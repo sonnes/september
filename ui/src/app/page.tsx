@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { convertTextToSpeech, playAudioBlob } from "../services/tts";
 import { getSuggestions } from "../services/completion";
-import { transcriber } from "../services/transcriber";
 import moment from "moment";
 import Recorder from "../components/Recorder";
 import { v4 as uuidv4 } from "uuid";
@@ -12,6 +11,7 @@ type Message = {
   id: string;
   text: string;
   sentAt: Date;
+  authorId: string;
 };
 
 export default function Home() {
@@ -64,6 +64,7 @@ export default function Home() {
         id: uuidv4(),
         text,
         sentAt: new Date(),
+        authorId: "user",
       };
       const newMessages = [...messages, newMessage];
       setMessages(newMessages);
@@ -85,51 +86,15 @@ export default function Home() {
     }
   };
 
-  const handleAudioData = async (audioData: Blob) => {
-    const transcriptionId = await transcriber.addJob({
+  const handleTranscription = (text: string) => {
+    const msg: Message = {
       id: uuidv4(),
-      audioBlob: audioData,
-    });
-    const newMessage: Message = {
-      id: transcriptionId,
-      text: "Transcribing audio...",
+      text,
       sentAt: new Date(),
+      authorId: "transcriber",
     };
-    setMessages([...messages, newMessage]);
+    setMessages([...messages, msg]);
   };
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMessages((prevMessages) =>
-        prevMessages.map((msg) => {
-          if (msg.id) {
-            const job = transcriber.getJob(msg.id);
-            if (job) {
-              switch (job.status) {
-                case "completed":
-                  return {
-                    ...msg,
-                    text: job.text || "Transcription completed",
-                  };
-                case "error":
-                  return {
-                    ...msg,
-                    text: "Transcription failed",
-                  };
-                case "processing":
-                  return { ...msg, text: "Processing audio..." };
-                default:
-                  return msg;
-              }
-            }
-          }
-          return msg;
-        })
-      );
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <div className="flex flex-col h-screen max-w-lg mx-auto border border-gray-300 rounded-lg overflow-hidden">
@@ -176,7 +141,7 @@ export default function Home() {
               Send
             </button>
             <Recorder
-              onAudioData={handleAudioData}
+              onTranscription={handleTranscription}
               onStarted={() => console.log("Recording started")}
               onStopped={() => console.log("Recording stopped")}
             />

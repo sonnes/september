@@ -21,3 +21,9 @@ Recorder is a component that continuously records the audio input from the micro
 Create a transcriber queue that receives audio data from the recorder and passes it to `/api/transcribe` for transcription.
 
 Each transcription status is displayed in the message history
+
+Create a new route `/api/transcribe` that transcribes the audio data and returns the transcription text.
+
+Update the Recorder component to transcribe the audio data and return the transcription text. Remove the transcriber queue.
+
+Use groq

@@ -1,25 +1,22 @@
 import React, { useState, useRef } from "react";
-import { MicrophoneIcon, StopIcon } from "./Icons";
+import { MicrophoneIcon, StopIcon, SpinnerIcon } from "./Icons";
 
 interface RecorderProps {
-  onAudioData: (audioData: Blob) => void;
+  onTranscription: (text: string) => void;
   onStarted?: () => void;
   onStopped?: () => void;
-  silenceThreshold?: number;
-  silenceDuration?: number;
 }
 
 const Recorder: React.FC<RecorderProps> = ({
-  onAudioData,
+  onTranscription,
   onStarted,
   onStopped,
-  silenceThreshold = -50,
-  silenceDuration = 1000,
 }) => {
-  const [isRecording, setIsRecording] = useState(false);
+  const [status, setStatus] = useState<"idle" | "recording" | "transcribing">(
+    "idle"
+  );
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const silenceStartRef = useRef<number | null>(null);
 
   const startRecording = async () => {
     try {
@@ -34,43 +31,75 @@ const Recorder: React.FC<RecorderProps> = ({
       };
 
       mediaRecorder.start();
-      setIsRecording(true);
+      setStatus("recording");
       onStarted?.();
-
-      // ... rest of the recording logic ...
     } catch (error) {
       console.error("Error starting recording:", error);
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
+  const stopRecording = async () => {
+    if (mediaRecorderRef.current && status === "recording") {
       mediaRecorderRef.current.stop();
-      setIsRecording(false);
+      setStatus("transcribing");
       onStopped?.();
 
       const audioBlob = new Blob(audioChunksRef.current, {
         type: "audio/webm",
       });
-      onAudioData(audioBlob);
       audioChunksRef.current = [];
+
+      const formData = new FormData();
+      formData.append("audio", audioBlob, "audio.webm");
+
+      try {
+        const response = await fetch("/api/transcribe", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error("Transcription failed");
+        }
+
+        const data = await response.json();
+        onTranscription(data.text);
+      } catch (error) {
+        console.error("Error transcribing audio:", error);
+      } finally {
+        setStatus("idle");
+      }
     }
   };
 
   const toggleRecording = () => {
-    if (isRecording) {
+    if (status === "recording") {
       stopRecording();
-    } else {
+    } else if (status === "idle") {
       startRecording();
+    }
+  };
+
+  const getIcon = () => {
+    switch (status) {
+      case "recording":
+        return <StopIcon />;
+      case "transcribing":
+        return <SpinnerIcon />;
+      default:
+        return <MicrophoneIcon />;
     }
   };
 
   return (
     <button
       onClick={toggleRecording}
-      className="ml-2 p-2 bg-green-500 text-white rounded"
+      className={`ml-2 p-2 text-white rounded ${
+        status === "recording" ? "bg-red-500" : "bg-green-500"
+      }`}
+      disabled={status === "transcribing"}
     >
-      {isRecording ? <StopIcon /> : <MicrophoneIcon />}
+      {getIcon()}
     </button>
   );
 };
