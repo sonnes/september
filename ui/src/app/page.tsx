@@ -6,14 +6,7 @@ import moment from "moment";
 import Recorder from "../components/Recorder";
 import { v4 as uuidv4 } from "uuid";
 import { PlayIcon } from "../components/Icons";
-
-type Message = {
-  id: string;
-  text: string;
-  sentAt: Date;
-  authorId: string;
-};
-
+import { Message } from "../types/message";
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState<string>("");
@@ -86,14 +79,11 @@ export default function Home() {
     }
   };
 
-  const handleTranscription = (text: string) => {
-    const msg: Message = {
-      id: uuidv4(),
-      text,
-      sentAt: new Date(),
-      authorId: "transcriber",
-    };
-    setMessages([...messages, msg]);
+  const handleTranscription = (msg: Message) => {
+    const newMessages = [...messages, msg];
+    setMessages(newMessages);
+
+    localStorage.setItem("messages.v1", JSON.stringify(newMessages));
   };
 
   return (
@@ -105,20 +95,26 @@ export default function Home() {
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className="p-2 my-2 bg-gray-50 rounded flex justify-between items-start"
+            className={`p-2 my-2 rounded flex ${
+              msg.authorId === "transcriber" ? "justify-start" : "justify-end"
+            }`}
           >
-            <div className="flex-1">
+            <div
+              className={`max-w-1/2 ${
+                msg.authorId === "transcriber" ? "bg-blue-100" : "bg-gray-50"
+              } rounded p-2`}
+            >
               <div>{msg.text}</div>
               <div className="text-xs text-gray-500 mt-1">
                 {moment(msg.sentAt).fromNow()}
               </div>
+              <button
+                onClick={() => playMessage(msg)}
+                className="mt-2 p-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs"
+              >
+                <PlayIcon />
+              </button>
             </div>
-            <button
-              onClick={() => playMessage(msg)}
-              className="ml-2 p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              <PlayIcon />
-            </button>
           </div>
         ))}
       </div>

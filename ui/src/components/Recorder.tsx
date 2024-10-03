@@ -1,8 +1,9 @@
 import React, { useState, useRef } from "react";
 import { MicrophoneIcon, StopIcon, SpinnerIcon } from "./Icons";
-
+import { Message } from "../types/message";
+import { v4 as uuidv4 } from "uuid";
 interface RecorderProps {
-  onTranscription: (text: string) => void;
+  onTranscription: (msg: Message) => void;
   onStarted?: () => void;
   onStopped?: () => void;
 }
@@ -38,37 +39,52 @@ const Recorder: React.FC<RecorderProps> = ({
     }
   };
 
-  const stopRecording = async () => {
+  const stopRecording = () => {
     if (mediaRecorderRef.current && status === "recording") {
       mediaRecorderRef.current.stop();
       setStatus("transcribing");
       onStopped?.();
 
-      const audioBlob = new Blob(audioChunksRef.current, {
-        type: "audio/webm",
-      });
-      audioChunksRef.current = [];
-
-      const formData = new FormData();
-      formData.append("audio", audioBlob, "audio.webm");
-
-      try {
-        const response = await fetch("/api/transcribe", {
-          method: "POST",
-          body: formData,
+      mediaRecorderRef.current.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: "audio/webm",
         });
+        audioChunksRef.current = [];
 
-        if (!response.ok) {
-          throw new Error("Transcription failed");
+        if (audioBlob.size > 0) {
+          await submitTranscription(audioBlob);
         }
+      };
+    }
+  };
 
-        const data = await response.json();
-        onTranscription(data.text);
-      } catch (error) {
-        console.error("Error transcribing audio:", error);
-      } finally {
-        setStatus("idle");
+  const submitTranscription = async (audioBlob: Blob) => {
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "audio.webm");
+
+    try {
+      const response = await fetch("/api/transcribe", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Transcription failed");
       }
+
+      const data = await response.json();
+      const msg: Message = {
+        id: uuidv4(),
+        text: data.text,
+        sentAt: new Date(),
+        authorId: "transcriber",
+      };
+
+      onTranscription(msg);
+    } catch (error) {
+      console.error("Error transcribing audio:", error);
+    } finally {
+      setStatus("idle");
     }
   };
 
