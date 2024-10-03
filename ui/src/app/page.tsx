@@ -1,10 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
+import { convertTextToSpeech, playAudioBlob } from "./services/tts";
+import { getSuggestions } from "./services/completion";
+import moment from "moment";
 
 type Message = {
   text: string;
   sentAt: Date;
-  audioBlob?: Blob;
 };
 
 export default function Home() {
@@ -17,37 +19,12 @@ export default function Home() {
       e.preventDefault();
       setIsLoading(true);
 
-      fetch("/api/completion", {
-        method: "POST",
-        body: JSON.stringify({ text }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          setText(data.text);
-          setIsLoading(false);
-        });
-    }
-  };
-
-  const convertTextToSpeech = async (text: string): Promise<Blob | null> => {
-    try {
-      const response = await fetch("/api/tts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ text }),
+      getSuggestions(text).then((suggestions) => {
+        if (suggestions.length > 0) {
+          setText(suggestions[0]);
+        }
+        setIsLoading(false);
       });
-
-      if (response.ok) {
-        return await response.blob();
-      } else {
-        console.error("Failed to convert text to speech");
-        return null;
-      }
-    } catch (error) {
-      console.error("Error calling text-to-speech API:", error);
-      return null;
     }
   };
 
@@ -76,25 +53,24 @@ export default function Home() {
       const newMessage: Message = {
         text,
         sentAt: new Date(),
-        audioBlob: audioBlob || undefined,
       };
       const newMessages = [...messages, newMessage];
       setMessages(newMessages);
       setText("");
       setIsLoading(false);
 
-      localStorage.setItem(
-        "messages.v1",
-        JSON.stringify(newMessages, (key, value) => {
-          if (key === "sentAt") return value.toISOString();
-          return value;
-        })
-      );
+      localStorage.setItem("messages.v1", JSON.stringify(newMessages));
 
       if (audioBlob) {
-        const audio = new Audio(URL.createObjectURL(audioBlob));
-        audio.play();
+        playAudioBlob(audioBlob);
       }
+    }
+  };
+
+  const playMessage = async (message: Message) => {
+    const audioBlob = await convertTextToSpeech(message.text);
+    if (audioBlob) {
+      playAudioBlob(audioBlob);
     }
   };
 
@@ -105,11 +81,35 @@ export default function Home() {
       </header>
       <div className="flex-1 p-4 overflow-y-auto bg-gray-100">
         {messages.map((msg, index) => (
-          <div key={index} className="p-2 my-2 bg-gray-50 rounded">
-            <div>{msg.text}</div>
-            <div className="text-xs text-gray-500 mt-1">
-              {msg.sentAt.toLocaleString()}
+          <div
+            key={index}
+            className="p-2 my-2 bg-gray-50 rounded flex justify-between items-start"
+          >
+            <div className="flex-1">
+              <div>{msg.text}</div>
+              <div className="text-xs text-gray-500 mt-1">
+                {moment(msg.sentAt).fromNow()}
+              </div>
             </div>
+            <button
+              onClick={() => playMessage(msg)}
+              className="ml-2 p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"
+                />
+              </svg>
+            </button>
           </div>
         ))}
       </div>
@@ -121,13 +121,16 @@ export default function Home() {
           onKeyDown={triggerCompletion}
           className="flex-1 p-2 border border-gray-300 rounded"
         />
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="ml-2 p-2 bg-blue-500 text-white rounded"
-        >
-          Send
-        </button>
+        {isLoading && <div className="p-2">Loading...</div>}
+        {!isLoading && (
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="ml-2 p-2 bg-blue-500 text-white rounded"
+          >
+            Send
+          </button>
+        )}
       </form>
     </div>
   );
