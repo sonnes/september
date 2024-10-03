@@ -3,7 +3,7 @@ import { createHash } from "crypto";
 import fs from "fs/promises";
 import path from "path";
 
-const voiceId = "zeTFANH8Ybln8sjiUtmJ";
+const voiceId = "3vXjdKMDgxJoOLbElGxC";
 const cacheDir = path.join(process.cwd(), "cache", "tts");
 
 export async function POST(req: Request) {

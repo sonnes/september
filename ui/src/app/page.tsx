@@ -1,10 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
-import { convertTextToSpeech, playAudioBlob } from "./services/tts";
-import { getSuggestions } from "./services/completion";
+import { convertTextToSpeech, playAudioBlob } from "../services/tts";
+import { getSuggestions } from "../services/completion";
+import { transcriber } from "../services/transcriber";
 import moment from "moment";
+import Recorder from "../components/Recorder";
+import { v4 as uuidv4 } from "uuid";
+import { PlayIcon } from "../components/Icons";
 
 type Message = {
+  id: string;
   text: string;
   sentAt: Date;
 };
@@ -36,7 +41,12 @@ export default function Home() {
         return value;
       });
 
-      setMessages(parsedMessages);
+      setMessages(
+        parsedMessages.map((msg: Message) => ({
+          ...msg,
+          id: msg.id || uuidv4(), // Ensure all messages have an id
+        }))
+      );
     }
   };
 
@@ -51,6 +61,7 @@ export default function Home() {
       const audioBlob = await convertTextToSpeech(text);
 
       const newMessage: Message = {
+        id: uuidv4(),
         text,
         sentAt: new Date(),
       };
@@ -74,15 +85,61 @@ export default function Home() {
     }
   };
 
+  const handleAudioData = async (audioData: Blob) => {
+    const transcriptionId = await transcriber.addJob({
+      id: uuidv4(),
+      audioBlob: audioData,
+    });
+    const newMessage: Message = {
+      id: transcriptionId,
+      text: "Transcribing audio...",
+      sentAt: new Date(),
+    };
+    setMessages([...messages, newMessage]);
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) => {
+          if (msg.id) {
+            const job = transcriber.getJob(msg.id);
+            if (job) {
+              switch (job.status) {
+                case "completed":
+                  return {
+                    ...msg,
+                    text: job.text || "Transcription completed",
+                  };
+                case "error":
+                  return {
+                    ...msg,
+                    text: "Transcription failed",
+                  };
+                case "processing":
+                  return { ...msg, text: "Processing audio..." };
+                default:
+                  return msg;
+              }
+            }
+          }
+          return msg;
+        })
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="flex flex-col h-screen max-w-lg mx-auto border border-gray-300 rounded-lg overflow-hidden">
       <header className="bg-blue-500 text-white p-4 text-center">
         Chat Interface
       </header>
       <div className="flex-1 p-4 overflow-y-auto bg-gray-100">
-        {messages.map((msg, index) => (
+        {messages.map((msg) => (
           <div
-            key={index}
+            key={msg.id}
             className="p-2 my-2 bg-gray-50 rounded flex justify-between items-start"
           >
             <div className="flex-1">
@@ -95,20 +152,7 @@ export default function Home() {
               onClick={() => playMessage(msg)}
               className="ml-2 p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-6 h-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"
-                />
-              </svg>
+              <PlayIcon />
             </button>
           </div>
         ))}
@@ -123,13 +167,20 @@ export default function Home() {
         />
         {isLoading && <div className="p-2">Loading...</div>}
         {!isLoading && (
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="ml-2 p-2 bg-blue-500 text-white rounded"
-          >
-            Send
-          </button>
+          <>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="ml-2 p-2 bg-blue-500 text-white rounded"
+            >
+              Send
+            </button>
+            <Recorder
+              onAudioData={handleAudioData}
+              onStarted={() => console.log("Recording started")}
+              onStopped={() => console.log("Recording stopped")}
+            />
+          </>
         )}
       </form>
     </div>
