@@ -3,7 +3,7 @@ export async function POST(req: Request) {
 
   return new Response(
     JSON.stringify({
-      text: "Hello, world!",
+      text: text,
     }),
     {
       status: 200,

@@ -1,8 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
 
+type Message = {
+  text: string;
+  sentAt: Date;
+  audioBlob?: Blob;
+};
+
 export default function Home() {
-  const [messages, setMessages] = useState<string[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -23,21 +29,72 @@ export default function Home() {
     }
   };
 
-  useEffect(() => {
-    const savedMessages = localStorage.getItem("messages");
-    if (savedMessages) {
-      setMessages(JSON.parse(savedMessages));
+  const convertTextToSpeech = async (text: string): Promise<Blob | null> => {
+    try {
+      const response = await fetch("/api/tts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text }),
+      });
+
+      if (response.ok) {
+        return await response.blob();
+      } else {
+        console.error("Failed to convert text to speech");
+        return null;
+      }
+    } catch (error) {
+      console.error("Error calling text-to-speech API:", error);
+      return null;
     }
+  };
+
+  const loadMessages = async () => {
+    const savedMessages = localStorage.getItem("messages.v1");
+    if (savedMessages) {
+      const parsedMessages = JSON.parse(savedMessages, (key, value) => {
+        if (key === "sentAt") return new Date(value);
+        return value;
+      });
+
+      setMessages(parsedMessages);
+    }
+  };
+
+  useEffect(() => {
+    loadMessages();
   }, []);
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (text.trim()) {
-      const newMessages = [...messages, text];
+      setIsLoading(true);
+      const audioBlob = await convertTextToSpeech(text);
+
+      const newMessage: Message = {
+        text,
+        sentAt: new Date(),
+        audioBlob: audioBlob || undefined,
+      };
+      const newMessages = [...messages, newMessage];
       setMessages(newMessages);
       setText("");
+      setIsLoading(false);
 
-      localStorage.setItem("messages", JSON.stringify(newMessages));
+      localStorage.setItem(
+        "messages.v1",
+        JSON.stringify(newMessages, (key, value) => {
+          if (key === "sentAt") return value.toISOString();
+          return value;
+        })
+      );
+
+      if (audioBlob) {
+        const audio = new Audio(URL.createObjectURL(audioBlob));
+        audio.play();
+      }
     }
   };
 
@@ -48,8 +105,11 @@ export default function Home() {
       </header>
       <div className="flex-1 p-4 overflow-y-auto bg-gray-100">
         {messages.map((msg, index) => (
-          <div key={index} className="p-2 my-2 bg-gray-300 rounded">
-            {msg}
+          <div key={index} className="p-2 my-2 bg-gray-50 rounded">
+            <div>{msg.text}</div>
+            <div className="text-xs text-gray-500 mt-1">
+              {msg.sentAt.toLocaleString()}
+            </div>
           </div>
         ))}
       </div>
