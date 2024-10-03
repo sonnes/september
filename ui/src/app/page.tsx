@@ -29,10 +29,10 @@ export default function Home() {
             difficulties
           </p>
           <Link
-            href="#features"
+            href="/home"
             className="bg-white text-red-700 px-6 py-3 rounded-full font-semibold hover:bg-red-100 transition duration-300"
           >
-            Explore Features
+            Get Started
           </Link>
         </div>
       </section>

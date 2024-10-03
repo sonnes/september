@@ -1,0 +1,32 @@
+[
+  {
+    "id": "1",
+    "title": "Introduction to AI",
+    "lastMessage": "Can you explain what AI is?",
+    "timestamp": "2023-04-10T14:30:00Z"
+  },
+  {
+    "id": "2",
+    "title": "Machine Learning Basics",
+    "lastMessage": "What's the difference between supervised and unsupervised learning?",
+    "timestamp": "2023-04-11T09:15:00Z"
+  },
+  {
+    "id": "3",
+    "title": "Neural Networks",
+    "lastMessage": "How do neural networks work?",
+    "timestamp": "2023-04-12T16:45:00Z"
+  },
+  {
+    "id": "4",
+    "title": "Natural Language Processing",
+    "lastMessage": "What are some applications of NLP?",
+    "timestamp": "2023-04-13T11:20:00Z"
+  },
+  {
+    "id": "5",
+    "title": "Computer Vision",
+    "lastMessage": "How does image recognition work?",
+    "timestamp": "2023-04-14T13:50:00Z"
+  }
+]
