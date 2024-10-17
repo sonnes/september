@@ -1,3 +1,4 @@
+import moment from "moment";
 import React from "react";
 
 interface Conversation {
@@ -43,7 +44,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
                 {conversation.lastMessage}
               </span>
               <span className="text-xs text-gray-400">
-                {conversation.timestamp}
+                {moment(conversation.timestamp).fromNow()}
               </span>
             </div>
           </li>

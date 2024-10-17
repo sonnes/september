@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import ConversationList from "@/components/ConversationList";
-import ConversationDetails from "@/components/ConversationDetails";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
+import { useRouter } from "next/navigation";
 
 // API functions
 const fetchConversations = async () => {
@@ -16,19 +16,9 @@ const fetchConversations = async () => {
   return response.json();
 };
 
-const fetchConversationDetails = async (id: string) => {
-  const response = await fetch(`/api/conversations/${id}`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch conversation details");
-  }
-  return response.json();
-};
-
 export default function HomePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [selectedConversationId, setSelectedConversationId] = useState<
-    string | null
-  >(null);
+  const router = useRouter();
 
   const {
     data: conversations,
@@ -39,15 +29,9 @@ export default function HomePage() {
     queryFn: fetchConversations,
   });
 
-  const {
-    data: selectedConversation,
-    isLoading: isLoadingConversation,
-    error: conversationError,
-  } = useQuery({
-    queryKey: ["conversation", selectedConversationId],
-    queryFn: () => fetchConversationDetails(selectedConversationId!),
-    enabled: !!selectedConversationId,
-  });
+  const handleSelectConversation = (id: string) => {
+    router.push(`/conversations/${id}`);
+  };
 
   return (
     <>
@@ -65,16 +49,13 @@ export default function HomePage() {
                     conversations={conversations}
                     isLoading={isLoadingConversations}
                     error={conversationsError}
-                    onSelectConversation={setSelectedConversationId}
-                    selectedConversationId={selectedConversationId}
+                    onSelectConversation={handleSelectConversation}
+                    selectedConversationId={null}
                   />
                 </div>
                 <div className="flex-1 pl-4">
-                  <ConversationDetails
-                    conversation={selectedConversation}
-                    isLoading={isLoadingConversation}
-                    error={conversationError}
-                  />
+                  {/* You can add a welcome message or instructions here */}
+                  <p>Select a conversation to view details</p>
                 </div>
               </div>
             </div>

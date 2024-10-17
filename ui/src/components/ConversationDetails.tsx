@@ -1,43 +1,58 @@
 import React from "react";
-
-interface Message {
-  id: string;
-  content: string;
-  sender: "user" | "ai";
-}
+import { Message } from "@/types/message";
+import moment from "moment";
+import { PlayIcon } from "./Icons";
 
 interface ConversationDetailsProps {
-  conversation: { id: string; title: string; messages: Message[] } | undefined;
+  conversation: {
+    id: string;
+    messages: Message[];
+  } | null;
   isLoading: boolean;
   error: Error | null;
+  onPlayMessage: (message: Message) => void;
 }
 
 const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   conversation,
   isLoading,
   error,
+  onPlayMessage,
 }) => {
-  if (isLoading) return <div>Loading conversation...</div>;
+  if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
-  if (!conversation) return <div>Select a conversation to view details</div>;
+  if (!conversation) return <div>No conversation selected</div>;
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-4">{conversation.title}</h2>
-      <div className="space-y-4">
-        {conversation.messages.map((message) => (
+    <div className="flex-1 p-4 overflow-y-auto bg-gray-100">
+      {conversation.messages.map((msg) => (
+        <div
+          key={msg.id}
+          className={`p-2 my-2 rounded flex ${
+            msg.authorId === "transcriber" ? "justify-start" : "justify-end"
+          }`}
+        >
           <div
-            key={message.id}
-            className={`p-2 rounded-lg ${
-              message.sender === "user"
-                ? "bg-blue-100 text-right"
-                : "bg-gray-100"
-            }`}
+            className={`max-w-3/4 ${
+              msg.authorId === "transcriber" ? "bg-blue-100" : "bg-gray-50"
+            } rounded p-3 shadow`}
           >
-            {message.content}
+            <div className="text-lg mb-2">{msg.text}</div>
+            <div className="flex items-center justify-between mt-2">
+              <div className="text-xs text-gray-500">
+                {moment(msg.sentAt).fromNow()}
+              </div>
+              <button
+                onClick={() => onPlayMessage(msg)}
+                className="ml-2 p-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs flex items-center"
+              >
+                <PlayIcon className="w-4 h-4 mr-1" />
+                Play
+              </button>
+            </div>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 };
