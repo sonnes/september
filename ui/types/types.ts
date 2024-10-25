@@ -1,8 +1,16 @@
 export interface Message {
-  id: number;
+  id: string;
   sender: string;
   content: string;
-  timestamp: string;
+  createdAt: Date;
+}
+
+export interface Conversation {
+  id: string;
+  name: string;
+  lastMessage: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface ConversationDetailProps {

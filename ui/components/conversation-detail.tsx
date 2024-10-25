@@ -19,12 +19,13 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { ConversationDetailProps } from "@/types/types";
 import { Textarea } from "@/components/ui/textarea";
+import moment from "moment";
 
 interface Message {
   id: number;
   sender: string;
   content: string;
-  timestamp: string;
+  createdAt: Date;
 }
 
 export function ConversationDetail({
@@ -136,24 +137,24 @@ export function ConversationDetail({
             }`}
           >
             <div
-              className={`max-w-[70%] ${
-                message.sender === "User"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-secondary-foreground"
-              } rounded-lg p-3`}
+              className={`max-w-[70%] bg-primary text-primary-foreground rounded-lg p-3 flex items-center`}
             >
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-semibold">{message.sender}</span>
-                <span className="text-xs opacity-70">{message.timestamp}</span>
+              <div className="flex-grow">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-semibold">{message.sender}</span>
+                  <span className="text-xs opacity-70">
+                    {moment(message.createdAt).fromNow()}
+                  </span>
+                </div>
+                <p>{message.content}</p>
               </div>
-              <p>{message.content}</p>
               <Button
                 variant="ghost"
                 size="sm"
-                className="mt-2 text-primary-foreground/80 hover:text-primary-foreground"
+                className="ml-2 text-primary-foreground/80 hover:text-primary-foreground self-center"
               >
-                <PlayIcon className="h-4 w-4 mr-2" />
-                Play
+                <PlayIcon className="h-4 w-4" />
+                <span className="sr-only">Play</span>
               </Button>
             </div>
           </div>

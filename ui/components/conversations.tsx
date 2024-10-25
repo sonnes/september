@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
 
 import { Button } from "@/components/ui/button";
@@ -10,43 +10,61 @@ import { MobileSidebar } from "./mobile-sidebar";
 import { DesktopSidebar } from "./desktop-sidebar";
 import { ConversationList } from "./conversation-list";
 import { ConversationDetail } from "./conversation-detail";
-import { Message } from "@/types/types";
+import { Message, Conversation } from "@/types/types";
+import { storageService } from "@/services/storage";
+import { v4 as uuidv4 } from "uuid";
 
 export function ConversationsComponent() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      sender: "User",
-      content: "Hello, how are you?",
-      timestamp: "10:00 AM",
-    },
-    {
-      id: 2,
-      sender: "Assistant",
-      content: "I'm doing well, thank you! How can I assist you today?",
-      timestamp: "10:01 AM",
-    },
-    {
-      id: 3,
-      sender: "User",
-      content: "Can you help me with my schedule?",
-      timestamp: "10:02 AM",
-    },
-  ]);
+  const [conversations, setConversations] = useState(
+    storageService.getConversations()
+  );
+  const [selectedConversation, setSelectedConversation] = useState<
+    string | null
+  >(null);
+  const [messages, setMessages] = useState<Message[]>([]);
 
-  const handleSendMessage = (newMessage: string) => {
-    if (newMessage.trim()) {
-      const message: Message = {
-        id: messages.length + 1,
-        sender: "User",
-        content: newMessage,
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      };
-      setMessages([...messages, message]);
+  useEffect(() => {
+    if (selectedConversation) {
+      setMessages(storageService.getMessages(selectedConversation));
     }
+  }, [selectedConversation]);
+
+  const handleSendMessage = (content: string) => {
+    if (content.trim() && selectedConversation) {
+      const message: Message = {
+        id: uuidv4(),
+        sender: "User",
+        content: content,
+        createdAt: new Date(),
+      };
+      storageService.saveMessage(selectedConversation, message);
+      setMessages([...messages, message]);
+
+      // Update the conversation's last message and updatedAt
+      const updatedConversation = conversations.find(
+        (c) => c.id === selectedConversation
+      );
+      if (updatedConversation) {
+        updatedConversation.lastMessage = content;
+        updatedConversation.updatedAt = new Date();
+        storageService.saveConversation(updatedConversation);
+        setConversations([...conversations]);
+      }
+    }
+  };
+
+  const handleNewConversation = () => {
+    const now = new Date();
+    const newConversation: Conversation = {
+      id: uuidv4(),
+      name: `Conversation ${conversations.length + 1}`,
+      lastMessage: "",
+      createdAt: now,
+      updatedAt: now,
+    };
+    storageService.saveConversation(newConversation);
+    setConversations([...conversations, newConversation]);
+    setSelectedConversation(newConversation.id);
   };
 
   return (
@@ -79,16 +97,20 @@ export function ConversationsComponent() {
       <main className="flex-1 flex flex-col p-4 lg:p-6 overflow-hidden bg-background">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-semibold text-primary">Conversations</h2>
-          <Button className="bg-secondary hover:bg-secondary/90 text-secondary-foreground">
+          <Button
+            className="bg-secondary hover:bg-secondary/90 text-secondary-foreground"
+            onClick={handleNewConversation}
+          >
             <PlusIcon className="h-5 w-5 mr-2" />
             New Conversation
           </Button>
         </div>
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 flex-1 overflow-hidden">
-          {/* Left column: Conversation list */}
-          <ConversationList />
-
-          {/* Right column: Conversation details */}
+          <ConversationList
+            conversations={conversations}
+            selectedConversation={selectedConversation}
+            onSelectConversation={setSelectedConversation}
+          />
           <ConversationDetail
             messages={messages}
             onSendMessage={handleSendMessage}
