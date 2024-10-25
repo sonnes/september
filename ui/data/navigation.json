@@ -1,0 +1,19 @@
+{
+  "items": [
+    {
+      "name": "Conversations",
+      "icon": "ChatBubbleLeftRightIcon",
+      "href": "/conversations"
+    },
+    {
+      "name": "Knowledge Base",
+      "icon": "BookOpenIcon",
+      "href": "/knowledge-base"
+    },
+    {
+      "name": "Voice",
+      "icon": "MicrophoneIcon",
+      "href": "/voice"
+    }
+  ]
+}
