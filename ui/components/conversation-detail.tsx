@@ -17,17 +17,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/components/ui/card";
-import { ConversationDetailProps } from "@/types/types";
+import { Conversation, Message } from "@/types/types";
 import { Textarea } from "@/components/ui/textarea";
 import moment from "moment";
 import { useToast } from "@/hooks/use-toast";
 
+export interface ConversationDetailProps {
+  conversation: Conversation;
+  messages: Message[];
+  onSendMessage: (message: string) => void;
+}
+
 export function ConversationDetail({
+  conversation,
   messages,
   onSendMessage,
 }: ConversationDetailProps) {
   const [inputText, setInputText] = useState("");
   const [transcription, setTranscription] = useState("");
+  const [displayedText, setDisplayedText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
@@ -38,17 +46,19 @@ export function ConversationDetail({
     pitch: 1,
   });
 
-  const [alignment, setAlignment] = useState<any>(null);
-  const [currentTime, setCurrentTime] = useState(0);
-  const animationRef = useRef<number>();
-
   useEffect(() => {
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
+    let index = -1;
+    const intervalId = setInterval(() => {
+      if (index < transcription.length) {
+        setDisplayedText((prev) => prev + transcription[index]);
+        index++;
+      } else {
+        clearInterval(intervalId);
       }
-    };
-  }, []);
+    }, 50);
+
+    return () => clearInterval(intervalId);
+  }, [transcription]);
 
   const generateSpeech = async (text: string) => {
     setIsLoading(true);
@@ -73,7 +83,7 @@ export function ConversationDetail({
       const audioUrl = URL.createObjectURL(audioBlob);
 
       setTranscription(text);
-      setAlignment(result.alignment);
+      setDisplayedText("");
       if (audioRef.current) {
         audioRef.current.src = audioUrl;
         audioRef.current.play();
@@ -106,69 +116,24 @@ export function ConversationDetail({
     await generateSpeech(messageContent);
   };
 
-  const animateTranscription = () => {
-    if (audioRef.current && alignment) {
-      setCurrentTime(audioRef.current.currentTime);
-      animationRef.current = requestAnimationFrame(animateTranscription);
-    }
-  };
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.onplay = () => {
-        animationRef.current = requestAnimationFrame(animateTranscription);
-      };
-      audioRef.current.onpause = () => {
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-        }
-      };
-      audioRef.current.onended = () => {
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-        }
-        setCurrentTime(0);
-      };
-    }
-  }, [alignment]);
-
-  const getHighlightedText = () => {
-    if (!alignment || !transcription) return transcription;
-
-    const { characters, character_end_times_seconds } = alignment;
-    let highlightedText = "";
-    let lastIndex = 0;
-
-    for (let i = 0; i < characters.length; i++) {
-      if (character_end_times_seconds[i] <= currentTime) {
-        highlightedText += characters[i];
-        lastIndex = i + 1;
-      } else {
-        break;
-      }
-    }
-
-    return (
-      <span>
-        <span className="text-primary">{highlightedText}</span>
-        <span>{transcription.slice(lastIndex)}</span>
-      </span>
-    );
-  };
-
   return (
-    <div className="w-full lg:w-2/3 bg-card rounded-lg shadow flex flex-col h-full">
+    <div className="flex flex-col h-full">
       {/* Conversation header */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center">
           <Avatar className="h-10 w-10">
             <AvatarImage
-              src="/placeholder-avatar-1.jpg"
-              alt="Current Contact"
+              src="/placeholder-avatar.jpg"
+              alt={conversation.name}
             />
-            <AvatarFallback>CC</AvatarFallback>
+            <AvatarFallback>{conversation.name.charAt(0)}</AvatarFallback>
           </Avatar>
-          <h3 className="ml-3 text-lg font-semibold">Current Contact</h3>
+          <div className="ml-3">
+            <h3 className="text-lg font-semibold">{conversation.name}</h3>
+            <p className="text-sm text-muted-foreground">
+              {conversation.lastMessage || "No messages yet"}
+            </p>
+          </div>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -247,12 +212,12 @@ export function ConversationDetail({
             >
               <div className="flex-grow">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold">{message.sender}</span>
+                  <span className="font-medium text-sm">{message.sender}</span>
                   <span className="text-xs opacity-70">
                     {moment(message.createdAt).fromNow()}
                   </span>
                 </div>
-                <p>{message.content}</p>
+                <p className="text-sm">{message.content}</p>
               </div>
               <Button
                 variant="ghost"
@@ -289,7 +254,7 @@ export function ConversationDetail({
               Transcription
             </h4>
             <p className="text-sm text-muted-foreground">
-              {getHighlightedText() || "No active transcription"}
+              {displayedText || "No active transcription"}
             </p>
           </div>
         </CardContent>
@@ -323,7 +288,6 @@ export function ConversationDetail({
               ) : (
                 <PaperAirplaneIcon className="h-4 w-4 mr-2" />
               )}
-              Send
             </Button>
           </div>
         </div>

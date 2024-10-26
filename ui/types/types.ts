@@ -13,11 +13,6 @@ export interface Conversation {
   updatedAt: Date;
 }
 
-export interface ConversationDetailProps {
-  messages: Message[];
-  onSendMessage: (message: string) => void;
-}
-
 export interface NavigationItem {
   name: string;
   icon: string;
