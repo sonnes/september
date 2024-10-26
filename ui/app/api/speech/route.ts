@@ -12,14 +12,15 @@ export async function POST(req: Request) {
   // Normalize text and generate unique ID
   const normalizedText = text.trim().toLowerCase();
   const textHash = createHash("md5").update(normalizedText).digest("hex");
-  const cacheFilePath = path.join(cacheDir, `${textHash}.mp3`);
+  const cacheFilePath = path.join(cacheDir, `${textHash}.json`);
 
   // Check if cached file exists
   try {
-    const cachedAudio = await fs.readFile(cacheFilePath);
-    return new Response(cachedAudio, {
+    const cachedData = await fs.readFile(cacheFilePath, "utf-8");
+    const parsedData = JSON.parse(cachedData);
+    return new Response(JSON.stringify(parsedData), {
       headers: {
-        "Content-Type": "audio/mpeg",
+        "Content-Type": "application/json",
         "X-Voice-ID": voiceId,
       },
     });
@@ -31,30 +32,24 @@ export async function POST(req: Request) {
     apiKey: process.env.ELEVEN_LABS_API_KEY,
   });
 
-  const audioBuffer = await client.textToSpeech.convert(voiceId, {
+  const response = await client.textToSpeech.convertWithTimestamps(voiceId, {
     optimize_streaming_latency: ElevenLabs.OptimizeStreamingLatency.Zero,
-    output_format: ElevenLabs.OutputFormat.Mp32205032,
+    output_format: ElevenLabs.OutputFormat.Mp34410032,
     text: text,
     voice_settings: {
-      stability: 0.1,
-      similarity_boost: 0.3,
-      style: 0.2,
+      stability: 0.5,
+      similarity_boost: 0.5,
+      style: 0.5,
     },
   });
 
-  const chunks: Uint8Array[] = [];
-  for await (const chunk of audioBuffer) {
-    chunks.push(chunk);
-  }
-  const buffer = Buffer.concat(chunks);
-
-  // Save audio to cache
+  // Save the entire response to cache
   await fs.mkdir(cacheDir, { recursive: true });
-  await fs.writeFile(cacheFilePath, buffer);
+  await fs.writeFile(cacheFilePath, JSON.stringify(response));
 
-  return new Response(buffer, {
+  return new Response(JSON.stringify(response), {
     headers: {
-      "Content-Type": "audio/mpeg",
+      "Content-Type": "application/json",
       "X-Voice-ID": voiceId,
     },
   });

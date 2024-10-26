@@ -43,7 +43,7 @@ export function ConversationList({
             <div className="ml-3">
               <p className="font-medium">{conversation.name}</p>
               <p className="text-sm text-muted-foreground">
-                {conversation.lastMessage || "No messages yet"}
+                {(conversation.lastMessage || "No messages yet").slice(0, 30)}
               </p>
             </div>
             <span className="ml-auto text-xs text-muted-foreground">

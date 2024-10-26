@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Cog6ToothIcon,
   PaperAirplaneIcon,
@@ -38,43 +38,122 @@ export function ConversationDetail({
     pitch: 1,
   });
 
+  const [alignment, setAlignment] = useState<any>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const animationRef = useRef<number>();
+
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
+
+  const generateSpeech = async (text: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/speech", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate speech");
+      }
+
+      const result = await response.json();
+      const audioBlob = new Blob(
+        [Uint8Array.from(atob(result.audio_base64), (c) => c.charCodeAt(0))],
+        { type: "audio/mp3" }
+      );
+      const audioUrl = URL.createObjectURL(audioBlob);
+
+      setTranscription(text);
+      setAlignment(result.alignment);
+      if (audioRef.current) {
+        audioRef.current.src = audioUrl;
+        audioRef.current.play();
+      }
+
+      return true;
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate speech. Please try again.",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (inputText.trim()) {
-      setIsLoading(true);
-      try {
-        const response = await fetch("/api/speech", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ text: inputText }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to generate speech");
-        }
-
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-
-        setTranscription(inputText);
-        if (audioRef.current) {
-          audioRef.current.src = audioUrl;
-          audioRef.current.play();
-        }
-
+      const success = await generateSpeech(inputText);
+      if (success) {
         onSendMessage(inputText);
         setInputText("");
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to generate speech. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
       }
     }
+  };
+
+  const handlePlayMessage = async (messageContent: string) => {
+    await generateSpeech(messageContent);
+  };
+
+  const animateTranscription = () => {
+    if (audioRef.current && alignment) {
+      setCurrentTime(audioRef.current.currentTime);
+      animationRef.current = requestAnimationFrame(animateTranscription);
+    }
+  };
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.onplay = () => {
+        animationRef.current = requestAnimationFrame(animateTranscription);
+      };
+      audioRef.current.onpause = () => {
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+        }
+      };
+      audioRef.current.onended = () => {
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+        }
+        setCurrentTime(0);
+      };
+    }
+  }, [alignment]);
+
+  const getHighlightedText = () => {
+    if (!alignment || !transcription) return transcription;
+
+    const { characters, character_end_times_seconds } = alignment;
+    let highlightedText = "";
+    let lastIndex = 0;
+
+    for (let i = 0; i < characters.length; i++) {
+      if (character_end_times_seconds[i] <= currentTime) {
+        highlightedText += characters[i];
+        lastIndex = i + 1;
+      } else {
+        break;
+      }
+    }
+
+    return (
+      <span>
+        <span className="text-primary">{highlightedText}</span>
+        <span>{transcription.slice(lastIndex)}</span>
+      </span>
+    );
   };
 
   return (
@@ -179,6 +258,7 @@ export function ConversationDetail({
                 variant="ghost"
                 size="sm"
                 className="ml-2 text-primary-foreground/80 hover:text-primary-foreground self-center"
+                onClick={() => handlePlayMessage(message.content)}
               >
                 <PlayIcon className="h-4 w-4" />
                 <span className="sr-only">Play</span>
@@ -209,7 +289,7 @@ export function ConversationDetail({
               Transcription
             </h4>
             <p className="text-sm text-muted-foreground">
-              {transcription || "No active transcription"}
+              {getHighlightedText() || "No active transcription"}
             </p>
           </div>
         </CardContent>
