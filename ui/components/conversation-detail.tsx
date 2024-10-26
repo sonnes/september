@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Cog6ToothIcon,
   PaperAirplaneIcon,
@@ -20,13 +20,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ConversationDetailProps } from "@/types/types";
 import { Textarea } from "@/components/ui/textarea";
 import moment from "moment";
-
-interface Message {
-  id: number;
-  sender: string;
-  content: string;
-  createdAt: Date;
-}
+import { useToast } from "@/hooks/use-toast";
 
 export function ConversationDetail({
   messages,
@@ -34,20 +28,53 @@ export function ConversationDetail({
 }: ConversationDetailProps) {
   const [inputText, setInputText] = useState("");
   const [transcription, setTranscription] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const { toast } = useToast();
+
   const [voiceSettings, setVoiceSettings] = useState({
     voice: "Default",
     speed: 1,
     pitch: 1,
   });
 
-  const handleSendMessage = () => {
-    onSendMessage(inputText);
-    setInputText("");
-  };
+  const handleSendMessage = async () => {
+    if (inputText.trim()) {
+      setIsLoading(true);
+      try {
+        const response = await fetch("/api/speech", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ text: inputText }),
+        });
 
-  const handleVoiceInput = () => {
-    // Simulating voice input
-    setTranscription("This is a simulated voice transcription...");
+        if (!response.ok) {
+          throw new Error("Failed to generate speech");
+        }
+
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        setTranscription(inputText);
+        if (audioRef.current) {
+          audioRef.current.src = audioUrl;
+          audioRef.current.play();
+        }
+
+        onSendMessage(inputText);
+        setInputText("");
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to generate speech. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
   };
 
   return (
@@ -168,9 +195,13 @@ export function ConversationDetail({
             variant="outline"
             size="icon"
             className="h-12 w-12 mr-4"
-            onClick={handleVoiceInput}
+            disabled={isLoading}
           >
-            <MicrophoneIcon className="h-6 w-6" />
+            {isLoading ? (
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            ) : (
+              <MicrophoneIcon className="h-6 w-6" />
+            )}
             <span className="sr-only">Voice input</span>
           </Button>
           <div className="flex-1">
@@ -205,13 +236,20 @@ export function ConversationDetail({
             <Button
               onClick={handleSendMessage}
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              disabled={isLoading}
             >
-              <PaperAirplaneIcon className="h-4 w-4 mr-2" />
+              {isLoading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
+              ) : (
+                <PaperAirplaneIcon className="h-4 w-4 mr-2" />
+              )}
               Send
             </Button>
           </div>
         </div>
       </div>
+
+      <audio ref={audioRef} className="hidden" />
     </div>
   );
 }
