@@ -60,11 +60,11 @@ export function ConversationsComponent() {
     }
   }, [selectedConversation]);
 
-  const handleSendMessage = (content: string) => {
+  const handleSendMessage = (content: string, sender: string = "User") => {
     if (content.trim() && selectedConversation) {
       const message: Message = {
         id: uuidv4(),
-        sender: "User",
+        sender: sender,
         content: content,
         createdAt: new Date(),
       };

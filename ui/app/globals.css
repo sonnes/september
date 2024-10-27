@@ -92,3 +92,29 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes sound-wave {
+  0% {
+    height: 4px;
+  }
+
+  50% {
+    height: 16px;
+  }
+
+  100% {
+    height: 4px;
+  }
+}
+
+.animate-sound-wave {
+  animation: sound-wave 1s infinite;
+}
+
+.animation-delay-200 {
+  animation-delay: 0.2s;
+}
+
+.animation-delay-400 {
+  animation-delay: 0.4s;
+}

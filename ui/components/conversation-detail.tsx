@@ -25,7 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 export interface ConversationDetailProps {
   conversation: Conversation;
   messages: Message[];
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string, sender: string) => void;
 }
 
 export function ConversationDetail({
@@ -46,8 +46,14 @@ export function ConversationDetail({
     pitch: 1,
   });
 
+  const [isListening, setIsListening] = useState(false);
+  const [audioData, setAudioData] = useState<Blob | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    let index = -1;
+    let index = 0;
     const intervalId = setInterval(() => {
       if (index < transcription.length) {
         setDisplayedText((prev) => prev + transcription[index]);
@@ -102,18 +108,115 @@ export function ConversationDetail({
     }
   };
 
-  const handleSendMessage = async () => {
-    if (inputText.trim()) {
-      const success = await generateSpeech(inputText);
+  const handleSendMessage = async (
+    text: string = inputText,
+    sender: string = "User"
+  ) => {
+    if (text.trim()) {
+      const success = await generateSpeech(text);
       if (success) {
-        onSendMessage(inputText);
+        onSendMessage(text, sender);
         setInputText("");
       }
     }
   };
 
-  const handlePlayMessage = async (messageContent: string) => {
-    await generateSpeech(messageContent);
+  const handlePlayMessage = async (messageContent: string, sender: string) => {
+    if (sender !== "Speaker") {
+      await generateSpeech(messageContent);
+    }
+  };
+
+  const startListening = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+
+      const audioChunks: BlobPart[] = [];
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+        setAudioData(audioBlob);
+        transcribeAudio(audioBlob);
+      };
+
+      mediaRecorder.start();
+      setIsListening(true);
+    } catch (error) {
+      console.error("Error accessing microphone:", error);
+      toast({
+        title: "Error",
+        description:
+          "Failed to access microphone. Please check your permissions.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopListening = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      setIsListening(false);
+    }
+  };
+
+  const transcribeAudio = async (audioBlob: Blob) => {
+    setIsLoading(true);
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "audio.wav");
+
+    try {
+      const response = await fetch("/api/transcribe", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Transcription failed");
+      }
+
+      const result = await response.json();
+      setTranscription(result.text);
+      setDisplayedText("");
+
+      // Submit the transcribed text to the conversation
+      onSendMessage(result.text, "Speaker");
+
+      // Play the audio if available
+      if (result.audio_base64) {
+        const audioBlob = new Blob(
+          [Uint8Array.from(atob(result.audio_base64), (c) => c.charCodeAt(0))],
+          { type: "audio/wav" }
+        );
+        const audioUrl = URL.createObjectURL(audioBlob);
+        if (audioRef.current) {
+          audioRef.current.src = audioUrl;
+          audioRef.current.play();
+        }
+      }
+    } catch (error) {
+      console.error("Transcription error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to transcribe audio. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // New useEffect hook for scrolling to bottom on new messages
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
@@ -204,11 +307,21 @@ export function ConversationDetail({
           <div
             key={message.id}
             className={`flex ${
-              message.sender === "User" ? "justify-end" : "justify-start"
+              message.sender === "User"
+                ? "justify-end"
+                : message.sender === "Speaker"
+                ? "justify-start"
+                : "justify-center"
             }`}
           >
             <div
-              className={`max-w-[70%] bg-primary text-primary-foreground rounded-lg p-3 flex items-center`}
+              className={`max-w-[70%] rounded-lg p-3 flex items-center ${
+                message.sender === "User"
+                  ? "bg-blue-500 text-white"
+                  : message.sender === "Speaker"
+                  ? "bg-green-500 text-white"
+                  : "bg-gray-200 text-gray-800"
+              }`}
             >
               <div className="flex-grow">
                 <div className="flex items-center justify-between mb-1">
@@ -219,18 +332,23 @@ export function ConversationDetail({
                 </div>
                 <p className="text-sm">{message.content}</p>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="ml-2 text-primary-foreground/80 hover:text-primary-foreground self-center"
-                onClick={() => handlePlayMessage(message.content)}
-              >
-                <PlayIcon className="h-4 w-4" />
-                <span className="sr-only">Play</span>
-              </Button>
+              {message.sender !== "Speaker" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-2 text-white/80 hover:text-white self-center"
+                  onClick={() =>
+                    handlePlayMessage(message.content, message.sender)
+                  }
+                >
+                  <PlayIcon className="h-4 w-4" />
+                  <span className="sr-only">Play</span>
+                </Button>
+              )}
             </div>
           </div>
         ))}
+        <div ref={messagesEndRef} /> {/* Add this line */}
       </div>
 
       {/* Transcription */}
@@ -240,10 +358,17 @@ export function ConversationDetail({
             variant="outline"
             size="icon"
             className="h-12 w-12 mr-4"
+            onClick={isListening ? stopListening : startListening}
             disabled={isLoading}
           >
             {isLoading ? (
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            ) : isListening ? (
+              <div className="flex items-center justify-center">
+                <div className="w-1 h-4 bg-red-500 mx-0.5 animate-sound-wave"></div>
+                <div className="w-1 h-6 bg-red-500 mx-0.5 animate-sound-wave animation-delay-200"></div>
+                <div className="w-1 h-8 bg-red-500 mx-0.5 animate-sound-wave animation-delay-400"></div>
+              </div>
             ) : (
               <MicrophoneIcon className="h-6 w-6" />
             )}
