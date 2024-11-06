@@ -50,8 +50,6 @@ export function ConversationDetail({
   const [audioData, setAudioData] = useState<Blob | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     let index = 0;
     const intervalId = setInterval(() => {
@@ -66,64 +64,50 @@ export function ConversationDetail({
     return () => clearInterval(intervalId);
   }, [transcription]);
 
-  const generateSpeech = async (text: string) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/speech", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ text }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to generate speech");
-      }
-
-      const result = await response.json();
-      const audioBlob = new Blob(
-        [Uint8Array.from(atob(result.audio_base64), (c) => c.charCodeAt(0))],
-        { type: "audio/mp3" }
-      );
-      const audioUrl = URL.createObjectURL(audioBlob);
-
-      setTranscription(text);
-      setDisplayedText("");
-      if (audioRef.current) {
-        audioRef.current.src = audioUrl;
-        audioRef.current.play();
-      }
-
-      return true;
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to generate speech. Please try again.",
-        variant: "destructive",
-      });
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleSendMessage = async (
     text: string = inputText,
     sender: string = "User"
   ) => {
     if (text.trim()) {
-      const success = await generateSpeech(text);
-      if (success) {
+      setIsLoading(true);
+      try {
+        const response = await fetch("/api/speech", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ text }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to generate speech");
+        }
+
+        const result = await response.json();
+        const audioBlob = new Blob(
+          [Uint8Array.from(atob(result.audio_base64), (c) => c.charCodeAt(0))],
+          { type: "audio/mp3" }
+        );
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        setTranscription(text);
+        setDisplayedText("");
+        if (audioRef.current) {
+          audioRef.current.src = audioUrl;
+          audioRef.current.play();
+        }
+
         onSendMessage(text, sender);
         setInputText("");
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to generate speech. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
-    }
-  };
-
-  const handlePlayMessage = async (messageContent: string, sender: string) => {
-    if (sender !== "Speaker") {
-      await generateSpeech(messageContent);
     }
   };
 
@@ -180,24 +164,11 @@ export function ConversationDetail({
       }
 
       const result = await response.json();
+
       setTranscription(result.text);
       setDisplayedText("");
 
-      // Submit the transcribed text to the conversation
       onSendMessage(result.text, "Speaker");
-
-      // Play the audio if available
-      if (result.audio_base64) {
-        const audioBlob = new Blob(
-          [Uint8Array.from(atob(result.audio_base64), (c) => c.charCodeAt(0))],
-          { type: "audio/wav" }
-        );
-        const audioUrl = URL.createObjectURL(audioBlob);
-        if (audioRef.current) {
-          audioRef.current.src = audioUrl;
-          audioRef.current.play();
-        }
-      }
     } catch (error) {
       console.error("Transcription error:", error);
       toast({
@@ -208,15 +179,6 @@ export function ConversationDetail({
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // New useEffect hook for scrolling to bottom on new messages
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
@@ -338,7 +300,7 @@ export function ConversationDetail({
                   size="sm"
                   className="ml-2 text-white/80 hover:text-white self-center"
                   onClick={() =>
-                    handlePlayMessage(message.content, message.sender)
+                    handleSendMessage(message.content, message.sender)
                   }
                 >
                   <PlayIcon className="h-4 w-4" />
@@ -348,7 +310,6 @@ export function ConversationDetail({
             </div>
           </div>
         ))}
-        <div ref={messagesEndRef} /> {/* Add this line */}
       </div>
 
       {/* Transcription */}
@@ -404,7 +365,9 @@ export function ConversationDetail({
           />
           <div className="flex justify-end">
             <Button
-              onClick={handleSendMessage}
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
+                handleSendMessage()
+              }
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
               disabled={isLoading}
             >

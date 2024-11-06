@@ -36,10 +36,11 @@ export async function POST(req: Request) {
     optimize_streaming_latency: ElevenLabs.OptimizeStreamingLatency.Zero,
     output_format: ElevenLabs.OutputFormat.Mp34410032,
     text: text,
+    model_id: "eleven_turbo_v2",
     voice_settings: {
-      stability: 0.5,
+      stability: 0.3,
       similarity_boost: 0.5,
-      style: 0.5,
+      style: 0,
     },
   });
 

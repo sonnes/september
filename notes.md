@@ -73,3 +73,23 @@ export async function POST(req: NextRequest) {
 ```
 
 match the response structure of the conversation details page.
+
+## Streaming transcription
+
+https://github.com/modal-labs/quillman/blob/c9e8a0f856b1fe34f626e34584deb5fce85e2483/src/frontend/app.jsx
+
+## Autocomplete
+
+Implement a new component that shows inline suggestions as the user types. Fork Textarea and add a new component called AutocompleteTextarea. The component should have the following features:
+
+- call `/api/autocomplete` with the text in the textarea and last 10 messages in the conversation.
+- Show the first suggestion inlined in the textarea. The suggestion should be in light gray and italic.
+- show the rest of the suggestions in a dropdown above the textarea.
+- The user can navigate through the suggestions with the arrow keys.
+- The user can select a suggestion by pressing tab
+- when the user presses command+right arrow, accept only the first word of the suggestion.
+
+Change the conversation details behavior to the following:
+
+- When the user sends a message, show the transcription in the large card, play the audio
+- When submitting the transcription from microphone, show the transcription in the large card and don’t play the audio
