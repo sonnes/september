@@ -50,6 +50,8 @@ export function ConversationDetail({
   const [audioData, setAudioData] = useState<Blob | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     let index = 0;
     const intervalId = setInterval(() => {
@@ -63,6 +65,13 @@ export function ConversationDetail({
 
     return () => clearInterval(intervalId);
   }, [transcription]);
+
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop =
+        messagesContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const handleSendMessage = async (
     text: string = inputText,
@@ -195,9 +204,6 @@ export function ConversationDetail({
           </Avatar>
           <div className="ml-3">
             <h3 className="text-lg font-semibold">{conversation.name}</h3>
-            <p className="text-sm text-muted-foreground">
-              {conversation.lastMessage || "No messages yet"}
-            </p>
           </div>
         </div>
         <DropdownMenu>
@@ -264,7 +270,10 @@ export function ConversationDetail({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto p-4 space-y-4"
+      >
         {messages.map((message) => (
           <div
             key={message.id}

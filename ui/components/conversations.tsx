@@ -98,7 +98,7 @@ export function ConversationsComponent() {
   };
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <div className="flex h-screen overflow-hidden">
         <AppSidebar
           conversations={conversations}
@@ -193,7 +193,9 @@ function AppSidebar({
   return (
     <Sidebar collapsible="icon" className="hidden border-r md:flex" {...props}>
       <SidebarHeader>
-        <h1 className="text-xl font-semibold p-4">September</h1>
+        <h1 className="text-xl font-semibold p-4 group-data-[collapsible=icon]:text-center">
+          S
+        </h1>
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
@@ -206,12 +208,16 @@ function AppSidebar({
                     children: item.name,
                     hidden: false,
                   }}
-                  className="px-2.5 md:px-2"
+                  className="px-2.5 md:px-2 group-data-[collapsible=icon]:justify-center"
                   asChild
                 >
                   <a href={item.href}>
-                    {Icon && <Icon className="h-5 w-5 mr-2" />}
-                    <span>{item.name}</span>
+                    {Icon && (
+                      <Icon className="h-5 w-5 group-data-[collapsible=icon]:mr-0 mr-2" />
+                    )}
+                    <span className="group-data-[collapsible=icon]:hidden">
+                      {item.name}
+                    </span>
                   </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>

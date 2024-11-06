@@ -89,7 +89,13 @@ Implement a new component that shows inline suggestions as the user types. Fork 
 - The user can select a suggestion by pressing tab
 - when the user presses command+right arrow, accept only the first word of the suggestion.
 
+## Conversation Details
+
 Change the conversation details behavior to the following:
 
 - When the user sends a message, show the transcription in the large card, play the audio
 - When submitting the transcription from microphone, show the transcription in the large card and don’t play the audio
+
+## Sidebar
+
+By default, keep the sidebar collapsed.
