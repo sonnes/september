@@ -21,6 +21,8 @@ import { Conversation, Message } from "@/types/types";
 import { Textarea } from "@/components/ui/textarea";
 import moment from "moment";
 import { useToast } from "@/hooks/use-toast";
+import { useAutocomplete } from "@/hooks/use-autocomplete";
+import { AutocompleteTextarea } from "@/components/ui/autocomplete-textarea";
 
 export interface ConversationDetailProps {
   conversation: Conversation;
@@ -51,6 +53,51 @@ export function ConversationDetail({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  const {
+    suggestions,
+    selectedIndex,
+    getSuggestions,
+    selectSuggestion,
+    acceptFirstWord,
+    clearSuggestions,
+  } = useAutocomplete();
+
+  const handleInputChange = async (text: string) => {
+    setInputText(text);
+
+    // Get last 10 messages for context
+    const recentMessages = messages.slice(-10).map((m) => ({
+      role: m.sender.toLowerCase(),
+      content: m.content,
+    }));
+
+    await getSuggestions(text, recentMessages);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      if (suggestions.length > 0) {
+        const suggestion = suggestions[selectedIndex];
+        const lastWord = inputText.split(" ").pop() || "";
+
+        const newText =
+          lastWord.length > 0
+            ? inputText.slice(0, -lastWord.length) + suggestion
+            : inputText + " " + suggestion;
+        setInputText(newText + " ");
+        clearSuggestions();
+      }
+    } else if (e.key === "ArrowRight" && e.metaKey) {
+      e.preventDefault();
+      if (suggestions.length > 0) {
+        const newText = acceptFirstWord(suggestions[selectedIndex], inputText);
+        setInputText(newText + " ");
+        clearSuggestions();
+      }
+    }
+  };
 
   useEffect(() => {
     let index = 0;
@@ -358,20 +405,39 @@ export function ConversationDetail({
       {/* Input area */}
       <div className="p-4 border-t border-border">
         <div className="flex flex-col space-y-2">
-          <Textarea
-            placeholder="Type your message..."
-            value={inputText}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-              setInputText(e.target.value)
-            }
-            onKeyPress={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSendMessage();
+          <div className="relative">
+            {suggestions.length > 0 && (
+              <div className="absolute bottom-full mb-1 w-full bg-popover border rounded-md shadow-lg">
+                {suggestions.map((suggestion: string, index: number) => (
+                  <div
+                    key={index}
+                    className={`px-3 py-2 cursor-pointer hover:bg-accent ${
+                      index === selectedIndex ? "bg-accent" : ""
+                    }`}
+                    onClick={() => {
+                      const lastWord = inputText.split(" ").pop() || "";
+                      const newText =
+                        inputText.slice(0, -lastWord.length) + suggestion;
+                      setInputText(newText);
+                      clearSuggestions();
+                    }}
+                  >
+                    {suggestion}
+                  </div>
+                ))}
+              </div>
+            )}
+            <AutocompleteTextarea
+              value={inputText}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                handleInputChange(e.target.value)
               }
-            }}
-            className="min-h-[100px] resize-none"
-          />
+              onKeyDown={handleKeyDown}
+              onSubmit={() => handleSendMessage()}
+              placeholder="Type your message..."
+              className="min-h-[100px] resize-none"
+            />
+          </div>
           <div className="flex justify-end">
             <Button
               onClick={(e: React.MouseEvent<HTMLButtonElement>) =>

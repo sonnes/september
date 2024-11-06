@@ -80,14 +80,20 @@ https://github.com/modal-labs/quillman/blob/c9e8a0f856b1fe34f626e34584deb5fce85e
 
 ## Autocomplete
 
-Implement a new component that shows inline suggestions as the user types. Fork Textarea and add a new component called AutocompleteTextarea. The component should have the following features:
+Implement a new component that shows suggestions as the user types. Fork Textarea and add a new component called AutocompleteTextarea. The component should have the following features:
 
 - call `/api/autocomplete` with the text in the textarea and last 10 messages in the conversation.
-- Show the first suggestion inlined in the textarea. The suggestion should be in light gray and italic.
-- show the rest of the suggestions in a dropdown above the textarea.
+- show the suggestions in a dropdown above the textarea.
 - The user can navigate through the suggestions with the arrow keys.
 - The user can select a suggestion by pressing tab
 - when the user presses command+right arrow, accept only the first word of the suggestion.
+
+Implement `/api/autocomplete`
+
+- The API should accept the text and messages as request body.
+- The API should return an array of suggestions.
+- Construct a prompt to generate the suggestions.
+- Call ollama to get the suggestions.
 
 ## Conversation Details
 
