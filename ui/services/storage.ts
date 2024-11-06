@@ -6,13 +6,16 @@ const MESSAGES_KEY = "september_messages";
 export const storageService = {
   getConversations: (): Conversation[] => {
     const conversations = localStorage.getItem(CONVERSATIONS_KEY);
-    return conversations
+    const parsedConversations = conversations
       ? JSON.parse(conversations, (key, value) => {
           if (key === "createdAt" || key === "updatedAt")
             return new Date(value);
           return value;
         })
       : [];
+    return parsedConversations.sort((a: Conversation, b: Conversation) => {
+      return b.updatedAt.getTime() - a.updatedAt.getTime();
+    });
   },
 
   saveConversation: (conversation: Conversation): void => {
