@@ -45,7 +45,7 @@ export function ConversationList({
                 <a
                   href="#"
                   key={conversation.id}
-                  className={`flex flex-col items-start gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
+                  className={`flex flex-col items-start gap-2 whitespace-nowrap border-b p-4 text-base leading-tight last:border-b-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
                     selectedConversation === conversation.id
                       ? "bg-sidebar-accent text-sidebar-accent-foreground"
                       : ""
@@ -62,12 +62,14 @@ export function ConversationList({
                         {conversation.name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="font-medium">{conversation.name}</span>
+                    <span className="font-medium text-base">
+                      {conversation.name}
+                    </span>
                     <span className="ml-auto text-xs text-muted-foreground">
                       {moment(conversation.updatedAt).fromNow()}
                     </span>
                   </div>
-                  <span className="line-clamp-2 w-[260px] whitespace-break-spaces text-xs text-muted-foreground">
+                  <span className="line-clamp-2 w-[260px] whitespace-break-spaces text-sm text-muted-foreground">
                     {conversation.lastMessage || "No messages yet"}
                   </span>
                 </a>

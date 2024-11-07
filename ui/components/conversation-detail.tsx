@@ -76,7 +76,22 @@ export function ConversationDetail({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Tab") {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      clearSuggestions();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (suggestions.length > 0) {
+        selectSuggestion(
+          (selectedIndex - 1 + suggestions.length) % suggestions.length
+        );
+      }
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (suggestions.length > 0) {
+        selectSuggestion((selectedIndex + 1) % suggestions.length);
+      }
+    } else if (e.key === "Tab") {
       e.preventDefault();
       if (suggestions.length > 0) {
         const suggestion = suggestions[selectedIndex];
@@ -94,7 +109,6 @@ export function ConversationDetail({
       if (suggestions.length > 0) {
         const newText = acceptFirstWord(suggestions[selectedIndex], inputText);
         setInputText(newText + " ");
-        clearSuggestions();
       }
     }
   };
@@ -237,6 +251,45 @@ export function ConversationDetail({
     }
   };
 
+  const playMessage = async (text: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/speech", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate speech");
+      }
+
+      const result = await response.json();
+      const audioBlob = new Blob(
+        [Uint8Array.from(atob(result.audio_base64), (c) => c.charCodeAt(0))],
+        { type: "audio/mp3" }
+      );
+      const audioUrl = URL.createObjectURL(audioBlob);
+
+      setTranscription(text);
+      setDisplayedText("");
+      if (audioRef.current) {
+        audioRef.current.src = audioUrl;
+        audioRef.current.play();
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate speech. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Conversation header */}
@@ -343,21 +396,21 @@ export function ConversationDetail({
             >
               <div className="flex-grow">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-sm">{message.sender}</span>
+                  <span className="font-medium text-base">
+                    {message.sender}
+                  </span>
                   <span className="text-xs opacity-70">
                     {moment(message.createdAt).fromNow()}
                   </span>
                 </div>
-                <p className="text-sm">{message.content}</p>
+                <p className="text-base">{message.content}</p>
               </div>
               {message.sender !== "Speaker" && (
                 <Button
                   variant="ghost"
                   size="sm"
                   className="ml-2 text-white/80 hover:text-white self-center"
-                  onClick={() =>
-                    handleSendMessage(message.content, message.sender)
-                  }
+                  onClick={() => playMessage(message.content)}
                 >
                   <PlayIcon className="h-4 w-4" />
                   <span className="sr-only">Play</span>
