@@ -1,42 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  PlusIcon,
-  ChatBubbleLeftRightIcon,
-  BookOpenIcon,
-  MicrophoneIcon,
-} from "@heroicons/react/24/outline";
+import { PlusIcon } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { ConversationList } from "./conversation-list";
-import { ConversationDetail } from "./conversation-detail";
+import { ConversationList } from "../conversation-list";
+import { ConversationDetail } from "../conversation-detail";
 import { Message, Conversation } from "@/types/types";
 import { storageService } from "@/services/storage";
 import { v4 as uuidv4 } from "uuid";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarProvider,
-  SidebarTrigger,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-} from "@/components/ui/sidebar";
-import { NavUser } from "./sidebar";
-import { Separator } from "@/components/ui/separator";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Menu } from "lucide-react";
-import navigationData from "@/data/navigation.json";
 
 export function ConversationsComponent() {
   const [conversations, setConversations] = useState(
