@@ -105,3 +105,5 @@ Change the conversation details behavior to the following:
 ## Sidebar
 
 By default, keep the sidebar collapsed.
+
+## AAC Mode
