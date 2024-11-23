@@ -1,6 +1,16 @@
 {
   "items": [
     {
+      "name": "Home",
+      "icon": "HomeIcon",
+      "href": "/"
+    },
+    {
+      "name": "AAC",
+      "icon": "MicrophoneIcon",
+      "href": "/aac"
+    },
+    {
       "name": "Conversations",
       "icon": "ChatBubbleLeftRightIcon",
       "href": "/conversations"

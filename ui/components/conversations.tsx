@@ -98,143 +98,32 @@ export function ConversationsComponent() {
   };
 
   return (
-    <SidebarProvider defaultOpen={false}>
-      <div className="flex h-screen overflow-hidden">
-        <AppSidebar
-          conversations={conversations}
-          onNewConversation={handleNewConversation}
-        />
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <header className="flex h-14 items-center gap-4 border-b bg-background px-6">
-            <SidebarTrigger />
-            <div className="flex items-center gap-2">
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="icon" className="md:hidden">
-                    <Menu className="h-4 w-4" />
-                    <span className="sr-only">
-                      Toggle conversations sidebar
-                    </span>
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-80 p-0">
-                  <ConversationsSidebar
-                    conversations={conversations}
-                    selectedConversation={selectedConversation}
-                    onSelectConversation={setSelectedConversation}
-                    onNewConversation={handleNewConversation}
-                  />
-                </SheetContent>
-              </Sheet>
-              <Separator orientation="vertical" className="h-6" />
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem>
-                    <BreadcrumbLink href="#" className="text-sm font-medium">
-                      All Conversations
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage className="text-sm font-medium">
-                      Current Conversation
-                    </BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
-            </div>
-          </header>
-          <div className="flex flex-1 overflow-hidden">
-            <ConversationsSidebar
-              className="hidden border-r md:block w-80"
-              conversations={conversations}
-              selectedConversation={selectedConversation}
-              onSelectConversation={setSelectedConversation}
-              onNewConversation={handleNewConversation}
-            />
-            <main className="flex-1 overflow-hidden">
-              {selectedConversation ? (
-                <ConversationDetail
-                  conversation={
-                    conversations.find((c) => c.id === selectedConversation)!
-                  }
-                  messages={messages}
-                  onSendMessage={handleSendMessage}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-muted-foreground">
-                    Select a conversation or start a new one
-                  </p>
-                </div>
-              )}
-            </main>
+    <div className="flex h-full">
+      <ConversationsSidebar
+        className="hidden border-r md:block w-80"
+        conversations={conversations}
+        selectedConversation={selectedConversation}
+        onSelectConversation={setSelectedConversation}
+        onNewConversation={handleNewConversation}
+      />
+      <div className="flex-1 overflow-hidden">
+        {selectedConversation ? (
+          <ConversationDetail
+            conversation={
+              conversations.find((c) => c.id === selectedConversation)!
+            }
+            messages={messages}
+            onSendMessage={handleSendMessage}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-muted-foreground">
+              Select a conversation or start a new one
+            </p>
           </div>
-        </div>
+        )}
       </div>
-    </SidebarProvider>
-  );
-}
-
-function AppSidebar({
-  conversations,
-  onNewConversation,
-  ...props
-}: React.ComponentProps<typeof Sidebar> & {
-  conversations: Conversation[];
-  onNewConversation: () => void;
-}) {
-  const iconMap = {
-    ChatBubbleLeftRightIcon,
-    BookOpenIcon,
-    MicrophoneIcon,
-  };
-
-  return (
-    <Sidebar collapsible="icon" className="hidden border-r md:flex" {...props}>
-      <SidebarHeader>
-        <h1 className="text-xl font-semibold p-4 group-data-[collapsible=icon]:text-center">
-          S
-        </h1>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarMenu>
-          {navigationData.items.map((item) => {
-            const Icon = iconMap[item.icon as keyof typeof iconMap];
-            return (
-              <SidebarMenuItem key={item.name}>
-                <SidebarMenuButton
-                  tooltip={{
-                    children: item.name,
-                    hidden: false,
-                  }}
-                  className="px-2.5 md:px-2 group-data-[collapsible=icon]:justify-center"
-                  asChild
-                >
-                  <a href={item.href}>
-                    {Icon && (
-                      <Icon className="h-5 w-5 group-data-[collapsible=icon]:mr-0 mr-2" />
-                    )}
-                    <span className="group-data-[collapsible=icon]:hidden">
-                      {item.name}
-                    </span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            );
-          })}
-        </SidebarMenu>
-      </SidebarContent>
-      <SidebarFooter>
-        <NavUser
-          user={{
-            name: "User Name",
-            email: "user@example.com",
-            avatar: "/path/to/avatar.jpg",
-          }}
-        />
-      </SidebarFooter>
-    </Sidebar>
+    </div>
   );
 }
 
