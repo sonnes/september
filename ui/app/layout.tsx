@@ -24,6 +24,7 @@ import {
   ChatBubbleLeftRightIcon,
   BookOpenIcon,
   MicrophoneIcon,
+  CalculatorIcon,
 } from "@heroicons/react/24/outline";
 
 const geistSans = localFont({
@@ -46,6 +47,7 @@ const iconMap = {
   ChatBubbleLeftRightIcon,
   BookOpenIcon,
   MicrophoneIcon,
+  CalculatorIcon,
 };
 
 function AppSidebar({

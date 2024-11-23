@@ -24,6 +24,11 @@
       "name": "Voice",
       "icon": "MicrophoneIcon",
       "href": "/voice"
+    },
+    {
+      "name": "Abacus",
+      "href": "/abacus",
+      "icon": "CalculatorIcon"
     }
   ]
 }

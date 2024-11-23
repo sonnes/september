@@ -107,3 +107,85 @@ Change the conversation details behavior to the following:
 By default, keep the sidebar collapsed.
 
 ## AAC Mode
+
+## Abacus Dictation
+
+Create a new page called Abacus, `/abacus`. The page should have the following features:
+
+- A radio to select - 1 Digit, 2 Digits, 3 Digits, 4 Digits
+- A radio to select - Slow, Medium, Fast
+- An number input to select number of numbers. default to 10
+- A number input to select number of questions. default to 10
+- A button to generate the dictation session
+
+When the user clicks the button, generate the dictation session. Call `/api/abacus` with the selected options. The API returns this response:
+
+```
+{
+  "digits": 3,
+  "speed": "medium",
+  "dictation": [
+    {
+      "numbers": [1, 2, 3, -5 ],
+      "answer": 121
+      "audio": "base64 encoded audio"
+    },
+    {
+      "numbers": [1, 2, 3, 4, -5 ],
+      "answer": 123
+      "audio": "base64 encoded audio"
+    }
+  ]
+}
+```
+
+Show the numbers in vertical columns, with answer input boxes below each column. Show a start button to start the dictation. When the user clicks the start button, play the audio for the first question. After the audio stops, pause for 2 seconds and start the next audio. After the last audio, show the answers.
+
+### Abacus API
+
+Implement `/api/abacus`
+
+Request body:
+
+```
+{
+  "digits": 3,
+  "speed": "medium",
+  "numbers": 10,
+  "questions": 10
+}
+```
+
+Response:
+
+```
+{
+  "digits": 3,
+  "speed": "medium",
+  "dictation": [
+    {
+      "numbers": [1, 2, 3, -5 ],
+      "answer": 121
+      "audio": "base64 encoded audio"
+    },
+    {
+      "numbers": [1, 2, 3, 4, -5 ],
+      "answer": 123
+      "audio": "base64 encoded audio"
+    }
+  ]
+}
+```
+
+make sure sum of the numbers in each question is not less than 0.
+numbers can be negative.
+
+using the numbers, generate the audio using the following template:
+
+```
+{n1} break time="1.0s" /> {n2} ...
+```
+
+based on the speed, adjust the break time.
+base64 encode the audio and return it in the response.
+generate the audio for all the questions separately and parallelize the process.
