@@ -131,28 +131,7 @@ export function AACComponent() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="flex items-center justify-between border-b px-4 py-3 lg:px-6">
-        <h1 className="text-xl lg:text-2xl font-semibold">
-          AAC Communication Board
-        </h1>
-        <div className="flex items-center gap-2">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Settings className="h-5 w-5" />
-                <span className="sr-only">Settings</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent>
-              <SheetHeader>
-                <SheetTitle>Settings</SheetTitle>
-              </SheetHeader>
-            </SheetContent>
-          </Sheet>
-        </div>
-      </header>
-
+    <div className="flex-1">
       <div className="flex-1 overflow-auto">
         <div className="p-4 lg:p-6">
           <div className="flex flex-col lg:flex-row gap-4 mb-4">
