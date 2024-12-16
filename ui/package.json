@@ -12,6 +12,7 @@
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
     "clsx": "^2.1.1",
+    "elevenlabs": "^1.50.2",
     "framer-motion": "^11.14.1",
     "next": "15.1.0",
     "react": "^19.0.0",
