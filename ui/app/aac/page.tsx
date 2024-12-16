@@ -3,7 +3,7 @@
 import SingleColumnLayout from "@/layouts/single-column";
 import { Input } from "@/components/catalyst/input";
 import { Button } from "@/components/catalyst/button";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { MicrophoneIcon } from "@heroicons/react/24/outline";
 import { Heading } from "@/components/catalyst/heading";
 import { getAllMessages, putMessage } from "@/db/messages";
@@ -18,6 +18,8 @@ export default function AACPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const quickResponses = [
     "talk about my day",
@@ -46,9 +48,21 @@ export default function AACPage() {
     setInputValue("");
   };
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   useEffect(() => {
-    getAllMessages().then(setMessages);
+    getAllMessages().then((msgs) => {
+      setMessages(msgs);
+      setTimeout(scrollToBottom, 100);
+    });
+    inputRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const appendInput = (text: string) => {
     setInputValue(inputValue.trim() + " " + text);
@@ -75,7 +89,7 @@ export default function AACPage() {
 
   return (
     <SingleColumnLayout title={metadata.title}>
-      <div className="flex flex-col h-[calc(100vh-320px)]">
+      <div className="flex flex-col h-[calc(100vh-256px)]">
         {/* Latest message card */}
         <div className="p-6 mb-4 bg-white rounded-lg shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-800 dark:ring-white/10">
           <Heading level={2} className="text-zinc-900 dark:text-white">
@@ -84,20 +98,21 @@ export default function AACPage() {
         </div>
 
         {/* Messages area */}
-        <div className="grid grid-cols-1overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4">
           {messages.map((message, index) => (
             <div
               key={index}
-              className="mb-4 p-3 bg-zinc-50 rounded-lg inline-block dark:bg-zinc-800"
+              className="mb-4 p-3 bg-zinc-50 rounded-lg w-full dark:bg-zinc-800"
             >
               {message.text}
             </div>
           ))}
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Quick responses */}
-        <div className="p-4 border-t bg-zinc-50 dark:bg-zinc-800">
-          <div className="flex flex-wrap gap-2 mb-2">
+        <div className="border-t bg-zinc-50 dark:bg-zinc-800">
+          <div className="flex flex-wrap gap-2 p-4">
             {quickResponses.map((response, index) => (
               <Button
                 key={index}
@@ -112,11 +127,12 @@ export default function AACPage() {
         </div>
 
         {/* Input area */}
-        <div className="p-4 border-t flex items-center gap-2">
+        <div className="border-t bg-white dark:bg-zinc-900 p-4 flex items-center gap-2">
           <Button plain>
-            <MicrophoneIcon className="size-8" />
+            <MicrophoneIcon className="size-10" />
           </Button>
           <Input
+            ref={inputRef}
             type="text"
             placeholder="Type your message..."
             value={inputValue}
@@ -127,10 +143,11 @@ export default function AACPage() {
                 e.preventDefault();
               }
             }}
+            className="flex-1"
           />
-          <div className="flex items-center gap-1 text-sm bg-zinc-800 text-white px-2 py-1 rounded dark:bg-zinc-700">
-            <Button onClick={sendMessage}>Send</Button>
-          </div>
+          <Button onClick={sendMessage} color="dark/zinc">
+            Send
+          </Button>
         </div>
       </div>
     </SingleColumnLayout>
