@@ -189,3 +189,10 @@ using the numbers, generate the audio using the following template:
 based on the speed, adjust the break time.
 base64 encode the audio and return it in the response.
 generate the audio for all the questions separately and parallelize the process.
+
+## Autocomplete (transformers.js)
+
+https://huggingface.co/docs/transformers.js/index
+https://huggingface.co/tasks/fill-mask
+
+Implement a suggestions component using Fill-Mask Pipeline.

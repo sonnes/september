@@ -3,10 +3,11 @@
 import SingleColumnLayout from "@/layouts/single-column";
 import { Input } from "@/components/catalyst/input";
 import { Button } from "@/components/catalyst/button";
-import { useEffect, useState, useRef } from "react";
 import { MicrophoneIcon } from "@heroicons/react/24/outline";
 import { Heading } from "@/components/catalyst/heading";
 import { getAllMessages, putMessage } from "@/db/messages";
+import Suggestions from "./suggestions";
+import { useEffect, useState, useRef } from "react";
 
 import type { Message } from "@/db/messages";
 
@@ -64,6 +65,11 @@ export default function AACPage() {
     scrollToBottom();
   }, [messages]);
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setInputValue(newValue);
+  };
+
   const appendInput = (text: string) => {
     setInputValue(inputValue.trim() + " " + text);
   };
@@ -111,20 +117,7 @@ export default function AACPage() {
         </div>
 
         {/* Quick responses */}
-        <div className="border-t bg-zinc-50 dark:bg-zinc-800">
-          <div className="flex flex-wrap gap-2 p-4">
-            {quickResponses.map((response, index) => (
-              <Button
-                key={index}
-                color="white"
-                onClick={() => appendInput(response)}
-                className="rounded-full"
-              >
-                {response}
-              </Button>
-            ))}
-          </div>
-        </div>
+        <Suggestions text={inputValue} onSuggestionClick={appendInput} />
 
         {/* Input area */}
         <div className="border-t bg-white dark:bg-zinc-900 p-4 flex items-center gap-2">
@@ -136,7 +129,7 @@ export default function AACPage() {
             type="text"
             placeholder="Type your message..."
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={handleInputChange}
             onKeyPress={(e) => {
               if (e.key === "Enter" && inputValue.trim()) {
                 sendMessage();
