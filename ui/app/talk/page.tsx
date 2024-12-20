@@ -12,10 +12,10 @@ import { useEffect, useState, useRef } from "react";
 import type { Message } from "@/db/messages";
 
 const metadata = {
-  title: "AAC",
+  title: "Talk",
 };
 
-export default function AACPage() {
+export default function TalkPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
