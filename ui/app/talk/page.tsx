@@ -19,15 +19,9 @@ export default function TalkPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const quickResponses = [
-    "talk about my day",
-    "go for a walk",
-    "rest a bit",
-    "watch a movie",
-  ];
 
   const latestMessage = messages[messages.length - 1];
 

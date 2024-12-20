@@ -10,41 +10,74 @@ export default function Suggestions({
   text,
   onSuggestionClick,
 }: SuggestionsProps) {
+  const [status, setStatus] = useState("");
+  const [loadingMessage, setLoadingMessage] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [worker, setWorker] = useState<Worker | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function onInterrupt() {
+    // NOTE: We do not set isRunning to false here because the worker
+    // will send a 'complete' message when it is done.
+    worker?.postMessage({ type: "interrupt" });
+  }
+
+  // Create a callback function for messages from the worker thread.
+  const onMessageReceived = (e: MessageEvent) => {
+    switch (e.data.status) {
+      case "loading":
+        // Model file start load: add a new progress item to the list.
+        setStatus("loading");
+        setLoadingMessage(e.data.data);
+        break;
+
+      case "ready":
+        // Pipeline ready: the worker is ready to accept messages.
+        setStatus("ready");
+        break;
+
+      case "update":
+        {
+          // Generation update: update the output text.
+          // Parse messages
+          const { output, tps, numTokens } = e.data;
+
+          console.log(output);
+        }
+        break;
+
+      case "complete":
+        setStatus("");
+        break;
+
+      case "error":
+        setError(e.data.data);
+        break;
+    }
+  };
+
+  const onErrorReceived = (e: ErrorEvent) => {
+    console.error("Worker error:", e);
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined" && !worker) {
       const newWorker = new Worker(
-        new URL("../../workers/fill-mask.js", import.meta.url),
+        new URL("../../workers/suggestions.js", import.meta.url),
         {
           type: "module",
         }
       );
 
-      newWorker.addEventListener("message", (e) => {
-        if (e.data.status === "complete") {
-          setIsLoading(false);
-          // Extract the top 5 suggestions
-          const newSuggestions = e.data.suggestions
-            .slice(0, 5)
-            .map((result: any) => result.token_str);
-          setSuggestions(newSuggestions);
-        } else if (e.data.status === "error") {
-          setIsLoading(false);
-          setError(e.data.error);
-          setSuggestions([]);
-        } else {
-          // Handle progress updates if needed
-          console.log("Loading model:", e.data);
-        }
-      });
+      newWorker.addEventListener("message", onMessageReceived);
+      newWorker.addEventListener("error", onErrorReceived);
 
+      newWorker.postMessage({ type: "check" });
       setWorker(newWorker);
 
       return () => {
+        newWorker.removeEventListener("message", onMessageReceived);
+        newWorker.removeEventListener("error", onErrorReceived);
         newWorker.terminate();
       };
     }
@@ -53,9 +86,14 @@ export default function Suggestions({
   const getSuggestions = useCallback(
     (text: string) => {
       if (!worker) return;
-      setIsLoading(true);
+      setStatus("loading");
       setError(null);
-      worker.postMessage({ text });
+      worker.postMessage({
+        type: "generate",
+        data: {
+          text,
+        },
+      });
     },
     [worker]
   );
@@ -66,7 +104,7 @@ export default function Suggestions({
       getSuggestions(text);
     } else {
       setSuggestions([]);
-      setIsLoading(false);
+      setStatus("ready");
     }
   }, [text, getSuggestions]);
 
@@ -78,7 +116,7 @@ export default function Suggestions({
     );
   }
 
-  if (isLoading) {
+  if (status === "loading") {
     return (
       <div className="border-t bg-zinc-50 dark:bg-zinc-800 p-4">
         Loading suggestions...
