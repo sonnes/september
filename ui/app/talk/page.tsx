@@ -111,7 +111,11 @@ export default function TalkPage() {
         </div>
 
         {/* Quick responses */}
-        <Suggestions text={inputValue} onSuggestionClick={appendInput} />
+        <Suggestions
+          text={inputValue}
+          onSuggestionClick={appendInput}
+          debounceMs={500}
+        />
 
         {/* Input area */}
         <div className="border-t bg-white dark:bg-zinc-900 p-4 flex items-center gap-2">

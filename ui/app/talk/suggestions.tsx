@@ -1,112 +1,71 @@
 import { Button } from "@/components/catalyst/button";
 import { useEffect, useState, useCallback } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
+
+import type { Message } from "@/db/messages";
 
 interface SuggestionsProps {
   text: string;
   onSuggestionClick: (suggestion: string) => void;
+  debounceMs?: number;
+  history?: Message[];
 }
 
 export default function Suggestions({
   text,
   onSuggestionClick,
+  debounceMs = 300,
+  history = [],
 }: SuggestionsProps) {
   const [status, setStatus] = useState("");
-  const [loadingMessage, setLoadingMessage] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [worker, setWorker] = useState<Worker | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  function onInterrupt() {
-    // NOTE: We do not set isRunning to false here because the worker
-    // will send a 'complete' message when it is done.
-    worker?.postMessage({ type: "interrupt" });
-  }
+  // Debounce the input text
+  const debouncedText = useDebounce(text, debounceMs);
 
-  // Create a callback function for messages from the worker thread.
-  const onMessageReceived = (e: MessageEvent) => {
-    switch (e.data.status) {
-      case "loading":
-        // Model file start load: add a new progress item to the list.
-        setStatus("loading");
-        setLoadingMessage(e.data.data);
-        break;
-
-      case "ready":
-        // Pipeline ready: the worker is ready to accept messages.
-        setStatus("ready");
-        break;
-
-      case "update":
-        {
-          // Generation update: update the output text.
-          // Parse messages
-          const { output, tps, numTokens } = e.data;
-
-          console.log(output);
-        }
-        break;
-
-      case "complete":
-        setStatus("");
-        break;
-
-      case "error":
-        setError(e.data.data);
-        break;
+  const getSuggestions = useCallback(async (text: string) => {
+    if (!text.trim()) {
+      setSuggestions([]);
+      return;
     }
-  };
 
-  const onErrorReceived = (e: ErrorEvent) => {
-    console.error("Worker error:", e);
-  };
+    try {
+      setStatus("loading");
+      setError(null);
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && !worker) {
-      const newWorker = new Worker(
-        new URL("../../workers/suggestions.js", import.meta.url),
-        {
-          type: "module",
-        }
-      );
+      const response = await fetch("/api/suggestions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text, history }),
+      });
 
-      newWorker.addEventListener("message", onMessageReceived);
-      newWorker.addEventListener("error", onErrorReceived);
+      if (!response.ok) {
+        throw new Error("Failed to fetch suggestions");
+      }
 
-      newWorker.postMessage({ type: "check" });
-      setWorker(newWorker);
-
-      return () => {
-        newWorker.removeEventListener("message", onMessageReceived);
-        newWorker.removeEventListener("error", onErrorReceived);
-        newWorker.terminate();
-      };
+      const data = await response.json();
+      setSuggestions(data.suggestions || []);
+      setStatus("");
+      console.log("Suggestions fetched:", data.suggestions);
+    } catch (err) {
+      console.error("Error fetching suggestions:", err);
+      setError(err instanceof Error ? err.message : "Unknown error");
+      setStatus("");
     }
   }, []);
 
-  const getSuggestions = useCallback(
-    (text: string) => {
-      if (!worker) return;
-      setStatus("loading");
-      setError(null);
-      worker.postMessage({
-        type: "generate",
-        data: {
-          text,
-        },
-      });
-    },
-    [worker]
-  );
-
-  // Get new suggestions whenever input changes
+  // Get new suggestions whenever debounced text changes
   useEffect(() => {
-    if (text.trim()) {
-      getSuggestions(text);
+    if (debouncedText.trim()) {
+      getSuggestions(debouncedText);
     } else {
       setSuggestions([]);
-      setStatus("ready");
+      setStatus("");
     }
-  }, [text, getSuggestions]);
+  }, [debouncedText, getSuggestions]);
 
   if (error) {
     return (
