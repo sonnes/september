@@ -5,10 +5,10 @@ import { Heading } from "@/components/catalyst/heading";
 import { getAllMessages, putMessage } from "@/db/messages";
 import Autocomplete from "@/components/autocomplete";
 import { useEffect, useState, useRef } from "react";
-import Editor from "@/components/editor";
-import { Switch } from "@/components/catalyst/switch";
+import SettingsMenu from "@/components/settings-menu";
 
 import type { Message } from "@/db/messages";
+import InlineEditor from "@/components/inline-editor";
 
 const metadata = {
   title: "Talk",
@@ -18,7 +18,9 @@ export default function TalkPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [useEditor, setUseEditor] = useState(true);
+  const [editorType, setEditorType] = useState<"editor" | "autocomplete">(
+    "editor"
+  );
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -112,48 +114,39 @@ export default function TalkPage() {
 
         {/* Input area */}
         <div className="border-t bg-white dark:bg-zinc-900 p-4">
-          <div className="mb-4 flex items-center justify-end gap-2">
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">
-              Quick suggestions
-            </span>
-            <Switch
-              checked={useEditor}
-              onChange={setUseEditor}
-              className="relative inline-flex h-6 w-11 items-center rounded-full"
-            />
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">
-              Inline suggestions
-            </span>
+          <div className="flex items-end gap-2">
+            <SettingsMenu value={editorType} onChange={setEditorType} />
+            <div className="flex-1">
+              {editorType === "editor" ? (
+                <InlineEditor
+                  onSubmit={(text) => {
+                    const msg = {
+                      id: crypto.randomUUID(),
+                      text: text,
+                      createdAt: new Date(),
+                    };
+                    putMessage(msg);
+                    getAllMessages()
+                      .then(setMessages)
+                      .catch((error) => {
+                        console.error("Error fetching messages:", error);
+                      });
+                    playMessage(msg);
+                  }}
+                  history={messages}
+                  placeholder="Type your message..."
+                />
+              ) : (
+                <Autocomplete
+                  value={inputValue}
+                  onChange={setInputValue}
+                  onSubmit={sendMessage}
+                  history={messages}
+                  placeholder="Type your message..."
+                />
+              )}
+            </div>
           </div>
-
-          {useEditor ? (
-            <Editor
-              onSubmit={(text) => {
-                const msg = {
-                  id: crypto.randomUUID(),
-                  text: text,
-                  createdAt: new Date(),
-                };
-                putMessage(msg);
-                getAllMessages()
-                  .then(setMessages)
-                  .catch((error) => {
-                    console.error("Error fetching messages:", error);
-                  });
-                playMessage(msg);
-              }}
-              history={messages}
-              placeholder="Type your message..."
-            />
-          ) : (
-            <Autocomplete
-              value={inputValue}
-              onChange={setInputValue}
-              onSubmit={sendMessage}
-              history={messages}
-              placeholder="Type your message..."
-            />
-          )}
         </div>
       </div>
     </SingleColumnLayout>

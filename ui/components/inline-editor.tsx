@@ -4,17 +4,17 @@ import { useDebounce } from "@/hooks/useDebounce";
 
 import type { Message } from "@/db/messages";
 
-interface EditorProps {
+interface InlineEditorProps {
   onSubmit: (text: string) => void;
   placeholder?: string;
   history?: Message[];
 }
 
-export default function Editor({
+export default function InlineEditor({
   onSubmit,
   placeholder = "Type something...",
   history = [],
-}: EditorProps) {
+}: InlineEditorProps) {
   const [text, setText] = useState("");
   const [suggestion, setSuggestion] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
