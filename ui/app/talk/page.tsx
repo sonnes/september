@@ -8,6 +8,7 @@ import { Heading } from "@/components/catalyst/heading";
 import { getAllMessages, putMessage } from "@/db/messages";
 import Suggestions from "./suggestions";
 import { useEffect, useState, useRef } from "react";
+import Editor from "@/components/editor";
 
 import type { Message } from "@/db/messages";
 
@@ -118,27 +119,25 @@ export default function TalkPage() {
         />
 
         {/* Input area */}
-        <div className="border-t bg-white dark:bg-zinc-900 p-4 flex items-center gap-2">
-          <Button plain>
-            <MicrophoneIcon className="size-10" />
-          </Button>
-          <Input
-            ref={inputRef}
-            type="text"
-            placeholder="Type your message..."
-            value={inputValue}
-            onChange={handleInputChange}
-            onKeyPress={(e) => {
-              if (e.key === "Enter" && inputValue.trim()) {
-                sendMessage();
-                e.preventDefault();
-              }
+        <div className="border-t bg-white dark:bg-zinc-900 p-4">
+          <Editor
+            onSubmit={(text) => {
+              const msg = {
+                id: crypto.randomUUID(),
+                text: text,
+                createdAt: new Date(),
+              };
+              putMessage(msg);
+              getAllMessages()
+                .then(setMessages)
+                .catch((error) => {
+                  console.error("Error fetching messages:", error);
+                });
+              playMessage(msg);
             }}
-            className="flex-1"
+            history={messages}
+            placeholder="Type your message..."
           />
-          <Button onClick={sendMessage} color="dark/zinc">
-            Send
-          </Button>
         </div>
       </div>
     </SingleColumnLayout>

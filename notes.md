@@ -196,3 +196,20 @@ https://huggingface.co/docs/transformers.js/index
 https://huggingface.co/tasks/fill-mask
 
 Implement a suggestions component using Fill-Mask Pipeline.
+
+## Inline Suggestions
+
+Implement a new component called Editor. The component should have the following features:
+
+- A textarea with a placeholder
+- A button to submit the text
+- Provide inline suggestions as the user types
+- Call `/api/suggestions/inline` with the text in the textarea and previous messages. Response should be only 1 suggestion.
+- Pressing tab should insert the suggestion into the textarea
+- Pressing command+right arrow should accept only the first word of the suggestion.
+
+Implement `/api/suggestions/inline`
+
+- Call `/api/suggestions/inline` with the text in the textarea and previous messages. Response should be only 1 suggestion.
+- Call ollama to get the suggestions.
+- Write a appropriate system prompt to get the suggestions.
