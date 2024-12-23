@@ -213,3 +213,15 @@ Implement `/api/suggestions/inline`
 - Call `/api/suggestions/inline` with the text in the textarea and previous messages. Response should be only 1 suggestion.
 - Call ollama to get the suggestions.
 - Write a appropriate system prompt to get the suggestions.
+
+## Markov Chain
+
+Implement a markov chain based autocomplete.
+
+- Implement a new component called MarkovChainAutocomplete.
+- The component should have the following features:
+  - An input to enter the text
+  - A button to submit the text
+  - The suggestions should be generated using a markov chain model.
+  - The suggestions should be shown as buttons above the input. Same style as the autocomplete component.
+  - When the user clicks a suggestion, it should be inserted into the input.

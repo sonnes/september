@@ -6,11 +6,11 @@ import {
   DropdownMenu,
   DropdownItem,
   DropdownHeader,
-} from "./catalyst/dropdown";
+} from "@/components/catalyst/dropdown";
 
 interface SettingsMenuProps {
-  value: "editor" | "autocomplete";
-  onChange: (value: "editor" | "autocomplete") => void;
+  value: "editor" | "autocomplete" | "markov";
+  onChange: (value: "editor" | "autocomplete" | "markov") => void;
 }
 
 export default function SettingsMenu({ value, onChange }: SettingsMenuProps) {
@@ -24,6 +24,15 @@ export default function SettingsMenu({ value, onChange }: SettingsMenuProps) {
         <DropdownHeader className="px-2 py-1.5 text-sm font-medium text-zinc-500 dark:text-zinc-400">
           Editor Type
         </DropdownHeader>
+
+        <DropdownItem
+          onClick={() => onChange("markov")}
+          className={cn(
+            value === "markov" && "text-blue-600 dark:text-blue-400"
+          )}
+        >
+          Markov
+        </DropdownItem>
 
         <DropdownItem
           onClick={() => onChange("editor")}

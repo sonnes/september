@@ -9,6 +9,7 @@ import SettingsMenu from "@/components/settings-menu";
 
 import type { Message } from "@/db/messages";
 import InlineEditor from "@/components/inline-editor";
+import MarkovChainAutocomplete from "@/components/markov-chain-autocomplete";
 
 const metadata = {
   title: "Talk",
@@ -18,9 +19,9 @@ export default function TalkPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [editorType, setEditorType] = useState<"editor" | "autocomplete">(
-    "editor"
-  );
+  const [editorType, setEditorType] = useState<
+    "editor" | "autocomplete" | "markov"
+  >("markov");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -60,15 +61,6 @@ export default function TalkPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setInputValue(newValue);
-  };
-
-  const appendInput = (text: string) => {
-    setInputValue(inputValue.trim() + " " + text);
-  };
 
   const playMessage = async (message: Message) => {
     setIsLoading(true);
@@ -136,8 +128,16 @@ export default function TalkPage() {
                   history={messages}
                   placeholder="Type your message..."
                 />
-              ) : (
+              ) : editorType === "autocomplete" ? (
                 <Autocomplete
+                  value={inputValue}
+                  onChange={setInputValue}
+                  onSubmit={sendMessage}
+                  history={messages}
+                  placeholder="Type your message..."
+                />
+              ) : (
+                <MarkovChainAutocomplete
                   value={inputValue}
                   onChange={setInputValue}
                   onSubmit={sendMessage}
