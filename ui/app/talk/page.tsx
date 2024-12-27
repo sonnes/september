@@ -21,7 +21,7 @@ export default function TalkPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [editorType, setEditorType] = useState<
     "editor" | "autocomplete" | "markov"
-  >("markov");
+  >("editor");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -111,20 +111,7 @@ export default function TalkPage() {
             <div className="flex-1">
               {editorType === "editor" ? (
                 <InlineEditor
-                  onSubmit={(text) => {
-                    const msg = {
-                      id: crypto.randomUUID(),
-                      text: text,
-                      createdAt: new Date(),
-                    };
-                    putMessage(msg);
-                    getAllMessages()
-                      .then(setMessages)
-                      .catch((error) => {
-                        console.error("Error fetching messages:", error);
-                      });
-                    playMessage(msg);
-                  }}
+                  onSubmit={sendMessage}
                   history={messages}
                   placeholder="Type your message..."
                 />
