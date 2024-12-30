@@ -106,34 +106,35 @@ export default function TalkPage() {
 
         {/* Input area */}
         <div className="border-t bg-white dark:bg-zinc-900 p-4">
-          <div className="flex items-end gap-2">
-            <SettingsMenu value={editorType} onChange={setEditorType} />
-            <div className="flex-1">
-              {editorType === "editor" ? (
-                <InlineEditor
-                  onSubmit={sendMessage}
-                  history={messages}
-                  placeholder="Type your message..."
-                />
-              ) : editorType === "autocomplete" ? (
-                <Autocomplete
-                  value={inputValue}
-                  onChange={setInputValue}
-                  onSubmit={sendMessage}
-                  history={messages}
-                  placeholder="Type your message..."
-                />
-              ) : (
-                <MarkovChainAutocomplete
-                  value={inputValue}
-                  onChange={setInputValue}
-                  onSubmit={sendMessage}
-                  history={messages}
-                  placeholder="Type your message..."
-                />
-              )}
-            </div>
+          <div className="flex-1">
+            {editorType === "editor" ? (
+              <InlineEditor
+                value={inputValue}
+                onChange={setInputValue}
+                onSubmit={sendMessage}
+                history={messages}
+                placeholder="Type your message..."
+                debounceMs={300}
+              />
+            ) : editorType === "autocomplete" ? (
+              <Autocomplete
+                value={inputValue}
+                onChange={setInputValue}
+                onSubmit={sendMessage}
+                history={messages}
+                placeholder="Type your message..."
+              />
+            ) : (
+              <MarkovChainAutocomplete
+                value={inputValue}
+                onChange={setInputValue}
+                onSubmit={sendMessage}
+                history={messages}
+                placeholder="Type your message..."
+              />
+            )}
           </div>
+          <SettingsMenu value={editorType} onChange={setEditorType} />
         </div>
       </div>
     </SingleColumnLayout>

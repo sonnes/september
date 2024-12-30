@@ -5,21 +5,26 @@ import { useDebounce } from "@/hooks/useDebounce";
 import type { Message } from "@/db/messages";
 
 interface InlineEditorProps {
-  onSubmit: (text: string) => void;
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: () => void;
   placeholder?: string;
+  debounceMs?: number;
   history?: Message[];
 }
 
 export default function InlineEditor({
+  value,
+  onChange,
   onSubmit,
   placeholder = "Type something...",
+  debounceMs = 300,
   history = [],
 }: InlineEditorProps) {
-  const [text, setText] = useState("");
   const [suggestion, setSuggestion] = useState("");
   const [isAddingWord, setIsAddingWord] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const debouncedText = useDebounce(text, 300);
+  const debouncedText = useDebounce(value, debounceMs);
 
   const fetchSuggestion = async () => {
     if (!debouncedText) return;
@@ -38,15 +43,15 @@ export default function InlineEditor({
   };
 
   const insertSuggestion = () => {
-    const newText = text + suggestion;
-    setText(newText);
+    const newText = value + suggestion;
+    onChange(newText);
     setSuggestion("");
   };
 
   const addFirstWord = () => {
     setIsAddingWord(true);
     const firstWord = suggestion.split(" ")[0];
-    setText(text + firstWord + " ");
+    onChange(value + firstWord + " ");
     setSuggestion(suggestion.slice(firstWord.length + 1));
   };
 
@@ -56,7 +61,7 @@ export default function InlineEditor({
       return;
     }
 
-    const lastWord = text.split(" ").pop() || "";
+    const lastWord = value.split(" ").pop() || "";
     const suggestionFirstWord = suggestion.split(" ")[0] || "";
 
     if (
@@ -81,13 +86,12 @@ export default function InlineEditor({
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setText(e.target.value);
+    onChange(e.target.value);
   };
 
   const handleSubmit = () => {
-    if (text.trim()) {
-      onSubmit(text);
-      setText("");
+    if (value.trim()) {
+      onSubmit();
       setSuggestion("");
     }
   };
@@ -97,7 +101,7 @@ export default function InlineEditor({
       <div className="relative">
         <textarea
           ref={textareaRef}
-          value={text}
+          value={value}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
@@ -106,7 +110,7 @@ export default function InlineEditor({
         />
         {suggestion && (
           <div className="absolute top-0 left-0 w-full min-h-[100px] p-3 pointer-events-none text-zinc-400 dark:text-zinc-500 whitespace-pre-wrap break-words border">
-            <span className="invisible">{text}</span>
+            <span className="invisible">{value}</span>
             <span className="text-zinc-400 italic dark:text-zinc-500">
               {suggestion}
             </span>

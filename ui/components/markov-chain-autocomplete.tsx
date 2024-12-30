@@ -6,8 +6,9 @@ interface MarkovChainAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
   onSubmit: () => void;
-  history: Message[];
   placeholder?: string;
+  debounceMs?: number;
+  history?: Message[];
 }
 
 type MarkovChain = {
@@ -55,8 +56,9 @@ export default function MarkovChainAutocomplete({
   value,
   onChange,
   onSubmit,
-  history,
-  placeholder,
+  history = [],
+  placeholder = "Type something...",
+  debounceMs = 300,
 }: MarkovChainAutocompleteProps) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
