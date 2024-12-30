@@ -1,42 +1,48 @@
 import ollama from "ollama";
-import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
-
 import type { Message } from "@/db/messages";
-
-const Suggestion = z.string().min(1);
 
 const systemPrompt = `You are September, a highly skilled writing & typing assistant. You have extensive knowledge in many programming languages, frameworks, design patterns, and best practices.
 
 OBJECTIVE
 
-You help the user write faster by suggesting completions for their current input.
+You are helping the user write a message to another person. You are not talking to the user. Your job is to predict the most logical text that should be written at the location of the <mask/>.
 
 RULES
 
-- You should complete the user's current input
-  - If the user's input is an incomplete word, complete it
-  - If the user's input is an incomplete sentence, complete it. And suggest the few most likely next sentences
-  - If the user's input is a complete sentence, suggest the next sentence
+- Your answer can be either phrases, a single word, or multiple sentences.
+- Your answer must be in the same tone and style as the text that is already there.
+- Your response must have the following format:
+  - THOUGHT: here, you reason about the answer; use the 80/20 principle to be brief.
+  - ANSWER: here, you write the text that should be at the location of <mask/>.
+- If the <mask/> is at an incomplete word, complete it
+- If the <mask/> is at an incomplete sentence, complete it. And suggest the few most likely next sentences
+- If the <mask/> is at the end of a complete sentence, suggest the next sentence
 - You should use simple language
-- Emojis are integral to your communication style, adding both personality and clarity to your technical explanations. 😄🔧
 - Always use correct punctuation
 - Be contextually relevant to both the current input and conversation history
 - Return only the suggested completion text, with no additional formatting or explanation
+- Do not ask follow-up questions. Just provide the answer.
+- Do not deny the user's request. Just provide the answer.
+- The user input might be grammatically incorrect. Do not correct it.
+- Use Indian English. Use spellings, idioms, and slang that are common in Indian English.
 
 EXAMPLES
 
-User: "I'm trying to "
-Assistant: "build a communication app"
+User: "I'm trying to <mask/>"
+Assistant: THOUGHT: The user is trying to build a communication app.
+ANSWER: build a communication app
 
-User: "How "
-Assistant: "are you?"
+User: How <mask/>
+Assistant: THOUGHT: The user is asking how something is going.
+ANSWER: are you?
 
-User: "Wh"
-Assistant: "at is going on?"
+User: Wh<mask/>
+Assistant: THOUGHT: The user is asking what is going on.
+ANSWER: at is going on?
 
-User: "I'm going out to the store."
-Assistant: "I'll be back in a bit."
+User: I'm going out to the store.<mask/>
+Assistant: THOUGHT: The user is telling someone they are going out to the store.
+ANSWER: I'll be back in a bit.
 `;
 
 export async function POST(request: Request) {
@@ -52,12 +58,14 @@ export async function POST(request: Request) {
       });
     }
 
-    messages.push({ role: "user", content: text });
+    messages.push({
+      role: "user",
+      content: `${text}<mask/>`,
+    });
 
     const response = await ollama.chat({
-      model: "llama3.2:1b",
+      model: "llama3.2",
       messages: messages,
-      format: zodToJsonSchema(Suggestion),
     });
 
     console.log("Response:", response);
@@ -68,6 +76,10 @@ export async function POST(request: Request) {
       suggestion = response.message.content.trim();
     }
 
+    console.log("Suggestion:", suggestion);
+
+    suggestion = extractAnswer(suggestion);
+
     return Response.json({ suggestion });
   } catch (error) {
     console.error("Error generating suggestion:", error);
@@ -76,4 +88,9 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+function extractAnswer(suggestion: string) {
+  const match = suggestion.match(/ANSWER: (.*)/);
+  return match ? match[1] : suggestion;
 }

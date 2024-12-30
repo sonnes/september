@@ -81,7 +81,11 @@ export default function InlineEditor({
     } else if (e.key === "ArrowRight" && e.metaKey && suggestion) {
       e.preventDefault();
       addFirstWord();
-      return;
+    } else if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (value.trim()) {
+        handleSubmit();
+      }
     }
   };
 

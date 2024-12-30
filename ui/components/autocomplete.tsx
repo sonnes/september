@@ -83,7 +83,9 @@ export default function Autocomplete({
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
-              onSubmit();
+              if (value.trim()) {
+                onSubmit();
+              }
             }
           }}
           placeholder={placeholder}

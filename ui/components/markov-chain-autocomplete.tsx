@@ -84,7 +84,9 @@ export default function MarkovChainAutocomplete({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      onSubmit();
+      if (value.trim()) {
+        onSubmit();
+      }
     }
   };
 
