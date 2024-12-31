@@ -110,18 +110,30 @@ By default, keep the sidebar collapsed.
 
 ## Abacus Dictation
 
-Create a new page called Abacus, `/abacus`. The page should have the following features:
+The abacus dictation page should have the following features:
 
-- A radio to select - 1 Digit, 2 Digits, 3 Digits, 4 Digits
-- A radio to select - Slow, Medium, Fast
-- An number input to select number of numbers. default to 10
-- A number input to select number of questions. default to 10
-- A button to generate the dictation session
+- A list of all generated dictations
+- Each dictation is a card with the following details:
+  - Digits
+  - Speed
+  - Numbers
+  - time stamp
+- Clicking on a dictation card takes user to `/abacus/dictation/<id>`
+- The cards layout should be responsive.
+- The first card should be a form to generate a new dictation with the following fields:
+  - A radio to select - 1 Digit, 2 Digits, 3 Digits, 4 Digits
+  - A radio to select - Slow, Medium, Fast
+  - An number input to select number of numbers. default to 10
+  - A number input to select number of questions. default to 10
+  - A button to generate the dictation session
+  - The form should be a separate client component.
+  - The form cardshould have a loading, generating and error state.
 
-When the user clicks the button, generate the dictation session. Call `/api/abacus` with the selected options. The API returns this response:
+When the user clicks the button, generate the dictation and redirect to the dictation page. Call `/api/dictation/generate` with the selected options. The API returns this response:
 
 ```
 {
+  "id": "123",
   "digits": 3,
   "speed": "medium",
   "dictation": [
@@ -139,11 +151,9 @@ When the user clicks the button, generate the dictation session. Call `/api/abac
 }
 ```
 
-Show the numbers in vertical columns, with answer input boxes below each column. Show a start button to start the dictation. When the user clicks the start button, play the audio for the first question. After the audio stops, pause for 2 seconds and start the next audio. After the last audio, show the answers.
-
 ### Abacus API
 
-Implement `/api/abacus`
+Implement `/api/dictation/generate`
 
 Request body:
 
