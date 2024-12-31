@@ -83,7 +83,7 @@ export default function TalkPage() {
 
   return (
     <SingleColumnLayout title={metadata.title}>
-      <div className="flex flex-col h-[calc(100vh-256px)]">
+      <div className="flex flex-col h-[calc(100vh-288px)]">
         {/* Latest message card */}
         <div className="p-6 mb-4 bg-white rounded-lg shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-800 dark:ring-white/10">
           <Heading level={2} className="text-zinc-900 dark:text-white">
