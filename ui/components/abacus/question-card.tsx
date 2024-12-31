@@ -6,15 +6,21 @@ interface QuestionCardProps {
   question: DictationQuestion;
   index: number;
   showAnswer?: boolean;
+  isActive?: boolean;
 }
 
 export function QuestionCard({
   question,
   index,
   showAnswer = false,
+  isActive,
 }: QuestionCardProps) {
   return (
-    <Card>
+    <div
+      className={`p-4 border rounded-lg ${
+        isActive ? "border-blue-500" : "border-gray-200"
+      }`}
+    >
       <div className="space-y-4">
         <div className="flex justify-center items-start">
           <Heading level={3} className="text-orange-500">
@@ -43,6 +49,6 @@ export function QuestionCard({
           </div>
         )}
       </div>
-    </Card>
+    </div>
   );
 }

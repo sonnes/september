@@ -25,6 +25,7 @@ export default async function DictationPage({ params }: PageProps) {
   return (
     <SingleColumnLayout title={`${dictation.digits} Digit Dictation`}>
       <div className="space-y-6">
+        <DictationPlayer questions={dictation.questions} />
         <div className="grid gap-6 grid-cols-4 lg:grid-cols-8">
           {dictation.questions.map((question, index) => (
             <QuestionCard

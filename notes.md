@@ -164,6 +164,16 @@ Create a new page called `/abacus/dictation/<id>`. The dictation page should hav
 - A progress bar to show the progress of the audio.
 - Answers should be shown after all the questions audio is played.
 
+### Dictation Player
+
+Implement a player component with the following features:
+
+- Play/Pause button
+- Progress bar based on the current/total time of the audio of all the questions.
+- A timer to show the time taken to answer all the questions.
+- Play/Pause button on the left, progress bar on the right, timer in the middle.
+- The player should play the audio of a question only after the previous question audio is finished.
+
 ### Abacus API
 
 Implement `/api/dictation/generate`
