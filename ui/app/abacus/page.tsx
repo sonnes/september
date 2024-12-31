@@ -16,7 +16,7 @@ export default async function AbacusPage() {
   return (
     <SingleColumnLayout title={metadata.title}>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <div>
+        <div className="row-span-2">
           <DictationForm />
         </div>
 

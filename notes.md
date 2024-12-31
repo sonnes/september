@@ -151,6 +151,19 @@ When the user clicks the button, generate the dictation and redirect to the dict
 }
 ```
 
+### Dictation Page
+
+Create a new page called `/abacus/dictation/<id>`. The dictation page should have the following features:
+
+- Fetch the dictation using the id from the url.
+- Display the questions as a list of cards.
+- Numbers should be shown vertically in the card. like a matrix.
+- Each question should have a play button to play the audio.
+- Another start button on top that starts playing the audio starting from the first question.
+- A pause button to pause the audio.
+- A progress bar to show the progress of the audio.
+- Answers should be shown after all the questions audio is played.
+
 ### Abacus API
 
 Implement `/api/dictation/generate`

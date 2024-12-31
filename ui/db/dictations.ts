@@ -14,7 +14,7 @@ export function saveDictation(dictation: Dictation): void {
   fs.writeFileSync(filePath, JSON.stringify(dictation, null, 2));
 }
 
-export function getDictation(id: string): Dictation | null {
+export async function getDictation(id: string): Promise<Dictation | null> {
   const filePath = path.join(DATA_DIR, `${id}.json`);
   if (!fs.existsSync(filePath)) {
     return null;
