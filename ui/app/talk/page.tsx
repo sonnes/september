@@ -8,8 +8,7 @@ import { useEffect, useState, useRef } from "react";
 import SettingsMenu from "@/components/settings-menu";
 
 import type { Message } from "@/db/messages";
-import InlineEditor from "@/components/inline-editor";
-import MarkovChainAutocomplete from "@/components/markov-chain-autocomplete";
+import type { EditorType } from "@/components/settings-menu";
 
 const metadata = {
   title: "Talk",
@@ -17,21 +16,17 @@ const metadata = {
 
 export default function TalkPage() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputValue, setInputValue] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [editorType, setEditorType] = useState<
-    "editor" | "autocomplete" | "markov"
-  >("editor");
+  const [editorType, setEditorType] = useState<EditorType>("autocomplete");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const latestMessage = messages[messages.length - 1];
 
-  const sendMessage = async () => {
+  const sendMessage = async (text: string) => {
     const msg = {
       id: crypto.randomUUID(),
-      text: inputValue,
+      text,
       createdAt: new Date(),
     };
 
@@ -43,7 +38,6 @@ export default function TalkPage() {
       });
 
     playMessage(msg);
-    setInputValue("");
   };
 
   const scrollToBottom = () => {
@@ -63,7 +57,6 @@ export default function TalkPage() {
   }, [messages]);
 
   const playMessage = async (message: Message) => {
-    setIsLoading(true);
     const response = await fetch("/api/speech", {
       method: "POST",
       body: JSON.stringify({ text: message.text }),
@@ -78,7 +71,6 @@ export default function TalkPage() {
     const audioUrl = URL.createObjectURL(audioBlob);
     const audio = new Audio(audioUrl);
     audio.play();
-    setIsLoading(false);
   };
 
   return (
@@ -87,7 +79,7 @@ export default function TalkPage() {
         {/* Latest message card */}
         <div className="p-6 mb-4 bg-white rounded-lg shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-800 dark:ring-white/10">
           <Heading level={2} className="text-zinc-900 dark:text-white">
-            {isLoading ? "Thinking..." : latestMessage?.text}
+            {latestMessage?.text}
           </Heading>
         </div>
 
@@ -107,30 +99,13 @@ export default function TalkPage() {
         {/* Input area */}
         <div className="border-t bg-white dark:bg-zinc-900 p-4">
           <div className="flex-1">
-            {editorType === "editor" ? (
-              <InlineEditor
-                onSubmit={sendMessage}
-                history={messages}
-                placeholder="Type your message..."
-                debounceMs={300}
-              />
-            ) : editorType === "autocomplete" ? (
+            {editorType === "autocomplete" ? (
               <Autocomplete
-                value={inputValue}
-                onChange={setInputValue}
                 onSubmit={sendMessage}
                 history={messages}
                 placeholder="Type your message..."
               />
-            ) : (
-              <MarkovChainAutocomplete
-                value={inputValue}
-                onChange={setInputValue}
-                onSubmit={sendMessage}
-                history={messages}
-                placeholder="Type your message..."
-              />
-            )}
+            ) : null}
           </div>
           <SettingsMenu value={editorType} onChange={setEditorType} />
         </div>

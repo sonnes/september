@@ -1,125 +1,160 @@
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/catalyst/button";
-import { Input } from "@/components/catalyst/input";
-import { useEffect, useState, useCallback } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 
 import type { Message } from "@/db/messages";
 
-interface AutocompleteProps {
-  value: string;
-  onChange: (value: string) => void;
-  onSubmit: () => void;
+interface InlineEditorProps {
+  onSubmit: (text: string) => void;
   placeholder?: string;
   debounceMs?: number;
   history?: Message[];
 }
 
 export default function Autocomplete({
-  value,
-  onChange,
   onSubmit,
   placeholder = "Type something...",
   debounceMs = 300,
   history = [],
-}: AutocompleteProps) {
-  const [status, setStatus] = useState("");
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+}: InlineEditorProps) {
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "error" | "success"
+  >("idle");
   const [error, setError] = useState<string | null>(null);
+  const [suggestion, setSuggestion] = useState("");
+  const [completions, setCompletions] = useState<string[]>([]);
+  const [isAddingWord, setIsAddingWord] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const debouncedText = useDebounce(value, debounceMs);
+  const [text, setText] = useState("");
+  const debouncedText = useDebounce(text, debounceMs);
 
-  const getSuggestions = useCallback(async (text: string) => {
-    if (!text.trim()) {
-      setSuggestions([]);
+  const fetchSuggestion = async (text: string) => {
+    if (!text) return;
+
+    setStatus("loading");
+    setError(null);
+
+    try {
+      const response = await fetch("/api/suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, history: history }),
+      });
+      const data = await response.json();
+      setSuggestion(data.suggestion || "");
+      setCompletions(data.completions || []);
+    } catch (error) {
+      setStatus("error");
+      setError(`Error fetching suggestion: ${error}`);
+    } finally {
+      setStatus("idle");
+    }
+  };
+
+  const appendSuggestion = (suggestion: string) => {
+    setText(text + suggestion);
+    setSuggestion("");
+  };
+
+  const addFirstWord = () => {
+    setIsAddingWord(true);
+    const firstWord = suggestion.split(" ")[0];
+    setText(text + firstWord + " ");
+    setSuggestion(suggestion.slice(firstWord.length + 1));
+  };
+
+  useEffect(() => {
+    if (isAddingWord) {
+      setIsAddingWord(false);
       return;
     }
 
-    try {
-      setStatus("loading");
-      setError(null);
+    fetchSuggestion(text);
+  }, [debouncedText]);
 
-      const response = await fetch("/api/suggestions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ text, history }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch suggestions");
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Tab" && suggestion) {
+      e.preventDefault();
+      appendSuggestion(suggestion);
+    } else if (e.key === "ArrowRight" && e.metaKey && suggestion) {
+      e.preventDefault();
+      addFirstWord();
+    } else if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (text.trim()) {
+        handleSubmit();
       }
-
-      const data = await response.json();
-      setSuggestions(data.suggestions || []);
-      setStatus("");
-    } catch (err) {
-      console.error("Error fetching suggestions:", err);
-      setError(err instanceof Error ? err.message : "Unknown error");
-      setStatus("");
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    if (debouncedText.trim()) {
-      getSuggestions(debouncedText);
-    } else {
-      setSuggestions([]);
-      setStatus("");
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setText(e.target.value);
+  };
+
+  const handleSubmit = () => {
+    if (text.trim()) {
+      onSubmit(text);
+      setText("");
+      setSuggestion("");
+      setError(null);
+      setCompletions([]);
+      setStatus("idle");
     }
-  }, [debouncedText, getSuggestions]);
-
-  const appendSuggestion = (suggestion: string) => {
-    onChange(value.trim() + " " + suggestion);
   };
 
   return (
     <div>
-      <div className="flex gap-2">
-        <Input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              if (value.trim()) {
-                onSubmit();
-              }
-            }
-          }}
-          placeholder={placeholder}
-          className="flex-1"
-        />
-        <Button onClick={onSubmit} color="dark/zinc">
-          Send
-        </Button>
-      </div>
-
-      {error ? (
-        <div className="border-t bg-red-50 dark:bg-red-900/20 p-4 text-red-600 dark:text-red-400">
-          Error loading suggestions: {error}
-        </div>
-      ) : status === "loading" ? (
-        <div className="border-t bg-zinc-50 dark:bg-zinc-800 p-4">
-          Loading suggestions...
-        </div>
-      ) : suggestions.length > 0 ? (
-        <div className="border-t bg-zinc-50 dark:bg-zinc-800">
-          <div className="flex flex-wrap gap-2 p-4">
-            {suggestions.map((suggestion, index) => (
+      <div className="flex gap-2 h-10">
+        {status === "error" ? (
+          <div className="mb-2 p-2 border rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400">
+            Error loading suggestions: {error}
+          </div>
+        ) : status === "loading" ? (
+          <div className="mb-2 p-2 border rounded-lg bg-zinc-50 dark:bg-zinc-800">
+            Loading suggestions...
+          </div>
+        ) : completions && completions.length > 0 ? (
+          <div className="mb-2 flex flex-wrap gap-2">
+            {completions.map((completion, index) => (
               <Button
                 key={index}
                 color="white"
-                onClick={() => appendSuggestion(suggestion)}
+                onClick={() => appendSuggestion(completion)}
                 className="rounded-full"
               >
-                {suggestion}
+                {completion}
               </Button>
             ))}
           </div>
+        ) : null}
+      </div>
+      <div className="relative">
+        <div className="relative">
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            className="w-full min-h-[100px] p-3 bg-transparent dark:bg-zinc-800 border rounded-lg"
+            style={{ caretColor: "auto" }}
+          />
+          {suggestion && (
+            <div className="absolute top-0 left-0 w-full min-h-[100px] p-3 pointer-events-none text-zinc-400 dark:text-zinc-500 whitespace-pre-wrap break-words border">
+              <span className="invisible">{text}</span>
+              <span className="text-zinc-400 italic dark:text-zinc-500">
+                {suggestion}
+              </span>
+            </div>
+          )}
         </div>
-      ) : null}
+        <div className="mt-2 flex justify-end">
+          <Button onClick={handleSubmit} color="dark/zinc">
+            Submit
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
