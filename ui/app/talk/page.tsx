@@ -6,6 +6,7 @@ import { getAllMessages, putMessage } from "@/db/messages";
 import Autocomplete from "@/components/autocomplete";
 import { useEffect, useState, useRef } from "react";
 import SettingsMenu from "@/components/settings-menu";
+import Waveform from "@/components/waveform";
 
 import type { Message } from "@/db/messages";
 import type { EditorType } from "@/components/settings-menu";
@@ -17,6 +18,13 @@ const metadata = {
 export default function TalkPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [editorType, setEditorType] = useState<EditorType>("autocomplete");
+  const [waveform, setWaveform] = useState<{
+    isActive: boolean;
+    analyser: AnalyserNode | null;
+  }>({
+    isActive: false,
+    analyser: null,
+  });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -57,20 +65,39 @@ export default function TalkPage() {
   }, [messages]);
 
   const playMessage = async (message: Message) => {
-    const response = await fetch("/api/speech", {
-      method: "POST",
-      body: JSON.stringify({ text: message.text }),
-    });
+    try {
+      const response = await fetch("/api/speech", {
+        method: "POST",
+        body: JSON.stringify({ text: message.text }),
+      });
 
-    const result = await response.json();
+      const result = await response.json();
+      const audioBlob = new Blob(
+        [Uint8Array.from(atob(result.audio_base64), (c) => c.charCodeAt(0))],
+        { type: "audio/mp3" }
+      );
 
-    const audioBlob = new Blob(
-      [Uint8Array.from(atob(result.audio_base64), (c) => c.charCodeAt(0))],
-      { type: "audio/mp3" }
-    );
-    const audioUrl = URL.createObjectURL(audioBlob);
-    const audio = new Audio(audioUrl);
-    audio.play();
+      const audioContext = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const source = audioContext.createMediaElementSource(
+        new Audio(URL.createObjectURL(audioBlob))
+      );
+
+      source.connect(analyser);
+      analyser.connect(audioContext.destination);
+
+      setWaveform({ isActive: true, analyser });
+
+      source.mediaElement.addEventListener("ended", () => {
+        setWaveform({ isActive: false, analyser: null });
+        audioContext.close();
+      });
+
+      source.mediaElement.play();
+    } catch (error) {
+      console.error("Error playing audio:", error);
+    }
   };
 
   return (
@@ -78,9 +105,17 @@ export default function TalkPage() {
       <div className="flex flex-col h-[calc(100vh-288px)]">
         {/* Latest message card */}
         <div className="p-6 mb-4 bg-white rounded-lg shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-800 dark:ring-white/10">
-          <Heading level={2} className="text-zinc-900 dark:text-white">
-            {latestMessage?.text}
-          </Heading>
+          <div className="flex items-center justify-between">
+            <Heading level={2} className="text-zinc-900 dark:text-white">
+              {latestMessage?.text}
+            </Heading>
+            <div className="ml-4">
+              <Waveform
+                isActive={waveform.isActive}
+                analyser={waveform.analyser}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Messages area */}
