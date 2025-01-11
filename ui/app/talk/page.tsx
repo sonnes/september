@@ -38,12 +38,13 @@ export default function TalkPage() {
       createdAt: new Date(),
     };
 
-    await putMessage(msg);
-    getAllMessages()
-      .then(setMessages)
-      .catch((error) => {
-        console.error("Error fetching messages:", error);
-      });
+    await putMessage(msg).then(() => {
+      getAllMessages()
+        .then(setMessages)
+        .catch((error) => {
+          console.error("Error fetching messages:", error);
+        });
+    });
 
     playMessage(msg);
   };
@@ -101,7 +102,7 @@ export default function TalkPage() {
   };
 
   return (
-    <SingleColumnLayout title={metadata.title}>
+    <SingleColumnLayout title={metadata.title} color="red">
       <div className="flex flex-col h-[calc(100vh-288px)]">
         {/* Latest message card */}
         <div className="p-6 mb-4 bg-white rounded-lg shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-800 dark:ring-white/10">

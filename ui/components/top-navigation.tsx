@@ -31,23 +31,25 @@ const userNavigation = [
   { name: "Sign out", href: "#" },
 ];
 
-export function TopNavigation() {
+export function TopNavigation({ color }: { color: string }) {
   const pathname = usePathname();
 
   return (
     <Disclosure
       as="nav"
-      className="border-b border-indigo-300/25 bg-indigo-600 lg:border-none"
+      className={`border-b border-${color}-300/25 bg-${color}-600 lg:border-none`}
     >
       {({ open }) => (
         <>
           <div className="mx-auto max-w-7xl px-2 sm:px-4 lg:px-8">
-            <div className="relative flex h-16 items-center justify-between lg:border-b lg:border-indigo-400/25">
+            <div
+              className={`relative flex h-16 items-center justify-between lg:border-b lg:border-${color}-400/25`}
+            >
               <div className="flex items-center px-2 lg:px-0">
                 <div className="shrink-0">
                   <img
                     alt="Your Company"
-                    src="https://tailwindui.com/plus/img/logos/mark.svg?color=indigo&shade=300"
+                    src={`https://tailwindui.com/plus/img/logos/mark.svg?color=${color}&shade=300`}
                     className="block size-8"
                   />
                 </div>
@@ -62,8 +64,8 @@ export function TopNavigation() {
                           aria-current={isCurrent ? "page" : undefined}
                           className={clsx(
                             isCurrent
-                              ? "bg-indigo-700 text-white"
-                              : "text-white hover:bg-indigo-500/75",
+                              ? `bg-${color}-700 text-white`
+                              : `text-white hover:bg -${color}-500/75`,
                             "rounded-md px-3 py-2 text-sm font-medium"
                           )}
                         >
@@ -76,7 +78,9 @@ export function TopNavigation() {
               </div>
 
               <div className="flex lg:hidden">
-                <DisclosureButton className="group relative inline-flex items-center justify-center rounded-md bg-indigo-600 p-2 text-indigo-200 hover:bg-indigo-500/75 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-indigo-600">
+                <DisclosureButton
+                  className={`group relative inline-flex items-center justify-center rounded-md bg-${color}-600 p-2 text-${color}-200 hover:bg-${color}-500/75 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-${color}-600`}
+                >
                   <span className="absolute -inset-0.5" />
                   <span className="sr-only">Open main menu</span>
                   <Bars3Icon
@@ -93,7 +97,7 @@ export function TopNavigation() {
                 <div className="flex items-center">
                   <button
                     type="button"
-                    className="relative shrink-0 rounded-full bg-indigo-600 p-1 text-indigo-200 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-indigo-600"
+                    className={`relative shrink-0 rounded-full bg-${color}-600 p-1 text-${color}-200 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-${color}-600`}
                   >
                     <span className="absolute -inset-1.5" />
                     <span className="sr-only">View notifications</span>
@@ -102,7 +106,9 @@ export function TopNavigation() {
 
                   <Menu as="div" className="relative ml-3 shrink-0">
                     <div>
-                      <MenuButton className="relative flex rounded-full bg-indigo-600 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-indigo-600">
+                      <MenuButton
+                        className={`relative flex rounded-full bg-${color}-600 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-${color}-600`}
+                      >
                         <span className="absolute -inset-1.5" />
                         <span className="sr-only">Open user menu</span>
                         <img
@@ -145,8 +151,8 @@ export function TopNavigation() {
                     aria-current={isCurrent ? "page" : undefined}
                     className={clsx(
                       isCurrent
-                        ? "bg-indigo-700 text-white"
-                        : "text-white hover:bg-indigo-500/75",
+                        ? `bg-${color}-700 text-white`
+                        : `text-white hover:bg -${color}-500/75`,
                       "block rounded-md px-3 py-2 text-base font-medium"
                     )}
                   >
@@ -155,7 +161,7 @@ export function TopNavigation() {
                 );
               })}
             </div>
-            <div className="border-t border-indigo-700 pb-3 pt-4">
+            <div className={`border-t border-${color}-700 pb-3 pt-4`}>
               <div className="flex items-center px-5">
                 <div className="shrink-0">
                   <img
@@ -165,16 +171,16 @@ export function TopNavigation() {
                   />
                 </div>
                 <div className="ml-3">
-                  <div className="text-base font-medium text-white">
+                  <div className={`text-base font-medium text-white`}>
                     {user.name}
                   </div>
-                  <div className="text-sm font-medium text-indigo-300">
+                  <div className={`text-sm font-medium text-${color}-300`}>
                     {user.email}
                   </div>
                 </div>
                 <button
                   type="button"
-                  className="relative ml-auto shrink-0 rounded-full bg-indigo-600 p-1 text-indigo-200 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-indigo-600"
+                  className={`relative ml-auto shrink-0 rounded-full bg-${color}-600 p-1 text-${color}-200 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-${color}-600`}
                 >
                   <span className="absolute -inset-1.5" />
                   <span className="sr-only">View notifications</span>
@@ -187,7 +193,7 @@ export function TopNavigation() {
                     key={item.name}
                     as="a"
                     href={item.href}
-                    className="block rounded-md px-3 py-2 text-base font-medium text-white hover:bg-indigo-500/75"
+                    className={`block rounded-md px-3 py-2 text-base font-medium text-white hover:bg-${color}-500/75`}
                   >
                     {item.name}
                   </DisclosureButton>

@@ -3,17 +3,34 @@ import { TopNavigation } from "@/components/top-navigation";
 export default function SingleColumnLayout({
   children,
   title,
-  color = "indigo",
+  color = "red",
 }: {
   children: React.ReactNode;
   title: string;
-  color?: "indigo" | "blue" | "green" | "yellow" | "purple" | "pink" | "red";
+  color?:
+    | "indigo"
+    | "blue"
+    | "green"
+    | "yellow"
+    | "purple"
+    | "pink"
+    | "red"
+    | "amber"
+    | "lime"
+    | "emerald"
+    | "teal"
+    | "cyan"
+    | "sky"
+    | "violet"
+    | "fuchsia"
+    | "pink"
+    | "rose";
 }) {
   return (
     <>
       <div className="min-h-full">
-        <div className="bg-indigo-600 pb-32">
-          <TopNavigation />
+        <div className={`bg-${color}-600 pb-32`}>
+          <TopNavigation color={color} />
           <header className="py-10">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <h1 className="text-3xl font-bold tracking-tight text-white">

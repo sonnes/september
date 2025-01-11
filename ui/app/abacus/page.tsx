@@ -14,7 +14,7 @@ export default async function AbacusPage() {
   const dictations = getAllDictations();
 
   return (
-    <SingleColumnLayout title={metadata.title}>
+    <SingleColumnLayout title={metadata.title} color="amber">
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <div className="row-span-2">
           <DictationForm />
