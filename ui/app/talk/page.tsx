@@ -109,8 +109,6 @@ export default function TalkPage() {
           <div className="flex-1">
             {editorType === "editor" ? (
               <InlineEditor
-                value={inputValue}
-                onChange={setInputValue}
                 onSubmit={sendMessage}
                 history={messages}
                 placeholder="Type your message..."
