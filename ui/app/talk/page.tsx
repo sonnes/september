@@ -10,6 +10,7 @@ import Waveform from "@/components/waveform";
 
 import type { Message } from "@/db/messages";
 import type { EditorType } from "@/components/settings-menu";
+import AAC from "@/components/aac";
 
 const metadata = {
   title: "Talk",
@@ -141,6 +142,8 @@ export default function TalkPage() {
                 history={messages}
                 placeholder="Type your message..."
               />
+            ) : editorType === "aac" ? (
+              <AAC onSubmit={sendMessage} />
             ) : null}
           </div>
           <SettingsMenu value={editorType} onChange={setEditorType} />
