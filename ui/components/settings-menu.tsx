@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-export type EditorType = "autocomplete" | "aac";
+export type EditorType = "autocomplete" | "aac" | "circular";
 
 interface SettingsMenuProps {
   value: EditorType;
@@ -32,6 +32,18 @@ export default function SettingsMenu({ value, onChange }: SettingsMenuProps) {
         )}
       >
         AAC
+      </button>
+
+      <button
+        onClick={() => onChange("circular")}
+        className={cn(
+          "text-sm hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors",
+          value === "circular"
+            ? "text-zinc-900 dark:text-white font-medium"
+            : "text-zinc-500 dark:text-zinc-400"
+        )}
+      >
+        Circular
       </button>
     </div>
   );

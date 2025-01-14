@@ -11,6 +11,7 @@ import Waveform from "@/components/waveform";
 import type { Message } from "@/db/messages";
 import type { EditorType } from "@/components/settings-menu";
 import AAC from "@/components/aac";
+import CircularKeyboard from "@/components/circular-keyboard";
 
 const metadata = {
   title: "Talk",
@@ -144,6 +145,8 @@ export default function TalkPage() {
               />
             ) : editorType === "aac" ? (
               <AAC onSubmit={sendMessage} />
+            ) : editorType === "circular" ? (
+              <CircularKeyboard onSubmit={sendMessage} />
             ) : null}
           </div>
           <SettingsMenu value={editorType} onChange={setEditorType} />
