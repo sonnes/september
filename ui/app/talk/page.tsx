@@ -11,7 +11,7 @@ import Waveform from "@/components/waveform";
 import type { Message } from "@/db/messages";
 import type { EditorType } from "@/components/settings-menu";
 import AAC from "@/components/aac";
-import CircularKeyboard from "@/components/circular-keyboard";
+import CircularKeyboard from "@/components/circular/keyboard";
 
 const metadata = {
   title: "Talk",
@@ -19,7 +19,7 @@ const metadata = {
 
 export default function TalkPage() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [editorType, setEditorType] = useState<EditorType>("autocomplete");
+  const [editorType, setEditorType] = useState<EditorType>("circular");
   const [waveform, setWaveform] = useState<{
     isActive: boolean;
     analyser: AnalyserNode | null;
