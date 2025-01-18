@@ -5,31 +5,18 @@ interface CircularKeyboardCanvasProps {
   dimensions: { width: number; height: number };
   isUpperCase: boolean;
   isNumberMode: boolean;
+  isSmileyMode: boolean;
   hoveredSection: string | null;
   onLetterClick: (letter: string) => void;
   onControlClick: (control: string) => void;
   onHover: (section: string | null) => void;
 }
 
-// Add type definition for keyboard layout
-interface KeyboardLayout {
-  upperHalf: {
-    outerRing: string[];
-    middleRing: string[];
-    innerRing: string[];
-  };
-  lowerHalf: {
-    outerRing: string[];
-    middleRing: string[];
-    innerRing: string[];
-  };
-  controlBar: string[];
-}
-
 const CircularKeyboardCanvas = ({
   dimensions,
   isUpperCase,
   isNumberMode,
+  isSmileyMode,
   hoveredSection,
   onLetterClick,
   onControlClick,
@@ -37,7 +24,45 @@ const CircularKeyboardCanvas = ({
 }: CircularKeyboardCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Add number/symbol layout
+  // Add control bar width constant
+  const CONTROL_BAR_WIDTH = 60;
+
+  // Add color variables
+  const colors = {
+    buttonBg:
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--button-bg")
+        .trim() || "#666666",
+    buttonHover:
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--button-hover")
+        .trim() || "#555555",
+    buttonStroke:
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--button-stroke")
+        .trim() || "#505050",
+    buttonText:
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--button-text")
+        .trim() || "#ffffff",
+  };
+
+  // Update smiley keyboard layout
+  const smileyKeyboard = {
+    upperHalf: {
+      outerRing: ["😊", "😂", "🥰", "😍", "😎", "🤗"],
+      middleRing: ["😄", "😅", "😆", "😉", "😋"],
+      innerRing: ["❤️"],
+    },
+    lowerHalf: {
+      outerRing: ["😭", "🥺", "😢", "😩", "😤", "😡", "🤬"],
+      middleRing: ["😐", "😑", "😒", "😕", "😔", "😪"],
+      innerRing: ["💔"],
+    },
+    controlBar: ["⇧", "ABC", "123", "⎵", "return", "⌫"],
+  };
+
+  // Update number keyboard layout
   const numberKeyboard = {
     upperHalf: {
       outerRing: ["!", "@", "#", "$", "%", "&"],
@@ -49,10 +74,10 @@ const CircularKeyboardCanvas = ({
       middleRing: ["6", "7", "8", "9", ".", ","],
       innerRing: ["?"],
     },
-    controlBar: ["⇧", "☺", "ABC", "⎵", "return", "⌫"],
+    controlBar: ["⇧", "ABC", "☺", "⎵", "return", "⌫"],
   };
 
-  // Letter keyboard layout
+  // Update letter keyboard layout
   const letterKeyboard = {
     upperHalf: {
       outerRing: ["k", "x", "j", "z", "q", "a"],
@@ -64,11 +89,15 @@ const CircularKeyboardCanvas = ({
       middleRing: ["r", "f", "v", "i", "o", "m"],
       innerRing: ["e"],
     },
-    controlBar: ["⇧", "☺", "123", "⎵", "return", "⌫"],
+    controlBar: ["⇧", "123", "☺", "⎵", "return", "⌫"],
   };
 
-  // Use the appropriate keyboard based on mode
-  const keyboard = isNumberMode ? numberKeyboard : letterKeyboard;
+  // Update keyboard selection logic
+  const keyboard = isSmileyMode
+    ? smileyKeyboard
+    : isNumberMode
+    ? numberKeyboard
+    : letterKeyboard;
 
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current) return;
@@ -78,15 +107,15 @@ const CircularKeyboardCanvas = ({
     const x = (e.clientX - rect.left) * (canvas.width / rect.width);
     const y = (e.clientY - rect.top) * (canvas.height / rect.height);
 
-    const centerX = dimensions.width / 2;
-    const centerY = (dimensions.height - 40) / 2;
+    // Adjust center coordinates to account for control bar
+    const centerX =
+      CONTROL_BAR_WIDTH + (dimensions.width - CONTROL_BAR_WIDTH) / 2;
+    const centerY = dimensions.height / 2;
 
-    // Check control bar at bottom
-    const controlBarHeight = 40;
-    const controlBarY = dimensions.height - controlBarHeight;
-    if (y >= controlBarY && y <= controlBarY + controlBarHeight) {
-      const buttonWidth = dimensions.width / keyboard.controlBar.length;
-      const buttonIndex = Math.floor(x / buttonWidth);
+    // Check control bar on left
+    if (x <= CONTROL_BAR_WIDTH) {
+      const buttonHeight = dimensions.height / keyboard.controlBar.length;
+      const buttonIndex = Math.floor(y / buttonHeight);
       const button = keyboard.controlBar[buttonIndex];
       onControlClick(button);
       return;
@@ -140,8 +169,20 @@ const CircularKeyboardCanvas = ({
     const x = (e.clientX - rect.left) * (canvas.width / rect.width);
     const y = (e.clientY - rect.top) * (canvas.height / rect.height);
 
-    const centerX = dimensions.width / 2;
-    const centerY = (dimensions.height - 40) / 2;
+    // Adjust center coordinates
+    const centerX =
+      CONTROL_BAR_WIDTH + (dimensions.width - CONTROL_BAR_WIDTH) / 2;
+    const centerY = dimensions.height / 2;
+
+    // Check control bar on left
+    if (x <= CONTROL_BAR_WIDTH) {
+      const buttonHeight = dimensions.height / keyboard.controlBar.length;
+      const buttonIndex = Math.floor(y / buttonHeight);
+      if (buttonIndex >= 0 && buttonIndex < keyboard.controlBar.length) {
+        onHover(`control-${buttonIndex}`);
+        return;
+      }
+    }
 
     const distance = Math.sqrt(
       Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2)
@@ -149,18 +190,6 @@ const CircularKeyboardCanvas = ({
 
     let angle = Math.atan2(y - centerY, x - centerX) + Math.PI / 2;
     if (angle < 0) angle += 2 * Math.PI;
-
-    // Check control bar at bottom
-    const controlBarHeight = 40;
-    const controlBarY = dimensions.height - controlBarHeight;
-    if (y >= controlBarY && y <= controlBarY + controlBarHeight) {
-      const buttonWidth = dimensions.width / keyboard.controlBar.length;
-      const buttonIndex = Math.floor(x / buttonWidth);
-      if (buttonIndex >= 0 && buttonIndex < keyboard.controlBar.length) {
-        onHover(`control-${buttonIndex}`);
-        return;
-      }
-    }
 
     let ring = "";
     if (distance < 60) ring = "inner";
@@ -173,7 +202,8 @@ const CircularKeyboardCanvas = ({
 
     const isUpperHalf = angle <= Math.PI;
     const half = isUpperHalf ? "upper" : "lower";
-    const letters = keyboard[`${half}Half`][`${ring}Ring`];
+    const ringKey = `${ring}Ring` as "outerRing" | "middleRing" | "innerRing";
+    const letters = keyboard[`${half}Half`][ringKey];
 
     const sectionAngle = Math.PI / letters.length;
     const section = Math.floor((angle % Math.PI) / sectionAngle);
@@ -199,11 +229,13 @@ const CircularKeyboardCanvas = ({
     canvas.height = dimensions.height * dpr;
     ctx.scale(dpr, dpr);
 
+    // Adjust center coordinates
+    const centerX =
+      CONTROL_BAR_WIDTH + (dimensions.width - CONTROL_BAR_WIDTH) / 2;
+    const centerY = dimensions.height / 2;
+
     // Clear canvas
     ctx.clearRect(0, 0, dimensions.width, dimensions.height);
-
-    const centerX = dimensions.width / 2;
-    const centerY = (dimensions.height - 40) / 2;
 
     const radii = {
       outer: 180,
@@ -227,9 +259,9 @@ const CircularKeyboardCanvas = ({
       ctx.moveTo(centerX, centerY);
       ctx.arc(centerX, centerY, radius, startAngle, endAngle);
       ctx.lineTo(centerX, centerY);
-      ctx.fillStyle = isHovered ? "#444444" : "#333333";
+      ctx.fillStyle = isHovered ? colors.buttonHover : colors.buttonBg;
       ctx.fill();
-      ctx.strokeStyle = "#404040";
+      ctx.strokeStyle = colors.buttonStroke;
       ctx.stroke();
 
       if (text) {
@@ -245,9 +277,8 @@ const CircularKeyboardCanvas = ({
 
         ctx.save();
         ctx.translate(textX, textY);
-        ctx.rotate(textAngle + Math.PI / 2);
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "16px Arial";
+        ctx.fillStyle = colors.buttonText;
+        ctx.font = "bold 18px Arial";
         ctx.textAlign = "center";
         ctx.fillText(
           isNumberMode ? text : isUpperCase ? text.toUpperCase() : text,
@@ -287,40 +318,30 @@ const CircularKeyboardCanvas = ({
       });
     };
 
-    // Draw upper half (moved up)
+    // Draw circles first
     drawHalf(keyboard.upperHalf, -Math.PI / 2, Math.PI / 2, "upper");
-
-    // Draw lower half (moved up)
     drawHalf(keyboard.lowerHalf, Math.PI / 2, Math.PI * 1.5, "lower");
 
-    // Draw control bar at bottom
-    const controlBarHeight = 40;
-    const controlBarY = dimensions.height - controlBarHeight;
-
-    // Draw control bar buttons
-    const buttonWidth = dimensions.width / keyboard.controlBar.length;
+    // Draw control bar on left
+    const buttonHeight = dimensions.height / keyboard.controlBar.length;
     keyboard.controlBar.forEach((button, i) => {
       const isHovered = hoveredSection === `control-${i}`;
-      ctx.fillStyle = isHovered ? "#444444" : "#333333";
-      ctx.fillRect(i * buttonWidth, controlBarY, buttonWidth, controlBarHeight);
+      ctx.fillStyle = isHovered ? colors.buttonHover : colors.buttonBg;
+      ctx.fillRect(0, i * buttonHeight, CONTROL_BAR_WIDTH, buttonHeight);
 
-      ctx.strokeStyle = "#404040";
-      ctx.strokeRect(
-        i * buttonWidth,
-        controlBarY,
-        buttonWidth,
-        controlBarHeight
-      );
+      ctx.strokeStyle = colors.buttonStroke;
+      ctx.strokeRect(0, i * buttonHeight, CONTROL_BAR_WIDTH, buttonHeight);
 
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "14px Arial";
+      ctx.fillStyle = colors.buttonText;
+      ctx.font = "bold 16px Arial";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(
-        button,
-        i * buttonWidth + buttonWidth / 2,
-        controlBarY + controlBarHeight / 2
-      );
+
+      // Save context for text rotation
+      ctx.save();
+      ctx.translate(CONTROL_BAR_WIDTH / 2, i * buttonHeight + buttonHeight / 2);
+      ctx.fillText(button, 0, 0);
+      ctx.restore();
     });
   }, [dimensions, hoveredSection, isUpperCase, isNumberMode]);
 

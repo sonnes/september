@@ -7,6 +7,7 @@ import Autocomplete from "@/components/autocomplete";
 import { useEffect, useState, useRef } from "react";
 import SettingsMenu from "@/components/settings-menu";
 import Waveform from "@/components/waveform";
+import { PlayCircleIcon } from "@heroicons/react/24/outline";
 
 import type { Message } from "@/db/messages";
 import type { EditorType } from "@/components/settings-menu";
@@ -18,6 +19,7 @@ const metadata = {
 };
 
 export default function TalkPage() {
+  const [speakingText, setSpeakingText] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [editorType, setEditorType] = useState<EditorType>("circular");
   const [waveform, setWaveform] = useState<{
@@ -49,6 +51,7 @@ export default function TalkPage() {
     });
 
     playMessage(msg);
+    setSpeakingText(msg.text);
   };
 
   const scrollToBottom = () => {
@@ -110,7 +113,7 @@ export default function TalkPage() {
         <div className="p-6 mb-4 bg-white rounded-lg shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-800 dark:ring-white/10">
           <div className="flex items-center justify-between">
             <Heading level={2} className="text-zinc-900 dark:text-white">
-              {latestMessage?.text}
+              {speakingText}
             </Heading>
             <div className="ml-4">
               <Waveform
@@ -128,7 +131,19 @@ export default function TalkPage() {
               key={index}
               className="mb-4 p-3 bg-zinc-50 rounded-lg w-full dark:bg-zinc-800"
             >
-              {message.text}
+              <div className="flex items-center justify-between">
+                <div>{message.text}</div>
+                <button
+                  onClick={() => {
+                    playMessage(message);
+                    setSpeakingText(message.text);
+                  }}
+                  className="ml-2 p-1 text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                  aria-label="Play message"
+                >
+                  <PlayCircleIcon className="h-6 w-6" />
+                </button>
+              </div>
             </div>
           ))}
           <div ref={messagesEndRef} />

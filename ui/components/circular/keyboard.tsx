@@ -8,11 +8,12 @@ interface CircularKeyboardProps {
 }
 
 const CircularKeyboard = ({ onSubmit }: CircularKeyboardProps) => {
-  const [dimensions] = useState({ width: 400, height: 400 });
+  const [dimensions] = useState({ width: 500, height: 400 });
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [inputText, setInputText] = useState("");
   const [isUpperCase, setIsUpperCase] = useState(false);
   const [isNumberMode, setIsNumberMode] = useState(false);
+  const [isSmileyMode, setIsSmileyMode] = useState(false);
 
   const handleLetterClick = (letter: string) => {
     setInputText((prev) => prev + letter);
@@ -33,7 +34,16 @@ const CircularKeyboard = ({ onSubmit }: CircularKeyboardProps) => {
         setInputText((prev) => prev + "\n");
         break;
       case "123":
-        setIsNumberMode(!isNumberMode);
+        setIsNumberMode(true);
+        setIsSmileyMode(false);
+        break;
+      case "ABC":
+        setIsNumberMode(false);
+        setIsSmileyMode(false);
+        break;
+      case "☺":
+        setIsSmileyMode(true);
+        setIsNumberMode(false);
         break;
     }
   };
@@ -44,26 +54,29 @@ const CircularKeyboard = ({ onSubmit }: CircularKeyboardProps) => {
   };
 
   return (
-    <div className="relative flex gap-4 w-full max-w-4xl mx-auto">
-      <CircularKeyboardCanvas
-        dimensions={dimensions}
-        isUpperCase={isUpperCase}
-        isNumberMode={isNumberMode}
-        hoveredSection={hoveredSection}
-        onLetterClick={handleLetterClick}
-        onControlClick={handleControlClick}
-        onHover={setHoveredSection}
-      />
-      <div className="flex-1 relative">
+    <div className="flex flex-col lg:flex-row gap-4 w-full max-w-6xl mx-auto">
+      <div className="shrink-0">
+        <CircularKeyboardCanvas
+          dimensions={dimensions}
+          isUpperCase={isUpperCase}
+          isNumberMode={isNumberMode}
+          isSmileyMode={isSmileyMode}
+          hoveredSection={hoveredSection}
+          onLetterClick={handleLetterClick}
+          onControlClick={handleControlClick}
+          onHover={setHoveredSection}
+        />
+      </div>
+      <div className="flex-1 flex flex-col min-w-[300px]">
         <textarea
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          className="w-full min-h-[100px] p-3 bg-transparent dark:bg-zinc-800 border rounded-lg"
+          className="w-full flex-1 min-h-[100px] lg:min-h-[400px] p-3 bg-transparent dark:bg-zinc-800 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-transparent"
           style={{ caretColor: "auto" }}
           placeholder="Type something..."
         />
         <div className="mt-2 flex justify-end">
-          <Button onClick={handleSubmit} color="dark/zinc">
+          <Button onClick={handleSubmit} color="red">
             Submit
           </Button>
         </div>
