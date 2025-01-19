@@ -8,6 +8,7 @@ import { useEffect, useState, useRef } from "react";
 import SettingsMenu from "@/components/settings-menu";
 import Waveform from "@/components/waveform";
 import { PlayCircleIcon } from "@heroicons/react/24/outline";
+import Transcription from "@/components/transcription";
 
 import type { Message } from "@/db/messages";
 import type { EditorType } from "@/components/settings-menu";
@@ -33,13 +34,12 @@ export default function TalkPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const latestMessage = messages[messages.length - 1];
-
   const sendMessage = async (text: string) => {
     const msg = {
       id: crypto.randomUUID(),
       text,
       createdAt: new Date(),
+      type: "message",
     };
 
     await putMessage(msg).then(() => {
@@ -52,6 +52,23 @@ export default function TalkPage() {
 
     playMessage(msg);
     setSpeakingText(msg.text);
+  };
+
+  const sendTranscription = async (text: string) => {
+    const msg = {
+      id: crypto.randomUUID(),
+      text,
+      createdAt: new Date(),
+      type: "transcription",
+    };
+
+    await putMessage(msg).then(() => {
+      getAllMessages()
+        .then(setMessages)
+        .catch((error) => {
+          console.error("Error fetching messages:", error);
+        });
+    });
   };
 
   const scrollToBottom = () => {
@@ -111,15 +128,21 @@ export default function TalkPage() {
       <div className="flex flex-col h-[calc(100vh-288px)]">
         {/* Latest message card */}
         <div className="p-6 mb-4 bg-white rounded-lg shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-800 dark:ring-white/10">
-          <div className="flex items-center justify-between">
-            <Heading level={2} className="text-zinc-900 dark:text-white">
-              {speakingText}
-            </Heading>
-            <div className="ml-4">
+          <div className="flex items-center gap-4">
+            <div className="flex-1 min-w-0">
+              <Heading
+                level={2}
+                className="text-zinc-900 dark:text-white truncate"
+              >
+                {speakingText}
+              </Heading>
+            </div>
+            <div className="flex items-center gap-4 shrink-0">
               <Waveform
                 isActive={waveform.isActive}
                 analyser={waveform.analyser}
               />
+              <Transcription onTranscription={sendTranscription} />
             </div>
           </div>
         </div>

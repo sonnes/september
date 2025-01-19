@@ -29,22 +29,10 @@ const CircularKeyboardCanvas = ({
 
   // Add color variables
   const colors = {
-    buttonBg:
-      getComputedStyle(document.documentElement)
-        .getPropertyValue("--button-bg")
-        .trim() || "#666666",
-    buttonHover:
-      getComputedStyle(document.documentElement)
-        .getPropertyValue("--button-hover")
-        .trim() || "#555555",
-    buttonStroke:
-      getComputedStyle(document.documentElement)
-        .getPropertyValue("--button-stroke")
-        .trim() || "#505050",
-    buttonText:
-      getComputedStyle(document.documentElement)
-        .getPropertyValue("--button-text")
-        .trim() || "#ffffff",
+    buttonBg: "#666666",
+    buttonHover: "#555555",
+    buttonStroke: "#505050",
+    buttonText: "#ffffff",
   };
 
   // Update smiley keyboard layout

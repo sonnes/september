@@ -2,6 +2,7 @@ export type Message = {
   id: string;
   text: string;
   createdAt: Date;
+  type?: string;
 };
 
 export const getAllMessages = async (): Promise<Message[]> => {

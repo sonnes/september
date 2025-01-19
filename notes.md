@@ -28,13 +28,12 @@ Conversation Details
 
 ## Transcription
 
-Implement transcription.
+Implement transcription as a separate component. It should be rendered on the right side of the waveform.
 
 - On click of the microphone icon, start listening to the audio.
-- Show animated sound waves when listening.
+- Show animated circles around the microphone icon when listening.
 - on pause/silence, stop listening and transcribe the audio.
 - call `/api/transcribe` with the audio data.
-- Show the transcription in the large card above the input. reusing the same function as the conversation details page.
 
 implement `/api/transcribe`
 
