@@ -152,20 +152,26 @@ export default function TalkPage() {
           {messages.map((message, index) => (
             <div
               key={index}
-              className="mb-4 p-3 bg-zinc-50 rounded-lg w-full dark:bg-zinc-800"
+              className={`mb-4 p-3 bg-zinc-50 rounded-lg w-full dark:bg-zinc-800 ${
+                message.type === "transcription"
+                  ? "bg-red-100 dark:bg-red-900"
+                  : ""
+              }`}
             >
               <div className="flex items-center justify-between">
                 <div>{message.text}</div>
-                <button
-                  onClick={() => {
-                    playMessage(message);
-                    setSpeakingText(message.text);
-                  }}
-                  className="ml-2 p-1 text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
-                  aria-label="Play message"
-                >
-                  <PlayCircleIcon className="h-6 w-6" />
-                </button>
+                {message.type === "message" && (
+                  <button
+                    onClick={() => {
+                      playMessage(message);
+                      setSpeakingText(message.text);
+                    }}
+                    className="ml-2 p-1 text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                    aria-label="Play message"
+                  >
+                    <PlayCircleIcon className="h-6 w-6" />
+                  </button>
+                )}
               </div>
             </div>
           ))}
