@@ -119,7 +119,7 @@ export function DictationPlayer({ questions }: DictationPlayerProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between p-4">
         <Button
-          color="indigo"
+          color="amber"
           onClick={startDictation}
           disabled={isPlaying}
           className="min-w-[48px] h-[48px] p-0 flex items-center justify-center"
@@ -130,7 +130,7 @@ export function DictationPlayer({ questions }: DictationPlayerProps) {
         <div className="flex-1 mx-8">
           <div className="w-full bg-gray-200 rounded-full h-2.5">
             <div
-              className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300"
+              className="bg-amber-600 h-2.5 rounded-full transition-all duration-300"
               style={{
                 width: `${
                   totalDuration ? (currentProgress / totalDuration) * 100 : 0

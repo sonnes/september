@@ -1,6 +1,9 @@
-import { Card } from "@/components/card";
+"use client";
+
 import { DictationQuestion } from "@/types/dictation";
-import { Heading } from "../catalyst/heading";
+import { Heading } from "@/components/catalyst/heading";
+import { PlayCircleIcon } from "@heroicons/react/24/outline";
+import { Button } from "@/components/catalyst/button";
 
 interface QuestionCardProps {
   question: DictationQuestion;
@@ -15,6 +18,10 @@ export function QuestionCard({
   showAnswer = false,
   isActive,
 }: QuestionCardProps) {
+  const playAudio = (question: DictationQuestion) => {
+    const audio = new Audio(question.audio);
+    audio.play();
+  };
   return (
     <div
       className={`p-4 border rounded-lg ${
@@ -22,8 +29,12 @@ export function QuestionCard({
       }`}
     >
       <div className="space-y-4">
-        <div className="flex justify-center items-start">
-          <Heading level={3} className="text-orange-500">
+        <div className="flex justify-center items-start gap-2">
+          <Heading
+            level={3}
+            className="text-orange-500 cursor-pointer"
+            onClick={() => playAudio(question)}
+          >
             #{index + 1}
           </Heading>
         </div>
@@ -41,13 +52,11 @@ export function QuestionCard({
           </div>
         </div>
 
-        {showAnswer && (
-          <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-            <div className="text-center font-mono text-xl">
-              = {question.answer}
-            </div>
+        <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+          <div className="text-center font-mono text-xl">
+            = {question.answer}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

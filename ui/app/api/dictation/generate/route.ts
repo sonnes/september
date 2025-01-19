@@ -3,6 +3,8 @@ import { randomUUID } from "crypto";
 import { ElevenLabsClient } from "elevenlabs";
 import { saveDictation } from "@/db/dictations";
 
+const voiceId = "zeTFANH8Ybln8sjiUtmJ";
+
 interface DictationRequest {
   digits: 1 | 2 | 3 | 4;
   speed: "slow" | "medium" | "fast";
@@ -82,8 +84,6 @@ async function generateAudio(
   const text = numbers
     .map((n) => n.toString())
     .join(` <break time="${breakTime}s" />`);
-
-  const voiceId = "3vXjdKMDgxJoOLbElGxC";
 
   try {
     const response = await client.textToSpeech.convert(voiceId, {
