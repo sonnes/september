@@ -100,13 +100,16 @@ export function TopNavigation({ color }: { color: keyof typeof colorsMap }) {
             >
               <div className="flex items-center px-2 lg:px-0">
                 <div className="shrink-0">
-                  <Link href="/">
+                  <Link href="/" className="flex items-center gap-2">
                     <Image
                       alt="September"
                       src={`/logo.png`}
                       width={32}
                       height={32}
                     />
+                    <span className="text-white font-semibold text-lg tracking-tight">
+                      septemberfox
+                    </span>
                   </Link>
                 </div>
                 <div className="hidden lg:ml-10 lg:block">
