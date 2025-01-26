@@ -84,7 +84,7 @@ export default function AAC({ onSubmit }: AACProps) {
                 `w-full rounded-lg py-2.5 text-sm font-medium leading-5
                  ${
                    selected
-                     ? "bg-white text-zinc-900 shadow dark:bg-zinc-700 dark:text-white"
+                     ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-white"
                      : "text-zinc-700 hover:bg-white/[0.12] hover:text-zinc-900 dark:text-zinc-300"
                  }`
               }

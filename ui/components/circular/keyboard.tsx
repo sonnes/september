@@ -71,7 +71,7 @@ const CircularKeyboard = ({ onSubmit }: CircularKeyboardProps) => {
         <textarea
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          className="w-full flex-1 min-h-[100px] lg:min-h-[400px] p-3 bg-transparent dark:bg-zinc-800 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-transparent"
+          className="w-full flex-1 min-h-[100px] lg:min-h-[400px] p-3 bg-transparent dark:bg-zinc-800 border rounded-lg resize-none focus:outline-hidden focus:ring-2 focus:ring-red-200 focus:border-transparent"
           style={{ caretColor: "auto" }}
           placeholder="Type something..."
         />

@@ -33,19 +33,70 @@ const userNavigation = [
   { name: "Sign out", href: "#" },
 ];
 
-export function TopNavigation({ color }: { color: string }) {
+const colorsMap = {
+  indigo: {
+    border: "border-indigo-300",
+    bg: "bg-indigo-500",
+    borderLg: "border-indigo-400",
+    bgHover: "hover:bg-indigo-500/75",
+    bgActive: "bg-indigo-600",
+    text: "text-indigo-200",
+    textHover: "hover:text-white",
+    ringOffset: "focus:ring-offset-indigo-600",
+    textLight: "text-indigo-300",
+  },
+  blue: {
+    border: "border-blue-300",
+    bg: "bg-blue-500",
+    borderLg: "border-blue-400",
+    bgHover: "hover:bg-blue-500/75",
+    bgActive: "bg-blue-600",
+    text: "text-blue-200",
+    textHover: "hover:text-white",
+    ringOffset: "focus:ring-offset-blue-600",
+    textLight: "text-blue-300",
+  },
+  red: {
+    border: "border-red-300",
+    bg: "bg-red-500",
+    borderLg: "border-red-400",
+    bgHover: "hover:bg-red-500/75",
+    bgActive: "bg-red-600",
+    text: "text-red-200",
+    textHover: "hover:text-white",
+    ringOffset: "focus:ring-offset-red-600",
+    textLight: "text-red-300",
+  },
+  amber: {
+    border: "border-amber-300",
+    bg: "bg-amber-500",
+    borderLg: "border-amber-400",
+    bgHover: "hover:bg-amber-500/75",
+    bgActive: "bg-amber-600",
+    text: "text-amber-200",
+    textHover: "hover:text-white",
+    ringOffset: "focus:ring-offset-amber-600",
+    textLight: "text-amber-300",
+  },
+} as const;
+
+export function TopNavigation({ color }: { color: keyof typeof colorsMap }) {
   const pathname = usePathname();
+  const colors = colorsMap[color];
 
   return (
     <Disclosure
       as="nav"
-      className={`border-b border-${color}-300/25 bg-${color}-600 lg:border-none`}
+      className={clsx("border-b lg:border-none", colors.border, colors.bg)}
     >
       {({ open }) => (
         <>
           <div className="mx-auto max-w-7xl px-2 sm:px-4 lg:px-8">
             <div
-              className={`relative flex h-16 items-center justify-between lg:border-b lg:border-${color}-400/25`}
+              className={clsx(
+                "relative flex h-16 items-center justify-between lg:border-b",
+                colors.borderLg
+              )}
             >
               <div className="flex items-center px-2 lg:px-0">
                 <div className="shrink-0">
@@ -68,10 +119,10 @@ export function TopNavigation({ color }: { color: string }) {
                           href={item.href}
                           aria-current={isCurrent ? "page" : undefined}
                           className={clsx(
+                            "rounded-md px-3 py-2 text-sm font-medium",
                             isCurrent
-                              ? `bg-${color}-700 text-white`
-                              : `text-white hover:bg -${color}-500/75`,
-                            "rounded-md px-3 py-2 text-sm font-medium"
+                              ? clsx(colors.bgActive, "text-white")
+                              : clsx("text-white", colors.bgHover)
                           )}
                         >
                           {item.name}
@@ -84,17 +135,24 @@ export function TopNavigation({ color }: { color: string }) {
 
               <div className="flex lg:hidden">
                 <DisclosureButton
-                  className={`group relative inline-flex items-center justify-center rounded-md bg-${color}-600 p-2 text-${color}-200 hover:bg-${color}-500/75 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-${color}-600`}
+                  className={clsx(
+                    "group relative inline-flex items-center justify-center rounded-md p-2",
+                    colors.bg,
+                    colors.text,
+                    colors.textHover,
+                    "focus:outline-hidden focus:ring-2 focus:ring-white focus:ring-offset-2",
+                    colors.ringOffset
+                  )}
                 >
                   <span className="absolute -inset-0.5" />
                   <span className="sr-only">Open main menu</span>
                   <Bars3Icon
                     aria-hidden="true"
-                    className="block size-6 group-data-[open]:hidden"
+                    className="block size-6 group-data-open:hidden"
                   />
                   <XMarkIcon
                     aria-hidden="true"
-                    className="hidden size-6 group-data-[open]:block"
+                    className="hidden size-6 group-data-open:block"
                   />
                 </DisclosureButton>
               </div>
@@ -102,7 +160,14 @@ export function TopNavigation({ color }: { color: string }) {
                 <div className="flex items-center">
                   <button
                     type="button"
-                    className={`relative shrink-0 rounded-full bg-${color}-600 p-1 text-${color}-200 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-${color}-600`}
+                    className={clsx(
+                      "relative shrink-0 rounded-full p-1",
+                      colors.bg,
+                      colors.text,
+                      colors.textHover,
+                      "focus:outline-hidden focus:ring-2 focus:ring-white focus:ring-offset-2",
+                      colors.ringOffset
+                    )}
                   >
                     <span className="absolute -inset-1.5" />
                     <span className="sr-only">View notifications</span>
@@ -112,7 +177,12 @@ export function TopNavigation({ color }: { color: string }) {
                   <Menu as="div" className="relative ml-3 shrink-0">
                     <div>
                       <MenuButton
-                        className={`relative flex rounded-full bg-${color}-600 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-${color}-600`}
+                        className={clsx(
+                          "relative flex rounded-full text-sm text-white",
+                          colors.bg,
+                          "focus:outline-hidden focus:ring-2 focus:ring-white focus:ring-offset-2",
+                          colors.ringOffset
+                        )}
                       >
                         <span className="absolute -inset-1.5" />
                         <span className="sr-only">Open user menu</span>
@@ -125,13 +195,13 @@ export function TopNavigation({ color }: { color: string }) {
                     </div>
                     <MenuItems
                       transition
-                      className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
+                      className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-leave:duration-75 data-enter:ease-out data-leave:ease-in"
                     >
                       {userNavigation.map((item) => (
                         <MenuItem key={item.name}>
                           <Link
                             href={item.href}
-                            className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100 data-[focus]:outline-none"
+                            className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
                           >
                             {item.name}
                           </Link>
@@ -155,10 +225,10 @@ export function TopNavigation({ color }: { color: string }) {
                     href={item.href}
                     aria-current={isCurrent ? "page" : undefined}
                     className={clsx(
+                      "block rounded-md px-3 py-2 text-base font-medium",
                       isCurrent
-                        ? `bg-${color}-700 text-white`
-                        : `text-white hover:bg -${color}-500/75`,
-                      "block rounded-md px-3 py-2 text-base font-medium"
+                        ? clsx(colors.bgActive, "text-white")
+                        : clsx("text-white", colors.bgHover)
                     )}
                   >
                     {item.name}
@@ -166,7 +236,7 @@ export function TopNavigation({ color }: { color: string }) {
                 );
               })}
             </div>
-            <div className={`border-t border-${color}-700 pb-3 pt-4`}>
+            <div className={clsx(`border-t pb-3 pt-4`, colors.borderLg)}>
               <div className="flex items-center px-5">
                 <div className="shrink-0">
                   <img
@@ -176,16 +246,25 @@ export function TopNavigation({ color }: { color: string }) {
                   />
                 </div>
                 <div className="ml-3">
-                  <div className={`text-base font-medium text-white`}>
+                  <div className="text-base font-medium text-white">
                     {user.name}
                   </div>
-                  <div className={`text-sm font-medium text-${color}-300`}>
+                  <div
+                    className={clsx("text-sm font-medium", colors.textLight)}
+                  >
                     {user.email}
                   </div>
                 </div>
                 <button
                   type="button"
-                  className={`relative ml-auto shrink-0 rounded-full bg-${color}-600 p-1 text-${color}-200 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-${color}-600`}
+                  className={clsx(
+                    "relative ml-auto shrink-0 rounded-full p-1",
+                    colors.bg,
+                    colors.text,
+                    colors.textHover,
+                    "focus:outline-hidden focus:ring-2 focus:ring-white focus:ring-offset-2",
+                    colors.ringOffset
+                  )}
                 >
                   <span className="absolute -inset-1.5" />
                   <span className="sr-only">View notifications</span>
@@ -198,7 +277,10 @@ export function TopNavigation({ color }: { color: string }) {
                     key={item.name}
                     as={Link}
                     href={item.href}
-                    className={`block rounded-md px-3 py-2 text-base font-medium text-white hover:bg-${color}-500/75`}
+                    className={clsx(
+                      "block rounded-md px-3 py-2 text-base font-medium text-white",
+                      colors.bgHover
+                    )}
                   >
                     {item.name}
                   </DisclosureButton>

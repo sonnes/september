@@ -15,11 +15,5 @@ export default {
       },
     },
   },
-  safelist: [
-    {
-      pattern:
-        /(bg|text|border|hover:bg|ring-offset)-(indigo|blue|green|yellow|purple|pink|red|amber|lime|emerald|teal|cyan|sky|violet|fuchsia|rose)-(200|300|400|500|600|700)/,
-    },
-  ],
   plugins: [],
 } satisfies Config;

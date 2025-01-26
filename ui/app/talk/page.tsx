@@ -127,7 +127,7 @@ export default function TalkPage() {
     <SingleColumnLayout title={metadata.title} color="red">
       <div className="flex flex-col h-[calc(100vh-288px)]">
         {/* Latest message card */}
-        <div className="p-6 mb-4 bg-white rounded-lg shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-800 dark:ring-white/10">
+        <div className="p-6 mb-4 bg-white rounded-lg shadow-xs ring-1 ring-zinc-950/5 dark:bg-zinc-800 dark:ring-white/10">
           <div className="flex items-center gap-4">
             <div className="flex-1 min-w-0">
               <Heading

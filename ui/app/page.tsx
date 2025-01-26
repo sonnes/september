@@ -1,23 +1,29 @@
 import { TopNavigation } from "@/components/top-navigation";
+import {
+  SpeakerWaveIcon,
+  MicrophoneIcon,
+  DocumentTextIcon,
+  SparklesIcon,
+} from "@heroicons/react/24/outline";
 
 export default function Home() {
   return (
     <div className="min-h-full">
-      <div className="bg-indigo-600 pb-32">
+      <div className="bg-indigo-500 pb-32">
         <TopNavigation color="indigo" />
 
         {/* Hero Section */}
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
           <div className="text-center">
-            <div className="inline-block rounded-full bg-indigo-500/10 px-3 py-1 text-sm text-white mb-8">
+            <div className="inline-block rounded-full bg-indigo-100 px-3 py-1 text-sm text-indigo-600 mb-8">
               COMMUNICATION ASSISTANT
             </div>
             <h1 className="text-4xl sm:text-6xl font-bold mb-4 text-white">
               Communicate
               <br />
-              <span className="text-orange-400">With Fewer Keystrokes</span>
+              <span className="text-amber-400">With Fewer Keystrokes</span>
             </h1>
-            <p className="text-indigo-100 mb-8">
+            <p className="text-indigo-50 mb-8">
               A communication assistant for people with ALS, MND, or other
               speech & motor difficulties.
             </p>
@@ -27,7 +33,7 @@ export default function Home() {
             >
               Start Talking →
             </a>
-            <p className="text-indigo-200 mt-4 text-sm">
+            <p className="text-indigo-100 mt-4 text-sm">
               Designed for accessibility
             </p>
           </div>
@@ -36,7 +42,7 @@ export default function Home() {
 
       <main className="-mt-32">
         <div className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
-          <div className="rounded-lg bg-white px-5 py-6 shadow sm:px-6">
+          <div className="rounded-lg bg-white px-5 py-6 shadow-sm sm:px-6">
             {/* Features Grid */}
             <div className="py-16">
               <h2 className="text-3xl font-bold text-center mb-4">
@@ -48,47 +54,47 @@ export default function Home() {
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="p-6 rounded-lg border">
-                  <div className="bg-orange-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-                    <span className="text-orange-600 text-xl">🗣️</span>
+                <div className="p-6 rounded-lg border border-zinc-100 flex flex-col items-center text-center">
+                  <div className="rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                    <SpeakerWaveIcon className="h-8 w-8 text-amber-600" />
                   </div>
                   <h3 className="text-xl font-semibold mb-2">Text-to-Speech</h3>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 max-w-sm">
                     Choose from multiple voices or clone your own voice to
                     maintain your unique identity.
                   </p>
                 </div>
 
-                <div className="p-6 rounded-lg border">
-                  <div className="bg-orange-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-                    <span className="text-orange-600 text-xl">🎙️</span>
+                <div className="p-6 rounded-lg border border-zinc-100 flex flex-col items-center text-center">
+                  <div className="rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                    <MicrophoneIcon className="h-8 w-8 text-amber-600" />
                   </div>
                   <h3 className="text-xl font-semibold mb-2">Voice Cloning</h3>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 max-w-sm">
                     Create a digital version of your voice using our simple
                     recording process.
                   </p>
                 </div>
 
-                <div className="p-6 rounded-lg border">
-                  <div className="bg-orange-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-                    <span className="text-orange-600 text-xl">📝</span>
+                <div className="p-6 rounded-lg border border-zinc-100 flex flex-col items-center text-center">
+                  <div className="rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                    <DocumentTextIcon className="h-8 w-8 text-amber-600" />
                   </div>
                   <h3 className="text-xl font-semibold mb-2">Speech-to-Text</h3>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 max-w-sm">
                     Real-time transcription of conversations to help you follow
                     and respond naturally.
                   </p>
                 </div>
 
-                <div className="p-6 rounded-lg border">
-                  <div className="bg-orange-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-                    <span className="text-orange-600 text-xl">✨</span>
+                <div className="p-6 rounded-lg border border-zinc-100 flex flex-col items-center text-center">
+                  <div className="rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                    <SparklesIcon className="h-8 w-8 text-amber-600" />
                   </div>
                   <h3 className="text-xl font-semibold mb-2">
                     Smart Auto-Complete
                   </h3>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 max-w-sm">
                     Context-aware suggestions that help you express yourself
                     with minimal effort.
                   </p>
@@ -104,8 +110,8 @@ export default function Home() {
                 </h2>
 
                 <div className="space-y-12">
-                  <div className="flex flex-col md:flex-row gap-8 items-center">
-                    <div className="flex-1">
+                  <div className="flex flex-col items-center text-center gap-8">
+                    <div className="flex-1 max-w-2xl">
                       <h3 className="text-xl font-semibold mb-4">
                         Contextual Understanding
                       </h3>
@@ -117,8 +123,8 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col md:flex-row gap-8 items-center">
-                    <div className="flex-1">
+                  <div className="flex flex-col items-center text-center gap-8">
+                    <div className="flex-1 max-w-2xl">
                       <h3 className="text-xl font-semibold mb-4">
                         Real-time Transcription
                       </h3>
@@ -137,7 +143,7 @@ export default function Home() {
       </main>
 
       <footer className="border-t py-12">
-        <div className="mx-auto max-w-7xl px-4 text-center text-gray-600">
+        <div className="mx-auto max-w-7xl px-4 text-center text-gray-400">
           <p>September - Making communication accessible for everyone</p>
         </div>
       </footer>
