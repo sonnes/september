@@ -1,3 +1,9 @@
+## Landing Page
+
+Create a landing page layout based on the image.
+
+- Reuse the existing top navigation component.
+
 ## Bootstrapping UI
 
 Generate a responsive UI with the following pages:

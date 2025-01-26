@@ -51,7 +51,7 @@ export function TopNavigation({ color }: { color: string }) {
                 <div className="shrink-0">
                   <Link href="/">
                     <Image
-                      alt="Your Company"
+                      alt="September"
                       src={`/logo.png`}
                       width={32}
                       height={32}
@@ -63,7 +63,7 @@ export function TopNavigation({ color }: { color: string }) {
                     {navigation.map((item) => {
                       const isCurrent = pathname.startsWith(item.href);
                       return (
-                        <a
+                        <Link
                           key={item.name}
                           href={item.href}
                           aria-current={isCurrent ? "page" : undefined}
@@ -75,7 +75,7 @@ export function TopNavigation({ color }: { color: string }) {
                           )}
                         >
                           {item.name}
-                        </a>
+                        </Link>
                       );
                     })}
                   </div>
@@ -129,12 +129,12 @@ export function TopNavigation({ color }: { color: string }) {
                     >
                       {userNavigation.map((item) => (
                         <MenuItem key={item.name}>
-                          <a
+                          <Link
                             href={item.href}
                             className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100 data-[focus]:outline-none"
                           >
                             {item.name}
-                          </a>
+                          </Link>
                         </MenuItem>
                       ))}
                     </MenuItems>
@@ -151,7 +151,7 @@ export function TopNavigation({ color }: { color: string }) {
                 return (
                   <DisclosureButton
                     key={item.name}
-                    as="a"
+                    as={Link}
                     href={item.href}
                     aria-current={isCurrent ? "page" : undefined}
                     className={clsx(
@@ -196,7 +196,7 @@ export function TopNavigation({ color }: { color: string }) {
                 {userNavigation.map((item) => (
                   <DisclosureButton
                     key={item.name}
-                    as="a"
+                    as={Link}
                     href={item.href}
                     className={`block rounded-md px-3 py-2 text-base font-medium text-white hover:bg-${color}-500/75`}
                   >
