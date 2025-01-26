@@ -12,6 +12,8 @@ import {
 import { Bars3Icon, BellIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
+import Image from "next/image";
+import Link from "next/link";
 
 const user = {
   name: "Tom Cook",
@@ -47,11 +49,14 @@ export function TopNavigation({ color }: { color: string }) {
             >
               <div className="flex items-center px-2 lg:px-0">
                 <div className="shrink-0">
-                  <img
-                    alt="Your Company"
-                    src={`https://tailwindui.com/plus/img/logos/mark.svg?color=${color}&shade=300`}
-                    className="block size-8"
-                  />
+                  <Link href="/">
+                    <Image
+                      alt="Your Company"
+                      src={`/logo.png`}
+                      width={32}
+                      height={32}
+                    />
+                  </Link>
                 </div>
                 <div className="hidden lg:ml-10 lg:block">
                   <div className="flex space-x-4">

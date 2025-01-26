@@ -2,7 +2,7 @@ import ollama from "ollama";
 import type { Message } from "@/db/messages";
 
 const SYSTEM_PROMPT = `# You're a superhuman autocomplete system that provides autocompletions for your users.
-You take the TOPIC, the PREVIOUS_COMPLETIONS, DOMAIN_KNOWLEDGE and you generate a list of the most likely auto completions for your users based on their INPUT_VALUE.
+You take the PREVIOUS_COMPLETIONS, DOMAIN_KNOWLEDGE and you generate a list of the most likely auto completions for your users based on their INPUT_VALUE.
 
 You closely follow GENERATION_RULES to provide the best possible completions.
 
@@ -13,27 +13,23 @@ You closely follow GENERATION_RULES to provide the best possible completions.
 - Return the list of completions as JSON in this format - {"completions": ["completion1", "completion2", "completion3"]}
 - Provide completions that fully complete the users sentence.
 - Your completions should be the remaining words in the sentence, and should be a valid sentence. It will be attached to the end of the sentence.
-- Your completion will be attached to the end of the sentence.
 - Be sure to use the correct grammar and punctuation.
 - Use Indian English. Use spellings, idioms, and slang that are common in Indian English.
-- Only provide the completions, no other text.
+- Only provide the completions, no other text or thought process.
 
 ## EXAMPLES
 
 User: "I'm trying to"
-Assistant: ["build a communication app", "do my homework", "get a job"]
+Assistant: {"completions": ["build a communication app", "do my homework", "get a job"]}
 
 User: How
-Assistant: ["are you?", "is it?", "was that?"]
+Assistant: {"completions": ["are you?", "is it?", "was that?"]}
 
 User: Wh
-Assistant: ["at is going on?", "ere are you?", "ere was that?"]
+Assistant: {"completions": ["at is going on?", "ere are you?", "ere was that?"]}
 
 User: I'm going out to the store.
-Assistant: ["I'll be back in a bit.", "Do you want anything?", "Do you want anything?"]
-
-## TOPIC
-{{TOPIC}}
+Assistant: {"completions": ["I'll be back in a bit.", "Do you want anything?", "Do you want anything?"]}
 
 ## PREVIOUS_MESSAGES
 {{PREVIOUS_MESSAGES}}
@@ -64,8 +60,14 @@ export async function POST(request: Request) {
 
     let suggestions = {} as { completions: string[] };
     try {
-      suggestions = JSON.parse(response.response.trim());
+      // Extract JSON using regex to find content between curly braces
+      const jsonMatch = response.response.match(/\{[^]*\}/);
+      if (jsonMatch) {
+        const jsonStr = jsonMatch[0];
+        suggestions = JSON.parse(jsonStr.trim());
+      }
     } catch (e) {
+      console.log(response.response);
       console.error("Error parsing suggestions:", e);
     }
 
