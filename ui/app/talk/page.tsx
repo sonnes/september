@@ -3,6 +3,7 @@
 import SingleColumnLayout from "@/layouts/single-column";
 import { Heading } from "@/components/catalyst/heading";
 import { getAllMessages, putMessage } from "@/db/messages";
+import { getMessagesAPI, createMessageAPI } from "@/service/messages";
 import Autocomplete from "@/components/autocomplete";
 import { useEffect, useState, useRef } from "react";
 import SettingsMenu from "@/components/settings-menu";
