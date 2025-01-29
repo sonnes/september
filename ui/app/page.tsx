@@ -5,6 +5,12 @@ import {
   DocumentTextIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
+import { Caveat } from "next/font/google";
+
+const caveat = Caveat({
+  subsets: ["latin"],
+  variable: "--font-caveat",
+});
 
 export default function Home() {
   return (
@@ -19,7 +25,7 @@ export default function Home() {
               COMMUNICATION ASSISTANT
             </div>
             <h1 className="text-4xl sm:text-6xl font-bold mb-4 text-white">
-              Communicate
+              <span className={caveat.className}>Communicate</span>
               <br />
               <span className="text-amber-400">With Fewer Keystrokes</span>
             </h1>
