@@ -2,7 +2,6 @@
 
 import SingleColumnLayout from "@/layouts/single-column";
 import { Heading } from "@/components/catalyst/heading";
-import { getAllMessages, putMessage } from "@/db/messages";
 import { getMessagesAPI, createMessageAPI } from "@/service/messages";
 import Autocomplete from "@/components/autocomplete";
 import { useEffect, useState, useRef } from "react";
@@ -37,35 +36,31 @@ export default function TalkPage() {
 
   const sendMessage = async (text: string) => {
     const msg = {
-      id: crypto.randomUUID(),
       text,
-      createdAt: new Date(),
-      type: "message",
+      type: "message" as const,
     };
 
-    await putMessage(msg).then(() => {
-      getAllMessages()
-        .then(setMessages)
+    createMessageAPI(msg).then((createdMessage) => {
+      getMessagesAPI()
+        .then((messages) => setMessages(messages))
         .catch((error) => {
           console.error("Error fetching messages:", error);
         });
-    });
 
-    playMessage(msg);
-    setSpeakingText(msg.text);
+      playMessage(createdMessage);
+      setSpeakingText(createdMessage.text ?? "");
+    });
   };
 
   const sendTranscription = async (text: string) => {
     const msg = {
-      id: crypto.randomUUID(),
-      text,
-      createdAt: new Date(),
-      type: "transcription",
+      text: text,
+      type: "transcription" as const,
     };
 
-    await putMessage(msg).then(() => {
-      getAllMessages()
-        .then(setMessages)
+    await createMessageAPI(msg).then(() => {
+      getMessagesAPI()
+        .then((messages) => setMessages(messages))
         .catch((error) => {
           console.error("Error fetching messages:", error);
         });
@@ -77,8 +72,8 @@ export default function TalkPage() {
   };
 
   useEffect(() => {
-    getAllMessages().then((msgs) => {
-      setMessages(msgs);
+    getMessagesAPI().then((messages) => {
+      setMessages(messages);
       setTimeout(scrollToBottom, 100);
     });
     inputRef.current?.focus();
@@ -165,7 +160,7 @@ export default function TalkPage() {
                   <button
                     onClick={() => {
                       playMessage(message);
-                      setSpeakingText(message.text);
+                      setSpeakingText(message.text ?? "");
                     }}
                     className="ml-2 p-1 text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
                     aria-label="Play message"

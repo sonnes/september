@@ -263,3 +263,10 @@ Implement a markov chain based autocomplete.
   - The suggestions should be generated using a markov chain model.
   - The suggestions should be shown as buttons above the input. Same style as the autocomplete component.
   - When the user clicks a suggestion, it should be inserted into the input.
+
+## Messages API
+
+- Implement a new API endpoint `GET /api/messages` using `getMessages` function.
+- Implement a new API endpoint `POST /api/messages` using `createMessage` function.
+- Update talk page to use the new APIs
+- Use react query to fetch messages and create message.
