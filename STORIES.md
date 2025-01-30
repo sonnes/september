@@ -269,4 +269,16 @@ Implement a markov chain based autocomplete.
 - Implement a new API endpoint `GET /api/messages` using `getMessages` function.
 - Implement a new API endpoint `POST /api/messages` using `createMessage` function.
 - Update talk page to use the new APIs
-- Use react query to fetch messages and create message.
+
+## Authentication
+
+- Implement a sign in button in the top navigation.
+- Implement a sign in form in a dialog.
+- Add sign out button in the profile dropdown.
+- Add a users schema in the database.
+- Implement a `createUser` function to create a new user.
+- Implement a `getUser` function to get a user by email.
+
+- Add a sign up button right to the sign in button.
+- Implement a sign up form in a dialog.
+- Implement a sign up API endpoint `POST /api/signup` using `createUser` function.

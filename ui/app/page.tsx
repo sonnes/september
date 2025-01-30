@@ -25,9 +25,15 @@ export default function Home() {
               COMMUNICATION ASSISTANT
             </div>
             <h1 className="text-4xl sm:text-6xl font-bold mb-4 text-white">
-              <span className={caveat.className}>Communicate</span>
+              Faster
+              <span className={`${caveat.className} text-amber-300`}>
+                Communication
+              </span>
               <br />
-              <span className="text-amber-400">With Fewer Keystrokes</span>
+              Fewer
+              <span className={`${caveat.className} text-amber-300`}>
+                Keystrokes
+              </span>
             </h1>
             <p className="text-indigo-50 mb-8">
               A communication assistant for people with ALS, MND, or other

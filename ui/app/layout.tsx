@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Funnel_Sans, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { SessionProvider } from "next-auth/react";
 
 const funnelSans = Funnel_Sans({
   variable: "--font-funnel-sans",
@@ -41,7 +42,7 @@ export default function RootLayout({
         <link rel="manifest" href="/site.webmanifest" />
       </head>
       <body className={`${funnelSans.className} antialiased h-full`}>
-        {children}
+        <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
   );
