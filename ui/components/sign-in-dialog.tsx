@@ -31,7 +31,7 @@ export function SignInDialog({
       const result = await signIn("credentials", {
         email,
         password,
-        redirect: false,
+        redirectTo: "/talk",
       });
 
       if (result?.error) {

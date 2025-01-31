@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Funnel_Sans, Geist, Geist_Mono } from "next/font/google";
+import { Funnel_Sans } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 
