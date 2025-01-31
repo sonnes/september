@@ -1,18 +1,20 @@
 import Link from "next/link";
 import clsx from "clsx";
-import { ColorConfig } from "./types";
+import { themes, type ThemeColor } from "@/lib/theme";
 
 interface NavigationLinksProps {
   items: Array<{ name: string; href: string }>;
   currentPath: string;
-  colors: ColorConfig;
+  color: ThemeColor;
 }
 
 export function NavigationLinks({
   items,
   currentPath,
-  colors,
+  color,
 }: NavigationLinksProps) {
+  const theme = themes[color];
+
   return (
     <div className="hidden lg:ml-10 lg:block">
       <div className="flex space-x-4">
@@ -26,8 +28,8 @@ export function NavigationLinks({
               className={clsx(
                 "rounded-md px-3 py-2 text-sm font-medium",
                 isCurrent
-                  ? clsx(colors.bgActive, "text-white")
-                  : clsx("text-white", colors.bgHover)
+                  ? clsx(theme.bgActive, "text-white")
+                  : clsx("text-white", theme.bgHover)
               )}
             >
               {item.name}

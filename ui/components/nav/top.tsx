@@ -76,7 +76,7 @@ export function TopNavigation({ color }: { color: ThemeColor }) {
                 <NavigationLinks
                   items={navigation}
                   currentPath={pathname}
-                  colors={theme}
+                  color={color}
                 />
               </div>
 

@@ -14,10 +14,10 @@ export function AuthButtons({ onSignIn, onSignUp }: AuthButtonsProps) {
         href="javascript:void(0)"
         onClick={onSignIn}
       >
-        Sign in
+        Login
       </Link>
       <Button color="white" onClick={onSignUp}>
-        Sign up
+        Sign Up
       </Button>
     </div>
   );
