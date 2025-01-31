@@ -1,4 +1,4 @@
-import { TopNavigation } from "@/components/top-navigation";
+import { TopNavigation } from "@/components/nav/top";
 import {
   SpeakerWaveIcon,
   MicrophoneIcon,
