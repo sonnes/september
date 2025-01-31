@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createMessage, getMessages } from "@/db/messages";
 import type { Message } from "@/db/messages";
+import { generate } from "@/app/api/speech/generate";
+import { createSpeechFile } from "@/db/speech";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -24,8 +26,14 @@ export async function POST(request: Request) {
     message.createdAt = new Date();
     message.id = crypto.randomUUID();
 
-    const createdMessage = await createMessage(message);
-    return NextResponse.json(createdMessage);
+    await Promise.all([
+      createMessage(message),
+      generate(message.text).then((audio) =>
+        createSpeechFile({ id: message.id, audio })
+      ),
+    ]);
+
+    return NextResponse.json(message);
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unknown error" },

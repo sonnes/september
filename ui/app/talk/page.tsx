@@ -47,7 +47,7 @@ export default function TalkPage() {
           console.error("Error fetching messages:", error);
         });
 
-      playMessage(createdMessage);
+      playMessage(createdMessage.id);
       setSpeakingText(createdMessage.text ?? "");
     });
   };
@@ -83,25 +83,19 @@ export default function TalkPage() {
     scrollToBottom();
   }, [messages]);
 
-  const playMessage = async (message: Message) => {
+  const playMessage = async (id: string) => {
     try {
-      const response = await fetch("/api/speech", {
-        method: "POST",
-        body: JSON.stringify({ text: message.text }),
-      });
-
-      const result = await response.json();
-      const audioBlob = new Blob(
-        [Uint8Array.from(atob(result.audio_base64), (c) => c.charCodeAt(0))],
-        { type: "audio/mp3" }
-      );
+      if (!id) return;
 
       const audioContext = new (window.AudioContext ||
         (window as any).webkitAudioContext)();
       const analyser = audioContext.createAnalyser();
-      const source = audioContext.createMediaElementSource(
-        new Audio(URL.createObjectURL(audioBlob))
-      );
+
+      const response = await fetch(`/api/speech/${id}`);
+      const audioBlob = await response.blob();
+
+      const audio = new Audio(URL.createObjectURL(audioBlob));
+      const source = audioContext.createMediaElementSource(audio);
 
       source.connect(analyser);
       analyser.connect(audioContext.destination);
@@ -159,7 +153,7 @@ export default function TalkPage() {
                 {message.type === "message" && (
                   <button
                     onClick={() => {
-                      playMessage(message);
+                      playMessage(message.id);
                       setSpeakingText(message.text ?? "");
                     }}
                     className="ml-2 p-1 text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"

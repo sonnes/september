@@ -3,9 +3,9 @@ import * as t from "drizzle-orm/sqlite-core";
 
 export const messages = table("messages", {
   id: t.text("id").primaryKey(),
-  text: t.text("text"),
-  type: t.text("type"),
-  createdAt: t.integer("created_at", { mode: "timestamp_ms" }),
+  text: t.text("text").notNull(),
+  type: t.text("type").notNull(),
+  createdAt: t.integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
 
 export type Message = typeof messages.$inferSelect;

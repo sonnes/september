@@ -15,6 +15,13 @@
       "when": 1738212350265,
       "tag": "0001_brave_harry_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1738312874999,
+      "tag": "0002_classy_prima",
+      "breakpoints": true
     }
   ]
 }
