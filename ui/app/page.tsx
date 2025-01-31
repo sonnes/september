@@ -6,18 +6,17 @@ import {
   SparklesIcon,
 } from "@heroicons/react/24/outline";
 import { Caveat } from "next/font/google";
-import { auth } from "@/auth";
+
 const caveat = Caveat({
   subsets: ["latin"],
   variable: "--font-caveat",
 });
 
 export default async function Home() {
-  const session = await auth();
   return (
     <div className="min-h-full">
       <div className="bg-indigo-500 pb-32">
-        <TopNavigation color="indigo" session={session} />
+        <TopNavigation color="indigo" />
 
         {/* Hero Section */}
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 sm:py-24">

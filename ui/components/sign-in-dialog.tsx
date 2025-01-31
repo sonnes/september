@@ -10,7 +10,6 @@ import { Button } from "@/components/catalyst/button";
 import { Input } from "@/components/catalyst/input";
 import { Field, Label } from "@/components/catalyst/fieldset";
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 
 export function SignInDialog({
   open,
@@ -28,16 +27,16 @@ export function SignInDialog({
     setError("");
 
     try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirectTo: "/talk",
-      });
+      // const result = await signIn("credentials", {
+      //   email,
+      //   password,
+      //   redirectTo: "/talk",
+      // });
 
-      if (result?.error) {
-        setError("Invalid email or password");
-        return;
-      }
+      // if (result?.error) {
+      //   setError("Invalid email or password");
+      //   return;
+      // }
 
       onClose();
     } catch (err) {

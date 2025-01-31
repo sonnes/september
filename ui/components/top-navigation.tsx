@@ -15,7 +15,6 @@ import { useState } from "react";
 import { Button } from "@/components/catalyst/button";
 import { Profile } from "@/components/profile";
 import { SignUpDialog } from "@/components/sign-up-dialog";
-import { signOut, useSession, SessionProvider } from "next-auth/react";
 
 const navigation = [
   { name: "Talk", href: "/talk" },
@@ -28,7 +27,6 @@ const userNavigation = [
   {
     name: "Sign out",
     href: "#",
-    onClick: () => signOut(),
   },
 ];
 
@@ -91,179 +89,173 @@ export function TopNavigation({ color }: { color: keyof typeof colorsMap }) {
   const [showSignUp, setShowSignUp] = useState(false);
   const pathname = usePathname();
   const colors = colorsMap[color];
-  const { data: session } = useSession();
 
   return (
     <>
-      <SessionProvider>
-        <SignInDialog open={showSignIn} onClose={() => setShowSignIn(false)} />
-        <SignUpDialog open={showSignUp} onClose={() => setShowSignUp(false)} />
-        <Disclosure
-          as="nav"
-          className={clsx("border-b lg:border-none", colors.border, colors.bg)}
-        >
-          {({ open }) => (
-            <>
-              <div className="mx-auto max-w-7xl px-2 sm:px-4 lg:px-8">
-                <div
-                  className={clsx(
-                    "relative flex h-16 items-center justify-between lg:border-b",
-                    colors.borderLg
-                  )}
-                >
-                  <div className="flex items-center px-2 lg:px-0">
-                    <div className="shrink-0">
-                      <Link href="/" className="flex items-center gap-2">
-                        <Image
-                          alt="September"
-                          src={`/logo.png`}
-                          width={32}
-                          height={32}
-                        />
-                        <span className="text-white font-semibold text-lg tracking-tight">
-                          septemberfox
-                        </span>
-                      </Link>
-                    </div>
-                    <div className="hidden lg:ml-10 lg:block">
-                      <div className="flex space-x-4">
-                        {navigation.map((item) => {
-                          const isCurrent = pathname.startsWith(item.href);
-                          return (
-                            <Link
-                              key={item.name}
-                              href={item.href}
-                              aria-current={isCurrent ? "page" : undefined}
-                              className={clsx(
-                                "rounded-md px-3 py-2 text-sm font-medium",
-                                isCurrent
-                                  ? clsx(colors.bgActive, "text-white")
-                                  : clsx("text-white", colors.bgHover)
-                              )}
-                            >
-                              {item.name}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex lg:hidden">
-                    <DisclosureButton
-                      className={clsx(
-                        "group relative inline-flex items-center justify-center rounded-md p-2",
-                        colors.bg,
-                        colors.text,
-                        colors.textHover,
-                        "focus:outline-hidden focus:ring-2 focus:ring-white focus:ring-offset-2",
-                        colors.ringOffset
-                      )}
-                    >
-                      <span className="absolute -inset-0.5" />
-                      <span className="sr-only">Open main menu</span>
-                      <Bars3Icon
-                        aria-hidden="true"
-                        className="block size-6 group-data-open:hidden"
+      <SignInDialog open={showSignIn} onClose={() => setShowSignIn(false)} />
+      <SignUpDialog open={showSignUp} onClose={() => setShowSignUp(false)} />
+      <Disclosure
+        as="nav"
+        className={clsx("border-b lg:border-none", colors.border, colors.bg)}
+      >
+        {({ open }) => (
+          <>
+            <div className="mx-auto max-w-7xl px-2 sm:px-4 lg:px-8">
+              <div
+                className={clsx(
+                  "relative flex h-16 items-center justify-between lg:border-b",
+                  colors.borderLg
+                )}
+              >
+                <div className="flex items-center px-2 lg:px-0">
+                  <div className="shrink-0">
+                    <Link href="/" className="flex items-center gap-2">
+                      <Image
+                        alt="September"
+                        src={`/logo.png`}
+                        width={32}
+                        height={32}
                       />
-                      <XMarkIcon
-                        aria-hidden="true"
-                        className="hidden size-6 group-data-open:block"
-                      />
-                    </DisclosureButton>
+                      <span className="text-white font-semibold text-lg tracking-tight">
+                        septemberfox
+                      </span>
+                    </Link>
                   </div>
-                  <div className="hidden lg:ml-4 lg:block">
-                    <div className="flex items-center">
-                      {session?.user ? (
-                        <Profile user={session.user} />
-                      ) : (
-                        <div className="flex gap-4 items-center">
+                  <div className="hidden lg:ml-10 lg:block">
+                    <div className="flex space-x-4">
+                      {navigation.map((item) => {
+                        const isCurrent = pathname.startsWith(item.href);
+                        return (
                           <Link
-                            className="text-sm font-medium text-white"
-                            href="javascript:void(0)"
-                            onClick={() => setShowSignIn(true)}
+                            key={item.name}
+                            href={item.href}
+                            aria-current={isCurrent ? "page" : undefined}
+                            className={clsx(
+                              "rounded-md px-3 py-2 text-sm font-medium",
+                              isCurrent
+                                ? clsx(colors.bgActive, "text-white")
+                                : clsx("text-white", colors.bgHover)
+                            )}
                           >
-                            Sign in
+                            {item.name}
                           </Link>
-                          <Button
-                            color="white"
-                            onClick={() => setShowSignUp(true)}
-                          >
-                            Sign up
-                          </Button>
-                        </div>
-                      )}
+                        );
+                      })}
                     </div>
+                  </div>
+                </div>
+
+                <div className="flex lg:hidden">
+                  <DisclosureButton
+                    className={clsx(
+                      "group relative inline-flex items-center justify-center rounded-md p-2",
+                      colors.bg,
+                      colors.text,
+                      colors.textHover,
+                      "focus:outline-hidden focus:ring-2 focus:ring-white focus:ring-offset-2",
+                      colors.ringOffset
+                    )}
+                  >
+                    <span className="absolute -inset-0.5" />
+                    <span className="sr-only">Open main menu</span>
+                    <Bars3Icon
+                      aria-hidden="true"
+                      className="block size-6 group-data-open:hidden"
+                    />
+                    <XMarkIcon
+                      aria-hidden="true"
+                      className="hidden size-6 group-data-open:block"
+                    />
+                  </DisclosureButton>
+                </div>
+                <div className="hidden lg:ml-4 lg:block">
+                  <div className="flex items-center">
+                    {false ? (
+                      <Profile user={{ email: "test@test.com", image: "" }} />
+                    ) : (
+                      <div className="flex gap-4 items-center">
+                        <Link
+                          className="text-sm font-medium text-white"
+                          href="javascript:void(0)"
+                          onClick={() => setShowSignIn(true)}
+                        >
+                          Sign in
+                        </Link>
+                        <Button
+                          color="white"
+                          onClick={() => setShowSignUp(true)}
+                        >
+                          Sign up
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
+            </div>
 
-              <DisclosurePanel className="lg:hidden">
-                <div className="space-y-1 px-2 pb-3 pt-2">
-                  {navigation.map((item) => {
-                    const isCurrent = pathname === item.href;
-                    return (
-                      <DisclosureButton
-                        key={item.name}
-                        as={Link}
-                        href={item.href}
-                        aria-current={isCurrent ? "page" : undefined}
-                        className={clsx(
-                          "block rounded-md px-3 py-2 text-base font-medium",
-                          isCurrent
-                            ? clsx(colors.bgActive, "text-white")
-                            : clsx("text-white", colors.bgHover)
-                        )}
-                      >
-                        {item.name}
-                      </DisclosureButton>
-                    );
-                  })}
-                </div>
-                <div className={clsx(`border-t pb-3 pt-4`, colors.borderLg)}>
-                  <div className="flex items-center px-5">
-                    <div className="shrink-0">
-                      <img
-                        alt=""
-                        src={user.imageUrl}
-                        className="size-10 rounded-full"
-                      />
+            <DisclosurePanel className="lg:hidden">
+              <div className="space-y-1 px-2 pb-3 pt-2">
+                {navigation.map((item) => {
+                  const isCurrent = pathname === item.href;
+                  return (
+                    <DisclosureButton
+                      key={item.name}
+                      as={Link}
+                      href={item.href}
+                      aria-current={isCurrent ? "page" : undefined}
+                      className={clsx(
+                        "block rounded-md px-3 py-2 text-base font-medium",
+                        isCurrent
+                          ? clsx(colors.bgActive, "text-white")
+                          : clsx("text-white", colors.bgHover)
+                      )}
+                    >
+                      {item.name}
+                    </DisclosureButton>
+                  );
+                })}
+              </div>
+              <div className={clsx(`border-t pb-3 pt-4`, colors.borderLg)}>
+                <div className="flex items-center px-5">
+                  <div className="shrink-0">
+                    <img
+                      alt=""
+                      src={user.imageUrl}
+                      className="size-10 rounded-full"
+                    />
+                  </div>
+                  <div className="ml-3">
+                    <div className="text-base font-medium text-white">
+                      {user.name}
                     </div>
-                    <div className="ml-3">
-                      <div className="text-base font-medium text-white">
-                        {user.name}
-                      </div>
-                      <div
-                        className={clsx(
-                          "text-sm font-medium",
-                          colors.textLight
-                        )}
-                      >
-                        {user.email}
-                      </div>
+                    <div
+                      className={clsx("text-sm font-medium", colors.textLight)}
+                    >
+                      {user.email}
                     </div>
                   </div>
-                  <div className="mt-3 space-y-1 px-2">
-                    {userNavigation.map((item) => (
-                      <DisclosureButton
-                        key={item.name}
-                        as={Link}
-                        href={item.href}
-                        className={clsx(
-                          "block rounded-md px-3 py-2 text-base font-medium text-white",
-                          colors.bgHover
-                        )}
-                      >
-                        {item.name}
-                      </DisclosureButton>
-                    ))}
-                  </div>
                 </div>
-              </DisclosurePanel>
-            </>
-          )}
-        </Disclosure>
-      </SessionProvider>
+                <div className="mt-3 space-y-1 px-2">
+                  {userNavigation.map((item) => (
+                    <DisclosureButton
+                      key={item.name}
+                      as={Link}
+                      href={item.href}
+                      className={clsx(
+                        "block rounded-md px-3 py-2 text-base font-medium text-white",
+                        colors.bgHover
+                      )}
+                    >
+                      {item.name}
+                    </DisclosureButton>
+                  ))}
+                </div>
+              </div>
+            </DisclosurePanel>
+          </>
+        )}
+      </Disclosure>
     </>
   );
 }

@@ -1,10 +1,8 @@
 import { Menu } from "@headlessui/react";
-import { User } from "next-auth";
-import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { Avatar } from "@/components/catalyst/avatar";
 
-export function Profile({ user }: { user: User }) {
+export function Profile({ user }: { user: { email: string; image: string } }) {
   return (
     <Menu as="div" className="relative ml-3 shrink-0">
       <Menu.Button className="relative flex rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-indigo-600">
@@ -41,14 +39,14 @@ export function Profile({ user }: { user: User }) {
         </Menu.Item>
         <Menu.Item>
           {({ active }) => (
-            <button
-              onClick={() => signOut()}
-              className={`block w-full px-4 py-2 text-left text-sm text-gray-700 ${
+            <Link
+              href="#"
+              className={`block px-4 py-2 text-sm text-gray-700 ${
                 active ? "bg-gray-100" : ""
               }`}
             >
               Sign out
-            </button>
+            </Link>
           )}
         </Menu.Item>
       </Menu.Items>

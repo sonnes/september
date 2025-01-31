@@ -10,7 +10,6 @@ import { Button } from "@/components/catalyst/button";
 import { Input } from "@/components/catalyst/input";
 import { Field, Label } from "@/components/catalyst/fieldset";
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 
 export function SignUpDialog({
   open,
@@ -41,12 +40,6 @@ export function SignUpDialog({
         const data = await response.json();
         throw new Error(data.error || "Failed to sign up");
       }
-
-      await signIn("credentials", {
-        email,
-        password,
-        redirectTo: "/talk",
-      });
 
       onClose();
     } catch (err) {
