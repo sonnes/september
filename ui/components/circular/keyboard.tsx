@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import CircularKeyboardCanvas from "@/components/circular/canvas";
+import CircularKeyboardFiber from "@/components/circular/fiber";
 import { Button } from "@/components/catalyst/button";
 
 interface CircularKeyboardProps {
@@ -56,16 +56,7 @@ const CircularKeyboard = ({ onSubmit }: CircularKeyboardProps) => {
   return (
     <div className="flex flex-col lg:flex-row gap-4 w-full max-w-6xl mx-auto">
       <div className="shrink-0">
-        <CircularKeyboardCanvas
-          dimensions={dimensions}
-          isUpperCase={isUpperCase}
-          isNumberMode={isNumberMode}
-          isSmileyMode={isSmileyMode}
-          hoveredSection={hoveredSection}
-          onLetterClick={handleLetterClick}
-          onControlClick={handleControlClick}
-          onHover={setHoveredSection}
-        />
+        <CircularKeyboardFiber />
       </div>
       <div className="flex-1 flex flex-col min-w-[300px]">
         <textarea
