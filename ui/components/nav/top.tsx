@@ -19,6 +19,7 @@ import { AuthButtons } from "./auth-buttons";
 import { themes, type ThemeColor } from "@/lib/theme";
 
 const navigation = [
+  { name: "Clone", href: "/clone" },
   { name: "Talk", href: "/talk" },
   { name: "Abacus", href: "/abacus" },
 ];

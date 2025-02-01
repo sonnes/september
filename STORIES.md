@@ -1,3 +1,37 @@
+## Voice Cloning
+
+- Implement a voice cloning page - `/clone`
+- Create a responsive layout with 2 columns
+- Left column: A form to upload audio file, name, and description.
+- Right column: A list of cards with the following details:
+
+  - text on left
+  - record button on right
+  - clicking on record button should start recording the audio
+  - a submit button at the bottom
+
+- Encode the audio file to base64
+- Call `/api/clone` with the base64 encoded audio file, name, and description.
+- If recordings are present, encode them to base64 and send them in the request.
+- On error, show a toast with the error message.
+- On success, show a toast with the success message.
+
+Implement `/api/clone`
+
+- Forward the request to voice cloning api
+- Decode the base64 encoded audio file and send it to the voice cloning api.
+
+```
+import { ElevenLabsClient } from "elevenlabs";
+import * as fs from "fs";
+
+const client = new ElevenLabsClient({ apiKey: "YOUR_API_KEY" });
+await client.voices.add({
+    files: [fs.createReadStream("/path/to/your/file")],
+    name: "Alex"
+});
+```
+
 ## Landing Page
 
 Create a landing page layout based on the image.
