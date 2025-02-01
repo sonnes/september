@@ -41,8 +41,6 @@ const user = {
 };
 
 export function TopNavigation({ color }: { color: ThemeColor }) {
-  const [showSignIn, setShowSignIn] = useState(false);
-  const [showSignUp, setShowSignUp] = useState(false);
   const pathname = usePathname();
   const theme = themes[color];
 
@@ -109,10 +107,7 @@ export function TopNavigation({ color }: { color: ThemeColor }) {
                   {false ? (
                     <Profile user={{ email: "test@test.com", image: "" }} />
                   ) : (
-                    <AuthButtons
-                      onSignIn={() => setShowSignIn(true)}
-                      onSignUp={() => setShowSignUp(true)}
-                    />
+                    <AuthButtons />
                   )}
                 </div>
               </div>

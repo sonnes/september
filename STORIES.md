@@ -1,3 +1,33 @@
+## Sign Up
+
+- Implement a sign up page - `/signup`
+- Create a responsive layout with a form to sign up
+- The form should have the following fields:
+  - Personal Information
+    - Name
+    - Email
+    - Password
+    - City
+    - Country
+  - Medical Information
+    - Patient or Caregiver
+    - Diagnosis (ALS, MS, etc.)
+    - Year of Diagnosis
+    - Upload diagnosis document
+  - Consent
+    - Brief description of data that will be shared with different parties
+    - I agree to the terms and conditions
+    - I agree to the privacy policy
+  - Submit button
+
+Use the existing form components. And this style:
+
+```
+
+
+
+```
+
 ## Voice Cloning
 
 - Implement a voice cloning page - `/clone`
