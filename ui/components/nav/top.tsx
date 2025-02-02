@@ -10,14 +10,13 @@ import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
-import { Button } from "@/components/catalyst/button";
+
 import { Profile } from "@/components/nav/profile";
 import { NavigationLinks } from "./navigation-links";
 import { MobileMenu } from "./mobile-menu";
 import { AuthButtons } from "./auth-buttons";
 import { themes, type ThemeColor } from "@/lib/theme";
-
+import { useSession } from "next-auth/react";
 const navigation = [
   { name: "Clone", href: "/clone" },
   { name: "Talk", href: "/talk" },
@@ -33,16 +32,18 @@ const userNavigation = [
   },
 ];
 
-const user = {
-  name: "Tom Cook",
-  email: "tom@example.com",
-  imageUrl:
-    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-};
+// const user = {
+//   name: "Tom Cook",
+//   email: "tom@example.com",
+//   imageUrl:
+//     "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+// };
 
 export function TopNavigation({ color }: { color: ThemeColor }) {
   const pathname = usePathname();
   const theme = themes[color];
+  const { data: session } = useSession();
+  const user = session?.user;
 
   return (
     <Disclosure
@@ -104,11 +105,7 @@ export function TopNavigation({ color }: { color: ThemeColor }) {
               </div>
               <div className="hidden lg:ml-4 lg:block">
                 <div className="flex items-center">
-                  {false ? (
-                    <Profile user={{ email: "test@test.com", image: "" }} />
-                  ) : (
-                    <AuthButtons />
-                  )}
+                  {user ? <Profile user={user} /> : <AuthButtons />}
                 </div>
               </div>
             </div>
@@ -119,7 +116,6 @@ export function TopNavigation({ color }: { color: ThemeColor }) {
             userNavigation={userNavigation}
             currentPath={pathname}
             color={color}
-            user={user}
           />
         </>
       )}

@@ -8,7 +8,6 @@ interface MobileMenuProps {
   userNavigation: Array<{ name: string; href: string }>;
   currentPath: string;
   color: ThemeColor;
-  user: { name: string; email: string; imageUrl: string };
 }
 
 export function MobileMenu({
@@ -16,7 +15,6 @@ export function MobileMenu({
   userNavigation,
   currentPath,
   color,
-  user,
 }: MobileMenuProps) {
   const theme = themes[color];
 
@@ -46,13 +44,13 @@ export function MobileMenu({
       <div className={clsx(`border-t pb-3 pt-4`, theme.borderLg)}>
         <div className="flex items-center px-5">
           <div className="shrink-0">
-            <img alt="" src={user.imageUrl} className="size-10 rounded-full" />
-          </div>
-          <div className="ml-3">
-            <div className="text-base font-medium text-white">{user.name}</div>
-            <div className={clsx("text-sm font-medium", theme.textLight)}>
-              {user.email}
-            </div>
+            <img
+              alt=""
+              src={
+                "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+              }
+              className="size-10 rounded-full"
+            />
           </div>
         </div>
         <div className="mt-3 space-y-1 px-2">

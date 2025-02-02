@@ -1,3 +1,19 @@
+## Authentication
+
+- Implement authentication using next-auth
+- Integrate with credentials provider
+- Use drizzle adapter to store data
+- Use jwt for session
+
+## Login
+
+- Implement a login page - `/login`
+- Create a responsive layout with a form to login
+- The form should have the following fields:
+  - Email
+  - Password
+  - Login button
+
 ## Sign Up
 
 - Implement a sign up page - `/signup`
@@ -21,12 +37,6 @@
   - Submit button
 
 Use the existing form components. And this style:
-
-```
-
-
-
-```
 
 ## Voice Cloning
 
@@ -333,16 +343,3 @@ Implement a markov chain based autocomplete.
 - Implement a new API endpoint `GET /api/messages` using `getMessages` function.
 - Implement a new API endpoint `POST /api/messages` using `createMessage` function.
 - Update talk page to use the new APIs
-
-## Authentication
-
-- Implement a sign in button in the top navigation.
-- Implement a sign in form in a dialog.
-- Add sign out button in the profile dropdown.
-- Add a users schema in the database.
-- Implement a `createUser` function to create a new user.
-- Implement a `getUser` function to get a user by email.
-
-- Add a sign up button right to the sign in button.
-- Implement a sign up form in a dialog.
-- Implement a sign up API endpoint `POST /api/signup` using `createUser` function.

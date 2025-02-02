@@ -1,14 +1,15 @@
 import { Menu } from "@headlessui/react";
 import Link from "next/link";
 import { Avatar } from "@/components/catalyst/avatar";
+import { signOut } from "next-auth/react";
 
-export function Profile({ user }: { user: { email: string; image: string } }) {
+export function Profile({ user }: { user: { email: string } }) {
   return (
     <Menu as="div" className="relative ml-3 shrink-0">
       <Menu.Button className="relative flex rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-indigo-600">
         <Avatar
           className="size-8 cursor-pointer font-medium"
-          src={user.image}
+          src={"https://github.com/shadcn.png"}
           initials={user.email?.slice(0, 2).toUpperCase()}
         />
       </Menu.Button>
@@ -40,7 +41,8 @@ export function Profile({ user }: { user: { email: string; image: string } }) {
         <Menu.Item>
           {({ active }) => (
             <Link
-              href="#"
+              href="javascript:void(0)"
+              onClick={() => signOut()}
               className={`block px-4 py-2 text-sm text-gray-700 ${
                 active ? "bg-gray-100" : ""
               }`}
