@@ -25,13 +25,17 @@ export default async function Home() {
               COMMUNICATION ASSISTANT
             </div>
             <h1 className="text-4xl sm:text-6xl font-bold mb-4 text-white">
-              Faster
-              <span className={`${caveat.className} text-amber-300`}>
-                Communication
+              <span
+                className={`${caveat.className} text-5xl sm:text-7xl text-amber-300 pr-4`}
+              >
+                Faster
               </span>
+              Communication
               <br />
               Fewer
-              <span className={`${caveat.className} text-amber-300`}>
+              <span
+                className={`${caveat.className} text-5xl sm:text-7xl text-amber-300`}
+              >
                 Keystrokes
               </span>
             </h1>
