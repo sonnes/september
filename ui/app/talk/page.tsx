@@ -1,28 +1,30 @@
-"use client";
+'use client';
 
-import SingleColumnLayout from "@/layouts/single-column";
-import { Heading } from "@/components/catalyst/heading";
-import { getMessagesAPI, createMessageAPI } from "@/service/messages";
-import Autocomplete from "@/components/autocomplete";
-import { useEffect, useState, useRef } from "react";
-import SettingsMenu from "@/components/settings-menu";
-import Waveform from "@/components/waveform";
-import { PlayCircleIcon } from "@heroicons/react/24/outline";
-import Transcription from "@/components/transcription";
+import { useEffect, useRef, useState } from 'react';
 
-import type { Message } from "@/db/messages";
-import type { EditorType } from "@/components/settings-menu";
-import AAC from "@/components/aac";
-import CircularKeyboard from "@/components/circular/keyboard";
+import { PlayCircleIcon } from '@heroicons/react/24/outline';
+
+import AAC from '@/components/aac';
+import Autocomplete from '@/components/autocomplete';
+import { Heading } from '@/components/catalyst/heading';
+import CircularKeyboard from '@/components/circular/keyboard';
+import SettingsMenu from '@/components/settings-menu';
+import type { EditorType } from '@/components/settings-menu';
+import Transcription from '@/components/transcription';
+import Waveform from '@/components/waveform';
+import SingleColumnLayout from '@/layouts/single-column';
+import { createMessageAPI, getMessagesAPI } from '@/service/messages';
+import { db } from '@/supabase/client';
+import type { Message } from '@/supabase/types';
 
 const metadata = {
-  title: "Talk",
+  title: 'Talk',
 };
 
 export default function TalkPage() {
-  const [speakingText, setSpeakingText] = useState<string>("");
+  const [speakingText, setSpeakingText] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
-  const [editorType, setEditorType] = useState<EditorType>("circular");
+  const [editorType, setEditorType] = useState<EditorType>('circular');
   const [waveform, setWaveform] = useState<{
     isActive: boolean;
     analyser: AnalyserNode | null;
@@ -37,45 +39,49 @@ export default function TalkPage() {
   const sendMessage = async (text: string) => {
     const msg = {
       text,
-      type: "message" as const,
+      type: 'message' as const,
     };
 
-    createMessageAPI(msg).then((createdMessage) => {
+    createMessageAPI(msg).then(createdMessage => {
       getMessagesAPI()
-        .then((messages) => setMessages(messages))
-        .catch((error) => {
-          console.error("Error fetching messages:", error);
+        .then(messages => setMessages(messages))
+        .catch(error => {
+          console.error('Error fetching messages:', error);
         });
 
       playMessage(createdMessage.id);
-      setSpeakingText(createdMessage.text ?? "");
+      setSpeakingText(createdMessage.text ?? '');
     });
   };
 
   const sendTranscription = async (text: string) => {
     const msg = {
       text: text,
-      type: "transcription" as const,
+      type: 'transcription' as const,
     };
 
     await createMessageAPI(msg).then(() => {
       getMessagesAPI()
-        .then((messages) => setMessages(messages))
-        .catch((error) => {
-          console.error("Error fetching messages:", error);
+        .then(messages => setMessages(messages))
+        .catch(error => {
+          console.error('Error fetching messages:', error);
         });
     });
   };
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
-    getMessagesAPI().then((messages) => {
-      setMessages(messages);
-      setTimeout(scrollToBottom, 100);
-    });
+    db.from('messages')
+      .select()
+      .order('created_at', { ascending: false })
+      .returns<Message[]>()
+      .then(messages => {
+        setMessages(messages);
+        setTimeout(scrollToBottom, 100);
+      });
     inputRef.current?.focus();
   }, []);
 
@@ -87,8 +93,7 @@ export default function TalkPage() {
     try {
       if (!id) return;
 
-      const audioContext = new (window.AudioContext ||
-        (window as any).webkitAudioContext)();
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const analyser = audioContext.createAnalyser();
 
       const response = await fetch(`/api/speech/${id}`);
@@ -102,14 +107,14 @@ export default function TalkPage() {
 
       setWaveform({ isActive: true, analyser });
 
-      source.mediaElement.addEventListener("ended", () => {
+      source.mediaElement.addEventListener('ended', () => {
         setWaveform({ isActive: false, analyser: null });
         audioContext.close();
       });
 
       source.mediaElement.play();
     } catch (error) {
-      console.error("Error playing audio:", error);
+      console.error('Error playing audio:', error);
     }
   };
 
@@ -120,18 +125,12 @@ export default function TalkPage() {
         <div className="p-6 mb-4 bg-white rounded-lg shadow-xs ring-1 ring-zinc-950/5 dark:bg-zinc-800 dark:ring-white/10">
           <div className="flex items-center gap-4">
             <div className="flex-1 min-w-0">
-              <Heading
-                level={2}
-                className="text-zinc-900 dark:text-white truncate"
-              >
+              <Heading level={2} className="text-zinc-900 dark:text-white truncate">
                 {speakingText}
               </Heading>
             </div>
             <div className="flex items-center gap-4 shrink-0">
-              <Waveform
-                isActive={waveform.isActive}
-                analyser={waveform.analyser}
-              />
+              <Waveform isActive={waveform.isActive} analyser={waveform.analyser} />
               <Transcription onTranscription={sendTranscription} />
             </div>
           </div>
@@ -143,18 +142,16 @@ export default function TalkPage() {
             <div
               key={index}
               className={`mb-4 p-3 bg-zinc-50 rounded-lg w-full dark:bg-zinc-800 ${
-                message.type === "transcription"
-                  ? "bg-red-100 dark:bg-red-900"
-                  : ""
+                message.type === 'transcription' ? 'bg-red-100 dark:bg-red-900' : ''
               }`}
             >
               <div className="flex items-center justify-between">
                 <div>{message.text}</div>
-                {message.type === "message" && (
+                {message.type === 'message' && (
                   <button
                     onClick={() => {
                       playMessage(message.id);
-                      setSpeakingText(message.text ?? "");
+                      setSpeakingText(message.text ?? '');
                     }}
                     className="ml-2 p-1 text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
                     aria-label="Play message"
@@ -171,15 +168,15 @@ export default function TalkPage() {
         {/* Input area */}
         <div className="border-t bg-white dark:bg-zinc-900 p-4">
           <div className="flex-1">
-            {editorType === "autocomplete" ? (
+            {editorType === 'autocomplete' ? (
               <Autocomplete
                 onSubmit={sendMessage}
                 history={messages}
                 placeholder="Type your message..."
               />
-            ) : editorType === "aac" ? (
+            ) : editorType === 'aac' ? (
               <AAC onSubmit={sendMessage} />
-            ) : editorType === "circular" ? (
+            ) : editorType === 'circular' ? (
               <CircularKeyboard onSubmit={sendMessage} />
             ) : null}
           </div>
