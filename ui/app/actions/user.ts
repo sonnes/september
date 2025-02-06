@@ -42,8 +42,7 @@ export async function signIn(_: LoginResponse, formData: FormData): Promise<Logi
   }
 
   revalidatePath('/', 'layout');
-
-  return { success: true, message: 'Signed in successfully' };
+  redirect('/clone');
 }
 
 export type SignUpFormData = {
