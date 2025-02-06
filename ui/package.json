@@ -9,14 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@auth/drizzle-adapter": "^1.7.4",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
     "@huggingface/transformers": "^3.3.2",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.48.1",
-    "@types/bcrypt": "^5.0.2",
-    "bcrypt": "^5.1.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.39.1",
     "elevenlabs": "^1.50.4",
