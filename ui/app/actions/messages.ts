@@ -5,12 +5,14 @@ import { createClient } from '@/supabase/server';
 import type { Message } from '@/supabase/types';
 
 export async function getMessages() {
-  const user = await getAuthUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
     return [];
   }
 
-  const supabase = await createClient();
   const { data, error } = await supabase
     .schema('api')
     .from('messages')
