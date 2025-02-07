@@ -9,11 +9,10 @@ import { Button } from '@/components/catalyst/button';
 import { Field, Label } from '@/components/catalyst/fieldset';
 import { Heading } from '@/components/catalyst/heading';
 import { Input } from '@/components/catalyst/input';
-import SingleColumnLayout from '@/components/layouts/single-column';
 
 import { RecordingSection } from './recording';
 
-function VoiceCloneForm() {
+export default function VoiceCloneForm() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [audioFile, setAudioFile] = useState<File | null>(null);
@@ -268,15 +267,5 @@ function VoiceCloneForm() {
         </div>
       </form>
     </div>
-  );
-}
-
-export default function ClonePage() {
-  return (
-    <SingleColumnLayout title="Voice Cloning" color="blue">
-      <div className="flex flex-col h-[calc(100vh-288px)]">
-        <VoiceCloneForm />
-      </div>
-    </SingleColumnLayout>
   );
 }
