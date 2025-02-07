@@ -1,4 +1,5 @@
 import { Caveat } from 'next/font/google';
+import Image from 'next/image';
 
 import {
   DocumentTextIcon,
@@ -6,8 +7,6 @@ import {
   SparklesIcon,
   SpeakerWaveIcon,
 } from '@heroicons/react/24/outline';
-
-import { TopNavigation } from '@/components/navbar';
 
 const caveat = Caveat({
   subsets: ['latin'],
@@ -18,11 +17,15 @@ export default async function Home() {
   return (
     <div className="min-h-full">
       <div className="bg-indigo-500 pb-32">
-        <TopNavigation color="indigo" />
-
         {/* Hero Section */}
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
           <div className="text-center">
+            <div className="flex justify-center items-center gap-2 mb-8">
+              <Image alt="September" src={`/logo.png`} width={96} height={96} />
+              <span className="text-white font-bold text-4xl sm:text-6xl tracking-tight">
+                septemberfox
+              </span>
+            </div>
             <div className="inline-block rounded-full bg-indigo-100 px-3 py-1 text-sm text-indigo-600 mb-8">
               COMMUNICATION ASSISTANT
             </div>
@@ -42,7 +45,7 @@ export default async function Home() {
               difficulties.
             </p>
             <a
-              href="/talk"
+              href="/app/talk"
               className="inline-block rounded-md bg-white text-indigo-600 px-8 py-3 font-medium hover:bg-indigo-50 transition"
             >
               Start Talking →
@@ -52,7 +55,7 @@ export default async function Home() {
         </div>
       </div>
 
-      <main className="-mt-32">
+      <main className="-mt-48">
         <div className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
           <div className="rounded-lg bg-white px-5 py-6 shadow-sm sm:px-6">
             {/* Features Grid */}
