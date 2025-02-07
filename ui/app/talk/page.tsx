@@ -1,6 +1,6 @@
 import { getMessages } from '@/app/actions/messages';
 import { Heading } from '@/components/catalyst/heading';
-import SingleColumnLayout from '@/layouts/single-column';
+import SingleColumnLayout from '@/components/layouts/single-column';
 
 export const metadata = {
   title: 'Talk - September',

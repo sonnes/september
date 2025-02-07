@@ -1,4 +1,4 @@
-import SingleColumnLayout from '@/layouts/single-column';
+import SingleColumnLayout from '@/components/layouts/single-column';
 
 import LoginForm from './form';
 

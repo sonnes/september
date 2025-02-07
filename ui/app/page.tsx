@@ -1,11 +1,13 @@
-import { TopNavigation } from '@/components/nav/top';
-import {
-  SpeakerWaveIcon,
-  MicrophoneIcon,
-  DocumentTextIcon,
-  SparklesIcon,
-} from '@heroicons/react/24/outline';
 import { Caveat } from 'next/font/google';
+
+import {
+  DocumentTextIcon,
+  MicrophoneIcon,
+  SparklesIcon,
+  SpeakerWaveIcon,
+} from '@heroicons/react/24/outline';
+
+import { TopNavigation } from '@/components/navbar';
 
 const caveat = Caveat({
   subsets: ['latin'],

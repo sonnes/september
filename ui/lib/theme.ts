@@ -1,4 +1,4 @@
-interface Theme {
+export type Theme = {
   border: string;
   bg: string;
   borderLg: string;
@@ -8,9 +8,9 @@ interface Theme {
   textHover: string;
   ringOffset: string;
   textLight: string;
-}
+};
 
-export const themes = {
+export const themes: Record<string, Theme> = {
   indigo: {
     border: 'border-indigo-300',
     bg: 'bg-indigo-500',

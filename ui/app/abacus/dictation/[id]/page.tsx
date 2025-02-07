@@ -1,8 +1,9 @@
-import { getDictation } from "@/db/dictations";
-import { notFound } from "next/navigation";
-import SingleColumnLayout from "@/layouts/single-column";
-import { DictationPlayer } from "@/components/abacus/dictation-player";
-import { QuestionCard } from "@/components/abacus/question-card";
+import { notFound } from 'next/navigation';
+
+import { DictationPlayer } from '@/components/abacus/dictation-player';
+import { QuestionCard } from '@/components/abacus/question-card';
+import SingleColumnLayout from '@/components/layouts/single-column';
+import { getDictation } from '@/db/dictations';
 
 interface PageProps {
   params: {
@@ -23,20 +24,12 @@ export default async function DictationPage({ params }: PageProps) {
   }
 
   return (
-    <SingleColumnLayout
-      title={`${dictation.digits} Digit Dictation`}
-      color="amber"
-    >
+    <SingleColumnLayout title={`${dictation.digits} Digit Dictation`} color="amber">
       <div className="space-y-6">
         <DictationPlayer questions={dictation.questions} />
         <div className="grid gap-6 grid-cols-4 lg:grid-cols-8">
           {dictation.questions.map((question, index) => (
-            <QuestionCard
-              key={index}
-              question={question}
-              index={index}
-              showAnswer={true}
-            />
+            <QuestionCard key={index} question={question} index={index} showAnswer={true} />
           ))}
         </div>
       </div>
