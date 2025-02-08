@@ -28,11 +28,17 @@ export async function getMessages() {
   return data;
 }
 
-export async function createMessage(message: Message) {
+export async function createMessage({ text, type }: { text: string; type: string }) {
   const user = await getAuthUser();
   if (!user) {
     return [];
   }
+
+  const message = {
+    text,
+    type,
+    user_id: user.id,
+  };
 
   const supabase = await createClient();
   const { data, error } = await supabase

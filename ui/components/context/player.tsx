@@ -8,12 +8,19 @@ export interface PlayMessage {
 }
 
 type PlayerContext = {
-  playing: boolean;
-  playMessage?: PlayMessage;
-  setPlayMessage: (message: PlayMessage) => void;
+  playing?: PlayMessage;
+  setPlaying: (message: PlayMessage) => void;
 };
 
 export const PlayerContext = createContext<PlayerContext | undefined>(undefined);
+
+export function PlayerProvider({ children }: { children: React.ReactNode }) {
+  const [playing, setPlaying] = useState<PlayMessage | undefined>(undefined);
+
+  return (
+    <PlayerContext.Provider value={{ playing, setPlaying }}>{children}</PlayerContext.Provider>
+  );
+}
 
 export const usePlayer = () => {
   const context = useContext(PlayerContext);
