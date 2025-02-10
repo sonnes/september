@@ -23,10 +23,8 @@ import { ThemeContext, useTheme } from '@/components/context/theme';
 import { type ThemeColor, themes } from '@/lib/theme';
 
 const links = [
-  { name: 'Home', href: '/app' },
   { name: 'Clone', href: '/app/clone' },
   { name: 'Talk', href: '/app/talk' },
-  { name: 'Abacus', href: '/app/abacus' },
 ];
 
 const profileLinks = [
@@ -40,7 +38,9 @@ type NavbarProps = {
 };
 
 export default function Navbar({ color = 'indigo' }: NavbarProps) {
+  const { user } = useAuth();
   const theme = themes[color];
+
   return (
     <ThemeContext.Provider value={{ theme }}>
       <Disclosure as="nav" className={clsx('border-b lg:border-none', theme.border, theme.bg)}>
@@ -55,7 +55,7 @@ export default function Navbar({ color = 'indigo' }: NavbarProps) {
               >
                 <div className="flex items-center px-2 lg:px-0">
                   <div className="shrink-0">
-                    <Link href="/" className="flex items-center gap-2">
+                    <Link href={user ? '/app' : '/'} className="flex items-center gap-2">
                       <Image alt="September" src={`/logo.png`} width={32} height={32} />
                       <span className="text-white font-semibold text-lg tracking-tight">
                         septemberfox

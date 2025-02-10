@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { PlayCircleIcon } from '@heroicons/react/24/outline';
 
+import Waveform from '@/app/app/talk/waveform';
 import AAC from '@/components/aac';
 import Autocomplete from '@/components/autocomplete';
 import { Heading } from '@/components/catalyst/heading';
@@ -12,7 +13,6 @@ import SingleColumnLayout from '@/components/layouts/single-column';
 import SettingsMenu from '@/components/settings-menu';
 import type { EditorType } from '@/components/settings-menu';
 import Transcription from '@/components/transcription';
-import Waveform from '@/components/waveform';
 import { createMessageAPI, getMessagesAPI } from '@/service/messages';
 import { db } from '@/supabase/client';
 import type { Message } from '@/supabase/types';

@@ -1,5 +1,7 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
+
 import { getAuthUser } from '@/app/actions/user';
 import { createClient } from '@/supabase/server';
 import type { Message } from '@/supabase/types';
@@ -60,6 +62,8 @@ export async function createMessage({
   if (error) {
     throw error;
   }
+
+  revalidatePath('/app/talk');
 
   return data;
 }

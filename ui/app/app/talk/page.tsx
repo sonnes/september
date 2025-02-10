@@ -23,7 +23,7 @@ export default async function TalkPage() {
       <PlayerProvider>
         <Layout>
           <Layout.Header>
-            <h1 className="text-3xl font-bold tracking-tight text-white">Hello 👋</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Talk</h1>
           </Layout.Header>
           <Layout.Content>
             <div className="p-6 mb-4 bg-white rounded-lg shadow-xs ring-1 ring-zinc-950/5 dark:bg-zinc-800 dark:ring-white/10">

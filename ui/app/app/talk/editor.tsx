@@ -40,7 +40,7 @@ export function Editor() {
   return (
     <div>
       {/* Input area */}
-      <div className="border-t bg-white dark:bg-zinc-900 p-4">
+      <div className="bg-white dark:bg-zinc-900">
         <div className="flex-1">
           <EditorComponent onSubmit={handleSubmit} />
         </div>
