@@ -1,11 +1,19 @@
 'use client';
 
+import { useEffect } from 'react';
+
 import { Heading } from '@/components/catalyst/heading';
 import { usePlayer } from '@/components/context/player';
-import Waveform from '@/components/waveform';
 
 export function Player() {
-  const { playing } = usePlayer();
+  const { playing, audio } = usePlayer();
+
+  useEffect(() => {
+    if (!audio) return;
+
+    audio.play();
+  }, [audio]);
+
   return (
     <div>
       <div className="flex-1 min-w-0">

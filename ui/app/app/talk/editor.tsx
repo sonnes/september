@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { createMessage } from '@/app/actions/messages';
+import { createSpeechFile } from '@/app/actions/speech';
 import AAC from '@/components/aac';
 import Autocomplete from '@/components/autocomplete';
 import CircularKeyboard from '@/components/circular/keyboard';
@@ -24,9 +25,16 @@ export function Editor() {
   const { setPlaying } = usePlayer();
 
   async function handleSubmit(text: string) {
-    const message = await createMessage({ text, type: 'message' });
-    addMessage(message);
-    setPlaying({ id: message.id, text });
+    const message = {
+      id: crypto.randomUUID(),
+      text,
+      type: 'message',
+    };
+
+    const createdMessage = await createSpeechFile(message).then(() => createMessage(message));
+
+    addMessage(createdMessage);
+    setPlaying({ id: createdMessage.id, text });
   }
 
   return (

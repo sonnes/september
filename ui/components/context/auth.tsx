@@ -11,7 +11,17 @@ type AuthContext = {
   user?: AuthUser;
 };
 
-export const AuthContext = createContext<AuthContext | undefined>(undefined);
+const AuthContext = createContext<AuthContext | undefined>(undefined);
+
+export const AuthProvider = ({
+  user,
+  children,
+}: {
+  user?: AuthUser;
+  children: React.ReactNode;
+}) => {
+  return <AuthContext.Provider value={{ user }}>{children}</AuthContext.Provider>;
+};
 
 export const useAuth = () => {
   const context = useContext(AuthContext);

@@ -28,7 +28,15 @@ export async function getMessages() {
   return data;
 }
 
-export async function createMessage({ text, type }: { text: string; type: string }) {
+export async function createMessage({
+  text,
+  type,
+  id,
+}: {
+  text: string;
+  type: string;
+  id: string;
+}) {
   const user = await getAuthUser();
   if (!user) {
     return [];
@@ -38,6 +46,7 @@ export async function createMessage({ text, type }: { text: string; type: string
     text,
     type,
     user_id: user.id,
+    id,
   };
 
   const supabase = await createClient();

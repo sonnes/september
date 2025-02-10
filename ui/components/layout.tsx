@@ -1,6 +1,7 @@
 import { PropsWithChildren } from 'react';
 
 import { getAuthUser } from '@/app/actions/user';
+import { AuthProvider } from '@/components/context/auth';
 import Navbar from '@/components/navbar';
 import { type ThemeColor, themes } from '@/lib/theme';
 import { cn } from '@/lib/utils';
@@ -10,15 +11,6 @@ type HeaderProps = PropsWithChildren & {
 };
 
 export default async function Layout({ children }: PropsWithChildren) {
-  return (
-    <>
-      <div className="min-h-full">{children}</div>
-    </>
-  );
-}
-
-Layout.Header = async ({ children, color = 'indigo' }: HeaderProps) => {
-  const theme = themes[color];
   const user = await getAuthUser();
   const authUser = user
     ? {
@@ -26,10 +18,21 @@ Layout.Header = async ({ children, color = 'indigo' }: HeaderProps) => {
         email: user.email ?? '',
       }
     : undefined;
+  return (
+    <>
+      <AuthProvider user={authUser}>
+        <div className="min-h-full">{children}</div>
+      </AuthProvider>
+    </>
+  );
+}
+
+Layout.Header = ({ children, color = 'indigo' }: HeaderProps) => {
+  const theme = themes[color];
 
   return (
     <div className={cn(theme.bg, 'pb-32')}>
-      <Navbar color={color} user={authUser} />
+      <Navbar color={color} />
       <header className="py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">{children}</div>
       </header>

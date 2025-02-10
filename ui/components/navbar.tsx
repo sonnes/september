@@ -18,7 +18,7 @@ import {
   DropdownItem,
   DropdownMenu,
 } from '@/components/catalyst/dropdown';
-import { AuthContext, type AuthUser, useAuth } from '@/components/context/auth';
+import { useAuth } from '@/components/context/auth';
 import { ThemeContext, useTheme } from '@/components/context/theme';
 import { type ThemeColor, themes } from '@/lib/theme';
 
@@ -37,73 +37,63 @@ const profileLinks = [
 
 type NavbarProps = {
   color?: ThemeColor;
-  user?: AuthUser;
 };
 
-export default function Navbar({ color = 'indigo', user }: NavbarProps) {
+export default function Navbar({ color = 'indigo' }: NavbarProps) {
   const theme = themes[color];
-  console.log(user);
   return (
     <ThemeContext.Provider value={{ theme }}>
-      <AuthContext.Provider value={{ user }}>
-        <Disclosure as="nav" className={clsx('border-b lg:border-none', theme.border, theme.bg)}>
-          {({ open }) => (
-            <>
-              <div className="mx-auto max-w-7xl px-2 sm:px-4 lg:px-8">
-                <div
-                  className={clsx(
-                    'relative flex h-16 items-center justify-between lg:border-b',
-                    theme.borderLg
-                  )}
-                >
-                  <div className="flex items-center px-2 lg:px-0">
-                    <div className="shrink-0">
-                      <Link href="/" className="flex items-center gap-2">
-                        <Image alt="September" src={`/logo.png`} width={32} height={32} />
-                        <span className="text-white font-semibold text-lg tracking-tight">
-                          septemberfox
-                        </span>
-                      </Link>
-                    </div>
-                    <DesktopMenu />
+      <Disclosure as="nav" className={clsx('border-b lg:border-none', theme.border, theme.bg)}>
+        {({ open }) => (
+          <>
+            <div className="mx-auto max-w-7xl px-2 sm:px-4 lg:px-8">
+              <div
+                className={clsx(
+                  'relative flex h-16 items-center justify-between lg:border-b',
+                  theme.borderLg
+                )}
+              >
+                <div className="flex items-center px-2 lg:px-0">
+                  <div className="shrink-0">
+                    <Link href="/" className="flex items-center gap-2">
+                      <Image alt="September" src={`/logo.png`} width={32} height={32} />
+                      <span className="text-white font-semibold text-lg tracking-tight">
+                        septemberfox
+                      </span>
+                    </Link>
                   </div>
+                  <DesktopMenu />
+                </div>
 
-                  <div className="flex lg:hidden">
-                    <DisclosureButton
-                      className={clsx(
-                        'group relative inline-flex items-center justify-center rounded-md p-2',
-                        theme.bg,
-                        theme.text,
-                        theme.textHover,
-                        'focus:outline-hidden focus:ring-2 focus:ring-white focus:ring-offset-2',
-                        theme.ringOffset
-                      )}
-                    >
-                      <span className="absolute -inset-0.5" />
-                      <span className="sr-only">Open main menu</span>
-                      <Bars3Icon
-                        aria-hidden="true"
-                        className="block size-6 group-data-open:hidden"
-                      />
-                      <XMarkIcon
-                        aria-hidden="true"
-                        className="hidden size-6 group-data-open:block"
-                      />
-                    </DisclosureButton>
-                  </div>
-                  <div className="hidden lg:ml-4 lg:block">
-                    <div className="flex items-center">
-                      <ProfileDropdown />
-                    </div>
+                <div className="flex lg:hidden">
+                  <DisclosureButton
+                    className={clsx(
+                      'group relative inline-flex items-center justify-center rounded-md p-2',
+                      theme.bg,
+                      theme.text,
+                      theme.textHover,
+                      'focus:outline-hidden focus:ring-2 focus:ring-white focus:ring-offset-2',
+                      theme.ringOffset
+                    )}
+                  >
+                    <span className="absolute -inset-0.5" />
+                    <span className="sr-only">Open main menu</span>
+                    <Bars3Icon aria-hidden="true" className="block size-6 group-data-open:hidden" />
+                    <XMarkIcon aria-hidden="true" className="hidden size-6 group-data-open:block" />
+                  </DisclosureButton>
+                </div>
+                <div className="hidden lg:ml-4 lg:block">
+                  <div className="flex items-center">
+                    <ProfileDropdown />
                   </div>
                 </div>
               </div>
+            </div>
 
-              <MobileMenu />
-            </>
-          )}
-        </Disclosure>
-      </AuthContext.Provider>
+            <MobileMenu />
+          </>
+        )}
+      </Disclosure>
     </ThemeContext.Provider>
   );
 }
