@@ -55,20 +55,20 @@ export default function SignUpForm() {
             />
           </Field>
         </div>
-      </div>
 
-      {state.message && (
-        <Banner
-          type={state.success ? 'success' : 'error'}
-          title={state.success ? 'Success' : 'Error'}
-          message={state.message}
-        />
-      )}
+        {state.message && (
+          <Banner
+            type={state.success ? 'success' : 'error'}
+            title={state.success ? 'Success' : 'Error'}
+            message={state.message}
+          />
+        )}
 
-      <div className="flex flex-col space-y-4">
-        <Button type="submit" className="w-full sm:w-auto" disabled={isPending}>
-          {isPending ? 'Creating account...' : 'Create Account'}
-        </Button>
+        <div className="flex flex-col space-y-4">
+          <Button type="submit" className="w-full sm:w-auto" disabled={isPending}>
+            {isPending ? 'Creating account...' : 'Create Account'}
+          </Button>
+        </div>
       </div>
     </form>
   );

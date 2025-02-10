@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/react';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -21,6 +22,7 @@ import {
 import { useAuth } from '@/components/context/auth';
 import { ThemeContext, useTheme } from '@/components/context/theme';
 import { type ThemeColor, themes } from '@/lib/theme';
+import { createClient } from '@/supabase/client';
 
 const links = [
   { name: 'Clone', href: '/app/clone' },
@@ -30,7 +32,6 @@ const links = [
 const profileLinks = [
   { name: 'Account', href: '/app/account' },
   { name: 'Settings', href: '/app/settings' },
-  { name: 'Logout', href: '/app/logout' },
 ];
 
 type NavbarProps = {
@@ -68,7 +69,7 @@ export default function Navbar({ color = 'indigo' }: NavbarProps) {
                 <div className="flex lg:hidden">
                   <DisclosureButton
                     className={clsx(
-                      'group relative inline-flex items-center justify-center rounded-md p-2',
+                      'group relative inline-flex items-center justify-center rounded-md p-2 cursor-pointer',
                       theme.bg,
                       theme.text,
                       theme.textHover,
@@ -134,9 +135,12 @@ const MobileMenu = () => {
 const MobileProfile = () => {
   const { theme } = useTheme();
   const { user } = useAuth();
+  const router = useRouter();
+
   if (!user) {
     return <MobileAuthButtons />;
   }
+
   return (
     <>
       <div className="flex flex-col gap-1">
@@ -151,13 +155,28 @@ const MobileProfile = () => {
           as={Link}
           href={item.href}
           className={clsx(
-            'block rounded-md px-3 py-2 text-base font-medium',
+            'block rounded-md px-3 py-2 text-base font-medium cursor-pointer',
             clsx('text-white', theme.bgHover)
           )}
         >
           {item.name}
         </DisclosureButton>
       ))}
+      <DisclosureButton
+        as={Link}
+        href={'javascript:void(0)'}
+        className={clsx(
+          'block rounded-md px-3 py-2 text-base font-medium cursor-pointer',
+          clsx('text-white', theme.bgHover)
+        )}
+        onClick={() => {
+          const supabase = createClient();
+          supabase.auth.signOut();
+          router.push('/');
+        }}
+      >
+        Logout
+      </DisclosureButton>
     </>
   );
 };
@@ -189,6 +208,7 @@ const MobileAuthButtons = () => {
     </>
   );
 };
+
 const DesktopMenu = () => {
   const { theme } = useTheme();
   const pathname = usePathname();
@@ -232,7 +252,7 @@ function AuthButtons() {
 
 function ProfileDropdown() {
   const { user } = useAuth();
-
+  const router = useRouter();
   if (!user) {
     return <AuthButtons />;
   }
@@ -242,7 +262,7 @@ function ProfileDropdown() {
       <DropdownButton
         as={AvatarButton}
         src={'https://github.com/shadcn.png'}
-        className="w-10 h-10"
+        className="w-8 h-8 cursor-pointer border-2 border-white"
       />
       <DropdownMenu>
         <DropdownHeader>
@@ -259,6 +279,16 @@ function ProfileDropdown() {
             {item.name}
           </DropdownItem>
         ))}
+        <DropdownItem
+          className="cursor-pointer"
+          onClick={() => {
+            const supabase = createClient();
+            supabase.auth.signOut();
+            router.push('/');
+          }}
+        >
+          Logout
+        </DropdownItem>
       </DropdownMenu>
     </Dropdown>
   );

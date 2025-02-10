@@ -2,6 +2,8 @@
 
 import { useActionState } from 'react';
 
+import { useSearchParams } from 'next/navigation';
+
 import { signIn } from '@/app/actions/user';
 import type { LoginResponse } from '@/app/actions/user';
 import { Banner } from '@/components/banner';
@@ -16,13 +18,17 @@ const initialState: LoginResponse = {
   inputs: {
     email: '',
     password: '',
+    next: '',
   },
 };
 
 export default function LoginForm() {
   const [state, formAction, isPending] = useActionState(signIn, initialState);
+  const searchParams = useSearchParams();
+
   return (
     <form className="space-y-8" action={formAction} autoComplete="on">
+      <input type="hidden" name="next" value={searchParams.get('next') || '/app/talk'} />
       <div className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 md:col-span-2">
         <div>
           <Heading level={2}>Welcome Back</Heading>
@@ -56,32 +62,26 @@ export default function LoginForm() {
           </Field>
         </div>
 
-        <div className="col-span-full flex items-center justify-between">
-          <a href="#" className="text-sm text-blue-600 hover:text-blue-500 hover:underline">
-            Forgot your password?
-          </a>
+        {state.message && (
+          <Banner
+            type={state.success ? 'success' : 'error'}
+            title={state.success ? 'Success' : 'Error'}
+            message={state.message}
+          />
+        )}
+
+        <div className="flex flex-col space-y-4">
+          <Button type="submit" className="w-full sm:w-auto" disabled={isPending}>
+            {isPending ? 'Signing in...' : 'Sign In'}
+          </Button>
+
+          <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
+            Don't have an account?{' '}
+            <a href="/signup" className="text-blue-600 hover:text-blue-500 hover:underline">
+              Sign up
+            </a>
+          </p>
         </div>
-      </div>
-
-      {state.message && (
-        <Banner
-          type={state.success ? 'success' : 'error'}
-          title={state.success ? 'Success' : 'Error'}
-          message={state.message}
-        />
-      )}
-
-      <div className="flex flex-col space-y-4">
-        <Button type="submit" className="w-full sm:w-auto" disabled={isPending}>
-          {isPending ? 'Signing in...' : 'Sign In'}
-        </Button>
-
-        <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
-          Don't have an account?{' '}
-          <a href="/signup" className="text-blue-600 hover:text-blue-500 hover:underline">
-            Sign up
-          </a>
-        </p>
       </div>
     </form>
   );

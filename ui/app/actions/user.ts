@@ -19,6 +19,7 @@ export const getAuthUser = async () => {
 export type LoginFormData = {
   email: string;
   password: string;
+  next: string;
 };
 
 export type LoginResponse = {
@@ -33,6 +34,7 @@ export async function signIn(_: LoginResponse, formData: FormData): Promise<Logi
   const data: LoginFormData = {
     email: formData.get('email') as string,
     password: formData.get('password') as string,
+    next: formData.get('next') as string,
   };
 
   const { error } = await supabase.auth.signInWithPassword(data);
@@ -41,8 +43,8 @@ export async function signIn(_: LoginResponse, formData: FormData): Promise<Logi
     return { success: false, message: error.message, inputs: data };
   }
 
-  revalidatePath('/', 'layout');
-  redirect('/clone');
+  revalidatePath('/login');
+  redirect(data.next === '' ? '/app' : data.next);
 }
 
 export type SignUpFormData = {
@@ -64,13 +66,16 @@ export async function signUp(_: SignUpResponse, formData: FormData): Promise<Sig
     password: formData.get('password') as string,
   };
 
-  const { error } = await supabase.auth.signUp(data);
+  const { error } = await supabase.auth.signUp(data).then(() => {
+    return supabase.auth.signInWithPassword(data);
+  });
 
   if (error) {
     return { success: false, message: error.message, inputs: data };
   }
 
-  return { success: true, message: 'Signed up successfully' };
+  revalidatePath('/signup');
+  redirect('/app');
 }
 
 // export type SignUpResponse = {
