@@ -26,20 +26,22 @@ export default async function TalkPage() {
             <h1 className="text-3xl font-bold tracking-tight text-white">Talk</h1>
           </Layout.Header>
           <Layout.Content>
-            <div className="p-6 mb-4 bg-white rounded-lg shadow-xs ring-1 ring-zinc-950/5 dark:bg-zinc-800 dark:ring-white/10">
-              <div className="flex items-center gap-4">
-                <Player />
+            <div className="flex flex-col h-[calc(100vh-280px)]">
+              <div className="p-4 mb-4 bg-white rounded-lg shadow-xs ring-1 ring-zinc-950/5 dark:bg-zinc-800 dark:ring-white/10">
+                <div className="flex items-center gap-4">
+                  <Player />
+                </div>
               </div>
-            </div>
 
-            {/* Messages area */}
-            <div className="flex-1 overflow-y-auto p-4">
-              <MessageList messages={messages} />
-            </div>
+              {/* Messages area */}
+              <div className="flex-1 overflow-y-auto">
+                <MessageList messages={messages} />
+              </div>
 
-            {/* Input area */}
-            <div className="border-t bg-white dark:bg-zinc-900 p-4">
-              <Editor />
+              {/* Input area */}
+              <div>
+                <Editor />
+              </div>
             </div>
           </Layout.Content>
         </Layout>

@@ -20,27 +20,38 @@ type EditorType = keyof typeof editors;
 
 export function Editor() {
   const [editorType, setEditorType] = useState<EditorType>('autocomplete');
+  const [isGenerating, setIsGenerating] = useState(false);
   const EditorComponent = editors[editorType];
   const { addMessage } = useMessages();
   const { setPlaying } = usePlayer();
 
   async function handleSubmit(text: string) {
+    setIsGenerating(true);
     const message = {
       id: crypto.randomUUID(),
       text,
       type: 'message',
     };
 
-    const createdMessage = await createSpeechFile(message).then(() => createMessage(message));
-
-    addMessage(createdMessage);
-    setPlaying({ id: createdMessage.id, text });
+    try {
+      const createdMessage = await createSpeechFile(message).then(() => createMessage(message));
+      addMessage(createdMessage);
+      setPlaying({ id: createdMessage.id, text });
+    } finally {
+      setIsGenerating(false);
+    }
   }
 
   return (
     <div>
       {/* Input area */}
-      <div className="bg-white dark:bg-zinc-900">
+      <div className="bg-white dark:bg-zinc-900 py-2 relative">
+        {/* Progress bar */}
+        <div
+          className={`absolute top-0 left-0 h-0.5 w-full ${
+            isGenerating ? 'bg-blue-500 transition-all duration-300' : 'bg-zinc-100'
+          }`}
+        />
         <div className="flex-1">
           <EditorComponent onSubmit={handleSubmit} />
         </div>
