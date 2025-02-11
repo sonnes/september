@@ -1,3 +1,18 @@
+## Account Wizard
+
+- Implement a step by step account wizard - `/app/account`
+- 1st step: Terms and Conditions and consent
+- 2nd step: Personal Information
+- 3rd step: Medical Information
+- Show all the steps in Layout.Header with a progress bar
+- Each step should have a form in a separate client component file
+- Show the current step form in Layout.Content
+- Each step should have a separate server action
+- 1st step should create a new account in the database
+- 2nd step & 3rd step should update the account in the database
+
+Refactor the account page to show the steps in a single page. Each step should be a separate section with its own form and submit button. Rename the step-one.tsx, step-two.tsx, step-three.tsx to consent.tsx, personal-info.tsx, medical-info.tsx.
+
 ## Authentication
 
 - Implement authentication using next-auth

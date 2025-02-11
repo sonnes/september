@@ -224,7 +224,7 @@ const DesktopMenu = () => {
               href={item.href}
               aria-current={isCurrent ? 'page' : undefined}
               className={clsx(
-                'rounded-md px-3 py-2 text-sm font-medium',
+                'rounded-md px-3 py-2 text-md font-semibold',
                 isCurrent ? clsx(theme.bgActive, 'text-white') : clsx('text-white', theme.bgHover)
               )}
             >
