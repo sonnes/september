@@ -10,6 +10,7 @@ CREATE TABLE api.accounts (
     "primary_diagnosis" TEXT,
     "year_of_diagnosis" INTEGER,
     "document_id" UUID REFERENCES storage.objects(id) ON DELETE CASCADE,
+    "medical_notes" TEXT,
     "terms_accepted" BOOLEAN,
     "privacy_accepted" BOOLEAN,
     "approved" BOOLEAN DEFAULT FALSE,

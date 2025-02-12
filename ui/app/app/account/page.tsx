@@ -1,10 +1,10 @@
 import { Metadata } from 'next';
 
+import { AccountProvider } from '@/components/context/auth';
 import Layout from '@/components/layout';
 
-import Consent from './consent';
-import MedicalInfo from './medical-info';
-import PersonalInfo from './personal-info';
+import { getAccount } from './actions';
+import AccountForm from './form';
 
 export const metadata: Metadata = {
   title: 'Your Account',
@@ -12,17 +12,17 @@ export const metadata: Metadata = {
 };
 
 export default async function AccountPage() {
+  const account = await getAccount();
+
   return (
     <Layout>
       <Layout.Header>
         <h1 className="text-3xl font-bold tracking-tight text-white">Your Account</h1>
       </Layout.Header>
       <Layout.Content>
-        <div className="divide-y divide-zinc-800">
-          <PersonalInfo />
-          <MedicalInfo />
-          <Consent />
-        </div>
+        <AccountProvider account={account}>
+          <AccountForm />
+        </AccountProvider>
       </Layout.Content>
     </Layout>
   );

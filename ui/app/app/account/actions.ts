@@ -1,119 +1,84 @@
 'use server';
 
-import { createServerClient } from '@/supabase/server';
+import { getAuthUser } from '@/app/actions/user';
+import { createClient } from '@/supabase/server';
+import type { Account, UpdateAccount } from '@/supabase/types';
 
-export async function createAccount(prevState: any, formData: FormData) {
-  const supabase = createServerClient();
+export type UpdateAccountResponse = {
+  success: boolean;
+  message: string;
+  inputs: UpdateAccount;
+};
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) {
-    return {
-      success: false,
-      message: 'You must be logged in',
-      inputs: Object.fromEntries(formData),
-    };
+export async function updateAccount(
+  _: UpdateAccountResponse,
+  formData: FormData
+): Promise<UpdateAccountResponse> {
+  const user = await getAuthUser();
+
+  if (!user) {
+    throw new Error('User not found');
   }
 
-  const terms_accepted = formData.get('terms_accepted') === 'on';
-  const privacy_accepted = formData.get('privacy_accepted') === 'on';
+  const account = {
+    id: user.id,
+    first_name: formData.get('first_name') as string,
+    last_name: formData.get('last_name') as string,
+    city: formData.get('city') as string,
+    country: formData.get('country') as string,
+    contact_name: formData.get('contact_name') as string,
+    contact_email: formData.get('contact_email') as string,
+    primary_diagnosis: formData.get('primary_diagnosis') as string,
+    year_of_diagnosis: parseInt(formData.get('year_of_diagnosis') as string),
+    medical_notes: formData.get('medical_notes') as string,
+    terms_accepted: formData.get('terms_accepted') === 'on',
+    privacy_accepted: formData.get('privacy_accepted') === 'on',
+  };
 
-  const { error } = await supabase.from('accounts').insert({
-    id: session.user.id,
-    terms_accepted,
-    privacy_accepted,
-  });
+  const supabase = await createClient();
+
+  const { error } = await supabase.schema('api').from('accounts').upsert(account);
 
   if (error) {
     return {
       success: false,
       message: error.message,
-      inputs: { terms_accepted, privacy_accepted },
+      inputs: account,
     };
   }
 
   return {
     success: true,
-    message: 'Account created successfully',
-    inputs: { terms_accepted, privacy_accepted },
+    message: 'Account updated successfully',
+    inputs: account,
   };
 }
 
-export async function updatePersonalInfo(prevState: any, formData: FormData) {
-  const supabase = createServerClient();
+export async function getAccount() {
+  const user = await getAuthUser();
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) {
-    return {
-      success: false,
-      message: 'You must be logged in',
-      inputs: Object.fromEntries(formData),
-    };
+  if (!user) {
+    throw new Error('User not found');
   }
 
-  const { error } = await supabase
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .schema('api')
     .from('accounts')
-    .update({
-      first_name: formData.get('first_name'),
-      last_name: formData.get('last_name'),
-      city: formData.get('city'),
-      country: formData.get('country'),
-      contact_name: formData.get('contact_name'),
-      contact_email: formData.get('contact_email'),
-    })
-    .eq('id', session.user.id);
+    .select('*')
+    .eq('id', user.id)
+    .single<Account>();
 
   if (error) {
-    return {
-      success: false,
-      message: error.message,
-      inputs: Object.fromEntries(formData),
-    };
+    if (error.code === 'PGRST116') {
+      return {
+        id: user.id,
+      } as Account;
+    }
+
+    throw new Error(error.message);
   }
 
-  return {
-    success: true,
-    message: 'Personal information updated successfully',
-    inputs: Object.fromEntries(formData),
-  };
-}
-
-export async function updateMedicalInfo(prevState: any, formData: FormData) {
-  const supabase = createServerClient();
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) {
-    return {
-      success: false,
-      message: 'You must be logged in',
-      inputs: Object.fromEntries(formData),
-    };
-  }
-
-  const { error } = await supabase
-    .from('accounts')
-    .update({
-      primary_diagnosis: formData.get('primary_diagnosis'),
-      year_of_diagnosis: parseInt(formData.get('year_of_diagnosis') as string),
-    })
-    .eq('id', session.user.id);
-
-  if (error) {
-    return {
-      success: false,
-      message: error.message,
-      inputs: Object.fromEntries(formData),
-    };
-  }
-
-  return {
-    success: true,
-    message: 'Medical information updated successfully',
-    inputs: Object.fromEntries(formData),
-  };
+  return data;
 }

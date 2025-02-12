@@ -9,6 +9,60 @@ export type Json =
 export type Database = {
   api: {
     Tables: {
+      accounts: {
+        Row: {
+          approved: boolean | null
+          city: string | null
+          contact_email: string | null
+          contact_name: string | null
+          country: string | null
+          created_at: string | null
+          document_id: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+          medical_notes: string | null
+          primary_diagnosis: string | null
+          privacy_accepted: boolean | null
+          terms_accepted: boolean | null
+          year_of_diagnosis: number | null
+        }
+        Insert: {
+          approved?: boolean | null
+          city?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string | null
+          document_id?: string | null
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          medical_notes?: string | null
+          primary_diagnosis?: string | null
+          privacy_accepted?: boolean | null
+          terms_accepted?: boolean | null
+          year_of_diagnosis?: number | null
+        }
+        Update: {
+          approved?: boolean | null
+          city?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string | null
+          document_id?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          medical_notes?: string | null
+          primary_diagnosis?: string | null
+          privacy_accepted?: boolean | null
+          terms_accepted?: boolean | null
+          year_of_diagnosis?: number | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           created_at: string | null
@@ -33,6 +87,23 @@ export type Database = {
         }
         Relationships: []
       }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  public: {
+    Tables: {
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
