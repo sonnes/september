@@ -138,18 +138,6 @@ export async function getAccount() {
     if (error.code === 'PGRST116') {
       return {
         id: user.id,
-        first_name: 'Raj',
-        last_name: 'Kumar',
-        city: 'San Francisco',
-        country: 'United States',
-        contact_name: 'John Doe',
-        contact_email: 'john.doe@example.com',
-        primary_diagnosis: 'ALS',
-        year_of_diagnosis: 2019,
-        medical_notes: 'This is a test note',
-        terms_accepted: true,
-        privacy_accepted: true,
-        document_path: '',
       } as Account;
     }
 

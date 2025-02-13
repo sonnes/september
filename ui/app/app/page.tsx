@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import {
   CheckCircleIcon,
   ClockIcon,
@@ -7,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 
+import { Button } from '@/components/catalyst/button';
 import Layout from '@/components/layout';
 
 import { getAccount } from './account/actions';
@@ -68,12 +71,15 @@ export default async function LoginPage() {
                 </p>
                 {!hasCompletedProfile && (
                   <div className="mt-4">
-                    <a
+                    <Link
                       href="/app/account"
-                      className="inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                      className={clsx(
+                        'inline-block px-4 py-2 rounded-md font-semibold',
+                        'bg-blue-600 text-white hover:bg-blue-700'
+                      )}
                     >
-                      Complete profile
-                    </a>
+                      Complete Account
+                    </Link>
                   </div>
                 )}
               </div>
@@ -120,16 +126,17 @@ export default async function LoginPage() {
                     : 'Once approved, you can clone your voice by uploading audio samples.'}
                 </p>
                 <div className="mt-4 flex gap-4">
-                  <button
-                    disabled={!isApproved || hasVoice}
-                    className={`px-4 py-2 rounded-md ${
+                  <Link
+                    href="/app/clone"
+                    className={clsx(
+                      'inline-block px-4 py-2 rounded-md font-semibold',
                       isApproved && !hasVoice
                         ? 'bg-blue-600 text-white hover:bg-blue-700'
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed border border-gray-200 dark:border-gray-700'
-                    }`}
+                    )}
                   >
                     Clone voice
-                  </button>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -152,16 +159,17 @@ export default async function LoginPage() {
                     : 'Start sending messages using your new voice.'}
                 </p>
                 <div className="mt-4 flex gap-4">
-                  <button
-                    disabled={!hasVoice || hasFirstMessage}
-                    className={`px-4 py-2 rounded-md ${
+                  <Link
+                    href="/app/messages"
+                    className={clsx(
+                      'inline-block px-4 py-2 rounded-md font-semibold',
                       hasVoice && !hasFirstMessage
                         ? 'bg-blue-600 text-white hover:bg-blue-700'
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed border border-gray-200 dark:border-gray-700'
-                    }`}
+                    )}
                   >
                     Send message
-                  </button>
+                  </Link>
                 </div>
               </div>
             </div>
