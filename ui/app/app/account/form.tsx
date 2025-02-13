@@ -14,7 +14,7 @@ import { useAccount } from '@/components/context/auth';
 import { type UpdateAccountResponse, updateAccount } from './actions';
 
 // Personal Info Section
-function PersonalInfoSection({ state }: any) {
+function PersonalInfoSection({ state }: { state: UpdateAccountResponse }) {
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
       <div className="px-4 sm:px-0">
@@ -28,7 +28,14 @@ function PersonalInfoSection({ state }: any) {
             <div className="sm:col-span-3">
               <Field>
                 <Label className="text-gray-900">First Name</Label>
-                <Input name="first_name" defaultValue={state.inputs?.first_name?.toString()} />
+                <Input
+                  name="first_name"
+                  defaultValue={state.inputs?.first_name?.toString()}
+                  required
+                />
+                {state.errors?.first_name && (
+                  <p className="mt-2 text-sm text-red-500">{state.errors.first_name.join(', ')}</p>
+                )}
               </Field>
             </div>
 
@@ -36,20 +43,29 @@ function PersonalInfoSection({ state }: any) {
               <Field>
                 <Label className="text-gray-900">Last Name</Label>
                 <Input name="last_name" defaultValue={state.inputs?.last_name?.toString()} />
+                {state.errors?.last_name && (
+                  <p className="mt-2 text-sm text-red-500">{state.errors.last_name.join(', ')}</p>
+                )}
               </Field>
             </div>
 
             <div className="sm:col-span-3">
               <Field>
                 <Label className="text-gray-900">City</Label>
-                <Input name="city" defaultValue={state.inputs?.city?.toString()} />
+                <Input name="city" defaultValue={state.inputs?.city?.toString()} required />
+                {state.errors?.city && (
+                  <p className="mt-2 text-sm text-red-500">{state.errors.city.join(', ')}</p>
+                )}
               </Field>
             </div>
 
             <div className="sm:col-span-3">
               <Field>
                 <Label className="text-gray-900">Country</Label>
-                <Input name="country" defaultValue={state.inputs?.country?.toString()} />
+                <Input name="country" defaultValue={state.inputs?.country?.toString()} required />
+                {state.errors?.country && (
+                  <p className="mt-2 text-sm text-red-500">{state.errors.country.join(', ')}</p>
+                )}
               </Field>
             </div>
 
@@ -65,6 +81,11 @@ function PersonalInfoSection({ state }: any) {
               <Field>
                 <Label className="text-gray-900">Contact Name</Label>
                 <Input name="contact_name" defaultValue={state.inputs?.contact_name?.toString()} />
+                {state.errors?.contact_name && (
+                  <p className="mt-2 text-sm text-red-500">
+                    {state.errors.contact_name.join(', ')}
+                  </p>
+                )}
               </Field>
             </div>
 
@@ -76,6 +97,11 @@ function PersonalInfoSection({ state }: any) {
                   type="email"
                   defaultValue={state.inputs?.contact_email?.toString()}
                 />
+                {state.errors?.contact_email && (
+                  <p className="mt-2 text-sm text-red-500">
+                    {state.errors.contact_email.join(', ')}
+                  </p>
+                )}
               </Field>
             </div>
           </div>
@@ -86,7 +112,7 @@ function PersonalInfoSection({ state }: any) {
 }
 
 // Medical Info Section
-function MedicalInfoSection({ state }: any) {
+function MedicalInfoSection({ state }: { state: UpdateAccountResponse }) {
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
       <div className="px-4 sm:px-0">
@@ -106,7 +132,13 @@ function MedicalInfoSection({ state }: any) {
                 <Input
                   name="primary_diagnosis"
                   defaultValue={state.inputs?.primary_diagnosis?.toString()}
+                  required
                 />
+                {state.errors?.primary_diagnosis && (
+                  <p className="mt-2 text-sm text-red-500">
+                    {state.errors.primary_diagnosis.join(', ')}
+                  </p>
+                )}
               </Field>
             </div>
 
@@ -117,7 +149,13 @@ function MedicalInfoSection({ state }: any) {
                   name="year_of_diagnosis"
                   type="number"
                   defaultValue={state.inputs?.year_of_diagnosis?.toString()}
+                  required
                 />
+                {state.errors?.year_of_diagnosis && (
+                  <p className="mt-2 text-sm text-red-500">
+                    {state.errors.year_of_diagnosis.join(', ')}
+                  </p>
+                )}
               </Field>
             </div>
 
@@ -128,46 +166,53 @@ function MedicalInfoSection({ state }: any) {
                   name="medical_notes"
                   defaultValue={state.inputs?.medical_notes?.toString()}
                 />
+                {state.errors?.medical_notes && (
+                  <p className="mt-2 text-sm text-red-500">
+                    {state.errors.medical_notes.join(', ')}
+                  </p>
+                )}
               </Field>
             </div>
 
-            <div className="col-span-full">
-              <Field>
-                <Label className="text-gray-900">Medical Documents</Label>
-                <p className="mt-1 text-sm/6 text-gray-600">
-                  We require a note from your Neurologist/Physician that you have been diagnosed
-                  with ALS. Please upload that note here.
-                </p>
-                <div className="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10">
-                  <div className="text-center">
-                    <CloudArrowUpIcon
-                      aria-hidden="true"
-                      className="mx-auto size-12 text-gray-300"
-                    />
-                    <div className="mt-4 flex text-sm/6 text-gray-600">
-                      <label
-                        htmlFor="document"
-                        className="relative cursor-pointer rounded-md bg-white font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500"
-                      >
-                        <span>Upload a file</span>
-                        <Input
-                          id="document"
-                          name="document"
-                          type="file"
-                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                          className="sr-only"
-                          defaultValue={state.inputs?.document?.toString()}
-                        />
-                      </label>
-                      <p className="pl-1">or drag and drop</p>
+            {!state.inputs?.document_id && (
+              <div className="col-span-full">
+                <Field>
+                  <Label className="text-gray-900">Medical Documents</Label>
+                  <p className="mt-1 text-sm/6 text-gray-600">
+                    We require a note from your Neurologist/Physician that you have been diagnosed
+                    with ALS. Please upload that note here.
+                  </p>
+                  <div className="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10">
+                    <div className="text-center">
+                      <CloudArrowUpIcon
+                        aria-hidden="true"
+                        className="mx-auto size-12 text-gray-300"
+                      />
+                      <div className="mt-4 flex text-sm/6 text-gray-600">
+                        <label
+                          htmlFor="document"
+                          className="relative cursor-pointer rounded-md bg-white font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500"
+                        >
+                          <span>Upload a file</span>
+                          <Input
+                            id="document"
+                            name="document"
+                            type="file"
+                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                            className="sr-only"
+                            required
+                          />
+                        </label>
+                        <p className="pl-1">or drag and drop</p>
+                      </div>
+                      <p className="text-xs/5 text-gray-600">
+                        PDF, DOC, DOCX, JPG, JPEG, PNG up to 10MB
+                      </p>
                     </div>
-                    <p className="text-xs/5 text-gray-600">
-                      PDF, DOC, DOCX, JPG, JPEG, PNG up to 10MB
-                    </p>
                   </div>
-                </div>
-              </Field>
-            </div>
+                </Field>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -176,7 +221,7 @@ function MedicalInfoSection({ state }: any) {
 }
 
 // Consent Section
-function ConsentSection({ state, formAction, isPending }: any) {
+function ConsentSection({ state }: { state: UpdateAccountResponse }) {
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
       <div className="px-4 sm:px-0">
@@ -193,7 +238,10 @@ function ConsentSection({ state, formAction, isPending }: any) {
               <div className="space-y-6">
                 <div className="flex gap-3">
                   <div className="flex h-6 items-center">
-                    <Checkbox name="terms_accepted" />
+                    <Checkbox
+                      name="terms_accepted"
+                      checked={state.inputs?.terms_accepted ?? false}
+                    />
                   </div>
                   <div className="text-sm/6">
                     <label className="font-medium text-gray-900">
@@ -204,7 +252,10 @@ function ConsentSection({ state, formAction, isPending }: any) {
 
                 <div className="flex gap-3">
                   <div className="flex h-6 items-center">
-                    <Checkbox name="privacy_accepted" />
+                    <Checkbox
+                      name="privacy_accepted"
+                      checked={state.inputs?.privacy_accepted ?? false}
+                    />
                   </div>
                   <div className="text-sm/6">
                     <label className="font-medium text-gray-900">I accept the privacy policy</label>
@@ -234,11 +285,14 @@ export default function AccountForm() {
       contact_name: account.contact_name ?? '',
       contact_email: account.contact_email ?? '',
       primary_diagnosis: account.primary_diagnosis ?? '',
-      year_of_diagnosis: account.year_of_diagnosis ?? null,
+      year_of_diagnosis: account.year_of_diagnosis ?? 0,
       medical_notes: account.medical_notes ?? '',
       terms_accepted: account.terms_accepted ?? false,
       privacy_accepted: account.privacy_accepted ?? false,
+      document_id: account.document_id ?? '',
+      has_consent: account.has_consent ?? false,
     },
+    errors: {},
   };
 
   const [state, formAction, isPending] = useActionState(updateAccount, initialState);

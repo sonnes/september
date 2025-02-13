@@ -6,6 +6,8 @@ CREATE TABLE api.messages (
     "created_at" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+GRANT SELECT, INSERT, UPDATE ON TABLE api.messages TO authenticated;
+
 ALTER TABLE api.messages ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view their own messages" 

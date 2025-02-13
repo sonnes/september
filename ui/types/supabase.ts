@@ -19,12 +19,16 @@ export type Database = {
           created_at: string | null
           document_id: string | null
           first_name: string | null
+          has_consent: boolean | null
+          has_first_message: boolean | null
+          has_voice: boolean | null
           id: string
           last_name: string | null
           medical_notes: string | null
           primary_diagnosis: string | null
           privacy_accepted: boolean | null
           terms_accepted: boolean | null
+          updated_at: string | null
           year_of_diagnosis: number | null
         }
         Insert: {
@@ -36,12 +40,16 @@ export type Database = {
           created_at?: string | null
           document_id?: string | null
           first_name?: string | null
+          has_consent?: boolean | null
+          has_first_message?: boolean | null
+          has_voice?: boolean | null
           id: string
           last_name?: string | null
           medical_notes?: string | null
           primary_diagnosis?: string | null
           privacy_accepted?: boolean | null
           terms_accepted?: boolean | null
+          updated_at?: string | null
           year_of_diagnosis?: number | null
         }
         Update: {
@@ -53,12 +61,16 @@ export type Database = {
           created_at?: string | null
           document_id?: string | null
           first_name?: string | null
+          has_consent?: boolean | null
+          has_first_message?: boolean | null
+          has_voice?: boolean | null
           id?: string
           last_name?: string | null
           medical_notes?: string | null
           primary_diagnosis?: string | null
           privacy_accepted?: boolean | null
           terms_accepted?: boolean | null
+          updated_at?: string | null
           year_of_diagnosis?: number | null
         }
         Relationships: []

@@ -1,3 +1,16 @@
+## Welcome
+
+- Update the welcome page to show the user a list of actions
+
+1. Complete your account information
+2. Wait for approval
+3. Create a new voice
+4. Send a message
+
+Update the state of each action based on the user's progress.
+
+Render the state of each step based on the flag in account
+
 ## Account Wizard
 
 - Implement a step by step account wizard - `/app/account`

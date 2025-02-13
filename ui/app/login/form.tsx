@@ -4,13 +4,14 @@ import { useActionState } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
-import { signIn } from '@/app/actions/user';
-import type { LoginResponse } from '@/app/actions/user';
 import { Banner } from '@/components/banner';
 import { Button } from '@/components/catalyst/button';
 import { Field, Label } from '@/components/catalyst/fieldset';
 import { Heading } from '@/components/catalyst/heading';
 import { Input } from '@/components/catalyst/input';
+
+import { signIn } from './actions';
+import type { LoginResponse } from './actions';
 
 const initialState: LoginResponse = {
   success: false,
@@ -46,6 +47,9 @@ export default function LoginForm() {
               required
               placeholder="you@example.com"
             />
+            {state.errors?.email && (
+              <p className="mt-2 text-sm text-red-500">{state.errors.email.join(', ')}</p>
+            )}
           </Field>
         </div>
 
@@ -58,7 +62,11 @@ export default function LoginForm() {
               defaultValue={state.inputs?.password}
               required
               placeholder="••••••••"
+              minLength={8}
             />
+            {state.errors?.password && (
+              <p className="mt-2 text-sm text-red-500">{state.errors.password.join(', ')}</p>
+            )}
           </Field>
         </div>
 

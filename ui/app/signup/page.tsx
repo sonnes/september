@@ -1,6 +1,11 @@
 import Layout from '@/components/layout';
 
-import SignUpForm from './simple';
+import SignUpForm from './form';
+
+export const metadata = {
+  title: 'Sign Up',
+  description: 'Create an account to get started',
+};
 
 export default function SignUpPage() {
   return (

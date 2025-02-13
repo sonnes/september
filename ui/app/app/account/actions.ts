@@ -1,13 +1,36 @@
 'use server';
 
+import { z } from 'zod';
+
 import { getAuthUser } from '@/app/actions/user';
 import { createClient } from '@/supabase/server';
-import type { Account, UpdateAccount } from '@/supabase/types';
+import type { Account } from '@/supabase/types';
+
+const UpdateAccountSchema = z.object({
+  id: z.string().optional(),
+  first_name: z.string().max(100),
+  last_name: z.string().max(100).optional(),
+  city: z.string().max(100),
+  country: z.string().max(100),
+  contact_name: z.string().max(100).optional(),
+  contact_email: z.string().email().optional(),
+  primary_diagnosis: z.string().max(100),
+  year_of_diagnosis: z.number(),
+  medical_notes: z.string().max(1000).optional(),
+  terms_accepted: z.boolean(),
+  privacy_accepted: z.boolean(),
+  document_id: z.string().optional(),
+  document_file: z.instanceof(File).optional(),
+  has_consent: z.boolean().optional(),
+});
+
+type UpdateAccountType = z.infer<typeof UpdateAccountSchema>;
 
 export type UpdateAccountResponse = {
   success: boolean;
   message: string;
-  inputs: UpdateAccount;
+  inputs?: UpdateAccountType;
+  errors?: Record<string, string[]>;
 };
 
 export async function updateAccount(
@@ -20,20 +43,35 @@ export async function updateAccount(
     throw new Error('User not found');
   }
 
-  const account = {
-    id: user.id,
-    first_name: formData.get('first_name') as string,
-    last_name: formData.get('last_name') as string,
-    city: formData.get('city') as string,
-    country: formData.get('country') as string,
-    contact_name: formData.get('contact_name') as string,
-    contact_email: formData.get('contact_email') as string,
-    primary_diagnosis: formData.get('primary_diagnosis') as string,
-    year_of_diagnosis: parseInt(formData.get('year_of_diagnosis') as string),
-    medical_notes: formData.get('medical_notes') as string,
-    terms_accepted: formData.get('terms_accepted') === 'on',
-    privacy_accepted: formData.get('privacy_accepted') === 'on',
-  };
+  const validated = UpdateAccountSchema.safeParse(Object.fromEntries(formData));
+
+  if (!validated.success) {
+    return {
+      success: false,
+      message: validated.error.message,
+      inputs: validated.data,
+      errors: validated.error.flatten().fieldErrors,
+    };
+  }
+
+  const account = validated.data;
+
+  account.id = user.id;
+  account.has_consent =
+    account.terms_accepted &&
+    account.privacy_accepted &&
+    account.document_id !== '' &&
+    account.first_name !== '' &&
+    account.last_name !== '';
+
+  if (account.document_file) {
+    const { id, error } = await uploadDocument(account.document_file);
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    account.document_id = id;
+  }
 
   const supabase = await createClient();
 
@@ -81,4 +119,12 @@ export async function getAccount() {
   }
 
   return data;
+}
+
+async function uploadDocument(file: File) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.storage.from('documents').upload(file.name, file);
+
+  return { id: data?.id, error: error };
 }

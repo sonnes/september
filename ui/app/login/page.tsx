@@ -2,6 +2,11 @@ import Layout from '@/components/layout';
 
 import LoginForm from './form';
 
+export const metadata = {
+  title: 'Login',
+  description: 'Login to your account',
+};
+
 export default function LoginPage() {
   return (
     <Layout>

@@ -14,8 +14,14 @@ CREATE TABLE api.accounts (
     "terms_accepted" BOOLEAN,
     "privacy_accepted" BOOLEAN,
     "approved" BOOLEAN DEFAULT FALSE,
-    "created_at" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    "created_at" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    "has_consent" BOOLEAN DEFAULT FALSE,
+    "has_voice" BOOLEAN DEFAULT FALSE,
+    "has_first_message" BOOLEAN DEFAULT FALSE
 );
+
+GRANT SELECT, INSERT, UPDATE ON TABLE api.accounts TO authenticated;
 
 ALTER TABLE api.accounts ENABLE ROW LEVEL SECURITY;
 
