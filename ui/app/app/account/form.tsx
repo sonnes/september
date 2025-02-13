@@ -183,6 +183,7 @@ function MedicalInfoSection({ state }: { state: UpdateAccountResponse }) {
                 </p>
                 {state.inputs?.document_path ? (
                   <div className="mt-2 flex items-center gap-4">
+                    <input type="hidden" name="document_path" value={state.inputs?.document_path} />
                     <div className="flex items-center gap-2 text-green-600">
                       <CheckCircleIcon className="size-5" />
                       <span className="text-sm">Document uploaded successfully</span>
@@ -257,7 +258,7 @@ function ConsentSection({ state }: { state: UpdateAccountResponse }) {
                   <div className="flex h-6 items-center">
                     <Checkbox
                       name="terms_accepted"
-                      checked={state.inputs?.terms_accepted ?? false}
+                      defaultChecked={state.inputs?.terms_accepted ?? false}
                     />
                   </div>
                   <div className="text-sm/6">
@@ -271,7 +272,7 @@ function ConsentSection({ state }: { state: UpdateAccountResponse }) {
                   <div className="flex h-6 items-center">
                     <Checkbox
                       name="privacy_accepted"
-                      checked={state.inputs?.privacy_accepted ?? false}
+                      defaultChecked={state.inputs?.privacy_accepted ?? false}
                     />
                   </div>
                   <div className="text-sm/6">
@@ -323,9 +324,11 @@ export default function AccountForm() {
 
         {/* Add floating save button */}
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+          <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
             {state.message && (
-              <p className={`text-sm ${state.success ? 'text-green-600' : 'text-red-600'}`}>
+              <p
+                className={`text-md font-semibold ${state.success ? 'text-green-600' : 'text-red-600'}`}
+              >
                 {state.message}
               </p>
             )}

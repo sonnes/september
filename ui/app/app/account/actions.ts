@@ -59,6 +59,7 @@ export async function updateAccount(
     medical_notes: formData.get('medical_notes') as string,
     terms_accepted: formData.get('terms_accepted') === 'on',
     privacy_accepted: formData.get('privacy_accepted') === 'on',
+    document_path: formData.get('document_path') as string,
   };
 
   const validated = UpdateAccountSchema.safeParse(inputs);
@@ -107,14 +108,14 @@ export async function updateAccount(
     return {
       success: false,
       message: error.message,
-      inputs: account,
+      inputs: inputs,
     };
   }
 
   return {
     success: true,
     message: 'Account updated successfully',
-    inputs: account,
+    inputs: inputs,
   };
 }
 
