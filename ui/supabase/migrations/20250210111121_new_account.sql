@@ -9,7 +9,7 @@ CREATE TABLE api.accounts (
     "contact_email" TEXT,
     "primary_diagnosis" TEXT,
     "year_of_diagnosis" INTEGER,
-    "document_id" UUID REFERENCES storage.objects(id) ON DELETE CASCADE,
+    "document_path" TEXT,
     "medical_notes" TEXT,
     "terms_accepted" BOOLEAN,
     "privacy_accepted" BOOLEAN,

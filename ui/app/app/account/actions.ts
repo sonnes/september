@@ -1,5 +1,7 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
+
 import { z } from 'zod';
 
 import { getAuthUser } from '@/app/actions/user';
@@ -13,14 +15,13 @@ const UpdateAccountSchema = z.object({
   city: z.string().max(100),
   country: z.string().max(100),
   contact_name: z.string().max(100).optional(),
-  contact_email: z.string().email().optional(),
+  contact_email: z.string().email().optional().or(z.literal('')),
   primary_diagnosis: z.string().max(100),
-  year_of_diagnosis: z.number(),
+  year_of_diagnosis: z.number().min(1900).max(new Date().getFullYear()),
   medical_notes: z.string().max(1000).optional(),
   terms_accepted: z.boolean(),
   privacy_accepted: z.boolean(),
-  document_id: z.string().optional(),
-  document_file: z.instanceof(File).optional(),
+  document_path: z.string().optional(),
   has_consent: z.boolean().optional(),
 });
 
@@ -43,37 +44,62 @@ export async function updateAccount(
     throw new Error('User not found');
   }
 
-  const validated = UpdateAccountSchema.safeParse(Object.fromEntries(formData));
+  const supabase = await createClient();
+
+  const inputs = {
+    id: user.id,
+    first_name: formData.get('first_name') as string,
+    last_name: formData.get('last_name') as string,
+    city: formData.get('city') as string,
+    country: formData.get('country') as string,
+    contact_name: formData.get('contact_name') as string,
+    contact_email: formData.get('contact_email') as string,
+    primary_diagnosis: formData.get('primary_diagnosis') as string,
+    year_of_diagnosis: parseInt(formData.get('year_of_diagnosis') as string),
+    medical_notes: formData.get('medical_notes') as string,
+    terms_accepted: formData.get('terms_accepted') === 'on',
+    privacy_accepted: formData.get('privacy_accepted') === 'on',
+  };
+
+  const validated = UpdateAccountSchema.safeParse(inputs);
 
   if (!validated.success) {
     return {
       success: false,
       message: validated.error.message,
-      inputs: validated.data,
+      inputs: inputs,
       errors: validated.error.flatten().fieldErrors,
     };
   }
 
   const account = validated.data;
-
   account.id = user.id;
+
+  // Handle document upload
+  const documentFile = formData.get('document') as File;
+  if (documentFile?.size > 0) {
+    const fileName = `${user.id}/${Date.now()}-${documentFile.name}`;
+    const { data, error: uploadError } = await supabase.storage
+      .from('documents')
+      .upload(fileName, documentFile);
+
+    if (uploadError) {
+      return {
+        success: false,
+        message: 'Failed to upload document',
+        inputs: account,
+      };
+    }
+
+    account.document_path = data.path;
+  }
+
+  // Update consent status
   account.has_consent =
     account.terms_accepted &&
     account.privacy_accepted &&
-    account.document_id !== '' &&
-    account.first_name !== '' &&
-    account.last_name !== '';
-
-  if (account.document_file) {
-    const { id, error } = await uploadDocument(account.document_file);
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    account.document_id = id;
-  }
-
-  const supabase = await createClient();
+    account.document_path !== '' &&
+    account.first_name !== '';
 
   const { error } = await supabase.schema('api').from('accounts').upsert(account);
 
@@ -112,6 +138,18 @@ export async function getAccount() {
     if (error.code === 'PGRST116') {
       return {
         id: user.id,
+        first_name: 'Raj',
+        last_name: 'Kumar',
+        city: 'San Francisco',
+        country: 'United States',
+        contact_name: 'John Doe',
+        contact_email: 'john.doe@example.com',
+        primary_diagnosis: 'ALS',
+        year_of_diagnosis: 2019,
+        medical_notes: 'This is a test note',
+        terms_accepted: true,
+        privacy_accepted: true,
+        document_path: '',
       } as Account;
     }
 
@@ -121,10 +159,32 @@ export async function getAccount() {
   return data;
 }
 
-async function uploadDocument(file: File) {
+export async function deleteDocument(path: string) {
+  const user = await getAuthUser();
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
   const supabase = await createClient();
 
-  const { data, error } = await supabase.storage.from('documents').upload(file.name, file);
+  // Delete the file from storage
+  const { error: deleteError } = await supabase.storage.from('documents').remove([path]);
 
-  return { id: data?.id, error: error };
+  if (deleteError) {
+    throw new Error(deleteError.message);
+  }
+
+  // Update account to remove document_id
+  const { error: updateError } = await supabase
+    .schema('api')
+    .from('accounts')
+    .update({ document_path: null })
+    .eq('id', user.id);
+
+  if (updateError) {
+    throw new Error(updateError.message);
+  }
+
+  revalidatePath('/app/account');
 }

@@ -1,3 +1,12 @@
+## Medical Document
+
+- On the account page, this should be the behavior:
+  - If the account has `document_id` show a green checkmark and a button to delete the document
+  - Clicking on the delete button should delete the document from supabase storage and update the account with `document_id` as null
+  - If the account doesn't have `document_id` show a file input to upload a new document
+  - Document file should be uploaded to `documents` bucket in supabase storage
+  - Update the account with the `document_id`
+
 ## Welcome
 
 - Update the welcome page to show the user a list of actions

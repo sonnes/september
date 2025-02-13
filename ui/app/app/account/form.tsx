@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 
-import { CloudArrowUpIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, CloudArrowUpIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 import { Banner } from '@/components/banner';
 import { Button } from '@/components/catalyst/button';
@@ -11,7 +11,7 @@ import { Field, Label } from '@/components/catalyst/fieldset';
 import { Input } from '@/components/catalyst/input';
 import { useAccount } from '@/components/context/auth';
 
-import { type UpdateAccountResponse, updateAccount } from './actions';
+import { type UpdateAccountResponse, deleteDocument, updateAccount } from './actions';
 
 // Personal Info Section
 function PersonalInfoSection({ state }: { state: UpdateAccountResponse }) {
@@ -174,14 +174,31 @@ function MedicalInfoSection({ state }: { state: UpdateAccountResponse }) {
               </Field>
             </div>
 
-            {!state.inputs?.document_id && (
-              <div className="col-span-full">
-                <Field>
-                  <Label className="text-gray-900">Medical Documents</Label>
-                  <p className="mt-1 text-sm/6 text-gray-600">
-                    We require a note from your Neurologist/Physician that you have been diagnosed
-                    with ALS. Please upload that note here.
-                  </p>
+            <div className="col-span-full">
+              <Field>
+                <Label className="text-gray-900">Medical Documents</Label>
+                <p className="mt-1 text-sm/6 text-gray-600">
+                  We require a note from your Neurologist/Physician that you have been diagnosed
+                  with ALS. Please upload that note here.
+                </p>
+                {state.inputs?.document_path ? (
+                  <div className="mt-2 flex items-center gap-4">
+                    <div className="flex items-center gap-2 text-green-600">
+                      <CheckCircleIcon className="size-5" />
+                      <span className="text-sm">Document uploaded successfully</span>
+                    </div>
+                    <button
+                      type="button"
+                      name="delete_document"
+                      value="true"
+                      className="flex items-center gap-1 rounded-md bg-red-50 px-2 py-1 text-sm font-semibold text-red-600 hover:bg-red-100"
+                      onClick={() => deleteDocument(state.inputs?.document_path ?? '')}
+                    >
+                      <TrashIcon className="size-4" />
+                      Delete Document
+                    </button>
+                  </div>
+                ) : (
                   <div className="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10">
                     <div className="text-center">
                       <CloudArrowUpIcon
@@ -200,7 +217,7 @@ function MedicalInfoSection({ state }: { state: UpdateAccountResponse }) {
                             type="file"
                             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                             className="sr-only"
-                            required
+                            required={!state.inputs?.document_path}
                           />
                         </label>
                         <p className="pl-1">or drag and drop</p>
@@ -210,9 +227,9 @@ function MedicalInfoSection({ state }: { state: UpdateAccountResponse }) {
                       </p>
                     </div>
                   </div>
-                </Field>
-              </div>
-            )}
+                )}
+              </Field>
+            </div>
           </div>
         </div>
       </div>
@@ -278,18 +295,18 @@ export default function AccountForm() {
     success: false,
     message: '',
     inputs: {
-      first_name: account.first_name ?? '',
-      last_name: account.last_name ?? '',
-      city: account.city ?? '',
-      country: account.country ?? '',
-      contact_name: account.contact_name ?? '',
-      contact_email: account.contact_email ?? '',
-      primary_diagnosis: account.primary_diagnosis ?? '',
-      year_of_diagnosis: account.year_of_diagnosis ?? 0,
-      medical_notes: account.medical_notes ?? '',
-      terms_accepted: account.terms_accepted ?? false,
-      privacy_accepted: account.privacy_accepted ?? false,
-      document_id: account.document_id ?? '',
+      first_name: account.first_name ?? 'Raj',
+      last_name: account.last_name ?? 'Kumar',
+      city: account.city ?? 'San Francisco',
+      country: account.country ?? 'United States',
+      contact_name: account.contact_name ?? 'John Doe',
+      contact_email: account.contact_email ?? 'john.doe@example.com',
+      primary_diagnosis: account.primary_diagnosis ?? 'ALS',
+      year_of_diagnosis: account.year_of_diagnosis ?? 2019,
+      medical_notes: account.medical_notes ?? 'This is a test note',
+      terms_accepted: account.terms_accepted ?? true,
+      privacy_accepted: account.privacy_accepted ?? true,
+      document_path: account.document_path ?? '',
       has_consent: account.has_consent ?? false,
     },
     errors: {},

@@ -1,7 +1,7 @@
 -- Create a new bucket for documents
 INSERT INTO storage.buckets 
 (id, name, public, allowed_mime_types) 
-VALUES ('documents', 'documents', false, '{"application/pdf"}');
+VALUES ('documents', 'documents', false, '{"application/pdf","image/png","image/jpeg","image/jpg"}');
 
 
 -- Create a insert policy for the new bucket

@@ -17,7 +17,7 @@ export type Database = {
           contact_name: string | null
           country: string | null
           created_at: string | null
-          document_id: string | null
+          document_path: string | null
           first_name: string | null
           has_consent: boolean | null
           has_first_message: boolean | null
@@ -38,7 +38,7 @@ export type Database = {
           contact_name?: string | null
           country?: string | null
           created_at?: string | null
-          document_id?: string | null
+          document_path?: string | null
           first_name?: string | null
           has_consent?: boolean | null
           has_first_message?: boolean | null
@@ -59,7 +59,7 @@ export type Database = {
           contact_name?: string | null
           country?: string | null
           created_at?: string | null
-          document_id?: string | null
+          document_path?: string | null
           first_name?: string | null
           has_consent?: boolean | null
           has_first_message?: boolean | null
