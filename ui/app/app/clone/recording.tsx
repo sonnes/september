@@ -1,27 +1,27 @@
-"use client";
+'use client';
 
-import { useState, useRef } from "react";
-import { Button } from "@/components/catalyst/button";
-import { MicrophoneIcon, StopIcon } from "@heroicons/react/24/outline";
-import { Field, Label } from "@/components/catalyst/fieldset";
+import { useRef, useState } from 'react';
+
+import { MicrophoneIcon, StopIcon } from '@heroicons/react/24/outline';
+
+import { Button } from '@/components/catalyst/button';
+import { Field, Label } from '@/components/catalyst/fieldset';
 
 export const SAMPLE_TEXTS = [
-  "The quick brown fox jumps over the lazy dog",
-  "She sells seashells by the seashore",
-  "How much wood would a woodchuck chuck if a woodchuck could chuck wood",
-  "Peter Piper picked a peck of pickled peppers",
+  'The quick brown fox jumps over the lazy dog',
+  'She sells seashells by the seashore',
+  'How much wood would a woodchuck chuck if a woodchuck could chuck wood',
+  'Peter Piper picked a peck of pickled peppers',
 ];
 
 interface RecordingSectionProps {
-  onRecordingsChange: (recordings: Record<string, Blob>) => void;
+  onRecordingsChange: (recordings: Record<string, File>) => void;
 }
 
-export function RecordingSection({
-  onRecordingsChange,
-}: RecordingSectionProps) {
+export function RecordingSection({ onRecordingsChange }: RecordingSectionProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingId, setRecordingId] = useState<string | null>(null);
-  const [recordings, setRecordings] = useState<Record<string, Blob>>({});
+  const [recordings, setRecordings] = useState<Record<string, File>>({});
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
   const startRecording = async (textId: string) => {
@@ -30,16 +30,17 @@ export function RecordingSection({
       const mediaRecorder = new MediaRecorder(stream);
       const chunks: BlobPart[] = [];
 
-      mediaRecorder.ondataavailable = (event) => {
+      mediaRecorder.ondataavailable = event => {
         chunks.push(event.data);
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: "audio/webm" });
-        setRecordings((prev) => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const file = new File([blob], `${textId}.webm`, { type: 'audio/webm' });
+        setRecordings(prev => {
           const newRecordings = {
             ...prev,
-            [textId]: blob,
+            [textId]: file,
           };
           onRecordingsChange(newRecordings);
           return newRecordings;
@@ -51,7 +52,7 @@ export function RecordingSection({
       setIsRecording(true);
       setRecordingId(textId);
     } catch (error) {
-      console.error("Error starting recording:", error);
+      console.error('Error starting recording:', error);
     }
   };
 

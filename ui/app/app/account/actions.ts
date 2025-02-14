@@ -21,7 +21,7 @@ const UpdateAccountSchema = z.object({
   medical_notes: z.string().max(1000).optional(),
   terms_accepted: z.boolean(),
   privacy_accepted: z.boolean(),
-  document_path: z.string().optional(),
+  document_path: z.string().optional().nullable(),
   has_consent: z.boolean().optional(),
 });
 
@@ -93,6 +93,7 @@ export async function updateAccount(
     }
 
     account.document_path = data.path;
+    inputs.document_path = data.path;
   }
 
   // Update consent status
@@ -176,4 +177,24 @@ export async function deleteDocument(path: string) {
   }
 
   revalidatePath('/app/account');
+}
+
+export async function setVoiceId(voiceId: string) {
+  const user = await getAuthUser();
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .schema('api')
+    .from('accounts')
+    .update({ voice_id: voiceId })
+    .eq('id', user.id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
 }

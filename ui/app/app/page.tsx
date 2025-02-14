@@ -19,11 +19,8 @@ export default async function LoginPage() {
 
   const hasCompletedProfile = account?.has_consent ?? false;
   const isApproved = account?.approved ?? false;
-  const hasVoice = account?.has_voice ?? false;
+  const hasVoice = account?.voice_id ? true : false;
   const hasFirstMessage = account?.has_first_message ?? false;
-
-  // Helper function to determine step status
-  const getStepStatus = (completed: boolean) => {};
 
   return (
     <Layout>

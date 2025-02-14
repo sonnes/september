@@ -2,16 +2,24 @@
 
 import { ElevenLabs, ElevenLabsClient } from 'elevenlabs';
 
+import { getAccount } from '@/app/app/account/actions';
 import { createClient } from '@/supabase/server';
 import type { Message } from '@/supabase/types';
 
-const voiceId = '3vXjdKMDgxJoOLbElGxC';
+const defaultVoiceId = '3vXjdKMDgxJoOLbElGxC';
 
 const client = new ElevenLabsClient({
   apiKey: process.env.ELEVENLABS_API_KEY,
 });
 
 export const generateSpeech = async (text: string) => {
+  const account = await getAccount();
+  const voiceId = account?.voice_id || defaultVoiceId;
+
+  if (!voiceId) {
+    throw new Error('Voice not found');
+  }
+
   const response = await client.textToSpeech.convert(voiceId, {
     output_format: ElevenLabs.OutputFormat.Mp34410032,
     text: text,

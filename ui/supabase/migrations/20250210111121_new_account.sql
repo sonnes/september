@@ -17,8 +17,8 @@ CREATE TABLE api.accounts (
     "created_at" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     "has_consent" BOOLEAN DEFAULT FALSE,
-    "has_voice" BOOLEAN DEFAULT FALSE,
-    "has_first_message" BOOLEAN DEFAULT FALSE
+    "has_first_message" BOOLEAN DEFAULT FALSE,
+    "voice_id" TEXT
 );
 
 GRANT SELECT, INSERT, UPDATE ON TABLE api.accounts TO authenticated;

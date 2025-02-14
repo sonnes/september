@@ -2,6 +2,11 @@ import Layout from '@/components/layout';
 
 import VoiceCloneForm from './form';
 
+export const metadata = {
+  title: 'Clone Your Voice',
+  description: 'Create a new voice clone.',
+};
+
 export default function ClonePage() {
   return (
     <Layout>

@@ -21,7 +21,6 @@ export type Database = {
           first_name: string | null
           has_consent: boolean | null
           has_first_message: boolean | null
-          has_voice: boolean | null
           id: string
           last_name: string | null
           medical_notes: string | null
@@ -29,6 +28,7 @@ export type Database = {
           privacy_accepted: boolean | null
           terms_accepted: boolean | null
           updated_at: string | null
+          voice_id: string | null
           year_of_diagnosis: number | null
         }
         Insert: {
@@ -42,7 +42,6 @@ export type Database = {
           first_name?: string | null
           has_consent?: boolean | null
           has_first_message?: boolean | null
-          has_voice?: boolean | null
           id: string
           last_name?: string | null
           medical_notes?: string | null
@@ -50,6 +49,7 @@ export type Database = {
           privacy_accepted?: boolean | null
           terms_accepted?: boolean | null
           updated_at?: string | null
+          voice_id?: string | null
           year_of_diagnosis?: number | null
         }
         Update: {
@@ -63,7 +63,6 @@ export type Database = {
           first_name?: string | null
           has_consent?: boolean | null
           has_first_message?: boolean | null
-          has_voice?: boolean | null
           id?: string
           last_name?: string | null
           medical_notes?: string | null
@@ -71,6 +70,7 @@ export type Database = {
           privacy_accepted?: boolean | null
           terms_accepted?: boolean | null
           updated_at?: string | null
+          voice_id?: string | null
           year_of_diagnosis?: number | null
         }
         Relationships: []
