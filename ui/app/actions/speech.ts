@@ -4,7 +4,6 @@ import { ElevenLabs, ElevenLabsClient } from 'elevenlabs';
 
 import { getAccount } from '@/app/app/account/actions';
 import { createClient } from '@/supabase/server';
-import type { Message } from '@/supabase/types';
 
 const defaultVoiceId = '3vXjdKMDgxJoOLbElGxC';
 

@@ -1,3 +1,10 @@
+## Voice Selection
+
+- Create a new page called `/app/voices`
+- Show a list of voices by calling the server action `getVoices`
+- Each voice should have a name, description, and a button to select the voice
+- On selecting a voice, call the server action `setVoiceId` to update the voice id in the database
+
 ## Medical Document
 
 - On the account page, this should be the behavior:

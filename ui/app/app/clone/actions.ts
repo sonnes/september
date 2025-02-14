@@ -52,8 +52,6 @@ export async function cloneVoice(
 
   const newVoice = await createVoice(data);
 
-  console.log(newVoice);
-
   await setVoiceId(newVoice.voice_id);
 
   return {
