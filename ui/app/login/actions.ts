@@ -22,6 +22,23 @@ export type LoginResponse = {
   errors?: Record<string, string[]>;
 };
 
+export async function signInWithGoogle(next?: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=${next || '/app'}`,
+    },
+  });
+
+  if (error) {
+    return { success: false, message: error.message };
+  }
+
+  redirect(data.url);
+}
+
 export async function signIn(_: LoginResponse, formData: FormData): Promise<LoginResponse> {
   const {
     success,
