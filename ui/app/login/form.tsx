@@ -10,7 +10,7 @@ import { Field, Label } from '@/components/catalyst/fieldset';
 import { Heading } from '@/components/catalyst/heading';
 import { Input } from '@/components/catalyst/input';
 
-import { signIn, signInWithGoogle } from './actions';
+import { signInWithEmail, signInWithGoogle } from './actions';
 import type { LoginResponse } from './actions';
 
 const initialState: LoginResponse = {
@@ -18,13 +18,12 @@ const initialState: LoginResponse = {
   message: '',
   inputs: {
     email: '',
-    password: '',
     next: '',
   },
 };
 
 export default function LoginForm() {
-  const [state, formAction, isPending] = useActionState(signIn, initialState);
+  const [state, formAction, isPending] = useActionState(signInWithEmail, initialState);
   const searchParams = useSearchParams();
   const next = searchParams.get('next') || '/app/talk';
 
@@ -37,10 +36,7 @@ export default function LoginForm() {
       <input type="hidden" name="next" value={next} />
       <div className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 md:col-span-2">
         <div>
-          <Heading level={2}>Welcome Back</Heading>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            Please enter your credentials to access your account.
-          </p>
+          <Heading level={2}>Welcome</Heading>
         </div>
         <div className="col-span-full">
           <Button type="button" outline className="w-full" onClick={handleGoogleSignIn}>
@@ -62,7 +58,7 @@ export default function LoginForm() {
                 fill="#EA4335"
               />
             </svg>
-            Sign in with Google
+            Login with Google
           </Button>
         </div>
 
@@ -93,23 +89,6 @@ export default function LoginForm() {
           </Field>
         </div>
 
-        <div className="col-span-full">
-          <Field>
-            <Label>Password</Label>
-            <Input
-              name="password"
-              type="password"
-              defaultValue={state.inputs?.password}
-              required
-              placeholder="••••••••"
-              minLength={8}
-            />
-            {state.errors?.password && (
-              <p className="mt-2 text-sm text-red-500">{state.errors.password.join(', ')}</p>
-            )}
-          </Field>
-        </div>
-
         {state.message && (
           <Banner
             type={state.success ? 'success' : 'error'}
@@ -120,15 +99,8 @@ export default function LoginForm() {
 
         <div className="flex flex-col space-y-4">
           <Button type="submit" className="w-full sm:w-auto" disabled={isPending}>
-            {isPending ? 'Signing in...' : 'Sign In with Email'}
+            {isPending ? 'Sending login link...' : 'Send Login Link'}
           </Button>
-
-          <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
-            Don't have an account?{' '}
-            <a href="/signup" className="text-blue-600 hover:text-blue-500 hover:underline">
-              Sign up
-            </a>
-          </p>
         </div>
       </div>
     </form>

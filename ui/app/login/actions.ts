@@ -9,7 +9,6 @@ import { createClient } from '@/supabase/server';
 
 const LoginSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8),
   next: z.string().optional(),
 });
 
@@ -39,7 +38,10 @@ export async function signInWithGoogle(next?: string) {
   redirect(data.url);
 }
 
-export async function signIn(_: LoginResponse, formData: FormData): Promise<LoginResponse> {
+export async function signInWithEmail(
+  _: LoginResponse,
+  formData: FormData
+): Promise<LoginResponse> {
   const {
     success,
     data,
@@ -57,12 +59,21 @@ export async function signIn(_: LoginResponse, formData: FormData): Promise<Logi
 
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword(data);
+  const { error } = await supabase.auth.signInWithOtp({
+    email: data.email,
+    options: {
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm?next=${data.next ?? '/app'}`,
+      shouldCreateUser: true,
+    },
+  });
 
   if (error) {
     return { success: false, message: error.message, inputs: data };
   }
 
-  revalidatePath('/login');
-  redirect(data.next ?? '/app');
+  return {
+    success: true,
+    message: 'Check your email for the link to login.',
+    inputs: data,
+  };
 }

@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login to Your Account</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
+          sans-serif;
+        line-height: 1.5;
+        margin: 0;
+        padding: 0;
+        -webkit-font-smoothing: antialiased;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 40px 20px;
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 32px;
+      }
+      .logo {
+        max-width: 200px;
+        margin-bottom: 24px;
+      }
+      .button {
+        display: inline-block;
+        background-color: #2563eb;
+        color: white;
+        text-decoration: none;
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-weight: 500;
+        margin: 24px 0;
+      }
+      .button:hover {
+        background-color: #1d4ed8;
+      }
+      .footer {
+        margin-top: 32px;
+        font-size: 14px;
+        color: #6b7280;
+        text-align: center;
+      }
+      .note {
+        font-size: 14px;
+        color: #6b7280;
+        margin-top: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <!-- Replace src with your actual logo URL -->
+        <img class="logo" src="{{ .SiteURL }}/logo.png" alt="Logo" />
+        <h1>Login to Your Account</h1>
+      </div>
+
+      <p>Hi there,</p>
+
+      <p>Click the button below to login to your account. This link will expire in 24 hours.</p>
+
+      <div style="text-align: center">
+        <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email" class="button"
+          >Login to Your Account</a
+        >
+      </div>
+
+      <p class="note">If you didn't request this email, you can safely ignore it.</p>
+
+      <div class="footer">
+        <p>Button not working? Copy and paste this URL into your browser:</p>
+        <p style="word-break: break-all">
+          {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

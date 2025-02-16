@@ -195,16 +195,6 @@ const MobileAuthButtons = () => {
       >
         Login
       </DisclosureButton>
-      <DisclosureButton
-        as={Link}
-        href={'/signup'}
-        className={clsx(
-          'block rounded-md px-3 py-2 text-base font-medium',
-          clsx('text-white', theme.bgHover)
-        )}
-      >
-        Sign Up
-      </DisclosureButton>
     </>
   );
 };
@@ -240,11 +230,8 @@ const DesktopMenu = () => {
 function AuthButtons() {
   return (
     <div className="flex gap-4 items-center">
-      <Link className="text-sm font-medium text-white" href="/login">
+      <Button color="white" href="/login">
         Login
-      </Link>
-      <Button color="white" href="/signup">
-        Sign Up
       </Button>
     </div>
   );
