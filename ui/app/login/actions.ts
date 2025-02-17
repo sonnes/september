@@ -42,17 +42,18 @@ export async function signInWithEmail(
   _: LoginResponse,
   formData: FormData
 ): Promise<LoginResponse> {
-  const {
-    success,
-    data,
-    error: validationError,
-  } = LoginSchema.safeParse(Object.fromEntries(formData));
+  const inputs = {
+    email: formData.get('email') as string,
+    next: formData.get('next') as string,
+  };
+
+  const { success, data, error: validationError } = LoginSchema.safeParse(inputs);
 
   if (!success) {
     return {
       success: false,
       message: '',
-      inputs: data,
+      inputs,
       errors: validationError.flatten().fieldErrors,
     };
   }
@@ -62,18 +63,18 @@ export async function signInWithEmail(
   const { error } = await supabase.auth.signInWithOtp({
     email: data.email,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm?next=${data.next ?? '/app'}`,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm`,
       shouldCreateUser: true,
     },
   });
 
   if (error) {
-    return { success: false, message: error.message, inputs: data };
+    return { success: false, message: error.message, inputs };
   }
 
   return {
     success: true,
-    message: 'Check your email for the link to login.',
-    inputs: data,
+    message: 'We sent you an email with instructions to login.',
+    inputs,
   };
 }

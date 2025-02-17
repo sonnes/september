@@ -25,7 +25,7 @@ const initialState: LoginResponse = {
 export default function LoginForm() {
   const [state, formAction, isPending] = useActionState(signInWithEmail, initialState);
   const searchParams = useSearchParams();
-  const next = searchParams.get('next') || '/app/talk';
+  const next = searchParams.get('next') || '/app';
 
   const handleGoogleSignIn = async () => {
     await signInWithGoogle(next);

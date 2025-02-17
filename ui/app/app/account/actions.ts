@@ -10,27 +10,27 @@ import type { Account } from '@/supabase/types';
 
 const UpdateAccountSchema = z.object({
   id: z.string().optional(),
-  first_name: z.string().max(100),
-  last_name: z.string().max(100).optional(),
-  city: z.string().max(100),
-  country: z.string().max(100),
-  contact_name: z.string().max(100).optional(),
+  first_name: z.string().max(100).nullable().optional(),
+  last_name: z.string().max(100).nullable().optional(),
+  city: z.string().max(100).nullable().optional(),
+  country: z.string().max(100).nullable().optional(),
+  contact_name: z.string().max(100).nullable().optional(),
   contact_email: z.string().email().optional().or(z.literal('')),
-  primary_diagnosis: z.string().max(100),
-  year_of_diagnosis: z.number().min(1900).max(new Date().getFullYear()),
-  medical_notes: z.string().max(1000).optional(),
-  terms_accepted: z.boolean(),
-  privacy_accepted: z.boolean(),
+  primary_diagnosis: z.string().max(100).nullable().optional(),
+  year_of_diagnosis: z.number().min(1900).max(new Date().getFullYear()).nullable().optional(),
+  medical_notes: z.string().max(1000).nullable().optional(),
+  terms_accepted: z.boolean().nullable().optional(),
+  privacy_accepted: z.boolean().nullable().optional(),
   document_path: z.string().optional().nullable(),
-  has_consent: z.boolean().optional(),
+  has_consent: z.boolean().nullable().optional(),
 });
 
-type UpdateAccountType = z.infer<typeof UpdateAccountSchema>;
+type UpdateAccount = z.infer<typeof UpdateAccountSchema>;
 
 export type UpdateAccountResponse = {
   success: boolean;
   message: string;
-  inputs?: UpdateAccountType;
+  inputs?: UpdateAccount;
   errors?: Record<string, string[]>;
 };
 
@@ -118,6 +118,28 @@ export async function updateAccount(
     message: 'Account updated successfully',
     inputs: inputs,
   };
+}
+
+export async function createAccount({
+  id,
+  first_name,
+  last_name,
+}: {
+  id: string;
+  first_name?: string;
+  last_name?: string;
+}) {
+  const supabase = await createClient();
+
+  const { error } = await supabase.schema('api').from('accounts').upsert({
+    id,
+    first_name,
+    last_name,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 export async function getAccount() {

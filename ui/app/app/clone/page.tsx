@@ -1,3 +1,5 @@
+import { getAccount } from '@/app/app/account/actions';
+import { Heading } from '@/components/catalyst/heading';
 import Layout from '@/components/layout';
 
 import VoiceCloneForm from './form';
@@ -7,7 +9,9 @@ export const metadata = {
   description: 'Create a new voice clone.',
 };
 
-export default function ClonePage() {
+export default async function ClonePage() {
+  const account = await getAccount();
+
   return (
     <Layout>
       <Layout.Header>
@@ -15,7 +19,12 @@ export default function ClonePage() {
       </Layout.Header>
       <Layout.Content>
         <div className="flex flex-col h-[calc(100vh-288px)]">
-          <VoiceCloneForm />
+          {account.approved && <VoiceCloneForm />}
+          {!account.approved && (
+            <Heading level={2} className="text-center text-zinc-400">
+              Your account is not approved for voice cloning.
+            </Heading>
+          )}
         </div>
       </Layout.Content>
     </Layout>

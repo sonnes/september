@@ -65,7 +65,10 @@
       <p>Click the button below to login to your account. This link will expire in 24 hours.</p>
 
       <div style="text-align: center">
-        <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email" class="button"
+        <a
+          href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email"
+          target="_blank"
+          class="button"
           >Login to Your Account</a
         >
       </div>
@@ -75,7 +78,11 @@
       <div class="footer">
         <p>Button not working? Copy and paste this URL into your browser:</p>
         <p style="word-break: break-all">
-          {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email
+          <a
+            href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email"
+            target="_blank"
+            >{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email</a
+          >
         </p>
       </div>
     </div>

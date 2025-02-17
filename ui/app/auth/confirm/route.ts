@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 
+import { createAccount } from '@/app/app/account/actions';
 import { createClient } from '@/supabase/server';
 
 export async function GET(request: Request) {
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
   const supabase = await createClient();
 
   if (type === 'email') {
-    const { error } = await supabase.auth.verifyOtp({
+    const { data, error } = await supabase.auth.verifyOtp({
       type: 'email',
       token_hash,
     });
@@ -24,6 +25,10 @@ export async function GET(request: Request) {
     if (error) {
       // If there's an error, redirect to login with error message
       return redirect(`/login?error=${encodeURIComponent(error.message)}`);
+    }
+
+    if (data.user) {
+      await createAccount({ id: data.user.id });
     }
   }
 

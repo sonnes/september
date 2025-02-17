@@ -9,7 +9,7 @@ import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/react
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 
-import { AvatarButton } from '@/components/catalyst/avatar';
+import { Avatar, AvatarButton } from '@/components/catalyst/avatar';
 import { Button } from '@/components/catalyst/button';
 import {
   Dropdown,
@@ -37,6 +37,17 @@ const profileLinks = [
 type NavbarProps = {
   color?: ThemeColor;
 };
+
+function generateAvatarColor(userId: string): string {
+  // Simple hash function to generate a number from string
+  const hash = userId.split('').reduce((acc, char) => {
+    return char.charCodeAt(0) + ((acc << 5) - acc);
+  }, 0);
+
+  // Generate HSL color with good saturation and lightness for visibility
+  const h = hash % 360;
+  return `hsl(${h}, 65%, 65%)`;
+}
 
 export default function Navbar({ color = 'indigo' }: NavbarProps) {
   const { user } = useAuth();
@@ -244,17 +255,21 @@ function ProfileDropdown() {
     return <AuthButtons />;
   }
 
+  const initials = user.email.split('@')[0].slice(0, 2);
+  const backgroundColor = generateAvatarColor(user.id);
+
   return (
     <Dropdown>
       <DropdownButton
         as={AvatarButton}
-        src={'https://github.com/shadcn.png'}
+        initials={initials}
+        color="white"
         className="w-8 h-8 cursor-pointer border-2 border-white"
+        style={{ backgroundColor }}
       />
       <DropdownMenu>
         <DropdownHeader>
           <div className="pr-6">
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">Signed in as Tom Cook</div>
             <div className="text-sm/7 font-semibold text-zinc-800 dark:text-white">
               {user.email}
             </div>
