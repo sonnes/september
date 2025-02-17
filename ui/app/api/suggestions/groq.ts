@@ -1,5 +1,6 @@
-import { Groq } from "groq-sdk";
-import type { Message } from "@/db/messages";
+import { Groq } from 'groq-sdk';
+
+import type { Message } from '@/supabase/types';
 
 const client = new Groq();
 
@@ -30,47 +31,47 @@ export async function generateSuggestions(
   text: string,
   history: Message[]
 ): Promise<SuggestionResponse> {
-  const previousMessages = history.map((m) => m.text).join("\n");
+  const previousMessages = history.map(m => m.text).join('\n');
 
   const response = await client.chat.completions.create({
     messages: [
       {
-        role: "system",
+        role: 'system',
         content: SYSTEM_PROMPT,
       },
       {
-        role: "user",
+        role: 'user',
         content: `PREVIOUS_MESSAGES:\n${previousMessages}\n\nINPUT_VALUE: ${text}`,
       },
       {
-        role: "assistant",
-        content: "```json",
+        role: 'assistant',
+        content: '```json',
       },
     ],
-    model: "llama-3.1-8b-instant",
+    model: 'llama-3.1-8b-instant',
     temperature: 0.7,
     max_tokens: 1024,
     stream: false,
-    stop: ["```"],
+    stop: ['```'],
   });
 
   let content = response.choices[0].message.content;
   if (!content) {
     return {
-      suggestion: "",
+      suggestion: '',
       completions: [],
     };
   }
 
-  content = content.replace("```json", "");
-  content = content.replace("```", "");
+  content = content.replace('```json', '');
+  content = content.replace('```', '');
 
   const suggestions = JSON.parse(content) as {
     completions: string[];
   };
 
   return {
-    suggestion: suggestions.completions[0] || "",
+    suggestion: suggestions.completions[0] || '',
     completions: suggestions.completions.slice(1) || [],
   };
 }

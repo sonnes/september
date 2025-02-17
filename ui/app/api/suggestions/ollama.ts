@@ -1,5 +1,6 @@
-import ollama from "ollama";
-import type { Message } from "@/db/messages";
+import ollama from 'ollama';
+
+import type { Message } from '@/supabase/types';
 
 const SYSTEM_PROMPT = `# You're a superhuman autocomplete system that provides autocompletions for your users.
 You take the PREVIOUS_COMPLETIONS, DOMAIN_KNOWLEDGE and you generate a list of the most likely auto completions for your users based on their INPUT_VALUE.
@@ -40,18 +41,18 @@ export async function generateSuggestions(
   text: string,
   history: Message[]
 ): Promise<SuggestionResponse> {
-  const previousMessages = history.map((m) => m.text).join("\n");
-  const domainKnowledge = "";
-  const topic = "English";
+  const previousMessages = history.map(m => m.text).join('\n');
+  const domainKnowledge = '';
+  const topic = 'English';
 
-  const systemPrompt = SYSTEM_PROMPT.replace("{{TOPIC}}", topic)
-    .replace("{{PREVIOUS_MESSAGES}}", previousMessages)
-    .replace("{{DOMAIN_KNOWLEDGE}}", domainKnowledge);
+  const systemPrompt = SYSTEM_PROMPT.replace('{{TOPIC}}', topic)
+    .replace('{{PREVIOUS_MESSAGES}}', previousMessages)
+    .replace('{{DOMAIN_KNOWLEDGE}}', domainKnowledge);
 
   const prompt = `## Complete the following INPUT_VALUE: ${text}`;
 
   const response = await ollama.generate({
-    model: "llama3.2",
+    model: 'llama3.2',
     system: systemPrompt,
     prompt: prompt,
   });
@@ -66,11 +67,11 @@ export async function generateSuggestions(
     }
   } catch (e) {
     console.log(response.response);
-    console.error("Error parsing suggestions:", e);
+    console.error('Error parsing suggestions:', e);
   }
 
   return {
-    suggestion: suggestions.completions ? suggestions.completions[0] : "",
+    suggestion: suggestions.completions ? suggestions.completions[0] : '',
     completions: suggestions.completions?.slice(1) || [],
   };
 }

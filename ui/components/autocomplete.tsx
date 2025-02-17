@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/catalyst/button";
-import { useDebounce } from "@/hooks/useDebounce";
+import { useEffect, useRef, useState } from 'react';
 
-import type { Message } from "@/db/messages";
+import { Button } from '@/components/catalyst/button';
+import { useDebounce } from '@/hooks/useDebounce';
+import type { Message } from '@/supabase/types';
 
 interface InlineEditorProps {
   onSubmit: (text: string) => void;
@@ -13,54 +13,52 @@ interface InlineEditorProps {
 
 export default function Autocomplete({
   onSubmit,
-  placeholder = "Type something...",
+  placeholder = 'Type something...',
   debounceMs = 300,
   history = [],
 }: InlineEditorProps) {
-  const [status, setStatus] = useState<
-    "idle" | "loading" | "error" | "success"
-  >("idle");
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'success'>('idle');
   const [error, setError] = useState<string | null>(null);
-  const [suggestion, setSuggestion] = useState("");
+  const [suggestion, setSuggestion] = useState('');
   const [completions, setCompletions] = useState<string[]>([]);
   const [isAddingWord, setIsAddingWord] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const [text, setText] = useState("");
+  const [text, setText] = useState('');
   const debouncedText = useDebounce(text, debounceMs);
 
   const fetchSuggestion = async (text: string) => {
     if (!text) return;
 
-    setStatus("loading");
+    setStatus('loading');
     setError(null);
 
     try {
-      const response = await fetch("/api/suggestions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/suggestions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, history: history }),
       });
       const data = await response.json();
-      setSuggestion(data.suggestion || "");
+      setSuggestion(data.suggestion || '');
       setCompletions(data.completions || []);
     } catch (error) {
-      setStatus("error");
+      setStatus('error');
       setError(`Error fetching suggestion: ${error}`);
     } finally {
-      setStatus("idle");
+      setStatus('idle');
     }
   };
 
   const appendSuggestion = (suggestion: string) => {
     setText(text + suggestion);
-    setSuggestion("");
+    setSuggestion('');
   };
 
   const addFirstWord = () => {
     setIsAddingWord(true);
-    const firstWord = suggestion.split(" ")[0];
-    setText(text + firstWord + " ");
+    const firstWord = suggestion.split(' ')[0];
+    setText(text + firstWord + ' ');
     setSuggestion(suggestion.slice(firstWord.length + 1));
   };
 
@@ -74,13 +72,13 @@ export default function Autocomplete({
   }, [debouncedText]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Tab" && suggestion) {
+    if (e.key === 'Tab' && suggestion) {
       e.preventDefault();
       appendSuggestion(suggestion);
-    } else if (e.key === "ArrowRight" && e.metaKey && suggestion) {
+    } else if (e.key === 'ArrowRight' && e.metaKey && suggestion) {
       e.preventDefault();
       addFirstWord();
-    } else if (e.key === "Enter" && !e.shiftKey) {
+    } else if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (text.trim()) {
         handleSubmit();
@@ -95,22 +93,22 @@ export default function Autocomplete({
   const handleSubmit = () => {
     if (text.trim()) {
       onSubmit(text);
-      setText("");
-      setSuggestion("");
+      setText('');
+      setSuggestion('');
       setError(null);
       setCompletions([]);
-      setStatus("idle");
+      setStatus('idle');
     }
   };
 
   return (
     <div>
       <div className="flex gap-2 h-10">
-        {status === "error" ? (
+        {status === 'error' ? (
           <div className="mb-2 p-2 border rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400">
             Error loading suggestions: {error}
           </div>
-        ) : status === "loading" ? (
+        ) : status === 'loading' ? (
           <div className="mb-2 p-2 border rounded-lg bg-zinc-50 dark:bg-zinc-800">
             Loading suggestions...
           </div>
@@ -138,14 +136,12 @@ export default function Autocomplete({
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             className="w-full min-h-[100px] p-3 bg-transparent dark:bg-zinc-800 border rounded-lg"
-            style={{ caretColor: "auto" }}
+            style={{ caretColor: 'auto' }}
           />
           {suggestion && (
             <div className="absolute top-0 left-0 w-full min-h-[100px] p-3 pointer-events-none text-zinc-400 dark:text-zinc-500 whitespace-pre-wrap break-words border">
               <span className="invisible">{text}</span>
-              <span className="text-zinc-400 italic dark:text-zinc-500">
-                {suggestion}
-              </span>
+              <span className="text-zinc-400 italic dark:text-zinc-500">{suggestion}</span>
             </div>
           )}
         </div>
