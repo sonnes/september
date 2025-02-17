@@ -16,7 +16,7 @@ env:
 jobs:
   migrate:
     runs-on: ubuntu-latest
-
+    environment: Production
     steps:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
@@ -32,6 +32,7 @@ jobs:
   deploy-production:
     runs-on: ubuntu-latest
     needs: migrate
+    environment: Production
     steps:
       - uses: actions/checkout@v4
       - name: Install Vercel CLI
