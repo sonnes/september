@@ -22,7 +22,7 @@ export const metadata = {
     siteName: 'September',
     images: [
       {
-        url: '/api/og', // This will use our OG image generation route
+        url: '/og',
         width: 1200,
         height: 630,
       },
@@ -30,6 +30,7 @@ export const metadata = {
     locale: 'en_US',
     type: 'website',
   },
+  metadataBase: new URL('https://september.raviatluri.in'),
 };
 
 export default async function Home() {
