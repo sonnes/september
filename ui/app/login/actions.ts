@@ -23,11 +23,14 @@ export type LoginResponse = {
 
 export async function signInWithGoogle(next?: string) {
   const supabase = await createClient();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  const isLocalEnv = process.env.NODE_ENV === 'development';
+  const host = isLocalEnv ? siteUrl : `https://${siteUrl}`;
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=${next || '/app'}`,
+      redirectTo: `${host}/auth/callback?next=${next || '/app'}`,
     },
   });
 
