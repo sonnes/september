@@ -5,6 +5,9 @@ import { createClient } from '@/supabase/server';
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
+  const forwardedHost = request.headers.get('x-forwarded-host');
+  const host = forwardedHost ? `https://${forwardedHost}` : origin;
+
   const code = searchParams.get('code');
   const next = searchParams.get('next') ?? '/app';
 
@@ -13,16 +16,16 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (error) {
-      return redirect(`/login?error=${encodeURIComponent(error.message)}`);
+      return redirect(`${host}/login?error=${encodeURIComponent(error.message)}`);
     }
 
     if (data.user) {
       await createAccount({ id: data.user.id });
     }
 
-    return redirect(next);
+    return redirect(`${host}${next}`);
   }
 
   // return the user to an error page with instructions
-  return redirect(`/login?error=${encodeURIComponent('Incorrect login link')}`);
+  return redirect(`${host}/login?error=${encodeURIComponent('Incorrect login link')}`);
 }

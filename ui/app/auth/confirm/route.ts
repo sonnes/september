@@ -4,7 +4,10 @@ import { createAccount } from '@/app/app/account/actions';
 import { createClient } from '@/supabase/server';
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const { searchParams, origin } = new URL(request.url);
+  const forwardedHost = request.headers.get('x-forwarded-host');
+  const host = forwardedHost ? `https://${forwardedHost}` : origin;
+
   const token_hash = searchParams.get('token_hash');
   const type = searchParams.get('type');
   const next = searchParams.get('next') || '/app';
@@ -24,14 +27,15 @@ export async function GET(request: Request) {
 
     if (error) {
       // If there's an error, redirect to login with error message
-      return redirect(`/login?error=${encodeURIComponent(error.message)}`);
+      return redirect(`${host}/login?error=${encodeURIComponent(error.message)}`);
     }
 
     if (data.user) {
       await createAccount({ id: data.user.id });
     }
+
+    return redirect(`${host}${next}`);
   }
 
-  // Successful verification, redirect to the next page
-  redirect(next);
+  return redirect(`${host}/login?error=${encodeURIComponent('Incorrect login link')}`);
 }
