@@ -13,6 +13,25 @@ const caveat = Caveat({
   variable: '--font-caveat',
 });
 
+export const metadata = {
+  openGraph: {
+    title: 'September - Communication Assistant',
+    description:
+      'A communication assistant for people with ALS, MND, or other speech & motor difficulties.',
+    url: 'https://september.raviatluri.in',
+    siteName: 'September',
+    images: [
+      {
+        url: '/api/og', // This will use our OG image generation route
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+};
+
 export default async function Home() {
   return (
     <div className="min-h-full">
