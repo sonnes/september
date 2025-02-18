@@ -43,7 +43,7 @@ export default async function LoginPage() {
               Welcome! Let's get started
             </h1>
             <p className="mt-2 text-gray-50">
-              Follow these steps to set up your account and start creating voices.
+              Follow these steps to set up your account and start using your assistant.
             </p>
           </div>
         </div>
@@ -61,10 +61,10 @@ export default async function LoginPage() {
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  Complete your account information
+                  Complete your Account
                 </h2>
                 <p className="mt-1 text-gray-600 dark:text-gray-400">
-                  Fill in your profile details and verify your email address.
+                  Fill in details of your medical condition and any other relevant information.
                 </p>
                 {!hasCompletedProfile && (
                   <div className="mt-4">
@@ -75,7 +75,7 @@ export default async function LoginPage() {
                         'bg-blue-600 text-white hover:bg-blue-700'
                       )}
                     >
-                      Complete Account
+                      Update Account
                     </Link>
                   </div>
                 )}
@@ -98,12 +98,14 @@ export default async function LoginPage() {
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  Wait for approval
+                  Join the Waitlist
                 </h2>
                 <p className="mt-1 text-gray-600 dark:text-gray-400">
-                  {isApproved
-                    ? 'Your account has been approved!'
-                    : "Your account is being reviewed. We'll notify you once it's approved."}
+                  {!hasCompletedProfile
+                    ? 'Voice cloning is only available to users with speech impairment.'
+                    : isApproved
+                      ? 'Your account has been approved!'
+                      : 'Your account is being reviewed.'}
                 </p>
               </div>
             </div>
@@ -115,7 +117,7 @@ export default async function LoginPage() {
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  Create a new voice
+                  Clone your Voice
                 </h2>
                 <p className="mt-1 text-gray-600 dark:text-gray-400">
                   {hasVoice
@@ -132,7 +134,7 @@ export default async function LoginPage() {
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed border border-gray-200 dark:border-gray-700'
                     )}
                   >
-                    Clone voice
+                    Clone Voice
                   </Link>
                 </div>
               </div>
@@ -148,12 +150,12 @@ export default async function LoginPage() {
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  Send a message
+                  Start Talking
                 </h2>
                 <p className="mt-1 text-gray-600 dark:text-gray-400">
                   {hasFirstMessage
                     ? "You've sent your first message!"
-                    : 'Start sending messages using your new voice.'}
+                    : 'Start using your assistant by typing a message.'}
                 </p>
                 <div className="mt-4 flex gap-4">
                   <Link
@@ -165,7 +167,7 @@ export default async function LoginPage() {
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed border border-gray-200 dark:border-gray-700'
                     )}
                   >
-                    Send message
+                    Send Message
                   </Link>
                 </div>
               </div>

@@ -3,8 +3,7 @@
 import { ElevenLabsClient } from 'elevenlabs';
 import { z } from 'zod';
 
-import { getAuthUser } from '@/app/actions/user';
-import { setVoiceId } from '@/app/app/account/actions';
+import { getAccount, setVoiceId } from '@/app/app/account/actions';
 
 const CloneVoiceSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -26,10 +25,17 @@ export async function cloneVoice(
   _: CloneVoiceResponse,
   formData: FormData
 ): Promise<CloneVoiceResponse> {
-  const user = await getAuthUser();
+  const account = await getAccount();
 
-  if (!user) {
-    throw new Error('User not found');
+  if (!account) {
+    throw new Error('Account not found');
+  }
+
+  if (!account.approved) {
+    return {
+      success: false,
+      message: 'You are on the waitlist',
+    };
   }
 
   const inputs = {

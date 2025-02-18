@@ -11,6 +11,7 @@ import { Button } from '@/components/catalyst/button';
 import { Field, Label } from '@/components/catalyst/fieldset';
 import { Heading } from '@/components/catalyst/heading';
 import { Input } from '@/components/catalyst/input';
+import { useAccount } from '@/components/context/auth';
 
 import { type CloneVoiceResponse, cloneVoice } from './actions';
 import { RecordingSection } from './recording';
@@ -29,6 +30,7 @@ const initialState: CloneVoiceResponse = {
 export default function VoiceCloneForm() {
   const [state, formAction, isPending] = useActionState(cloneVoice, initialState);
   const [recordings, setRecordings] = useState(state.inputs?.recordings);
+  const { account } = useAccount();
 
   return (
     <div>
@@ -142,36 +144,43 @@ export default function VoiceCloneForm() {
         </div>
 
         {/* Common Fields */}
-        <div className="max-w-xl mx-auto bg-white dark:bg-zinc-900 rounded-lg p-6 shadow-sm ring-1 ring-zinc-950/5 dark:ring-white/5">
-          <Field>
-            <Label>Name</Label>
-            <Input
-              name="name"
-              defaultValue={state.inputs?.name}
-              required
-              placeholder="The name that identifies this voice."
-            />
-            {state.errors?.name && (
-              <p className="mt-2 text-sm text-red-500">{state.errors.name.join(', ')}</p>
-            )}
-          </Field>
+        {!account.approved && (
+          <div className="max-w-xl mx-auto text-center bg-white dark:bg-zinc-900 rounded-lg p-6 shadow-sm ring-1 ring-zinc-950/5 dark:ring-white/5">
+            <Heading level={3}>You are on the waitlist</Heading>
+          </div>
+        )}
+        {account.approved && (
+          <div className="max-w-xl mx-auto bg-white dark:bg-zinc-900 rounded-lg p-6 shadow-sm ring-1 ring-zinc-950/5 dark:ring-white/5">
+            <Field>
+              <Label>Name</Label>
+              <Input
+                name="name"
+                defaultValue={state.inputs?.name}
+                required
+                placeholder="The name that identifies this voice."
+              />
+              {state.errors?.name && (
+                <p className="mt-2 text-sm text-red-500">{state.errors.name.join(', ')}</p>
+              )}
+            </Field>
 
-          <Field className="mt-4">
-            <Label>Description</Label>
-            <Input
-              name="description"
-              defaultValue={state.inputs?.description}
-              placeholder="How would you describe the voice?"
-            />
-            {state.errors?.description && (
-              <p className="mt-2 text-sm text-red-500">{state.errors.description.join(', ')}</p>
-            )}
-          </Field>
+            <Field className="mt-4">
+              <Label>Description</Label>
+              <Input
+                name="description"
+                defaultValue={state.inputs?.description}
+                placeholder="How would you describe the voice?"
+              />
+              {state.errors?.description && (
+                <p className="mt-2 text-sm text-red-500">{state.errors.description.join(', ')}</p>
+              )}
+            </Field>
 
-          <Button type="submit" color="blue" className="w-full mt-6" disabled={isPending}>
-            {isPending ? 'Creating Voice Clone...' : 'Create Voice Clone'}
-          </Button>
-        </div>
+            <Button type="submit" color="blue" className="w-full mt-6" disabled={isPending}>
+              {isPending ? 'Creating Voice Clone...' : 'Create Voice Clone'}
+            </Button>
+          </div>
+        )}
       </form>
     </div>
   );
