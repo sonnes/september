@@ -6,7 +6,9 @@ import { createClient } from '@/supabase/server';
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const forwardedHost = request.headers.get('x-forwarded-host');
-  const host = forwardedHost ? `https://${forwardedHost}` : origin;
+  const isLocalEnv = process.env.NODE_ENV === 'development';
+
+  const host = forwardedHost && !isLocalEnv ? `https://${forwardedHost}` : origin;
 
   const code = searchParams.get('code');
   const next = searchParams.get('next') ?? '/app';

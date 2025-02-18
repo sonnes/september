@@ -27,6 +27,8 @@ export async function signInWithGoogle(next?: string) {
   const isLocalEnv = process.env.NODE_ENV === 'development';
   const host = isLocalEnv ? siteUrl : `https://${siteUrl}`;
 
+  console.log('redirectTo', `${host}/auth/callback?next=${next || '/app'}`);
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
