@@ -31,10 +31,6 @@ export async function createClient() {
 }
 
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
-
   const supabase = await createClient();
   // Do not run code between createServerClient and
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug
@@ -53,5 +49,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  return supabaseResponse;
+  return NextResponse.next({
+    request,
+  });
 }
