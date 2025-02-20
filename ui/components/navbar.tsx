@@ -24,9 +24,14 @@ import { ThemeContext, useTheme } from '@/components/context/theme';
 import { type ThemeColor, themes } from '@/lib/theme';
 import { createClient } from '@/supabase/client';
 
-const links = [
+const appLinks = [
   { name: 'Clone', href: '/app/clone' },
   { name: 'Talk', href: '/app/talk' },
+];
+
+const homeLinks = [
+  { name: 'About', href: '/about' },
+  { name: 'Contact', href: '/contact' },
 ];
 
 const profileLinks = [
@@ -114,6 +119,7 @@ const MobileMenu = () => {
   const { theme } = useTheme();
   const { user } = useAuth();
   const pathname = usePathname();
+  const links = user ? appLinks : homeLinks;
 
   return (
     <DisclosurePanel className="lg:hidden">
@@ -212,7 +218,9 @@ const MobileAuthButtons = () => {
 
 const DesktopMenu = () => {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const pathname = usePathname();
+  const links = user ? appLinks : homeLinks;
 
   return (
     <div className="hidden lg:ml-10 lg:block">

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { createHash } from 'crypto';
-import fs from 'fs/promises';
 import { Groq } from 'groq-sdk';
 import path from 'path';
 import Replicate from 'replicate';

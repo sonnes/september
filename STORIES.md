@@ -1,3 +1,39 @@
+## Landing Page
+
+Update landing page content to describe the app and the features. Don’t change the layout and header.
+
+- Landing page should have a hero section with a video of the app in action.
+- Each feature should have a card with:
+  - 2/3 for a video/image
+  - 1/3 for a title, description
+
+## Key Features
+
+### 1. Voice Cloning
+
+If you are already having speech difficulties, you can clone your voice with just 30 seconds of audio.
+
+Or instantly create a new voice from scratch using 10 sample sentences.
+
+### 2. Real-Time Text-to-Speech
+
+Engage in natural conversations, express emotions, and be heard. Whether you're storytelling to your kids or giving presentations at work, don't let dysphasia hold you back.
+
+### 3. Smart Autocomplete & Transcription
+
+Boost your typing efficiency with context-aware suggestions and auto-generated responses. September provides automatic transcription of conversations, making communication seamless and efficient.
+
+### 4. Adaptive Keyboard Layouts
+
+Choose from a variety of innovative keyboard designs tailored to your needs. Our adaptive layouts include:
+
+- **AAC (Augmentative and Alternative Communication)**: Designed for accessibility
+- **Circular**: Unique radial input for faster typing with eye-gaze
+
+### 5. Diverse Voice Library
+
+Access a wide range of high-quality voices from ElevenLabs.
+
 ## Voice Selection
 
 - Create a new page called `/app/voices`

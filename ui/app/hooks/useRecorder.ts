@@ -1,8 +1,6 @@
 // https://github.com/nico-martin/markdown-editor/blob/main/src/app/hooks/useAudioRecorder.ts
 import React from 'react';
 
-import { webmFixDuration } from '@/lib/blob';
-
 const getMimeType = () => {
   const types = ['audio/webm', 'audio/mp4', 'audio/ogg', 'audio/wav', 'audio/aac'];
   for (let i = 0; i < types.length; i++) {
@@ -57,14 +55,8 @@ const useAudioRecorder = (): {
         chunksRef.current.push(event.data);
       }
       if (mediaRecorder.state === 'inactive') {
-        const duration = Date.now() - startTime;
-
         // Received a stop event
         let blob = new Blob(chunksRef.current, { type: mimeType });
-
-        if (mimeType === 'audio/webm') {
-          blob = await webmFixDuration(blob, duration, blob.type);
-        }
 
         setRecordedBlob(blob);
 
@@ -83,7 +75,7 @@ const useAudioRecorder = (): {
   };
 
   React.useEffect(() => {
-    const stream: MediaStream | null = null;
+    const stream: MediaStream | null = streamRef.current;
 
     if (recording) {
       const timer = setInterval(() => {

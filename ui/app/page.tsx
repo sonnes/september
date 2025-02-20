@@ -8,10 +8,59 @@ import {
   SpeakerWaveIcon,
 } from '@heroicons/react/24/outline';
 
+import Layout from '@/components/layout';
+
 const caveat = Caveat({
   subsets: ['latin'],
   variable: '--font-caveat',
 });
+
+const faqs = [
+  {
+    id: 1,
+    question: 'How does voice cloning work?',
+    answer:
+      'Our voice cloning technology requires just 30 seconds of your voice to create a digital replica. Alternatively, you can create a new voice by reading 10 sample sentences. The process uses advanced AI to preserve your unique voice characteristics.',
+  },
+  {
+    id: 2,
+    question: 'Is my voice data secure?',
+    answer:
+      'Yes, we take privacy seriously. Your voice data is encrypted, stored securely, and never shared with third parties. You have complete control over your voice model and can delete it at any time.',
+  },
+  {
+    id: 3,
+    question: 'What devices are supported?',
+    answer:
+      'September works on any modern web browser across desktop and mobile devices. We also support various input methods including touch, keyboard, mouse, and eye-tracking devices.',
+  },
+  {
+    id: 4,
+    question: 'Can I use this for professional presentations?',
+    answer:
+      'Absolutely! Many of our users successfully use September for work presentations, meetings, and professional communication. The real-time text-to-speech and natural voice quality make it perfect for professional settings.',
+  },
+];
+
+const footerNavigation = {
+  product: [
+    { name: 'Features', href: '#features' },
+    { name: 'Voice Cloning', href: '#voice-cloning' },
+    { name: 'Keyboards', href: '#keyboards' },
+    { name: 'FAQ', href: '#faq' },
+  ],
+  support: [
+    { name: 'Documentation', href: '/docs' },
+    { name: 'Community', href: '/community' },
+    { name: 'Contact', href: '/contact' },
+  ],
+  company: [
+    { name: 'About', href: '/about' },
+    { name: 'Blog', href: '/blog' },
+    { name: 'Privacy', href: '/privacy' },
+    { name: 'Terms', href: '/terms' },
+  ],
+};
 
 export const metadata = {
   openGraph: {
@@ -33,140 +82,206 @@ export const metadata = {
   metadataBase: new URL('https://september.raviatluri.in'),
 };
 
-export default async function Home() {
+function Header() {
   return (
-    <div className="min-h-full">
-      <div className="bg-indigo-500 pb-32">
-        {/* Hero Section */}
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-          <div className="text-center">
-            <div className="flex justify-center items-center gap-2 mb-8">
-              <Image alt="September" src={`/logo.png`} width={96} height={96} />
-              <span className="text-white font-bold text-4xl sm:text-6xl tracking-tight">
-                septemberfox
-              </span>
-            </div>
-            <div className="inline-block rounded-full bg-indigo-100 px-3 py-1 text-sm text-indigo-600 mb-8">
-              COMMUNICATION ASSISTANT
-            </div>
-            <h1 className="text-4xl sm:text-6xl font-bold mb-4 text-white">
-              <span className={`${caveat.className} text-5xl sm:text-7xl text-amber-300 pr-4`}>
-                Faster
-              </span>
-              Communication
-              <br />
-              Fewer
-              <span className={`${caveat.className} text-5xl sm:text-7xl text-amber-300`}>
-                Keystrokes
-              </span>
-            </h1>
-            <p className="text-indigo-50 mb-8">
-              A communication assistant for people with ALS, MND, or other speech & motor
-              difficulties.
-            </p>
-            <a
-              href="/app/talk"
-              className="inline-block rounded-md bg-white text-indigo-600 px-8 py-3 font-medium hover:bg-indigo-50 transition"
-            >
-              Start Talking →
-            </a>
-            <p className="text-indigo-100 mt-4 text-sm">Designed for accessibility</p>
+    <div className="text-center">
+      <div className="inline-block rounded-full bg-indigo-100 px-3 py-1 text-sm text-indigo-600 mb-8">
+        COMMUNICATION ASSISTANT
+      </div>
+      <h1 className="text-4xl sm:text-6xl font-bold mb-4 text-white">
+        <span className={`${caveat.className} text-5xl sm:text-7xl text-amber-300 pr-4`}>
+          Faster
+        </span>
+        Communication
+        <br />
+        Fewer
+        <span className={`${caveat.className} text-5xl sm:text-7xl text-amber-300`}>
+          Keystrokes
+        </span>
+      </h1>
+      <p className="text-indigo-50">
+        A communication assistant for people living with neurodegenerative conditions like ALS, MND,
+        or other speech & motor difficulties.
+      </p>
+    </div>
+  );
+}
+
+function DemoVideo() {
+  return (
+    <div className="mt-2 max-w-6xl mx-auto rounded-lg overflow-hidden shadow-lg">
+      {/* Desktop video */}
+      <video autoPlay muted playsInline className="w-full hidden md:block">
+        <source src="/demo.mp4" type="video/mp4" />
+      </video>
+      {/* Mobile video */}
+      <video autoPlay muted playsInline className="w-full md:hidden">
+        <source src="/demo-mobile.mp4" type="video/mp4" />
+      </video>
+    </div>
+  );
+}
+
+function FeatureSection({
+  title,
+  description,
+  videoSrc,
+  isReversed,
+}: {
+  title: string;
+  description: string;
+  videoSrc: string;
+  isReversed?: boolean;
+}) {
+  const contentOrder = isReversed ? 'md:flex-row-reverse' : 'md:flex-row';
+
+  return (
+    <div className={`flex flex-col ${contentOrder} gap-8 items-center`}>
+      <div className="md:w-2/3 rounded-lg overflow-hidden">
+        <video autoPlay loop muted playsInline className="w-full">
+          <source src={videoSrc} type="video/mp4" />
+        </video>
+      </div>
+      <div className="md:w-1/3">
+        <h3 className="text-xl font-semibold mb-4">{title}</h3>
+        <p className="text-gray-600">{description}</p>
+      </div>
+    </div>
+  );
+}
+
+function Features() {
+  return (
+    <div className="py-16">
+      <h2 className="text-3xl font-bold text-center mb-4">Key Features</h2>
+      <p className="text-gray-600 text-center mb-12">
+        Empowering communication through innovative technology.
+      </p>
+
+      <div className="space-y-12">
+        <FeatureSection
+          title="Voice Cloning"
+          description="Clone your voice with just 30 seconds of audio, or create a new voice instantly using 10 sample sentences. Preserve your unique voice identity even as speech becomes challenging."
+          videoSrc="/voice-cloning-demo.mp4"
+        />
+
+        <FeatureSection
+          title="Real-Time Text-to-Speech"
+          description="Engage in natural conversations, express emotions, and be heard. Perfect for storytelling to your kids or giving presentations at work - don't let dysphasia hold you back."
+          videoSrc="/tts-demo.mp4"
+          isReversed
+        />
+
+        <FeatureSection
+          title="Smart Autocomplete & Transcription"
+          description="Boost your typing efficiency with context-aware suggestions and auto-generated responses. Follow conversations easily with automatic transcription."
+          videoSrc="/smart-features-demo.mp4"
+        />
+
+        <FeatureSection
+          title="Adaptive Keyboard Layouts"
+          description="Choose from innovative keyboard designs including AAC (Augmentative and Alternative Communication) and unique circular layouts optimized for eye-gaze input."
+          videoSrc="/keyboards-demo.mp4"
+          isReversed
+        />
+      </div>
+    </div>
+  );
+}
+
+function FAQ() {
+  return (
+    <div className="mx-auto max-w-4xl px-6 py-16 sm:py-24 lg:px-8">
+      <h2 className="text-3xl font-bold text-center mb-12">Frequently Asked Questions</h2>
+      <dl className="space-y-8">
+        {faqs.map(faq => (
+          <div key={faq.id} className="border-b border-gray-200 pb-8 last:border-b-0">
+            <dt className="text-lg font-semibold text-gray-900 mb-4">{faq.question}</dt>
+            <dd className="text-base text-gray-600">{faq.answer}</dd>
           </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+function Footer() {
+  return (
+    <footer>
+      <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-12 md:grid-cols-3">
+          <div>
+            <h3 className="text-sm font-semibold leading-6 text-gray-900">Product</h3>
+            <ul role="list" className="mt-6 space-y-4">
+              {footerNavigation.product.map(item => (
+                <li key={item.name}>
+                  <a
+                    href={item.href}
+                    className="text-sm leading-6 text-gray-600 hover:text-gray-900"
+                  >
+                    {item.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold leading-6 text-gray-900">Support</h3>
+            <ul role="list" className="mt-6 space-y-4">
+              {footerNavigation.support.map(item => (
+                <li key={item.name}>
+                  <a
+                    href={item.href}
+                    className="text-sm leading-6 text-gray-600 hover:text-gray-900"
+                  >
+                    {item.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="col-span-2 md:col-span-1">
+            <h3 className="text-sm font-semibold leading-6 text-gray-900">Company</h3>
+            <ul role="list" className="mt-6 space-y-4">
+              {footerNavigation.company.map(item => (
+                <li key={item.name}>
+                  <a
+                    href={item.href}
+                    className="text-sm leading-6 text-gray-600 hover:text-gray-900"
+                  >
+                    {item.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <div className="mt-12 border-t border-gray-900/10 pt-8">
+          <p className="text-sm leading-5 text-gray-500">
+            &copy; {new Date().getFullYear()} September. All rights reserved.
+          </p>
         </div>
       </div>
+    </footer>
+  );
+}
 
-      <main className="-mt-48">
-        <div className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
-          <div className="rounded-lg bg-white px-5 py-6 shadow-sm sm:px-6">
-            {/* Features Grid */}
-            <div className="py-16">
-              <h2 className="text-3xl font-bold text-center mb-4">Powerful Communication Tools</h2>
-              <p className="text-gray-600 text-center mb-12">
-                Express yourself naturally with our comprehensive suite of features.
-              </p>
+export default async function Home() {
+  return (
+    <Layout>
+      <Layout.Header>
+        <Header />
+      </Layout.Header>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="p-6 rounded-lg border border-zinc-100 flex flex-col items-center text-center">
-                  <div className="rounded-full w-12 h-12 flex items-center justify-center mb-4">
-                    <SpeakerWaveIcon className="h-8 w-8 text-amber-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">Text-to-Speech</h3>
-                  <p className="text-gray-600 max-w-sm">
-                    Choose from multiple voices or clone your own voice to maintain your unique
-                    identity.
-                  </p>
-                </div>
+      <Layout.Content>
+        <DemoVideo />
+        <Features />
+        <FAQ />
+      </Layout.Content>
 
-                <div className="p-6 rounded-lg border border-zinc-100 flex flex-col items-center text-center">
-                  <div className="rounded-full w-12 h-12 flex items-center justify-center mb-4">
-                    <MicrophoneIcon className="h-8 w-8 text-amber-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">Voice Cloning</h3>
-                  <p className="text-gray-600 max-w-sm">
-                    Create a digital version of your voice using our simple recording process.
-                  </p>
-                </div>
-
-                <div className="p-6 rounded-lg border border-zinc-100 flex flex-col items-center text-center">
-                  <div className="rounded-full w-12 h-12 flex items-center justify-center mb-4">
-                    <DocumentTextIcon className="h-8 w-8 text-amber-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">Speech-to-Text</h3>
-                  <p className="text-gray-600 max-w-sm">
-                    Real-time transcription of conversations to help you follow and respond
-                    naturally.
-                  </p>
-                </div>
-
-                <div className="p-6 rounded-lg border border-zinc-100 flex flex-col items-center text-center">
-                  <div className="rounded-full w-12 h-12 flex items-center justify-center mb-4">
-                    <SparklesIcon className="h-8 w-8 text-amber-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">Smart Auto-Complete</h3>
-                  <p className="text-gray-600 max-w-sm">
-                    Context-aware suggestions that help you express yourself with minimal effort.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* How It Works Section */}
-            <div className="py-16">
-              <div className="max-w-3xl mx-auto">
-                <h2 className="text-3xl font-bold text-center mb-12">How It Works</h2>
-
-                <div className="space-y-12">
-                  <div className="flex flex-col items-center text-center gap-8">
-                    <div className="flex-1 max-w-2xl">
-                      <h3 className="text-xl font-semibold mb-4">Contextual Understanding</h3>
-                      <p className="text-gray-600">
-                        September indexes your notes, documents, and conversation history to provide
-                        relevant suggestions and help you communicate more efficiently.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-center text-center gap-8">
-                    <div className="flex-1 max-w-2xl">
-                      <h3 className="text-xl font-semibold mb-4">Real-time Transcription</h3>
-                      <p className="text-gray-600">
-                        Follow conversations easily with live transcription, making it simpler to
-                        participate and respond at your own pace.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      <footer className="border-t py-12">
-        <div className="mx-auto max-w-7xl px-4 text-center text-gray-400">
-          <p>September - Making communication accessible for everyone</p>
-        </div>
-      </footer>
-    </div>
+      <Layout.Footer>
+        <Footer />
+      </Layout.Footer>
+    </Layout>
   );
 }
