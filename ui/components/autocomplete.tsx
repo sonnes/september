@@ -5,7 +5,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import type { Message } from '@/supabase/types';
 
 interface InlineEditorProps {
-  onSubmit: (text: string) => void;
+  onSubmit: (text: string, emotion?: string) => void;
   placeholder?: string;
   debounceMs?: number;
   history?: Message[];
@@ -26,6 +26,18 @@ export default function Autocomplete({
 
   const [text, setText] = useState('');
   const debouncedText = useDebounce(text, debounceMs);
+
+  const [selectedEmotion, setSelectedEmotion] = useState<string>('neutral');
+
+  const emotions = [
+    { emoji: '😐', name: 'neutral' },
+    { emoji: '😡', name: 'angry' },
+    { emoji: '😢', name: 'sad' },
+    { emoji: '😊', name: 'happy' },
+    { emoji: '🤔', name: 'confused' },
+    { emoji: '😤', name: 'shouting' },
+    { emoji: '🤩', name: 'excited' },
+  ];
 
   const fetchSuggestion = async (text: string) => {
     if (!text) return;
@@ -92,28 +104,29 @@ export default function Autocomplete({
 
   const handleSubmit = () => {
     if (text.trim()) {
-      onSubmit(text);
+      onSubmit(text, selectedEmotion);
       setText('');
       setSuggestion('');
       setError(null);
       setCompletions([]);
       setStatus('idle');
+      setSelectedEmotion('neutral');
     }
   };
 
   return (
     <div>
-      <div className="flex gap-2 h-10">
+      <div className="mb-2">
         {status === 'error' ? (
-          <div className="mb-2 p-2 border rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400">
+          <div className="p-2 border rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400">
             Error loading suggestions: {error}
           </div>
         ) : status === 'loading' ? (
-          <div className="mb-2 p-2 border rounded-lg bg-zinc-50 dark:bg-zinc-800">
+          <div className="p-2 border rounded-lg bg-zinc-50 dark:bg-zinc-800">
             Loading suggestions...
           </div>
         ) : completions && completions.length > 0 ? (
-          <div className="mb-2 flex flex-wrap gap-2">
+          <div className="p-2 flex flex-wrap gap-2">
             {completions.map((completion, index) => (
               <Button
                 key={index}
@@ -145,7 +158,24 @@ export default function Autocomplete({
             </div>
           )}
         </div>
-        <div className="mt-2 flex justify-end">
+        <div className="mt-2 flex justify-end items-center gap-2">
+          <div className="flex gap-1">
+            {emotions.map(emotion => (
+              <div key={emotion.name} className="relative group">
+                <button
+                  onClick={() => setSelectedEmotion(emotion.name)}
+                  className={`p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors ${
+                    selectedEmotion === emotion.name ? 'bg-zinc-200 dark:bg-zinc-600' : ''
+                  }`}
+                >
+                  {emotion.emoji}
+                </button>
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-zinc-800 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                  {emotion.name.charAt(0).toUpperCase() + emotion.name.slice(1)}
+                </div>
+              </div>
+            ))}
+          </div>
           <Button onClick={handleSubmit} color="dark/zinc">
             Submit
           </Button>

@@ -1,3 +1,13 @@
+## Emotions
+
+- Add buttons to modify the emotion of the voice
+- Buttons are in the form of emojis
+- Placed to the left of submit button
+- Show 5-6 emojis - shouting, sad, happy, excited, angry, confused
+- Emojis should be rendered in a row
+- Default emotion is neutral
+- When an emoji is clicked, it should be highlighted
+
 ## Landing Page
 
 Update landing page content to describe the app and the features. Don’t change the layout and header.

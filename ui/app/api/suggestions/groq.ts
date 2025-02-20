@@ -4,7 +4,7 @@ import type { Message } from '@/supabase/types';
 
 const client = new Groq();
 
-const SYSTEM_PROMPT = `You're a superhuman autocomplete system that provides autocompletions for your users.
+const SYSTEM_PROMPT = `You're a autocomplete system that provides autocompletions for your users.
 You take the PREVIOUS_MESSAGES and generate a list of the most likely auto completions for users based on their INPUT_VALUE.
 
 You must return completions in this exact JSON format:
@@ -20,6 +20,7 @@ Follow these rules:
 - Generate new, short concise completions based on context if no matches found
 - Completions should fully complete the user's sentence with proper grammar
 - Use Indian English spellings, idioms, and slang
+- DO NOT repeat the user's input in the completions
 - Return only the JSON, no other text`;
 
 export interface SuggestionResponse {
