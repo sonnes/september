@@ -42,7 +42,7 @@ export default async function TalkPage() {
               </div>
 
               {/* Input area */}
-              <div>
+              <div className="pt-2 border-t border-zinc-200 dark:border-zinc-700">
                 <Editor />
               </div>
             </div>

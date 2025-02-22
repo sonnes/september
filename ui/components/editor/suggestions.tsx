@@ -46,7 +46,7 @@ export default function Suggestions({ debounceMs = 300 }: SuggestionsProps) {
   }, [debouncedText]);
 
   return (
-    <div className="mb-2">
+    <div className="mb-2 min-h-[52px]">
       {status === 'loading' ? (
         <div className="p-2 border rounded-lg bg-zinc-50 dark:bg-zinc-800">
           Loading suggestions...
@@ -64,7 +64,9 @@ export default function Suggestions({ debounceMs = 300 }: SuggestionsProps) {
             </Button>
           ))}
         </div>
-      ) : null}
+      ) : (
+        <div className="p-2" />
+      )}
     </div>
   );
 }

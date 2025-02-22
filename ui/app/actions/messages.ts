@@ -6,6 +6,8 @@ import { getAuthUser } from '@/app/actions/user';
 import { createClient } from '@/supabase/server';
 import type { Message } from '@/supabase/types';
 
+import { createSpeechFile } from './speech';
+
 export async function getMessages() {
   const supabase = await createClient();
   const {
@@ -30,15 +32,20 @@ export async function getMessages() {
   return data;
 }
 
-export async function createMessage({
-  text,
-  type,
-  id,
-}: {
+interface CreateMessage {
+  id: string;
   text: string;
   type: string;
-  id: string;
-}) {
+  tone?: string;
+}
+
+export async function createUserMessage(newMessage: CreateMessage) {
+  const createdMessage = await createSpeechFile(newMessage).then(() => createMessage(newMessage));
+
+  return createdMessage;
+}
+
+export async function createMessage({ id, text, type }: CreateMessage) {
   const user = await getAuthUser();
   if (!user) {
     return [];

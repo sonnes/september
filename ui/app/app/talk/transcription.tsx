@@ -11,11 +11,14 @@ import { useMessages } from '@/components/context/messages';
 export default function Transcription() {
   const { recording, startRecording, stopRecording, recordedBlob, clear } = useAudioRecorder();
   const { addMessage } = useMessages();
+  const [status, setStatus] = useState<'idle' | 'listening' | 'transcribing'>('idle');
 
   const transcribeAudio = async () => {
     if (!recordedBlob) {
       return;
     }
+
+    setStatus('transcribing');
 
     const formData = new FormData();
     formData.append('audio', recordedBlob);
@@ -45,14 +48,17 @@ export default function Transcription() {
       console.error('Transcription error:', error);
     } finally {
       clear();
+      setStatus('idle');
     }
   };
 
   const toggleRecording = async () => {
     if (recording) {
       stopRecording();
+      setStatus('idle');
     } else {
       startRecording();
+      setStatus('listening');
     }
   };
 
@@ -66,13 +72,18 @@ export default function Transcription() {
     <div className="relative">
       <button
         onClick={toggleRecording}
-        className={`p-2 rounded-full ${
+        className={`p-2 rounded-full cursor-pointer ${
           recording
             ? 'text-red-500 dark:text-red-600'
             : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
         }`}
+        disabled={status === 'transcribing'}
       >
-        {recording ? (
+        {status === 'transcribing' ? (
+          <div className="relative">
+            <MicrophoneIcon className="h-6 w-6 animate-ping" />
+          </div>
+        ) : recording ? (
           <div className="relative">
             <PauseIcon className="h-6 w-6" />
             <div className="absolute -inset-1 animate-ping rounded-full border-2 border-red-500 opacity-75" />

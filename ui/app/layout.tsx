@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
-import { Source_Sans_3 } from 'next/font/google';
+import { Noto_Sans } from 'next/font/google';
 
 import './globals.css';
 
-const sourceSans3 = Source_Sans_3({
-  variable: '--font-source-sans-3',
+const notoSans = Noto_Sans({
+  variable: '--font-noto-sans',
   subsets: ['latin'],
 });
 
@@ -27,7 +27,7 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="manifest" href="/site.webmanifest" />
       </head>
-      <body className={`${sourceSans3.className} antialiased h-full`}>{children}</body>
+      <body className={`${notoSans.className} antialiased h-full`}>{children}</body>
     </html>
   );
 }
