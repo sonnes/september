@@ -33,8 +33,7 @@ User: I'm going out to the store.
 Assistant: {"completions": ["I'll be back in a bit.", "Do you want anything?", "Do you want anything?"]}`;
 
 export interface SuggestionResponse {
-  suggestion: string;
-  completions: string[];
+  suggestions: string[];
 }
 
 export async function generateSuggestions(
@@ -71,7 +70,6 @@ export async function generateSuggestions(
   }
 
   return {
-    suggestion: suggestions.completions ? suggestions.completions[0] : '',
-    completions: suggestions.completions?.slice(1) || [],
+    suggestions: suggestions.completions || [],
   };
 }

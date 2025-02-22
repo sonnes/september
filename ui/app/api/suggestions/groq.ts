@@ -24,8 +24,7 @@ Follow these rules:
 - Return only the JSON, no other text`;
 
 export interface SuggestionResponse {
-  suggestion: string;
-  completions: string[];
+  suggestions: string[];
 }
 
 export async function generateSuggestions(
@@ -59,8 +58,7 @@ export async function generateSuggestions(
   let content = response.choices[0].message.content;
   if (!content) {
     return {
-      suggestion: '',
-      completions: [],
+      suggestions: [],
     };
   }
 
@@ -72,7 +70,6 @@ export async function generateSuggestions(
   };
 
   return {
-    suggestion: suggestions.completions[0] || '',
-    completions: suggestions.completions.slice(1) || [],
+    suggestions: suggestions.completions,
   };
 }

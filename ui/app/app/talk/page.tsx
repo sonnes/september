@@ -4,10 +4,10 @@ import { getMessages } from '@/app/actions/messages';
 import { Heading } from '@/components/catalyst/heading';
 import { MessagesProvider } from '@/components/context/messages';
 import { PlayerProvider } from '@/components/context/player';
+import Editor from '@/components/editor/simple';
 import Layout from '@/components/layout';
 import type { Message } from '@/supabase/types';
 
-import { Editor } from './editor';
 import { PlayButton } from './play-button';
 import { Player } from './player';
 import Transcription from './transcription';
