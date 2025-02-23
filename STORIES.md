@@ -1,3 +1,9 @@
+## Messages
+
+- Make message list client component
+- Scroll to the bottom when a new message is added
+- Scroll to the bottom when the page is loaded
+
 ## Emotions
 
 - Add buttons to modify the emotion of the voice

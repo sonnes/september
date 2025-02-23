@@ -8,6 +8,7 @@ import Editor from '@/components/editor/simple';
 import Layout from '@/components/layout';
 import type { Message } from '@/supabase/types';
 
+import { MessageList } from './message-list';
 import { PlayButton } from './play-button';
 import { Player } from './player';
 import Transcription from './transcription';
@@ -38,7 +39,7 @@ export default async function TalkPage() {
 
               {/* Messages area */}
               <div className="flex-1 overflow-y-auto">
-                <MessageList messages={messages} />
+                <MessageList />
               </div>
 
               {/* Input area */}
@@ -50,30 +51,5 @@ export default async function TalkPage() {
         </Layout>
       </PlayerProvider>
     </MessagesProvider>
-  );
-}
-
-function Message({ message }: { message: Message }) {
-  return (
-    <div
-      className={`mb-4 p-3 bg-zinc-50 rounded-lg w-full dark:bg-zinc-800 ${
-        message.type === 'transcription' ? 'bg-red-100 dark:bg-red-900' : ''
-      }`}
-    >
-      <div className="flex items-center justify-between">
-        <div>{message.text}</div>
-        {message.type === 'message' && <PlayButton id={message.id} text={message.text} />}
-      </div>
-    </div>
-  );
-}
-
-function MessageList({ messages }: { messages: Message[] }) {
-  return (
-    <>
-      {messages.map((message, index) => (
-        <Message key={index} message={message} />
-      ))}
-    </>
   );
 }
