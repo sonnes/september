@@ -34,10 +34,7 @@ const homeLinks = [
   { name: 'Contact', href: '/contact' },
 ];
 
-const profileLinks = [
-  { name: 'Account', href: '/app/account' },
-  { name: 'Settings', href: '/app/settings' },
-];
+const profileLinks = [{ name: 'Account', href: '/app/account' }];
 
 type NavbarProps = {
   color?: ThemeColor;
@@ -285,7 +282,7 @@ function ProfileDropdown() {
         </DropdownHeader>
         <DropdownDivider />
         {profileLinks.map(item => (
-          <DropdownItem key={item.name} href={item.href}>
+          <DropdownItem className="cursor-pointer" key={item.name} href={item.href}>
             {item.name}
           </DropdownItem>
         ))}

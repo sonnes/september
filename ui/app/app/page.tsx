@@ -87,6 +87,7 @@ export default async function LoginPage() {
               <div className="flex-shrink-0">
                 <StepStatus
                   completed={isApproved}
+                  inProgress={hasCompletedProfile && !isApproved}
                   icon={
                     isApproved ? (
                       <CheckCircleIcon className="h-6 w-6" />
@@ -98,7 +99,11 @@ export default async function LoginPage() {
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  Join the Waitlist
+                  {hasCompletedProfile
+                    ? 'You are in the queue'
+                    : isApproved
+                      ? 'Approved'
+                      : 'Join the Waitlist'}
                 </h2>
                 <p className="mt-1 text-gray-600 dark:text-gray-400">
                   {!hasCompletedProfile
@@ -179,12 +184,21 @@ export default async function LoginPage() {
   );
 }
 
-const StepStatus = ({ completed, icon }: { completed: boolean; icon: React.ReactNode }) => {
+const StepStatus = ({
+  completed,
+  inProgress = false,
+  icon,
+}: {
+  completed: boolean;
+  inProgress?: boolean;
+  icon: React.ReactNode;
+}) => {
   return (
     <div
       className={clsx(
         'flex h-8 w-8 items-center justify-center rounded-full',
-        completed ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-400'
+        completed && 'bg-green-600 text-white',
+        inProgress && 'bg-amber-600 text-white animate-pulse'
       )}
     >
       {icon}

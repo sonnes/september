@@ -76,26 +76,6 @@ export async function updateAccount(
   const account = validated.data;
   account.id = user.id;
 
-  // Handle document upload
-  const documentFile = formData.get('document') as File;
-  if (documentFile?.size > 0) {
-    const fileName = `${user.id}/${Date.now()}-${documentFile.name}`;
-    const { data, error: uploadError } = await supabase.storage
-      .from('documents')
-      .upload(fileName, documentFile);
-
-    if (uploadError) {
-      return {
-        success: false,
-        message: 'Failed to upload document',
-        inputs: account,
-      };
-    }
-
-    account.document_path = data.path;
-    inputs.document_path = data.path;
-  }
-
   // Update consent status
   account.has_consent =
     account.terms_accepted &&

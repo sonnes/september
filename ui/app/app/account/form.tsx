@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
+import { useState } from 'react';
 
 import { CheckCircleIcon, CloudArrowUpIcon, TrashIcon } from '@heroicons/react/24/outline';
 
@@ -9,7 +10,8 @@ import { Button } from '@/components/catalyst/button';
 import { Checkbox } from '@/components/catalyst/checkbox';
 import { Field, Label } from '@/components/catalyst/fieldset';
 import { Input } from '@/components/catalyst/input';
-import { useAccount } from '@/components/context/auth';
+import { useAccount, useAuth } from '@/components/context/auth';
+import { createClient } from '@/supabase/client';
 
 import { type UpdateAccountResponse, deleteDocument, updateAccount } from './actions';
 
@@ -113,6 +115,56 @@ function PersonalInfoSection({ state }: { state: UpdateAccountResponse }) {
 
 // Medical Info Section
 function MedicalInfoSection({ state }: { state: UpdateAccountResponse }) {
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [documentPath, setDocumentPath] = useState(state.inputs?.document_path || null);
+
+  const supabase = createClient();
+  const { user } = useAuth();
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError('File size must be less than 10MB');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const fileName = `${user?.id}/${file.name}`;
+
+      const { data, error } = await supabase.storage.from('documents').upload(fileName, file, {
+        cacheControl: 'no-cache',
+        upsert: true,
+      });
+
+      if (error) throw error;
+
+      setDocumentPath(data.path);
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Failed to upload file');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!documentPath) return;
+
+    try {
+      await deleteDocument(documentPath);
+
+      setDocumentPath(null);
+    } catch (error) {
+      console.error('Failed to delete document:', error);
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
       <div className="px-4 sm:px-0">
@@ -181,19 +233,17 @@ function MedicalInfoSection({ state }: { state: UpdateAccountResponse }) {
                   We require a note from your Neurologist/Physician that you have been diagnosed
                   with ALS. Please upload that note here.
                 </p>
-                {state.inputs?.document_path ? (
+                {documentPath ? (
                   <div className="mt-2 flex items-center gap-4">
-                    <input type="hidden" name="document_path" value={state.inputs?.document_path} />
+                    <input type="hidden" name="document_path" value={documentPath} />
                     <div className="flex items-center gap-2 text-green-600">
                       <CheckCircleIcon className="size-5" />
                       <span className="text-sm">Document uploaded successfully</span>
                     </div>
                     <button
                       type="button"
-                      name="delete_document"
-                      value="true"
                       className="flex items-center gap-1 rounded-md bg-red-50 px-2 py-1 text-sm font-semibold text-red-600 hover:bg-red-100"
-                      onClick={() => deleteDocument(state.inputs?.document_path ?? '')}
+                      onClick={handleDelete}
                     >
                       <TrashIcon className="size-4" />
                       Delete Document
@@ -211,18 +261,20 @@ function MedicalInfoSection({ state }: { state: UpdateAccountResponse }) {
                           htmlFor="document"
                           className="relative cursor-pointer rounded-md bg-white font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500"
                         >
-                          <span>Upload a file</span>
+                          <span>{isUploading ? 'Uploading...' : 'Upload a file'}</span>
                           <Input
                             id="document"
                             name="document"
                             type="file"
                             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                             className="sr-only"
-                            required={!state.inputs?.document_path}
+                            onChange={handleFileUpload}
+                            disabled={isUploading}
                           />
                         </label>
                         <p className="pl-1">or drag and drop</p>
                       </div>
+                      {uploadError && <p className="mt-2 text-sm text-red-500">{uploadError}</p>}
                       <p className="text-xs/5 text-gray-600">
                         PDF, DOC, DOCX, JPG, JPEG, PNG up to 10MB
                       </p>
