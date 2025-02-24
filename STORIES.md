@@ -1,3 +1,34 @@
+## Editor & Keyboards
+
+Editor can have multiple keyboards. User can switch between keyboards using icons.
+
+- By default, no keyboard is shown
+- All keyboard icons are rendered vertically in the left side of the editor
+- When an icon is clicked, the corresponding keyboard is shown
+- The keyboard should be a separate component
+- The keyboard component should be rendered in the left side of the text area
+
+### Circular Keyboard
+
+Using image as a reference, implement a circular keyboard on canvas.
+
+Use a light theme. All the buttons should have a hover effect.
+
+- First, implement the control bar with the following buttons:
+  - space
+  - return
+  - backspace
+  - shift
+- Control bar should be rendered in the center of the canvas
+
+- Second, implement top half of the circular keyboard with 3 parts - inner, middle, outer.
+- Third, implement bottom half of the circular keyboard with 3 parts - inner, middle, outer.
+
+Each half is a reusable function that takes the keys and renders them in the canvas.
+Inner section should have 2 keys
+Middle section should have 5 keys
+Outer section should have 7 keys
+
 ## Messages
 
 - Make message list client component
