@@ -3,7 +3,12 @@
 import { useState } from 'react';
 import { useActionState } from 'react';
 
-import { CloudArrowUpIcon, MicrophoneIcon } from '@heroicons/react/24/outline';
+import {
+  CheckCircleIcon,
+  CloudArrowUpIcon,
+  MicrophoneIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 
 import { Banner } from '@/components/banner';
@@ -11,10 +16,12 @@ import { Button } from '@/components/catalyst/button';
 import { Field, Label } from '@/components/catalyst/fieldset';
 import { Heading } from '@/components/catalyst/heading';
 import { Input } from '@/components/catalyst/input';
-import { useAccount } from '@/components/context/auth';
+import { useAccount, useAuth } from '@/components/context/auth';
+import { createClient } from '@/supabase/client';
 
 import { type CloneVoiceResponse, cloneVoice } from './actions';
 import { RecordingSection } from './recording';
+import { UploadSection } from './upload-section';
 
 const initialState: CloneVoiceResponse = {
   success: false,
@@ -46,57 +53,7 @@ export default function VoiceCloneForm() {
 
       <form action={formAction} className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-8 items-start">
-          {/* Upload Section */}
-          <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 shadow-sm ring-1 ring-zinc-950/5 dark:ring-white/5">
-            <Heading level={3}>Upload Audio</Heading>
-            <p className="text-md text-zinc-500 mt-2 mb-6">
-              If you have a sample of your voice, upload it here. The sample should be at least 30
-              seconds long. The audio should have only you speaking. For best results, please use a
-              recording with minimal background noise.
-            </p>
-            <Field>
-              <Label htmlFor="audio-upload">Audio Sample</Label>
-              <div
-                className={clsx(
-                  'mt-2 flex justify-center rounded-lg border-2 border-dashed px-6 py-10',
-                  'border-zinc-200 dark:border-zinc-800'
-                )}
-              >
-                <div className="text-center">
-                  <CloudArrowUpIcon
-                    aria-hidden="true"
-                    className="mx-auto size-12 text-zinc-300 dark:text-zinc-600"
-                  />
-                  <div className="mt-4 flex text-sm/6 text-zinc-600 dark:text-zinc-400">
-                    <label
-                      htmlFor="audio-upload"
-                      className="relative cursor-pointer rounded-md font-semibold text-blue-600 dark:text-blue-400 
-                        focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-600 
-                        focus-within:ring-offset-2 hover:text-blue-500"
-                    >
-                      <span>Upload a file</span>
-                      <input
-                        id="audio-upload"
-                        name="audio-upload"
-                        type="file"
-                        accept="audio/*"
-                        className="sr-only"
-                      />
-                    </label>
-                    <p className="pl-1">or drag and drop</p>
-                  </div>
-                  <p className="text-xs/5 text-zinc-600 dark:text-zinc-400 mt-1">
-                    WAV, MP3, M4A up to 25MB
-                  </p>
-                  {state.inputs?.audioFile && (
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-4">
-                      Selected: {state.inputs.audioFile.name}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </Field>
-          </div>
+          <UploadSection />
 
           {/* Divider */}
           <div className="flex md:flex-col items-center justify-center h-full">
