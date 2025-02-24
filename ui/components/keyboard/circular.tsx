@@ -4,12 +4,26 @@ interface CircularKeyboardProps {
   onKeyPress: (key: string) => void;
   width?: number;
   height?: number;
+  topKeys: {
+    inner: string[];
+    middle: string[];
+    outer: string[];
+  };
+  bottomKeys: {
+    inner: string[];
+    middle: string[];
+    outer: string[];
+  };
+  controlKeys: string[];
 }
 
 export const CircularKeyboard: React.FC<CircularKeyboardProps> = ({
   onKeyPress,
   width = 400,
   height = 400,
+  topKeys,
+  bottomKeys,
+  controlKeys,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hoverCoords, setHoverCoords] = React.useState<{ x: number; y: number } | null>(null);
@@ -22,12 +36,11 @@ export const CircularKeyboard: React.FC<CircularKeyboardProps> = ({
   const OUTER_RADIUS = 180;
 
   const drawControlBar = (ctx: CanvasRenderingContext2D) => {
-    const barWidth = 300;
+    const barWidth = 400;
     const barHeight = 40;
     const x = CENTER_X - barWidth / 2;
     const y = CENTER_Y - barHeight / 2;
-    const buttons = ['⇧', '☺', '123', '␣', '⌫'];
-    const buttonWidth = barWidth / buttons.length;
+    const buttonWidth = barWidth / controlKeys.length;
 
     // Draw control bar background
     ctx.fillStyle = '#f0f0f0';
@@ -45,7 +58,7 @@ export const CircularKeyboard: React.FC<CircularKeyboardProps> = ({
     };
 
     // Draw control buttons
-    buttons.forEach((button, index) => {
+    controlKeys.forEach((button, index) => {
       const buttonX = x + buttonWidth * index;
       const isHovered = hoverCoords && isPointInButton(hoverCoords.x, hoverCoords.y, index);
 
@@ -56,7 +69,7 @@ export const CircularKeyboard: React.FC<CircularKeyboardProps> = ({
       if (index === 0) {
         // First button - round left corners
         ctx.roundRect(buttonX, y, buttonWidth, barHeight, [20, 0, 0, 20]);
-      } else if (index === buttons.length - 1) {
+      } else if (index === controlKeys.length - 1) {
         // Last button - round right corners
         ctx.roundRect(buttonX, y, buttonWidth, barHeight, [0, 20, 20, 0]);
       } else {
@@ -69,7 +82,7 @@ export const CircularKeyboard: React.FC<CircularKeyboardProps> = ({
 
       // Draw button text
       ctx.fillStyle = '#333';
-      ctx.font = '20px Arial';
+      ctx.font = '18px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(button, buttonX + buttonWidth / 2, y + barHeight / 2);
@@ -231,31 +244,15 @@ export const CircularKeyboard: React.FC<CircularKeyboardProps> = ({
     const barHeight = 40;
     const barX = CENTER_X - barWidth / 2;
     const barY = CENTER_Y - barHeight / 2;
-    const buttons = ['⇧', '☺', '123', '␣', '⌫'];
-    const buttonWidth = barWidth / buttons.length;
+    const buttonWidth = barWidth / controlKeys.length;
 
     // Check if click is in control bar area
     if (y >= barY && y <= barY + barHeight && x >= barX && x <= barX + barWidth) {
       const buttonIndex = Math.floor((x - barX) / buttonWidth);
-      const button = buttons[buttonIndex];
+      const button = controlKeys[buttonIndex];
 
-      switch (button) {
-        case '␣':
-          onKeyPress(' ');
-          break;
-        case '⌫':
-          onKeyPress('Backspace');
-          break;
-        case '⇧':
-          onKeyPress('Shift');
-          break;
-        case '☺':
-          onKeyPress('Emoji');
-          break;
-        case '123':
-          onKeyPress('Numbers');
-          break;
-      }
+      onKeyPress(button);
+
       return;
     }
 
@@ -292,21 +289,7 @@ export const CircularKeyboard: React.FC<CircularKeyboardProps> = ({
       return null;
     };
 
-    // Check top half
-    const topKeys = {
-      inner: ['t', 'c'],
-      middle: ['h', 'd', 'u', 'm', 'q'],
-      outer: ['v', 'k', 'x', 'j', 'z', 'l', 'h'],
-    };
-
-    // Check bottom half
-    const bottomKeys = {
-      inner: ['e', 'a'],
-      middle: ['s', 'n', 'o', 'p', 'f'],
-      outer: ['b', 'y', 'w', 'g', 'i', 'p', 'f'],
-    };
-
-    // Check each section in both halves
+    // Update the sections to use props
     const sections = [
       { keys: topKeys.inner, innerRadius: 0, outerRadius: INNER_RADIUS, yOffset: -10 },
       { keys: topKeys.middle, innerRadius: INNER_RADIUS, outerRadius: MIDDLE_RADIUS, yOffset: -10 },
@@ -367,20 +350,10 @@ export const CircularKeyboard: React.FC<CircularKeyboardProps> = ({
     // Clear canvas
     ctx.clearRect(0, 0, width, height);
 
-    // Draw top half
-    const topKeys = {
-      inner: ['t', 'c'],
-      middle: ['h', 'd', 'u', 'm', 'q'],
-      outer: ['v', 'k', 'x', 'j', 'z', 'l', 'h'],
-    };
+    // Draw top half using props
     drawHalf(ctx, -Math.PI, 0, topKeys, -10);
 
-    // Draw bottom half
-    const bottomKeys = {
-      inner: ['e', 'a'],
-      middle: ['s', 'n', 'o', 'p', 'f'],
-      outer: ['b', 'y', 'w', 'g', 'i', 'p', 'f'],
-    };
+    // Draw bottom half using props
     drawHalf(ctx, 0, Math.PI, bottomKeys, 10);
 
     // Draw control bar
