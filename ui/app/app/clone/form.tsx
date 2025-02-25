@@ -3,25 +3,16 @@
 import { useState } from 'react';
 import { useActionState } from 'react';
 
-import {
-  CheckCircleIcon,
-  CloudArrowUpIcon,
-  MicrophoneIcon,
-  TrashIcon,
-} from '@heroicons/react/24/outline';
-import clsx from 'clsx';
-
 import { Banner } from '@/components/banner';
 import { Button } from '@/components/catalyst/button';
 import { Field, Label } from '@/components/catalyst/fieldset';
 import { Heading } from '@/components/catalyst/heading';
 import { Input } from '@/components/catalyst/input';
-import { useAccount, useAuth } from '@/components/context/auth';
-import { createClient } from '@/supabase/client';
+import { useAccount } from '@/components/context/auth';
 
 import { type CloneVoiceResponse, cloneVoice } from './actions';
-import { RecordingSection } from './recording';
-import { UploadSection } from './upload-section';
+import { RecordingSection } from './record';
+import { UploadSection } from './upload';
 
 const initialState: CloneVoiceResponse = {
   success: false,
@@ -36,7 +27,7 @@ const initialState: CloneVoiceResponse = {
 
 export default function VoiceCloneForm() {
   const [state, formAction, isPending] = useActionState(cloneVoice, initialState);
-  const [recordings, setRecordings] = useState(state.inputs?.recordings);
+
   const { account } = useAccount();
 
   return (
@@ -77,27 +68,8 @@ export default function VoiceCloneForm() {
           </div>
 
           {/* Record Section */}
-          <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 shadow-sm ring-1 ring-zinc-950/5 dark:ring-white/5">
-            <Heading level={3}>Record Now</Heading>
-            <p className="text-md text-zinc-500 mt-2 mb-6">
-              Record a sample of your voice by speaking the following texts. Try to speak clearly
-              and slowly in a normal tone. For best results, try to record in a quiet environment.
-            </p>
-            <p className="text-md text-zinc-500 mt-2 mb-6">
-              Read more about how to record a good sample{' '}
-              <a
-                href="https://elevenlabs.io/docs/product-guides/voices/voice-cloning/instant-voice-cloning"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                here
-              </a>
-            </p>
-            <input type="hidden" name="recordings" value={recordings} />
-            <RecordingSection
-              onRecordingsChange={newRecordings => setRecordings(JSON.stringify(newRecordings))}
-            />
-          </div>
+
+          <RecordingSection />
         </div>
 
         {/* Common Fields */}

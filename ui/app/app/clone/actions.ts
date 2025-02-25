@@ -3,13 +3,13 @@
 import { ElevenLabsClient } from 'elevenlabs';
 import { z } from 'zod';
 
+import { getAuthUser } from '@/app/actions/user';
 import { getAccount, setVoiceId } from '@/app/app/account/actions';
+import { createClient } from '@/supabase/server';
 
 const CloneVoiceSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
-  audioFile: z.instanceof(File).optional().nullable(),
-  recordings: z.string().optional(),
 });
 
 type CloneVoiceType = z.infer<typeof CloneVoiceSchema>;
@@ -41,8 +41,6 @@ export async function cloneVoice(
   const inputs = {
     name: formData.get('name') as string,
     description: formData.get('description') as string,
-    audioFile: formData.get('audio-upload') as File,
-    recordings: formData.get('recordings') as string,
   };
 
   const { success, data, error } = CloneVoiceSchema.safeParse(inputs);
@@ -67,26 +65,73 @@ export async function cloneVoice(
 }
 
 async function createVoice(data: CloneVoiceType) {
-  // convert recordings to array of files
-  const recordings = JSON.parse(data.recordings || '[]', (key, value) => {
-    if (key === 'blob') {
-      return new File([value], `${key}.webm`, { type: 'audio/webm' });
-    }
-    return value;
-  });
+  const [audioFiles, recordings] = await Promise.all([getUploadedFiles(), getRecordings()]);
 
-  if (data.audioFile) {
-    recordings.push(data.audioFile);
-  }
+  const files =
+    audioFiles.length > 0
+      ? await downloadAll(audioFiles)
+      : await downloadAll(Object.values(recordings));
 
   const client = new ElevenLabsClient({ apiKey: process.env.ELEVENLABS_API_KEY });
 
   const voice = await client.voices.add({
-    files: recordings,
+    files,
     name: data.name,
     description: data.description,
     labels: JSON.stringify({ app: 'september' }),
   });
 
   return voice;
+}
+
+export async function getUploadedFiles() {
+  const supabase = await createClient();
+  const user = await getAuthUser();
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const prefix = `${user.id}/uploads`;
+  const { data, error } = await supabase.storage.from('voice_samples').list(prefix);
+
+  if (error) throw error;
+
+  return data.map(file => `${prefix}/${file.name}`);
+}
+
+export async function getRecordings() {
+  const supabase = await createClient();
+  const user = await getAuthUser();
+
+  if (!user) throw new Error('User not found');
+
+  const prefix = `${user.id}/recordings`;
+  const { data, error } = await supabase.storage.from('voice_samples').list(prefix);
+
+  if (error) throw error;
+
+  return data.reduce<Record<string, string>>((acc, file) => {
+    const name = file.name.replace(prefix, '');
+    const id = name.split('.')[0];
+    acc[id] = `${prefix}/${file.name}`;
+    return acc;
+  }, {});
+}
+
+async function downloadAll(paths: string[]) {
+  const supabase = await createClient();
+  const user = await getAuthUser();
+
+  if (!user) throw new Error('User not found');
+
+  const files = await Promise.all(
+    paths.map(async path => {
+      const { data, error } = await supabase.storage.from('voice_samples').download(path);
+      if (error) throw error;
+      return data;
+    })
+  );
+
+  return files;
 }
