@@ -18,10 +18,8 @@ const initialState: CloneVoiceResponse = {
   success: false,
   message: '',
   inputs: {
-    name: 'Ravi',
-    description: 'A voice clone of Ravi',
-    audioFile: null,
-    recordings: '',
+    name: '',
+    description: '',
   },
 };
 
