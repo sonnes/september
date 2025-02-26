@@ -82,7 +82,7 @@ export function useUpload() {
   return context;
 }
 
-type RecordingStatus = 'idle' | 'recording' | 'uploading' | 'error';
+type RecordingStatus = 'idle' | 'recording' | 'uploading' | 'error' | 'playing';
 
 type RecordingContextType = {
   status: Record<string, RecordingStatus>;
@@ -91,6 +91,8 @@ type RecordingContextType = {
   startRecording: (id: string) => void;
   stopRecording: (id: string) => void;
   deleteRecording: (id: string) => Promise<void>;
+  playRecording: (id: string) => Promise<void>;
+  stopPlaying: (id: string) => void;
 };
 
 export const RecordingContext = createContext<RecordingContextType | null>(null);
@@ -105,6 +107,8 @@ export function RecordingProvider({
   const [status, setStatus] = useState<Record<string, RecordingStatus>>({});
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [recordings, setRecordings] = useState<Record<string, string>>(initialRecordings);
+
+  const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
   const supabase = createClient();
@@ -190,9 +194,61 @@ export function RecordingProvider({
     }
   };
 
+  const getRecordingUrl = async (id: string): Promise<string | null> => {
+    try {
+      if (!recordings[id]) return null;
+
+      const { data, error } = await supabase.storage
+        .from('voice_samples')
+        .createSignedUrl(recordings[id], 3600); // URL valid for 1 hour
+
+      if (error) throw error;
+      return data.signedUrl;
+    } catch (error) {
+      setErrorFor(id, error instanceof Error ? error.message : 'Failed to get recording URL');
+      return null;
+    }
+  };
+
+  const playRecording = async (id: string) => {
+    if (audioRefs.current[id]) {
+      audioRefs.current[id].play();
+    }
+
+    const url = await getRecordingUrl(id);
+
+    if (!url) return;
+
+    audioRefs.current[id] = new Audio(url);
+
+    audioRefs.current[id].onended = () => {
+      setStatusFor(id, 'idle');
+    };
+
+    audioRefs.current[id].play();
+    setStatusFor(id, 'playing');
+  };
+
+  const stopPlaying = (id: string) => {
+    if (!audioRefs.current[id]) return;
+
+    audioRefs.current[id].pause();
+    audioRefs.current[id].currentTime = 0;
+    setStatusFor(id, 'idle');
+  };
+
   return (
     <RecordingContext.Provider
-      value={{ recordings, startRecording, stopRecording, deleteRecording, status, errors }}
+      value={{
+        recordings,
+        startRecording,
+        stopRecording,
+        deleteRecording,
+        playRecording,
+        stopPlaying,
+        status,
+        errors,
+      }}
     >
       {children}
     </RecordingContext.Provider>

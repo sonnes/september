@@ -2,7 +2,13 @@
 
 import { useRef, useState } from 'react';
 
-import { CheckCircleIcon, MicrophoneIcon, StopIcon, TrashIcon } from '@heroicons/react/24/outline';
+import {
+  CheckCircleIcon,
+  MicrophoneIcon,
+  PlayIcon,
+  StopIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline';
 
 import { Button } from '@/components/catalyst/button';
 import { Field, Label } from '@/components/catalyst/fieldset';
@@ -24,8 +30,16 @@ export const SAMPLE_TEXTS = [
 ];
 
 export function RecordingSection() {
-  const { recordings, startRecording, stopRecording, deleteRecording, status, errors } =
-    useRecording();
+  const {
+    recordings,
+    startRecording,
+    stopRecording,
+    deleteRecording,
+    playRecording,
+    stopPlaying,
+    status,
+    errors,
+  } = useRecording();
 
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 shadow-sm ring-1 ring-zinc-950/5 dark:ring-white/5">
@@ -56,43 +70,55 @@ export function RecordingSection() {
               >
                 <div className="flex-1 mr-4">
                   <p className="text-md font-medium text-zinc-900 dark:text-white">{text}</p>
-                  {recordings[id] && (
-                    <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                      <CheckCircleIcon className="size-4" /> Recorded
-                    </p>
+                  <div className="h-5 mt-1">
+                    {recordings[id] && (
+                      <p className="text-xs text-green-600 flex items-center gap-1">
+                        <CheckCircleIcon className="size-4" /> Recorded
+                      </p>
+                    )}
+                    {errors[id] && <p className="text-xs text-red-600">{errors[id]}</p>}
+                    {thisStatus === 'uploading' && (
+                      <p className="text-xs text-blue-600">Uploading...</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-2 min-w-[88px] justify-end">
+                  {thisStatus === 'recording' ? (
+                    <Button outline type="button" onClick={() => stopRecording(id)}>
+                      <StopIcon className="h-5 w-5" />
+                    </Button>
+                  ) : thisStatus === 'playing' ? (
+                    <Button outline type="button" onClick={() => stopPlaying(id)}>
+                      <StopIcon className="h-5 w-5" />
+                    </Button>
+                  ) : recordings[id] ? (
+                    <Button outline type="button" onClick={() => playRecording(id)}>
+                      <PlayIcon className="h-5 w-5" />
+                    </Button>
+                  ) : (
+                    <Button
+                      outline
+                      type="button"
+                      onClick={() => {
+                        startRecording(id);
+                      }}
+                    >
+                      <MicrophoneIcon className="h-5 w-5" />
+                    </Button>
                   )}
-                  {errors[id] && <p className="text-xs text-red-600 mt-1">{errors[id]}</p>}
-                  {thisStatus === 'uploading' && (
-                    <p className="text-xs text-blue-600 mt-1">Uploading...</p>
+
+                  {recordings[id] && (
+                    <Button
+                      outline
+                      type="button"
+                      onClick={() => {
+                        deleteRecording(id);
+                      }}
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </Button>
                   )}
                 </div>
-                {!recordings[id] && thisStatus !== 'recording' && (
-                  <Button
-                    outline
-                    type="button"
-                    onClick={() => {
-                      startRecording(id);
-                    }}
-                  >
-                    <MicrophoneIcon className="h-5 w-5" />
-                  </Button>
-                )}
-                {thisStatus === 'recording' && (
-                  <Button outline type="button" onClick={() => stopRecording(id)}>
-                    <StopIcon className="h-5 w-5" />
-                  </Button>
-                )}
-                {recordings[id] && (
-                  <Button
-                    outline
-                    type="button"
-                    onClick={() => {
-                      deleteRecording(id);
-                    }}
-                  >
-                    <TrashIcon className="h-5 w-5" />
-                  </Button>
-                )}
               </div>
             );
           })}
