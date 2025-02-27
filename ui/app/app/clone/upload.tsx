@@ -19,7 +19,7 @@ export function UploadSection() {
   };
 
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 shadow-sm ring-1 ring-zinc-950/5 dark:ring-white/5">
+    <div className="bg-white rounded-lg p-6 shadow-sm ring-1 ring-zinc-950/5">
       <Heading level={4}>Upload Audio</Heading>
       <p className="text-sm text-zinc-500 mt-2 mb-6">
         If you have a sample of your voice, upload it here. The sample should be at least 30 seconds
@@ -34,13 +34,13 @@ export function UploadSection() {
               {uploadedFiles.map(filePath => (
                 <li
                   key={filePath}
-                  className="flex items-center justify-between rounded-md bg-zinc-50 dark:bg-zinc-800 p-3"
+                  className="flex items-center justify-between rounded-md bg-zinc-50 p-3"
                 >
                   <input type="hidden" name="audio-file-path" value={filePath} />
                   <span className="text-sm truncate max-w-[80%]">{filePath.split('/').pop()}</span>
                   <button
                     type="button"
-                    className="flex items-center gap-1 rounded-md bg-red-50 dark:bg-red-900/50 px-2 py-1 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/75"
+                    className="flex items-center gap-1 rounded-md bg-red-50 px-2 py-1 text-sm font-semibold text-red-600 hover:bg-red-100"
                     onClick={() => deleteFile(filePath)}
                   >
                     <TrashIcon className="size-4" />
@@ -53,18 +53,15 @@ export function UploadSection() {
         <div
           className={clsx(
             'mt-2 flex justify-center rounded-lg border-2 border-dashed px-6 py-10',
-            'border-zinc-200 dark:border-zinc-800'
+            'border-zinc-200'
           )}
         >
           <div className="text-center">
-            <CloudArrowUpIcon
-              aria-hidden="true"
-              className="mx-auto size-12 text-zinc-300 dark:text-zinc-600"
-            />
-            <div className="mt-4 flex text-sm/6 text-zinc-600 dark:text-zinc-400">
+            <CloudArrowUpIcon aria-hidden="true" className="mx-auto size-12 text-zinc-300" />
+            <div className="mt-4 flex text-sm/6 text-zinc-600">
               <label
                 htmlFor="audio-upload"
-                className="relative cursor-pointer rounded-md font-semibold text-blue-600 dark:text-blue-400 
+                className="relative cursor-pointer rounded-md font-semibold text-blue-600 
                     focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-600 
                     focus-within:ring-offset-2 hover:text-blue-500"
               >
@@ -82,9 +79,7 @@ export function UploadSection() {
               <p className="pl-1">or drag and drop</p>
             </div>
             {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
-            <p className="text-xs/5 text-zinc-600 dark:text-zinc-400 mt-1">
-              WAV, MP3, M4A up to 25MB
-            </p>
+            <p className="text-xs/5 text-zinc-600 mt-1">WAV, MP3, M4A up to 25MB</p>
           </div>
         </div>
       </Field>

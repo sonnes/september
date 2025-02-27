@@ -10,8 +10,8 @@ import { PlayButton } from './play-button';
 function Message({ message }: { message: Message }) {
   return (
     <div
-      className={`mb-4 p-3 bg-zinc-50 rounded-lg w-full dark:bg-zinc-800 ${
-        message.type === 'transcription' ? 'bg-red-100 dark:bg-red-900' : ''
+      className={`mb-4 p-3 bg-zinc-50 rounded-lg w-full ${
+        message.type === 'transcription' ? 'bg-red-100' : ''
       }`}
     >
       <div className="flex items-center justify-between">

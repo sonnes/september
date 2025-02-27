@@ -29,10 +29,10 @@ export default async function TalkPage() {
           </Layout.Header>
           <Layout.Content>
             <div className="flex flex-col h-[calc(100vh-280px)]">
-              <div className="p-4 mb-4 bg-white rounded-lg shadow-xs ring-1 ring-zinc-950/5 dark:bg-zinc-800 dark:ring-white/10">
+              <div className="p-4 mb-4 bg-white rounded-lg shadow-xs ring-1 ring-zinc-950/5">
                 <div className="flex items-center justify-between">
                   <Player />
-                  <div className="border-l border-zinc-200 dark:border-zinc-700 h-12 mx-4" />
+                  <div className="border-l border-zinc-200 h-12 mx-4" />
                   <Transcription />
                 </div>
               </div>
@@ -43,7 +43,7 @@ export default async function TalkPage() {
               </div>
 
               {/* Input area */}
-              <div className="pt-2 border-t border-zinc-200 dark:border-zinc-700">
+              <div className="pt-2 border-t border-zinc-200">
                 <Editor />
               </div>
             </div>

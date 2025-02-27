@@ -275,9 +275,7 @@ function ProfileDropdown() {
       <DropdownMenu>
         <DropdownHeader>
           <div className="pr-6">
-            <div className="text-sm/7 font-semibold text-zinc-800 dark:text-white">
-              {user.email}
-            </div>
+            <div className="text-sm/7 font-semibold text-zinc-800">{user.email}</div>
           </div>
         </DropdownHeader>
         <DropdownDivider />

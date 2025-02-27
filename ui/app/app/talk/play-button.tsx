@@ -8,7 +8,7 @@ export function PlayButton({ id, text }: { id: string; text: string }) {
   const { setPlaying } = usePlayer();
   return (
     <button
-      className="ml-2 p-1 text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+      className="ml-2 p-1 text-zinc-500 hover:text-zinc-700"
       aria-label="Play message"
       onClick={() => setPlaying({ id, text })}
     >

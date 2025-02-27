@@ -73,9 +73,7 @@ export default function Transcription() {
       <button
         onClick={toggleRecording}
         className={`p-2 rounded-full cursor-pointer ${
-          recording
-            ? 'text-red-500 dark:text-red-600'
-            : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+          recording ? 'text-red-500' : 'text-zinc-500 hover:text-zinc-700'
         }`}
         disabled={status === 'transcribing'}
       >

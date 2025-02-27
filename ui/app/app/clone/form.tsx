@@ -48,20 +48,20 @@ export default function VoiceCloneForm() {
           <div className="flex md:flex-col items-center justify-center h-full">
             {/* Vertical divider (desktop) */}
             <div className="hidden md:flex flex-col items-center justify-center h-full w-full min-h-[400px]">
-              <div className="flex-1 w-px bg-zinc-200 dark:bg-zinc-800" />
-              <div className="bg-zinc-50 dark:bg-zinc-800 rounded-full p-4">
-                <span className="text-zinc-600 dark:text-zinc-500 text-lg font-medium">OR</span>
+              <div className="flex-1 w-px bg-zinc-200" />
+              <div className="bg-zinc-50 rounded-full p-4">
+                <span className="text-zinc-600 text-lg font-medium">OR</span>
               </div>
-              <div className="flex-1 w-px bg-zinc-200 dark:bg-zinc-800" />
+              <div className="flex-1 w-px bg-zinc-200" />
             </div>
 
             {/* Horizontal divider (mobile) */}
             <div className="md:hidden w-full flex items-center gap-4 py-4">
-              <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
-              <div className="bg-zinc-50 dark:bg-zinc-800 rounded-full p-4">
-                <span className="text-zinc-600 dark:text-zinc-500 text-lg font-medium">OR</span>
+              <div className="h-px flex-1 bg-zinc-200" />
+              <div className="bg-zinc-50 rounded-full p-4">
+                <span className="text-zinc-600 text-lg font-medium">OR</span>
               </div>
-              <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+              <div className="h-px flex-1 bg-zinc-200" />
             </div>
           </div>
 
@@ -72,12 +72,12 @@ export default function VoiceCloneForm() {
 
         {/* Common Fields */}
         {!account.approved && (
-          <div className="max-w-xl mx-auto text-center bg-white dark:bg-zinc-900 rounded-lg p-6 shadow-sm ring-1 ring-zinc-950/5 dark:ring-white/5">
+          <div className="max-w-xl mx-auto text-center bg-white rounded-lg p-6 shadow-sm ring-1 ring-zinc-950/5">
             <Heading level={3}>You are on the waitlist</Heading>
           </div>
         )}
         {account.approved && (
-          <div className="max-w-xl mx-auto bg-white dark:bg-zinc-900 rounded-lg p-6 shadow-sm ring-1 ring-zinc-950/5 dark:ring-white/5">
+          <div className="max-w-xl mx-auto bg-white rounded-lg p-6 shadow-sm ring-1 ring-zinc-950/5">
             <Field>
               <Label>Name</Label>
               <Input

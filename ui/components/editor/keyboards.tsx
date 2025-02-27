@@ -97,7 +97,7 @@ export function KeyboardSelector({ activeKeyboard, setActiveKeyboard }: Keyboard
       {activeKeyboard && (
         <button
           onClick={() => setActiveKeyboard(null)}
-          className="p-2 text-sm font-semibold text-red-500 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+          className="p-2 text-sm font-semibold text-red-500 rounded-lg hover:bg-zinc-100 transition-colors"
         >
           x
         </button>
@@ -106,8 +106,8 @@ export function KeyboardSelector({ activeKeyboard, setActiveKeyboard }: Keyboard
         <div key={keyboard.type} className="relative group">
           <button
             onClick={keyboard.onClick}
-            className={`p-2 text-sm font-semibold text-zinc-500 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors ${
-              activeKeyboard === keyboard.type ? 'bg-zinc-200 dark:bg-zinc-600' : ''
+            className={`p-2 text-sm font-semibold text-zinc-500 rounded-lg hover:bg-zinc-100 transition-colors ${
+              activeKeyboard === keyboard.type ? 'bg-zinc-200' : ''
             }`}
           >
             {keyboard.icon}

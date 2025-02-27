@@ -28,7 +28,7 @@ export default function SignUpForm() {
       <div className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 md:col-span-2">
         <div>
           <Heading level={2}>Sign Up</Heading>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="mt-1 text-sm text-zinc-600">
             Please enter your email and password to create an account.
           </p>
         </div>
@@ -78,7 +78,7 @@ export default function SignUpForm() {
             {isPending ? 'Creating account...' : 'Create Account'}
           </Button>
 
-          <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="text-center text-sm text-zinc-600">
             Already have an account?{' '}
             <a href="/login" className="text-blue-600 hover:text-blue-500 hover:underline">
               Sign in

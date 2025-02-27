@@ -17,8 +17,8 @@ export default function EmotionsSelector({ emotions }: EmotionsSelectorProps) {
         <div key={emotion.name} className="relative group">
           <button
             onClick={() => setTone(emotion.name)}
-            className={`p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors ${
-              tone === emotion.name ? 'bg-zinc-200 dark:bg-zinc-600' : ''
+            className={`p-2 rounded-full hover:bg-zinc-100 transition-colors ${
+              tone === emotion.name ? 'bg-zinc-200' : ''
             }`}
           >
             {emotion.emoji}

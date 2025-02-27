@@ -48,9 +48,7 @@ export default function Suggestions({ debounceMs = 300 }: SuggestionsProps) {
   return (
     <div className="mb-2 min-h-[52px]">
       {status === 'loading' ? (
-        <div className="p-2 border rounded-lg bg-zinc-50 dark:bg-zinc-800">
-          Loading suggestions...
-        </div>
+        <div className="p-2 border rounded-lg bg-zinc-50">Loading suggestions...</div>
       ) : suggestions && suggestions.length > 0 ? (
         <div className="p-2 flex flex-wrap gap-2">
           {suggestions.map((completion, index) => (

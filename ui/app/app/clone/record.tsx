@@ -42,7 +42,7 @@ export function RecordingSection() {
   } = useRecording();
 
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 shadow-sm ring-1 ring-zinc-950/5 dark:ring-white/5">
+    <div className="bg-white rounded-lg p-6 shadow-sm ring-1 ring-zinc-950/5">
       <Heading level={4}>Record Now</Heading>
       <p className="text-sm text-zinc-500 mt-2 mb-6">
         Record a sample of your voice by speaking the following texts. Try to speak clearly and
@@ -66,10 +66,10 @@ export function RecordingSection() {
             return (
               <div
                 key={id}
-                className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg shadow-sm flex items-center justify-between"
+                className="p-4 bg-zinc-50 rounded-lg shadow-sm flex items-center justify-between"
               >
                 <div className="flex-1 mr-4">
-                  <p className="text-md font-medium text-zinc-900 dark:text-white">{text}</p>
+                  <p className="text-md font-medium text-zinc-900">{text}</p>
                   <div className="h-5 mt-1">
                     {recordings[id] && (
                       <p className="text-xs text-green-600 flex items-center gap-1">

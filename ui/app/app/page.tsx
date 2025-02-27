@@ -60,10 +60,8 @@ export default async function LoginPage() {
                 />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  Complete your Account
-                </h2>
-                <p className="mt-1 text-gray-600 dark:text-gray-400">
+                <h2 className="text-xl font-semibold text-gray-900">Complete your Account</h2>
+                <p className="mt-1 text-gray-600">
                   Fill in details of your medical condition and any other relevant information.
                 </p>
                 {!hasCompletedProfile && (
@@ -98,14 +96,14 @@ export default async function LoginPage() {
                 />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                <h2 className="text-xl font-semibold text-gray-900">
                   {hasCompletedProfile
                     ? 'You are in the queue'
                     : isApproved
                       ? 'Approved'
                       : 'Join the Waitlist'}
                 </h2>
-                <p className="mt-1 text-gray-600 dark:text-gray-400">
+                <p className="mt-1 text-gray-600">
                   {!hasCompletedProfile
                     ? 'Voice cloning is only available to users with speech impairment.'
                     : isApproved
@@ -121,10 +119,8 @@ export default async function LoginPage() {
                 <StepStatus completed={hasVoice} icon={<MicrophoneIcon className="h-6 w-6" />} />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  Clone your Voice
-                </h2>
-                <p className="mt-1 text-gray-600 dark:text-gray-400">
+                <h2 className="text-xl font-semibold text-gray-900">Clone your Voice</h2>
+                <p className="mt-1 text-gray-600">
                   {hasVoice
                     ? "You've successfully cloned your voice!"
                     : 'Once approved, you can clone your voice by uploading audio samples.'}
@@ -136,7 +132,7 @@ export default async function LoginPage() {
                       'inline-block px-4 py-2 rounded-md font-semibold',
                       isApproved && !hasVoice
                         ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed border border-gray-200 dark:border-gray-700'
+                        : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
                     )}
                   >
                     Clone Voice
@@ -154,10 +150,8 @@ export default async function LoginPage() {
                 />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  Start Talking
-                </h2>
-                <p className="mt-1 text-gray-600 dark:text-gray-400">
+                <h2 className="text-xl font-semibold text-gray-900">Start Talking</h2>
+                <p className="mt-1 text-gray-600">
                   {hasFirstMessage
                     ? "You've sent your first message!"
                     : 'Start using your assistant by typing a message.'}
@@ -169,7 +163,7 @@ export default async function LoginPage() {
                       'inline-block px-4 py-2 rounded-md font-semibold',
                       hasVoice && !hasFirstMessage
                         ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed border border-gray-200 dark:border-gray-700'
+                        : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
                     )}
                   >
                     Send Message

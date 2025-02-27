@@ -21,7 +21,7 @@ export function Player() {
         <Waveform />
       </div>
       <div className="relative">
-        <Heading level={2} className="text-zinc-900 dark:text-white  mix-blend-darken">
+        <Heading level={2} className="text-zinc-900 mix-blend-darken">
           {playing?.text}
         </Heading>
       </div>
