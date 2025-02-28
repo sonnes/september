@@ -5,32 +5,130 @@ export const runtime = 'edge';
 export async function GET() {
   return new ImageResponse(
     (
-      <div tw="w-full h-full bg-indigo-500 flex flex-col items-center justify-center p-20">
-        {/* Title Section */}
-        <div tw="flex flex-col items-center text-center">
-          <div tw="flex items-center mb-8">
-            <span tw="text-white font-bold text-7xl tracking-tight">september</span>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'white',
+          padding: '80px',
+        }}
+      >
+        {/* Logo and Title Section */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            textAlign: 'center',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginTop: '32px',
+              marginBottom: '32px',
+            }}
+          >
+            <span
+              style={{
+                color: '#111827',
+                fontWeight: 'bold',
+                fontSize: '70px',
+                letterSpacing: '-0.025em',
+              }}
+            >
+              september
+            </span>
           </div>
 
-          <div tw="rounded-full bg-indigo-100 px-4 py-2 text-xl text-indigo-600 mb-8">
-            COMMUNICATION ASSISTANT
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#F3F4F6',
+              borderRadius: '9999px',
+              paddingLeft: '16px',
+              paddingRight: '16px',
+              paddingTop: '8px',
+              paddingBottom: '8px',
+              marginBottom: '32px',
+            }}
+          >
+            <span
+              style={{
+                fontSize: '20px',
+                color: '#4B5563',
+              }}
+            >
+              COMMUNICATION ASSISTANT
+            </span>
           </div>
 
           {/* Main Heading */}
-          <div tw="text-7xl font-bold mb-8 text-white flex flex-col items-center">
-            <div tw="flex items-center">
-              <span tw="text-amber-300 pr-2">Faster</span> <span>Communication</span>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              fontSize: '70px',
+              fontWeight: 'bold',
+              marginBottom: '32px',
+              color: '#111827',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <span
+                style={{
+                  color: '#F59E0B',
+                  paddingRight: '8px',
+                  fontFamily: 'cursive',
+                }}
+              >
+                Faster
+              </span>{' '}
+              <span>Communication</span>
             </div>
-            <div tw="flex items-center">
-              <span>Fewer</span>
-              <span tw="pl-2 text-amber-300">Keystrokes</span>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <span
+                style={{
+                  color: '#F59E0B',
+                  paddingRight: '8px',
+                  fontFamily: 'cursive',
+                }}
+              >
+                Fewer
+              </span>{' '}
+              <span>Keystrokes</span>
             </div>
           </div>
 
           {/* Description */}
-          <p tw="text-indigo-50 text-2xl max-w-3xl text-center">
-            A communication assistant for people with ALS, MND, or other speech & motor
-            difficulties.
+          <p
+            style={{
+              color: '#4B5563',
+              fontSize: '24px',
+              maxWidth: '768px',
+              textAlign: 'center',
+            }}
+          >
+            A communication assistant for people living with neurodegenerative conditions like ALS,
+            MND, or other speech & motor difficulties.
           </p>
         </div>
       </div>
