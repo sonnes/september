@@ -40,7 +40,45 @@ export default function VoiceCloneForm() {
         </div>
       )}
 
-      <form action={formAction} className="space-y-8">
+      <form action={formAction} className="space-y-8 pb-24">
+        {/* Common Fields */}
+        {!account.approved && (
+          <Banner
+            type="warning"
+            title="You are on the waitlist"
+            message="Please wait for approval to create a voice clone. Meanwhile, you can upload or record voice samples."
+          />
+        )}
+        {account.approved && (
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field>
+                <Label>Name</Label>
+                <Input
+                  name="name"
+                  defaultValue={state.inputs?.name}
+                  required
+                  placeholder="The name that identifies this voice."
+                />
+                {state.errors?.name && (
+                  <p className="mt-2 text-sm text-red-500">{state.errors.name.join(', ')}</p>
+                )}
+              </Field>
+
+              <Field>
+                <Label>Description</Label>
+                <Input
+                  name="description"
+                  defaultValue={state.inputs?.description}
+                  placeholder="How would you describe the voice?"
+                />
+                {state.errors?.description && (
+                  <p className="mt-2 text-sm text-red-500">{state.errors.description.join(', ')}</p>
+                )}
+              </Field>
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-8 items-start">
           <UploadSection />
 
@@ -66,46 +104,26 @@ export default function VoiceCloneForm() {
           </div>
 
           {/* Record Section */}
-
           <RecordingSection />
         </div>
 
-        {/* Common Fields */}
-        {!account.approved && (
-          <div className="max-w-xl mx-auto text-center bg-white rounded-lg p-6 shadow-sm ring-1 ring-zinc-950/5">
-            <Heading level={3}>You are on the waitlist</Heading>
-          </div>
-        )}
+        {/* Sticky submit button */}
         {account.approved && (
-          <div className="max-w-xl mx-auto bg-white rounded-lg p-6 shadow-sm ring-1 ring-zinc-950/5">
-            <Field>
-              <Label>Name</Label>
-              <Input
-                name="name"
-                defaultValue={state.inputs?.name}
-                required
-                placeholder="The name that identifies this voice."
-              />
-              {state.errors?.name && (
-                <p className="mt-2 text-sm text-red-500">{state.errors.name.join(', ')}</p>
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
+            <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+              {state.message && (
+                <p
+                  className={`text-md font-semibold ${state.success ? 'text-green-600' : 'text-red-600'}`}
+                >
+                  {state.message}
+                </p>
               )}
-            </Field>
-
-            <Field className="mt-4">
-              <Label>Description</Label>
-              <Input
-                name="description"
-                defaultValue={state.inputs?.description}
-                placeholder="How would you describe the voice?"
-              />
-              {state.errors?.description && (
-                <p className="mt-2 text-sm text-red-500">{state.errors.description.join(', ')}</p>
-              )}
-            </Field>
-
-            <Button type="submit" color="blue" className="w-full mt-6" disabled={isPending}>
-              {isPending ? 'Creating Voice Clone...' : 'Create Voice Clone'}
-            </Button>
+              <div className="flex-shrink-0 ml-auto">
+                <Button type="submit" color="blue" disabled={isPending}>
+                  {isPending ? 'Creating Voice Clone...' : 'Create Voice Clone'}
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </form>

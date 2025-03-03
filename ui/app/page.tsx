@@ -431,7 +431,7 @@ function Footer() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-5xl md:text-6xl font-bold mb-12">Ready to use september?</h2>
           <Link
-            href="/start"
+            href="/app"
             className="inline-flex items-center px-8 py-4 text-lg font-medium text-white bg-amber-500 rounded-xl hover:bg-amber-600 transition-colors"
           >
             Get started for free
