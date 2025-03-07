@@ -95,7 +95,8 @@ export default function Settings() {
           />
         ) : (
           <>
-            <div className="absolute top-4 right-4">
+            <div className="flex items-center justify-between py-4 border-b">
+              <DialogTitle className="text-xl font-semibold pr-8">Talk Settings</DialogTitle>
               <button
                 onClick={() => setIsOpen(false)}
                 className="rounded-full p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -104,14 +105,8 @@ export default function Settings() {
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
-
-            <DialogTitle className="text-xl font-semibold pr-8">Talk Settings</DialogTitle>
-            <DialogDescription>
-              Customize your talk experience. Changes will be saved to your device.
-            </DialogDescription>
-
-            <DialogBody className="space-y-6 py-4 z-50">
-              <h3 className="text-lg font-medium border-b pb-2">Voice</h3>
+            <DialogBody className="space-y-3 py-4 z-50">
+              <h3 className="text-md font-medium pb-2">Voice</h3>
               <div
                 className="rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50"
                 onClick={() => setShowVoiceSearch(true)}
@@ -119,9 +114,11 @@ export default function Settings() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div
-                      className={`h-10 w-10 rounded-full ${getColorClass(getColorFromName(settings.voice.name))} flex items-center justify-center`}
+                      className={`h-10 w-10 rounded-full ${getColorClass(
+                        getColorFromName(settings.voice.name || '')
+                      )} flex items-center justify-center`}
                     >
-                      <span className="text-sm">{getInitial(settings.voice.name)}</span>
+                      <span className="text-sm">{getInitial(settings.voice.name || '')}</span>
                     </div>
                     <span className="font-medium">{settings.voice.name}</span>
                   </div>
@@ -129,17 +126,12 @@ export default function Settings() {
                 </div>
               </div>
 
-              <h3 className="text-lg font-medium border-b pb-2">Model</h3>
+              <h3 className="text-md font-medium pb-2">Model</h3>
 
               <Dropdown>
                 <DropdownButton as="div">
                   <div className="rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <span className="font-medium">{currentModel.name}</span>
-                      </div>
-                      <ArrowRightIcon className="h-5 w-5 text-gray-400" />
-                    </div>
+                    <span className="font-medium">{currentModel.name}</span>
                   </div>
                 </DropdownButton>
                 <DropdownMenu className="z-50">
@@ -154,7 +146,7 @@ export default function Settings() {
                 </DropdownMenu>
               </Dropdown>
 
-              <h3 className="text-lg font-medium border-b pb-2">Speed</h3>
+              <h3 className="text-md font-medium pb-2">Speed</h3>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm text-gray-500">
                   <span>Slower</span>
@@ -171,7 +163,7 @@ export default function Settings() {
                 />
               </div>
 
-              <h3 className="text-lg font-medium border-b pb-2">Stability</h3>
+              <h3 className="text-md font-medium pb-2">Stability</h3>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm text-gray-500">
                   <span>More variable</span>
@@ -188,7 +180,7 @@ export default function Settings() {
                 />
               </div>
 
-              <h3 className="text-lg font-medium border-b pb-2">Similarity</h3>
+              <h3 className="text-md font-medium pb-2">Similarity</h3>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm text-gray-500">
                   <span>Low</span>
@@ -205,7 +197,7 @@ export default function Settings() {
                 />
               </div>
 
-              <h3 className="text-lg font-medium border-b pb-2">Style Exaggeration</h3>
+              <h3 className="text-md font-medium pb-2">Style Exaggeration</h3>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm text-gray-500">
                   <span>None</span>

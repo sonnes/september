@@ -2,21 +2,19 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
-import { EllipsisVerticalIcon } from '@heroicons/react/20/solid';
 import {
   ArrowLeftIcon,
   MagnifyingGlassIcon,
-  PlayCircleIcon,
   PlayIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
+import clsx from 'clsx';
 
 import { DialogBody, DialogTitle } from '@/components/catalyst/dialog';
 import { useDebounce } from '@/hooks/useDebounce';
 import type { Voice } from '@/types/speech';
 
-import { addVoice, getVoices } from './actions';
+import { getVoices } from './actions';
 
 interface VoiceSearchProps {
   onClose: () => void;
@@ -54,11 +52,6 @@ export default function VoiceSearch({ onClose, onSelectVoice, onCloseDialog }: V
     searchVoices();
   }, []);
 
-  // Helper function to combine class names
-  const classNames = (...classes: string[]) => {
-    return classes.filter(Boolean).join(' ');
-  };
-
   // Get gender style based on gender value
   const getGenderStyle = (gender?: string) => {
     if (!gender) return 'text-gray-600 bg-gray-50 ring-gray-500/10';
@@ -73,7 +66,7 @@ export default function VoiceSearch({ onClose, onSelectVoice, onCloseDialog }: V
   };
   return (
     <>
-      <div className="absolute top-4 left-4">
+      <div className="flex items-center justify-between px-4 py-4 border-b">
         <button
           onClick={onClose}
           className="rounded-full p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -81,8 +74,7 @@ export default function VoiceSearch({ onClose, onSelectVoice, onCloseDialog }: V
         >
           <ArrowLeftIcon className="h-6 w-6" />
         </button>
-      </div>
-      <div className="absolute top-4 right-4">
+        <DialogTitle className="text-xl font-semibold">Select a Voice</DialogTitle>
         <button
           onClick={onCloseDialog}
           className="rounded-full p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -91,8 +83,6 @@ export default function VoiceSearch({ onClose, onSelectVoice, onCloseDialog }: V
           <XMarkIcon className="h-6 w-6" />
         </button>
       </div>
-
-      <DialogTitle className="text-xl font-semibold px-8">Select a voice</DialogTitle>
 
       <DialogBody className="space-y-4 py-4">
         <div className="relative">
@@ -126,7 +116,7 @@ export default function VoiceSearch({ onClose, onSelectVoice, onCloseDialog }: V
                     <p className="text-sm/6 font-semibold text-gray-900">{voice.name}</p>
                     {voice.labels?.['gender'] && (
                       <p
-                        className={classNames(
+                        className={clsx(
                           getGenderStyle(voice.labels['gender']),
                           'mt-0.5 whitespace-nowrap rounded-md px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset'
                         )}
