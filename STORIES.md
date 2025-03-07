@@ -1,3 +1,16 @@
+## Speech Settings
+
+Implement settings dialog. Store the settings in local storage. Implement settings as shown in the image.
+
+Settings should have the following options:
+
+- Speeed
+- Stability
+- Style
+- Similarity
+
+Use this image as a reference:
+
 ## Editor & Keyboards
 
 Editor can have multiple keyboards. User can switch between keyboards using icons.
