@@ -6,6 +6,7 @@ import Layout from '@/components/layout';
 import { getRecordings, getUploadedFiles } from './actions';
 import { RecordingProvider, UploadProvider } from './context';
 import VoiceCloneForm from './form';
+import Help from './help';
 
 export const metadata = {
   title: 'Clone Your Voice',
@@ -23,7 +24,10 @@ export default async function ClonePage() {
     <AccountProvider account={account}>
       <Layout>
         <Layout.Header>
-          <h1 className="text-3xl font-bold tracking-tight text-white">Clone Your Voice</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold tracking-tight text-white">Clone Your Voice</h1>
+            <Help />
+          </div>
         </Layout.Header>
         <Layout.Content>
           <div className="flex flex-col">

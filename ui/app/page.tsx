@@ -44,12 +44,6 @@ function Navbar() {
 
         <div className="flex items-center">
           <div className="flex items-center space-x-6 font-semibold">
-            <Link href="/about" className="text-gray-700 hover:text-gray-900">
-              About
-            </Link>
-            <Link href="/contact" className="text-gray-700 hover:text-gray-900">
-              Contact
-            </Link>
             <Link
               href="/login"
               className="bg-gray-900 text-white font-bold px-6 py-2 rounded-xl hover:bg-gray-800 transition-colors ml-2"

@@ -5,6 +5,7 @@ import Editor from '@/components/editor/simple';
 import Layout from '@/components/layout';
 
 import { SettingsProvider, TalkSettings } from './context';
+import Help from './help';
 import { MessageList } from './message-list';
 import { Player } from './player';
 import Settings from './settings';
@@ -38,7 +39,10 @@ export default async function TalkPage() {
             <Layout.Header>
               <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold tracking-tight text-white">Talk</h1>
-                <Settings />
+                <div className="flex items-center space-x-2">
+                  <Help />
+                  <Settings />
+                </div>
               </div>
             </Layout.Header>
             <Layout.Content>
