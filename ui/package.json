@@ -15,7 +15,7 @@
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.48.1",
     "clsx": "^2.1.1",
-    "elevenlabs": "^1.50.4",
+    "elevenlabs": "^1.52.0",
     "framer-motion": "^11.18.2",
     "groq-sdk": "^0.12.0",
     "moment": "^2.30.1",

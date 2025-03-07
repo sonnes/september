@@ -5,8 +5,9 @@ import { revalidatePath } from 'next/cache';
 import { getAuthUser } from '@/app/actions/user';
 import { createClient } from '@/supabase/server';
 import type { Message } from '@/supabase/types';
+import { SpeechSettings } from '@/types/speech';
 
-import { createSpeechFile } from './speech';
+import { createSpeech } from './speech';
 
 export async function getMessages() {
   const supabase = await createClient();
@@ -32,20 +33,21 @@ export async function getMessages() {
   return data;
 }
 
-interface CreateMessage {
+interface CreateMessageParams {
   id: string;
   text: string;
   type: string;
   tone?: string;
+  settings?: SpeechSettings;
 }
 
-export async function createUserMessage(newMessage: CreateMessage) {
-  const createdMessage = await createSpeechFile(newMessage).then(() => createMessage(newMessage));
+export async function createUserMessage(newMessage: CreateMessageParams) {
+  const createdMessage = await createSpeech(newMessage).then(() => createMessage(newMessage));
 
   return createdMessage;
 }
 
-export async function createMessage({ id, text, type }: CreateMessage) {
+export async function createMessage({ id, text, type }: CreateMessageParams) {
   const user = await getAuthUser();
   if (!user) {
     return [];

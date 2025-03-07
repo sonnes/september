@@ -27,3 +27,19 @@ export async function getVoices(request: GetVoicesRequest) {
 
   return voices;
 }
+
+export async function addVoice({
+  owner_id,
+  voice_id,
+  name,
+}: {
+  owner_id: string;
+  voice_id: string;
+  name: string;
+}) {
+  const voice = await client.voices.addSharingVoice(owner_id, voice_id, {
+    new_name: name,
+  });
+
+  return voice.voice_id;
+}

@@ -14,9 +14,9 @@ import {
 
 import { DialogBody, DialogTitle } from '@/components/catalyst/dialog';
 import { useDebounce } from '@/hooks/useDebounce';
+import type { Voice } from '@/types/speech';
 
-import { getVoices } from './actions';
-import type { Voice } from './context';
+import { addVoice, getVoices } from './actions';
 
 interface VoiceSearchProps {
   onClose: () => void;
@@ -72,6 +72,17 @@ export default function VoiceSearch({ onClose, onSelectVoice, onCloseDialog }: V
     return styles[gender.toLowerCase()] || 'text-gray-600 bg-gray-50 ring-gray-500/10';
   };
 
+  const selectVoice = async (voice: Voice) => {
+    const newVoiceId = await addVoice({
+      owner_id: voice.public_owner_id,
+      voice_id: voice.voice_id,
+      name: voice.name,
+    });
+
+    voice.voice_id = newVoiceId;
+    onSelectVoice(voice);
+  };
+
   return (
     <>
       <div className="absolute top-4 left-4">
@@ -120,7 +131,7 @@ export default function VoiceSearch({ onClose, onSelectVoice, onCloseDialog }: V
               <li
                 key={voice.voice_id}
                 className="flex items-center justify-between gap-x-6 py-5 px-2 hover:bg-gray-50 rounded-lg cursor-pointer"
-                onClick={() => onSelectVoice(voice)}
+                onClick={() => selectVoice(voice)}
               >
                 <div className="min-w-0">
                   <div className="flex items-start gap-x-3">

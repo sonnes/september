@@ -5,6 +5,7 @@ import { useState } from 'react';
 import clsx from 'clsx';
 
 import { createUserMessage } from '@/app/actions/messages';
+import { useSettings } from '@/app/app/talk/context';
 import { Button } from '@/components/catalyst/button';
 import { useMessages } from '@/components/context/messages';
 import { usePlayer } from '@/components/context/player';
@@ -29,30 +30,46 @@ type EditorProps = {
 
 function Editor({ placeholder = 'Start typing...' }: EditorProps) {
   const [status, setStatus] = useState<'idle' | 'loading'>('idle');
+  const [error, setError] = useState<string | null>(null);
   const [activeKeyboard, setActiveKeyboard] = useState<KeyboardType>(null);
-  const { text, setText, suggestions, tone, setTone, setSuggestions } = useEditor();
+  const { text, setText, suggestions, tone, setSuggestions } = useEditor();
   const { addMessage } = useMessages();
   const { setPlaying } = usePlayer();
+  const { settings } = useSettings();
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
   };
 
   const createMessage = async () => {
+    setError(null);
     setStatus('loading');
-    const message = {
+    const request = {
       id: crypto.randomUUID(),
       text,
       tone,
       type: 'message',
+      settings: {
+        ...settings,
+        voice_id: settings.voice.voice_id,
+      },
     };
 
-    const createdMessage = await createUserMessage(message);
-    addMessage(createdMessage);
-    setPlaying(createdMessage);
-    setStatus('idle');
-    setText('');
-    setSuggestions([]);
+    try {
+      const createdMessage = await createUserMessage(request);
+      addMessage(createdMessage);
+      setPlaying(createdMessage);
+      setText('');
+      setSuggestions([]);
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('An unknown error occurred');
+      }
+    } finally {
+      setStatus('idle');
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -131,8 +148,9 @@ function Editor({ placeholder = 'Start typing...' }: EditorProps) {
             </div>
           </div>
         </div>
-        <div className="mt-2 flex justify-end items-center gap-2 relative">
+        <div className="mt-2 flex justify-between items-center gap-2 relative">
           <EmotionsSelector emotions={emotions} />
+          {error && <div className="text-red-500">{error}</div>}
           <Button onClick={createMessage} color="dark/zinc" disabled={status === 'loading'}>
             {status === 'loading' ? 'Submitting...' : 'Submit'}
           </Button>

@@ -4,7 +4,7 @@ import { PlayerProvider } from '@/components/context/player';
 import Editor from '@/components/editor/simple';
 import Layout from '@/components/layout';
 
-import { SettingsProvider } from './context';
+import { SettingsProvider, TalkSettings } from './context';
 import { MessageList } from './message-list';
 import { Player } from './player';
 import Settings from './settings';
@@ -14,12 +14,25 @@ export const metadata = {
   title: 'Talk - September',
 };
 
+const defaultSettings: TalkSettings = {
+  voice: {
+    voice_id: 'rachel',
+    name: 'Rachel',
+  },
+  model_id: 'eleven_multilingual_v2',
+  speed: 1,
+  stability: 0.5,
+  similarity: 0.5,
+  style: 0.0,
+  speaker_boost: false,
+};
+
 export default async function TalkPage() {
   const messages = await getMessages().then(messages => messages.reverse());
 
   return (
     <MessagesProvider messages={messages}>
-      <SettingsProvider>
+      <SettingsProvider defaultSettings={defaultSettings}>
         <PlayerProvider>
           <Layout>
             <Layout.Header>
