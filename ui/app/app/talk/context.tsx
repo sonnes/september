@@ -7,10 +7,22 @@ export const MODELS = [
   { id: 'eleven_flash_v2_5', name: 'Eleven Flash v2.5' },
   { id: 'eleven_flash_v2', name: 'Eleven Flash v2 (English Only)' },
 ];
-
-// Define the settings interface
-export interface TalkSettings {
+export interface Voice {
   voice_id: string;
+  name: string;
+  preview_url?: string;
+  category?: string;
+  labels?: Record<string, string>;
+  description?: string;
+  use_case?: string;
+  age?: string;
+  gender?: string;
+  accent?: string;
+  language?: string;
+}
+
+export interface TalkSettings {
+  voice: Voice;
   model_id: string;
   speed: number;
   stability: number;
@@ -21,7 +33,10 @@ export interface TalkSettings {
 
 // Default settings
 export const defaultSettings: TalkSettings = {
-  voice_id: 'Rachel',
+  voice: {
+    voice_id: 'rachel',
+    name: 'Rachel',
+  },
   model_id: 'eleven_multilingual_v2',
   speed: 0.5,
   stability: 0.5,

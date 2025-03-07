@@ -102,7 +102,7 @@ function Editor({ placeholder = 'Start typing...' }: EditorProps) {
         <Suggestions />
         <div className="relative">
           <div
-            className={`relative z-10 overflow-hidden rounded-xl border border-zinc-500 ${
+            className={`relative z-2 overflow-hidden rounded-xl border border-zinc-500 ${
               status === 'loading' ? 'p-[1.5px]' : ''
             }`}
           >
@@ -110,7 +110,7 @@ function Editor({ placeholder = 'Start typing...' }: EditorProps) {
               <div className="animate-rotate absolute inset-0 h-full w-full rounded-full bg-[conic-gradient(#71717a_20deg,transparent_120deg)]"></div>
             )}
             <div
-              className={`relative z-20 flex ${
+              className={`relative z-3 flex ${
                 status === 'loading' ? 'rounded-[0.60rem] bg-white' : ''
               }`}
             >
@@ -123,7 +123,7 @@ function Editor({ placeholder = 'Start typing...' }: EditorProps) {
                 style={{ caretColor: 'auto' }}
               />
               {suggestions.length > 0 && (
-                <div className="absolute top-0 left-0 w-full min-h-[100px] p-3 pointer-events-none text-zinc-400 whitespace-pre-wrap break-words">
+                <div className="absolute top-0 left-0 w-full min-h-[100px] p-3 pointer-events-none text-zinc-400 whitespace-pre-wrap break-words z-2">
                   <span className="invisible">{text}</span>
                   <span className="text-zinc-400 italic">{suggestions[0]}</span>
                 </div>
@@ -131,7 +131,7 @@ function Editor({ placeholder = 'Start typing...' }: EditorProps) {
             </div>
           </div>
         </div>
-        <div className="mt-2 flex justify-end items-center gap-2">
+        <div className="mt-2 flex justify-end items-center gap-2 relative">
           <EmotionsSelector emotions={emotions} />
           <Button onClick={createMessage} color="dark/zinc" disabled={status === 'loading'}>
             {status === 'loading' ? 'Submitting...' : 'Submit'}

@@ -11,6 +11,10 @@ Settings should have the following options:
 
 Use this image as a reference:
 
+Clicking on the voice settings should open a search ui in the same dialog.
+as user types, the suggestions should be shown.
+Clicking on a suggestion should select it.
+
 ## Editor & Keyboards
 
 Editor can have multiple keyboards. User can switch between keyboards using icons.
