@@ -71,18 +71,6 @@ export default function VoiceSearch({ onClose, onSelectVoice, onCloseDialog }: V
 
     return styles[gender.toLowerCase()] || 'text-gray-600 bg-gray-50 ring-gray-500/10';
   };
-
-  const selectVoice = async (voice: Voice) => {
-    const newVoiceId = await addVoice({
-      owner_id: voice.public_owner_id,
-      voice_id: voice.voice_id,
-      name: voice.name,
-    });
-
-    voice.voice_id = newVoiceId;
-    onSelectVoice(voice);
-  };
-
   return (
     <>
       <div className="absolute top-4 left-4">
@@ -131,33 +119,33 @@ export default function VoiceSearch({ onClose, onSelectVoice, onCloseDialog }: V
               <li
                 key={voice.voice_id}
                 className="flex items-center justify-between gap-x-6 py-5 px-2 hover:bg-gray-50 rounded-lg cursor-pointer"
-                onClick={() => selectVoice(voice)}
+                onClick={() => onSelectVoice(voice)}
               >
                 <div className="min-w-0">
                   <div className="flex items-start gap-x-3">
                     <p className="text-sm/6 font-semibold text-gray-900">{voice.name}</p>
-                    {voice.gender && (
+                    {voice.labels?.['gender'] && (
                       <p
                         className={classNames(
-                          getGenderStyle(voice.gender),
+                          getGenderStyle(voice.labels['gender']),
                           'mt-0.5 whitespace-nowrap rounded-md px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset'
                         )}
                       >
-                        {voice.gender}
+                        {voice.labels['gender']}
                       </p>
                     )}
                   </div>
                   <div className="mt-1 flex items-center gap-x-2 text-xs/5 text-gray-500">
-                    {voice.language && (
-                      <p className="whitespace-nowrap">{voice.language.toUpperCase()}</p>
+                    {voice.labels?.['accent'] && (
+                      <p className="truncate capitalize">{voice.labels['accent'].toLowerCase()}</p>
                     )}
-                    {voice.language && voice.accent && (
-                      <svg viewBox="0 0 2 2" className="size-0.5 fill-current">
-                        <circle r={1} cx={1} cy={1} />
-                      </svg>
+                    {voice.labels?.['age'] && (
+                      <p className="truncate capitalize">{voice.labels['age'].toLowerCase()}</p>
                     )}
-                    {voice.accent && (
-                      <p className="truncate capitalize">{voice.accent.toLowerCase()}</p>
+                    {voice.labels?.['use_case'] && (
+                      <p className="truncate capitalize">
+                        {voice.labels['use_case'].toLowerCase()}
+                      </p>
                     )}
                   </div>
                   {voice.description && (

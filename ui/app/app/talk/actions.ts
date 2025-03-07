@@ -6,26 +6,31 @@ import { z } from 'zod';
 const client = new ElevenLabsClient({ apiKey: process.env.ELEVENLABS_API_KEY });
 
 const GetVoicesSchema = z.object({
-  gender: z.enum(['male', 'female']).optional(),
-  language: z.string().optional(),
   search: z.string().optional(),
 });
 
 export type GetVoicesRequest = z.infer<typeof GetVoicesSchema>;
 
 export async function getVoices(request: GetVoicesRequest) {
-  const { gender, language, search } = GetVoicesSchema.parse(request);
+  const { search } = GetVoicesSchema.parse(request);
 
-  const voices = await client.voices.getShared({
-    page_size: 50,
-    use_cases: 'conversational',
-    sort: 'trending',
-    language,
-    gender,
-    search,
+  const allVoices = await client.voices.getAll();
+  const clonedVoices = allVoices.voices.filter(voice => {
+    return voice.category === 'cloned';
+  });
+  const defaultVoices = allVoices.voices.filter(voice => {
+    return voice.category === 'premade';
   });
 
-  return voices;
+  const filteredClonedVoices = clonedVoices.concat(defaultVoices).filter(voice => {
+    if (search && !voice.name?.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  return {
+    voices: filteredClonedVoices,
+    total: filteredClonedVoices.length,
+  };
 }
 
 export async function addVoice({

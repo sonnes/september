@@ -1,6 +1,6 @@
-import { LibraryVoiceResponse } from 'elevenlabs/api';
+import { Voice as ElevenLabsVoice } from 'elevenlabs/api';
 
-export type Voice = LibraryVoiceResponse;
+export type Voice = ElevenLabsVoice;
 
 export interface SpeechSettings {
   voice_id?: string;
