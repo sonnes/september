@@ -5,7 +5,6 @@ import { useState } from 'react';
 
 import { CheckCircleIcon, CloudArrowUpIcon, TrashIcon } from '@heroicons/react/24/outline';
 
-import { Banner } from '@/components/banner';
 import { Button } from '@/components/catalyst/button';
 import { Checkbox } from '@/components/catalyst/checkbox';
 import { Field, Label } from '@/components/catalyst/fieldset';
@@ -29,7 +28,10 @@ function PersonalInfoSection({ state }: { state: UpdateAccountResponse }) {
           <div className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
             <div className="sm:col-span-3">
               <Field>
-                <Label className="text-gray-900">First Name</Label>
+                <div className="p-1 flex justify-between items-center">
+                  <Label className="font-medium text-gray-900">First Name</Label>
+                  <span className="text-red-500 text-xs">*Required</span>
+                </div>
                 <Input
                   name="first_name"
                   defaultValue={state.inputs?.first_name?.toString()}
@@ -43,7 +45,9 @@ function PersonalInfoSection({ state }: { state: UpdateAccountResponse }) {
 
             <div className="sm:col-span-3">
               <Field>
-                <Label className="text-gray-900">Last Name</Label>
+                <div className="p-1 flex justify-between items-center">
+                  <Label className="font-medium text-gray-900">Last Name</Label>
+                </div>
                 <Input name="last_name" defaultValue={state.inputs?.last_name?.toString()} />
                 {state.errors?.last_name && (
                   <p className="mt-2 text-sm text-red-500">{state.errors.last_name.join(', ')}</p>
@@ -53,7 +57,10 @@ function PersonalInfoSection({ state }: { state: UpdateAccountResponse }) {
 
             <div className="sm:col-span-3">
               <Field>
-                <Label className="text-gray-900">City</Label>
+                <div className="p-1 flex justify-between items-center">
+                  <Label className="font-medium text-gray-900">City</Label>
+                  <span className="text-red-500 text-xs">*Required</span>
+                </div>
                 <Input name="city" defaultValue={state.inputs?.city?.toString()} required />
                 {state.errors?.city && (
                   <p className="mt-2 text-sm text-red-500">{state.errors.city.join(', ')}</p>
@@ -63,7 +70,10 @@ function PersonalInfoSection({ state }: { state: UpdateAccountResponse }) {
 
             <div className="sm:col-span-3">
               <Field>
-                <Label className="text-gray-900">Country</Label>
+                <div className="p-1 flex justify-between items-center">
+                  <Label className="font-medium text-gray-900">Country</Label>
+                  <span className="text-red-500 text-xs">*Required</span>
+                </div>
                 <Input name="country" defaultValue={state.inputs?.country?.toString()} required />
                 {state.errors?.country && (
                   <p className="mt-2 text-sm text-red-500">{state.errors.country.join(', ')}</p>
@@ -72,7 +82,7 @@ function PersonalInfoSection({ state }: { state: UpdateAccountResponse }) {
             </div>
 
             <div className="col-span-full">
-              <h3 className="text-lg font-medium text-gray-900">Alternative Contact</h3>
+              <h3 className="font-medium text-gray-900">Alternative Contact</h3>
               <p className="mt-1 text-sm/6 text-gray-600">
                 Optional. Details of caretaker, friend or family member who is helping you with your
                 use of the service.
@@ -81,7 +91,9 @@ function PersonalInfoSection({ state }: { state: UpdateAccountResponse }) {
 
             <div className="sm:col-span-3">
               <Field>
-                <Label className="text-gray-900">Contact Name</Label>
+                <div className="p-1 flex justify-between items-center">
+                  <Label className="font-medium text-gray-900">Contact Name</Label>
+                </div>
                 <Input name="contact_name" defaultValue={state.inputs?.contact_name?.toString()} />
                 {state.errors?.contact_name && (
                   <p className="mt-2 text-sm text-red-500">
@@ -93,7 +105,9 @@ function PersonalInfoSection({ state }: { state: UpdateAccountResponse }) {
 
             <div className="sm:col-span-3">
               <Field>
-                <Label className="text-gray-900">Contact Email</Label>
+                <div className="p-1 flex justify-between items-center">
+                  <Label className="font-medium text-gray-900">Contact Email</Label>
+                </div>
                 <Input
                   name="contact_email"
                   type="email"
@@ -180,7 +194,10 @@ function MedicalInfoSection({ state }: { state: UpdateAccountResponse }) {
           <div className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
             <div className="sm:col-span-4">
               <Field>
-                <Label className="text-gray-900">Primary Diagnosis</Label>
+                <div className="p-1 flex justify-between items-center">
+                  <Label className="font-medium text-gray-900">Primary Diagnosis</Label>
+                  <span className="text-red-500 text-xs">*Required</span>
+                </div>
                 <Input
                   name="primary_diagnosis"
                   defaultValue={state.inputs?.primary_diagnosis?.toString()}
@@ -196,7 +213,10 @@ function MedicalInfoSection({ state }: { state: UpdateAccountResponse }) {
 
             <div className="sm:col-span-2">
               <Field>
-                <Label className="text-gray-900">Year of Diagnosis</Label>
+                <div className="p-1 flex justify-between items-center">
+                  <Label className="font-medium text-gray-900">Year of Diagnosis</Label>
+                  <span className="text-red-500 text-xs">*Required</span>
+                </div>
                 <Input
                   name="year_of_diagnosis"
                   type="number"
@@ -213,7 +233,11 @@ function MedicalInfoSection({ state }: { state: UpdateAccountResponse }) {
 
             <div className="col-span-full">
               <Field>
-                <Label className="text-gray-900">Additional Medical Information</Label>
+                <div className="p-1 flex justify-between items-center">
+                  <Label className="font-medium text-gray-900">
+                    Additional Medical Information
+                  </Label>
+                </div>
                 <Input
                   name="medical_notes"
                   defaultValue={state.inputs?.medical_notes?.toString()}
@@ -228,10 +252,13 @@ function MedicalInfoSection({ state }: { state: UpdateAccountResponse }) {
 
             <div className="col-span-full">
               <Field>
-                <Label className="text-gray-900">Medical Documents</Label>
+                <div className="p-1 flex justify-between items-center">
+                  <Label className="font-medium text-gray-900">Medical Documents</Label>
+                  <span className="text-red-500 text-xs">*Required</span>
+                </div>
                 <p className="mt-1 text-sm/6 text-gray-600">
-                  We require a note from your Neurologist/Physician that you have been diagnosed
-                  with ALS. Please upload that note here.
+                  To provide free voice cloning services, we require a note from your
+                  Neurologist/Physician that states your diagnosis. Please upload that note here.
                 </p>
                 {documentPath ? (
                   <div className="mt-2 flex items-center gap-4">
