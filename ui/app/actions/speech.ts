@@ -1,16 +1,13 @@
 'use server';
 
-import { ElevenLabs, ElevenLabsClient, ElevenLabsError } from 'elevenlabs';
+import { ElevenLabs, ElevenLabsError } from 'elevenlabs';
 
 import { getAccount } from '@/app/app/account/actions';
+import { ElevenAPI } from '@/lib/api.elevenlabs';
 import { createClient } from '@/supabase/server';
 import { SpeechSettings } from '@/types/speech';
 
 const defaultVoiceId = '3vXjdKMDgxJoOLbElGxC';
-
-const client = new ElevenLabsClient({
-  apiKey: process.env.ELEVENLABS_API_KEY,
-});
 
 interface CreateSpeechParams {
   id: string;
@@ -24,7 +21,7 @@ export const createSpeech = async ({ id, text, settings }: CreateSpeechParams) =
   const voiceId = settings?.voice_id || account?.voice_id || defaultVoiceId;
 
   try {
-    const response = await client.textToSpeech.convert(voiceId, {
+    const response = await ElevenAPI.textToSpeech.convert(voiceId, {
       output_format: ElevenLabs.OutputFormat.Mp34410032,
       text: text,
       model_id: settings?.model_id || 'eleven_multilingual_v2',

@@ -8,14 +8,18 @@ import type { Message } from '@/supabase/types';
 import { PlayButton } from './play-button';
 
 function Message({ message }: { message: Message }) {
+  const messageTypeStyles =
+    {
+      transcription: 'bg-blue-50 border border-blue-100',
+      message: 'bg-white border border-gray-200',
+    }[message.type] || 'bg-gray-50 border border-gray-100';
+
   return (
-    <div
-      className={`mb-4 p-3 bg-zinc-50 rounded-lg w-full ${
-        message.type === 'transcription' ? 'bg-red-100' : ''
-      }`}
-    >
-      <div className="flex items-center justify-between">
-        <div>{message.text}</div>
+    <div className={`mb-4 p-4 rounded-lg w-full transition-colors ${messageTypeStyles}`}>
+      <div className="flex items-center justify-between gap-4">
+        <div className={`${message.type === 'transcription' ? 'text-blue-500' : 'text-gray-800'}`}>
+          {message.text}
+        </div>
         {message.type === 'message' && <PlayButton id={message.id} text={message.text} />}
       </div>
     </div>
