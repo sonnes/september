@@ -2,6 +2,7 @@ import { Caveat, Inter } from 'next/font/google';
 import Image from 'next/image';
 import Link from 'next/link';
 
+import { ArrowRightIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 
 import faqs from '@/data/home-faqs.json';
@@ -38,7 +39,9 @@ function Navbar() {
         <div className="flex items-center">
           <Link href="/" className="flex items-center">
             <Image src="/logo.png" alt="September Logo" width={40} height={40} className="mr-2" />
-            <span className="text-2xl font-bold">september</span>
+            <span className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-amber-600 text-transparent bg-clip-text">
+              september
+            </span>
           </Link>
         </div>
 
@@ -46,9 +49,9 @@ function Navbar() {
           <div className="flex items-center space-x-6 font-semibold">
             <Link
               href="/login"
-              className="bg-gray-900 text-white font-bold px-6 py-2 rounded-xl hover:bg-gray-800 transition-colors ml-2"
+              className="bg-gray-900 text-md text-white font-semibold px-6 py-2 rounded-xl hover:bg-gray-800 transition-colors flex items-center gap-2"
             >
-              Log In
+              Log In <ArrowRightIcon className="w-4 h-4" />
             </Link>
           </div>
         </div>
@@ -77,8 +80,11 @@ function HeroSection() {
         </p>
 
         <div className="flex flex-col sm:flex-row justify-center gap-4 mt-12">
-          <Link href="/app" className="bg-gray-900 text-white font-bold px-8 py-4 rounded-xl">
-            Get Started
+          <Link
+            href="/app"
+            className="bg-gray-900 text-white font-bold px-8 py-4 rounded-xl hover:bg-gray-800 transition-colors flex items-center gap-2"
+          >
+            Get Started <ArrowRightIcon className="w-4 h-4" />
           </Link>
         </div>
       </div>

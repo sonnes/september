@@ -1,20 +1,13 @@
 import Link from 'next/link';
 
-import {
-  CheckCircleIcon,
-  ClockIcon,
-  MicrophoneIcon,
-  PaperAirplaneIcon,
-  UserIcon,
-} from '@heroicons/react/24/outline';
+import { CheckIcon as CheckIconSolid } from '@heroicons/react/20/solid';
+import { ClockIcon, MicrophoneIcon, SpeakerWaveIcon, UserIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 
-import { Button } from '@/components/catalyst/button';
+import { getAccount } from '@/app/app/account/actions';
 import Layout from '@/components/layout';
 
-import { getAccount } from './account/actions';
-
-export default async function LoginPage() {
+export default async function AppPage() {
   const account = await getAccount();
 
   const hasCompletedProfile = account?.has_consent ?? false;
@@ -22,24 +15,60 @@ export default async function LoginPage() {
   const hasVoice = account?.voice_id ? true : false;
   const hasFirstMessage = account?.has_first_message ?? false;
 
+  const steps = [
+    {
+      name: 'Complete your Account',
+      description: 'Fill in details of your medical condition and any other relevant information.',
+      href: '/app/account',
+      icon: <UserIcon className="h-5 w-5" />,
+      status: hasCompletedProfile ? 'complete' : 'current',
+      showAction: !hasCompletedProfile,
+    },
+    {
+      name: hasCompletedProfile
+        ? 'You are in the queue'
+        : isApproved
+          ? 'Approved'
+          : 'Join the Waitlist',
+      description: !hasCompletedProfile
+        ? 'Voice cloning is only available to users with speech impairment.'
+        : isApproved
+          ? 'Your account has been approved!'
+          : 'Your account is being reviewed.',
+      href: '#',
+      icon: isApproved ? <CheckIconSolid className="h-5 w-5" /> : <ClockIcon className="h-5 w-5" />,
+      status: isApproved ? 'complete' : hasCompletedProfile ? 'current' : 'upcoming',
+      showAction: false,
+    },
+    {
+      name: 'Clone your Voice',
+      description: hasVoice
+        ? "You've successfully cloned your voice!"
+        : 'Once approved, you can clone your voice by uploading audio samples.',
+      href: '/app/clone',
+      icon: <MicrophoneIcon className="h-5 w-5" />,
+      status: hasVoice ? 'complete' : isApproved ? 'current' : 'upcoming',
+      showAction: isApproved && !hasVoice,
+    },
+    {
+      name: 'Start Talking',
+      description: hasFirstMessage
+        ? "You've sent your first message!"
+        : 'Start using your assistant by typing a message.',
+      href: '/app/messages',
+      icon: <SpeakerWaveIcon className="h-5 w-5" />,
+      status: hasFirstMessage ? 'complete' : hasVoice ? 'current' : 'upcoming',
+      showAction: hasVoice && !hasFirstMessage,
+    },
+  ];
+
   return (
     <Layout>
       <Layout.Header>
         <div className="flex items-center gap-4">
-          <div className="h-16 w-16 rounded-full bg-gradient-to-br from-amber-500 to-orange-400 p-3">
-            <div className="flex h-full items-center justify-center">
-              <svg className="h-8 w-8 text-white" viewBox="0 0 24 24" fill="currentColor">
-                <path
-                  d="M7.03 4.95L3.49 8.49c-3.32 3.32-3.32 8.7 0 12.02s8.7 3.32 12.02 0l3.54-3.54M7.03 4.95L8.51 6.43m-1.48-1.48l1.48 1.48M19.05 16.97l-1.48-1.48m1.48 1.48l-1.48-1.48m1.48 1.48l3.54-3.54c3.32-3.32 3.32-8.7 0-12.02s-8.7-3.32-12.02 0L7.03 4.95"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-          </div>
+          <div className="text-4xl">👋</div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">
+            <h1 className="text-2xl font-bold tracking-tight text-white">
               Welcome! Let's get started
             </h1>
             <p className="mt-2 text-gray-50">
@@ -49,153 +78,111 @@ export default async function LoginPage() {
         </div>
       </Layout.Header>
       <Layout.Content>
-        <div className="p-6 space-y-8">
-          <div className="space-y-6">
-            {/* Complete Account Step */}
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <StepStatus
-                  completed={hasCompletedProfile}
-                  icon={<UserIcon className="h-6 w-6" />}
-                />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Complete your Account</h2>
-                <p className="mt-1 text-gray-600">
-                  Fill in details of your medical condition and any other relevant information.
-                </p>
-                {!hasCompletedProfile && (
-                  <div className="mt-4">
-                    <Link
-                      href="/app/account"
-                      className={clsx(
-                        'inline-block px-4 py-2 rounded-md font-semibold',
-                        'bg-blue-600 text-white hover:bg-blue-700'
-                      )}
-                    >
-                      Update Account
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Approval Step */}
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <StepStatus
-                  completed={isApproved}
-                  inProgress={hasCompletedProfile && !isApproved}
-                  icon={
-                    isApproved ? (
-                      <CheckCircleIcon className="h-6 w-6" />
-                    ) : (
-                      <ClockIcon className="h-6 w-6" />
-                    )
-                  }
-                />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {hasCompletedProfile
-                    ? 'You are in the queue'
-                    : isApproved
-                      ? 'Approved'
-                      : 'Join the Waitlist'}
-                </h2>
-                <p className="mt-1 text-gray-600">
-                  {!hasCompletedProfile
-                    ? 'Voice cloning is only available to users with speech impairment.'
-                    : isApproved
-                      ? 'Your account has been approved!'
-                      : 'Your account is being reviewed.'}
-                </p>
-              </div>
-            </div>
-
-            {/* Create Voice Step */}
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <StepStatus completed={hasVoice} icon={<MicrophoneIcon className="h-6 w-6" />} />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Clone your Voice</h2>
-                <p className="mt-1 text-gray-600">
-                  {hasVoice
-                    ? "You've successfully cloned your voice!"
-                    : 'Once approved, you can clone your voice by uploading audio samples.'}
-                </p>
-                <div className="mt-4 flex gap-4">
-                  <Link
-                    href="/app/clone"
-                    className={clsx(
-                      'inline-block px-4 py-2 rounded-md font-semibold',
-                      isApproved && !hasVoice
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                    )}
-                  >
-                    Clone Voice
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            {/* Send Message Step */}
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <StepStatus
-                  completed={hasFirstMessage}
-                  icon={<PaperAirplaneIcon className="h-6 w-6 rotate-325" />}
-                />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Start Talking</h2>
-                <p className="mt-1 text-gray-600">
-                  {hasFirstMessage
-                    ? "You've sent your first message!"
-                    : 'Start using your assistant by typing a message.'}
-                </p>
-                <div className="mt-4 flex gap-4">
-                  <Link
-                    href="/app/messages"
-                    className={clsx(
-                      'inline-block px-4 py-2 rounded-md font-semibold',
-                      hasVoice && !hasFirstMessage
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                    )}
-                  >
-                    Send Message
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className="p-6">
+          <nav aria-label="Progress">
+            <ol role="list" className="overflow-hidden">
+              {steps.map((step, stepIdx) => (
+                <li
+                  key={step.name}
+                  className={clsx(stepIdx !== steps.length - 1 ? 'pb-10' : '', 'relative')}
+                >
+                  {step.status === 'complete' ? (
+                    <>
+                      {stepIdx !== steps.length - 1 ? (
+                        <div
+                          aria-hidden="true"
+                          className="absolute left-4 top-4 -ml-px mt-0.5 h-full w-0.5 bg-green-600"
+                        />
+                      ) : null}
+                      <div className="group relative flex items-start">
+                        <span className="flex h-9 items-center">
+                          <span className="relative z-10 flex size-8 items-center justify-center rounded-full bg-green-600 text-white group-hover:bg-green-700">
+                            {step.icon}
+                          </span>
+                        </span>
+                        <span className="ml-4 flex min-w-0 flex-col">
+                          <span className="text-md font-medium text-green-600">{step.name}</span>
+                          <span className="text-sm text-gray-500">{step.description}</span>
+                          {step.showAction && (
+                            <div className="mt-4">
+                              <Link
+                                href={step.href}
+                                className="inline-block rounded-md bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700"
+                              >
+                                {step.name}
+                              </Link>
+                            </div>
+                          )}
+                        </span>
+                      </div>
+                    </>
+                  ) : step.status === 'current' ? (
+                    <>
+                      {stepIdx !== steps.length - 1 ? (
+                        <div
+                          aria-hidden="true"
+                          className="absolute left-4 top-4 -ml-px mt-0.5 h-full w-0.5 bg-gray-300"
+                        />
+                      ) : null}
+                      <div className="group relative flex items-start">
+                        <span aria-hidden="true" className="flex h-9 items-center">
+                          <span className="relative z-10 flex size-8 items-center justify-center rounded-full border-2 border-amber-500 bg-white text-amber-500">
+                            {step.icon}
+                          </span>
+                        </span>
+                        <span className="ml-4 flex min-w-0 flex-col">
+                          <span className="text-md font-medium text-amber-500">{step.name}</span>
+                          <span className="text-sm text-gray-500">{step.description}</span>
+                          {step.showAction && (
+                            <div className="mt-4">
+                              <Link
+                                href={step.href}
+                                className="inline-block rounded-md bg-amber-500 px-4 py-2 font-semibold text-white hover:bg-amber-600"
+                              >
+                                {step.name}
+                              </Link>
+                            </div>
+                          )}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {stepIdx !== steps.length - 1 ? (
+                        <div
+                          aria-hidden="true"
+                          className="absolute left-4 top-4 -ml-px mt-0.5 h-full w-0.5 bg-gray-300"
+                        />
+                      ) : null}
+                      <div className="group relative flex items-start">
+                        <span aria-hidden="true" className="flex h-9 items-center">
+                          <span className="relative z-10 flex size-8 items-center justify-center rounded-full border-2 border-gray-300 bg-white group-hover:border-gray-400">
+                            {step.icon}
+                          </span>
+                        </span>
+                        <span className="ml-4 flex min-w-0 flex-col">
+                          <span className="text-md font-medium text-gray-500">{step.name}</span>
+                          <span className="text-sm text-gray-500">{step.description}</span>
+                          {step.showAction && (
+                            <div className="mt-4">
+                              <Link
+                                href={step.href}
+                                className="inline-block rounded-md border border-gray-200 bg-gray-100 px-4 py-2 font-semibold text-gray-400 cursor-not-allowed"
+                              >
+                                {step.name}
+                              </Link>
+                            </div>
+                          )}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </nav>
         </div>
       </Layout.Content>
     </Layout>
   );
 }
-
-const StepStatus = ({
-  completed,
-  inProgress = false,
-  icon,
-}: {
-  completed: boolean;
-  inProgress?: boolean;
-  icon: React.ReactNode;
-}) => {
-  return (
-    <div
-      className={clsx(
-        'flex h-8 w-8 items-center justify-center rounded-full',
-        completed && 'bg-green-600 text-white',
-        inProgress && 'bg-amber-600 text-white animate-pulse'
-      )}
-    >
-      {icon}
-    </div>
-  );
-};
