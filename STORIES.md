@@ -1,3 +1,14 @@
+## Voice Cloning
+
+Let us brainstorm on a voice cloning page.
+
+- A user can upload a audio file or record speaking 10 sample sentences.
+- They can try the new voice by typing a text.
+- They can repeat the same step to clone another voice.
+- Alternatively, they can search for a similar voice in the library using an audio file or sample recording.
+
+What is the best way to design this page?
+
 ## Speech Settings
 
 Implement settings dialog. Store the settings in local storage. Implement settings as shown in the image.
