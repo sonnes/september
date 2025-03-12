@@ -13,6 +13,7 @@ import { Input } from '@/components/catalyst/input';
 import { useAccount } from '@/components/context/auth';
 
 import { type CloneVoiceResponse, cloneVoice } from './actions';
+import { useRecording, useUpload } from './context';
 import { RecordingSection } from './record';
 import { UploadSection } from './upload';
 
@@ -33,6 +34,8 @@ export default function VoiceCloneForm() {
   const [state, formAction, isPending] = useActionState(cloneVoice, initialState);
   const { account } = useAccount();
   const [activeTab, setActiveTab] = useState('upload');
+  const { recordings } = useRecording();
+  const { uploadedFiles } = useUpload();
 
   const tabs = [
     { name: 'Upload Audio', value: 'upload' },
@@ -142,18 +145,20 @@ export default function VoiceCloneForm() {
         </div>
 
         {/* Find Similar Voices */}
-        <div className="bg-white rounded-lg shadow-sm ring-1 ring-zinc-950/5 p-6">
-          <Heading level={4}>Find Similar Voices</Heading>
-          <div className="mt-6 space-y-6">
-            <p>
-              Not satisfied with the cloned voice? Try searching for similar voices using the
-              samples you uploaded or recorded.
-            </p>
-            <Button href="/app/voices?search=similar" outline>
-              <MagnifyingGlassIcon className="w-4 h-4" /> Search for Similar Voices
-            </Button>
+        {(Object.keys(recordings).length > 0 || uploadedFiles.length > 0) && (
+          <div className="bg-white rounded-lg shadow-sm ring-1 ring-zinc-950/5 p-6">
+            <Heading level={4}>Find Similar Voices</Heading>
+            <div className="mt-6 space-y-6">
+              <p>
+                Not satisfied with the cloned voice? Try searching for similar voices using the
+                samples you uploaded or recorded.
+              </p>
+              <Button href="/app/voices?search=similar" outline>
+                <MagnifyingGlassIcon className="w-4 h-4" /> Search for Similar Voices
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </form>
     </div>
   );
