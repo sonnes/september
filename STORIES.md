@@ -1,3 +1,17 @@
+## Voices
+
+Refactor the page content to a multi-column layout.
+
+- Left column:
+
+  - 1/3 width for the voice list
+  - list of voices similar to
+  - First item should be a create new voice button
+  - Clicking on the create new voice button should open the clone form in the right column
+
+- Right column:
+  - 2/3 width for clone form
+
 ## Voice Cloning
 
 Let us brainstorm on a voice cloning page.

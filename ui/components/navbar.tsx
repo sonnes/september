@@ -25,7 +25,7 @@ import { type ThemeColor, themes } from '@/lib/theme';
 import { createClient } from '@/supabase/client';
 
 const appLinks = [
-  { name: 'Clone', href: '/app/clone' },
+  { name: 'Voices', href: '/app/voices' },
   { name: 'Talk', href: '/app/talk' },
 ];
 
