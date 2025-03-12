@@ -1,9 +1,9 @@
 import { Metadata } from 'next';
 
+import { getAccount } from '@/app/actions/account';
 import { AccountProvider } from '@/components/context/auth';
 import Layout from '@/components/layout';
 
-import { getAccount } from './actions';
 import AccountForm from './form';
 
 export const metadata: Metadata = {

@@ -1,12 +1,16 @@
 'use client';
 
-import { PlayIcon } from '@heroicons/react/24/outline';
+import { ArrowRightIcon, PlayIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 
+import { setVoiceId } from '@/app/actions/account';
 import { Button } from '@/components/catalyst/button';
+import { useAccount } from '@/components/context/auth';
 import type { Voice } from '@/types/speech';
 
 export default function VoicesList({ voices }: { voices: Voice[] }) {
+  const { account, setAccount } = useAccount();
+
   // Get gender style based on gender value
   const getGenderStyle = (gender?: string) => {
     if (!gender) return 'text-gray-600 bg-gray-50 ring-gray-500/10';
@@ -19,13 +23,19 @@ export default function VoicesList({ voices }: { voices: Voice[] }) {
 
     return styles[gender.toLowerCase()] || 'text-gray-600 bg-gray-50 ring-gray-500/10';
   };
+
+  const onSelectVoice = (voiceId: string) => {
+    setVoiceId(voiceId);
+    setAccount({ ...account, voice_id: voiceId });
+  };
+
   return (
     <div className="w-full">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
         <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden border border-gray-200 flex flex-col items-center justify-center p-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New Voice</h3>
-          <Button href="/app/voices/clone" className="w-full">
-            Clone Voice
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Clone Your Voice</h3>
+          <Button href="/app/voices/clone" className="w-full" color="indigo">
+            Clone <ArrowRightIcon className="w-4 h-4" />
           </Button>
         </div>
         {voices.map(voice => (
@@ -37,45 +47,55 @@ export default function VoicesList({ voices }: { voices: Voice[] }) {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900">{voice.name}</h3>
-                  {voice.labels?.['gender'] && (
+                  {voice.gender && (
                     <span
                       className={clsx(
-                        getGenderStyle(voice.labels['gender']),
-                        'inline-block mt-1 rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset'
+                        getGenderStyle(voice.gender),
+                        'inline-block mt-1 rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset capitalize'
                       )}
                     >
-                      {voice.labels['gender']}
+                      {voice.gender}
                     </span>
                   )}
                 </div>
                 {voice.preview_url && (
-                  <button
-                    className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
+                  <Button
+                    plain
                     onClick={() => {
                       const audio = new Audio(voice.preview_url);
                       audio.play();
                     }}
                   >
-                    <PlayIcon className="h-6 w-6 text-gray-600 hover:text-gray-900" />
-                    <span className="sr-only">Play {voice.name}</span>
-                  </button>
+                    <PlayIcon className="h-5 w-5 text-gray-600" />
+                  </Button>
+                )}
+                {account?.voice_id !== voice.voice_id ? (
+                  <Button
+                    onClick={() => onSelectVoice(voice.voice_id)}
+                    className="shrink-0"
+                    outline
+                  >
+                    Use
+                  </Button>
+                ) : (
+                  <div className="p-2 shrink-0 text-green-600 text-sm">Selected</div>
                 )}
               </div>
 
               <div className="mt-2 flex flex-wrap gap-2">
-                {voice.labels?.['accent'] && (
-                  <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
-                    {voice.labels['accent'].toLowerCase()}
+                {voice.accent && (
+                  <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 capitalize">
+                    {voice.accent.toLowerCase()}
                   </span>
                 )}
-                {voice.labels?.['age'] && (
-                  <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
-                    {voice.labels['age'].toLowerCase()}
+                {voice.age && (
+                  <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 capitalize">
+                    {voice.age.toLowerCase()}
                   </span>
                 )}
-                {voice.labels?.['use_case'] && (
-                  <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
-                    {voice.labels['use_case'].toLowerCase()}
+                {voice.use_case && (
+                  <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 capitalize">
+                    {voice.use_case.toLowerCase()}
                   </span>
                 )}
               </div>

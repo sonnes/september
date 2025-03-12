@@ -1,10 +1,9 @@
-import { getVoices } from '@/app/actions/voices';
-import { getAccount } from '@/app/app/account/actions';
+import { getAccount } from '@/app/actions/account';
+import { getRecordings, getUploadedFiles } from '@/app/actions/voices';
 import { AccountProvider } from '@/components/context/auth';
 import Layout from '@/components/layout';
 
 import Help from '../help';
-import { getRecordings, getUploadedFiles } from './actions';
 import { RecordingProvider, UploadProvider } from './context';
 import VoiceCloneForm from './form';
 

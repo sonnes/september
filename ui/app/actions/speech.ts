@@ -2,7 +2,7 @@
 
 import { ElevenLabs, ElevenLabsError } from 'elevenlabs';
 
-import { getAccount } from '@/app/app/account/actions';
+import { getAccount } from '@/app/actions/account';
 import { ElevenAPI } from '@/lib/api.elevenlabs';
 import { createClient } from '@/supabase/server';
 import { SpeechSettings } from '@/types/speech';

@@ -11,6 +11,7 @@ import {
   StopIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
+import clsx from 'clsx';
 
 import { Button } from '@/components/catalyst/button';
 import { Field, Label } from '@/components/catalyst/fieldset';
@@ -161,14 +162,13 @@ export function RecordingSection() {
                 key={index}
                 outline
                 onClick={() => setCurrentIndex(index)}
-                className={`h-8 w-8 rounded-full transition-colors flex items-center justify-center text-xs font-medium cursor-pointer
-                  ${
-                    index === currentIndex
-                      ? 'bg-zinc-500 text-white'
-                      : recordings[sample.id]
-                        ? 'bg-green-100 text-green-700 ring-1 ring-green-700'
-                        : 'bg-zinc-100 text-zinc-700'
-                  }`}
+                className={clsx(
+                  'h-8 w-8 rounded-full transition-colors flex items-center justify-center text-xs cursor-pointer',
+                  recordings[sample.id]
+                    ? 'bg-green-100 text-green-700 ring-green-500'
+                    : 'bg-zinc-100 text-zinc-700 ring-zinc-500',
+                  index === currentIndex ? 'font-bold ring-1' : ''
+                )}
                 aria-label={`Go to sample ${index + 1}${recordings[sample.id] ? ' (Recorded)' : ''}`}
               >
                 {index + 1}

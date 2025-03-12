@@ -1,5 +1,5 @@
+import { getAccount } from '@/app/actions/account';
 import { getVoices } from '@/app/actions/voices';
-import { getAccount } from '@/app/app/account/actions';
 import { AccountProvider } from '@/components/context/auth';
 import Layout from '@/components/layout';
 
@@ -11,8 +11,13 @@ export const metadata = {
   description: 'Manage your voices.',
 };
 
-export default async function ClonePage() {
-  const [account, voices] = await Promise.all([getAccount(), getVoices({})]);
+export default async function ClonePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ search: string }>;
+}) {
+  const { search } = await searchParams;
+  const [account, voices] = await Promise.all([getAccount(), getVoices({ search })]);
 
   return (
     <AccountProvider account={account}>

@@ -4,7 +4,7 @@ import { CheckIcon as CheckIconSolid } from '@heroicons/react/20/solid';
 import { ClockIcon, MicrophoneIcon, SpeakerWaveIcon, UserIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 
-import { getAccount } from '@/app/app/account/actions';
+import { getAccount } from '@/app/actions/account';
 import Layout from '@/components/layout';
 
 export default async function AppPage() {
@@ -45,7 +45,7 @@ export default async function AppPage() {
       description: hasVoice
         ? "You've successfully cloned your voice!"
         : 'Once approved, you can clone your voice by uploading audio samples.',
-      href: '/app/clone',
+      href: '/app/voices/clone',
       icon: <MicrophoneIcon className="h-5 w-5" />,
       status: hasVoice ? 'complete' : isApproved ? 'current' : 'upcoming',
       showAction: isApproved && !hasVoice,
@@ -55,7 +55,7 @@ export default async function AppPage() {
       description: hasFirstMessage
         ? "You've sent your first message!"
         : 'Start using your assistant by typing a message.',
-      href: '/app/messages',
+      href: '/app/talk',
       icon: <SpeakerWaveIcon className="h-5 w-5" />,
       status: hasFirstMessage ? 'complete' : hasVoice ? 'current' : 'upcoming',
       showAction: hasVoice && !hasFirstMessage,

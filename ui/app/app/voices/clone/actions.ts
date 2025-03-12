@@ -3,9 +3,8 @@
 import { ElevenLabsClient } from 'elevenlabs';
 import { z } from 'zod';
 
-import { getAuthUser } from '@/app/actions/user';
-import { getAccount, setVoiceId } from '@/app/app/account/actions';
-import { createClient } from '@/supabase/server';
+import { getAccount, setVoiceId } from '@/app/actions/account';
+import { downloadAll, getRecordings, getUploadedFiles } from '@/app/actions/voices';
 
 const CloneVoiceSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -82,56 +81,4 @@ async function createVoice(data: CloneVoiceType) {
   });
 
   return voice;
-}
-
-export async function getUploadedFiles() {
-  const supabase = await createClient();
-  const user = await getAuthUser();
-
-  if (!user) {
-    throw new Error('User not found');
-  }
-
-  const prefix = `${user.id}/uploads`;
-  const { data, error } = await supabase.storage.from('voice_samples').list(prefix);
-
-  if (error) throw error;
-
-  return data.map(file => `${prefix}/${file.name}`);
-}
-
-export async function getRecordings() {
-  const supabase = await createClient();
-  const user = await getAuthUser();
-
-  if (!user) throw new Error('User not found');
-
-  const prefix = `${user.id}/recordings`;
-  const { data, error } = await supabase.storage.from('voice_samples').list(prefix);
-
-  if (error) throw error;
-
-  return data.reduce<Record<string, string>>((acc, file) => {
-    const name = file.name.replace(prefix, '');
-    const id = name.split('.')[0];
-    acc[id] = `${prefix}/${file.name}`;
-    return acc;
-  }, {});
-}
-
-async function downloadAll(paths: string[]) {
-  const supabase = await createClient();
-  const user = await getAuthUser();
-
-  if (!user) throw new Error('User not found');
-
-  const files = await Promise.all(
-    paths.map(async path => {
-      const { data, error } = await supabase.storage.from('voice_samples').download(path);
-      if (error) throw error;
-      return data;
-    })
-  );
-
-  return files;
 }
