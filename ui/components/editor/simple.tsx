@@ -9,6 +9,7 @@ import { useSettings } from '@/app/app/talk/context';
 import { Button } from '@/components/catalyst/button';
 import { useMessages } from '@/components/context/messages';
 import { usePlayer } from '@/components/context/player';
+import { QwertyKeyboard } from '@/components/keyboard/qwerty';
 
 import { KeyboardType } from '../keyboard/types';
 import { EditorProvider, useEditor } from './context';
@@ -91,6 +92,12 @@ function Editor({ placeholder = 'Start typing...' }: EditorProps) {
       case '⌫':
         setText(text.slice(0, -1));
         break;
+      case 'Enter':
+        createMessage();
+        break;
+      default:
+        setText(text + key);
+        break;
     }
   };
 
@@ -107,6 +114,8 @@ function Editor({ placeholder = 'Start typing...' }: EditorProps) {
               <NumberKeyboard onKeyPress={handleVirtualKeyPress} />
             ) : activeKeyboard === 'emojis' ? (
               <EmojiKeyboard onKeyPress={handleVirtualKeyPress} />
+            ) : activeKeyboard === 'qwerty' ? (
+              <QwertyKeyboard onKeyPress={handleVirtualKeyPress} />
             ) : null}
           </div>
         )}

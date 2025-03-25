@@ -90,6 +90,7 @@ export function KeyboardSelector({ activeKeyboard, setActiveKeyboard }: Keyboard
       onClick: () => setActiveKeyboard('numbers'),
     },
     { type: 'emojis', icon: '😎', label: 'Emojis', onClick: () => setActiveKeyboard('emojis') },
+    { type: 'qwerty', icon: 'qwerty', label: 'Qwerty', onClick: () => setActiveKeyboard('qwerty') },
   ];
 
   return (

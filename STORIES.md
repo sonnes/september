@@ -1,3 +1,7 @@
+## qwerty keyboard
+
+Let's implement an on-screen qwerty keyboard using the image as a reference.
+
 ## Voices
 
 Refactor the page content to a multi-column layout.
