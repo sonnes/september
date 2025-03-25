@@ -19,6 +19,7 @@ export type Database = {
           created_at: string | null
           document_path: string | null
           first_name: string | null
+          has_cloned_voice: boolean | null
           has_consent: boolean | null
           has_first_message: boolean | null
           id: string
@@ -40,6 +41,7 @@ export type Database = {
           created_at?: string | null
           document_path?: string | null
           first_name?: string | null
+          has_cloned_voice?: boolean | null
           has_consent?: boolean | null
           has_first_message?: boolean | null
           id: string
@@ -61,6 +63,7 @@ export type Database = {
           created_at?: string | null
           document_path?: string | null
           first_name?: string | null
+          has_cloned_voice?: boolean | null
           has_consent?: boolean | null
           has_first_message?: boolean | null
           id?: string

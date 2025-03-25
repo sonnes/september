@@ -3,7 +3,7 @@
 import { ElevenLabsClient } from 'elevenlabs';
 import { z } from 'zod';
 
-import { getAccount, setVoiceId } from '@/app/actions/account';
+import { getAccount, setClonedVoice, setVoiceId } from '@/app/actions/account';
 import { downloadAll, getRecordings, getUploadedFiles } from '@/app/actions/voices';
 
 const CloneVoiceSchema = z.object({
@@ -55,7 +55,7 @@ export async function cloneVoice(
 
   const newVoice = await createVoice(data);
 
-  await setVoiceId(newVoice.voice_id);
+  await Promise.all([setVoiceId(newVoice.voice_id), setClonedVoice(account)]);
 
   return {
     success: true,

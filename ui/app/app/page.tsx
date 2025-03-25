@@ -12,7 +12,7 @@ export default async function AppPage() {
 
   const hasCompletedProfile = account?.has_consent ?? false;
   const isApproved = account?.approved ?? false;
-  const hasVoice = account?.voice_id ? true : false;
+  const hasClonedVoice = account?.has_cloned_voice ?? false;
   const hasFirstMessage = account?.has_first_message ?? false;
 
   const steps = [
@@ -42,13 +42,13 @@ export default async function AppPage() {
     },
     {
       name: 'Clone your Voice',
-      description: hasVoice
+      description: hasClonedVoice
         ? "You've successfully cloned your voice!"
         : 'Once approved, you can clone your voice by uploading audio samples.',
       href: '/app/voices/clone',
       icon: <MicrophoneIcon className="h-5 w-5" />,
-      status: hasVoice ? 'complete' : isApproved ? 'current' : 'upcoming',
-      showAction: isApproved && !hasVoice,
+      status: hasClonedVoice ? 'complete' : isApproved ? 'current' : 'upcoming',
+      showAction: isApproved && !hasClonedVoice,
     },
     {
       name: 'Start Talking',
@@ -57,8 +57,8 @@ export default async function AppPage() {
         : 'Start using your assistant by typing a message.',
       href: '/app/talk',
       icon: <SpeakerWaveIcon className="h-5 w-5" />,
-      status: hasFirstMessage ? 'complete' : hasVoice ? 'current' : 'upcoming',
-      showAction: hasVoice && !hasFirstMessage,
+      status: hasFirstMessage ? 'complete' : hasClonedVoice ? 'current' : 'upcoming',
+      showAction: hasClonedVoice && !hasFirstMessage,
     },
   ];
 

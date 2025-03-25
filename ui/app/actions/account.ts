@@ -57,3 +57,21 @@ export async function setVoiceId(voiceId: string) {
 
   revalidatePath('/app/voices');
 }
+
+export async function setClonedVoice(account: Account) {
+  if (account.has_cloned_voice) {
+    return;
+  }
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .schema('api')
+    .from('accounts')
+    .update({ has_cloned_voice: true })
+    .eq('id', account.id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
