@@ -48,11 +48,8 @@ function Editor({ placeholder = 'Start typing...' }: EditorProps) {
       id: crypto.randomUUID(),
       text,
       tone,
+      settings,
       type: 'message',
-      settings: {
-        ...settings,
-        voice_id: settings.voice.voice_id,
-      },
     };
 
     try {

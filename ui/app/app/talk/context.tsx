@@ -11,7 +11,6 @@ export const MODELS = [
 ];
 
 export interface TalkSettings {
-  voice: Voice;
   model_id: string;
   speed: number;
   stability: number;

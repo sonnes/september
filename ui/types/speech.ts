@@ -16,7 +16,6 @@ export interface Voice {
 }
 
 export interface SpeechSettings {
-  voice_id?: string;
   model_id?: string;
   speed?: number;
   stability?: number;

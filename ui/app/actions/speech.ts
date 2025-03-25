@@ -7,7 +7,7 @@ import { ElevenAPI } from '@/lib/api.elevenlabs';
 import { createClient } from '@/supabase/server';
 import { SpeechSettings } from '@/types/speech';
 
-const defaultVoiceId = '3vXjdKMDgxJoOLbElGxC';
+const defaultVoiceId = 'iP95p4xoKVk53GoZ742B';
 
 interface CreateSpeechParams {
   id: string;
@@ -18,7 +18,7 @@ interface CreateSpeechParams {
 
 export const createSpeech = async ({ id, text, settings }: CreateSpeechParams) => {
   const account = await getAccount();
-  const voiceId = settings?.voice_id || account?.voice_id || defaultVoiceId;
+  const voiceId = account?.voice_id || defaultVoiceId;
 
   try {
     const response = await ElevenAPI.textToSpeech.convert(voiceId, {

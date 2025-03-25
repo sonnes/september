@@ -16,10 +16,6 @@ export const metadata = {
 };
 
 const defaultSettings: TalkSettings = {
-  voice: {
-    voice_id: 'rachel',
-    name: 'Rachel',
-  },
   model_id: 'eleven_multilingual_v2',
   speed: 1,
   stability: 0.5,
