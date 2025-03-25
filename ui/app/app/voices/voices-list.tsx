@@ -1,9 +1,10 @@
 'use client';
 
-import { ArrowRightIcon, PlayIcon } from '@heroicons/react/24/outline';
+import { ArrowRightIcon, PlayIcon, TrashIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 
 import { setVoiceId } from '@/app/actions/account';
+import { deleteVoice } from '@/app/actions/voices';
 import { Button } from '@/components/catalyst/button';
 import { useAccount } from '@/components/context/auth';
 import type { Voice } from '@/types/speech';
@@ -29,6 +30,12 @@ export default function VoicesList({ voices }: { voices: Voice[] }) {
     setAccount({ ...account, voice_id: voiceId });
   };
 
+  const onDeleteVoice = async (voiceId: string) => {
+    if (confirm('Are you sure you want to delete this voice? This action cannot be undone.')) {
+      await deleteVoice(voiceId);
+    }
+  };
+
   return (
     <div className="w-full">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
@@ -46,40 +53,56 @@ export default function VoicesList({ voices }: { voices: Voice[] }) {
             <div className="p-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">{voice.name}</h3>
+                  <h3 className="text-md font-semibold text-gray-900">{voice.name}</h3>
                   {voice.gender && (
                     <span
                       className={clsx(
                         getGenderStyle(voice.gender),
-                        'inline-block mt-1 rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset capitalize'
+                        'inline-block mt-1 mr-2 rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset capitalize'
                       )}
                     >
                       {voice.gender}
                     </span>
                   )}
+                  {voice.category && voice.category === 'cloned' && (
+                    <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 capitalize">
+                      Cloned
+                    </span>
+                  )}
                 </div>
-                {voice.preview_url && (
-                  <Button
-                    plain
-                    onClick={() => {
-                      const audio = new Audio(voice.preview_url);
-                      audio.play();
-                    }}
-                  >
-                    <PlayIcon className="h-5 w-5 text-gray-600" />
-                  </Button>
-                )}
-                {account?.voice_id !== voice.voice_id ? (
-                  <Button
-                    onClick={() => onSelectVoice(voice.voice_id)}
-                    className="shrink-0"
-                    outline
-                  >
-                    Use
-                  </Button>
-                ) : (
-                  <div className="p-2 shrink-0 text-green-600 text-sm">Selected</div>
-                )}
+                <div className="flex items-center gap-2">
+                  {voice.preview_url && (
+                    <Button
+                      plain
+                      onClick={() => {
+                        const audio = new Audio(voice.preview_url);
+                        audio.play();
+                      }}
+                    >
+                      <PlayIcon className="h-5 w-5 text-gray-600" />
+                    </Button>
+                  )}
+                  {voice.category === 'cloned' && (
+                    <Button
+                      plain
+                      onClick={() => onDeleteVoice(voice.voice_id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </Button>
+                  )}
+                  {account?.voice_id !== voice.voice_id ? (
+                    <Button
+                      onClick={() => onSelectVoice(voice.voice_id)}
+                      className="shrink-0"
+                      outline
+                    >
+                      Use
+                    </Button>
+                  ) : (
+                    <div className="p-2 shrink-0 text-green-600 text-sm">Selected</div>
+                  )}
+                </div>
               </div>
 
               <div className="mt-2 flex flex-wrap gap-2">

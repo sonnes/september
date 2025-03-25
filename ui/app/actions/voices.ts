@@ -1,5 +1,7 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
+
 import { ElevenLabs } from 'elevenlabs';
 import { z } from 'zod';
 
@@ -181,4 +183,9 @@ function mapAPIVoices(voices: ElevenLabs.Voice[]): Voice[] {
       public_owner_id: voice.sharing?.public_owner_id,
     };
   });
+}
+
+export async function deleteVoice(voiceId: string) {
+  await ElevenAPI.voices.delete(voiceId);
+  revalidatePath('/app/voices');
 }

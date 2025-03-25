@@ -80,8 +80,8 @@ export async function updateAccount(
   account.has_consent =
     account.terms_accepted &&
     account.privacy_accepted &&
-    account.document_path !== '' &&
-    account.first_name !== '';
+    (account.document_path?.length ?? 0) > 0 &&
+    (account.first_name?.length ?? 0) > 0;
 
   const { error } = await supabase.schema('api').from('accounts').upsert(account);
 
