@@ -102,25 +102,7 @@ function Editor({ placeholder = 'Start typing...' }: EditorProps) {
   };
 
   return (
-    <div className={clsx('flex gap-2', activeKeyboard && ' flex-col md:flex-row', 'gap-2')}>
-      <div className="flex flex-row items-center gap-2">
-        <KeyboardSelector activeKeyboard={activeKeyboard} setActiveKeyboard={setActiveKeyboard} />
-
-        {activeKeyboard && (
-          <div className="md:border-r border-zinc-200">
-            {activeKeyboard === 'abc' ? (
-              <ABCKeyboard onKeyPress={handleVirtualKeyPress} />
-            ) : activeKeyboard === 'numbers' ? (
-              <NumberKeyboard onKeyPress={handleVirtualKeyPress} />
-            ) : activeKeyboard === 'emojis' ? (
-              <EmojiKeyboard onKeyPress={handleVirtualKeyPress} />
-            ) : activeKeyboard === 'qwerty' ? (
-              <QwertyKeyboard onKeyPress={handleVirtualKeyPress} />
-            ) : null}
-          </div>
-        )}
-      </div>
-
+    <div className="flex flex-col gap-2">
       <div className="flex-1">
         <Suggestions />
         <div className="relative">
@@ -161,6 +143,26 @@ function Editor({ placeholder = 'Start typing...' }: EditorProps) {
             {status === 'loading' ? 'Submitting...' : 'Submit'}
           </Button>
         </div>
+      </div>
+
+      <div className="w-full flex flex-row items-center gap-2">
+        <div className="flex-shrink-0">
+          <KeyboardSelector activeKeyboard={activeKeyboard} setActiveKeyboard={setActiveKeyboard} />
+        </div>
+
+        {activeKeyboard && (
+          <div className="flex-1 flex justify-center">
+            {activeKeyboard === 'abc' ? (
+              <ABCKeyboard onKeyPress={handleVirtualKeyPress} />
+            ) : activeKeyboard === 'numbers' ? (
+              <NumberKeyboard onKeyPress={handleVirtualKeyPress} />
+            ) : activeKeyboard === 'emojis' ? (
+              <EmojiKeyboard onKeyPress={handleVirtualKeyPress} />
+            ) : activeKeyboard === 'qwerty' ? (
+              <QwertyKeyboard onKeyPress={handleVirtualKeyPress} />
+            ) : null}
+          </div>
+        )}
       </div>
     </div>
   );
