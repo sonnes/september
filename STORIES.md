@@ -1,3 +1,19 @@
+## konva
+
+Let’s create a new circular keyboard using konva. https://konvajs.org/docs/react/index.html
+
+First, create a control bar with the following buttons:
+
+- space
+- return
+- backspace
+- shift
+- right & left arrow keys
+
+Second, an inner bar with 2 keys shaped like a semicircle above the control bar.
+
+Next, another inner bar with 2 keys shaped like a semicircle below the control bar.
+
 ## qwerty keyboard
 
 Let's implement an on-screen qwerty keyboard using the image as a reference.

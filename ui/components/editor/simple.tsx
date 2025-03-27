@@ -9,12 +9,10 @@ import { useSettings } from '@/app/app/talk/context';
 import { Button } from '@/components/catalyst/button';
 import { useMessages } from '@/components/context/messages';
 import { usePlayer } from '@/components/context/player';
-import { QwertyKeyboard } from '@/components/keyboard/qwerty';
 
-import { KeyboardType } from '../keyboard/types';
 import { EditorProvider, useEditor } from './context';
 import EmotionsSelector from './emotions-selector';
-import { ABCKeyboard, EmojiKeyboard, KeyboardSelector, NumberKeyboard } from './keyboards';
+import { Keyboard } from './keyboards';
 import Suggestions from './suggestions';
 
 const emotions = [
@@ -32,7 +30,7 @@ type EditorProps = {
 function Editor({ placeholder = 'Start typing...' }: EditorProps) {
   const [status, setStatus] = useState<'idle' | 'loading'>('idle');
   const [error, setError] = useState<string | null>(null);
-  const [activeKeyboard, setActiveKeyboard] = useState<KeyboardType>(null);
+
   const { text, setText, suggestions, tone, setSuggestions } = useEditor();
   const { addMessage } = useMessages();
   const { setPlaying } = usePlayer();
@@ -144,26 +142,7 @@ function Editor({ placeholder = 'Start typing...' }: EditorProps) {
           </Button>
         </div>
       </div>
-
-      <div className="w-full flex flex-row items-center gap-2">
-        <div className="flex-shrink-0">
-          <KeyboardSelector activeKeyboard={activeKeyboard} setActiveKeyboard={setActiveKeyboard} />
-        </div>
-
-        {activeKeyboard && (
-          <div className="flex-1 flex justify-center">
-            {activeKeyboard === 'abc' ? (
-              <ABCKeyboard onKeyPress={handleVirtualKeyPress} />
-            ) : activeKeyboard === 'numbers' ? (
-              <NumberKeyboard onKeyPress={handleVirtualKeyPress} />
-            ) : activeKeyboard === 'emojis' ? (
-              <EmojiKeyboard onKeyPress={handleVirtualKeyPress} />
-            ) : activeKeyboard === 'qwerty' ? (
-              <QwertyKeyboard onKeyPress={handleVirtualKeyPress} />
-            ) : null}
-          </div>
-        )}
-      </div>
+      <Keyboard onKeyPress={handleVirtualKeyPress} />
     </div>
   );
 }
