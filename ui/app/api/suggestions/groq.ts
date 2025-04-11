@@ -4,24 +4,24 @@ import type { Message } from '@/supabase/types';
 
 const client = new Groq();
 
-const SYSTEM_PROMPT = `You're a autocomplete system that provides autocompletions for your users.
-You take the PREVIOUS_MESSAGES and generate a list of the most likely auto completions for users based on their INPUT_VALUE.
+const SYSTEM_PROMPT = `You're a communication assistant for USER. You take the PREVIOUS_MESSAGES and predict the most likely next message.
 
 You must return completions in this exact JSON format:
 {
-  "completions": [
-    "completion1",
-    "completion2",
-    "completion3"
+  "replies": [
+    "reply1",
+    "reply2",
+    "reply3"
   ]
 }
 
 Follow these rules:
-- Generate new, short concise completions based on context if no matches found
-- Completions should fully complete the user's sentence with proper grammar
+- Generate new, short concise replies based on context 
+- Replies should fully complete the user's sentence with proper grammar
 - Use Indian English spellings, idioms, and slang
-- DO NOT repeat the user's input in the completions
-- Return only the JSON, no other text`;
+- Use emojis if appropriate
+- Return only the JSON, no other text
+`;
 
 export interface SuggestionResponse {
   suggestions: string[];
@@ -31,7 +31,14 @@ export async function generateSuggestions(
   text: string,
   history: Message[]
 ): Promise<SuggestionResponse> {
-  const previousMessages = history.map(m => m.text).join('\n');
+  const previousMessages = history
+    .map(m => {
+      if (m.type === 'message') {
+        return `USER: ${m.text}`;
+      }
+      return `PERSON-2: ${m.text}`;
+    })
+    .join('\n');
 
   const response = await client.chat.completions.create({
     messages: [
@@ -41,7 +48,7 @@ export async function generateSuggestions(
       },
       {
         role: 'user',
-        content: `PREVIOUS_MESSAGES:\n${previousMessages}\n\nINPUT_VALUE: ${text}`,
+        content: `PREVIOUS_MESSAGES:\n${previousMessages}`,
       },
       {
         role: 'assistant',
@@ -66,10 +73,10 @@ export async function generateSuggestions(
   content = content.replace('```', '');
 
   const suggestions = JSON.parse(content) as {
-    completions: string[];
+    replies: string[];
   };
 
   return {
-    suggestions: suggestions.completions,
+    suggestions: suggestions.replies,
   };
 }

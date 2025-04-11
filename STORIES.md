@@ -1,3 +1,12 @@
+## Suggested Responses
+
+Create a new component called SuggestedReplies.
+
+- On event new message it should call `/api/suggestions`
+- all existing messages should be sent in the request body
+- the response should be a list of suggestions
+- the suggestions should be shown as buttons
+
 ## markov chain
 
 Implement a markov chain based singleton class.

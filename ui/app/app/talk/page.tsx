@@ -9,6 +9,7 @@ import Help from './help';
 import { MessageList } from './message-list';
 import { Player } from './player';
 import Settings from './settings';
+import { SuggestedReplies } from './suggested-replies';
 import Transcription from './transcription';
 
 export const metadata = {
@@ -57,6 +58,7 @@ export default async function TalkPage() {
 
                 {/* Input area */}
                 <div className="pt-2 border-t border-zinc-200">
+                  <SuggestedReplies />
                   <Editor />
                 </div>
               </div>

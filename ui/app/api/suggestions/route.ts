@@ -1,25 +1,21 @@
-import { generateSuggestions as generateOllamaSuggestions } from "./ollama";
-import { generateSuggestions as generateGroqSuggestions } from "./groq";
+import { NextResponse } from 'next/server';
 
-const MODEL_PROVIDER = process.env.MODEL_PROVIDER || "groq";
+import type { Message } from '@/supabase/types';
+
+import { generateSuggestions } from './groq';
 
 export async function POST(request: Request) {
   try {
-    const { text, history } = await request.json();
+    const { messages } = (await request.json()) as { messages: Message[] };
 
-    const generateSuggestions =
-      MODEL_PROVIDER === "groq"
-        ? generateGroqSuggestions
-        : generateOllamaSuggestions;
+    if (!messages || !Array.isArray(messages)) {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    }
 
-    const result = await generateSuggestions(text, history);
-
-    return Response.json(result);
+    const suggestions = await generateSuggestions('', messages);
+    return NextResponse.json(suggestions);
   } catch (error) {
-    console.error("Error generating suggestion:", error);
-    return Response.json(
-      { error: "Failed to generate suggestion" },
-      { status: 500 }
-    );
+    console.error('Error generating suggestions:', error);
+    return NextResponse.json({ error: 'Failed to generate suggestions' }, { status: 500 });
   }
 }
