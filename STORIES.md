@@ -1,3 +1,25 @@
+## markov chain
+
+Implement a markov chain based singleton class.
+
+- The class should be instantiated with a text file.
+- The class should process the text file and build a markov chain.
+- The class should have a method to return N suggestions based on given text.
+- The class should have a method to add a new text to the markov chain.
+
+Modify getSuggestions to predict both incomplete words and next words.
+
+- if prefix ends with a space, predict the next word.
+- if prefix doesn't end with a space, predict the incomplete word.
+
+Modify appendText to correctly handle inserting tokens.
+
+- if the last character is a punctuation, insert the token as is.
+- if the text is empty, insert the token as is.
+- if the text is ending with a space, insert the token as is.
+- if the text is not ending with a space and the last word matches the token prefix, replace the last word with the token.
+- if the text is not ending with a space and the last word doesn't match the token prefix, insert the token as is.
+
 ## konva
 
 Let’s create a new circular keyboard using konva. https://konvajs.org/docs/react/index.html
