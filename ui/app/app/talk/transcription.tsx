@@ -2,94 +2,81 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { MicrophoneIcon, PauseIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, MicrophoneIcon, PauseIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { useMicVAD, utils } from '@ricky0123/vad-react';
+import clsx from 'clsx';
 
 import { createMessage } from '@/app/actions/messages';
-import useAudioRecorder from '@/app/hooks/useRecorder';
 import { useMessages } from '@/components/context/messages';
 
 export default function Transcription() {
-  const { recording, startRecording, stopRecording, recordedBlob, clear } = useAudioRecorder();
   const { addMessage } = useMessages();
-  const [status, setStatus] = useState<'idle' | 'listening' | 'transcribing'>('idle');
-
-  const transcribeAudio = async () => {
-    if (!recordedBlob) {
+  const transcribeAudio = async (wav: Blob) => {
+    if (!wav) {
       return;
     }
 
-    setStatus('transcribing');
-
     const formData = new FormData();
-    formData.append('audio', recordedBlob);
+    formData.append('audio', wav);
 
-    try {
-      const response = await fetch('/api/transcribe', {
-        method: 'POST',
-        body: formData,
-      });
+    const response = await fetch('/api/transcribe', {
+      method: 'POST',
+      body: formData,
+    });
 
-      if (!response.ok) {
-        throw new Error('Transcription failed');
-      }
-
-      const result = await response.json();
-
-      const message = {
-        id: crypto.randomUUID(),
-        text: result.text,
-        type: 'transcription',
-      };
-
-      const createdMessage = await createMessage(message);
-
-      addMessage(createdMessage);
-    } catch (error) {
-      console.error('Transcription error:', error);
-    } finally {
-      clear();
-      setStatus('idle');
+    if (!response.ok) {
+      throw new Error('Transcription failed');
     }
+
+    const result = await response.json();
+
+    const message = {
+      id: crypto.randomUUID(),
+      text: result.text,
+      type: 'transcription',
+    };
+
+    const createdMessage = await createMessage(message);
+    addMessage(createdMessage);
   };
 
-  const toggleRecording = async () => {
-    if (recording) {
-      stopRecording();
-      setStatus('idle');
+  const { listening, loading, errored, userSpeaking, pause, start } = useMicVAD({
+    startOnLoad: false,
+    onSpeechEnd: async (audio: Float32Array) => {
+      const wav = utils.encodeWAV(audio);
+      const blob = new Blob([wav], { type: 'audio/wav' });
+      await transcribeAudio(blob);
+    },
+  });
+
+  const toggleRecording = () => {
+    if (listening) {
+      pause();
     } else {
-      startRecording();
-      setStatus('listening');
+      start();
     }
   };
 
-  useEffect(() => {
-    if (recordedBlob) {
-      transcribeAudio();
-    }
-  }, [recordedBlob]);
+  if (loading) {
+    return (
+      <div className="p-2 rounded-md bg-gray-100">
+        <ArrowPathIcon className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="relative">
-      <button
-        onClick={toggleRecording}
-        className={`p-2 rounded-full cursor-pointer ${
-          recording ? 'text-red-500' : 'text-zinc-500 hover:text-zinc-700'
-        }`}
-        disabled={status === 'transcribing'}
-      >
-        {status === 'transcribing' ? (
-          <div className="relative">
-            <MicrophoneIcon className="h-6 w-6 animate-ping" />
-          </div>
-        ) : recording ? (
-          <div className="relative">
-            <PauseIcon className="h-6 w-6" />
-            <div className="absolute -inset-1 animate-ping rounded-full border-2 border-red-500 opacity-75" />
-          </div>
-        ) : (
-          <MicrophoneIcon className="h-6 w-6" />
-        )}
-      </button>
-    </div>
+    <button
+      onClick={toggleRecording}
+      className={clsx(
+        'p-2 rounded-md cursor-pointer',
+        loading && 'bg-gray-100',
+        listening && !userSpeaking && 'bg-red-100 text-red-500',
+        userSpeaking && 'bg-green-100 text-green-500'
+      )}
+    >
+      {listening && <PauseIcon className="h-6 w-6" />}
+      {!listening && <MicrophoneIcon className="h-6 w-6" />}
+    </button>
   );
 }

@@ -12,6 +12,7 @@
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
     "@huggingface/transformers": "^3.4.0",
+    "@ricky0123/vad-react": "^0.0.28",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.49.1",
     "canvas": "^3.0.0-rc3",

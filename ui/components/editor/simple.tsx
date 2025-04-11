@@ -109,7 +109,7 @@ function Editor({ placeholder = 'Start typing...' }: EditorProps) {
           style={{ caretColor: 'auto' }}
         />
         <div className="mt-2 flex justify-between items-center gap-2 relative">
-          <EmotionsSelector emotions={emotions} />
+          {/* <EmotionsSelector emotions={emotions} /> */}
           {error && <div className="text-red-500">{error}</div>}
           <Button onClick={createMessage} color="dark/zinc" disabled={status === 'loading'}>
             {status === 'loading' ? 'Submitting...' : 'Submit'}

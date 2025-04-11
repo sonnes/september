@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 
+import clsx from 'clsx';
+
 import { useMessages } from '@/components/context/messages';
 import type { Message } from '@/supabase/types';
 
@@ -17,7 +19,12 @@ function Message({ message }: { message: Message }) {
   return (
     <div className={`mb-4 p-4 rounded-lg w-full transition-colors ${messageTypeStyles}`}>
       <div className="flex items-center justify-between gap-4">
-        <div className={`${message.type === 'transcription' ? 'text-blue-500' : 'text-gray-800'}`}>
+        <div
+          className={clsx(
+            message.type === 'transcription' ? 'text-blue-500' : 'text-gray-800',
+            'font-medium'
+          )}
+        >
           {message.text}
         </div>
         {message.type === 'message' && <PlayButton id={message.id} text={message.text} />}

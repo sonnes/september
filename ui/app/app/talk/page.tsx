@@ -46,7 +46,6 @@ export default async function TalkPage() {
                 <div className="p-4 mb-4 bg-white rounded-lg shadow-xs ring-1 ring-zinc-950/5">
                   <div className="flex items-center justify-between">
                     <Player />
-                    <div className="border-l border-zinc-200 h-12 mx-4" />
                     <Transcription />
                   </div>
                 </div>
