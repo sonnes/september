@@ -1,6 +1,7 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 
-import { Button } from '@/components/catalyst/button';
 import { useDebounce } from '@/hooks/useDebounce';
 
 import { MarkovChain } from './markov';

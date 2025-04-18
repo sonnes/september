@@ -81,7 +81,7 @@ function HeroSection() {
 
         <div className="flex flex-col sm:flex-row justify-center gap-4 mt-12">
           <Link
-            href="/app"
+            href="/app/talk"
             className="bg-gray-900 text-white font-bold px-8 py-4 rounded-xl hover:bg-gray-800 transition-colors flex items-center gap-2"
           >
             Get Started <ArrowRightIcon className="w-4 h-4" />
