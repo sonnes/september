@@ -12,19 +12,23 @@ interface SuggestionsProps {
   debounceMs?: number;
 }
 
-const markov = MarkovChain.getInstance();
-markov.initializeCSV('/corpus.csv');
-markov.initializeCSV('/ngsl.csv');
-
 export default function Suggestions({ text, onSelect, debounceMs = 300 }: SuggestionsProps) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [markov, setMarkov] = useState<MarkovChain | null>(null);
+
+  useEffect(() => {
+    const chain = MarkovChain.getInstance();
+    chain.initializeCSV(new URL('/corpus.csv', window.location.origin).toString());
+    chain.initializeCSV(new URL('/ngsl.csv', window.location.origin).toString());
+    setMarkov(chain);
+  }, []);
 
   const debouncedText = useDebounce(text, debounceMs);
 
   const fetchSuggestion = async (text: string) => {
     if (!text) return;
 
-    const suggestions = markov.getSuggestions(text, 10);
+    const suggestions = markov?.getSuggestions(text, 10) || [];
     setSuggestions(suggestions);
   };
 
