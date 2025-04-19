@@ -12,111 +12,29 @@ import { Input } from '@/components/catalyst/input';
 import { useAccount, useAuth } from '@/components/context/auth';
 import { createClient } from '@/supabase/client';
 
-import { type UpdateAccountResponse, deleteDocument, updateAccount } from './actions';
+import { type OnboardingResponse, deleteDocument, updateOnboarding } from './actions';
 
-// Personal Info Section
-function PersonalInfoSection({ state }: { state: UpdateAccountResponse }) {
+// Name Section
+function NameSection({ state }: { state: OnboardingResponse }) {
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
       <div className="px-4 sm:px-0">
-        <h2 className="text-base/7 font-semibold text-gray-900">Personal Information</h2>
-        <p className="mt-1 text-sm/6 text-gray-600">Please provide your personal details.</p>
+        <h2 className="text-base/7 font-semibold text-gray-900">Your Name</h2>
+        <p className="mt-1 text-sm/6 text-gray-600">Please provide your full name.</p>
       </div>
 
-      <div className="bg-white shadow-sm ring-1 ring-gray-200 sm:rounded-xl md:col-span-2">
-        <div className="px-4 py-6 sm:p-8">
+      <div className="md:col-span-2">
+        <div className="px-4">
           <div className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-            <div className="sm:col-span-3">
-              <Field>
-                <div className="p-1 flex justify-between items-center">
-                  <Label className="font-medium text-gray-900">First Name</Label>
-                  <span className="text-red-500 text-xs">*Required</span>
-                </div>
-                <Input
-                  name="first_name"
-                  defaultValue={state.inputs?.first_name?.toString()}
-                  required
-                />
-                {state.errors?.first_name && (
-                  <p className="mt-2 text-sm text-red-500">{state.errors.first_name.join(', ')}</p>
-                )}
-              </Field>
-            </div>
-
-            <div className="sm:col-span-3">
-              <Field>
-                <div className="p-1 flex justify-between items-center">
-                  <Label className="font-medium text-gray-900">Last Name</Label>
-                </div>
-                <Input name="last_name" defaultValue={state.inputs?.last_name?.toString()} />
-                {state.errors?.last_name && (
-                  <p className="mt-2 text-sm text-red-500">{state.errors.last_name.join(', ')}</p>
-                )}
-              </Field>
-            </div>
-
-            <div className="sm:col-span-3">
-              <Field>
-                <div className="p-1 flex justify-between items-center">
-                  <Label className="font-medium text-gray-900">City</Label>
-                  <span className="text-red-500 text-xs">*Required</span>
-                </div>
-                <Input name="city" defaultValue={state.inputs?.city?.toString()} required />
-                {state.errors?.city && (
-                  <p className="mt-2 text-sm text-red-500">{state.errors.city.join(', ')}</p>
-                )}
-              </Field>
-            </div>
-
-            <div className="sm:col-span-3">
-              <Field>
-                <div className="p-1 flex justify-between items-center">
-                  <Label className="font-medium text-gray-900">Country</Label>
-                  <span className="text-red-500 text-xs">*Required</span>
-                </div>
-                <Input name="country" defaultValue={state.inputs?.country?.toString()} required />
-                {state.errors?.country && (
-                  <p className="mt-2 text-sm text-red-500">{state.errors.country.join(', ')}</p>
-                )}
-              </Field>
-            </div>
-
             <div className="col-span-full">
-              <h3 className="font-medium text-gray-900">Alternative Contact</h3>
-              <p className="mt-1 text-sm/6 text-gray-600">
-                Optional. Details of caretaker, friend or family member who is helping you with your
-                use of the service.
-              </p>
-            </div>
-
-            <div className="sm:col-span-3">
               <Field>
                 <div className="p-1 flex justify-between items-center">
-                  <Label className="font-medium text-gray-900">Contact Name</Label>
+                  <Label className="font-medium text-gray-900">Full Name</Label>
+                  <span className="text-red-500 text-xs">*Required</span>
                 </div>
-                <Input name="contact_name" defaultValue={state.inputs?.contact_name?.toString()} />
-                {state.errors?.contact_name && (
-                  <p className="mt-2 text-sm text-red-500">
-                    {state.errors.contact_name.join(', ')}
-                  </p>
-                )}
-              </Field>
-            </div>
-
-            <div className="sm:col-span-3">
-              <Field>
-                <div className="p-1 flex justify-between items-center">
-                  <Label className="font-medium text-gray-900">Contact Email</Label>
-                </div>
-                <Input
-                  name="contact_email"
-                  type="email"
-                  defaultValue={state.inputs?.contact_email?.toString()}
-                />
-                {state.errors?.contact_email && (
-                  <p className="mt-2 text-sm text-red-500">
-                    {state.errors.contact_email.join(', ')}
-                  </p>
+                <Input name="name" defaultValue={state.inputs?.name} required />
+                {state.errors?.name && (
+                  <p className="mt-2 text-sm text-red-500">{state.errors.name.join(', ')}</p>
                 )}
               </Field>
             </div>
@@ -128,7 +46,7 @@ function PersonalInfoSection({ state }: { state: UpdateAccountResponse }) {
 }
 
 // Medical Info Section
-function MedicalInfoSection({ state }: { state: UpdateAccountResponse }) {
+function MedicalInfoSection({ state }: { state: OnboardingResponse }) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [documentPath, setDocumentPath] = useState(state.inputs?.document_path || null);
@@ -172,7 +90,6 @@ function MedicalInfoSection({ state }: { state: UpdateAccountResponse }) {
 
     try {
       await deleteDocument(documentPath);
-
       setDocumentPath(null);
     } catch (error) {
       console.error('Failed to delete document:', error);
@@ -189,8 +106,8 @@ function MedicalInfoSection({ state }: { state: UpdateAccountResponse }) {
         </p>
       </div>
 
-      <div className="bg-white shadow-sm ring-1 ring-gray-200 sm:rounded-xl md:col-span-2">
-        <div className="px-4 py-6 sm:p-8">
+      <div className="md:col-span-2">
+        <div className="px-4">
           <div className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
             <div className="sm:col-span-4">
               <Field>
@@ -200,7 +117,7 @@ function MedicalInfoSection({ state }: { state: UpdateAccountResponse }) {
                 </div>
                 <Input
                   name="primary_diagnosis"
-                  defaultValue={state.inputs?.primary_diagnosis?.toString()}
+                  defaultValue={state.inputs?.primary_diagnosis}
                   required
                 />
                 {state.errors?.primary_diagnosis && (
@@ -220,7 +137,7 @@ function MedicalInfoSection({ state }: { state: UpdateAccountResponse }) {
                 <Input
                   name="year_of_diagnosis"
                   type="number"
-                  defaultValue={state.inputs?.year_of_diagnosis?.toString()}
+                  defaultValue={state.inputs?.year_of_diagnosis}
                   required
                 />
                 {state.errors?.year_of_diagnosis && (
@@ -238,10 +155,7 @@ function MedicalInfoSection({ state }: { state: UpdateAccountResponse }) {
                     Additional Medical Information
                   </Label>
                 </div>
-                <Input
-                  name="medical_notes"
-                  defaultValue={state.inputs?.medical_notes?.toString()}
-                />
+                <Input name="medical_notes" defaultValue={state.inputs?.medical_notes} />
                 {state.errors?.medical_notes && (
                   <p className="mt-2 text-sm text-red-500">
                     {state.errors.medical_notes.join(', ')}
@@ -303,7 +217,7 @@ function MedicalInfoSection({ state }: { state: UpdateAccountResponse }) {
                       </div>
                       {uploadError && <p className="mt-2 text-sm text-red-500">{uploadError}</p>}
                       <p className="text-xs/5 text-gray-600">
-                        PDF, DOC, DOCX, JPG, JPEG, PNG up to 10MB
+                        PDF, DOC, DOCX, JPG, JPEG, PNG up to 5MB
                       </p>
                     </div>
                   </div>
@@ -318,7 +232,7 @@ function MedicalInfoSection({ state }: { state: UpdateAccountResponse }) {
 }
 
 // Consent Section
-function ConsentSection({ state }: { state: UpdateAccountResponse }) {
+function ConsentSection({ state }: { state: OnboardingResponse }) {
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
       <div className="px-4 sm:px-0">
@@ -326,19 +240,21 @@ function ConsentSection({ state }: { state: UpdateAccountResponse }) {
         <p className="mt-1 text-sm/6 text-gray-600">
           Please review and accept our terms and conditions to continue.
         </p>
+
+        <p className="mt-4 text-sm/6 text-gray-600">
+          Your data is used to provide voice cloning services. All your messages are processed by
+          our service providers. Do not type any passwords or sensitive information.
+        </p>
       </div>
 
-      <div className="bg-white shadow-sm ring-1 ring-gray-200 sm:rounded-xl md:col-span-2">
-        <div className="px-4 py-6 sm:p-8">
+      <div className="md:col-span-2">
+        <div className="px-4">
           <div className="max-w-2xl space-y-10">
             <fieldset>
               <div className="space-y-6">
                 <div className="flex gap-3">
                   <div className="flex h-6 items-center">
-                    <Checkbox
-                      name="terms_accepted"
-                      defaultChecked={state.inputs?.terms_accepted ?? false}
-                    />
+                    <Checkbox name="terms_accepted" defaultChecked={state.inputs?.terms_accepted} />
                   </div>
                   <div className="text-sm/6">
                     <label className="font-medium text-gray-900">
@@ -351,7 +267,7 @@ function ConsentSection({ state }: { state: UpdateAccountResponse }) {
                   <div className="flex h-6 items-center">
                     <Checkbox
                       name="privacy_accepted"
-                      defaultChecked={state.inputs?.privacy_accepted ?? false}
+                      defaultChecked={state.inputs?.privacy_accepted}
                     />
                   </div>
                   <div className="text-sm/6">
@@ -367,37 +283,28 @@ function ConsentSection({ state }: { state: UpdateAccountResponse }) {
   );
 }
 
-// Main Form Component
-export default function AccountForm() {
+export default function OnboardingForm() {
   const { account } = useAccount();
-
-  const initialState: UpdateAccountResponse = {
+  const initialState: OnboardingResponse = {
     success: false,
     message: '',
     inputs: {
-      first_name: account.first_name ?? '',
-      last_name: account.last_name ?? '',
-      city: account.city ?? '',
-      country: account.country ?? '',
-      contact_name: account.contact_name ?? '',
-      contact_email: account.contact_email ?? '',
+      name: account.name ?? '',
       primary_diagnosis: account.primary_diagnosis ?? '',
-      year_of_diagnosis: account.year_of_diagnosis ?? 1999,
+      year_of_diagnosis: account.year_of_diagnosis ?? new Date().getFullYear(),
       medical_notes: account.medical_notes ?? '',
       terms_accepted: account.terms_accepted ?? false,
       privacy_accepted: account.privacy_accepted ?? false,
       document_path: account.document_path ?? '',
-      has_consent: account.has_consent ?? false,
     },
     errors: {},
   };
-
-  const [state, formAction, isPending] = useActionState(updateAccount, initialState);
+  const [state, formAction, isPending] = useActionState(updateOnboarding, initialState);
 
   return (
     <div className="divide-y divide-gray-400">
       <form action={formAction}>
-        <PersonalInfoSection state={state} />
+        <NameSection state={state} />
         <MedicalInfoSection state={state} />
         <ConsentSection state={state} />
 
@@ -413,7 +320,7 @@ export default function AccountForm() {
             )}
             <div className="flex-shrink-0 ml-auto">
               <Button type="submit" disabled={isPending}>
-                {isPending ? 'Saving...' : 'Save Changes'}
+                {isPending ? 'Saving...' : 'Complete Onboarding'}
               </Button>
             </div>
           </div>

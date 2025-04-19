@@ -12,19 +12,13 @@ export type Database = {
       accounts: {
         Row: {
           approved: boolean | null
-          city: string | null
-          contact_email: string | null
-          contact_name: string | null
-          country: string | null
           created_at: string | null
           document_path: string | null
-          first_name: string | null
           has_cloned_voice: boolean | null
-          has_consent: boolean | null
-          has_first_message: boolean | null
           id: string
-          last_name: string | null
           medical_notes: string | null
+          name: string | null
+          onboarding_completed: boolean | null
           primary_diagnosis: string | null
           privacy_accepted: boolean | null
           terms_accepted: boolean | null
@@ -34,19 +28,13 @@ export type Database = {
         }
         Insert: {
           approved?: boolean | null
-          city?: string | null
-          contact_email?: string | null
-          contact_name?: string | null
-          country?: string | null
           created_at?: string | null
           document_path?: string | null
-          first_name?: string | null
           has_cloned_voice?: boolean | null
-          has_consent?: boolean | null
-          has_first_message?: boolean | null
           id: string
-          last_name?: string | null
           medical_notes?: string | null
+          name?: string | null
+          onboarding_completed?: boolean | null
           primary_diagnosis?: string | null
           privacy_accepted?: boolean | null
           terms_accepted?: boolean | null
@@ -56,19 +44,13 @@ export type Database = {
         }
         Update: {
           approved?: boolean | null
-          city?: string | null
-          contact_email?: string | null
-          contact_name?: string | null
-          country?: string | null
           created_at?: string | null
           document_path?: string | null
-          first_name?: string | null
           has_cloned_voice?: boolean | null
-          has_consent?: boolean | null
-          has_first_message?: boolean | null
           id?: string
-          last_name?: string | null
           medical_notes?: string | null
+          name?: string | null
+          onboarding_completed?: boolean | null
           primary_diagnosis?: string | null
           privacy_accepted?: boolean | null
           terms_accepted?: boolean | null

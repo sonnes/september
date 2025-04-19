@@ -75,3 +75,16 @@ export async function setClonedVoice(account: Account) {
     throw new Error(error.message);
   }
 }
+
+export async function createAccount({ id, name }: { id: string; name: string }) {
+  const supabase = await createClient();
+
+  const { error } = await supabase.schema('api').from('accounts').upsert({
+    id,
+    name,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}

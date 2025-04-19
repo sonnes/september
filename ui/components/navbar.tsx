@@ -34,8 +34,6 @@ const homeLinks = [
   { name: 'Contact', href: '/contact' },
 ];
 
-const profileLinks = [{ name: 'Account', href: '/app/account' }];
-
 type NavbarProps = {
   color?: ThemeColor;
 };
@@ -69,10 +67,10 @@ export default function Navbar({ color = 'indigo' }: NavbarProps) {
               >
                 <div className="flex items-center px-2 lg:px-0">
                   <div className="shrink-0">
-                    <Link href={user ? '/app' : '/'} className="flex items-center gap-2">
+                    <Link href={user ? '/app/talk' : '/'} className="flex items-center gap-2">
                       <Image alt="September" src={`/logo.png`} width={32} height={32} />
                       <span className="text-white font-semibold text-lg tracking-tight">
-                        septemberfox
+                        september
                       </span>
                     </Link>
                   </div>
@@ -163,19 +161,7 @@ const MobileProfile = () => {
         </div>
         <DropdownDivider />
       </div>
-      {profileLinks.map(item => (
-        <DisclosureButton
-          key={item.name}
-          as={Link}
-          href={item.href}
-          className={clsx(
-            'block rounded-md px-3 py-2 text-base font-medium cursor-pointer',
-            clsx('text-white', theme.bgHover)
-          )}
-        >
-          {item.name}
-        </DisclosureButton>
-      ))}
+
       <DisclosureButton
         as={Link}
         href={'javascript:void(0)'}
@@ -279,11 +265,7 @@ function ProfileDropdown() {
           </div>
         </DropdownHeader>
         <DropdownDivider />
-        {profileLinks.map(item => (
-          <DropdownItem className="cursor-pointer" key={item.name} href={item.href}>
-            {item.name}
-          </DropdownItem>
-        ))}
+
         <DropdownItem
           className="cursor-pointer"
           onClick={() => {

@@ -1,3 +1,6 @@
+import { redirect } from 'next/navigation';
+
+import { getAccount } from '@/app/actions/account';
 import { getMessages } from '@/app/actions/messages';
 import { MessagesProvider } from '@/components/context/messages';
 import { PlayerProvider } from '@/components/context/player';
@@ -26,6 +29,12 @@ const defaultSettings: TalkSettings = {
 };
 
 export default async function TalkPage() {
+  const account = await getAccount();
+
+  if (!account.onboarding_completed) {
+    redirect('/app/onboarding');
+  }
+
   const messages = await getMessages().then(messages => messages.reverse());
 
   return (
@@ -43,7 +52,7 @@ export default async function TalkPage() {
               </div>
             </Layout.Header>
             <Layout.Content>
-              <div className="flex flex-col h-[calc(100vh-280px)]">
+              <div className="flex flex-col h-[calc(100vh-296px)]">
                 <div className="p-4 mb-4 bg-white rounded-lg shadow-xs ring-1 ring-zinc-950/5">
                   <div className="flex items-center justify-between">
                     <Player />
