@@ -75,14 +75,14 @@ function Editor({ placeholder = 'Start typing...' }: EditorProps) {
   };
 
   const handleVirtualKeyPress = (key: string) => {
-    switch (key) {
+    switch (key.toLowerCase()) {
       case 'space':
         setText(text + ' ');
         break;
-      case '⌫':
+      case 'backspace':
         setText(text.slice(0, -1));
         break;
-      case 'Enter':
+      case 'enter':
         createMessage();
         break;
       default:
