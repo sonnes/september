@@ -100,21 +100,20 @@ function Editor({ placeholder = 'Start typing...' }: EditorProps) {
       <div className="flex-1">
         <Suggestions text={text} onSelect={handleSuggestionSelect} />
 
-        <textarea
-          value={text}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          className="flex-1 w-full p-3 rounded-xl border border-zinc-400"
-          style={{ caretColor: 'auto' }}
-        />
-        <div className="mt-2 flex justify-between items-center gap-2 relative">
-          {/* <EmotionsSelector emotions={emotions} /> */}
-          {error && <div className="text-red-500">{error}</div>}
+        <div className="flex gap-2">
+          <textarea
+            value={text}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            className="flex-1 w-full p-3 rounded-xl border border-zinc-400"
+            style={{ caretColor: 'auto' }}
+          />
           <Button onClick={createMessage} color="dark/zinc" disabled={status === 'loading'}>
             {status === 'loading' ? 'Submitting...' : 'Submit'}
           </Button>
         </div>
+        <div className="mt-2">{error && <div className="text-red-500">{error}</div>}</div>
       </div>
       <Keyboard onKeyPress={handleVirtualKeyPress} />
     </div>

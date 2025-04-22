@@ -13,16 +13,16 @@ function Message({ message }: { message: Message }) {
   const messageTypeStyles =
     {
       transcription: 'bg-blue-50 border border-blue-100',
-      message: 'bg-white border border-gray-200',
-    }[message.type] || 'bg-gray-50 border border-gray-100';
+      message: 'bg-zinc-50 border border-zinc-100',
+    }[message.type] || 'bg-zinc-50 border border-zinc-100';
 
   return (
-    <div className={`mb-4 p-4 rounded-lg w-full transition-colors ${messageTypeStyles}`}>
-      <div className="flex items-center justify-between gap-4">
+    <div className={`mb-4 p-2 rounded-lg w-full max-w-full transition-colors ${messageTypeStyles}`}>
+      <div className="flex items-center justify-between gap-4 min-w-0">
         <div
           className={clsx(
-            message.type === 'transcription' ? 'text-blue-500' : 'text-gray-800',
-            'font-medium'
+            message.type === 'transcription' ? 'text-blue-500' : 'text-zinc-600',
+            'font-medium break-words overflow-hidden'
           )}
         >
           {message.text}

@@ -43,12 +43,13 @@ const TOP_CIRCLE_KEYS: CircleKey[] = [
   { key: 'p', startAngle: -20, endAngle: 0, radius: 180 },
 
   // Top middle ring (medium frequency)
-  { key: 'b', startAngle: -180, endAngle: -150, radius: 120 },
-  { key: 'f', startAngle: -150, endAngle: -120, radius: 120 },
-  { key: 'm', startAngle: -120, endAngle: -90, radius: 120 },
-  { key: 'c', startAngle: -90, endAngle: -60, radius: 120 },
-  { key: 'l', startAngle: -60, endAngle: -30, radius: 120 },
-  { key: 'g', startAngle: -30, endAngle: 0, radius: 120 },
+  { key: 's', startAngle: -180, endAngle: -180 + 180 / 7, radius: 120 },
+  { key: 'b', startAngle: -180 + 180 / 7, endAngle: -180 + (2 * 180) / 7, radius: 120 },
+  { key: 'f', startAngle: -180 + (2 * 180) / 7, endAngle: -180 + (3 * 180) / 7, radius: 120 },
+  { key: 'm', startAngle: -180 + (3 * 180) / 7, endAngle: -180 + (4 * 180) / 7, radius: 120 },
+  { key: 'c', startAngle: -180 + (4 * 180) / 7, endAngle: -180 + (5 * 180) / 7, radius: 120 },
+  { key: 'l', startAngle: -180 + (5 * 180) / 7, endAngle: -180 + (6 * 180) / 7, radius: 120 },
+  { key: 'g', startAngle: -180 + (6 * 180) / 7, endAngle: -180 + (7 * 180) / 7, radius: 120 },
 
   // Top inner ring (most frequent)
   { key: 'e', startAngle: -180, endAngle: -90, radius: 60 }, // Most common letter
@@ -100,19 +101,33 @@ export function CircularKeyboard({ onKeyPress }: KeyboardProps) {
   const [stageSize, setStageSize] = React.useState({ width: 0, height: 0 });
   const [isShiftPressed, setIsShiftPressed] = React.useState(false);
   const [hoveredKey, setHoveredKey] = React.useState<string | null>(null);
+  const [isMounted, setIsMounted] = React.useState(false);
 
   useEffect(() => {
-    if (containerRef.current) {
-      setStageSize({
-        width: containerRef.current.offsetWidth,
-        height: containerRef.current.offsetHeight,
-      });
-    }
+    setIsMounted(true);
+    const updateSize = () => {
+      if (containerRef.current) {
+        setStageSize({
+          width: containerRef.current.offsetWidth,
+          height: containerRef.current.offsetHeight,
+        });
+      }
+    };
+
+    updateSize();
+    window.addEventListener('resize', updateSize);
+
+    return () => {
+      window.removeEventListener('resize', updateSize);
+      setIsMounted(false);
+    };
   }, []);
 
   const handleButtonClick = (key: string) => {
     if (key === 'Shift') {
       setIsShiftPressed(!isShiftPressed);
+    } else if (key === 'Space') {
+      onKeyPress(' ');
     } else if (onKeyPress) {
       if (isShiftPressed) {
         if (/^[a-z]$/.test(key)) {
@@ -200,6 +215,8 @@ export function CircularKeyboard({ onKeyPress }: KeyboardProps) {
         height={BAR_HEIGHT}
         fill="#f1f1f1"
         cornerRadius={22}
+        stroke="#dddddd"
+        strokeWidth={1}
         shadowColor="rgba(0, 0, 0, 0.1)"
         shadowBlur={4}
         shadowOffset={{ x: 0, y: 2 }}
@@ -264,22 +281,28 @@ export function CircularKeyboard({ onKeyPress }: KeyboardProps) {
       ref={containerRef}
       style={{
         width: '100%',
-        height: '600px',
+        height: '420px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
-      <Stage width={stageSize.width} height={stageSize.height}>
-        <Layer>
-          <Group>{renderKeys(stageSize.width / 2, stageSize.height / 2, TOP_CIRCLE_KEYS)}</Group>
-          <Group y={stageSize.height / 2}>{renderControlButtons()}</Group>
-          <Group>
-            {renderKeys(stageSize.width / 2, stageSize.height / 2 + 47, BOTTOM_CIRCLE_KEYS)}
-          </Group>
-        </Layer>
-      </Stage>
+      {isMounted && stageSize.width > 0 && stageSize.height > 0 && (
+        <Stage width={stageSize.width} height={stageSize.height}>
+          <Layer>
+            <Group>
+              {renderKeys(stageSize.width / 2, stageSize.height / 2 - 30, TOP_CIRCLE_KEYS)}
+            </Group>
+            <Group>
+              {renderKeys(stageSize.width / 2, stageSize.height / 2 - 5, BOTTOM_CIRCLE_KEYS)}
+            </Group>
+          </Layer>
+          <Layer>
+            <Group y={stageSize.height / 2 - 40}>{renderControlButtons()}</Group>
+          </Layer>
+        </Stage>
+      )}
     </div>
   );
 }

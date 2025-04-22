@@ -46,7 +46,7 @@ export function SuggestedReplies() {
 
     // Only fetch suggestions when there are messages
     if (messages.length > 0) {
-      fetchSuggestions();
+      // fetchSuggestions();
     }
   }, [messages]);
 
