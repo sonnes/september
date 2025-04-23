@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-
 import clsx from 'clsx';
+import moment from 'moment';
 
 import { useMessages } from '@/components/context/messages';
 import type { Message } from '@/supabase/types';
@@ -19,13 +18,16 @@ function Message({ message }: { message: Message }) {
   return (
     <div className={`mb-4 p-2 rounded-lg w-full max-w-full transition-colors ${messageTypeStyles}`}>
       <div className="flex items-center justify-between gap-4 min-w-0">
-        <div
-          className={clsx(
-            message.type === 'transcription' ? 'text-blue-500' : 'text-zinc-600',
-            'font-medium break-words overflow-hidden'
-          )}
-        >
-          {message.text}
+        <div className="flex-1 min-w-0">
+          <div
+            className={clsx(
+              message.type === 'transcription' ? 'text-blue-500' : 'text-zinc-600',
+              'font-medium break-words overflow-hidden'
+            )}
+          >
+            {message.text}
+          </div>
+          <div className="text-xs text-zinc-400 mt-1">{moment(message.created_at).fromNow()}</div>
         </div>
         {message.type === 'message' && <PlayButton id={message.id} text={message.text} />}
       </div>
@@ -35,30 +37,12 @@ function Message({ message }: { message: Message }) {
 
 export function MessageList() {
   const { messages } = useMessages();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    if (messages.length > 0 && messages[messages.length - 1].type === 'message') {
-      scrollToBottom();
-    }
-  }, [messages]);
-
-  // Scroll to bottom on initial load
-  useEffect(() => {
-    scrollToBottom();
-  }, []);
 
   return (
     <>
-      {messages.map((message, index) => (
+      {[...messages].reverse().map((message, index) => (
         <Message key={index} message={message} />
       ))}
-      <div ref={messagesEndRef} />
     </>
   );
 }
