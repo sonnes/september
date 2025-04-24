@@ -27,7 +27,7 @@ export function SuggestedReplies() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ messages }),
+          body: JSON.stringify({ messages: messages.slice(-5) }),
         });
 
         if (!response.ok) {
@@ -45,8 +45,14 @@ export function SuggestedReplies() {
     };
 
     // Only fetch suggestions when there are messages
+    // in last 5 minutes
     if (messages.length > 0) {
-      // fetchSuggestions();
+      const lastMessage = messages[messages.length - 1];
+      const lastMessageTime = new Date(lastMessage.created_at ?? '');
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      if (lastMessageTime > fiveMinutesAgo) {
+        fetchSuggestions();
+      }
     }
   }, [messages]);
 
