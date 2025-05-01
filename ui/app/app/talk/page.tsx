@@ -9,7 +9,7 @@ import Layout from '@/components/layout';
 
 import { SettingsProvider, TalkSettings } from './context';
 import Help from './help';
-import { MessageList } from './message-list';
+import { MessageList, MobileMessageList } from './message-list';
 import { Player } from './player';
 import Settings from './settings';
 import { SuggestedReplies } from './suggested-replies';
@@ -46,6 +46,7 @@ export default async function TalkPage() {
               <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold tracking-tight text-white">Talk</h1>
                 <div className="flex items-center space-x-2">
+                  <MobileMessageList />
                   <Help />
                   <Settings />
                 </div>

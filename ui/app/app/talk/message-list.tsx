@@ -1,8 +1,14 @@
 'use client';
 
+import { useState } from 'react';
+
+import { ChatBubbleLeftRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 import moment from 'moment';
 
+import { DialogTitle } from '@/components/catalyst/dialog';
+import { DialogBody } from '@/components/catalyst/dialog';
+import { Dialog } from '@/components/catalyst/dialog';
 import { useMessages } from '@/components/context/messages';
 import type { Message } from '@/supabase/types';
 
@@ -44,5 +50,36 @@ export function MessageList() {
         <Message key={index} message={message} />
       ))}
     </>
+  );
+}
+
+export function MobileMessageList() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="md:hidden">
+      <button
+        className="p-2 text-white rounded-full transition-colors cursor-pointer"
+        onClick={() => setIsOpen(prev => !prev)}
+      >
+        <ChatBubbleLeftRightIcon className="w-8 h-8" />
+      </button>
+
+      <Dialog open={isOpen} onClose={() => setIsOpen(false)}>
+        <div className="flex items-center justify-between py-4 border-b">
+          <DialogTitle className="text-xl font-semibold pr-8">History</DialogTitle>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="rounded-full p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            aria-label="Close"
+          >
+            <XMarkIcon className="h-6 w-6" />
+          </button>
+        </div>
+        <DialogBody>
+          <MessageList />
+        </DialogBody>
+      </Dialog>
+    </div>
   );
 }
