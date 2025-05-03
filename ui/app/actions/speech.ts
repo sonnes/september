@@ -13,10 +13,11 @@ interface CreateSpeechParams {
   id: string;
   text: string;
   tone?: string;
+  previous_text?: string;
   settings?: SpeechSettings;
 }
 
-export const createSpeech = async ({ id, text, settings }: CreateSpeechParams) => {
+export const createSpeech = async ({ id, text, previous_text, settings }: CreateSpeechParams) => {
   const account = await getAccount();
   const voiceId = account?.voice_id || defaultVoiceId;
 
@@ -24,6 +25,7 @@ export const createSpeech = async ({ id, text, settings }: CreateSpeechParams) =
     const response = await ElevenAPI.textToSpeech.convert(voiceId, {
       output_format: ElevenLabs.OutputFormat.Mp34410032,
       text: text,
+      previous_text: previous_text,
       model_id: settings?.model_id || 'eleven_multilingual_v2',
       voice_settings: {
         speed: settings?.speed || 1,

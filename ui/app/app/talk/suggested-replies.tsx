@@ -61,10 +61,16 @@ export function SuggestedReplies() {
   }
 
   const handleReplyClick = async (reply: string) => {
+    const previousText = messages
+      .slice(0, 5)
+      .map(message => message.text)
+      .join('.\n');
+
     const message = {
       id: crypto.randomUUID(),
       text: reply,
       type: 'message',
+      previous_text: previousText,
     };
 
     const createdMessage = await createUserMessage(message);

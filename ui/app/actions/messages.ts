@@ -38,6 +38,7 @@ interface CreateMessageParams {
   text: string;
   type: string;
   tone?: string;
+  previous_text?: string;
   settings?: SpeechSettings;
 }
 

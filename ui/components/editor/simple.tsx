@@ -31,6 +31,7 @@ function Editor({ placeholder = 'Start typing...' }: EditorProps) {
   const [status, setStatus] = useState<'idle' | 'loading'>('idle');
   const [error, setError] = useState<string | null>(null);
 
+  const { messages } = useMessages();
   const { text, setText, tone, appendText } = useEditor();
   const { addMessage } = useMessages();
   const { setPlaying } = usePlayer();
@@ -43,11 +44,18 @@ function Editor({ placeholder = 'Start typing...' }: EditorProps) {
   const createMessage = async () => {
     setError(null);
     setStatus('loading');
+
+    const previousText = messages
+      .slice(0, 5)
+      .map(message => message.text)
+      .join('.\n');
+
     const request = {
       id: crypto.randomUUID(),
       text,
       tone,
       settings,
+      previous_text: previousText,
       type: 'message',
     };
 
