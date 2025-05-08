@@ -17,6 +17,7 @@ export interface TalkSettings {
   similarity: number;
   style: number;
   speaker_boost: boolean;
+  audio_output_device_id?: string;
 }
 
 interface SettingsContextType {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import Link from 'next/link';
 
@@ -19,8 +19,21 @@ import { MODELS, TalkSettings, useSettings } from './context';
 
 export default function Settings() {
   const [isOpen, setIsOpen] = useState(false);
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
 
   const { settings, updateSetting } = useSettings();
+
+  // Fetch audio output devices
+  useEffect(() => {
+    async function fetchAudioDevices() {
+      if (!navigator.mediaDevices?.enumerateDevices) return;
+
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      setAudioDevices(devices.filter(d => d.kind === 'audiooutput'));
+    }
+
+    if (isOpen) fetchAudioDevices();
+  }, [isOpen]);
 
   const openDialog = () => {
     setIsOpen(true);
@@ -166,6 +179,33 @@ export default function Settings() {
                 ></span>
               </div>
             </div>
+
+            {/* Audio Output Device Dropdown */}
+            {audioDevices.length > 0 && (
+              <>
+                <h3 className="text-md font-medium pb-2">Audio Output Device</h3>
+                <Dropdown>
+                  <DropdownButton as="div">
+                    <div className="rounded-xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50">
+                      <span className="font-medium">
+                        {audioDevices.find(d => d.deviceId === settings.audio_output_device_id)
+                          ?.label || 'Default'}
+                      </span>
+                    </div>
+                  </DropdownButton>
+                  <DropdownMenu className="z-50">
+                    {audioDevices.map(device => (
+                      <DropdownItem
+                        key={device.deviceId}
+                        onClick={() => updateSetting('audio_output_device_id', device.deviceId)}
+                      >
+                        {device.label || `Device ${device.deviceId}`}
+                      </DropdownItem>
+                    ))}
+                  </DropdownMenu>
+                </Dropdown>
+              </>
+            )}
           </DialogBody>
 
           <DialogActions>
