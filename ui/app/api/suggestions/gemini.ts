@@ -42,7 +42,6 @@ export async function generateSuggestions(
     .join('\n');
 
   const prompt = [
-    { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
     { role: 'user', parts: [{ text: `PREVIOUS_MESSAGES:\n${previousMessages}` }] },
     { role: 'model', parts: [{ text: '```json' }] },
   ];
@@ -51,6 +50,7 @@ export async function generateSuggestions(
     model: 'gemini-2.0-flash-001',
     contents: prompt,
     config: {
+      systemInstruction: SYSTEM_PROMPT,
       temperature: 0.7,
       maxOutputTokens: 1024,
       stopSequences: ['```'],
