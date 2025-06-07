@@ -1,0 +1,23 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Package Manager Rule
+
+This project uses **Bun** as its package manager.
+
+- All package management commands (install, run, etc.) should use `bun` instead of `npm` or `yarn`.
+- Update documentation and scripts to reference `bun` where appropriate.
+
+**Example:**
+
+```sh
+# Good
+bun install
+bun run dev
+
+# Bad
+npm install
+yarn install
+```

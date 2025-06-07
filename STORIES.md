@@ -1,3 +1,23 @@
+## Read
+
+Abstractions:
+
+- Deck - A collection of cards with title, description, created at, updated at, author, and a list of cards.
+- Card - A card can have 1 or more of - image, text, audio, video. Each card has a unique id and must have deck_id.
+
+Implement a new page called `/app/read`. The page accepts 1 or more images. It uploads the images to supabase storage and shows a list of uploaded images.
+
+On submit, a server action is called with the uploaded image paths.
+
+The server action does the following:
+
+- Sends images to extract text
+- Receives the text and sends it for voice generation
+- Creates a new deck with the title
+- Each image is converted to a card with image, text, and audio
+- Each card is added to the deck
+- The deck is returned to the client
+
 ## Suggested Responses
 
 Create a new component called SuggestedReplies.
