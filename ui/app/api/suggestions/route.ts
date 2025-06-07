@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 import type { Message } from '@/supabase/types';
 
-import { generateSuggestions } from './groq';
+import { generateSuggestions } from './gemini';
 
 export async function POST(request: Request) {
   try {
