@@ -3,19 +3,16 @@
 ## Relevant Files
 
 - `components/editor/markdown-editor.tsx` - Main React component for the markdown editor
-- `components/editor/auto-completion.tsx` - Auto-completion dropdown component
-- `components/editor/toolbar.tsx` - Editor toolbar with formatting buttons
-- `hooks/useMarkdownEditor.ts` - Custom hook for editor state management
-- `hooks/useAutoCompletion.ts` - Custom hook for auto-completion logic
-- `lib/editor/markdown-parser.ts` - Utility functions for markdown parsing and rendering
-- `lib/editor/storage.ts` - Local storage utilities for content persistence
+- `app/app/write/page.tsx` - Page for the writing editor
+- `app/app/write/editor.tsx` - Client component handling editor state for the `/app/write` page
 - `types/editor.ts` - TypeScript type definitions for editor components
+- `components/navbar.tsx` - Main navigation bar, updated with link to /app/write
 
 ## Tasks
 
-- [ ] 1.0 Set up Tiptap editor foundation and basic markdown support
+- [x] 1.0 Set up Tiptap editor foundation and basic markdown support
 
-  - [x] 1.1 Install and configure Tiptap dependencies (tiptap, @tiptap/react, @tiptap/starter-kit, @tiptap/extension-markdown)
+  - [x] 1.1 Install and configure Tiptap dependencies (tiptap, @tiptap/react, @tiptap/starter-kit)
   - [x] 1.2 Create basic Tiptap editor component with React integration
   - [x] 1.3 Implement basic markdown extensions (bold, italic, headers, lists)
   - [x] 1.4 Add markdown syntax highlighting and WYSIWYG rendering
@@ -49,20 +46,18 @@
   - [ ] 4.6 Implement loading states and progress indicators
   - [ ] 4.7 Add comprehensive keyboard navigation support
 
-- [ ] 5.0 Create editor UI components (toolbar, preview, interface)
+- [ ] 5.0 Create editor UI components (toolbar, interface)
 
   - [ ] 5.1 Design and implement editor toolbar with formatting buttons
-  - [x] 5.2 Create real-time preview component with markdown rendering
-  - [x] 5.3 Implement WYSIWYG interface with syntax highlighting
-  - [x] 5.4 Add mode switching between edit and preview modes
-  - [x] 5.5 Style components using Tailwind CSS and existing Catalyst components
-  - [x] 5.6 Ensure responsive design for different screen sizes
-  - [x] 5.7 Add accessibility features (ARIA labels, keyboard navigation)
+  - [ ] 5.3 Implement WYSIWYG interface with syntax highlighting
+  - [ ] 5.5 Style components using Tailwind CSS and existing Catalyst components
+  - [ ] 5.6 Ensure responsive design for different screen sizes
+  - [ ] 5.7 Add accessibility features (ARIA labels, keyboard navigation)
 
 - [x] 6.0 Implement /app/write Page
   - [x] 6.1 Create a new page at `app/app/write/page.tsx` using the main app layout (see `talk/page.tsx`)
   - [x] 6.2 Add a header with the title "Write" and optional help/settings actions
   - [x] 6.3 Implement a one-column layout
-  - [x] 6.4 Integrate the markdown editor, toolbar, and real-time preview into the main column
+  - [x] 6.4 Integrate the markdown editor and toolbar into the main column
   - [x] 6.5 Ensure the page is responsive and accessible
   - [x] 6.6 Add a navigation link to /app/write from the main app navigation/sidebar

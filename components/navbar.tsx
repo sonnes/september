@@ -26,6 +26,7 @@ import { createClient } from '@/supabase/client';
 
 const appLinks = [
   { name: 'Talk', href: '/app/talk' },
+  { name: 'Write', href: '/app/write' },
   { name: 'Voices', href: '/app/voices' },
 ];
 

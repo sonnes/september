@@ -8,7 +8,7 @@ This document outlines the requirements for a simple markdown editor with conten
 
 1. **Create an intuitive markdown editing experience** that accommodates both technical and non-technical users
 2. **Implement content-based auto-completion** to enhance writing productivity and reduce typing effort
-3. **Provide comprehensive markdown support** including basic formatting, advanced features, and real-time preview
+3. **Provide comprehensive markdown support** including basic formatting and advanced features
 4. **Build a reusable standalone component** that can be easily integrated into different parts of the application
 5. **Ensure ease of implementation** by prioritizing simplicity and maintainability
 
@@ -29,8 +29,6 @@ This document outlines the requirements for a simple markdown editor with conten
 1. **Editor Interface**
 
    - The system must provide a WYSIWYG-style editor with markdown syntax highlighting
-   - The system must display real-time preview of the rendered markdown content
-   - The system must support both edit and preview modes with seamless switching
 
 2. **Markdown Support**
 
@@ -112,7 +110,6 @@ This document outlines the requirements for a simple markdown editor with conten
 - Basic WYSIWYG editor with markdown support
 - Simple content-based auto-completion
 - Local storage persistence
-- Real-time preview
 
 **Phase 2 (Enhancement):**
 
@@ -132,7 +129,7 @@ This document outlines the requirements for a simple markdown editor with conten
 
 ## Overview
 
-The `/app/write` page provides a dedicated, distraction-free writing environment within the September app. It is designed for users who want to compose longer-form content (such as notes, stories, or documents) using the markdown editor with auto-completion and real-time preview. This page is accessible from the main app navigation and is distinct from chat or conversation interfaces.
+The `/app/write` page provides a dedicated, distraction-free writing environment within the September app. It is designed for users who want to compose longer-form content (such as notes, stories, or documents) using the markdown editor with auto-completion. This page is accessible from the main app navigation and is distinct from chat or conversation interfaces.
 
 ## Layout & Structure
 
@@ -140,12 +137,12 @@ The `/app/write` page provides a dedicated, distraction-free writing environment
 - The header displays the page title ("Write") and may include actions such as help or settings.
 - The main content area is a two-column layout:
   - **Left column (optional):** Can be used for navigation, document list, or left empty for maximum focus.
-  - **Main column:** Contains the markdown editor, toolbar, and real-time preview.
+  - **Main column:** Contains the markdown editor and toolbar.
 - The editor supports all features described in this PRD (auto-completion, local storage, keyboard shortcuts, etc.).
 - The page is optimized for both desktop and mobile, ensuring a responsive and accessible experience.
 
 ## Purpose
 
 - Provide a focused space for writing, separate from chat or conversation flows.
-- Allow users to draft, edit, and preview markdown content with productivity features.
+- Allow users to draft and edit markdown content with productivity features.
 - Serve as a foundation for future enhancements (e.g., document management, export, sharing).
