@@ -127,3 +127,25 @@ This document outlines the requirements for a simple markdown editor with conten
 - Accessibility improvements
 - Advanced UI features
 - Documentation and examples
+
+# /app/write Page: Focused Writing Experience
+
+## Overview
+
+The `/app/write` page provides a dedicated, distraction-free writing environment within the September app. It is designed for users who want to compose longer-form content (such as notes, stories, or documents) using the markdown editor with auto-completion and real-time preview. This page is accessible from the main app navigation and is distinct from chat or conversation interfaces.
+
+## Layout & Structure
+
+- The page uses the main app layout (see `talk/page.tsx` for reference).
+- The header displays the page title ("Write") and may include actions such as help or settings.
+- The main content area is a two-column layout:
+  - **Left column (optional):** Can be used for navigation, document list, or left empty for maximum focus.
+  - **Main column:** Contains the markdown editor, toolbar, and real-time preview.
+- The editor supports all features described in this PRD (auto-completion, local storage, keyboard shortcuts, etc.).
+- The page is optimized for both desktop and mobile, ensuring a responsive and accessible experience.
+
+## Purpose
+
+- Provide a focused space for writing, separate from chat or conversation flows.
+- Allow users to draft, edit, and preview markdown content with productivity features.
+- Serve as a foundation for future enhancements (e.g., document management, export, sharing).
