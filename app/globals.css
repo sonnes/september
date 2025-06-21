@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import '../lib/tiptap/syntax-highlighting.css';
 
 :root {
   --background: #ffffff;

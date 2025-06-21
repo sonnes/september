@@ -49,8 +49,9 @@ The editor will be designed with a minimal, clean aesthetic that matches the exi
 - `package.json` - Updated dependencies with tiptap-markdown and @tiptap/extension-typography packages
 - `app/write/editor.tsx` - Page component that will integrate the enhanced markdown editor (to be updated)
 - `components/markdown/context.tsx` - Context for markdown editor (to be updated)
-- `lib/tiptap/syntax-highlighting.css` - CSS styles for Obsidian-style syntax highlighting (to be created)
-- `app/globals.css` - Global styles for enhanced markdown editor styling (to be updated)
+- `lib/tiptap/syntax-highlighting.css` - CSS styles for Obsidian-style syntax highlighting with dimmed syntax characters
+- `lib/tiptap/syntax-decorations.ts` - Custom Tiptap extension for applying syntax highlighting decorations
+- `app/globals.css` - Updated global styles to include syntax highlighting CSS import
 
 ## Tasks
 
@@ -70,21 +71,20 @@ The editor will be designed with a minimal, clean aesthetic that matches the exi
   - [x] 2.5 Modify content prop handling to support markdown input via `editor.commands.setContent()`
   - [x] 2.6 Create custom hook `useMarkdownEditor.ts` for enhanced editor state management
 
-- [ ] 3.0 Add Obsidian-Style Syntax Highlighting and Styling
+- [x] 3.0 Add Obsidian-Style Syntax Highlighting and Styling
 
-  - [ ] 3.1 Create custom CSS classes for dimmed markdown syntax characters (#, \*\*, \_\_, [], etc.)
-  - [ ] 3.2 Implement custom Tiptap node views or decorations for syntax character styling
-  - [ ] 3.3 Enhance header styling with appropriate font sizes while keeping # visible but dimmed
-  - [ ] 3.4 Style bold and italic text with proper visual hierarchy while dimming markup characters
-  - [ ] 3.5 Style links with appropriate colors and hover states while dimming bracket notation
-  - [ ] 3.6 Style lists with proper indentation and bullet/number styling while dimming list markers
-  - [ ] 3.7 Update prose classes to work with Obsidian-style syntax highlighting
-  - [ ] 3.8 Ensure all styling matches current app design system and maintains readability
+  - [x] 3.1 Create custom CSS classes for dimmed markdown syntax characters (#, \*\*, \_\_, [], etc.)
+  - [x] 3.2 Implement custom Tiptap node views or decorations for syntax character styling
+  - [x] 3.3 Enhance header styling with appropriate font sizes while keeping # visible but dimmed
+  - [x] 3.4 Style bold and italic text with proper visual hierarchy while dimming markup characters
+  - [x] 3.5 Style links with appropriate colors and hover states while dimming bracket notation
+  - [x] 3.6 Style lists with proper indentation and bullet/number styling while dimming list markers
+  - [x] 3.7 Update prose classes to work with Obsidian-style syntax highlighting
+  - [x] 3.8 Ensure all styling matches current app design system and maintains readability
 
 - [ ] 4.0 Integrate Enhanced Editor with App Architecture
 
-  - [ ] 4.1 Update `app/write/editor.tsx` to use enhanced markdown editor component
-  - [ ] 4.2 Update `types/editor.ts` MarkdownEditorProps interface for new functionality
+  - [ ] 4.1 Update `app/write/editor.tsx` to use enhanced markdown editor component -[ ] 4.2 Update `types/editor.ts` MarkdownEditorProps interface for new functionality
   - [ ] 4.3 Integrate auto-save functionality using markdown serialization from enhanced editor
   - [ ] 4.4 Update content loading/saving to use markdown format throughout the app
   - [ ] 4.5 Update `components/editor/context.tsx` to work with enhanced Tiptap editor instance

@@ -8,6 +8,7 @@ import StarterKit from '@tiptap/starter-kit';
 import { Markdown } from 'tiptap-markdown';
 
 import { markdownConfig } from '@/lib/tiptap/markdown-config';
+import { ObsidianSyntaxHighlight } from '@/lib/tiptap/syntax-decorations';
 import { MarkdownEditorProps } from '@/types/editor';
 
 const MarkdownEditor = ({
@@ -19,7 +20,12 @@ const MarkdownEditor = ({
   autoFocus = false,
 }: MarkdownEditorProps) => {
   const editor = useEditor({
-    extensions: [StarterKit, Typography, Markdown.configure(markdownConfig)],
+    extensions: [
+      StarterKit,
+      Typography,
+      Markdown.configure(markdownConfig),
+      ObsidianSyntaxHighlight,
+    ],
     content: content,
     editable,
     autofocus: autoFocus,
@@ -30,7 +36,7 @@ const MarkdownEditor = ({
     },
     editorProps: {
       attributes: {
-        class: `prose dark:prose-invert focus:outline-none w-full ${className}`,
+        class: `prose prose-obsidian dark:prose-invert focus:outline-none w-full ${className}`,
         'data-placeholder': placeholder,
       },
     },

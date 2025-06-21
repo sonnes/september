@@ -6,6 +6,7 @@ import StarterKit from '@tiptap/starter-kit';
 import { Markdown } from 'tiptap-markdown';
 
 import { markdownConfig } from '@/lib/tiptap/markdown-config';
+import { ObsidianSyntaxHighlight } from '@/lib/tiptap/syntax-decorations';
 import { MarkdownEditorHookProps, MarkdownEditorHookReturn } from '@/types/editor';
 
 import { useDebounce } from './useDebounce';
@@ -26,7 +27,12 @@ export const useMarkdownEditor = ({
   const debouncedContent = useDebounce(content, debounceMs);
 
   const editor = useEditor({
-    extensions: [StarterKit, Typography, Markdown.configure(markdownConfig)],
+    extensions: [
+      StarterKit,
+      Typography,
+      Markdown.configure(markdownConfig),
+      ObsidianSyntaxHighlight,
+    ],
     content: initialContent,
     editable,
     autofocus: autoFocus,
@@ -40,7 +46,7 @@ export const useMarkdownEditor = ({
     },
     editorProps: {
       attributes: {
-        class: 'prose dark:prose-invert focus:outline-none w-full min-h-[200px]',
+        class: 'prose prose-obsidian dark:prose-invert focus:outline-none w-full min-h-[200px]',
         'data-placeholder': placeholder,
       },
     },
