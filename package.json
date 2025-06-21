@@ -17,6 +17,7 @@
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.49.1",
     "@tiptap/core": "^2.22.0",
+    "@tiptap/extension-typography": "^2.22.0",
     "@tiptap/react": "^2.22.0",
     "@tiptap/starter-kit": "^2.22.0",
     "canvas": "^3.0.0-rc3",
@@ -32,6 +33,7 @@
     "react-dom": "^19.0.0",
     "react-konva": "^19.0.3",
     "tailwind-merge": "^2.6.0",
+    "tiptap-markdown": "^0.8.10",
     "zod": "^3.24.2",
     "zod-to-json-schema": "^3.24.3"
   },
