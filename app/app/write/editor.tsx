@@ -15,7 +15,11 @@ export default function Editor() {
 
   return (
     <div className="p-2 md:p-4 bg-white rounded-lg shadow-xs ring-1 ring-zinc-950/5 h-full">
-      <MarkdownEditor content={content} onContentChange={handleContentChange} />
+      <MarkdownEditor
+        content={content}
+        onContentChange={handleContentChange}
+        ariaLabel="Markdown editor"
+      />
     </div>
   );
 }

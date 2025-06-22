@@ -7,6 +7,7 @@ export interface MarkdownEditorProps {
   className?: string;
   editable?: boolean;
   autoFocus?: boolean;
+  ariaLabel?: string;
 }
 
 export interface EditorState {

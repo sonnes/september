@@ -18,6 +18,7 @@ const MarkdownEditor = ({
   className = '',
   editable = true,
   autoFocus = false,
+  ariaLabel,
 }: MarkdownEditorProps) => {
   const editor = useEditor({
     extensions: [
@@ -38,6 +39,9 @@ const MarkdownEditor = ({
       attributes: {
         class: `prose prose-obsidian dark:prose-invert focus:outline-none w-full ${className}`,
         'data-placeholder': placeholder,
+        'aria-label': ariaLabel || placeholder,
+        role: 'textbox',
+        'aria-multiline': 'true',
       },
     },
   });
