@@ -1,6 +1,6 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: false
 ---
 
@@ -42,6 +42,8 @@ The generated FIP should include the following sections:
 
 ## Create Tasks
 
+In the same FIP file, create tasks.
+
 1.  **Analyze FIP:** The AI reads and analyzes the functional requirements, user stories, and other sections of the specified FIP.
 2.  **Phase 1: Generate Parent Tasks:** Based on the FIP analysis, create the file and generate the main, high-level tasks required to implement the feature. Use your judgement on how many high-level tasks to use. It's likely to be about 5. Present these tasks to the user in the specified format (without sub-tasks yet). Inform the user: "I have generated the high-level tasks based on the FIP. Ready to generate the sub-tasks? Respond with 'Go' to proceed."
 3.  **Wait for Confirmation:** Pause and wait for the user to respond with "Go".
@@ -49,7 +51,7 @@ The generated FIP should include the following sections:
 5.  **Identify Relevant Files:** Based on the tasks and FIP and the existing project file structure identify potential files that will need to be created or modified. List these under the `Relevant Files` section, including corresponding test files if applicable.
 6.  **Generate Final Output:** In the same file, combine the parent tasks, sub-tasks, relevant files, and notes into the final Markdown structure.
 
-### Output Format
+### Format
 
 The generated task list _must_ follow this structure:
 
@@ -89,3 +91,4 @@ Assume the primary reader of the PRD is a **junior developer**. Therefore, requi
 1. Do NOT start implementing the FIP
 2. Make sure to ask the user clarifying questions
 3. Take the user's answers to the clarifying questions and improve the FIP
+4. STOP after generating sub-tasks.
