@@ -34,11 +34,11 @@ This document outlines a plan to implement a new text-to-speech (TTS) feature wi
 
 ## Tasks (UI-First, Log Text)
 
-- [ ] 1.0 Extend Tiptap Editor
+- [x] 1.0 Extend Tiptap Editor
   - [x] 1.1 Create a new Tiptap extension in `lib/tiptap/block-actions.ts` that adds a `Plugin` to always show an action menu for block-level elements.
   - [x] 1.2 Ensure the action menu is rendered persistently to the left of every block-level node (not just on hover or selection).
   - [x] 1.3 Update the editor component's state with the node's text content and the coordinates for the action menu if needed.
-- [ ] 2.0 Implement Action Menu UI
+- [x] 2.0 Implement Action Menu UI
   - [x] 2.1 Create a new component `components/markdown/action-menu.tsx`.
   - [x] 2.2 The component will take the block's position (to render to the left of the block), an `onPlay` function, and an `isLoading` flag as props.
   - [x] 2.3 Style the component so that the "Play" button is always visible to the left of each block-level element (not just on hover or selection).
@@ -47,13 +47,13 @@ This document outlines a plan to implement a new text-to-speech (TTS) feature wi
   - [x] 3.2 Add an `isLoading` state to track the action (optional for logging).
   - [ ] 3.3 Create a `handlePlay` function that, for now, simply logs the selected node's text to the console (instead of calling the server action).
 - [ ] 4.0 Backend Integration (To be done after UI is validated)
-  - [ ] 4.1 Update `handlePlay` to invoke the `createUserMessage` server action.
-  - [ ] 4.2 Pass the selected node's text and other required parameters (`id`, `type`, etc.) to the action.
-  - [ ] 4.3 The server action will return a `Message` object which should contain a base64-encoded audio string (`audioB64`) representing the generated speech.
-- [ ] 5.0 Audio Playback
-  - [ ] 5.1 After the `createUserMessage` action returns, get the base64-encoded audio string from the response.
-  - [ ] 5.2 Create a new `Audio` object and set its `src` to a data URL using the base64 audio string (e.g., `data:audio/wav;base64,...`).
-  - [ ] 5.3 Call `.play()` on the `Audio` object to start playback.
-  - [ ] 5.4 Once the action is complete (successfully or with an error), set `isLoading` back to `false`.
+  - [x] 4.1 Update `handlePlay` to invoke the `createUserMessage` server action.
+  - [x] 4.2 Pass the selected node's text and other required parameters (`id`, `type`, etc.) to the action.
+  - [N/A] 4.3 The server action will return a `Message` object which should contain a base64-encoded audio string (`audioB64`) representing the generated speech.
+- [x] 5.0 Audio Playback
+  - [x] 5.1 After the `createUserMessage` action returns, get the base64-encoded audio string from the response. (N/A, using public URL)
+  - [x] 5.2 Create a new `Audio` object and set its `src` to a data URL using the base64 audio string (e.g., `data:audio/wav;base64,...`). (N/A, using public URL)
+  - [x] 5.3 Call `.play()` on the `Audio` object to start playback.
+  - [x] 5.4 Once the action is complete (successfully or with an error), set `isLoading` back to `false`.
 
 ## 5. Open Questions

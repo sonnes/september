@@ -41,7 +41,12 @@ export const createSpeech = async ({ id, text, previous_text, settings }: Create
       chunks.push(chunk);
     }
 
-    await createSpeechFile(id, Buffer.concat(chunks));
+    const audio = Buffer.concat(chunks);
+    await createSpeechFile(id, audio);
+
+    return {
+      blob: audio.toString('base64'),
+    };
   } catch (error) {
     const err = error as ElevenLabsError;
 

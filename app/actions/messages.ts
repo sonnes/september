@@ -43,9 +43,12 @@ interface CreateMessageParams {
 }
 
 export async function createUserMessage(newMessage: CreateMessageParams) {
-  const createdMessage = await createSpeech(newMessage).then(() => createMessage(newMessage));
+  const [audio, message] = await Promise.all([createSpeech(newMessage), createMessage(newMessage)]);
 
-  return createdMessage;
+  return {
+    ...message,
+    audio,
+  };
 }
 
 export async function createMessage({ id, text, type }: CreateMessageParams) {

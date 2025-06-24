@@ -33,6 +33,7 @@ export const useMarkdownEditor = ({
       Markdown.configure(markdownConfig),
       ObsidianSyntaxHighlight,
     ],
+    immediatelyRender: false,
     content: initialContent,
     editable,
     autofocus: autoFocus,
