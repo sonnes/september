@@ -1,22 +1,20 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 import Heading from '@tiptap/extension-heading';
 import ListItem from '@tiptap/extension-list-item';
-import Paragraph from '@tiptap/extension-paragraph';
 import Typography from '@tiptap/extension-typography';
-import { EditorContent, ReactNodeViewRenderer, useEditor } from '@tiptap/react';
+import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Markdown } from 'tiptap-markdown';
 import { v4 as uuidv4 } from 'uuid';
 
-import { createUserMessage } from '@/app/actions/messages';
 import { markdownConfig } from '@/lib/tiptap/markdown-config';
 import { ObsidianSyntaxHighlight } from '@/lib/tiptap/syntax-decorations';
 import { MarkdownEditorProps } from '@/types/editor';
 
-import BlockNodeView from './BlockNodeView';
+import ParagraphPlayExtension from './paragraph-play-extension';
 
 const MarkdownEditor = ({
   content,
@@ -27,51 +25,11 @@ const MarkdownEditor = ({
   autoFocus = false,
   ariaLabel,
 }: MarkdownEditorProps) => {
-  const [loadingKey, setLoadingKey] = useState<string | null>(null);
-
-  // Play handler for NodeView
-  const handleBlockPlay = async (text: string) => {
-    setLoadingKey(text);
-    const id = uuidv4();
-    try {
-      const { audio } = await createUserMessage({
-        id,
-        text,
-        type: 'message',
-      });
-      const audioUrl = `data:audio/mp3;base64,${audio.blob}`;
-      const audioElement = new Audio(audioUrl);
-      await audioElement.play();
-    } catch (err) {
-      console.error('Error generating or playing audio:', err);
-    } finally {
-      setLoadingKey(null);
-    }
-  };
-
   const editor = useEditor({
     extensions: [
-      Paragraph.extend({
-        addNodeView() {
-          return ReactNodeViewRenderer(props => (
-            <BlockNodeView {...props} onPlay={handleBlockPlay} loadingKey={loadingKey} />
-          ));
-        },
-      }),
-      Heading.extend({
-        addNodeView() {
-          return ReactNodeViewRenderer(props => (
-            <BlockNodeView {...props} onPlay={handleBlockPlay} loadingKey={loadingKey} />
-          ));
-        },
-      }),
-      ListItem.extend({
-        addNodeView() {
-          return ReactNodeViewRenderer(props => (
-            <BlockNodeView {...props} onPlay={handleBlockPlay} loadingKey={loadingKey} />
-          ));
-        },
-      }),
+      ParagraphPlayExtension,
+      Heading,
+      ListItem,
       StarterKit,
       Typography,
       Markdown.configure(markdownConfig),
