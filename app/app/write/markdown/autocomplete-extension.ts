@@ -23,11 +23,208 @@ function debounce<T extends (...args: any[]) => any>(
   };
 }
 
+// Fast hash function for content deduplication and caching
+function simpleHash(str: string): string {
+  let hash = 0;
+  if (str.length === 0) return hash.toString();
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash).toString(36);
+}
+
+// Optimized text extraction with intelligent context building
+function extractOptimizedContext(
+  doc: any,
+  cursorPos: number,
+  maxLength: number
+): {
+  content: string;
+  contextHash: string;
+  wordContext: string;
+} {
+  try {
+    // Performance optimization: Extract text in chunks rather than entire document
+    const docSize = doc.content.size;
+    const extractionStart = Math.max(0, cursorPos - maxLength);
+
+    // Get the surrounding context with smart boundaries
+    let contextText = '';
+    let wordContext = '';
+
+    // Extract text around cursor position efficiently
+    if (docSize > 0) {
+      // Use textBetween for efficient text extraction
+      contextText = doc.textBetween(extractionStart, Math.min(docSize, cursorPos), ' ') || '';
+
+      // Extract immediate word context (last 50 characters for performance)
+      const wordContextLength = Math.min(50, contextText.length);
+      const wordContextStart = Math.max(0, contextText.length - wordContextLength);
+      wordContext = contextText.slice(wordContextStart);
+    }
+
+    // Create context hash for caching and deduplication
+    const contextHash = simpleHash(contextText + '|' + cursorPos);
+
+    return {
+      content: contextText,
+      contextHash,
+      wordContext,
+    };
+  } catch (error) {
+    console.warn('Autocomplete: Error in optimized text extraction:', error);
+    return {
+      content: '',
+      contextHash: '',
+      wordContext: '',
+    };
+  }
+}
+
+// Cache management with automatic cleanup
+class SuggestionCacheManager {
+  private cache = new Map<string, SuggestionCache>();
+  private readonly maxCacheSize = 50;
+  private readonly cacheExpiryMs = 5 * 60 * 1000; // 5 minutes
+
+  get(contentHash: string, contextHash: string): string | null {
+    const cacheKey = `${contentHash}:${contextHash}`;
+    const cached = this.cache.get(cacheKey);
+
+    if (!cached) return null;
+
+    // Check if cache entry is expired
+    if (Date.now() - cached.timestamp > this.cacheExpiryMs) {
+      this.cache.delete(cacheKey);
+      return null;
+    }
+
+    return cached.suggestion;
+  }
+
+  set(contentHash: string, contextHash: string, content: string, suggestion: string): void {
+    const cacheKey = `${contentHash}:${contextHash}`;
+
+    // Clean up old entries if cache is getting too large
+    if (this.cache.size >= this.maxCacheSize) {
+      this.cleanupOldEntries();
+    }
+
+    this.cache.set(cacheKey, {
+      content,
+      suggestion,
+      timestamp: Date.now(),
+      contextHash,
+    });
+  }
+
+  cleanupOldEntries(): void {
+    const now = Date.now();
+    const entries = Array.from(this.cache.entries());
+
+    // Sort by timestamp and remove oldest entries
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+
+    // Remove oldest 25% of entries
+    const toRemove = Math.floor(entries.length * 0.25);
+    for (let i = 0; i < toRemove; i++) {
+      this.cache.delete(entries[i][0]);
+    }
+
+    // Also remove any expired entries
+    for (const [key, value] of this.cache.entries()) {
+      if (now - value.timestamp > this.cacheExpiryMs) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+// Request deduplication manager
+class RequestDeduplicationManager {
+  private pendingRequests = new Map<string, PendingRequest>();
+  private readonly requestTimeoutMs = 30 * 1000; // 30 seconds
+
+  async getOrCreateRequest(
+    contentHash: string,
+    requestFactory: () => Promise<string | null>
+  ): Promise<string | null> {
+    // Check if there's already a pending request for this content
+    const existing = this.pendingRequests.get(contentHash);
+
+    if (existing) {
+      // Check if the request is still valid (not timed out)
+      if (Date.now() - existing.timestamp < this.requestTimeoutMs) {
+        try {
+          return await existing.promise;
+        } catch (error) {
+          // If the existing request failed, remove it and create a new one
+          this.pendingRequests.delete(contentHash);
+        }
+      } else {
+        // Request timed out, remove it
+        this.pendingRequests.delete(contentHash);
+      }
+    }
+
+    // Create new request
+    const promise = requestFactory();
+    this.pendingRequests.set(contentHash, {
+      contentHash,
+      promise,
+      timestamp: Date.now(),
+    });
+
+    try {
+      const result = await promise;
+      this.pendingRequests.delete(contentHash);
+      return result;
+    } catch (error) {
+      this.pendingRequests.delete(contentHash);
+      throw error;
+    }
+  }
+
+  cleanup(): void {
+    const now = Date.now();
+    for (const [key, request] of this.pendingRequests.entries()) {
+      if (now - request.timestamp > this.requestTimeoutMs) {
+        this.pendingRequests.delete(key);
+      }
+    }
+  }
+
+  clear(): void {
+    this.pendingRequests.clear();
+  }
+}
+
 export interface AutocompleteOptions {
   applySuggestionKey: string;
   suggestionDebounce: number;
   previousTextLength: number;
   getSuggestion?: (previousText: string) => Promise<string | null>;
+}
+
+// Cache interface for suggestion caching
+interface SuggestionCache {
+  content: string;
+  suggestion: string;
+  timestamp: number;
+  contextHash: string;
+}
+
+// Request deduplication interface
+interface PendingRequest {
+  contentHash: string;
+  promise: Promise<string | null>;
+  timestamp: number;
 }
 
 interface CursorContext {
@@ -155,7 +352,12 @@ function analyzeCursorContext(state: any, cursorPos: number): CursorContext {
   }
 }
 
-function createSuggestionDecoration(cursorPos: number, suggestion: string, context: CursorContext) {
+function createSuggestionDecoration(
+  cursorPos: number,
+  suggestion: string,
+  context: CursorContext,
+  isLoading = false
+) {
   return Decoration.widget(
     cursorPos,
     () => {
@@ -163,7 +365,20 @@ function createSuggestionDecoration(cursorPos: number, suggestion: string, conte
       ghostContainer.className = 'autocomplete-suggestion-container';
 
       const ghostText = document.createElement('span');
-      ghostText.className = 'autocomplete-suggestion-ghost';
+
+      // Build CSS classes for proper styling
+      let className = 'autocomplete-suggestion-ghost';
+
+      // Add context-specific modifiers
+      if (context.isInCodeBlock) {
+        className += ' in-code-block';
+      }
+
+      if (isLoading) {
+        className += ' loading';
+      }
+
+      ghostText.className = className;
 
       // Smart spacing based on context
       let displayText = suggestion;
@@ -177,19 +392,9 @@ function createSuggestionDecoration(cursorPos: number, suggestion: string, conte
 
       ghostText.textContent = displayText;
 
-      // Context-aware styling
-      const opacity = context.isInCodeBlock ? '0.3' : '0.5';
-      const color = context.isInCodeBlock ? '#999' : '#666';
-
-      ghostText.style.cssText = `
-        opacity: ${opacity};
-        color: ${color};
-        pointer-events: none;
-        user-select: none;
-        font-style: italic;
-        position: relative;
-        font-family: inherit;
-      `;
+      // Add accessibility attributes
+      ghostText.setAttribute('aria-hidden', 'true');
+      ghostText.setAttribute('role', 'presentation');
 
       ghostContainer.appendChild(ghostText);
       return ghostContainer;
@@ -287,9 +492,23 @@ export const AutocompleteExtension = Extension.create<AutocompleteOptions>({
     const options = this.options;
     let currentRequestId = 0;
     let currentSuggestion: string | null = null;
+    let isLoadingSuggestion = false;
+
+    // Initialize performance optimization managers
+    const cacheManager = new SuggestionCacheManager();
+    const deduplicationManager = new RequestDeduplicationManager();
+
+    // Periodic cleanup to prevent memory leaks
+    const cleanupInterval = setInterval(() => {
+      cacheManager.cleanupOldEntries();
+      deduplicationManager.cleanup();
+    }, 60000); // Cleanup every minute
 
     const getSuggestion = debounce(
-      async (previousText: string, cb: (suggestion: string | null) => void) => {
+      async (
+        contextData: { content: string; contextHash: string; wordContext: string },
+        cb: (suggestion: string | null) => void
+      ) => {
         try {
           // Generate request ID for this request
           const requestId = ++currentRequestId;
@@ -300,6 +519,8 @@ export const AutocompleteExtension = Extension.create<AutocompleteOptions>({
             return;
           }
 
+          const { content: previousText, contextHash, wordContext } = contextData;
+
           // Edge case: Empty or too short text
           const cleanText = previousText?.trim() || '';
           if (cleanText.length < 3) {
@@ -307,10 +528,23 @@ export const AutocompleteExtension = Extension.create<AutocompleteOptions>({
             return;
           }
 
+          // Create content hash for deduplication and caching
+          const contentHash = simpleHash(cleanText);
+
+          // Check cache first (5.2: Client-side caching)
+          const cachedSuggestion = cacheManager.get(contentHash, contextHash);
+          if (cachedSuggestion) {
+            console.log('Autocomplete: Using cached suggestion');
+            currentSuggestion = cachedSuggestion;
+            cb(cachedSuggestion);
+            return;
+          }
+
           // Edge case: Text too long (could cause performance issues)
+          let finalText = previousText;
           if (cleanText.length > 10000) {
             console.warn('Autocomplete: Text too long, truncating for suggestion generation');
-            previousText = cleanText.slice(-options.previousTextLength);
+            finalText = cleanText.slice(-options.previousTextLength);
           }
 
           // Edge case: Check for rate limiting or too many concurrent requests
@@ -320,16 +554,22 @@ export const AutocompleteExtension = Extension.create<AutocompleteOptions>({
             return;
           }
 
-          // Add timeout to prevent hanging requests
-          const timeoutPromise = new Promise<string | null>((_, reject) => {
-            setTimeout(() => reject(new Error('Suggestion request timeout')), 10000);
-          });
+          // 5.1: Request deduplication - check if similar request is already pending
+          const suggestion = await deduplicationManager.getOrCreateRequest(
+            contentHash,
+            async () => {
+              // Add timeout to prevent hanging requests
+              const timeoutPromise = new Promise<string | null>((_, reject) => {
+                setTimeout(() => reject(new Error('Suggestion request timeout')), 10000);
+              });
 
-          // Make the request with timeout
-          const suggestion = await Promise.race([
-            options.getSuggestion(previousText),
-            timeoutPromise,
-          ]);
+              // Make the request with timeout
+              return await Promise.race([
+                options.getSuggestion!(finalText), // Non-null assertion since we checked above
+                timeoutPromise,
+              ]);
+            }
+          );
 
           // Edge case: Invalid suggestion response
           if (
@@ -352,6 +592,13 @@ export const AutocompleteExtension = Extension.create<AutocompleteOptions>({
           // Only proceed with callback if this is still the latest request
           if (requestId === currentRequestId) {
             currentSuggestion = suggestion;
+
+            // 5.2: Cache the suggestion for future use
+            if (suggestion && suggestion.trim()) {
+              cacheManager.set(contentHash, contextHash, cleanText, suggestion);
+              console.log('Autocomplete: Cached new suggestion');
+            }
+
             cb(suggestion);
           }
         } catch (error) {
@@ -488,18 +735,25 @@ export const AutocompleteExtension = Extension.create<AutocompleteOptions>({
                   return;
                 }
 
-                // fetch a new suggestion with enhanced context
-                let previousText;
+                // 5.3: Optimized text extraction and context building
+                let contextData;
                 try {
-                  previousText = view.state.doc
-                    .textBetween(0, view.state.doc.content.size, ' ')
-                    .slice(-options.previousTextLength);
+                  contextData = extractOptimizedContext(
+                    view.state.doc,
+                    cursorPos,
+                    options.previousTextLength
+                  );
                 } catch (error) {
-                  console.warn('Autocomplete: Error extracting text:', error);
+                  console.warn('Autocomplete: Error extracting optimized context:', error);
                   return;
                 }
 
-                getSuggestion(previousText, suggestion => {
+                // Set loading state
+                isLoadingSuggestion = true;
+
+                getSuggestion(contextData, suggestion => {
+                  // Clear loading state
+                  isLoadingSuggestion = false;
                   try {
                     if (!suggestion || !suggestion.trim()) return;
 
@@ -532,7 +786,8 @@ export const AutocompleteExtension = Extension.create<AutocompleteOptions>({
                       suggestionDecoration = createSuggestionDecoration(
                         currentCursorPos,
                         suggestion,
-                        currentContext
+                        currentContext,
+                        isLoadingSuggestion
                       );
                     } catch (error) {
                       console.warn('Autocomplete: Error creating decoration:', error);
@@ -666,6 +921,12 @@ export const AutocompleteExtension = Extension.create<AutocompleteOptions>({
               return false;
             }
           },
+        },
+        destroy() {
+          // Cleanup to prevent memory leaks
+          clearInterval(cleanupInterval);
+          cacheManager.clear();
+          deduplicationManager.clear();
         },
       }),
     ];

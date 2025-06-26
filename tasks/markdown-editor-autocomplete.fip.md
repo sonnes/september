@@ -144,17 +144,17 @@ The feature will integrate seamlessly with the existing TipTap-based markdown ed
 
 - [ ] 4.0 Styling and Visual Implementation
 
-  - [ ] 4.1 Add CSS classes for autocomplete ghost text in `app/globals.css`
-  - [ ] 4.2 Style suggestion text with appropriate opacity and color
-  - [ ] 4.3 Ensure ghost text is visually distinct but not distracting
-  - [ ] 4.4 Add loading states and visual feedback
+  - [x] 4.1 Add CSS classes for autocomplete ghost text in `app/globals.css`
+  - [x] 4.2 Style suggestion text with appropriate opacity and color
+  - [x] 4.3 Ensure ghost text is visually distinct but not distracting
+  - [x] 4.4 Add loading states and visual feedback
   - [ ] 4.5 Test styling in both light and dark themes
   - [ ] 4.6 Ensure accessibility compliance for suggestion visibility
 
 - [ ] 5.0 Performance Optimization and Testing
-  - [ ] 5.1 Implement request deduplication to avoid redundant API calls
-  - [ ] 5.2 Add client-side caching for recently generated suggestions
-  - [ ] 5.3 Optimize text extraction and context building algorithms
+  - [x] 5.1 Implement request deduplication to avoid redundant API calls
+  - [x] 5.2 Add client-side caching for recently generated suggestions
+  - [x] 5.3 Optimize text extraction and context building algorithms
   - [ ] 5.4 Test performance with documents of varying lengths
   - [ ] 5.5 Verify <500ms suggestion delivery requirement is met
   - [ ] 5.6 Add monitoring and logging for performance metrics

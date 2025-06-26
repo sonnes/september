@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import Heading from '@tiptap/extension-heading';
 import ListItem from '@tiptap/extension-list-item';
@@ -27,8 +27,22 @@ const MarkdownEditor = ({
   autoFocus = false,
   ariaLabel,
 }: MarkdownEditorProps) => {
+  const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
+  const [statusFeedback, setStatusFeedback] = useState<{
+    visible: boolean;
+    type: 'success' | 'error';
+    message: string;
+  }>({
+    visible: false,
+    type: 'success',
+    message: '',
+  });
+
   // Real suggestion function using server action
   const getSuggestion = async (previousText: string): Promise<string | null> => {
+    setIsLoadingSuggestion(true);
+    setStatusFeedback({ visible: false, type: 'success', message: '' });
+
     try {
       console.log('previousText', previousText);
       // Call the server action with the required parameters
@@ -38,10 +52,27 @@ const MarkdownEditor = ({
         content || '' // document content
       );
 
+      if (suggestion) {
+        // Show brief success feedback
+        setStatusFeedback({ visible: true, type: 'success', message: 'Ready' });
+        setTimeout(() => {
+          setStatusFeedback(prev => ({ ...prev, visible: false }));
+        }, 1500);
+      }
+
       return suggestion;
     } catch (error) {
       console.error('Error getting suggestion:', error);
+
+      // Show error feedback
+      setStatusFeedback({ visible: true, type: 'error', message: 'Error' });
+      setTimeout(() => {
+        setStatusFeedback(prev => ({ ...prev, visible: false }));
+      }, 2000);
+
       return null;
+    } finally {
+      setIsLoadingSuggestion(false);
     }
   };
 
@@ -55,9 +86,9 @@ const MarkdownEditor = ({
       ObsidianSyntaxHighlight,
       AutocompleteExtension.configure({
         getSuggestion: getSuggestion,
-        suggestionDebounce: 2000, // Slightly faster response for better UX
+        suggestionDebounce: 700, // Slightly faster response for better UX
         applySuggestionKey: 'Tab', // Standard key for accepting suggestions
-        previousTextLength: 1000, // More context for better suggestions
+        previousTextLength: 4000, // More context for better suggestions
       }),
     ],
     content: content,
@@ -85,7 +116,22 @@ const MarkdownEditor = ({
   });
 
   return (
-    <div className="relative w-full h-full">
+    <div
+      className={`relative w-full h-full autocomplete-editor-loading ${isLoadingSuggestion ? 'visible' : ''}`}
+      role="textbox"
+      aria-busy={isLoadingSuggestion}
+      aria-label={isLoadingSuggestion ? 'Loading suggestion...' : undefined}
+    >
+      {/* Status feedback for autocomplete */}
+      <div
+        className={`autocomplete-status-feedback ${statusFeedback.visible ? 'visible' : ''} ${statusFeedback.type}`}
+        aria-hidden="true"
+        role="status"
+        aria-live="polite"
+      >
+        {statusFeedback.message}
+      </div>
+
       <EditorContent editor={editor} />
     </div>
   );
