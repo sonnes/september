@@ -55,7 +55,7 @@ const MarkdownEditor = ({
       ObsidianSyntaxHighlight,
       AutocompleteExtension.configure({
         getSuggestion: getSuggestion,
-        suggestionDebounce: 1200, // Slightly faster response for better UX
+        suggestionDebounce: 2000, // Slightly faster response for better UX
         applySuggestionKey: 'Tab', // Standard key for accepting suggestions
         previousTextLength: 1000, // More context for better suggestions
       }),
@@ -75,6 +75,11 @@ const MarkdownEditor = ({
         'aria-label': ariaLabel || placeholder,
         role: 'textbox',
         'aria-multiline': 'true',
+        spellcheck: 'true',
+        autocomplete: 'on',
+        autocorrect: 'on',
+        autocapitalize: 'sentences',
+        'data-gramm': 'true', // Enable Grammarly if installed
       },
     },
   });

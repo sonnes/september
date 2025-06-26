@@ -90,7 +90,14 @@ const ParagraphPlayNodeView: React.FC<NodeViewProps> = props => {
       >
         <PlayIcon className="w-5 h-5" />
       </button>
-      <NodeViewContent className="flex-1 outline-none" />
+      <NodeViewContent
+        className="flex-1 outline-none"
+        spellCheck={true}
+        autoComplete="on"
+        autoCorrect="on"
+        autoCapitalize="sentences"
+        data-gramm="true"
+      />
       {/* Visual feedback */}
       {state === 'loading' && <span className="ml-2 text-xs text-gray-400">Loading...</span>}
       {state === 'playing' && <span className="ml-2 text-xs text-green-500">Playing</span>}

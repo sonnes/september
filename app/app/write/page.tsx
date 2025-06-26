@@ -27,7 +27,7 @@ export default async function WritePage() {
         </div>
       </Layout.Header>
       <Layout.Content>
-        <div className="flex h-[calc(100vh-140px)]">
+        <div className="flex h-[calc(100vh-296px)]">
           {/* Main content area */}
           <div className="flex-1 flex flex-col px-2 md:px-4 min-w-0 overflow-hidden">
             <Editor />
