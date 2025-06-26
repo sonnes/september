@@ -10,10 +10,12 @@ import StarterKit from '@tiptap/starter-kit';
 import { Markdown } from 'tiptap-markdown';
 import { v4 as uuidv4 } from 'uuid';
 
+import { getAutocompleteSuggestions } from '@/app/actions/suggestions';
 import { markdownConfig } from '@/lib/tiptap/markdown-config';
 import { ObsidianSyntaxHighlight } from '@/lib/tiptap/syntax-decorations';
 import { MarkdownEditorProps } from '@/types/editor';
 
+import { AutocompleteExtension } from './autocomplete-extension';
 import ParagraphPlayExtension from './paragraph-play-extension';
 
 const MarkdownEditor = ({
@@ -25,15 +27,38 @@ const MarkdownEditor = ({
   autoFocus = false,
   ariaLabel,
 }: MarkdownEditorProps) => {
+  // Real suggestion function using server action
+  const getSuggestion = async (previousText: string): Promise<string | null> => {
+    try {
+      console.log('previousText', previousText);
+      // Call the server action with the required parameters
+      const suggestion = await getAutocompleteSuggestions(
+        previousText,
+        previousText.length, // cursor position at end of previous text
+        content || '' // document content
+      );
+
+      return suggestion;
+    } catch (error) {
+      console.error('Error getting suggestion:', error);
+      return null;
+    }
+  };
+
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       ParagraphPlayExtension,
-      Heading,
-      ListItem,
       StarterKit,
       Typography,
       Markdown.configure(markdownConfig),
       ObsidianSyntaxHighlight,
+      AutocompleteExtension.configure({
+        getSuggestion: getSuggestion,
+        suggestionDebounce: 1200, // Slightly faster response for better UX
+        applySuggestionKey: 'Tab', // Standard key for accepting suggestions
+        previousTextLength: 1000, // More context for better suggestions
+      }),
     ],
     content: content,
     editable,
