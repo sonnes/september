@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import clsx from 'clsx';
+import { v4 as uuidv4 } from 'uuid';
 
 import { createUserMessage } from '@/app/actions/messages';
 import { useSettings } from '@/app/app/talk/context';
@@ -51,7 +52,7 @@ function Editor({ placeholder = 'Start typing...' }: EditorProps) {
       .join('.\n');
 
     const request = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       text,
       tone,
       settings,

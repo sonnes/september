@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { ArrowPathIcon, MicrophoneIcon, PauseIcon } from '@heroicons/react/24/outline';
 import { useMicVAD, utils } from '@ricky0123/vad-react';
 import clsx from 'clsx';
+import { v4 as uuidv4 } from 'uuid';
 
 import { createMessage } from '@/app/actions/messages';
 import { useMessages } from '@/components/context/messages';
@@ -90,7 +91,7 @@ export default function Transcription() {
     const result = await response.json();
 
     const message = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       text: result.text,
       type: 'transcription',
     };

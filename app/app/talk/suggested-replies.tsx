@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 
+import { v4 as uuidv4 } from 'uuid';
+
 import { createUserMessage } from '@/app/actions/messages';
 import { Button } from '@/components/catalyst/button';
 import { useMessages } from '@/components/context/messages';
@@ -67,7 +69,7 @@ export function SuggestedReplies() {
       .join('.\n');
 
     const message = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       text: reply,
       type: 'message',
       previous_text: previousText,
