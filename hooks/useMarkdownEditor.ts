@@ -47,7 +47,7 @@ export const useMarkdownEditor = ({
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-obsidian dark:prose-invert focus:outline-none w-full min-h-[200px]',
+        class: 'prose prose-obsidian focus:outline-none w-full min-h-[200px]',
         'data-placeholder': placeholder,
       },
     },

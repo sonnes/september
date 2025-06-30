@@ -37,13 +37,7 @@ body {
   outline: none;
 }
 
-/* Dark theme support */
-@media (prefers-color-scheme: dark) {
-  .autocomplete-suggestion-ghost {
-    color: #9ca3af; /* gray-400 */
-    opacity: 0.6;
-  }
-}
+
 
 /* Code block context styling */
 .autocomplete-suggestion-ghost.in-code-block {
@@ -52,12 +46,7 @@ body {
   font-family: ui-monospace, SFMono-Regular, 'SF Mono', Monaco, Menlo, 'Liberation Mono', 'Courier New', monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  .autocomplete-suggestion-ghost.in-code-block {
-    color: #6b7280; /* gray-500 */
-    opacity: 0.4;
-  }
-}
+
 
 /* Loading state */
 .autocomplete-suggestion-ghost.loading {
@@ -105,11 +94,7 @@ body {
   text-shadow: 0 0 1px rgba(107, 114, 128, 0.1);
 }
 
-@media (prefers-color-scheme: dark) {
-  .autocomplete-suggestion-ghost:not(.in-code-block) {
-    text-shadow: 0 0 1px rgba(156, 163, 175, 0.1);
-  }
-}
+
 
 /* Accessibility - ensure sufficient contrast */
 @media (prefers-contrast: high) {
@@ -129,18 +114,7 @@ body {
     color: #4b5563; /* gray-600 */
   }
   
-  @media (prefers-color-scheme: dark) {
-    .autocomplete-suggestion-ghost {
-      color: #d1d5db; /* gray-300 */
-      opacity: 0.8;
-      text-shadow: 0 0 2px rgba(209, 213, 219, 0.15);
-    }
-    
-    .autocomplete-suggestion-ghost.in-code-block {
-      color: #9ca3af; /* gray-400 */
-      opacity: 0.7;
-    }
-  }
+
 }
 
 /* Status feedback for successful suggestion load */
@@ -179,20 +153,13 @@ body {
   border-color: rgba(239, 68, 68, 0.2);
 }
 
-/* Dark theme support for status feedback */
-@media (prefers-color-scheme: dark) {
-  .autocomplete-status-feedback.success {
-    background: rgba(34, 197, 94, 0.15);
-    color: #4ade80;
-    border-color: rgba(34, 197, 94, 0.3);
-  }
-  
-  .autocomplete-status-feedback.error {
-    background: rgba(239, 68, 68, 0.15);
-    color: #f87171;
-    border-color: rgba(239, 68, 68, 0.3);
-  }
+.autocomplete-status-feedback.loading {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+  border-color: rgba(59, 130, 246, 0.2);
 }
+
+
 
 /* Reduce motion for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
@@ -216,11 +183,7 @@ body {
   opacity: 0.45;
 }
 
-@media (prefers-color-scheme: dark) {
-  .autocomplete-suggestion-container:not(:focus-within) .autocomplete-suggestion-ghost {
-    opacity: 0.5;
-  }
-}
+
 
 /* Fine-tune visual hierarchy */
 .autocomplete-suggestion-ghost {
@@ -269,18 +232,7 @@ body {
   100% { background-position: -300% 0; }
 }
 
-/* Dark theme support for animated border */
-@media (prefers-color-scheme: dark) {
-  .autocomplete-editor-loading::before {
-    background: linear-gradient(90deg, 
-      rgba(156, 163, 175, 0.3) 0%, 
-      rgba(156, 163, 175, 0.8) 25%, 
-      rgba(209, 213, 219, 0.9) 50%, 
-      rgba(156, 163, 175, 0.8) 75%, 
-      rgba(156, 163, 175, 0.3) 100%);
-    box-shadow: 0 0 20px rgba(156, 163, 175, 0.1);
-  }
-}
+
 
 /* High contrast mode for animated border */
 @media (prefers-contrast: high) {
@@ -298,17 +250,7 @@ body {
     box-shadow: 0 0 25px rgba(55, 65, 81, 0.2);
   }
   
-  @media (prefers-color-scheme: dark) {
-    .autocomplete-editor-loading::before {
-      background: linear-gradient(90deg, 
-        rgba(209, 213, 219, 0.6) 0%, 
-        rgba(209, 213, 219, 1) 25%, 
-        rgba(243, 244, 246, 1) 50%, 
-        rgba(209, 213, 219, 1) 75%, 
-        rgba(209, 213, 219, 0.6) 100%);
-      box-shadow: 0 0 25px rgba(209, 213, 219, 0.2);
-    }
-  }
+
 }
 
 /* Reduce motion for animated border */
@@ -321,12 +263,7 @@ body {
     box-shadow: 0 0 10px rgba(107, 114, 128, 0.1);
   }
   
-  @media (prefers-color-scheme: dark) {
-    .autocomplete-editor-loading::before {
-      background: rgba(156, 163, 175, 0.6);
-      box-shadow: 0 0 10px rgba(156, 163, 175, 0.1);
-    }
-  }
+
   
   .autocomplete-suggestion-ghost.loading::after {
     animation: none;

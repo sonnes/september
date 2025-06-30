@@ -118,7 +118,7 @@ function Editor({ placeholder = 'Start typing...' }: EditorProps) {
             className="flex-1 w-full p-3 rounded-xl border border-zinc-400"
             style={{ caretColor: 'auto' }}
           />
-          <Button onClick={createMessage} color="dark/zinc" disabled={status === 'loading'}>
+          <Button onClick={createMessage} color="zinc" disabled={status === 'loading'}>
             {status === 'loading' ? 'Submitting...' : 'Submit'}
           </Button>
         </div>

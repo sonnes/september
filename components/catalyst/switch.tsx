@@ -1,6 +1,7 @@
-import * as Headless from '@headlessui/react'
-import clsx from 'clsx'
-import type React from 'react'
+import type React from 'react';
+
+import * as Headless from '@headlessui/react';
+import clsx from 'clsx';
 
 export function SwitchGroup({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
   return (
@@ -15,7 +16,7 @@ export function SwitchGroup({ className, ...props }: React.ComponentPropsWithout
         'has-data-[slot=description]:space-y-6 has-data-[slot=description]:**:data-[slot=label]:font-medium'
       )}
     />
-  )
+  );
 }
 
 export function SwitchField({
@@ -40,52 +41,40 @@ export function SwitchField({
         'has-data-[slot=description]:**:data-[slot=label]:font-medium'
       )}
     />
-  )
+  );
 }
 
 const colors = {
-  'dark/zinc': [
-    '[--switch-bg-ring:var(--color-zinc-950)]/90 [--switch-bg:var(--color-zinc-900)] dark:[--switch-bg-ring:transparent] dark:[--switch-bg:var(--color-white)]/25',
-    '[--switch-ring:var(--color-zinc-950)]/90 [--switch-shadow:var(--color-black)]/10 [--switch:white] dark:[--switch-ring:var(--color-zinc-700)]/90',
-  ],
-  'dark/white': [
-    '[--switch-bg-ring:var(--color-zinc-950)]/90 [--switch-bg:var(--color-zinc-900)] dark:[--switch-bg-ring:transparent] dark:[--switch-bg:var(--color-white)]',
-    '[--switch-ring:var(--color-zinc-950)]/90 [--switch-shadow:var(--color-black)]/10 [--switch:white] dark:[--switch-ring:transparent] dark:[--switch:var(--color-zinc-900)]',
-  ],
-  dark: [
-    '[--switch-bg-ring:var(--color-zinc-950)]/90 [--switch-bg:var(--color-zinc-900)] dark:[--switch-bg-ring:var(--color-white)]/15',
+  zinc: [
+    '[--switch-bg-ring:var(--color-zinc-950)]/90 [--switch-bg:var(--color-zinc-900)]',
     '[--switch-ring:var(--color-zinc-950)]/90 [--switch-shadow:var(--color-black)]/10 [--switch:white]',
   ],
-  zinc: [
-    '[--switch-bg-ring:var(--color-zinc-700)]/90 [--switch-bg:var(--color-zinc-600)] dark:[--switch-bg-ring:transparent]',
-    '[--switch-shadow:var(--color-black)]/10 [--switch:white] [--switch-ring:var(--color-zinc-700)]/90',
-  ],
   white: [
-    '[--switch-bg-ring:var(--color-black)]/15 [--switch-bg:white] dark:[--switch-bg-ring:transparent]',
+    '[--switch-bg-ring:var(--color-black)]/15 [--switch-bg:white]',
     '[--switch-shadow:var(--color-black)]/10 [--switch-ring:transparent] [--switch:var(--color-zinc-950)]',
   ],
   red: [
-    '[--switch-bg-ring:var(--color-red-700)]/90 [--switch-bg:var(--color-red-600)] dark:[--switch-bg-ring:transparent]',
+    '[--switch-bg-ring:var(--color-red-700)]/90 [--switch-bg:var(--color-red-600)]',
     '[--switch:white] [--switch-ring:var(--color-red-700)]/90 [--switch-shadow:var(--color-red-900)]/20',
   ],
   orange: [
-    '[--switch-bg-ring:var(--color-orange-600)]/90 [--switch-bg:var(--color-orange-500)] dark:[--switch-bg-ring:transparent]',
+    '[--switch-bg-ring:var(--color-orange-600)]/90 [--switch-bg:var(--color-orange-500)]',
     '[--switch:white] [--switch-ring:var(--color-orange-600)]/90 [--switch-shadow:var(--color-orange-900)]/20',
   ],
   amber: [
-    '[--switch-bg-ring:var(--color-amber-500)]/80 [--switch-bg:var(--color-amber-400)] dark:[--switch-bg-ring:transparent]',
+    '[--switch-bg-ring:var(--color-amber-500)]/80 [--switch-bg:var(--color-amber-400)]',
     '[--switch-ring:transparent] [--switch-shadow:transparent] [--switch:var(--color-amber-950)]',
   ],
   yellow: [
-    '[--switch-bg-ring:var(--color-yellow-400)]/80 [--switch-bg:var(--color-yellow-300)] dark:[--switch-bg-ring:transparent]',
+    '[--switch-bg-ring:var(--color-yellow-400)]/80 [--switch-bg:var(--color-yellow-300)]',
     '[--switch-ring:transparent] [--switch-shadow:transparent] [--switch:var(--color-yellow-950)]',
   ],
   lime: [
-    '[--switch-bg-ring:var(--color-lime-400)]/80 [--switch-bg:var(--color-lime-300)] dark:[--switch-bg-ring:transparent]',
+    '[--switch-bg-ring:var(--color-lime-400)]/80 [--switch-bg:var(--color-lime-300)]',
     '[--switch-ring:transparent] [--switch-shadow:transparent] [--switch:var(--color-lime-950)]',
   ],
   green: [
-    '[--switch-bg-ring:var(--color-green-700)]/90 [--switch-bg:var(--color-green-600)] dark:[--switch-bg-ring:transparent]',
+    '[--switch-bg-ring:var(--color-green-700)]/90 [--switch-bg:var(--color-green-600)]',
     '[--switch:white] [--switch-ring:var(--color-green-700)]/90 [--switch-shadow:var(--color-green-900)]/20',
   ],
   emerald: [
@@ -132,17 +121,17 @@ const colors = {
     '[--switch-bg-ring:var(--color-rose-600)]/90 [--switch-bg:var(--color-rose-500)] dark:[--switch-bg-ring:transparent]',
     '[--switch:white] [--switch-ring:var(--color-rose-600)]/90 [--switch-shadow:var(--color-rose-900)]/20',
   ],
-}
+};
 
-type Color = keyof typeof colors
+type Color = keyof typeof colors;
 
 export function Switch({
-  color = 'dark/zinc',
+  color = 'zinc',
   className,
   ...props
 }: {
-  color?: Color
-  className?: string
+  color?: Color;
+  className?: string;
 } & Omit<Headless.SwitchProps, 'as' | 'className' | 'children'>) {
   return (
     <Headless.Switch
@@ -155,19 +144,17 @@ export function Switch({
         // Transitions
         'transition duration-0 ease-in-out data-changing:duration-200',
         // Outline and background color in forced-colors mode so switch is still visible
-        'forced-colors:outline forced-colors:[--switch-bg:Highlight] dark:forced-colors:[--switch-bg:Highlight]',
+        'forced-colors:outline forced-colors:[--switch-bg:Highlight]',
         // Unchecked
-        'bg-zinc-200 ring-1 ring-inset ring-black/5 dark:bg-white/5 dark:ring-white/15',
+        'bg-zinc-200 ring-1 ring-inset ring-black/5',
         // Checked
-        'data-checked:bg-(--switch-bg) data-checked:ring-(--switch-bg-ring) dark:data-checked:bg-(--switch-bg) dark:data-checked:ring-(--switch-bg-ring)',
+        'data-checked:bg-(--switch-bg) data-checked:ring-(--switch-bg-ring)',
         // Focus
         'focus:outline-hidden data-focus:outline data-focus:outline-2 data-focus:outline-offset-2 data-focus:outline-blue-500',
         // Hover
         'data-hover:data-checked:ring-(--switch-bg-ring) data-hover:ring-black/15',
-        'dark:data-hover:data-checked:ring-(--switch-bg-ring) dark:data-hover:ring-white/25',
         // Disabled
         'data-disabled:bg-zinc-200 data-disabled:data-checked:bg-zinc-200 data-disabled:opacity-50 data-disabled:data-checked:ring-black/5',
-        'dark:data-disabled:bg-white/15 dark:data-disabled:data-checked:bg-white/15 dark:data-disabled:data-checked:ring-white/15',
         // Color specific styles
         colors[color]
       )}
@@ -191,5 +178,5 @@ export function Switch({
         )}
       />
     </Headless.Switch>
-  )
+  );
 }
