@@ -25,3 +25,14 @@ Thes transcriptions are then used to provide contextually relevant replies or au
 In every conversation, September tries to predict the next words or phrases you might want to use. It uses the context of the conversation & your mood/cues to provide these suggestions.
 
 Additionally, in every conversation, you can provide additional context in the form of notes, documents, images, videos, or links. September indexes all this information to "speak your mind" in your conversations.
+
+## Development
+
+This repository uses Next.js, Tailwind CSS, Tailwind UI, and is deployed on Cloudflare.
+
+### Data
+
+September uses a combination of local storage - Triplit, and a cloud database - Supabase, to store your data.
+
+- Local storage is used to store your data. It is automatically synced to individual SQLite databases.
+- The cloud database is used for authentication, storing your data, and for the voice cloning feature.
