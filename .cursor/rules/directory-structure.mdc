@@ -1,5 +1,5 @@
 ---
-alwaysApply: false
+alwaysApply: true
 ---
 
 # Directory Structure Rule
@@ -163,23 +163,24 @@ public/
 
 ```typescript
 // Good: Relative imports for local files
-import { MessageBubble } from "../conversation/message-bubble";
-
 // Good: Absolute imports from project root
-import { Button } from "@/components/ui/button";
-import { useSpeechToText } from "@/hooks/use-speech-to-text";
+import { Button } from '@/components/ui/button';
+import { useSpeechToText } from '@/hooks/use-speech-to-text';
+
+import { MessageBubble } from '../conversation/message-bubble';
 ```
 
 ### 2. Group Imports Logically
 
 ```typescript
 // Good: External libraries first, then internal imports
-import React from "react";
-import { NextPage } from "next";
+import React from 'react';
 
-import { Button } from "@/components/ui/button";
-import { useConversation } from "@/hooks/use-conversation";
-import { ConversationService } from "@/services/conversation";
+import { NextPage } from 'next';
+
+import { Button } from '@/components/ui/button';
+import { useConversation } from '@/hooks/use-conversation';
+import { ConversationService } from '@/services/conversation';
 ```
 
 ## File Naming Conventions
