@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 
+import Editor from '@/components/editor/simple';
 import Layout from '@/components/layout';
 
 export const metadata: Metadata = {
@@ -15,7 +16,9 @@ export default function TalkPage() {
           <div className="flex items-center space-x-2"></div>
         </div>
       </Layout.Header>
-      <Layout.Content></Layout.Content>
+      <Layout.Content>
+        <Editor />
+      </Layout.Content>
     </Layout>
   );
 }
