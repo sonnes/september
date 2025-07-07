@@ -12,7 +12,7 @@ This rule ensures consistent directory organization for the September project fo
 september/
 ├── app/                          # Next.js App Router
 │   ├── (auth)/                   # Route groups for authentication
-│   ├── (dashboard)/              # Route groups for main app
+│   ├── (app)/              # Route groups for main app
 │   ├── api/                      # API routes
 │   ├── globals.css               # Global styles
 │   ├── layout.tsx                # Root layout
@@ -42,12 +42,12 @@ september/
 ### 1. App Router Files
 
 - **DO**: Place all route files in `app/` directory
-- **DO**: Use route groups `(auth)` and `(dashboard)` for organization
+- **DO**: Use route groups `(auth)` and `(app)` for organization
 - **DO**: Place API routes in `app/api/`
 - **DON'T**: Create pages outside the app directory
 
 ```typescript
-// Good: app/(dashboard)/conversation/page.tsx
+// Good: app/(app)/conversation/page.tsx
 export default function ConversationPage() {
   return <div>Conversation</div>;
 }
@@ -264,7 +264,7 @@ When creating new files or directories:
 When adding a "settings" feature:
 
 ```
-1. Create route: app/(dashboard)/settings/page.tsx
+1. Create route: app/(app)/settings/page.tsx
 2. Create components: components/settings/
 3. Create hooks: hooks/use-settings.ts
 4. Create types: types/settings.ts
