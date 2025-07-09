@@ -14,8 +14,16 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
   const { createMessage, status } = useCreateMessage();
 
   const handleSubmit = async () => {
-    await createMessage({ text, authorId: '123' });
+    const createdMessage = await createMessage({ text, authorId: '123' });
+
     setText('');
+
+    // Play the base64 encoded audio
+    if (createdMessage.audioBlob) {
+      const audioSrc = `data:audio/mpeg;base64,${createdMessage.audioBlob}`;
+      const audio = new Audio(audioSrc);
+      audio.play();
+    }
   };
 
   return (

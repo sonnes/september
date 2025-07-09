@@ -7,6 +7,7 @@ let triplit: any = undefined;
 if (typeof window !== 'undefined') {
   triplit = new TriplitClient({
     schema,
+    autoConnect: false,
     storage: 'indexeddb',
     // Optionally add serverUrl and token here if needed
   });
