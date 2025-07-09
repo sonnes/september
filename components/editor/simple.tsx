@@ -14,7 +14,7 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
   const { createMessage, status } = useCreateMessage();
 
   const handleSubmit = async () => {
-    await createMessage(text);
+    await createMessage({ text, authorId: '123' });
     setText('');
   };
 
