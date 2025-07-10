@@ -8,6 +8,7 @@ export const schema = S.Collections({
       authorId: S.String(),
       createdAt: S.Date({ default: S.Default.now() }),
       audioBlob: S.String({ nullable: true }),
+      alignment: S.Json({ nullable: true }),
     }),
   },
 });

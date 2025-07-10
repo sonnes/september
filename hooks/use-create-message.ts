@@ -20,12 +20,12 @@ export function useCreateMessage() {
     try {
       const { audio, alignment } = await generateAudio({ text, voiceId, modelId });
 
-      console.log(alignment);
       const createdMessage = await triplit.insert('messages', {
         text,
         authorId,
         createdAt: new Date(),
         audioBlob: audio || null,
+        alignment: alignment || null,
       });
 
       return createdMessage;

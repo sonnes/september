@@ -4,17 +4,24 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 export type ButtonProps = {
-  children: ReactNode;
+  children?: ReactNode;
   icon?: ReactNode;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
   color?: 'indigo' | 'zinc' | 'gray' | 'red' | 'green' | 'blue';
+  variant?: 'default' | 'circular';
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
 const sizeClasses = {
   sm: 'gap-x-1.5 px-2.5 py-1.5',
   md: 'gap-x-1.5 px-3 py-2',
   lg: 'gap-x-2 px-3.5 py-2.5',
+};
+
+const circularSizeClasses = {
+  sm: 'p-1',
+  md: 'p-1.5',
+  lg: 'p-2',
 };
 
 const colorClasses: Record<string, string> = {
@@ -32,26 +39,29 @@ export function Button({
   size = 'md',
   className = '',
   color = 'indigo',
+  variant = 'default',
   ...props
 }: ButtonProps) {
+  const isCircular = variant === 'circular';
   return (
     <button
       type="button"
       className={cn(
-        'inline-flex items-center rounded-md text-sm font-semibold shadow-sm focus-visible:outline-offset-2',
+        'flex items-center justify-center font-semibold shadow-sm focus-visible:outline-offset-2',
         colorClasses[color] ?? colorClasses['indigo'],
-        sizeClasses[size],
+        isCircular
+          ? `rounded-full ${circularSizeClasses[size]}`
+          : `rounded-md text-sm ${sizeClasses[size]}`,
         className
       )}
       {...props}
     >
       {icon && React.isValidElement(icon)
         ? React.cloneElement(icon as React.ReactElement<any>, {
-            className:
-              `${(icon as React.ReactElement<any>).props.className ?? ''} -ml-0.5 size-5`.trim(),
+            className: cn('w-5 h-5', (icon as React.ReactElement<any>).props.className),
           })
         : icon}
-      {children}
+      {!isCircular && children}
     </button>
   );
 }
