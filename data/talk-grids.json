@@ -1,0 +1,32 @@
+[
+  {
+    "id": "greetings",
+    "name": "Greetings",
+    "buttons": [
+      {
+        "id": "hello",
+        "text": "Hello",
+        "tags": ["greeting"],
+        "type": "default"
+      },
+      {
+        "id": "bye",
+        "text": "Goodbye",
+        "tags": ["farewell"],
+        "type": "default"
+      },
+      {
+        "id": "more-greetings",
+        "text": "More Greetings",
+        "tags": ["greeting"],
+        "type": "tag"
+      },
+      {
+        "id": "custom-grid",
+        "text": "Custom Grid",
+        "tags": [],
+        "type": "grid"
+      }
+    ]
+  }
+]

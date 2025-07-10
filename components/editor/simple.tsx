@@ -5,13 +5,14 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useCreateMessage } from '@/hooks/use-create-message';
+import { useTextContext } from '@/hooks/use-text-context';
 
 type EditorProps = {
   placeholder?: string;
 };
 
 export default function Editor({ placeholder = 'Start typing...' }: EditorProps) {
-  const [text, setText] = useState('');
+  const { text, setText } = useTextContext();
   const { createMessage, status } = useCreateMessage();
   const { enqueue } = useAudioPlayer();
 

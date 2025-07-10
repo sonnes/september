@@ -3,7 +3,9 @@ import type { Metadata } from 'next';
 import AudioPlayer from '@/components/audio-player';
 import Editor from '@/components/editor/simple';
 import Layout from '@/components/layout';
+import { GridManager } from '@/components/talk/grid-manager';
 import { AudioPlayerProvider } from '@/hooks/use-audio-player';
+import { TextProvider } from '@/hooks/use-text-context';
 
 export const metadata: Metadata = {
   title: 'Talk - September',
@@ -20,7 +22,10 @@ export default function TalkPage() {
           </div>
         </Layout.Header>
         <Layout.Content>
-          <Editor />
+          <TextProvider>
+            <Editor />
+            <GridManager />
+          </TextProvider>
           <AudioPlayer />
         </Layout.Content>
       </Layout>
