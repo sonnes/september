@@ -67,7 +67,6 @@ export async function extractDeck({ images }: ExtractDeckParams): Promise<Extrac
       },
     });
 
-    console.log(response.text);
     const { name, chunks } = JSON.parse(response.text?.trim() || '{}');
 
     const cards: Card[] = chunks.map((chunk: string, index: number) => ({

@@ -23,7 +23,7 @@ const CreateStory: React.FC = () => {
       images.forEach((file, idx) => {
         formData.append(`image${idx}`, file);
       });
-      const res = await fetch('/api/read/extract-text', {
+      const res = await fetch('/api/extract-text', {
         method: 'POST',
         body: formData,
       });
