@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 
 export default function AudioPlayer() {
-  const { current, isPlaying, pause, resume, getCurrentTime } = useAudioPlayer();
+  const { current, isPlaying, togglePlayPause } = useAudioPlayer();
 
   // Helper to render aligned text with words grouped
   function renderAlignedText() {
@@ -47,7 +47,7 @@ export default function AudioPlayer() {
         {renderAlignedText()}
       </div>
       <Button
-        onClick={current ? (isPlaying ? pause : resume) : undefined}
+        onClick={togglePlayPause}
         color="zinc"
         variant="circular"
         aria-label={isPlaying ? 'Pause' : 'Play'}

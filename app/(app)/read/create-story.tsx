@@ -2,22 +2,35 @@
 
 import React, { useState } from 'react';
 
-import DeckView from '@/components/deck/view';
+import { useRouter } from 'next/navigation';
+
 import ImageUploader from '@/components/ui/image-uploader';
 import { useCreateDeck } from '@/hooks/use-create-deck';
-import { Deck } from '@/types/card';
+import { generateAudio } from '@/hooks/use-create-message';
+import { triplit } from '@/triplit/client';
+import { Card } from '@/types/card';
 
 const CreateStory: React.FC = () => {
   const { createDeck } = useCreateDeck();
-
-  const [deck, setDeck] = useState<Deck | null>(null);
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const generateDeckAudio = async (cards: Card[]) => {
+    cards.forEach(async card => {
+      const audio = await generateAudio({ text: card.text });
+
+      // update the card with the audio
+      await triplit?.update('cards', card.id, {
+        audio,
+      });
+    });
+  };
 
   const handleImagesUploaded = async (images: File[]) => {
     setLoading(true);
     setError(null);
-    setDeck(null);
+
     try {
       const formData = new FormData();
       images.forEach((file, idx) => {
@@ -32,11 +45,15 @@ const CreateStory: React.FC = () => {
         throw new Error(data.error || 'Failed to extract text');
       }
       const data = await res.json();
+
       const deck = await createDeck({
         name: data.name,
         cards: data.cards,
       });
-      setDeck(deck);
+
+      await generateDeckAudio(deck.cards || []);
+
+      router.push(`/read/${deck.id}`);
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
     } finally {
@@ -49,7 +66,6 @@ const CreateStory: React.FC = () => {
       <ImageUploader onUpload={handleImagesUploaded} />
       {loading && <div className="mt-4 text-blue-600">Extracting text from images...</div>}
       {error && <div className="mt-4 text-red-600">{error}</div>}
-      <div className="mt-8">{deck && <DeckView deck={deck} />}</div>
     </>
   );
 };

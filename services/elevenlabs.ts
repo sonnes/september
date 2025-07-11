@@ -12,7 +12,7 @@ const elevenlabs = new ElevenLabsClient({ apiKey });
 
 export async function generateSpeech({
   text,
-  voiceId = 'JBFqnCBsd6RMkjVDRZzb', // Default voiceId, replace as needed
+  voiceId = '3vXjdKMDgxJoOLbElGxC', // Default voiceId, replace as needed
 }: {
   text: string;
   voiceId?: string;

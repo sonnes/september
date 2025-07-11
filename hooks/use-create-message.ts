@@ -8,21 +8,21 @@ export function useCreateMessage() {
 
   const createMessage = async ({
     text,
-    authorId,
-    voiceId,
+    author_id,
+    voice_id,
   }: {
     text: string;
-    authorId: string;
-    voiceId?: string;
+    author_id: string;
+    voice_id?: string;
   }) => {
     setStatus('loading');
     try {
-      const audio = await generateAudio({ text, voiceId });
+      const audio = await generateAudio({ text, voice_id });
 
-      const createdMessage = await triplit.insert('messages', {
+      const createdMessage = await triplit?.insert('messages', {
         text,
-        authorId,
-        createdAt: new Date(),
+        author_id,
+        created_at: new Date(),
         audio,
       });
 
@@ -35,17 +35,17 @@ export function useCreateMessage() {
   return { createMessage, status };
 }
 
-async function generateAudio({
+export async function generateAudio({
   text,
-  voiceId,
+  voice_id,
 }: {
   text: string;
-  voiceId?: string;
+  voice_id?: string;
 }): Promise<Audio> {
   const res = await fetch('/api/text-to-speech', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, voiceId }),
+    body: JSON.stringify({ text, voice_id }),
   });
   if (!res.ok) throw new Error('Failed to generate audio');
   const { blob, alignment } = await res.json();

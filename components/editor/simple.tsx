@@ -17,12 +17,12 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
   const { enqueue } = useAudioPlayer();
 
   const handleSubmit = async () => {
-    const createdMessage = await createMessage({ text, authorId: '123' });
+    const createdMessage = await createMessage({ text, author_id: '123' });
 
     setText('');
 
     // Play the base64 encoded audio
-    if (createdMessage.audio) {
+    if (createdMessage?.audio) {
       enqueue(createdMessage.audio);
     }
   };

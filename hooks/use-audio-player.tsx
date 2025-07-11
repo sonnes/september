@@ -1,153 +1,100 @@
 'use client';
 
-import React, { ReactNode, createContext, useCallback, useContext, useRef, useState } from 'react';
+import React, {
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
-import { Audio } from '@/types/audio';
+import {
+  AudioPlayerProvider as AudioPlayerProviderBase,
+  useAudioPlayerContext,
+} from 'react-use-audio-player';
+
+// Type for an audio track (can be extended later)
+export type AudioTrack = {
+  blob: string; // URL or blob string
+  alignment: any;
+};
 
 // Context value type
 interface AudioPlayerContextType {
-  queue: Audio[];
-  current: Audio | null;
   isPlaying: boolean;
-  play: (track: Audio) => void;
-  enqueue: (track: Audio) => void;
-  pause: () => void;
-  resume: () => void;
-  clearQueue: () => void;
+  enqueue: (track: AudioTrack) => void;
+  togglePlayPause: () => void;
+  current: AudioTrack | null;
 }
 
 const AudioPlayerContext = createContext<AudioPlayerContextType | undefined>(undefined);
 
 export function AudioPlayerProvider({ children }: { children: ReactNode }) {
-  const [queue, setQueue] = useState<Audio[]>([]);
-  const [current, setCurrent] = useState<Audio | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  // Play a specific track immediately
-  const play = useCallback((track: Audio) => {
-    setCurrent(track);
-    setIsPlaying(true);
-    if (audioRef.current) {
-      const src = `data:audio/mp3;base64,${track.blob}`;
-      audioRef.current.src = src;
-      audioRef.current.play();
-    }
-  }, []);
-
-  // Enqueue a track (if nothing playing, play immediately)
-  const enqueue = useCallback(
-    (track: Audio) => {
-      setQueue(prev => {
-        if (!current && prev.length === 0) {
-          setCurrent(track);
-          setIsPlaying(true);
-          if (audioRef.current) {
-            const src = `data:audio/mp3;base64,${track.blob}`;
-            audioRef.current.src = src;
-            audioRef.current.play();
-          }
-          return prev;
-        }
-        return [...prev, track];
-      });
-    },
-    [current]
+  return (
+    <AudioPlayerProviderBase>
+      <AudioPlayerQueueProvider>{children}</AudioPlayerQueueProvider>
+    </AudioPlayerProviderBase>
   );
+}
 
-  // Play next track in queue
-  const playNext = useCallback(() => {
+// This is the actual queue logic provider
+function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
+  const [queue, setQueue] = useState<AudioTrack[]>([]);
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
+
+  const { load, play, pause, isPlaying } = useAudioPlayerContext();
+
+  // Play the current track when the queue or index changes
+  useEffect(() => {
+    if (queue.length > 0 && queue[currentIndex]) {
+      const src = `data:audio/mp3;base64,${queue[currentIndex].blob}`;
+      load(src, {
+        autoplay: true,
+        onend: () => {
+          // When the track ends, move to the next one
+          if (currentIndex < queue.length - 1) {
+            setCurrentIndex(idx => idx + 1);
+          } else {
+            // Optionally, clear the queue or reset index
+            // setQueue([]);
+            // setCurrentIndex(0);
+          }
+        },
+      });
+    }
+  }, [queue, currentIndex, load]);
+
+  // Enqueue a new track
+  const enqueue = useCallback((track: AudioTrack) => {
     setQueue(prev => {
-      if (prev.length > 0) {
-        const [next, ...rest] = prev;
-        setCurrent(next);
-        setIsPlaying(true);
-        if (audioRef.current) {
-          const src = `data:audio/mp3;base64,${next.blob}`;
-          audioRef.current.src = src;
-          audioRef.current.play();
-        }
-        return rest;
-      } else {
-        setCurrent(null);
-        setIsPlaying(false);
-        return [];
+      // If nothing is playing, start with this track
+      if (prev.length === 0) {
+        setCurrentIndex(0);
+        return [track];
       }
+      return [...prev, track];
     });
   }, []);
 
-  // Pause playback
-  const pause = useCallback(() => {
-    setIsPlaying(false);
-    if (audioRef.current) {
-      audioRef.current.pause();
+  // Toggle play/pause
+  const togglePlayPause = useCallback(() => {
+    if (isPlaying) {
+      pause();
+    } else {
+      play();
     }
-  }, []);
-
-  // Resume playback
-  const resume = useCallback(() => {
-    setIsPlaying(true);
-    if (audioRef.current) {
-      audioRef.current.play();
-    }
-  }, []);
-
-  // Clear queue and stop
-  const clearQueue = useCallback(() => {
-    setQueue([]);
-    setCurrent(null);
-    setIsPlaying(false);
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = '';
-    }
-  }, []);
-
-  // Handle audio end event
-  const handleEnded = () => {
-    playNext();
-  };
-
-  // Attach event listener to audio element
-  React.useEffect(() => {
-    const audio = audioRef.current;
-    if (audio) {
-      audio.addEventListener('ended', handleEnded);
-      return () => {
-        audio.removeEventListener('ended', handleEnded);
-      };
-    }
-  }, [audioRef, playNext]);
-
-  // Sync audio element src when current changes
-  React.useEffect(() => {
-    if (audioRef.current && current) {
-      const src = `data:audio/mp3;base64,${current.blob}`;
-      audioRef.current.src = src;
-      if (isPlaying) {
-        audioRef.current.play();
-      }
-    }
-  }, [current, isPlaying]);
+  }, [isPlaying, play, pause]);
 
   const value: AudioPlayerContextType = {
-    queue,
-    current,
     isPlaying,
-    play,
     enqueue,
-    pause,
-    resume,
-    clearQueue,
+    togglePlayPause,
+    current: queue[currentIndex] || null,
   };
 
-  return (
-    <AudioPlayerContext.Provider value={value}>
-      {children}
-      {/* Hidden audio element for playback */}
-      <audio ref={audioRef} style={{ display: 'none' }} />
-    </AudioPlayerContext.Provider>
-  );
+  return <AudioPlayerContext.Provider value={value}>{children}</AudioPlayerContext.Provider>;
 }
 
 export function useAudioPlayer() {

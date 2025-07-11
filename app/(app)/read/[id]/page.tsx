@@ -4,8 +4,10 @@ import React, { useEffect, useState } from 'react';
 
 import { useParams } from 'next/navigation';
 
+import AudioPlayer from '@/components/audio-player';
 import DeckView from '@/components/deck/view';
 import Layout from '@/components/layout';
+import { AudioPlayerProvider } from '@/hooks/use-audio-player';
 import { triplit } from '@/triplit/client';
 import { Card, Deck } from '@/types/card';
 
@@ -42,18 +44,23 @@ const DeckPage: React.FC = () => {
   }, [id]);
 
   return (
-    <Layout>
-      <Layout.Header>
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight text-white">Read &gt; {deck?.name}</h1>
-        </div>
-      </Layout.Header>
-      <Layout.Content>
-        {loading && <div>Loading deck...</div>}
-        {!loading && !deck && <div>Deck not found.</div>}
-        {!loading && deck && <DeckView deck={deck} />}
-      </Layout.Content>
-    </Layout>
+    <>
+      <Layout>
+        <Layout.Header>
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold tracking-tight text-white">Read &gt; {deck?.name}</h1>
+          </div>
+        </Layout.Header>
+        <Layout.Content>
+          <AudioPlayerProvider>
+            {loading && <div>Loading deck...</div>}
+            {!loading && !deck && <div>Deck not found.</div>}
+            {!loading && deck && <DeckView deck={deck} />}
+            <AudioPlayer />
+          </AudioPlayerProvider>
+        </Layout.Content>
+      </Layout>
+    </>
   );
 };
 
