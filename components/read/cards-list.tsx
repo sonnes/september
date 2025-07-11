@@ -1,9 +1,9 @@
 import React from 'react';
 
-import { TextCard } from '@/types/card';
+import { Card } from '@/types/card';
 
 type CardsListProps = {
-  cards: TextCard[];
+  cards: Card[];
 };
 
 const CardsList: React.FC<CardsListProps> = ({ cards }) => {
@@ -30,7 +30,7 @@ const CardsList: React.FC<CardsListProps> = ({ cards }) => {
                 <div className="flex flex-1 flex-col justify-between px-8 max-lg:pb-12 max-lg:pt-10 sm:px-10 lg:pb-2">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm text-gray-500">
-                      <span>{card.createdAt.toLocaleString()}</span>
+                      <span>{card.created_at.toLocaleString()}</span>
                     </div>
                   </div>
                   <div className="mt-4">

@@ -5,11 +5,10 @@ import React, { useState } from 'react';
 import Layout from '@/components/layout';
 import CardsList from '@/components/read/cards-list';
 import ImageUploader from '@/components/read/image-uploader';
-import { FormSectionHeader } from '@/components/ui/form-section-header';
-import { TextCard } from '@/types/card';
+import { Card } from '@/types/card';
 
 export default function ReadPage() {
-  const [cards, setCards] = useState<TextCard[]>([]);
+  const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

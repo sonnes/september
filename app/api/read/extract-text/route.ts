@@ -17,6 +17,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No images provided.' }, { status: 400 });
   }
   // Use Gemini service for OCR
-  const result = await extractTextFromImagesGemini(files);
+  const result = await extractTextFromImagesGemini({ images: files });
   return NextResponse.json(result);
 }

@@ -5,10 +5,33 @@ export const schema = S.Collections({
     schema: S.Schema({
       id: S.Id({ format: 'uuidv4' }),
       text: S.String(),
-      authorId: S.String(),
-      createdAt: S.Date({ default: S.Default.now() }),
-      audioBlob: S.String({ nullable: true }),
-      alignment: S.Json({ nullable: true }),
+      author_id: S.String(),
+      created_at: S.Date({ default: S.Default.now() }),
+      audio: S.Json({ nullable: true }),
+    }),
+  },
+  decks: {
+    schema: S.Schema({
+      id: S.Id({ format: 'uuidv4' }),
+      name: S.String(),
+      created_at: S.Date({ default: S.Default.now() }),
+      updated_at: S.Date({ default: S.Default.now() }),
+      author_id: S.String({ nullable: true }),
+    }),
+    relationships: {
+      cards: S.RelationMany('cards', {
+        where: [['deck_id', '=', 'decks.id']],
+      }),
+    },
+  },
+  cards: {
+    schema: S.Schema({
+      id: S.Id({ format: 'uuidv4' }),
+      text: S.String(),
+      rank: S.Number(),
+      created_at: S.Date({ default: S.Default.now() }),
+      deck_id: S.String(),
+      audio: S.Json({ nullable: true }),
     }),
   },
 });

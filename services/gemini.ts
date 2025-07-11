@@ -1,59 +1,69 @@
-import { GoogleGenAI } from '@google/genai';
+import { Content, ContentListUnion, GoogleGenAI } from '@google/genai';
 import { v4 as uuidv4 } from 'uuid';
 
-import { TextCard } from '@/types/card';
+import { Card } from '@/types/card';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
-/**
- * Extracts text from images using Gemini AI (OCR) and returns TextCard objects
- */
-export async function extractTextFromImagesGemini(images: Blob[]): Promise<TextCard[]> {
+const PROMPT = `You are a storyteller.
+https://www.triplit.dev/docs/schemas/relations
+Extract all readable text from all images. Break down the text into smaller chunks for narration. Each chunk can be multiple sentences.
+
+Depending on the situation, add appropriate sound effects, exclamations, and pauses to make the narration more engaging. Use the following format:
+- <pause time="0.5s">
+- <effect>tiger roar</effect>
+
+The output should be a JSON array of text chunks, each chunk should be a string. Nothing else.
+
+Example output:
+[
+  "He slowly walks towards <pause time="0.5s">". The tiger roars <effect>tiger roar</effect>",
+  "The tiger says 'Hello'! <pause time="0.5s">. The man nervously says 'Hello' back.",
+]
+`;
+
+export async function extractTextFromImagesGemini({ images }: { images: Blob[] }): Promise<Card[]> {
   if (!GEMINI_API_KEY) {
     console.warn('Gemini API key not configured');
     return [];
   }
-
-  const cards: TextCard[] = [];
+  const contents: Content[] = [];
 
   for (let i = 0; i < images.length; i++) {
     const image = images[i];
-    const startTime = Date.now();
+    const arrayBuffer = await image.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
+    const mimeType = image.type || 'image/jpeg';
 
-    try {
-      // Read image as base64
-      const arrayBuffer = await image.arrayBuffer();
-      const base64 = Buffer.from(arrayBuffer).toString('base64');
-      const mimeType = image.type || 'image/jpeg';
-      const contents = [
-        {
-          inlineData: {
-            mimeType,
-            data: base64,
-          },
-        },
-        { text: 'Extract all readable text from this image.' },
-      ];
+    contents.push({
+      parts: [{ inlineData: { mimeType, data: base64 } }],
+    });
+  }
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents,
-      });
+  const cards: Card[] = [];
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents,
+      config: {
+        systemInstruction: PROMPT,
+      },
+    });
 
-      const extractedText = response.text?.trim() || '';
+    const chunks = JSON.parse(response.text?.trim() || '[]');
 
-      const card: TextCard = {
+    for (let i = 0; i < chunks.length; i++) {
+      const card: Card = {
         id: uuidv4(),
-        text: extractedText,
+        text: chunks[i],
         rank: i,
-        createdAt: new Date(),
+        created_at: new Date(),
       };
-
       cards.push(card);
-    } catch (err) {
-      console.error('Gemini OCR error:', err);
     }
+  } catch (err) {
+    console.error('Gemini OCR error:', err);
   }
 
   return cards;
