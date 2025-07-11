@@ -1,6 +1,6 @@
 import React from 'react';
 
-import type { Grid, GridButton } from '@/types/talk';
+import type { Grid, GridButton } from '@/types/grid';
 
 interface GridViewProps {
   grid: Grid;
