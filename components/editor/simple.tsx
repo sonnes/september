@@ -22,11 +22,8 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
     setText('');
 
     // Play the base64 encoded audio
-    if (createdMessage.audioBlob) {
-      enqueue({
-        blob: createdMessage.audioBlob,
-        alignment: createdMessage.alignment,
-      });
+    if (createdMessage.audio) {
+      enqueue(createdMessage.audio);
     }
   };
 

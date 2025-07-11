@@ -1,5 +1,6 @@
 import { ElevenLabs, ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
-import { audio } from 'framer-motion/client';
+
+import { Audio } from '@/types/audio';
 
 const apiKey = process.env.ELEVENLABS_API_KEY;
 
@@ -17,12 +18,18 @@ export async function generateSpeech({
   voiceId?: string;
   modelId?: string;
   outputFormat?: string;
-}) {
+}): Promise<Audio> {
   const response = await elevenlabs.textToSpeech.convertWithTimestamps(voiceId, {
     text,
     modelId: 'eleven_flash_v2_5',
     outputFormat: ElevenLabs.OutputFormat.Mp34410032,
   });
 
-  return { audio: response.audioBase64, alignment: response.alignment };
+  const alignment = {
+    characters: response.alignment?.characters ?? [],
+    start_times: response.alignment?.characterStartTimesSeconds ?? [],
+    end_times: response.alignment?.characterEndTimesSeconds ?? [],
+  };
+
+  return { blob: response.audioBase64, alignment };
 }

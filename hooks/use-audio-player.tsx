@@ -2,19 +2,15 @@
 
 import React, { ReactNode, createContext, useCallback, useContext, useRef, useState } from 'react';
 
-// Type for an audio track (can be extended later)
-export type AudioTrack = {
-  blob: string;
-  alignment: any;
-};
+import { Audio } from '@/types/audio';
 
 // Context value type
 interface AudioPlayerContextType {
-  queue: AudioTrack[];
-  current: AudioTrack | null;
+  queue: Audio[];
+  current: Audio | null;
   isPlaying: boolean;
-  play: (track: AudioTrack) => void;
-  enqueue: (track: AudioTrack) => void;
+  play: (track: Audio) => void;
+  enqueue: (track: Audio) => void;
   pause: () => void;
   resume: () => void;
   clearQueue: () => void;
@@ -23,13 +19,13 @@ interface AudioPlayerContextType {
 const AudioPlayerContext = createContext<AudioPlayerContextType | undefined>(undefined);
 
 export function AudioPlayerProvider({ children }: { children: ReactNode }) {
-  const [queue, setQueue] = useState<AudioTrack[]>([]);
-  const [current, setCurrent] = useState<AudioTrack | null>(null);
+  const [queue, setQueue] = useState<Audio[]>([]);
+  const [current, setCurrent] = useState<Audio | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Play a specific track immediately
-  const play = useCallback((track: AudioTrack) => {
+  const play = useCallback((track: Audio) => {
     setCurrent(track);
     setIsPlaying(true);
     if (audioRef.current) {
@@ -41,7 +37,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
   // Enqueue a track (if nothing playing, play immediately)
   const enqueue = useCallback(
-    (track: AudioTrack) => {
+    (track: Audio) => {
       setQueue(prev => {
         if (!current && prev.length === 0) {
           setCurrent(track);

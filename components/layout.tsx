@@ -1,6 +1,5 @@
 import { PropsWithChildren } from 'react';
 
-import { Navbar } from '@/components/home/navbar';
 import { type ThemeColor, themes } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
@@ -17,7 +16,6 @@ Layout.Header = ({ children, color = 'indigo' }: HeaderProps) => {
 
   return (
     <div className={cn(theme.bg, 'pb-32')}>
-      <Navbar />
       <header className="py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">{children}</div>
       </header>

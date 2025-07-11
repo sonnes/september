@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { triplit } from '@/triplit/client';
+import { Audio } from '@/types/audio';
 
 export function useCreateMessage() {
   const [status, setStatus] = useState<'idle' | 'loading'>('idle');
@@ -9,23 +10,20 @@ export function useCreateMessage() {
     text,
     authorId,
     voiceId,
-    modelId,
   }: {
     text: string;
     authorId: string;
     voiceId?: string;
-    modelId?: string;
   }) => {
     setStatus('loading');
     try {
-      const { audio, alignment } = await generateAudio({ text, voiceId, modelId });
+      const audio = await generateAudio({ text, voiceId });
 
       const createdMessage = await triplit.insert('messages', {
         text,
         authorId,
         createdAt: new Date(),
-        audioBlob: audio || null,
-        alignment: alignment || null,
+        audio,
       });
 
       return createdMessage;
@@ -40,19 +38,17 @@ export function useCreateMessage() {
 async function generateAudio({
   text,
   voiceId,
-  modelId,
 }: {
   text: string;
   voiceId?: string;
-  modelId?: string;
-}) {
+}): Promise<Audio> {
   const res = await fetch('/api/text-to-speech', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, voiceId, modelId }),
+    body: JSON.stringify({ text, voiceId }),
   });
   if (!res.ok) throw new Error('Failed to generate audio');
-  const { audio, alignment } = await res.json();
+  const { blob, alignment } = await res.json();
 
-  return { audio, alignment };
+  return { blob, alignment };
 }
