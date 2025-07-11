@@ -2,7 +2,7 @@ import { TriplitClient } from '@triplit/client';
 
 import { schema } from './schema';
 
-let triplit: any = undefined;
+let triplit: TriplitClient<typeof schema> | undefined = undefined;
 
 if (typeof window !== 'undefined') {
   triplit = new TriplitClient({

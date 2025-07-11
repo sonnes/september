@@ -1,5 +1,6 @@
 import React from 'react';
 
+import DecksList from '@/components/deck/list';
 import Layout from '@/components/layout';
 
 import CreateStory from './create-story';
@@ -13,6 +14,7 @@ export default function ReadPage() {
         </div>
       </Layout.Header>
       <Layout.Content>
+        <DecksList />
         <CreateStory />
       </Layout.Content>
     </Layout>

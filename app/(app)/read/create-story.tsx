@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 
-import CardsList from '@/components/read/cards-list';
-import ImageUploader from '@/components/read/image-uploader';
+import DeckView from '@/components/deck/view';
+import ImageUploader from '@/components/ui/image-uploader';
 import { useCreateDeck } from '@/hooks/use-create-deck';
 import { Deck } from '@/types/card';
 
@@ -49,9 +49,7 @@ const CreateStory: React.FC = () => {
       <ImageUploader onUpload={handleImagesUploaded} />
       {loading && <div className="mt-4 text-blue-600">Extracting text from images...</div>}
       {error && <div className="mt-4 text-red-600">{error}</div>}
-      <div className="mt-8">
-        <CardsList cards={deck?.cards || []} />
-      </div>
+      <div className="mt-8">{deck && <DeckView deck={deck} />}</div>
     </>
   );
 };
