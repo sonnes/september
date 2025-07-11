@@ -1,4 +1,4 @@
-import { Content, ContentListUnion, GoogleGenAI } from '@google/genai';
+import { Content, GoogleGenAI } from '@google/genai';
 import { v4 as uuidv4 } from 'uuid';
 
 import { Card } from '@/types/card';
@@ -10,6 +10,8 @@ const PROMPT = `You are a storyteller.
 https://www.triplit.dev/docs/schemas/relations
 Extract all readable text from all images. Break down the text into smaller chunks for narration. Each chunk can be multiple sentences.
 
+Extract the name of the story from the images. If you can't find the name, generate a simple name.
+
 Depending on the situation, add appropriate sound effects, exclamations, and pauses to make the narration more engaging. Use the following format:
 - <pause time="0.5s">
 - <effect>tiger roar</effect>
@@ -17,17 +19,31 @@ Depending on the situation, add appropriate sound effects, exclamations, and pau
 The output should be a JSON array of text chunks, each chunk should be a string. Nothing else.
 
 Example output:
-[
-  "He slowly walks towards <pause time="0.5s">". The tiger roars <effect>tiger roar</effect>",
-  "The tiger says 'Hello'! <pause time="0.5s">. The man nervously says 'Hello' back.",
-]
+{
+  "name": "The Jungle Book",
+  "chunks": [
+    "He slowly walks towards <pause time="0.5s">". The tiger roars <effect>tiger roar</effect>",
+    "The tiger says 'Hello'! <pause time="0.5s">. The man nervously says 'Hello' back.",
+  ]
+}
 `;
 
-export async function extractTextFromImagesGemini({ images }: { images: Blob[] }): Promise<Card[]> {
+interface ExtractDeckParams {
+  images: Blob[];
+}
+
+interface ExtractDeckResponse {
+  error?: string;
+  cards?: Card[];
+  name?: string;
+}
+
+export async function extractDeck({ images }: ExtractDeckParams): Promise<ExtractDeckResponse> {
   if (!GEMINI_API_KEY) {
     console.warn('Gemini API key not configured');
-    return [];
+    return { error: 'Gemini API key not configured' };
   }
+
   const contents: Content[] = [];
 
   for (let i = 0; i < images.length; i++) {
@@ -41,30 +57,29 @@ export async function extractTextFromImagesGemini({ images }: { images: Blob[] }
     });
   }
 
-  const cards: Card[] = [];
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents,
       config: {
         systemInstruction: PROMPT,
+        responseMimeType: 'application/json',
       },
     });
 
-    const chunks = JSON.parse(response.text?.trim() || '[]');
+    console.log(response.text);
+    const { name, chunks } = JSON.parse(response.text?.trim() || '{}');
 
-    for (let i = 0; i < chunks.length; i++) {
-      const card: Card = {
-        id: uuidv4(),
-        text: chunks[i],
-        rank: i,
-        created_at: new Date(),
-      };
-      cards.push(card);
-    }
+    const cards: Card[] = chunks.map((chunk: string, index: number) => ({
+      id: uuidv4(),
+      text: chunk,
+      rank: index,
+      created_at: new Date(),
+    }));
+
+    return { cards, name };
   } catch (err) {
     console.error('Gemini OCR error:', err);
+    return { error: 'Could not extract text from images' };
   }
-
-  return cards;
 }

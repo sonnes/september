@@ -1,43 +1,10 @@
-'use client';
-
-import React, { useState } from 'react';
+import React from 'react';
 
 import Layout from '@/components/layout';
-import CardsList from '@/components/read/cards-list';
-import ImageUploader from '@/components/read/image-uploader';
-import { Card } from '@/types/card';
+
+import CreateStory from './create-story';
 
 export default function ReadPage() {
-  const [cards, setCards] = useState<Card[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleImagesUploaded = async (images: File[]) => {
-    setLoading(true);
-    setError(null);
-    setCards([]);
-    try {
-      const formData = new FormData();
-      images.forEach((file, idx) => {
-        formData.append(`image${idx}`, file);
-      });
-      const res = await fetch('/api/read/extract-text', {
-        method: 'POST',
-        body: formData,
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to extract text');
-      }
-      const data = await res.json();
-      setCards(data || []);
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <Layout>
       <Layout.Header>
@@ -46,12 +13,7 @@ export default function ReadPage() {
         </div>
       </Layout.Header>
       <Layout.Content>
-        <ImageUploader onUpload={handleImagesUploaded} />
-        {loading && <div className="mt-4 text-blue-600">Extracting text from images...</div>}
-        {error && <div className="mt-4 text-red-600">{error}</div>}
-        <div className="mt-8">
-          <CardsList cards={cards} />
-        </div>
+        <CreateStory />
       </Layout.Content>
     </Layout>
   );
