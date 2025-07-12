@@ -69,7 +69,7 @@ const DeckView: React.FC<DeckViewProps> = ({ deck }) => {
   const nextIdx = current === cards.length - 1 ? undefined : current + 1;
 
   return (
-    <div className="bg-gray-50 py-12 sm:py-18">
+    <div className="bg-gray-50 py-4 sm:py-8">
       <div className="mx-auto px-6 lg:px-8">
         <h2 className="text-center text-base/7 font-semibold text-indigo-600">Story</h2>
         <div className="mx-auto mt-2 flex items-center justify-center gap-2">
@@ -95,7 +95,7 @@ const DeckView: React.FC<DeckViewProps> = ({ deck }) => {
             <PlayIcon className="w-6 h-6" />
           </button>
         </div>
-        <div className="relative mt-10 flex flex-col items-center justify-center">
+        <div className="relative mt-4 flex flex-col items-center justify-center">
           {/* Center mode carousel */}
           <div
             className="overflow-x-hidden flex items-center justify-center w-full"

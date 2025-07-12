@@ -15,11 +15,7 @@ import {
   useAudioPlayerContext,
 } from 'react-use-audio-player';
 
-// Type for an audio track (can be extended later)
-export type AudioTrack = {
-  blob: string; // URL or blob string
-  alignment: any;
-};
+import { Audio as AudioTrack } from '@/types/audio';
 
 // Context value type
 interface AudioPlayerContextType {
@@ -39,14 +35,12 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// This is the actual queue logic provider
 function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
   const [queue, setQueue] = useState<AudioTrack[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
 
   const { load, play, pause, isPlaying } = useAudioPlayerContext();
 
-  // Play the current track when the queue or index changes
   useEffect(() => {
     if (queue.length > 0 && queue[currentIndex]) {
       const src = `data:audio/mp3;base64,${queue[currentIndex].blob}`;
