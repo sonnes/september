@@ -53,7 +53,7 @@ const CreateStory: React.FC = () => {
 
       await generateDeckAudio(deck.cards || []);
 
-      router.push(`/read/${deck.id}`);
+      router.push(`/stories/${deck.id}`);
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
     } finally {

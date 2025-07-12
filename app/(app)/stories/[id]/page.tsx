@@ -41,7 +41,6 @@ const StoryPage: React.FC = () => {
             {loading && <div>Loading deck...</div>}
             {!loading && !deck && <div>Deck not found.</div>}
             {!loading && deck && <DeckView deck={deck} />}
-            <AudioPlayer />
           </AudioPlayerProvider>
         </Layout.Content>
       </Layout>

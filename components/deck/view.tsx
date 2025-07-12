@@ -1,6 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-import { PlayIcon } from '@heroicons/react/24/outline';
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  PauseIcon,
+  PlayIcon,
+} from '@heroicons/react/24/outline';
 
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { Card, Deck } from '@/types/card';
@@ -10,157 +15,97 @@ interface DeckViewProps {
 }
 
 const DeckView: React.FC<DeckViewProps> = ({ deck }) => {
-  const [current, setCurrent] = useState(0);
   const cards = deck.cards;
+  const [current, setCurrent] = useState(0);
+  const { enqueue, isPlaying, togglePlayPause, current: currentAudio } = useAudioPlayer();
+
   if (!cards?.length) return null;
 
-  const prev = () => setCurrent(c => (c === 0 ? cards.length - 1 : c - 1));
-  const next = () => setCurrent(c => (c === cards.length - 1 ? 0 : c + 1));
-
-  const { enqueue } = useAudioPlayer();
-
-  const playAll = () => {
+  useEffect(() => {
     cards.forEach(card => {
       if (card.audio) {
         enqueue(card.audio);
       }
     });
+  }, [cards, enqueue]);
+
+  const handlePrev = () => {
+    setCurrent(c => (c === 0 ? cards.length - 1 : c - 1));
   };
-
-  // Swipe/touch support
-  const touchStartX = useRef<number | null>(null);
-  const touchEndX = useRef<number | null>(null);
-  const cardAreaRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const cardArea = cardAreaRef.current;
-    if (!cardArea) return;
-
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStartX.current = e.touches[0].clientX;
-    };
-    const handleTouchMove = (e: TouchEvent) => {
-      touchEndX.current = e.touches[0].clientX;
-    };
-    const handleTouchEnd = () => {
-      if (touchStartX.current !== null && touchEndX.current !== null) {
-        const deltaX = touchEndX.current - touchStartX.current;
-        if (Math.abs(deltaX) > 50) {
-          if (deltaX < 0)
-            next(); // swipe left
-          else prev(); // swipe right
-        }
-      }
-      touchStartX.current = null;
-      touchEndX.current = null;
-    };
-    cardArea.addEventListener('touchstart', handleTouchStart);
-    cardArea.addEventListener('touchmove', handleTouchMove);
-    cardArea.addEventListener('touchend', handleTouchEnd);
-    return () => {
-      cardArea.removeEventListener('touchstart', handleTouchStart);
-      cardArea.removeEventListener('touchmove', handleTouchMove);
-      cardArea.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [cards.length]);
-
-  // Carousel indices
-  const prevIdx = current === 0 ? undefined : current - 1;
-  const nextIdx = current === cards.length - 1 ? undefined : current + 1;
+  const handleNext = () => {
+    setCurrent(c => (c === cards.length - 1 ? 0 : c + 1));
+  };
 
   return (
     <div className="bg-gray-50 py-4 sm:py-8">
       <div className="mx-auto px-6 lg:px-8">
-        <h2 className="text-center text-base/7 font-semibold text-indigo-600">Story</h2>
         <div className="mx-auto mt-2 flex items-center justify-center gap-2">
-          <span className="text-balance text-center text-4xl font-semibold tracking-tight text-gray-950 sm:text-5xl">
+          <span className="text-balance text-center text-2xl font-semibold tracking-tight text-gray-950 lg:text-3xl">
             {deck.name}
           </span>
-          <button
-            className="ml-2 align-middle text-2xl hover:text-indigo-600 transition-colors"
-            onClick={playAll}
-            aria-label="Play All"
-            title="Play All"
-            type="button"
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              lineHeight: 1,
-              display: 'inline',
-              verticalAlign: 'middle',
-              cursor: 'pointer',
-            }}
-          >
-            <PlayIcon className="w-6 h-6" />
-          </button>
         </div>
-        <div className="relative mt-4 flex flex-col items-center justify-center">
-          {/* Center mode carousel */}
-          <div
-            className="overflow-x-hidden flex items-center justify-center w-full"
-            ref={cardAreaRef}
-            style={{ touchAction: 'pan-y' }}
-          >
-            <div
-              className="flex items-center justify-center w-full gap-2 sm:gap-6"
-              style={{ maxWidth: 900 }}
+        <div className="mt-12 flex flex-col items-center justify-center min-h-[400px]">
+          <CardStack cards={cards} current={current} />
+          {/* Controls below card */}
+          <div className="flex justify-center gap-8 mt-8">
+            <button
+              className="flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors"
+              onClick={handlePrev}
+              aria-label="Previous"
+              type="button"
             >
-              {/* Previous card (hidden on mobile) */}
-              {prevIdx !== undefined && (
-                <div
-                  className="hidden sm:block flex-shrink-0 cursor-pointer"
-                  style={{ width: '28%', opacity: 0.5, transform: 'scale(0.85)' }}
-                  onClick={prev}
-                  tabIndex={0}
-                  role="button"
-                  aria-label="Previous card"
-                >
-                  <CardDisplay card={cards[prevIdx]} />
-                </div>
-              )}
-              {/* Current card */}
-              <div className="flex-shrink-0 z-10" style={{ width: '90%', transform: 'scale(1)' }}>
-                <CardDisplay card={cards[current]} />
-              </div>
-              {/* Next card (hidden on mobile) */}
-              {nextIdx !== undefined && (
-                <div
-                  className="hidden sm:block flex-shrink-0 cursor-pointer"
-                  style={{ width: '28%', opacity: 0.5, transform: 'scale(0.85)' }}
-                  onClick={next}
-                  tabIndex={0}
-                  role="button"
-                  aria-label="Next card"
-                >
-                  <CardDisplay card={cards[nextIdx]} />
-                </div>
-              )}
-            </div>
+              <ChevronLeftIcon className="w-6 h-6" />
+            </button>
+            <button
+              className="flex items-center justify-center w-14 h-14 rounded-full bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-lg"
+              onClick={togglePlayPause}
+              aria-label={isPlaying ? 'Pause' : 'Play'}
+              type="button"
+              disabled={!cards[current].audio}
+            >
+              {isPlaying ? <PauseIcon className="w-7 h-7" /> : <PlayIcon className="w-7 h-7" />}
+            </button>
+            <button
+              className="flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors"
+              onClick={handleNext}
+              aria-label="Next"
+              type="button"
+            >
+              <ChevronRightIcon className="w-6 h-6" />
+            </button>
           </div>
-          {/* Navigation buttons */}
-          <div className="flex justify-center gap-4 mt-6">
-            <button
-              className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors"
-              onClick={prev}
-            >
-              Previous
-            </button>
-            <span className="text-gray-600 self-center">
-              {current + 1} / {cards.length}
-            </span>
-            <button
-              className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors"
-              onClick={next}
-            >
-              Next
-            </button>
+          <div className="mt-4 text-gray-600 text-sm">
+            {current + 1} / {cards.length}
           </div>
         </div>
       </div>
     </div>
   );
 };
+
+interface CardStackProps {
+  cards: Card[];
+  current: number;
+  className?: string;
+}
+
+const CardStack: React.FC<CardStackProps> = ({ cards, current, className }) => (
+  <div
+    className={`w-full max-w-xl flex items-center justify-center select-none ${className || ''}`}
+  >
+    <div className="w-full transition-all duration-300">
+      <CardDisplay card={cards[current]} />
+    </div>
+  </div>
+);
+
+function cleanText(text: string) {
+  // remove all tags like <pause> and <effect> containing text
+  return text
+    .replace(/<pause.*?>|<pause.*?>.*?<\/pause>|<effect.*?>.*?<\/effect>/g, ' ')
+    .replace(/<.*?>/g, '')
+    .trim();
+}
 
 interface CardDisplayProps {
   card: Card;
@@ -169,17 +114,18 @@ interface CardDisplayProps {
 
 const CardDisplay: React.FC<CardDisplayProps> = ({ card }) => (
   <div
-    className={`relative flex items-center justify-center w-full h-full overflow-hidden rounded-2xl transition-all duration-300`}
+    className={`relative flex items-center justify-center w-full h-full overflow-hidden rounded-2xl transition-all duration-300 bg-white shadow-md border border-gray-200`}
   >
-    <div className="absolute inset-0 rounded-2xl bg-white shadow-lg border border-gray-200" />
-    <div className="relative flex flex-col h-full w-full items-center justify-center px-4 sm:px-12 py-10 rounded-2xl">
-      {/* Card number in top right using flex */}
-      <div className="flex w-full justify-end mb-2">
+    <div className="flex flex-col h-full w-full items-center justify-center px-4 sm:px-12 py-10 rounded-2xl">
+      <p className="text-xl lg:text-2xl font-medium text-gray-800 text-center mb-6 break-words">
+        {cleanText(card.text)}
+      </p>
+
+      <div className="absolute bottom-2 right-2 flex items-center justify-center">
         <span className="text-base font-semibold text-gray-400 bg-white bg-opacity-70 px-2 py-0.5 rounded shadow-none">
           #{card.rank + 1}
         </span>
       </div>
-      <p className="text-3xl font-medium text-gray-800 text-center mb-6 break-words">{card.text}</p>
     </div>
   </div>
 );
