@@ -9,6 +9,7 @@
         "@headlessui/react": "^2.2.4",
         "@heroicons/react": "^2.2.0",
         "@triplit/client": "^1.0.46",
+        "@triplit/react": "^1.0.46",
         "@types/uuid": "^10.0.0",
         "clsx": "^2.1.1",
         "framer-motion": "^12.23.0",
@@ -297,6 +298,8 @@
     "@triplit/db": ["@triplit/db@1.1.7", "", { "dependencies": { "@triplit/logger": "^0.0.3", "core-js": "^3.41.0", "elen": "^1.0.10", "nanoid": "^5.1.0", "sorted-btree": "^1.8.1", "web-worker": "^1.5.0" }, "peerDependencies": { "better-sqlite3": "*", "expo-sqlite": "*", "lmdb": "*", "uuidv7": "*" }, "optionalPeers": ["better-sqlite3", "expo-sqlite", "lmdb", "uuidv7"] }, "sha512-FdmCB9ftqR9tZag1yT8X2FrWkuE/pDcYooZNMYjUUYiGI7G1tWw+xCcJG/z0QxAjqml5SdZgjZGdn/rZ7Ih85Q=="],
 
     "@triplit/logger": ["@triplit/logger@0.0.3", "", { "peerDependencies": { "typescript": "^5.0.0" } }, "sha512-hHcoD6/BsNwBtXjEp8Wiy0/YA2SqIYXd1nMukEPBmFkjT7Cd30eqtsBRT0NRq2mIFX2mr5h9JaO27zDToKnwdw=="],
+
+    "@triplit/react": ["@triplit/react@1.0.46", "", { "dependencies": { "@triplit/client": "^1.0.46" }, "peerDependencies": { "react": "*" } }, "sha512-AsrgtD2f3yrrChNirjAHjufYhfn6ZrRd8MRwbPIfXKkNwEK3BrLci0zXTOE6gUkvC92JIjpxFUPA17ljppGqzg=="],
 
     "@trivago/prettier-plugin-sort-imports": ["@trivago/prettier-plugin-sort-imports@5.2.2", "", { "dependencies": { "@babel/generator": "^7.26.5", "@babel/parser": "^7.26.7", "@babel/traverse": "^7.26.7", "@babel/types": "^7.26.7", "javascript-natural-sort": "^0.7.1", "lodash": "^4.17.21" }, "peerDependencies": { "@vue/compiler-sfc": "3.x", "prettier": "2.x - 3.x", "prettier-plugin-svelte": "3.x", "svelte": "4.x || 5.x" }, "optionalPeers": ["@vue/compiler-sfc", "prettier-plugin-svelte", "svelte"] }, "sha512-fYDQA9e6yTNmA13TLVSA+WMQRc5Bn/c0EUBditUHNfMMxN7M82c38b1kEggVE3pLpZ0FwkwJkUEKMiOi52JXFA=="],
 

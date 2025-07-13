@@ -5,9 +5,9 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
+import { useQuery } from '@triplit/react';
 
 import Layout from '@/components/layout';
-import { useDecks } from '@/hooks/use-decks';
 import { triplit } from '@/triplit/client';
 import { Deck } from '@/types/card';
 
@@ -45,7 +45,11 @@ function StoryCard({ deck }: { deck: Deck }) {
 
 export default function StoriesPage() {
   const [showCreate, setShowCreate] = useState(false);
-  const [decks, loading] = useDecks();
+  if (!triplit) {
+    return <div>Loading stories...</div>;
+  }
+  const decksQuery = triplit.query('decks').Order('created_at', 'DESC');
+  const { results: decks = [], fetching: loading } = useQuery(triplit, decksQuery);
 
   return (
     <Layout>
