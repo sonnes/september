@@ -10,5 +10,9 @@ export const config = {
   matcher: [
     // Protect /api/* routes
     '/api/:path*',
+    // Protect all (app) group routes
+    '/talk',
+    '/stories',
+    '/st',
   ],
 };
