@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Noto_Sans } from 'next/font/google';
 
+import { Toaster } from 'sonner';
+
 import './globals.css';
 
 const notoSans = Noto_Sans({
@@ -27,7 +29,10 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="manifest" href="/site.webmanifest" />
       </head>
-      <body className={`${notoSans.className} antialiased h-full`}>{children}</body>
+      <body className={`${notoSans.className} antialiased h-full`}>
+        {children}
+        <Toaster position="top-center" closeButton duration={15000} />
+      </body>
     </html>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
+import React from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
@@ -8,6 +9,7 @@ import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { TextInput } from '@/components/ui/text-input';
+import { useToast } from '@/hooks/use-toast';
 
 import { signInWithEmail, signInWithGoogle } from './actions';
 import type { LoginResponse } from './actions';
@@ -25,6 +27,19 @@ export default function LoginForm() {
   const [state, formAction, isPending] = useActionState(signInWithEmail, initialState);
   const searchParams = useSearchParams();
   const next = searchParams.get('next') || '/app';
+  const { show } = useToast();
+
+  React.useEffect(() => {
+    if (state.message) {
+      show({
+        type: state.success ? 'success' : 'error',
+        title: state.success ? 'Success' : 'Error',
+        message: state.message,
+      });
+    }
+    // Only run when state.message changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.message]);
 
   const handleGoogleSignIn = async () => {
     await signInWithGoogle(next);
@@ -61,13 +76,6 @@ export default function LoginForm() {
                 {isPending ? 'Sending login link...' : 'Send Login Link'}
               </Button>
             </div>
-            {state.message && (
-              <Alert
-                type={state.success ? 'success' : 'error'}
-                title={state.success ? 'Success' : 'Error'}
-                message={state.message}
-              />
-            )}
           </form>
 
           <div>
