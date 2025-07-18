@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import ImageUploader from '@/components/ui/image-uploader';
+import FileUploader from '@/components/ui/file-uploader';
 import { useCreateDeck } from '@/hooks/use-create-deck';
 import { generateAudio } from '@/hooks/use-create-message';
 import { triplit } from '@/triplit/client';
@@ -63,7 +63,12 @@ const CreateStory: React.FC = () => {
 
   return (
     <>
-      <ImageUploader onUpload={handleImagesUploaded} />
+      <FileUploader
+        onUpload={handleImagesUploaded}
+        accept="image/*"
+        previewClassName="w-24 h-24 object-cover rounded border"
+        showPreviews={true}
+      />
       {loading && <div className="mt-4 text-blue-600">Extracting text from images...</div>}
       {error && <div className="mt-4 text-red-600">{error}</div>}
     </>

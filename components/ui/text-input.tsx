@@ -4,14 +4,24 @@ interface TextInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   id: string;
   containerClassName?: string;
+  required?: boolean;
 }
 
-export function TextInput({ label, id, containerClassName = '', ...props }: TextInputProps) {
+export function TextInput({
+  label,
+  id,
+  containerClassName = '',
+  required = false,
+  ...props
+}: TextInputProps) {
   return (
     <div className={containerClassName}>
-      <label htmlFor={id} className="block text-sm/6 font-medium text-gray-900">
-        {label}
-      </label>
+      <div className="flex justify-between items-center">
+        <label htmlFor={id} className="block text-sm/6 font-medium text-gray-900">
+          {label}
+        </label>
+        {required && <span className="text-red-500 text-xs">*Required</span>}
+      </div>
       <div className="mt-2">
         <input
           id={id}

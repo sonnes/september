@@ -7,10 +7,11 @@ interface FileUploadProps {
   label: string;
   helperText?: string;
   accept?: string;
+  multiple?: boolean;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export function FileUpload({ id, label, helperText, accept, onChange }: FileUploadProps) {
+export function FileUpload({ id, label, helperText, accept, multiple, onChange }: FileUploadProps) {
   return (
     <div>
       <label htmlFor={id} className="block text-sm/6 font-medium text-gray-900">
@@ -30,6 +31,7 @@ export function FileUpload({ id, label, helperText, accept, onChange }: FileUplo
                 name={id}
                 type="file"
                 accept={accept}
+                multiple={multiple}
                 className="sr-only"
                 onChange={onChange}
               />

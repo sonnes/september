@@ -2,87 +2,94 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { User } from '@supabase/supabase-js';
 
+import AccountsService from '@/services/accounts';
 import supabase from '@/supabase/client';
 import type { Account, PutAccountData } from '@/types/account';
 
-export function useAccount() {
-  const [user, setUser] = useState<User | null>(null);
-  const [account, setAccount] = useState<Account | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+const accountService = new AccountsService(supabase);
+
+export function useAccount({
+  user: initialUser,
+  account: initialAccount,
+}: {
+  user?: User;
+  account?: Account;
+}) {
+  const [user, setUser] = useState<User | undefined>(initialUser);
+  const [account, setAccount] = useState<Account | undefined>(initialAccount);
 
   const getUser = async () => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    setUser(user);
+    setUser(user ?? undefined);
   };
 
   useEffect(() => {
+    if (initialUser) return;
+
     getUser();
-  }, []);
+  }, [initialUser]);
 
   const getAccount = useCallback(async () => {
     if (!user) return;
-    setLoading(true);
 
-    const { data, error } = await supabase.from('accounts').select('*').eq('id', user.id).single();
+    const account = await accountService.getAccount(user.id);
 
-    if (error) {
-      if (error.code === 'PGRST116') {
-        setAccount(null);
-        setError(null);
-        return;
-      }
-
-      setError(error.message);
-      return;
-    }
-
-    setAccount(data);
-    setError(null);
-    setLoading(false);
+    setAccount(account);
   }, [user]);
 
   const putAccount = useCallback(
     async (accountData: PutAccountData) => {
       if (!user) {
-        setError('User not found');
-        return;
+        throw new Error('User must be authenticated');
       }
 
-      setError(null);
+      const account = await accountService.putAccount(user.id, accountData);
 
-      const { data, error } = await supabase
-        .from('accounts')
-        .upsert({
-          id: user.id,
-          ...accountData,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        setError(error.message);
-        return;
-      }
-
-      setAccount(data);
-      setError(null);
+      setAccount(account);
     },
     [user]
   );
 
   useEffect(() => {
+    if (initialAccount) return;
+
     getAccount();
-  }, [user]);
+  }, [user, initialAccount]);
+
+  const uploadFile = useCallback(
+    async (file: File) => {
+      if (!account) {
+        throw new Error('Account must be authenticated');
+      }
+
+      const fileName = `${account.id}/${file.name}`;
+      const { data, error } = await supabase.storage.from('documents').upload(fileName, file, {
+        cacheControl: 'no-cache',
+        upsert: true,
+      });
+
+      if (error) throw error;
+
+      return data.path;
+    },
+    [account]
+  );
+
+  const deleteFile = useCallback(
+    async (path: string) => {
+      await supabase.storage.from('documents').remove([path]);
+    },
+    [account?.medical_document_path]
+  );
 
   return {
     user,
     account,
-    loading,
-    error,
     putAccount,
     refetch: getAccount,
+    uploadFile,
+    deleteFile,
   };
 }

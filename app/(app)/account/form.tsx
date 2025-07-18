@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 
+import { useAccountContext } from '@/components/context/account-provider';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import FileUploader from '@/components/ui/file-uploader';
 import { TextInput } from '@/components/ui/text-input';
-import { TextareaInput } from '@/components/ui/textarea-input';
-import { useAccount } from '@/hooks/use-account';
 
 // Personal Information Section
 function PersonalInfoSection({
@@ -35,6 +35,7 @@ function PersonalInfoSection({
                 value={formData.name}
                 onChange={e => handleInputChange('name', e.target.value)}
                 placeholder="Enter your name"
+                required
               />
             </div>
             <div className="sm:col-span-3">
@@ -70,12 +71,32 @@ function MedicalInfoSection({
   formData: any;
   handleInputChange: (field: string, value: any) => void;
 }) {
+  const { uploadFile, deleteFile } = useAccountContext();
+
+  const onUpload = async (files: File[]) => {
+    const path = await uploadFile(files[0]);
+
+    handleInputChange('medical_document_path', path);
+  };
+
+  const handleDelete = async () => {
+    if (!formData.medical_document_path) return;
+
+    try {
+      await deleteFile(formData.medical_document_path);
+      handleInputChange('medical_document_path', '');
+    } catch (error) {
+      console.error('Failed to delete document:', error);
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
       <div className="px-4 sm:px-0">
         <h2 className="text-base/7 font-semibold text-gray-900">Medical Information</h2>
         <p className="mt-1 text-sm/6 text-gray-600">
-          This information helps us provide better assistance for your specific needs.
+          This information helps us ensure that we provide the voice cloning features only to people
+          with speech disabilities.
         </p>
       </div>
 
@@ -89,6 +110,7 @@ function MedicalInfoSection({
                 value={formData.primary_diagnosis}
                 onChange={e => handleInputChange('primary_diagnosis', e.target.value)}
                 placeholder="Enter your primary diagnosis"
+                required
               />
             </div>
             <div className="sm:col-span-2">
@@ -101,16 +123,58 @@ function MedicalInfoSection({
                   handleInputChange('year_of_diagnosis', parseInt(e.target.value) || null)
                 }
                 placeholder="Enter year of diagnosis"
+                required
               />
             </div>
+
             <div className="col-span-full">
-              <TextareaInput
-                id="medical_document_path"
-                label="Medical Notes"
-                value={formData.medical_document_path}
-                onChange={e => handleInputChange('medical_document_path', e.target.value)}
-                placeholder="Enter any additional medical notes"
-              />
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="block text-sm font-medium text-gray-900">
+                    Medical Documents
+                  </label>
+                  <span className="text-red-500 text-xs">*Required</span>
+                </div>
+                <p className="text-sm text-gray-600">
+                  To provide voice cloning services, we require a note from your
+                  Neurologist/Physician that states your diagnosis. Please upload that note here.
+                </p>
+                {formData.medical_document_path ? (
+                  <div className="mt-2 flex items-center gap-4">
+                    <div className="flex items-center gap-2 text-green-600">
+                      <svg className="size-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="text-sm">Document uploaded successfully</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 rounded-md bg-red-50 px-2 py-1 text-sm font-semibold text-red-600 hover:bg-red-100"
+                      onClick={handleDelete}
+                    >
+                      <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                      Delete Document
+                    </button>
+                  </div>
+                ) : (
+                  <FileUploader
+                    onUpload={onUpload}
+                    multiple={false}
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -132,7 +196,8 @@ function ApiKeysSection({
       <div className="px-4 sm:px-0">
         <h2 className="text-base/7 font-semibold text-gray-900">API Keys (Optional)</h2>
         <p className="mt-1 text-sm/6 text-gray-600">
-          Add your own API keys to use premium features. These are optional and securely stored.
+          Add your own API keys to use voice cloning features. These are optional and securely
+          stored.
         </p>
       </div>
 
@@ -223,7 +288,7 @@ function TermsSection({
 }
 
 export function AccountForm() {
-  const { account, error, putAccount, loading } = useAccount();
+  const { account, putAccount } = useAccountContext();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -259,7 +324,6 @@ export function AccountForm() {
     setMessage('');
 
     try {
-      console.log('formData', formData);
       await putAccount(formData);
       setMessage('Account updated successfully!');
     } catch (err) {
@@ -273,18 +337,6 @@ export function AccountForm() {
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
-
-  // Show loading state while account is being fetched
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading account information...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="divide-y divide-gray-400">
@@ -304,7 +356,7 @@ export function AccountForm() {
                 {message}
               </p>
             )}
-            {error && <p className="text-md font-semibold text-red-600">{error}</p>}
+
             <div className="flex-shrink-0 ml-auto">
               <Button
                 type="submit"
