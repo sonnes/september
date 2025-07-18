@@ -26,7 +26,7 @@ const initialState: LoginResponse = {
 export default function LoginForm() {
   const [state, formAction, isPending] = useActionState(signInWithEmail, initialState);
   const searchParams = useSearchParams();
-  const next = searchParams.get('next') || '/app';
+  const next = searchParams.get('next') || '/talk';
   const { show } = useToast();
 
   React.useEffect(() => {

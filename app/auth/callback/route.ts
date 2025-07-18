@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-//import { createAccount } from '@/app/actions/account';
+import AccountsService from '@/services/accounts';
 import { createClient } from '@/supabase/server';
 
 export async function GET(request: Request) {
@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   const host = forwardedHost && !isLocalEnv ? `https://${forwardedHost}` : origin;
 
   const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/app/talk';
+  const next = searchParams.get('next') ?? '/talk';
 
   if (code) {
     const supabase = await createClient();
@@ -22,7 +22,14 @@ export async function GET(request: Request) {
     }
 
     if (data.user) {
-      //await createAccount({ id: data.user.id, name: data.user.user_metadata.name });
+      const accountsService = new AccountsService(supabase);
+      const account = await accountsService.getAccount(data.user.id);
+
+      if (!account) {
+        await accountsService.putAccount(data.user.id, {
+          name: data.user.user_metadata.full_name,
+        });
+      }
     }
 
     return redirect(`${host}${next}`);

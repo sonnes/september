@@ -40,6 +40,7 @@ export function Button({
   className = '',
   color = 'indigo',
   variant = 'default',
+  disabled,
   ...props
 }: ButtonProps) {
   const isCircular = variant === 'circular';
@@ -52,8 +53,10 @@ export function Button({
         isCircular
           ? `rounded-full ${circularSizeClasses[size]}`
           : `rounded-md text-sm ${sizeClasses[size]}`,
+        disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : '',
         className
       )}
+      disabled={disabled}
       {...props}
     >
       {icon && React.isValidElement(icon)
