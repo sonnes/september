@@ -37,5 +37,13 @@ export function useToast() {
     ));
   }
 
-  return { show };
+  function showError(message: string, title: string = 'Error') {
+    return show({
+      type: 'error',
+      title,
+      message,
+    });
+  }
+
+  return { show, showError };
 }
