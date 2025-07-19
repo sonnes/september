@@ -1,6 +1,8 @@
 export interface Audio {
-  blob: string;
+  id?: string;
+  blob?: string;
   alignment?: Alignment;
+  duration?: number;
 }
 
 export interface Alignment {

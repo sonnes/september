@@ -1,6 +1,6 @@
 import { ElevenLabs, ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
 
-import { Audio } from '@/types/audio';
+import { Alignment } from '@/types/audio';
 
 const apiKey = process.env.ELEVENLABS_API_KEY;
 
@@ -10,15 +10,22 @@ if (!apiKey) {
 
 const elevenlabs = new ElevenLabsClient({ apiKey });
 
-export async function generateSpeech({
-  text,
-  voiceId = '3vXjdKMDgxJoOLbElGxC', // Default voiceId, replace as needed
-}: {
+interface GenerateSpeechOptions {
   text: string;
   voiceId?: string;
   modelId?: string;
   outputFormat?: string;
-}): Promise<Audio> {
+}
+
+interface GenerateSpeechResponse {
+  blob: string;
+  alignment: Alignment;
+}
+
+export async function generateSpeech({
+  text,
+  voiceId = '3vXjdKMDgxJoOLbElGxC', // Default voiceId, replace as needed
+}: GenerateSpeechOptions): Promise<GenerateSpeechResponse> {
   const response = await elevenlabs.textToSpeech.convertWithTimestamps(voiceId, {
     text,
     modelId: 'eleven_flash_v2_5',

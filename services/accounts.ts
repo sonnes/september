@@ -1,6 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 
-import { createClient } from '@/supabase/server';
 import { PutAccountData } from '@/types/account';
 
 class AccountsService {
