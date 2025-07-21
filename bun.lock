@@ -15,6 +15,7 @@
         "@types/uuid": "^10.0.0",
         "clsx": "^2.1.1",
         "framer-motion": "^12.23.0",
+        "lodash": "^4.17.21",
         "next": "15.3.5",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
@@ -23,6 +24,7 @@
         "tailwind-merge": "^3.3.1",
         "trie-search": "^2.2.0",
         "uuidv7": "^1.0.2",
+        "wink-pos-tagger": "^2.2.2",
         "zod": "^4.0.5",
       },
       "devDependencies": {
@@ -30,9 +32,11 @@
         "@tailwindcss/postcss": "^4",
         "@triplit/cli": "^1.0.57",
         "@trivago/prettier-plugin-sort-imports": "^5.2.2",
+        "@types/lodash": "^4.17.20",
         "@types/node": "^20",
         "@types/react": "^19",
         "@types/react-dom": "^19",
+        "@types/wink-pos-tagger": "^2.2.6",
         "eslint": "^9",
         "eslint-config-next": "15.3.5",
         "prettier-plugin-tailwindcss": "^0.6.13",
@@ -330,6 +334,8 @@
 
     "@types/json5": ["@types/json5@0.0.29", "", {}, "sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ=="],
 
+    "@types/lodash": ["@types/lodash@4.17.20", "", {}, "sha512-H3MHACvFUEiujabxhaI/ImO6gUrd8oOurg7LQtS7mbwIXA/cUqWrvBsaeJ23aZEPk1TAYkurjfMbSELfoCXlGA=="],
+
     "@types/node": ["@types/node@20.19.4", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-OP+We5WV8Xnbuvw0zC2m4qfB/BJvjyCwtNjhHdJxV1639SGSKrLmJkc3fMnp2Qy8nJyHp8RO6umxELN/dS1/EA=="],
 
     "@types/phoenix": ["@types/phoenix@1.6.6", "", {}, "sha512-PIzZZlEppgrpoT2QgbnDU+MMzuR6BbCjllj0bM70lWoejMeNJAxCchxnv7J3XFkI8MpygtRpzXrIlmWUBclP5A=="],
@@ -339,6 +345,10 @@
     "@types/react-dom": ["@types/react-dom@19.1.6", "", { "peerDependencies": { "@types/react": "^19.0.0" } }, "sha512-4hOiT/dwO8Ko0gV1m/TJZYk3y0KBnY9vzDh7W+DH17b2HFSOGgdj33dhihPeuy3l0q23+4e+hoXHV6hCC4dCXw=="],
 
     "@types/uuid": ["@types/uuid@10.0.0", "", {}, "sha512-7gqG38EyHgyP1S+7+xomFtL+ZNHcKv6DwNaCZmJmo1vgMugyF3TCnXVg4t1uk89mLNwnLtnY3TpOpCOyp1/xHQ=="],
+
+    "@types/wink-pos-tagger": ["@types/wink-pos-tagger@2.2.6", "", { "dependencies": { "@types/wink-tokenizer": "*" } }, "sha512-KWDONU9YjbYM61Xh2spF1espHRP31BgHocT3uXm1JWQaHik8IXeim3PpUBRKztVd9pyKDSnvmfqMEVAZsvSYCQ=="],
+
+    "@types/wink-tokenizer": ["@types/wink-tokenizer@4.0.6", "", {}, "sha512-FSQP7MwLDWgSkYw1sJMmN4SFBJt/W6bDaHy/quOG2aq5DOB/ilHfY4x3IsAhGUmA45y3H29tM0tbq0Ut1LD7/Q=="],
 
     "@types/ws": ["@types/ws@8.18.1", "", { "dependencies": { "@types/node": "*" } }, "sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg=="],
 
@@ -1061,6 +1071,18 @@
     "which-collection": ["which-collection@1.0.2", "", { "dependencies": { "is-map": "^2.0.3", "is-set": "^2.0.3", "is-weakmap": "^2.0.2", "is-weakset": "^2.0.3" } }, "sha512-K4jVyjnBdgvc86Y6BkaLZEN933SwYOuBFkdmBu9ZfkcAbdVbpITnDmjvZ/aQjRXQrv5EPkTnD1s39GiiqbngCw=="],
 
     "which-typed-array": ["which-typed-array@1.1.19", "", { "dependencies": { "available-typed-arrays": "^1.0.7", "call-bind": "^1.0.8", "call-bound": "^1.0.4", "for-each": "^0.3.5", "get-proto": "^1.0.1", "gopd": "^1.2.0", "has-tostringtag": "^1.0.2" } }, "sha512-rEvr90Bck4WZt9HHFC4DJMsjvu7x+r6bImz0/BrbWb7A2djJ8hnZMrWnHo9F8ssv0OMErasDhftrfROTyqSDrw=="],
+
+    "wink-helpers": ["wink-helpers@2.0.0", "", {}, "sha512-I/ZzXrHcNRXuoeFJmp2vMVqDI6UCK02Tds1WP4kSGAmx520gjL1BObVzF7d2ps24tyHIly9ngdB2jwhlFUjPvg=="],
+
+    "wink-lemmatizer": ["wink-lemmatizer@3.0.4", "", { "dependencies": { "wink-lexicon": "^2.2.0", "wink-porter2-stemmer": "^2.0.0" } }, "sha512-EdLJfy1xLF2ze2cp9Z3qiEWjiq+V8ZVRWiWooCXTXR0AyPxY8ezm4E0puJ0yIj5szzED9tcXV2U7RboaGvboFw=="],
+
+    "wink-lexicon": ["wink-lexicon@2.2.0", "", {}, "sha512-QIuHS9r/HV6q3PCCz6pymg4gbsryW9wDk8CHdU+sDn0kJcHpECNDIcdY0Q/mZpqxtFLp9dzIw7pjcStLBbGZGg=="],
+
+    "wink-porter2-stemmer": ["wink-porter2-stemmer@2.0.1", "", {}, "sha512-0g+RkkqhRXFmSpJQStVXW5N/WsshWpJXsoDRW7DwVkGI2uDT6IBCoq3xdH5p6IHLaC6ygk7RWUsUx4alKxoagQ=="],
+
+    "wink-pos-tagger": ["wink-pos-tagger@2.2.2", "", { "dependencies": { "wink-helpers": "^2.0.0", "wink-lemmatizer": "^3.0.1", "wink-lexicon": "^2.1.1", "wink-porter2-stemmer": "^2.0.0", "wink-tokenizer": "^5.2.1" } }, "sha512-+bhkwqwwChqWR75ksFKVJZQagwu404UmnvFjxr+OWZ02/ZJAv19N/iqDpMeYRQRxatk5N+W9pXIKEDJsVrzGyw=="],
+
+    "wink-tokenizer": ["wink-tokenizer@5.3.0", "", { "dependencies": { "emoji-regex": "^9.0.0" } }, "sha512-O/yAw0g3FmSgeeQuYAJJfP7fVPB4A6ay0018qASh79aWmIOyPYy4j4r9EQT8xBjicja6lCLvgRVAybmEBaATQA=="],
 
     "word-wrap": ["word-wrap@1.2.5", "", {}, "sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA=="],
 

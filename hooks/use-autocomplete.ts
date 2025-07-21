@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import Transformer from '@/lib/transformer';
 import autocompleteService from '@/services/autocomplete';
 
 interface UseAutocompleteOptions {
@@ -22,19 +23,37 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const transformerRef = useRef<Transformer | null>(null);
 
-  // Initialize service on mount
+  // Initialize service and transformer on mount
   useEffect(() => {
-    const initService = async () => {
+    const initializeServices = async () => {
       try {
-        await autocompleteService.initialize();
+        // Initialize both services in parallel
+        await Promise.all([
+          autocompleteService.initialize(),
+          (async () => {
+            if (!transformerRef.current) {
+              transformerRef.current = new Transformer();
+
+              const response = await fetch('/corpus.csv');
+              const trainingText = await response.text();
+
+              await transformerRef.current.train({
+                name: 'test',
+                text: trainingText.slice(0, 100000),
+              });
+            }
+          })(),
+        ]);
+
         setIsReady(true);
       } catch (error) {
-        console.error('Failed to initialize autocomplete service:', error);
+        console.error('Failed to initialize services:', error);
       }
     };
 
-    initService();
+    initializeServices();
   }, []);
 
   const getSuggestions = useCallback(
@@ -62,10 +81,36 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
     [maxSuggestions, minQueryLength]
   );
 
-  const predictNextWord = useCallback(async (query: string) => {
-    const results = ['hello']; //await autocompleteService.predictNextWord(query);
-    setSuggestions(results);
-  }, []);
+  const predictNextWord = useCallback(
+    async (query: string) => {
+      if (!transformerRef.current || !isReady) {
+        setSuggestions([]);
+        return;
+      }
+
+      try {
+        const result = transformerRef.current.getTokenPrediction(query);
+        console.log('result', result);
+
+        if (result.error) {
+          console.warn('Transformer prediction error:', result.error.message);
+          setSuggestions([]);
+          return;
+        }
+
+        // Return the ranked token list as suggestions
+        const suggestions = result.rankedTokenList
+          .filter(token => token && token.trim().length > 0)
+          .slice(0, maxSuggestions);
+
+        setSuggestions(suggestions);
+      } catch (error) {
+        console.error('Error predicting next word:', error);
+        setSuggestions([]);
+      }
+    },
+    [maxSuggestions, isReady]
+  );
 
   const clearSuggestions = useCallback(() => {
     setSuggestions([]);
