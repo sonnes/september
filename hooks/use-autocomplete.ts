@@ -5,7 +5,6 @@ import autocompleteService from '@/services/autocomplete';
 interface UseAutocompleteOptions {
   maxSuggestions?: number;
   minQueryLength?: number;
-  debounceMs?: number;
 }
 
 interface UseAutocompleteReturn {
@@ -13,16 +12,16 @@ interface UseAutocompleteReturn {
   isLoading: boolean;
   isReady: boolean;
   getSuggestions: (query: string) => void;
+  predictNextWord: (query: string) => void;
   clearSuggestions: () => void;
 }
 
 export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutocompleteReturn {
-  const { maxSuggestions = 5, minQueryLength = 2, debounceMs = 300 } = options;
+  const { maxSuggestions = 5, minQueryLength = 2 } = options;
 
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize service on mount
   useEffect(() => {
@@ -63,45 +62,21 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
     [maxSuggestions, minQueryLength]
   );
 
-  const debouncedGetSuggestions = useCallback(
-    (query: string) => {
-      // Clear existing timer
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-
-      // Set new timer
-      const timer = setTimeout(() => {
-        getSuggestions(query);
-      }, debounceMs);
-
-      debounceTimerRef.current = timer;
-    },
-    [getSuggestions, debounceMs]
-  );
+  const predictNextWord = useCallback(async (query: string) => {
+    const results = ['hello']; //await autocompleteService.predictNextWord(query);
+    setSuggestions(results);
+  }, []);
 
   const clearSuggestions = useCallback(() => {
     setSuggestions([]);
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = null;
-    }
-  }, []);
-
-  // Cleanup timer on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
   }, []);
 
   return {
     suggestions,
     isLoading,
     isReady,
-    getSuggestions: debouncedGetSuggestions,
+    getSuggestions,
+    predictNextWord,
     clearSuggestions,
   };
 }

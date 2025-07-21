@@ -10,12 +10,31 @@ interface SuggestionsProps {
 }
 
 export default function Suggestions({ className = '' }: SuggestionsProps) {
-  const { text, completeWord } = useTextContext();
-  const { suggestions, isLoading, isReady, getSuggestions, clearSuggestions } = useAutocomplete({
-    maxSuggestions: 10,
-    minQueryLength: 1,
-    debounceMs: 300,
-  });
+  const { debouncedText, completeWord, addWord } = useTextContext();
+  const { suggestions, isLoading, isReady, getSuggestions, clearSuggestions, predictNextWord } =
+    useAutocomplete({
+      maxSuggestions: 10,
+      minQueryLength: 1,
+    });
+
+  // Check if text ends with space or punctuation (trigger for phrase prediction)
+  const shouldTriggerPhrasePrediction = (text: string) => {
+    const trimmed = text.trim();
+    if (trimmed.length === 0) return true;
+
+    // Trigger after space at the end or after punctuation followed by space
+    return text.endsWith(' ') || /[.!?]\s*$/.test(text);
+  };
+
+  // Get context for phrase prediction (last few words)
+  const getPhraseContext = (text: string) => {
+    const trimmed = text.trim();
+    const words = trimmed.split(/\s+/).filter(w => w.length > 0);
+
+    // Take last 3-5 words as context, depending on what's available
+    const contextLength = Math.min(5, Math.max(1, words.length));
+    return words.slice(-contextLength).join(' ');
+  };
 
   // Get the last word being typed
   const getLastWord = (text: string) => {
@@ -37,15 +56,23 @@ export default function Suggestions({ className = '' }: SuggestionsProps) {
   useEffect(() => {
     if (!isReady) return;
 
-    const lastWord = getLastWord(text);
-
-    console.log(lastWord);
-    if (!lastWord) {
-      clearSuggestions();
+    console.log('debouncedText', debouncedText);
+    if (shouldTriggerPhrasePrediction(debouncedText)) {
+      const context = getPhraseContext(debouncedText);
+      if (context) {
+        predictNextWord(context);
+      } else {
+        clearSuggestions();
+      }
     } else {
-      getSuggestions(lastWord);
+      const lastWord = getLastWord(debouncedText);
+      if (lastWord) {
+        getSuggestions(lastWord);
+      } else {
+        clearSuggestions();
+      }
     }
-  }, [text, isReady, getSuggestions, clearSuggestions]);
+  }, [debouncedText, isReady, getSuggestions, clearSuggestions]);
 
   return (
     <div className={`flex flex-wrap gap-2 p-2 text-md ${className}`}>

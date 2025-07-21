@@ -1,9 +1,10 @@
 'use client';
 
-import React, { ReactNode, createContext, useContext, useState } from 'react';
+import React, { ReactNode, createContext, useContext, useEffect, useRef, useState } from 'react';
 
 interface TextContextType {
   text: string;
+  debouncedText: string;
   setText: (value: string) => void;
   addWord: (value: string) => void;
   completeWord: (value: string) => void;
@@ -11,8 +12,32 @@ interface TextContextType {
 
 const TextContext = createContext<TextContextType | undefined>(undefined);
 
-export function TextProvider({ children }: { children: ReactNode }) {
+export function TextProvider({
+  debounceMs = 300,
+  children,
+}: {
+  debounceMs?: number;
+  children: ReactNode;
+}) {
   const [text, setText] = useState('');
+  const [debouncedText, setDebouncedText] = useState('');
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+
+    timerRef.current = setTimeout(() => {
+      setDebouncedText(text);
+    }, debounceMs);
+
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [text]);
 
   const addWord = (value: string) => {
     //capitalize value based on the last word, full stop.
@@ -31,7 +56,7 @@ export function TextProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <TextContext.Provider value={{ text, setText, addWord, completeWord }}>
+    <TextContext.Provider value={{ text, debouncedText, setText, addWord, completeWord }}>
       {children}
     </TextContext.Provider>
   );
