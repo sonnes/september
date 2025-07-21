@@ -6,6 +6,7 @@ interface TextContextType {
   text: string;
   setText: (value: string) => void;
   addWord: (value: string) => void;
+  completeWord: (value: string) => void;
 }
 
 const TextContext = createContext<TextContextType | undefined>(undefined);
@@ -24,7 +25,16 @@ export function TextProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  return <TextContext.Provider value={{ text, setText, addWord }}>{children}</TextContext.Provider>;
+  const completeWord = (value: string) => {
+    // replace the last word with the value
+    setText(prev => prev.replace(/\s\w+$/, ' ' + value + ' '));
+  };
+
+  return (
+    <TextContext.Provider value={{ text, setText, addWord, completeWord }}>
+      {children}
+    </TextContext.Provider>
+  );
 }
 
 export function useTextContext() {
