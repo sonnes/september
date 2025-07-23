@@ -9,7 +9,7 @@ export type ButtonProps = {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
   color?: 'indigo' | 'zinc' | 'gray' | 'red' | 'green' | 'blue';
-  variant?: 'default' | 'circular';
+  variant?: 'default' | 'circular' | 'outline';
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
 const sizeClasses = {
@@ -33,6 +33,15 @@ const colorClasses: Record<string, string> = {
   blue: 'bg-blue-600 text-white hover:bg-blue-500 focus-visible:outline-blue-600',
 };
 
+const outlineColorClasses: Record<string, string> = {
+  indigo: 'border-indigo-600 text-indigo-600 hover:bg-indigo-50 focus-visible:outline-indigo-600',
+  zinc: 'border-zinc-600 text-zinc-600 hover:bg-zinc-50 focus-visible:outline-zinc-600',
+  gray: 'border-gray-600 text-gray-600 hover:bg-gray-50 focus-visible:outline-gray-600',
+  red: 'border-red-600 text-red-600 hover:bg-red-50 focus-visible:outline-red-600',
+  green: 'border-green-600 text-green-600 hover:bg-green-50 focus-visible:outline-green-600',
+  blue: 'border-blue-600 text-blue-600 hover:bg-blue-50 focus-visible:outline-blue-600',
+};
+
 export function Button({
   children,
   icon,
@@ -44,15 +53,25 @@ export function Button({
   ...props
 }: ButtonProps) {
   const isCircular = variant === 'circular';
+  const isOutline = variant === 'outline';
+
+  const getColorClasses = () => {
+    if (isOutline) {
+      return outlineColorClasses[color] ?? outlineColorClasses['indigo'];
+    }
+    return colorClasses[color] ?? colorClasses['indigo'];
+  };
+
   return (
     <button
       type="button"
       className={cn(
         'flex items-center justify-center font-semibold shadow-sm focus-visible:outline-offset-2',
-        colorClasses[color] ?? colorClasses['indigo'],
+        getColorClasses(),
         isCircular
           ? `rounded-full ${circularSizeClasses[size]}`
           : `rounded-md text-sm ${sizeClasses[size]}`,
+        isOutline && 'border-2 bg-transparent',
         disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : '',
         className
       )}

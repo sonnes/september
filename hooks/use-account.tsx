@@ -52,6 +52,19 @@ export function useAccount({
     [user]
   );
 
+  const patchAccount = useCallback(
+    async (accountData: Partial<PutAccountData>) => {
+      if (!user) {
+        throw new Error('User must be authenticated');
+      }
+
+      const account = await accountService.patchAccount(user.id, accountData);
+
+      setAccount(account);
+    },
+    [user]
+  );
+
   useEffect(() => {
     if (initialAccount) return;
 
@@ -88,6 +101,7 @@ export function useAccount({
     user,
     account,
     putAccount,
+    patchAccount,
     refetch: getAccount,
     uploadFile,
     deleteFile,

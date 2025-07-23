@@ -30,6 +30,20 @@ class AccountsService {
 
     return data;
   }
+
+  async patchAccount(id: string, account: Partial<PutAccountData>) {
+    const { data, error } = await this.supabase
+      .from('accounts')
+      .update(account)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  }
 }
 
 export default AccountsService;
