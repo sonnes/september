@@ -8,12 +8,20 @@ export function useCorpus() {
   const [isGenerating, setIsGenerating] = useState(false);
   const { showError } = useToast();
 
-  const generateCorpus = async () => {
+  const generateCorpus = async (persona: string) => {
     setIsGenerating(true);
 
     try {
-      const response = await fetch('/api/ai/generate-corpus');
+      const response = await fetch('/api/ai/generate-corpus', {
+        method: 'POST',
+        body: JSON.stringify({ persona }),
+      });
       const data = await response.json();
+
+      if (!response.ok) {
+        showError(data.error);
+        return;
+      }
 
       return data;
     } catch (error) {

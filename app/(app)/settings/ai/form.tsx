@@ -108,6 +108,12 @@ function CorpusSection({
   handleInputChange: (field: string, value: string) => void;
 }) {
   const { isGenerating, generateCorpus } = useCorpus();
+
+  const handleGenerateCorpus = async () => {
+    const { corpus } = await generateCorpus(formData.persona);
+    handleInputChange('corpus', corpus);
+  };
+
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
       <div className="px-4 sm:px-0">
@@ -144,19 +150,17 @@ function CorpusSection({
               </div>
             </div>
 
-            {generateCorpus && (
-              <div className="flex justify-start">
-                <Button
-                  type="button"
-                  onClick={generateCorpus}
-                  disabled={isGenerating}
-                  color="indigo"
-                  variant="outline"
-                >
-                  {isGenerating ? 'Generating...' : 'Generate Corpus'}
-                </Button>
-              </div>
-            )}
+            <div className="flex justify-start">
+              <Button
+                type="button"
+                onClick={handleGenerateCorpus}
+                disabled={isGenerating}
+                color="indigo"
+                variant="outline"
+              >
+                {isGenerating ? 'Generating...' : 'Generate Corpus'}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -207,11 +211,6 @@ export function AISettingsForm() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleGenerateCorpus = async () => {
-    console.log('generate corpus');
-    // TODO: Implement corpus generation logic
   };
 
   return (
