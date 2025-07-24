@@ -17,7 +17,7 @@ export interface Account {
   google_api_key?: string;
 
   // AI Settings
-  ai_persona?: string;
+  ai_instructions?: string;
   ai_corpus?: string;
 
   // Flags
@@ -39,7 +39,7 @@ export interface PutAccountData {
   medical_document_path?: string;
   elevenlabs_api_key?: string;
   google_api_key?: string;
-  ai_persona?: string;
+  ai_instructions?: string;
   ai_corpus?: string;
   terms_accepted?: boolean;
   privacy_policy_accepted?: boolean;

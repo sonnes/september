@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Card } from '@/types/card';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+export const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 const PROMPT = `You are a storyteller.
 https://www.triplit.dev/docs/schemas/relations

@@ -9,77 +9,91 @@ import { useCorpus } from '@/hooks/use-ai-settings';
 import { useToast } from '@/hooks/use-toast';
 
 interface AISettingsFormData {
-  persona: string;
+  instructions: string;
   corpus: string;
 }
 
-const EXAMPLE_PERSONAS = [
+const EXAMPLE_INSTRUCTIONS = [
   {
-    name: 'Friendly Assistant',
-    text: 'You are a helpful, friendly AI assistant who speaks in a warm and approachable manner. You provide clear explanations and are always eager to help users with their questions and tasks.',
+    name: 'ALS Person',
+    text: 'I am a person living with ALS. I cannot move speak.I also work as a software engineer. You should help me with communication. I usually talk about my daily chores, talking to my family, communication during work meetings, etc.',
   },
   {
-    name: 'Professional Expert',
-    text: 'You are a knowledgeable expert in your field who provides precise, well-researched answers. You maintain a professional tone while being accessible and clear in your explanations.',
+    name: 'Yoda',
+    text: "I'm a wise and knowledgeable Jedi Master who talks like Yoda in Star Wars.",
   },
   {
-    name: 'Creative Collaborator',
-    text: 'You are a creative and imaginative AI that helps users explore ideas and think outside the box. You encourage experimentation and offer unique perspectives on problems.',
+    name: 'Teenager',
+    text: 'I am a Gen Z teenager. You need to use modern slang and emojis. You should also be able to talk about the latest trends in technology, music, and fashion.',
   },
 ];
 
-// Persona Section
-function PersonaSection({
+// Instructions Section
+function InstructionsSection({
   formData,
   handleInputChange,
 }: {
   formData: AISettingsFormData;
   handleInputChange: (field: string, value: string) => void;
 }) {
+  const [showExamples, setShowExamples] = useState(false);
+
   const handleExampleClick = (example: string) => {
-    handleInputChange('persona', example);
+    handleInputChange('instructions', example);
   };
 
   return (
-    <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
+    <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-4 md:grid-cols-3">
       <div className="px-4 sm:px-0">
-        <h2 className="text-base/7 font-semibold text-gray-900">AI Persona</h2>
+        <h2 className="text-base/7 font-semibold text-gray-900">Your Instructions</h2>
         <p className="mt-1 text-sm/6 text-gray-600">
-          Define the personality and behavior of your AI assistant.
+          Describe how you want the AI to provide suggestions. Include common phrases, topics, names
+          of people, places, etc. This will help the AI to provide more relevant suggestions.
         </p>
       </div>
 
       <div className="md:col-span-2 px-4">
         <div className="max-w-2xl space-y-4">
           <div>
-            <label htmlFor="persona" className="block text-sm font-medium text-gray-700">
-              AI Personality
-            </label>
-            <p className="mt-1 text-sm text-gray-500">
-              Describe how you want the AI to behave and respond...
-            </p>
+            <TextareaInput
+              id="instructions"
+              label=""
+              value={formData.instructions}
+              onChange={e => handleInputChange('instructions', e.target.value)}
+              placeholder="Describe how you want the AI to provide suggestions..."
+              rows={4}
+              maxLength={1000}
+            />
+            <div className="mt-1 text-right text-sm text-gray-500">
+              {formData.instructions.length} characters
+            </div>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <TextareaInput
-                id="persona"
-                label=""
-                value={formData.persona}
-                onChange={e => handleInputChange('persona', e.target.value)}
-                placeholder="Describe how you want the AI to behave and respond..."
-                rows={4}
-                maxLength={1000}
-              />
-              <div className="mt-1 text-right text-sm text-gray-500">
-                {formData.persona.length} characters
-              </div>
-            </div>
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <button
+              type="button"
+              onClick={() => setShowExamples(!showExamples)}
+              className="flex w-full items-center justify-between text-left"
+            >
+              <h4 className="text-sm font-medium text-gray-700">Example Instructions</h4>
+              <svg
+                className={`h-4 w-4 text-gray-500 transition-transform ${showExamples ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
 
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">Example Personas</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {EXAMPLE_PERSONAS.map(example => (
+            {showExamples && (
+              <div className="mt-3 space-y-2">
+                {EXAMPLE_INSTRUCTIONS.map(example => (
                   <button
                     key={example.name}
                     type="button"
@@ -91,7 +105,7 @@ function PersonaSection({
                   </button>
                 ))}
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -110,57 +124,51 @@ function CorpusSection({
   const { isGenerating, generateCorpus } = useCorpus();
 
   const handleGenerateCorpus = async () => {
-    const { corpus } = await generateCorpus(formData.persona);
+    const { corpus } = await generateCorpus(formData.instructions);
     handleInputChange('corpus', corpus);
   };
 
   return (
-    <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
+    <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-4 md:grid-cols-3">
       <div className="px-4 sm:px-0">
-        <h2 className="text-base/7 font-semibold text-gray-900">Knowledge Corpus</h2>
+        <h2 className="text-base/7 font-semibold text-gray-900">Content Corpus</h2>
         <p className="mt-1 text-sm/6 text-gray-600">
-          Provide additional knowledge and context for the AI to use in conversations.
+          Provide examples of your daily life, conversations, and other content that the AI can use
+          to provide suggestions.
+        </p>
+        <p className="mt-1 text-sm/6 text-gray-600">
+          Alternatively, you can generate a corpus from your instructions. This will take a few
+          minutes.
         </p>
       </div>
 
       <div className="md:col-span-2 px-4">
         <div className="max-w-2xl space-y-4">
           <div>
-            <label htmlFor="corpus" className="block text-sm font-medium text-gray-700">
-              Additional Knowledge
-            </label>
-            <p className="mt-1 text-sm text-gray-500">
-              Enter additional knowledge, documents, or context for the AI...
-            </p>
+            <TextareaInput
+              id="corpus"
+              label=""
+              value={formData.corpus}
+              onChange={e => handleInputChange('corpus', e.target.value)}
+              placeholder="Enter additional knowledge, documents, or context for the AI..."
+              rows={6}
+              maxLength={5000}
+            />
+            <div className="mt-1 text-right text-sm text-gray-500">
+              {formData.corpus.length} characters
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <div>
-              <TextareaInput
-                id="corpus"
-                label=""
-                value={formData.corpus}
-                onChange={e => handleInputChange('corpus', e.target.value)}
-                placeholder="Enter additional knowledge, documents, or context for the AI..."
-                rows={6}
-                maxLength={5000}
-              />
-              <div className="mt-1 text-right text-sm text-gray-500">
-                {formData.corpus.length} characters
-              </div>
-            </div>
-
-            <div className="flex justify-start">
-              <Button
-                type="button"
-                onClick={handleGenerateCorpus}
-                disabled={isGenerating}
-                color="indigo"
-                variant="outline"
-              >
-                {isGenerating ? 'Generating...' : 'Generate Corpus'}
-              </Button>
-            </div>
+          <div className="flex justify-start">
+            <Button
+              type="button"
+              onClick={handleGenerateCorpus}
+              disabled={isGenerating}
+              color="indigo"
+              variant="outline"
+            >
+              {isGenerating ? 'Generating...' : 'Generate Corpus'}
+            </Button>
           </div>
         </div>
       </div>
@@ -175,7 +183,7 @@ export function AISettingsForm() {
   const { show, showError } = useToast();
 
   const initialFormData = {
-    persona: account?.ai_persona || '',
+    instructions: account?.ai_instructions || '',
     corpus: account?.ai_corpus || '',
   };
 
@@ -183,7 +191,7 @@ export function AISettingsForm() {
 
   useEffect(() => {
     setFormData({
-      persona: account?.ai_persona || '',
+      instructions: account?.ai_instructions || '',
       corpus: account?.ai_corpus || '',
     });
   }, [account]);
@@ -194,7 +202,7 @@ export function AISettingsForm() {
 
     try {
       await patchAccount({
-        ai_persona: formData.persona,
+        ai_instructions: formData.instructions,
         ai_corpus: formData.corpus,
       });
       show({
@@ -216,7 +224,7 @@ export function AISettingsForm() {
   return (
     <div className="divide-y divide-gray-400">
       <form onSubmit={handleSubmit}>
-        <PersonaSection formData={formData} handleInputChange={handleInputChange} />
+        <InstructionsSection formData={formData} handleInputChange={handleInputChange} />
         <CorpusSection formData={formData} handleInputChange={handleInputChange} />
 
         {/* Floating save button */}
