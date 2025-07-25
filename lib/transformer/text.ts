@@ -98,8 +98,6 @@ export const getPartsOfSpeech = (text: string) => tagger.tagSentence(text);
 export const isLowerCase = (letter: string) =>
   letter === letter.toLowerCase() && letter !== letter.toUpperCase();
 
-export const tokenize = (input: string) =>
-  input
-    .trim()
-    .replace(/[\p{P}$+<=>^`(\\\n)|~]/gu, ' ')
-    .split(' ');
+export const MATCH_PUNCTUATION = /[\p{P}$+<=>^`(\\\n)|~]/gu;
+
+export const tokenize = (input: string) => input.trim().replace(MATCH_PUNCTUATION, ' ').split(' ');

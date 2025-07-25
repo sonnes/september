@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useAccountContext } from '@/components/context/account-provider';
 import Transformer from '@/lib/transformer';
+import { tokenize } from '@/lib/transformer/text';
 import autocompleteService from '@/services/autocomplete';
 
 interface UseAutocompleteOptions {
@@ -20,6 +22,7 @@ interface UseAutocompleteReturn {
 export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutocompleteReturn {
   const { maxSuggestions = 5, minQueryLength = 2 } = options;
 
+  const { account } = useAccountContext();
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
@@ -36,12 +39,9 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
             if (!transformerRef.current) {
               transformerRef.current = new Transformer();
 
-              const response = await fetch('/corpus.csv');
-              const trainingText = await response.text();
-
               await transformerRef.current.train({
                 name: 'test',
-                text: trainingText.slice(0, 100000),
+                text: account?.ai_corpus || '',
               });
             }
           })(),
@@ -54,7 +54,7 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
     };
 
     initializeServices();
-  }, []);
+  }, [account?.ai_corpus]);
 
   const getSuggestions = useCallback(
     async (query: string) => {
@@ -89,8 +89,8 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
       }
 
       try {
-        const result = transformerRef.current.getTokenPrediction(query);
-        console.log('result', result);
+        const tokens = tokenize(query);
+        const result = transformerRef.current.getTokenPrediction(tokens[tokens.length - 1]);
 
         if (result.error) {
           console.warn('Transformer prediction error:', result.error.message);

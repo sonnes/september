@@ -1,10 +1,9 @@
 'use client';
 
-import React, { ReactNode, createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { ReactNode, createContext, useContext, useState } from 'react';
 
 interface TextContextType {
   text: string;
-  debouncedText: string;
   setText: (value: string) => void;
   addWord: (value: string) => void;
   completeWord: (value: string) => void;
@@ -12,32 +11,8 @@ interface TextContextType {
 
 const TextContext = createContext<TextContextType | undefined>(undefined);
 
-export function TextProvider({
-  debounceMs = 300,
-  children,
-}: {
-  debounceMs?: number;
-  children: ReactNode;
-}) {
+export function TextProvider({ children }: { children: ReactNode }) {
   const [text, setText] = useState('');
-  const [debouncedText, setDebouncedText] = useState('');
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-    }
-
-    timerRef.current = setTimeout(() => {
-      setDebouncedText(text);
-    }, debounceMs);
-
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-  }, [text]);
 
   const addWord = (value: string) => {
     //capitalize value based on the last word, full stop.
@@ -52,11 +27,27 @@ export function TextProvider({
 
   const completeWord = (value: string) => {
     // replace the last word with the value
-    setText(prev => prev.replace(/\s\w+$/, ' ' + value + ' '));
+    setText(prev => {
+      // If text is empty, just set the value
+      if (prev.trim() === '') {
+        return value + ' ';
+      }
+
+      // Find the last word boundary (space or start of string)
+      const lastSpaceIndex = prev.lastIndexOf(' ');
+
+      if (lastSpaceIndex === -1) {
+        // No spaces found, replace the entire text
+        return value + ' ';
+      } else {
+        // Replace from the last space onwards
+        return prev.substring(0, lastSpaceIndex + 1) + value + ' ';
+      }
+    });
   };
 
   return (
-    <TextContext.Provider value={{ text, debouncedText, setText, addWord, completeWord }}>
+    <TextContext.Provider value={{ text, setText, addWord, completeWord }}>
       {children}
     </TextContext.Provider>
   );
