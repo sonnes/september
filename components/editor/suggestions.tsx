@@ -11,7 +11,7 @@ interface SuggestionsProps {
 }
 
 export default function Suggestions({ className = '' }: SuggestionsProps) {
-  const { text, completeWord, addWord } = useTextContext();
+  const { text, addWord } = useTextContext();
   const { suggestions, isLoading, isReady, getSuggestions, clearSuggestions, predictNextWord } =
     useAutocomplete({
       maxSuggestions: 10,
@@ -30,14 +30,7 @@ export default function Suggestions({ className = '' }: SuggestionsProps) {
 
   // Handle suggestion click
   const handleSuggestionClick = (suggestion: string) => {
-    const lastChar = text.slice(-1);
-
-    if (lastChar.match(MATCH_PUNCTUATION) || lastChar === ' ') {
-      completeWord(suggestion);
-    } else {
-      addWord(suggestion);
-    }
-
+    addWord(suggestion);
     clearSuggestions();
   };
 

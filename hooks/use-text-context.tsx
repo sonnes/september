@@ -1,53 +1,48 @@
 'use client';
 
-import React, { ReactNode, createContext, useContext, useState } from 'react';
+import React, { ReactNode, createContext, useContext, useEffect, useState } from 'react';
 
 interface TextContextType {
   text: string;
   setText: (value: string) => void;
   addWord: (value: string) => void;
-  completeWord: (value: string) => void;
+  type: (value: string) => void;
+  reset: () => void;
 }
 
 const TextContext = createContext<TextContextType | undefined>(undefined);
 
 export function TextProvider({ children }: { children: ReactNode }) {
+  const [stack, setStack] = useState<string[]>([]);
+  const [currentWord, setCurrentWord] = useState('');
   const [text, setText] = useState('');
 
   const addWord = (value: string) => {
-    //capitalize value based on the last word, full stop.
-    if (text === '') {
-      setText(value);
-    } else if (text.endsWith('.')) {
-      setText(prev => prev + ' ' + value);
+    setCurrentWord('');
+    setStack(prev => [...prev, value]);
+  };
+
+  const type = (value: string) => {
+    if (value === ' ') {
+      setStack(prev => [...prev, currentWord]);
+      setCurrentWord('');
     } else {
-      setText(prev => prev + ' ' + value.toLowerCase());
+      setCurrentWord(prev => prev + value);
     }
   };
 
-  const completeWord = (value: string) => {
-    // replace the last word with the value
-    setText(prev => {
-      // If text is empty, just set the value
-      if (prev.trim() === '') {
-        return value + ' ';
-      }
+  useEffect(() => {
+    setText(stack.join(' ') + ' ' + currentWord);
+  }, [stack, currentWord]);
 
-      // Find the last word boundary (space or start of string)
-      const lastSpaceIndex = prev.lastIndexOf(' ');
-
-      if (lastSpaceIndex === -1) {
-        // No spaces found, replace the entire text
-        return value + ' ';
-      } else {
-        // Replace from the last space onwards
-        return prev.substring(0, lastSpaceIndex + 1) + value + ' ';
-      }
-    });
+  const reset = () => {
+    setStack([]);
+    setCurrentWord('');
+    setText('');
   };
 
   return (
-    <TextContext.Provider value={{ text, setText, addWord, completeWord }}>
+    <TextContext.Provider value={{ text, setText, addWord, type, reset }}>
       {children}
     </TextContext.Provider>
   );

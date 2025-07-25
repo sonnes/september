@@ -12,14 +12,14 @@ type EditorProps = {
 };
 
 export default function Editor({ placeholder = 'Start typing...' }: EditorProps) {
-  const { text, setText } = useTextContext();
+  const { text, type, reset } = useTextContext();
   const { createMessage, status } = useCreateMessage();
   const { enqueue } = useAudioPlayer();
 
   const handleSubmit = async () => {
-    const { message, audio } = await createMessage({ text });
+    const { audio } = await createMessage({ text });
 
-    setText('');
+    reset();
 
     if (audio) {
       enqueue(audio);
@@ -30,7 +30,12 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       await handleSubmit();
+      return;
     }
+  };
+
+  const onChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    type(e.target.value.slice(text.length));
   };
 
   return (
@@ -39,7 +44,7 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
         <div className="flex gap-2">
           <textarea
             value={text}
-            onChange={e => setText(e.target.value)}
+            onChange={onChange}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             className="flex-1 w-full p-3 rounded-xl border border-zinc-400"
