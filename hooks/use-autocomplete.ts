@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAccountContext } from '@/components/context/account-provider';
 import Transformer from '@/lib/transformer';
 import { tokenize } from '@/lib/transformer/text';
-import autocompleteService from '@/services/autocomplete';
 
 interface UseAutocompleteOptions {
   maxSuggestions?: number;
@@ -34,7 +33,6 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
       try {
         // Initialize both services in parallel
         await Promise.all([
-          autocompleteService.initialize(),
           (async () => {
             if (!transformerRef.current) {
               transformerRef.current = new Transformer();
@@ -66,11 +64,10 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
       setIsLoading(true);
 
       try {
-        const results = await autocompleteService.getAutocompleteSuggestions(query, {
-          maxSuggestions,
-          minQueryLength,
-        });
-        setSuggestions(results);
+        console.log('query', query);
+        const results = await transformerRef.current?.getAutocompleteSuggestions(query);
+        console.log('results', results);
+        setSuggestions(results || []);
       } catch (error) {
         console.error('Error getting suggestions:', error);
         setSuggestions([]);
@@ -78,7 +75,7 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
         setIsLoading(false);
       }
     },
-    [maxSuggestions, minQueryLength]
+    [isReady]
   );
 
   const predictNextWord = useCallback(
@@ -91,13 +88,7 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
       try {
         const tokens = tokenize(query);
         const result = transformerRef.current.getTokenPrediction(tokens[tokens.length - 1]);
-
-        if (result.error) {
-          console.warn('Transformer prediction error:', result.error.message);
-          setSuggestions([]);
-          return;
-        }
-
+        console.log('result', result);
         // Return the ranked token list as suggestions
         const suggestions = result.rankedTokenList
           .filter(token => token && token.trim().length > 0)

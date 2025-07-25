@@ -1,5 +1,6 @@
 // Adapted from https://github.com/bennyschmidt/next-token-prediction/tree/master
 import { merge } from 'lodash';
+import TrieSearch from 'trie-search';
 
 import { alphabet, getPartsOfSpeech, partsOfSpeech, suffixes, tokenize } from './text';
 import Vector from './vector';
@@ -23,8 +24,9 @@ interface Dataset {
   text: string;
 }
 
-interface Trie {
-  [key: string]: Trie;
+interface TrieItem {
+  sequence: string;
+  nextTokens: { [key: string]: number };
 }
 
 interface Embeddings {
@@ -96,15 +98,27 @@ function* chunkArray<T>(array: T[], chunkSize: number): Generator<T[], void, unk
 }
 
 class Transformer {
-  private trie: Trie = {};
+  private trie: TrieSearch<TrieItem>;
   private embeddings: Embeddings = {};
+
+  constructor() {
+    this.trie = new TrieSearch('sequence', {
+      min: 1,
+      ignoreCase: true,
+      cache: true,
+    });
+  }
 
   /**
    * ngramSearch
    * Look up n-gram by token sequence.
    */
-  #ngramSearch(input: string): Trie {
-    return input.split(/ /).reduce((a: Trie | undefined, b: string) => a?.[b], this.trie) || {};
+  #ngramSearch(input: string): { [key: string]: number } {
+    const results = this.trie.search(input) as TrieItem[];
+    if (results.length > 0) {
+      return results[0].nextTokens;
+    }
+    return {};
   }
 
   /**
@@ -185,6 +199,31 @@ class Transformer {
       .replace(FORMAT_PLAIN_TEXT[4], ' ');
   }
 
+  getAutocompleteSuggestions(query: string): string[] {
+    const cleanQuery = query.trim().toLowerCase();
+
+    try {
+      // Search trie for matches
+      const matches = this.trie.search(cleanQuery) as TrieItem[];
+
+      // Sort by frequency and length
+      matches.sort((a, b) => {
+        // Primary sort by frequency
+        if (b.nextTokens[a.sequence] !== a.nextTokens[b.sequence]) {
+          return b.nextTokens[a.sequence] - a.nextTokens[b.sequence];
+        }
+        // Secondary sort by length (prefer shorter matches)
+        return a.sequence.length - b.sequence.length;
+      });
+
+      // Return top suggestions
+      return matches.slice(0, 5).map(item => item.sequence);
+    } catch (error) {
+      console.error('Error getting autocomplete suggestions:', error);
+      return [];
+    }
+  }
+
   /**
    * getTokenPrediction
    * Predict the next token or token sequence
@@ -199,9 +238,10 @@ class Transformer {
     }
 
     // ngram search
-    const rankedTokens = Object.keys(
-      this.#ngramSearch(token.replace(token.charAt(0), token.charAt(0).toUpperCase()))
+    const nextTokens = this.#ngramSearch(
+      token.replace(token.charAt(0), token.charAt(0).toUpperCase())
     );
+    const rankedTokens = Object.keys(nextTokens).sort((a, b) => nextTokens[b] - nextTokens[a]);
 
     const highestRankedToken = rankedTokens[rankedTokens.length - 1];
 
@@ -330,28 +370,36 @@ class Transformer {
       .map(text => this.#toPlainText(text));
 
     // create n-grams of all sequences
-    const ngrams = sequences.map(sequence => {
-      let cursor: Trie | undefined;
+    const ngramItems: TrieItem[] = [];
+
+    sequences.forEach(sequence => {
       const words = sequence.split(' ');
 
-      const ngram = words.reduce((a: Trie, b: string) => {
-        if (typeof cursor === 'object') {
-          cursor = cursor[b] = {};
-        } else {
-          cursor = a[b] = {};
-        }
-        return a;
-      }, {});
+      // Create n-grams for each sequence
+      for (let i = 0; i < words.length - 1; i++) {
+        const ngram = words.slice(0, i + 1).join(' ');
+        const nextToken = words[i + 1];
 
-      return ngram;
+        // Find existing item or create new one
+        const existingItem = ngramItems.find(item => item.sequence === ngram);
+        if (existingItem) {
+          existingItem.nextTokens[nextToken] = (existingItem.nextTokens[nextToken] || 0) + 1;
+        } else {
+          ngramItems.push({
+            sequence: ngram,
+            nextTokens: { [nextToken]: 1 },
+          });
+        }
+      }
     });
 
-    // deep merge all n-gram sequences
-    const ngramMap = chunkArray(ngrams, PARAMETER_CHUNK_SIZE_NUM);
+    // Add all items to trie in chunks
+    const ngramChunks = chunkArray(ngramItems, PARAMETER_CHUNK_SIZE_NUM);
 
-    // keep reference in memory
-    for (const ngram of ngramMap) {
-      this.trie = merge(this.trie, ...ngram);
+    for (const chunk of ngramChunks) {
+      chunk.forEach(item => {
+        this.trie.add(item);
+      });
     }
 
     console.log(DONE);
