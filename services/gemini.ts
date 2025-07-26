@@ -28,12 +28,12 @@ Example output:
 }
 `;
 
-const SUGGESTIONS_PROMPT = `You're a communication assistant for USER. You take the PREVIOUS_MESSAGES and predict the most likely next message.
+const SUGGESTIONS_PROMPT = `You're a communication assistant for USER. You take the previous messages and predict the most likely next message.
 
 These are the instructions from the user:
-{aiInstructions}
+{USER_INSTRUCTIONS}
 
-You must return completions in this exact JSON format:
+You must return completions and predictions in this exact JSON format:
 {
   "replies": [
     "reply1",
@@ -111,16 +111,24 @@ export async function extractDeck({ images }: ExtractDeckParams): Promise<Extrac
   }
 }
 
-export async function generateSuggestions(
-  aiInstructions: string,
-  text: string
-): Promise<SuggestionResponse> {
+export async function generateSuggestions({
+  instructions,
+  text,
+  messages,
+}: {
+  instructions: string;
+  text: string;
+  messages: string[];
+}): Promise<SuggestionResponse> {
   if (!GEMINI_API_KEY) {
     console.warn('Gemini API key not configured');
     return { suggestions: [] };
   }
 
+  const previousMessages = messages.map(m => ({ role: 'user', parts: [{ text: m }] }));
+
   const prompt = [
+    ...previousMessages,
     { role: 'user', parts: [{ text: text }] },
     { role: 'model', parts: [{ text: '```json' }] },
   ];
@@ -130,7 +138,7 @@ export async function generateSuggestions(
       model: 'gemini-2.0-flash-001',
       contents: prompt,
       config: {
-        systemInstruction: SUGGESTIONS_PROMPT.replace('{aiInstructions}', aiInstructions),
+        systemInstruction: SUGGESTIONS_PROMPT.replace('{USER_INSTRUCTIONS}', instructions),
         temperature: 0.7,
         maxOutputTokens: 1024,
         stopSequences: ['```'],

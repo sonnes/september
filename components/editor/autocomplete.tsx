@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 
+import { useTextContext } from '@/components/context/text-provider';
 import { useAutocomplete } from '@/hooks/use-autocomplete';
-import { useTextContext } from '@/hooks/use-text-context';
 import { MATCH_PUNCTUATION } from '@/lib/transformer/text';
 import { cn } from '@/lib/utils';
 
@@ -12,7 +12,7 @@ interface AutocompleteProps {
 }
 
 export default function Autocomplete({ className = '' }: AutocompleteProps) {
-  const { text, addWord } = useTextContext();
+  const { text, addWord, setCurrentWord } = useTextContext();
   const { suggestions, isLoading, isReady, getSuggestions, clearSuggestions, predictNextWord } =
     useAutocomplete({
       maxSuggestions: 10,
@@ -31,7 +31,11 @@ export default function Autocomplete({ className = '' }: AutocompleteProps) {
 
   // Handle suggestion click
   const handleSuggestionClick = (suggestion: string) => {
-    addWord(suggestion);
+    if (shouldTriggerPhrasePrediction(text)) {
+      setCurrentWord(suggestion);
+    } else {
+      addWord(suggestion);
+    }
     clearSuggestions();
   };
 

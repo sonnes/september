@@ -2,17 +2,18 @@
 
 import { useEffect, useState } from 'react';
 
-import { useTextContext } from '@/hooks/use-text-context';
+import { useMessagesContext } from '@/components/context/messages-provider';
+import { useTextContext } from '@/components/context/text-provider';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import type { Message } from '@/types/message';
 
 interface SuggestionsProps {
   className?: string;
 }
 
 export default function Suggestions({ className = '' }: SuggestionsProps) {
-  const { text, addWord } = useTextContext();
+  const { text, setText } = useTextContext();
+  const { messages } = useMessagesContext();
   const { showError } = useToast();
 
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -20,11 +21,6 @@ export default function Suggestions({ className = '' }: SuggestionsProps) {
 
   // Fetch suggestions from API
   const fetchSuggestions = async () => {
-    if (!text.trim()) {
-      setSuggestions([]);
-      return;
-    }
-
     setIsLoading(true);
 
     try {
@@ -33,7 +29,7 @@ export default function Suggestions({ className = '' }: SuggestionsProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, messages: messages.map(m => m.text) }),
       });
 
       if (!response.ok) {
@@ -53,12 +49,12 @@ export default function Suggestions({ className = '' }: SuggestionsProps) {
 
   // Handle suggestion click
   const handleSuggestionClick = (suggestion: string) => {
-    addWord(suggestion);
+    setText(suggestion);
   };
 
   useEffect(() => {
     fetchSuggestions();
-  }, [text]);
+  }, [text, messages]);
 
   return (
     <div className={cn('flex flex-col gap-2 py-2 text-md', className)}>

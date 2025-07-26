@@ -2,17 +2,17 @@
 
 import { useState } from 'react';
 
+import { useTextContext } from '@/components/context/text-provider';
 import { Button } from '@/components/ui/button';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useCreateMessage } from '@/hooks/use-create-message';
-import { useTextContext } from '@/hooks/use-text-context';
 
 type EditorProps = {
   placeholder?: string;
 };
 
 export default function Editor({ placeholder = 'Start typing...' }: EditorProps) {
-  const { text, type, reset } = useTextContext();
+  const { text, setText, reset } = useTextContext();
   const { createMessage, status } = useCreateMessage();
   const { enqueue } = useAudioPlayer();
 
@@ -35,7 +35,7 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
   };
 
   const onChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    type(e.target.value.slice(text.length));
+    setText(e.target.value);
   };
 
   return (

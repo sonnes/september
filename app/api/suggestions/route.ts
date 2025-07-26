@@ -15,13 +15,17 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { text } = (await request.json()) as { text: string };
+    const { text, messages } = (await request.json()) as { text: string; messages: string[] };
 
-    if (!text) {
-      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    if (!text && !messages.length) {
+      return NextResponse.json({ suggestions: [] });
     }
 
-    const suggestions = await generateSuggestions(account.ai_instructions, text);
+    const suggestions = await generateSuggestions({
+      instructions: account.ai_instructions,
+      text,
+      messages,
+    });
     return NextResponse.json(suggestions);
   } catch (error) {
     console.error('Error generating suggestions:', error);
