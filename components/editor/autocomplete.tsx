@@ -5,12 +5,13 @@ import { useEffect } from 'react';
 import { useAutocomplete } from '@/hooks/use-autocomplete';
 import { useTextContext } from '@/hooks/use-text-context';
 import { MATCH_PUNCTUATION } from '@/lib/transformer/text';
+import { cn } from '@/lib/utils';
 
-interface SuggestionsProps {
+interface AutocompleteProps {
   className?: string;
 }
 
-export default function Suggestions({ className = '' }: SuggestionsProps) {
+export default function Autocomplete({ className = '' }: AutocompleteProps) {
   const { text, addWord } = useTextContext();
   const { suggestions, isLoading, isReady, getSuggestions, clearSuggestions, predictNextWord } =
     useAutocomplete({
@@ -48,7 +49,7 @@ export default function Suggestions({ className = '' }: SuggestionsProps) {
   }, [text, isReady, getSuggestions, clearSuggestions]);
 
   return (
-    <div className={`flex flex-wrap gap-2 p-2 text-md ${className}`}>
+    <div className={cn('flex flex-wrap gap-2 py-2 text-md min-h-[60px] items-center', className)}>
       {!isReady && <div className="text-zinc-400 animate-pulse">Loading suggestions...</div>}
       {isReady && !isLoading && !suggestions.length && (
         <div className="text-zinc-400">No suggestions</div>
@@ -57,7 +58,7 @@ export default function Suggestions({ className = '' }: SuggestionsProps) {
         <button
           key={index}
           onClick={() => handleSuggestionClick(suggestion)}
-          className="px-3 py-2 text-md bg-transparent hover:bg-amber-100 text-zinc-800 rounded-lg border border-zinc-600 transition-colors duration-200"
+          className="px-4 py-2 text-sm font-medium text-black bg-white rounded-xl border border-green-600 hover:bg-gray-100 hover:border-green-400 transition-colors duration-200"
         >
           {suggestion}
         </button>
