@@ -1,5 +1,5 @@
 export interface Audio {
-  id?: string;
+  path?: string;
   blob?: string;
   alignment?: Alignment;
   duration?: number;

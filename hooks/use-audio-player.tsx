@@ -52,8 +52,8 @@ function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
             setCurrentIndex(idx => idx + 1);
           } else {
             // Optionally, clear the queue or reset index
-            // setQueue([]);
-            // setCurrentIndex(0);
+            setQueue([]);
+            setCurrentIndex(0);
           }
         },
       });

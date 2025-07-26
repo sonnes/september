@@ -8,6 +8,7 @@ import Autocomplete from '@/components/editor/autocomplete';
 import Editor from '@/components/editor/simple';
 import Suggestions from '@/components/editor/suggestions';
 import Layout from '@/components/layout';
+import { MessageList, MobileMessageList } from '@/components/talk';
 import { GridManager } from '@/components/talk/grid-manager';
 import { AudioPlayerProvider } from '@/hooks/use-audio-player';
 import { TextProvider } from '@/hooks/use-text-context';
@@ -39,28 +40,42 @@ export default async function TalkPage() {
 
   return (
     <AccountProvider user={user} account={account}>
-      <AudioPlayerProvider>
-        <Layout>
-          <Layout.Header>
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold tracking-tight text-white">Talk</h1>
-              <div className="flex items-center space-x-2"></div>
-            </div>
-          </Layout.Header>
-          <Layout.Content>
-            <MessagesProvider user={user} messages={messages}>
-              <TextProvider>
-                <div className="flex flex-col gap-2">
-                  <Autocomplete />
-                  <Suggestions />
-                  <Editor />
+      <MessagesProvider user={user} messages={messages}>
+        <AudioPlayerProvider>
+          <Layout>
+            <Layout.Header>
+              <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold tracking-tight text-white">Talk</h1>
+                <div className="flex items-center space-x-2">
+                  <MobileMessageList />
                 </div>
+              </div>
+            </Layout.Header>
+            <Layout.Content>
+              <TextProvider>
+                <div className="flex h-[calc(100vh-296px)]">
+                  {/* Left column - Message list */}
+                  <div className="hidden md:block w-1/3 lg:w-1/4 px-2 overflow-y-auto border-r border-zinc-200">
+                    <div className="max-w-full">
+                      <MessageList />
+                    </div>
+                  </div>
+
+                  {/* Main content area */}
+                  <div className="flex-1 flex flex-col px-2 md:px-4 min-w-0 overflow-hidden">
+                    <div className="flex flex-col gap-2">
+                      <Autocomplete />
+                      <Suggestions />
+                      <Editor />
+                    </div>
+                  </div>
+                </div>
+                <AudioPlayer />
               </TextProvider>
-            </MessagesProvider>
-            <AudioPlayer />
-          </Layout.Content>
-        </Layout>
-      </AudioPlayerProvider>
+            </Layout.Content>
+          </Layout>
+        </AudioPlayerProvider>
+      </MessagesProvider>
     </AccountProvider>
   );
 }

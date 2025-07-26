@@ -6,6 +6,7 @@ export interface Message {
   type: string;
   user_id: string;
   created_at: Date;
+  audio_path?: string;
   audio?: Audio;
 }
 
