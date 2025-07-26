@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 
 import AudioPlayer from '@/components/audio-player';
 import { AccountProvider } from '@/components/context/account-provider';
+import { MessagesProvider } from '@/components/context/messages-provider';
 import Autocomplete from '@/components/editor/autocomplete';
 import Editor from '@/components/editor/simple';
 import Suggestions from '@/components/editor/suggestions';
@@ -11,6 +12,7 @@ import { GridManager } from '@/components/talk/grid-manager';
 import { AudioPlayerProvider } from '@/hooks/use-audio-player';
 import { TextProvider } from '@/hooks/use-text-context';
 import AccountsService from '@/services/accounts';
+import MessagesService from '@/services/messages';
 import { createClient } from '@/supabase/server';
 
 export const metadata: Metadata = {
@@ -20,6 +22,7 @@ export const metadata: Metadata = {
 export default async function TalkPage() {
   const supabase = await createClient();
   const accountsService = new AccountsService(supabase);
+  const messagesService = new MessagesService(supabase);
 
   const {
     data: { user },
@@ -29,7 +32,10 @@ export default async function TalkPage() {
     redirect('/login');
   }
 
-  const account = await accountsService.getAccount(user.id);
+  const [account, messages] = await Promise.all([
+    accountsService.getAccount(user.id),
+    messagesService.getMessages(user.id),
+  ]);
 
   return (
     <AccountProvider user={user} account={account}>
@@ -42,13 +48,15 @@ export default async function TalkPage() {
             </div>
           </Layout.Header>
           <Layout.Content>
-            <TextProvider>
-              <div className="flex flex-col gap-2">
-                <Autocomplete />
-                <Suggestions />
-                <Editor />
-              </div>
-            </TextProvider>
+            <MessagesProvider user={user} messages={messages}>
+              <TextProvider>
+                <div className="flex flex-col gap-2">
+                  <Autocomplete />
+                  <Suggestions />
+                  <Editor />
+                </div>
+              </TextProvider>
+            </MessagesProvider>
             <AudioPlayer />
           </Layout.Content>
         </Layout>

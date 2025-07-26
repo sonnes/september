@@ -69,6 +69,12 @@ class MessagesService {
 
     return data.path;
   }
+
+  async getMessages(user_id: string): Promise<Message[]> {
+    const { data, error } = await this.supabase.from('messages').select('*').eq('user_id', user_id);
+    if (error) throw error;
+    return data;
+  }
 }
 
 export default MessagesService;
