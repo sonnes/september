@@ -30,6 +30,9 @@ Example output:
 
 const SUGGESTIONS_PROMPT = `You're a communication assistant for USER. You take the PREVIOUS_MESSAGES and predict the most likely next message.
 
+These are the instructions from the user:
+{aiInstructions}
+
 You must return completions in this exact JSON format:
 {
   "replies": [
@@ -108,7 +111,10 @@ export async function extractDeck({ images }: ExtractDeckParams): Promise<Extrac
   }
 }
 
-export async function generateSuggestions(text: string): Promise<SuggestionResponse> {
+export async function generateSuggestions(
+  aiInstructions: string,
+  text: string
+): Promise<SuggestionResponse> {
   if (!GEMINI_API_KEY) {
     console.warn('Gemini API key not configured');
     return { suggestions: [] };
@@ -124,7 +130,7 @@ export async function generateSuggestions(text: string): Promise<SuggestionRespo
       model: 'gemini-2.0-flash-001',
       contents: prompt,
       config: {
-        systemInstruction: SUGGESTIONS_PROMPT,
+        systemInstruction: SUGGESTIONS_PROMPT.replace('{aiInstructions}', aiInstructions),
         temperature: 0.7,
         maxOutputTokens: 1024,
         stopSequences: ['```'],

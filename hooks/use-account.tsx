@@ -4,6 +4,7 @@ import { User } from '@supabase/supabase-js';
 
 import AccountsService from '@/services/accounts';
 import supabase from '@/supabase/client';
+import { removeRealtimeSubscription, subscribeToUserAccount } from '@/supabase/realtime';
 import type { Account, PutAccountData } from '@/types/account';
 
 const accountService = new AccountsService(supabase);
@@ -69,7 +70,37 @@ export function useAccount({
     if (initialAccount) return;
 
     getAccount();
-  }, [user, initialAccount]);
+  }, [user, initialAccount, getAccount]);
+
+  // Realtime subscription for account changes
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = subscribeToUserAccount<Account>(user.id, {
+      onInsert: newAccount => {
+        setAccount(newAccount);
+      },
+      onUpdate: updatedAccount => {
+        setAccount(updatedAccount);
+      },
+      onDelete: () => {
+        setAccount(undefined);
+      },
+      onError: error => {
+        console.error('Account realtime error:', error);
+      },
+      onSubscribe: status => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to account changes');
+        }
+      },
+    });
+
+    // Cleanup function to unsubscribe on unmount
+    return () => {
+      removeRealtimeSubscription(channel);
+    };
+  }, [user]);
 
   const uploadFile = useCallback(
     async (file: File) => {

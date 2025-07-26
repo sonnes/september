@@ -9,6 +9,17 @@ class AccountsService {
     this.supabase = client;
   }
 
+  async getCurrentAccount() {
+    const {
+      data: { user },
+    } = await this.supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return this.getAccount(user.id);
+  }
+
   async getAccount(id: string) {
     const { data, error } = await this.supabase.from('accounts').select('*').eq('id', id).single();
     if (error) {
