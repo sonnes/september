@@ -32,7 +32,7 @@ export function TextProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    setText(stack.join(' ') + ' ' + currentWord);
+    setText((stack.join(' ') + ' ' + currentWord).trim());
   }, [stack, currentWord]);
 
   const reset = () => {

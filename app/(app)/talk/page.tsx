@@ -5,6 +5,7 @@ import AudioPlayer from '@/components/audio-player';
 import { AccountProvider } from '@/components/context/account-provider';
 import Autocomplete from '@/components/editor/autocomplete';
 import Editor from '@/components/editor/simple';
+import Suggestions from '@/components/editor/suggestions';
 import Layout from '@/components/layout';
 import { GridManager } from '@/components/talk/grid-manager';
 import { AudioPlayerProvider } from '@/hooks/use-audio-player';
@@ -44,6 +45,7 @@ export default async function TalkPage() {
             <TextProvider>
               <div className="flex flex-col gap-2">
                 <Autocomplete />
+                <Suggestions />
                 <Editor />
               </div>
             </TextProvider>

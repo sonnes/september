@@ -6,7 +6,7 @@ import { Card } from '@/types/card';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 export const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
-const PROMPT = `You are a storyteller.
+const STORY_PROMPT = `You are a storyteller.
 https://www.triplit.dev/docs/schemas/relations
 Extract all readable text from all images. Break down the text into smaller chunks for narration. Each chunk can be multiple sentences.
 
@@ -28,6 +28,25 @@ Example output:
 }
 `;
 
+const SUGGESTIONS_PROMPT = `You're a communication assistant for USER. You take the PREVIOUS_MESSAGES and predict the most likely next message.
+
+You must return completions in this exact JSON format:
+{
+  "replies": [
+    "reply1",
+    "reply2",
+    "reply3"
+  ]
+}
+
+Follow these rules:
+- Generate new, short concise replies based on context 
+- Replies should fully complete the user's sentence with proper grammar
+- Use Indian English spellings, idioms, and slang
+- Use emojis if appropriate
+- Return only the JSON, no other text
+`;
+
 interface ExtractDeckParams {
   images: Blob[];
 }
@@ -36,6 +55,10 @@ interface ExtractDeckResponse {
   error?: string;
   cards?: Card[];
   name?: string;
+}
+
+export interface SuggestionResponse {
+  suggestions: string[];
 }
 
 export async function extractDeck({ images }: ExtractDeckParams): Promise<ExtractDeckResponse> {
@@ -62,7 +85,7 @@ export async function extractDeck({ images }: ExtractDeckParams): Promise<Extrac
       model: 'gemini-2.5-flash',
       contents,
       config: {
-        systemInstruction: PROMPT,
+        systemInstruction: STORY_PROMPT,
         responseMimeType: 'application/json',
       },
     });
@@ -80,5 +103,52 @@ export async function extractDeck({ images }: ExtractDeckParams): Promise<Extrac
   } catch (err) {
     console.error('Gemini OCR error:', err);
     return { error: 'Could not extract text from images' };
+  }
+}
+
+export async function generateSuggestions(text: string): Promise<SuggestionResponse> {
+  if (!GEMINI_API_KEY) {
+    console.warn('Gemini API key not configured');
+    return { suggestions: [] };
+  }
+
+  const prompt = [
+    { role: 'user', parts: [{ text: text }] },
+    { role: 'model', parts: [{ text: '```json' }] },
+  ];
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash-001',
+      contents: prompt,
+      config: {
+        systemInstruction: SUGGESTIONS_PROMPT,
+        temperature: 0.7,
+        maxOutputTokens: 1024,
+        stopSequences: ['```'],
+        responseMimeType: 'application/json',
+      },
+    });
+
+    let content = response.text;
+    if (!content) {
+      return {
+        suggestions: [],
+      };
+    }
+
+    content = content.replace('```json', '');
+    content = content.replace('```', '');
+
+    const suggestions = JSON.parse(content) as {
+      replies: string[];
+    };
+
+    return {
+      suggestions: suggestions.replies,
+    };
+  } catch (err) {
+    console.error('Gemini suggestions error:', err);
+    return { suggestions: [] };
   }
 }
