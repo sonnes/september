@@ -61,16 +61,16 @@ export default function Suggestions({ className = '' }: SuggestionsProps) {
   }, [text]);
 
   return (
-    <div className={cn('flex flex-wrap gap-2 py-2 text-md min-h-[60px] items-center', className)}>
+    <div className={cn('flex flex-col gap-2 py-2 text-md', className)}>
       {isLoading && <div className="text-zinc-400 animate-pulse">Loading suggestions...</div>}
       {!isLoading && !suggestions.length && (
         <div className="text-zinc-400">No suggestions available</div>
       )}
-      {suggestions.map((suggestion, index) => (
+      {suggestions.slice(0, 10).map((suggestion, index) => (
         <button
           key={index}
           onClick={() => handleSuggestionClick(suggestion)}
-          className="px-4 py-2 text-sm font-medium text-black bg-white rounded-xl border border-blue-600 hover:bg-gray-100 hover:border-blue-400 transition-colors duration-200"
+          className="px-4 py-2 text-sm font-medium text-black bg-white rounded-xl border border-blue-600 hover:bg-gray-100 hover:border-blue-400 transition-colors duration-200 text-left"
         >
           {suggestion}
         </button>

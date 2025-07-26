@@ -63,9 +63,17 @@ export default async function TalkPage() {
 
                   {/* Main content area */}
                   <div className="flex-1 flex flex-col px-2 md:px-4 min-w-0 overflow-hidden">
+                    {/* Top components - Autocomplete and Suggestions */}
                     <div className="flex flex-col gap-2">
                       <Autocomplete />
                       <Suggestions />
+                    </div>
+
+                    {/* Spacer to push editor to bottom */}
+                    <div className="flex-1"></div>
+
+                    {/* Editor at bottom */}
+                    <div className="flex flex-col py-2">
                       <Editor />
                     </div>
                   </div>

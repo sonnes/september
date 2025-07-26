@@ -41,6 +41,8 @@ You must return completions in this exact JSON format:
 
 Follow these rules:
 - Generate new, short concise replies based on context 
+- Don't repeat the similar replies
+- Return at least 3 replies, maximum 10 replies
 - Replies should fully complete the user's sentence with proper grammar
 - Use Indian English spellings, idioms, and slang
 - Use emojis if appropriate
