@@ -71,7 +71,23 @@ class MessagesService {
   }
 
   async getMessages(user_id: string): Promise<Message[]> {
-    const { data, error } = await this.supabase.from('messages').select('*').eq('user_id', user_id);
+    const { data, error } = await this.supabase
+      .from('messages')
+      .select('*')
+      .eq('user_id', user_id)
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (error) throw error;
+    return data;
+  }
+
+  async searchMessages(user_id: string, query: string): Promise<Message[]> {
+    const { data, error } = await this.supabase
+      .from('messages')
+      .select('*')
+      .eq('user_id', user_id)
+      .textSearch('fts', query.replace(/\s+/g, '+'))
+      .limit(10);
     if (error) throw error;
     return data;
   }

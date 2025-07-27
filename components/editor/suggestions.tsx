@@ -4,23 +4,27 @@ import { useEffect, useState } from 'react';
 
 import { useMessagesContext } from '@/components/context/messages-provider';
 import { useTextContext } from '@/components/context/text-provider';
+import { PlayButton } from '@/components/talk/play-button';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Suggestion } from '@/types/suggestion';
 
 interface SuggestionsProps {
   className?: string;
+  timeout?: number;
 }
 
-export default function Suggestions({ className = '' }: SuggestionsProps) {
+export default function Suggestions({ className = '', timeout = 500 }: SuggestionsProps) {
   const { text, setText } = useTextContext();
   const { messages } = useMessagesContext();
   const { showError } = useToast();
 
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [debouncedText, setDebouncedText] = useState(text);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Fetch suggestions from API
-  const fetchSuggestions = async () => {
+  const fetchSuggestions = async (text: string, messages: string[]) => {
     setIsLoading(true);
 
     try {
@@ -29,7 +33,7 @@ export default function Suggestions({ className = '' }: SuggestionsProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text, messages: messages.map(m => m.text) }),
+        body: JSON.stringify({ text, messages }),
       });
 
       if (!response.ok) {
@@ -37,7 +41,7 @@ export default function Suggestions({ className = '' }: SuggestionsProps) {
       }
 
       const data = await response.json();
-      setSuggestions(data.suggestions || []);
+      setSuggestions(data.hits || []);
     } catch (err) {
       console.error('Error fetching suggestions:', err);
       showError('Failed to load suggestions');
@@ -53,8 +57,18 @@ export default function Suggestions({ className = '' }: SuggestionsProps) {
   };
 
   useEffect(() => {
-    fetchSuggestions();
-  }, [text, messages]);
+    fetchSuggestions(
+      debouncedText,
+      messages.map(m => m.text)
+    );
+  }, [debouncedText, messages]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedText(text);
+    }, timeout);
+    return () => clearTimeout(timeoutId);
+  }, [text, timeout]);
 
   return (
     <div className={cn('flex flex-col gap-2 py-2 text-md', className)}>
@@ -62,15 +76,20 @@ export default function Suggestions({ className = '' }: SuggestionsProps) {
       {!isLoading && !suggestions.length && (
         <div className="text-zinc-400">No suggestions available</div>
       )}
-      {suggestions.slice(0, 10).map((suggestion, index) => (
-        <button
-          key={index}
-          onClick={() => handleSuggestionClick(suggestion)}
-          className="px-4 py-2 text-sm font-medium text-black bg-white rounded-xl border border-blue-600 hover:bg-gray-100 hover:border-blue-400 transition-colors duration-200 text-left"
-        >
-          {suggestion}
-        </button>
-      ))}
+      {!isLoading &&
+        suggestions.slice(0, 10).map(({ text, audio_path }, index) => (
+          <div className="flex items-center justify-between w-full gap-2">
+            <button
+              key={index}
+              onClick={() => handleSuggestionClick(text)}
+              className="px-4 py-2 text-sm font-medium text-black bg-white rounded-xl border border-blue-600 hover:bg-gray-100 hover:border-blue-400 transition-colors duration-200 text-left"
+            >
+              {text}
+            </button>
+
+            {audio_path && <PlayButton path={audio_path} />}
+          </div>
+        ))}
     </div>
   );
 }

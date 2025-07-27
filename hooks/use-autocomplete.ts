@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAccountContext } from '@/components/context/account-provider';
+import { useMessagesContext } from '@/components/context/messages-provider';
 import Transformer from '@/lib/transformer';
 import { tokenize } from '@/lib/transformer/text';
 
@@ -22,6 +23,8 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
   const { maxSuggestions = 5, minQueryLength = 2 } = options;
 
   const { account } = useAccountContext();
+  const { messages } = useMessagesContext();
+
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
@@ -37,9 +40,11 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
             if (!transformerRef.current) {
               transformerRef.current = new Transformer();
 
+              const messagesText = messages.map(m => m.text).join('\n');
+
               await transformerRef.current.train({
                 name: 'test',
-                text: account?.ai_corpus || '',
+                text: (account?.ai_corpus || '') + '\n' + messagesText,
               });
             }
           })(),
