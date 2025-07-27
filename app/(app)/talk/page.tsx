@@ -10,6 +10,7 @@ import Editor from '@/components/editor/simple';
 import Suggestions from '@/components/editor/suggestions';
 import Layout from '@/components/layout';
 import { MessageList, MobileMessageList } from '@/components/talk';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { AudioPlayerProvider } from '@/hooks/use-audio-player';
 import AccountsService from '@/services/accounts';
 import MessagesService from '@/services/messages';
@@ -44,7 +45,13 @@ export default async function TalkPage() {
           <Layout>
             <Layout.Header>
               <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold tracking-tight text-white">Talk</h1>
+                <Breadcrumbs
+                  pages={[{ name: 'Talk', href: '/talk', current: true }]}
+                  className="md:hidden"
+                />
+                <h1 className="hidden md:block text-2xl font-bold tracking-tight text-white">
+                  Talk
+                </h1>
                 <div className="flex items-center space-x-2">
                   <MobileMessageList />
                 </div>
@@ -52,7 +59,7 @@ export default async function TalkPage() {
             </Layout.Header>
             <Layout.Content>
               <TextProvider>
-                <div className="flex h-[calc(100vh-296px)]">
+                <div className="flex h-[calc(100vh-222px)] md:h-[calc(100vh-256px)]">
                   {/* Left column - Message list */}
                   <div className="hidden md:block w-1/3 lg:w-1/4 px-2 overflow-y-auto border-r border-zinc-200">
                     <div className="max-w-full">

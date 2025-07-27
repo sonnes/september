@@ -59,7 +59,7 @@ export function MobileMessageList() {
         className="p-2 text-white rounded-full transition-colors cursor-pointer"
         onClick={() => setIsOpen(prev => !prev)}
       >
-        <ChatBubbleLeftRightIcon className="w-8 h-8" />
+        <ChatBubbleLeftRightIcon className="w-6 h-6" />
       </button>
 
       {isOpen && (

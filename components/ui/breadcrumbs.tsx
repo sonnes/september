@@ -2,6 +2,8 @@ import React from 'react';
 
 import { ChevronRightIcon, HomeIcon } from '@heroicons/react/20/solid';
 
+import { cn } from '@/lib/utils';
+
 export interface BreadcrumbPage {
   name: string;
   href: string;
@@ -11,11 +13,12 @@ export interface BreadcrumbPage {
 interface BreadcrumbsProps {
   pages: BreadcrumbPage[];
   homeHref?: string;
+  className?: string;
 }
 
-const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ pages, homeHref = '/' }) => {
+const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ pages, homeHref = '/', className }) => {
   return (
-    <nav aria-label="Breadcrumb" className="flex">
+    <nav aria-label="Breadcrumb" className={cn('flex', className)}>
       <ol role="list" className="flex items-center space-x-4">
         <li>
           <div>
