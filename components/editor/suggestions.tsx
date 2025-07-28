@@ -25,6 +25,11 @@ export default function Suggestions({ className = '', timeout = 2000 }: Suggesti
 
   // Fetch suggestions from API
   const fetchSuggestions = async (text: string, messages: string[]) => {
+    if (!text) {
+      setSuggestions([]);
+      return;
+    }
+
     setIsLoading(true);
 
     try {

@@ -41,7 +41,7 @@ export function useMessages({
   useEffect(() => {
     const channel = subscribeToUserMessages<Message>(user.id, {
       onInsert: newMessage => {
-        setMessages(prev => [...prev, newMessage]);
+        setMessages(prev => [newMessage, ...prev]);
       },
       onUpdate: updatedMessage => {
         setMessages(prev => prev.map(msg => (msg.id === updatedMessage.id ? updatedMessage : msg)));

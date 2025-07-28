@@ -11,6 +11,7 @@ import Suggestions from '@/components/editor/suggestions';
 import Layout from '@/components/layout';
 import Navbar from '@/components/nav';
 import { MessageList, MobileMessageList } from '@/components/talk';
+import Recorder from '@/components/talk/recorder';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { AudioPlayerProvider } from '@/hooks/use-audio-player';
 import AccountsService from '@/services/accounts';
@@ -54,8 +55,11 @@ export default async function TalkPage() {
                 <h1 className="hidden md:block text-2xl font-bold tracking-tight text-white">
                   Talk
                 </h1>
-                <AudioPlayer />
                 <div className="flex items-center space-x-2">
+                  <AudioPlayer />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Recorder />
                   <MobileMessageList />
                 </div>
               </div>

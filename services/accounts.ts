@@ -23,6 +23,9 @@ class AccountsService {
   async getAccount(id: string) {
     const { data, error } = await this.supabase.from('accounts').select('*').eq('id', id).single();
     if (error) {
+      if (error.code === 'PGRST116') {
+        return null;
+      }
       throw error;
     }
 
