@@ -9,6 +9,7 @@ import Autocomplete from '@/components/editor/autocomplete';
 import Editor from '@/components/editor/simple';
 import Suggestions from '@/components/editor/suggestions';
 import Layout from '@/components/layout';
+import Navbar from '@/components/nav';
 import { MessageList, MobileMessageList } from '@/components/talk';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { AudioPlayerProvider } from '@/hooks/use-audio-player';
@@ -44,7 +45,8 @@ export default async function TalkPage() {
         <AudioPlayerProvider>
           <Layout>
             <Layout.Header>
-              <div className="flex items-center justify-between">
+              <Navbar user={user} current="/talk" />
+              <div className="flex items-center justify-between mb-4">
                 <Breadcrumbs
                   pages={[{ name: 'Talk', href: '/talk', current: true }]}
                   className="md:hidden"

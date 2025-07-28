@@ -8,6 +8,9 @@ import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { useQuery } from '@triplit/react';
 
 import Layout from '@/components/layout';
+import Navbar from '@/components/nav';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
+import { useAccount } from '@/hooks/use-account';
 import { triplit } from '@/triplit/client';
 import { Deck } from '@/types/card';
 
@@ -51,11 +54,17 @@ export default function StoriesPage() {
   const decksQuery = triplit.query('decks').Order('created_at', 'DESC');
   const { results: decks = [], fetching: loading } = useQuery(triplit, decksQuery);
 
+  const { user } = useAccount({});
   return (
     <Layout>
       <Layout.Header>
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight text-white">Stories</h1>
+        <Navbar user={user} current="/stories" />
+        <div className="flex items-center justify-between mb-4">
+          <Breadcrumbs
+            pages={[{ name: 'Stories', href: '/stories', current: true }]}
+            className="md:hidden"
+          />
+          <h1 className="hidden md:block text-2xl font-bold tracking-tight text-white">Stories</h1>
         </div>
       </Layout.Header>
       <Layout.Content>

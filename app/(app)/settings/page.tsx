@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 
 import { AccountProvider } from '@/components/context/account-provider';
 import Layout from '@/components/layout';
+import Navbar from '@/components/nav';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import AccountsService from '@/services/accounts';
 import { createClient } from '@/supabase/server';
@@ -26,14 +27,13 @@ export default async function AISettingsPage() {
     <AccountProvider user={user} account={account}>
       <Layout>
         <Layout.Header>
-          <div className="space-y-4">
+          <Navbar user={user} current="/settings" />
+          <div className="flex items-center justify-between mb-4">
             <Breadcrumbs
-              pages={[
-                { name: 'Settings', href: '/account' },
-                { name: 'AI Settings', href: '/settings/ai', current: true },
-              ]}
+              pages={[{ name: 'Settings', href: '/settings', current: true }]}
+              className="md:hidden"
             />
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">AI Settings</h1>
+            <h1 className="hidden md:block text-2xl font-bold tracking-tight text-white">Talk</h1>
           </div>
         </Layout.Header>
         <Layout.Content>

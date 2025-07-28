@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation';
 
 import { AccountProvider } from '@/components/context/account-provider';
 import Layout from '@/components/layout';
+import Navbar from '@/components/nav';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 import AccountsService from '@/services/accounts';
 import { createClient } from '@/supabase/server';
 
@@ -25,7 +27,16 @@ export default async function AccountPage() {
     <AccountProvider user={user} account={account}>
       <Layout>
         <Layout.Header>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Account Settings</h1>
+          <Navbar user={user} current="/account" />
+          <div className="flex items-center justify-between mb-4">
+            <Breadcrumbs
+              pages={[{ name: 'Account', href: '/account', current: true }]}
+              className="md:hidden"
+            />
+            <h1 className="hidden md:block text-2xl font-bold tracking-tight text-white">
+              Account
+            </h1>
+          </div>
         </Layout.Header>
         <Layout.Content>
           <AccountForm />

@@ -78,9 +78,11 @@ export default function Suggestions({ className = '', timeout = 500 }: Suggestio
       )}
       {!isLoading &&
         suggestions.slice(0, 10).map(({ text, audio_path }, index) => (
-          <div className="flex items-center justify-between w-full gap-2">
+          <div
+            className="flex items-center justify-between w-full gap-2"
+            key={`suggestion-${index}`}
+          >
             <button
-              key={index}
               onClick={() => handleSuggestionClick(text)}
               className="px-4 py-2 text-sm font-medium text-black bg-white rounded-xl border border-blue-600 hover:bg-gray-100 hover:border-blue-400 transition-colors duration-200 text-left"
             >

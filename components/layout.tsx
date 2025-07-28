@@ -16,7 +16,7 @@ Layout.Header = ({ children, color = 'indigo' }: HeaderProps) => {
 
   return (
     <div className={cn(theme.bg, 'pb-32')}>
-      <header className="py-2 md:py-10">
+      <header>
         <div className="mx-auto max-w-7xl px-2 md:px-8">{children}</div>
       </header>
     </div>
