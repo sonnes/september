@@ -52,6 +52,20 @@ Follow these rules:
 - Return only the JSON, no other text
 `;
 
+const TRANSCRIPTION_PROMPT = `You are a speech-to-text transcription service. 
+
+Your task is to transcribe the provided audio content accurately. 
+
+Guidelines:
+- Transcribe exactly what is spoken, including filler words like "um", "uh", "like", etc.
+- Preserve natural speech patterns and pauses
+- Use proper punctuation to reflect speech patterns
+- If the audio is unclear or contains background noise, do your best to transcribe what you can hear
+- If there's no speech detected, return an empty string
+- Return only the transcribed text, no additional formatting or explanations
+
+Return the transcription as plain text.`;
+
 interface ExtractDeckParams {
   images: Blob[];
 }
@@ -64,6 +78,10 @@ interface ExtractDeckResponse {
 
 export interface SuggestionResponse {
   suggestions: string[];
+}
+
+export interface TranscriptionResponse {
+  text: string;
 }
 
 export async function extractDeck({ images }: ExtractDeckParams): Promise<ExtractDeckResponse> {
@@ -166,5 +184,37 @@ export async function generateSuggestions({
   } catch (err) {
     console.error('Gemini suggestions error:', err);
     return { suggestions: [] };
+  }
+}
+
+export async function transcribeAudio({ audio }: { audio: Blob }): Promise<TranscriptionResponse> {
+  if (!GEMINI_API_KEY) {
+    console.warn('Gemini API key not configured');
+    return { text: '' };
+  }
+
+  try {
+    const arrayBuffer = await audio.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
+    const mimeType = audio.type || 'audio/wav';
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash-exp',
+      contents: [
+        {
+          parts: [{ inlineData: { mimeType, data: base64 } }, { text: TRANSCRIPTION_PROMPT }],
+        },
+      ],
+      config: {
+        temperature: 0.1,
+        maxOutputTokens: 1024,
+      },
+    });
+
+    const text = response.text?.trim() || '';
+    return { text };
+  } catch (err) {
+    console.error('Gemini transcription error:', err);
+    return { text: '' };
   }
 }

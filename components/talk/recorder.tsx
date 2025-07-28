@@ -4,19 +4,13 @@ import { useEffect, useState } from 'react';
 
 import { ArrowPathIcon, MicrophoneIcon, PauseIcon, StopIcon } from '@heroicons/react/24/outline';
 import { useMicVAD, utils } from '@ricky0123/vad-react';
-import { uuidv4 } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
 
 import { Button } from '@/components/ui/button';
 import { useCreateMessage } from '@/hooks/use-create-message';
 
-function VADController({
-  onSpeechEnd,
-  onStop,
-}: {
-  onSpeechEnd: (blob: Blob) => Promise<void>;
-  onStop: () => void;
-}) {
-  const { listening, loading, pause, start } = useMicVAD({
+function VADController({ onSpeechEnd }: { onSpeechEnd: (blob: Blob) => Promise<void> }) {
+  const { listening, loading, toggle } = useMicVAD({
     startOnLoad: true,
     onSpeechEnd: async (audio: Float32Array) => {
       const wav = utils.encodeWAV(audio);
@@ -29,25 +23,9 @@ function VADController({
   });
 
   // Pause and notify parent when stopped
-  const handlePause = () => {
-    pause();
-    if (onStop) {
-      onStop();
-    }
+  const handleToggle = () => {
+    toggle();
   };
-
-  // Auto-pause when window loses focus
-  useEffect(() => {
-    const handleBlur = () => {
-      if (listening) {
-        handlePause();
-      }
-    };
-    window.addEventListener('blur', handleBlur);
-    return () => {
-      window.removeEventListener('blur', handleBlur);
-    };
-  }, [listening]);
 
   if (loading) {
     return (
@@ -59,12 +37,13 @@ function VADController({
 
   return (
     <Button
-      onClick={handlePause}
+      onClick={handleToggle}
       title={listening ? 'Stop recording' : 'Recording...'}
       variant="outline"
       color="white"
     >
-      {listening ? 'Stop' : 'Listen'} {listening && <StopIcon className="h-6 w-6" />}
+      {listening ? 'Stop' : 'Listen'}{' '}
+      {listening ? <StopIcon className="h-6 w-6" /> : <MicrophoneIcon className="h-6 w-6" />}
     </Button>
   );
 }
@@ -97,10 +76,6 @@ export default function Recorder() {
     console.log(createdMessage);
   };
 
-  const handleStop = () => {
-    setVadActive(false);
-  };
-
   const toggleRecording = () => {
     setVadActive(active => !active);
   };
@@ -108,7 +83,7 @@ export default function Recorder() {
   return (
     <div className="flex items-center">
       {vadActive ? (
-        <VADController onSpeechEnd={handleSpeechEnd} onStop={handleStop} />
+        <VADController onSpeechEnd={handleSpeechEnd} />
       ) : (
         <Button onClick={toggleRecording} title="Start recording" variant="outline" color="white">
           Listen <MicrophoneIcon className="h-6 w-6" />
