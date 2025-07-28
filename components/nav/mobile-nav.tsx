@@ -21,7 +21,6 @@ type MobileNavProps = {
   items: NavigationItem[];
   current?: string;
   user?: {
-    name?: string;
     email?: string;
     avatar?: string;
   } | null;
@@ -103,19 +102,18 @@ export default function MobileNav({ items, current, user, color = 'indigo' }: Mo
                           {user.avatar ? (
                             <Image
                               src={user.avatar}
-                              alt={user.name || 'User'}
+                              alt={user.email || 'User'}
                               width={32}
                               height={32}
                               className="rounded-full"
                             />
                           ) : (
                             <span className="text-sm font-medium text-gray-600">
-                              {user.name?.charAt(0) || 'U'}
+                              {user.email?.charAt(0) || 'U'}
                             </span>
                           )}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{user.name}</p>
                           <p className="text-xs text-gray-500">{user.email}</p>
                         </div>
                       </div>

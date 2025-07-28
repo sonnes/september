@@ -17,7 +17,6 @@ type DesktopNavProps = {
   items: NavigationItem[];
   current?: string;
   user?: {
-    name?: string;
     email?: string;
     avatar?: string;
   } | null;
@@ -61,24 +60,23 @@ export default function DesktopNav({ items, current, user, color = 'indigo' }: D
       <div className="hidden lg:flex lg:flex-1 lg:justify-end">
         {user ? (
           <Popover className="relative">
-            <PopoverButton className="inline-flex items-center gap-x-1 text-sm/6 font-semibold text-white hover:text-white/80 transition-colors">
+            <PopoverButton className="inline-flex items-center gap-x-1 text-sm/6 font-semibold text-white hover:text-white/80 transition-colors cursor-pointer">
               <div className="flex items-center space-x-3">
                 <div className="text-right">
-                  <p className="text-sm font-medium text-white">{user.name}</p>
                   <p className="text-xs text-white/70">{user.email}</p>
                 </div>
                 <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
                   {user.avatar ? (
                     <Image
                       src={user.avatar}
-                      alt={user.name || 'User'}
+                      alt={user.email || 'User'}
                       width={32}
                       height={32}
                       className="rounded-full"
                     />
                   ) : (
                     <span className="text-sm font-medium text-white">
-                      {user.name?.charAt(0) || 'U'}
+                      {user.email?.charAt(0) || 'U'}
                     </span>
                   )}
                 </div>

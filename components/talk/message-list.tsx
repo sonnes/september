@@ -43,7 +43,7 @@ export function MessageList() {
 
   return (
     <>
-      {[...messages].reverse().map((message, index) => (
+      {[...messages].map((message, index) => (
         <MessageItem key={index} message={message} />
       ))}
     </>

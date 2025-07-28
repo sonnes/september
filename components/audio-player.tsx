@@ -4,7 +4,6 @@ import React from 'react';
 
 import { PauseIcon, PlayIcon } from '@heroicons/react/24/outline';
 
-import { Button } from '@/components/ui/button';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 
 export default function AudioPlayer() {
@@ -12,7 +11,7 @@ export default function AudioPlayer() {
 
   // Helper to render aligned text with words grouped
   function renderAlignedText() {
-    if (!current?.alignment) return current ? 'Playing audio...' : 'No audio loaded';
+    if (!current?.alignment) return current ? 'Playing audio...' : 'Waiting...';
     const { characters } = current.alignment;
 
     // Group characters into words
@@ -42,19 +41,16 @@ export default function AudioPlayer() {
   }
 
   return (
-    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white shadow-lg rounded-full px-6 py-3 flex flex-row justify-between items-center gap-4 z-50 border border-zinc-300 min-w-[280px] w-full max-w-lg">
-      <div className="flex-1 text-zinc-900 font-medium text-base text-center truncate max-w-xs mx-auto">
-        {renderAlignedText()}
-      </div>
-      <Button
+    <div className="px-4 flex flex-row justify-between items-center gap-3 text-white">
+      <div className="flex-1 font-medium text-sm text-center truncate">{renderAlignedText()}</div>
+      <button
         onClick={togglePlayPause}
-        color="zinc"
-        variant="circular"
         aria-label={isPlaying ? 'Pause' : 'Play'}
-        icon={isPlaying ? <PauseIcon className="w-6 h-6" /> : <PlayIcon className="w-6 h-6" />}
         disabled={!current}
-        className="flex-shrink-0"
-      />
+        className="text-white hover:text-white/80"
+      >
+        {isPlaying ? <PauseIcon className="w-6 h-6" /> : <PlayIcon className="w-6 h-6" />}
+      </button>
     </div>
   );
 }

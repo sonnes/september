@@ -8,7 +8,7 @@ export type ButtonProps = {
   icon?: ReactNode;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
-  color?: 'indigo' | 'zinc' | 'gray' | 'red' | 'green' | 'blue';
+  color?: keyof typeof colorClasses;
   variant?: 'default' | 'circular' | 'outline';
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
@@ -31,6 +31,7 @@ const colorClasses: Record<string, string> = {
   red: 'bg-red-600 text-white hover:bg-red-500 focus-visible:outline-red-600',
   green: 'bg-green-600 text-white hover:bg-green-500 focus-visible:outline-green-600',
   blue: 'bg-blue-600 text-white hover:bg-blue-500 focus-visible:outline-blue-600',
+  white: 'bg-white text-zinc-900 hover:bg-zinc-100 focus-visible:outline-zinc-600',
 };
 
 const outlineColorClasses: Record<string, string> = {
@@ -40,6 +41,7 @@ const outlineColorClasses: Record<string, string> = {
   red: 'border-red-600 text-red-600 hover:bg-red-50 focus-visible:outline-red-600',
   green: 'border-green-600 text-green-600 hover:bg-green-50 focus-visible:outline-green-600',
   blue: 'border-blue-600 text-blue-600 hover:bg-blue-50 focus-visible:outline-blue-600',
+  white: 'border-zinc-900 text-zinc-900 hover:bg-zinc-100 focus-visible:outline-zinc-600',
 };
 
 export function Button({

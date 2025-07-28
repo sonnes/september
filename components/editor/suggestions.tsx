@@ -14,7 +14,7 @@ interface SuggestionsProps {
   timeout?: number;
 }
 
-export default function Suggestions({ className = '', timeout = 500 }: SuggestionsProps) {
+export default function Suggestions({ className = '', timeout = 2000 }: SuggestionsProps) {
   const { text, setText } = useTextContext();
   const { messages } = useMessagesContext();
   const { showError } = useToast();
@@ -59,7 +59,7 @@ export default function Suggestions({ className = '', timeout = 500 }: Suggestio
   useEffect(() => {
     fetchSuggestions(
       debouncedText,
-      messages.map(m => m.text)
+      messages.reverse().map(m => m.text)
     );
   }, [debouncedText, messages]);
 

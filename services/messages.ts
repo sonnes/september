@@ -86,7 +86,7 @@ class MessagesService {
       .from('messages')
       .select('*')
       .eq('user_id', user_id)
-      .textSearch('fts', query.replace(/\s+/g, '+'))
+      .textSearch('fts', query.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '+'))
       .limit(10);
     if (error) throw error;
     return data;

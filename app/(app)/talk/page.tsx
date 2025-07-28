@@ -54,6 +54,7 @@ export default async function TalkPage() {
                 <h1 className="hidden md:block text-2xl font-bold tracking-tight text-white">
                   Talk
                 </h1>
+                <AudioPlayer />
                 <div className="flex items-center space-x-2">
                   <MobileMessageList />
                 </div>
@@ -86,7 +87,6 @@ export default async function TalkPage() {
                     </div>
                   </div>
                 </div>
-                <AudioPlayer />
               </TextProvider>
             </Layout.Content>
           </Layout>
