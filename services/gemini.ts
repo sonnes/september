@@ -205,10 +205,6 @@ export async function transcribeAudio({ audio }: { audio: Blob }): Promise<Trans
           parts: [{ inlineData: { mimeType, data: base64 } }, { text: TRANSCRIPTION_PROMPT }],
         },
       ],
-      config: {
-        temperature: 0.1,
-        maxOutputTokens: 1024,
-      },
     });
 
     const text = response.text?.trim() || '';

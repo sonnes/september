@@ -11,8 +11,9 @@ export default function AudioPlayer() {
 
   // Helper to render aligned text with words grouped
   function renderAlignedText() {
-    if (!current?.alignment) return current ? 'Playing audio...' : 'Waiting...';
-    const { characters } = current.alignment;
+    if (!current?.alignment && !isPlaying) return '...';
+    if (!current?.alignment && isPlaying) return 'Playing audio...';
+    const { characters } = current?.alignment || { characters: [] };
 
     // Group characters into words
     const words = [];

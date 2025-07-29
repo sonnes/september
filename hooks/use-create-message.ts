@@ -1,9 +1,13 @@
 import { useState } from 'react';
 
+import { useAccountContext } from '@/components/context/account-provider';
+import supabase from '@/supabase/client';
+
 import { useToast } from './use-toast';
 
 export function useCreateMessage() {
   const [status, setStatus] = useState<'idle' | 'loading'>('idle');
+  const { user } = useAccountContext();
   const { showError } = useToast();
 
   const createMessage = async ({ text, voice_id }: { text: string; voice_id?: string }) => {
@@ -36,5 +40,30 @@ export function useCreateMessage() {
     }
   };
 
-  return { createMessage, status };
+  const createTranscription = async ({ id, text }: { id: string; text: string }) => {
+    if (!user) {
+      showError('User not found');
+      throw new Error('User not found');
+    }
+
+    const { data, error } = await supabase
+      .from('messages')
+      .upsert({
+        id,
+        text,
+        type: 'transcription',
+        user_id: user.id,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      showError(error.message || 'Failed to create transcription');
+      throw new Error(error.message);
+    }
+
+    return data;
+  };
+
+  return { createMessage, createTranscription, status };
 }

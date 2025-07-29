@@ -15,10 +15,13 @@ interface PlayButtonProps {
 }
 
 export function PlayButton({ path }: PlayButtonProps) {
-  const { enqueue, isPlaying, current } = useAudioPlayer();
+  const { enqueue, isPlaying, current, togglePlayPause } = useAudioPlayer();
   const { showError } = useToast();
   const [audio, setAudio] = useState<Audio | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const isCurrentTrack = current?.path === path;
+  const isCurrentlyPlaying = isCurrentTrack && isPlaying;
 
   const downloadAudio = async (path: string) => {
     const { data, error } = await supabase.storage.from('audio').download(path);
@@ -30,8 +33,13 @@ export function PlayButton({ path }: PlayButtonProps) {
     return data;
   };
 
-  const handlePlay = async () => {
+  const handlePlayPause = async () => {
     if (isLoading || !path) return;
+
+    if (isCurrentlyPlaying) {
+      togglePlayPause();
+      return;
+    }
 
     if (audio) {
       enqueue(audio);
@@ -60,12 +68,9 @@ export function PlayButton({ path }: PlayButtonProps) {
     }
   };
 
-  const isCurrentTrack = current?.path === path;
-  const isCurrentlyPlaying = isCurrentTrack && isPlaying;
-
   return (
     <button
-      onClick={handlePlay}
+      onClick={handlePlayPause}
       disabled={isLoading}
       className="p-2 text-zinc-600 hover:text-zinc-800 hover:bg-zinc-100 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       aria-label={isCurrentlyPlaying ? 'Pause message' : 'Play message'}

@@ -12,6 +12,9 @@ import { useCreateMessage } from '@/hooks/use-create-message';
 function VADController({ onSpeechEnd }: { onSpeechEnd: (blob: Blob) => Promise<void> }) {
   const { listening, loading, toggle } = useMicVAD({
     startOnLoad: true,
+    onFrameProcessed: () => {
+      console.log('onFrameProcessed');
+    },
     onSpeechEnd: async (audio: Float32Array) => {
       const wav = utils.encodeWAV(audio);
       const blob = new Blob([wav], { type: 'audio/wav' });
@@ -50,7 +53,7 @@ function VADController({ onSpeechEnd }: { onSpeechEnd: (blob: Blob) => Promise<v
 
 export default function Recorder() {
   const [vadActive, setVadActive] = useState(false);
-  const { createMessage } = useCreateMessage();
+  const { createTranscription } = useCreateMessage();
 
   const handleSpeechEnd = async (wav: Blob) => {
     const formData = new FormData();
@@ -69,11 +72,9 @@ export default function Recorder() {
     const message = {
       id: uuidv4(),
       text: result.text,
-      type: 'transcription',
     };
 
-    const createdMessage = await createMessage(message);
-    console.log(createdMessage);
+    await createTranscription(message);
   };
 
   const toggleRecording = () => {

@@ -19,7 +19,12 @@ export function useMessages({
   const [messages, setMessages] = useState<Message[]>(initialMessages);
 
   const getMessages = useCallback(async () => {
-    const { data, error } = await supabase.from('messages').select('*').eq('user_id', user.id);
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(100);
 
     if (error) {
       showError(error.message);
@@ -27,7 +32,7 @@ export function useMessages({
       return;
     }
 
-    setMessages(data);
+    setMessages(data.reverse());
     return data;
   }, [user.id, showError]);
 

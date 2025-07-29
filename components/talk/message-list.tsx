@@ -3,10 +3,10 @@
 import { useState } from 'react';
 
 import { ChatBubbleLeftRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import clsx from 'clsx';
 import moment from 'moment';
 
 import { useMessagesContext } from '@/components/context/messages-provider';
+import { cn } from '@/lib/utils';
 import type { Message } from '@/types/message';
 
 import { PlayButton } from './play-button';
@@ -23,7 +23,8 @@ function MessageItem({ message }: { message: Message }) {
       <div className="flex items-center justify-between gap-4 min-w-0">
         <div className="flex-1 min-w-0">
           <div
-            className={clsx(
+            className={cn(
+              'text-sm',
               message.type === 'transcription' ? 'text-blue-500' : 'text-zinc-600',
               'font-medium break-words overflow-hidden'
             )}
