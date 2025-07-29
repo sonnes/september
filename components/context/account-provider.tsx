@@ -8,8 +8,8 @@ import { useAccount } from '@/hooks/use-account';
 import type { Account, PutAccountData } from '@/types/account';
 
 interface AccountContextType {
-  user?: User;
-  account?: Account;
+  user: User;
+  account: Account;
   putAccount: (accountData: PutAccountData) => Promise<void>;
   patchAccount: (accountData: Partial<PutAccountData>) => Promise<void>;
   refetch: () => Promise<void>;
@@ -20,8 +20,8 @@ interface AccountContextType {
 const AccountContext = createContext<AccountContextType | undefined>(undefined);
 
 interface AccountProviderProps {
-  user?: User;
-  account?: Account;
+  user: User;
+  account: Account;
   children: ReactNode;
 }
 

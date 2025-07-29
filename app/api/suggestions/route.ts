@@ -4,6 +4,7 @@ import AccountsService from '@/services/accounts';
 import { generateSuggestions } from '@/services/gemini';
 import MessagesService from '@/services/messages';
 import { createClient } from '@/supabase/server';
+import { Message } from '@/types/message';
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
   try {
     const { text, messages: history } = (await request.json()) as {
       text: string;
-      messages: string[];
+      messages: Partial<Message>[];
     };
 
     if (!text && !history.length) {

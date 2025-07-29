@@ -4,8 +4,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { Alignment, Audio } from '@/types/audio';
 import { CreateMessageData, Message } from '@/types/message';
 
-import { generateSpeech } from './elevenlabs';
-
 interface CreateMessageResponse {
   message: Message;
   audio: Audio;
@@ -19,23 +17,14 @@ class MessagesService {
   }
 
   async createMessage(message: CreateMessageData): Promise<CreateMessageResponse> {
-    const id = uuidv4();
-    const { blob, alignment } = await generateSpeech({ text: message.text });
-
-    const audioPath = await this.uploadAudio({
-      path: `${id}.mp3`,
-      blob,
-      alignment,
-    });
-
     const { data, error } = await this.supabase
       .from('messages')
       .insert({
-        id,
+        id: message.id || uuidv4(),
         type: message.type,
         text: message.text,
         user_id: message.user_id,
-        audio_path: audioPath,
+        audio_path: message.audio_path,
       })
       .select()
       .single();
@@ -43,7 +32,7 @@ class MessagesService {
       throw error;
     }
 
-    return { message: data, audio: { blob, alignment } };
+    return data;
   }
 
   async uploadAudio({

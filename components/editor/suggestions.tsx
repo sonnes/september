@@ -7,6 +7,7 @@ import { useTextContext } from '@/components/context/text-provider';
 import { PlayButton } from '@/components/talk/play-button';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Message } from '@/types/message';
 import { Suggestion } from '@/types/suggestion';
 
 interface SuggestionsProps {
@@ -24,8 +25,8 @@ export default function Suggestions({ className = '', timeout = 2000 }: Suggesti
   const [isLoading, setIsLoading] = useState(false);
 
   // Fetch suggestions from API
-  const fetchSuggestions = async (text: string, messages: string[]) => {
-    if (!text) {
+  const fetchSuggestions = async (text: string, messages: Partial<Message>[]) => {
+    if (!text && !messages.length) {
       setSuggestions([]);
       return;
     }
@@ -64,7 +65,7 @@ export default function Suggestions({ className = '', timeout = 2000 }: Suggesti
   useEffect(() => {
     fetchSuggestions(
       debouncedText,
-      messages.reverse().map(m => m.text)
+      messages.map(m => ({ text: m.text, type: m.type }))
     );
   }, [debouncedText, messages]);
 

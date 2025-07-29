@@ -1,32 +1,56 @@
 import { useState } from 'react';
 
+import { v4 as uuidv4 } from 'uuid';
+
 import { useAccountContext } from '@/components/context/account-provider';
+import MessagesService from '@/services/messages';
 import supabase from '@/supabase/client';
 
 import { useToast } from './use-toast';
 
 export function useCreateMessage() {
   const [status, setStatus] = useState<'idle' | 'loading'>('idle');
-  const { user } = useAccountContext();
+  const { account } = useAccountContext();
   const { showError } = useToast();
+
+  const messagesService = new MessagesService(supabase);
+
+  const createSpeech = async ({ text, voice_id }: { text: string; voice_id?: string }) => {
+    const response = await fetch('/api/speech', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, voice_id }),
+    });
+
+    const { blob, alignment } = await response.json();
+
+    return { blob, alignment };
+  };
 
   const createMessage = async ({ text, voice_id }: { text: string; voice_id?: string }) => {
     setStatus('loading');
     try {
-      const response = await fetch('/api/messages/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voice_id }),
-      });
+      const { blob, alignment } = await createSpeech({ text, voice_id });
 
-      const data = await response.json();
+      const id = uuidv4();
+      const audioPath = `${id}.mp3`;
 
-      if (!response.ok) {
-        showError(data.error || 'Failed to create message');
-        throw new Error(data.error);
-      }
+      const [_, createResponse] = await Promise.all([
+        messagesService.uploadAudio({
+          path: audioPath,
+          blob,
+          alignment,
+        }),
+        messagesService.createMessage({
+          id,
+          text,
+          type: 'speech',
+          user_id: account.id,
+          audio_path: audioPath,
+        }),
+      ]);
 
-      return data;
+      return { message: createResponse, audio: { blob, alignment } };
     } catch (error) {
       // Handle network errors or other exceptions
       if (error instanceof Error) {
@@ -41,18 +65,13 @@ export function useCreateMessage() {
   };
 
   const createTranscription = async ({ id, text }: { id: string; text: string }) => {
-    if (!user) {
-      showError('User not found');
-      throw new Error('User not found');
-    }
-
     const { data, error } = await supabase
       .from('messages')
       .upsert({
         id,
         text,
         type: 'transcription',
-        user_id: user.id,
+        user_id: account.id,
       })
       .select()
       .single();

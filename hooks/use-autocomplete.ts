@@ -69,9 +69,7 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
       setIsLoading(true);
 
       try {
-        console.log('query', query);
         const results = await transformerRef.current?.getAutocompleteSuggestions(query);
-        console.log('results', results);
         setSuggestions(results || []);
       } catch (error) {
         console.error('Error getting suggestions:', error);
@@ -93,7 +91,7 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
       try {
         const tokens = tokenize(query);
         const result = transformerRef.current.getTokenPrediction(tokens[tokens.length - 1]);
-        console.log('result', result);
+
         // Return the ranked token list as suggestions
         const suggestions = result.rankedTokenList
           .filter(token => token && token.trim().length > 0)

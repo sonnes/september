@@ -13,17 +13,20 @@ export function useAccount({
   user: initialUser,
   account: initialAccount,
 }: {
-  user?: User;
-  account?: Account;
+  user: User;
+  account: Account;
 }) {
-  const [user, setUser] = useState<User | undefined>(initialUser);
-  const [account, setAccount] = useState<Account | undefined>(initialAccount);
+  const [user, setUser] = useState<User>(initialUser);
+  const [account, setAccount] = useState<Account>(initialAccount);
 
   const getUser = async () => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    setUser(user ?? undefined);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    setUser(user);
   };
 
   useEffect(() => {
@@ -82,9 +85,6 @@ export function useAccount({
       },
       onUpdate: updatedAccount => {
         setAccount(updatedAccount);
-      },
-      onDelete: () => {
-        setAccount(undefined);
       },
       onError: error => {
         console.error('Account realtime error:', error);
