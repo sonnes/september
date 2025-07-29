@@ -146,7 +146,7 @@ export async function generateSuggestions({
 
   const previousMessages = messages.reverse().map(m => ({
     role: 'user',
-    parts: [{ text: `${m.type === 'message' ? 'USER_A' : 'USER_B'}: ${m.text}` }],
+    parts: [{ text: `${m.type === 'transcription' ? 'USER_B' : 'USER_A'}: ${m.text}` }],
   }));
 
   const prompt = [
