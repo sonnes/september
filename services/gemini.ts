@@ -1,7 +1,7 @@
 import { Content, GoogleGenAI } from '@google/genai';
 import { v4 as uuidv4 } from 'uuid';
 
-import { Card } from '@/types/card';
+import { PartialCard } from '@/types/card';
 import { Message } from '@/types/message';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -73,7 +73,7 @@ interface ExtractDeckParams {
 
 interface ExtractDeckResponse {
   error?: string;
-  cards?: Card[];
+  cards?: PartialCard[];
   name?: string;
 }
 
@@ -116,7 +116,7 @@ export async function extractDeck({ images }: ExtractDeckParams): Promise<Extrac
 
     const { name, chunks } = JSON.parse(response.text?.trim() || '{}');
 
-    const cards: Card[] = chunks.map((chunk: string, index: number) => ({
+    const cards: PartialCard[] = chunks.map((chunk: string, index: number) => ({
       id: uuidv4(),
       text: chunk,
       rank: index,

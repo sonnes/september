@@ -1,52 +1,50 @@
 import { useState } from 'react';
 
-import { v4 as uuidv4 } from 'uuid';
-
-import { triplit } from '@/triplit/client';
+import { useAccountContext } from '@/components/context/account-provider';
+import DecksService from '@/services/decks';
+import supabase from '@/supabase/client';
 import { Card, Deck } from '@/types/card';
 
 export function useCreateDeck() {
   const [status, setStatus] = useState<'idle' | 'loading'>('idle');
+  const { account } = useAccountContext();
+  const decksService = new DecksService(supabase);
 
   const createDeck = async ({
     name,
     cards,
-    authorId,
   }: {
     name: string;
-    cards: Card[];
-    authorId?: string;
+    cards: Omit<Card, 'id' | 'deck_id' | 'user_id' | 'created_at'>[];
   }): Promise<Deck> => {
     setStatus('loading');
     try {
+      if (!account) {
+        throw new Error('User account not found');
+      }
+
       // 1. Create the deck
-      const deckId = uuidv4();
-      const createdDeck = await triplit.insert('decks', {
-        id: deckId,
+      const createdDeck = await decksService.createDeck({
         name,
-        author_id: authorId,
-        created_at: new Date(),
-        updated_at: new Date(),
+        user_id: account.id,
       });
 
-      // 2. Insert cards with deck_id
-      const cardsWithDeck = await Promise.all(
-        cards.map(async card => {
-          const cardId = card.id || uuidv4();
-          const createdCard = await triplit.insert('cards', {
-            ...card,
-            id: cardId,
-            deck_id: deckId,
-            created_at: card.created_at || new Date(),
+      // 2. Create cards with deck_id
+      const createdCards = await Promise.all(
+        cards.map(async (card, index) => {
+          return await decksService.createCard({
+            text: card.text,
+            rank: index,
+            deck_id: createdDeck.id,
+            user_id: account.id,
+            audio_path: card.audio_path,
           });
-          return createdCard;
         })
       );
 
       return {
-        id: deckId,
-        name,
-        cards: cardsWithDeck,
+        ...createdDeck,
+        cards: createdCards,
       };
     } finally {
       setStatus('idle');

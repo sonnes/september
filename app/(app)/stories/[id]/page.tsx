@@ -7,7 +7,7 @@ import { notFound, useParams } from 'next/navigation';
 import { useQuery, useQueryOne } from '@triplit/react';
 
 import AudioPlayer from '@/components/audio-player';
-import DeckView from '@/components/deck/view';
+import DeckView from '@/components/decks/view';
 import Layout from '@/components/layout';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { AudioPlayerProvider } from '@/hooks/use-audio-player';

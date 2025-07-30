@@ -6,26 +6,16 @@ import { useAccountContext } from '@/components/context/account-provider';
 import MessagesService from '@/services/messages';
 import supabase from '@/supabase/client';
 
+import { useCreateSpeech } from './use-create-speech';
 import { useToast } from './use-toast';
 
 export function useCreateMessage() {
   const [status, setStatus] = useState<'idle' | 'loading'>('idle');
   const { account } = useAccountContext();
   const { showError } = useToast();
+  const { createSpeech } = useCreateSpeech();
 
   const messagesService = new MessagesService(supabase);
-
-  const createSpeech = async ({ text, voice_id }: { text: string; voice_id?: string }) => {
-    const response = await fetch('/api/speech', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, voice_id }),
-    });
-
-    const { blob, alignment } = await response.json();
-
-    return { blob, alignment };
-  };
 
   const createMessage = async ({ text, voice_id }: { text: string; voice_id?: string }) => {
     setStatus('loading');
