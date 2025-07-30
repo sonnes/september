@@ -158,7 +158,6 @@ export async function generateSuggestions({
     { role: 'model', parts: [{ text: '```json' }] },
   ];
 
-  console.log('prompt', JSON.stringify(prompt, null, 2));
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.0-flash-001',

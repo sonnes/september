@@ -65,11 +65,16 @@ export default function Suggestions({ className = '', timeout = 2000 }: Suggesti
   useEffect(() => {
     fetchSuggestions(
       debouncedText,
-      messages.map(m => ({ text: m.text, type: m.type }))
+      messages.slice(0, 10).map(m => ({ text: m.text, type: m.type }))
     );
   }, [debouncedText, messages]);
 
   useEffect(() => {
+    if (text.length === 0) {
+      setDebouncedText(text);
+      return;
+    }
+
     const timeoutId = setTimeout(() => {
       setDebouncedText(text);
     }, timeout);
