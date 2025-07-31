@@ -11,7 +11,7 @@ import Breadcrumbs from '@/components/ui/breadcrumbs';
 import AccountsService from '@/services/accounts';
 import DecksService from '@/services/decks';
 import { createClient } from '@/supabase/server';
-import { Deck } from '@/types/card';
+import { Deck } from '@/types/deck';
 
 export const metadata: Metadata = {
   title: 'Stories - September',

@@ -11,6 +11,15 @@ export interface Card {
   audio?: Audio;
 }
 
+export interface PutCardData {
+  id: string;
+  text: string;
+  rank: number;
+  deck_id: string;
+  user_id: string;
+  audio_path?: string;
+}
+
 export type PartialCard = Partial<Card>;
 
 export interface Deck {
@@ -19,6 +28,12 @@ export interface Deck {
   created_at: Date;
   user_id: string;
   cards?: Card[];
+}
+
+export interface PutDeckData {
+  id: string;
+  name: string;
+  user_id: string;
 }
 
 export type PartialDeck = Partial<Deck>;

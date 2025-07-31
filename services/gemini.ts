@@ -1,7 +1,7 @@
 import { Content, GoogleGenAI } from '@google/genai';
 import { v4 as uuidv4 } from 'uuid';
 
-import { PartialCard } from '@/types/card';
+import { PartialCard } from '@/types/deck';
 import { Message } from '@/types/message';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -71,10 +71,10 @@ interface ExtractDeckParams {
   images: Blob[];
 }
 
-interface ExtractDeckResponse {
-  error?: string;
-  cards?: PartialCard[];
-  name?: string;
+export interface ExtractDeckResponse {
+  id: string;
+  name: string;
+  cards: PartialCard[];
 }
 
 export interface SuggestionResponse {
@@ -88,7 +88,7 @@ export interface TranscriptionResponse {
 export async function extractDeck({ images }: ExtractDeckParams): Promise<ExtractDeckResponse> {
   if (!GEMINI_API_KEY) {
     console.warn('Gemini API key not configured');
-    return { error: 'Gemini API key not configured' };
+    throw new Error('Gemini API key not configured');
   }
 
   const contents: Content[] = [];
@@ -123,10 +123,10 @@ export async function extractDeck({ images }: ExtractDeckParams): Promise<Extrac
       created_at: new Date(),
     }));
 
-    return { cards, name };
+    return { id: uuidv4(), cards, name };
   } catch (err) {
     console.error('Gemini OCR error:', err);
-    return { error: 'Could not extract text from images' };
+    throw new Error('Could not extract text from images');
   }
 }
 

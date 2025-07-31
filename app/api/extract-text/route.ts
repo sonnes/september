@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { extractDeck } from '@/services/gemini';
 
-export const runtime = 'edge';
-
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const files: File[] = [];
@@ -19,7 +17,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No images provided.' }, { status: 400 });
   }
 
-  const result = await extractDeck({ images: files });
-
-  return NextResponse.json(result, { status: result.error ? 400 : 200 });
+  try {
+    const result = await extractDeck({ images: files });
+    return NextResponse.json(result, { status: 200 });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to extract text from images' }, { status: 400 });
+  }
 }

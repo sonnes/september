@@ -5,7 +5,7 @@ import { User } from '@supabase/supabase-js';
 import DecksService from '@/services/decks';
 import supabase from '@/supabase/client';
 import { removeRealtimeSubscription, subscribeToTable } from '@/supabase/realtime';
-import { Deck } from '@/types/card';
+import { Deck } from '@/types/deck';
 
 import { useToast } from './use-toast';
 

@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect, useState } from 'react';
 
 import {
@@ -8,7 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 import { useAudioPlayer } from '@/hooks/use-audio-player';
-import { Card, Deck } from '@/types/card';
+import { Card, Deck } from '@/types/deck';
 
 interface DeckViewProps {
   deck: Deck;

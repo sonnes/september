@@ -14,7 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 import { triplit } from '@/triplit/client';
-import { Deck } from '@/types/card';
+import { Deck } from '@/types/deck';
 
 const icons = [
   ClockIcon,

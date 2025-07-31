@@ -1,41 +1,53 @@
-'use client';
-
 import React from 'react';
 
-import { notFound, useParams } from 'next/navigation';
-
-import { useQuery, useQueryOne } from '@triplit/react';
+import { Metadata } from 'next';
+import { notFound, redirect } from 'next/navigation';
 
 import AudioPlayer from '@/components/audio-player';
+import { AccountProvider } from '@/components/context/account-provider';
 import DeckView from '@/components/decks/view';
 import Layout from '@/components/layout';
+import Navbar from '@/components/nav';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { AudioPlayerProvider } from '@/hooks/use-audio-player';
-import { triplit } from '@/triplit/client';
-import { Card, Deck } from '@/types/card';
+import AccountsService from '@/services/accounts';
+import DecksService from '@/services/decks';
+import { createClient } from '@/supabase/server';
 
-const StoryPage: React.FC = () => {
-  const params = useParams();
-  const id =
-    typeof params?.id === 'string' ? params.id : Array.isArray(params?.id) ? params.id[0] : '';
+export const metadata: Metadata = {
+  title: 'Story - September',
+};
 
-  if (!triplit || !id) notFound();
+export default async function StoryPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
-  const deckQuery = triplit.query('decks').Where('id', '=', id);
-  const { result: deck, fetching: loading } = useQueryOne(triplit, deckQuery);
+  const supabase = await createClient();
+  const accountsService = new AccountsService(supabase);
+  const decksService = new DecksService(supabase);
 
-  if (!loading && !deck) notFound();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const cardsQuery = triplit.query('cards').Where('deck_id', '=', id).Order('rank', 'ASC');
-  const { results: cards } = useQuery(triplit, cardsQuery);
+  if (!user) {
+    redirect('/login');
+  }
 
-  if (deck) (deck as Deck).cards = cards as Card[];
+  const [account, deck] = await Promise.all([
+    accountsService.getAccount(user.id),
+    decksService.getDeckWithCards(id),
+  ]);
+
+  if (!deck) {
+    notFound();
+  }
 
   return (
-    <>
+    <AccountProvider user={user} account={account}>
       <Layout>
         <Layout.Header>
-          <div className="flex flex-col gap-2">
+          <Navbar user={user} current={`/stories/${deck.id}`} />
+          <div className="flex items-center justify-between mb-4">
             <Breadcrumbs
               pages={
                 deck
@@ -45,20 +57,19 @@ const StoryPage: React.FC = () => {
                     ]
                   : [{ name: 'Stories', href: '/stories', current: true }]
               }
-              homeHref="/"
+              className="md:hidden"
             />
+            <h1 className="hidden md:block text-2xl font-bold tracking-tight text-white">
+              Stories
+            </h1>
           </div>
         </Layout.Header>
         <Layout.Content>
           <AudioPlayerProvider>
-            {loading && <div>Loading deck...</div>}
-            {!loading && !deck && <div>Deck not found.</div>}
-            {!loading && deck && <DeckView deck={deck} />}
+            <DeckView deck={deck} />
           </AudioPlayerProvider>
         </Layout.Content>
       </Layout>
-    </>
+    </AccountProvider>
   );
-};
-
-export default StoryPage;
+}

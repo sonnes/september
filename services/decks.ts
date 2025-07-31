@@ -1,7 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 
-import { Card, Deck } from '@/types/card';
+import { Card, Deck, PutCardData, PutDeckData } from '@/types/deck';
 
 interface CreateDeckData {
   id?: string;
@@ -25,11 +25,11 @@ class DecksService {
     this.supabase = client;
   }
 
-  async createDeck(deck: CreateDeckData): Promise<Deck> {
+  async putDeck(deck: PutDeckData): Promise<Deck> {
     const { data, error } = await this.supabase
       .from('decks')
-      .insert({
-        id: deck.id || uuidv4(),
+      .upsert({
+        id: deck.id,
         name: deck.name,
         user_id: deck.user_id,
       })
@@ -42,13 +42,9 @@ class DecksService {
     return data;
   }
 
-  async updateDeck(deckId: string, updates: Partial<Pick<Deck, 'name'>>): Promise<Deck> {
-    const { data, error } = await this.supabase
-      .from('decks')
-      .update(updates)
-      .eq('id', deckId)
-      .select()
-      .single();
+  async putCards(cards: PutCardData[]): Promise<Card[]> {
+    const { data, error } = await this.supabase.from('cards').upsert(cards).select();
+
     if (error) {
       throw error;
     }
