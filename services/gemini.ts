@@ -8,14 +8,12 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 export const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 const STORY_PROMPT = `You are a storyteller.
-https://www.triplit.dev/docs/schemas/relations
-Extract all readable text from all images. Break down the text into smaller chunks for narration. Each chunk can be multiple sentences.
+
+Extract all readable text from all images. Break down the text into smaller chunks for narration. Each chunk can be 4-5 sentences.
 
 Extract the name of the story from the images. If you can't find the name, generate a simple name.
 
-Depending on the situation, add appropriate sound effects, exclamations, and pauses to make the narration more engaging. Use the following format:
-- <pause time="0.5s">
-- <effect>tiger roar</effect>
+Depending on the situation, add appropriate sound effects, exclamations, and pauses to make the narration more engaging.
 
 The output should be a JSON array of text chunks, each chunk should be a string. Nothing else.
 
@@ -23,8 +21,10 @@ Example output:
 {
   "name": "The Jungle Book",
   "chunks": [
-    "He slowly walks towards <pause time="0.5s">". The tiger roars <effect>tiger roar</effect>",
-    "The tiger says 'Hello'! <pause time="0.5s">. The man nervously says 'Hello' back.",
+    "He slowly walks towards",
+    "The tiger roars",
+    "The tiger says 'Hello'!",
+    "The man nervously says 'Hello' back.",
   ]
 }
 `;

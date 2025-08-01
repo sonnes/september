@@ -7,26 +7,56 @@ import {
   ChevronRightIcon,
   PauseIcon,
   PlayIcon,
+  SpeakerWaveIcon,
 } from '@heroicons/react/24/outline';
 
 import { useAudioPlayer } from '@/hooks/use-audio-player';
+import { useCreateSpeech } from '@/hooks/use-create-speech';
+import DecksService from '@/services/decks';
+import MessagesService from '@/services/messages';
+import supabase from '@/supabase/client';
 import { Card, Deck } from '@/types/deck';
 
 interface DeckViewProps {
   deck: Deck;
 }
 
-const DeckView: React.FC<DeckViewProps> = ({ deck }) => {
-  const cards = deck.cards;
+const DeckView: React.FC<DeckViewProps> = ({ deck: initialDeck }) => {
+  const [deck, setDeck] = useState(initialDeck);
+
   const [current, setCurrent] = useState(0);
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const decksService = new DecksService(supabase);
+  const messagesService = new MessagesService(supabase);
+  const { createSpeech } = useCreateSpeech();
   const { enqueue, isPlaying, togglePlayPause, current: currentAudio } = useAudioPlayer();
+
+  const cards = deck.cards;
 
   if (!cards?.length) return null;
 
+  const downloadAudio = async (path: string) => {
+    const { data, error } = await supabase.storage.from('audio').download(path);
+    if (error || !data) {
+      console.error('Error downloading audio:', error);
+
+      return;
+    }
+    return data;
+  };
+
   useEffect(() => {
-    cards.forEach(card => {
+    cards.forEach(async card => {
       if (card.audio) {
         enqueue(card.audio);
+      } else if (card.audio_path) {
+        const audio = await downloadAudio(card.audio_path);
+        if (audio) {
+          enqueue({
+            path: card.audio_path,
+            blob: Buffer.from(await audio.arrayBuffer()).toString('base64'),
+          });
+        }
       }
     });
   }, [cards, enqueue]);
@@ -38,13 +68,55 @@ const DeckView: React.FC<DeckViewProps> = ({ deck }) => {
     setCurrent(c => (c === cards.length - 1 ? 0 : c + 1));
   };
 
+  const handleGenerateNarration = async () => {
+    setIsGeneratingAudio(true);
+    try {
+      const cardsWithAudio = await Promise.all(
+        cards.map(async card => {
+          // 1. Generate narration
+          const { blob, alignment } = await createSpeech({ text: card.text });
+
+          // 2. Upload audio
+          const audioPath = `${card.id}.mp3`;
+          const audio = await messagesService.uploadAudio({
+            path: audioPath,
+            blob,
+            alignment,
+          });
+
+          // 3. Update card with audio path
+          const updatedCard = { ...card, audio_path: audioPath };
+
+          return updatedCard;
+        })
+      );
+
+      await decksService.putCards(cardsWithAudio);
+
+      setDeck({ ...deck, cards: cardsWithAudio });
+    } catch (error) {
+      console.error('Error generating audio:', error);
+    } finally {
+      setIsGeneratingAudio(false);
+    }
+  };
+
   return (
     <div className="bg-gray-50 py-4 sm:py-8">
       <div className="mx-auto px-6 lg:px-8">
-        <div className="mx-auto mt-2 flex items-center justify-center gap-2">
+        <div className="mx-auto mt-2 flex items-center justify-center gap-4">
           <span className="text-balance text-center text-2xl font-semibold tracking-tight text-gray-950 lg:text-3xl">
             {deck.name}
           </span>
+          <button
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleGenerateNarration}
+            disabled={isGeneratingAudio}
+            type="button"
+          >
+            <SpeakerWaveIcon className="w-5 h-5" />
+            {isGeneratingAudio ? 'Generating...' : 'Generate Audio'}
+          </button>
         </div>
         <div className="mt-12 flex flex-col items-center justify-center min-h-[400px]">
           <CardStack cards={cards} current={current} />

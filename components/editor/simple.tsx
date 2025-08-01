@@ -1,10 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-
 import { useTextContext } from '@/components/context/text-provider';
 import { Button } from '@/components/ui/button';
-import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useCreateMessage } from '@/hooks/use-create-message';
 
 type EditorProps = {
@@ -14,16 +11,11 @@ type EditorProps = {
 export default function Editor({ placeholder = 'Start typing...' }: EditorProps) {
   const { text, setText, reset } = useTextContext();
   const { createMessage, status } = useCreateMessage();
-  const { enqueue } = useAudioPlayer();
 
   const handleSubmit = async () => {
-    const { audio } = await createMessage({ text });
+    await createMessage({ text });
 
     reset();
-
-    if (audio) {
-      enqueue(audio);
-    }
   };
 
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

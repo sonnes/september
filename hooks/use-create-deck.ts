@@ -18,10 +18,8 @@ export function useCreateDeck() {
   }): Promise<Deck> => {
     setCreating(true);
     try {
-      const [createdDeck, createdCards] = await Promise.all([
-        decksService.putDeck(deck),
-        decksService.putCards(cards),
-      ]);
+      const createdDeck = await decksService.putDeck(deck);
+      const createdCards = await decksService.putCards(cards);
 
       return {
         ...createdDeck,

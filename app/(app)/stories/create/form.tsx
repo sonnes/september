@@ -78,7 +78,6 @@ const CreateStory: React.FC = () => {
       {extracting && (
         <div className="mt-4 text-blue-600">
           <div>Extracting text from images...</div>
-          <div className="text-sm text-gray-500 mt-1">Generating audio narration...</div>
         </div>
       )}
     </>

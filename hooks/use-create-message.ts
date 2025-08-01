@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { useAccountContext } from '@/components/context/account-provider';
+import { useAudioPlayer } from '@/hooks/use-audio-player';
 import MessagesService from '@/services/messages';
 import supabase from '@/supabase/client';
 
@@ -11,9 +12,11 @@ import { useToast } from './use-toast';
 
 export function useCreateMessage() {
   const [status, setStatus] = useState<'idle' | 'loading'>('idle');
+
   const { account } = useAccountContext();
   const { showError } = useToast();
   const { createSpeech } = useCreateSpeech();
+  const { enqueue } = useAudioPlayer();
 
   const messagesService = new MessagesService(supabase);
 
@@ -21,6 +24,8 @@ export function useCreateMessage() {
     setStatus('loading');
     try {
       const { blob, alignment } = await createSpeech({ text, voice_id });
+
+      enqueue({ blob, alignment });
 
       const id = uuidv4();
       const audioPath = `${id}.mp3`;
