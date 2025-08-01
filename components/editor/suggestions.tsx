@@ -26,11 +26,6 @@ export default function Suggestions({ className = '', timeout = 2000 }: Suggesti
 
   // Fetch suggestions from API
   const fetchSuggestions = async (text: string, messages: Partial<Message>[]) => {
-    if (!text && !messages.length) {
-      setSuggestions([]);
-      return;
-    }
-
     setIsLoading(true);
 
     try {
@@ -63,6 +58,8 @@ export default function Suggestions({ className = '', timeout = 2000 }: Suggesti
   };
 
   useEffect(() => {
+    if (text.trim().length === 0) return;
+
     fetchSuggestions(
       debouncedText,
       messages.slice(0, 10).map(m => ({ text: m.text, type: m.type }))
@@ -70,10 +67,7 @@ export default function Suggestions({ className = '', timeout = 2000 }: Suggesti
   }, [debouncedText, messages]);
 
   useEffect(() => {
-    if (text.length === 0) {
-      setDebouncedText(text);
-      return;
-    }
+    if (text.trim().length === 0) return;
 
     const timeoutId = setTimeout(() => {
       setDebouncedText(text);
