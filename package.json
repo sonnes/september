@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@elevenlabs/elevenlabs-js": "^2.5.0",
+    "@elevenlabs/elevenlabs-js": "^2.7.0",
     "@google/genai": "^1.9.0",
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",

@@ -3,7 +3,6 @@ import { Alignment } from '@/types/audio';
 export interface SpeechProvider {
   id: string;
   name: string;
-  apiKey?: string;
   generateSpeech(request: SpeechRequest): Promise<SpeechResponse>;
   getVoices(): Promise<Voice[]>;
 }
@@ -11,14 +10,17 @@ export interface SpeechProvider {
 export interface SpeechRequest {
   text: string;
   voiceId?: string;
+  apiKey?: string;
   options?: SpeechOptions;
 }
 
 export interface SpeechOptions {
-  rate?: number;
-  pitch?: number;
-  volume?: number;
-  language?: string;
+  modelId?: string;
+  speed?: number;
+  stability?: number;
+  similarity?: number;
+  style?: number;
+  speakerBoost?: boolean;
 }
 
 export interface SpeechResponse {

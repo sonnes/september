@@ -20,6 +20,7 @@ interface TalkSettingsFormData {
   similarity: string;
   style: string;
   speaker_boost: string;
+  elevenlabs_api_key: string;
 }
 
 function ProviderSection({
@@ -57,18 +58,23 @@ function ProviderSection({
                 selectedValue={formData.speech_provider}
                 onSelect={providerId => {
                   const provider = providers.find(p => p.id === providerId);
-                  handleInputChange('speech_provider', provider?.name || providerId);
+                  handleInputChange('speech_provider', provider?.id || providerId);
                   setProvider(providerId);
                 }}
                 placeholder="Select a provider"
                 label="Speech Provider"
               />
 
-              {formData.speech_provider && (
+
+              {formData.speech_provider === 'elevenlabs' && (
                 <div className="text-sm text-gray-700">
                   <p>
-                    Selected provider:{' '}
-                    <span className="font-medium">{formData.speech_provider}</span>
+                    <input
+                      type="text"
+                      value={formData.elevenlabs_api_key}
+                      onChange={e => handleInputChange('elevenlabs_api_key', e.target.value)}
+                      placeholder="Enter your ElevenLabs API key"
+                    />
                   </p>
                 </div>
               )}
@@ -413,6 +419,7 @@ export function TalkSettingsForm() {
     similarity: account.speech_settings?.similarity?.toString() || '0.5',
     style: account.speech_settings?.style?.toString() || '0.0',
     speaker_boost: account.speech_settings?.speaker_boost?.toString() || 'false',
+    elevenlabs_api_key: account.elevenlabs_api_key || '',
   };
 
   const [formData, setFormData] = useState(initialFormData);

@@ -4,14 +4,20 @@ import { useAccountContext } from '@/components/context/account-provider';
 
 import { SpeechProvider } from '.';
 import { BrowserSpeechProvider } from './provider-browser';
+import { ElevenLabsSpeechProvider } from './provider-elevenlabs';
 
 const browser = new BrowserSpeechProvider();
-const providers: Map<string, SpeechProvider> = new Map([['browser', browser]]);
+const elevenlabs = new ElevenLabsSpeechProvider();
+
+const providers = new Map<string, SpeechProvider>([
+  ['browser', browser],
+  ['elevenlabs', elevenlabs],
+]);
 
 export function useSpeech() {
-  const [engine, setEngine] = useState<SpeechProvider>(browser);
-
   const { account } = useAccountContext();
+
+  const [engine, setEngine] = useState<SpeechProvider>(browser);
 
   useEffect(() => {
     if (account.speech_provider) {
@@ -19,8 +25,14 @@ export function useSpeech() {
     }
   }, [account.speech_provider]);
 
+  useEffect(() => {
+    if (account.elevenlabs_api_key) {
+      elevenlabs.setApiKey(account.elevenlabs_api_key);
+    }
+  }, [account.elevenlabs_api_key]);
+
   const getProviders = useCallback(() => {
-    return [browser];
+    return Array.from(providers.values());
   }, []);
 
   const setProvider = useCallback((providerId: string) => {
