@@ -12,11 +12,16 @@ export interface Account {
   year_of_diagnosis: number;
   medical_document_path: string;
 
-  // API Keys
+  // Speech Settings
+  speech_provider?: string;
+  speech_voice_id?: string;
+  speech_settings?: SpeechSettings;
+
+  // ElevenLabs
   elevenlabs_api_key?: string;
-  google_api_key?: string;
 
   // AI Settings
+  google_api_key?: string;
   ai_instructions?: string;
   ai_corpus?: string;
 
@@ -43,4 +48,16 @@ export interface PutAccountData {
   ai_corpus?: string;
   terms_accepted?: boolean;
   privacy_policy_accepted?: boolean;
+  speech_provider?: string;
+  speech_voice_id?: string;
+  speech_settings?: SpeechSettings;
+}
+
+export interface SpeechSettings {
+  model_id?: string;
+  speed?: number;
+  stability?: number;
+  similarity?: number;
+  style?: number;
+  speaker_boost?: boolean;
 }
