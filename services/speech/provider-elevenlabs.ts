@@ -1,4 +1,4 @@
-
+import { ElevenLabsSettings } from '@/types/account';
 
 import { SpeechProvider, SpeechRequest, SpeechResponse, Voice } from '.';
 
@@ -36,28 +36,29 @@ export class ElevenLabsSpeechProvider implements SpeechProvider {
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey || process.env.ELEVENLABS_API_KEY || '';
-    
   }
 
   async generateSpeech(request: SpeechRequest): Promise<SpeechResponse> {
     if (!this.apiKey) {
       throw new Error('ElevenLabs API key is required');
     }
-    if (!request.voiceId) {
+    if (!request.options?.voice_id) {
       throw new Error('Voice ID is required for ElevenLabs');
     }
 
-    const url = `${this.baseUrl}/text-to-speech/${request.voiceId}/with-timestamps`;
-    
+    const settings = request.options as ElevenLabsSettings;
+
+    const url = `${this.baseUrl}/text-to-speech/${request.options.voice_id}/with-timestamps`;
+
     const body = {
       text: request.text,
-      model_id: request.options?.modelId || 'eleven_flash_v2_5',
+      model_id: settings.model_id || 'eleven_flash_v2_5',
       voice_settings: {
-        speed: request.options?.speed || 1.0,
-        stability: request.options?.stability || 0.5,
-        similarity_boost: request.options?.similarity || 0.5,
-        style: request.options?.style || 0.0,
-        use_speaker_boost: request.options?.speakerBoost || false,
+        speed: settings.speed || 1.0,
+        stability: settings.stability || 0.5,
+        similarity_boost: settings.similarity || 0.5,
+        style: settings.style || 0.0,
+        use_speaker_boost: settings.speaker_boost || false,
       },
       output_format: 'mp3_44100_128',
     };
@@ -73,24 +74,32 @@ export class ElevenLabsSpeechProvider implements SpeechProvider {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`ElevenLabs API error: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(
+        `ElevenLabs API error: ${response.status} ${response.statusText} - ${errorText}`
+      );
     }
 
     const data: ElevenLabsResponse = await response.json();
 
-    const alignment = data.alignment ? {
-      characters: data.alignment.characters,
-      start_times: data.alignment.character_start_times_seconds,
-      end_times: data.alignment.character_end_times_seconds,
-    } : undefined;
+    const alignment = data.alignment
+      ? {
+          characters: data.alignment.characters,
+          start_times: data.alignment.character_start_times_seconds,
+          end_times: data.alignment.character_end_times_seconds,
+        }
+      : undefined;
 
-    return { 
-      blob: data.audio_base64, 
-      alignment 
+    return {
+      blob: data.audio_base64,
+      alignment,
     };
   }
 
   async getVoices(): Promise<Voice[]> {
+    if (!this.apiKey) {
+      return [];
+    }
+
     const url = `${this.baseUrl}/voices`;
 
     const response = await fetch(url, {
@@ -102,7 +111,9 @@ export class ElevenLabsSpeechProvider implements SpeechProvider {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`ElevenLabs API error: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(
+        `ElevenLabs API error: ${response.status} ${response.statusText} - ${errorText}`
+      );
     }
 
     const data: { voices: ElevenLabsVoice[] } = await response.json();

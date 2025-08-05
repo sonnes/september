@@ -12,10 +12,6 @@ CREATE TABLE public.accounts (
   year_of_diagnosis INTEGER,
   medical_document_path TEXT,
   
-  -- API Keys (encrypted)
-  elevenlabs_api_key TEXT,
-  google_api_key TEXT,
-  
   -- Flags
   terms_accepted BOOLEAN DEFAULT FALSE,
   privacy_policy_accepted BOOLEAN DEFAULT FALSE,

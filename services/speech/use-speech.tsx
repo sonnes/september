@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAccountContext } from '@/components/context/account-provider';
 
-import { SpeechProvider } from '.';
+import { SpeechOptions, SpeechProvider } from '.';
 import { BrowserSpeechProvider } from './provider-browser';
 import { ElevenLabsSpeechProvider } from './provider-elevenlabs';
 
@@ -10,12 +10,19 @@ const browser = new BrowserSpeechProvider();
 const elevenlabs = new ElevenLabsSpeechProvider();
 
 const providers = new Map<string, SpeechProvider>([
-  ['browser', browser],
+  ['browser_tts', browser],
   ['elevenlabs', elevenlabs],
 ]);
 
 export function useSpeech() {
   const { account } = useAccountContext();
+
+  const getSettings = useCallback((providerId: string) => {
+    if (providerId === 'browser_tts') {
+      return account.browser_tts_settings;
+    }
+    return account.elevenlabs_settings;
+  }, [account]);
 
   const [engine, setEngine] = useState<SpeechProvider>(browser);
 
@@ -26,10 +33,10 @@ export function useSpeech() {
   }, [account.speech_provider]);
 
   useEffect(() => {
-    if (account.elevenlabs_api_key) {
-      elevenlabs.setApiKey(account.elevenlabs_api_key);
+    if (account.elevenlabs_settings?.api_key) {
+      elevenlabs.setApiKey(account.elevenlabs_settings.api_key);
     }
-  }, [account.elevenlabs_api_key]);
+  }, [account.elevenlabs_settings?.api_key]);
 
   const getProviders = useCallback(() => {
     return Array.from(providers.values());
@@ -39,5 +46,14 @@ export function useSpeech() {
     setEngine(providers.get(providerId) || browser);
   }, []);
 
-  return { engine, getProviders, setProvider };
+  const generateSpeech = useCallback((text: string, options: SpeechOptions) => {
+    const settings = getSettings(engine.id);
+    return engine.generateSpeech({ text, options: { ...settings, ...options } });
+  }, [engine, getSettings]);
+
+  const getVoices = useCallback(() => {
+    return engine.getVoices();
+  }, [engine]);
+
+  return { getVoices, getProviders, setProvider, generateSpeech };
 }

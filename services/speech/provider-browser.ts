@@ -1,10 +1,11 @@
+import { BrowserTTSSettings } from '@/types/account';
 import { SpeechProvider, SpeechRequest, SpeechResponse, Voice } from '.';
 
 export class BrowserSpeechProvider implements SpeechProvider {
-  id = 'browser';
+  id = 'browser_tts';
   name = 'Browser TTS';
   private synthesis: SpeechSynthesis | null = null;
-  private currentUtterance: SpeechSynthesisUtterance | null = null;
+  
 
   constructor() {
     this.synthesis = typeof window !== 'undefined' ? window.speechSynthesis : null;
@@ -19,17 +20,19 @@ export class BrowserSpeechProvider implements SpeechProvider {
 
       const utterance = new SpeechSynthesisUtterance(request.text);
 
+      const settings = request.options as BrowserTTSSettings;
+
       // Configure utterance
-      if (request.voiceId) {
+      if (settings.voice_id) {
         const voices = this.synthesis.getVoices();
-        const voice = voices.find(v => v.voiceURI === request.voiceId);
+        const voice = voices.find(v => v.voiceURI === settings.voice_id);
         if (voice) utterance.voice = voice;
       }
 
-      utterance.rate = request.options?.rate || 1;
-      utterance.pitch = request.options?.pitch || 1;
-      utterance.volume = request.options?.volume || 1;
-      utterance.lang = request.options?.language || 'en-US';
+      utterance.rate = settings.speed || 1;
+      utterance.pitch = settings.pitch || 1;
+      utterance.volume = settings.volume || 1;
+      utterance.lang = settings.language || 'en-US';
 
       // Create audio blob
       const audioContext = new AudioContext();
@@ -62,7 +65,7 @@ export class BrowserSpeechProvider implements SpeechProvider {
         reject(new Error(`Browser TTS error: ${error.error}`));
       };
 
-      this.currentUtterance = utterance;
+
       this.synthesis.speak(utterance);
     });
   }

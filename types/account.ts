@@ -14,14 +14,12 @@ export interface Account {
 
   // Speech Settings
   speech_provider?: string;
-  speech_voice_id?: string;
-  speech_settings?: SpeechSettings;
 
-  // ElevenLabs
-  elevenlabs_api_key?: string;
+  // TTS
+  browser_tts_settings?: BrowserTTSSettings;
+  elevenlabs_settings?: ElevenLabsSettings;
 
   // AI Settings
-  google_api_key?: string;
   ai_instructions?: string;
   ai_corpus?: string;
 
@@ -42,19 +40,26 @@ export interface PutAccountData {
   primary_diagnosis?: string;
   year_of_diagnosis?: number;
   medical_document_path?: string;
-  elevenlabs_api_key?: string;
-  google_api_key?: string;
   ai_instructions?: string;
   ai_corpus?: string;
   terms_accepted?: boolean;
   privacy_policy_accepted?: boolean;
   speech_provider?: string;
-  speech_voice_id?: string;
-  speech_settings?: SpeechSettings;
+  elevenlabs_settings?: ElevenLabsSettings;
 }
 
-export interface SpeechSettings {
+export interface BrowserTTSSettings {
+  voice_id?: string;
+  speed?: number;
+  pitch?: number;
+  volume?: number;
+  language?: string;
+}
+
+export interface ElevenLabsSettings {
+  api_key?: string;
   model_id?: string;
+  voice_id?: string;
   speed?: number;
   stability?: number;
   similarity?: number;
