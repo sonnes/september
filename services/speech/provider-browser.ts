@@ -1,11 +1,11 @@
 import { BrowserTTSSettings } from '@/types/account';
+
 import { SpeechProvider, SpeechRequest, SpeechResponse, Voice } from '.';
 
 export class BrowserSpeechProvider implements SpeechProvider {
   id = 'browser_tts';
   name = 'Browser TTS';
   private synthesis: SpeechSynthesis | null = null;
-  
 
   constructor() {
     this.synthesis = typeof window !== 'undefined' ? window.speechSynthesis : null;
@@ -34,39 +34,9 @@ export class BrowserSpeechProvider implements SpeechProvider {
       utterance.volume = settings.volume || 1;
       utterance.lang = settings.language || 'en-US';
 
-      // Create audio blob
-      const audioContext = new AudioContext();
-      const mediaStreamDestination = audioContext.createMediaStreamDestination();
-      const mediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
-      const chunks: Blob[] = [];
-
-      mediaRecorder.ondataavailable = event => {
-        chunks.push(event.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        const blob = new Blob(chunks, { type: 'audio/wav' });
-        const base64 = await this.blobToBase64(blob);
-        resolve({
-          blob: base64,
-          duration: audioContext.currentTime,
-        });
-      };
-
-      utterance.onstart = () => {
-        mediaRecorder.start();
-      };
-
-      utterance.onend = () => {
-        mediaRecorder.stop();
-      };
-
-      utterance.onerror = error => {
-        reject(new Error(`Browser TTS error: ${error.error}`));
-      };
-
-
-      this.synthesis.speak(utterance);
+      resolve({
+        utterance,
+      });
     });
   }
 
@@ -80,11 +50,13 @@ export class BrowserSpeechProvider implements SpeechProvider {
       const voices = this.synthesis.getVoices();
       if (voices.length > 0) {
         resolve(
-          voices.map(voice => ({
-            id: voice.voiceURI,
-            name: voice.name,
-            language: voice.lang,
-          }))
+          voices
+            .filter(voice => voice.lang === window.navigator.language)
+            .map(voice => ({
+              id: voice.voiceURI,
+              name: voice.name,
+              language: voice.lang,
+            }))
         );
       }
     });

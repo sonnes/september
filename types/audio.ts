@@ -3,6 +3,7 @@ export interface Audio {
   blob?: string;
   alignment?: Alignment;
   duration?: number;
+  utterance?: SpeechSynthesisUtterance;
 }
 
 export interface Alignment {

@@ -40,23 +40,44 @@ function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
 
   const { load, play, pause, isPlaying } = useAudioPlayerContext();
+  const synthesis = typeof window !== 'undefined' ? window.speechSynthesis : null;
 
   useEffect(() => {
     if (queue.length > 0 && queue[currentIndex]) {
-      const src = `data:audio/mp3;base64,${queue[currentIndex].blob}`;
-      load(src, {
-        autoplay: true,
-        onend: () => {
-          // When the track ends, move to the next one
+      const track = queue[currentIndex];
+
+      if (track.utterance) {
+        track.utterance.onend = () => {
           if (currentIndex < queue.length - 1) {
             setCurrentIndex(idx => idx + 1);
           } else {
-            // Optionally, clear the queue or reset index
             setQueue([]);
             setCurrentIndex(0);
           }
-        },
-      });
+        };
+
+        synthesis?.speak(track.utterance);
+        return;
+      }
+
+      if (track.blob) {
+        const blob = queue[currentIndex].blob;
+
+        const src = blob?.startsWith('data:') ? blob : `data:audio/mp3;base64,${blob}`;
+        load(src, {
+          autoplay: true,
+          onend: () => {
+            // When the track ends, move to the next one
+            if (currentIndex < queue.length - 1) {
+              setCurrentIndex(idx => idx + 1);
+            } else {
+              // Optionally, clear the queue or reset index
+              setQueue([]);
+              setCurrentIndex(0);
+            }
+          },
+        });
+      }
     }
   }, [queue, currentIndex, load]);
 

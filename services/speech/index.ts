@@ -1,5 +1,5 @@
-import { Alignment } from '@/types/audio';
 import { BrowserTTSSettings, ElevenLabsSettings } from '@/types/account';
+import { Alignment } from '@/types/audio';
 
 export interface SpeechProvider {
   id: string;
@@ -8,7 +8,7 @@ export interface SpeechProvider {
   getVoices(): Promise<Voice[]>;
 }
 
-export interface SpeechRequest{
+export interface SpeechRequest {
   text: string;
   options?: SpeechOptions;
 }
@@ -16,9 +16,9 @@ export interface SpeechRequest{
 export type SpeechOptions = ElevenLabsSettings | BrowserTTSSettings;
 
 export interface SpeechResponse {
-  blob: string;
+  utterance?: SpeechSynthesisUtterance;
+  blob?: string;
   alignment?: Alignment;
-  duration?: number;
 }
 
 export interface Voice {

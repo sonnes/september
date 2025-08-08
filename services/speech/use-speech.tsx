@@ -17,12 +17,15 @@ const providers = new Map<string, SpeechProvider>([
 export function useSpeech() {
   const { account } = useAccountContext();
 
-  const getSettings = useCallback((providerId: string) => {
-    if (providerId === 'browser_tts') {
-      return account.browser_tts_settings;
-    }
-    return account.elevenlabs_settings;
-  }, [account]);
+  const getSettings = useCallback(
+    (providerId: string) => {
+      if (providerId === 'browser_tts') {
+        return account.browser_tts_settings;
+      }
+      return account.elevenlabs_settings;
+    },
+    [account]
+  );
 
   const [engine, setEngine] = useState<SpeechProvider>(browser);
 
@@ -46,10 +49,13 @@ export function useSpeech() {
     setEngine(providers.get(providerId) || browser);
   }, []);
 
-  const generateSpeech = useCallback((text: string, options: SpeechOptions) => {
-    const settings = getSettings(engine.id);
-    return engine.generateSpeech({ text, options: { ...settings, ...options } });
-  }, [engine, getSettings]);
+  const generateSpeech = useCallback(
+    (text: string, options?: SpeechOptions) => {
+      const settings = getSettings(engine.id);
+      return engine.generateSpeech({ text, options: { ...settings, ...options } });
+    },
+    [engine, getSettings]
+  );
 
   const getVoices = useCallback(() => {
     return engine.getVoices();

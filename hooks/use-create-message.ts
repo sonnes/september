@@ -5,9 +5,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { useAccountContext } from '@/components/context/account-provider';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import MessagesService from '@/services/messages';
+import { useSpeech } from '@/services/speech/use-speech';
 import supabase from '@/supabase/client';
 
-import { useCreateSpeech } from './use-create-speech';
 import { useToast } from './use-toast';
 
 export function useCreateMessage() {
@@ -15,37 +15,39 @@ export function useCreateMessage() {
 
   const { account } = useAccountContext();
   const { showError } = useToast();
-  const { createSpeech } = useCreateSpeech();
+  const { generateSpeech } = useSpeech();
   const { enqueue } = useAudioPlayer();
 
   const messagesService = new MessagesService(supabase);
 
-  const createMessage = async ({ text, voice_id }: { text: string; voice_id?: string }) => {
+  const createMessage = async ({ text }: { text: string }) => {
     setStatus('loading');
     try {
-      const { blob, alignment } = await createSpeech({ text, voice_id });
+      const audio = await generateSpeech(text);
 
-      enqueue({ blob, alignment });
+      enqueue(audio);
 
       const id = uuidv4();
       const audioPath = `${id}.mp3`;
 
       const [_, createResponse] = await Promise.all([
-        messagesService.uploadAudio({
-          path: audioPath,
-          blob,
-          alignment,
-        }),
+        audio.blob
+          ? messagesService.uploadAudio({
+              path: audioPath,
+              blob: audio.blob,
+              alignment: audio.alignment,
+            })
+          : Promise.resolve(null),
         messagesService.createMessage({
           id,
           text,
           type: 'speech',
           user_id: account.id,
-          audio_path: audioPath,
+          audio_path: audio.blob ? audioPath : undefined,
         }),
       ]);
 
-      return { message: createResponse, audio: { blob, alignment } };
+      return { message: createResponse, audio };
     } catch (error) {
       // Handle network errors or other exceptions
       if (error instanceof Error) {

@@ -29,6 +29,7 @@ export default function Suggestions({ className = '', timeout = 2000 }: Suggesti
     setIsLoading(true);
 
     try {
+      return;
       const response = await fetch('/api/suggestions', {
         method: 'POST',
         headers: {
