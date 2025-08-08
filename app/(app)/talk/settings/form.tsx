@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from 'react';
 
-import { Input } from '@headlessui/react';
 import { PlayIcon } from '@heroicons/react/24/outline';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Control, Controller, UseFormSetValue, UseFormWatch, useForm } from 'react-hook-form';
+import { Control, UseFormSetValue, UseFormWatch, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { useAccountContext } from '@/components/context/account-provider';
 import { Button } from '@/components/ui/button';
-import { Dropdown, DropdownOption } from '@/components/ui/dropdown';
+import { FormCheckbox, FormDropdown, FormInput, FormRangeWithLabels } from '@/components/ui/form';
+import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useToast } from '@/hooks/use-toast';
 import { Voice } from '@/services/speech';
 import { SpeechProvider, useSpeechContext } from '@/services/speech/context';
@@ -52,7 +52,7 @@ function ProviderSection({ control }: SectionProps) {
   const providers = getProviders();
 
   // Convert providers to dropdown options
-  const providerOptions: DropdownOption[] = providers.map(provider => ({
+  const providerOptions = providers.map(provider => ({
     id: provider.id,
     name: provider.name,
   }));
@@ -70,22 +70,16 @@ function ProviderSection({ control }: SectionProps) {
         <div className="max-w-2xl space-y-4">
           <div className="rounded-md bg-gray-50 p-4">
             <div className="space-y-4">
-              <Controller
+              <FormDropdown
                 name="speech_provider"
                 control={control}
-                render={({ field, fieldState }) => (
-                  <Dropdown
-                    options={providerOptions}
-                    selectedValue={field.value || ''}
-                    onSelect={providerId => {
-                      const provider = providers.find(p => p.id === providerId);
-                      field.onChange(provider?.id || providerId);
-                      setProvider(providerId);
-                    }}
-                    placeholder="Select a provider"
-                    label="Speech Provider"
-                  />
-                )}
+                label="Speech Provider"
+                required
+                placeholder="Select a provider"
+                options={providerOptions}
+                onSelect={providerId => {
+                  setProvider(providerId);
+                }}
               />
             </div>
           </div>
@@ -97,6 +91,7 @@ function ProviderSection({ control }: SectionProps) {
 
 function VoiceSection({ control, watch, setValue }: SectionProps) {
   const { getVoices, generateSpeech } = useSpeechContext();
+  const { enqueue } = useAudioPlayer();
   const [voices, setVoices] = useState<Voice[]>([]);
   const [loading, setLoading] = useState(true);
   const speechProvider = watch('speech_provider');
@@ -117,7 +112,6 @@ function VoiceSection({ control, watch, setValue }: SectionProps) {
   }, [speechProvider, getVoices]);
 
   const onSelectVoice = (voiceId: string) => {
-    setValue('speech_voice_id', voiceId);
     if (speechProvider === 'elevenlabs') {
       setValue('elevenlabs_settings.voice_id', voiceId);
     } else if (speechProvider === 'browser_tts') {
@@ -128,18 +122,11 @@ function VoiceSection({ control, watch, setValue }: SectionProps) {
   const onPlayPreview = async (voiceId: string) => {
     try {
       const sampleText = 'Hello, this is a preview of my voice.';
-      const response = await generateSpeech(sampleText, {
+      const audio = await generateSpeech(sampleText, {
         voice_id: voiceId,
       });
 
-      const audioBlob = await fetch(response.blob).then(r => r.blob());
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
-      audio.play();
-
-      audio.onended = () => {
-        URL.revokeObjectURL(audioUrl);
-      };
+      enqueue(audio);
     } catch (error) {
       console.error('Error playing voice preview:', error);
     }
@@ -185,25 +172,24 @@ function VoiceSection({ control, watch, setValue }: SectionProps) {
                       >
                         <PlayIcon className="h-5 w-5" />
                       </button>
-                      <Controller
-                        name="speech_voice_id"
-                        control={control}
-                        render={({ field }) => (
-                          <>
-                            {(field.value || '') !== voice.id ? (
-                              <button
-                                type="button"
-                                onClick={() => onSelectVoice(voice.id)}
-                                className="rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                              >
-                                Use
-                              </button>
-                            ) : (
-                              <div className="p-2 text-green-600 text-sm font-medium">Selected</div>
-                            )}
-                          </>
-                        )}
-                      />
+                      {(() => {
+                        const currentVoiceId =
+                          speechProvider === 'elevenlabs'
+                            ? watch('elevenlabs_settings.voice_id')
+                            : watch('browser_tts_settings.voice_id');
+
+                        return currentVoiceId !== voice.id ? (
+                          <button
+                            type="button"
+                            onClick={() => onSelectVoice(voice.id)}
+                            className="rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                          >
+                            Use
+                          </button>
+                        ) : (
+                          <div className="p-2 text-green-600 text-sm font-medium">Selected</div>
+                        );
+                      })()}
                     </div>
                   </li>
                 ))}
@@ -241,180 +227,83 @@ function ElevenLabsSettingsSection({ control }: SectionProps) {
           <div className="rounded-md bg-gray-50 p-4">
             <div className="space-y-6">
               {/* API Key */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-900 mb-3">API Key</h3>
-                <Controller
-                  name="elevenlabs_settings.api_key"
-                  control={control}
-                  render={({ field }) => (
-                    <input
-                      type="password"
-                      value={field.value || ''}
-                      onChange={e => field.onChange(e.target.value)}
-                      placeholder="Enter your ElevenLabs API key"
-                      className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
-                    />
-                  )}
-                />
-              </div>
+              <FormInput
+                name="elevenlabs_settings.api_key"
+                control={control}
+                label="API Key"
+                type="password"
+                required
+                placeholder="Enter your ElevenLabs API key"
+              />
 
               {/* Model Selection */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Model</h3>
-                <Controller
-                  name="elevenlabs_settings.model_id"
-                  control={control}
-                  render={({ field }) => (
-                    <Dropdown
-                      options={MODELS.map(model => ({ id: model.id, name: model.name }))}
-                      selectedValue={field.value || ''}
-                      onSelect={field.onChange}
-                      placeholder="Select a model"
-                    />
-                  )}
-                />
-              </div>
+              <FormDropdown
+                name="elevenlabs_settings.model_id"
+                control={control}
+                label="Model"
+                options={MODELS}
+                placeholder="Select a model"
+              />
 
               {/* Speed Control */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Speed</h3>
-                <Controller
-                  name="elevenlabs_settings.speed"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm text-gray-500">
-                        <span>Slower</span>
-                        <span>Faster</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0.7"
-                        max="1.2"
-                        step="0.1"
-                        value={field.value || 1.0}
-                        onChange={e => field.onChange(parseFloat(e.target.value))}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <div className="text-center text-sm text-gray-600">{field.value || 1.0}x</div>
-                    </div>
-                  )}
-                />
-              </div>
+              <FormRangeWithLabels
+                name="elevenlabs_settings.speed"
+                control={control}
+                label="Speed"
+                leftLabel="Slower"
+                rightLabel="Faster"
+                min={0.7}
+                max={1.2}
+                step={0.1}
+                valueFormatter={value => `${value}x`}
+              />
 
               {/* Stability Control */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Stability</h3>
-                <Controller
-                  name="elevenlabs_settings.stability"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm text-gray-500">
-                        <span>More variable</span>
-                        <span>More stable</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={field.value || 0.5}
-                        onChange={e => field.onChange(parseFloat(e.target.value))}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <div className="text-center text-sm text-gray-600">
-                        {Math.round((field.value || 0.5) * 100)}%
-                      </div>
-                    </div>
-                  )}
-                />
-              </div>
+              <FormRangeWithLabels
+                name="elevenlabs_settings.stability"
+                control={control}
+                label="Stability"
+                leftLabel="More variable"
+                rightLabel="More stable"
+                min={0}
+                max={1}
+                step={0.05}
+                valueFormatter={value => `${Math.round(value * 100)}%`}
+              />
 
               {/* Similarity Control */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Similarity</h3>
-                <Controller
-                  name="elevenlabs_settings.similarity"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm text-gray-500">
-                        <span>Low</span>
-                        <span>High</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={field.value || 0.5}
-                        onChange={e => field.onChange(parseFloat(e.target.value))}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <div className="text-center text-sm text-gray-600">
-                        {Math.round((field.value || 0.5) * 100)}%
-                      </div>
-                    </div>
-                  )}
-                />
-              </div>
+              <FormRangeWithLabels
+                name="elevenlabs_settings.similarity"
+                control={control}
+                label="Similarity"
+                leftLabel="Low"
+                rightLabel="High"
+                min={0}
+                max={1}
+                step={0.05}
+                valueFormatter={value => `${Math.round(value * 100)}%`}
+              />
 
               {/* Style Exaggeration Control */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Style Exaggeration</h3>
-                <Controller
-                  name="elevenlabs_settings.style"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm text-gray-500">
-                        <span>None</span>
-                        <span>Exaggerated</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={field.value || 0.0}
-                        onChange={e => field.onChange(parseFloat(e.target.value))}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <div className="text-center text-sm text-gray-600">
-                        {Math.round((field.value || 0.0) * 100)}%
-                      </div>
-                    </div>
-                  )}
-                />
-              </div>
+              <FormRangeWithLabels
+                name="elevenlabs_settings.style"
+                control={control}
+                label="Style Exaggeration"
+                leftLabel="None"
+                rightLabel="Exaggerated"
+                min={0}
+                max={1}
+                step={0.05}
+                valueFormatter={value => `${Math.round(value * 100)}%`}
+              />
 
               {/* Speaker Boost Toggle */}
-              <div className="flex items-center justify-between pt-2">
-                <label htmlFor="speakerBoost" className="text-sm font-medium text-gray-900">
-                  Speaker boost
-                </label>
-                <Controller
-                  name="elevenlabs_settings.speaker_boost"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200">
-                      <input
-                        type="checkbox"
-                        id="speakerBoost"
-                        checked={field.value || false}
-                        onChange={e => field.onChange(e.target.checked)}
-                        className="peer sr-only"
-                      />
-                      <span
-                        className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-all ${
-                          field.value || false ? 'translate-x-5 bg-indigo-600' : ''
-                        }`}
-                      ></span>
-                    </div>
-                  )}
-                />
-              </div>
+              <FormCheckbox
+                name="elevenlabs_settings.speaker_boost"
+                control={control}
+                label="Speaker boost"
+                description="Enhance speaker clarity and reduce background noise"
+              />
             </div>
           </div>
         </div>
@@ -438,87 +327,43 @@ function BrowserTTSSettingsSection({ control }: SectionProps) {
           <div className="rounded-md bg-gray-50 p-4">
             <div className="space-y-6">
               {/* Speed Control */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Speed</h3>
-                <Controller
-                  name="browser_tts_settings.speed"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm text-gray-500">
-                        <span>Slower</span>
-                        <span>Faster</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0.5"
-                        max="2.0"
-                        step="0.1"
-                        value={field.value || 1.0}
-                        onChange={e => field.onChange(parseFloat(e.target.value))}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <div className="text-center text-sm text-gray-600">{field.value || 1.0}x</div>
-                    </div>
-                  )}
-                />
-              </div>
+              <FormRangeWithLabels
+                name="browser_tts_settings.speed"
+                control={control}
+                label="Speed"
+                leftLabel="Slower"
+                rightLabel="Faster"
+                min={0.5}
+                max={2.0}
+                step={0.1}
+                valueFormatter={value => `${value}x`}
+              />
 
               {/* Pitch Control */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Pitch</h3>
-                <Controller
-                  name="browser_tts_settings.pitch"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm text-gray-500">
-                        <span>Lower</span>
-                        <span>Higher</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="-20"
-                        max="20"
-                        step="1"
-                        value={field.value || 0}
-                        onChange={e => field.onChange(parseFloat(e.target.value))}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <div className="text-center text-sm text-gray-600">{field.value || 0}</div>
-                    </div>
-                  )}
-                />
-              </div>
+              <FormRangeWithLabels
+                name="browser_tts_settings.pitch"
+                control={control}
+                label="Pitch"
+                leftLabel="Lower"
+                rightLabel="Higher"
+                min={-20}
+                max={20}
+                step={1}
+                valueFormatter={value => value.toString()}
+              />
 
               {/* Volume Control */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Volume</h3>
-                <Controller
-                  name="browser_tts_settings.volume"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm text-gray-500">
-                        <span>Quieter</span>
-                        <span>Louder</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.1"
-                        value={field.value || 1}
-                        onChange={e => field.onChange(parseFloat(e.target.value))}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <div className="text-center text-sm text-gray-600">
-                        {Math.round((field.value || 1) * 100)}%
-                      </div>
-                    </div>
-                  )}
-                />
-              </div>
+              <FormRangeWithLabels
+                name="browser_tts_settings.volume"
+                control={control}
+                label="Volume"
+                leftLabel="Quieter"
+                rightLabel="Louder"
+                min={0}
+                max={1}
+                step={0.1}
+                valueFormatter={value => `${Math.round(value * 100)}%`}
+              />
             </div>
           </div>
         </div>
@@ -535,8 +380,6 @@ export function TalkSettingsForm() {
   // Create default values that ensure all fields are controlled from the start
   const getDefaultValues = (): TalkSettingsFormData => ({
     speech_provider: account?.speech_provider || 'browser_tts',
-    speech_voice_id:
-      account?.elevenlabs_settings?.voice_id || account?.browser_tts_settings?.voice_id || '',
     elevenlabs_settings: {
       api_key: account?.elevenlabs_settings?.api_key || '',
       model_id: account?.elevenlabs_settings?.model_id || 'eleven_multilingual_v2',
@@ -583,12 +426,16 @@ export function TalkSettingsForm() {
     try {
       const settings = {
         speech_provider: data.speech_provider,
-        elevenlabs_settings: data.speech_provider === 'elevenlabs' ? data.elevenlabs_settings : {},
+        elevenlabs_settings:
+          data.speech_provider === 'elevenlabs'
+            ? data.elevenlabs_settings
+            : account.elevenlabs_settings,
         browser_tts_settings:
-          data.speech_provider === 'browser_tts' ? data.browser_tts_settings : {},
+          data.speech_provider === 'browser_tts'
+            ? data.browser_tts_settings
+            : account.browser_tts_settings,
       };
 
-      console.log('settings', settings);
       await patchAccount(settings);
 
       show({
@@ -621,8 +468,12 @@ export function TalkSettingsForm() {
           <ProviderSection control={control} watch={watch} setValue={setValue} />
           <VoiceSection control={control} watch={watch} setValue={setValue} />
 
-          {speechProvider === 'elevenlabs' && <ElevenLabsSettingsSection control={control} />}
-          {speechProvider === 'browser_tts' && <BrowserTTSSettingsSection control={control} />}
+          {speechProvider === 'elevenlabs' && (
+            <ElevenLabsSettingsSection control={control} watch={watch} setValue={setValue} />
+          )}
+          {speechProvider === 'browser_tts' && (
+            <BrowserTTSSettingsSection control={control} watch={watch} setValue={setValue} />
+          )}
 
           {/* Floating save button */}
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">

@@ -4,6 +4,7 @@ import { AccountProvider } from '@/components/context/account-provider';
 import Layout from '@/components/layout';
 import Navbar from '@/components/nav';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
+import { AudioPlayerProvider } from '@/hooks/use-audio-player';
 import AccountsService from '@/services/accounts';
 import { createClient } from '@/supabase/server';
 
@@ -42,7 +43,9 @@ export default async function TalkSettingsPage() {
           </div>
         </Layout.Header>
         <Layout.Content>
-          <TalkSettingsForm />
+          <AudioPlayerProvider>
+            <TalkSettingsForm />
+          </AudioPlayerProvider>
         </Layout.Content>
       </Layout>
     </AccountProvider>

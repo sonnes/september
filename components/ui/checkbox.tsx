@@ -2,12 +2,10 @@ import React from 'react';
 
 interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
   id: string;
-  label: string;
-  description?: string;
   indeterminate?: boolean;
 }
 
-export function Checkbox({ id, label, description, indeterminate, ...props }: CheckboxProps) {
+export function Checkbox({ id, indeterminate, ...props }: CheckboxProps) {
   // For indeterminate state
   const ref = React.useRef<HTMLInputElement>(null);
   React.useEffect(() => {
@@ -50,18 +48,8 @@ export function Checkbox({ id, label, description, indeterminate, ...props }: Ch
           </svg>
         </div>
       </div>
-      <div className="text-sm/6">
-        <label htmlFor={id} className="font-medium text-gray-900">
-          {label}
-        </label>
-        {description && (
-          <p id={`${id}-description`} className="text-gray-500">
-            {description}
-          </p>
-        )}
-      </div>
     </div>
   );
 }
 // Usage:
-// <Checkbox id="comments" label="Comments" description="Get notified when someone posts a comment." />
+// <Checkbox id="comments" />

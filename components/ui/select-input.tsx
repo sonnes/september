@@ -1,27 +1,66 @@
+/**
+ * @deprecated This component has been deprecated. Use the Dropdown component instead.
+ *
+ * The Dropdown component provides better functionality with:
+ * - Better accessibility
+ * - Custom styling
+ * - Keyboard navigation
+ * - Search functionality
+ *
+ * Migration guide:
+ *
+ * OLD:
+ * ```tsx
+ * import { SelectInput } from '@/components/ui/select-input';
+ *
+ * <SelectInput
+ *   id="country"
+ *   options={[{ value: 'us', label: 'United States' }]}
+ * />
+ * ```
+ *
+ * NEW:
+ * ```tsx
+ * import { Dropdown } from '@/components/ui/dropdown';
+ *
+ * <Dropdown
+ *   options={[{ id: 'us', name: 'United States' }]}
+ *   selectedValue={selectedCountry}
+ *   onSelect={setSelectedCountry}
+ *   placeholder="Select a country"
+ * />
+ * ```
+ *
+ * For form integration, use FormDropdown from '@/components/ui/form':
+ * ```tsx
+ * import { FormDropdown } from '@/components/ui/form';
+ *
+ * <FormDropdown
+ *   name="country"
+ *   control={form.control}
+ *   label="Country"
+ *   options={[{ id: 'us', name: 'United States' }]}
+ * />
+ * ```
+ */
 import React from 'react';
 
 import { ChevronDownIcon } from '@heroicons/react/16/solid';
 
 interface SelectInputProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  label: string;
   id: string;
   options: { value: string; label: string }[];
   containerClassName?: string;
 }
 
-export function SelectInput({
-  label,
-  id,
-  options,
-  containerClassName = '',
-  ...props
-}: SelectInputProps) {
+export function SelectInput({ id, options, containerClassName = '', ...props }: SelectInputProps) {
+  console.warn(
+    'SelectInput component is deprecated. Use Dropdown or FormDropdown component instead. See the deprecation notice above for migration guide.'
+  );
+
   return (
     <div className={containerClassName}>
-      <label htmlFor={id} className="block text-sm/6 font-medium text-gray-900">
-        {label}
-      </label>
-      <div className="mt-2 grid grid-cols-1">
+      <div className="grid grid-cols-1">
         <select
           id={id}
           name={id}
@@ -42,5 +81,6 @@ export function SelectInput({
     </div>
   );
 }
+
 // Usage:
-// <SelectInput label="Country" id="country" options={[{value: 'us', label: 'United States'}]} />
+// <SelectInput id="country" options={[{value: 'us', label: 'United States'}]} />
