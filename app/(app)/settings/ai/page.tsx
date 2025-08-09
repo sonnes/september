@@ -6,9 +6,9 @@ import Navbar, { SettingsTabs } from '@/components/nav';
 import AccountsService from '@/services/accounts';
 import { createClient } from '@/supabase/server';
 
-import { AccountForm } from './form';
+import { AISettingsForm } from './form';
 
-export default async function AccountPage() {
+export default async function AISettingsPage() {
   const supabase = await createClient();
   const accountsService = new AccountsService(supabase);
 
@@ -27,10 +27,10 @@ export default async function AccountPage() {
       <Layout>
         <Layout.Header>
           <Navbar user={user} current="/settings" />
-          <SettingsTabs current="/account" />
+          <SettingsTabs current="/settings/ai" />
         </Layout.Header>
         <Layout.Content>
-          <AccountForm />
+          <AISettingsForm />
         </Layout.Content>
       </Layout>
     </AccountProvider>

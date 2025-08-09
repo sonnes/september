@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils';
 import DesktopNav from './desktop-nav';
 import MobileNav from './mobile-nav';
 
+export { SettingsTabs } from './settings-tabs';
+
 type NavigationItem = {
   name: string;
   href: string;
@@ -24,6 +26,7 @@ type NavbarProps = {
 const defaultItems = [
   { name: 'Talk', href: '/talk' },
   { name: 'Stories', href: '/stories' },
+  { name: 'Settings', href: '/settings' },
 ];
 
 export default function Navbar({

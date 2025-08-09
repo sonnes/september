@@ -27,7 +27,7 @@ Layout.Content = ({ children }: PropsWithChildren) => {
   return (
     <main className="-mt-32 flex-1">
       <div className="mx-auto max-w-7xl px-2 md:px-8">
-        <div className="rounded-lg bg-white px-5 py-6 shadow-sm sm:px-6">{children}</div>
+        <div className="rounded-lg bg-white p-2 md:p-6">{children}</div>
       </div>
     </main>
   );

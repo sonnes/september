@@ -459,8 +459,6 @@ export function TalkSettingsForm() {
     );
   }
 
-  console.log('errors', errors);
-
   return (
     <SpeechProvider>
       <div className="divide-y divide-gray-400">
