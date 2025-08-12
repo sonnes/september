@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Autocomplete Library Demo</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .demo-section {
+        margin-bottom: 30px;
+        padding: 20px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: #fafafa;
+      }
+
+      .demo-section h3 {
+        margin-top: 0;
+        color: #555;
+      }
+
+      .input-group {
+        margin-bottom: 15px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #333;
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        font-size: 16px;
+        transition: border-color 0.2s;
+      }
+
+      input:focus,
+      textarea:focus {
+        outline: none;
+        border-color: #007bff;
+      }
+
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.2s;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      button:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+      }
+
+      .results {
+        margin-top: 15px;
+        padding: 15px;
+        background-color: #e9ecef;
+        border-radius: 6px;
+        min-height: 20px;
+      }
+
+      .result-item {
+        display: inline-block;
+        background-color: #007bff;
+        color: white;
+        padding: 5px 10px;
+        margin: 2px;
+        border-radius: 15px;
+        font-size: 14px;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+      }
+
+      .stat-card {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 6px;
+        text-align: center;
+        border: 1px solid #dee2e6;
+      }
+
+      .stat-number {
+        font-size: 24px;
+        font-weight: bold;
+        color: #007bff;
+      }
+
+      .stat-label {
+        color: #6c757d;
+        font-size: 14px;
+        margin-top: 5px;
+      }
+
+      .error {
+        color: #dc3545;
+        background-color: #f8d7da;
+        padding: 10px;
+        border-radius: 6px;
+        margin-top: 10px;
+      }
+
+      .success {
+        color: #155724;
+        background-color: #d4edda;
+        padding: 10px;
+        border-radius: 6px;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🚀 Autocomplete Library Demo</h1>
+
+      <div class="demo-section">
+        <h3>📚 Training</h3>
+        <div class="input-group">
+          <label for="corpus">Training Corpus:</label>
+          <textarea id="corpus" rows="8" placeholder="Enter your training text here...">
+I want to eat a sandwich.
+I want to eat a burger.
+I want to eat a pizza.
+I want to eat a sandwich for lunch.
+I want to eat a pizza for lunch.
+I want to drink a coffee.
+Coffee is good for health.
+Coffee is good for the heart.
+Coffee is good for the brain.
+Coffee is good for the body.
+Coffee is good for the soul.
+Coffee is good for the spirit.
+Coffee is good for the mind.
+Sometimes coffee is hot.
+Sometimes coffee is cold.
+Sometimes coffee is sweet.
+Sometimes coffee is bitter.
+Sometimes coffee is acidic.
+Peanuts, pasta, peanut butter</textarea
+          >
+        </div>
+        <button onclick="trainService()">Train Service</button>
+        <div id="trainingStatus"></div>
+      </div>
+
+      <div class="demo-section">
+        <h3>🔍 Word Completions</h3>
+        <div class="input-group">
+          <label for="completionInput">Input prefix:</label>
+          <input
+            type="text"
+            id="completionInput"
+            placeholder="Enter a prefix (e.g., 'p', 'co')"
+            oninput="getCompletions()"
+          />
+        </div>
+        <div id="completionResults" class="results"></div>
+      </div>
+
+      <div class="demo-section">
+        <h3>📝 Next Word Prediction</h3>
+        <div class="input-group">
+          <label for="nextWordInput">Text sequence:</label>
+          <input
+            type="text"
+            id="nextWordInput"
+            placeholder="Enter a sequence (e.g., 'I want to eat a')"
+            oninput="getNextWord()"
+          />
+        </div>
+        <div id="nextWordResults" class="results"></div>
+      </div>
+
+      <div class="demo-section">
+        <h3>💬 Next Phrase Prediction</h3>
+        <div class="input-group">
+          <label for="nextPhraseInput">Text sequence:</label>
+          <input
+            type="text"
+            id="nextPhraseInput"
+            placeholder="Enter a sequence (e.g., 'Coffee is good for')"
+            oninput="getNextPhrase()"
+          />
+        </div>
+        <div id="nextPhraseResults" class="results"></div>
+      </div>
+
+      <div class="demo-section">
+        <h3>📊 Statistics</h3>
+        <button onclick="showStats()">Show Statistics</button>
+        <div id="statsResults" class="results"></div>
+      </div>
+    </div>
+
+    <script type="module">
+      // Import the autocomplete library
+      import { BrowserAutocomplete } from './autocomplete.browser.js';
+
+      let autocompleteService = null;
+
+      // Initialize the service
+      function initService() {
+        autocompleteService = new BrowserAutocomplete({
+          maxSuggestions: 10,
+          minWordLength: 2,
+          caseSensitive: false,
+          enablePhrases: true,
+        });
+      }
+
+      // Train the service
+      window.trainService = function () {
+        try {
+          const corpus = document.getElementById('corpus').value;
+          if (!corpus.trim()) {
+            showMessage('trainingStatus', 'Please enter some training text.', 'error');
+            return;
+          }
+
+          if (!autocompleteService) {
+            initService();
+          }
+
+          autocompleteService.train(corpus);
+          showMessage('trainingStatus', '✅ Service trained successfully!', 'success');
+
+          // Enable inputs
+          document.getElementById('completionInput').disabled = false;
+          document.getElementById('nextWordInput').disabled = false;
+          document.getElementById('nextPhraseInput').disabled = false;
+        } catch (error) {
+          showMessage('trainingStatus', `❌ Error: ${error.message}`, 'error');
+        }
+      };
+
+      // Get completions
+      window.getCompletions = function () {
+        if (!autocompleteService || !autocompleteService.isReady()) {
+          document.getElementById('completionResults').innerHTML =
+            'Please train the service first.';
+          return;
+        }
+
+        try {
+          const input = document.getElementById('completionInput').value;
+          const completions = autocompleteService.getCompletions(input);
+          displayResults('completionResults', completions);
+        } catch (error) {
+          showMessage('completionResults', `❌ Error: ${error.message}`, 'error');
+        }
+      };
+
+      // Get next word
+      window.getNextWord = function () {
+        if (!autocompleteService || !autocompleteService.isReady()) {
+          document.getElementById('nextWordResults').innerHTML = 'Please train the service first.';
+          return;
+        }
+
+        try {
+          const input = document.getElementById('nextWordInput').value;
+          const nextWords = autocompleteService.getNextWord(input);
+          displayResults('nextWordResults', nextWords);
+        } catch (error) {
+          showMessage('nextWordResults', `❌ Error: ${error.message}`, 'error');
+        }
+      };
+
+      // Get next phrase
+      window.getNextPhrase = function () {
+        if (!autocompleteService || !autocompleteService.isReady()) {
+          document.getElementById('nextPhraseResults').innerHTML =
+            'Please train the service first.';
+          return;
+        }
+
+        try {
+          const input = document.getElementById('nextPhraseInput').value;
+          const nextPhrases = autocompleteService.getNextPhrase(input);
+          displayResults('nextPhraseResults', nextPhrases);
+        } catch (error) {
+          showMessage('nextPhraseResults', `❌ Error: ${error.message}`, 'error');
+        }
+      };
+
+      // Show statistics
+      window.showStats = function () {
+        if (!autocompleteService || !autocompleteService.isReady()) {
+          document.getElementById('statsResults').innerHTML = 'Please train the service first.';
+          return;
+        }
+
+        try {
+          const stats = autocompleteService.getStats();
+          const statsHtml = `
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.totalWords}</div>
+                            <div class="stat-label">Total Words</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.totalPhrases}</div>
+                            <div class="stat-label">Total Phrases</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.totalNGrams}</div>
+                            <div class="stat-label">Total N-Grams</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.averageWordFrequency.toFixed(2)}</div>
+                            <div class="stat-label">Avg Word Frequency</div>
+                        </div>
+                    </div>
+                `;
+          document.getElementById('statsResults').innerHTML = statsHtml;
+        } catch (error) {
+          showMessage('statsResults', `❌ Error: ${error.message}`, 'error');
+        }
+      };
+
+      // Display results
+      function displayResults(elementId, results) {
+        const element = document.getElementById(elementId);
+        if (results.length === 0) {
+          element.innerHTML = '<em>No results found.</em>';
+          return;
+        }
+
+        const resultsHtml = results
+          .map(result => `<span class="result-item">${result}</span>`)
+          .join('');
+        element.innerHTML = resultsHtml;
+      }
+
+      // Show message
+      function showMessage(elementId, message, type) {
+        const element = document.getElementById(elementId);
+        element.innerHTML = `<div class="${type}">${message}</div>`;
+      }
+
+      // Initialize
+      initService();
+
+      // Disable inputs initially
+      document.getElementById('completionInput').disabled = true;
+      document.getElementById('nextWordInput').disabled = true;
+      document.getElementById('nextPhraseInput').disabled = true;
+    </script>
+  </body>
+</html>
