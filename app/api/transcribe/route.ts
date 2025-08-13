@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { transcribeAudio } from '@/services/gemini';
+import GeminiService from '@/services/gemini';
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const gemini = new GeminiService(GEMINI_API_KEY || '');
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,7 +14,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Audio file is required' }, { status: 400 });
     }
 
-    const result = await transcribeAudio({ audio });
+    const result = await gemini.transcribeAudio({ audio });
 
     return NextResponse.json(result);
   } catch (error) {

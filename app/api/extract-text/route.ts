@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { extractDeck } from '@/services/gemini';
+import GeminiService from '@/services/gemini';
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const gemini = new GeminiService(GEMINI_API_KEY || '');
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
@@ -18,7 +21,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await extractDeck({ images: files });
+    const result = await gemini.extractDeck({ images: files });
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to extract text from images' }, { status: 400 });

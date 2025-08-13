@@ -4,9 +4,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { PartialCard } from '@/types/deck';
 import { Message } from '@/types/message';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-export const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-
 const STORY_PROMPT = `You are a storyteller.
 
 Extract all readable text from all images. Break down the text into smaller chunks for narration. Each chunk can be 4-5 sentences.
@@ -29,9 +26,9 @@ Example output:
 }
 `;
 
-const SUGGESTIONS_PROMPT = `You're a communication assistant for USER_A. USER_A is having a conversation with USER_B. You take the previous messages and predict the most likely next message for USER_A.
+const SUGGESTIONS_PROMPT = `You're a communication assistant for USER_A. USER_A is having a conversation with USER_B. You take the previous messages and complete the sentence USER_A is writing. 
 
-These are the instructions from USER_A:
+Use the following instructions from USER_A to generate the sentence:
 {USER_INSTRUCTIONS}
 
 You must return completions and predictions in this exact JSON format:
@@ -46,10 +43,9 @@ You must return completions and predictions in this exact JSON format:
 Follow these rules:
 - Generate new, short concise replies based on context. Keep the replies varied.
 - Don't repeat the similar replies
-- Return at least 3 replies, maximum 10 replies
-- Replies should fully complete the USER_A's sentence
+- Replies should fully complete the USER_A's sentence. If USER_A is not writing, you should generate a new sentence.
 - Use spellings, idioms, and slang of USER_A's language
-- Use emojis 
+- Use emojis if appropriate
 - Return only the JSON, no other text
 `;
 
@@ -85,139 +81,134 @@ export interface TranscriptionResponse {
   text: string;
 }
 
-export async function extractDeck({ images }: ExtractDeckParams): Promise<ExtractDeckResponse> {
-  if (!GEMINI_API_KEY) {
-    console.warn('Gemini API key not configured');
-    throw new Error('Gemini API key not configured');
+class GeminiService {
+  readonly ai: GoogleGenAI;
+
+  constructor(apiKey: string) {
+    this.ai = new GoogleGenAI({ apiKey });
   }
 
-  const contents: Content[] = [];
-
-  for (let i = 0; i < images.length; i++) {
-    const image = images[i];
-    const arrayBuffer = await image.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString('base64');
-    const mimeType = image.type || 'image/jpeg';
-
-    contents.push({
-      parts: [{ inlineData: { mimeType, data: base64 } }],
-    });
-  }
-
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents,
-      config: {
-        systemInstruction: STORY_PROMPT,
-        responseMimeType: 'application/json',
-      },
-    });
-
-    const { name, chunks } = JSON.parse(response.text?.trim() || '{}');
-
-    const cards: PartialCard[] = chunks.map((chunk: string, index: number) => ({
-      id: uuidv4(),
-      text: chunk,
-      rank: index,
-      created_at: new Date(),
+  async generateSuggestions({
+    instructions,
+    text,
+    messages,
+  }: {
+    instructions: string;
+    text: string;
+    messages: Partial<Message>[];
+  }): Promise<SuggestionResponse> {
+    const previousMessages = messages.reverse().map(m => ({
+      role: 'user',
+      parts: [{ text: `${m.type === 'transcription' ? 'USER_B' : 'USER_A'}: ${m.text}` }],
     }));
 
-    return { id: uuidv4(), cards, name };
-  } catch (err) {
-    console.error('Gemini OCR error:', err);
-    throw new Error('Could not extract text from images');
-  }
-}
-
-export async function generateSuggestions({
-  instructions,
-  text,
-  messages,
-}: {
-  instructions: string;
-  text: string;
-  messages: Partial<Message>[];
-}): Promise<SuggestionResponse> {
-  if (!GEMINI_API_KEY) {
-    console.warn('Gemini API key not configured');
-    return { suggestions: [] };
-  }
-
-  const previousMessages = messages.reverse().map(m => ({
-    role: 'user',
-    parts: [{ text: `${m.type === 'transcription' ? 'USER_B' : 'USER_A'}: ${m.text}` }],
-  }));
-
-  const prompt = [
-    ...previousMessages,
-    {
-      role: 'user',
-      parts: [{ text: `USER_A: ${text}` }],
-    },
-    { role: 'model', parts: [{ text: '```json' }] },
-  ];
-
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-001',
-      contents: prompt,
-      config: {
-        systemInstruction: SUGGESTIONS_PROMPT.replace('{USER_INSTRUCTIONS}', instructions),
-        temperature: 0.7,
-        maxOutputTokens: 1024,
-        stopSequences: ['```'],
-        responseMimeType: 'application/json',
+    const prompt = [
+      ...previousMessages,
+      {
+        role: 'user',
+        parts: [{ text: `USER_A: ${text}` }],
       },
-    });
+      { role: 'model', parts: [{ text: '```json' }] },
+    ];
 
-    let content = response.text;
-    if (!content) {
-      return {
-        suggestions: [],
+    try {
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-2.0-flash-lite',
+        contents: prompt,
+        config: {
+          systemInstruction: SUGGESTIONS_PROMPT.replace('{USER_INSTRUCTIONS}', instructions),
+          temperature: 0.7,
+          maxOutputTokens: 1024,
+          stopSequences: ['```'],
+          responseMimeType: 'application/json',
+        },
+      });
+
+      let content = response.text;
+      if (!content) {
+        return {
+          suggestions: [],
+        };
+      }
+
+      content = content.replace('```json', '');
+      content = content.replace('```', '');
+
+      const suggestions = JSON.parse(content) as {
+        replies: string[];
       };
+
+      return {
+        suggestions: suggestions.replies,
+      };
+    } catch (err) {
+      console.error('Gemini suggestions error:', err);
+      return { suggestions: [] };
+    }
+  }
+
+  async transcribeAudio({ audio }: { audio: Blob }): Promise<TranscriptionResponse> {
+    try {
+      const arrayBuffer = await audio.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString('base64');
+      const mimeType = audio.type || 'audio/wav';
+
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-2.0-flash-exp',
+        contents: [
+          {
+            parts: [{ inlineData: { mimeType, data: base64 } }, { text: TRANSCRIPTION_PROMPT }],
+          },
+        ],
+      });
+
+      const text = response.text?.trim() || '';
+      return { text };
+    } catch (err) {
+      console.error('Gemini transcription error:', err);
+      return { text: '' };
+    }
+  }
+
+  async extractDeck({ images }: ExtractDeckParams): Promise<ExtractDeckResponse> {
+    const contents: Content[] = [];
+
+    for (let i = 0; i < images.length; i++) {
+      const image = images[i];
+      const arrayBuffer = await image.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString('base64');
+      const mimeType = image.type || 'image/jpeg';
+
+      contents.push({
+        parts: [{ inlineData: { mimeType, data: base64 } }],
+      });
     }
 
-    content = content.replace('```json', '');
-    content = content.replace('```', '');
-
-    const suggestions = JSON.parse(content) as {
-      replies: string[];
-    };
-
-    return {
-      suggestions: suggestions.replies,
-    };
-  } catch (err) {
-    console.error('Gemini suggestions error:', err);
-    return { suggestions: [] };
-  }
-}
-
-export async function transcribeAudio({ audio }: { audio: Blob }): Promise<TranscriptionResponse> {
-  if (!GEMINI_API_KEY) {
-    console.warn('Gemini API key not configured');
-    return { text: '' };
-  }
-
-  try {
-    const arrayBuffer = await audio.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString('base64');
-    const mimeType = audio.type || 'audio/wav';
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
-      contents: [
-        {
-          parts: [{ inlineData: { mimeType, data: base64 } }, { text: TRANSCRIPTION_PROMPT }],
+    try {
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents,
+        config: {
+          systemInstruction: STORY_PROMPT,
+          responseMimeType: 'application/json',
         },
-      ],
-    });
+      });
 
-    const text = response.text?.trim() || '';
-    return { text };
-  } catch (err) {
-    console.error('Gemini transcription error:', err);
-    return { text: '' };
+      const { name, chunks } = JSON.parse(response.text?.trim() || '{}');
+
+      const cards: PartialCard[] = chunks.map((chunk: string, index: number) => ({
+        id: uuidv4(),
+        text: chunk,
+        rank: index,
+        created_at: new Date(),
+      }));
+
+      return { id: uuidv4(), cards, name };
+    } catch (err) {
+      console.error('Gemini OCR error:', err);
+      throw new Error('Could not extract text from images');
+    }
   }
 }
+
+export default GeminiService;

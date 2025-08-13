@@ -22,6 +22,7 @@ export interface Account {
   // AI Settings
   ai_instructions?: string;
   ai_corpus?: string;
+  gemini_api_key?: string;
 
   // Flags
   terms_accepted: boolean;
@@ -46,6 +47,7 @@ export interface PutAccountData {
   privacy_policy_accepted?: boolean;
   speech_provider?: string;
   elevenlabs_settings?: ElevenLabsSettings;
+  gemini_api_key?: string;
 }
 
 export interface BrowserTTSSettings {

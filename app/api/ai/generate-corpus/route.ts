@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { ai } from '@/services/gemini';
+import GeminiService from '@/services/gemini';
 import { createClient } from '@/supabase/server';
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const gemini = new GeminiService(GEMINI_API_KEY || '');
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,7 +48,7 @@ The corpus should be in the same language as the persona.
 `;
 
 async function generateCorpusFromPersona(persona: string): Promise<string> {
-  const response = await ai.models.generateContent({
+  const response = await gemini.ai.models.generateContent({
     model: 'gemini-2.5-flash',
     contents: [{ parts: [{ text: persona }] }],
     config: {

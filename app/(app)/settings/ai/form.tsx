@@ -1,17 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+
+import { Control, UseFormSetValue, useForm } from 'react-hook-form';
 
 import { useAccountContext } from '@/components/context/account-provider';
 import { Button } from '@/components/ui/button';
-import { TextareaInput } from '@/components/ui/textarea-input';
+import { FormInput, FormTextarea } from '@/components/ui/form';
 import { useCorpus } from '@/hooks/use-ai-settings';
 import { useToast } from '@/hooks/use-toast';
 
 interface AISettingsFormData {
   instructions: string;
   corpus: string;
+  gemini_api_key: string;
 }
+
+type SectionProps = {
+  control: Control<AISettingsFormData>;
+  setValue: UseFormSetValue<AISettingsFormData>;
+};
 
 const EXAMPLE_INSTRUCTIONS = [
   {
@@ -29,17 +37,9 @@ const EXAMPLE_INSTRUCTIONS = [
 ];
 
 // Instructions Section
-function InstructionsSection({
-  formData,
-  handleInputChange,
-}: {
-  formData: AISettingsFormData;
-  handleInputChange: (field: string, value: string) => void;
-}) {
-  const [showExamples, setShowExamples] = useState(false);
-
+function InstructionsSection({ control, setValue }: SectionProps) {
   const handleExampleClick = (example: string) => {
-    handleInputChange('instructions', example);
+    setValue('instructions', example);
   };
 
   return (
@@ -55,29 +55,30 @@ function InstructionsSection({
       <div className="md:col-span-2 px-4">
         <div className="max-w-2xl space-y-4">
           <div>
-            <TextareaInput
-              id="instructions"
-              label=""
-              value={formData.instructions}
-              onChange={e => handleInputChange('instructions', e.target.value)}
+            <FormTextarea
+              name="instructions"
+              control={control}
               placeholder="Describe how you want the AI to provide suggestions..."
               rows={4}
               maxLength={1000}
             />
-            <div className="mt-1 text-right text-sm text-gray-500">
-              {formData.instructions.length} characters
-            </div>
           </div>
 
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
             <button
               type="button"
-              onClick={() => setShowExamples(!showExamples)}
+              onClick={() => {
+                const currentShow = document.getElementById('examples')?.style.display === 'none';
+                const examplesEl = document.getElementById('examples');
+                if (examplesEl) {
+                  examplesEl.style.display = currentShow ? 'block' : 'none';
+                }
+              }}
               className="flex w-full items-center justify-between text-left"
             >
               <h4 className="text-sm font-medium text-gray-700">Example Instructions</h4>
               <svg
-                className={`h-4 w-4 text-gray-500 transition-transform ${showExamples ? 'rotate-180' : ''}`}
+                className="h-4 w-4 text-gray-500 transition-transform"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -91,21 +92,19 @@ function InstructionsSection({
               </svg>
             </button>
 
-            {showExamples && (
-              <div className="mt-3 space-y-2">
-                {EXAMPLE_INSTRUCTIONS.map(example => (
-                  <button
-                    key={example.name}
-                    type="button"
-                    onClick={() => handleExampleClick(example.text)}
-                    className="block w-full text-left rounded border border-gray-200 bg-white p-3 text-sm hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="font-medium text-gray-900 text-sm">{example.name}</div>
-                    <div className="mt-1 text-gray-600 text-sm leading-relaxed">{example.text}</div>
-                  </button>
-                ))}
-              </div>
-            )}
+            <div id="examples" className="mt-3 space-y-2" style={{ display: 'none' }}>
+              {EXAMPLE_INSTRUCTIONS.map(example => (
+                <button
+                  key={example.name}
+                  type="button"
+                  onClick={() => handleExampleClick(example.text)}
+                  className="block w-full text-left rounded border border-gray-200 bg-white p-3 text-sm hover:bg-gray-50 transition-colors"
+                >
+                  <div className="font-medium text-gray-900 text-sm">{example.name}</div>
+                  <div className="mt-1 text-gray-600 text-sm leading-relaxed">{example.text}</div>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -114,18 +113,12 @@ function InstructionsSection({
 }
 
 // Corpus Section
-function CorpusSection({
-  formData,
-  handleInputChange,
-}: {
-  formData: AISettingsFormData;
-  handleInputChange: (field: string, value: string) => void;
-}) {
+function CorpusSection({ control, setValue }: SectionProps) {
   const { isGenerating, generateCorpus } = useCorpus();
 
   const handleGenerateCorpus = async () => {
-    const { corpus } = await generateCorpus(formData.instructions);
-    handleInputChange('corpus', corpus);
+    const { corpus } = await generateCorpus(control._formValues.instructions);
+    setValue('corpus', corpus);
   };
 
   return (
@@ -145,18 +138,13 @@ function CorpusSection({
       <div className="md:col-span-2 px-4">
         <div className="max-w-2xl space-y-4">
           <div>
-            <TextareaInput
-              id="corpus"
-              label=""
-              value={formData.corpus}
-              onChange={e => handleInputChange('corpus', e.target.value)}
+            <FormTextarea
+              name="corpus"
+              control={control}
               placeholder="Enter additional knowledge, documents, or context for the AI..."
               rows={6}
               maxLength={5000}
             />
-            <div className="mt-1 text-right text-sm text-gray-500">
-              {formData.corpus.length} characters
-            </div>
           </div>
 
           <div className="flex justify-start">
@@ -176,34 +164,70 @@ function CorpusSection({
   );
 }
 
+// Gemini API Key Section
+function GeminiAPIKeySection({ control }: SectionProps) {
+  return (
+    <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-4 md:grid-cols-3">
+      <div className="px-4 sm:px-0">
+        <h2 className="text-base/7 font-semibold text-gray-900">Gemini API Key</h2>
+        <p className="mt-1 text-sm/6 text-gray-600">
+          Enter your Google Gemini API key to enable AI-powered suggestions. You can get your API
+          key from the{' '}
+          <a
+            href="https://makersuite.google.com/app/apikey"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-indigo-600 hover:text-indigo-500 underline"
+          >
+            Google AI Studio
+          </a>
+          .
+        </p>
+      </div>
+
+      <div className="md:col-span-2 px-4">
+        <div className="max-w-2xl space-y-4">
+          <div>
+            <FormInput
+              name="gemini_api_key"
+              control={control}
+              type="password"
+              placeholder="Enter your Gemini API key"
+              autoComplete="off"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AISettingsForm() {
   const { account, patchAccount } = useAccountContext();
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { show, showError } = useToast();
 
-  const initialFormData = {
-    instructions: account?.ai_instructions || '',
-    corpus: account?.ai_corpus || '',
-  };
-
-  const [formData, setFormData] = useState(initialFormData);
-
-  useEffect(() => {
-    setFormData({
+  const form = useForm<AISettingsFormData>({
+    defaultValues: {
       instructions: account?.ai_instructions || '',
       corpus: account?.ai_corpus || '',
+      gemini_api_key: account?.gemini_api_key || '',
+    },
+  });
+
+  useEffect(() => {
+    form.reset({
+      instructions: account?.ai_instructions || '',
+      corpus: account?.ai_corpus || '',
+      gemini_api_key: account?.gemini_api_key || '',
     });
-  }, [account]);
+  }, [account, form]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
+  const onSubmit = async (data: AISettingsFormData) => {
     try {
       await patchAccount({
-        ai_instructions: formData.instructions,
-        ai_corpus: formData.corpus,
+        ai_instructions: data.instructions,
+        ai_corpus: data.corpus,
+        gemini_api_key: data.gemini_api_key,
       });
       show({
         title: 'AI settings',
@@ -212,26 +236,21 @@ export function AISettingsForm() {
     } catch (err) {
       console.error('Error saving AI settings:', err);
       showError('Failed to update AI settings. Please try again.');
-    } finally {
-      setIsSubmitting(false);
     }
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
     <div className="divide-y divide-gray-400">
-      <form onSubmit={handleSubmit}>
-        <InstructionsSection formData={formData} handleInputChange={handleInputChange} />
-        <CorpusSection formData={formData} handleInputChange={handleInputChange} />
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <GeminiAPIKeySection control={form.control} setValue={form.setValue} />
+        <InstructionsSection control={form.control} setValue={form.setValue} />
+        <CorpusSection control={form.control} setValue={form.setValue} />
 
         {/* Floating save button */}
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
           <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-end">
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : 'Save Settings'}
+            <Button type="submit" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? 'Saving...' : 'Save Settings'}
             </Button>
           </div>
         </div>
