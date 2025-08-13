@@ -19,16 +19,16 @@ console.log('1. Basic Functionality Test');
 const engine = new TypingSuggestions();
 engine.processCorpus(SAMPLE_CORPUS);
 
-const stats = engine.getStats();
+const stats = engine.getStatsAdvanced();
 console.log(`📊 Corpus Stats:`, stats);
 
-const completions = engine.getCompletions('tech');
+const completions = engine.getCompletionsAdvanced('tech');
 console.log(
   `🔤 Completions for "tech":`,
   completions.map(c => c.word)
 );
 
-const predictions = engine.getNextWord('machine learning');
+const predictions = engine.getNextWordAdvanced('machine learning');
 console.log(
   `🔮 Predictions for "machine learning":`,
   predictions.map(p => p.word)
@@ -39,13 +39,13 @@ console.log('\n2. Technical Corpus Test');
 const techEngine = new TypingSuggestions();
 techEngine.processCorpus(TECHNICAL_CORPUS);
 
-const techCompletions = techEngine.getCompletions('api');
+const techCompletions = techEngine.getCompletionsAdvanced('api');
 console.log(
   `🔤 Technical completions for "api":`,
   techCompletions.map(c => c.word)
 );
 
-const techPredictions = techEngine.getNextWord('javascript is');
+const techPredictions = techEngine.getNextWordAdvanced('javascript is');
 console.log(
   `🔮 Technical predictions for "javascript is":`,
   techPredictions.map(p => p.word)
@@ -73,8 +73,8 @@ const engine2 = new TypingSuggestions();
 engine1.processCorpus(SAMPLE_CORPUS);
 engine2.processCorpus(TECHNICAL_CORPUS);
 
-const suggestions1 = engine1.getCompletions('dev');
-const suggestions2 = engine2.getCompletions('dev');
+const suggestions1 = engine1.getCompletionsAdvanced('dev');
+const suggestions2 = engine2.getCompletionsAdvanced('dev');
 
 const merged = mergeSuggestions([suggestions1, suggestions2], { maxResults: 5 });
 console.log(
@@ -84,7 +84,7 @@ console.log(
 
 // Test 5: Similarity matching
 console.log('\n5. Similarity Matching Test');
-const allCompletions = engine.getCompletions('tech');
+const allCompletions = engine.getCompletionsAdvanced('tech');
 const similar = findSimilarWords('technology', allCompletions, 0.7);
 console.log(
   `🔍 Similar words to "technology":`,
@@ -94,7 +94,7 @@ console.log(
 // Test 6: Advanced options
 console.log('\n6. Advanced Options Test');
 
-const filteredCompletions = engine.getCompletions('tech', {
+const filteredCompletions = engine.getCompletionsAdvanced('tech', {
   maxResults: 3,
   minFrequency: 2,
   caseSensitive: false,
@@ -104,7 +104,7 @@ console.log(
   filteredCompletions.map(c => ({ word: c.word, freq: c.frequency }))
 );
 
-const contextPredictions = engine.getNextWord('artificial intelligence', {
+const contextPredictions = engine.getNextWordAdvanced('artificial intelligence', {
   maxResults: 3,
   useTrigrams: true,
   useBigrams: true,
@@ -118,7 +118,7 @@ console.log(
 console.log('\n7. Performance Test');
 const startTime = performance.now();
 for (let i = 0; i < 1000; i++) {
-  engine.getCompletions('tech');
+  engine.getCompletionsAdvanced('tech');
 }
 const endTime = performance.now();
 console.log(`⚡ 1000 completion lookups took: ${(endTime - startTime).toFixed(2)}ms`);
@@ -131,6 +131,20 @@ console.log(
   commonWords.map(w => ({ word: w.word, frequency: w.frequency }))
 );
 
+// Test 9: Simple API compatibility (requires training)
+console.log('\n9. Simple API Compatibility Test');
+const simpleEngine = new TypingSuggestions();
+simpleEngine.train(SAMPLE_CORPUS);
+
+const simpleCompletions = simpleEngine.getCompletions('tech');
+console.log(`🔤 Simple API completions for "tech":`, simpleCompletions);
+
+const simplePredictions = simpleEngine.getNextWord('machine learning');
+console.log(`🔮 Simple API predictions for "machine learning":`, simplePredictions);
+
+const simpleStats = simpleEngine.getStats();
+console.log(`📊 Simple API stats:`, simpleStats);
+
 console.log('\n✅ All tests completed successfully!');
 console.log('\n📚 Library Features Demonstrated:');
 console.log('   • Word completions with prefix matching');
@@ -140,3 +154,4 @@ console.log('   • Suggestion merging and filtering');
 console.log('   • Word similarity matching');
 console.log('   • Performance optimization');
 console.log('   • Multiple corpus support');
+console.log('   • Simple API compatibility (Autocomplete-style)');

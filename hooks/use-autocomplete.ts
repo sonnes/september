@@ -2,120 +2,125 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAccountContext } from '@/components/context/account-provider';
 import { useMessagesContext } from '@/components/context/messages-provider';
-import Transformer from '@/lib/transformer';
-import { tokenize } from '@/lib/transformer/text';
-
-interface UseAutocompleteOptions {
-  maxSuggestions?: number;
-  minQueryLength?: number;
-}
+import { TypingSuggestions } from '@/lib/autocomplete';
 
 interface UseAutocompleteReturn {
-  suggestions: string[];
+  words: string[];
+  phrases: string[];
   isLoading: boolean;
   isReady: boolean;
   getSuggestions: (query: string) => void;
   predictNextWord: (query: string) => void;
+  predictNextPhrase: (query: string) => void;
   clearSuggestions: () => void;
 }
 
-export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutocompleteReturn {
-  const { maxSuggestions = 5, minQueryLength = 2 } = options;
-
+export function useAutocomplete(): UseAutocompleteReturn {
   const { account } = useAccountContext();
   const { messages } = useMessagesContext();
 
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [words, setWords] = useState<string[]>([]);
+  const [phrases, setPhrases] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
-  const transformerRef = useRef<Transformer | null>(null);
 
-  // Initialize service and transformer on mount
+  const typingSuggestionsRef = useRef<TypingSuggestions | null>(null);
+
+  // Initialize service on mount
   useEffect(() => {
     const initializeServices = async () => {
       try {
-        // Initialize both services in parallel
-        await Promise.all([
-          (async () => {
-            if (!transformerRef.current) {
-              transformerRef.current = new Transformer();
+        // Initialize TypingSuggestions service
+        if (!typingSuggestionsRef.current) {
+          typingSuggestionsRef.current = new TypingSuggestions();
 
-              const messagesText = messages.map(m => m.text).join('\n');
+          const messagesText = messages.map(m => m.text).join('\n');
+          const trainingText = (account?.ai_corpus || '') + '\n' + messagesText;
 
-              await transformerRef.current.train({
-                name: 'test',
-                text: (account?.ai_corpus || '') + '\n' + messagesText,
-              });
-            }
-          })(),
-        ]);
+          // Train the service with the combined text
+          typingSuggestionsRef.current.train(trainingText);
+        }
 
         setIsReady(true);
       } catch (error) {
-        console.error('Failed to initialize services:', error);
+        console.error('Failed to initialize TypingSuggestions service:', error);
       }
     };
 
     initializeServices();
-  }, [account?.ai_corpus]);
+  }, [account?.ai_corpus, messages]);
 
-  const getSuggestions = useCallback(
-    async (query: string) => {
-      if (!query || query.trim().length < minQueryLength) {
-        setSuggestions([]);
-        return;
+  const getSuggestions = useCallback(async (query: string) => {
+    if (!query || query.trim().length < 1) {
+      setWords([]);
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      if (typingSuggestionsRef.current && typingSuggestionsRef.current.isReady()) {
+        const results = typingSuggestionsRef.current.getCompletions(query);
+        setWords(results.slice(0, 10));
+      } else {
+        setWords([]);
       }
+    } catch (error) {
+      console.error('Error getting suggestions:', error);
+      setWords([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-      setIsLoading(true);
+  const predictNextWord = useCallback(async (query: string) => {
+    if (!typingSuggestionsRef.current || !typingSuggestionsRef.current.isReady()) {
+      setWords([]);
+      return;
+    }
 
-      try {
-        const results = await transformerRef.current?.getAutocompleteSuggestions(query);
-        setSuggestions(results || []);
-      } catch (error) {
-        console.error('Error getting suggestions:', error);
-        setSuggestions([]);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [isReady]
-  );
+    try {
+      // Get next word predictions using the context
+      const predictions = typingSuggestionsRef.current.getNextWord(query);
 
-  const predictNextWord = useCallback(
-    async (query: string) => {
-      if (!transformerRef.current || !isReady) {
-        setSuggestions([]);
-        return;
-      }
+      // Return the top predictions as suggestions
+      const suggestions = predictions.filter(word => word && word.trim().length > 0).slice(0, 10);
 
-      try {
-        const tokens = tokenize(query);
-        const result = transformerRef.current.getTokenPrediction(tokens[tokens.length - 1]);
+      setWords(suggestions);
+    } catch (error) {
+      console.error('Error predicting next word:', error);
+      setWords([]);
+    }
+  }, []);
 
-        // Return the ranked token list as suggestions
-        const suggestions = result.rankedTokenList
-          .filter(token => token && token.trim().length > 0)
-          .slice(0, maxSuggestions);
+  const predictNextPhrase = useCallback(async (query: string) => {
+    if (!typingSuggestionsRef.current || !typingSuggestionsRef.current.isReady()) {
+      setPhrases([]);
+      return;
+    }
 
-        setSuggestions(suggestions);
-      } catch (error) {
-        console.error('Error predicting next word:', error);
-        setSuggestions([]);
-      }
-    },
-    [maxSuggestions, isReady]
-  );
+    try {
+      const predictions = typingSuggestionsRef.current.getNextPhrase(query);
+      setPhrases(predictions.slice(0, 10));
+    } catch (error) {
+      console.error('Error predicting next phrase:', error);
+      setPhrases([]);
+    }
+  }, []);
 
   const clearSuggestions = useCallback(() => {
-    setSuggestions([]);
+    setWords([]);
+    setPhrases([]);
   }, []);
 
   return {
-    suggestions,
+    words,
+    phrases,
     isLoading,
     isReady,
     getSuggestions,
     predictNextWord,
+    predictNextPhrase,
     clearSuggestions,
   };
 }

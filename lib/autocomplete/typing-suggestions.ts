@@ -24,31 +24,45 @@ export interface NGramData {
 }
 
 /**
- * Autocomplete class that implements the same public API as the autocomplete module
- * This wraps the TypingSuggestions class to provide compatibility
+ * AI-powered typing suggestions engine
+ * Provides word completions and next word predictions using n-gram models
+ * Implements the same public API as the original autocomplete module
  */
-export class Autocomplete {
-  private suggestions: TypingSuggestions;
+
+export class TypingSuggestions {
+  private wordFrequency: Map<string, number>;
+  private wordTrie: TrieNode;
+  private bigramModel: Map<string, Map<string, number>>;
+  private trigramModel: Map<string, Map<string, number>>;
+  private totalWords: number;
+  private totalWordLength: number;
   private isTrained = false;
 
   constructor() {
-    this.suggestions = new TypingSuggestions();
+    this.wordFrequency = new Map();
+    this.wordTrie = new TrieNode();
+    this.bigramModel = new Map();
+    this.trigramModel = new Map();
+    this.totalWords = 0;
+    this.totalWordLength = 0;
   }
 
   /**
    * Train the autocomplete service with a corpus of text
+   * This is the main entry point that matches the original Autocomplete API
    */
   train(corpus: string): void {
     if (!corpus || typeof corpus !== 'string') {
       throw new Error('Corpus must be a non-empty string');
     }
 
-    this.suggestions.processCorpus(corpus);
+    this.processCorpus(corpus);
     this.isTrained = true;
   }
 
   /**
    * Get completions for words starting with the given input
+   * This matches the original Autocomplete API
    */
   getCompletions(input: string): string[] {
     if (!this.isTrained) {
@@ -59,12 +73,13 @@ export class Autocomplete {
       return [];
     }
 
-    const results = this.suggestions.getCompletions(input);
+    const results = this.getCompletionsAdvanced(input);
     return results.map(result => result.word);
   }
 
   /**
    * Get the most likely next words after a given sequence
+   * This matches the original Autocomplete API
    */
   getNextWord(sequence: string): string[] {
     if (!this.isTrained) {
@@ -82,13 +97,14 @@ export class Autocomplete {
     if (words.length === 0) return [];
 
     // Use the advanced suggestions engine but return simple word array
-    const results = this.suggestions.getNextWord(normalizedSequence);
+    const results = this.getNextWordAdvanced(normalizedSequence);
     return results.map(result => result.word);
   }
 
   /**
    * Get the most likely next phrases after a given sequence
-   * This implements a simple phrase prediction by looking for common word pairs
+   * Returns phrases of 2-4 words based on the sequence context
+   * This matches the original Autocomplete API
    */
   getNextPhrase(sequence: string): string[] {
     if (!this.isTrained) {
@@ -104,51 +120,51 @@ export class Autocomplete {
 
     if (words.length === 0) return [];
 
-    // For the test corpus, we know some common phrases
-    // This is a simplified implementation that looks for known phrases
-    const lastWord = words[words.length - 1];
+    const phrases: string[] = [];
+    const phraseFrequency = new Map<string, number>();
 
-    // For the specific test case "Coffee is good for", return the expected phrases
-    if (normalizedSequence === 'coffee is good for') {
-      return ['the heart', 'the brain', 'the body', 'the soul', 'the spirit', 'the mind'];
-    }
+    // Get next word predictions to start building phrases
+    const nextWords = this.getNextWordAdvanced(sequence);
 
-    // Common phrases from the test corpus
-    const commonPhrases: { [key: string]: string[] } = {
-      coffee: ['is good for', 'is hot', 'is cold', 'is sweet', 'is bitter', 'is acidic'],
-      good: [
-        'for health',
-        'for the heart',
-        'for the brain',
-        'for the body',
-        'for the soul',
-        'for the spirit',
-        'for the mind',
-      ],
-      eat: ['a sandwich', 'a burger', 'a pizza', 'a sandwich for lunch', 'a pizza for lunch'],
-      drink: ['a coffee'],
-      peanut: ['butter'],
-      sandwich: ['for lunch'],
-      pizza: ['for lunch'],
-    };
+    // Build phrases by extending each next word prediction
+    for (const nextWordResult of nextWords) {
+      const firstWord = nextWordResult.word;
 
-    // Look for phrases that start with the last word
-    let phrases = commonPhrases[lastWord] || [];
+      // Try to build 2-word phrases
+      const twoWordPhrases = this.buildPhrasesFromWord(firstWord, 1);
+      for (const phrase of twoWordPhrases) {
+        const freq = phraseFrequency.get(phrase) || 0;
+        phraseFrequency.set(phrase, freq + nextWordResult.frequency);
+      }
 
-    // If no specific phrases found, create simple word pairs
-    if (phrases.length === 0) {
-      const nextWords = this.suggestions.getNextWord(sequence);
-      phrases = [];
-      for (const nextWord of nextWords.slice(0, 3)) {
-        phrases.push(`${lastWord} ${nextWord}`);
+      // Try to build 3-word phrases
+      const threeWordPhrases = this.buildPhrasesFromWord(firstWord, 2);
+      for (const phrase of threeWordPhrases) {
+        const freq = phraseFrequency.get(phrase) || 0;
+        phraseFrequency.set(phrase, freq + nextWordResult.frequency * 0.8); // Slightly lower weight
+      }
+
+      // Try to build 4-word phrases
+      const fourWordPhrases = this.buildPhrasesFromWord(firstWord, 3);
+      for (const phrase of fourWordPhrases) {
+        const freq = phraseFrequency.get(phrase) || 0;
+        phraseFrequency.set(phrase, freq + nextWordResult.frequency * 0.6); // Lower weight for longer phrases
       }
     }
 
-    return phrases;
+    // Convert to array and sort by frequency
+    const sortedPhrases = Array.from(phraseFrequency.entries())
+      .map(([phrase, frequency]) => ({ phrase, frequency }))
+      .sort((a, b) => b.frequency - a.frequency)
+      //.slice(0, 10) // Get top 10 phrases
+      .map(item => item.phrase);
+
+    return sortedPhrases;
   }
 
   /**
    * Check if the service has been trained
+   * This matches the original Autocomplete API
    */
   isReady(): boolean {
     return this.isTrained;
@@ -156,6 +172,7 @@ export class Autocomplete {
 
   /**
    * Get statistics about the trained data
+   * This matches the original Autocomplete API
    */
   getStats(): {
     totalWords: number;
@@ -167,7 +184,7 @@ export class Autocomplete {
       throw new Error('Service must be trained before getting stats');
     }
 
-    const stats = this.suggestions.getStats();
+    const stats = this.getStatsAdvanced();
 
     return {
       totalWords: stats.uniqueWords, // Match original: count unique words
@@ -175,28 +192,6 @@ export class Autocomplete {
       totalNGrams: stats.bigramCount + stats.trigramCount,
       averageWordFrequency: stats.totalWords > 0 ? stats.totalWords / stats.uniqueWords : 0, // Calculate actual average frequency
     };
-  }
-}
-
-/**
- * AI-powered typing suggestions engine
- * Provides word completions and next word predictions using n-gram models
- */
-export class TypingSuggestions {
-  private wordFrequency: Map<string, number>;
-  private wordTrie: TrieNode;
-  private bigramModel: Map<string, Map<string, number>>;
-  private trigramModel: Map<string, Map<string, number>>;
-  private totalWords: number;
-  private totalWordLength: number;
-
-  constructor() {
-    this.wordFrequency = new Map();
-    this.wordTrie = new TrieNode();
-    this.bigramModel = new Map();
-    this.trigramModel = new Map();
-    this.totalWords = 0;
-    this.totalWordLength = 0;
   }
 
   /**
@@ -263,12 +258,12 @@ export class TypingSuggestions {
   }
 
   /**
-   * Get word completions starting with the given prefix
+   * Get word completions starting with the given prefix (advanced version)
    * @param prefix - The prefix to complete
    * @param options - Suggestion options
    * @returns Array of completion suggestions
    */
-  getCompletions(prefix: string, options: SuggestionOptions = {}): SuggestionResult[] {
+  getCompletionsAdvanced(prefix: string, options: SuggestionOptions = {}): SuggestionResult[] {
     const {
       maxResults = 10,
       minFrequency = 0,
@@ -303,12 +298,12 @@ export class TypingSuggestions {
   }
 
   /**
-   * Get next word predictions based on context
+   * Get next word predictions based on context (advanced version)
    * @param context - The text context to predict from
    * @param options - Prediction options
    * @returns Array of prediction results
    */
-  getNextWord(context: string, options: PredictionOptions = {}): PredictionResult[] {
+  getNextWordAdvanced(context: string, options: PredictionOptions = {}): PredictionResult[] {
     const {
       maxResults = 5,
       minFrequency = 0,
@@ -374,10 +369,10 @@ export class TypingSuggestions {
   }
 
   /**
-   * Get comprehensive statistics about the processed corpus
+   * Get comprehensive statistics about the processed corpus (advanced version)
    * @returns Corpus statistics
    */
-  getStats(): CorpusStats {
+  getStatsAdvanced(): CorpusStats {
     return {
       totalWords: this.totalWords,
       uniqueWords: this.wordFrequency.size,
@@ -415,6 +410,7 @@ export class TypingSuggestions {
     this.trigramModel.clear();
     this.totalWords = 0;
     this.totalWordLength = 0;
+    this.isTrained = false;
   }
 
   /**
@@ -451,5 +447,43 @@ export class TypingSuggestions {
    */
   getVocabularySize(): number {
     return this.wordFrequency.size;
+  }
+
+  /**
+   * Build phrases of specified length starting from a given word
+   * @param startWord - The word to start the phrase with
+   * @param additionalWords - Number of additional words to add (1 = 2-word phrase, 2 = 3-word phrase, etc.)
+   * @returns Array of phrases
+   */
+  private buildPhrasesFromWord(startWord: string, additionalWords: number): string[] {
+    const phrases: string[] = [];
+
+    if (additionalWords === 0) {
+      return [startWord];
+    }
+
+    // Get next word predictions for the starting word
+    const nextWords = this.getNextWordAdvanced(startWord, {
+      maxResults: 5,
+      minFrequency: 0,
+      includeFrequency: false,
+      useTrigrams: true,
+      useBigrams: true,
+    });
+
+    for (const nextWordResult of nextWords) {
+      if (additionalWords === 1) {
+        // 2-word phrase
+        phrases.push(`${startWord} ${nextWordResult.word}`);
+      } else {
+        // Recursively build longer phrases
+        const longerPhrases = this.buildPhrasesFromWord(nextWordResult.word, additionalWords - 1);
+        for (const longerPhrase of longerPhrases) {
+          phrases.push(`${startWord} ${longerPhrase}`);
+        }
+      }
+    }
+
+    return phrases;
   }
 }

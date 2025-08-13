@@ -1,8 +1,17 @@
-// Main autocomplete library exports
-export { Autocomplete } from './autocomplete';
-export { BrowserAutocomplete } from './autocomplete.browser';
-
-// Re-export types for convenience
-export type { WordFrequency, PhraseFrequency, NGramData } from './autocomplete';
-export type { AutocompleteOptions, SuggestionResult } from './autocomplete.browser';
-
+export { TypingSuggestions } from './typing-suggestions';
+export { TrieNode } from './trie-node';
+export type {
+  SuggestionResult,
+  PredictionResult,
+  CorpusStats,
+  SuggestionOptions,
+  PredictionOptions,
+} from './types';
+export type {
+  // Re-export types to match autocomplete API
+  WordFrequency,
+  PhraseFrequency,
+  NGramData,
+} from './typing-suggestions';
+export * from './utils';
+export * from './sample-data';
