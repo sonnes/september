@@ -1,21 +1,46 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Control, UseFormSetValue, UseFormWatch, useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 import { useAccountContext } from '@/components/context/account-provider';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import FileUploader from '@/components/ui/file-uploader';
-import { TextInput } from '@/components/ui/text-input';
+import { FormCheckbox, FormInput } from '@/components/ui/form';
+import { useToast } from '@/hooks/use-toast';
+
+// Validation schema
+const accountFormSchema = z.object({
+  // Personal Information
+  name: z.string().min(1, 'Name is required'),
+  city: z.string().optional(),
+  country: z.string().optional(),
+
+  // Medical Information
+  primary_diagnosis: z.string().min(1, 'Primary diagnosis is required'),
+  year_of_diagnosis: z.string().min(1, 'Year of diagnosis is required'),
+  medical_document_path: z.string().min(1, 'Medical document is required'),
+
+  // Terms and Privacy
+  terms_accepted: z.boolean().refine(val => val === true, 'You must accept the Terms of Service'),
+  privacy_policy_accepted: z
+    .boolean()
+    .refine(val => val === true, 'You must accept the Privacy Policy'),
+});
+
+type AccountFormData = z.infer<typeof accountFormSchema>;
+
+interface SectionProps {
+  control: Control<AccountFormData>;
+  setValue?: UseFormSetValue<AccountFormData>;
+  watch?: UseFormWatch<AccountFormData>;
+}
 
 // Personal Information Section
-function PersonalInfoSection({
-  formData,
-  handleInputChange,
-}: {
-  formData: any;
-  handleInputChange: (field: string, value: any) => void;
-}) {
+function PersonalInfoSection({ control }: SectionProps) {
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
       <div className="px-4 sm:px-0">
@@ -29,30 +54,22 @@ function PersonalInfoSection({
         <div className="px-4">
           <div className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
             <div className="sm:col-span-3">
-              <TextInput
-                id="name"
+              <FormInput
+                name="name"
+                control={control}
                 label="Full Name"
-                value={formData.name}
-                onChange={e => handleInputChange('name', e.target.value)}
                 placeholder="Enter your name"
                 required
               />
             </div>
             <div className="sm:col-span-3">
-              <TextInput
-                id="city"
-                label="City"
-                value={formData.city}
-                onChange={e => handleInputChange('city', e.target.value)}
-                placeholder="Enter your city"
-              />
+              <FormInput name="city" control={control} label="City" placeholder="Enter your city" />
             </div>
             <div className="sm:col-span-3">
-              <TextInput
-                id="country"
+              <FormInput
+                name="country"
+                control={control}
                 label="Country"
-                value={formData.country}
-                onChange={e => handleInputChange('country', e.target.value)}
                 placeholder="Enter your country"
               />
             </div>
@@ -64,27 +81,22 @@ function PersonalInfoSection({
 }
 
 // Medical Information Section
-function MedicalInfoSection({
-  formData,
-  handleInputChange,
-}: {
-  formData: any;
-  handleInputChange: (field: string, value: any) => void;
-}) {
+function MedicalInfoSection({ control, setValue, watch }: SectionProps) {
   const { uploadFile, deleteFile } = useAccountContext();
+
+  const medicalDocumentPath = watch?.('medical_document_path') || '';
 
   const onUpload = async (files: File[]) => {
     const path = await uploadFile(files[0]);
-
-    handleInputChange('medical_document_path', path);
+    setValue?.('medical_document_path', path);
   };
 
   const handleDelete = async () => {
-    if (!formData.medical_document_path) return;
+    if (!medicalDocumentPath) return;
 
     try {
-      await deleteFile(formData.medical_document_path);
-      handleInputChange('medical_document_path', '');
+      await deleteFile(medicalDocumentPath);
+      setValue?.('medical_document_path', '');
     } catch (error) {
       console.error('Failed to delete document:', error);
     }
@@ -104,24 +116,20 @@ function MedicalInfoSection({
         <div className="px-4">
           <div className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
             <div className="sm:col-span-4">
-              <TextInput
-                id="primary_diagnosis"
+              <FormInput
+                name="primary_diagnosis"
+                control={control}
                 label="Primary Diagnosis"
-                value={formData.primary_diagnosis}
-                onChange={e => handleInputChange('primary_diagnosis', e.target.value)}
                 placeholder="Enter your primary diagnosis"
                 required
               />
             </div>
             <div className="sm:col-span-2">
-              <TextInput
-                id="year_of_diagnosis"
+              <FormInput
+                name="year_of_diagnosis"
+                control={control}
                 label="Year of Diagnosis"
                 type="number"
-                value={formData.year_of_diagnosis}
-                onChange={e =>
-                  handleInputChange('year_of_diagnosis', parseInt(e.target.value) || null)
-                }
                 placeholder="Enter year of diagnosis"
                 required
               />
@@ -139,7 +147,7 @@ function MedicalInfoSection({
                   To provide voice cloning services, we require a note from your
                   Neurologist/Physician that states your diagnosis. Please upload that note here.
                 </p>
-                {formData.medical_document_path ? (
+                {medicalDocumentPath ? (
                   <div className="mt-2 flex items-center gap-4">
                     <div className="flex items-center gap-2 text-green-600">
                       <svg className="size-5" fill="currentColor" viewBox="0 0 20 20">
@@ -183,62 +191,8 @@ function MedicalInfoSection({
   );
 }
 
-// API Keys Section
-function ApiKeysSection({
-  formData,
-  handleInputChange,
-}: {
-  formData: any;
-  handleInputChange: (field: string, value: any) => void;
-}) {
-  return (
-    <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
-      <div className="px-4 sm:px-0">
-        <h2 className="text-base/7 font-semibold text-gray-900">API Keys (Optional)</h2>
-        <p className="mt-1 text-sm/6 text-gray-600">
-          Add your own API keys to use voice cloning features. These are optional and securely
-          stored.
-        </p>
-      </div>
-
-      <div className="md:col-span-2">
-        <div className="px-4">
-          <div className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-            <div className="col-span-full">
-              <TextInput
-                id="elevenlabs_api_key"
-                label="ElevenLabs API Key"
-                type="password"
-                value={formData.elevenlabs_api_key}
-                onChange={e => handleInputChange('elevenlabs_api_key', e.target.value)}
-                placeholder="Enter your ElevenLabs API key"
-              />
-            </div>
-            <div className="col-span-full">
-              <TextInput
-                id="google_api_key"
-                label="Google API Key"
-                type="password"
-                value={formData.google_api_key}
-                onChange={e => handleInputChange('google_api_key', e.target.value)}
-                placeholder="Enter your Google API key"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // Terms and Privacy Section
-function TermsSection({
-  formData,
-  handleInputChange,
-}: {
-  formData: any;
-  handleInputChange: (field: string, value: any) => void;
-}) {
+function TermsSection({ control }: SectionProps) {
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
       <div className="px-4 sm:px-0">
@@ -259,22 +213,20 @@ function TermsSection({
               <div className="space-y-6">
                 <div className="flex gap-3">
                   <div className="flex h-6 items-center">
-                    <Checkbox
-                      id="terms_accepted"
+                    <FormCheckbox
+                      name="terms_accepted"
+                      control={control}
                       label="I accept the Terms of Service"
-                      checked={formData.terms_accepted}
-                      onChange={e => handleInputChange('terms_accepted', e.target.checked)}
                     />
                   </div>
                 </div>
 
                 <div className="flex gap-3">
                   <div className="flex h-6 items-center">
-                    <Checkbox
-                      id="privacy_policy_accepted"
+                    <FormCheckbox
+                      name="privacy_policy_accepted"
+                      control={control}
                       label="I accept the Privacy Policy"
-                      checked={formData.privacy_policy_accepted}
-                      onChange={e => handleInputChange('privacy_policy_accepted', e.target.checked)}
                     />
                   </div>
                 </div>
@@ -289,84 +241,64 @@ function TermsSection({
 
 export function AccountForm() {
   const { account, putAccount } = useAccountContext();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState('');
+  const { show, showError } = useToast();
 
-  const initialFormData = {
-    // Personal Information
-    name: account?.name || '',
-    city: account?.city || '',
-    country: account?.country || '',
-
-    // Medical Information
-    primary_diagnosis: account?.primary_diagnosis || '',
-    year_of_diagnosis: account?.year_of_diagnosis || undefined,
-    medical_document_path: account?.medical_document_path || '',
-
-    // API Keys
-    elevenlabs_api_key: account?.elevenlabs_api_key || '',
-    google_api_key: account?.google_api_key || '',
-
-    // Flags
-    terms_accepted: account?.terms_accepted || false,
-    privacy_policy_accepted: account?.privacy_policy_accepted || false,
-  };
-
-  const [formData, setFormData] = useState(initialFormData);
+  const form = useForm<AccountFormData>({
+    resolver: zodResolver(accountFormSchema),
+    defaultValues: {
+      name: account?.name || '',
+      city: account?.city || '',
+      country: account?.country || '',
+      primary_diagnosis: account?.primary_diagnosis || '',
+      year_of_diagnosis: account?.year_of_diagnosis?.toString() || '',
+      medical_document_path: account?.medical_document_path || '',
+      terms_accepted: account?.terms_accepted || false,
+      privacy_policy_accepted: account?.privacy_policy_accepted || false,
+    },
+  });
 
   useEffect(() => {
-    setFormData(initialFormData);
-  }, [account]);
+    form.reset({
+      name: account?.name || '',
+      city: account?.city || '',
+      country: account?.country || '',
+      primary_diagnosis: account?.primary_diagnosis || '',
+      year_of_diagnosis: account?.year_of_diagnosis?.toString() || '',
+      medical_document_path: account?.medical_document_path || '',
+      terms_accepted: account?.terms_accepted || false,
+      privacy_policy_accepted: account?.privacy_policy_accepted || false,
+    });
+  }, [account, form]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setMessage('');
-
+  const onSubmit = async (data: AccountFormData) => {
     try {
-      await putAccount(formData);
-      setMessage('Account updated successfully!');
+      await putAccount({
+        ...data,
+        year_of_diagnosis: parseInt(data.year_of_diagnosis),
+      });
+      show({
+        title: 'Account updated',
+        message: 'Your account has been updated successfully.',
+      });
     } catch (err) {
       console.error('Error saving account:', err);
-      setMessage('Failed to update account. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+      showError('Failed to update account. Please try again.');
     }
-  };
-
-  const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
     <div className="divide-y divide-gray-400">
-      <form onSubmit={handleSubmit}>
-        <PersonalInfoSection formData={formData} handleInputChange={handleInputChange} />
-        <MedicalInfoSection formData={formData} handleInputChange={handleInputChange} />
-        <ApiKeysSection formData={formData} handleInputChange={handleInputChange} />
-        <TermsSection formData={formData} handleInputChange={handleInputChange} />
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <PersonalInfoSection control={form.control} setValue={form.setValue} watch={form.watch} />
+        <MedicalInfoSection control={form.control} setValue={form.setValue} watch={form.watch} />
+        <TermsSection control={form.control} setValue={form.setValue} watch={form.watch} />
 
         {/* Floating save button */}
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
-          <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-            {message && (
-              <p
-                className={`text-md font-semibold ${message.includes('successfully') ? 'text-green-600' : 'text-red-600'}`}
-              >
-                {message}
-              </p>
-            )}
-
-            <div className="flex-shrink-0 ml-auto">
-              <Button
-                type="submit"
-                disabled={
-                  isSubmitting || !formData.terms_accepted || !formData.privacy_policy_accepted
-                }
-              >
-                {isSubmitting ? 'Saving...' : 'Update Account'}
-              </Button>
-            </div>
+          <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-end">
+            <Button type="submit" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? 'Saving...' : 'Update Account'}
+            </Button>
           </div>
         </div>
       </form>
