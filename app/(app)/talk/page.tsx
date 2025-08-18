@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import { Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { Cog6ToothIcon, EyeIcon } from '@heroicons/react/24/outline';
 
 import AudioPlayer from '@/components/audio-player';
 import { AccountProvider } from '@/components/context/account-provider';
@@ -65,6 +65,12 @@ export default async function TalkPage() {
                     className="p-2 text-white rounded-full transition-colors cursor-pointer"
                   >
                     <Cog6ToothIcon className="w-6 h-6" />{' '}
+                  </Link>
+                  <Link
+                    href={`/monitor/${user.id}`}
+                    className="p-2 text-white rounded-full transition-colors cursor-pointer"
+                  >
+                    <EyeIcon className="w-6 h-6" />
                   </Link>
                 </div>
               </div>

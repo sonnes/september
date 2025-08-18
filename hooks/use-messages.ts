@@ -40,7 +40,7 @@ export function useMessages({
     if (initialMessages.length === 0) {
       getMessages();
     }
-  }, [user.id, initialMessages.length, getMessages]);
+  }, [user.id, initialMessages.length]);
 
   // Realtime subscription for messages
   useEffect(() => {

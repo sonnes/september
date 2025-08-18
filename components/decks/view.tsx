@@ -11,9 +11,9 @@ import {
 } from '@heroicons/react/24/outline';
 
 import { useAudioPlayer } from '@/hooks/use-audio-player';
-import { useCreateSpeech } from '@/hooks/use-create-speech';
 import DecksService from '@/services/decks';
 import MessagesService from '@/services/messages';
+import { useSpeech } from '@/services/speech/use-speech';
 import supabase from '@/supabase/client';
 import { Card, Deck } from '@/types/deck';
 
@@ -28,7 +28,7 @@ const DeckView: React.FC<DeckViewProps> = ({ deck: initialDeck }) => {
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const decksService = new DecksService(supabase);
   const messagesService = new MessagesService(supabase);
-  const { createSpeech } = useCreateSpeech();
+  const { generateSpeech } = useSpeech();
   const { enqueue, isPlaying, togglePlayPause, current: currentAudio } = useAudioPlayer();
 
   const cards = deck.cards;
@@ -74,14 +74,14 @@ const DeckView: React.FC<DeckViewProps> = ({ deck: initialDeck }) => {
       const cardsWithAudio = await Promise.all(
         cards.map(async card => {
           // 1. Generate narration
-          const { blob, alignment } = await createSpeech({ text: card.text });
+          const speechAudio = await generateSpeech(card.text);
 
           // 2. Upload audio
           const audioPath = `${card.id}.mp3`;
           const audio = await messagesService.uploadAudio({
             path: audioPath,
-            blob,
-            alignment,
+            blob: speechAudio.blob,
+            alignment: speechAudio.alignment,
           });
 
           // 3. Update card with audio path
