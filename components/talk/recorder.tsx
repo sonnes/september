@@ -86,7 +86,7 @@ export default function Recorder() {
       {vadActive ? (
         <VADController onSpeechEnd={handleSpeechEnd} />
       ) : (
-        <Button onClick={toggleRecording} title="Start recording" variant="outline" color="white">
+        <Button onClick={toggleRecording} title="Start recording" variant="outline" color="red">
           Listen <MicrophoneIcon className="h-6 w-6" />
         </Button>
       )}

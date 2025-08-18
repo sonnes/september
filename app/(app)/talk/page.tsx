@@ -59,10 +59,6 @@ export default async function TalkPage() {
                   Talk
                 </h1>
                 <div className="flex items-center space-x-2">
-                  <AudioPlayer />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Recorder />
                   <MobileMessageList />
                   <Link
                     href="/settings/speech"
@@ -73,9 +69,26 @@ export default async function TalkPage() {
                 </div>
               </div>
             </Layout.Header>
+
             <Layout.Content>
               <TextProvider>
-                <div className="flex h-[calc(100vh-222px)] md:h-[calc(100vh-256px)]">
+                {/* Preview Component */}
+                <div className="w-full bg-white border-b border-zinc-200">
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <div className="flex-1 flex">
+                      <div className="text-zinc-900">
+                        <Recorder />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-zinc-900">
+                        <AudioPlayer />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex h-[calc(100vh-270px)] md:h-[calc(100vh-304px)]">
                   {/* Left column - Message list */}
                   <div className="hidden md:block w-1/3 lg:w-1/4 px-2 overflow-y-auto border-r border-zinc-200">
                     <div className="max-w-full">
