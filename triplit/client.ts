@@ -1,19 +1,12 @@
-import { TriplitClient } from '@triplit/client';
+import { TriplitClient as TriplitClientType } from '@triplit/client';
 
 import { schema } from './schema';
 
-let triplit: TriplitClient<typeof schema> | undefined = undefined;
+export const triplit = new TriplitClientType({
+  schema,
+  autoConnect: false,
+  storage: 'indexeddb',
+  // Optionally add serverUrl and token here if needed
+});
 
-if (typeof window !== 'undefined') {
-  triplit = new TriplitClient({
-    schema,
-    autoConnect: false,
-    storage: 'indexeddb',
-    // Optionally add serverUrl and token here if needed
-  });
-} else {
-  // Optionally, you can initialize with 'memory' storage for SSR, or just leave undefined
-  // triplit = new TriplitClient({ schema, storage: 'memory' });
-}
-
-export { triplit };
+export type TriplitClient = typeof triplit;

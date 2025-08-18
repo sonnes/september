@@ -1,91 +1,36 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { v4 as uuidv4 } from 'uuid';
+import { TriplitClient } from '@triplit/client';
 
-import { Alignment, Audio } from '@/types/audio';
-import { CreateMessageData, Message } from '@/types/message';
-
-interface CreateMessageResponse {
-  message: Message;
-  audio: Audio;
-}
+import { StorageProvider, SupabaseStorageProvider, TriplitStorageProvider } from './storage';
+import { schema } from '@/triplit/schema';
 
 class MessagesService {
-  private supabase: SupabaseClient;
+  private provider: StorageProvider;
 
-  constructor(client: SupabaseClient) {
-    this.supabase = client;
-  }
-
-  async createMessage(message: CreateMessageData): Promise<CreateMessageResponse> {
-    const { data, error } = await this.supabase
-      .from('messages')
-      .insert({
-        id: message.id || uuidv4(),
-        type: message.type,
-        text: message.text,
-        user_id: message.user_id,
-        audio_path: message.audio_path,
-      })
-      .select()
-      .single();
-    if (error) {
-      throw error;
+  constructor(client: SupabaseClient | TriplitClient<typeof schema>) {
+    if ('from' in client) {
+      // Supabase client
+      this.provider = new SupabaseStorageProvider(client as SupabaseClient);
+    } else {
+      // Triplit client
+      this.provider = new TriplitStorageProvider(client as TriplitClient<typeof schema>);
     }
-
-    return data;
   }
 
-  async uploadAudio({
-    path,
-    blob,
-    alignment,
-  }: {
-    path: string;
-    blob: string;
-    alignment?: Alignment;
-  }): Promise<string> {
-    const buffer = Buffer.from(blob, 'base64');
-    const { data, error } = await this.supabase.storage.from('audio').upload(path, buffer, {
-      contentType: 'audio/mp3',
-      upsert: true,
-      metadata: {
-        alignment: alignment,
-      },
-    });
-    if (error) {
-      throw error;
-    }
-
-    return data.path;
+  async createMessage(message: any) {
+    return this.provider.createMessage(message);
   }
 
-  async getMessages(user_id: string): Promise<Message[]> {
-    const { data, error } = await this.supabase
-      .from('messages')
-      .select('*')
-      .eq('user_id', user_id)
-      .order('created_at', { ascending: false })
-      .limit(100);
-    if (error) throw error;
-    return data;
+  async uploadAudio(params: any) {
+    return this.provider.uploadAudio(params);
   }
 
-  async searchMessages(user_id: string, query: string): Promise<Message[]> {
-    const { data, error } = await this.supabase
-      .from('messages')
-      .select('*')
-      .eq('user_id', user_id)
-      .textSearch(
-        'fts',
-        query
-          .toLowerCase()
-          .replace(/[^a-zA-Z0-9\s]/g, '')
-          .replace(/\s+/g, '+')
-      )
-      .limit(10);
-    if (error) throw error;
+  async getMessages(user_id: string) {
+    return this.provider.getMessages(user_id);
+  }
 
-    return data;
+  async searchMessages(user_id: string, query: string) {
+    return this.provider.searchMessages(user_id, query);
   }
 }
 

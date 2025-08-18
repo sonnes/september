@@ -16,4 +16,5 @@ export interface CreateMessageData {
   type: string;
   user_id: string;
   audio_path?: string;
+  audio?: Audio;
 }

@@ -1,0 +1,88 @@
+import { SupabaseClient } from '@supabase/supabase-js';
+import { v4 as uuidv4 } from 'uuid';
+
+import { Alignment, Audio } from '@/types/audio';
+import { CreateMessageData, Message } from '@/types/message';
+
+import { StorageProvider } from './provider';
+
+export class SupabaseStorageProvider extends StorageProvider {
+  private supabase: SupabaseClient;
+
+  constructor(client: SupabaseClient) {
+    super();
+    this.supabase = client;
+  }
+
+  async createMessage(message: CreateMessageData): Promise<Message> {
+    const { data, error } = await this.supabase
+      .from('messages')
+      .insert({
+        id: message.id || uuidv4(),
+        type: message.type,
+        text: message.text,
+        user_id: message.user_id,
+        audio_path: message.audio_path,
+      })
+      .select()
+      .single();
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  }
+
+  async uploadAudio({
+    path,
+    blob,
+    alignment,
+  }: {
+    path: string;
+    blob: string;
+    alignment?: Alignment;
+  }): Promise<string> {
+    const buffer = Buffer.from(blob, 'base64');
+    const { data, error } = await this.supabase.storage.from('audio').upload(path, buffer, {
+      contentType: 'audio/mp3',
+      upsert: true,
+      metadata: {
+        alignment: alignment,
+      },
+    });
+    if (error) {
+      throw error;
+    }
+
+    return data.path;
+  }
+
+  async getMessages(user_id: string): Promise<Message[]> {
+    const { data, error } = await this.supabase
+      .from('messages')
+      .select('*')
+      .eq('user_id', user_id)
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (error) throw error;
+    return data;
+  }
+
+  async searchMessages(user_id: string, query: string): Promise<Message[]> {
+    const { data, error } = await this.supabase
+      .from('messages')
+      .select('*')
+      .eq('user_id', user_id)
+      .textSearch(
+        'fts',
+        query
+          .toLowerCase()
+          .replace(/[^a-zA-Z0-9\s]/g, '')
+          .replace(/\s+/g, '+')
+      )
+      .limit(10);
+    if (error) throw error;
+
+    return data;
+  }
+}
