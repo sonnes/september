@@ -1,8 +1,9 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { TriplitClient } from '@triplit/client';
 
-import { StorageProvider, SupabaseStorageProvider, TriplitStorageProvider } from './storage';
 import { schema } from '@/triplit/schema';
+
+import { StorageProvider, SupabaseStorageProvider, TriplitStorageProvider } from './storage';
 
 class MessagesService {
   private provider: StorageProvider;
@@ -31,6 +32,10 @@ class MessagesService {
 
   async searchMessages(user_id: string, query: string) {
     return this.provider.searchMessages(user_id, query);
+  }
+
+  async downloadAudio(path: string) {
+    return this.provider.downloadAudio(path);
   }
 }
 

@@ -10,4 +10,5 @@ export abstract class StorageProvider {
   }): Promise<string>;
   abstract getMessages(user_id: string): Promise<Message[]>;
   abstract searchMessages(user_id: string, query: string): Promise<Message[]>;
+  abstract downloadAudio(path: string): Promise<Blob>;
 }

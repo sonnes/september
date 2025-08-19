@@ -3,12 +3,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { User } from '@supabase/supabase-js';
+import moment from 'moment';
 import Webcam from 'react-webcam';
 
+import { useAccountContext } from '@/components/context/account-provider';
+import AnimatedText from '@/components/ui/animated-text';
+import { useAccount } from '@/hooks/use-account';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useMessages } from '@/hooks/use-messages';
 import { useToast } from '@/hooks/use-toast';
+import MessagesService from '@/services/messages';
 import supabase from '@/supabase/client';
+import { removeRealtimeSubscription, subscribeToUserMessages } from '@/supabase/realtime';
 import { Audio } from '@/types/audio';
 import { Message } from '@/types/message';
 
@@ -17,43 +23,50 @@ interface MonitorClientProps {
 }
 
 export default function MonitorClient({ userId }: MonitorClientProps) {
+  const messagesService = new MessagesService(supabase);
+
   const webcamRef = useRef(null);
   const [latestMessage, setLatestMessage] = useState<Message | null>(null);
 
   const { enqueue } = useAudioPlayer();
+  const { user, account } = useAccountContext();
   const { showError } = useToast();
 
-  // Create a mock user object for the useMessages hook
-  const mockUser: User = {
-    id: userId,
-    email: '',
-    created_at: '',
-    app_metadata: {},
-    user_metadata: {},
-    aud: 'authenticated',
-  };
+  // Realtime subscription for messages
+  useEffect(() => {
+    const channel = subscribeToUserMessages<Message>(user.id, {
+      onInsert: newMessage => {
+        setLatestMessage(newMessage);
+      },
+      onError: error => {
+        console.error('Messages realtime error:', error);
+        showError('Failed to receive real-time updates');
+      },
+      onSubscribe: status => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to messages changes');
+        }
+      },
+    });
 
-  const { messages } = useMessages({
-    user: mockUser,
-    messages: [],
-  });
+    // Cleanup function to unsubscribe on unmount
+    return () => {
+      removeRealtimeSubscription(channel);
+    };
+  }, [user.id, showError]);
 
   useEffect(() => {
-    const speechMessages = messages.filter(message => message.type === 'speech');
-    if (speechMessages.length > 0) {
-      setLatestMessage(speechMessages[speechMessages.length - 1]);
-    }
-  }, [messages]);
+    async function downloadAudio() {
+      if (latestMessage && latestMessage.audio_path) {
+        const audio = await messagesService.downloadAudio(latestMessage.audio_path);
 
-  // Handle new messages
-  useEffect(() => {
-    console.log('latestMessage', latestMessage);
-    if (latestMessage && latestMessage.audio_path) {
-      console.log('enqueue', latestMessage.audio_path);
-      enqueue({
-        path: latestMessage.audio_path,
-      });
+        enqueue({
+          blob: Buffer.from(await audio.arrayBuffer()).toString('base64'),
+        });
+      }
     }
+
+    downloadAudio();
   }, [latestMessage, enqueue]);
 
   return (
@@ -68,15 +81,17 @@ export default function MonitorClient({ userId }: MonitorClientProps) {
       />
 
       {/* Text Overlay */}
-      <div className="absolute inset-0 flex items-center justify-center p-8">
+      <div className="absolute inset-0 flex items-end justify-center p-8 pb-[33.33%]">
         <div className="text-center max-w-4xl">
           {latestMessage ? (
             <div className="space-y-4">
-              <h1 className="text-4xl md:text-6xl lg:text-8xl font-bold text-white drop-shadow-2xl leading-tight">
-                {latestMessage.text}
-              </h1>
+              <AnimatedText
+                text={latestMessage.text}
+                speed={400}
+                className="text-4xl md:text-6xl lg:text-8xl font-bold text-white drop-shadow-2xl leading-tight uppercase"
+              />
               <div className="text-sm md:text-base text-white/80 font-medium">
-                {new Date(latestMessage.created_at).toLocaleTimeString()}
+                {moment(latestMessage.created_at).fromNow()}
               </div>
             </div>
           ) : (

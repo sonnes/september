@@ -85,4 +85,10 @@ export class SupabaseStorageProvider extends StorageProvider {
 
     return data;
   }
+
+  async downloadAudio(path: string): Promise<Blob> {
+    const { data, error } = await this.supabase.storage.from('audio').download(path);
+    if (error) throw error;
+    return data;
+  }
 }

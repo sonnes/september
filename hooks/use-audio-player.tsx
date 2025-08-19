@@ -23,6 +23,8 @@ interface AudioPlayerContextType {
   enqueue: (track: AudioTrack) => void;
   togglePlayPause: () => void;
   current: AudioTrack | null;
+  isMuted: boolean;
+  toggleMute: () => void;
 }
 
 const AudioPlayerContext = createContext<AudioPlayerContextType | undefined>(undefined);
@@ -38,6 +40,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
   const [queue, setQueue] = useState<AudioTrack[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [isMuted, setIsMuted] = useState(false);
 
   const { load, play, pause, isPlaying } = useAudioPlayerContext();
   const synthesis = typeof window !== 'undefined' ? window.speechSynthesis : null;
@@ -82,16 +85,24 @@ function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
   }, [queue, currentIndex, load]);
 
   // Enqueue a new track
-  const enqueue = useCallback((track: AudioTrack) => {
-    setQueue(prev => {
-      // If nothing is playing, start with this track
-      if (prev.length === 0) {
-        setCurrentIndex(0);
-        return [track];
-      }
-      return [...prev, track];
-    });
-  }, []);
+  const enqueue = useCallback(
+    (track: AudioTrack) => {
+      setQueue(prev => {
+        if (isMuted) {
+          4;
+          return prev;
+        }
+
+        // If nothing is playing, start with this track
+        if (prev.length === 0) {
+          setCurrentIndex(0);
+          return [track];
+        }
+        return [...prev, track];
+      });
+    },
+    [isMuted]
+  );
 
   // Toggle play/pause
   const togglePlayPause = useCallback(() => {
@@ -102,11 +113,17 @@ function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
     }
   }, [isPlaying, play, pause]);
 
+  const toggleMute = useCallback(() => {
+    setIsMuted(prev => !prev);
+  }, [isMuted]);
+
   const value: AudioPlayerContextType = {
     isPlaying,
     enqueue,
     togglePlayPause,
     current: queue[currentIndex] || null,
+    isMuted,
+    toggleMute,
   };
 
   return <AudioPlayerContext.Provider value={value}>{children}</AudioPlayerContext.Provider>;

@@ -14,6 +14,7 @@ import Suggestions from '@/components/editor/suggestions';
 import Layout from '@/components/layout';
 import Navbar from '@/components/nav';
 import { MessageList, MobileMessageList } from '@/components/talk';
+import MuteButton from '@/components/talk/mute-button';
 import Recorder from '@/components/talk/recorder';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { AudioPlayerProvider } from '@/hooks/use-audio-player';
@@ -59,6 +60,7 @@ export default async function TalkPage() {
                   Talk
                 </h1>
                 <div className="flex items-center space-x-2">
+                  <MuteButton />
                   <MobileMessageList />
                   <Link
                     href="/settings/speech"
