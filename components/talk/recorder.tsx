@@ -12,13 +12,10 @@ import { useCreateMessage } from '@/hooks/use-create-message';
 function VADController({ onSpeechEnd }: { onSpeechEnd: (blob: Blob) => Promise<void> }) {
   const { listening, loading, toggle } = useMicVAD({
     startOnLoad: true,
-    onFrameProcessed: () => {
-      console.log('onFrameProcessed');
-    },
     onSpeechEnd: async (audio: Float32Array) => {
       const wav = utils.encodeWAV(audio);
       const blob = new Blob([wav], { type: 'audio/wav' });
-      console.log('onSpeechEnd', blob);
+
       if (onSpeechEnd) {
         await onSpeechEnd(blob);
       }
@@ -32,7 +29,7 @@ function VADController({ onSpeechEnd }: { onSpeechEnd: (blob: Blob) => Promise<v
 
   if (loading) {
     return (
-      <Button variant="outline" color="white" disabled>
+      <Button variant="outline" color="gray" disabled className="flex items-center gap-2">
         Loading... <ArrowPathIcon className="h-6 w-6 animate-spin" />
       </Button>
     );
@@ -43,9 +40,9 @@ function VADController({ onSpeechEnd }: { onSpeechEnd: (blob: Blob) => Promise<v
       onClick={handleToggle}
       title={listening ? 'Stop recording' : 'Recording...'}
       variant="outline"
-      color="white"
+      color={!listening ? 'red' : 'gray'}
+      className="flex items-center gap-2"
     >
-      {listening ? 'Stop' : 'Listen'}{' '}
       {listening ? <StopIcon className="h-6 w-6" /> : <MicrophoneIcon className="h-6 w-6" />}
     </Button>
   );
@@ -87,7 +84,7 @@ export default function Recorder() {
         <VADController onSpeechEnd={handleSpeechEnd} />
       ) : (
         <Button onClick={toggleRecording} title="Start recording" variant="outline" color="red">
-          Listen <MicrophoneIcon className="h-6 w-6" />
+          <MicrophoneIcon className="h-6 w-6" />
         </Button>
       )}
     </div>

@@ -62,6 +62,10 @@ export function useCreateMessage() {
   };
 
   const createTranscription = async ({ id, text }: { id: string; text: string }) => {
+    if (!text || text.trim().length === 0 || text.length < 3) {
+      return;
+    }
+
     const { data, error } = await supabase
       .from('messages')
       .upsert({
