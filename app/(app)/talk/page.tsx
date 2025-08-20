@@ -81,17 +81,13 @@ export default async function TalkPage() {
             <Layout.Content>
               <TextProvider>
                 {/* Preview Component */}
-                <div className="w-full bg-white border-b border-zinc-200">
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <div className="flex-1 flex">
-                      <div className="text-zinc-900">
-                        <Recorder />
-                      </div>
+                <div className="w-full bg-white border-b border-zinc-200 mb-4">
+                  <div className="flex items-center gap-4 px-6 py-4">
+                    <div className="flex-shrink-0">
+                      <Recorder />
                     </div>
-                    <div className="flex-1">
-                      <div className="text-zinc-900">
-                        <AudioPlayer />
-                      </div>
+                    <div className="flex-1 min-w-0">
+                      <AudioPlayer />
                     </div>
                   </div>
                 </div>
