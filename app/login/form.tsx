@@ -5,9 +5,7 @@ import React from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
-import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { TextInput } from '@/components/ui/text-input';
 import { useToast } from '@/hooks/use-toast';
 

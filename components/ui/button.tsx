@@ -81,8 +81,8 @@ export function Button({
       {...props}
     >
       {icon && React.isValidElement(icon)
-        ? React.cloneElement(icon as React.ReactElement<any>, {
-            className: cn('w-5 h-5', (icon as React.ReactElement<any>).props.className),
+        ? React.cloneElement(icon as React.ReactElement<{ className?: string }>, {
+            className: cn('w-5 h-5', (icon as React.ReactElement<{ className?: string }>).props.className),
           })
         : icon}
       {!isCircular && children}

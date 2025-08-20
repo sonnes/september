@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Popover, PopoverButton, PopoverGroup, PopoverPanel } from '@headlessui/react';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 
-import { type ThemeColor, themes } from '@/lib/theme';
+import { type ThemeColor } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
 type NavigationItem = {
@@ -23,8 +23,7 @@ type DesktopNavProps = {
   color?: ThemeColor;
 };
 
-export default function DesktopNav({ items, current, user, color = 'indigo' }: DesktopNavProps) {
-  const theme = themes[color];
+export default function DesktopNav({ items, current, user }: DesktopNavProps) {
 
   return (
     <nav

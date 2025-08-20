@@ -1,5 +1,4 @@
-import { type ThemeColor, themes } from '@/lib/theme';
-import { cn } from '@/lib/utils';
+import { type ThemeColor } from '@/lib/theme';
 
 import DesktopNav from './desktop-nav';
 import MobileNav from './mobile-nav';
@@ -35,8 +34,6 @@ export default function Navbar({
   user,
   color = 'indigo',
 }: NavbarProps) {
-  const theme = themes[color];
-
   return (
     <div>
       <DesktopNav items={items} current={current} user={user} color={color} />

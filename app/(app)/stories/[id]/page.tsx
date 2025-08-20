@@ -3,7 +3,6 @@ import React from 'react';
 import { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 
-import AudioPlayer from '@/components/audio-player';
 import { AccountProvider } from '@/components/context/account-provider';
 import DeckView from '@/components/decks/view';
 import Layout from '@/components/layout';

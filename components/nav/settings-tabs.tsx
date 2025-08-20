@@ -23,7 +23,6 @@ function classNames(...classes: string[]) {
 }
 
 export function SettingsTabs({ tabs = defaultTabs, current }: SettingsTabsProps) {
-  const currentTab = tabs.find(tab => tab.href === current);
 
   // Convert tabs to dropdown options
   const dropdownOptions: DropdownOption[] = tabs.map(tab => ({

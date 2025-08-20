@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { Dialog, DialogPanel } from '@headlessui/react';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 
-import { type ThemeColor, themes } from '@/lib/theme';
+import { type ThemeColor } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
 type NavigationItem = {
@@ -27,8 +27,7 @@ type MobileNavProps = {
   color?: ThemeColor;
 };
 
-export default function MobileNav({ items, current, user, color = 'indigo' }: MobileNavProps) {
-  const theme = themes[color];
+export default function MobileNav({ items, current, user }: MobileNavProps) {
 
   const [isOpen, setIsOpen] = useState(false);
 

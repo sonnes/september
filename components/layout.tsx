@@ -11,7 +11,7 @@ export default function Layout({ children }: PropsWithChildren) {
   return <div className="min-h-full flex flex-col">{children}</div>;
 }
 
-Layout.Header = ({ children, color = 'indigo' }: HeaderProps) => {
+const LayoutHeader = ({ children, color = 'indigo' }: HeaderProps) => {
   const theme = themes[color];
 
   return (
@@ -23,7 +23,9 @@ Layout.Header = ({ children, color = 'indigo' }: HeaderProps) => {
   );
 };
 
-Layout.Content = ({ children }: PropsWithChildren) => {
+LayoutHeader.displayName = 'Layout.Header';
+
+const LayoutContent = ({ children }: PropsWithChildren) => {
   return (
     <main className="-mt-32 flex-1">
       <div className="mx-auto max-w-7xl px-2 md:px-8">
@@ -33,10 +35,18 @@ Layout.Content = ({ children }: PropsWithChildren) => {
   );
 };
 
-Layout.Footer = ({ children }: PropsWithChildren) => {
+LayoutContent.displayName = 'Layout.Content';
+
+const LayoutFooter = ({ children }: PropsWithChildren) => {
   return (
     <footer className="border-t py-6 md:py-12 px-2 md:px-8">
       <div className="mx-auto max-w-7xl text-center text-gray-400">{children}</div>
     </footer>
   );
 };
+
+LayoutFooter.displayName = 'Layout.Footer';
+
+Layout.Header = LayoutHeader;
+Layout.Content = LayoutContent;
+Layout.Footer = LayoutFooter;

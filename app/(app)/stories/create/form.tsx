@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ExtractDeckResponse } from '@/services/gemini';
 
 const CreateStory: React.FC = () => {
-  const { putDeck, creating } = useCreateDeck();
+  const { putDeck } = useCreateDeck();
   const { showError } = useToast();
   const { account } = useAccountContext();
   const router = useRouter();

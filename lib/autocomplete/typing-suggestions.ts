@@ -120,7 +120,6 @@ export class TypingSuggestions {
 
     if (words.length === 0) return [];
 
-    const phrases: string[] = [];
     const phraseFrequency = new Map<string, number>();
 
     // Get next word predictions to start building phrases
@@ -267,7 +266,6 @@ export class TypingSuggestions {
     const {
       maxResults = 10,
       minFrequency = 0,
-      includeFrequency = true,
       caseSensitive = false,
     } = options;
 
@@ -307,7 +305,6 @@ export class TypingSuggestions {
     const {
       maxResults = 5,
       minFrequency = 0,
-      includeFrequency = true,
       useTrigrams = true,
       useBigrams = true,
     } = options;
@@ -348,7 +345,7 @@ export class TypingSuggestions {
 
     // Convert to array and filter by minimum frequency
     const filteredPredictions = Array.from(predictions.entries())
-      .filter(([_, frequency]) => frequency >= minFrequency)
+      .filter(([, frequency]) => frequency >= minFrequency)
       .map(([word, frequency]) => ({
         word,
         frequency,
@@ -466,7 +463,6 @@ export class TypingSuggestions {
     const nextWords = this.getNextWordAdvanced(startWord, {
       maxResults: 5,
       minFrequency: 0,
-      includeFrequency: false,
       useTrigrams: true,
       useBigrams: true,
     });

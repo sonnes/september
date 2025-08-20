@@ -1,4 +1,4 @@
-import type { PredictionResult, SuggestionResult } from './types';
+import type { SuggestionResult } from './types';
 import { TypingSuggestions } from './typing-suggestions';
 
 /**

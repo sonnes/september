@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   try {
     const result = await gemini.extractDeck({ images: files });
     return NextResponse.json(result, { status: 200 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to extract text from images' }, { status: 400 });
   }
 }

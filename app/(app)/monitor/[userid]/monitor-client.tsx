@@ -1,35 +1,31 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-import { User } from '@supabase/supabase-js';
 import moment from 'moment';
 import Webcam from 'react-webcam';
 
 import { useAccountContext } from '@/components/context/account-provider';
 import AnimatedText from '@/components/ui/animated-text';
-import { useAccount } from '@/hooks/use-account';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
-import { useMessages } from '@/hooks/use-messages';
 import { useToast } from '@/hooks/use-toast';
 import MessagesService from '@/services/messages';
 import supabase from '@/supabase/client';
 import { removeRealtimeSubscription, subscribeToUserMessages } from '@/supabase/realtime';
-import { Audio } from '@/types/audio';
 import { Message } from '@/types/message';
 
 interface MonitorClientProps {
   userId: string;
 }
 
-export default function MonitorClient({ userId }: MonitorClientProps) {
+export default function MonitorClient({}: MonitorClientProps) {
   const messagesService = new MessagesService(supabase);
 
   const webcamRef = useRef(null);
   const [latestMessage, setLatestMessage] = useState<Message | null>(null);
 
   const { enqueue } = useAudioPlayer();
-  const { user, account } = useAccountContext();
+  const { user } = useAccountContext();
   const { showError } = useToast();
 
   // Realtime subscription for messages
@@ -67,7 +63,7 @@ export default function MonitorClient({ userId }: MonitorClientProps) {
     }
 
     downloadAudio();
-  }, [latestMessage, enqueue]);
+  }, [latestMessage, enqueue, messagesService]);
 
   return (
     <div className="relative w-full h-screen overflow-hidden">

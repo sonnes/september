@@ -7,7 +7,7 @@ import { ChevronDownIcon } from '@heroicons/react/16/solid';
 import { Control, Controller, FieldError, FieldPath, FieldValues } from 'react-hook-form';
 
 import { Checkbox } from './checkbox';
-import { Dropdown, DropdownOption } from './dropdown';
+import { DropdownOption } from './dropdown';
 import { Radio } from './radio';
 import { TextInput } from './text-input';
 import { TextareaInput } from './textarea-input';

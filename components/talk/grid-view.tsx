@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 
 import type { Grid, GridButton } from '@/types/grid';
 
@@ -20,7 +21,7 @@ export const GridView: React.FC<GridViewProps> = ({ grid, onButtonClick }) => {
             onClick={() => onButtonClick(button)}
           >
             {button.image_url && (
-              <img src={button.image_url} alt={button.text} className="w-6 h-6 mb-1" />
+              <Image src={button.image_url} alt={button.text} width={24} height={24} className="mb-1" />
             )}
             <span className="font-medium truncate w-full text-xs text-center">{button.text}</span>
             {button.type !== 'default' && (

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Image from 'next/image';
 
 import { FileUpload } from '@/components/ui/file-upload';
 
@@ -55,7 +56,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       {showPreviews && previews.length > 0 && (
         <div className="flex gap-2 flex-wrap mt-4">
           {previews.map((src, idx) => (
-            <img key={idx} src={src} alt={`preview-${idx}`} className={previewClassName} />
+            <Image key={idx} src={src} alt={`preview-${idx}`} width={96} height={96} className={previewClassName} />
           ))}
         </div>
       )}

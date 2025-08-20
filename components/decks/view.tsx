@@ -29,11 +29,9 @@ const DeckView: React.FC<DeckViewProps> = ({ deck: initialDeck }) => {
   const decksService = new DecksService(supabase);
   const messagesService = new MessagesService(supabase);
   const { generateSpeech } = useSpeech();
-  const { enqueue, isPlaying, togglePlayPause, current: currentAudio } = useAudioPlayer();
+  const { enqueue, isPlaying, togglePlayPause } = useAudioPlayer();
 
   const cards = deck.cards;
-
-  if (!cards?.length) return null;
 
   const downloadAudio = async (path: string) => {
     const { data, error } = await supabase.storage.from('audio').download(path);
@@ -46,20 +44,28 @@ const DeckView: React.FC<DeckViewProps> = ({ deck: initialDeck }) => {
   };
 
   useEffect(() => {
-    cards.forEach(async card => {
-      if (card.audio) {
-        enqueue(card.audio);
-      } else if (card.audio_path) {
-        const audio = await downloadAudio(card.audio_path);
-        if (audio) {
-          enqueue({
-            path: card.audio_path,
-            blob: Buffer.from(await audio.arrayBuffer()).toString('base64'),
-          });
+    if (!cards?.length) return;
+    
+    const loadAudio = async () => {
+      for (const card of cards) {
+        if (card.audio) {
+          enqueue(card.audio);
+        } else if (card.audio_path) {
+          const audioData = await downloadAudio(card.audio_path);
+          if (audioData) {
+            enqueue({
+              path: card.audio_path,
+              blob: Buffer.from(await audioData.arrayBuffer()).toString('base64'),
+            });
+          }
         }
       }
-    });
+    };
+    
+    loadAudio();
   }, [cards, enqueue]);
+
+  if (!cards?.length) return null;
 
   const handlePrev = () => {
     setCurrent(c => (c === 0 ? cards.length - 1 : c - 1));
@@ -78,16 +84,14 @@ const DeckView: React.FC<DeckViewProps> = ({ deck: initialDeck }) => {
 
           // 2. Upload audio
           const audioPath = `${card.id}.mp3`;
-          const audio = await messagesService.uploadAudio({
+          await messagesService.uploadAudio({
             path: audioPath,
             blob: speechAudio.blob,
             alignment: speechAudio.alignment,
           });
 
           // 3. Update card with audio path
-          const updatedCard = { ...card, audio_path: audioPath };
-
-          return updatedCard;
+          return { ...card, audio_path: audioPath };
         })
       );
 

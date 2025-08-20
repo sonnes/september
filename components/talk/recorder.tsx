@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
-import { ArrowPathIcon, MicrophoneIcon, PauseIcon, StopIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, MicrophoneIcon, StopIcon } from '@heroicons/react/24/outline';
 import { useMicVAD, utils } from '@ricky0123/vad-react';
 import { v4 as uuidv4 } from 'uuid';
 

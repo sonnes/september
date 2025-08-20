@@ -14,7 +14,6 @@ import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useToast } from '@/hooks/use-toast';
 import { Voice } from '@/services/speech';
 import { SpeechProvider, useSpeechContext } from '@/services/speech/context';
-import { BrowserTTSSettings, ElevenLabsSettings } from '@/types/account';
 
 // Validation schema for the form
 const talkSettingsSchema = z.object({
@@ -89,7 +88,7 @@ function ProviderSection({ control }: SectionProps) {
   );
 }
 
-function VoiceSection({ control, watch, setValue }: SectionProps) {
+function VoiceSection({ watch, setValue }: SectionProps) {
   const { getVoices, generateSpeech } = useSpeechContext();
   const { enqueue } = useAudioPlayer();
   const [voices, setVoices] = useState<Voice[]>([]);
@@ -405,7 +404,7 @@ export function TalkSettingsForm() {
     watch,
     setValue,
     reset,
-    formState: { errors },
+    formState: {},
   } = useForm<TalkSettingsFormData>({
     resolver: zodResolver(talkSettingsSchema),
     defaultValues: getDefaultValues(),
@@ -418,7 +417,7 @@ export function TalkSettingsForm() {
     if (account) {
       reset(getDefaultValues());
     }
-  }, [account, reset]);
+  }, [account, reset, getDefaultValues]);
 
   const onSubmit = async (data: TalkSettingsFormData) => {
     setIsSubmitting(true);

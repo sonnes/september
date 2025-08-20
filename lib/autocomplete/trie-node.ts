@@ -19,7 +19,7 @@ export class TrieNode {
    * @param frequency - Optional frequency count for the word
    */
   insert(word: string, frequency: number = 1): void {
-    let node: TrieNode = this;
+    let node = this as TrieNode;
 
     for (const char of word) {
       if (!node.children.has(char)) {
@@ -38,7 +38,7 @@ export class TrieNode {
    * @returns Array of words with the given prefix
    */
   findWordsWithPrefix(prefix: string): Array<{ word: string; frequency: number }> {
-    let node: TrieNode = this;
+    let node = this as TrieNode;
 
     // Navigate to the node representing the prefix
     for (const char of prefix) {
@@ -59,7 +59,7 @@ export class TrieNode {
    * @returns True if the word exists
    */
   contains(word: string): boolean {
-    let node: TrieNode = this;
+    let node = this as TrieNode;
 
     for (const char of word) {
       if (!node.children.has(char)) {
@@ -77,7 +77,7 @@ export class TrieNode {
    * @returns The frequency count, or 0 if word doesn't exist
    */
   getFrequency(word: string): number {
-    let node: TrieNode = this;
+    let node = this as TrieNode;
 
     for (const char of word) {
       if (!node.children.has(char)) {
@@ -114,7 +114,7 @@ export class TrieNode {
    * @returns The count of words
    */
   getWordCount(): number {
-    let count = 0;
+    const count = 0;
     this.countWords(this, { value: count });
     return count;
   }
