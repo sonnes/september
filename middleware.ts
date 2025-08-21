@@ -12,6 +12,7 @@ export const config = {
     '/api/:path*',
     // Protect all (app) group routes
     '/talk',
+    '/write',
     '/stories',
     '/stories/:path*',
     '/account',

@@ -24,6 +24,7 @@ type NavbarProps = {
 
 const defaultItems = [
   { name: 'Talk', href: '/talk' },
+  { name: 'Write', href: '/write' },
   { name: 'Stories', href: '/stories' },
   { name: 'Settings', href: '/settings' },
 ];

@@ -6,10 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Core Commands
 
-- `npm run dev` - Start development server
-- `npm run build` - Build production application
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint for code quality checks
+- `bun run dev` - Start development server
+- `bun run build` - Build production application
+- `bun run start` - Start production server
+- `bun run lint` - Run ESLint for code quality checks
 
 ### Database Operations
 

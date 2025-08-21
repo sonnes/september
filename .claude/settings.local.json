@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(npm run lint)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "WebFetch(domain:tiptap.dev)",
+      "WebSearch",
+      "Bash(bun install:*)",
+      "Bash(bun run:*)"
     ],
     "defaultMode": "acceptEdits"
   },
