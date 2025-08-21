@@ -2,10 +2,12 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
 import { AccountProvider } from '@/components/context/account-provider';
-import TiptapEditor from '@/components/editor/tiptap-editor';
+import { DocumentsProvider } from '@/components/context/documents-provider';
 import Layout from '@/components/layout';
 import Navbar from '@/components/nav';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
+import Document from '@/components/write/document';
+import DocumentsSidebar from '@/components/write/sidebar';
 import AccountsService from '@/services/accounts';
 import { createClient } from '@/supabase/server';
 
@@ -29,28 +31,31 @@ export default async function WritePage() {
 
   return (
     <AccountProvider user={user} account={account}>
-      <Layout>
-        <Layout.Header>
-          <Navbar user={user} current="/write" />
-          <div className="flex items-center justify-between mb-4">
-            <Breadcrumbs
-              pages={[{ name: 'Write', href: '/write', current: true }]}
-              className="md:hidden"
-            />
-            <h1 className="hidden md:block text-2xl font-bold tracking-tight text-white">Write</h1>
-          </div>
-        </Layout.Header>
+      <DocumentsProvider>
+        <Layout>
+          <Layout.Header>
+            <Navbar user={user} current="/write" />
+            <div className="flex items-center justify-between mb-4">
+              <Breadcrumbs
+                pages={[{ name: 'Write', href: '/write', current: true }]}
+                className="md:hidden"
+              />
+              <h1 className="hidden md:block text-2xl font-bold tracking-tight text-white">
+                Write
+              </h1>
+            </div>
+          </Layout.Header>
 
-        <Layout.Content>
-          <div className="max-w-4xl mx-auto">
-            <TiptapEditor
-              placeholder="Start writing your story..."
-              className="min-h-[600px]"
-              theme="indigo"
-            />
-          </div>
-        </Layout.Content>
-      </Layout>
+          <Layout.Content>
+            <div className="flex flex-1 h-full">
+              <DocumentsSidebar />
+              <div className="flex-1 max-w-4xl mx-auto p-6">
+                <Document />
+              </div>
+            </div>
+          </Layout.Content>
+        </Layout>
+      </DocumentsProvider>
     </AccountProvider>
   );
 }

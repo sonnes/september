@@ -11,4 +11,13 @@ export const schema = S.Collections({
       audio: S.Json({ nullable: true }),
     }),
   },
+  documents: {
+    schema: S.Schema({
+      id: S.Id({ format: 'uuidv4' }),
+      name: S.String(),
+      content: S.String(),
+      created_at: S.Date({ default: S.Default.now() }),
+      updated_at: S.Date({ default: S.Default.now() }),
+    }),
+  },
 });
