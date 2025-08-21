@@ -10,47 +10,39 @@ interface DocumentProps {
 }
 
 export default function Document({ className = '' }: DocumentProps) {
-  const { currentDocument, updateDocument } = useDocumentsContext();
+  const { currentDocument, putContent, putDocument, setCurrentDocument } = useDocumentsContext();
 
   const handleContentChange = useCallback(
-    (content: string, markdown: string) => {
+    async (content: string, markdown: string) => {
       if (!currentDocument?.id) return;
 
-      // Update the document content
-      updateDocument(currentDocument.id, {
-        content: markdown,
-      });
+      putContent(currentDocument.id, markdown);
     },
-    [currentDocument, updateDocument]
+    [currentDocument, putContent]
   );
 
   const handleSave = useCallback(
-    (content: string, markdown: string) => {
-      if (!currentDocument?.id) return;
+    async (content: string, markdown: string) => {
+      if (!currentDocument?.id) {
+        const newDoc = await putDocument({
+          name: 'Untitled',
+          content: markdown,
+        });
 
-      // Explicit save action
-      updateDocument(currentDocument.id, {
-        content: markdown,
-      });
+        setCurrentDocument(newDoc);
+
+        return;
+      }
+
+      putContent(currentDocument.id, markdown);
     },
-    [currentDocument, updateDocument]
+    [currentDocument, putContent]
   );
-
-  if (!currentDocument) {
-    return (
-      <div className={`flex items-center justify-center h-full text-gray-500 ${className}`}>
-        <div className="text-center">
-          <p className="text-lg mb-2">No document selected</p>
-          <p className="text-sm">Select a document from the sidebar or create a new one</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className={`h-full ${className}`}>
       <TiptapEditor
-        content={currentDocument.content || '<p>Start writing...</p>'}
+        content={currentDocument?.content || ''}
         placeholder="Start writing your story..."
         onChange={handleContentChange}
         onSave={handleSave}

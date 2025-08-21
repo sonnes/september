@@ -1,6 +1,6 @@
 export interface Document {
   id: string;
-  name: string;
+  name?: string;
   content: string;
   created_at: Date;
   updated_at: Date;
@@ -8,7 +8,7 @@ export interface Document {
 
 export interface PutDocumentData {
   id?: string;
-  name: string;
+  name?: string;
   content?: string;
   created_at?: Date;
 }

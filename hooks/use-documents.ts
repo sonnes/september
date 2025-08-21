@@ -13,11 +13,20 @@ export function useDocuments() {
   const { results: documents, fetching, error } = useQuery(triplit, query);
 
   const putDocument = async (data: PutDocumentData) => {
-    await triplit.insert('documents', {
+    const document = await triplit.insert('documents', {
       id: data.id || uuidv4().toString(),
       name: data.name || '',
       content: data.content || '',
       created_at: data.created_at || new Date(),
+      updated_at: new Date(),
+    });
+
+    return document;
+  };
+
+  const putContent = async (id: string, content: string) => {
+    await triplit.update('documents', id, {
+      content,
       updated_at: new Date(),
     });
   };
@@ -27,10 +36,10 @@ export function useDocuments() {
   };
 
   return {
-    documents,
+    documents: documents || [],
     fetching,
-    error,
     putDocument,
+    putContent,
     deleteDocument,
   };
 }

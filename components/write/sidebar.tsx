@@ -10,6 +10,7 @@ import {
   TrashIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
+import moment from 'moment';
 
 import { useDocumentsContext } from '@/components/context/documents-provider';
 import { Button } from '@/components/ui/button';
@@ -20,24 +21,20 @@ interface DocumentsSidebarProps {
 }
 
 export default function DocumentsSidebar({ className = '' }: DocumentsSidebarProps) {
-  const {
-    documents,
-    fetching,
-    error,
-    currentDocument,
-    setCurrentDocument,
-    deleteDocument,
-    createNewDocument,
-  } = useDocumentsContext();
+  const { documents, fetching, currentDocument, setCurrentDocument, deleteDocument, putDocument } =
+    useDocumentsContext();
 
   const handleCreateDocument = useCallback(async () => {
     try {
-      const newDoc = await createNewDocument();
+      const newDoc = await putDocument({
+        name: 'Untitled',
+        content: '',
+      });
       setCurrentDocument(newDoc);
     } catch (error) {
       console.error('Failed to create document:', error);
     }
-  }, [createNewDocument, setCurrentDocument]);
+  }, [putDocument, setCurrentDocument]);
 
   const handleSelectDocument = useCallback(
     (document: Document) => {
@@ -93,13 +90,7 @@ export default function DocumentsSidebar({ className = '' }: DocumentsSidebarPro
           </div>
         )}
 
-        {error && (
-          <div className="p-4 text-center text-red-500">
-            <p>Error loading documents</p>
-          </div>
-        )}
-
-        {!fetching && !error && documentsArray.length === 0 && (
+        {!fetching && documentsArray.length === 0 && (
           <div className="p-4 text-center text-gray-500">
             <DocumentIcon className="h-12 w-12 mx-auto mb-2 text-gray-300" />
             <p className="text-sm">No documents yet</p>
@@ -127,7 +118,9 @@ export default function DocumentsSidebar({ className = '' }: DocumentsSidebarPro
                 >
                   {document.name || 'Untitled'}
                 </p>
-                <p className="text-xs text-gray-500">{document.updated_at.toLocaleDateString()}</p>
+                <p className="text-xs text-gray-500">
+                  {moment(document.updated_at).format('MM/DD/YYYY')}
+                </p>
               </div>
               <button
                 onClick={e => handleDeleteDocument(document, e)}
