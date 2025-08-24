@@ -26,6 +26,15 @@ Example output:
 }
 `;
 
+const TEXT_EXTRACTION_PROMPT = `You are a text extraction service.
+
+Extract all readable text from the provided files. Break down the text into smaller chunks. Each chunk can be 4-5 sentences.
+
+The output should be markdown formatted text. Use --- to separate the chunks. Only extract text, do not describe the files. Use markdown syntax for showing lists, bold, italic, links, tables, etc.
+
+Do not include any other text in the output.
+`;
+
 const SUGGESTIONS_PROMPT = `You're a communication assistant for USER_A. USER_A is having a conversation with USER_B. You take the previous messages and complete the sentence USER_A is writing. 
 
 Use the following instructions from USER_A to generate the sentence:
@@ -65,6 +74,10 @@ Return the transcription as plain text.`;
 
 interface ExtractDeckParams {
   images: Blob[];
+}
+
+interface ExtractTextParams {
+  files: Blob[];
 }
 
 export interface ExtractDeckResponse {
@@ -167,6 +180,37 @@ class GeminiService {
     } catch (err) {
       console.error('Gemini transcription error:', err);
       return { text: '' };
+    }
+  }
+
+  async extractText({ files }: ExtractTextParams): Promise<string> {
+    const contents: Content[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const arrayBuffer = await file.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString('base64');
+      const mimeType = file.type || 'application/pdf';
+
+      contents.push({
+        parts: [{ inlineData: { mimeType, data: base64 } }],
+      });
+    }
+
+    try {
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents,
+        config: {
+          systemInstruction: TEXT_EXTRACTION_PROMPT,
+          responseMimeType: 'text/plain',
+        },
+      });
+
+      return response.text?.trim() || '';
+    } catch (err) {
+      console.error('Gemini OCR error:', err);
+      throw new Error('Could not extract text from files');
     }
   }
 

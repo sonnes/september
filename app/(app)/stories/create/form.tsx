@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
 
 import { useAccountContext } from '@/components/context/account-provider';
+import { Button } from '@/components/ui/button';
 import FileUploader from '@/components/ui/file-uploader';
 import { useCreateDeck } from '@/hooks/use-create-deck';
 import { useToast } from '@/hooks/use-toast';
@@ -19,6 +20,7 @@ const CreateStory: React.FC = () => {
   const router = useRouter();
 
   const [extracting, setExtracting] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
 
   const extractText = async (images: File[]): Promise<ExtractDeckResponse> => {
     const formData = new FormData();
@@ -38,11 +40,20 @@ const CreateStory: React.FC = () => {
     return await res.json();
   };
 
-  const handleImagesUploaded = async (images: File[]) => {
+  const handleImagesUploaded = (images: File[]) => {
+    setUploadedImages(images);
+  };
+
+  const handleSubmit = async () => {
+    if (uploadedImages.length === 0) {
+      showError('Please upload at least one image');
+      return;
+    }
+
     setExtracting(true);
 
     try {
-      const extractedDeck = await extractText(images);
+      const extractedDeck = await extractText(uploadedImages);
       const deck = await putDeck({
         deck: {
           id: extractedDeck.id,
@@ -75,6 +86,18 @@ const CreateStory: React.FC = () => {
         previewClassName="w-24 h-24 object-cover rounded border"
         showPreviews={true}
       />
+
+      <div className="mt-6 flex justify-end">
+        <Button
+          type="button"
+          onClick={handleSubmit}
+          disabled={uploadedImages.length === 0 || extracting}
+          className="px-6"
+        >
+          {extracting ? 'Extracting...' : 'Extract Text'}
+        </Button>
+      </div>
+
       {extracting && (
         <div className="mt-4 text-blue-600">
           <div>Extracting text from images...</div>

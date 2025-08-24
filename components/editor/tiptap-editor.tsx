@@ -42,10 +42,10 @@ export default function TiptapEditor({
   className = '',
   theme = 'indigo',
 }: TiptapEditorProps) {
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
   const themeConfig = themes[theme];
 
   const editor = useEditor({
+    content,
     immediatelyRender: false,
     shouldRerenderOnTransaction: false,
     extensions: [
@@ -135,10 +135,6 @@ export default function TiptapEditor({
     return (editor?.storage as MarkdownStorage)?.markdown?.getMarkdown() || '';
   };
 
-  const togglePreview = () => {
-    setIsPreviewMode(!isPreviewMode);
-  };
-
   if (!editor) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -150,17 +146,21 @@ export default function TiptapEditor({
   return (
     <div
       className={cn(
-        `border rounded-xl shadow-sm flex flex-col h-full`,
-        themeConfig.border,
+        'flex flex-col h-full',
+        // Only apply default styling if no custom className is provided
+        !className.includes('border-0') &&
+          !className.includes('shadow-none') && ['border rounded-xl shadow-sm', themeConfig.border],
         className
       )}
     >
       {/* Toolbar */}
       <div
         className={cn(
-          'flex flex-col sm:flex-row items-start sm:items-center justify-between border-b p-3 rounded-t-xl gap-3 sm:gap-0 flex-shrink-0',
-          themeConfig.border,
-          `bg-${theme}-50`
+          'flex flex-col sm:flex-row items-start sm:items-center justify-between border-b p-3 gap-3 sm:gap-0 flex-shrink-0',
+          // Only apply border styling if not using custom className
+          !className.includes('border-0') && themeConfig.border,
+          // Apply rounded corners only if not using custom className
+          !className.includes('border-0') && 'rounded-t-xl'
         )}
       >
         <div className="flex items-center gap-1 flex-wrap">
@@ -171,6 +171,7 @@ export default function TiptapEditor({
             color={editor.isActive('bold') ? theme : 'gray'}
             onClick={() => editor.chain().focus().toggleBold().run()}
             icon={<BoldIcon />}
+            className="bg-white hover:bg-gray-50"
           />
           <Button
             type="button"
@@ -179,6 +180,7 @@ export default function TiptapEditor({
             color={editor.isActive('italic') ? theme : 'gray'}
             onClick={() => editor.chain().focus().toggleItalic().run()}
             icon={<ItalicIcon />}
+            className="bg-white hover:bg-gray-50"
           />
           <Button
             type="button"
@@ -186,6 +188,7 @@ export default function TiptapEditor({
             size="sm"
             color={editor.isActive('heading', { level: 1 }) ? theme : 'gray'}
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+            className="bg-white hover:bg-gray-50"
           >
             H1
           </Button>
@@ -195,6 +198,7 @@ export default function TiptapEditor({
             size="sm"
             color={editor.isActive('heading', { level: 2 }) ? theme : 'gray'}
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+            className="bg-white hover:bg-gray-50"
           >
             H2
           </Button>
@@ -205,6 +209,7 @@ export default function TiptapEditor({
             color={editor.isActive('bulletList') ? theme : 'gray'}
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             icon={<ListBulletIcon />}
+            className="bg-white hover:bg-gray-50"
           />
           <Button
             type="button"
@@ -213,6 +218,7 @@ export default function TiptapEditor({
             color={editor.isActive('blockquote') ? theme : 'gray'}
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             icon={<ChatBubbleBottomCenterTextIcon />}
+            className="bg-white hover:bg-gray-50"
           />
           <Button
             type="button"
@@ -221,63 +227,14 @@ export default function TiptapEditor({
             color={editor.isActive('codeBlock') ? theme : 'gray'}
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
             icon={<CodeBracketIcon />}
+            className="bg-white hover:bg-gray-50"
           />
         </div>
       </div>
 
       {/* Editor Content */}
       <div className="relative flex-1 min-h-0">
-        {isPreviewMode ? (
-          <div className="p-4 h-full overflow-auto">
-            <div className="prose prose-sm sm:prose lg:prose-lg xl:prose-2xl max-w-none">
-              <div className="space-y-4">
-                <div className="border-b border-gray-200 pb-2">
-                  <h3 className="text-sm font-medium text-gray-700">Markdown Source</h3>
-                </div>
-                <pre className="whitespace-pre-wrap font-mono text-sm bg-gray-50 p-4 rounded border overflow-auto">
-                  {getMarkdownContent()}
-                </pre>
-                <div className="border-b border-gray-200 pb-2">
-                  <h3 className="text-sm font-medium text-gray-700">Rendered Preview</h3>
-                </div>
-                <div
-                  className="prose prose-sm max-w-none bg-white p-4 border rounded"
-                  dangerouslySetInnerHTML={{ __html: editor.getHTML() }}
-                />
-              </div>
-            </div>
-          </div>
-        ) : (
-          <EditorContent editor={editor} className="h-full overflow-auto" />
-        )}
-      </div>
-
-      {/* Bottom Action Buttons */}
-      <div
-        className={cn(
-          'flex items-center justify-end gap-2 border-t p-3 rounded-b-xl flex-shrink-0',
-          themeConfig.border,
-          `bg-${theme}-50`
-        )}
-      >
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={togglePreview}
-          icon={isPreviewMode ? <PencilIcon /> : <EyeIcon />}
-        >
-          <span className="hidden sm:inline">{isPreviewMode ? 'Edit' : 'Preview'}</span>
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => onSave?.(editor.getHTML(), getMarkdownContent())}
-          icon={<DocumentDuplicateIcon />}
-        >
-          Save
-        </Button>
+        <EditorContent editor={editor} className="h-full overflow-auto" />
       </div>
     </div>
   );
