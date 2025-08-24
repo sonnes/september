@@ -6,7 +6,8 @@
       "WebFetch(domain:tiptap.dev)",
       "WebSearch",
       "Bash(bun install:*)",
-      "Bash(bun run:*)"
+      "Bash(bun run:*)",
+      "Bash(bun add:*)"
     ],
     "defaultMode": "acceptEdits"
   },

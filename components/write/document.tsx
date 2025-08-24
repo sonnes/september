@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import {
@@ -8,6 +8,7 @@ import {
   EyeIcon,
   PaperClipIcon,
   PencilIcon,
+  PresentationChartBarIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 
@@ -50,6 +51,12 @@ export default function Document({ className = '' }: DocumentProps) {
 
   const handleUploadFile = () => {
     setIsUploadDialogOpen(true);
+  };
+
+  const handleSlidesPreview = () => {
+    if (current?.id) {
+      window.open(`/write/preview/${current.id}`, '_blank', 'noopener,noreferrer');
+    }
   };
 
   const closeUploadDialog = () => {
@@ -111,6 +118,18 @@ export default function Document({ className = '' }: DocumentProps) {
               className="bg-white hover:bg-gray-50 border-gray-300 hover:border-gray-400 transition-colors duration-200"
             >
               <span className="hidden sm:inline">Upload File</span>
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleSlidesPreview}
+              disabled={!current?.id}
+              icon={<PresentationChartBarIcon className="h-4 w-4" />}
+              className="bg-white hover:bg-gray-50 border-gray-300 hover:border-gray-400 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span className="hidden sm:inline">Slides</span>
             </Button>
           </div>
 
