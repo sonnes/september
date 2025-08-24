@@ -6,7 +6,6 @@ import { DocumentsProvider } from '@/components/context/documents-provider';
 import Layout from '@/components/layout';
 import Navbar from '@/components/nav';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
-import Document from '@/components/write/document';
 import DocumentsSidebar from '@/components/write/sidebar';
 import AccountsService from '@/services/accounts';
 import { createClient } from '@/supabase/server';

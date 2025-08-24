@@ -2,11 +2,22 @@ import { TriplitClient as TriplitClientType } from '@triplit/client';
 
 import { schema } from './schema';
 
-export const triplit = new TriplitClientType({
-  schema,
-  autoConnect: false,
-  storage: 'indexeddb',
-  // Optionally add serverUrl and token here if needed
-});
+export const getClient = () => {
+  if (typeof window === 'undefined') {
+    return new TriplitClientType({
+      schema,
+      autoConnect: false,
+      storage: 'memory',
+    });
+  }
+
+  return new TriplitClientType({
+    schema,
+    autoConnect: false,
+    storage: 'indexeddb',
+  });
+};
+
+export const triplit = getClient();
 
 export type TriplitClient = typeof triplit;
