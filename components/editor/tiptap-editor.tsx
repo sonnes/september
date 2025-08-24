@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   BoldIcon,
   ChatBubbleBottomCenterTextIcon,
   CodeBracketIcon,
+  DocumentDuplicateIcon,
   EyeIcon,
   ItalicIcon,
   ListBulletIcon,
@@ -29,16 +30,14 @@ interface MarkdownStorage {
 interface TiptapEditorProps {
   content?: string;
   placeholder?: string;
-  onChange?: (content: string, markdown: string) => void;
   onSave?: (content: string, markdown: string) => void;
   className?: string;
   theme?: ThemeColor;
 }
 
 export default function TiptapEditor({
-  content = '<p>Start writing...</p>',
+  content = '',
   placeholder = 'Start writing...',
-  onChange,
   onSave,
   className = '',
   theme = 'indigo',
@@ -110,11 +109,10 @@ export default function TiptapEditor({
         transformCopiedText: false,
       }),
     ],
-    content,
     editorProps: {
       attributes: {
         class: cn(
-          'prose prose-lg max-w-none focus:outline-none min-h-[400px] p-6',
+          'prose prose-lg max-w-none focus:outline-none h-full p-6',
           'prose-headings:font-bold prose-headings:text-gray-900',
           'prose-p:text-gray-800 prose-p:leading-relaxed',
           'prose-strong:text-gray-900 prose-strong:font-semibold',
@@ -125,27 +123,20 @@ export default function TiptapEditor({
         ),
       },
     },
-    onUpdate: ({ editor }) => {
-      const htmlContent = editor.getHTML();
-      const markdownContent = (editor.storage as MarkdownStorage).markdown?.getMarkdown() || '';
-      onChange?.(htmlContent, markdownContent);
-    },
   });
 
-  const handleSave = () => {
-    if (!editor) return;
+  useEffect(() => {
+    if (editor && content && editor.isInitialized) {
+      editor.commands.setContent(content);
+    }
+  }, [content, editor]);
 
-    const htmlContent = editor.getHTML();
-    const markdownContent = (editor.storage as MarkdownStorage).markdown?.getMarkdown() || '';
-    onSave?.(htmlContent, markdownContent);
+  const getMarkdownContent = () => {
+    return (editor?.storage as MarkdownStorage)?.markdown?.getMarkdown() || '';
   };
 
   const togglePreview = () => {
     setIsPreviewMode(!isPreviewMode);
-  };
-
-  const getMarkdownContent = () => {
-    return (editor?.storage as MarkdownStorage)?.markdown?.getMarkdown() || '';
   };
 
   if (!editor) {
@@ -157,11 +148,17 @@ export default function TiptapEditor({
   }
 
   return (
-    <div className={cn(`border rounded-xl shadow-sm`, themeConfig.border, className)}>
+    <div
+      className={cn(
+        `border rounded-xl shadow-sm flex flex-col h-full`,
+        themeConfig.border,
+        className
+      )}
+    >
       {/* Toolbar */}
       <div
         className={cn(
-          'flex flex-col sm:flex-row items-start sm:items-center justify-between border-b p-3 rounded-t-xl gap-3 sm:gap-0',
+          'flex flex-col sm:flex-row items-start sm:items-center justify-between border-b p-3 rounded-t-xl gap-3 sm:gap-0 flex-shrink-0',
           themeConfig.border,
           `bg-${theme}-50`
         )}
@@ -174,9 +171,7 @@ export default function TiptapEditor({
             color={editor.isActive('bold') ? theme : 'gray'}
             onClick={() => editor.chain().focus().toggleBold().run()}
             icon={<BoldIcon />}
-          >
-            <span className="hidden sm:inline">Bold</span>
-          </Button>
+          />
           <Button
             type="button"
             variant="outline"
@@ -184,9 +179,7 @@ export default function TiptapEditor({
             color={editor.isActive('italic') ? theme : 'gray'}
             onClick={() => editor.chain().focus().toggleItalic().run()}
             icon={<ItalicIcon />}
-          >
-            <span className="hidden sm:inline">Italic</span>
-          </Button>
+          />
           <Button
             type="button"
             variant="outline"
@@ -212,9 +205,7 @@ export default function TiptapEditor({
             color={editor.isActive('bulletList') ? theme : 'gray'}
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             icon={<ListBulletIcon />}
-          >
-            <span className="hidden sm:inline">List</span>
-          </Button>
+          />
           <Button
             type="button"
             variant="outline"
@@ -222,9 +213,7 @@ export default function TiptapEditor({
             color={editor.isActive('blockquote') ? theme : 'gray'}
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             icon={<ChatBubbleBottomCenterTextIcon />}
-          >
-            <span className="hidden sm:inline">Quote</span>
-          </Button>
+          />
           <Button
             type="button"
             variant="outline"
@@ -232,33 +221,14 @@ export default function TiptapEditor({
             color={editor.isActive('codeBlock') ? theme : 'gray'}
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
             icon={<CodeBracketIcon />}
-          >
-            <span className="hidden sm:inline">Code</span>
-          </Button>
-        </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={togglePreview}
-            icon={isPreviewMode ? <PencilIcon /> : <EyeIcon />}
-          >
-            <span className="hidden sm:inline">{isPreviewMode ? 'Edit' : 'Preview'}</span>
-          </Button>
-          {onSave && (
-            <Button type="button" size="sm" color={theme} onClick={handleSave}>
-              Save
-            </Button>
-          )}
+          />
         </div>
       </div>
 
       {/* Editor Content */}
-      <div className="relative">
+      <div className="relative flex-1 min-h-0">
         {isPreviewMode ? (
-          <div className="p-4 min-h-[400px]">
+          <div className="p-4 h-full overflow-auto">
             <div className="prose prose-sm sm:prose lg:prose-lg xl:prose-2xl max-w-none">
               <div className="space-y-4">
                 <div className="border-b border-gray-200 pb-2">
@@ -278,8 +248,36 @@ export default function TiptapEditor({
             </div>
           </div>
         ) : (
-          <EditorContent editor={editor} className="min-h-[400px]" />
+          <EditorContent editor={editor} className="h-full overflow-auto" />
         )}
+      </div>
+
+      {/* Bottom Action Buttons */}
+      <div
+        className={cn(
+          'flex items-center justify-end gap-2 border-t p-3 rounded-b-xl flex-shrink-0',
+          themeConfig.border,
+          `bg-${theme}-50`
+        )}
+      >
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={togglePreview}
+          icon={isPreviewMode ? <PencilIcon /> : <EyeIcon />}
+        >
+          <span className="hidden sm:inline">{isPreviewMode ? 'Edit' : 'Preview'}</span>
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onSave?.(editor.getHTML(), getMarkdownContent())}
+          icon={<DocumentDuplicateIcon />}
+        >
+          Save
+        </Button>
       </div>
     </div>
   );

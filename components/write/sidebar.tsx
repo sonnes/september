@@ -2,6 +2,9 @@
 
 import React, { useCallback } from 'react';
 
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+
 import {
   Bars3Icon,
   DocumentIcon,
@@ -14,53 +17,23 @@ import moment from 'moment';
 
 import { useDocumentsContext } from '@/components/context/documents-provider';
 import { Button } from '@/components/ui/button';
-import { Document } from '@/types/document';
 
 interface DocumentsSidebarProps {
   className?: string;
 }
 
 export default function DocumentsSidebar({ className = '' }: DocumentsSidebarProps) {
-  const { documents, fetching, currentDocument, setCurrentDocument, deleteDocument, putDocument } =
+  const { documents, fetching, current, setCurrentId, deleteDocument, putDocument } =
     useDocumentsContext();
 
-  const handleCreateDocument = useCallback(async () => {
-    try {
-      const newDoc = await putDocument({
-        name: 'Untitled',
-        content: '',
-      });
-      setCurrentDocument(newDoc);
-    } catch (error) {
-      console.error('Failed to create document:', error);
-    }
-  }, [putDocument, setCurrentDocument]);
+  const handleCreateDocument = async () => {
+    const newDoc = await putDocument({ name: '', content: '' });
+    redirect(`/write/${newDoc.id}`);
+  };
 
-  const handleSelectDocument = useCallback(
-    (document: Document) => {
-      setCurrentDocument(document);
-    },
-    [setCurrentDocument]
-  );
-
-  const handleDeleteDocument = useCallback(
-    async (document: Document, event: React.MouseEvent) => {
-      event.stopPropagation();
-
-      if (confirm(`Are you sure you want to delete "${document.name}"?`)) {
-        try {
-          await deleteDocument(document.id);
-          // If we're deleting the current document, clear the selection
-          if (currentDocument?.id === document.id) {
-            setCurrentDocument(null);
-          }
-        } catch (error) {
-          console.error('Failed to delete document:', error);
-        }
-      }
-    },
-    [deleteDocument, currentDocument, setCurrentDocument]
-  );
+  const handleDeleteDocument = async (id: string) => {
+    await deleteDocument(id);
+  };
 
   const documentsArray = documents || [];
 
@@ -100,11 +73,11 @@ export default function DocumentsSidebar({ className = '' }: DocumentsSidebarPro
 
         <div className="p-2">
           {documentsArray.map(document => (
-            <div
+            <Link
+              href={`/write/${document.id}`}
               key={document.id}
-              onClick={() => handleSelectDocument(document)}
               className={`group relative flex items-center p-3 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
-                currentDocument?.id === document.id
+                current?.id === document.id
                   ? 'bg-indigo-50 border border-indigo-200'
                   : 'border border-transparent'
               }`}
@@ -113,22 +86,20 @@ export default function DocumentsSidebar({ className = '' }: DocumentsSidebarPro
               <div className="flex-1 min-w-0">
                 <p
                   className={`text-sm font-medium truncate ${
-                    currentDocument?.id === document.id ? 'text-indigo-700' : 'text-gray-900'
+                    current?.id === document.id ? 'text-indigo-700' : 'text-gray-900'
                   }`}
                 >
                   {document.name || 'Untitled'}
                 </p>
-                <p className="text-xs text-gray-500">
-                  {moment(document.updated_at).format('MM/DD/YYYY')}
-                </p>
+                <p className="text-xs text-gray-500">{moment(document.updated_at).fromNow()}</p>
               </div>
               <button
-                onClick={e => handleDeleteDocument(document, e)}
+                onClick={() => handleDeleteDocument(document.id)}
                 className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-all"
               >
                 <TrashIcon className="h-4 w-4" />
               </button>
-            </div>
+            </Link>
           ))}
         </div>
       </div>

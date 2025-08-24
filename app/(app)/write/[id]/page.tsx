@@ -15,7 +15,9 @@ export const metadata: Metadata = {
   title: 'Write - September',
 };
 
-export default async function WritePage() {
+export default async function DocumentPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
   const supabase = await createClient();
   const accountsService = new AccountsService(supabase);
 
@@ -31,7 +33,7 @@ export default async function WritePage() {
 
   return (
     <AccountProvider user={user} account={account}>
-      <DocumentsProvider>
+      <DocumentsProvider initialId={id}>
         <Layout>
           <Layout.Header>
             <Navbar user={user} current="/write" />
@@ -49,7 +51,9 @@ export default async function WritePage() {
           <Layout.Content>
             <div className="flex flex-1 h-[calc(100vh-270px)] md:h-[calc(100vh-304px)]">
               <DocumentsSidebar />
-              <div className="flex-1 max-w-4xl mx-auto p-6 flex flex-col min-h-0"></div>
+              <div className="flex-1 max-w-4xl mx-auto p-6 flex flex-col min-h-0">
+                <Document className="flex-1 min-h-0" />
+              </div>
             </div>
           </Layout.Content>
         </Layout>

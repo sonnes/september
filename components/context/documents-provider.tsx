@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { useDocuments } from '@/hooks/use-documents';
 import { Document, PutDocumentData } from '@/types/document';
@@ -9,33 +9,36 @@ interface DocumentsContextType {
   documents: Document[];
   fetching: boolean;
 
-  currentDocument: Document | null;
-  setCurrentDocument: (document: Document | null) => void;
+  current: Document | null;
+  setCurrentId: (id: string) => void;
 
   // Document operations
   putDocument: (data: PutDocumentData) => Promise<Document>;
   deleteDocument: (id: string) => Promise<void>;
-  putContent: (id: string, content: string) => Promise<void>;
 }
 
 const DocumentsContext = createContext<DocumentsContextType | undefined>(undefined);
 
 interface DocumentsProviderProps {
+  initialId?: string;
   children: React.ReactNode;
 }
 
-export function DocumentsProvider({ children }: DocumentsProviderProps) {
-  const { documents, fetching, putDocument, deleteDocument, putContent } = useDocuments();
-  const [currentDocument, setCurrentDocument] = useState<Document | null>(null);
+export function DocumentsProvider({ initialId, children }: DocumentsProviderProps) {
+  const { documents, fetching, putDocument, deleteDocument } = useDocuments();
+
+  const [currentId, setCurrentId] = useState<string | undefined>(initialId);
+  const currentDocument = useMemo(() => {
+    return documents.find(document => document.id === currentId) || null;
+  }, [documents, currentId]);
 
   const value: DocumentsContextType = {
     documents,
     fetching,
-    currentDocument,
-    setCurrentDocument,
+    current: currentDocument,
+    setCurrentId,
     putDocument,
     deleteDocument,
-    putContent,
   };
 
   return <DocumentsContext.Provider value={value}>{children}</DocumentsContext.Provider>;
