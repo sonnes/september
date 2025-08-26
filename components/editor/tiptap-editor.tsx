@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import {
   BoldIcon,
@@ -13,8 +13,9 @@ import {
   PencilIcon,
 } from '@heroicons/react/24/outline';
 import Placeholder from '@tiptap/extension-placeholder';
-import { EditorContent, useEditor } from '@tiptap/react';
+import { Editor, EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import { debounce } from 'lodash';
 import { Markdown } from 'tiptap-markdown';
 
 import { Button } from '@/components/ui/button';
@@ -30,7 +31,7 @@ interface MarkdownStorage {
 interface TiptapEditorProps {
   content?: string;
   placeholder?: string;
-  onSave?: (content: string, markdown: string) => void;
+  onUpdate?: (content: string, markdown: string) => void;
   className?: string;
   theme?: ThemeColor;
 }
@@ -38,102 +39,110 @@ interface TiptapEditorProps {
 export default function TiptapEditor({
   content = '',
   placeholder = 'Start writing...',
-  onSave,
+  onUpdate,
   className = '',
   theme = 'indigo',
 }: TiptapEditorProps) {
   const themeConfig = themes[theme];
 
-  const editor = useEditor({
-    content,
-    immediatelyRender: false,
-    shouldRerenderOnTransaction: false,
-    extensions: [
-      StarterKit.configure({
-        bulletList: {
-          keepMarks: true,
-          keepAttributes: false,
-          HTMLAttributes: {
-            class: 'list-disc list-inside my-4 space-y-2',
+  const editor = useEditor(
+    {
+      content,
+      immediatelyRender: false,
+      shouldRerenderOnTransaction: false,
+      extensions: [
+        StarterKit.configure({
+          bulletList: {
+            keepMarks: true,
+            keepAttributes: false,
+            HTMLAttributes: {
+              class: 'list-disc list-inside my-4 space-y-2',
+            },
           },
-        },
-        orderedList: {
-          keepMarks: true,
-          keepAttributes: false,
-          HTMLAttributes: {
-            class: 'list-decimal list-inside my-4 space-y-2',
+          orderedList: {
+            keepMarks: true,
+            keepAttributes: false,
+            HTMLAttributes: {
+              class: 'list-decimal list-inside my-4 space-y-2',
+            },
           },
-        },
-        blockquote: {
-          HTMLAttributes: {
-            class: cn(
-              'border-l-4 pl-6 py-2 my-4 italic text-gray-700 bg-gray-50 rounded-r-md',
-              `border-${theme}-400`
-            ),
+          blockquote: {
+            HTMLAttributes: {
+              class: cn(
+                'border-l-4 pl-6 py-2 my-4 italic text-gray-700 bg-gray-50 rounded-r-md',
+                `border-${theme}-400`
+              ),
+            },
           },
-        },
-        codeBlock: {
-          HTMLAttributes: {
-            class:
-              'bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-sm my-4 overflow-x-auto',
+          codeBlock: {
+            HTMLAttributes: {
+              class:
+                'bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-sm my-4 overflow-x-auto',
+            },
           },
-        },
-        heading: {
-          levels: [1, 2, 3],
-          HTMLAttributes: {
-            class: 'font-bold text-gray-900 tracking-tight',
+          heading: {
+            levels: [1, 2, 3],
+            HTMLAttributes: {
+              class: 'font-bold text-gray-900 tracking-tight',
+            },
           },
-        },
-        paragraph: {
-          HTMLAttributes: {
-            class: 'text-gray-800 leading-relaxed my-2',
+          paragraph: {
+            HTMLAttributes: {
+              class: 'text-gray-800 leading-relaxed my-2',
+            },
           },
-        },
-        listItem: {
-          HTMLAttributes: {
-            class: 'text-gray-800',
+          listItem: {
+            HTMLAttributes: {
+              class: 'text-gray-800',
+            },
           },
+        }),
+        Placeholder.configure({
+          placeholder,
+        }),
+        Markdown.configure({
+          html: true,
+          tightLists: true,
+          tightListClass: 'tight',
+          bulletListMarker: '-',
+          linkify: false,
+          breaks: false,
+          transformPastedText: true,
+          transformCopiedText: false,
+        }),
+      ],
+      editorProps: {
+        attributes: {
+          class: cn(
+            'prose prose-lg max-w-none focus:outline-none h-full p-6',
+            'prose-headings:font-bold prose-headings:text-gray-900',
+            'prose-p:text-gray-800 prose-p:leading-relaxed',
+            'prose-strong:text-gray-900 prose-strong:font-semibold',
+            'prose-em:text-gray-700',
+            'prose-code:text-gray-900 prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm',
+            `prose-a:text-${theme}-600 prose-a:no-underline hover:prose-a:underline`,
+            'placeholder:text-gray-400'
+          ),
         },
-      }),
-      Placeholder.configure({
-        placeholder,
-      }),
-      Markdown.configure({
-        html: true,
-        tightLists: true,
-        tightListClass: 'tight',
-        bulletListMarker: '-',
-        linkify: false,
-        breaks: false,
-        transformPastedText: true,
-        transformCopiedText: false,
-      }),
-    ],
-    editorProps: {
-      attributes: {
-        class: cn(
-          'prose prose-lg max-w-none focus:outline-none h-full p-6',
-          'prose-headings:font-bold prose-headings:text-gray-900',
-          'prose-p:text-gray-800 prose-p:leading-relaxed',
-          'prose-strong:text-gray-900 prose-strong:font-semibold',
-          'prose-em:text-gray-700',
-          'prose-code:text-gray-900 prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm',
-          `prose-a:text-${theme}-600 prose-a:no-underline hover:prose-a:underline`,
-          'placeholder:text-gray-400'
-        ),
+      },
+      onUpdate: ({ editor }) => {
+        if (!onUpdate) return;
+        if (editor.isFocused) return;
+
+        const html = editor.getHTML();
+        const markdown = (editor.storage as MarkdownStorage)?.markdown?.getMarkdown() || '';
+
+        onUpdate?.(html, markdown);
+      },
+      onBlur: ({ editor }) => {
+        const html = editor.getHTML();
+        const markdown = (editor.storage as MarkdownStorage)?.markdown?.getMarkdown() || '';
+
+        onUpdate?.(html, markdown);
       },
     },
-  });
-
-  useEffect(() => {
-    if (editor && content && editor.isInitialized) {
-      editor.commands.setContent(content);
-    }
-  }, [content, editor]);
-
-  const getMarkdownContent = () => {
-    return (editor?.storage as MarkdownStorage)?.markdown?.getMarkdown() || '';
-  };
+    [content]
+  );
 
   if (!editor) {
     return (
