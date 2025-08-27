@@ -17,38 +17,52 @@ type NavigationItem = {
   description?: string;
 };
 
-type MobileNavProps = {
-  items: NavigationItem[];
+export type MobileNavProps = {
+  title?: string;
+  items?: NavigationItem[];
   current?: string;
   user?: {
     email?: string;
     avatar?: string;
   } | null;
   color?: ThemeColor;
+  className?: string;
+  children?: React.ReactNode;
 };
 
-export default function MobileNav({ items, current, user }: MobileNavProps) {
-
+export default function MobileNav({
+  title = 'September',
+  items,
+  current,
+  user,
+  className,
+  children,
+}: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
       {/* Mobile navigation bar */}
-      <nav className="md:hidden mx-auto flex max-w-7xl items-center justify-between py-4 mb-2 border-b border-white/10">
-        <Link href="/" className="-m-1.5 p-1.5 flex items-center space-x-2">
-          <span className="sr-only">September</span>
-          <Image src="/logo.png" alt="September" width={32} height={32} />
-          <span className="text-white font-semibold text-xl tracking-tight">september</span>
-        </Link>
+      <nav
+        className={cn(
+          'md:hidden mx-auto flex max-w-7xl items-center justify-between py-4 mb-2 border-b border-white/10',
+          className
+        )}
+      >
+        <div className="flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={() => setIsOpen(true)}
+            className="inline-flex items-center justify-center rounded-md p-2 text-white"
+          >
+            <span className="sr-only">Open main menu</span>
+            <Bars3Icon aria-hidden="true" className="size-6" />
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-white"
-        >
-          <span className="sr-only">Open main menu</span>
-          <Bars3Icon aria-hidden="true" className="size-6" />
-        </button>
+          <div className="text-white font-semibold text-xl tracking-tight">{title}</div>
+        </div>
+
+        {children}
       </nav>
 
       {/* Mobile menu */}
@@ -76,7 +90,7 @@ export default function MobileNav({ items, current, user }: MobileNavProps) {
             <div className="mt-6 flow-root">
               <div className="-my-6 divide-y divide-gray-500/10">
                 <div className="space-y-2 py-6">
-                  {items.map(item => {
+                  {items?.map(item => {
                     const isActive = current === item.href;
                     return (
                       <Link

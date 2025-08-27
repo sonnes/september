@@ -12,7 +12,7 @@ import Autocomplete from '@/components/editor/autocomplete';
 import Editor from '@/components/editor/simple';
 import Suggestions from '@/components/editor/suggestions';
 import Layout from '@/components/layout';
-import Navbar from '@/components/nav';
+import { DesktopNav, MobileNav } from '@/components/nav';
 import { MessageList, MobileMessageList } from '@/components/talk';
 import MuteButton from '@/components/talk/mute-button';
 import Recorder from '@/components/talk/recorder';
@@ -44,37 +44,38 @@ export default async function TalkPage() {
     messagesService.getMessages(user.id),
   ]);
 
+  const actions = (
+    <div className="flex items-center space-x-2">
+      <MuteButton />
+      <MobileMessageList />
+      <Link
+        href="/settings/speech"
+        className="p-2 text-white rounded-full transition-colors cursor-pointer"
+      >
+        <Cog6ToothIcon className="w-6 h-6" />{' '}
+      </Link>
+      <Link
+        href={`/monitor/${user.id}`}
+        className="p-2 text-white rounded-full transition-colors cursor-pointer"
+      >
+        <EyeIcon className="w-6 h-6" />
+      </Link>
+    </div>
+  );
+
   return (
     <AccountProvider user={user} account={account}>
       <MessagesProvider user={user} messages={messages}>
         <AudioPlayerProvider>
           <Layout>
             <Layout.Header>
-              <Navbar user={user} current="/talk" />
-              <div className="flex items-center justify-between mb-4">
-                <Breadcrumbs
-                  pages={[{ name: 'Talk', href: '/talk', current: true }]}
-                  className="md:hidden"
-                />
-                <h1 className="hidden md:block text-2xl font-bold tracking-tight text-white">
-                  Talk
-                </h1>
-                <div className="flex items-center space-x-2">
-                  <MuteButton />
-                  <MobileMessageList />
-                  <Link
-                    href="/settings/speech"
-                    className="p-2 text-white rounded-full transition-colors cursor-pointer"
-                  >
-                    <Cog6ToothIcon className="w-6 h-6" />{' '}
-                  </Link>
-                  <Link
-                    href={`/monitor/${user.id}`}
-                    className="p-2 text-white rounded-full transition-colors cursor-pointer"
-                  >
-                    <EyeIcon className="w-6 h-6" />
-                  </Link>
-                </div>
+              <DesktopNav user={user} current="/talk" />
+              <MobileNav title="Talk" user={user} current="/talk">
+                {actions}
+              </MobileNav>
+              <div className="hidden md:flex items-center justify-between mb-4">
+                <h1 className="text-2xl font-bold tracking-tight text-white">Talk</h1>
+                {actions}
               </div>
             </Layout.Header>
 

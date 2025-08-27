@@ -13,22 +13,25 @@ type NavigationItem = {
   description?: string;
 };
 
-type DesktopNavProps = {
-  items: NavigationItem[];
+export type DesktopNavProps = {
+  items?: NavigationItem[];
   current?: string;
   user?: {
     email?: string;
     avatar?: string;
   } | null;
   color?: ThemeColor;
+  className?: string;
 };
 
-export default function DesktopNav({ items, current, user }: DesktopNavProps) {
-
+export default function DesktopNav({ items, current, user, className }: DesktopNavProps) {
   return (
     <nav
       aria-label="Global"
-      className="hidden md:flex mx-auto max-w-7xl items-center justify-between py-4 mb-6 border-b border-white/10"
+      className={cn(
+        'hidden md:flex mx-auto max-w-7xl items-center justify-between py-4 mb-6 border-b border-white/10',
+        className
+      )}
     >
       <div className="flex lg:flex-1">
         <Link href="/" className="-m-1.5 p-1.5 flex items-center space-x-2">
@@ -39,7 +42,7 @@ export default function DesktopNav({ items, current, user }: DesktopNavProps) {
       </div>
 
       <PopoverGroup className="hidden lg:flex lg:gap-x-12">
-        {items.map(item => {
+        {items?.map(item => {
           const isActive = current === item.href;
           return (
             <Link

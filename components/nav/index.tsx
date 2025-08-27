@@ -1,7 +1,7 @@
 import { type ThemeColor } from '@/lib/theme';
 
-import DesktopNav from './desktop-nav';
-import MobileNav from './mobile-nav';
+import DesktopNavComponent, { type DesktopNavProps } from './desktop';
+import MobileNavComponent, { type MobileNavProps } from './mobile';
 
 export { SettingsTabs } from './settings-tabs';
 
@@ -20,6 +20,7 @@ type NavbarProps = {
     avatar?: string;
   } | null;
   color?: ThemeColor;
+  className?: string;
 };
 
 const defaultItems = [
@@ -28,6 +29,14 @@ const defaultItems = [
   { name: 'Stories', href: '/stories' },
   { name: 'Settings', href: '/settings' },
 ];
+
+export const MobileNav = ({ items = defaultItems, ...props }: MobileNavProps) => {
+  return <MobileNavComponent items={items} {...props} />;
+};
+
+export const DesktopNav = ({ items = defaultItems, ...props }: DesktopNavProps) => {
+  return <DesktopNavComponent items={items} {...props} />;
+};
 
 export default function Navbar({
   items = defaultItems,
