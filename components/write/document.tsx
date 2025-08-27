@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import {
@@ -69,89 +69,124 @@ export default function Document({ className = '' }: DocumentProps) {
     setIsDirty(false);
   };
 
+  // Calculate document statistics
+  const documentStats = useMemo(() => {
+    if (!content) return { words: 0, characters: 0, readingTime: 0 };
+
+    // Strip HTML tags for accurate word count
+    const text = content
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const words = text ? text.split(' ').length : 0;
+    const characters = text.length;
+    const readingTime = Math.ceil(words / 200); // 200 WPM average
+
+    return { words, characters, readingTime };
+  }, [content]);
+
   return (
-    <div className={`h-full flex flex-col ${className}`}>
-      {/* Document Header */}
-
-      <TextInput
-        value={name}
-        onChange={e => setName(e.target.value)}
-        placeholder="Untitled Document"
-        className="text-3xl font-bold text-gray-900 border-0 shadow-none bg-transparent px-0 py-0 placeholder:text-gray-400 focus:outline-none hover:bg-gray-50 rounded-md transition-colors duration-200"
-      />
-
-      {/* Editor Container */}
-      <div className="flex-1 min-h-0 flex flex-col bg-white">
-        {content}
-        <TiptapEditor
-          content={content}
-          placeholder="Start writing your story..."
-          onUpdate={handleContentChange}
-          className="flex-1 min-h-0 border-0 shadow-none"
-          theme="indigo"
-        />
-      </div>
-
-      {/* Action Bar */}
-      <div className="flex-shrink-0 border-t border-gray-200 bg-gray-50 px-6 py-4 shadow-inner">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleUploadFile}
-              icon={<PaperClipIcon className="h-4 w-4" />}
-              className="bg-white hover:bg-gray-50 border-gray-300 hover:border-gray-400 transition-colors duration-200"
-            >
-              <span className="hidden sm:inline">Upload File</span>
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleSlidesPreview}
-              disabled={!current?.id}
-              icon={<PresentationChartBarIcon className="h-4 w-4" />}
-              className="bg-white hover:bg-gray-50 border-gray-300 hover:border-gray-400 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span className="hidden sm:inline">Slides</span>
-            </Button>
+    <div className={`h-full flex flex-col bg-gray-50 ${className}`}>
+      {/* Main Content Card */}
+      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full p-4 sm:p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 flex flex-col overflow-hidden">
+          {/* Document Header */}
+          <div className="px-4 sm:px-8 pt-6 sm:pt-8 pb-4 sm:pb-6 border-b border-gray-100">
+            <TextInput
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Untitled Document"
+              className="text-2xl sm:text-3xl font-bold text-gray-900 border-0 shadow-none bg-transparent px-0 py-2 placeholder:text-gray-400 focus:outline-none hover:bg-gray-50/50 rounded-lg transition-all duration-200 -mx-2"
+            />
           </div>
 
-          {/* Primary Action - Save */}
-          <div className="flex items-center gap-3">
-            {/* Status indicator */}
-            <div className="text-sm text-gray-500 flex items-center gap-2">
-              <div
-                className={`w-2 h-2 rounded-full ${isDirty ? 'bg-yellow-500' : 'bg-green-500'}`}
-              ></div>
-              {isDirty ? 'Unsaved changes' : 'Saved'}
+          {/* Editor Container */}
+          <div className="flex-1 min-h-0 flex flex-col">
+            <TiptapEditor
+              content={content}
+              placeholder="Start writing your story..."
+              onUpdate={handleContentChange}
+              className="flex-1 min-h-0 border-0 shadow-none"
+              theme="indigo"
+            />
+          </div>
+        </div>
+
+        {/* Enhanced Action Bar */}
+        <div className="mt-4 sm:mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleUploadFile}
+                icon={<PaperClipIcon className="h-4 w-4" />}
+                className="bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow transition-all duration-200"
+              >
+                <span className="hidden sm:inline">Upload</span>
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleSlidesPreview}
+                disabled={!current?.id}
+                icon={<PresentationChartBarIcon className="h-4 w-4" />}
+                className="bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="hidden sm:inline">Slides</span>
+              </Button>
             </div>
-            <Button
-              type="button"
-              variant="default"
-              size="sm"
-              onClick={handleSave}
-              icon={<DocumentDuplicateIcon className="h-4 w-4" />}
-              color="indigo"
-              className="shadow-sm hover:shadow-md transition-all duration-200"
-            >
-              <span className="hidden sm:inline">Save</span>
-            </Button>
+
+            {/* Enhanced Save Section */}
+            <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto justify-between sm:justify-end">
+              {/* Enhanced Status indicator */}
+              <div className="flex items-center gap-2 text-sm">
+                <div className="relative">
+                  <div
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                      isDirty
+                        ? 'bg-amber-400 shadow-amber-400/50 shadow-sm'
+                        : 'bg-emerald-400 shadow-emerald-400/50 shadow-sm'
+                    }`}
+                  />
+                  {isDirty && (
+                    <div className="absolute inset-0 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  )}
+                </div>
+                <span className={`font-medium ${isDirty ? 'text-amber-600' : 'text-emerald-600'}`}>
+                  {isDirty ? 'Unsaved changes' : 'All changes saved'}
+                </span>
+              </div>
+
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                onClick={handleSave}
+                disabled={!isDirty}
+                icon={<DocumentDuplicateIcon className="h-4 w-4" />}
+                color="indigo"
+                className="shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="hidden sm:inline">Save Document</span>
+                <span className="sm:hidden">Save</span>
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Upload File Dialog */}
+      {/* Enhanced Upload File Dialog */}
       <Dialog open={isUploadDialogOpen} onClose={closeUploadDialog} className="relative z-50">
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" aria-hidden="true" />
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm" aria-hidden="true" />
 
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <DialogPanel className="mx-auto max-w-2xl w-full bg-white rounded-xl shadow-2xl border border-gray-200">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <DialogTitle className="text-lg font-semibold text-gray-900">
+          <DialogPanel className="mx-auto max-w-2xl w-full bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gray-50/50">
+              <DialogTitle className="text-xl font-semibold text-gray-900">
                 Upload File to Extract Text
               </DialogTitle>
               <Button
@@ -159,7 +194,7 @@ export default function Document({ className = '' }: DocumentProps) {
                 variant="circular"
                 size="sm"
                 onClick={closeUploadDialog}
-                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100/70 transition-colors duration-200"
               >
                 <XMarkIcon className="h-5 w-5" />
               </Button>

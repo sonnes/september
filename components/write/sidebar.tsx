@@ -1,17 +1,14 @@
 'use client';
 
-import React, { useCallback } from 'react';
+import React from 'react';
 
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import {
-  Bars3Icon,
   DocumentIcon,
-  PencilIcon,
   PlusIcon,
   TrashIcon,
-  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import moment from 'moment';
 
@@ -22,8 +19,8 @@ interface DocumentsSidebarProps {
   className?: string;
 }
 
-export default function DocumentsSidebar({ className = '' }: DocumentsSidebarProps) {
-  const { documents, fetching, current, setCurrentId, deleteDocument, putDocument } =
+export default function DocumentsSidebar({ }: DocumentsSidebarProps) {
+  const { documents, fetching, current, deleteDocument, putDocument } =
     useDocumentsContext();
 
   const handleCreateDocument = async () => {

@@ -1,24 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-
 import {
   BoldIcon,
   ChatBubbleBottomCenterTextIcon,
   CodeBracketIcon,
-  DocumentDuplicateIcon,
-  EyeIcon,
   ItalicIcon,
   ListBulletIcon,
-  PencilIcon,
 } from '@heroicons/react/24/outline';
 import Placeholder from '@tiptap/extension-placeholder';
-import { Editor, EditorContent, useEditor } from '@tiptap/react';
+import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { debounce } from 'lodash';
 import { Markdown } from 'tiptap-markdown';
 
-import { Button } from '@/components/ui/button';
 import { type ThemeColor, themes } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
@@ -162,82 +155,112 @@ export default function TiptapEditor({
         className
       )}
     >
-      {/* Toolbar */}
-      <div
-        className={cn(
-          'flex flex-col sm:flex-row items-start sm:items-center justify-between border-b p-3 gap-3 sm:gap-0 flex-shrink-0',
-          // Only apply border styling if not using custom className
-          !className.includes('border-0') && themeConfig.border,
-          // Apply rounded corners only if not using custom className
-          !className.includes('border-0') && 'rounded-t-xl'
-        )}
-      >
-        <div className="flex items-center gap-1 flex-wrap">
-          <Button
+      {/* Seamless Toolbar */}
+      <div className="flex items-center px-4 py-2 border-b border-gray-100 bg-gray-50/30">
+        <div className="flex items-center gap-0.5">
+          {/* Bold */}
+          <button
             type="button"
-            variant="outline"
-            size="sm"
-            color={editor.isActive('bold') ? theme : 'gray'}
             onClick={() => editor.chain().focus().toggleBold().run()}
-            icon={<BoldIcon />}
-            className="bg-white hover:bg-gray-50"
-          />
-          <Button
+            className={cn(
+              'flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 hover:bg-gray-100',
+              editor.isActive('bold') 
+                ? `bg-${theme}-100 text-${theme}-700 shadow-sm` 
+                : 'text-gray-600 hover:text-gray-900'
+            )}
+          >
+            <BoldIcon className="h-4 w-4" />
+          </button>
+          
+          {/* Italic */}
+          <button
             type="button"
-            variant="outline"
-            size="sm"
-            color={editor.isActive('italic') ? theme : 'gray'}
             onClick={() => editor.chain().focus().toggleItalic().run()}
-            icon={<ItalicIcon />}
-            className="bg-white hover:bg-gray-50"
-          />
-          <Button
+            className={cn(
+              'flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 hover:bg-gray-100',
+              editor.isActive('italic') 
+                ? `bg-${theme}-100 text-${theme}-700 shadow-sm` 
+                : 'text-gray-600 hover:text-gray-900'
+            )}
+          >
+            <ItalicIcon className="h-4 w-4" />
+          </button>
+          
+          {/* Separator */}
+          <div className="w-px h-6 bg-gray-200 mx-2" />
+          
+          {/* H1 */}
+          <button
             type="button"
-            variant="outline"
-            size="sm"
-            color={editor.isActive('heading', { level: 1 }) ? theme : 'gray'}
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-            className="bg-white hover:bg-gray-50"
+            className={cn(
+              'flex items-center justify-center px-2 h-8 rounded-md transition-all duration-200 hover:bg-gray-100',
+              editor.isActive('heading', { level: 1 }) 
+                ? `bg-${theme}-100 text-${theme}-700 shadow-sm font-semibold` 
+                : 'text-gray-600 hover:text-gray-900'
+            )}
           >
-            H1
-          </Button>
-          <Button
+            <span className="text-sm font-medium">H1</span>
+          </button>
+          
+          {/* H2 */}
+          <button
             type="button"
-            variant="outline"
-            size="sm"
-            color={editor.isActive('heading', { level: 2 }) ? theme : 'gray'}
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-            className="bg-white hover:bg-gray-50"
+            className={cn(
+              'flex items-center justify-center px-2 h-8 rounded-md transition-all duration-200 hover:bg-gray-100',
+              editor.isActive('heading', { level: 2 }) 
+                ? `bg-${theme}-100 text-${theme}-700 shadow-sm font-semibold` 
+                : 'text-gray-600 hover:text-gray-900'
+            )}
           >
-            H2
-          </Button>
-          <Button
+            <span className="text-sm font-medium">H2</span>
+          </button>
+          
+          {/* Separator */}
+          <div className="w-px h-6 bg-gray-200 mx-2" />
+          
+          {/* Bullet List */}
+          <button
             type="button"
-            variant="outline"
-            size="sm"
-            color={editor.isActive('bulletList') ? theme : 'gray'}
             onClick={() => editor.chain().focus().toggleBulletList().run()}
-            icon={<ListBulletIcon />}
-            className="bg-white hover:bg-gray-50"
-          />
-          <Button
+            className={cn(
+              'flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 hover:bg-gray-100',
+              editor.isActive('bulletList') 
+                ? `bg-${theme}-100 text-${theme}-700 shadow-sm` 
+                : 'text-gray-600 hover:text-gray-900'
+            )}
+          >
+            <ListBulletIcon className="h-4 w-4" />
+          </button>
+          
+          {/* Blockquote */}
+          <button
             type="button"
-            variant="outline"
-            size="sm"
-            color={editor.isActive('blockquote') ? theme : 'gray'}
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
-            icon={<ChatBubbleBottomCenterTextIcon />}
-            className="bg-white hover:bg-gray-50"
-          />
-          <Button
+            className={cn(
+              'flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 hover:bg-gray-100',
+              editor.isActive('blockquote') 
+                ? `bg-${theme}-100 text-${theme}-700 shadow-sm` 
+                : 'text-gray-600 hover:text-gray-900'
+            )}
+          >
+            <ChatBubbleBottomCenterTextIcon className="h-4 w-4" />
+          </button>
+          
+          {/* Code Block */}
+          <button
             type="button"
-            variant="outline"
-            size="sm"
-            color={editor.isActive('codeBlock') ? theme : 'gray'}
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-            icon={<CodeBracketIcon />}
-            className="bg-white hover:bg-gray-50"
-          />
+            className={cn(
+              'flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 hover:bg-gray-100',
+              editor.isActive('codeBlock') 
+                ? `bg-${theme}-100 text-${theme}-700 shadow-sm` 
+                : 'text-gray-600 hover:text-gray-900'
+            )}
+          >
+            <CodeBracketIcon className="h-4 w-4" />
+          </button>
         </div>
       </div>
 

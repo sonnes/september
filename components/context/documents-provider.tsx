@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 
 import { useDocuments } from '@/hooks/use-documents';
 import { Document, PutDocumentData } from '@/types/document';
