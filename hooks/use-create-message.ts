@@ -2,8 +2,8 @@ import { useState } from 'react';
 
 import { v4 as uuidv4 } from 'uuid';
 
-import { useAccountContext } from '@/components/context/account-provider';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
+import { useAccount } from '@/services/account/context';
 import MessagesService from '@/services/messages';
 import { useSpeech } from '@/services/speech/use-speech';
 import supabase from '@/supabase/client';
@@ -13,7 +13,7 @@ import { useToast } from './use-toast';
 export function useCreateMessage() {
   const [status, setStatus] = useState<'idle' | 'loading'>('idle');
 
-  const { account } = useAccountContext();
+  const { account } = useAccount();
   const { showError } = useToast();
   const { generateSpeech } = useSpeech();
   const { enqueue } = useAudioPlayer();

@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 
-import { AccountProvider } from '@/components/context/account-provider';
 import Layout from '@/components/layout';
 import Navbar, { SettingsTabs } from '@/components/nav';
+import { AccountProvider } from '@/services/account/context';
 import AccountsService from '@/services/accounts';
 import { createClient } from '@/supabase/server';
 

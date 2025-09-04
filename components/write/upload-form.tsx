@@ -7,7 +7,7 @@ import FileUploader from '@/components/ui/file-uploader';
 import { useToast } from '@/hooks/use-toast';
 import GeminiService from '@/services/gemini';
 
-import { useAccountContext } from '../context/account-provider';
+import { useAccountContext } from '../../services/account/context';
 
 export default function UploadForm({
   onTextExtracted,

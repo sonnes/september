@@ -3,12 +3,12 @@ import React from 'react';
 import { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 
-import { AccountProvider } from '@/components/context/account-provider';
 import DeckView from '@/components/decks/view';
 import Layout from '@/components/layout';
 import Navbar from '@/components/nav';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { AudioPlayerProvider } from '@/hooks/use-audio-player';
+import { AccountProvider } from '@/services/account/context';
 import AccountsService from '@/services/accounts';
 import DecksService from '@/services/decks';
 import { createClient } from '@/supabase/server';

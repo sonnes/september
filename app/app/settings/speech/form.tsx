@@ -7,11 +7,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Control, UseFormSetValue, UseFormWatch, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { useAccountContext } from '@/components/context/account-provider';
 import { Button } from '@/components/ui/button';
 import { FormCheckbox, FormDropdown, FormInput, FormRangeWithLabels } from '@/components/ui/form';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useToast } from '@/hooks/use-toast';
+import { useAccountContext } from '@/services/account/context';
 import { Voice } from '@/services/speech';
 import { SpeechProvider, useSpeechContext } from '@/services/speech/context';
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useAccountContext } from '@/components/context/account-provider';
+import { useAccount } from '@/services/account/context';
 
 import { SpeechOptions, SpeechProvider } from '.';
 import { BrowserSpeechProvider } from './provider-browser';
@@ -15,7 +15,7 @@ const providers = new Map<string, SpeechProvider>([
 ]);
 
 export function useSpeech() {
-  const { account } = useAccountContext();
+  const { account } = useAccount();
 
   const getSettings = useCallback(
     (providerId: string) => {

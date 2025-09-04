@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { useAccountContext } from '@/components/context/account-provider';
+import { useAccount } from '@/services/account/context';
 import supabase from '@/supabase/client';
 import { removeRealtimeSubscription, subscribeToUserMessages } from '@/supabase/realtime';
 import { Message } from '@/types/message';
@@ -8,7 +8,7 @@ import { Message } from '@/types/message';
 import { useToast } from './use-toast';
 
 export function useMessages({ messages: initialMessages }: { messages: Message[] }) {
-  const { user } = useAccountContext();
+  const { user } = useAccount();
   const { showError } = useToast();
   const [messages, setMessages] = useState<Message[]>(initialMessages);
 

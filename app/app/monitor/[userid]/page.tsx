@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 
-import { AccountProvider } from '@/components/context/account-provider';
 import { AudioPlayerProvider } from '@/hooks/use-audio-player';
+import { AccountProvider } from '@/services/account/context';
 import AccountsService from '@/services/accounts';
 import { createClient } from '@/supabase/server';
 

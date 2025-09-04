@@ -5,7 +5,6 @@ import { redirect } from 'next/navigation';
 import { Cog6ToothIcon, EyeIcon } from '@heroicons/react/24/outline';
 
 import AudioPlayer from '@/components/audio-player';
-import { AccountProvider } from '@/components/context/account-provider';
 import { MessagesProvider } from '@/components/context/messages-provider';
 import { TextProvider } from '@/components/context/text-provider';
 import Autocomplete from '@/components/editor/autocomplete';
@@ -18,6 +17,7 @@ import MuteButton from '@/components/talk/mute-button';
 import Recorder from '@/components/talk/recorder';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { AudioPlayerProvider } from '@/hooks/use-audio-player';
+import { AccountProvider } from '@/services/account/context';
 import AccountsService from '@/services/accounts';
 import MessagesService from '@/services/messages';
 import { createClient } from '@/supabase/server';

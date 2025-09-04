@@ -2,14 +2,13 @@
 
 import { ReactNode, createContext, useContext } from 'react';
 
-import { User } from '@supabase/supabase-js';
-
-import { useAccountSupabase } from '@/hooks/use-account-supabase';
-import { useAccountTriplit } from '@/hooks/use-account-triplit';
+import { useAccountSupabase } from '@/services/account/supabase';
+import { useAccountTriplit } from '@/services/account/triplit';
 import type { Account, PutAccountData } from '@/types/account';
+import type { User } from '@/types/user';
 
 interface AccountContextType {
-  user: User | Account;
+  user: User;
   account: Account;
   putAccount: (accountData: PutAccountData) => Promise<void>;
   patchAccount: (accountData: Partial<PutAccountData>) => Promise<void>;
@@ -41,7 +40,7 @@ export function AccountProvider(props: AccountProviderProps) {
   return <AccountContext.Provider value={accountData}>{props.children}</AccountContext.Provider>;
 }
 
-export function useAccountContext() {
+export function useAccount() {
   const context = useContext(AccountContext);
   if (context === undefined) {
     throw new Error('useAccountContext must be used within an AccountProvider');

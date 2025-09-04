@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
-import { AccountProvider } from '@/components/context/account-provider';
 import { DocumentsProvider } from '@/components/context/documents-provider';
 import Layout from '@/components/layout';
 import { DesktopNav, MobileNav } from '@/components/nav';
 import DocumentsSidebar from '@/components/write/sidebar';
+import { AccountProvider } from '@/services/account/context';
 import AccountsService from '@/services/accounts';
 import { createClient } from '@/supabase/server';
 

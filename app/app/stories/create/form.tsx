@@ -6,11 +6,11 @@ import { useRouter } from 'next/navigation';
 
 import { v4 as uuidv4 } from 'uuid';
 
-import { useAccountContext } from '@/components/context/account-provider';
 import { Button } from '@/components/ui/button';
 import FileUploader from '@/components/ui/file-uploader';
 import { useCreateDeck } from '@/hooks/use-create-deck';
 import { useToast } from '@/hooks/use-toast';
+import { useAccountContext } from '@/services/account/context';
 import { ExtractDeckResponse } from '@/services/gemini';
 
 const CreateStory: React.FC = () => {

@@ -4,11 +4,11 @@ import { useEffect } from 'react';
 
 import { Control, UseFormSetValue, useForm } from 'react-hook-form';
 
-import { useAccountContext } from '@/components/context/account-provider';
 import { Button } from '@/components/ui/button';
 import { FormInput, FormTextarea } from '@/components/ui/form';
 import { useCorpus } from '@/hooks/use-ai-settings';
 import { useToast } from '@/hooks/use-toast';
+import { useAccountContext } from '@/services/account/context';
 
 interface AISettingsFormData {
   instructions: string;

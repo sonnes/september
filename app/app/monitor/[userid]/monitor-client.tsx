@@ -5,10 +5,10 @@ import { useEffect, useRef, useState } from 'react';
 import moment from 'moment';
 import Webcam from 'react-webcam';
 
-import { useAccountContext } from '@/components/context/account-provider';
 import AnimatedText from '@/components/ui/animated-text';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useToast } from '@/hooks/use-toast';
+import { useAccount } from '@/services/account/context';
 import MessagesService from '@/services/messages';
 import supabase from '@/supabase/client';
 import { removeRealtimeSubscription, subscribeToUserMessages } from '@/supabase/realtime';
@@ -25,7 +25,7 @@ export default function MonitorClient({}: MonitorClientProps) {
   const [latestMessage, setLatestMessage] = useState<Message | null>(null);
 
   const { enqueue } = useAudioPlayer();
-  const { user } = useAccountContext();
+  const { user } = useAccount();
   const { showError } = useToast();
 
   // Realtime subscription for messages

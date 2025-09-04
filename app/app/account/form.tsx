@@ -6,11 +6,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Control, UseFormSetValue, UseFormWatch, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { useAccountContext } from '@/components/context/account-provider';
 import { Button } from '@/components/ui/button';
 import FileUploader from '@/components/ui/file-uploader';
 import { FormCheckbox, FormInput } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
+import { useAccountContext } from '@/services/account/context';
 
 // Validation schema
 const accountFormSchema = z.object({

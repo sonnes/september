@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { User } from '@supabase/supabase-js';
-
 import AccountsService from '@/services/accounts';
 import supabase from '@/supabase/client';
 import { removeRealtimeSubscription, subscribeToUserAccount } from '@/supabase/realtime';
 import type { Account, PutAccountData } from '@/types/account';
+import type { User } from '@/types/user';
 
 const accountService = new AccountsService(supabase);
 
-export function useAccount({
+export function useAccountSupabase({
   user: initialUser,
   account: initialAccount,
 }: {
