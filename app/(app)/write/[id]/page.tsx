@@ -4,8 +4,7 @@ import { redirect } from 'next/navigation';
 import { AccountProvider } from '@/components/context/account-provider';
 import { DocumentsProvider } from '@/components/context/documents-provider';
 import Layout from '@/components/layout';
-import Navbar from '@/components/nav';
-import Breadcrumbs from '@/components/ui/breadcrumbs';
+import { DesktopNav, MobileNav } from '@/components/nav';
 import Document from '@/components/write/document';
 import DocumentsSidebar from '@/components/write/sidebar';
 import AccountsService from '@/services/accounts';
@@ -36,15 +35,10 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
       <DocumentsProvider initialId={id}>
         <Layout>
           <Layout.Header>
-            <Navbar user={user} current="/write" />
-            <div className="flex items-center justify-between mb-4">
-              <Breadcrumbs
-                pages={[{ name: 'Write', href: '/write', current: true }]}
-                className="md:hidden"
-              />
-              <h1 className="hidden md:block text-2xl font-bold tracking-tight text-white">
-                Write
-              </h1>
+            <DesktopNav user={user} current="/write" />
+            <MobileNav title="Write" user={user} current="/write" />
+            <div className="hidden md:flex items-center justify-between mb-4">
+              <h1 className="text-2xl font-bold tracking-tight text-white">Write</h1>
             </div>
           </Layout.Header>
 
