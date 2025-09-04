@@ -64,7 +64,7 @@ export default async function TalkPage() {
   );
 
   return (
-    <AccountProvider user={user} account={account}>
+    <AccountProvider provider="supabase" user={user} account={account}>
       <MessagesProvider user={user} messages={messages}>
         <AudioPlayerProvider>
           <Layout>

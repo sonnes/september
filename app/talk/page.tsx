@@ -27,23 +27,6 @@ export const metadata: Metadata = {
 };
 
 export default async function TalkPage() {
-  const supabase = await createClient();
-  const accountsService = new AccountsService(supabase);
-  const messagesService = new MessagesService(supabase);
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/login');
-  }
-
-  const [account, messages] = await Promise.all([
-    accountsService.getAccount(user.id),
-    messagesService.getMessages(user.id),
-  ]);
-
   const actions = (
     <div className="flex items-center space-x-2">
       <MuteButton />
@@ -55,7 +38,7 @@ export default async function TalkPage() {
         <Cog6ToothIcon className="w-6 h-6" />{' '}
       </Link>
       <Link
-        href={`/monitor/${user.id}`}
+        href={`/monitor/local-user`}
         className="p-2 text-white rounded-full transition-colors cursor-pointer"
       >
         <EyeIcon className="w-6 h-6" />
@@ -64,13 +47,13 @@ export default async function TalkPage() {
   );
 
   return (
-    <AccountProvider user={user} account={account}>
-      <MessagesProvider user={user} messages={messages}>
+    <AccountProvider provider="triplit">
+      <MessagesProvider messages={[]}>
         <AudioPlayerProvider>
           <Layout>
             <Layout.Header>
-              <DesktopNav user={user} current="/talk" />
-              <MobileNav title="Talk" user={user} current="/talk">
+              <DesktopNav user={null} current="/talk" />
+              <MobileNav title="Talk" user={null} current="/talk">
                 {actions}
               </MobileNav>
               <div className="hidden md:flex items-center justify-between mb-4">

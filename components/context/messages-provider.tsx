@@ -15,13 +15,12 @@ interface MessagesContextType {
 const MessagesContext = createContext<MessagesContextType | undefined>(undefined);
 
 interface MessagesProviderProps {
-  user: User;
   messages: Message[];
   children: ReactNode;
 }
 
-export function MessagesProvider({ user, messages, children }: MessagesProviderProps) {
-  const messagesData = useMessages({ user, messages });
+export function MessagesProvider({ messages, children }: MessagesProviderProps) {
+  const messagesData = useMessages({ messages });
 
   return <MessagesContext.Provider value={messagesData}>{children}</MessagesContext.Provider>;
 }
