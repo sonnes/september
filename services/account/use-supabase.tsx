@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import AccountsService from '@/services/accounts';
+import AccountsService from '@/services/account/supabase';
 import supabase from '@/supabase/client';
 import { removeRealtimeSubscription, subscribeToUserAccount } from '@/supabase/realtime';
 import type { Account, PutAccountData } from '@/types/account';

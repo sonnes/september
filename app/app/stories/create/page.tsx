@@ -5,7 +5,7 @@ import Layout from '@/components/layout';
 import Navbar from '@/components/nav';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { AccountProvider } from '@/services/account/context';
-import AccountsService from '@/services/accounts';
+import AccountsService from '@/services/account/supabase';
 import { createClient } from '@/supabase/server';
 
 import CreateStory from './form';

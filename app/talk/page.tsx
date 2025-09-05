@@ -18,7 +18,7 @@ import Recorder from '@/components/talk/recorder';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { AudioPlayerProvider } from '@/hooks/use-audio-player';
 import { AccountProvider } from '@/services/account/context';
-import AccountsService from '@/services/accounts';
+import AccountsService from '@/services/account/supabase';
 import MessagesService from '@/services/messages';
 import { createClient } from '@/supabase/server';
 

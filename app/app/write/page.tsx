@@ -6,7 +6,7 @@ import Layout from '@/components/layout';
 import { DesktopNav, MobileNav } from '@/components/nav';
 import DocumentsSidebar from '@/components/write/sidebar';
 import { AccountProvider } from '@/services/account/context';
-import AccountsService from '@/services/accounts';
+import AccountsService from '@/services/account/supabase';
 import { createClient } from '@/supabase/server';
 
 export const metadata: Metadata = {
@@ -17,18 +17,14 @@ export default async function WritePage() {
   const supabase = await createClient();
   const accountsService = new AccountsService(supabase);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [user, account] = await accountsService.getCurrentAccount();
 
-  if (!user) {
+  if (!user || !account) {
     redirect('/login');
   }
 
-  const account = await accountsService.getAccount(user.id);
-
   return (
-    <AccountProvider user={user} account={account}>
+    <AccountProvider provider="supabase" user={user} account={account}>
       <DocumentsProvider>
         <Layout>
           <Layout.Header>

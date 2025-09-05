@@ -18,7 +18,7 @@ import Recorder from '@/components/talk/recorder';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { AudioPlayerProvider } from '@/hooks/use-audio-player';
 import { AccountProvider } from '@/services/account/context';
-import AccountsService from '@/services/accounts';
+import AccountsService from '@/services/account/supabase';
 import MessagesService from '@/services/messages';
 import { createClient } from '@/supabase/server';
 
@@ -31,18 +31,13 @@ export default async function TalkPage() {
   const accountsService = new AccountsService(supabase);
   const messagesService = new MessagesService(supabase);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [user, account] = await accountsService.getCurrentAccount();
 
-  if (!user) {
+  if (!user || !account) {
     redirect('/login');
   }
 
-  const [account, messages] = await Promise.all([
-    accountsService.getAccount(user.id),
-    messagesService.getMessages(user.id),
-  ]);
+  const [messages] = await Promise.all([messagesService.getMessages(user.id)]);
 
   const actions = (
     <div className="flex items-center space-x-2">
@@ -65,7 +60,7 @@ export default async function TalkPage() {
 
   return (
     <AccountProvider provider="supabase" user={user} account={account}>
-      <MessagesProvider user={user} messages={messages}>
+      <MessagesProvider messages={messages}>
         <AudioPlayerProvider>
           <Layout>
             <Layout.Header>

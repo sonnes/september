@@ -2,10 +2,11 @@
 
 import { ReactNode, createContext, useContext } from 'react';
 
-import { useAccountSupabase } from '@/services/account/supabase';
-import { useAccountTriplit } from '@/services/account/triplit';
 import type { Account, PutAccountData } from '@/types/account';
 import type { User } from '@/types/user';
+
+import { useAccountSupabase } from './use-supabase';
+import { useAccountTriplit } from './use-triplit';
 
 interface AccountContextType {
   user: User;

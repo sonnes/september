@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { DocumentsProvider } from '@/components/context/documents-provider';
 import SlidesPresentation from '@/components/write/slides-presentation';
 import { AccountProvider } from '@/services/account/context';
-import AccountsService from '@/services/accounts';
+import AccountsService from '@/services/account/supabase';
 import { createClient } from '@/supabase/server';
 
 export const metadata: Metadata = {
@@ -21,18 +21,14 @@ export default async function PreviewPage({ params }: PreviewPageProps) {
   const supabase = await createClient();
   const accountsService = new AccountsService(supabase);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [user, account] = await accountsService.getCurrentAccount();
 
-  if (!user) {
+  if (!user || !account) {
     redirect('/login');
   }
 
-  const account = await accountsService.getAccount(user.id);
-
   return (
-    <AccountProvider user={user} account={account}>
+    <AccountProvider provider="supabase" user={user} account={account}>
       <DocumentsProvider initialId={id}>
         <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100">
           <SlidesPresentation className="h-full" />

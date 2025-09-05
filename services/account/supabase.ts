@@ -1,23 +1,26 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 
-import { PutAccountData } from '@/types/account';
+import { Account, PutAccountData } from '@/types/account';
+import { User } from '@/types/user';
 
-class AccountsService {
+class AccountService {
   private supabase: SupabaseClient;
 
   constructor(client: SupabaseClient) {
     this.supabase = client;
   }
 
-  async getCurrentAccount() {
+  async getCurrentAccount(): Promise<[User | null, Account | null]> {
     const {
       data: { user },
     } = await this.supabase.auth.getUser();
+
     if (!user) {
-      throw new Error('User not found');
+      return [null, null];
     }
 
-    return this.getAccount(user.id);
+    const account = await this.getAccount(user.id);
+    return [user, account];
   }
 
   async getAccount(id: string) {
@@ -29,7 +32,7 @@ class AccountsService {
       throw error;
     }
 
-    return data;
+    return data as Account;
   }
 
   async putAccount(id: string, account: PutAccountData) {
@@ -60,4 +63,4 @@ class AccountsService {
   }
 }
 
-export default AccountsService;
+export default AccountService;

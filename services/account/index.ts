@@ -1,3 +1,4 @@
 import { AccountProvider, useAccount } from './context';
+import AccountService from './supabase';
 
-export { AccountProvider, useAccount };
+export { AccountProvider, useAccount, AccountService };
