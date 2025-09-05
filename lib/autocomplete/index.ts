@@ -1,4 +1,4 @@
-export { TypingSuggestions } from './typing-suggestions';
+export { Autocomplete } from './autocomplete';
 export { TrieNode } from './trie-node';
 export type {
   SuggestionResult,
@@ -12,6 +12,6 @@ export type {
   WordFrequency,
   PhraseFrequency,
   NGramData,
-} from './typing-suggestions';
+} from './autocomplete';
 export * from './utils';
 export * from './sample-data';

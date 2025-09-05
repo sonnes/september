@@ -29,7 +29,7 @@ export interface NGramData {
  * Implements the same public API as the original autocomplete module
  */
 
-export class TypingSuggestions {
+export class Autocomplete {
   private wordFrequency: Map<string, number>;
   private wordTrie: TrieNode;
   private bigramModel: Map<string, Map<string, number>>;
@@ -263,11 +263,7 @@ export class TypingSuggestions {
    * @returns Array of completion suggestions
    */
   getCompletionsAdvanced(prefix: string, options: SuggestionOptions = {}): SuggestionResult[] {
-    const {
-      maxResults = 10,
-      minFrequency = 0,
-      caseSensitive = false,
-    } = options;
+    const { maxResults = 10, minFrequency = 0, caseSensitive = false } = options;
 
     if (!prefix) return [];
 
@@ -302,12 +298,7 @@ export class TypingSuggestions {
    * @returns Array of prediction results
    */
   getNextWordAdvanced(context: string, options: PredictionOptions = {}): PredictionResult[] {
-    const {
-      maxResults = 5,
-      minFrequency = 0,
-      useTrigrams = true,
-      useBigrams = true,
-    } = options;
+    const { maxResults = 5, minFrequency = 0, useTrigrams = true, useBigrams = true } = options;
 
     if (!context) return [];
 

@@ -2,8 +2,8 @@
  * Test file demonstrating the suggestions library functionality
  * This can be run with: bun run lib/suggestions/test.ts
  */
+import { Autocomplete } from './autocomplete';
 import { SAMPLE_CORPUS, TECHNICAL_CORPUS } from './sample-data';
-import { TypingSuggestions } from './typing-suggestions';
 import {
   ENGLISH_STOP_WORDS,
   cleanText,
@@ -16,7 +16,7 @@ console.log('🧪 Testing Typing Suggestions Library\n');
 
 // Test 1: Basic functionality
 console.log('1. Basic Functionality Test');
-const engine = new TypingSuggestions();
+const engine = new Autocomplete();
 engine.processCorpus(SAMPLE_CORPUS);
 
 const stats = engine.getStatsAdvanced();
@@ -36,7 +36,7 @@ console.log(
 
 // Test 2: Technical corpus
 console.log('\n2. Technical Corpus Test');
-const techEngine = new TypingSuggestions();
+const techEngine = new Autocomplete();
 techEngine.processCorpus(TECHNICAL_CORPUS);
 
 const techCompletions = techEngine.getCompletionsAdvanced('api');
@@ -67,8 +67,8 @@ console.log(`🔤 Tokens (no stop words):`, tokens);
 
 // Test 4: Merging suggestions
 console.log('\n4. Merging Suggestions Test');
-const engine1 = new TypingSuggestions();
-const engine2 = new TypingSuggestions();
+const engine1 = new Autocomplete();
+const engine2 = new Autocomplete();
 
 engine1.processCorpus(SAMPLE_CORPUS);
 engine2.processCorpus(TECHNICAL_CORPUS);
@@ -133,7 +133,7 @@ console.log(
 
 // Test 9: Simple API compatibility (requires training)
 console.log('\n9. Simple API Compatibility Test');
-const simpleEngine = new TypingSuggestions();
+const simpleEngine = new Autocomplete();
 simpleEngine.train(SAMPLE_CORPUS);
 
 const simpleCompletions = simpleEngine.getCompletions('tech');

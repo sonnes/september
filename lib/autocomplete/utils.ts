@@ -1,5 +1,5 @@
+import { Autocomplete } from './autocomplete';
 import type { SuggestionResult } from './types';
-import { TypingSuggestions } from './typing-suggestions';
 
 /**
  * Utility functions for the suggestions library
@@ -81,12 +81,12 @@ export function tokenize(
  * @param filePath - Path to the text file
  * @returns Promise that resolves to a TypingSuggestions instance
  */
-export async function createFromFile(filePath: string): Promise<TypingSuggestions> {
+export async function createFromFile(filePath: string): Promise<Autocomplete> {
   try {
     const response = await fetch(filePath);
     const text = await response.text();
 
-    const engine = new TypingSuggestions();
+    const engine = new Autocomplete();
     engine.processCorpus(text);
 
     return engine;
@@ -100,8 +100,8 @@ export async function createFromFile(filePath: string): Promise<TypingSuggestion
  * @param sources - Array of text sources
  * @returns TypingSuggestions instance
  */
-export function createFromMultipleSources(sources: string[]): TypingSuggestions {
-  const engine = new TypingSuggestions();
+export function createFromMultipleSources(sources: string[]): Autocomplete {
+  const engine = new Autocomplete();
 
   for (const source of sources) {
     engine.processCorpus(source);

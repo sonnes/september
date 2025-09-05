@@ -5,7 +5,7 @@
  *
  * Run with: bun run lib/suggestions/comparison-demo.ts
  */
-import { TypingSuggestions } from './typing-suggestions';
+import { Autocomplete } from './autocomplete';
 
 // Test corpus from the original demo
 const TEST_CORPUS = `
@@ -34,7 +34,7 @@ async function runComparison() {
   console.log('🔄 Starting TypingSuggestions API Compatibility Demo\n');
 
   // Initialize the refactored TypingSuggestions
-  const typingSuggestions = new TypingSuggestions();
+  const typingSuggestions = new Autocomplete();
 
   console.log('📚 Training TypingSuggestions with the test corpus...');
 
@@ -112,7 +112,7 @@ async function runComparison() {
   // Test 6: Error Handling
   console.log('🔍 Test 6: Error Handling');
   try {
-    const untrainedSuggestions = new TypingSuggestions();
+    const untrainedSuggestions = new Autocomplete();
     untrainedSuggestions.getCompletions('test');
     console.log('❌ Error Handling: FAIL (should throw error for untrained service)');
   } catch (error) {
