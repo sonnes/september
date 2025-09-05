@@ -6,7 +6,7 @@ import { PauseIcon, PlayIcon } from '@heroicons/react/24/outline';
 
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useToast } from '@/hooks/use-toast';
-import supabase from '@/supabase/client';
+import { useAudio } from '@/services/audio';
 import type { Audio } from '@/types/audio';
 
 interface PlayButtonProps {
@@ -17,21 +17,13 @@ interface PlayButtonProps {
 export function PlayButton({ path }: PlayButtonProps) {
   const { enqueue, isPlaying, current, togglePlayPause } = useAudioPlayer();
   const { showError } = useToast();
+  const { downloadAudio } = useAudio();
+
   const [audio, setAudio] = useState<Audio | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const isCurrentTrack = current?.path === path;
   const isCurrentlyPlaying = isCurrentTrack && isPlaying;
-
-  const downloadAudio = async (path: string) => {
-    const { data, error } = await supabase.storage.from('audio').download(path);
-    if (error || !data) {
-      console.error('Error downloading audio:', error);
-      showError('Error downloading audio');
-      return;
-    }
-    return data;
-  };
 
   const handlePlayPause = async () => {
     if (isLoading || !path) return;

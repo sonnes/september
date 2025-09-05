@@ -7,7 +7,8 @@ import { useMicVAD, utils } from '@ricky0123/vad-react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { Button } from '@/components/ui/button';
-import { useCreateMessage } from '@/hooks/use-create-message';
+import { useAccount } from '@/services/account/context';
+import { useMessages } from '@/services/messages';
 
 function VADController({ onSpeechEnd }: { onSpeechEnd: (blob: Blob) => Promise<void> }) {
   const { listening, loading, toggle } = useMicVAD({
@@ -50,7 +51,8 @@ function VADController({ onSpeechEnd }: { onSpeechEnd: (blob: Blob) => Promise<v
 
 export default function Recorder() {
   const [vadActive, setVadActive] = useState(false);
-  const { createTranscription } = useCreateMessage();
+  const { createMessage } = useMessages();
+  const { user } = useAccount();
 
   const handleSpeechEnd = async (wav: Blob) => {
     const formData = new FormData();
@@ -69,9 +71,11 @@ export default function Recorder() {
     const message = {
       id: uuidv4(),
       text: result.text,
+      type: 'transcription',
+      user_id: user.id,
     };
 
-    await createTranscription(message);
+    await createMessage(message);
   };
 
   const toggleRecording = () => {

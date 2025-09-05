@@ -56,4 +56,12 @@ export const schema = S.Collections({
       updated_at: S.Date({ default: S.Default.now() }),
     }),
   },
+  audio_files: {
+    schema: S.Schema({
+      id: S.Id(),
+      blob: S.String(),
+      alignment: S.Optional(S.Json()),
+      created_at: S.Date({ default: S.Default.now() }),
+    }),
+  },
 });

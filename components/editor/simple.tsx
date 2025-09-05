@@ -2,10 +2,15 @@
 
 import { useState } from 'react';
 
+import { v4 as uuidv4 } from 'uuid';
+
 import { useTextContext } from '@/components/context/text-provider';
 import { Button } from '@/components/ui/button';
+import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useAccount } from '@/services/account/context';
+import { useAudio } from '@/services/audio';
 import { useMessages } from '@/services/messages';
+import { useSpeech } from '@/services/speech/use-speech';
 
 type EditorProps = {
   placeholder?: string;
@@ -13,14 +18,31 @@ type EditorProps = {
 
 export default function Editor({ placeholder = 'Start typing...' }: EditorProps) {
   const { text, setText, reset } = useTextContext();
-  const { createMessage } = useMessages();
   const { user } = useAccount();
+  const { createMessage } = useMessages();
+  const { generateSpeech } = useSpeech();
+  const { enqueue } = useAudioPlayer();
+  const { uploadAudio } = useAudio();
 
   const [status, setStatus] = useState<'idle' | 'loading'>('idle');
 
   const handleSubmit = async () => {
     setStatus('loading');
-    await createMessage({ text, type: 'message', user_id: user.id });
+
+    const audio = await generateSpeech(text);
+
+    enqueue(audio);
+
+    const id = uuidv4();
+    const audioPath = `${id}.mp3`;
+
+    await Promise.all([
+      audio.blob
+        ? uploadAudio({ path: audioPath, blob: audio.blob, alignment: audio.alignment })
+        : Promise.resolve(null),
+      createMessage({ id, text, type: 'message', user_id: user.id, audio_path: audioPath }),
+    ]);
+
     setStatus('idle');
     reset();
   };
