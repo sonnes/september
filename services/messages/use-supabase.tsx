@@ -4,31 +4,31 @@ import { useToast } from '@/hooks/use-toast';
 import { useAccount } from '@/services/account/context';
 import supabase from '@/supabase/client';
 import { removeRealtimeSubscription, subscribeToUserMessages } from '@/supabase/realtime';
-import { Message } from '@/types/message';
+import { CreateMessageData, Message } from '@/types/message';
 
-export function useMessagesSupabase({ messages: initialMessages }: { messages: Message[] }) {
+import { MessagesService } from './supabase';
+
+const messagesService = new MessagesService(supabase);
+
+export function useMessages({ messages: initialMessages }: { messages: Message[] }) {
   const { user } = useAccount();
   const { showError } = useToast();
+
   const [messages, setMessages] = useState<Message[]>(initialMessages);
 
   const getMessages = useCallback(async () => {
     if (!user) return;
 
-    const { data, error } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(100);
+    try {
+      const data = await messagesService.getMessages(user.id);
 
-    if (error) {
-      showError(error.message);
+      setMessages(data.reverse());
+
+      return data;
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Failed to fetch messages');
       console.error(error);
-      return;
     }
-
-    setMessages(data.reverse());
-    return data;
   }, [user, showError]);
 
   useEffect(() => {
@@ -72,4 +72,24 @@ export function useMessagesSupabase({ messages: initialMessages }: { messages: M
     messages,
     getMessages,
   };
+}
+
+export function useCreateMessage() {
+  const { user } = useAccount();
+  const { showError } = useToast();
+
+  const createMessage = useCallback(
+    async (message: CreateMessageData) => {
+      try {
+        const createdMessage = await messagesService.createMessage(message);
+        return createdMessage;
+      } catch (error) {
+        showError(error instanceof Error ? error.message : 'Failed to create message');
+        console.error(error);
+      }
+    },
+    [user]
+  );
+
+  return { createMessage };
 }

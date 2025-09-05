@@ -14,12 +14,10 @@ import { DesktopNav, MobileNav } from '@/components/nav';
 import { MessageList, MobileMessageList } from '@/components/talk';
 import MuteButton from '@/components/talk/mute-button';
 import Recorder from '@/components/talk/recorder';
-import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { AudioPlayerProvider } from '@/hooks/use-audio-player';
 import { AccountProvider } from '@/services/account/context';
 import AccountsService from '@/services/account/supabase';
-import { MessagesProvider } from '@/services/messages/context';
-import MessagesService from '@/services/messages/messages';
+import { MessagesProvider, MessagesService } from '@/services/messages';
 import { createClient } from '@/supabase/server';
 
 export const metadata: Metadata = {
@@ -60,7 +58,7 @@ export default async function TalkPage() {
 
   return (
     <AccountProvider provider="supabase" user={user} account={account}>
-      <MessagesProvider messages={messages}>
+      <MessagesProvider provider="supabase" messages={messages}>
         <AudioPlayerProvider>
           <Layout>
             <Layout.Header>

@@ -1,8 +1,11 @@
 'use client';
 
+import { useState } from 'react';
+
 import { useTextContext } from '@/components/context/text-provider';
 import { Button } from '@/components/ui/button';
-import { useCreateMessage } from '@/hooks/use-create-message';
+import { useAccount } from '@/services/account/context';
+import { useMessages } from '@/services/messages';
 
 type EditorProps = {
   placeholder?: string;
@@ -10,11 +13,15 @@ type EditorProps = {
 
 export default function Editor({ placeholder = 'Start typing...' }: EditorProps) {
   const { text, setText, reset } = useTextContext();
-  const { createMessage, status } = useCreateMessage();
+  const { createMessage } = useMessages();
+  const { user } = useAccount();
+
+  const [status, setStatus] = useState<'idle' | 'loading'>('idle');
 
   const handleSubmit = async () => {
-    await createMessage({ text });
-
+    setStatus('loading');
+    await createMessage({ text, type: 'message', user_id: user.id });
+    setStatus('idle');
     reset();
   };
 

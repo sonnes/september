@@ -8,7 +8,7 @@ import { useAccount } from '@/services/account/context';
 import { triplit } from '@/triplit/client';
 import { CreateMessageData, Message } from '@/types/message';
 
-export function useMessagesTriplit() {
+export function useMessages() {
   const { user } = useAccount();
   const { showError } = useToast();
 
@@ -51,11 +51,15 @@ export function useMessagesTriplit() {
   };
 }
 
-export function useCreateMessageTriplit() {
+export function useCreateMessage() {
   const { user } = useAccount();
 
   const createMessage = useCallback(
-    async (message: CreateMessageData) => {
+    async (message: CreateMessageData): Promise<Message | undefined> => {
+      if (!message.id) {
+        message.id = uuidv4();
+      }
+
       await triplit.insert('messages', {
         id: message.id || uuidv4(),
         text: message.text,
@@ -63,6 +67,14 @@ export function useCreateMessageTriplit() {
         user_id: message.user_id,
         created_at: new Date(),
       });
+
+      const result = await triplit.fetchById('messages', message.id);
+
+      if (!result) {
+        return undefined;
+      }
+
+      return result as Message;
     },
     [user]
   );

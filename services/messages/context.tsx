@@ -2,14 +2,21 @@
 
 import { ReactNode, createContext, useContext } from 'react';
 
-import type { Message } from '@/types/message';
+import type { CreateMessageData, Message } from '@/types/message';
 
-import { useMessagesSupabase } from './use-supabase';
-import { useMessagesTriplit } from './use-triplit';
+import {
+  useCreateMessage as useCreateMessageSupabase,
+  useMessages as useMessagesSupabase,
+} from './use-supabase';
+import {
+  useCreateMessage as useCreateMessageTriplit,
+  useMessages as useMessagesTriplit,
+} from './use-triplit';
 
 interface MessagesContextType {
   messages: Message[];
   getMessages: () => Promise<Message[] | undefined>;
+  createMessage: (message: CreateMessageData) => Promise<Message | undefined>;
 }
 
 const MessagesContext = createContext<MessagesContextType | undefined>(undefined);
@@ -31,7 +38,14 @@ export function MessagesProvider(props: MessagesProviderProps) {
       ? useMessagesSupabase({ messages: props.messages })
       : useMessagesTriplit();
 
-  return <MessagesContext.Provider value={messagesData}>{props.children}</MessagesContext.Provider>;
+  const { createMessage } =
+    props.provider === 'supabase' ? useCreateMessageSupabase() : useCreateMessageTriplit();
+
+  return (
+    <MessagesContext.Provider value={{ ...messagesData, createMessage }}>
+      {props.children}
+    </MessagesContext.Provider>
+  );
 }
 
 export function useMessages() {
