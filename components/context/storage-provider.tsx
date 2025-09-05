@@ -2,7 +2,7 @@
 
 import { ReactNode, createContext, useContext } from 'react';
 
-import { StorageProvider } from '@/services/storage/provider';
+import { StorageProvider } from '@/services/messages/provider';
 
 const StorageProviderContext = createContext<StorageProvider | undefined>(undefined);
 

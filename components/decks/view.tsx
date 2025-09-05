@@ -12,7 +12,7 @@ import {
 
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import DecksService from '@/services/decks';
-import MessagesService from '@/services/messages';
+import MessagesService from '@/services/messages/messages';
 import { useSpeech } from '@/services/speech/use-speech';
 import supabase from '@/supabase/client';
 import { Card, Deck } from '@/types/deck';
@@ -45,7 +45,7 @@ const DeckView: React.FC<DeckViewProps> = ({ deck: initialDeck }) => {
 
   useEffect(() => {
     if (!cards?.length) return;
-    
+
     const loadAudio = async () => {
       for (const card of cards) {
         if (card.audio) {
@@ -61,7 +61,7 @@ const DeckView: React.FC<DeckViewProps> = ({ deck: initialDeck }) => {
         }
       }
     };
-    
+
     loadAudio();
   }, [cards, enqueue]);
 

@@ -5,7 +5,6 @@ import { redirect } from 'next/navigation';
 import { Cog6ToothIcon, EyeIcon } from '@heroicons/react/24/outline';
 
 import AudioPlayer from '@/components/audio-player';
-import { MessagesProvider } from '@/components/context/messages-provider';
 import { TextProvider } from '@/components/context/text-provider';
 import Autocomplete from '@/components/editor/autocomplete';
 import Editor from '@/components/editor/simple';
@@ -15,12 +14,9 @@ import { DesktopNav, MobileNav } from '@/components/nav';
 import { MessageList, MobileMessageList } from '@/components/talk';
 import MuteButton from '@/components/talk/mute-button';
 import Recorder from '@/components/talk/recorder';
-import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { AudioPlayerProvider } from '@/hooks/use-audio-player';
 import { AccountProvider } from '@/services/account/context';
-import AccountsService from '@/services/account/supabase';
-import MessagesService from '@/services/messages';
-import { createClient } from '@/supabase/server';
+import { MessagesProvider } from '@/services/messages';
 
 export const metadata: Metadata = {
   title: 'Talk - September',
@@ -48,7 +44,7 @@ export default async function TalkPage() {
 
   return (
     <AccountProvider provider="triplit">
-      <MessagesProvider messages={[]}>
+      <MessagesProvider provider="triplit">
         <AudioPlayerProvider>
           <Layout>
             <Layout.Header>

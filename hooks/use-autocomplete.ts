@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useMessagesContext } from '@/components/context/messages-provider';
 import { TypingSuggestions } from '@/lib/autocomplete';
 import { useAccount } from '@/services/account/context';
+import { useMessages } from '@/services/messages';
 
 interface UseAutocompleteReturn {
   words: string[];
@@ -17,7 +17,7 @@ interface UseAutocompleteReturn {
 
 export function useAutocomplete(): UseAutocompleteReturn {
   const { account } = useAccount();
-  const { messages } = useMessagesContext();
+  const { messages } = useMessages();
 
   const [words, setWords] = useState<string[]>([]);
   const [phrases, setPhrases] = useState<string[]>([]);

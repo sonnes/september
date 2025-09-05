@@ -5,8 +5,8 @@ import { useState } from 'react';
 import { ChatBubbleLeftRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import moment from 'moment';
 
-import { useMessagesContext } from '@/components/context/messages-provider';
 import { cn } from '@/lib/utils';
+import { useMessages } from '@/services/messages';
 import type { Message } from '@/types/message';
 
 import { PlayButton } from './play-button';
@@ -40,7 +40,7 @@ function MessageItem({ message }: { message: Message }) {
 }
 
 export function MessageList() {
-  const { messages } = useMessagesContext();
+  const { messages } = useMessages();
 
   return (
     <>

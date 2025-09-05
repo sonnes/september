@@ -1,16 +1,12 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 
-import { Alignment, Audio } from '@/types/audio';
 import { CreateMessageData, Message } from '@/types/message';
 
-import { StorageProvider } from './provider';
-
-export class SupabaseStorageProvider extends StorageProvider {
+export class MessagesService {
   private supabase: SupabaseClient;
 
   constructor(client: SupabaseClient) {
-    super();
     this.supabase = client;
   }
 
@@ -31,30 +27,6 @@ export class SupabaseStorageProvider extends StorageProvider {
     }
 
     return data;
-  }
-
-  async uploadAudio({
-    path,
-    blob,
-    alignment,
-  }: {
-    path: string;
-    blob: string;
-    alignment?: Alignment;
-  }): Promise<string> {
-    const buffer = Buffer.from(blob, 'base64');
-    const { data, error } = await this.supabase.storage.from('audio').upload(path, buffer, {
-      contentType: 'audio/mp3',
-      upsert: true,
-      metadata: {
-        alignment: alignment,
-      },
-    });
-    if (error) {
-      throw error;
-    }
-
-    return data.path;
   }
 
   async getMessages(user_id: string): Promise<Message[]> {
@@ -83,12 +55,6 @@ export class SupabaseStorageProvider extends StorageProvider {
       .limit(10);
     if (error) throw error;
 
-    return data;
-  }
-
-  async downloadAudio(path: string): Promise<Blob> {
-    const { data, error } = await this.supabase.storage.from('audio').download(path);
-    if (error) throw error;
     return data;
   }
 }

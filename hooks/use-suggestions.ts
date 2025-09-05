@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { useMessagesContext } from '@/components/context/messages-provider';
 import { useTextContext } from '@/components/context/text-provider';
 import { useToast } from '@/hooks/use-toast';
 import { useAccount } from '@/services/account/context';
 import GeminiService from '@/services/gemini';
-import MessagesService from '@/services/messages';
+import { MessagesService, useMessages } from '@/services/messages';
 import supabase from '@/supabase/client';
 import { Message } from '@/types/message';
 import { Suggestion } from '@/types/suggestion';
@@ -19,7 +18,7 @@ interface UseSuggestionsReturn {
 
 export function useSuggestions(timeout: number = 3000): UseSuggestionsReturn {
   const { text } = useTextContext();
-  const { messages } = useMessagesContext();
+  const { messages } = useMessages();
   const { account } = useAccount();
   const { showError } = useToast();
 

@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useAccount } from '@/services/account/context';
-import MessagesService from '@/services/messages';
+import { MessagesService } from '@/services/messages';
 import { useSpeech } from '@/services/speech/use-speech';
 import supabase from '@/supabase/client';
 

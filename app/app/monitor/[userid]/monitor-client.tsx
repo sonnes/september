@@ -9,7 +9,7 @@ import AnimatedText from '@/components/ui/animated-text';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useToast } from '@/hooks/use-toast';
 import { useAccount } from '@/services/account/context';
-import MessagesService from '@/services/messages';
+import { MessagesService } from '@/services/messages';
 import supabase from '@/supabase/client';
 import { removeRealtimeSubscription, subscribeToUserMessages } from '@/supabase/realtime';
 import { Message } from '@/types/message';
