@@ -62,19 +62,7 @@ export default async function TalkPage() {
 
               <Layout.Content>
                 <TextProvider>
-                  {/* Preview Component */}
-                  <div className="w-full bg-white border-b border-zinc-200 mb-4">
-                    <div className="flex items-center gap-4 px-6 py-4">
-                      <div className="flex-shrink-0">
-                        <Recorder />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <AudioPlayer />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex h-[calc(100vh-270px)] md:h-[calc(100vh-304px)]">
+                  <div className="flex h-[calc(100vh-100px)] md:h-[calc(100vh-196px)]">
                     {/* Left column - Message list */}
                     <div className="hidden md:block w-1/3 lg:w-1/4 px-2 overflow-y-auto border-r border-zinc-200">
                       <div className="max-w-full">
@@ -84,6 +72,15 @@ export default async function TalkPage() {
 
                     {/* Main content area */}
                     <div className="flex-1 flex flex-col px-2 md:px-4 min-w-0 overflow-hidden">
+                      <div className="flex items-center gap-4 px-6 py-4 border-b border-zinc-200">
+                        <div className="flex-shrink-0">
+                          <Recorder />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <AudioPlayer />
+                        </div>
+                        `
+                      </div>
                       {/* Top components - Autocomplete and Suggestions */}
                       <div className="flex flex-col gap-2">
                         <Autocomplete />
