@@ -5,45 +5,27 @@ import { useEffect, useState } from 'react';
 import { PlayIcon } from '@heroicons/react/24/outline';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Control, UseFormSetValue, UseFormWatch, useForm } from 'react-hook-form';
-import { z } from 'zod';
 
+import {
+  BrowserTTSSettingsSection,
+  ElevenLabsSettingsSection,
+  SpeechSettingsFormData,
+  SpeechSettingsSchema,
+} from '@/components/settings';
 import { Button } from '@/components/ui/button';
-import { FormCheckbox, FormDropdown, FormInput, FormRangeWithLabels } from '@/components/ui/form';
+import { FormDropdown, FormInput, FormRangeWithLabels } from '@/components/ui/form';
+
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useToast } from '@/hooks/use-toast';
-import { useAccountContext } from '@/services/account/context';
+
+import { useAccount } from '@/services/account';
 import { Voice } from '@/services/speech';
 import { SpeechProvider, useSpeechContext } from '@/services/speech/context';
 
-// Validation schema for the form
-const talkSettingsSchema = z.object({
-  speech_provider: z.string().min(1, 'Speech provider is required'),
-
-  elevenlabs_settings: z.object({
-    api_key: z.string().min(1, 'API key is required'),
-    model_id: z.string().optional(),
-    voice_id: z.string().optional(),
-    speed: z.number().min(0.7).max(1.2),
-    stability: z.number().min(0).max(1),
-    similarity: z.number().min(0).max(1),
-    style: z.number().min(0).max(1),
-    speaker_boost: z.boolean(),
-  }),
-  browser_tts_settings: z.object({
-    voice_id: z.string().optional(),
-    speed: z.number().min(0.5).max(2.0),
-    pitch: z.number().min(-20).max(20).optional(),
-    volume: z.number().min(0).max(1).optional(),
-    language: z.string().optional(),
-  }),
-});
-
-type TalkSettingsFormData = z.infer<typeof talkSettingsSchema>;
-
 interface SectionProps {
-  control: Control<TalkSettingsFormData>;
-  watch: UseFormWatch<TalkSettingsFormData>;
-  setValue: UseFormSetValue<TalkSettingsFormData>;
+  control: Control<SpeechSettingsFormData>;
+  watch: UseFormWatch<SpeechSettingsFormData>;
+  setValue: UseFormSetValue<SpeechSettingsFormData>;
 }
 
 function ProviderSection({ control }: SectionProps) {
@@ -205,179 +187,13 @@ function VoiceSection({ watch, setValue }: SectionProps) {
   );
 }
 
-const MODELS = [
-  { id: 'eleven_multilingual_v2', name: 'Eleven Multilingual v2' },
-  { id: 'eleven_flash_v2_5', name: 'Eleven Flash v2.5' },
-  { id: 'eleven_flash_v2', name: 'Eleven Flash v2 (English Only)' },
-];
-
-function ElevenLabsSettingsSection({ control }: SectionProps) {
-  return (
-    <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-4 md:grid-cols-3">
-      <div className="px-4 sm:px-0">
-        <h2 className="text-base/7 font-semibold text-gray-900">ElevenLabs Settings</h2>
-        <p className="mt-1 text-sm/6 text-gray-600">
-          Configure the settings for ElevenLabs speech generation.
-        </p>
-      </div>
-
-      <div className="md:col-span-2 px-4">
-        <div className="max-w-2xl space-y-6">
-          <div className="rounded-md bg-gray-50 p-4">
-            <div className="space-y-6">
-              {/* API Key */}
-              <FormInput
-                name="elevenlabs_settings.api_key"
-                control={control}
-                label="API Key"
-                type="password"
-                required
-                placeholder="Enter your ElevenLabs API key"
-              />
-
-              {/* Model Selection */}
-              <FormDropdown
-                name="elevenlabs_settings.model_id"
-                control={control}
-                label="Model"
-                options={MODELS}
-                placeholder="Select a model"
-              />
-
-              {/* Speed Control */}
-              <FormRangeWithLabels
-                name="elevenlabs_settings.speed"
-                control={control}
-                label="Speed"
-                leftLabel="Slower"
-                rightLabel="Faster"
-                min={0.7}
-                max={1.2}
-                step={0.1}
-                valueFormatter={value => `${value}x`}
-              />
-
-              {/* Stability Control */}
-              <FormRangeWithLabels
-                name="elevenlabs_settings.stability"
-                control={control}
-                label="Stability"
-                leftLabel="More variable"
-                rightLabel="More stable"
-                min={0}
-                max={1}
-                step={0.05}
-                valueFormatter={value => `${Math.round(value * 100)}%`}
-              />
-
-              {/* Similarity Control */}
-              <FormRangeWithLabels
-                name="elevenlabs_settings.similarity"
-                control={control}
-                label="Similarity"
-                leftLabel="Low"
-                rightLabel="High"
-                min={0}
-                max={1}
-                step={0.05}
-                valueFormatter={value => `${Math.round(value * 100)}%`}
-              />
-
-              {/* Style Exaggeration Control */}
-              <FormRangeWithLabels
-                name="elevenlabs_settings.style"
-                control={control}
-                label="Style Exaggeration"
-                leftLabel="None"
-                rightLabel="Exaggerated"
-                min={0}
-                max={1}
-                step={0.05}
-                valueFormatter={value => `${Math.round(value * 100)}%`}
-              />
-
-              {/* Speaker Boost Toggle */}
-              <FormCheckbox
-                name="elevenlabs_settings.speaker_boost"
-                control={control}
-                label="Speaker boost"
-                description="Enhance speaker clarity and reduce background noise"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function BrowserTTSSettingsSection({ control }: SectionProps) {
-  return (
-    <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-4 md:grid-cols-3">
-      <div className="px-4 sm:px-0">
-        <h2 className="text-base/7 font-semibold text-gray-900">Browser TTS Settings</h2>
-        <p className="mt-1 text-sm/6 text-gray-600">
-          Configure the settings for browser text-to-speech.
-        </p>
-      </div>
-
-      <div className="md:col-span-2 px-4">
-        <div className="max-w-2xl space-y-6">
-          <div className="rounded-md bg-gray-50 p-4">
-            <div className="space-y-6">
-              {/* Speed Control */}
-              <FormRangeWithLabels
-                name="browser_tts_settings.speed"
-                control={control}
-                label="Speed"
-                leftLabel="Slower"
-                rightLabel="Faster"
-                min={0.5}
-                max={2.0}
-                step={0.1}
-                valueFormatter={value => `${value}x`}
-              />
-
-              {/* Pitch Control */}
-              <FormRangeWithLabels
-                name="browser_tts_settings.pitch"
-                control={control}
-                label="Pitch"
-                leftLabel="Lower"
-                rightLabel="Higher"
-                min={-20}
-                max={20}
-                step={1}
-                valueFormatter={value => value.toString()}
-              />
-
-              {/* Volume Control */}
-              <FormRangeWithLabels
-                name="browser_tts_settings.volume"
-                control={control}
-                label="Volume"
-                leftLabel="Quieter"
-                rightLabel="Louder"
-                min={0}
-                max={1}
-                step={0.1}
-                valueFormatter={value => `${Math.round(value * 100)}%`}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function TalkSettingsForm() {
-  const { account, patchAccount } = useAccountContext();
+  const { account, patchAccount } = useAccount();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { show, showError } = useToast();
 
   // Create default values that ensure all fields are controlled from the start
-  const getDefaultValues = (): TalkSettingsFormData => ({
+  const getDefaultValues = (): SpeechSettingsFormData => ({
     speech_provider: account?.speech_provider || 'browser_tts',
     elevenlabs_settings: {
       api_key: account?.elevenlabs_settings?.api_key || '',
@@ -405,8 +221,8 @@ export function TalkSettingsForm() {
     setValue,
     reset,
     formState: {},
-  } = useForm<TalkSettingsFormData>({
-    resolver: zodResolver(talkSettingsSchema),
+  } = useForm<SpeechSettingsFormData>({
+    resolver: zodResolver(SpeechSettingsSchema),
     defaultValues: getDefaultValues(),
   });
 
@@ -419,7 +235,7 @@ export function TalkSettingsForm() {
     }
   }, [account, reset, getDefaultValues]);
 
-  const onSubmit = async (data: TalkSettingsFormData) => {
+  const onSubmit = async (data: SpeechSettingsFormData) => {
     setIsSubmitting(true);
 
     try {
