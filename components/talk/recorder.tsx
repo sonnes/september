@@ -7,6 +7,7 @@ import { useMicVAD, utils } from '@ricky0123/vad-react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { useAccount } from '@/services/account/context';
 import { useMessages } from '@/services/messages';
 
@@ -30,22 +31,25 @@ function VADController({ onSpeechEnd }: { onSpeechEnd: (blob: Blob) => Promise<v
 
   if (loading) {
     return (
-      <Button variant="outline" color="gray" disabled className="flex items-center gap-2">
-        Loading... <ArrowPathIcon className="h-6 w-6 animate-spin" />
-      </Button>
+      <button disabled className="flex items-center gap-2 px-2 py-4 cursor-not-allowed">
+        <ArrowPathIcon className="h-4 w-4 animate-spin" />{' '}
+        <span className="text-sm">Loading...</span>
+      </button>
     );
   }
 
   return (
-    <Button
+    <button
       onClick={handleToggle}
-      title={listening ? 'Stop recording' : 'Recording...'}
-      variant="outline"
-      color={!listening ? 'red' : 'gray'}
-      className="flex items-center gap-2"
+      title={listening ? 'Stop' : 'Listening...'}
+      className={cn(
+        'flex items-center gap-2 px-2 py-4 cursor-pointer group hover:bg-zinc-100',
+        listening && 'text-red-500'
+      )}
     >
-      {listening ? <StopIcon className="h-6 w-6" /> : <MicrophoneIcon className="h-6 w-6" />}
-    </Button>
+      {listening ? <StopIcon className="h-4 w-4" /> : <MicrophoneIcon className="h-4 w-4" />}
+      <span className="text-sm">{listening ? 'Listening...' : 'Listen'}</span>
+    </button>
   );
 }
 
@@ -87,9 +91,13 @@ export default function Recorder() {
       {vadActive ? (
         <VADController onSpeechEnd={handleSpeechEnd} />
       ) : (
-        <Button onClick={toggleRecording} title="Start recording" variant="outline" color="red">
-          <MicrophoneIcon className="h-6 w-6" />
-        </Button>
+        <button
+          onClick={toggleRecording}
+          title="Start recording"
+          className="flex items-center gap-2 px-2 py-4 cursor-pointer group hover:bg-zinc-100"
+        >
+          <MicrophoneIcon className="h-4 w-4" /> <span className="text-sm">Listen</span>
+        </button>
       )}
     </div>
   );
