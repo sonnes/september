@@ -11,6 +11,7 @@ const defaultTabs = [
   { name: 'Account', href: '/account' },
   { name: 'AI', href: '/settings/ai' },
   { name: 'Speech', href: '/settings/speech' },
+  { name: 'Voices', href: '/settings/voices' },
 ];
 
 interface SettingsTabsProps {
@@ -23,7 +24,6 @@ function classNames(...classes: string[]) {
 }
 
 export function SettingsTabs({ tabs = defaultTabs, current }: SettingsTabsProps) {
-
   // Convert tabs to dropdown options
   const dropdownOptions: DropdownOption[] = tabs.map(tab => ({
     id: tab.href,

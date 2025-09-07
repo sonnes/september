@@ -1,6 +1,7 @@
 import { ElevenLabsSettings } from '@/types/account';
+import { Voice } from '@/types/voice';
 
-import { SpeechProvider, SpeechRequest, SpeechResponse, Voice } from '.';
+import { ListVoicesRequest, SpeechProvider, SpeechRequest, SpeechResponse } from '.';
 
 const ranks = {
   cloned: 1,
@@ -14,6 +15,13 @@ interface ElevenLabsVoice {
   name: string;
   category: string;
   language?: string;
+  description?: string;
+  preview_url?: string;
+  labels?: Record<string, string>;
+  sharing?: {
+    public_owner_id?: string;
+  };
+  is_added_by_user?: boolean;
 }
 
 interface ElevenLabsAlignment {
@@ -128,6 +136,62 @@ export class ElevenLabsSpeechProvider implements SpeechProvider {
       id: voice.voice_id,
       name: voice.name || '',
       language: voice.language || '',
+      // Include additional properties for the UI
+      category: voice.category,
+      description: voice.description,
+      preview_url: voice.preview_url,
+      labels: voice.labels,
+      sharing: voice.sharing,
+      is_added_by_user: voice.is_added_by_user,
+    }));
+  }
+
+  async listVoices(request: ListVoicesRequest): Promise<Voice[]> {
+    if (!this.apiKey) {
+      return [];
+    }
+
+    const params = new URLSearchParams({
+      search: request.search || '',
+      language: request.language || '',
+      page: request.page?.toString() || '1',
+      limit: request.limit?.toString() || '100',
+    });
+    const url = `${this.baseUrl}/voices?${params.toString()}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'xi-api-key': this.apiKey,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `ElevenLabs API error: ${response.status} ${response.statusText} - ${errorText}`
+      );
+    }
+
+    const data: { voices: ElevenLabsVoice[] } = await response.json();
+
+    const sortedVoices = data.voices.sort((a, b) => {
+      const rankA = ranks[a.category as keyof typeof ranks] || 999;
+      const rankB = ranks[b.category as keyof typeof ranks] || 999;
+      return rankA - rankB;
+    });
+
+    return sortedVoices.map(voice => ({
+      id: voice.voice_id,
+      name: voice.name || '',
+      language: voice.language || '',
+      // Include additional properties for the UI
+      category: voice.category,
+      description: voice.description,
+      preview_url: voice.preview_url,
+      labels: voice.labels,
+      sharing: voice.sharing,
+      is_added_by_user: voice.is_added_by_user,
     }));
   }
 

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAccount } from '@/services/account/context';
 
-import { SpeechOptions, SpeechProvider } from '.';
+import { ListVoicesRequest, SpeechOptions, SpeechProvider } from '.';
 import { BrowserSpeechProvider } from './provider-browser';
 import { ElevenLabsSpeechProvider } from './provider-elevenlabs';
 
@@ -61,5 +61,12 @@ export function useSpeech() {
     return engine.getVoices();
   }, [engine]);
 
-  return { getVoices, getProviders, setProvider, generateSpeech };
+  const listVoices = useCallback(
+    (request: ListVoicesRequest) => {
+      return engine.listVoices(request);
+    },
+    [engine]
+  );
+
+  return { getVoices, listVoices, getProviders, setProvider, generateSpeech };
 }

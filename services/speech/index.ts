@@ -1,11 +1,13 @@
 import { BrowserTTSSettings, ElevenLabsSettings } from '@/types/account';
 import { Alignment } from '@/types/audio';
+import { Voice } from '@/types/voice';
 
 export interface SpeechProvider {
   id: string;
   name: string;
   generateSpeech(request: SpeechRequest): Promise<SpeechResponse>;
   getVoices(): Promise<Voice[]>;
+  listVoices(request: ListVoicesRequest): Promise<Voice[]>;
 }
 
 export interface SpeechRequest {
@@ -21,8 +23,9 @@ export interface SpeechResponse {
   alignment?: Alignment;
 }
 
-export interface Voice {
-  id: string;
-  name: string;
-  language: string;
+export interface ListVoicesRequest {
+  search?: string;
+  language?: string;
+  page?: number;
+  limit?: number;
 }

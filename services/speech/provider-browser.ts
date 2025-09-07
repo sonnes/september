@@ -1,6 +1,7 @@
 import { BrowserTTSSettings } from '@/types/account';
+import { Voice } from '@/types/voice';
 
-import { SpeechProvider, SpeechRequest, SpeechResponse, Voice } from '.';
+import { ListVoicesRequest, SpeechProvider, SpeechRequest, SpeechResponse } from '.';
 
 export class BrowserSpeechProvider implements SpeechProvider {
   id = 'browser_tts';
@@ -59,6 +60,46 @@ export class BrowserSpeechProvider implements SpeechProvider {
             }))
         );
       }
+    });
+  }
+
+  async listVoices(request: ListVoicesRequest): Promise<Voice[]> {
+    return new Promise((resolve, reject) => {
+      if (!this.synthesis) {
+        reject(new Error('Speech synthesis is not supported in this browser'));
+        return;
+      }
+
+      const voices = this.synthesis.getVoices();
+
+      const page = request.page || 1;
+      const limit = request.limit || 100;
+
+      const filteredVoices = voices
+        .filter(voice => {
+          if (request.search) {
+            return voice.name.toLowerCase().includes(request.search.toLowerCase());
+          }
+          return true;
+        })
+        .filter(voice => {
+          if (request.language) {
+            return voice.lang === request.language;
+          }
+          return true;
+        })
+        .sort((a, b) => {
+          return a.name.localeCompare(b.name);
+        })
+        .slice((page - 1) * limit, page * limit);
+
+      resolve(
+        filteredVoices.map(voice => ({
+          id: voice.voiceURI,
+          name: voice.name,
+          language: voice.lang,
+        }))
+      );
     });
   }
 
