@@ -7,10 +7,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Control, UseFormSetValue, UseFormWatch, useForm } from 'react-hook-form';
 
 import {
+  AccountFormData,
+  AccountSchema,
   BrowserTTSSettingsSection,
   ElevenLabsSettingsSection,
-  SpeechSettingsFormData,
-  SpeechSettingsSchema,
 } from '@/components/settings';
 import { Button } from '@/components/ui/button';
 import { FormDropdown, FormInput, FormRangeWithLabels } from '@/components/ui/form';
@@ -19,13 +19,14 @@ import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useToast } from '@/hooks/use-toast';
 
 import { useAccount } from '@/services/account';
-import { Voice } from '@/services/speech';
 import { SpeechProvider, useSpeechContext } from '@/services/speech/context';
 
+import { Voice } from '@/types/voice';
+
 interface SectionProps {
-  control: Control<SpeechSettingsFormData>;
-  watch: UseFormWatch<SpeechSettingsFormData>;
-  setValue: UseFormSetValue<SpeechSettingsFormData>;
+  control: Control<AccountFormData>;
+  watch: UseFormWatch<AccountFormData>;
+  setValue: UseFormSetValue<AccountFormData>;
 }
 
 function ProviderSection({ control }: SectionProps) {
@@ -70,148 +71,42 @@ function ProviderSection({ control }: SectionProps) {
   );
 }
 
-function VoiceSection({ watch, setValue }: SectionProps) {
-  const { getVoices, generateSpeech } = useSpeechContext();
-  const { enqueue } = useAudioPlayer();
-  const [voices, setVoices] = useState<Voice[]>([]);
-  const [loading, setLoading] = useState(true);
-  const speechProvider = watch('speech_provider');
-
-  useEffect(() => {
-    const loadVoices = async () => {
-      try {
-        const voicesList = await getVoices();
-        setVoices(voicesList);
-      } catch (error) {
-        console.error('Error loading voices:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadVoices();
-  }, [speechProvider, getVoices]);
-
-  const onSelectVoice = (voiceId: string) => {
-    if (speechProvider === 'elevenlabs') {
-      setValue('elevenlabs_settings.voice_id', voiceId);
-    } else if (speechProvider === 'browser_tts') {
-      setValue('browser_tts_settings.voice_id', voiceId);
-    }
-  };
-
-  const onPlayPreview = async (voiceId: string) => {
-    try {
-      const sampleText = 'Hello, this is a preview of my voice.';
-      const audio = await generateSpeech(sampleText, {
-        voice_id: voiceId,
-      });
-
-      enqueue(audio);
-    } catch (error) {
-      console.error('Error playing voice preview:', error);
-    }
-  };
-
-  return (
-    <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-4 md:grid-cols-3">
-      <div className="px-4 sm:px-0">
-        <h2 className="text-base/7 font-semibold text-gray-900">Voice</h2>
-        <p className="mt-1 text-sm/6 text-gray-600">
-          Select the voice you want to use for generating speech.
-        </p>
-      </div>
-
-      <div className="md:col-span-2 px-4">
-        <div className="max-w-2xl space-y-4">
-          <div className="rounded-md bg-gray-50 p-4 h-64 overflow-y-auto">
-            {loading ? (
-              <div className="text-sm text-gray-700">
-                <p>Loading voices...</p>
-              </div>
-            ) : voices.length > 0 ? (
-              <ul className="divide-y divide-gray-200">
-                {voices.map((voice, index) => (
-                  <li key={index} className="flex items-center justify-between gap-x-6 py-4">
-                    <div className="min-w-0">
-                      <div className="flex items-start gap-x-3">
-                        <p className="text-sm/6 font-semibold text-gray-900">{voice.name}</p>
-                        <span className="mt-0.5 whitespace-nowrap rounded-md px-1.5 py-0.5 text-xs font-medium text-blue-700 bg-blue-50 ring-1 ring-inset ring-blue-600/20">
-                          {voice.language}
-                        </span>
-                      </div>
-                      <div className="mt-1 flex items-center gap-x-2 text-xs/5 text-gray-500">
-                        <span className="whitespace-nowrap">Voice ID: {voice.id}</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-none items-center gap-x-4">
-                      <button
-                        type="button"
-                        onClick={() => onPlayPreview(voice.id)}
-                        className="rounded-md bg-white p-2 text-gray-400 shadow-sm ring-1 ring-inset ring-gray-300 hover:text-gray-500 hover:bg-gray-50"
-                        title="Play preview"
-                      >
-                        <PlayIcon className="h-5 w-5" />
-                      </button>
-                      {(() => {
-                        const currentVoiceId =
-                          speechProvider === 'elevenlabs'
-                            ? watch('elevenlabs_settings.voice_id')
-                            : watch('browser_tts_settings.voice_id');
-
-                        return currentVoiceId !== voice.id ? (
-                          <button
-                            type="button"
-                            onClick={() => onSelectVoice(voice.id)}
-                            className="rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                          >
-                            Use
-                          </button>
-                        ) : (
-                          <div className="p-2 text-green-600 text-sm font-medium">Selected</div>
-                        );
-                      })()}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="text-sm text-gray-700">
-                <p>No voices available for the selected provider.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function TalkSettingsForm() {
   const { account, patchAccount } = useAccount();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { show, showError } = useToast();
 
   // Create default values that ensure all fields are controlled from the start
-  const getDefaultValues = (): SpeechSettingsFormData => ({
+  const getDefaultValues = (): AccountFormData => ({
+    // Personal Information
+    name: account?.name || '',
+    city: account?.city || '',
+    country: account?.country || '',
+
+    // Medical Information
+    primary_diagnosis: account?.primary_diagnosis || '',
+    year_of_diagnosis: account?.year_of_diagnosis || new Date().getFullYear(),
+    medical_document_path: account?.medical_document_path || '',
+
+    // Speech Settings
     speech_provider: account?.speech_provider || 'browser_tts',
-    elevenlabs_settings: {
-      api_key: account?.elevenlabs_settings?.api_key || '',
-      model_id: account?.elevenlabs_settings?.model_id || 'eleven_multilingual_v2',
-      voice_id: account?.elevenlabs_settings?.voice_id || '',
-      speed: account?.elevenlabs_settings?.speed || 1.0,
-      stability: account?.elevenlabs_settings?.stability || 0.5,
-      similarity: account?.elevenlabs_settings?.similarity || 0.5,
-      style: account?.elevenlabs_settings?.style || 0.0,
-      speaker_boost: account?.elevenlabs_settings?.speaker_boost || false,
+    speech_settings: account?.speech_settings || {
+      speed: 1.0,
+      pitch: 0,
+      volume: 1.0,
+      language: '',
     },
-    browser_tts_settings: {
-      voice_id: account?.browser_tts_settings?.voice_id || '',
-      speed: account?.browser_tts_settings?.speed || 1.0,
-      pitch: account?.browser_tts_settings?.pitch || 0,
-      volume: account?.browser_tts_settings?.volume || 1.0,
-      language: account?.browser_tts_settings?.language || '',
-    },
+    voice: account?.voice,
+
+    // AI Settings
+    ai_instructions: account?.ai_instructions || '',
+    ai_corpus: account?.ai_corpus || '',
+    gemini_api_key: account?.gemini_api_key || '',
+
+    // Flags
+    terms_accepted: account?.terms_accepted || false,
+    privacy_policy_accepted: account?.privacy_policy_accepted || false,
+    onboarding_completed: account?.onboarding_completed || false,
   });
 
   const {
@@ -221,34 +116,22 @@ export function TalkSettingsForm() {
     setValue,
     reset,
     formState: {},
-  } = useForm<SpeechSettingsFormData>({
-    resolver: zodResolver(SpeechSettingsSchema),
+  } = useForm<AccountFormData>({
+    resolver: zodResolver(AccountSchema),
     defaultValues: getDefaultValues(),
   });
 
   const speechProvider = watch('speech_provider');
 
-  // Reset form when account changes
-  useEffect(() => {
-    if (account) {
-      reset(getDefaultValues());
-    }
-  }, [account, reset, getDefaultValues]);
-
-  const onSubmit = async (data: SpeechSettingsFormData) => {
+  const onSubmit = async (data: AccountFormData) => {
     setIsSubmitting(true);
 
     try {
+      // Extract only the fields that should be updated for this form
       const settings = {
         speech_provider: data.speech_provider,
-        elevenlabs_settings:
-          data.speech_provider === 'elevenlabs'
-            ? data.elevenlabs_settings
-            : account.elevenlabs_settings,
-        browser_tts_settings:
-          data.speech_provider === 'browser_tts'
-            ? data.browser_tts_settings
-            : account.browser_tts_settings,
+        speech_settings: data.speech_settings,
+        voice: data.voice,
       };
 
       await patchAccount(settings);
@@ -279,7 +162,6 @@ export function TalkSettingsForm() {
       <div className="divide-y divide-gray-400">
         <form onSubmit={handleSubmit(onSubmit)}>
           <ProviderSection control={control} watch={watch} setValue={setValue} />
-          <VoiceSection control={control} watch={watch} setValue={setValue} />
 
           {speechProvider === 'elevenlabs' && (
             <ElevenLabsSettingsSection control={control} watch={watch} setValue={setValue} />

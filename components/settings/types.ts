@@ -1,35 +1,71 @@
 import { Control, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 import { z } from 'zod';
 
-// Validation schema for the talk settings form
-export const SpeechSettingsSchema = z.object({
-  speech_provider: z.string().min(1, 'Speech provider is required'),
+// Validation schema for the account form
+export const AccountSchema = z.object({
+  // Personal Information
+  name: z.string().min(1, 'Name is required'),
+  city: z.string().optional(),
+  country: z.string().optional(),
 
-  elevenlabs_settings: z.object({
-    api_key: z.string().min(1, 'API key is required'),
-    model_id: z.string().optional(),
-    voice_id: z.string().optional(),
-    speed: z.number().min(0.7).max(1.2),
-    stability: z.number().min(0).max(1),
-    similarity: z.number().min(0).max(1),
-    style: z.number().min(0).max(1),
-    speaker_boost: z.boolean(),
-  }),
-  browser_tts_settings: z.object({
-    voice_id: z.string().optional(),
-    speed: z.number().min(0.5).max(2.0),
-    pitch: z.number().min(-20).max(20).optional(),
-    volume: z.number().min(0).max(1).optional(),
-    language: z.string().optional(),
-  }),
+  // Medical Information
+  primary_diagnosis: z.string().min(1, 'Primary diagnosis is required'),
+  year_of_diagnosis: z.number().min(1900).max(new Date().getFullYear()),
+  medical_document_path: z.string().min(1, 'Medical document path is required'),
+
+  // Speech Settings
+  speech_provider: z.string().optional(),
+  speech_settings: z
+    .union([
+      z.object({
+        speed: z.number().min(0.1).max(10).optional(),
+        pitch: z.number().min(0).max(2).optional(),
+        volume: z.number().min(0).max(1).optional(),
+        language: z.string().optional(),
+      }),
+      z.object({
+        api_key: z.string().optional(),
+        model_id: z.string().optional(),
+        speed: z.number().min(0.25).max(4).optional(),
+        stability: z.number().min(0).max(1).optional(),
+        similarity: z.number().min(0).max(1).optional(),
+        style: z.number().min(0).max(1).optional(),
+        speaker_boost: z.boolean().optional(),
+      }),
+    ])
+    .optional(),
+  voice: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      language: z.string(),
+      gender: z.string().optional(),
+      accent: z.string().optional(),
+      age: z.string().optional(),
+      use_case: z.string().optional(),
+      description: z.string().optional(),
+      category: z.string().optional(),
+      preview_url: z.string().optional(),
+    })
+    .optional(),
+
+  // AI Settings
+  ai_instructions: z.string().optional(),
+  ai_corpus: z.string().optional(),
+  gemini_api_key: z.string().optional(),
+
+  // Flags
+  terms_accepted: z.boolean(),
+  privacy_policy_accepted: z.boolean(),
+  onboarding_completed: z.boolean(),
 });
 
 // TypeScript type inferred from the schema
-export type SpeechSettingsFormData = z.infer<typeof SpeechSettingsSchema>;
+export type AccountFormData = z.infer<typeof AccountSchema>;
 
 // Interface for section component props
 export interface SectionProps {
-  control: Control<SpeechSettingsFormData>;
-  watch: UseFormWatch<SpeechSettingsFormData>;
-  setValue: UseFormSetValue<SpeechSettingsFormData>;
+  control: Control<AccountFormData>;
+  watch: UseFormWatch<AccountFormData>;
+  setValue: UseFormSetValue<AccountFormData>;
 }

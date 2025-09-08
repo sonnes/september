@@ -16,6 +16,16 @@ CREATE TABLE public.accounts (
   terms_accepted BOOLEAN DEFAULT FALSE,
   privacy_policy_accepted BOOLEAN DEFAULT FALSE,
   onboarding_completed BOOLEAN DEFAULT FALSE,
+
+  -- Speech Settings
+  speech_provider TEXT,
+  speech_settings JSONB,
+  voice JSONB,
+
+  -- AI Settings
+  ai_instructions TEXT,
+  ai_corpus TEXT,
+  gemini_api_key TEXT,
   
   -- Timestamps
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

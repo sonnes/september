@@ -4,13 +4,7 @@ import { Control, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 
 import { FormCheckbox, FormDropdown, FormInput, FormRangeWithLabels } from '@/components/ui/form';
 
-import { TalkSettingsFormData } from './types';
-
-interface ElevenLabsSettingsSectionProps {
-  control: Control<TalkSettingsFormData>;
-  watch: UseFormWatch<TalkSettingsFormData>;
-  setValue: UseFormSetValue<TalkSettingsFormData>;
-}
+import { AccountFormData, SectionProps } from './types';
 
 const MODELS = [
   { id: 'eleven_multilingual_v2', name: 'Eleven Multilingual v2' },
@@ -18,7 +12,7 @@ const MODELS = [
   { id: 'eleven_flash_v2', name: 'Eleven Flash v2 (English Only)' },
 ];
 
-export function ElevenLabsSettingsSection({ control }: ElevenLabsSettingsSectionProps) {
+export function ElevenLabsSettingsSection({ control }: SectionProps) {
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-4 md:grid-cols-3">
       <div className="px-4 sm:px-0">
@@ -34,7 +28,7 @@ export function ElevenLabsSettingsSection({ control }: ElevenLabsSettingsSection
             <div className="space-y-6">
               {/* API Key */}
               <FormInput
-                name="elevenlabs_settings.api_key"
+                name="speech_settings.api_key"
                 control={control}
                 label="API Key"
                 type="password"
@@ -44,7 +38,7 @@ export function ElevenLabsSettingsSection({ control }: ElevenLabsSettingsSection
 
               {/* Model Selection */}
               <FormDropdown
-                name="elevenlabs_settings.model_id"
+                name="speech_settings.model_id"
                 control={control}
                 label="Model"
                 options={MODELS}
@@ -53,7 +47,7 @@ export function ElevenLabsSettingsSection({ control }: ElevenLabsSettingsSection
 
               {/* Speed Control */}
               <FormRangeWithLabels
-                name="elevenlabs_settings.speed"
+                name="speech_settings.speed"
                 control={control}
                 label="Speed"
                 leftLabel="Slower"
@@ -66,7 +60,7 @@ export function ElevenLabsSettingsSection({ control }: ElevenLabsSettingsSection
 
               {/* Stability Control */}
               <FormRangeWithLabels
-                name="elevenlabs_settings.stability"
+                name="speech_settings.stability"
                 control={control}
                 label="Stability"
                 leftLabel="More variable"
@@ -79,7 +73,7 @@ export function ElevenLabsSettingsSection({ control }: ElevenLabsSettingsSection
 
               {/* Similarity Control */}
               <FormRangeWithLabels
-                name="elevenlabs_settings.similarity"
+                name="speech_settings.similarity"
                 control={control}
                 label="Similarity"
                 leftLabel="Low"
@@ -92,7 +86,7 @@ export function ElevenLabsSettingsSection({ control }: ElevenLabsSettingsSection
 
               {/* Style Exaggeration Control */}
               <FormRangeWithLabels
-                name="elevenlabs_settings.style"
+                name="speech_settings.style"
                 control={control}
                 label="Style Exaggeration"
                 leftLabel="None"
@@ -105,7 +99,7 @@ export function ElevenLabsSettingsSection({ control }: ElevenLabsSettingsSection
 
               {/* Speaker Boost Toggle */}
               <FormCheckbox
-                name="elevenlabs_settings.speaker_boost"
+                name="speech_settings.speaker_boost"
                 control={control}
                 label="Speaker boost"
                 description="Enhance speaker clarity and reduce background noise"

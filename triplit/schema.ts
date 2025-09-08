@@ -17,10 +17,8 @@ export const schema = S.Collections({
 
       // Speech Settings
       speech_provider: S.Optional(S.String()),
-
-      // TTS
-      browser_tts_settings: S.Optional(S.Json()),
-      elevenlabs_settings: S.Optional(S.Json()),
+      speech_settings: S.Optional(S.Json()),
+      voice: S.Optional(S.Json()),
 
       // AI Settings
       ai_instructions: S.Optional(S.String()),

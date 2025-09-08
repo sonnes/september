@@ -4,15 +4,9 @@ import { Control, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 
 import { FormRangeWithLabels } from '@/components/ui/form';
 
-import { TalkSettingsFormData } from './types';
+import { AccountFormData, SectionProps } from './types';
 
-interface BrowserTTSSettingsSectionProps {
-  control: Control<TalkSettingsFormData>;
-  watch: UseFormWatch<TalkSettingsFormData>;
-  setValue: UseFormSetValue<TalkSettingsFormData>;
-}
-
-export function BrowserTTSSettingsSection({ control }: BrowserTTSSettingsSectionProps) {
+export function BrowserTTSSettingsSection({ control }: SectionProps) {
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-4 md:grid-cols-3">
       <div className="px-4 sm:px-0">
@@ -28,7 +22,7 @@ export function BrowserTTSSettingsSection({ control }: BrowserTTSSettingsSection
             <div className="space-y-6">
               {/* Speed Control */}
               <FormRangeWithLabels
-                name="browser_tts_settings.speed"
+                name="speech_settings.speed"
                 control={control}
                 label="Speed"
                 leftLabel="Slower"
@@ -41,7 +35,7 @@ export function BrowserTTSSettingsSection({ control }: BrowserTTSSettingsSection
 
               {/* Pitch Control */}
               <FormRangeWithLabels
-                name="browser_tts_settings.pitch"
+                name="speech_settings.pitch"
                 control={control}
                 label="Pitch"
                 leftLabel="Lower"
@@ -54,7 +48,7 @@ export function BrowserTTSSettingsSection({ control }: BrowserTTSSettingsSection
 
               {/* Volume Control */}
               <FormRangeWithLabels
-                name="browser_tts_settings.volume"
+                name="speech_settings.volume"
                 control={control}
                 label="Volume"
                 leftLabel="Quieter"

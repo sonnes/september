@@ -1,3 +1,5 @@
+import { Voice } from './voice';
+
 export interface Account {
   id: string;
 
@@ -13,10 +15,8 @@ export interface Account {
 
   // Speech Settings
   speech_provider?: string;
-
-  // TTS
-  browser_tts_settings?: BrowserTTSSettings;
-  elevenlabs_settings?: ElevenLabsSettings;
+  speech_settings?: BrowserTTSSettings | ElevenLabsSettings;
+  voice?: Voice;
 
   // AI Settings
   ai_instructions?: string;
@@ -33,24 +33,9 @@ export interface Account {
   updated_at: Date;
 }
 
-export interface PutAccountData {
-  name?: string;
-  city?: string;
-  country?: string;
-  primary_diagnosis?: string;
-  year_of_diagnosis?: number;
-  medical_document_path?: string;
-  ai_instructions?: string;
-  ai_corpus?: string;
-  terms_accepted?: boolean;
-  privacy_policy_accepted?: boolean;
-  speech_provider?: string;
-  elevenlabs_settings?: ElevenLabsSettings;
-  gemini_api_key?: string;
-}
+export type PutAccountData = Partial<Omit<Account, 'id' | 'created_at' | 'updated_at'>>;
 
 export interface BrowserTTSSettings {
-  voice_id?: string;
   speed?: number;
   pitch?: number;
   volume?: number;
@@ -60,7 +45,6 @@ export interface BrowserTTSSettings {
 export interface ElevenLabsSettings {
   api_key?: string;
   model_id?: string;
-  voice_id?: string;
   speed?: number;
   stability?: number;
   similarity?: number;
