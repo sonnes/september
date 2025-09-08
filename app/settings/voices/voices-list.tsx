@@ -58,6 +58,17 @@ export default function VoicesList({ search }: { search?: string }) {
     await updateAccount({ voice: { id: voice.id, name: voice.name, language: voice.language } });
   };
 
+  if (!account) {
+    return (
+      <div className="w-full">
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 p-8 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading voices...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="w-full">

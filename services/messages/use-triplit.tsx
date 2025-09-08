@@ -4,7 +4,9 @@ import { useQuery } from '@triplit/react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { useToast } from '@/hooks/use-toast';
+
 import { useAccount } from '@/services/account/context';
+
 import { triplit } from '@/triplit/client';
 import { CreateMessageData, Message } from '@/types/message';
 
@@ -16,7 +18,7 @@ export function useMessages() {
 
   const query = triplit
     .query('messages')
-    .Where('user_id', '=', user.id)
+    .Where('user_id', '=', user?.id || '')
     .Order('created_at', 'DESC')
     .Limit(100);
 
