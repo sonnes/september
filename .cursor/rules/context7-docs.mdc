@@ -1,0 +1,56 @@
+---
+description: Guidelines for using Context7 MCP to fetch up-to-date library documentation and resolve library IDs
+alwaysApply: false
+---
+
+# Context7 MCP Documentation Rule
+
+This rule provides guidelines for using the Context7 MCP (Model Context Protocol) to fetch up-to-date documentation for libraries and frameworks in the September project.
+
+## Overview
+
+Context7 MCP provides access to current, comprehensive documentation for popular libraries and frameworks. It's particularly useful when working with external dependencies that may have recent updates or when you need specific implementation details.
+
+## When to Use Context7 MCP
+
+### ✅ Use Context7 MCP When:
+
+- **Working with external libraries** that aren't well-documented in the codebase
+- **Implementing new features** using unfamiliar libraries
+- **Debugging issues** with third-party dependencies
+- **Upgrading library versions** and need to understand breaking changes
+- **Learning new APIs** or library patterns
+- **Verifying best practices** for library usage
+
+### ❌ Don't Use Context7 MCP When:
+
+- Working with internal/custom code that's already documented in the codebase
+- Simple, well-known APIs that are already understood
+- When the codebase already has comprehensive examples
+
+## Usage Workflow
+
+### Step 1: Resolve Library ID
+
+**ALWAYS** call `resolve-library-id` first to get the correct Context7-compatible library ID:
+
+```typescript
+// Example: Looking for React documentation
+// Call: resolve-library-id with libraryName: "react"
+// Returns: Library ID like "/facebook/react"
+```
+
+**Library ID Format:**
+
+- Format: `/org/project` or `/org/project/version`
+- Examples: `/facebook/react`, `/vercel/next.js`, `/supabase/supabase`
+- Version-specific: `/vercel/next.js/v14.3.0-canary.87`
+
+### Step 2: Fetch Documentation
+
+Use the resolved library ID to fetch documentation:
+
+```typescript
+// Example: Get React documentation
+// Call: get-library-docs with context7CompatibleLibraryID: "/facebook/react"
+```

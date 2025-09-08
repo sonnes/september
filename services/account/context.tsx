@@ -12,7 +12,7 @@ interface AccountContextType {
   user: User;
   account: Account;
   putAccount: (accountData: PutAccountData) => Promise<void>;
-  patchAccount: (accountData: Partial<PutAccountData>) => Promise<void>;
+  updateAccount: (accountData: Partial<PutAccountData>) => Promise<void>;
   refetch: () => Promise<void>;
   uploadFile: (file: File) => Promise<string>;
   deleteFile: (path: string) => Promise<void>;

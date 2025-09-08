@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
-import { Control, UseFormSetValue, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
 
 import { AccountFormData, AccountSchema, SectionProps } from '@/components/settings';
 import { Button } from '@/components/ui/button';
@@ -12,8 +13,6 @@ import { useCorpus } from '@/hooks/use-ai-settings';
 import { useToast } from '@/hooks/use-toast';
 
 import { useAccount } from '@/services/account';
-
-import { PutAccountData } from '@/types/account';
 
 const EXAMPLE_INSTRUCTIONS = [
   {
@@ -111,6 +110,8 @@ function CorpusSection({ control, setValue, watch }: SectionProps) {
   const { isGenerating, generateCorpus } = useCorpus();
 
   const aiInstructions = watch('ai_instructions');
+  const gemini_api_key = watch('gemini_api_key');
+
   const handleGenerateCorpus = async () => {
     const { corpus } = await generateCorpus(aiInstructions || '');
     setValue('ai_corpus', corpus);
@@ -146,7 +147,7 @@ function CorpusSection({ control, setValue, watch }: SectionProps) {
             <Button
               type="button"
               onClick={handleGenerateCorpus}
-              disabled={isGenerating}
+              disabled={!gemini_api_key || isGenerating}
               color="indigo"
               variant="outline"
             >
@@ -198,16 +199,30 @@ function GeminiAPIKeySection({ control }: SectionProps) {
 }
 
 export function AISettingsForm() {
-  const { account, patchAccount } = useAccount();
+  const { account, updateAccount } = useAccount();
   const { show, showError } = useToast();
 
+  const defaultValues = useMemo(() => {
+    return {
+      ...account,
+      gemini_api_key: account?.gemini_api_key || '',
+      ai_instructions: account?.ai_instructions || '',
+      ai_corpus: account?.ai_corpus || '',
+    };
+  }, [account]);
+
   const form = useForm<AccountFormData>({
-    defaultValues: account,
+    resolver: zodResolver(AccountSchema),
+    defaultValues: defaultValues,
   });
+
+  useEffect(() => {
+    form.reset(defaultValues);
+  }, [defaultValues, form]);
 
   const onSubmit = async (data: AccountFormData) => {
     try {
-      await patchAccount({
+      await updateAccount({
         ai_instructions: data.ai_instructions,
         ai_corpus: data.ai_corpus,
         gemini_api_key: data.gemini_api_key,

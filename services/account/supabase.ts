@@ -48,7 +48,7 @@ class AccountService {
     return data;
   }
 
-  async patchAccount(id: string, account: Partial<PutAccountData>) {
+  async updateAccount(id: string, account: Partial<PutAccountData>) {
     const { data, error } = await this.supabase
       .from('accounts')
       .update(account)

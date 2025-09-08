@@ -10,7 +10,7 @@ export const AccountSchema = z.object({
 
   // Medical Information
   primary_diagnosis: z.string().optional(),
-  year_of_diagnosis: z.number().min(1900).max(new Date().getFullYear()).optional(),
+  year_of_diagnosis: z.number().optional(),
   medical_document_path: z.string().optional(),
 
   // Speech Settings
@@ -55,9 +55,8 @@ export const AccountSchema = z.object({
   gemini_api_key: z.string().optional(),
 
   // Flags
-  terms_accepted: z.boolean(),
-  privacy_policy_accepted: z.boolean(),
-  onboarding_completed: z.boolean(),
+  terms_accepted: z.boolean().optional(),
+  privacy_policy_accepted: z.boolean().optional(),
 });
 
 // TypeScript type inferred from the schema

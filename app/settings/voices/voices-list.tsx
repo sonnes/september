@@ -13,7 +13,7 @@ import { useSpeechContext } from '@/services/speech/context';
 import type { Voice } from '@/types/voice';
 
 export default function VoicesList({ search }: { search?: string }) {
-  const { account, patchAccount } = useAccount();
+  const { account, updateAccount } = useAccount();
   const { listVoices } = useSpeechContext();
 
   const [voices, setVoices] = useState<Voice[]>([]);
@@ -55,7 +55,7 @@ export default function VoicesList({ search }: { search?: string }) {
   };
 
   const onSelectVoice = async (voice: Voice) => {
-    await patchAccount({ voice: { id: voice.id, name: voice.name, language: voice.language } });
+    await updateAccount({ voice: { id: voice.id, name: voice.name, language: voice.language } });
   };
 
   if (loading) {

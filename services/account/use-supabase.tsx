@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import AccountsService from '@/services/account/supabase';
+
 import supabase from '@/supabase/client';
 import { removeRealtimeSubscription, subscribeToUserAccount } from '@/supabase/realtime';
 import type { Account, PutAccountData } from '@/types/account';
@@ -39,29 +40,24 @@ export function useAccountSupabase({
 
     const account = await accountService.getAccount(user.id);
 
+    if (!account) {
+      throw new Error('Account not found');
+    }
+
     setAccount(account);
   }, [user]);
 
-  const putAccount = useCallback(
-    async (accountData: PutAccountData) => {
-      if (!user) {
-        throw new Error('User must be authenticated');
-      }
-
-      const account = await accountService.putAccount(user.id, accountData);
-
-      setAccount(account);
-    },
-    [user]
-  );
-
-  const patchAccount = useCallback(
+  const updateAccount = useCallback(
     async (accountData: Partial<PutAccountData>) => {
       if (!user) {
         throw new Error('User must be authenticated');
       }
 
-      const account = await accountService.patchAccount(user.id, accountData);
+      const account = await accountService.updateAccount(user.id, accountData);
+
+      if (!account) {
+        throw new Error('Account not found');
+      }
 
       setAccount(account);
     },
@@ -130,9 +126,7 @@ export function useAccountSupabase({
   return {
     user,
     account,
-    putAccount,
-    patchAccount,
-    refetch: getAccount,
+    updateAccount,
     uploadFile,
     deleteFile,
   };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -215,34 +215,40 @@ function TermsSection({ control }: SectionProps) {
 }
 
 export function AccountForm() {
-  const { account, patchAccount } = useAccount();
+  const { account, updateAccount } = useAccount();
   const { show, showError } = useToast();
+
+  const defaultValues = useMemo(() => {
+    return {
+      name: account?.name || '',
+      city: account?.city || '',
+      country: account?.country || '',
+      primary_diagnosis: account?.primary_diagnosis || '',
+      year_of_diagnosis: account?.year_of_diagnosis || undefined,
+      medical_document_path: account?.medical_document_path || '',
+      speech_provider: account?.speech_provider || '',
+      speech_settings: account?.speech_settings || undefined,
+      voice: account?.voice || undefined,
+      ai_instructions: account?.ai_instructions || '',
+      ai_corpus: account?.ai_corpus || '',
+      gemini_api_key: account?.gemini_api_key || '',
+      terms_accepted: account?.terms_accepted || false,
+      privacy_policy_accepted: account?.privacy_policy_accepted || false,
+    };
+  }, [account]);
 
   const form = useForm<AccountFormData>({
     resolver: zodResolver(AccountSchema),
-    defaultValues: {
-      name: account?.name || '',
-      city: account?.city || '',
-      country: account?.country || '',
-      terms_accepted: account?.terms_accepted || false,
-      privacy_policy_accepted: account?.privacy_policy_accepted || false,
-    },
+    defaultValues: defaultValues,
   });
 
   useEffect(() => {
-    form.reset({
-      name: account?.name || '',
-      city: account?.city || '',
-      country: account?.country || '',
-      terms_accepted: account?.terms_accepted || false,
-      privacy_policy_accepted: account?.privacy_policy_accepted || false,
-    });
-  }, [account, form]);
+    form.reset(defaultValues);
+  }, [defaultValues, form]);
 
   const onSubmit = async (data: AccountFormData) => {
-    console.log('data', data);
     try {
-      await patchAccount(data);
+      await updateAccount(data);
       show({
         title: 'Account updated',
         message: 'Your account has been updated successfully.',
@@ -253,6 +259,13 @@ export function AccountForm() {
     }
   };
 
+  if (!account) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-sm text-gray-500">Loading account settings...</div>
+      </div>
+    );
+  }
   return (
     <div className="divide-y divide-gray-400">
       <form onSubmit={form.handleSubmit(onSubmit)}>

@@ -9,14 +9,24 @@ export function TextInput({
   className = '',
   id,
   name,
+  value,
   ...props
 }: TextInputProps) {
   const baseClasses =
     'block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 transition-all duration-200';
 
+  // Ensure value is always a string to prevent controlled/uncontrolled input warnings
+  const inputValue = value ?? '';
+
   return (
     <div className={containerClassName}>
-      <input id={id} name={name} className={`${baseClasses} ${className}`} {...props} />
+      <input
+        id={id}
+        name={name}
+        value={inputValue}
+        className={`${baseClasses} ${className}`}
+        {...props}
+      />
     </div>
   );
 }
