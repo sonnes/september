@@ -1,10 +1,8 @@
 'use client';
 
-import { Control, UseFormSetValue, UseFormWatch } from 'react-hook-form';
+import { FormCheckbox, FormDropdown, FormRangeWithLabels } from '@/components/ui/form';
 
-import { FormCheckbox, FormDropdown, FormInput, FormRangeWithLabels } from '@/components/ui/form';
-
-import { AccountFormData, SectionProps } from './types';
+import { SectionProps } from './types';
 
 const MODELS = [
   { id: 'eleven_multilingual_v2', name: 'Eleven Multilingual v2' },
@@ -26,16 +24,6 @@ export function ElevenLabsSettingsSection({ control }: SectionProps) {
         <div className="max-w-2xl space-y-6">
           <div className="rounded-md bg-gray-50 p-4">
             <div className="space-y-6">
-              {/* API Key */}
-              <FormInput
-                name="speech_settings.api_key"
-                control={control}
-                label="API Key"
-                type="password"
-                required
-                placeholder="Enter your ElevenLabs API key"
-              />
-
               {/* Model Selection */}
               <FormDropdown
                 name="speech_settings.model_id"

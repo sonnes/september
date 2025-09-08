@@ -25,7 +25,10 @@ type NavbarProps = {
 
 const defaultItems = [
   { name: 'Talk', href: '/talk' },
+  { name: 'Voices', href: '/voices' },
   { name: 'Write', href: '/write' },
+  { name: 'Settings', href: '/settings' },
+  { name: 'Account', href: '/account' },
 ];
 
 export const MobileNav = ({ items = defaultItems, ...props }: MobileNavProps) => {

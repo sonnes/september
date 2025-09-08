@@ -41,8 +41,8 @@ export const schema = S.Collections({
       text: S.String(),
       type: S.String(),
       user_id: S.String(),
+      audio_path: S.Optional(S.String()),
       created_at: S.Date({ default: S.Default.now() }),
-      audio: S.Json({ nullable: true }),
     }),
   },
   documents: {

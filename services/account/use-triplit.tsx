@@ -9,13 +9,14 @@ import { User } from '@/types/user';
 const ID = 'local-user';
 
 export function useAccountTriplit() {
-  const localAccount = triplit.fetchById('accounts', ID);
-  if (!localAccount) {
-    triplit.insert('accounts', { id: ID, name: '' });
-  }
-
   const query = triplit.query('accounts').Where('id', '=', ID);
   const { result: account } = useQueryOne(triplit, query);
+
+  useEffect(() => {
+    if (!account) {
+      triplit.insert('accounts', { id: ID, name: '' });
+    }
+  }, [account]);
 
   const updateAccount = useCallback(
     async (accountData: Partial<PutAccountData>) => {

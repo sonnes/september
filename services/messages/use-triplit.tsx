@@ -33,8 +33,7 @@ export function useMessages() {
           type: item.type,
           user_id: item.user_id,
           created_at: item.created_at,
-          audio_path: item.audio?.path,
-          audio: item.audio,
+          audio_path: item.audio_path || undefined,
         }))
       );
     } else if (error) {
@@ -67,6 +66,7 @@ export function useCreateMessage() {
         text: message.text,
         type: message.type,
         user_id: message.user_id,
+        audio_path: message.audio_path,
         created_at: new Date(),
       });
 
