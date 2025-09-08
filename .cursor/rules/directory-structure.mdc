@@ -25,7 +25,12 @@ september/
 │   └── layout/                   # Layout components
 ├── lib/                          # Utility functions and configurations
 ├── hooks/                        # Custom React hooks
-├── services/                     # External service integrations
+├── services/                     # Domain business logic
+│   ├── {domain}/                 # Domain-specific business logic
+│   └── {domain}/service.ts       # Domain-specific service class for server-side functionality
+│   └── {domain}/context.ts       # Domain-specific context provider for client-side functionality
+│   └── {domain}/use-triplit.ts   # Domain-specific useTriplit hook for local-first database functionality
+│   └── {domain}/use-supabase.ts  # Domain-specific useSupabase hook for cloud database functionality
 ├── data/                         # Static data and configurations
 ├── public/                       # Static assets
 │   ├── images/
@@ -165,6 +170,7 @@ public/
 // Good: Relative imports for local files
 // Good: Absolute imports from project root
 import { Button } from '@/components/ui/button';
+
 import { useSpeechToText } from '@/hooks/use-speech-to-text';
 
 import { MessageBubble } from '../conversation/message-bubble';
@@ -179,7 +185,9 @@ import React from 'react';
 import { NextPage } from 'next';
 
 import { Button } from '@/components/ui/button';
+
 import { useConversation } from '@/hooks/use-conversation';
+
 import { ConversationService } from '@/services/conversation';
 ```
 

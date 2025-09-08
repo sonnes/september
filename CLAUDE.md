@@ -37,6 +37,14 @@ All external integrations use service classes in `services/`:
 - `Gemini` - AI text generation
 - `Speech` providers - Text-to-speech with multiple providers
 
+Domain-specific services follow this structure:
+
+- `{domain}/index.ts` - Exports all domain-specific functionality
+- `{domain}/supabase.ts` - Service class for Supabase operations
+- `{domain}/context.tsx` - React Context provider for client-side state
+- `{domain}/use-supabase.tsx` - Hook for Supabase operations
+- `{domain}/use-triplit.tsx` - Hook for Triplit (local) operations
+
 **Context + Hooks Architecture:**
 
 - React Context providers in `components/context/` manage global state
@@ -55,7 +63,7 @@ All external integrations use service classes in `services/`:
 **Authentication Flow:**
 
 - Supabase Auth with middleware protection (`middleware.ts`)
-- Routes protected: `/api/*`, `/talk`, `/write`, `/stories/*`, `/account`
+- Routes protected: `/api/*`, `/app/*`
 - Auth callbacks handled in `app/auth/`
 
 **AI Features:**
@@ -128,7 +136,14 @@ All external integrations use service classes in `services/`:
 
 - ALL forms must use `react-hook-form` with `zodResolver` for validation
 - Use form components from `components/ui/form.tsx` (`FormInput`, `FormTextarea`, `FormCheckbox`, etc.)
-- Follow the pattern from `app/(app)/settings/ai/form.tsx`
+- Follow the pattern from `app/settings/ai/form.tsx`
 - Form validation schemas should be defined with Zod
 - Error handling via toast notifications from `useToast` hook
 - Use `SectionProps` interface for form sections
+
+# important-instruction-reminders
+
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (_.md, _.mdc) or README files. Only create documentation files if explicitly requested by the User.
