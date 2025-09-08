@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAccount } from '@/services/account/context';
 
+import { BrowserTTSSettings, ElevenLabsSettings } from '@/types/account';
+
 import { ListVoicesRequest, SpeechOptions, SpeechProvider } from '.';
 import { BrowserSpeechProvider } from './provider-browser';
 import { ElevenLabsSpeechProvider } from './provider-elevenlabs';
@@ -20,9 +22,9 @@ export function useSpeech() {
   const getSettings = useCallback(
     (providerId: string) => {
       if (providerId === 'browser_tts') {
-        return account.browser_tts_settings;
+        return account.speech_settings as BrowserTTSSettings;
       }
-      return account.elevenlabs_settings;
+      return account.speech_settings as ElevenLabsSettings;
     },
     [account]
   );
@@ -30,16 +32,10 @@ export function useSpeech() {
   const [engine, setEngine] = useState<SpeechProvider>(browser);
 
   useEffect(() => {
-    if (account.speech_provider) {
+    if (account?.speech_provider) {
       setEngine(providers.get(account.speech_provider) || browser);
     }
-  }, [account.speech_provider]);
-
-  useEffect(() => {
-    if (account.elevenlabs_settings?.api_key) {
-      elevenlabs.setApiKey(account.elevenlabs_settings.api_key);
-    }
-  }, [account.elevenlabs_settings?.api_key]);
+  }, [account?.speech_provider]);
 
   const getProviders = useCallback(() => {
     return Array.from(providers.values());

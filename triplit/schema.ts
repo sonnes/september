@@ -11,9 +11,9 @@ export const schema = S.Collections({
       country: S.Optional(S.String()),
 
       // Medical Information
-      primary_diagnosis: S.String(),
-      year_of_diagnosis: S.Number(),
-      medical_document_path: S.String(),
+      primary_diagnosis: S.Optional(S.String()),
+      year_of_diagnosis: S.Optional(S.Number()),
+      medical_document_path: S.Optional(S.String()),
 
       // Speech Settings
       speech_provider: S.Optional(S.String()),

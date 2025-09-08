@@ -1,25 +1,21 @@
-import { redirect } from 'next/navigation';
-
 import Layout from '@/components/layout';
 import Navbar, { SettingsTabs } from '@/components/nav';
-import { AccountProvider } from '@/services/account/context';
-import AccountsService from '@/services/account/supabase';
+
+import { AccountProvider, AccountService } from '@/services/account';
+
 import { createClient } from '@/supabase/server';
 
 import { AISettingsForm } from './form';
 
 export default async function AISettingsPage() {
   const supabase = await createClient();
-  const accountsService = new AccountsService(supabase);
+  const accountsService = new AccountService(supabase);
 
   const [user, account] = await accountsService.getCurrentAccount();
-
-  if (!user || !account) {
-    redirect('/login');
-  }
+  const provider = user ? 'supabase' : 'triplit';
 
   return (
-    <AccountProvider provider="supabase" user={user} account={account}>
+    <AccountProvider provider={provider} user={user!} account={account!}>
       <Layout>
         <Layout.Header>
           <Navbar user={user} current="/settings" />

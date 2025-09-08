@@ -3,41 +3,16 @@
 import { useEffect } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Control, UseFormSetValue, UseFormWatch, useForm } from 'react-hook-form';
-import { z } from 'zod';
+import { useForm } from 'react-hook-form';
 
+import { AccountFormData, AccountSchema, SectionProps } from '@/components/settings';
 import { Button } from '@/components/ui/button';
 import FileUploader from '@/components/ui/file-uploader';
 import { FormCheckbox, FormInput } from '@/components/ui/form';
+
 import { useToast } from '@/hooks/use-toast';
-import { useAccountContext } from '@/services/account/context';
 
-// Validation schema
-const accountFormSchema = z.object({
-  // Personal Information
-  name: z.string().min(1, 'Name is required'),
-  city: z.string().optional(),
-  country: z.string().optional(),
-
-  // Medical Information
-  primary_diagnosis: z.string().min(1, 'Primary diagnosis is required'),
-  year_of_diagnosis: z.string().min(1, 'Year of diagnosis is required'),
-  medical_document_path: z.string().min(1, 'Medical document is required'),
-
-  // Terms and Privacy
-  terms_accepted: z.boolean().refine(val => val === true, 'You must accept the Terms of Service'),
-  privacy_policy_accepted: z
-    .boolean()
-    .refine(val => val === true, 'You must accept the Privacy Policy'),
-});
-
-type AccountFormData = z.infer<typeof accountFormSchema>;
-
-interface SectionProps {
-  control: Control<AccountFormData>;
-  setValue?: UseFormSetValue<AccountFormData>;
-  watch?: UseFormWatch<AccountFormData>;
-}
+import { useAccount } from '@/services/account';
 
 // Personal Information Section
 function PersonalInfoSection({ control }: SectionProps) {
@@ -82,7 +57,7 @@ function PersonalInfoSection({ control }: SectionProps) {
 
 // Medical Information Section
 function MedicalInfoSection({ control, setValue, watch }: SectionProps) {
-  const { uploadFile, deleteFile } = useAccountContext();
+  const { uploadFile, deleteFile } = useAccount();
 
   const medicalDocumentPath = watch?.('medical_document_path') || '';
 
@@ -240,18 +215,15 @@ function TermsSection({ control }: SectionProps) {
 }
 
 export function AccountForm() {
-  const { account, putAccount } = useAccountContext();
+  const { account, patchAccount } = useAccount();
   const { show, showError } = useToast();
 
   const form = useForm<AccountFormData>({
-    resolver: zodResolver(accountFormSchema),
+    resolver: zodResolver(AccountSchema),
     defaultValues: {
       name: account?.name || '',
       city: account?.city || '',
       country: account?.country || '',
-      primary_diagnosis: account?.primary_diagnosis || '',
-      year_of_diagnosis: account?.year_of_diagnosis?.toString() || '',
-      medical_document_path: account?.medical_document_path || '',
       terms_accepted: account?.terms_accepted || false,
       privacy_policy_accepted: account?.privacy_policy_accepted || false,
     },
@@ -262,20 +234,15 @@ export function AccountForm() {
       name: account?.name || '',
       city: account?.city || '',
       country: account?.country || '',
-      primary_diagnosis: account?.primary_diagnosis || '',
-      year_of_diagnosis: account?.year_of_diagnosis?.toString() || '',
-      medical_document_path: account?.medical_document_path || '',
       terms_accepted: account?.terms_accepted || false,
       privacy_policy_accepted: account?.privacy_policy_accepted || false,
     });
   }, [account, form]);
 
   const onSubmit = async (data: AccountFormData) => {
+    console.log('data', data);
     try {
-      await putAccount({
-        ...data,
-        year_of_diagnosis: parseInt(data.year_of_diagnosis),
-      });
+      await patchAccount(data);
       show({
         title: 'Account updated',
         message: 'Your account has been updated successfully.',
@@ -290,7 +257,7 @@ export function AccountForm() {
     <div className="divide-y divide-gray-400">
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <PersonalInfoSection control={form.control} setValue={form.setValue} watch={form.watch} />
-        <MedicalInfoSection control={form.control} setValue={form.setValue} watch={form.watch} />
+        {/* <MedicalInfoSection control={form.control} setValue={form.setValue} watch={form.watch} /> */}
         <TermsSection control={form.control} setValue={form.setValue} watch={form.watch} />
 
         {/* Floating save button */}

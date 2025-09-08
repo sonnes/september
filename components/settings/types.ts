@@ -9,9 +9,9 @@ export const AccountSchema = z.object({
   country: z.string().optional(),
 
   // Medical Information
-  primary_diagnosis: z.string().min(1, 'Primary diagnosis is required'),
-  year_of_diagnosis: z.number().min(1900).max(new Date().getFullYear()),
-  medical_document_path: z.string().min(1, 'Medical document path is required'),
+  primary_diagnosis: z.string().optional(),
+  year_of_diagnosis: z.number().min(1900).max(new Date().getFullYear()).optional(),
+  medical_document_path: z.string().optional(),
 
   // Speech Settings
   speech_provider: z.string().optional(),

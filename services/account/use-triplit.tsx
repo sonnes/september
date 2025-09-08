@@ -4,41 +4,29 @@ import { useQueryOne } from '@triplit/react';
 
 import { triplit } from '@/triplit/client';
 import type { Account, PutAccountData } from '@/types/account';
+import { User } from '@/types/user';
 
-const defaultAccount: Account = {
+const defaultAccount = {
   id: 'local-user',
   name: '',
-  primary_diagnosis: '',
-  year_of_diagnosis: 0,
-  medical_document_path: '',
-  terms_accepted: false,
-  privacy_policy_accepted: false,
-  onboarding_completed: false,
-  speech_provider: 'browser_tts',
-  created_at: new Date(),
-  updated_at: new Date(),
 };
 
 export function useAccountTriplit() {
-  const [account, setAccount] = useState<Account>(defaultAccount);
-
-  const query = triplit.query('accounts').Order('created_at', 'DESC');
-  const { result, fetching, error } = useQueryOne(triplit, query);
+  const query = triplit.query('accounts').Where('id', '=', defaultAccount.id);
+  const { result: account, fetching, error } = useQueryOne(triplit, query);
 
   useEffect(() => {
-    if (!fetching && !result) {
+    if (!fetching && !account) {
       triplit.insert('accounts', defaultAccount);
     }
-  }, [fetching, result]);
-
-  useEffect(() => {
-    if (result) {
-      setAccount(result as Account);
-    }
-  }, [result]);
+  }, [fetching, account]);
 
   const putAccount = useCallback(
     async (accountData: PutAccountData) => {
+      if (!account) {
+        throw new Error('Account not found');
+      }
+
       // For Triplit implementation, update local state
       // In a real implementation, this would use Triplit client
       const updatedAccount = { ...account, ...accountData, updated_at: new Date() };
@@ -52,9 +40,13 @@ export function useAccountTriplit() {
 
   const patchAccount = useCallback(
     async (accountData: Partial<PutAccountData>) => {
+      if (!account) {
+        throw new Error('Account not found');
+      }
+
       // For Triplit implementation, update local state
       // In a real implementation, this would use Triplit client
-      const updatedAccount = { ...account, ...accountData, updated_at: new Date() };
+      const updatedAccount = { ...accountData, updated_at: new Date() };
       triplit.update('accounts', account.id, updatedAccount);
       // TODO: Implement Triplit storage
       console.log('Triplit patchAccount:', accountData);
@@ -70,6 +62,10 @@ export function useAccountTriplit() {
 
   const uploadFile = useCallback(
     async (file: File) => {
+      if (!account) {
+        throw new Error('Account not found');
+      }
+
       // For Triplit implementation, this would handle local file storage
       // Return a local path or blob URL
       const localPath = `local/${account.id}/${file.name}`;
@@ -89,7 +85,7 @@ export function useAccountTriplit() {
   }, []);
 
   return {
-    user: account as Account,
+    user: account || (defaultAccount as User),
     account: account as Account,
     putAccount,
     patchAccount,

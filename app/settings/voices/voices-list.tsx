@@ -27,7 +27,6 @@ export default function VoicesList({ search }: { search?: string }) {
         setLoading(true);
         setError(null);
 
-        // Convert speech service voices to our extended Voice interface
         const speechVoices = await listVoices({ search });
 
         setVoices(speechVoices);
@@ -55,15 +54,8 @@ export default function VoicesList({ search }: { search?: string }) {
     return styles[gender.toLowerCase()] || 'text-gray-600 bg-gray-50 ring-gray-500/10';
   };
 
-  const onSelectVoice = async (voiceId: string) => {
-    await setVoiceId(voiceId);
-    patchAccount({ voice_id: voiceId });
-  };
-
-  const onDeleteVoice = async (voiceId: string) => {
-    if (confirm('Are you sure you want to delete this voice? This action cannot be undone.')) {
-      await deleteVoice(voiceId);
-    }
+  const onSelectVoice = async (voice: Voice) => {
+    await patchAccount({ voice: { id: voice.id, name: voice.name, language: voice.language } });
   };
 
   if (loading) {
@@ -104,10 +96,7 @@ export default function VoicesList({ search }: { search?: string }) {
           className="divide-y divide-gray-100 bg-white rounded-xl shadow-sm border border-gray-200"
         >
           {voices.map(voice => (
-            <li
-              key={voice.voice_id}
-              className="flex items-center justify-between gap-x-6 py-5 px-4"
-            >
+            <li key={voice.id} className="flex items-center justify-between gap-x-6 py-5 px-4">
               <div className="min-w-0">
                 <div className="flex items-start gap-x-3">
                   <p className="text-sm/6 font-semibold text-gray-900">{voice.name}</p>
@@ -171,19 +160,10 @@ export default function VoicesList({ search }: { search?: string }) {
                     <PlayIcon className="h-5 w-5 text-gray-600" />
                   </Button>
                 )}
-                {voice.category === 'cloned' && (
+
+                {account?.voice?.id !== voice.id ? (
                   <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onDeleteVoice(voice.voice_id)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <TrashIcon className="h-5 w-5" />
-                  </Button>
-                )}
-                {account?.settings?.voice_id !== voice.voice_id ? (
-                  <Button
-                    onClick={() => onSelectVoice(voice.voice_id)}
+                    onClick={() => onSelectVoice(voice)}
                     className="shrink-0"
                     variant="outline"
                   >

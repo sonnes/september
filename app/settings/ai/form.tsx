@@ -4,22 +4,16 @@ import { useEffect } from 'react';
 
 import { Control, UseFormSetValue, useForm } from 'react-hook-form';
 
+import { AccountFormData, AccountSchema, SectionProps } from '@/components/settings';
 import { Button } from '@/components/ui/button';
 import { FormInput, FormTextarea } from '@/components/ui/form';
+
 import { useCorpus } from '@/hooks/use-ai-settings';
 import { useToast } from '@/hooks/use-toast';
-import { useAccountContext } from '@/services/account/context';
 
-interface AISettingsFormData {
-  instructions: string;
-  corpus: string;
-  gemini_api_key: string;
-}
+import { useAccount } from '@/services/account';
 
-type SectionProps = {
-  control: Control<AISettingsFormData>;
-  setValue: UseFormSetValue<AISettingsFormData>;
-};
+import { PutAccountData } from '@/types/account';
 
 const EXAMPLE_INSTRUCTIONS = [
   {
@@ -39,7 +33,7 @@ const EXAMPLE_INSTRUCTIONS = [
 // Instructions Section
 function InstructionsSection({ control, setValue }: SectionProps) {
   const handleExampleClick = (example: string) => {
-    setValue('instructions', example);
+    setValue('ai_instructions', example);
   };
 
   return (
@@ -56,7 +50,7 @@ function InstructionsSection({ control, setValue }: SectionProps) {
         <div className="max-w-2xl space-y-4">
           <div>
             <FormTextarea
-              name="instructions"
+              name="ai_instructions"
               control={control}
               placeholder="Describe how you want the AI to provide suggestions..."
               rows={4}
@@ -113,12 +107,13 @@ function InstructionsSection({ control, setValue }: SectionProps) {
 }
 
 // Corpus Section
-function CorpusSection({ control, setValue }: SectionProps) {
+function CorpusSection({ control, setValue, watch }: SectionProps) {
   const { isGenerating, generateCorpus } = useCorpus();
 
+  const aiInstructions = watch('ai_instructions');
   const handleGenerateCorpus = async () => {
-    const { corpus } = await generateCorpus(control._formValues.instructions);
-    setValue('corpus', corpus);
+    const { corpus } = await generateCorpus(aiInstructions || '');
+    setValue('ai_corpus', corpus);
   };
 
   return (
@@ -139,7 +134,7 @@ function CorpusSection({ control, setValue }: SectionProps) {
         <div className="max-w-2xl space-y-4">
           <div>
             <FormTextarea
-              name="corpus"
+              name="ai_corpus"
               control={control}
               placeholder="Enter additional knowledge, documents, or context for the AI..."
               rows={6}
@@ -203,30 +198,18 @@ function GeminiAPIKeySection({ control }: SectionProps) {
 }
 
 export function AISettingsForm() {
-  const { account, patchAccount } = useAccountContext();
+  const { account, patchAccount } = useAccount();
   const { show, showError } = useToast();
 
-  const form = useForm<AISettingsFormData>({
-    defaultValues: {
-      instructions: account?.ai_instructions || '',
-      corpus: account?.ai_corpus || '',
-      gemini_api_key: account?.gemini_api_key || '',
-    },
+  const form = useForm<AccountFormData>({
+    defaultValues: account,
   });
 
-  useEffect(() => {
-    form.reset({
-      instructions: account?.ai_instructions || '',
-      corpus: account?.ai_corpus || '',
-      gemini_api_key: account?.gemini_api_key || '',
-    });
-  }, [account, form]);
-
-  const onSubmit = async (data: AISettingsFormData) => {
+  const onSubmit = async (data: AccountFormData) => {
     try {
       await patchAccount({
-        ai_instructions: data.instructions,
-        ai_corpus: data.corpus,
+        ai_instructions: data.ai_instructions,
+        ai_corpus: data.ai_corpus,
         gemini_api_key: data.gemini_api_key,
       });
       show({
@@ -239,12 +222,20 @@ export function AISettingsForm() {
     }
   };
 
+  if (!account) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-sm text-gray-500">Loading account settings...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="divide-y divide-gray-400">
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <GeminiAPIKeySection control={form.control} setValue={form.setValue} />
-        <InstructionsSection control={form.control} setValue={form.setValue} />
-        <CorpusSection control={form.control} setValue={form.setValue} />
+        <GeminiAPIKeySection control={form.control} watch={form.watch} setValue={form.setValue} />
+        <InstructionsSection control={form.control} watch={form.watch} setValue={form.setValue} />
+        <CorpusSection control={form.control} watch={form.watch} setValue={form.setValue} />
 
         {/* Floating save button */}
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">

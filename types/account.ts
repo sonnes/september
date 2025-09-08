@@ -9,9 +9,9 @@ export interface Account {
   country?: string;
 
   // Medical Information
-  primary_diagnosis: string;
-  year_of_diagnosis: number;
-  medical_document_path: string;
+  primary_diagnosis?: string;
+  year_of_diagnosis?: number;
+  medical_document_path?: string;
 
   // Speech Settings
   speech_provider?: string;
@@ -24,9 +24,9 @@ export interface Account {
   gemini_api_key?: string;
 
   // Flags
-  terms_accepted: boolean;
-  privacy_policy_accepted: boolean;
-  onboarding_completed: boolean;
+  terms_accepted?: boolean;
+  privacy_policy_accepted?: boolean;
+  onboarding_completed?: boolean;
 
   // Timestamps
   created_at: Date;
