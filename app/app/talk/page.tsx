@@ -29,12 +29,9 @@ export default async function TalkPage() {
   const messagesService = new MessagesService(supabase);
 
   const [user, account] = await accountsService.getCurrentAccount();
+  const provider = user ? 'supabase' : 'triplit';
 
-  if (!user || !account) {
-    redirect('/login');
-  }
-
-  const [messages] = await Promise.all([messagesService.getMessages(user.id)]);
+  const messages = user ? await messagesService.getMessages(user.id) : [];
 
   const actions = (
     <div className="flex items-center space-x-2">
@@ -47,7 +44,7 @@ export default async function TalkPage() {
         <Cog6ToothIcon className="w-6 h-6" />{' '}
       </Link>
       <Link
-        href={`/monitor/${user.id}`}
+        href={`/monitor`}
         className="p-2 text-white rounded-full transition-colors cursor-pointer"
       >
         <EyeIcon className="w-6 h-6" />
@@ -56,9 +53,9 @@ export default async function TalkPage() {
   );
 
   return (
-    <AccountProvider provider="supabase" user={user} account={account}>
-      <MessagesProvider provider="supabase" messages={messages}>
-        <AudioProvider provider="supabase">
+    <AccountProvider provider={provider} user={user!} account={account!}>
+      <MessagesProvider provider={provider} messages={messages!}>
+        <AudioProvider provider={provider}>
           <AudioPlayerProvider>
             <Layout>
               <Layout.Header>
