@@ -1,7 +1,7 @@
 import { ElevenLabsSettings } from '@/types/account';
 import { Voice } from '@/types/voice';
 
-import { ListVoicesRequest, SpeechProvider, SpeechRequest, SpeechResponse } from '.';
+import { ListVoicesRequest, SpeechProvider, SpeechRequest, SpeechResponse } from './types';
 
 const ranks = {
   cloned: 1,
@@ -43,20 +43,20 @@ export class ElevenLabsSpeechProvider implements SpeechProvider {
   private baseUrl = 'https://api.elevenlabs.io/v1';
 
   constructor(apiKey?: string) {
-    this.apiKey = apiKey || process.env.ELEVENLABS_API_KEY || '';
+    this.apiKey = apiKey || '';
   }
 
   async generateSpeech(request: SpeechRequest): Promise<SpeechResponse> {
     if (!this.apiKey) {
       throw new Error('ElevenLabs API key is required');
     }
-    if (!request.options?.voice_id) {
+    if (!request.voice?.id) {
       throw new Error('Voice ID is required for ElevenLabs');
     }
 
     const settings = request.options as ElevenLabsSettings;
 
-    const url = `${this.baseUrl}/text-to-speech/${request.options.voice_id}/with-timestamps`;
+    const url = `${this.baseUrl}/text-to-speech/${request.voice.id}/with-timestamps`;
 
     const body = {
       text: request.text,
@@ -101,49 +101,6 @@ export class ElevenLabsSpeechProvider implements SpeechProvider {
       blob: data.audio_base64,
       alignment,
     };
-  }
-
-  async getVoices(): Promise<Voice[]> {
-    if (!this.apiKey) {
-      return [];
-    }
-
-    const url = `${this.baseUrl}/voices`;
-
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'xi-api-key': this.apiKey,
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `ElevenLabs API error: ${response.status} ${response.statusText} - ${errorText}`
-      );
-    }
-
-    const data: { voices: ElevenLabsVoice[] } = await response.json();
-
-    const sortedVoices = data.voices.sort((a, b) => {
-      const rankA = ranks[a.category as keyof typeof ranks] || 999;
-      const rankB = ranks[b.category as keyof typeof ranks] || 999;
-      return rankA - rankB;
-    });
-
-    return sortedVoices.map(voice => ({
-      id: voice.voice_id,
-      name: voice.name || '',
-      language: voice.language || '',
-      // Include additional properties for the UI
-      category: voice.category,
-      description: voice.description,
-      preview_url: voice.preview_url,
-      labels: voice.labels,
-      sharing: voice.sharing,
-      is_added_by_user: voice.is_added_by_user,
-    }));
   }
 
   async listVoices(request: ListVoicesRequest): Promise<Voice[]> {

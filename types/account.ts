@@ -15,7 +15,7 @@ export interface Account {
 
   // Speech Settings
   speech_provider?: string;
-  speech_settings?: BrowserTTSSettings | ElevenLabsSettings;
+  speech_settings?: BrowserTTSSettings & ElevenLabsSettings;
   voice?: Voice;
 
   // AI Settings

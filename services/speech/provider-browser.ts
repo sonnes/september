@@ -1,7 +1,7 @@
 import { BrowserTTSSettings } from '@/types/account';
 import { Voice } from '@/types/voice';
 
-import { ListVoicesRequest, SpeechProvider, SpeechRequest, SpeechResponse } from '.';
+import { ListVoicesRequest, SpeechProvider, SpeechRequest, SpeechResponse } from './types';
 
 export class BrowserSpeechProvider implements SpeechProvider {
   id = 'browser_tts';
@@ -22,12 +22,13 @@ export class BrowserSpeechProvider implements SpeechProvider {
       const utterance = new SpeechSynthesisUtterance(request.text);
 
       const settings = request.options as BrowserTTSSettings;
+      const voice = request.voice;
 
       // Configure utterance
-      if (settings.voice_id) {
+      if (voice) {
         const voices = this.synthesis.getVoices();
-        const voice = voices.find(v => v.voiceURI === settings.voice_id);
-        if (voice) utterance.voice = voice;
+        const selectedVoice = voices.find(v => v.voiceURI === voice.id);
+        if (selectedVoice) utterance.voice = selectedVoice;
       }
 
       utterance.rate = settings.speed || 1;
@@ -38,28 +39,6 @@ export class BrowserSpeechProvider implements SpeechProvider {
       resolve({
         utterance,
       });
-    });
-  }
-
-  async getVoices(): Promise<Voice[]> {
-    return new Promise((resolve, reject) => {
-      if (!this.synthesis) {
-        reject(new Error('Speech synthesis is not supported in this browser'));
-        return;
-      }
-
-      const voices = this.synthesis.getVoices();
-      if (voices.length > 0) {
-        resolve(
-          voices
-            .filter(voice => voice.lang === window.navigator.language)
-            .map(voice => ({
-              id: voice.voiceURI,
-              name: voice.name,
-              language: voice.lang,
-            }))
-        );
-      }
     });
   }
 

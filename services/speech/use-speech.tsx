@@ -4,58 +4,42 @@ import { useAccount } from '@/services/account/context';
 
 import { BrowserTTSSettings, ElevenLabsSettings } from '@/types/account';
 
-import { ListVoicesRequest, SpeechOptions, SpeechProvider } from '.';
 import { BrowserSpeechProvider } from './provider-browser';
 import { ElevenLabsSpeechProvider } from './provider-elevenlabs';
-
-const browser = new BrowserSpeechProvider();
-const elevenlabs = new ElevenLabsSpeechProvider();
-
-const providers = new Map<string, SpeechProvider>([
-  ['browser_tts', browser],
-  ['elevenlabs', elevenlabs],
-]);
+import { ListVoicesRequest, SpeechOptions, SpeechProvider } from './types';
 
 export function useSpeech() {
   const { account } = useAccount();
 
-  const getSettings = useCallback(
-    (providerId: string) => {
-      if (providerId === 'browser_tts') {
-        return account.speech_settings as BrowserTTSSettings;
-      }
-      return account.speech_settings as ElevenLabsSettings;
-    },
-    [account]
-  );
+  const browser = new BrowserSpeechProvider();
 
-  const [engine, setEngine] = useState<SpeechProvider>(browser);
+  const providers = useMemo(() => {
+    const elevenlabs = new ElevenLabsSpeechProvider(account?.speech_settings?.api_key);
 
-  useEffect(() => {
-    if (account?.speech_provider) {
-      setEngine(providers.get(account.speech_provider) || browser);
-    }
+    return new Map<string, SpeechProvider>([
+      ['browser_tts', browser],
+      ['elevenlabs', elevenlabs],
+    ]);
+  }, [account?.speech_provider]);
+
+  const engine = useMemo(() => {
+    return providers.get(account?.speech_provider || 'browser_tts') || browser;
   }, [account?.speech_provider]);
 
   const getProviders = useCallback(() => {
     return Array.from(providers.values());
   }, []);
 
-  const setProvider = useCallback((providerId: string) => {
-    setEngine(providers.get(providerId) || browser);
-  }, []);
-
   const generateSpeech = useCallback(
     (text: string, options?: SpeechOptions) => {
-      const settings = getSettings(engine.id);
-      return engine.generateSpeech({ text, options: { ...settings, ...options } });
+      return engine.generateSpeech({
+        text,
+        voice: account?.voice,
+        options: { ...account?.speech_settings, ...options },
+      });
     },
-    [engine, getSettings]
+    [engine]
   );
-
-  const getVoices = useCallback(() => {
-    return engine.getVoices();
-  }, [engine]);
 
   const listVoices = useCallback(
     (request: ListVoicesRequest) => {
@@ -64,5 +48,5 @@ export function useSpeech() {
     [engine]
   );
 
-  return { getVoices, listVoices, getProviders, setProvider, generateSpeech };
+  return { listVoices, getProviders, generateSpeech };
 }
