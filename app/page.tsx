@@ -3,6 +3,7 @@ import React from 'react';
 import { Caveat } from 'next/font/google';
 
 import { BentoCardsSection } from '@/components/home/bento-cards-section';
+import { CTASection } from '@/components/home/cta-section';
 import { FAQSection } from '@/components/home/faq-section';
 import { FeaturesSection } from '@/components/home/features-section';
 import { Footer } from '@/components/home/footer';
@@ -37,12 +38,13 @@ export const metadata = {
 
 export default function Home() {
   return (
-    <main className="bg-white min-h-screen">
+    <main className="bg-stone-100 min-h-screen">
       <Navbar />
       <HeroSection caveat={caveat} />
-      <HighlightCards />
       <FeaturesSection />
+      {/* <HighlightCards /> */}
       <BentoCardsSection />
+      <CTASection />
       <FAQSection />
       <Footer />
     </main>
