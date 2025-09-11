@@ -5,9 +5,8 @@ import { useEffect, useMemo } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
-import { AccountFormData, AccountSchema, SectionProps } from '@/components/settings';
+import { AccountFormData, AccountSchema, AccountSectionProps } from '@/components/settings';
 import { Button } from '@/components/ui/button';
-import FileUploader from '@/components/ui/file-uploader';
 import { FormCheckbox, FormInput } from '@/components/ui/form';
 
 import { useToast } from '@/hooks/use-toast';
@@ -15,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAccount } from '@/services/account';
 
 // Personal Information Section
-function PersonalInfoSection({ control }: SectionProps) {
+function PersonalInfoSection({ control }: AccountSectionProps) {
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
       <div className="px-4 sm:px-0">
@@ -55,8 +54,9 @@ function PersonalInfoSection({ control }: SectionProps) {
   );
 }
 
-// Medical Information Section
-function MedicalInfoSection({ control, setValue, watch }: SectionProps) {
+// Medical Information Section (currently commented out)
+/* 
+function MedicalInfoSection({ control, setValue, watch }: AccountSectionProps) {
   const { uploadFile, deleteFile } = useAccount();
 
   const medicalDocumentPath = watch?.('medical_document_path') || '';
@@ -165,9 +165,10 @@ function MedicalInfoSection({ control, setValue, watch }: SectionProps) {
     </div>
   );
 }
+*/
 
 // Terms and Privacy Section
-function TermsSection({ control }: SectionProps) {
+function TermsSection({ control }: AccountSectionProps) {
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
       <div className="px-4 sm:px-0">

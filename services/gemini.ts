@@ -1,8 +1,14 @@
 import { Content, GoogleGenAI } from '@google/genai';
 import { v4 as uuidv4 } from 'uuid';
 
-import { PartialCard } from '@/types/deck';
 import { Message } from '@/types/message';
+
+interface PartialCard {
+  id: string;
+  text: string;
+  rank: number;
+  created_at: Date;
+}
 
 const STORY_PROMPT = `You are a storyteller.
 

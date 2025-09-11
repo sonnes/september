@@ -11,7 +11,7 @@ export function CTASection() {
         </div>
         <div className="lg:w-1/2">
           <p className="text-xl text-gray-700 leading-relaxed mb-8">
-            We're building the next chapter of human-computer interaction. Sign up to track our
+            We&apos;re building the next chapter of human-computer interaction. Sign up to track our
             progress and be first to know when September becomes available.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">

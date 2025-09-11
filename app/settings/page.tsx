@@ -1,7 +1,6 @@
 import Layout from '@/components/layout';
 import Navbar from '@/components/nav';
 
-import { AudioPlayerProvider } from '@/hooks/use-audio-player';
 
 import { AccountProvider, AccountService } from '@/services/account';
 import { SpeechProvider } from '@/services/speech';

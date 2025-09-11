@@ -1,3 +1,5 @@
+import { Suspense } from 'react';
+
 import Layout from '@/components/layout';
 
 import LoginForm from './form';
@@ -13,7 +15,9 @@ export default function LoginPage() {
       <Layout.Header>&nbsp;</Layout.Header>
       <Layout.Content>
         <div className="bg-zinc-50">
-          <LoginForm />
+          <Suspense fallback={<div>Loading...</div>}>
+            <LoginForm />
+          </Suspense>
         </div>
       </Layout.Content>
     </Layout>

@@ -11,7 +11,6 @@ import {
   ElevenLabsSettingsSection,
   GeminiAPIKeySection,
   InstructionsSection,
-  SectionProps,
   SettingsFormData,
   SettingsSchema,
   SpeechProviderSection,

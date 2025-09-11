@@ -7,7 +7,7 @@ import FileUploader from '@/components/ui/file-uploader';
 import { useToast } from '@/hooks/use-toast';
 import GeminiService from '@/services/gemini';
 
-import { useAccountContext } from '../../services/account/context';
+import { useAccount } from '../../services/account/context';
 
 export default function UploadForm({
   onTextExtracted,
@@ -15,7 +15,7 @@ export default function UploadForm({
   onTextExtracted: (text: string) => void;
 }) {
   const { showError } = useToast();
-  const { account } = useAccountContext();
+  const { account } = useAccount();
 
   const gemini = new GeminiService(account?.gemini_api_key || '');
 

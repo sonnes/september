@@ -1,13 +1,11 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import {
   DocumentDuplicateIcon,
-  EyeIcon,
   PaperClipIcon,
-  PencilIcon,
   PresentationChartBarIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
@@ -68,23 +66,6 @@ export default function Document({ className = '' }: DocumentProps) {
     await putDocument({ ...current, content, name });
     setIsDirty(false);
   };
-
-  // Calculate document statistics
-  const documentStats = useMemo(() => {
-    if (!content) return { words: 0, characters: 0, readingTime: 0 };
-
-    // Strip HTML tags for accurate word count
-    const text = content
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    const words = text ? text.split(' ').length : 0;
-    const characters = text.length;
-    const readingTime = Math.ceil(words / 200); // 200 WPM average
-
-    return { words, characters, readingTime };
-  }, [content]);
-
   return (
     <div className={`h-full flex flex-col bg-zinc-50 ${className}`}>
       {/* Main Content Card */}
