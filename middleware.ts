@@ -8,9 +8,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Protect /app/* routes
-    '/app/:path*',
     // Protect /api/* routes
     '/api/:path*',
+    // Protect all (app) group routes
+    '/app/:path*',
   ],
 };

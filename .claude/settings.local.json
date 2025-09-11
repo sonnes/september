@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint)",
+      "Bash(mkdir:*)",
+      "WebFetch(domain:tiptap.dev)",
+      "WebSearch",
+      "Bash(bun install:*)",
+      "Bash(bun run:*)",
+      "Bash(bun add:*)",
+      "Bash(bun lint:*)",
+      "Bash(bun build:*)",
+      "Bash(bun:*)"
+    ],
+    "defaultMode": "acceptEdits"
+  },
+  "enableAllProjectMcpServers": false
+}

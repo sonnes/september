@@ -1,14 +1,13 @@
 'use client';
 
 import { useActionState } from 'react';
+import React from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
-import { Banner } from '@/components/banner';
-import { Button } from '@/components/catalyst/button';
-import { Field, Label } from '@/components/catalyst/fieldset';
-import { Heading } from '@/components/catalyst/heading';
-import { Input } from '@/components/catalyst/input';
+import { Button } from '@/components/ui/button';
+import { TextInput } from '@/components/ui/text-input';
+import { useToast } from '@/hooks/use-toast';
 
 import { signInWithEmail, signInWithGoogle } from './actions';
 import type { LoginResponse } from './actions';
@@ -25,87 +24,100 @@ const initialState: LoginResponse = {
 export default function LoginForm() {
   const [state, formAction, isPending] = useActionState(signInWithEmail, initialState);
   const searchParams = useSearchParams();
-  const next = searchParams.get('next') || '/app';
+  const next = searchParams.get('next') || '/talk';
+  const { show } = useToast();
+
+  React.useEffect(() => {
+    if (state.message) {
+      show({
+        type: state.success ? 'success' : 'error',
+        title: state.success ? 'Success' : 'Error',
+        message: state.message,
+      });
+    }
+    // Only run when state.message changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.message]);
 
   const handleGoogleSignIn = async () => {
     await signInWithGoogle(next);
   };
 
   return (
-    <form className="space-y-8" action={formAction} autoComplete="on">
-      <input type="hidden" name="next" value={next} />
-      <div className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 md:col-span-2">
-        <div>
-          <Heading level={2}>Welcome</Heading>
-        </div>
-        <div className="col-span-full">
-          <Button
-            type="button"
-            outline
-            className="w-full cursor-pointer"
-            onClick={handleGoogleSignIn}
-          >
-            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-              <path
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                fill="#4285F4"
-              />
-              <path
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                fill="#34A853"
-              />
-              <path
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                fill="#FBBC05"
-              />
-              <path
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                fill="#EA4335"
-              />
-            </svg>
-            Login with Google
-          </Button>
-        </div>
+    <div className="flex min-h-full flex-1 flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 className="mt-6 text-center text-2xl/9 font-bold tracking-tight text-zinc-900">
+          Login
+        </h2>
+      </div>
 
-        <div className="relative col-span-full">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-zinc-300" />
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="bg-white px-2 text-zinc-500">Or continue with</span>
-          </div>
-        </div>
-
-        <div className="col-span-full">
-          <Field>
-            <Label>Email</Label>
-            <Input
+      <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-[480px]">
+        <div className="bg-white px-6 py-12 shadow sm:rounded-lg sm:px-12">
+          <form action={formAction} method="POST" className="space-y-6" autoComplete="on">
+            <input type="hidden" name="next" value={next} />
+            <TextInput
+              id="email"
               name="email"
               type="email"
-              defaultValue={state.inputs?.email}
               required
+              autoComplete="email"
               placeholder="you@example.com"
+              label="Email address"
+              defaultValue={state.inputs?.email}
             />
             {state.errors?.email && (
-              <p className="mt-2 text-sm text-red-500">{state.errors.email.join(', ')}</p>
+              <p className="mt-2 text-sm text-indigo-500">{state.errors.email.join(', ')}</p>
             )}
-          </Field>
-        </div>
 
-        {state.message && (
-          <Banner
-            type={state.success ? 'success' : 'error'}
-            title={state.success ? 'Success' : 'Error'}
-            message={state.message}
-          />
-        )}
+            <div>
+              <Button type="submit" className="flex w-full justify-center" disabled={isPending}>
+                {isPending ? 'Sending login link...' : 'Send Login Link'}
+              </Button>
+            </div>
+          </form>
 
-        <div className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full sm:w-auto" disabled={isPending}>
-            {isPending ? 'Sending login link...' : 'Send Login Link'}
-          </Button>
+          <div>
+            <div className="relative mt-10">
+              <div aria-hidden="true" className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-zinc-200" />
+              </div>
+              <div className="relative flex justify-center text-sm/6 font-medium">
+                <span className="bg-white px-6 text-zinc-900">Or continue with</span>
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 gap-4">
+              <Button
+                type="button"
+                color="zinc"
+                className="w-full flex items-center justify-center gap-3 ring-1 ring-inset ring-zinc-300 bg-white text-zinc-900 hover:bg-zinc-50 focus-visible:ring-transparent"
+                onClick={handleGoogleSignIn}
+                disabled={isPending}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
+                  <path
+                    d="M12.0003 4.75C13.7703 4.75 15.3553 5.36002 16.6053 6.54998L20.0303 3.125C17.9502 1.19 15.2353 0 12.0003 0C7.31028 0 3.25527 2.69 1.28027 6.60998L5.27028 9.70498C6.21525 6.86002 8.87028 4.75 12.0003 4.75Z"
+                    fill="#EA4335"
+                  />
+                  <path
+                    d="M23.49 12.275C23.49 11.49 23.415 10.73 23.3 10H12V14.51H18.47C18.18 15.99 17.34 17.25 16.08 18.1L19.945 21.1C22.2 19.01 23.49 15.92 23.49 12.275Z"
+                    fill="#4285F4"
+                  />
+                  <path
+                    d="M5.26498 14.2949C5.02498 13.5699 4.88501 12.7999 4.88501 11.9999C4.88501 11.1999 5.01998 10.4299 5.26498 9.7049L1.275 6.60986C0.46 8.22986 0 10.0599 0 11.9999C0 13.9399 0.46 15.7699 1.28 17.3899L5.26498 14.2949Z"
+                    fill="#FBBC05"
+                  />
+                  <path
+                    d="M12.0004 24.0001C15.2404 24.0001 17.9654 22.935 19.9454 21.095L16.0804 18.095C15.0054 18.82 13.6204 19.245 12.0004 19.245C8.8704 19.245 6.21537 17.135 5.26540 14.29L1.27539 17.385C3.25539 21.31 7.31040 24.0001 12.0004 24.0001Z"
+                    fill="#34A853"
+                  />
+                </svg>
+                <span className="text-sm/6 font-semibold">Google</span>
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
-    </form>
+    </div>
   );
 }

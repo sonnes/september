@@ -1,0 +1,53 @@
+import { Voice } from './voice';
+
+export interface Account {
+  id: string;
+
+  // Personal Information
+  name: string;
+  city?: string;
+  country?: string;
+
+  // Medical Information
+  primary_diagnosis?: string;
+  year_of_diagnosis?: number;
+  medical_document_path?: string;
+
+  // Speech Settings
+  speech_provider?: string;
+  speech_settings?: BrowserTTSSettings & ElevenLabsSettings;
+  voice?: Voice;
+
+  // AI Settings
+  ai_instructions?: string;
+  ai_corpus?: string;
+  gemini_api_key?: string;
+
+  // Flags
+  terms_accepted?: boolean;
+  privacy_policy_accepted?: boolean;
+  onboarding_completed?: boolean;
+
+  // Timestamps
+  created_at: Date;
+  updated_at: Date;
+}
+
+export type PutAccountData = Partial<Omit<Account, 'id' | 'created_at' | 'updated_at'>>;
+
+export interface BrowserTTSSettings {
+  speed?: number;
+  pitch?: number;
+  volume?: number;
+  language?: string;
+}
+
+export interface ElevenLabsSettings {
+  api_key?: string;
+  model_id?: string;
+  speed?: number;
+  stability?: number;
+  similarity?: number;
+  style?: number;
+  speaker_boost?: boolean;
+}

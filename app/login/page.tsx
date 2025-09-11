@@ -10,11 +10,9 @@ export const metadata = {
 export default function LoginPage() {
   return (
     <Layout>
-      <Layout.Header>
-        <h1 className="text-3xl font-bold tracking-tight text-white">Login</h1>
-      </Layout.Header>
+      <Layout.Header>&nbsp;</Layout.Header>
       <Layout.Content>
-        <div className="p-6">
+        <div className="bg-zinc-50">
           <LoginForm />
         </div>
       </Layout.Content>

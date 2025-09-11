@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-import { createAccount } from '@/app/actions/account';
+import AccountsService from '@/services/account/supabase';
 import { createClient } from '@/supabase/server';
 
 export async function GET(request: Request) {
@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
   const token_hash = searchParams.get('token_hash');
   const type = searchParams.get('type');
-  const next = searchParams.get('next') || '/app';
+  const next = searchParams.get('next') || '/talk';
 
   // If no token hash is present, redirect to login
   if (!token_hash || !type) {
@@ -32,7 +32,14 @@ export async function GET(request: Request) {
     }
 
     if (data.user) {
-      await createAccount({ id: data.user.id, name: data.user.user_metadata.name });
+      const accountsService = new AccountsService(supabase);
+      const account = await accountsService.getAccount(data.user.id);
+
+      if (!account) {
+        await accountsService.putAccount(data.user.id, {
+          name: data.user.user_metadata.full_name,
+        });
+      }
     }
 
     return redirect(`${host}${next}`);

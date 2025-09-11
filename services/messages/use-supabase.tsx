@@ -1,0 +1,95 @@
+import { useCallback, useEffect, useState } from 'react';
+
+import { useToast } from '@/hooks/use-toast';
+import { useAccount } from '@/services/account/context';
+import supabase from '@/supabase/client';
+import { removeRealtimeSubscription, subscribeToUserMessages } from '@/supabase/realtime';
+import { CreateMessageData, Message } from '@/types/message';
+
+import { MessagesService } from './supabase';
+
+const messagesService = new MessagesService(supabase);
+
+export function useMessages({ messages: initialMessages }: { messages: Message[] }) {
+  const { user } = useAccount();
+  const { showError } = useToast();
+
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
+
+  const getMessages = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const data = await messagesService.getMessages(user.id);
+
+      setMessages(data.reverse());
+
+      return data;
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Failed to fetch messages');
+      console.error(error);
+    }
+  }, [user, showError]);
+
+  useEffect(() => {
+    if (initialMessages.length === 0) {
+      getMessages();
+    }
+  }, [user, initialMessages.length]);
+
+  // Realtime subscription for messages
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = subscribeToUserMessages<Message>(user.id, {
+      onInsert: newMessage => {
+        setMessages(prev => [newMessage, ...prev]);
+      },
+      onUpdate: updatedMessage => {
+        setMessages(prev => prev.map(msg => (msg.id === updatedMessage.id ? updatedMessage : msg)));
+      },
+      onDelete: deletedMessage => {
+        setMessages(prev => prev.filter(msg => msg.id !== deletedMessage.id));
+      },
+      onError: error => {
+        console.error('Messages realtime error:', error);
+        showError('Failed to receive real-time updates');
+      },
+      onSubscribe: status => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to messages changes');
+        }
+      },
+    });
+
+    // Cleanup function to unsubscribe on unmount
+    return () => {
+      removeRealtimeSubscription(channel);
+    };
+  }, [user, showError]);
+
+  return {
+    messages,
+    getMessages,
+  };
+}
+
+export function useCreateMessage() {
+  const { user } = useAccount();
+  const { showError } = useToast();
+
+  const createMessage = useCallback(
+    async (message: CreateMessageData) => {
+      try {
+        const createdMessage = await messagesService.createMessage(message);
+        return createdMessage;
+      } catch (error) {
+        showError(error instanceof Error ? error.message : 'Failed to create message');
+        console.error(error);
+      }
+    },
+    [user]
+  );
+
+  return { createMessage };
+}

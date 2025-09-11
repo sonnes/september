@@ -1,3 +1,20 @@
-import { Database } from './supabase';
+import { Audio } from './audio';
 
-export type Message = Database['api']['Tables']['messages']['Row'];
+export interface Message {
+  id: string;
+  text: string;
+  type: string;
+  user_id: string;
+  created_at: Date;
+  audio_path?: string;
+  audio?: Audio;
+}
+
+export interface CreateMessageData {
+  id?: string;
+  text: string;
+  type: string;
+  user_id: string;
+  audio_path?: string;
+  audio?: Audio;
+}

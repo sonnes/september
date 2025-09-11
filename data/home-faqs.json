@@ -2,7 +2,7 @@
   {
     "id": 1,
     "question": "How do I get started with September?",
-    "answer": "First, register a free account with us. From our homepage, click on \"Clone your Voice\". This page will allow you to record your voice or use an existing recording. For more details on voice cloning go here <Add link> to voice cloning. After your voice is ready, click on “Start Talking” on our homepage to start using your voice and communicate."
+    "answer": "First, register a free account with us. From our homepage, click on \"Clone your Voice\". This page will allow you to record your voice or use an existing recording. For more details on voice cloning go here <Add link> to voice cloning. After your voice is ready, click on \"Start Talking\" on our homepage to start using your voice and communicate."
   },
   {
     "id": 2,
@@ -14,4 +14,4 @@
     "question": "What devices are supported?",
     "answer": "September works on any modern web browser across desktop and mobile devices. We also support various input methods including touch, keyboard, mouse, and eye-tracking devices."
   }
-] 
+]

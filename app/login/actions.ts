@@ -1,6 +1,5 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { z } from 'zod';
@@ -26,7 +25,7 @@ export async function signInWithGoogle(next?: string) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
   const isLocalEnv = process.env.NODE_ENV === 'development';
   const host = isLocalEnv ? siteUrl : `https://${siteUrl}`;
-  const redirectTo = `${host}/auth/callback?next=${next || '/app'}`;
+  const redirectTo = `${host}/auth/callback?next=${next || '/talk'}`;
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',

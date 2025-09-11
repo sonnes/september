@@ -2,137 +2,80 @@
 
 import { useState } from 'react';
 
-import clsx from 'clsx';
 import { v4 as uuidv4 } from 'uuid';
 
-import { createUserMessage } from '@/app/actions/messages';
-import { useSettings } from '@/app/app/talk/context';
-import { Button } from '@/components/catalyst/button';
-import { useMessages } from '@/components/context/messages';
-import { usePlayer } from '@/components/context/player';
-
-import Suggestions from '../autocomplete/suggestions';
-import { EditorProvider, useEditor } from './context';
-import EmotionsSelector from './emotions-selector';
-import { Keyboard } from './keyboards';
-
-const emotions = [
-  { emoji: '😡', name: 'angry' },
-  { emoji: '😢', name: 'sad' },
-  { emoji: '😐', name: 'neutral' },
-  { emoji: '😊', name: 'happy' },
-  { emoji: '🤩', name: 'excited' },
-];
+import { useTextContext } from '@/components/context/text-provider';
+import { Button } from '@/components/ui/button';
+import { useAudioPlayer } from '@/hooks/use-audio-player';
+import { useAccount } from '@/services/account/context';
+import { useAudio } from '@/services/audio';
+import { useMessages } from '@/services/messages';
+import { useSpeech } from '@/services/speech/use-speech';
 
 type EditorProps = {
   placeholder?: string;
 };
 
-function Editor({ placeholder = 'Start typing...' }: EditorProps) {
+export default function Editor({ placeholder = 'Start typing...' }: EditorProps) {
+  const { text, setText, reset } = useTextContext();
+  const { user } = useAccount();
+  const { createMessage } = useMessages();
+  const { generateSpeech } = useSpeech();
+  const { enqueue } = useAudioPlayer();
+  const { uploadAudio } = useAudio();
+
   const [status, setStatus] = useState<'idle' | 'loading'>('idle');
-  const [error, setError] = useState<string | null>(null);
 
-  const { messages } = useMessages();
-  const { text, setText, tone, appendText } = useEditor();
-  const { addMessage } = useMessages();
-  const { setPlaying } = usePlayer();
-  const { settings } = useSettings();
-
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setText(e.target.value);
-  };
-
-  const createMessage = async () => {
-    setError(null);
+  const handleSubmit = async () => {
     setStatus('loading');
 
-    const previousText = messages
-      .slice(0, 5)
-      .map(message => message.text)
-      .join('.\n');
+    const audio = await generateSpeech(text);
 
-    const request = {
-      id: uuidv4(),
-      text,
-      tone,
-      settings,
-      previous_text: previousText,
-      type: 'message',
-    };
+    enqueue(audio);
 
-    try {
-      const createdMessage = await createUserMessage(request);
-      addMessage(createdMessage);
-      setPlaying(createdMessage);
-      setText('');
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError('An unknown error occurred');
-      }
-    } finally {
-      setStatus('idle');
-    }
+    const id = uuidv4();
+    const audioPath = `${id}.mp3`;
+
+    await Promise.all([
+      audio.blob
+        ? uploadAudio({ path: audioPath, blob: audio.blob, alignment: audio.alignment })
+        : Promise.resolve(null),
+      createMessage({ id, text, type: 'message', user_id: user.id, audio_path: audioPath }),
+    ]);
+
+    setStatus('idle');
+    reset();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter') {
+  const handleKeyDown = async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      createMessage();
+      await handleSubmit();
+      return;
     }
   };
 
-  const handleVirtualKeyPress = (key: string) => {
-    switch (key.toLowerCase()) {
-      case 'space':
-        setText(text + ' ');
-        break;
-      case 'backspace':
-        setText(text.slice(0, -1));
-        break;
-      case 'enter':
-        createMessage();
-        break;
-      default:
-        setText(text + key);
-        break;
-    }
-  };
-
-  const handleSuggestionSelect = (suggestion: string) => {
-    appendText(suggestion);
+  const onChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setText(e.target.value);
   };
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex-1">
-        <Suggestions text={text} onSelect={handleSuggestionSelect} />
-
         <div className="flex gap-2">
           <textarea
             value={text}
-            onChange={handleChange}
+            onChange={onChange}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             className="flex-1 w-full p-3 rounded-xl border border-zinc-400"
             style={{ caretColor: 'auto' }}
           />
-          <Button onClick={createMessage} color="zinc" disabled={status === 'loading'}>
+          <Button onClick={handleSubmit} color="zinc" disabled={status === 'loading'}>
             {status === 'loading' ? 'Submitting...' : 'Submit'}
           </Button>
         </div>
-        <div className="mt-2">{error && <div className="text-red-500">{error}</div>}</div>
       </div>
-      <Keyboard onKeyPress={handleVirtualKeyPress} />
     </div>
-  );
-}
-
-export default function EditorComponent(props: EditorProps) {
-  return (
-    <EditorProvider>
-      <Editor {...props} />
-    </EditorProvider>
   );
 }
