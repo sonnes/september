@@ -8,7 +8,6 @@ import Link from 'next/link';
 import { Dialog, DialogPanel } from '@headlessui/react';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 
-import { type ThemeColor } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
 type NavigationItem = {
@@ -25,7 +24,6 @@ export type MobileNavProps = {
     email?: string;
     avatar?: string;
   } | null;
-  color?: ThemeColor;
   className?: string;
   children?: React.ReactNode;
 };

@@ -12,7 +12,6 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Markdown } from 'tiptap-markdown';
 
-import { type ThemeColor, themes } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
 interface MarkdownStorage {
@@ -26,7 +25,6 @@ interface TiptapEditorProps {
   placeholder?: string;
   onUpdate?: (content: string, markdown: string) => void;
   className?: string;
-  theme?: ThemeColor;
 }
 
 export default function TiptapEditor({
@@ -34,9 +32,7 @@ export default function TiptapEditor({
   placeholder = 'Start writing...',
   onUpdate,
   className = '',
-  theme = 'indigo',
 }: TiptapEditorProps) {
-  const themeConfig = themes[theme];
 
   const editor = useEditor(
     {
@@ -61,10 +57,7 @@ export default function TiptapEditor({
           },
           blockquote: {
             HTMLAttributes: {
-              class: cn(
-                'border-l-4 pl-6 py-2 my-4 italic text-gray-700 bg-gray-50 rounded-r-md',
-                `border-${theme}-400`
-              ),
+              class: 'border-l-4 pl-6 py-2 my-4 italic text-gray-700 bg-gray-50 rounded-r-md border-indigo-400',
             },
           },
           codeBlock: {
@@ -113,7 +106,7 @@ export default function TiptapEditor({
             'prose-strong:text-gray-900 prose-strong:font-semibold',
             'prose-em:text-gray-700',
             'prose-code:text-gray-900 prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm',
-            `prose-a:text-${theme}-600 prose-a:no-underline hover:prose-a:underline`,
+            'prose-a:text-indigo-600 prose-a:no-underline hover:prose-a:underline',
             'placeholder:text-gray-400'
           ),
         },
@@ -151,7 +144,7 @@ export default function TiptapEditor({
         'flex flex-col h-full',
         // Only apply default styling if no custom className is provided
         !className.includes('border-0') &&
-          !className.includes('shadow-none') && ['border rounded-xl shadow-sm', themeConfig.border],
+          !className.includes('shadow-none') && 'border rounded-xl shadow-sm border-indigo-300',
         className
       )}
     >
@@ -165,7 +158,7 @@ export default function TiptapEditor({
             className={cn(
               'flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 hover:bg-gray-100',
               editor.isActive('bold') 
-                ? `bg-${theme}-100 text-${theme}-700 shadow-sm` 
+                ? 'bg-indigo-100 text-indigo-700 shadow-sm' 
                 : 'text-gray-600 hover:text-gray-900'
             )}
           >
@@ -179,7 +172,7 @@ export default function TiptapEditor({
             className={cn(
               'flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 hover:bg-gray-100',
               editor.isActive('italic') 
-                ? `bg-${theme}-100 text-${theme}-700 shadow-sm` 
+                ? 'bg-indigo-100 text-indigo-700 shadow-sm' 
                 : 'text-gray-600 hover:text-gray-900'
             )}
           >
@@ -196,7 +189,7 @@ export default function TiptapEditor({
             className={cn(
               'flex items-center justify-center px-2 h-8 rounded-md transition-all duration-200 hover:bg-gray-100',
               editor.isActive('heading', { level: 1 }) 
-                ? `bg-${theme}-100 text-${theme}-700 shadow-sm font-semibold` 
+                ? 'bg-indigo-100 text-indigo-700 shadow-sm font-semibold' 
                 : 'text-gray-600 hover:text-gray-900'
             )}
           >
@@ -210,7 +203,7 @@ export default function TiptapEditor({
             className={cn(
               'flex items-center justify-center px-2 h-8 rounded-md transition-all duration-200 hover:bg-gray-100',
               editor.isActive('heading', { level: 2 }) 
-                ? `bg-${theme}-100 text-${theme}-700 shadow-sm font-semibold` 
+                ? 'bg-indigo-100 text-indigo-700 shadow-sm font-semibold' 
                 : 'text-gray-600 hover:text-gray-900'
             )}
           >
@@ -227,7 +220,7 @@ export default function TiptapEditor({
             className={cn(
               'flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 hover:bg-gray-100',
               editor.isActive('bulletList') 
-                ? `bg-${theme}-100 text-${theme}-700 shadow-sm` 
+                ? 'bg-indigo-100 text-indigo-700 shadow-sm' 
                 : 'text-gray-600 hover:text-gray-900'
             )}
           >
@@ -241,7 +234,7 @@ export default function TiptapEditor({
             className={cn(
               'flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 hover:bg-gray-100',
               editor.isActive('blockquote') 
-                ? `bg-${theme}-100 text-${theme}-700 shadow-sm` 
+                ? 'bg-indigo-100 text-indigo-700 shadow-sm' 
                 : 'text-gray-600 hover:text-gray-900'
             )}
           >
@@ -255,7 +248,7 @@ export default function TiptapEditor({
             className={cn(
               'flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 hover:bg-gray-100',
               editor.isActive('codeBlock') 
-                ? `bg-${theme}-100 text-${theme}-700 shadow-sm` 
+                ? 'bg-indigo-100 text-indigo-700 shadow-sm' 
                 : 'text-gray-600 hover:text-gray-900'
             )}
           >

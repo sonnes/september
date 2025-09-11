@@ -27,21 +27,11 @@ const circularSizeClasses = {
 const colorClasses: Record<string, string> = {
   indigo: 'bg-indigo-600 text-white hover:bg-indigo-500 focus-visible:outline-indigo-600',
   zinc: 'bg-zinc-600 text-white hover:bg-zinc-500 focus-visible:outline-zinc-600',
-  gray: 'bg-gray-600 text-white hover:bg-gray-500 focus-visible:outline-gray-600',
-  red: 'bg-red-600 text-white hover:bg-red-500 focus-visible:outline-red-600',
-  green: 'bg-green-600 text-white hover:bg-green-500 focus-visible:outline-green-600',
-  blue: 'bg-blue-600 text-white hover:bg-blue-500 focus-visible:outline-blue-600',
-  white: 'bg-white text-zinc-900 hover:bg-white/80 focus-visible:outline-white',
 };
 
 const outlineColorClasses: Record<string, string> = {
   indigo: 'border-indigo-600 text-indigo-600 hover:bg-indigo-50 focus-visible:outline-indigo-600',
   zinc: 'border-zinc-600 text-zinc-600 hover:bg-zinc-50 focus-visible:outline-zinc-600',
-  gray: 'border-gray-600 text-gray-600 hover:bg-gray-50 focus-visible:outline-gray-600',
-  red: 'border-red-600 text-red-600 hover:bg-red-50 focus-visible:outline-red-600',
-  green: 'border-green-600 text-green-600 hover:bg-green-50 focus-visible:outline-green-600',
-  blue: 'border-blue-600 text-blue-600 hover:bg-blue-50 focus-visible:outline-blue-600',
-  white: 'border-white text-white hover:bg-white hover:text-zinc-900 focus-visible:outline-white',
 };
 
 export function Button({

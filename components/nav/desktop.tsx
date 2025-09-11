@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { Popover, PopoverButton, PopoverGroup, PopoverPanel } from '@headlessui/react';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 
-import { type ThemeColor } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
 type NavigationItem = {
@@ -20,7 +19,6 @@ export type DesktopNavProps = {
     email?: string;
     avatar?: string;
   } | null;
-  color?: ThemeColor;
   className?: string;
 };
 

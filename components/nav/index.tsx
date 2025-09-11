@@ -1,4 +1,3 @@
-import { type ThemeColor } from '@/lib/theme';
 
 import DesktopNavComponent, { type DesktopNavProps } from './desktop';
 import MobileNavComponent, { type MobileNavProps } from './mobile';
@@ -19,7 +18,6 @@ type NavbarProps = {
     email?: string;
     avatar?: string;
   } | null;
-  color?: ThemeColor;
   className?: string;
 };
 
@@ -43,12 +41,11 @@ export default function Navbar({
   items = defaultItems,
   current,
   user,
-  color = 'indigo',
 }: NavbarProps) {
   return (
     <div>
-      <DesktopNav items={items} current={current} user={user} color={color} />
-      <MobileNav items={items} current={current} user={user} color={color} />
+      <DesktopNav items={items} current={current} user={user} />
+      <MobileNav items={items} current={current} user={user} />
     </div>
   );
 }

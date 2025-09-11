@@ -1,21 +1,18 @@
 import { PropsWithChildren } from 'react';
 
-import { type ThemeColor, themes } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
 type HeaderProps = PropsWithChildren & {
-  color?: ThemeColor;
 };
 
 export default function Layout({ children }: PropsWithChildren) {
   return <div className="min-h-full flex flex-col">{children}</div>;
 }
 
-const LayoutHeader = ({ children, color = 'indigo' }: HeaderProps) => {
-  const theme = themes[color];
+const LayoutHeader = ({ children }: HeaderProps) => {
 
   return (
-    <div className={cn(theme.bg, 'pb-32')}>
+    <div className="bg-indigo-500 pb-32">
       <header>
         <div className="mx-auto max-w-7xl px-2 md:px-8">{children}</div>
       </header>
