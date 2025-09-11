@@ -21,12 +21,12 @@ export function CorpusSection({ control, setValue, watch }: SectionProps) {
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-4 md:grid-cols-3">
       <div className="px-4 sm:px-0">
-        <h2 className="text-base/7 font-semibold text-gray-900">Content Corpus</h2>
-        <p className="mt-1 text-sm/6 text-gray-600">
+        <h2 className="text-base/7 font-semibold text-zinc-900">Content Corpus</h2>
+        <p className="mt-1 text-sm/6 text-zinc-600">
           Provide examples of your daily life, conversations, and other content that the AI can use
           to provide suggestions.
         </p>
-        <p className="mt-1 text-sm/6 text-gray-600">
+        <p className="mt-1 text-sm/6 text-zinc-600">
           Alternatively, you can generate a corpus from your instructions. This will take a few
           minutes.
         </p>

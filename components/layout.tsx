@@ -37,7 +37,7 @@ LayoutContent.displayName = 'Layout.Content';
 const LayoutFooter = ({ children }: PropsWithChildren) => {
   return (
     <footer className="border-t py-6 md:py-12 px-2 md:px-8">
-      <div className="mx-auto max-w-7xl text-center text-gray-400">{children}</div>
+      <div className="mx-auto max-w-7xl text-center text-zinc-400">{children}</div>
     </footer>
   );
 };

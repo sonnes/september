@@ -14,7 +14,7 @@ import { PlayButton } from './play-button';
 function MessageItem({ message }: { message: Message }) {
   const messageTypeStyles =
     {
-      transcription: 'bg-blue-50 border border-blue-100',
+      transcription: 'bg-indigo-50 border border-indigo-100',
       message: 'bg-zinc-50 border border-zinc-100',
     }[message.type] || 'bg-zinc-50 border border-zinc-100';
 
@@ -25,7 +25,7 @@ function MessageItem({ message }: { message: Message }) {
           <div
             className={cn(
               'text-sm',
-              message.type === 'transcription' ? 'text-blue-500' : 'text-zinc-600',
+              message.type === 'transcription' ? 'text-indigo-500' : 'text-zinc-600',
               'font-medium break-words overflow-hidden'
             )}
           >
@@ -70,7 +70,7 @@ export function MobileMessageList() {
               <h2 className="text-xl font-semibold">History</h2>
               <button
                 onClick={() => setIsOpen(false)}
-                className="rounded-full p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="rounded-full p-1 text-zinc-400 hover:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 aria-label="Close"
               >
                 <XMarkIcon className="h-6 w-6" />

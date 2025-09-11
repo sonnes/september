@@ -44,7 +44,7 @@ function VADController({ onSpeechEnd }: { onSpeechEnd: (blob: Blob) => Promise<v
       title={listening ? 'Stop' : 'Listening...'}
       className={cn(
         'flex items-center gap-2 px-2 py-4 cursor-pointer group hover:bg-zinc-100',
-        listening && 'text-red-500'
+        listening && 'text-indigo-500'
       )}
     >
       {listening ? <StopIcon className="h-4 w-4" /> : <MicrophoneIcon className="h-4 w-4" />}

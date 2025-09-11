@@ -55,9 +55,9 @@ export default function Help() {
           <div className="space-y-6 py-4">
             {FAQ_ITEMS.map((item, index) => (
               <div key={index} className="space-y-2">
-                <h3 className="text-md font-medium text-gray-900">{item.question}</h3>
-                <p className="text-sm text-gray-500">{item.answer}</p>
-                {index < FAQ_ITEMS.length - 1 && <div className="pt-4 border-b border-gray-200" />}
+                <h3 className="text-md font-medium text-zinc-900">{item.question}</h3>
+                <p className="text-sm text-zinc-500">{item.answer}</p>
+                {index < FAQ_ITEMS.length - 1 && <div className="pt-4 border-b border-zinc-200" />}
               </div>
             ))}
           </div>

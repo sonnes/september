@@ -34,7 +34,7 @@ export default function SlidesNavigation({
         disabled={isFirstSlide}
         icon={<ChevronLeftIcon className="h-5 w-5" />}
         className={`
-          bg-white/90 backdrop-blur-sm border-gray-300 hover:bg-gray-50
+          bg-white/90 backdrop-blur-sm border-zinc-300 hover:bg-zinc-50
           disabled:opacity-40 disabled:cursor-not-allowed
           shadow-lg hover:shadow-xl transition-all duration-200
           ${isFirstSlide ? 'invisible' : ''}
@@ -43,12 +43,12 @@ export default function SlidesNavigation({
         <span className="hidden sm:inline">Previous</span>
       </Button>
 
-      <div className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-lg border border-gray-300 shadow-lg">
-        <span className="text-sm font-medium text-gray-700">
+      <div className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-lg border border-zinc-300 shadow-lg">
+        <span className="text-sm font-medium text-zinc-700">
           {currentSlide}
         </span>
-        <span className="text-sm text-gray-500">/</span>
-        <span className="text-sm text-gray-500">{totalSlides}</span>
+        <span className="text-sm text-zinc-500">/</span>
+        <span className="text-sm text-zinc-500">{totalSlides}</span>
       </div>
 
       <Button
@@ -59,7 +59,7 @@ export default function SlidesNavigation({
         disabled={isLastSlide}
         icon={<ChevronRightIcon className="h-5 w-5" />}
         className={`
-          bg-white/90 backdrop-blur-sm border-gray-300 hover:bg-gray-50
+          bg-white/90 backdrop-blur-sm border-zinc-300 hover:bg-zinc-50
           disabled:opacity-40 disabled:cursor-not-allowed
           shadow-lg hover:shadow-xl transition-all duration-200
           ${isLastSlide ? 'invisible' : ''}

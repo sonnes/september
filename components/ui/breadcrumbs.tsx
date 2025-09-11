@@ -22,7 +22,7 @@ const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ pages, homeHref = '/', classN
       <ol role="list" className="flex items-center space-x-4">
         <li>
           <div>
-            <a href={homeHref} className="text-gray-100 hover:text-gray-300">
+            <a href={homeHref} className="text-zinc-100 hover:text-zinc-300">
               <HomeIcon aria-hidden="true" className="size-5 shrink-0" />
               <span className="sr-only">Home</span>
             </a>
@@ -31,13 +31,13 @@ const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ pages, homeHref = '/', classN
         {pages.map(page => (
           <li key={page.name}>
             <div className="flex items-center">
-              <ChevronRightIcon aria-hidden="true" className="size-5 shrink-0 text-gray-100" />
+              <ChevronRightIcon aria-hidden="true" className="size-5 shrink-0 text-zinc-100" />
               <a
                 href={page.href}
                 aria-current={page.current ? 'page' : undefined}
                 className={
                   'ml-4 text-sm font-semibold ' +
-                  (page.current ? 'text-gray-200' : 'text-gray-100 hover:text-gray-300')
+                  (page.current ? 'text-zinc-200' : 'text-zinc-100 hover:text-zinc-300')
                 }
               >
                 {page.name}

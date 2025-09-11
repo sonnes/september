@@ -88,7 +88,7 @@ export default function DesktopNav({ items, current, user, className }: DesktopN
               transition
               className="absolute right-0 z-10 mt-5 flex w-screen max-w-min bg-transparent px-4 transition data-closed:translate-y-1 data-closed:opacity-0 data-enter:duration-200 data-enter:ease-out data-leave:duration-150 data-leave:ease-in"
             >
-              <div className="w-56 shrink rounded-xl bg-white p-4 text-sm/6 font-semibold text-gray-900 shadow-lg ring-1 ring-gray-900/5">
+              <div className="w-56 shrink rounded-xl bg-white p-4 text-sm/6 font-semibold text-zinc-900 shadow-lg ring-1 ring-zinc-900/5">
                 <Link href="/account" className="block p-2 hover:text-indigo-600">
                   Account
                 </Link>

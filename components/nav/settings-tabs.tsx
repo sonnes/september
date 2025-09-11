@@ -55,7 +55,7 @@ export function SettingsTabs({ tabs = defaultTabs, current }: SettingsTabsProps)
               className={classNames(
                 tab.href === current
                   ? 'bg-indigo-600 text-white font-semibold'
-                  : 'text-white hover:text-gray-50',
+                  : 'text-white hover:text-zinc-50',
                 'rounded-md px-3 py-2 text-sm font-medium'
               )}
             >

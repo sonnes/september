@@ -86,17 +86,17 @@ export default function Document({ className = '' }: DocumentProps) {
   }, [content]);
 
   return (
-    <div className={`h-full flex flex-col bg-gray-50 ${className}`}>
+    <div className={`h-full flex flex-col bg-zinc-50 ${className}`}>
       {/* Main Content Card */}
       <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full p-4 sm:p-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 flex flex-col overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-zinc-200 flex-1 flex flex-col overflow-hidden">
           {/* Document Header */}
-          <div className="px-4 sm:px-8 pt-6 sm:pt-8 pb-4 sm:pb-6 border-b border-gray-100">
+          <div className="px-4 sm:px-8 pt-6 sm:pt-8 pb-4 sm:pb-6 border-b border-zinc-100">
             <TextInput
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="Untitled Document"
-              className="text-2xl sm:text-3xl font-bold text-gray-900 border-0 shadow-none bg-transparent px-0 py-2 placeholder:text-gray-400 focus:outline-none hover:bg-gray-50/50 rounded-lg transition-all duration-200 -mx-2"
+              className="text-2xl sm:text-3xl font-bold text-zinc-900 border-0 shadow-none bg-transparent px-0 py-2 placeholder:text-zinc-400 focus:outline-none hover:bg-zinc-50/50 rounded-lg transition-all duration-200 -mx-2"
             />
           </div>
 
@@ -112,7 +112,7 @@ export default function Document({ className = '' }: DocumentProps) {
         </div>
 
         {/* Enhanced Action Bar */}
-        <div className="mt-4 sm:mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4">
+        <div className="mt-4 sm:mt-6 bg-white rounded-xl shadow-sm border border-zinc-200 p-3 sm:p-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <div className="flex items-center gap-2">
               <Button
@@ -121,7 +121,7 @@ export default function Document({ className = '' }: DocumentProps) {
                 size="sm"
                 onClick={handleUploadFile}
                 icon={<PaperClipIcon className="h-4 w-4" />}
-                className="bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow transition-all duration-200"
+                className="bg-white hover:bg-zinc-50 border-zinc-200 hover:border-zinc-300 shadow-sm hover:shadow transition-all duration-200"
               >
                 <span className="hidden sm:inline">Upload</span>
               </Button>
@@ -133,7 +133,7 @@ export default function Document({ className = '' }: DocumentProps) {
                 onClick={handleSlidesPreview}
                 disabled={!current?.id}
                 icon={<PresentationChartBarIcon className="h-4 w-4" />}
-                className="bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-white hover:bg-zinc-50 border-zinc-200 hover:border-zinc-300 shadow-sm hover:shadow transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span className="hidden sm:inline">Slides</span>
               </Button>
@@ -147,15 +147,15 @@ export default function Document({ className = '' }: DocumentProps) {
                   <div
                     className={`w-2 h-2 rounded-full transition-all duration-300 ${
                       isDirty
-                        ? 'bg-amber-400 shadow-amber-400/50 shadow-sm'
-                        : 'bg-emerald-400 shadow-emerald-400/50 shadow-sm'
+                        ? 'bg-indigo-400 shadow-indigo-400/50 shadow-sm'
+                        : 'bg-indigo-400 shadow-indigo-400/50 shadow-sm'
                     }`}
                   />
                   {isDirty && (
-                    <div className="absolute inset-0 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                    <div className="absolute inset-0 w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
                   )}
                 </div>
-                <span className={`font-medium ${isDirty ? 'text-amber-600' : 'text-emerald-600'}`}>
+                <span className={`font-medium ${isDirty ? 'text-indigo-600' : 'text-indigo-600'}`}>
                   {isDirty ? 'Unsaved changes' : 'All changes saved'}
                 </span>
               </div>
@@ -183,9 +183,9 @@ export default function Document({ className = '' }: DocumentProps) {
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm" aria-hidden="true" />
 
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <DialogPanel className="mx-auto max-w-2xl w-full bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gray-50/50">
-              <DialogTitle className="text-xl font-semibold text-gray-900">
+          <DialogPanel className="mx-auto max-w-2xl w-full bg-white rounded-2xl shadow-2xl border border-zinc-100 overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-zinc-100 bg-zinc-50/50">
+              <DialogTitle className="text-xl font-semibold text-zinc-900">
                 Upload File to Extract Text
               </DialogTitle>
               <Button
@@ -193,7 +193,7 @@ export default function Document({ className = '' }: DocumentProps) {
                 variant="circular"
                 size="sm"
                 onClick={closeUploadDialog}
-                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100/70 transition-colors duration-200"
+                className="text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100/70 transition-colors duration-200"
               >
                 <XMarkIcon className="h-5 w-5" />
               </Button>

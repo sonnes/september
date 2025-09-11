@@ -34,15 +34,15 @@ function FormFieldWrapper({
     <div className={containerClassName}>
       {label && (
         <div className="flex justify-between items-center">
-          <label htmlFor={id} className="block text-sm/6 font-medium text-gray-900">
+          <label htmlFor={id} className="block text-sm/6 font-medium text-zinc-900">
             {label}
           </label>
-          {required && <span className="text-red-500 text-xs">*Required</span>}
+          {required && <span className="text-indigo-500 text-xs">*Required</span>}
         </div>
       )}
       <div className="mt-2">{children}</div>
       {error && (
-        <p className="mt-1 text-sm text-red-600" id={`${id}-error`}>
+        <p className="mt-1 text-sm text-indigo-600" id={`${id}-error`}>
           {error.message}
         </p>
       )}
@@ -153,12 +153,12 @@ export function FormDropdown<
             <Menu as="div" className="relative inline-block w-full">
               <MenuButton
                 disabled={disabled}
-                className="inline-flex w-full justify-between items-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-gray-300 ring-inset hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600"
+                className="inline-flex w-full justify-between items-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-zinc-900 shadow-xs ring-1 ring-zinc-300 ring-inset hover:bg-zinc-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600"
                 aria-invalid={error ? 'true' : 'false'}
                 aria-describedby={error ? `${name}-error` : undefined}
               >
                 {selectedOption?.name || placeholder}
-                <ChevronDownIcon aria-hidden="true" className="-mr-1 size-5 text-gray-400" />
+                <ChevronDownIcon aria-hidden="true" className="-mr-1 size-5 text-zinc-400" />
               </MenuButton>
 
               <MenuItems
@@ -172,7 +172,7 @@ export function FormDropdown<
                         <button
                           type="button"
                           onClick={() => handleSelect(option.id)}
-                          className="block w-full px-4 py-2 text-left text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="block w-full px-4 py-2 text-left text-sm text-zinc-700 data-focus:bg-zinc-100 data-focus:text-zinc-900 data-focus:outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {option.name}
                         </button>
@@ -180,7 +180,7 @@ export function FormDropdown<
                     ))
                   ) : (
                     <MenuItem disabled>
-                      <span className="block px-4 py-2 text-sm text-gray-500">
+                      <span className="block px-4 py-2 text-sm text-zinc-500">
                         No options available
                       </span>
                     </MenuItem>
@@ -228,10 +228,10 @@ export function FormTextarea<
         <div className={containerClassName}>
           {label && (
             <div className="flex justify-between items-center">
-              <label htmlFor={name} className="block text-sm/6 font-medium text-gray-900">
+              <label htmlFor={name} className="block text-sm/6 font-medium text-zinc-900">
                 {label}
               </label>
-              {required && <span className="text-red-500 text-xs">*Required</span>}
+              {required && <span className="text-indigo-500 text-xs">*Required</span>}
             </div>
           )}
           <div className="mt-2">
@@ -243,9 +243,9 @@ export function FormTextarea<
               {...props}
             />
           </div>
-          {helperText && <p className="mt-3 text-sm/6 text-gray-600">{helperText}</p>}
+          {helperText && <p className="mt-3 text-sm/6 text-zinc-600">{helperText}</p>}
           {error && (
-            <p className="mt-1 text-sm text-red-600" id={`${name}-error`}>
+            <p className="mt-1 text-sm text-indigo-600" id={`${name}-error`}>
               {error.message}
             </p>
           )}
@@ -288,8 +288,8 @@ export function FormCheckbox<
         <div className={containerClassName}>
           {label && (
             <div className="flex justify-between items-center mb-2">
-              <label className="block text-sm font-medium text-gray-900">{label}</label>
-              {required && <span className="text-red-500 text-xs">*Required</span>}
+              <label className="block text-sm font-medium text-zinc-900">{label}</label>
+              {required && <span className="text-indigo-500 text-xs">*Required</span>}
             </div>
           )}
           <div className="flex gap-3">
@@ -303,11 +303,11 @@ export function FormCheckbox<
             />
             {label && (
               <div className="text-sm/6">
-                <label htmlFor={name} className="font-medium text-gray-900">
+                <label htmlFor={name} className="font-medium text-zinc-900">
                   {label}
                 </label>
                 {description && (
-                  <p id={`${name}-description`} className="text-gray-500">
+                  <p id={`${name}-description`} className="text-zinc-500">
                     {description}
                   </p>
                 )}
@@ -315,7 +315,7 @@ export function FormCheckbox<
             )}
           </div>
           {error && (
-            <p className="mt-1 text-sm text-red-600" id={`${name}-error`}>
+            <p className="mt-1 text-sm text-indigo-600" id={`${name}-error`}>
               {error.message}
             </p>
           )}
@@ -364,8 +364,8 @@ export function FormRadioGroup<
         <div className={containerClassName}>
           {label && (
             <div className="flex justify-between items-center mb-2">
-              <label className="block text-sm font-medium text-gray-900">{label}</label>
-              {required && <span className="text-red-500 text-xs">*Required</span>}
+              <label className="block text-sm font-medium text-zinc-900">{label}</label>
+              {required && <span className="text-indigo-500 text-xs">*Required</span>}
             </div>
           )}
           <div className="space-y-2">
@@ -383,16 +383,16 @@ export function FormRadioGroup<
                 />
                 <label
                   htmlFor={`${name}-${option.value}`}
-                  className="block text-sm/6 font-medium text-gray-900"
+                  className="block text-sm/6 font-medium text-zinc-900"
                 >
                   {option.label}
                 </label>
-                {option.description && <p className="text-gray-500">{option.description}</p>}
+                {option.description && <p className="text-zinc-500">{option.description}</p>}
               </div>
             ))}
           </div>
           {error && (
-            <p className="mt-1 text-sm text-red-600" id={`${name}-error`}>
+            <p className="mt-1 text-sm text-indigo-600" id={`${name}-error`}>
               {error.message}
             </p>
           )}
@@ -460,12 +460,12 @@ export function FormRange<
                 step={step}
                 value={currentValue}
                 onChange={e => field.onChange(parseFloat(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer"
                 aria-invalid={error ? 'true' : 'false'}
                 aria-describedby={error ? `${name}-error` : undefined}
                 {...props}
               />
-              {showValue && <div className="text-center text-sm text-gray-600">{displayValue}</div>}
+              {showValue && <div className="text-center text-sm text-zinc-600">{displayValue}</div>}
             </div>
           </FormFieldWrapper>
         );
@@ -529,7 +529,7 @@ export function FormRangeWithLabels<
           >
             <div className="space-y-2">
               {(leftLabel || rightLabel) && (
-                <div className="flex justify-between text-sm text-gray-500">
+                <div className="flex justify-between text-sm text-zinc-500">
                   {leftLabel && <span>{leftLabel}</span>}
                   {rightLabel && <span>{rightLabel}</span>}
                 </div>
@@ -542,12 +542,12 @@ export function FormRangeWithLabels<
                 step={step}
                 value={currentValue}
                 onChange={e => field.onChange(parseFloat(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer"
                 aria-invalid={error ? 'true' : 'false'}
                 aria-describedby={error ? `${name}-error` : undefined}
                 {...props}
               />
-              {showValue && <div className="text-center text-sm text-gray-600">{displayValue}</div>}
+              {showValue && <div className="text-center text-sm text-zinc-600">{displayValue}</div>}
             </div>
           </FormFieldWrapper>
         );

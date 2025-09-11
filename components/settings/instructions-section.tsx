@@ -27,8 +27,8 @@ export function InstructionsSection({ control, setValue }: SectionProps) {
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-4 md:grid-cols-3">
       <div className="px-4 sm:px-0">
-        <h2 className="text-base/7 font-semibold text-gray-900">Your Instructions</h2>
-        <p className="mt-1 text-sm/6 text-gray-600">
+        <h2 className="text-base/7 font-semibold text-zinc-900">Your Instructions</h2>
+        <p className="mt-1 text-sm/6 text-zinc-600">
           Describe how you want the AI to provide suggestions. Include common phrases, topics, names
           of people, places, etc. This will help the AI to provide more relevant suggestions.
         </p>
@@ -46,7 +46,7 @@ export function InstructionsSection({ control, setValue }: SectionProps) {
             />
           </div>
 
-          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
             <button
               type="button"
               onClick={() => {
@@ -58,9 +58,9 @@ export function InstructionsSection({ control, setValue }: SectionProps) {
               }}
               className="flex w-full items-center justify-between text-left"
             >
-              <h4 className="text-sm font-medium text-gray-700">Example Instructions</h4>
+              <h4 className="text-sm font-medium text-zinc-700">Example Instructions</h4>
               <svg
-                className="h-4 w-4 text-gray-500 transition-transform"
+                className="h-4 w-4 text-zinc-500 transition-transform"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -80,10 +80,10 @@ export function InstructionsSection({ control, setValue }: SectionProps) {
                   key={example.name}
                   type="button"
                   onClick={() => handleExampleClick(example.text)}
-                  className="block w-full text-left rounded border border-gray-200 bg-white p-3 text-sm hover:bg-gray-50 transition-colors"
+                  className="block w-full text-left rounded border border-zinc-200 bg-white p-3 text-sm hover:bg-zinc-50 transition-colors"
                 >
-                  <div className="font-medium text-gray-900 text-sm">{example.name}</div>
-                  <div className="mt-1 text-gray-600 text-sm leading-relaxed">{example.text}</div>
+                  <div className="font-medium text-zinc-900 text-sm">{example.name}</div>
+                  <div className="mt-1 text-zinc-600 text-sm leading-relaxed">{example.text}</div>
                 </button>
               ))}
             </div>

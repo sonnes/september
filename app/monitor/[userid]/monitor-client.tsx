@@ -101,7 +101,7 @@ export default function MonitorClient({}: MonitorClientProps) {
       {/* Status indicator */}
       <div className="absolute top-4 right-4">
         <div className="flex items-center space-x-2 text-white/80 text-sm">
-          <div className={`w-2 h-2 rounded-full bg-green-500 animate-pulse`} />
+          <div className={`w-2 h-2 rounded-full bg-indigo-500 animate-pulse`} />
           <span>Live</span>
         </div>
       </div>

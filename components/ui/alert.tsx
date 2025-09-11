@@ -16,13 +16,13 @@ interface AlertProps {
 export function Alert({ type, title, message, button, onDismiss }: AlertProps) {
   const isSuccess = type === 'success';
   const icon = isSuccess ? (
-    <CheckCircleIcon aria-hidden="true" className="size-5 text-green-400" />
+    <CheckCircleIcon aria-hidden="true" className="size-5 text-indigo-400" />
   ) : (
-    <XCircleIcon aria-hidden="true" className="size-5 text-red-400" />
+    <XCircleIcon aria-hidden="true" className="size-5 text-indigo-400" />
   );
-  const bgClass = isSuccess ? 'bg-green-50' : 'bg-red-50';
-  const titleClass = isSuccess ? 'text-green-800' : 'text-red-800';
-  const messageClass = isSuccess ? 'text-green-700' : 'text-red-700';
+  const bgClass = isSuccess ? 'bg-indigo-50' : 'bg-indigo-50';
+  const titleClass = isSuccess ? 'text-indigo-800' : 'text-indigo-800';
+  const messageClass = isSuccess ? 'text-indigo-700' : 'text-indigo-700';
 
   return (
     <div className={`rounded-md ${bgClass} p-4 flex items-center`}>
@@ -43,7 +43,7 @@ export function Alert({ type, title, message, button, onDismiss }: AlertProps) {
       )}
       {onDismiss && (
         <button
-          className="ml-2 rounded bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-600 hover:bg-gray-200"
+          className="ml-2 rounded bg-zinc-100 px-3 py-1 text-sm font-semibold text-zinc-600 hover:bg-zinc-200"
           onClick={onDismiss}
         >
           Dismiss

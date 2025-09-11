@@ -8,8 +8,8 @@ interface FormSectionHeaderProps {
 export function FormSectionHeader({ title, description }: FormSectionHeaderProps) {
   return (
     <>
-      <h2 className="text-base/7 font-semibold text-gray-900">{title}</h2>
-      {description && <p className="mt-1 text-sm/6 text-gray-600">{description}</p>}
+      <h2 className="text-base/7 font-semibold text-zinc-900">{title}</h2>
+      {description && <p className="mt-1 text-sm/6 text-zinc-600">{description}</p>}
     </>
   );
 }

@@ -31,7 +31,7 @@ export default function Suggestions({ className = '', timeout = 3000 }: Suggesti
           >
             <button
               onClick={() => handleSuggestionClick(text)}
-              className="px-4 py-2 text-sm font-medium text-black bg-white rounded-xl border border-blue-600 hover:bg-gray-100 hover:border-blue-400 transition-colors duration-200 text-left"
+              className="px-4 py-2 text-sm font-medium text-black bg-white rounded-xl border border-indigo-600 hover:bg-zinc-100 hover:border-indigo-400 transition-colors duration-200 text-left"
             >
               {text}
             </button>

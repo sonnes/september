@@ -34,14 +34,14 @@ export function Dropdown({
 
   return (
     <div className={className}>
-      {label && <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>}
+      {label && <label className="block text-sm font-medium text-zinc-700 mb-2">{label}</label>}
       <Menu as="div" className="relative inline-block w-full">
         <MenuButton
           disabled={disabled}
-          className="inline-flex w-full justify-between items-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-gray-300 ring-inset hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex w-full justify-between items-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-zinc-900 shadow-xs ring-1 ring-zinc-300 ring-inset hover:bg-zinc-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {selectedOption?.name || placeholder}
-          <ChevronDownIcon aria-hidden="true" className="-mr-1 size-5 text-gray-400" />
+          <ChevronDownIcon aria-hidden="true" className="-mr-1 size-5 text-zinc-400" />
         </MenuButton>
 
         <MenuItems
@@ -55,7 +55,7 @@ export function Dropdown({
                   <button
                     type="button"
                     onClick={() => onSelect(option.id)}
-                    className="block w-full px-4 py-2 text-left text-sm text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="block w-full px-4 py-2 text-left text-sm text-zinc-700 data-focus:bg-zinc-100 data-focus:text-zinc-900 data-focus:outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {option.name}
                   </button>
@@ -63,7 +63,7 @@ export function Dropdown({
               ))
             ) : (
               <MenuItem disabled>
-                <span className="block px-4 py-2 text-sm text-gray-500">No options available</span>
+                <span className="block px-4 py-2 text-sm text-zinc-500">No options available</span>
               </MenuItem>
             )}
           </div>

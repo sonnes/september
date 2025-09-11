@@ -16,7 +16,7 @@ export const GridView: React.FC<GridViewProps> = ({ grid, onButtonClick }) => {
         {grid.buttons.map(button => (
           <button
             key={button.id}
-            className="p-2 rounded shadow bg-white hover:bg-gray-100 border flex flex-col items-center min-w-0 min-h-0"
+            className="p-2 rounded shadow bg-white hover:bg-zinc-100 border flex flex-col items-center min-w-0 min-h-0"
             style={{ fontSize: '0.75rem', lineHeight: 1.1 }}
             onClick={() => onButtonClick(button)}
           >
@@ -25,7 +25,7 @@ export const GridView: React.FC<GridViewProps> = ({ grid, onButtonClick }) => {
             )}
             <span className="font-medium truncate w-full text-xs text-center">{button.text}</span>
             {button.type !== 'default' && (
-              <span className="text-[10px] mt-0.5 text-gray-500">{button.type}</span>
+              <span className="text-[10px] mt-0.5 text-zinc-500">{button.type}</span>
             )}
           </button>
         ))}

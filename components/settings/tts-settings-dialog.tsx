@@ -87,12 +87,12 @@ export function TTSSettingsDialog({ isOpen, onClose }: TTSSettingsDialogProps) {
       <div className="fixed inset-0 flex w-screen items-center justify-center p-0 sm:p-4">
         <DialogPanel className="mx-auto w-full h-full sm:h-auto sm:max-w-2xl sm:max-h-[90vh] bg-white sm:rounded-lg shadow-xl flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
-            <DialogTitle className="text-lg font-semibold text-gray-900">TTS Settings</DialogTitle>
+          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-zinc-200 flex-shrink-0">
+            <DialogTitle className="text-lg font-semibold text-zinc-900">TTS Settings</DialogTitle>
             <button
               type="button"
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+              className="text-zinc-400 hover:text-zinc-600 transition-colors p-1"
             >
               <XMarkIcon className="w-6 h-6" />
             </button>
@@ -105,12 +105,12 @@ export function TTSSettingsDialog({ isOpen, onClose }: TTSSettingsDialogProps) {
                 {/* Mobile-optimized speech provider section */}
                 <div className="space-y-4">
                   <div>
-                    <h2 className="text-base/7 font-semibold text-gray-900">Provider</h2>
-                    <p className="mt-1 text-sm/6 text-gray-600">
+                    <h2 className="text-base/7 font-semibold text-zinc-900">Provider</h2>
+                    <p className="mt-1 text-sm/6 text-zinc-600">
                       Select the provider you want to use for generating speech.
                     </p>
                     {speechProvider === 'elevenlabs' && (
-                      <p className="mt-1 text-sm/6 text-gray-600">
+                      <p className="mt-1 text-sm/6 text-zinc-600">
                         You can get your API key from the{' '}
                         <a
                           href="https://elevenlabs.io/app/settings/api-keys"
@@ -124,7 +124,7 @@ export function TTSSettingsDialog({ isOpen, onClose }: TTSSettingsDialogProps) {
                       </p>
                     )}
                   </div>
-                  <div className="rounded-md bg-gray-50 p-4">
+                  <div className="rounded-md bg-zinc-50 p-4">
                     <div className="space-y-4">
                       <FormDropdown
                         name="speech_provider"
@@ -155,14 +155,14 @@ export function TTSSettingsDialog({ isOpen, onClose }: TTSSettingsDialogProps) {
                 {speechProvider === 'elevenlabs' && (
                   <div className="space-y-4">
                     <div>
-                      <h2 className="text-base/7 font-semibold text-gray-900">
+                      <h2 className="text-base/7 font-semibold text-zinc-900">
                         ElevenLabs Settings
                       </h2>
-                      <p className="mt-1 text-sm/6 text-gray-600">
+                      <p className="mt-1 text-sm/6 text-zinc-600">
                         Configure the settings for ElevenLabs speech generation.
                       </p>
                     </div>
-                    <div className="rounded-md bg-gray-50 p-4">
+                    <div className="rounded-md bg-zinc-50 p-4">
                       <div className="space-y-6">
                         {/* Model Selection */}
                         <FormDropdown
@@ -243,14 +243,14 @@ export function TTSSettingsDialog({ isOpen, onClose }: TTSSettingsDialogProps) {
                 {speechProvider === 'browser_tts' && (
                   <div className="space-y-4">
                     <div>
-                      <h2 className="text-base/7 font-semibold text-gray-900">
+                      <h2 className="text-base/7 font-semibold text-zinc-900">
                         Browser TTS Settings
                       </h2>
-                      <p className="mt-1 text-sm/6 text-gray-600">
+                      <p className="mt-1 text-sm/6 text-zinc-600">
                         Configure the settings for browser text-to-speech.
                       </p>
                     </div>
-                    <div className="rounded-md bg-gray-50 p-4">
+                    <div className="rounded-md bg-zinc-50 p-4">
                       <div className="space-y-6">
                         {/* Speed Control */}
                         <FormRangeWithLabels
@@ -297,7 +297,7 @@ export function TTSSettingsDialog({ isOpen, onClose }: TTSSettingsDialogProps) {
               </div>
 
               {/* Fixed footer on mobile, inline on desktop */}
-              <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200">
+              <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-zinc-200">
                 <Button
                   type="button"
                   variant="outline"

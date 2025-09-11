@@ -106,10 +106,10 @@ const DeckView: React.FC<DeckViewProps> = ({ deck: initialDeck }) => {
   };
 
   return (
-    <div className="bg-gray-50 py-4 sm:py-8">
+    <div className="bg-zinc-50 py-4 sm:py-8">
       <div className="mx-auto px-6 lg:px-8">
         <div className="mx-auto mt-2 flex items-center justify-center gap-4">
-          <span className="text-balance text-center text-2xl font-semibold tracking-tight text-gray-950 lg:text-3xl">
+          <span className="text-balance text-center text-2xl font-semibold tracking-tight text-zinc-950 lg:text-3xl">
             {deck.name}
           </span>
           <button
@@ -127,7 +127,7 @@ const DeckView: React.FC<DeckViewProps> = ({ deck: initialDeck }) => {
           {/* Controls below card */}
           <div className="flex justify-center gap-8 mt-8">
             <button
-              className="flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors"
+              className="flex items-center justify-center w-12 h-12 rounded-full bg-zinc-200 hover:bg-zinc-300 transition-colors"
               onClick={handlePrev}
               aria-label="Previous"
               type="button"
@@ -144,7 +144,7 @@ const DeckView: React.FC<DeckViewProps> = ({ deck: initialDeck }) => {
               {isPlaying ? <PauseIcon className="w-7 h-7" /> : <PlayIcon className="w-7 h-7" />}
             </button>
             <button
-              className="flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors"
+              className="flex items-center justify-center w-12 h-12 rounded-full bg-zinc-200 hover:bg-zinc-300 transition-colors"
               onClick={handleNext}
               aria-label="Next"
               type="button"
@@ -152,7 +152,7 @@ const DeckView: React.FC<DeckViewProps> = ({ deck: initialDeck }) => {
               <ChevronRightIcon className="w-6 h-6" />
             </button>
           </div>
-          <div className="mt-4 text-gray-600 text-sm">
+          <div className="mt-4 text-zinc-600 text-sm">
             {current + 1} / {cards.length}
           </div>
         </div>
@@ -192,15 +192,15 @@ interface CardDisplayProps {
 
 const CardDisplay: React.FC<CardDisplayProps> = ({ card }) => (
   <div
-    className={`relative flex items-center justify-center w-full h-full overflow-hidden rounded-2xl transition-all duration-300 bg-white shadow-md border border-gray-200`}
+    className={`relative flex items-center justify-center w-full h-full overflow-hidden rounded-2xl transition-all duration-300 bg-white shadow-md border border-zinc-200`}
   >
     <div className="flex flex-col h-full w-full items-center justify-center px-4 sm:px-12 py-10 rounded-2xl">
-      <p className="text-xl lg:text-2xl font-medium text-gray-800 text-center mb-6 break-words">
+      <p className="text-xl lg:text-2xl font-medium text-zinc-800 text-center mb-6 break-words">
         {cleanText(card.text)}
       </p>
 
       <div className="absolute bottom-2 right-2 flex items-center justify-center">
-        <span className="text-base font-semibold text-gray-400 bg-white bg-opacity-70 px-2 py-0.5 rounded shadow-none">
+        <span className="text-base font-semibold text-zinc-400 bg-white bg-opacity-70 px-2 py-0.5 rounded shadow-none">
           #{card.rank + 1}
         </span>
       </div>

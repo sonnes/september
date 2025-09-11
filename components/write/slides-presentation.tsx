@@ -179,7 +179,7 @@ export default function SlidesPresentation({
       <div className={`flex items-center justify-center h-full ${className}`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Processing slides...</p>
+          <p className="text-zinc-600">Processing slides...</p>
         </div>
       </div>
     );
@@ -189,8 +189,8 @@ export default function SlidesPresentation({
     return (
       <div className={`flex items-center justify-center h-full ${className}`}>
         <div className="text-center max-w-md">
-          <p className="text-red-600 mb-4">{error}</p>
-          <p className="text-gray-500 text-sm">
+          <p className="text-indigo-600 mb-4">{error}</p>
+          <p className="text-zinc-500 text-sm">
             Make sure your markdown contains slide separators (---) to create multiple slides.
           </p>
         </div>
@@ -202,8 +202,8 @@ export default function SlidesPresentation({
     return (
       <div className={`flex items-center justify-center h-full ${className}`}>
         <div className="text-center max-w-md">
-          <p className="text-gray-600 mb-4">No slides found</p>
-          <p className="text-gray-500 text-sm">
+          <p className="text-zinc-600 mb-4">No slides found</p>
+          <p className="text-zinc-500 text-sm">
             Add content to your document and use &quot;---&quot; to separate slides.
           </p>
         </div>
@@ -222,7 +222,7 @@ export default function SlidesPresentation({
         </div>
 
         {/* Navigation and Progress */}
-        <div className="flex-shrink-0 p-4 space-y-4 bg-gray-50/80 backdrop-blur-sm border-t border-gray-200">
+        <div className="flex-shrink-0 p-4 space-y-4 bg-zinc-50/80 backdrop-blur-sm border-t border-zinc-200">
           {/* Navigation Controls */}
           <SlidesNavigation
             currentSlide={currentSlideIndex + 1}
@@ -246,7 +246,7 @@ export default function SlidesPresentation({
         {/* Keyboard shortcuts tooltip */}
         <div 
           className={`
-            absolute top-10 right-0 bg-black/90 text-white text-xs px-3 py-2 rounded-lg shadow-xl border border-gray-600 whitespace-nowrap
+            absolute top-10 right-0 bg-black/90 text-white text-xs px-3 py-2 rounded-lg shadow-xl border border-zinc-600 whitespace-nowrap
             transition-all duration-300 transform
             ${showHintOnMount 
               ? 'opacity-100 scale-100 pointer-events-auto' 
@@ -254,7 +254,7 @@ export default function SlidesPresentation({
             }
           `}
         >
-          <div className="text-center text-gray-200 mb-1 font-medium">Keyboard Shortcuts</div>
+          <div className="text-center text-zinc-200 mb-1 font-medium">Keyboard Shortcuts</div>
           <div className="space-y-1">
             <div>← → : Navigate</div>
             <div>Space : Next slide</div>
@@ -262,7 +262,7 @@ export default function SlidesPresentation({
             <div>Home/End : First/Last</div>
           </div>
           {/* Arrow pointing to icon */}
-          <div className="absolute -top-1 right-3 w-2 h-2 bg-black/90 border-l border-t border-gray-600 rotate-45"></div>
+          <div className="absolute -top-1 right-3 w-2 h-2 bg-black/90 border-l border-t border-zinc-600 rotate-45"></div>
         </div>
       </div>
     </>

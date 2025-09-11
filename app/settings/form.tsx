@@ -79,13 +79,13 @@ export default function SettingsForm() {
   if (!account) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="text-sm text-gray-500">Loading account settings...</div>
+        <div className="text-sm text-zinc-500">Loading account settings...</div>
       </div>
     );
   }
 
   return (
-    <div className="divide-y divide-gray-400">
+    <div className="divide-y divide-zinc-400">
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <GeminiAPIKeySection control={form.control} watch={form.watch} setValue={form.setValue} />
         <InstructionsSection control={form.control} watch={form.watch} setValue={form.setValue} />
@@ -106,7 +106,7 @@ export default function SettingsForm() {
           />
         )}
         {/* Floating save button */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-200 p-4">
           <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-end">
             <Button type="submit" disabled={form.formState.isSubmitting}>
               {form.formState.isSubmitting ? 'Saving...' : 'Save Settings'}

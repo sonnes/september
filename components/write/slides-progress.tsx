@@ -18,7 +18,7 @@ export default function SlidesProgress({
   return (
     <div className={`w-full ${className}`}>
       {/* Progress Bar */}
-      <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+      <div className="w-full h-1 bg-zinc-200 rounded-full overflow-hidden shadow-inner">
         <div
           className="h-full bg-indigo-600 rounded-full transition-all duration-300 ease-out"
           style={{ width: `${progressPercentage}%` }}
@@ -27,7 +27,7 @@ export default function SlidesProgress({
 
       {/* Progress Text (optional, can be shown on hover or always) */}
       <div className="mt-2 text-center">
-        <span className="text-xs text-gray-500 font-medium">
+        <span className="text-xs text-zinc-500 font-medium">
           {Math.round(progressPercentage)}% Complete
         </span>
       </div>

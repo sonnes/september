@@ -46,7 +46,7 @@ export default function LoginForm() {
   return (
     <div className="flex min-h-full flex-1 flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-2xl/9 font-bold tracking-tight text-gray-900">
+        <h2 className="mt-6 text-center text-2xl/9 font-bold tracking-tight text-zinc-900">
           Login
         </h2>
       </div>
@@ -66,7 +66,7 @@ export default function LoginForm() {
               defaultValue={state.inputs?.email}
             />
             {state.errors?.email && (
-              <p className="mt-2 text-sm text-red-500">{state.errors.email.join(', ')}</p>
+              <p className="mt-2 text-sm text-indigo-500">{state.errors.email.join(', ')}</p>
             )}
 
             <div>
@@ -79,10 +79,10 @@ export default function LoginForm() {
           <div>
             <div className="relative mt-10">
               <div aria-hidden="true" className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200" />
+                <div className="w-full border-t border-zinc-200" />
               </div>
               <div className="relative flex justify-center text-sm/6 font-medium">
-                <span className="bg-white px-6 text-gray-900">Or continue with</span>
+                <span className="bg-white px-6 text-zinc-900">Or continue with</span>
               </div>
             </div>
 
@@ -90,7 +90,7 @@ export default function LoginForm() {
               <Button
                 type="button"
                 color="zinc"
-                className="w-full flex items-center justify-center gap-3 ring-1 ring-inset ring-gray-300 bg-white text-gray-900 hover:bg-gray-50 focus-visible:ring-transparent"
+                className="w-full flex items-center justify-center gap-3 ring-1 ring-inset ring-zinc-300 bg-white text-zinc-900 hover:bg-zinc-50 focus-visible:ring-transparent"
                 onClick={handleGoogleSignIn}
                 disabled={isPending}
               >
