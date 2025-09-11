@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import moment from 'moment';
 import Webcam from 'react-webcam';
@@ -9,7 +9,7 @@ import AnimatedText from '@/components/ui/animated-text';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useToast } from '@/hooks/use-toast';
 import { useAccount } from '@/services/account/context';
-import { MessagesService } from '@/services/messages';
+import { AudioService } from '@/services/audio/supabase';
 import supabase from '@/supabase/client';
 import { removeRealtimeSubscription, subscribeToUserMessages } from '@/supabase/realtime';
 import { Message } from '@/types/message';
@@ -19,7 +19,7 @@ interface MonitorClientProps {
 }
 
 export default function MonitorClient({}: MonitorClientProps) {
-  const messagesService = new MessagesService(supabase);
+  const audioService = useMemo(() => new AudioService(supabase), []);
 
   const webcamRef = useRef(null);
   const [latestMessage, setLatestMessage] = useState<Message | null>(null);
@@ -54,7 +54,7 @@ export default function MonitorClient({}: MonitorClientProps) {
   useEffect(() => {
     async function downloadAudio() {
       if (latestMessage && latestMessage.audio_path) {
-        const audio = await messagesService.downloadAudio(latestMessage.audio_path);
+        const audio = await audioService.downloadAudio(latestMessage.audio_path);
 
         enqueue({
           blob: Buffer.from(await audio.arrayBuffer()).toString('base64'),
@@ -63,7 +63,7 @@ export default function MonitorClient({}: MonitorClientProps) {
     }
 
     downloadAudio();
-  }, [latestMessage, enqueue, messagesService]);
+  }, [latestMessage, enqueue, audioService]);
 
   return (
     <div className="relative w-full h-screen overflow-hidden">

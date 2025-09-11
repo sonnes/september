@@ -62,7 +62,6 @@ export default function LoginForm() {
               required
               autoComplete="email"
               placeholder="you@example.com"
-              label="Email address"
               defaultValue={state.inputs?.email}
             />
             {state.errors?.email && (

@@ -5,4 +5,11 @@ export { InstructionsSection } from './instructions-section';
 export { CorpusSection } from './corpus-section';
 export { SpeechProviderSection } from './speech-provider-section';
 export { TTSSettingsDialog } from './tts-settings-dialog';
-export { SettingsSchema, type SettingsFormData, type SectionProps } from './types';
+export { 
+  SettingsSchema, 
+  AccountSchema,
+  type SettingsFormData, 
+  type AccountFormData,
+  type SectionProps,
+  type AccountSectionProps 
+} from './types';

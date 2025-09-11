@@ -8,7 +8,6 @@ import { FAQSection } from '@/components/home/faq-section';
 import { FeaturesSection } from '@/components/home/features-section';
 import { Footer } from '@/components/home/footer';
 import { HeroSection } from '@/components/home/hero-section';
-import { HighlightCards } from '@/components/home/highlight-cards';
 import { Navbar } from '@/components/home/navbar';
 
 const caveat = Caveat({

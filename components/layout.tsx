@@ -1,6 +1,5 @@
 import { PropsWithChildren } from 'react';
 
-import { cn } from '@/lib/utils';
 
 type HeaderProps = PropsWithChildren & {
 };

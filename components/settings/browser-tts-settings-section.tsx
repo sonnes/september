@@ -1,10 +1,8 @@
 'use client';
 
-import { Control, UseFormSetValue, UseFormWatch } from 'react-hook-form';
-
 import { FormRangeWithLabels } from '@/components/ui/form';
 
-import { AccountFormData, SectionProps } from './types';
+import { SectionProps } from './types';
 
 export function BrowserTTSSettingsSection({ control }: SectionProps) {
   return (

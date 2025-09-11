@@ -6,7 +6,6 @@ import { ArrowPathIcon, MicrophoneIcon, StopIcon } from '@heroicons/react/24/out
 import { useMicVAD, utils } from '@ricky0123/vad-react';
 import { v4 as uuidv4 } from 'uuid';
 
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAccount } from '@/services/account/context';
 import { useMessages } from '@/services/messages';

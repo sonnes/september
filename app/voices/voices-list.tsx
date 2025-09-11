@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { PlayIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PlayIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 
 import { Button } from '@/components/ui/button';

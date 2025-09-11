@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 
-import { QuestionMarkCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 
 const FAQ_ITEMS = [
   {
@@ -47,21 +47,22 @@ export default function Help() {
         <QuestionMarkCircleIcon className="w-8 h-8" />
       </button>
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">Help & FAQ</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6 py-4">
-            {FAQ_ITEMS.map((item, index) => (
-              <div key={index} className="space-y-2">
-                <h3 className="text-md font-medium text-zinc-900">{item.question}</h3>
-                <p className="text-sm text-zinc-500">{item.answer}</p>
-                {index < FAQ_ITEMS.length - 1 && <div className="pt-4 border-b border-zinc-200" />}
-              </div>
-            ))}
-          </div>
-        </DialogContent>
+      <Dialog open={isOpen} onClose={() => setIsOpen(false)}>
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <DialogPanel className="max-w-2xl bg-white rounded-lg p-6">
+            <DialogTitle className="text-xl font-semibold mb-4">Help & FAQ</DialogTitle>
+            <div className="space-y-6 py-4">
+              {FAQ_ITEMS.map((item, index) => (
+                <div key={index} className="space-y-2">
+                  <h3 className="text-md font-medium text-zinc-900">{item.question}</h3>
+                  <p className="text-sm text-zinc-500">{item.answer}</p>
+                  {index < FAQ_ITEMS.length - 1 && <div className="pt-4 border-b border-zinc-200" />}
+                </div>
+              ))}
+            </div>
+          </DialogPanel>
+        </div>
       </Dialog>
     </div>
   );
