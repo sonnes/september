@@ -33,9 +33,6 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
   const { uploadAudio } = useAudio();
 
   const [status, setStatus] = useState<'idle' | 'loading'>('idle');
-  const [isTTSSettingsOpen, setIsTTSSettingsOpen] = useState(false);
-  const [isAISettingsOpen, setIsAISettingsOpen] = useState(false);
-  const [isCombinedSpeechSettingsOpen, setIsCombinedSpeechSettingsOpen] = useState(false);
 
   const handleSubmit = async () => {
     setStatus('loading');
@@ -84,46 +81,14 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
       </div>
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsTTSSettingsOpen(true)}
-            className="flex items-center gap-2 px-3 py-1 text-zinc-600 rounded-full transition-colors cursor-pointer hover:bg-zinc-100 border border-zinc-200"
-            aria-label="Open TTS settings"
-          >
-            <SpeakerWaveIcon className="w-4 h-4" />
-            <span className="text-sm hidden md:block">
-              {account?.voice?.name || 'select voice'}
-            </span>
-          </button>
-          <button
-            onClick={() => setIsAISettingsOpen(true)}
-            className="flex items-center gap-2 px-3 py-1 text-zinc-600 rounded-full transition-colors cursor-pointer hover:bg-zinc-100 border border-zinc-200"
-            aria-label="Open AI settings"
-          >
-            <SparklesIcon className="w-4 h-4" />
-            <span className="text-sm hidden md:block">Gemini AI</span>
-          </button>
-          <button
-            onClick={() => setIsCombinedSpeechSettingsOpen(true)}
-            className="flex items-center gap-2 px-3 py-1 text-zinc-600 rounded-full transition-colors cursor-pointer hover:bg-zinc-100 border border-zinc-200"
-            aria-label="Open combined speech settings"
-          >
-            <Cog6ToothIcon className="w-4 h-4" />
-            <span className="text-sm hidden md:block">Speech Settings</span>
-          </button>
+          <SpeechProviderDialog />
+          <AISettingsDialog />
+          <SpeechSettingsDialog />
         </div>
         <Button onClick={handleSubmit} color="zinc" disabled={status === 'loading'}>
           {status === 'loading' ? 'Submitting...' : 'Submit'}
         </Button>
       </div>
-      <SpeechProviderDialog
-        isOpen={isTTSSettingsOpen}
-        onClose={() => setIsTTSSettingsOpen(false)}
-      />
-      <AISettingsDialog isOpen={isAISettingsOpen} onClose={() => setIsAISettingsOpen(false)} />
-      <SpeechSettingsDialog
-        isOpen={isCombinedSpeechSettingsOpen}
-        onClose={() => setIsCombinedSpeechSettingsOpen(false)}
-      />
     </div>
   );
 }

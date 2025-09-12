@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { SpeakerWaveIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
@@ -19,12 +19,8 @@ import { useSpeechContext } from '@/services/speech/context';
 
 import type { Voice } from '@/types/voice';
 
-interface SpeechProviderDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-export function SpeechProviderDialog({ isOpen, onClose }: SpeechProviderDialogProps) {
+export function SpeechProviderDialog() {
+  const [isOpen, setIsOpen] = useState(false);
   const { account, updateAccount } = useAccount();
   const { show, showError } = useToast();
   const { getProvider } = useSpeechContext();
@@ -67,7 +63,7 @@ export function SpeechProviderDialog({ isOpen, onClose }: SpeechProviderDialogPr
         title: 'TTS Settings',
         message: 'Your TTS settings have been updated successfully.',
       });
-      onClose();
+      setIsOpen(false);
     } catch (err) {
       console.error('Error saving TTS settings:', err);
       showError('Failed to update TTS settings. Please try again.');
@@ -138,142 +134,156 @@ export function SpeechProviderDialog({ isOpen, onClose }: SpeechProviderDialogPr
   }
 
   return (
-    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
-      <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+    <>
+      <button
+        onClick={() => setIsOpen(true)}
+        className="flex items-center gap-2 px-3 py-1 text-zinc-600 rounded-full transition-colors cursor-pointer hover:bg-zinc-100 border border-zinc-200"
+        aria-label="Open TTS settings"
+      >
+        <SpeakerWaveIcon className="w-4 h-4" />
+        <span className="text-sm hidden md:block">{account?.voice?.name || 'select voice'}</span>
+      </button>
+      <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
 
-      {/* Mobile: Full screen, Desktop: Centered modal */}
-      <div className="fixed inset-0 flex w-screen items-center justify-center p-0 sm:p-4">
-        <DialogPanel className="mx-auto w-full h-full sm:h-auto sm:max-w-2xl sm:max-h-[90vh] bg-white sm:rounded-lg shadow-xl flex flex-col">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-zinc-200 flex-shrink-0">
-            <DialogTitle className="text-lg font-semibold text-zinc-900">TTS Settings</DialogTitle>
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-zinc-400 hover:text-zinc-600 transition-colors p-1"
-            >
-              <XMarkIcon className="w-6 h-6" />
-            </button>
-          </div>
+        {/* Mobile: Full screen, Desktop: Centered modal */}
+        <div className="fixed inset-0 flex w-screen items-center justify-center p-0 sm:p-4">
+          <DialogPanel className="mx-auto w-full h-full sm:h-auto sm:max-w-2xl sm:max-h-[90vh] bg-white sm:rounded-lg shadow-xl flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-zinc-200 flex-shrink-0">
+              <DialogTitle className="text-lg font-semibold text-zinc-900">
+                TTS Settings
+              </DialogTitle>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="text-zinc-400 hover:text-zinc-600 transition-colors p-1"
+              >
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            </div>
 
-          {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto">
-            <form
-              id="speech-settings-form"
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="p-4 sm:p-6"
-            >
-              <div className="space-y-4 sm:space-y-6">
-                {/* Provider Selection */}
-                <div className="space-y-4">
-                  <div>
-                    <h2 className="text-base/7 font-semibold text-zinc-900">Provider</h2>
-                    <p className="mt-1 text-sm/6 text-zinc-600">
-                      Select the provider you want to use for generating speech.
-                    </p>
-                    {speechProvider === 'elevenlabs' && (
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto">
+              <form
+                id="speech-settings-form"
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="p-4 sm:p-6"
+              >
+                <div className="space-y-4 sm:space-y-6">
+                  {/* Provider Selection */}
+                  <div className="space-y-4">
+                    <div>
+                      <h2 className="text-base/7 font-semibold text-zinc-900">Provider</h2>
                       <p className="mt-1 text-sm/6 text-zinc-600">
-                        You can get your API key from the{' '}
-                        <a
-                          href="https://elevenlabs.io/app/settings/api-keys"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-indigo-600 hover:text-indigo-500 underline"
-                        >
-                          ElevenLabs API Keys page
-                        </a>
-                        .
+                        Select the provider you want to use for generating speech.
                       </p>
-                    )}
-                  </div>
-                  <div className="rounded-md bg-zinc-50 p-4">
-                    <div className="space-y-4">
-                      <FormDropdown
-                        name="speech_provider"
-                        control={form.control}
-                        label="Speech Provider"
-                        required
-                        placeholder="Select a provider"
-                        options={[
-                          { id: 'browser_tts', name: 'Browser TTS' },
-                          { id: 'elevenlabs', name: 'ElevenLabs' },
-                        ]}
-                      />
-
                       {speechProvider === 'elevenlabs' && (
-                        <FormInput
-                          name="speech_settings.api_key"
-                          control={form.control}
-                          label="API Key"
-                          type="password"
-                          required
-                          placeholder="Enter your ElevenLabs API key"
-                        />
+                        <p className="mt-1 text-sm/6 text-zinc-600">
+                          You can get your API key from the{' '}
+                          <a
+                            href="https://elevenlabs.io/app/settings/api-keys"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 hover:text-indigo-500 underline"
+                          >
+                            ElevenLabs API Keys page
+                          </a>
+                          .
+                        </p>
                       )}
+                    </div>
+                    <div className="rounded-md bg-zinc-50 p-4">
+                      <div className="space-y-4">
+                        <FormDropdown
+                          name="speech_provider"
+                          control={form.control}
+                          label="Speech Provider"
+                          required
+                          placeholder="Select a provider"
+                          options={[
+                            { id: 'browser_tts', name: 'Browser TTS' },
+                            { id: 'elevenlabs', name: 'ElevenLabs' },
+                          ]}
+                        />
+
+                        {speechProvider === 'elevenlabs' && (
+                          <FormInput
+                            name="speech_settings.api_key"
+                            control={form.control}
+                            label="API Key"
+                            type="password"
+                            required
+                            placeholder="Enter your ElevenLabs API key"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Voice Selection */}
+
+                  <div className="space-y-4">
+                    <div>
+                      <h2 className="text-base/7 font-semibold text-zinc-900">Voice Selection</h2>
+                      <p className="mt-1 text-sm/6 text-zinc-600">
+                        Choose a voice for text-to-speech generation.
+                      </p>
+                    </div>
+                    <div className="">
+                      {voicesLoading && (
+                        <div className="w-full">
+                          <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-zinc-200 p-8 text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+                            <p className="mt-4 text-zinc-600">Loading voices...</p>
+                          </div>
+                        </div>
+                      )}
+                      {voicesError && (
+                        <div className="w-full">
+                          <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-zinc-200 p-8 text-center">
+                            <p className="mt-4 text-zinc-600">
+                              Error loading voices: {voicesError}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      <VoicesList
+                        voices={voices}
+                        selectedVoiceId={account?.voice?.id}
+                        onSelectVoice={handleSelectVoice}
+                      />
                     </div>
                   </div>
                 </div>
-
-                {/* Voice Selection */}
-
-                <div className="space-y-4">
-                  <div>
-                    <h2 className="text-base/7 font-semibold text-zinc-900">Voice Selection</h2>
-                    <p className="mt-1 text-sm/6 text-zinc-600">
-                      Choose a voice for text-to-speech generation.
-                    </p>
-                  </div>
-                  <div className="">
-                    {voicesLoading && (
-                      <div className="w-full">
-                        <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-zinc-200 p-8 text-center">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-                          <p className="mt-4 text-zinc-600">Loading voices...</p>
-                        </div>
-                      </div>
-                    )}
-                    {voicesError && (
-                      <div className="w-full">
-                        <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-zinc-200 p-8 text-center">
-                          <p className="mt-4 text-zinc-600">Error loading voices: {voicesError}</p>
-                        </div>
-                      </div>
-                    )}
-                    <VoicesList
-                      voices={voices}
-                      selectedVoiceId={account?.voice?.id}
-                      onSelectVoice={handleSelectVoice}
-                    />
-                  </div>
-                </div>
-              </div>
-            </form>
-          </div>
-
-          {/* Fixed footer with form actions */}
-          <div className="flex-shrink-0 border-t border-zinc-200 bg-white p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={isSubmitting}
-                className="w-full sm:w-auto order-2 sm:order-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                form="speech-settings-form"
-                disabled={isSubmitting}
-                className="w-full sm:w-auto order-1 sm:order-2"
-              >
-                {isSubmitting ? 'Saving...' : 'Save Settings'}
-              </Button>
+              </form>
             </div>
-          </div>
-        </DialogPanel>
-      </div>
-    </Dialog>
+
+            {/* Fixed footer with form actions */}
+            <div className="flex-shrink-0 border-t border-zinc-200 bg-white p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsOpen(false)}
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto order-2 sm:order-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  form="speech-settings-form"
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto order-1 sm:order-2"
+                >
+                  {isSubmitting ? 'Saving...' : 'Save Settings'}
+                </Button>
+              </div>
+            </div>
+          </DialogPanel>
+        </div>
+      </Dialog>
+    </>
   );
 }

@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 
-import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
-
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
+import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 
 const FAQ_ITEMS = [
   {
@@ -40,26 +40,47 @@ export default function Help() {
   return (
     <div>
       <button
-        className="p-2 text-white rounded-full transition-colors cursor-pointer"
+        className="flex items-center gap-2 px-3 py-1 text-zinc-600 rounded-full transition-colors cursor-pointer hover:bg-zinc-100 border border-zinc-200"
         aria-label="Help"
         onClick={() => setIsOpen(true)}
       >
-        <QuestionMarkCircleIcon className="w-8 h-8" />
+        <QuestionMarkCircleIcon className="w-4 h-4" />
+        <span className="text-sm hidden md:block">Help</span>
       </button>
 
-      <Dialog open={isOpen} onClose={() => setIsOpen(false)}>
+      <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          <DialogPanel className="max-w-2xl bg-white rounded-lg p-6">
-            <DialogTitle className="text-xl font-semibold mb-4">Help & FAQ</DialogTitle>
-            <div className="space-y-6 py-4">
-              {FAQ_ITEMS.map((item, index) => (
-                <div key={index} className="space-y-2">
-                  <h3 className="text-md font-medium text-zinc-900">{item.question}</h3>
-                  <p className="text-sm text-zinc-500">{item.answer}</p>
-                  {index < FAQ_ITEMS.length - 1 && <div className="pt-4 border-b border-zinc-200" />}
+
+        {/* Mobile: Full screen, Desktop: Centered modal */}
+        <div className="fixed inset-0 flex w-screen items-center justify-center p-0 sm:p-4">
+          <DialogPanel className="mx-auto w-full h-full sm:h-auto sm:max-w-2xl sm:max-h-[90vh] bg-white sm:rounded-lg shadow-xl flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-zinc-200 flex-shrink-0">
+              <DialogTitle className="text-lg font-semibold text-zinc-900">Help & FAQ</DialogTitle>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="text-zinc-400 hover:text-zinc-600 transition-colors p-1"
+              >
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-4 sm:p-6">
+                <div className="space-y-6">
+                  {FAQ_ITEMS.map((item, index) => (
+                    <div key={index} className="space-y-2">
+                      <h3 className="text-md font-medium text-zinc-900">{item.question}</h3>
+                      <p className="text-sm text-zinc-500">{item.answer}</p>
+                      {index < FAQ_ITEMS.length - 1 && (
+                        <div className="pt-4 border-b border-zinc-200" />
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
           </DialogPanel>
         </div>

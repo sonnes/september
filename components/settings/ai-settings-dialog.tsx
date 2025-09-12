@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { CpuChipIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
@@ -16,12 +16,8 @@ import { useAccount } from '@/services/account';
 
 import { AISettingsSection } from './ai-settings-section';
 
-interface AISettingsDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-export function AISettingsDialog({ isOpen, onClose }: AISettingsDialogProps) {
+export function AISettingsDialog() {
+  const [isOpen, setIsOpen] = useState(false);
   const { account, updateAccount } = useAccount();
   const { show, showError } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,7 +53,7 @@ export function AISettingsDialog({ isOpen, onClose }: AISettingsDialogProps) {
         title: 'AI Settings',
         message: 'Your AI settings have been updated successfully.',
       });
-      onClose();
+      setIsOpen(false);
     } catch (err) {
       console.error('Error saving AI settings:', err);
       showError('Failed to update AI settings. Please try again.');
@@ -71,65 +67,75 @@ export function AISettingsDialog({ isOpen, onClose }: AISettingsDialogProps) {
   }
 
   return (
-    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
-      <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+    <>
+      <button
+        onClick={() => setIsOpen(true)}
+        className="flex items-center gap-2 px-3 py-1 text-zinc-600 rounded-full transition-colors cursor-pointer hover:bg-zinc-100 border border-zinc-200"
+        aria-label="Open AI settings"
+      >
+        <CpuChipIcon className="w-4 h-4" />
+        <span className="text-sm hidden md:block">AI</span>
+      </button>
+      <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
 
-      {/* Mobile: Full screen, Desktop: Centered modal */}
-      <div className="fixed inset-0 flex w-screen items-center justify-center p-0 sm:p-4">
-        <DialogPanel className="mx-auto w-full h-full sm:h-auto sm:max-w-4xl sm:max-h-[90vh] bg-white sm:rounded-lg shadow-xl flex flex-col">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-zinc-200 flex-shrink-0">
-            <DialogTitle className="text-lg font-semibold text-zinc-900">AI Settings</DialogTitle>
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-zinc-400 hover:text-zinc-600 transition-colors p-1"
-            >
-              <XMarkIcon className="w-6 h-6" />
-            </button>
-          </div>
-
-          {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto">
-            <form
-              id="ai-settings-form"
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="p-4 sm:p-6"
-            >
-              <div className="space-y-4 sm:space-y-6">
-                <AISettingsSection
-                  control={form.control}
-                  watch={form.watch}
-                  setValue={form.setValue}
-                />
-              </div>
-            </form>
-          </div>
-
-          {/* Fixed footer with form actions */}
-          <div className="flex-shrink-0 border-t border-zinc-200 bg-white p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3">
-              <Button
+        {/* Mobile: Full screen, Desktop: Centered modal */}
+        <div className="fixed inset-0 flex w-screen items-center justify-center p-0 sm:p-4">
+          <DialogPanel className="mx-auto w-full h-full sm:h-auto sm:max-w-4xl sm:max-h-[90vh] bg-white sm:rounded-lg shadow-xl flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-zinc-200 flex-shrink-0">
+              <DialogTitle className="text-lg font-semibold text-zinc-900">AI Settings</DialogTitle>
+              <button
                 type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={isSubmitting}
-                className="w-full sm:w-auto order-2 sm:order-1"
+                onClick={() => setIsOpen(false)}
+                className="text-zinc-400 hover:text-zinc-600 transition-colors p-1"
               >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                form="ai-settings-form"
-                disabled={isSubmitting}
-                className="w-full sm:w-auto order-1 sm:order-2"
-              >
-                {isSubmitting ? 'Saving...' : 'Save Settings'}
-              </Button>
+                <XMarkIcon className="w-6 h-6" />
+              </button>
             </div>
-          </div>
-        </DialogPanel>
-      </div>
-    </Dialog>
+
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto">
+              <form
+                id="ai-settings-form"
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="p-4 sm:p-6"
+              >
+                <div className="space-y-4 sm:space-y-6">
+                  <AISettingsSection
+                    control={form.control}
+                    watch={form.watch}
+                    setValue={form.setValue}
+                  />
+                </div>
+              </form>
+            </div>
+
+            {/* Fixed footer with form actions */}
+            <div className="flex-shrink-0 border-t border-zinc-200 bg-white p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsOpen(false)}
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto order-2 sm:order-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  form="ai-settings-form"
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto order-1 sm:order-2"
+                >
+                  {isSubmitting ? 'Saving...' : 'Save Settings'}
+                </Button>
+              </div>
+            </div>
+          </DialogPanel>
+        </div>
+      </Dialog>
+    </>
   );
 }
