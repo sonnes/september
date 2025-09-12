@@ -2,11 +2,15 @@
 
 import { useState } from 'react';
 
+import { SparklesIcon, SpeakerWaveIcon } from '@heroicons/react/24/outline';
 import { v4 as uuidv4 } from 'uuid';
 
 import { useTextContext } from '@/components/context/text-provider';
+import { AISettingsDialog, TTSSettingsDialog } from '@/components/settings';
 import { Button } from '@/components/ui/button';
+
 import { useAudioPlayer } from '@/hooks/use-audio-player';
+
 import { useAccount } from '@/services/account/context';
 import { useAudio } from '@/services/audio';
 import { useMessages } from '@/services/messages';
@@ -18,13 +22,15 @@ type EditorProps = {
 
 export default function Editor({ placeholder = 'Start typing...' }: EditorProps) {
   const { text, setText, reset } = useTextContext();
-  const { user } = useAccount();
+  const { user, account } = useAccount();
   const { createMessage } = useMessages();
   const { generateSpeech } = useSpeech();
   const { enqueue } = useAudioPlayer();
   const { uploadAudio } = useAudio();
 
   const [status, setStatus] = useState<'idle' | 'loading'>('idle');
+  const [isTTSSettingsOpen, setIsTTSSettingsOpen] = useState(false);
+  const [isAISettingsOpen, setIsAISettingsOpen] = useState(false);
 
   const handleSubmit = async () => {
     setStatus('loading');
@@ -62,20 +68,40 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
   return (
     <div className="flex flex-col gap-2">
       <div className="flex-1">
-        <div className="flex gap-2">
-          <textarea
-            value={text}
-            onChange={onChange}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            className="flex-1 w-full p-3 rounded-xl border border-zinc-400"
-            style={{ caretColor: 'auto' }}
-          />
-          <Button onClick={handleSubmit} color="zinc" disabled={status === 'loading'}>
-            {status === 'loading' ? 'Submitting...' : 'Submit'}
-          </Button>
-        </div>
+        <textarea
+          value={text}
+          onChange={onChange}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          className="w-full p-3 rounded-xl border border-zinc-400"
+          style={{ caretColor: 'auto' }}
+        />
       </div>
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsTTSSettingsOpen(true)}
+            className="flex items-center gap-2 px-3 py-1 text-zinc-600 rounded-full transition-colors cursor-pointer hover:bg-zinc-100 border border-zinc-200"
+            aria-label="Open TTS settings"
+          >
+            <SpeakerWaveIcon className="w-4 h-4" />
+            <span className="text-sm">{account?.voice?.name || 'select voice'}</span>
+          </button>
+          <button
+            onClick={() => setIsAISettingsOpen(true)}
+            className="flex items-center gap-2 px-3 py-1 text-zinc-600 rounded-full transition-colors cursor-pointer hover:bg-zinc-100 border border-zinc-200"
+            aria-label="Open AI settings"
+          >
+            <SparklesIcon className="w-4 h-4" />
+            <span className="text-sm">Gemini AI</span>
+          </button>
+        </div>
+        <Button onClick={handleSubmit} color="zinc" disabled={status === 'loading'}>
+          {status === 'loading' ? 'Submitting...' : 'Submit'}
+        </Button>
+      </div>
+      <TTSSettingsDialog isOpen={isTTSSettingsOpen} onClose={() => setIsTTSSettingsOpen(false)} />
+      <AISettingsDialog isOpen={isAISettingsOpen} onClose={() => setIsAISettingsOpen(false)} />
     </div>
   );
 }

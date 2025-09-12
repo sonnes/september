@@ -1,15 +1,14 @@
 export { ElevenLabsSettingsSection } from './elevenlabs-settings-section';
 export { BrowserTTSSettingsSection } from './browser-tts-settings-section';
-export { GeminiAPIKeySection } from './gemini-api-key-section';
-export { InstructionsSection } from './instructions-section';
-export { CorpusSection } from './corpus-section';
+export { AISettingsSection } from './ai-settings-section';
+export { AISettingsDialog } from './ai-settings-dialog';
 export { SpeechProviderSection } from './speech-provider-section';
 export { TTSSettingsDialog } from './tts-settings-dialog';
-export { 
-  SettingsSchema, 
+export {
+  SettingsSchema,
   AccountSchema,
-  type SettingsFormData, 
+  type SettingsFormData,
   type AccountFormData,
   type SectionProps,
-  type AccountSectionProps 
+  type AccountSectionProps,
 } from './types';

@@ -6,11 +6,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
 import {
+  AISettingsSection,
   BrowserTTSSettingsSection,
-  CorpusSection,
   ElevenLabsSettingsSection,
-  GeminiAPIKeySection,
-  InstructionsSection,
   SettingsFormData,
   SettingsSchema,
   SpeechProviderSection,
@@ -86,9 +84,7 @@ export default function SettingsForm() {
   return (
     <div className="divide-y divide-zinc-400">
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <GeminiAPIKeySection control={form.control} watch={form.watch} setValue={form.setValue} />
-        <InstructionsSection control={form.control} watch={form.watch} setValue={form.setValue} />
-        <CorpusSection control={form.control} watch={form.watch} setValue={form.setValue} />
+        <AISettingsSection control={form.control} watch={form.watch} setValue={form.setValue} />
         <SpeechProviderSection control={form.control} watch={form.watch} setValue={form.setValue} />
         {speechProvider === 'elevenlabs' && (
           <ElevenLabsSettingsSection
