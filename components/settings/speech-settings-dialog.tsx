@@ -15,24 +15,22 @@ import { useToast } from '@/hooks/use-toast';
 
 import { useAccount } from '@/services/account';
 
-import { BrowserTTSSettingsSection } from './browser-tts-settings-section';
-import { ElevenLabsSettingsSection } from './elevenlabs-settings-section';
+import { BrowserTTSSettingsSection } from './speech/browser';
+import { ElevenLabsSettingsSection } from './speech/elevenlabs';
 
-interface TTSSettingsDialogProps {
+interface SpeechSettingsDialogProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function TTSSettingsDialog({ isOpen, onClose }: TTSSettingsDialogProps) {
+export function SpeechSettingsDialog({ isOpen, onClose }: SpeechSettingsDialogProps) {
   const { account, updateAccount } = useAccount();
   const { show, showError } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const defaultValues = useMemo(() => {
     return {
-      speech_provider: account?.speech_provider || 'browser_tts',
       speech_settings: {
-        api_key: account?.speech_settings?.api_key || '',
         model_id: account?.speech_settings?.model_id || '',
         speed: account?.speech_settings?.speed || 1.0,
         stability: account?.speech_settings?.stability || 0.5,
@@ -60,23 +58,25 @@ export function TTSSettingsDialog({ isOpen, onClose }: TTSSettingsDialogProps) {
     setIsSubmitting(true);
     try {
       await updateAccount({
-        speech_provider: data.speech_provider,
-        speech_settings: data.speech_settings,
+        speech_settings: {
+          ...account?.speech_settings,
+          ...data.speech_settings,
+        },
       });
       show({
-        title: 'TTS Settings',
-        message: 'Your TTS settings have been updated successfully.',
+        title: 'Speech Settings',
+        message: 'Your speech settings have been updated successfully.',
       });
       onClose();
     } catch (err) {
-      console.error('Error saving TTS settings:', err);
-      showError('Failed to update TTS settings. Please try again.');
+      console.error('Error saving speech settings:', err);
+      showError('Failed to update speech settings. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const speechProvider = form.watch('speech_provider');
+  const speechProvider = account?.speech_provider || 'browser_tts';
 
   if (!account) {
     return null;
@@ -88,10 +88,12 @@ export function TTSSettingsDialog({ isOpen, onClose }: TTSSettingsDialogProps) {
 
       {/* Mobile: Full screen, Desktop: Centered modal */}
       <div className="fixed inset-0 flex w-screen items-center justify-center p-0 sm:p-4">
-        <DialogPanel className="mx-auto w-full h-full sm:h-auto sm:max-w-2xl sm:max-h-[90vh] bg-white sm:rounded-lg shadow-xl flex flex-col">
+        <DialogPanel className="mx-auto w-full h-full sm:h-auto sm:max-w-4xl sm:max-h-[90vh] bg-white sm:rounded-lg shadow-xl flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-4 sm:p-6 border-b border-zinc-200 flex-shrink-0">
-            <DialogTitle className="text-lg font-semibold text-zinc-900">TTS Settings</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-zinc-900">
+              Speech Settings
+            </DialogTitle>
             <button
               type="button"
               onClick={onClose}
@@ -105,57 +107,7 @@ export function TTSSettingsDialog({ isOpen, onClose }: TTSSettingsDialogProps) {
           <div className="flex-1 overflow-y-auto">
             <form onSubmit={form.handleSubmit(onSubmit)} className="p-4 sm:p-6">
               <div className="space-y-4 sm:space-y-6">
-                {/* Provider Selection */}
-                <div className="space-y-4">
-                  <div>
-                    <h2 className="text-base/7 font-semibold text-zinc-900">Provider</h2>
-                    <p className="mt-1 text-sm/6 text-zinc-600">
-                      Select the provider you want to use for generating speech.
-                    </p>
-                    {speechProvider === 'elevenlabs' && (
-                      <p className="mt-1 text-sm/6 text-zinc-600">
-                        You can get your API key from the{' '}
-                        <a
-                          href="https://elevenlabs.io/app/settings/api-keys"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-indigo-600 hover:text-indigo-500 underline"
-                        >
-                          ElevenLabs API Keys page
-                        </a>
-                        .
-                      </p>
-                    )}
-                  </div>
-                  <div className="rounded-md bg-zinc-50 p-4">
-                    <div className="space-y-4">
-                      <FormDropdown
-                        name="speech_provider"
-                        control={form.control}
-                        label="Speech Provider"
-                        required
-                        placeholder="Select a provider"
-                        options={[
-                          { id: 'browser_tts', name: 'Browser TTS' },
-                          { id: 'elevenlabs', name: 'ElevenLabs' },
-                        ]}
-                      />
-
-                      {speechProvider === 'elevenlabs' && (
-                        <FormInput
-                          name="speech_settings.api_key"
-                          control={form.control}
-                          label="API Key"
-                          type="password"
-                          required
-                          placeholder="Enter your ElevenLabs API key"
-                        />
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Reusable Settings Sections */}
+                {/* ElevenLabs Settings Section */}
                 {speechProvider === 'elevenlabs' && (
                   <ElevenLabsSettingsSection
                     control={form.control}
@@ -164,6 +116,7 @@ export function TTSSettingsDialog({ isOpen, onClose }: TTSSettingsDialogProps) {
                   />
                 )}
 
+                {/* Browser TTS Settings Section */}
                 {speechProvider === 'browser_tts' && (
                   <BrowserTTSSettingsSection
                     control={form.control}

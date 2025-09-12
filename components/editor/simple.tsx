@@ -2,11 +2,15 @@
 
 import { useState } from 'react';
 
-import { SparklesIcon, SpeakerWaveIcon } from '@heroicons/react/24/outline';
+import { Cog6ToothIcon, SparklesIcon, SpeakerWaveIcon } from '@heroicons/react/24/outline';
 import { v4 as uuidv4 } from 'uuid';
 
 import { useTextContext } from '@/components/context/text-provider';
-import { AISettingsDialog, TTSSettingsDialog } from '@/components/settings';
+import {
+  AISettingsDialog,
+  SpeechProviderDialog,
+  SpeechSettingsDialog,
+} from '@/components/settings';
 import { Button } from '@/components/ui/button';
 
 import { useAudioPlayer } from '@/hooks/use-audio-player';
@@ -31,6 +35,7 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
   const [status, setStatus] = useState<'idle' | 'loading'>('idle');
   const [isTTSSettingsOpen, setIsTTSSettingsOpen] = useState(false);
   const [isAISettingsOpen, setIsAISettingsOpen] = useState(false);
+  const [isCombinedSpeechSettingsOpen, setIsCombinedSpeechSettingsOpen] = useState(false);
 
   const handleSubmit = async () => {
     setStatus('loading');
@@ -95,13 +100,28 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
             <SparklesIcon className="w-4 h-4" />
             <span className="text-sm">Gemini AI</span>
           </button>
+          <button
+            onClick={() => setIsCombinedSpeechSettingsOpen(true)}
+            className="flex items-center gap-2 px-3 py-1 text-zinc-600 rounded-full transition-colors cursor-pointer hover:bg-zinc-100 border border-zinc-200"
+            aria-label="Open combined speech settings"
+          >
+            <Cog6ToothIcon className="w-4 h-4" />
+            <span className="text-sm">Speech Settings</span>
+          </button>
         </div>
         <Button onClick={handleSubmit} color="zinc" disabled={status === 'loading'}>
           {status === 'loading' ? 'Submitting...' : 'Submit'}
         </Button>
       </div>
-      <TTSSettingsDialog isOpen={isTTSSettingsOpen} onClose={() => setIsTTSSettingsOpen(false)} />
+      <SpeechProviderDialog
+        isOpen={isTTSSettingsOpen}
+        onClose={() => setIsTTSSettingsOpen(false)}
+      />
       <AISettingsDialog isOpen={isAISettingsOpen} onClose={() => setIsAISettingsOpen(false)} />
+      <SpeechSettingsDialog
+        isOpen={isCombinedSpeechSettingsOpen}
+        onClose={() => setIsCombinedSpeechSettingsOpen(false)}
+      />
     </div>
   );
 }

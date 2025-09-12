@@ -2,7 +2,7 @@
 
 import { FormRangeWithLabels } from '@/components/ui/form';
 
-import { SectionProps } from './types';
+import { SectionProps } from '../types';
 
 export function BrowserTTSSettingsSection({ control }: SectionProps) {
   return (

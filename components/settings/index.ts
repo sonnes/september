@@ -1,9 +1,10 @@
-export { ElevenLabsSettingsSection } from './elevenlabs-settings-section';
-export { BrowserTTSSettingsSection } from './browser-tts-settings-section';
+export { ElevenLabsSettingsSection } from './speech/elevenlabs';
+export { BrowserTTSSettingsSection } from './speech/browser';
 export { AISettingsSection } from './ai-settings-section';
 export { AISettingsDialog } from './ai-settings-dialog';
 export { SpeechProviderSection } from './speech-provider-section';
-export { TTSSettingsDialog } from './tts-settings-dialog';
+export { SpeechProviderDialog } from './speech-provider-dialog';
+export { SpeechSettingsDialog } from './speech-settings-dialog';
 export {
   SettingsSchema,
   AccountSchema,

@@ -1,12 +1,11 @@
 import Layout from '@/components/layout';
 import Navbar, { SettingsTabs } from '@/components/nav';
+import VoicesList from '@/components/voices/voices-list';
 
 import { AccountProvider, AccountService } from '@/services/account';
 import { SpeechProvider } from '@/services/speech/context';
 
 import { createClient } from '@/supabase/server';
-
-import VoicesList from './voices-list';
 
 export default async function VoicesPage({
   searchParams,

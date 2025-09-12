@@ -2,7 +2,7 @@
 
 import { FormCheckbox, FormDropdown, FormRangeWithLabels } from '@/components/ui/form';
 
-import { SectionProps } from './types';
+import { SectionProps } from '../types';
 
 const MODELS = [
   { id: 'eleven_multilingual_v2', name: 'Eleven Multilingual v2' },
