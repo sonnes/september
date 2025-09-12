@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
@@ -15,9 +15,9 @@ import VoicesList from '@/components/voices/voices-list';
 import { useToast } from '@/hooks/use-toast';
 
 import { useAccount } from '@/services/account';
+import { useSpeechContext } from '@/services/speech/context';
 
-import { BrowserTTSSettingsSection } from './speech/browser';
-import { ElevenLabsSettingsSection } from './speech/elevenlabs';
+import type { Voice } from '@/types/voice';
 
 interface SpeechProviderDialogProps {
   isOpen: boolean;
@@ -27,7 +27,11 @@ interface SpeechProviderDialogProps {
 export function SpeechProviderDialog({ isOpen, onClose }: SpeechProviderDialogProps) {
   const { account, updateAccount } = useAccount();
   const { show, showError } = useToast();
+  const { getProvider } = useSpeechContext();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [voices, setVoices] = useState<Voice[]>([]);
+  const [voicesLoading, setVoicesLoading] = useState(false);
+  const [voicesError, setVoicesError] = useState<string | null>(null);
 
   const defaultValues = useMemo(() => {
     return {
@@ -73,6 +77,61 @@ export function SpeechProviderDialog({ isOpen, onClose }: SpeechProviderDialogPr
   };
 
   const speechProvider = form.watch('speech_provider');
+
+  const provider = useMemo(() => {
+    if (!speechProvider) {
+      return null;
+    }
+
+    return getProvider(speechProvider);
+  }, [speechProvider, getProvider]);
+
+  const fetchVoices = useCallback(async () => {
+    try {
+      setVoicesLoading(true);
+      setVoicesError(null);
+      setVoices([]);
+
+      console.log('fetching voices');
+
+      console.log('provider', provider);
+      console.log('speechProvider', speechProvider);
+
+      const speechVoices = await provider?.listVoices({});
+      setVoices(speechVoices || []);
+    } catch (err) {
+      setVoicesError(err instanceof Error ? err.message : 'Failed to fetch voices');
+      console.error('Error fetching voices:', err);
+    } finally {
+      setVoicesLoading(false);
+    }
+  }, [speechProvider, provider]);
+
+  // Handle voice selection
+  const handleSelectVoice = useCallback(
+    async (voice: Voice) => {
+      try {
+        await updateAccount({
+          voice: { id: voice.id, name: voice.name, language: voice.language },
+        });
+        show({
+          title: 'Voice Selected',
+          message: `Selected voice: ${voice.name}`,
+        });
+      } catch (err) {
+        console.error('Error selecting voice:', err);
+        showError('Failed to select voice. Please try again.');
+      }
+    },
+    [updateAccount, show, showError]
+  );
+
+  // Fetch voices when provider changes
+  useEffect(() => {
+    if (isOpen && provider) {
+      fetchVoices();
+    }
+  }, [provider, isOpen, fetchVoices]);
 
   if (!account) {
     return null;
@@ -152,19 +211,37 @@ export function SpeechProviderDialog({ isOpen, onClose }: SpeechProviderDialogPr
                 </div>
 
                 {/* Voice Selection */}
-                {speechProvider === 'elevenlabs' && (
-                  <div className="space-y-4">
-                    <div>
-                      <h2 className="text-base/7 font-semibold text-zinc-900">Voice Selection</h2>
-                      <p className="mt-1 text-sm/6 text-zinc-600">
-                        Choose a voice for text-to-speech generation.
-                      </p>
-                    </div>
-                    <div className="rounded-md bg-zinc-50 p-4">
-                      <VoicesList />
-                    </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <h2 className="text-base/7 font-semibold text-zinc-900">Voice Selection</h2>
+                    <p className="mt-1 text-sm/6 text-zinc-600">
+                      Choose a voice for text-to-speech generation.
+                    </p>
                   </div>
-                )}
+                  <div className="">
+                    {voicesLoading && (
+                      <div className="w-full">
+                        <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-zinc-200 p-8 text-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+                          <p className="mt-4 text-zinc-600">Loading voices...</p>
+                        </div>
+                      </div>
+                    )}
+                    {voicesError && (
+                      <div className="w-full">
+                        <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-zinc-200 p-8 text-center">
+                          <p className="mt-4 text-zinc-600">Error loading voices: {voicesError}</p>
+                        </div>
+                      </div>
+                    )}
+                    <VoicesList
+                      voices={voices}
+                      selectedVoiceId={account?.voice?.id}
+                      onSelectVoice={handleSelectVoice}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Fixed footer on mobile, inline on desktop */}

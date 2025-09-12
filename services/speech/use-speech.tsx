@@ -30,6 +30,10 @@ export function useSpeech() {
     return Array.from(providers.values());
   }, []);
 
+  const getProvider = useCallback((id: string) => {
+    return providers.get(id);
+  }, []);
+
   const generateSpeech = useCallback(
     (text: string, options?: SpeechOptions) => {
       return engine.generateSpeech({
@@ -48,5 +52,5 @@ export function useSpeech() {
     [engine]
   );
 
-  return { listVoices, getProviders, generateSpeech };
+  return { listVoices, getProviders, generateSpeech, getProvider };
 }

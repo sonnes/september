@@ -1,6 +1,6 @@
 import Layout from '@/components/layout';
 import Navbar, { SettingsTabs } from '@/components/nav';
-import VoicesList from '@/components/voices/voices-list';
+import VoicesPageWrapper from '@/components/voices/voices-page-wrapper';
 
 import { AccountProvider, AccountService } from '@/services/account';
 import { SpeechProvider } from '@/services/speech/context';
@@ -30,7 +30,7 @@ export default async function VoicesPage({
           </Layout.Header>
           <Layout.Content>
             <div className="flex gap-8">
-              <VoicesList search={search} />
+              <VoicesPageWrapper search={search} />
             </div>
           </Layout.Content>
         </Layout>
