@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 
 import { PauseIcon, PlayIcon } from '@heroicons/react/24/outline';
 

@@ -18,21 +18,14 @@ export default function VoicesPageWrapper({ search }: VoicesPageWrapperProps) {
   const { listVoices } = useSpeechContext();
 
   const [voices, setVoices] = useState<Voice[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // Fetch voices using the speech service
   const fetchVoices = useCallback(async () => {
     try {
-      setLoading(true);
-      setError(null);
       const speechVoices = await listVoices({ search });
       setVoices(speechVoices);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch voices');
       console.error('Error fetching voices:', err);
-    } finally {
-      setLoading(false);
     }
   }, [listVoices, search]);
 
@@ -69,11 +62,8 @@ export default function VoicesPageWrapper({ search }: VoicesPageWrapperProps) {
   return (
     <VoicesList
       voices={voices}
-      loading={loading}
-      error={error}
       selectedVoiceId={account?.voice?.id}
       onSelectVoice={handleSelectVoice}
-      onRetry={fetchVoices}
     />
   );
 }

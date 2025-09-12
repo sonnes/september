@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 
-import { Cog6ToothIcon, SparklesIcon, SpeakerWaveIcon } from '@heroicons/react/24/outline';
 import { v4 as uuidv4 } from 'uuid';
 
 import { useTextContext } from '@/components/context/text-provider';
@@ -26,7 +25,7 @@ type EditorProps = {
 
 export default function Editor({ placeholder = 'Start typing...' }: EditorProps) {
   const { text, setText, reset } = useTextContext();
-  const { user, account } = useAccount();
+  const { user } = useAccount();
   const { createMessage } = useMessages();
   const { generateSpeech } = useSpeech();
   const { enqueue } = useAudioPlayer();

@@ -36,7 +36,7 @@ export default function Suggestions({ className = '', timeout = 3000 }: Suggesti
               {text}
             </button>
 
-            {audio_path && <PlayButton path={audio_path} />}
+            {audio_path && <PlayButton id={`suggestion-${index}`} text={text} path={audio_path} />}
           </div>
         ))}
     </div>

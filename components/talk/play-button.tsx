@@ -8,7 +8,6 @@ import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useToast } from '@/hooks/use-toast';
 
 import { useAudio } from '@/services/audio';
-import { generateSpeech } from '@/services/elevenlabs';
 import { useSpeech } from '@/services/speech/use-speech';
 
 import type { Audio } from '@/types/audio';

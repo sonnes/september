@@ -1,5 +1,5 @@
 import Layout from '@/components/layout';
-import Navbar, { DesktopNav, MobileNav, SettingsTabs } from '@/components/nav';
+import { DesktopNav, MobileNav } from '@/components/nav';
 
 import { AccountProvider, AccountService } from '@/services/account';
 import { SpeechProvider } from '@/services/speech';

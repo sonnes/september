@@ -3,14 +3,9 @@
 import { useEffect, useMemo } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { Control, useForm } from 'react-hook-form';
 
-import {
-  AISettingsSection,
-  AccountFormData,
-  AccountSchema,
-  SpeechProviderSection,
-} from '@/components/settings';
+import { AccountFormData, AccountSchema } from '@/components/settings';
 import { Button } from '@/components/ui/button';
 import { FormCheckbox, FormInput } from '@/components/ui/form';
 
@@ -19,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAccount } from '@/services/account';
 
 // Personal Information Section
-function PersonalInfoSection({ control }: { control: any }) {
+function PersonalInfoSection({ control }: { control: Control<AccountFormData> }) {
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
       <div className="px-4 sm:px-0">
@@ -60,7 +55,7 @@ function PersonalInfoSection({ control }: { control: any }) {
 }
 
 // Terms and Privacy Section
-function TermsSection({ control }: { control: any }) {
+function TermsSection({ control }: { control: Control<AccountFormData> }) {
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
       <div className="px-4 sm:px-0">
@@ -187,8 +182,6 @@ export default function SettingsForm() {
     }
   };
 
-  const speechProvider = form.watch('speech_provider');
-
   if (!account) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -201,9 +194,6 @@ export default function SettingsForm() {
     <div className="divide-y divide-zinc-400">
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <PersonalInfoSection control={form.control} />
-        <AISettingsSection control={form.control} watch={form.watch} setValue={form.setValue} />
-        <SpeechProviderSection control={form.control} watch={form.watch} setValue={form.setValue} />
-
         <TermsSection control={form.control} />
         {/* Floating save button */}
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-200 p-4">

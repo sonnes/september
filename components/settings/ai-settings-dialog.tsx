@@ -6,7 +6,6 @@ import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { CpuChipIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 
 import { AISettingsFormData, AISettingsSchema } from '@/components/settings';
 import { Button } from '@/components/ui/button';

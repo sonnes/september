@@ -6,7 +6,6 @@ import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { SpeakerWaveIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 
 import { SpeechProviderFormData, SpeechProviderSchema } from '@/components/settings';
 import { Button } from '@/components/ui/button';
@@ -101,7 +100,7 @@ export function SpeechProviderDialog() {
     } finally {
       setVoicesLoading(false);
     }
-  }, [speechProvider, provider]);
+  }, [provider, apiKey]);
 
   // Handle voice selection
   const handleSelectVoice = useCallback(
