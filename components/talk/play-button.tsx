@@ -6,27 +6,34 @@ import { PauseIcon, PlayIcon } from '@heroicons/react/24/outline';
 
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useToast } from '@/hooks/use-toast';
+
 import { useAudio } from '@/services/audio';
+import { generateSpeech } from '@/services/elevenlabs';
+import { useSpeech } from '@/services/speech/use-speech';
+
 import type { Audio } from '@/types/audio';
 
 interface PlayButtonProps {
+  id: string;
+  text: string;
   audio?: Audio;
   path?: string;
 }
 
-export function PlayButton({ path }: PlayButtonProps) {
+export function PlayButton({ id, text, path }: PlayButtonProps) {
   const { enqueue, isPlaying, current, togglePlayPause } = useAudioPlayer();
+  const { generateSpeech } = useSpeech();
   const { showError } = useToast();
   const { downloadAudio } = useAudio();
 
   const [audio, setAudio] = useState<Audio | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const isCurrentTrack = current?.path === path;
+  const isCurrentTrack = current?.id === id;
   const isCurrentlyPlaying = isCurrentTrack && isPlaying;
 
   const handlePlayPause = async () => {
-    if (isLoading || !path) return;
+    if (isLoading) return;
 
     if (isCurrentlyPlaying) {
       togglePlayPause();
@@ -41,14 +48,22 @@ export function PlayButton({ path }: PlayButtonProps) {
     try {
       setIsLoading(true);
 
-      const blob = await downloadAudio(path);
+      if (path) {
+        const blob = await downloadAudio(path);
 
-      if (blob) {
-        const audioTrack: Audio = {
-          path,
-          blob: Buffer.from(await blob.arrayBuffer()).toString('base64'),
-        };
+        if (blob) {
+          const audioTrack: Audio = {
+            path,
+            blob: Buffer.from(await blob.arrayBuffer()).toString('base64'),
+          };
 
+          setAudio(audioTrack);
+          enqueue(audioTrack);
+        }
+      } else {
+        const audioTrack = (await generateSpeech(text)) as Audio;
+        audioTrack.id = id;
+        audioTrack.text = text;
         setAudio(audioTrack);
         enqueue(audioTrack);
       }

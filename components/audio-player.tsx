@@ -1,20 +1,22 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { PauseIcon, PlayIcon } from '@heroicons/react/24/outline';
 
 import AnimatedText from '@/components/ui/animated-text';
+
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 
 export default function AudioPlayer() {
-  const [text, setText] = useState('');
   const { current, isPlaying, togglePlayPause } = useAudioPlayer();
 
-  useEffect(() => {
+  const text = useMemo(() => {
     if (current && current.alignment) {
-      setText(current.alignment?.characters.join('') || '');
+      return current.alignment?.characters.join('') || '';
     }
+
+    return current?.text || '';
   }, [current]);
 
   return (
@@ -23,7 +25,7 @@ export default function AudioPlayer() {
         <div className="flex-1">
           <AnimatedText
             text={text}
-            speed={300}
+            speed={200}
             className="text-sm md:text-base lg:text-lg font-semibold text-zinc-700 leading-relaxed"
           />
         </div>

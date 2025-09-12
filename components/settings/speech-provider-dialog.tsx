@@ -54,7 +54,6 @@ export function SpeechProviderDialog() {
   const onSubmit = async (data: SpeechProviderFormData) => {
     setIsSubmitting(true);
     try {
-      console.log('data', data);
       await updateAccount({
         speech_provider: data.speech_provider,
         speech_settings: {
@@ -78,6 +77,7 @@ export function SpeechProviderDialog() {
 
   const speechProvider = form.watch('speech_provider');
   const selectedVoice = form.watch('voice');
+  const apiKey = form.watch('speech_settings.api_key');
 
   const provider = useMemo(() => {
     if (!speechProvider) {
@@ -93,12 +93,7 @@ export function SpeechProviderDialog() {
       setVoicesError(null);
       setVoices([]);
 
-      console.log('fetching voices');
-
-      console.log('provider', provider);
-      console.log('speechProvider', speechProvider);
-
-      const speechVoices = await provider?.listVoices({});
+      const speechVoices = await provider?.listVoices({ apiKey });
       setVoices(speechVoices || []);
     } catch (err) {
       setVoicesError(err instanceof Error ? err.message : 'Failed to fetch voices');

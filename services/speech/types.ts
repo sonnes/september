@@ -28,4 +28,5 @@ export interface ListVoicesRequest {
   language?: string;
   page?: number;
   limit?: number;
+  apiKey?: string;
 }

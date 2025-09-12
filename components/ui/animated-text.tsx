@@ -57,8 +57,8 @@ export default function AnimatedText({
           <span
             key={index}
             className={cn(
-              'inline-block transition-all duration-300 ease-out',
-              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+              'inline-block transition-opacity duration-200 ease-out',
+              isVisible ? 'opacity-100' : 'opacity-0'
             )}
           >
             {word}

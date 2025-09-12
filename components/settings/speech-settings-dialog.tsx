@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
-import { Cog6ToothIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { AdjustmentsHorizontalIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
@@ -84,7 +84,7 @@ export function SpeechSettingsDialog() {
         className="flex items-center gap-2 px-3 py-1 text-zinc-600 rounded-full transition-colors cursor-pointer hover:bg-zinc-100 border border-zinc-200"
         aria-label="Open speech settings"
       >
-        <Cog6ToothIcon className="w-4 h-4" />
+        <AdjustmentsHorizontalIcon className="w-4 h-4" />
         <span className="text-sm hidden md:block">Speech</span>
       </button>
       <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">

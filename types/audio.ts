@@ -1,4 +1,6 @@
 export interface Audio {
+  id?: string;
+  text?: string;
   path?: string;
   blob?: string;
   alignment?: Alignment;

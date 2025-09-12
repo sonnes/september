@@ -42,10 +42,10 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
     enqueue(audio);
 
     const id = uuidv4();
-    const audioPath = `${id}.mp3`;
+    const audioPath = audio.blob ? `${id}.mp3` : undefined;
 
     await Promise.all([
-      audio.blob
+      audioPath && audio.blob
         ? uploadAudio({ path: audioPath, blob: audio.blob, alignment: audio.alignment })
         : Promise.resolve(null),
       createMessage({ id, text, type: 'message', user_id: user.id, audio_path: audioPath }),

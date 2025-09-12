@@ -104,10 +104,6 @@ export class ElevenLabsSpeechProvider implements SpeechProvider {
   }
 
   async listVoices(request: ListVoicesRequest): Promise<Voice[]> {
-    if (!this.apiKey) {
-      return [];
-    }
-
     const params = new URLSearchParams({
       search: request.search || '',
       language: request.language || '',
@@ -119,7 +115,7 @@ export class ElevenLabsSpeechProvider implements SpeechProvider {
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'xi-api-key': this.apiKey,
+        'xi-api-key': request.apiKey || this.apiKey,
       },
     });
 

@@ -5,8 +5,9 @@ import { useState } from 'react';
 import { ChatBubbleLeftRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import moment from 'moment';
 
-import { cn } from '@/lib/utils';
 import { useMessages } from '@/services/messages';
+
+import { cn } from '@/lib/utils';
 import type { Message } from '@/types/message';
 
 import { PlayButton } from './play-button';
@@ -33,7 +34,9 @@ function MessageItem({ message }: { message: Message }) {
           </div>
           <div className="text-xs text-zinc-400 mt-1">{moment(message.created_at).fromNow()}</div>
         </div>
-        {message.audio_path && <PlayButton path={message.audio_path} />}
+        {message.type === 'message' && (
+          <PlayButton id={message.id} text={message.text} path={message.audio_path} />
+        )}
       </div>
     </div>
   );
