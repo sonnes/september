@@ -1,4 +1,4 @@
-import { Control, UseFormSetValue, UseFormWatch } from 'react-hook-form';
+import { Control, FieldValues, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 import { z } from 'zod';
 
 import { Voice } from '@/types/voice';
@@ -40,8 +40,30 @@ export const AccountSchema = z.object({
 
 export type AccountFormData = z.infer<typeof AccountSchema>;
 
-export interface SectionProps {
-  control: Control<AccountFormData>;
-  watch: UseFormWatch<AccountFormData>;
-  setValue: UseFormSetValue<AccountFormData>;
+export const SpeechProviderSchema = AccountSchema.pick({
+  speech_provider: true,
+  speech_settings: true,
+  voice: true,
+});
+
+export type SpeechProviderFormData = z.infer<typeof SpeechProviderSchema>;
+
+export const AISettingsSchema = AccountSchema.pick({
+  gemini_api_key: true,
+  ai_instructions: true,
+  ai_corpus: true,
+});
+
+export type AISettingsFormData = z.infer<typeof AISettingsSchema>;
+
+export const SpeechSettingsSchema = AccountSchema.pick({
+  speech_settings: true,
+});
+
+export type SpeechSettingsFormData = z.infer<typeof SpeechSettingsSchema>;
+
+export interface SectionProps<T extends FieldValues> {
+  control: Control<T>;
+  watch: UseFormWatch<T>;
+  setValue: UseFormSetValue<T>;
 }

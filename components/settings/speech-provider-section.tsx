@@ -4,9 +4,9 @@ import { FormDropdown, FormInput } from '@/components/ui/form';
 
 import { useSpeechContext } from '@/services/speech';
 
-import { SectionProps } from './types';
+import { SectionProps, SpeechProviderFormData } from './types';
 
-export function SpeechProviderSection({ control, watch }: SectionProps) {
+export function SpeechProviderSection({ control, watch }: SectionProps<SpeechProviderFormData>) {
   const { getProviders } = useSpeechContext();
   const providers = getProviders();
 

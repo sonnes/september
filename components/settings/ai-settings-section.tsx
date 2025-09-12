@@ -5,7 +5,7 @@ import { FormInput, FormTextarea } from '@/components/ui/form';
 
 import { useCorpus } from '@/hooks/use-ai-settings';
 
-import { SectionProps } from './types';
+import { AISettingsFormData, SectionProps } from './types';
 
 const EXAMPLE_INSTRUCTIONS = [
   {
@@ -22,7 +22,7 @@ const EXAMPLE_INSTRUCTIONS = [
   },
 ];
 
-export function AISettingsSection({ control, setValue, watch }: SectionProps) {
+export function AISettingsSection({ control, setValue, watch }: SectionProps<AISettingsFormData>) {
   const { isGenerating, generateCorpus } = useCorpus();
 
   const aiInstructions = watch('ai_instructions');

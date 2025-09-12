@@ -7,9 +7,8 @@ import { Cog6ToothIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
-import { AccountFormData, AccountSchema } from '@/components/settings';
+import { SpeechSettingsFormData, SpeechSettingsSchema } from '@/components/settings';
 import { Button } from '@/components/ui/button';
-import { FormDropdown, FormInput } from '@/components/ui/form';
 
 import { useToast } from '@/hooks/use-toast';
 
@@ -39,8 +38,8 @@ export function SpeechSettingsDialog() {
     };
   }, [account]);
 
-  const form = useForm<AccountFormData>({
-    resolver: zodResolver(AccountSchema),
+  const form = useForm<SpeechSettingsFormData>({
+    resolver: zodResolver(SpeechSettingsSchema),
     defaultValues: defaultValues,
   });
 
@@ -50,7 +49,7 @@ export function SpeechSettingsDialog() {
     }
   }, [defaultValues, form, isOpen]);
 
-  const onSubmit = async (data: AccountFormData) => {
+  const onSubmit = async (data: SpeechSettingsFormData) => {
     setIsSubmitting(true);
     try {
       await updateAccount({

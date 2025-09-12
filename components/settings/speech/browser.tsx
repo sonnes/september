@@ -2,9 +2,9 @@
 
 import { FormRangeWithLabels } from '@/components/ui/form';
 
-import { SectionProps } from '../types';
+import { SectionProps, SpeechSettingsFormData } from '../types';
 
-export function BrowserTTSSettingsSection({ control }: SectionProps) {
+export function BrowserTTSSettingsSection({ control }: SectionProps<SpeechSettingsFormData>) {
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-4 md:grid-cols-3">
       <div className="px-4 sm:px-0">

@@ -6,8 +6,9 @@ import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { SpeakerWaveIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
-import { AccountFormData, AccountSchema } from '@/components/settings';
+import { SpeechProviderFormData, SpeechProviderSchema } from '@/components/settings';
 import { Button } from '@/components/ui/button';
 import { FormDropdown, FormInput } from '@/components/ui/form';
 import VoicesList from '@/components/voices/voices-list';
@@ -35,11 +36,12 @@ export function SpeechProviderDialog() {
       speech_settings: {
         api_key: account?.speech_settings?.api_key || '',
       },
+      voice: account?.voice || undefined,
     };
   }, [account]);
 
-  const form = useForm<AccountFormData>({
-    resolver: zodResolver(AccountSchema),
+  const form = useForm<SpeechProviderFormData>({
+    resolver: zodResolver(SpeechProviderSchema),
     defaultValues: defaultValues,
   });
 
@@ -49,15 +51,17 @@ export function SpeechProviderDialog() {
     }
   }, [defaultValues, form, isOpen]);
 
-  const onSubmit = async (data: AccountFormData) => {
+  const onSubmit = async (data: SpeechProviderFormData) => {
     setIsSubmitting(true);
     try {
+      console.log('data', data);
       await updateAccount({
         speech_provider: data.speech_provider,
         speech_settings: {
           ...account?.speech_settings,
           api_key: data.speech_settings?.api_key,
         },
+        voice: data.voice,
       });
       show({
         title: 'TTS Settings',
@@ -73,6 +77,7 @@ export function SpeechProviderDialog() {
   };
 
   const speechProvider = form.watch('speech_provider');
+  const selectedVoice = form.watch('voice');
 
   const provider = useMemo(() => {
     if (!speechProvider) {
@@ -105,21 +110,10 @@ export function SpeechProviderDialog() {
 
   // Handle voice selection
   const handleSelectVoice = useCallback(
-    async (voice: Voice) => {
-      try {
-        await updateAccount({
-          voice: { id: voice.id, name: voice.name, language: voice.language },
-        });
-        show({
-          title: 'Voice Selected',
-          message: `Selected voice: ${voice.name}`,
-        });
-      } catch (err) {
-        console.error('Error selecting voice:', err);
-        showError('Failed to select voice. Please try again.');
-      }
+    (voice: Voice) => {
+      form.setValue('voice', voice);
     },
-    [updateAccount, show, showError]
+    [form]
   );
 
   // Fetch voices when provider changes
@@ -250,7 +244,7 @@ export function SpeechProviderDialog() {
                       )}
                       <VoicesList
                         voices={voices}
-                        selectedVoiceId={account?.voice?.id}
+                        selectedVoiceId={selectedVoice?.id}
                         onSelectVoice={handleSelectVoice}
                       />
                     </div>

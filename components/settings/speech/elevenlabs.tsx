@@ -2,7 +2,7 @@
 
 import { FormCheckbox, FormDropdown, FormRangeWithLabels } from '@/components/ui/form';
 
-import { SectionProps } from '../types';
+import { SectionProps, SpeechSettingsFormData } from '../types';
 
 const MODELS = [
   { id: 'eleven_multilingual_v2', name: 'Eleven Multilingual v2' },
@@ -10,7 +10,7 @@ const MODELS = [
   { id: 'eleven_flash_v2', name: 'Eleven Flash v2 (English Only)' },
 ];
 
-export function ElevenLabsSettingsSection({ control }: SectionProps) {
+export function ElevenLabsSettingsSection({ control }: SectionProps<SpeechSettingsFormData>) {
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-4 md:grid-cols-3">
       <div className="px-4 sm:px-0">

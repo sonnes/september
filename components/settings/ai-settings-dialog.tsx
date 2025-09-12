@@ -6,8 +6,9 @@ import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { CpuChipIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
-import { AccountFormData, AccountSchema } from '@/components/settings';
+import { AISettingsFormData, AISettingsSchema } from '@/components/settings';
 import { Button } from '@/components/ui/button';
 
 import { useToast } from '@/hooks/use-toast';
@@ -30,8 +31,8 @@ export function AISettingsDialog() {
     };
   }, [account]);
 
-  const form = useForm<AccountFormData>({
-    resolver: zodResolver(AccountSchema),
+  const form = useForm<AISettingsFormData>({
+    resolver: zodResolver(AISettingsSchema),
     defaultValues: defaultValues,
   });
 
@@ -41,7 +42,7 @@ export function AISettingsDialog() {
     }
   }, [defaultValues, form, isOpen]);
 
-  const onSubmit = async (data: AccountFormData) => {
+  const onSubmit = async (data: AISettingsFormData) => {
     setIsSubmitting(true);
     try {
       await updateAccount({
