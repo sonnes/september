@@ -1,6 +1,5 @@
 import Layout from '@/components/layout';
-import Navbar from '@/components/nav';
-
+import Navbar, { DesktopNav, MobileNav, SettingsTabs } from '@/components/nav';
 
 import { AccountProvider, AccountService } from '@/services/account';
 import { SpeechProvider } from '@/services/speech';
@@ -20,7 +19,11 @@ export default async function SettingsPage() {
     <AccountProvider provider={provider} user={user!} account={account!}>
       <Layout>
         <Layout.Header>
-          <Navbar user={user} current="/settings" />
+          <DesktopNav user={user} current="/settings" />
+          <MobileNav title="Settings" user={user} current="/settings"></MobileNav>
+          <div className="hidden md:flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold tracking-tight text-white">Settings</h1>
+          </div>
         </Layout.Header>
         <Layout.Content>
           <SpeechProvider>

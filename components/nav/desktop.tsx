@@ -27,7 +27,7 @@ export default function DesktopNav({ items, current, user, className }: DesktopN
     <nav
       aria-label="Global"
       className={cn(
-        'hidden md:flex mx-auto max-w-7xl items-center justify-between py-4 mb-6 border-b border-white/10',
+        'hidden md:flex mx-auto max-w-7xl items-center justify-between py-2 mb-4 border-b border-white/10',
         className
       )}
     >
@@ -39,7 +39,7 @@ export default function DesktopNav({ items, current, user, className }: DesktopN
         </Link>
       </div>
 
-      <PopoverGroup className="hidden lg:flex lg:gap-x-12">
+      <PopoverGroup className="hidden lg:flex lg:gap-x-6">
         {items?.map(item => {
           const isActive = current === item.href;
           return (
@@ -47,8 +47,8 @@ export default function DesktopNav({ items, current, user, className }: DesktopN
               key={item.href}
               href={item.href}
               className={cn(
-                'text-sm/6 font-semibold transition-colors',
-                isActive ? 'text-white' : 'text-white/80 hover:text-white'
+                'text-sm/6 font-semibold transition-colors rounded-md px-3 py-2',
+                isActive ? 'text-white bg-indigo-600' : 'text-white/80 hover:text-white'
               )}
             >
               {item.name}
@@ -89,9 +89,6 @@ export default function DesktopNav({ items, current, user, className }: DesktopN
               className="absolute right-0 z-10 mt-5 flex w-screen max-w-min bg-transparent px-4 transition data-closed:translate-y-1 data-closed:opacity-0 data-enter:duration-200 data-enter:ease-out data-leave:duration-150 data-leave:ease-in"
             >
               <div className="w-56 shrink rounded-xl bg-white p-4 text-sm/6 font-semibold text-zinc-900 shadow-lg ring-1 ring-zinc-900/5">
-                <Link href="/account" className="block p-2 hover:text-indigo-600">
-                  Account
-                </Link>
                 <Link href="/settings" className="block p-2 hover:text-indigo-600">
                   Settings
                 </Link>

@@ -47,7 +47,16 @@ export default function MobileNav({
           className
         )}
       >
+        <div className="flex items-center space-x-4">
+          <Link href="/">
+            <Image src="/logo.png" alt="September" width={36} height={36} />
+          </Link>
+          <div className="text-white font-bold text-xl tracking-tight">{title}</div>
+        </div>
+
         <div className="flex items-center space-x-2">
+          {children}
+
           <button
             type="button"
             onClick={() => setIsOpen(true)}
@@ -56,11 +65,7 @@ export default function MobileNav({
             <span className="sr-only">Open main menu</span>
             <Bars3Icon aria-hidden="true" className="size-6" />
           </button>
-
-          <div className="text-white font-semibold text-xl tracking-tight">{title}</div>
         </div>
-
-        {children}
       </nav>
 
       {/* Mobile menu */}
@@ -129,13 +134,6 @@ export default function MobileNav({
                         </div>
                       </div>
                       <div className="space-y-2 pt-3">
-                        <Link
-                          href="/account"
-                          onClick={() => setIsOpen(false)}
-                          className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold text-zinc-900 hover:bg-zinc-50"
-                        >
-                          Account
-                        </Link>
                         <Link
                           href="/settings"
                           onClick={() => setIsOpen(false)}

@@ -7,17 +7,105 @@ import { useForm } from 'react-hook-form';
 
 import {
   AISettingsSection,
-  BrowserTTSSettingsSection,
-  ElevenLabsSettingsSection,
-  SettingsFormData,
-  SettingsSchema,
+  AccountFormData,
+  AccountSchema,
   SpeechProviderSection,
 } from '@/components/settings';
 import { Button } from '@/components/ui/button';
+import { FormCheckbox, FormInput } from '@/components/ui/form';
 
 import { useToast } from '@/hooks/use-toast';
 
 import { useAccount } from '@/services/account';
+
+// Personal Information Section
+function PersonalInfoSection({ control }: { control: any }) {
+  return (
+    <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
+      <div className="px-4 sm:px-0">
+        <h2 className="text-base/7 font-semibold text-zinc-900">Personal Information</h2>
+        <p className="mt-1 text-sm/6 text-zinc-600">
+          Please provide your basic personal information.
+        </p>
+      </div>
+
+      <div className="md:col-span-2">
+        <div className="px-4">
+          <div className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+            <div className="sm:col-span-3">
+              <FormInput
+                name="name"
+                control={control}
+                label="Full Name"
+                placeholder="Enter your name"
+                required
+              />
+            </div>
+            <div className="sm:col-span-3">
+              <FormInput name="city" control={control} label="City" placeholder="Enter your city" />
+            </div>
+            <div className="sm:col-span-3">
+              <FormInput
+                name="country"
+                control={control}
+                label="Country"
+                placeholder="Enter your country"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Terms and Privacy Section
+function TermsSection({ control }: { control: any }) {
+  return (
+    <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
+      <div className="px-4 sm:px-0">
+        <h2 className="text-base/7 font-semibold text-zinc-900">Terms and Privacy</h2>
+        <p className="mt-1 text-sm/6 text-zinc-600">
+          Please review and accept our terms and privacy policy to continue.
+        </p>
+        <p className="mt-4 text-sm/6 text-zinc-600">
+          Your data is used to provide voice cloning services. All your messages are processed by
+          our service providers. Do not type any passwords or sensitive information.
+        </p>
+      </div>
+
+      <div className="md:col-span-2">
+        <div className="px-4">
+          <div className="max-w-2xl space-y-10">
+            <fieldset>
+              <div className="space-y-6">
+                <div className="flex gap-3">
+                  <div className="flex h-6 items-center">
+                    <FormCheckbox
+                      name="terms_accepted"
+                      control={control}
+                      label="I accept the Terms of Service"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <div className="flex h-6 items-center">
+                    <FormCheckbox
+                      name="privacy_policy_accepted"
+                      control={control}
+                      label="I accept the Privacy Policy"
+                    />
+                  </div>
+                </div>
+              </div>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function SettingsForm() {
   const { account, updateAccount } = useAccount();
@@ -25,6 +113,15 @@ export default function SettingsForm() {
 
   const defaultValues = useMemo(() => {
     return {
+      // Personal Information
+      name: account?.name || '',
+      city: account?.city || '',
+      country: account?.country || '',
+      // Medical Information
+      primary_diagnosis: account?.primary_diagnosis || '',
+      year_of_diagnosis: account?.year_of_diagnosis || undefined,
+      medical_document_path: account?.medical_document_path || '',
+      // Speech Settings
       speech_provider: account?.speech_provider || 'browser_tts',
       speech_settings: {
         api_key: account?.speech_settings?.api_key || '',
@@ -37,14 +134,19 @@ export default function SettingsForm() {
         pitch: account?.speech_settings?.pitch || 0,
         volume: account?.speech_settings?.volume || 1.0,
       },
+      voice: account?.voice || undefined,
+      // AI Settings
       gemini_api_key: account?.gemini_api_key || '',
       ai_instructions: account?.ai_instructions || '',
       ai_corpus: account?.ai_corpus || '',
+      // Terms and Privacy
+      terms_accepted: account?.terms_accepted || false,
+      privacy_policy_accepted: account?.privacy_policy_accepted || false,
     };
   }, [account]);
 
-  const form = useForm<SettingsFormData>({
-    resolver: zodResolver(SettingsSchema),
+  const form = useForm<AccountFormData>({
+    resolver: zodResolver(AccountSchema),
     defaultValues: defaultValues,
   });
 
@@ -52,14 +154,28 @@ export default function SettingsForm() {
     form.reset(defaultValues);
   }, [defaultValues, form]);
 
-  const onSubmit = async (data: SettingsFormData) => {
+  const onSubmit = async (data: AccountFormData) => {
     try {
       await updateAccount({
+        // Personal Information
+        name: data.name,
+        city: data.city,
+        country: data.country,
+        // Medical Information
+        primary_diagnosis: data.primary_diagnosis,
+        year_of_diagnosis: data.year_of_diagnosis,
+        medical_document_path: data.medical_document_path,
+        // Speech Settings
         speech_provider: data.speech_provider,
         speech_settings: data.speech_settings,
+        voice: data.voice,
+        // AI Settings
         gemini_api_key: data.gemini_api_key,
         ai_instructions: data.ai_instructions,
         ai_corpus: data.ai_corpus,
+        // Terms and Privacy
+        terms_accepted: data.terms_accepted,
+        privacy_policy_accepted: data.privacy_policy_accepted,
       });
       show({
         title: 'Settings',
@@ -84,22 +200,11 @@ export default function SettingsForm() {
   return (
     <div className="divide-y divide-zinc-400">
       <form onSubmit={form.handleSubmit(onSubmit)}>
+        <PersonalInfoSection control={form.control} />
         <AISettingsSection control={form.control} watch={form.watch} setValue={form.setValue} />
         <SpeechProviderSection control={form.control} watch={form.watch} setValue={form.setValue} />
-        {speechProvider === 'elevenlabs' && (
-          <ElevenLabsSettingsSection
-            control={form.control}
-            watch={form.watch}
-            setValue={form.setValue}
-          />
-        )}
-        {speechProvider === 'browser_tts' && (
-          <BrowserTTSSettingsSection
-            control={form.control}
-            watch={form.watch}
-            setValue={form.setValue}
-          />
-        )}
+
+        <TermsSection control={form.control} />
         {/* Floating save button */}
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-200 p-4">
           <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-end">

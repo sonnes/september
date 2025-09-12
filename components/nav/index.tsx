@@ -1,4 +1,3 @@
-
 import DesktopNavComponent, { type DesktopNavProps } from './desktop';
 import MobileNavComponent, { type MobileNavProps } from './mobile';
 
@@ -26,7 +25,6 @@ const defaultItems = [
   { name: 'Voices', href: '/voices' },
   { name: 'Write', href: '/write' },
   { name: 'Settings', href: '/settings' },
-  { name: 'Account', href: '/account' },
 ];
 
 export const MobileNav = ({ items = defaultItems, ...props }: MobileNavProps) => {
@@ -37,11 +35,7 @@ export const DesktopNav = ({ items = defaultItems, ...props }: DesktopNavProps) 
   return <DesktopNavComponent items={items} {...props} />;
 };
 
-export default function Navbar({
-  items = defaultItems,
-  current,
-  user,
-}: NavbarProps) {
+export default function Navbar({ items = defaultItems, current, user }: NavbarProps) {
   return (
     <div>
       <DesktopNav items={items} current={current} user={user} />

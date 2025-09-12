@@ -7,7 +7,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
-import { SettingsFormData, SettingsSchema } from '@/components/settings';
+import { AccountFormData, AccountSchema } from '@/components/settings';
 import { Button } from '@/components/ui/button';
 import { FormDropdown, FormInput } from '@/components/ui/form';
 import VoicesList from '@/components/voices/voices-list';
@@ -42,8 +42,8 @@ export function SpeechProviderDialog({ isOpen, onClose }: SpeechProviderDialogPr
     };
   }, [account]);
 
-  const form = useForm<SettingsFormData>({
-    resolver: zodResolver(SettingsSchema),
+  const form = useForm<AccountFormData>({
+    resolver: zodResolver(AccountSchema),
     defaultValues: defaultValues,
   });
 
@@ -53,7 +53,7 @@ export function SpeechProviderDialog({ isOpen, onClose }: SpeechProviderDialogPr
     }
   }, [defaultValues, form, isOpen]);
 
-  const onSubmit = async (data: SettingsFormData) => {
+  const onSubmit = async (data: AccountFormData) => {
     setIsSubmitting(true);
     try {
       await updateAccount({

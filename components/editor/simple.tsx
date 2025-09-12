@@ -90,7 +90,9 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
             aria-label="Open TTS settings"
           >
             <SpeakerWaveIcon className="w-4 h-4" />
-            <span className="text-sm">{account?.voice?.name || 'select voice'}</span>
+            <span className="text-sm hidden md:block">
+              {account?.voice?.name || 'select voice'}
+            </span>
           </button>
           <button
             onClick={() => setIsAISettingsOpen(true)}
@@ -98,7 +100,7 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
             aria-label="Open AI settings"
           >
             <SparklesIcon className="w-4 h-4" />
-            <span className="text-sm">Gemini AI</span>
+            <span className="text-sm hidden md:block">Gemini AI</span>
           </button>
           <button
             onClick={() => setIsCombinedSpeechSettingsOpen(true)}
@@ -106,7 +108,7 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
             aria-label="Open combined speech settings"
           >
             <Cog6ToothIcon className="w-4 h-4" />
-            <span className="text-sm">Speech Settings</span>
+            <span className="text-sm hidden md:block">Speech Settings</span>
           </button>
         </div>
         <Button onClick={handleSubmit} color="zinc" disabled={status === 'loading'}>
