@@ -3,6 +3,7 @@ import Link from 'next/link';
 
 import { Popover, PopoverButton, PopoverGroup, PopoverPanel } from '@headlessui/react';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
+import { CloudIcon } from '@heroicons/react/24/outline';
 
 import { cn } from '@/lib/utils';
 
@@ -96,12 +97,7 @@ export default function DesktopNav({ items, current, user, className }: DesktopN
             </PopoverPanel>
           </Popover>
         ) : (
-          <Link
-            href="/login"
-            className="text-sm/6 font-semibold text-white hover:text-white/80 transition-colors"
-          >
-            Log in <span aria-hidden="true">&rarr;</span>
-          </Link>
+          <CloudIcon className="size-5 text-white" />
         )}
       </div>
     </nav>

@@ -1,5 +1,5 @@
 import Layout from '@/components/layout';
-import Navbar, { SettingsTabs } from '@/components/nav';
+import Navbar, { DesktopNav, MobileNav, SettingsTabs } from '@/components/nav';
 import VoicesPageWrapper from '@/components/voices/voices-page-wrapper';
 
 import { AccountProvider, AccountService } from '@/services/account';
@@ -25,8 +25,11 @@ export default async function VoicesPage({
       <SpeechProvider>
         <Layout>
           <Layout.Header>
-            <Navbar user={user} current="/settings" />
-            <SettingsTabs current="/settings/voices" />
+            <DesktopNav user={user} current="/voices" />
+            <MobileNav title="Voices" user={user} current="/voices"></MobileNav>
+            <div className="hidden md:flex items-center justify-between mb-4">
+              <h1 className="text-2xl font-bold tracking-tight text-white">Voices</h1>
+            </div>
           </Layout.Header>
           <Layout.Content>
             <div className="flex gap-8">
