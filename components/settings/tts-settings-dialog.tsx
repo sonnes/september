@@ -9,11 +9,14 @@ import { useForm } from 'react-hook-form';
 
 import { SettingsFormData, SettingsSchema } from '@/components/settings';
 import { Button } from '@/components/ui/button';
-import { FormCheckbox, FormDropdown, FormInput, FormRangeWithLabels } from '@/components/ui/form';
+import { FormDropdown, FormInput } from '@/components/ui/form';
 
 import { useToast } from '@/hooks/use-toast';
 
 import { useAccount } from '@/services/account';
+
+import { BrowserTTSSettingsSection } from './browser-tts-settings-section';
+import { ElevenLabsSettingsSection } from './elevenlabs-settings-section';
 
 interface TTSSettingsDialogProps {
   isOpen: boolean;
@@ -102,7 +105,7 @@ export function TTSSettingsDialog({ isOpen, onClose }: TTSSettingsDialogProps) {
           <div className="flex-1 overflow-y-auto">
             <form onSubmit={form.handleSubmit(onSubmit)} className="p-4 sm:p-6">
               <div className="space-y-4 sm:space-y-6">
-                {/* Mobile-optimized speech provider section */}
+                {/* Provider Selection */}
                 <div className="space-y-4">
                   <div>
                     <h2 className="text-base/7 font-semibold text-zinc-900">Provider</h2>
@@ -152,147 +155,21 @@ export function TTSSettingsDialog({ isOpen, onClose }: TTSSettingsDialogProps) {
                   </div>
                 </div>
 
+                {/* Reusable Settings Sections */}
                 {speechProvider === 'elevenlabs' && (
-                  <div className="space-y-4">
-                    <div>
-                      <h2 className="text-base/7 font-semibold text-zinc-900">
-                        ElevenLabs Settings
-                      </h2>
-                      <p className="mt-1 text-sm/6 text-zinc-600">
-                        Configure the settings for ElevenLabs speech generation.
-                      </p>
-                    </div>
-                    <div className="rounded-md bg-zinc-50 p-4">
-                      <div className="space-y-6">
-                        {/* Model Selection */}
-                        <FormDropdown
-                          name="speech_settings.model_id"
-                          control={form.control}
-                          label="Model"
-                          options={[
-                            { id: 'eleven_multilingual_v2', name: 'Eleven Multilingual v2' },
-                            { id: 'eleven_flash_v2_5', name: 'Eleven Flash v2.5' },
-                            { id: 'eleven_flash_v2', name: 'Eleven Flash v2 (English Only)' },
-                          ]}
-                          placeholder="Select a model"
-                        />
-
-                        {/* Speed Control */}
-                        <FormRangeWithLabels
-                          name="speech_settings.speed"
-                          control={form.control}
-                          label="Speed"
-                          leftLabel="Slower"
-                          rightLabel="Faster"
-                          min={0.7}
-                          max={1.2}
-                          step={0.1}
-                          valueFormatter={value => `${value}x`}
-                        />
-
-                        {/* Stability Control */}
-                        <FormRangeWithLabels
-                          name="speech_settings.stability"
-                          control={form.control}
-                          label="Stability"
-                          leftLabel="More Variable"
-                          rightLabel="More Stable"
-                          min={0}
-                          max={1}
-                          step={0.1}
-                          valueFormatter={value => value.toFixed(1)}
-                        />
-
-                        {/* Similarity Control */}
-                        <FormRangeWithLabels
-                          name="speech_settings.similarity"
-                          control={form.control}
-                          label="Similarity"
-                          leftLabel="More Different"
-                          rightLabel="More Similar"
-                          min={0}
-                          max={1}
-                          step={0.1}
-                          valueFormatter={value => value.toFixed(1)}
-                        />
-
-                        {/* Style Control */}
-                        <FormRangeWithLabels
-                          name="speech_settings.style"
-                          control={form.control}
-                          label="Style"
-                          leftLabel="Less Styled"
-                          rightLabel="More Styled"
-                          min={0}
-                          max={1}
-                          step={0.1}
-                          valueFormatter={value => value.toFixed(1)}
-                        />
-
-                        {/* Speaker Boost */}
-                        <FormCheckbox
-                          name="speech_settings.speaker_boost"
-                          control={form.control}
-                          label="Speaker Boost"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                  <ElevenLabsSettingsSection
+                    control={form.control}
+                    watch={form.watch}
+                    setValue={form.setValue}
+                  />
                 )}
 
                 {speechProvider === 'browser_tts' && (
-                  <div className="space-y-4">
-                    <div>
-                      <h2 className="text-base/7 font-semibold text-zinc-900">
-                        Browser TTS Settings
-                      </h2>
-                      <p className="mt-1 text-sm/6 text-zinc-600">
-                        Configure the settings for browser text-to-speech.
-                      </p>
-                    </div>
-                    <div className="rounded-md bg-zinc-50 p-4">
-                      <div className="space-y-6">
-                        {/* Speed Control */}
-                        <FormRangeWithLabels
-                          name="speech_settings.speed"
-                          control={form.control}
-                          label="Speed"
-                          leftLabel="Slower"
-                          rightLabel="Faster"
-                          min={0.5}
-                          max={2.0}
-                          step={0.1}
-                          valueFormatter={value => `${value}x`}
-                        />
-
-                        {/* Pitch Control */}
-                        <FormRangeWithLabels
-                          name="speech_settings.pitch"
-                          control={form.control}
-                          label="Pitch"
-                          leftLabel="Lower"
-                          rightLabel="Higher"
-                          min={-20}
-                          max={20}
-                          step={1}
-                          valueFormatter={value => value.toString()}
-                        />
-
-                        {/* Volume Control */}
-                        <FormRangeWithLabels
-                          name="speech_settings.volume"
-                          control={form.control}
-                          label="Volume"
-                          leftLabel="Quieter"
-                          rightLabel="Louder"
-                          min={0}
-                          max={1}
-                          step={0.1}
-                          valueFormatter={value => `${Math.round(value * 100)}%`}
-                        />
-                      </div>
-                    </div>
-                  </div>
+                  <BrowserTTSSettingsSection
+                    control={form.control}
+                    watch={form.watch}
+                    setValue={form.setValue}
+                  />
                 )}
               </div>
 
