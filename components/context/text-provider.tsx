@@ -9,6 +9,7 @@ interface TextContextType {
   setText: (value: string) => void;
   addWord: (value: string) => void;
   setCurrentWord: (value: string) => void;
+  appendText: (value: string) => void;
   reset: () => void;
 }
 

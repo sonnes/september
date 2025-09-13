@@ -16,21 +16,23 @@ export function useText() {
 
   const setCurrentWord = (value: string) => {
     if (text.length === 0) {
-      console.log('setting text', value);
       setText(value);
     } else {
       // remove the last word
       const tokens = tokenize(text);
       const lastWord = tokens[tokens.length - 1];
-      console.log('last word', lastWord);
-      console.log('value', value);
+
       setText(prev => prev + value.slice(lastWord.length) + ' ');
     }
+  };
+
+  const appendText = (value: string) => {
+    setText(prev => prev + value + ' ');
   };
 
   const reset = () => {
     setText('');
   };
 
-  return { text, setText, addWord, setCurrentWord, reset };
+  return { text, setText, addWord, setCurrentWord, reset, appendText };
 }

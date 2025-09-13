@@ -34,8 +34,6 @@ export default async function TalkPage() {
 
   const messages = user ? await messagesService.getMessages(user.id) : [];
 
-  const actions = <TalkActions />;
-
   return (
     <AccountProvider provider={provider} user={user!} account={account!}>
       <MessagesProvider provider={provider} messages={messages!}>
@@ -46,11 +44,11 @@ export default async function TalkPage() {
                 <Layout.Header>
                   <DesktopNav user={user} current="/talk" />
                   <MobileNav title="Talk" user={user} current="/talk">
-                    {actions}
+                    <TalkActions />
                   </MobileNav>
                   <div className="hidden md:flex items-center justify-between mb-4">
                     <h1 className="text-2xl font-bold tracking-tight text-white">Talk</h1>
-                    {actions}
+                    <TalkActions />
                   </div>
                 </Layout.Header>
 
@@ -74,17 +72,15 @@ export default async function TalkPage() {
                             <Recorder />
                           </div>
                         </div>
-                        {/* Top components - Autocomplete and Suggestions */}
-                        <div className="flex flex-col gap-2">
-                          <Autocomplete />
-                          <Suggestions />
-                        </div>
 
                         {/* Spacer to push editor to bottom */}
                         <div className="flex-1"></div>
 
                         {/* Editor at bottom */}
                         <div className="flex flex-col py-2">
+                          <Suggestions />
+
+                          <Autocomplete />
                           <Editor />
                         </div>
                       </div>

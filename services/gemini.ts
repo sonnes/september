@@ -41,27 +41,46 @@ The output should be markdown formatted text. Use --- to separate the chunks. On
 Do not include any other text in the output.
 `;
 
-const SUGGESTIONS_PROMPT = `You're a communication assistant for USER_A. USER_A is having a conversation with USER_B. You take the previous messages and complete the sentence USER_A is writing. 
+const SUGGESTIONS_PROMPT = `You're a communication assistant for USER_A. USER_A is having a conversation with USER_B. 
+You need to complete the sentence USER_A is writing. 
 
 Use the following instructions from USER_A to generate the sentence:
+<user_instructions>
 {USER_INSTRUCTIONS}
+</user_instructions>
 
 You must return completions and predictions in this exact JSON format:
-{
-  "replies": [
-    "reply1",
-    "reply2",
-    "reply3"
-  ]
-}
+<json_output>
+["suggestion1", "suggestion2", "suggestion3"]
+</json_output>
 
 Follow these rules:
-- Generate new, short concise replies based on context. Keep the replies varied.
-- Don't repeat the similar replies
-- Replies should fully complete the USER_A's sentence. If USER_A is not writing, you should generate a new sentence.
+<rules>
+- Generate short concise suggestions.
+- If last word is incomplete, only return the suggestions that complete the last word.
+- Keep the suggestions varied.
+- Use the context of the previous messages to generate the suggestions.
+- Don't repeat the similar suggestions
 - Use spellings, idioms, and slang of USER_A's language
 - Use emojis if appropriate
 - Return only the JSON, no other text
+</rules>
+
+<examples>
+<example>
+USER_A: "Been busy"
+USER_A: "I'm trying to"
+Suggestions: ["build a communication app", "do my homework", "get a job"]
+</example>
+<example>
+USER_B: "How are you?"
+USER_A: "I"
+Suggestions: ["am doing good", "have been busy", "was travelling"]
+</example>
+<example>
+USER_A: "It is un"
+Suggestions: ["fortunate that it happened", "lucky to have it"]
+</examples>
 `;
 
 const TRANSCRIPTION_PROMPT = `You are a speech-to-text transcription service. 
@@ -162,12 +181,10 @@ class GeminiService {
       content = content.replace('```json', '');
       content = content.replace('```', '');
 
-      const suggestions = JSON.parse(content) as {
-        replies: string[];
-      };
+      const suggestions = JSON.parse(content) as string[];
 
       return {
-        suggestions: suggestions.replies,
+        suggestions,
       };
     } catch (err) {
       console.error('Gemini suggestions error:', err);
