@@ -29,7 +29,7 @@ export function AISettingsSection({ control, setValue, watch }: SectionProps<AIS
   const gemini_api_key = watch('gemini_api_key');
 
   const handleGenerateCorpus = async () => {
-    const { corpus } = await generateCorpus(aiInstructions || '');
+    const corpus = await generateCorpus(aiInstructions || '');
     setValue('ai_corpus', corpus);
   };
 

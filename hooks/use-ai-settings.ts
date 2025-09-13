@@ -4,26 +4,28 @@ import { useEffect, useState } from 'react';
 
 import { useToast } from '@/hooks/use-toast';
 
+import { useAccount } from '@/services/account';
+import GeminiService from '@/services/gemini';
+
 export function useCorpus() {
+  const { account } = useAccount();
   const [isGenerating, setIsGenerating] = useState(false);
   const { showError } = useToast();
+
+  const gemini = new GeminiService(account?.gemini_api_key || '');
 
   const generateCorpus = async (persona: string) => {
     setIsGenerating(true);
 
     try {
-      const response = await fetch('/api/ai/generate-corpus', {
-        method: 'POST',
-        body: JSON.stringify({ persona }),
-      });
-      const data = await response.json();
+      const response = await gemini.generateCorpusFromPersona(persona);
 
-      if (!response.ok) {
-        showError(data.error);
+      if (!response) {
+        showError('Failed to generate corpus. Please try again.');
         return;
       }
 
-      return data;
+      return response;
     } catch (error) {
       console.error(error);
       showError('Failed to generate corpus. Please try again.');

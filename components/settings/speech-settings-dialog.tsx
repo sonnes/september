@@ -81,11 +81,10 @@ export function SpeechSettingsDialog() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 px-3 py-1 text-zinc-600 rounded-full transition-colors cursor-pointer hover:bg-zinc-100 border border-zinc-200"
+        className="flex items-center gap-2 px-1 py-1 text-zinc-800 rounded-full transition-colors cursor-pointer hover:bg-zinc-100 border border-zinc-200"
         aria-label="Open speech settings"
       >
         <AdjustmentsHorizontalIcon className="w-4 h-4" />
-        <span className="text-sm hidden md:block">Speech</span>
       </button>
       <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />

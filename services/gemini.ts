@@ -78,6 +78,15 @@ Guidelines:
 
 Return the transcription as plain text.`;
 
+const CORPUS_GENERATION_PROMPT = `You need to generate a corpus of synthetic data based on the persona. 
+The corpus should have wide variety of spoken phrases, sentences, expressions, etc. 
+Include emojis, slang, and other jargon.
+Include mix of formal and informal language.
+Include mix of short and long sentences.
+This data will be used to train an autocompletion system.
+Each sentence should be in a new line.
+The corpus should be in the same language as the persona.`;
+
 interface ExtractDeckParams {
   images: Blob[];
 }
@@ -257,6 +266,24 @@ class GeminiService {
     } catch (err) {
       console.error('Gemini OCR error:', err);
       throw new Error('Could not extract text from images');
+    }
+  }
+
+  async generateCorpusFromPersona(persona: string): Promise<string> {
+    try {
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: [{ parts: [{ text: persona }] }],
+        config: {
+          systemInstruction: CORPUS_GENERATION_PROMPT,
+          responseMimeType: 'text/plain',
+        },
+      });
+
+      return response.text || '';
+    } catch (err) {
+      console.error('Gemini corpus generation error:', err);
+      throw new Error('Could not generate corpus from persona');
     }
   }
 }
