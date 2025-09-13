@@ -83,3 +83,32 @@ export function useCreateMessage() {
 
   return { createMessage };
 }
+
+export function useSearchMessages() {
+  const { user } = useAccount();
+
+  const searchMessages = useCallback(
+    async (query: string) => {
+      if (!user) return [];
+
+      const q = await triplit
+        .query('messages')
+        .Where('text', 'like', `%${query.trim().toLowerCase()}%`)
+        .Order('created_at', 'DESC')
+        .Limit(10);
+
+      const result = await triplit.fetch(q);
+      return result.map(item => ({
+        id: item.id,
+        text: item.text,
+        type: item.type,
+        user_id: item.user_id,
+        created_at: item.created_at,
+        audio_path: item.audio_path || undefined,
+      })) as Message[];
+    },
+    [user]
+  );
+
+  return { searchMessages };
+}

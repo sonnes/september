@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { useToast } from '@/hooks/use-toast';
+
 import { useAccount } from '@/services/account/context';
+
 import supabase from '@/supabase/client';
 import { removeRealtimeSubscription, subscribeToUserMessages } from '@/supabase/realtime';
 import { CreateMessageData, Message } from '@/types/message';
@@ -92,4 +94,20 @@ export function useCreateMessage() {
   );
 
   return { createMessage };
+}
+
+export function useSearchMessages() {
+  const { user } = useAccount();
+
+  const searchMessages = useCallback(
+    async (query: string) => {
+      if (!user) return [];
+
+      const data = await messagesService.searchMessages(user.id, query);
+      return data as Message[];
+    },
+    [user]
+  );
+
+  return { searchMessages };
 }

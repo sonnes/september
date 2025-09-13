@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { useTextContext } from '@/components/context/text-provider';
+
 import { useToast } from '@/hooks/use-toast';
+
 import { useAccount } from '@/services/account/context';
 import GeminiService from '@/services/gemini';
 import { MessagesService, useMessages } from '@/services/messages';
+
 import supabase from '@/supabase/client';
 import { Message } from '@/types/message';
 import { Suggestion } from '@/types/suggestion';
@@ -20,20 +23,20 @@ export function useSuggestions(timeout: number = 3000): UseSuggestionsReturn {
   const { text } = useTextContext();
   const { messages } = useMessages();
   const { account } = useAccount();
-  const { showError } = useToast();
 
-  const [debouncedText, setDebouncedText] = useState(text);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [debouncedText, setDebouncedText] = useState(text);
   const [isLoading, setIsLoading] = useState(false);
 
   const gemini = new GeminiService(account?.gemini_api_key || '');
-  const messagesService = new MessagesService(supabase);
 
-  const fetchAISuggestions = useCallback(
+  const fetchSuggestions = useCallback(
     async (text: string, messages: Partial<Message>[]) => {
       if (!account?.gemini_api_key) {
         return;
       }
+
+      setIsLoading(true);
 
       try {
         const suggestions = await gemini.generateSuggestions({
@@ -42,42 +45,14 @@ export function useSuggestions(timeout: number = 3000): UseSuggestionsReturn {
           messages,
         });
 
-        return suggestions.suggestions.map(text => ({ text, audio_path: undefined }));
+        setSuggestions(suggestions.suggestions.map(text => ({ text, audio_path: undefined })));
+        setIsLoading(false);
       } catch (error) {
         console.error('Error fetching suggestions:', error);
-        showError('Failed to fetch suggestions');
-        return [];
+        setIsLoading(false);
       }
     },
     [account]
-  );
-
-  const searchMessages = useCallback(
-    async (text: string) => {
-      const messages = await messagesService.searchMessages(account.id, text);
-      return messages.map(message => ({
-        text: message.text,
-        audio_path: message.audio_path,
-      }));
-    },
-    [account]
-  );
-
-  const fetchSuggestions = useCallback(
-    async (text: string, messages: Partial<Message>[]) => {
-      setIsLoading(true);
-
-      const [hits, suggestions] = await Promise.all([
-        searchMessages(text),
-        fetchAISuggestions(text, messages),
-      ]);
-
-      const results = [...hits, ...(suggestions || [])];
-
-      setSuggestions(results);
-      setIsLoading(false);
-    },
-    [searchMessages, fetchAISuggestions]
   );
 
   const clearSuggestions = useCallback(() => {
@@ -109,5 +84,51 @@ export function useSuggestions(timeout: number = 3000): UseSuggestionsReturn {
     isLoading,
     fetchSuggestions,
     clearSuggestions,
+  };
+}
+
+interface UseSearchHistoryReturn {
+  history: Suggestion[];
+  isLoading: boolean;
+  fetchHistory: (text: string, messages: Partial<Message>[]) => Promise<void>;
+}
+
+export function useSearchHistory(timeout: number = 3000): UseSearchHistoryReturn {
+  const { text } = useTextContext();
+  const { searchMessages } = useMessages();
+
+  const [history, setHistory] = useState<Suggestion[]>([]);
+  const [debouncedText, setDebouncedText] = useState(text);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const fetchHistory = useCallback(
+    async (text: string) => {
+      setIsLoading(true);
+
+      const history = await searchMessages(text);
+      setHistory(history.map(m => ({ text: m.text, audio_path: m.audio_path })));
+      setIsLoading(false);
+    },
+    [searchMessages]
+  );
+
+  useEffect(() => {
+    if (text.trim().length === 0) return;
+    fetchHistory(debouncedText);
+  }, [debouncedText, fetchHistory]);
+
+  useEffect(() => {
+    if (text.trim().length === 0) return;
+
+    const timeoutId = setTimeout(() => {
+      setDebouncedText(text);
+    }, timeout);
+    return () => clearTimeout(timeoutId);
+  }, [text]);
+
+  return {
+    history,
+    isLoading,
+    fetchHistory,
   };
 }

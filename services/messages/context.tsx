@@ -7,16 +7,19 @@ import type { CreateMessageData, Message } from '@/types/message';
 import {
   useCreateMessage as useCreateMessageSupabase,
   useMessages as useMessagesSupabase,
+  useSearchMessages as useSearchMessagesSupabase,
 } from './use-supabase';
 import {
   useCreateMessage as useCreateMessageTriplit,
   useMessages as useMessagesTriplit,
+  useSearchMessages as useSearchMessagesTriplit,
 } from './use-triplit';
 
 interface MessagesContextType {
   messages: Message[];
   getMessages: () => Promise<Message[] | undefined>;
   createMessage: (message: CreateMessageData) => Promise<Message | undefined>;
+  searchMessages: (query: string) => Promise<Message[]>;
 }
 
 const MessagesContext = createContext<MessagesContextType | undefined>(undefined);
@@ -41,8 +44,11 @@ export function MessagesProvider(props: MessagesProviderProps) {
   const { createMessage } =
     props.provider === 'supabase' ? useCreateMessageSupabase() : useCreateMessageTriplit();
 
+  const { searchMessages } =
+    props.provider === 'supabase' ? useSearchMessagesSupabase() : useSearchMessagesTriplit();
+
   return (
-    <MessagesContext.Provider value={{ ...messagesData, createMessage }}>
+    <MessagesContext.Provider value={{ ...messagesData, createMessage, searchMessages }}>
       {props.children}
     </MessagesContext.Provider>
   );
