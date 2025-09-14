@@ -11,8 +11,46 @@ const notoSans = Noto_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'September',
-  description: 'September',
+  title: {
+    default: 'September - Communication Assistant',
+    template: '%s | September - Communication Assistant',
+  },
+  description:
+    'September is a communication assistant for people living with neurodegenerative conditions like ALS, MND, or other speech & motor difficulties.',
+  openGraph: {
+    title: 'September - Communication Assistant',
+    description:
+      'September is a communication assistant for people living with neurodegenerative conditions like ALS, MND, or other speech & motor difficulties.',
+    url: 'https://september-one.vercel.app',
+    siteName: 'September - Communication Assistant',
+    // images: [
+    //   {
+    //     url: 'https://september-one.vercel.app/og.png',
+    //     width: 1920,
+    //     height: 1080,
+    //   },
+    // ],
+    locale: 'en-US',
+    type: 'website',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  twitter: {
+    title: 'September - Communication Assistant',
+    card: 'summary_large_image',
+  },
+  icons: {
+    shortcut: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({

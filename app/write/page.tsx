@@ -5,12 +5,16 @@ import { DocumentsProvider } from '@/components/context/documents-provider';
 import Layout from '@/components/layout';
 import { DesktopNav, MobileNav } from '@/components/nav';
 import DocumentsSidebar from '@/components/write/sidebar';
+
 import { AccountProvider } from '@/services/account/context';
 import AccountsService from '@/services/account/supabase';
+
 import { createClient } from '@/supabase/server';
 
 export const metadata: Metadata = {
-  title: 'Write - September',
+  title: 'Write',
+  description:
+    "Create and edit documents with September's writing assistant and text-to-speech features.",
 };
 
 export default async function WritePage() {

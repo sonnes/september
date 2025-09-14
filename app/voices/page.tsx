@@ -1,3 +1,5 @@
+import type { Metadata } from 'next';
+
 import Layout from '@/components/layout';
 import { DesktopNav, MobileNav } from '@/components/nav';
 import VoicesPageWrapper from '@/components/voices/voices-page-wrapper';
@@ -6,6 +8,11 @@ import { AccountProvider, AccountService } from '@/services/account';
 import { SpeechProvider } from '@/services/speech/context';
 
 import { createClient } from '@/supabase/server';
+
+export const metadata: Metadata = {
+  title: 'Voices',
+  description: 'Manage and customize your voice settings for text-to-speech communication.',
+};
 
 export default async function VoicesPage({
   searchParams,

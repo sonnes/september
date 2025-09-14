@@ -21,7 +21,8 @@ import { SpeechProvider } from '@/services/speech';
 import { createClient } from '@/supabase/server';
 
 export const metadata: Metadata = {
-  title: 'Talk - September',
+  title: 'Talk',
+  description: 'Use voice-to-text and text-to-speech to communicate with others using September.',
 };
 
 export default async function TalkPage() {

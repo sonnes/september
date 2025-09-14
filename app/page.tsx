@@ -1,5 +1,6 @@
 import React from 'react';
 
+import type { Metadata } from 'next';
 import { Caveat } from 'next/font/google';
 
 import { BentoCardsSection } from '@/components/home/bento-cards-section';
@@ -15,20 +16,23 @@ const caveat = Caveat({
   variable: '--font-caveat',
 });
 
-export const metadata = {
+export const metadata: Metadata = {
+  title: 'September - Communication Assistant',
+  description:
+    'A communication assistant for people with ALS, MND, or other speech & motor difficulties.',
   openGraph: {
     title: 'September - Communication Assistant',
     description:
       'A communication assistant for people with ALS, MND, or other speech & motor difficulties.',
-    url: 'https://september.raviatluri.in',
-    siteName: 'September',
-    images: [
-      {
-        url: '/og',
-        width: 1200,
-        height: 630,
-      },
-    ],
+    url: 'https://september-one.vercel.app',
+    siteName: 'September - Communication Assistant',
+    // images: [
+    //   {
+    //     url: '/og',
+    //     width: 1200,
+    //     height: 630,
+    //   },
+    // ],
     locale: 'en_US',
     type: 'website',
   },

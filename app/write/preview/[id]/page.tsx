@@ -3,12 +3,19 @@ import { redirect } from 'next/navigation';
 
 import { DocumentsProvider } from '@/components/context/documents-provider';
 import SlidesPresentation from '@/components/write/slides-presentation';
+
 import { AccountProvider } from '@/services/account/context';
 import AccountsService from '@/services/account/supabase';
+
 import { createClient } from '@/supabase/server';
 
 export const metadata: Metadata = {
-  title: 'Slides Preview - September',
+  title: 'Slides Preview',
+  description: "Preview your presentation slides with September's slide presentation feature.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 interface PreviewPageProps {

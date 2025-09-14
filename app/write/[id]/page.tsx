@@ -6,12 +6,16 @@ import Layout from '@/components/layout';
 import { DesktopNav, MobileNav } from '@/components/nav';
 import Document from '@/components/write/document';
 import DocumentsSidebar from '@/components/write/sidebar';
+
 import { AccountProvider } from '@/services/account/context';
 import AccountsService from '@/services/account/supabase';
+
 import { createClient } from '@/supabase/server';
 
 export const metadata: Metadata = {
-  title: 'Write - September',
+  title: 'Write',
+  description:
+    "Create and edit documents with September's writing assistant and text-to-speech features.",
 };
 
 export default async function DocumentPage({ params }: { params: Promise<{ id: string }> }) {

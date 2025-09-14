@@ -1,3 +1,5 @@
+import type { Metadata } from 'next';
+
 import Layout from '@/components/layout';
 import { DesktopNav, MobileNav } from '@/components/nav';
 
@@ -7,6 +9,11 @@ import { SpeechProvider } from '@/services/speech';
 import { createClient } from '@/supabase/server';
 
 import SettingsForm from './form';
+
+export const metadata: Metadata = {
+  title: 'Settings',
+  description: 'Configure your September communication assistant settings and preferences.',
+};
 
 export default async function SettingsPage() {
   const supabase = await createClient();

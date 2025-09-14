@@ -1,11 +1,23 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
 import { AudioPlayerProvider } from '@/hooks/use-audio-player';
+
 import { AccountProvider } from '@/services/account/context';
 import AccountsService from '@/services/account/supabase';
+
 import { createClient } from '@/supabase/server';
 
 import MonitorClient from './monitor-client';
+
+export const metadata: Metadata = {
+  title: 'Monitor',
+  description: 'Monitor communication activity and usage statistics.',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 interface MonitorPageProps {
   params: Promise<{ userid: string }>;
