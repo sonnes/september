@@ -4,6 +4,7 @@ import { useAccount } from '@/services/account/context';
 import { useMessages } from '@/services/messages';
 
 import { Autocomplete } from '@/lib/autocomplete';
+import { tokenize } from '@/lib/autocomplete/utils';
 
 // Cache for static data to avoid refetching
 let cachedDictionary: any = null;
@@ -99,7 +100,10 @@ export function useAutocomplete(): UseAutocompleteReturn {
         return [];
       }
 
-      const spellings = autocomplete.getCompletions(query) || [];
+      const tokens = tokenize(query);
+      const lastToken = tokens[tokens.length - 1];
+
+      const spellings = autocomplete.getCompletions(lastToken) || [];
 
       return spellings.map(spelling => spelling.toLowerCase());
     },
@@ -112,7 +116,10 @@ export function useAutocomplete(): UseAutocompleteReturn {
         return [];
       }
 
-      const nextWords = autocomplete.getNextWord(query) || [];
+      const tokens = tokenize(query);
+      const last3Tokens = tokens.slice(-3).join(' ');
+
+      const nextWords = autocomplete.getNextWord(last3Tokens) || [];
 
       return nextWords;
     },

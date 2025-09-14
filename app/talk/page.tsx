@@ -5,6 +5,7 @@ import { TextProvider } from '@/components/context/text-provider';
 import Autocomplete from '@/components/editor/autocomplete';
 import Editor from '@/components/editor/simple';
 import Suggestions from '@/components/editor/suggestions';
+import { QwertyKeyboard } from '@/components/keyboards';
 import Layout from '@/components/layout';
 import { DesktopNav, MobileNav } from '@/components/nav';
 import { MessageList, TalkActions } from '@/components/talk';
@@ -83,6 +84,9 @@ export default async function TalkPage() {
 
                           <Autocomplete />
                           <Editor />
+
+                          {/* QWERTY Keyboard */}
+                          <QwertyKeyboard />
                         </div>
                       </div>
                     </div>
