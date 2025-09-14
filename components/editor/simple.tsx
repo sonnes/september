@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { useTextContext } from '@/components/context/text-provider';
+import { KeyboardSelector } from '@/components/keyboards';
 import {
   AISettingsDialog,
   SpeechProviderDialog,
@@ -80,6 +81,7 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
       </div>
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
+          <KeyboardSelector />
           <SpeechProviderDialog />
           <AISettingsDialog />
           <SpeechSettingsDialog />
