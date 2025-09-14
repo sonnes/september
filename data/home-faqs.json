@@ -1,17 +1,47 @@
 [
   {
     "id": 1,
-    "question": "How do I get started with September?",
-    "answer": "First, register a free account with us. From our homepage, click on \"Clone your Voice\". This page will allow you to record your voice or use an existing recording. For more details on voice cloning go here <Add link> to voice cloning. After your voice is ready, click on \"Start Talking\" on our homepage to start using your voice and communicate."
+    "question": "Do I need to download or install anything?",
+    "answer": "No, September works in any modern web browser on desktop or mobile devices."
   },
   {
     "id": 2,
-    "question": "Do you charge a fee?",
-    "answer": "September is completely free for anyone to use. September is supported by ElevenLabs, who provide the voice cloning & text-to-speech technology."
+    "question": "Can I use my existing assistive devices?",
+    "answer": "Yes, September is compatible with head-mounted mice, eye-tracking devices, and other assistive technologies."
   },
   {
     "id": 3,
-    "question": "What devices are supported?",
-    "answer": "September works on any modern web browser across desktop and mobile devices. We also support various input methods including touch, keyboard, mouse, and eye-tracking devices."
+    "question": "How does voice cloning work?",
+    "answer": "You can record your voice directly or upload existing audio/video files. September uses ElevenLabs technology to create a natural-sounding voice clone."
+  },
+  {
+    "id": 4,
+    "question": "What if I can no longer speak clearly?",
+    "answer": "You can use old recordings, videos, or voicemails to clone your voice. You can also choose from community and professional voices."
+  },
+  {
+    "id": 5,
+    "question": "Does it work with video calling apps?",
+    "answer": "Yes, September can output audio that works with FaceTime, Zoom, and other video calling applications."
+  },
+  {
+    "id": 6,
+    "question": "How does the smart text editor learn my style?",
+    "answer": "The editor analyzes your message history and writing patterns to provide increasingly accurate suggestions over time."
+  },
+  {
+    "id": 7,
+    "question": "Is my data private?",
+    "answer": "Yes, your conversations and personal data are encrypted and never shared. You control what information September can access."
+  },
+  {
+    "id": 8,
+    "question": "Can I add context for specific conversations?",
+    "answer": "Absolutely. You can add notes, documents, images, and links to help September understand context and suggest more relevant responses."
+  },
+  {
+    "id": 9,
+    "question": "What languages are supported?",
+    "answer": "September supports multiple languages for both text suggestions and voice synthesis. Check our documentation for the full list."
   }
 ]

@@ -6,10 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Core Commands
 
-- `bun dev` - Start development server
-- `bun build` - Build production application
-- `bun start` - Start production server
-- `bun lint` - Run ESLint for code quality checks
+- `bun run dev` - Start development server
+- `bun run build` - Build production application
+- `bun run start` - Start production server
+- `bun run lint` - Run ESLint for code quality checks
 
 ### Database Operations
 

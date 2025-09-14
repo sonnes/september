@@ -1,29 +1,27 @@
 import React from 'react';
 
 import type { Metadata } from 'next';
-import { Caveat } from 'next/font/google';
 
-import { BentoCardsSection } from '@/components/home/bento-cards-section';
-import { CTASection } from '@/components/home/cta-section';
+import { EnhancedCTASection } from '@/components/home/enhanced-cta-section';
 import { FAQSection } from '@/components/home/faq-section';
 import { FeaturesSection } from '@/components/home/features-section';
 import { Footer } from '@/components/home/footer';
 import { HeroSection } from '@/components/home/hero-section';
+import { HowItWorksSection } from '@/components/home/how-it-works-section';
 import { Navbar } from '@/components/home/navbar';
-
-const caveat = Caveat({
-  subsets: ['latin'],
-  variable: '--font-caveat',
-});
+import { PersonalStoryBanner } from '@/components/home/personal-story-banner';
+import { ProblemStatementSection } from '@/components/home/problem-statement-section';
+import { TechnologySection } from '@/components/home/technology-section';
+import { UseCasesSection } from '@/components/home/use-cases-section';
 
 export const metadata: Metadata = {
-  title: 'September - Communication Assistant',
+  title: 'September - Your Voice, Your Way',
   description:
-    'A communication assistant for people with ALS, MND, or other speech & motor difficulties.',
+    'A communication assistant for people living with ALS, MND, and other speech & motor difficulties.',
   openGraph: {
-    title: 'September - Communication Assistant',
+    title: 'September - Your Voice, Your Way',
     description:
-      'A communication assistant for people with ALS, MND, or other speech & motor difficulties.',
+      'A communication assistant for people living with ALS, MND, and other speech & motor difficulties.',
     url: 'https://september-one.vercel.app',
     siteName: 'September - Communication Assistant',
     // images: [
@@ -41,14 +39,17 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <main className="bg-stone-100 min-h-screen">
+    <main className="bg-white min-h-screen">
       <Navbar />
-      <HeroSection caveat={caveat} />
+      <HeroSection />
+      <ProblemStatementSection />
+      {/* <PersonalStoryBanner /> */}
       <FeaturesSection />
-      {/* <HighlightCards /> */}
-      <BentoCardsSection />
-      <CTASection />
+      <HowItWorksSection />
+      <UseCasesSection />
+      <TechnologySection />
       <FAQSection />
+      <EnhancedCTASection />
       <Footer />
     </main>
   );

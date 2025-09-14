@@ -1,4 +1,4 @@
-import { CircleKey, ControlButton } from './types';
+import { ControlButton } from './types';
 
 export const CONTROL_BUTTONS: ControlButton[] = [
   { key: 'Special', label: '@$%', width: 60 },
