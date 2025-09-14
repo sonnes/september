@@ -5,6 +5,11 @@ import { useMessages } from '@/services/messages';
 
 import { Autocomplete } from '@/lib/autocomplete';
 
+// Cache for static data to avoid refetching
+let cachedDictionary: any = null;
+let cachedCorpus: string | null = null;
+let isLoadingStaticData = false;
+
 interface UseAutocompleteReturn {
   isReady: boolean;
   getSpellings: (query: string) => string[];
@@ -14,20 +19,79 @@ interface UseAutocompleteReturn {
 export function useAutocomplete(): UseAutocompleteReturn {
   const { account } = useAccount();
   const { messages } = useMessages();
+  const [autocomplete, setAutocomplete] = useState<Autocomplete>(new Autocomplete());
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  const autocomplete = useMemo(() => {
-    const autocomplete = new Autocomplete();
-    if (!account?.ai_corpus && !messages.length) {
-      return autocomplete;
-    }
+  const retrainAutocomplete = useCallback(() => {
+    if (!cachedDictionary || !cachedCorpus) return;
 
+    // Create training text with default data first, then user data
     const messagesText = messages.map(m => m.text).join('\n');
-    const trainingText = (account?.ai_corpus || '') + '\n' + messagesText;
+    const userCorpus = account?.ai_corpus || '';
+    const trainingText = cachedCorpus + '\n' + userCorpus + '\n' + messagesText;
 
-    autocomplete.train(trainingText);
-
-    return autocomplete;
+    const newAutocomplete = new Autocomplete();
+    newAutocomplete.train(trainingText);
+    setAutocomplete(newAutocomplete);
+    setIsInitialized(true);
   }, [account, messages]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        let dictionary = cachedDictionary;
+        let defaultCorpus = cachedCorpus;
+
+        // Only fetch static data if not cached
+        if (!dictionary || !defaultCorpus) {
+          if (isLoadingStaticData) {
+            // Wait for ongoing fetch to complete
+            const checkCache = () => {
+              if (cachedDictionary && cachedCorpus) {
+                retrainAutocomplete();
+              } else {
+                setTimeout(checkCache, 100);
+              }
+            };
+            checkCache();
+            return;
+          }
+
+          isLoadingStaticData = true;
+          try {
+            const [dictResponse, corpusResponse] = await Promise.all([
+              fetch('/dictionary.json'),
+              fetch('/corpus.txt'),
+            ]);
+
+            dictionary = await dictResponse.json();
+            defaultCorpus = await corpusResponse.text();
+
+            // Cache the static data
+            cachedDictionary = dictionary;
+            cachedCorpus = defaultCorpus;
+          } finally {
+            isLoadingStaticData = false;
+          }
+        }
+
+        retrainAutocomplete();
+      } catch (error) {
+        console.warn('Failed to load default dictionary/corpus, using fallback:', error);
+        // Fallback to user data only if default loading fails
+        if (account?.ai_corpus || messages.length) {
+          const messagesText = messages.map(m => m.text).join('\n');
+          const trainingText = (account?.ai_corpus || '') + '\n' + messagesText;
+          const newAutocomplete = new Autocomplete();
+          newAutocomplete.train(trainingText);
+          setAutocomplete(newAutocomplete);
+        }
+        setIsInitialized(true);
+      }
+    };
+
+    loadData();
+  }, [retrainAutocomplete]);
 
   const getSpellings = useCallback(
     (query: string) => {
@@ -56,7 +120,7 @@ export function useAutocomplete(): UseAutocompleteReturn {
   );
 
   return {
-    isReady: autocomplete.isReady(),
+    isReady: isInitialized && autocomplete.isReady(),
     getSpellings,
     getNextWords,
   };
