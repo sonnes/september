@@ -9,7 +9,6 @@ import { Footer } from '@/components/home/footer';
 import { HeroSection } from '@/components/home/hero-section';
 import { HowItWorksSection } from '@/components/home/how-it-works-section';
 import { Navbar } from '@/components/home/navbar';
-import { PersonalStoryBanner } from '@/components/home/personal-story-banner';
 import { ProblemStatementSection } from '@/components/home/problem-statement-section';
 import { TechnologySection } from '@/components/home/technology-section';
 import { UseCasesSection } from '@/components/home/use-cases-section';
