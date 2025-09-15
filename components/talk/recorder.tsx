@@ -6,9 +6,10 @@ import { ArrowPathIcon, MicrophoneIcon, StopIcon } from '@heroicons/react/24/out
 import { useMicVAD, utils } from '@ricky0123/vad-react';
 import { v4 as uuidv4 } from 'uuid';
 
-import { cn } from '@/lib/utils';
 import { useAccount } from '@/services/account/context';
 import { useMessages } from '@/services/messages';
+
+import { cn } from '@/lib/utils';
 
 function VADController({ onSpeechEnd }: { onSpeechEnd: (blob: Blob) => Promise<void> }) {
   const { listening, loading, toggle } = useMicVAD({
@@ -55,7 +56,7 @@ function VADController({ onSpeechEnd }: { onSpeechEnd: (blob: Blob) => Promise<v
 export default function Recorder() {
   const [vadActive, setVadActive] = useState(false);
   const { createMessage } = useMessages();
-  const { user } = useAccount();
+  const { account, user } = useAccount();
 
   const handleSpeechEnd = async (wav: Blob) => {
     const formData = new FormData();
@@ -85,6 +86,8 @@ export default function Recorder() {
     setVadActive(active => !active);
   };
 
+  const isDisabled = !account?.gemini_api_key?.trim();
+
   return (
     <div className="flex items-center">
       {vadActive ? (
@@ -93,7 +96,11 @@ export default function Recorder() {
         <button
           onClick={toggleRecording}
           title="Start recording"
-          className="flex items-center gap-2 px-2 py-4 cursor-pointer group hover:bg-zinc-100"
+          disabled={isDisabled}
+          className={cn(
+            'flex items-center gap-2 px-2 py-4 group ',
+            isDisabled ? 'cursor-not-allowed text-zinc-500' : 'cursor-pointer hover:bg-zinc-100'
+          )}
         >
           <MicrophoneIcon className="h-4 w-4" /> <span className="text-sm">Listen</span>
         </button>

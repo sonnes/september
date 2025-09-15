@@ -20,14 +20,9 @@
     "answer": "You can use old recordings, videos, or voicemails to clone your voice. You can also choose from community and professional voices."
   },
   {
-    "id": 5,
-    "question": "Does it work with video calling apps?",
-    "answer": "Yes, September can output audio that works with FaceTime, Zoom, and other video calling applications."
-  },
-  {
     "id": 6,
     "question": "How does the smart text editor learn my style?",
-    "answer": "The editor analyzes your message history and writing patterns to provide increasingly accurate suggestions over time."
+    "answer": "The editor uses your message history and writing patterns to provide increasingly accurate suggestions over time."
   },
   {
     "id": 7,

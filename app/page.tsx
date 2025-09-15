@@ -14,7 +14,7 @@ import { TechnologySection } from '@/components/home/technology-section';
 import { UseCasesSection } from '@/components/home/use-cases-section';
 
 export const metadata: Metadata = {
-  title: 'September - Your Voice, Your Way',
+  title: 'September - Faster Communication , Fewer Keystrokes',
   description:
     'A communication assistant for people living with ALS, MND, and other speech & motor difficulties.',
   openGraph: {
