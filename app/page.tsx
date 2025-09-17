@@ -13,6 +13,13 @@ import { ProblemStatementSection } from '@/components/home/problem-statement-sec
 import { TechnologySection } from '@/components/home/technology-section';
 import { UseCasesSection } from '@/components/home/use-cases-section';
 
+import { AudioPlayerProvider } from '@/hooks/use-audio-player';
+
+import { AccountProvider } from '@/services/account';
+import { AudioProvider } from '@/services/audio';
+import { MessagesProvider } from '@/services/messages';
+import { SpeechProvider } from '@/services/speech';
+
 export const metadata: Metadata = {
   title: 'September - Faster Communication , Fewer Keystrokes',
   description:
@@ -37,19 +44,31 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
+  const provider = 'triplit';
+
   return (
-    <main className="bg-white min-h-screen">
-      <Navbar />
-      <HeroSection />
-      <ProblemStatementSection />
-      {/* <PersonalStoryBanner /> */}
-      <FeaturesSection />
-      <HowItWorksSection />
-      <UseCasesSection />
-      <TechnologySection />
-      <FAQSection />
-      <EnhancedCTASection />
-      <Footer />
-    </main>
+    <AccountProvider provider={provider}>
+      <MessagesProvider provider={provider}>
+        <AudioProvider provider={provider}>
+          <SpeechProvider>
+            <AudioPlayerProvider>
+              <main className="bg-white min-h-screen">
+                <Navbar />
+                <HeroSection />
+                {/* <ProblemStatementSection /> */}
+                {/* <PersonalStoryBanner /> */}
+                <FeaturesSection />
+                <HowItWorksSection />
+                <UseCasesSection />
+                <TechnologySection />
+                <FAQSection />
+                <EnhancedCTASection />
+              </main>
+              <Footer />
+            </AudioPlayerProvider>
+          </SpeechProvider>
+        </AudioProvider>
+      </MessagesProvider>
+    </AccountProvider>
   );
 }

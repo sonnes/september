@@ -21,18 +21,18 @@ export function KeyboardDemo() {
     <KeyboardProvider defaultKeyboardType="qwerty">
       <TextProvider>
         <div className="w-full">
-          <div className="bg-gradient-to-r from-orange-100 to-red-100 rounded-2xl p-8 hover:shadow-lg transition-shadow">
+          <div className="bg-orange-100 rounded-2xl p-8 hover:shadow-lg transition-shadow">
             <div className="bg-white rounded-lg p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-lg font-semibold text-gray-900">Try the Keyboards</h4>
                 <KeyboardSelector />
               </div>
 
-              <div className="mb-4">
-                <KeyboardRenderer />
-              </div>
               <div>
                 <TextDisplay />
+              </div>
+              <div className="mb-4">
+                <KeyboardRenderer />
               </div>
               <div className="text-xs text-gray-500 text-center">
                 Click on the keyboard selector above to switch between QWERTY, Circular, or no

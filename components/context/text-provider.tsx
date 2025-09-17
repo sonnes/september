@@ -15,8 +15,14 @@ interface TextContextType {
 
 const TextContext = createContext<TextContextType | undefined>(undefined);
 
-export function TextProvider({ children }: { children: ReactNode }) {
-  const value = useText();
+export function TextProvider({
+  children,
+  defaultText = '',
+}: {
+  children: ReactNode;
+  defaultText?: string;
+}) {
+  const value = useText(defaultText);
 
   return <TextContext.Provider value={value}>{children}</TextContext.Provider>;
 }

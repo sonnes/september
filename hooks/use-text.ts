@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 
 import { tokenize } from '@/lib/autocomplete';
 
-export function useText() {
-  const [text, setText] = useState('');
+export function useText(defaultText = '') {
+  const [text, setText] = useState(defaultText);
 
   const addWord = (value: string) => {
     // if the last character is a space, add the new word
