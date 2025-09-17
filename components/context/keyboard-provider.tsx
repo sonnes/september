@@ -11,8 +11,14 @@ interface KeyboardContextType {
 
 const KeyboardContext = createContext<KeyboardContextType | undefined>(undefined);
 
-export function KeyboardProvider({ children }: { children: ReactNode }) {
-  const [keyboardType, setKeyboardType] = useState<KeyboardType>('none');
+export function KeyboardProvider({
+  defaultKeyboardType = 'none',
+  children,
+}: {
+  defaultKeyboardType?: KeyboardType;
+  children: ReactNode;
+}) {
+  const [keyboardType, setKeyboardType] = useState<KeyboardType>(defaultKeyboardType);
 
   return (
     <KeyboardContext.Provider value={{ keyboardType, setKeyboardType }}>

@@ -13,9 +13,7 @@ export function ProblemStatementSection() {
               </svg>
             </div>
             <h3 className="text-xl font-semibold mb-2">Daily Conversations</h3>
-            <p className="text-gray-600">
-              Asking for water shouldn&rsquo;t require typing full sentences
-            </p>
+            <p className="text-gray-600">Asking for water shouldn&rsquo;t require 21 clicks</p>
           </div>
           <div className="text-center">
             <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -24,7 +22,7 @@ export function ProblemStatementSection() {
               </svg>
             </div>
             <h3 className="text-xl font-semibold mb-2">Video Calls</h3>
-            <p className="text-gray-600">Stay connected with family using your own voice</p>
+            <p className="text-gray-600">Stay connected with your own voice</p>
           </div>
           <div className="text-center">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -33,7 +31,7 @@ export function ProblemStatementSection() {
               </svg>
             </div>
             <h3 className="text-xl font-semibold mb-2">Sharing Stories</h3>
-            <p className="text-gray-600">Express longer thoughts without exhaustion</p>
+            <p className="text-gray-600">Narrate longer stories without exhaustion</p>
           </div>
         </div>
       </div>

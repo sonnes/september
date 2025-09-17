@@ -1,3 +1,5 @@
+import { KeyboardDemo } from './keyboard-demo';
+
 export function FeaturesSection() {
   return (
     <section id="features" className="py-20 bg-white">
@@ -250,48 +252,10 @@ export function FeaturesSection() {
                 </svg>
                 <span className="text-gray-700">Minimize clicks and movements</span>
               </li>
-              <li className="flex items-start">
-                <svg
-                  className="w-6 h-6 text-orange-600 mt-1 mr-3 flex-shrink-0"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                </svg>
-                <span className="text-gray-700">Works with assistive devices</span>
-              </li>
             </ul>
           </div>
           <div className="lg:w-1/2">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-gray-100 rounded-xl p-4 hover:shadow-lg transition-shadow">
-                <p className="text-sm font-semibold mb-2 text-gray-700">QWERTY</p>
-                <div className="grid grid-cols-10 gap-1 text-xs">
-                  <span className="bg-white p-1 text-center rounded text-gray-700">Q</span>
-                  <span className="bg-white p-1 text-center rounded text-gray-700">W</span>
-                  <span className="bg-white p-1 text-center rounded text-gray-700">E</span>
-                  <span className="bg-white p-1 text-center rounded text-gray-700">R</span>
-                  <span className="bg-white p-1 text-center rounded text-gray-700">T</span>
-                  <span className="bg-white p-1 text-center rounded text-gray-700">Y</span>
-                  <span className="bg-white p-1 text-center rounded text-gray-700">U</span>
-                  <span className="bg-white p-1 text-center rounded text-gray-700">I</span>
-                  <span className="bg-white p-1 text-center rounded text-gray-700">O</span>
-                  <span className="bg-white p-1 text-center rounded text-gray-700">P</span>
-                </div>
-              </div>
-              <div className="bg-gray-100 rounded-xl p-4 hover:shadow-lg transition-shadow">
-                <p className="text-sm font-semibold mb-2 text-gray-700">Circular</p>
-                <div className="flex justify-center">
-                  <div className="relative w-20 h-20">
-                    <div className="absolute inset-0 rounded-full border-4 border-purple-300"></div>
-                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 w-3 h-3 bg-purple-600 rounded-full"></div>
-                    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1 w-3 h-3 bg-purple-400 rounded-full"></div>
-                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-3 h-3 bg-purple-400 rounded-full"></div>
-                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1 w-3 h-3 bg-purple-400 rounded-full"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <KeyboardDemo />
           </div>
         </div>
       </div>
