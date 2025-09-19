@@ -19,7 +19,7 @@ interface UseSuggestionsReturn {
   clearSuggestions: () => void;
 }
 
-export function useSuggestions(timeout: number = 3000): UseSuggestionsReturn {
+export function useSuggestions(timeout: number = 1000): UseSuggestionsReturn {
   const { text } = useTextContext();
   const { messages } = useMessages();
   const { account } = useAccount();
@@ -61,7 +61,7 @@ export function useSuggestions(timeout: number = 3000): UseSuggestionsReturn {
 
   // Auto-fetch suggestions when debounced text changes
   useEffect(() => {
-    if (text.trim().length === 0) return;
+    if (debouncedText.trim().length === 0) return;
 
     fetchSuggestions(
       debouncedText,

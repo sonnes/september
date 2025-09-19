@@ -51,35 +51,41 @@ Use the following instructions from USER_A to generate the sentence:
 
 You must return completions and predictions in this exact JSON format:
 <json_output>
-["suggestion1", "suggestion2", "suggestion3"]
+  ["suggestion1", "suggestion2", "suggestion3"]
 </json_output>
 
 Follow these rules:
 <rules>
-- Generate short concise suggestions.
-- If last word is incomplete, only return the suggestions that complete the last word.
-- Keep the suggestions varied.
-- Use the context of the previous messages to generate the suggestions.
-- Don't repeat the similar suggestions
-- Use spellings, idioms, and slang of USER_A's language
-- Use emojis if appropriate
-- Return only the JSON, no other text
+  - Generate short concise suggestions.
+  - If last message is empty, return full sentence suggestions.
+  - If last message is not empty, return suggestions that complete the message.
+  - Keep the suggestions varied.
+  - Use the context of the previous messages to generate the suggestions.
+  - Don't repeat the similar suggestions
+  - Use spellings, idioms, and slang of USER_A's language
+  - Use emojis if appropriate
+  - Return only the JSON, no other text
 </rules>
 
 <examples>
-<example>
-USER_A: "Been busy"
-USER_A: "I'm trying to"
-Suggestions: ["build a communication app", "do my homework", "get a job"]
-</example>
-<example>
-USER_B: "How are you?"
-USER_A: "I"
-Suggestions: ["am doing good", "have been busy", "was travelling"]
-</example>
-<example>
-USER_A: "It is un"
-Suggestions: ["fortunate that it happened", "lucky to have it"]
+  <example>
+    USER_A: "Been busy"
+    USER_A: "I'm trying to"
+    Suggestions: ["build a communication app", "do my homework", "get a job"]
+  </example>
+  <example>
+    USER_B: "How are you?"
+    USER_A: "I"
+    Suggestions: ["am doing good", "have been busy", "was travelling"]
+  </example>
+  <example>
+    USER_A: "It is un"
+    Suggestions: ["fortunate that it happened", "lucky to have it"]
+  </example>
+  <example>
+    USER_A: "I have been working on a new project"
+    Suggestions: ["Let me show you", "But I'm not sure how to do it", "It has been a lot of work"]
+  </example>
 </examples>
 `;
 

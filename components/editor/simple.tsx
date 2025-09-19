@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 
 import { useAudioPlayer } from '@/hooks/use-audio-player';
+import { useSuggestions } from '@/hooks/use-suggestions';
 
 import { useAccount } from '@/services/account/context';
 import { useAudio } from '@/services/audio';
@@ -31,6 +32,7 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
   const { generateSpeech } = useSpeech();
   const { enqueue } = useAudioPlayer();
   const { uploadAudio } = useAudio();
+  const { clearSuggestions } = useSuggestions();
 
   const [status, setStatus] = useState<'idle' | 'loading'>('idle');
 
@@ -53,6 +55,7 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
 
     setStatus('idle');
     reset();
+    clearSuggestions();
   };
 
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

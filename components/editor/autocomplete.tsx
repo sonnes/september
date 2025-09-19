@@ -34,12 +34,18 @@ export default function Autocomplete({ className = '' }: AutocompleteProps) {
     } else {
       setCurrentWord(suggestion);
     }
+
     setWords([]);
   };
 
   // Update suggestions when text changes
   useEffect(() => {
-    if (!isReady || !text.trim().length) return;
+    if (!isReady) return;
+
+    if (text.trim().length === 0) {
+      setWords([]);
+      return;
+    }
 
     if (shouldTriggerPhrasePrediction(text)) {
       const words = getNextWords(text);
