@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 
 import AudioPlayer from '@/components/audio-player';
 import { KeyboardProvider } from '@/components/context/keyboard-provider';
@@ -33,6 +34,11 @@ export default async function TalkPage() {
   const messagesService = new MessagesService(supabase);
 
   const [user, account] = await accountsService.getCurrentAccount();
+
+  if (account && !account.is_approved) {
+    redirect('/settings');
+  }
+
   const provider = user ? 'supabase' : 'triplit';
 
   const messages = user ? await messagesService.getMessages(user.id) : [];

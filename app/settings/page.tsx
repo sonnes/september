@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 
 import Layout from '@/components/layout';
 import { DesktopNav, MobileNav } from '@/components/nav';
+import Alert from '@/components/ui/alert';
 
 import { AccountProvider, AccountService } from '@/services/account';
 import { SpeechProvider } from '@/services/speech';
@@ -33,6 +34,13 @@ export default async function SettingsPage() {
           </div>
         </Layout.Header>
         <Layout.Content>
+          {provider === 'supabase' && account && !account.is_approved && (
+            <Alert
+              type="warning"
+              title="Account Pending Approval"
+              message="Your account is not approved yet. Please wait for approval."
+            />
+          )}
           <SpeechProvider>
             <SettingsForm />
           </SpeechProvider>

@@ -21,11 +21,11 @@ export const metadata: Metadata = {
     title: 'September - Communication Assistant',
     description:
       'September is a communication assistant for people living with neurodegenerative conditions like ALS, MND, or other speech & motor difficulties.',
-    url: 'https://september-one.vercel.app',
+    url: 'https://september.to',
     siteName: 'September - Communication Assistant',
     // images: [
     //   {
-    //     url: 'https://september-one.vercel.app/og.png',
+    //     url: 'https://september.to/og.png',
     //     width: 1920,
     //     height: 1080,
     //   },

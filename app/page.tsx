@@ -23,23 +23,6 @@ export const metadata: Metadata = {
   title: 'September - Faster Communication , Fewer Keystrokes',
   description:
     'A communication assistant for people living with ALS, MND, and other speech & motor difficulties.',
-  openGraph: {
-    title: 'September - Your Voice, Your Way',
-    description:
-      'A communication assistant for people living with ALS, MND, and other speech & motor difficulties.',
-    url: 'https://september-one.vercel.app',
-    siteName: 'September - Communication Assistant',
-    // images: [
-    //   {
-    //     url: '/og',
-    //     width: 1200,
-    //     height: 630,
-    //   },
-    // ],
-    locale: 'en_US',
-    type: 'website',
-  },
-  metadataBase: new URL('https://september.raviatluri.in'),
 };
 
 export default function Home() {

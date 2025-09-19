@@ -27,6 +27,7 @@ export interface Account {
   terms_accepted?: boolean;
   privacy_policy_accepted?: boolean;
   onboarding_completed?: boolean;
+  is_approved?: boolean;
 
   // Timestamps
   created_at: Date;

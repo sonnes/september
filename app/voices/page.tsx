@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 
 import Layout from '@/components/layout';
 import { DesktopNav, MobileNav } from '@/components/nav';
@@ -23,6 +24,11 @@ export default async function VoicesPage({
   const accountsService = new AccountService(supabase);
 
   const [user, account] = await accountsService.getCurrentAccount();
+
+  if (account && !account.is_approved) {
+    redirect('/settings');
+  }
+
   const provider = user ? 'supabase' : 'triplit';
 
   const { search } = await searchParams;

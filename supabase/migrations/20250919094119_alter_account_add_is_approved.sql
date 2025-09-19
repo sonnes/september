@@ -1,0 +1,1 @@
+ALTER TABLE public.accounts ADD COLUMN is_approved BOOLEAN DEFAULT FALSE;

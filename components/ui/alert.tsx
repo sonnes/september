@@ -1,9 +1,9 @@
 import React from 'react';
 
-import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/20/solid';
+import { CheckCircleIcon, ExclamationTriangleIcon, XCircleIcon } from '@heroicons/react/20/solid';
 
 interface AlertProps {
-  type: 'success' | 'error';
+  type: 'success' | 'error' | 'warning';
   title: string;
   message: string;
   button?: {
@@ -15,14 +15,23 @@ interface AlertProps {
 
 export function Alert({ type, title, message, button, onDismiss }: AlertProps) {
   const isSuccess = type === 'success';
+  const isWarning = type === 'warning';
+
   const icon = isSuccess ? (
     <CheckCircleIcon aria-hidden="true" className="size-5 text-indigo-400" />
+  ) : isWarning ? (
+    <ExclamationTriangleIcon aria-hidden="true" className="size-5 text-amber-400" />
   ) : (
-    <XCircleIcon aria-hidden="true" className="size-5 text-indigo-400" />
+    <XCircleIcon aria-hidden="true" className="size-5 text-red-400" />
   );
-  const bgClass = isSuccess ? 'bg-indigo-50' : 'bg-indigo-50';
-  const titleClass = isSuccess ? 'text-indigo-800' : 'text-indigo-800';
-  const messageClass = isSuccess ? 'text-indigo-700' : 'text-indigo-700';
+
+  const bgClass = isSuccess ? 'bg-indigo-50' : isWarning ? 'bg-amber-50' : 'bg-red-50';
+  const titleClass = isSuccess ? 'text-indigo-800' : isWarning ? 'text-amber-800' : 'text-red-800';
+  const messageClass = isSuccess
+    ? 'text-indigo-700'
+    : isWarning
+      ? 'text-amber-700'
+      : 'text-red-700';
 
   return (
     <div className={`rounded-md ${bgClass} p-4 flex items-center`}>

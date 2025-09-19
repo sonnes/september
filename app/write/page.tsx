@@ -23,12 +23,14 @@ export default async function WritePage() {
 
   const [user, account] = await accountsService.getCurrentAccount();
 
-  if (!user || !account) {
-    redirect('/login');
+  if (account && !account.is_approved) {
+    redirect('/settings');
   }
 
+  const provider = user ? 'supabase' : 'triplit';
+
   return (
-    <AccountProvider provider="supabase" user={user} account={account}>
+    <AccountProvider provider={provider} user={user!} account={account!}>
       <DocumentsProvider>
         <Layout>
           <Layout.Header>
