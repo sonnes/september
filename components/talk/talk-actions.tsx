@@ -17,6 +17,7 @@ export function TalkActions() {
       <MobileMessageList />
       <Link
         href={`/monitor`}
+        target="_blank"
         className="p-2 text-white rounded-full transition-colors cursor-pointer hover:bg-white/10"
         aria-label="Open monitor"
       >
