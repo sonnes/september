@@ -40,7 +40,7 @@ export class ElevenLabsSpeechProvider implements SpeechProvider {
   id = 'elevenlabs';
   name = 'ElevenLabs';
   private apiKey: string;
-  private baseUrl = 'https://api.elevenlabs.io/v1';
+  private baseUrl = 'https://api.elevenlabs.io';
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey || '';
@@ -56,7 +56,7 @@ export class ElevenLabsSpeechProvider implements SpeechProvider {
 
     const settings = request.options as ElevenLabsSettings;
 
-    const url = `${this.baseUrl}/text-to-speech/${request.voice.id}/with-timestamps`;
+    const url = `${this.baseUrl}/v1/text-to-speech/${request.voice.id}/with-timestamps`;
 
     const body = {
       text: request.text,
@@ -109,8 +109,11 @@ export class ElevenLabsSpeechProvider implements SpeechProvider {
       language: request.language || '',
       page: request.page?.toString() || '1',
       limit: request.limit?.toString() || '100',
+      voice_type: 'non-default',
     });
-    const url = `${this.baseUrl}/voices?${params.toString()}`;
+    const url = request.search
+      ? `${this.baseUrl}/v1/shared-voices?${params.toString()}`
+      : `${this.baseUrl}/v2/voices?${params.toString()}`;
 
     const response = await fetch(url, {
       method: 'GET',

@@ -11,7 +11,6 @@ import { KeyboardRenderer } from '@/components/keyboards';
 import Layout from '@/components/layout';
 import { DesktopNav, MobileNav } from '@/components/nav';
 import { MessageList, TalkActions } from '@/components/talk';
-import Recorder from '@/components/talk/recorder';
 
 import { AudioPlayerProvider } from '@/hooks/use-audio-player';
 
@@ -36,7 +35,7 @@ export default async function TalkPage() {
   const [user, account] = await accountsService.getCurrentAccount();
 
   if (account && !account.is_approved) {
-    redirect('/settings');
+    redirect('/app/onboarding');
   }
 
   const provider = user ? 'supabase' : 'triplit';
@@ -77,9 +76,6 @@ export default async function TalkPage() {
                           <div className="flex items-center gap-4 border border-zinc-200 rounded-md">
                             <div className="flex-1 min-w-0">
                               <AudioPlayer />
-                            </div>
-                            <div className="flex-shrink-0">
-                              <Recorder />
                             </div>
                           </div>
 

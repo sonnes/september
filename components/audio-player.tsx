@@ -20,9 +20,9 @@ export default function AudioPlayer() {
   }, [current]);
 
   return (
-    <div className="flex flex-col gap-3 px-2">
-      <div className="flex flex-row items-start justify-between gap-2">
-        <div className="flex-1">
+    <div className="flex flex-col gap-3 px-2 h-12">
+      <div className="flex flex-row items-center justify-between gap-2 h-full">
+        <div className="flex-1 min-h-0">
           <AnimatedText
             text={text}
             speed={200}
@@ -30,16 +30,18 @@ export default function AudioPlayer() {
           />
         </div>
 
-        {current && (
-          <button
-            onClick={togglePlayPause}
-            aria-label={isPlaying ? 'Pause' : 'Play'}
-            disabled={!current}
-            className="text-zinc-900 hover:text-zinc-800 flex-shrink-0"
-          >
-            {isPlaying ? <PauseIcon className="w-6 h-6" /> : <PlayIcon className="w-6 h-6" />}
-          </button>
-        )}
+        <div className="w-6 h-6 flex-shrink-0">
+          {current && (
+            <button
+              onClick={togglePlayPause}
+              aria-label={isPlaying ? 'Pause' : 'Play'}
+              disabled={!current}
+              className="text-zinc-900 hover:text-zinc-800 w-full h-full flex items-center justify-center"
+            >
+              {isPlaying ? <PauseIcon className="w-6 h-6" /> : <PlayIcon className="w-6 h-6" />}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

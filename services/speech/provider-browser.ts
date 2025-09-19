@@ -64,6 +64,8 @@ export class BrowserSpeechProvider implements SpeechProvider {
         .filter(voice => {
           if (request.language) {
             return voice.lang === request.language;
+          } else if (window.navigator.language) {
+            return voice.lang === window.navigator.language;
           }
           return true;
         })

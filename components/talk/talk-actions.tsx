@@ -7,9 +7,12 @@ import { EyeIcon } from '@heroicons/react/24/outline';
 import { MobileMessageList } from '@/components/talk';
 import MuteButton from '@/components/talk/mute-button';
 
+import Recorder from './recorder';
+
 export function TalkActions() {
   return (
     <div className="flex items-center space-x-2">
+      <Recorder />
       <MuteButton />
       <MobileMessageList />
       <Link

@@ -31,9 +31,8 @@ function VADController({ onSpeechEnd }: { onSpeechEnd: (blob: Blob) => Promise<v
 
   if (loading) {
     return (
-      <button disabled className="flex items-center gap-2 px-2 py-4 cursor-not-allowed">
-        <ArrowPathIcon className="h-4 w-4 animate-spin" />{' '}
-        <span className="text-sm">Loading...</span>
+      <button disabled className="p-2 text-white rounded-full transition-colors cursor-not-allowed">
+        <ArrowPathIcon className="w-6 h-6 animate-spin" />
       </button>
     );
   }
@@ -43,12 +42,11 @@ function VADController({ onSpeechEnd }: { onSpeechEnd: (blob: Blob) => Promise<v
       onClick={handleToggle}
       title={listening ? 'Stop' : 'Listening...'}
       className={cn(
-        'flex items-center gap-2 px-2 py-4 cursor-pointer group hover:bg-zinc-100',
-        listening && 'text-indigo-500'
+        'p-2 text-white rounded-full transition-colors cursor-pointer hover:bg-white/10',
+        listening && 'text-red-200 bg-white/20 animate-pulse'
       )}
     >
-      {listening ? <StopIcon className="h-4 w-4" /> : <MicrophoneIcon className="h-4 w-4" />}
-      <span className="text-sm">{listening ? 'Listening...' : 'Listen'}</span>
+      {listening ? <StopIcon className="w-6 h-6" /> : <MicrophoneIcon className="w-6 h-6" />}
     </button>
   );
 }
@@ -98,11 +96,13 @@ export default function Recorder() {
           title="Start recording"
           disabled={isDisabled}
           className={cn(
-            'flex items-center gap-2 px-2 py-4 group ',
-            isDisabled ? 'cursor-not-allowed text-zinc-500' : 'cursor-pointer hover:bg-zinc-100'
+            'p-2 rounded-full transition-colors',
+            isDisabled
+              ? 'cursor-not-allowed text-white/50'
+              : 'text-white cursor-pointer hover:bg-white/10'
           )}
         >
-          <MicrophoneIcon className="h-4 w-4" /> <span className="text-sm">Listen</span>
+          <MicrophoneIcon className="w-6 h-6" />
         </button>
       )}
     </div>
