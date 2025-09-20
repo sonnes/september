@@ -12,7 +12,7 @@ interface KeyboardContextType {
 const KeyboardContext = createContext<KeyboardContextType | undefined>(undefined);
 
 export function KeyboardProvider({
-  defaultKeyboardType = 'none',
+  defaultKeyboardType = 'qwerty',
   children,
 }: {
   defaultKeyboardType?: KeyboardType;

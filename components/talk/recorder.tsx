@@ -70,6 +70,10 @@ export default function Recorder() {
     }
 
     const result = await response.json();
+    if (result.text.trim() === '' || result.text.length < 3) {
+      return;
+    }
+
     const message = {
       id: uuidv4(),
       text: result.text,

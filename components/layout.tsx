@@ -1,15 +1,12 @@
 import { PropsWithChildren } from 'react';
 
-
-type HeaderProps = PropsWithChildren & {
-};
+type HeaderProps = PropsWithChildren & {};
 
 export default function Layout({ children }: PropsWithChildren) {
   return <div className="min-h-full flex flex-col">{children}</div>;
 }
 
 const LayoutHeader = ({ children }: HeaderProps) => {
-
   return (
     <div className="bg-indigo-500 pb-32">
       <header>
@@ -25,7 +22,7 @@ const LayoutContent = ({ children }: PropsWithChildren) => {
   return (
     <main className="-mt-32 flex-1">
       <div className="mx-auto max-w-7xl px-2 md:px-8">
-        <div className="rounded-lg bg-white p-2 md:p-6">{children}</div>
+        <div className="rounded-lg bg-white p-2 md:py-6 md:px-2">{children}</div>
       </div>
     </main>
   );

@@ -65,7 +65,7 @@ export default async function TalkPage() {
                     <KeyboardProvider>
                       <div className="flex h-[calc(100vh-100px)] md:h-[calc(100vh-196px)]">
                         {/* Left column - Message list */}
-                        <div className="hidden md:block w-1/3 lg:w-1/4 px-2 overflow-y-auto border-r border-zinc-200">
+                        <div className="hidden md:block w-1/3  px-2 overflow-y-auto border-r border-zinc-200">
                           <div className="max-w-full">
                             <MessageList />
                           </div>
