@@ -27,10 +27,10 @@ export function SpeechSettingsDialog() {
     return {
       speech_settings: {
         model_id: account?.speech_settings?.model_id || '',
-        speed: account?.speech_settings?.speed || 1.0,
-        stability: account?.speech_settings?.stability || 0.5,
-        similarity: account?.speech_settings?.similarity || 0.5,
-        style: account?.speech_settings?.style || 0.5,
+        speed: account?.speech_settings?.speed ?? 1.0,
+        stability: account?.speech_settings?.stability ?? 0.5,
+        similarity: account?.speech_settings?.similarity ?? 0.5,
+        style: account?.speech_settings?.style ?? 0.5,
         speaker_boost: account?.speech_settings?.speaker_boost || false,
         pitch: account?.speech_settings?.pitch || 0,
         volume: account?.speech_settings?.volume || 1.0,
@@ -54,7 +54,7 @@ export function SpeechSettingsDialog() {
     try {
       await updateAccount({
         speech_settings: {
-          ...account?.speech_settings,
+          ...(account?.speech_settings || {}),
           ...data.speech_settings,
         },
       });
