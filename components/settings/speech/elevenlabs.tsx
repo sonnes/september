@@ -5,6 +5,7 @@ import { FormCheckbox, FormDropdown, FormRangeWithLabels } from '@/components/ui
 import { SectionProps, SpeechSettingsFormData } from '../types';
 
 const MODELS = [
+  { id: 'eleven_v3', name: 'Eleven v3' },
   { id: 'eleven_multilingual_v2', name: 'Eleven Multilingual v2' },
   { id: 'eleven_flash_v2_5', name: 'Eleven Flash v2.5' },
   { id: 'eleven_flash_v2', name: 'Eleven Flash v2 (English Only)' },

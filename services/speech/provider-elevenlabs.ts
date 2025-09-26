@@ -58,16 +58,22 @@ export class ElevenLabsSpeechProvider implements SpeechProvider {
 
     const url = `${this.baseUrl}/v1/text-to-speech/${request.voice.id}/with-timestamps`;
 
+    const model_id = settings.model_id || 'eleven_flash_v2_5';
+    const voice_settings =
+      model_id === 'eleven_v3'
+        ? {}
+        : {
+            speed: settings.speed || 1.0,
+            stability: settings.stability || 0.5,
+            similarity_boost: settings.similarity || 0.5,
+            style: settings.style || 0.0,
+            use_speaker_boost: settings.speaker_boost || false,
+          };
+
     const body = {
       text: request.text,
-      model_id: settings.model_id || 'eleven_flash_v2_5',
-      voice_settings: {
-        speed: settings.speed || 1.0,
-        stability: settings.stability || 0.5,
-        similarity_boost: settings.similarity || 0.5,
-        style: settings.style || 0.0,
-        use_speaker_boost: settings.speaker_boost || false,
-      },
+      model_id: model_id,
+      voice_settings: voice_settings,
       output_format: 'mp3_44100_128',
     };
 
