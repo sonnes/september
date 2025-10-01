@@ -10,7 +10,8 @@
       "Bash(bun add:*)",
       "Bash(bun lint:*)",
       "Bash(bun build:*)",
-      "Bash(bun:*)"
+      "Bash(bun:*)",
+      "Bash(du:*)"
     ],
     "defaultMode": "acceptEdits"
   },

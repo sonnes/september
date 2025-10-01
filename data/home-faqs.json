@@ -27,7 +27,7 @@
   {
     "id": 7,
     "question": "Is my data private?",
-    "answer": "Yes, your conversations and personal data are encrypted and never shared. You control what information September can access."
+    "answer": "Yes, your messages and personal data are by default stored locally in your browser. Depending on the configured services and your data maybe shared with third party services."
   },
   {
     "id": 8,
