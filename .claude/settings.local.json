@@ -11,7 +11,8 @@
       "Bash(bun lint:*)",
       "Bash(bun build:*)",
       "Bash(bun:*)",
-      "Bash(du:*)"
+      "Bash(du:*)",
+      "WebFetch(domain:ai.google.dev)"
     ],
     "defaultMode": "acceptEdits"
   },

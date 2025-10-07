@@ -15,7 +15,7 @@ export interface Account {
 
   // Speech Settings
   speech_provider?: string;
-  speech_settings?: BrowserTTSSettings & ElevenLabsSettings;
+  speech_settings?: BrowserTTSSettings & ElevenLabsSettings & GeminiSpeechSettings;
   voice?: Voice;
 
   // AI Settings
@@ -51,4 +51,10 @@ export interface ElevenLabsSettings {
   similarity?: number;
   style?: number;
   speaker_boost?: boolean;
+}
+
+export interface GeminiSpeechSettings {
+  api_key?: string;
+  model_id?: string;
+  voice_name?: string;
 }

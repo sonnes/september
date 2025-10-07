@@ -180,6 +180,20 @@ export function SpeechProviderDialog() {
                           .
                         </p>
                       )}
+                      {speechProvider === 'gemini' && (
+                        <p className="mt-1 text-sm/6 text-zinc-600">
+                          You can get your API key from the{' '}
+                          <a
+                            href="https://aistudio.google.com/app/apikey"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 hover:text-indigo-500 underline"
+                          >
+                            Google AI Studio
+                          </a>
+                          .
+                        </p>
+                      )}
                     </div>
                     <div className="rounded-md bg-zinc-50 p-4">
                       <div className="space-y-4">
@@ -192,6 +206,7 @@ export function SpeechProviderDialog() {
                           options={[
                             { id: 'browser_tts', name: 'Browser TTS' },
                             { id: 'elevenlabs', name: 'ElevenLabs' },
+                            { id: 'gemini', name: 'Gemini Speech' },
                           ]}
                         />
 
@@ -203,6 +218,17 @@ export function SpeechProviderDialog() {
                             type="password"
                             required
                             placeholder="Enter your ElevenLabs API key"
+                          />
+                        )}
+
+                        {speechProvider === 'gemini' && (
+                          <FormInput
+                            name="speech_settings.api_key"
+                            control={form.control}
+                            label="API Key"
+                            type="password"
+                            required
+                            placeholder="Enter your Gemini API key"
                           />
                         )}
                       </div>

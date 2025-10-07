@@ -1,4 +1,4 @@
-import { BrowserTTSSettings, ElevenLabsSettings } from '@/types/account';
+import { BrowserTTSSettings, ElevenLabsSettings, GeminiSpeechSettings } from '@/types/account';
 import { Alignment } from '@/types/audio';
 import { Voice } from '@/types/voice';
 
@@ -15,7 +15,7 @@ export interface SpeechRequest {
   options?: SpeechOptions;
 }
 
-export type SpeechOptions = ElevenLabsSettings | BrowserTTSSettings;
+export type SpeechOptions = ElevenLabsSettings | BrowserTTSSettings | GeminiSpeechSettings;
 
 export interface SpeechResponse {
   utterance?: SpeechSynthesisUtterance;

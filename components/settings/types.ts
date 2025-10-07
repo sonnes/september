@@ -22,6 +22,7 @@ export const AccountSchema = z.object({
       volume: z.number().min(0).max(1).optional(),
       api_key: z.string().optional(),
       model_id: z.string().optional(),
+      voice_name: z.string().optional(),
       stability: z.number().min(0).max(1).optional(),
       similarity: z.number().min(0).max(1).optional(),
       style: z.number().min(0).max(1).optional(),

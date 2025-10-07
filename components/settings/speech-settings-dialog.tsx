@@ -16,6 +16,7 @@ import { useAccount } from '@/services/account';
 
 import { BrowserTTSSettingsSection } from './speech/browser';
 import { ElevenLabsSettingsSection } from './speech/elevenlabs';
+import { GeminiSpeechSettingsSection } from './speech/gemini';
 
 export function SpeechSettingsDialog() {
   const [isOpen, setIsOpen] = useState(false);
@@ -23,10 +24,29 @@ export function SpeechSettingsDialog() {
   const { show, showError } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const speechProvider = account?.speech_provider || 'browser_tts';
+
   const defaultValues = useMemo(() => {
+    // Provide provider-specific defaults for model_id
+    let defaultModelId = account?.speech_settings?.model_id || '';
+    if (!defaultModelId) {
+      switch (speechProvider) {
+        case 'elevenlabs':
+          defaultModelId = 'eleven_flash_v2_5';
+          break;
+        case 'gemini':
+          defaultModelId = 'gemini-2.5-flash-preview-tts';
+          break;
+        default:
+          defaultModelId = '';
+          break;
+      }
+    }
+
     return {
       speech_settings: {
-        model_id: account?.speech_settings?.model_id || '',
+        model_id: defaultModelId,
+        voice_name: account?.speech_settings?.voice_name || 'Aoede',
         speed: account?.speech_settings?.speed ?? 1.0,
         stability: account?.speech_settings?.stability ?? 0.5,
         similarity: account?.speech_settings?.similarity ?? 0.5,
@@ -36,7 +56,7 @@ export function SpeechSettingsDialog() {
         volume: account?.speech_settings?.volume || 1.0,
       },
     };
-  }, [account]);
+  }, [account, speechProvider]);
 
   const form = useForm<SpeechSettingsFormData>({
     resolver: zodResolver(SpeechSettingsSchema),
@@ -70,8 +90,6 @@ export function SpeechSettingsDialog() {
       setIsSubmitting(false);
     }
   };
-
-  const speechProvider = account?.speech_provider || 'browser_tts';
 
   if (!account) {
     return null;
@@ -126,6 +144,15 @@ export function SpeechSettingsDialog() {
                   {/* Browser TTS Settings Section */}
                   {speechProvider === 'browser_tts' && (
                     <BrowserTTSSettingsSection
+                      control={form.control}
+                      watch={form.watch}
+                      setValue={form.setValue}
+                    />
+                  )}
+
+                  {/* Gemini Speech Settings Section */}
+                  {speechProvider === 'gemini' && (
+                    <GeminiSpeechSettingsSection
                       control={form.control}
                       watch={form.watch}
                       setValue={form.setValue}

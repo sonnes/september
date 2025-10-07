@@ -2,10 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAccount } from '@/services/account/context';
 
-import { BrowserTTSSettings, ElevenLabsSettings } from '@/types/account';
+import { BrowserTTSSettings, ElevenLabsSettings, GeminiSpeechSettings } from '@/types/account';
 
 import { BrowserSpeechProvider } from './provider-browser';
 import { ElevenLabsSpeechProvider } from './provider-elevenlabs';
+import { GeminiSpeechProvider } from './provider-gemini';
 import { ListVoicesRequest, SpeechOptions, SpeechProvider } from './types';
 
 export function useSpeech() {
@@ -15,10 +16,12 @@ export function useSpeech() {
 
   const providers = useMemo(() => {
     const elevenlabs = new ElevenLabsSpeechProvider(account?.speech_settings?.api_key);
+    const gemini = new GeminiSpeechProvider(account?.speech_settings?.api_key);
 
     return new Map<string, SpeechProvider>([
       ['browser_tts', browser],
       ['elevenlabs', elevenlabs],
+      ['gemini', gemini],
     ]);
   }, [account?.speech_provider]);
 
