@@ -12,7 +12,8 @@
       "Bash(bun build:*)",
       "Bash(bun:*)",
       "Bash(du:*)",
-      "WebFetch(domain:ai.google.dev)"
+      "WebFetch(domain:ai.google.dev)",
+      "Bash(node:*)"
     ],
     "defaultMode": "acceptEdits"
   },

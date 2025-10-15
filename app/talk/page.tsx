@@ -20,14 +20,22 @@ import { AudioProvider } from '@/services/audio/context';
 import { MessagesProvider, MessagesService } from '@/services/messages';
 import { SpeechProvider } from '@/services/speech';
 
+import { loadDemoMessages } from '@/lib/demo-loader';
 import { createClient } from '@/supabase/server';
+import { Message } from '@/types/message';
 
 export const metadata: Metadata = {
   title: 'Talk',
   description: 'Use voice-to-text and text-to-speech to communicate with others using September.',
 };
 
-export default async function TalkPage() {
+interface TalkPageProps {
+  searchParams: Promise<{ demo?: string }>;
+}
+
+export default async function TalkPage({ searchParams }: TalkPageProps) {
+  const { demo } = await searchParams;
+
   const supabase = await createClient();
   const accountsService = new AccountsService(supabase);
   const messagesService = new MessagesService(supabase);
@@ -40,7 +48,14 @@ export default async function TalkPage() {
 
   const provider = user ? 'supabase' : 'triplit';
 
-  const messages = user ? await messagesService.getMessages(user.id) : [];
+  // Load demo messages if demo parameter is present, otherwise load user messages
+  let messages: Message[] = [];
+  if (demo !== undefined) {
+    // Load demo messages - if demo has a value, use it as scenario ID
+    messages = await loadDemoMessages(demo || undefined);
+  } else {
+    messages = user ? await messagesService.getMessages(user.id) : [];
+  }
 
   return (
     <AccountProvider provider={provider} user={user!} account={account!}>

@@ -1,0 +1,192 @@
+{
+  "scenarios": [
+    {
+      "id": "morning-routine",
+      "title": "Morning Routine with Caregiver",
+      "context": "Daily morning care and breakfast",
+      "messages": [
+        { "text": "Good morning Bhaiya. Ab uthna hai.", "type": "message" },
+        { "text": "Good morning! Haan, main help karta hoon.", "type": "transcription" },
+        { "text": "Zara baithne mein help karoge?", "type": "message" },
+        { "text": "Nashte mein daliya aur kela kha lunga.", "type": "message" },
+        {
+          "text": "Theek hai, abhi laya. Aapki subah ki dawaiyan bhi laa raha hoon.",
+          "type": "transcription"
+        },
+        {
+          "text": "Thodi thand lag rahi hai. AC ko 27 pe kar sakte ho kya?",
+          "type": "message"
+        },
+        { "text": "Thanks. Ab theek hai.", "type": "message" }
+      ]
+    },
+    {
+      "id": "family-dinner",
+      "title": "Family Dinner Conversation",
+      "context": "Evening meal with spouse and children",
+      "messages": [
+        { "text": "School ela jarigindi ee roju?", "type": "message" },
+        {
+          "text": "Bane vundi! Science lo volcano project start chesam.",
+          "type": "transcription"
+        },
+        {
+          "text": "Oh, interesting!",
+          "type": "message"
+        },
+        { "text": "Chala kashtapadutunnav. Good job!", "type": "message" },
+        { "text": "Vanta chala bagundi, thanks!", "type": "message" },
+        { "text": "Thanks! Eeroju kotthaga try chesa.", "type": "transcription" },
+        { "text": "Konchem water isthava please?", "type": "message" }
+      ]
+    },
+    {
+      "id": "work-standup",
+      "title": "Daily Standup Meeting",
+      "context": "Team sync meeting with engineering colleagues",
+      "messages": [
+        { "text": "Good morning team. Here's my update from yesterday.", "type": "message" },
+        {
+          "text": "I completed the code review for the authentication PR and left detailed feedback.",
+          "type": "message"
+        },
+        {
+          "text": "Today I'm working on the database migration for the new features table.",
+          "type": "message"
+        },
+        {
+          "text": "I have a blocker on the API documentation - can someone share the latest Swagger specs?",
+          "type": "message"
+        },
+        { "text": "Sure, I'll ping you the link right after standup.", "type": "transcription" },
+        {
+          "text": "No other blockers from my side. I'll be available on Slack if anyone needs me.",
+          "type": "message"
+        }
+      ]
+    },
+    {
+      "id": "code-review-feedback",
+      "title": "Code Review Discussion",
+      "context": "Providing technical feedback on a pull request",
+      "messages": [
+        { "text": "I reviewed your PR. Overall structure looks good.", "type": "message" },
+        {
+          "text": "Line 47 in auth.ts - we should add error handling for the edge case when token is expired.",
+          "type": "message"
+        },
+        {
+          "text": "Consider extracting the validation logic into a separate helper function for reusability.",
+          "type": "message"
+        },
+        { "text": "That makes sense. I'll refactor that section.", "type": "transcription" },
+        {
+          "text": "The tests look comprehensive. Nice work on covering the error scenarios.",
+          "type": "message"
+        },
+        {
+          "text": "Approved once you address the error handling. Let me know if you have questions.",
+          "type": "message"
+        }
+      ]
+    },
+    {
+      "id": "college-reunion-chat",
+      "title": "Catching Up with College Friends",
+      "context": "A casual video call with an old friend from college",
+      "messages": [
+        { "text": "Hey man! Long time no see. How have you been?", "type": "message" },
+        {
+          "text": "Dude! So good to hear your voice. I'm doing great, man. Just busy. How are you?",
+          "type": "transcription"
+        },
+        {
+          "text": "Same here, work is hectic. You still in Pune or did you move?",
+          "type": "message"
+        },
+        {
+          "text": "Nah, I moved to Bangalore about two years ago. The startup scene, you know? It's been wild.",
+          "type": "transcription"
+        },
+        {
+          "text": "That's awesome! We have to get the old gang back together sometime. Remember our final year trip?",
+          "type": "message"
+        },
+        {
+          "text": "How can I forget! Best time ever. Yeah, for sure. Let's make a plan soon.",
+          "type": "transcription"
+        },
+        { "text": "Definitely. I'll ping the others. Great catching up, man!", "type": "message" }
+      ]
+    },
+    {
+      "id": "pair-programming",
+      "title": "Pair Programming Session",
+      "context": "Collaborative coding with teammate",
+      "messages": [
+        {
+          "text": "Let's start by looking at the database schema for the users table.",
+          "type": "message"
+        },
+        {
+          "text": "We need to add an index on the email column to improve query performance.",
+          "type": "message"
+        },
+        { "text": "Try running the migration locally first to test it.", "type": "message" },
+        {
+          "text": "Okay, running it now... I got a constraint violation error.",
+          "type": "transcription"
+        },
+        {
+          "text": "That error means we need to handle the existing null values before adding the not-null constraint.",
+          "type": "message"
+        },
+        {
+          "text": "Perfect! Now let's write unit tests for the new validation logic.",
+          "type": "message"
+        }
+      ]
+    },
+    {
+      "id": "evening-conversation",
+      "title": "Evening Chat with Spouse",
+      "context": "Relaxing conversation at end of day",
+      "messages": [
+        { "text": "Office ela undi eeroju?", "type": "message" },
+        { "text": "Full busy, but parledu. Mari neeku ela undi?", "type": "transcription" },
+        { "text": "Naaku kuda parledu. Kottha feature meeda work chesa.", "type": "message" },
+        { "text": "Aa documentary chuddama ippudu?", "type": "message" },
+        { "text": "Sure! Remote teesta. Tea taguthava?", "type": "transcription" },
+        {
+          "text": "Sounds good. Mundu nannu konchem sarigga kurchopettava?",
+          "type": "message"
+        }
+      ]
+    },
+    {
+      "id": "incident-response",
+      "title": "Production Incident Discussion",
+      "context": "Urgent production issue resolution",
+      "messages": [
+        { "text": "I'm seeing the alerts. The API response times are spiking.", "type": "message" },
+        {
+          "text": "Check the database connection pool - it might be exhausted.",
+          "type": "message"
+        },
+        {
+          "text": "You're right - connection pool is at 100% utilization.",
+          "type": "transcription"
+        },
+        {
+          "text": "We should roll back the last deployment while we investigate.",
+          "type": "message"
+        },
+        { "text": "The rollback completed. Response times are back to normal.", "type": "message" },
+        {
+          "text": "Let's schedule a post-mortem for tomorrow to discuss root cause and prevention.",
+          "type": "message"
+        }
+      ]
+    }
+  ]
+}

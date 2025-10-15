@@ -11,11 +11,11 @@ export function Navbar() {
   return (
     <nav className="fixed w-full bg-white/95 backdrop-blur-sm z-50 border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-18">
           <div className="flex items-center">
             <Link href="/" className="flex items-center">
-              <Image src="/logo.png" alt="September Logo" width={32} height={32} className="mr-2" />
-              <span className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-amber-600 bg-clip-text text-transparent">
+              <Image src="/logo.png" alt="September Logo" width={48} height={48} className="mr-2" />
+              <span className="text-3xl font-bold bg-gradient-to-r from-amber-500 to-amber-600 bg-clip-text text-transparent">
                 september
               </span>
             </Link>
