@@ -75,6 +75,7 @@ export default function RootLayout({
       <body className={`${notoSans.className} antialiased h-full`}>
         {children}
         <Toaster position="top-center" closeButton duration={15000} />
+        <script src="https://cdn.usefathom.com/script.js" data-site="HPETEWQC" defer></script>
       </body>
     </html>
   );
