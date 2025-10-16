@@ -66,6 +66,11 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="manifest" href="/site.webmanifest" />
+        <script
+          defer
+          src="https://cloud.umami.is/script.js"
+          data-website-id="2d4c0126-840c-4397-9ccb-4d618d7df1ce"
+        ></script>
       </head>
       <body className={`${notoSans.className} antialiased h-full`}>
         {children}
