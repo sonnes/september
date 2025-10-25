@@ -13,13 +13,13 @@ interface SuggestionsProps {
 }
 
 export default function Suggestions({ className = '', timeout = 3000 }: SuggestionsProps) {
-  const { appendText } = useTextContext();
+  const { setText } = useTextContext();
   const { suggestions, isLoading } = useSuggestions(timeout);
   const { history, isLoading: isHistoryLoading } = useSearchHistory(300);
 
   // Handle suggestion click
   const handleSuggestionClick = (suggestion: string) => {
-    appendText(suggestion);
+    setText(suggestion);
   };
 
   return (

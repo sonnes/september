@@ -19,7 +19,7 @@ interface UseSuggestionsReturn {
   clearSuggestions: () => void;
 }
 
-export function useSuggestions(timeout: number = 1000): UseSuggestionsReturn {
+export function useSuggestions(timeout: number = 800): UseSuggestionsReturn {
   const { text } = useTextContext();
   const { messages } = useMessages();
   const { account } = useAccount();

@@ -1,4 +1,4 @@
-import { Content, GoogleGenAI } from '@google/genai';
+import { Content, GoogleGenAI, Type } from '@google/genai';
 import { v4 as uuidv4 } from 'uuid';
 
 import { Message } from '@/types/message';
@@ -41,53 +41,100 @@ The output should be markdown formatted text. Use --- to separate the chunks. On
 Do not include any other text in the output.
 `;
 
-const SUGGESTIONS_PROMPT = `You're a communication assistant for USER_A. USER_A is having a conversation with USER_B. 
-You need to complete the sentence USER_A is writing. 
+const SUGGESTIONS_PROMPT = `<role>
+You are a communication assistant helping USER_A communicate with USER_B in a real-time conversation.
+</role>
 
-Use the following instructions from USER_A to generate the sentence:
+<task>
+Generate intelligent full sentence suggestions for USER_A based on:
+1. The current partial message USER_A is typing (if any)
+2. The conversation context from previous messages
+3. USER_A's personalized communication style and preferences
+
+Important: Suggestions should be COMPLETE SENTENCES that USER_A can send as-is. They don't need to be prefix matches or completions of the partial text - they can be complete rewrites, alternative phrasings, or contextually relevant responses.
+</task>
+
 <user_instructions>
 {USER_INSTRUCTIONS}
 </user_instructions>
 
-You must return completions and predictions in this exact JSON format:
-<json_output>
-  ["suggestion1", "suggestion2", "suggestion3"]
-</json_output>
+<output_format>
+Return ONLY a JSON array of 5 suggestions, nothing else:
+["suggestion1", "suggestion2", "suggestion3", "suggestion4", "suggestion5"]
+</output_format>
 
-Follow these rules:
 <rules>
-  - Generate short concise suggestions.
-  - If last message is empty, return full sentence suggestions.
-  - If last message is not empty, return suggestions that complete the message.
-  - Keep the suggestions varied.
-  - Use the context of the previous messages to generate the suggestions.
-  - Don't repeat the similar suggestions
-  - Use spellings, idioms, and slang of USER_A's language
-  - Use emojis if appropriate
-  - Return only the JSON, no other text
+<rule>Always generate COMPLETE, STANDALONE sentences that can be sent immediately</rule>
+<rule>Don't just complete partial text - offer full sentence alternatives that express the same or related intent</rule>
+<rule>If the current message is empty, suggest contextually relevant sentences that naturally continue the conversation</rule>
+<rule>If the current message has text, provide:
+  - A polished version of what they're trying to say
+  - Alternative phrasings with different tones (casual, formal, enthusiastic, etc.)
+  - Related responses that might express the same intent better
+</rule>
+<rule>MINIMAL INPUT EXPANSION: When input is very short (single word, number, emoji, or abbreviation), expand it into complete contextual sentences:
+  - Single numbers: Incorporate into natural sentences based on context
+  - Single words (emotions, actions): Build full expressions around them
+  - Emojis/symbols: Convert to complete emotional or conversational responses
+  - Time expressions: Create full scheduling or time-related sentences
+  - Abbreviations: Expand with contextual relevance
+</rule>
+<rule>CREATIVE EXPANSION: When context suggests storytelling, creative scenarios, or imaginative content (e.g., bedtime stories, children's conversations), generate engaging, playful, and creative suggestions</rule>
+<rule>Each suggestion should be 2-20 words - complete but concise (allow up to 20 words for creative/storytelling contexts)</rule>
+<rule>Ensure suggestions are meaningfully different from each other in tone, style, or content</rule>
+<rule>Use conversation history to maintain context and relevance</rule>
+<rule>Match USER_A's language style: preserve their spelling conventions, idioms, slang, and formality level</rule>
+<rule>Include emojis when they fit USER_A's communication style or enhance clarity</rule>
+<rule>Prioritize suggestions that help USER_A communicate more effectively and efficiently</rule>
+<rule>Return ONLY the JSON array - no explanations, no markdown formatting, no additional text</rule>
 </rules>
 
 <examples>
-  <example>
-    USER_A: "Been busy"
-    USER_A: "I'm trying to"
-    Suggestions: ["build a communication app", "do my homework", "get a job"]
-  </example>
-  <example>
-    USER_B: "How are you?"
-    USER_A: "I"
-    Suggestions: ["am doing good", "have been busy", "was travelling"]
-  </example>
-  <example>
-    USER_A: "It is un"
-    Suggestions: ["fortunate that it happened", "lucky to have it"]
-  </example>
-  <example>
-    USER_A: "I have been working on a new project"
-    Suggestions: ["Let me show you", "But I'm not sure how to do it", "It has been a lot of work"]
-  </example>
-</examples>
-`;
+<example>
+<context>
+Context: Team stand-up meeting
+USER_A (typing): "3"
+</context>
+<output>["Today I have 3 meetings scheduled", "I'll need 3 hours to complete this", "We have 3 action items from yesterday"]</output>
+<explanation>Single number/minimal input expanded into contextual sentences</explanation>
+</example>
+
+<example>
+<context>
+USER_B: "What's for dinner?"
+USER_A (typing): "tired"
+</context>
+<output>["I'm feeling tired today, maybe we can order in?", "Pretty tired, let's do something easy", "Feeling exhausted - takeout sounds perfect"]</output>
+<explanation>Single emotion word expanded with context and natural consequence</explanation>
+</example>
+
+<example>
+<context>
+USER_B: "Love you!"
+USER_A (typing): "♥"
+</context>
+<output>["Love you too! ❤️", "♥️♥️♥️", "Love you more every day!"]</output>
+<explanation>Emoji converted to complete emotional expressions</explanation>
+</example>
+
+<example>
+<context>
+Context: Bedtime story with child
+USER_A (typing): "dragon"
+</context>
+<output>["Once upon a time, there was a brave dragon who loved adventures!", "Let me tell you about a friendly dragon named Spark", "How about a story of a dragon who makes new friends?"]</output>
+<explanation>Creative storytelling expansion with imaginative, playful content</explanation>
+</example>
+
+<example>
+<context>
+USER_B: "Want to grab lunch?"
+USER_A (typing): ""
+</context>
+<output>["Sure, what time works for you?", "I'd love to! Where should we go?", "Maybe tomorrow? I'm tied up today"]</output>
+<explanation>Empty input with contextual conversation continuations</explanation>
+</example>
+</examples>`;
 
 const TRANSCRIPTION_PROMPT = `You are a speech-to-text transcription service. 
 
@@ -161,19 +208,20 @@ class GeminiService {
         role: 'user',
         parts: [{ text: `USER_A: ${text}` }],
       },
-      { role: 'model', parts: [{ text: '```json' }] },
     ];
 
     try {
       const response = await this.ai.models.generateContent({
-        model: 'gemini-2.0-flash-lite',
+        model: 'gemini-2.5-flash-lite',
         contents: prompt,
         config: {
           systemInstruction: SUGGESTIONS_PROMPT.replace('{USER_INSTRUCTIONS}', instructions),
           temperature: 0.7,
-          maxOutputTokens: 1024,
-          stopSequences: ['```'],
           responseMimeType: 'application/json',
+          responseJsonSchema: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+          },
         },
       });
 
@@ -205,7 +253,7 @@ class GeminiService {
       const mimeType = audio.type || 'audio/wav';
 
       const response = await this.ai.models.generateContent({
-        model: 'gemini-2.0-flash-exp',
+        model: 'gemini-2.5-flash-lite',
         contents: [
           {
             parts: [{ inlineData: { mimeType, data: base64 } }, { text: TRANSCRIPTION_PROMPT }],
