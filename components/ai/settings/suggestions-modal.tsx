@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { CpuChipIcon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -11,48 +11,32 @@ import { Button } from '@/components/ui/button';
 
 import { useToast } from '@/hooks/use-toast';
 
-import { useAccount } from '@/services/account';
-import { DEFAULT_SUGGESTIONS_CONFIG } from '@/services/ai/defaults';
+import { useAISettings } from '@/services/ai';
 
 import { SuggestionsForm, SuggestionsFormData, SuggestionsFormSchema } from './suggestions-form';
 
 export function SuggestionsModal() {
   const [isOpen, setIsOpen] = useState(false);
-  const { account, updateAccount } = useAccount();
+  const { suggestions, hasGeminiApiKey, updateSuggestions } = useAISettings();
   const { show, showError } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Build default values from account data or fallback to defaults
-  const defaultValues = useMemo(() => {
-    if (account?.ai_suggestions) {
-      return {
-        ...DEFAULT_SUGGESTIONS_CONFIG,
-        ...account.ai_suggestions,
-      };
-    }
-    return DEFAULT_SUGGESTIONS_CONFIG;
-  }, [account]);
-
   const form = useForm<SuggestionsFormData>({
     resolver: zodResolver(SuggestionsFormSchema),
-    defaultValues,
+    defaultValues: suggestions,
   });
 
-  // Reset form when dialog opens or account changes
+  // Reset form when dialog opens or suggestions change
   useEffect(() => {
     if (isOpen) {
-      form.reset(defaultValues);
+      form.reset(suggestions);
     }
-  }, [defaultValues, form, isOpen]);
-
-  const hasApiKey = Boolean(account?.ai_providers?.gemini?.api_key);
+  }, [suggestions, form, isOpen]);
 
   const onSubmit = async (data: SuggestionsFormData) => {
     setIsSubmitting(true);
     try {
-      await updateAccount({
-        ai_suggestions: data,
-      });
+      await updateSuggestions(data);
       show({
         title: 'Suggestions Settings',
         message: 'Your AI suggestions settings have been updated successfully.',
@@ -102,7 +86,7 @@ export function SuggestionsModal() {
                 <SuggestionsForm
                   control={form.control}
                   setValue={form.setValue}
-                  hasApiKey={hasApiKey}
+                  hasApiKey={hasGeminiApiKey}
                 />
               </form>
             </div>
@@ -122,7 +106,7 @@ export function SuggestionsModal() {
                 <Button
                   type="submit"
                   form="suggestions-form"
-                  disabled={isSubmitting || !hasApiKey}
+                  disabled={isSubmitting || !hasGeminiApiKey}
                   className="w-full sm:w-auto"
                 >
                   {isSubmitting ? 'Saving...' : 'Save Settings'}

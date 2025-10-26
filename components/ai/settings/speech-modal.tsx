@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { SpeakerWaveIcon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -11,48 +11,32 @@ import { Button } from '@/components/ui/button';
 
 import { useToast } from '@/hooks/use-toast';
 
-import { useAccount } from '@/services/account';
-import { DEFAULT_SPEECH_CONFIG } from '@/services/ai/defaults';
+import { useAISettings } from '@/services/ai';
 
 import { SpeechForm, SpeechFormData, SpeechFormSchema } from './speech-form';
 
 export function SpeechModal() {
   const [isOpen, setIsOpen] = useState(false);
-  const { account, updateAccount } = useAccount();
+  const { speech, hasElevenLabsApiKey, updateSpeech } = useAISettings();
   const { show, showError } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Build default values from account data or fallback to defaults
-  const defaultValues = useMemo(() => {
-    if (account?.ai_speech) {
-      return {
-        ...DEFAULT_SPEECH_CONFIG,
-        ...account.ai_speech,
-      };
-    }
-    return DEFAULT_SPEECH_CONFIG;
-  }, [account]);
-
   const form = useForm<SpeechFormData>({
     resolver: zodResolver(SpeechFormSchema),
-    defaultValues,
+    defaultValues: speech,
   });
 
-  // Reset form when dialog opens or account changes
+  // Reset form when dialog opens or speech config changes
   useEffect(() => {
     if (isOpen) {
-      form.reset(defaultValues);
+      form.reset(speech);
     }
-  }, [defaultValues, form, isOpen]);
-
-  const hasElevenLabsApiKey = Boolean(account?.ai_providers?.eleven_labs?.api_key);
+  }, [speech, form, isOpen]);
 
   const onSubmit = async (data: SpeechFormData) => {
     setIsSubmitting(true);
     try {
-      await updateAccount({
-        ai_speech: data,
-      });
+      await updateSpeech(data);
       show({
         title: 'Speech Settings',
         message: 'Your text-to-speech settings have been updated successfully.',
@@ -73,7 +57,7 @@ export function SpeechModal() {
         aria-label="Configure text-to-speech"
       >
         <SpeakerWaveIcon className="w-4 h-4" />
-        {account?.ai_speech?.voice_name || 'select voice'}{' '}
+        {speech?.voice_name || 'select voice'}{' '}
       </button>
 
       <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { MicrophoneIcon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -11,8 +11,7 @@ import { Button } from '@/components/ui/button';
 
 import { useToast } from '@/hooks/use-toast';
 
-import { useAccount } from '@/services/account';
-import { DEFAULT_TRANSCRIPTION_CONFIG } from '@/services/ai/defaults';
+import { useAISettings } from '@/services/ai';
 
 import {
   TranscriptionForm,
@@ -22,41 +21,26 @@ import {
 
 export function TranscriptionModal() {
   const [isOpen, setIsOpen] = useState(false);
-  const { account, updateAccount } = useAccount();
+  const { transcription, hasGeminiApiKey, updateTranscription } = useAISettings();
   const { show, showError } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Build default values from account data or fallback to defaults
-  const defaultValues = useMemo(() => {
-    if (account?.ai_transcription) {
-      return {
-        ...DEFAULT_TRANSCRIPTION_CONFIG,
-        ...account.ai_transcription,
-      };
-    }
-    return DEFAULT_TRANSCRIPTION_CONFIG;
-  }, [account]);
-
   const form = useForm<TranscriptionFormData>({
     resolver: zodResolver(TranscriptionFormSchema),
-    defaultValues,
+    defaultValues: transcription,
   });
 
-  // Reset form when dialog opens or account changes
+  // Reset form when dialog opens or transcription config changes
   useEffect(() => {
     if (isOpen) {
-      form.reset(defaultValues);
+      form.reset(transcription);
     }
-  }, [defaultValues, form, isOpen]);
-
-  const hasApiKey = Boolean(account?.ai_providers?.gemini?.api_key);
+  }, [transcription, form, isOpen]);
 
   const onSubmit = async (data: TranscriptionFormData) => {
     setIsSubmitting(true);
     try {
-      await updateAccount({
-        ai_transcription: data,
-      });
+      await updateTranscription(data);
       show({
         title: 'Transcription Settings',
         message: 'Your speech-to-text transcription settings have been updated successfully.',
@@ -102,7 +86,7 @@ export function TranscriptionModal() {
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               <form id="transcription-form" onSubmit={form.handleSubmit(onSubmit)}>
-                <TranscriptionForm control={form.control} hasApiKey={hasApiKey} />
+                <TranscriptionForm control={form.control} hasApiKey={hasGeminiApiKey} />
               </form>
             </div>
 
@@ -121,7 +105,7 @@ export function TranscriptionModal() {
                 <Button
                   type="submit"
                   form="transcription-form"
-                  disabled={isSubmitting || !hasApiKey}
+                  disabled={isSubmitting || !hasGeminiApiKey}
                   className="w-full sm:w-auto"
                 >
                   {isSubmitting ? 'Saving...' : 'Save Settings'}

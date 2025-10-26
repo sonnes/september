@@ -16,6 +16,7 @@ import { AudioPlayerProvider } from '@/hooks/use-audio-player';
 
 import { AccountProvider } from '@/services/account/context';
 import AccountsService from '@/services/account/supabase';
+import { AISettingsProvider } from '@/services/ai';
 import { AudioProvider } from '@/services/audio/context';
 import { MessagesProvider, MessagesService } from '@/services/messages';
 import { SpeechProvider } from '@/services/speech';
@@ -59,63 +60,65 @@ export default async function TalkPage({ searchParams }: TalkPageProps) {
 
   return (
     <AccountProvider provider={provider} user={user!} account={account!}>
-      <MessagesProvider provider={provider} messages={messages!}>
-        <AudioProvider provider={provider}>
-          <SpeechProvider>
-            <AudioPlayerProvider>
-              <Layout>
-                <Layout.Header>
-                  <DesktopNav user={user} current="/talk" />
-                  <MobileNav title="Talk" user={user} current="/talk">
-                    <TalkActions />
-                  </MobileNav>
-                  <div className="hidden md:flex items-center justify-between mb-4">
-                    <h1 className="text-2xl font-bold tracking-tight text-white">Talk</h1>
-                    <TalkActions />
-                  </div>
-                </Layout.Header>
+      <AISettingsProvider>
+        <MessagesProvider provider={provider} messages={messages!}>
+          <AudioProvider provider={provider}>
+            <SpeechProvider>
+              <AudioPlayerProvider>
+                <Layout>
+                  <Layout.Header>
+                    <DesktopNav user={user} current="/talk" />
+                    <MobileNav title="Talk" user={user} current="/talk">
+                      <TalkActions />
+                    </MobileNav>
+                    <div className="hidden md:flex items-center justify-between mb-4">
+                      <h1 className="text-2xl font-bold tracking-tight text-white">Talk</h1>
+                      <TalkActions />
+                    </div>
+                  </Layout.Header>
 
-                <Layout.Content>
-                  <TextProvider>
-                    <KeyboardProvider>
-                      <div className="flex h-[calc(100vh-100px)] md:h-[calc(100vh-196px)]">
-                        {/* Left column - Message list */}
-                        <div className="hidden md:block w-1/3  px-2 overflow-y-auto border-r border-zinc-200">
-                          <div className="max-w-full">
-                            <MessageList />
-                          </div>
-                        </div>
-
-                        {/* Main content area */}
-                        <div className="flex-1 flex flex-col px-2 md:px-4 min-w-0 overflow-hidden">
-                          <div className="flex items-center gap-4 border border-zinc-200 rounded-md">
-                            <div className="flex-1 min-w-0">
-                              <AudioPlayer />
+                  <Layout.Content>
+                    <TextProvider>
+                      <KeyboardProvider>
+                        <div className="flex h-[calc(100vh-100px)] md:h-[calc(100vh-196px)]">
+                          {/* Left column - Message list */}
+                          <div className="hidden md:block w-1/3  px-2 overflow-y-auto border-r border-zinc-200">
+                            <div className="max-w-full">
+                              <MessageList />
                             </div>
                           </div>
 
-                          {/* Spacer to push editor to bottom */}
-                          <div className="flex-1"></div>
+                          {/* Main content area */}
+                          <div className="flex-1 flex flex-col px-2 md:px-4 min-w-0 overflow-hidden">
+                            <div className="flex items-center gap-4 border border-zinc-200 rounded-md">
+                              <div className="flex-1 min-w-0">
+                                <AudioPlayer />
+                              </div>
+                            </div>
 
-                          {/* Editor at bottom */}
-                          <div className="flex flex-col py-2">
-                            <Suggestions />
+                            {/* Spacer to push editor to bottom */}
+                            <div className="flex-1"></div>
 
-                            <Autocomplete />
-                            <Editor />
+                            {/* Editor at bottom */}
+                            <div className="flex flex-col py-2">
+                              <Suggestions />
 
-                            <KeyboardRenderer />
+                              <Autocomplete />
+                              <Editor />
+
+                              <KeyboardRenderer />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </KeyboardProvider>
-                  </TextProvider>
-                </Layout.Content>
-              </Layout>
-            </AudioPlayerProvider>
-          </SpeechProvider>
-        </AudioProvider>
-      </MessagesProvider>
+                      </KeyboardProvider>
+                    </TextProvider>
+                  </Layout.Content>
+                </Layout>
+              </AudioPlayerProvider>
+            </SpeechProvider>
+          </AudioProvider>
+        </MessagesProvider>
+      </AISettingsProvider>
     </AccountProvider>
   );
 }
