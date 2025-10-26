@@ -17,7 +17,7 @@ import { SpeechForm, SpeechFormData, SpeechFormSchema } from './speech-form';
 
 export function SpeechModal() {
   const [isOpen, setIsOpen] = useState(false);
-  const { speech, hasElevenLabsApiKey, updateSpeech } = useAISettings();
+  const { speech, updateSpeech } = useAISettings();
   const { show, showError } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -82,12 +82,7 @@ export function SpeechModal() {
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               <form id="speech-form" onSubmit={form.handleSubmit(onSubmit)}>
-                <SpeechForm
-                  control={form.control}
-                  setValue={form.setValue}
-                  getValues={form.getValues}
-                  hasElevenLabsApiKey={hasElevenLabsApiKey}
-                />
+                <SpeechForm control={form.control} setValue={form.setValue} />
               </form>
             </div>
 

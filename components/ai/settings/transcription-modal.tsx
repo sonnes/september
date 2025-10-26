@@ -9,6 +9,7 @@ import { useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 
+import { useAIFeatures } from '@/hooks/use-ai-features';
 import { useToast } from '@/hooks/use-toast';
 
 import { useAISettings } from '@/services/ai';
@@ -21,19 +22,36 @@ import {
 
 export function TranscriptionModal() {
   const [isOpen, setIsOpen] = useState(false);
-  const { transcription, hasGeminiApiKey, updateTranscription } = useAISettings();
+  const { transcription, updateTranscription } = useAISettings();
+  const { hasProviderConfig } = useAIFeatures();
   const { show, showError } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Get API key status
+  const hasGeminiApiKey = hasProviderConfig('gemini');
+
   const form = useForm<TranscriptionFormData>({
     resolver: zodResolver(TranscriptionFormSchema),
-    defaultValues: transcription,
+    defaultValues: {
+      enabled: transcription.enabled,
+      provider: transcription.provider,
+      model: transcription.model as 'gemini-2.5-flash-lite' | 'gemini-2.5-flash' | 'gemini-2.5-pro',
+      settings: transcription.settings,
+    },
   });
 
   // Reset form when dialog opens or transcription config changes
   useEffect(() => {
     if (isOpen) {
-      form.reset(transcription);
+      form.reset({
+        enabled: transcription.enabled,
+        provider: transcription.provider,
+        model: transcription.model as
+          | 'gemini-2.5-flash-lite'
+          | 'gemini-2.5-flash'
+          | 'gemini-2.5-pro',
+        settings: transcription.settings,
+      });
     }
   }, [transcription, form, isOpen]);
 

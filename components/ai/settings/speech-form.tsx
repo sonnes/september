@@ -8,10 +8,13 @@ import { z } from 'zod';
 import { FormCheckbox, FormDropdown, FormRangeWithLabels } from '@/components/ui/form';
 import VoicesList from '@/components/voices/voices-list';
 
+import { useAIFeatures } from '@/hooks/use-ai-features';
 import { useToast } from '@/hooks/use-toast';
 
+import { getModelsForProvider, getProvidersForFeature } from '@/services/ai/registry';
 import { useSpeechContext } from '@/services/speech/context';
 
+import type { AIProvider } from '@/types/ai-config';
 import type { Voice } from '@/types/voice';
 
 /**
@@ -41,45 +44,30 @@ export const SpeechFormSchema = z.object({
 
 export type SpeechFormData = z.infer<typeof SpeechFormSchema>;
 
-const SPEECH_PROVIDERS = [
-  { id: 'browser', name: 'Browser TTS (Free, No API Key)' },
-  { id: 'elevenlabs', name: 'ElevenLabs (High Quality, Requires API Key)' },
-  { id: 'gemini', name: 'Gemini Speech (Google AI, Requires API Key)' },
-];
+// Get speech providers from registry
+const getSpeechProviders = () => {
+  return getProvidersForFeature('speech').map(provider => ({
+    id: provider.id,
+    name: provider.name,
+  }));
+};
 
-const ELEVENLABS_MODELS = [
-  { id: 'eleven_v3', name: 'Eleven v3' },
-  { id: 'eleven_multilingual_v2', name: 'Eleven Multilingual v2' },
-  { id: 'eleven_flash_v2_5', name: 'Eleven Flash v2.5' },
-  { id: 'eleven_flash_v2', name: 'Eleven Flash v2 (English Only)' },
-];
-
-const GEMINI_MODELS = [
-  { id: 'gemini-2.5-flash-preview-tts', name: 'Gemini 2.5 Flash Preview TTS' },
-  { id: 'gemini-2.5-pro-preview-tts', name: 'Gemini 2.5 Pro Preview TTS' },
-];
+// Get models for a specific provider from registry
+const getProviderModels = (providerId: string) => {
+  return getModelsForProvider(providerId as AIProvider).map(model => ({
+    id: model.id,
+    name: model.name,
+  }));
+};
 
 interface SpeechFormProps {
   control: Control<SpeechFormData>;
   setValue: UseFormSetValue<SpeechFormData>;
-  getValues: (name?: string) => any;
-  hasElevenLabsApiKey: boolean;
-  hasGeminiApiKey?: boolean;
-  elevenLabsApiKey?: string;
-  geminiApiKey?: string;
 }
 
-export function SpeechForm({
-  control,
-  setValue,
-  getValues,
-  hasElevenLabsApiKey,
-  hasGeminiApiKey,
-  elevenLabsApiKey,
-  geminiApiKey,
-}: SpeechFormProps) {
-  const { showError } = useToast();
+export function SpeechForm({ control, setValue }: SpeechFormProps) {
   const { getProvider } = useSpeechContext();
+  const { getProviderApiKey } = useAIFeatures();
 
   // Voice state management
   const [voices, setVoices] = useState<Voice[]>([]);
@@ -99,14 +87,8 @@ export function SpeechForm({
 
   // Get the appropriate API key based on provider
   const apiKey = useMemo(() => {
-    if (provider === 'elevenlabs') {
-      return elevenLabsApiKey;
-    }
-    if (provider === 'gemini') {
-      return geminiApiKey;
-    }
-    return undefined;
-  }, [provider, elevenLabsApiKey, geminiApiKey]);
+    return getProviderApiKey(provider as AIProvider);
+  }, [provider, getProviderApiKey]);
 
   // Fetch voices when provider changes
   const fetchVoices = useCallback(async () => {
@@ -120,7 +102,7 @@ export function SpeechForm({
       setVoicesError(null);
       setVoices([]);
 
-      const speechVoices = await providerInstance.listVoices({ apiKey });
+      const speechVoices = await providerInstance.listVoices({ apiKey: apiKey || undefined });
       setVoices(speechVoices || []);
     } catch (err) {
       setVoicesError(err instanceof Error ? err.message : 'Failed to fetch voices');
@@ -162,29 +144,18 @@ export function SpeechForm({
             name="provider"
             control={control}
             label="Provider"
-            options={SPEECH_PROVIDERS}
+            options={getSpeechProviders()}
           />
 
-          {provider === 'elevenlabs' && !hasElevenLabsApiKey && (
+          {!apiKey && (
             <div className="mt-4 rounded-md bg-amber-50 p-4">
               <p className="text-sm text-amber-800">
-                <strong>API Key Required:</strong> You need to configure your ElevenLabs API key in{' '}
+                <strong>API Key Required:</strong> You need to configure your speech provider API
+                key in{' '}
                 <a href="/settings/ai" className="underline hover:text-amber-900">
                   AI Settings
                 </a>{' '}
-                to use ElevenLabs text-to-speech.
-              </p>
-            </div>
-          )}
-
-          {provider === 'gemini' && !hasGeminiApiKey && (
-            <div className="mt-4 rounded-md bg-amber-50 p-4">
-              <p className="text-sm text-amber-800">
-                <strong>API Key Required:</strong> You need to configure your Gemini API key in{' '}
-                <a href="/settings/ai" className="underline hover:text-amber-900">
-                  AI Settings
-                </a>{' '}
-                to use Gemini text-to-speech.
+                to use speech generation.
               </p>
             </div>
           )}
@@ -326,7 +297,7 @@ export function SpeechForm({
                   name="settings.model_id"
                   control={control}
                   label="Model"
-                  options={ELEVENLABS_MODELS}
+                  options={getProviderModels('elevenlabs')}
                   placeholder="Select a model"
                 />
               </div>
@@ -466,7 +437,7 @@ export function SpeechForm({
                   name="settings.model_id"
                   control={control}
                   label="Model"
-                  options={GEMINI_MODELS}
+                  options={getProviderModels('gemini')}
                   placeholder="Select a model"
                 />
               </div>

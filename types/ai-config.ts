@@ -35,7 +35,7 @@ export interface BaseFeatureConfig {
  */
 export interface SuggestionsConfig extends BaseFeatureConfig {
   provider: 'gemini';
-  model: 'gemini-2.5-flash-lite' | 'gemini-2.5-flash' | 'gemini-2.5-pro';
+  model?: string;
   settings?: {
     /** Temperature for generation (0-1) */
     temperature?: number;
@@ -56,7 +56,7 @@ export interface SuggestionsConfig extends BaseFeatureConfig {
  */
 export interface TranscriptionConfig extends BaseFeatureConfig {
   provider: 'gemini';
-  model: 'gemini-2.5-flash-lite' | 'gemini-2.5-flash' | 'gemini-2.5-pro';
+  model?: string;
   settings?: {
     /** Language code (e.g., 'en-US') */
     language?: string;
@@ -124,7 +124,7 @@ export interface GeminiSpeechSettings extends Record<string, unknown> {
  * Configuration for text-to-speech
  */
 export interface SpeechConfig {
-  provider: 'elevenlabs' | 'browser' | 'gemini';
+  provider: 'browser' | 'gemini' | 'elevenlabs';
 
   /** Voice ID (provider-specific) */
   voice_id?: string;
@@ -135,7 +135,7 @@ export interface SpeechConfig {
   /** Model ID (provider-specific) */
   model_id?: string;
 
-  settings?: ElevenLabsSettings | BrowserTTSSettings | GeminiSpeechSettings;
+  settings?: BrowserTTSSettings | GeminiSpeechSettings | ElevenLabsSettings;
 }
 
 /**
@@ -144,10 +144,6 @@ export interface SpeechConfig {
  */
 export interface ProviderConfig {
   gemini?: {
-    api_key: string;
-    base_url?: string;
-  };
-  eleven_labs?: {
     api_key: string;
     base_url?: string;
   };
@@ -163,7 +159,11 @@ export interface ProviderConfig {
     api_key: string;
     base_url?: string;
   };
-  assembly_ai?: {
+  'assembly-ai'?: {
+    api_key: string;
+    base_url?: string;
+  };
+  elevenlabs?: {
     api_key: string;
     base_url?: string;
   };

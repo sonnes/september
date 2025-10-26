@@ -12,19 +12,25 @@ import { FormInput } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 
 import { useAccount } from '@/services/account';
-import { AIProviderMetadata, AI_PROVIDER_REGISTRY } from '@/services/ai/providers';
+import { AI_PROVIDERS } from '@/services/ai/registry';
+
+import type { AIServiceProvider, ProviderConfig } from '@/types/ai-config';
+
+// Get providers that require API keys
+const getProvidersWithApiKeys = (): AIServiceProvider[] => {
+  return Object.values(AI_PROVIDERS).filter(provider => provider.requires_api_key);
+};
 
 // Dynamically generate Zod schema from provider registry
 const createProviderSchema = () => {
   const schemaFields: Record<string, z.ZodTypeAny> = {};
 
-  AI_PROVIDER_REGISTRY.forEach(provider => {
-    schemaFields[provider.apiKeyField] = z.string().optional();
-    schemaFields[provider.baseUrlField] = z
-      .string()
-      .url('Invalid URL')
-      .optional()
-      .or(z.literal(''));
+  getProvidersWithApiKeys().forEach(provider => {
+    const apiKeyField = `${provider.id}_api_key`;
+    const baseUrlField = `${provider.id}_base_url`;
+
+    schemaFields[apiKeyField] = z.string().optional();
+    schemaFields[baseUrlField] = z.string().url('Invalid URL').optional().or(z.literal(''));
   });
 
   return z.object(schemaFields);
@@ -35,17 +41,33 @@ type AIProviderFormData = z.infer<typeof AIProviderSchema>;
 
 interface ProviderSectionProps {
   control: Control<AIProviderFormData>;
-  provider: AIProviderMetadata;
+  provider: AIServiceProvider;
 }
 
+// API key URLs for different providers
+const getApiKeyUrl = (providerId: string): string => {
+  const urls: Record<string, string> = {
+    gemini: 'https://aistudio.google.com/app/apikey',
+    openai: 'https://platform.openai.com/api-keys',
+    anthropic: 'https://console.anthropic.com/settings/keys',
+    whisper: 'https://platform.openai.com/api-keys',
+    'assembly-ai': 'https://www.assemblyai.com/app/account',
+  };
+  return urls[providerId] || '#';
+};
+
 function ProviderSection({ control, provider }: ProviderSectionProps) {
+  const apiKeyField = `${provider.id}_api_key`;
+  const baseUrlField = `${provider.id}_base_url`;
+
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
       <div className="px-4 sm:px-0">
         <h2 className="text-base/7 font-semibold text-zinc-900">{provider.name}</h2>
         <p className="mt-1 text-sm/6 text-zinc-600">{provider.description}</p>
+        <p className="mt-2 text-xs text-zinc-500">Features: {provider.features.join(', ')}</p>
         <a
-          href={provider.apiKeyUrl}
+          href={getApiKeyUrl(provider.id)}
           target="_blank"
           rel="noopener noreferrer"
           className="mt-4 inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-500"
@@ -58,7 +80,7 @@ function ProviderSection({ control, provider }: ProviderSectionProps) {
         <div className="px-4">
           <div className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8">
             <FormInput
-              name={provider.apiKeyField as any}
+              name={apiKeyField as keyof AIProviderFormData}
               control={control}
               label={`${provider.name} API Key`}
               type="password"
@@ -68,7 +90,7 @@ function ProviderSection({ control, provider }: ProviderSectionProps) {
 
             <div>
               <FormInput
-                name={provider.baseUrlField as any}
+                name={baseUrlField as keyof AIProviderFormData}
                 control={control}
                 label="Custom Base URL (Optional)"
                 type="url"
@@ -92,10 +114,14 @@ export default function AISettingsForm() {
   const defaultValues = useMemo(() => {
     const values: Record<string, string> = {};
 
-    AI_PROVIDER_REGISTRY.forEach(provider => {
-      const providerConfig = account?.ai_providers?.[provider.configKey];
-      values[provider.apiKeyField] = providerConfig?.api_key || '';
-      values[provider.baseUrlField] = providerConfig?.base_url || '';
+    getProvidersWithApiKeys().forEach(provider => {
+      const apiKeyField = `${provider.id}_api_key`;
+      const baseUrlField = `${provider.id}_base_url`;
+      const providerConfig =
+        account?.ai_providers?.[provider.id as keyof typeof account.ai_providers];
+
+      values[apiKeyField] = providerConfig?.api_key || '';
+      values[baseUrlField] = providerConfig?.base_url || '';
     });
 
     return values;
@@ -115,23 +141,25 @@ export default function AISettingsForm() {
       // Build the provider config object dynamically
       const providerConfig: Record<string, { api_key: string; base_url?: string }> = {};
 
-      AI_PROVIDER_REGISTRY.forEach(provider => {
-        const apiKey = data[provider.apiKeyField as keyof AIProviderFormData] as string;
-        const baseUrl = data[provider.baseUrlField as keyof AIProviderFormData] as string;
+      getProvidersWithApiKeys().forEach(provider => {
+        const apiKeyField = `${provider.id}_api_key`;
+        const baseUrlField = `${provider.id}_base_url`;
+        const apiKey = data[apiKeyField as keyof AIProviderFormData] as string;
+        const baseUrl = data[baseUrlField as keyof AIProviderFormData] as string;
 
         // Only include provider if API key is provided
         if (apiKey) {
-          providerConfig[provider.configKey] = {
+          providerConfig[provider.id] = {
             api_key: apiKey,
           };
           if (baseUrl) {
-            providerConfig[provider.configKey].base_url = baseUrl;
+            providerConfig[provider.id].base_url = baseUrl;
           }
         }
       });
 
       await updateAccount({
-        ai_providers: providerConfig as any,
+        ai_providers: providerConfig as ProviderConfig,
       });
 
       show({
@@ -178,7 +206,7 @@ export default function AISettingsForm() {
 
       <form onSubmit={form.handleSubmit(onSubmit)}>
         {/* Dynamically render provider sections from registry */}
-        {AI_PROVIDER_REGISTRY.map(provider => (
+        {getProvidersWithApiKeys().map(provider => (
           <ProviderSection key={provider.id} control={form.control} provider={provider} />
         ))}
 

@@ -11,16 +11,13 @@ import {
   DEFAULT_SUGGESTIONS_CONFIG,
   DEFAULT_TRANSCRIPTION_CONFIG,
 } from './defaults';
+import { getSpeechConfig, getSuggestionsConfig, getTranscriptionConfig } from './utils';
 
 interface AISettingsContextType {
   // AI Feature Configurations
   suggestions: SuggestionsConfig;
   transcription: TranscriptionConfig;
   speech: SpeechConfig;
-
-  // API Key Status
-  hasGeminiApiKey: boolean;
-  hasElevenLabsApiKey: boolean;
 
   // Update functions
   updateSuggestions: (config: Partial<SuggestionsConfig>) => Promise<void>;
@@ -37,52 +34,18 @@ interface AISettingsProviderProps {
 export function AISettingsProvider({ children }: AISettingsProviderProps) {
   const { account, updateAccount } = useAccount();
 
-  // Memoized configurations with fallbacks to defaults
+  // Memoized configurations using helper functions
   const suggestions = useMemo(() => {
-    if (account?.ai_suggestions) {
-      return {
-        ...DEFAULT_SUGGESTIONS_CONFIG,
-        ...account.ai_suggestions,
-        settings: {
-          ...DEFAULT_SUGGESTIONS_CONFIG.settings,
-          ...account.ai_suggestions.settings,
-        },
-      };
-    }
-    return DEFAULT_SUGGESTIONS_CONFIG;
-  }, [account?.ai_suggestions]);
+    return account ? getSuggestionsConfig(account) : DEFAULT_SUGGESTIONS_CONFIG;
+  }, [account]);
 
   const transcription = useMemo(() => {
-    if (account?.ai_transcription) {
-      return {
-        ...DEFAULT_TRANSCRIPTION_CONFIG,
-        ...account.ai_transcription,
-        settings: {
-          ...DEFAULT_TRANSCRIPTION_CONFIG.settings,
-          ...account.ai_transcription.settings,
-        },
-      };
-    }
-    return DEFAULT_TRANSCRIPTION_CONFIG;
-  }, [account?.ai_transcription]);
+    return account ? getTranscriptionConfig(account) : DEFAULT_TRANSCRIPTION_CONFIG;
+  }, [account]);
 
   const speech = useMemo(() => {
-    if (account?.ai_speech) {
-      return {
-        ...DEFAULT_SPEECH_CONFIG,
-        ...account.ai_speech,
-        settings: {
-          ...DEFAULT_SPEECH_CONFIG.settings,
-          ...account.ai_speech.settings,
-        },
-      };
-    }
-    return DEFAULT_SPEECH_CONFIG;
-  }, [account?.ai_speech]);
-
-  // API Key status checks
-  const hasGeminiApiKey = Boolean(account?.ai_providers?.gemini?.api_key);
-  const hasElevenLabsApiKey = Boolean(account?.ai_providers?.eleven_labs?.api_key);
+    return account ? getSpeechConfig(account) : DEFAULT_SPEECH_CONFIG;
+  }, [account]);
 
   // Update functions
   const updateSuggestions = async (config: Partial<SuggestionsConfig>) => {
@@ -125,8 +88,6 @@ export function AISettingsProvider({ children }: AISettingsProviderProps) {
     suggestions,
     transcription,
     speech,
-    hasGeminiApiKey,
-    hasElevenLabsApiKey,
     updateSuggestions,
     updateTranscription,
     updateSpeech,

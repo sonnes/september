@@ -9,6 +9,7 @@ import { useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 
+import { useAIFeatures } from '@/hooks/use-ai-features';
 import { useToast } from '@/hooks/use-toast';
 
 import { useAISettings } from '@/services/ai';
@@ -17,19 +18,33 @@ import { SuggestionsForm, SuggestionsFormData, SuggestionsFormSchema } from './s
 
 export function SuggestionsModal() {
   const [isOpen, setIsOpen] = useState(false);
-  const { suggestions, hasGeminiApiKey, updateSuggestions } = useAISettings();
+  const { suggestions, updateSuggestions } = useAISettings();
+  const { hasProviderConfig } = useAIFeatures();
   const { show, showError } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Get API key status
+  const hasGeminiApiKey = hasProviderConfig('gemini');
+
   const form = useForm<SuggestionsFormData>({
     resolver: zodResolver(SuggestionsFormSchema),
-    defaultValues: suggestions,
+    defaultValues: {
+      enabled: suggestions.enabled,
+      provider: suggestions.provider,
+      model: suggestions.model as 'gemini-2.5-flash-lite' | 'gemini-2.5-flash' | 'gemini-2.5-pro',
+      settings: suggestions.settings,
+    },
   });
 
   // Reset form when dialog opens or suggestions change
   useEffect(() => {
     if (isOpen) {
-      form.reset(suggestions);
+      form.reset({
+        enabled: suggestions.enabled,
+        provider: suggestions.provider,
+        model: suggestions.model as 'gemini-2.5-flash-lite' | 'gemini-2.5-flash' | 'gemini-2.5-pro',
+        settings: suggestions.settings,
+      });
     }
   }, [suggestions, form, isOpen]);
 

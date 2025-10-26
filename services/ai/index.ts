@@ -1,4 +1,5 @@
 // AI Services
 export * from './defaults';
-export * from './providers';
+export * from './registry';
 export * from './context';
+export * from './utils';
