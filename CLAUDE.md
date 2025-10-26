@@ -2,14 +2,25 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Important: Always Read README Files
+
+**Before working in any directory, ALWAYS read the README.md file in that directory first.** Each major directory contains a README with:
+
+- Directory purpose and organization
+- Key files and their responsibilities
+- Architecture patterns specific to that area
+- Links to relevant files for reference
+
+This ensures you understand the context and patterns before making changes.
+
 ## Development Commands
 
 ### Core Commands
 
-- `bun run dev` - Start development server
-- `bun run build` - Build production application
-- `bun run start` - Start production server
-- `bun run lint` - Run ESLint for code quality checks
+- `pnpm run dev` - Start development server
+- `pnpm run build` - Build production application
+- `pnpm run start` - Start production server
+- `pnpm run lint` - Run ESLint for code quality checks
 
 ### Database Operations
 
