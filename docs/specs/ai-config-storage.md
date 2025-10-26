@@ -143,17 +143,17 @@ export interface SuggestionsConfig extends BaseFeatureConfig {
   provider: 'gemini';
   model: 'gemini-2.5-flash-lite' | 'gemini-2.5-flash' | 'gemini-2.5-pro';
   settings?: {
+    /** Custom system instructions (PRESERVED from ai_instructions, max 1000 chars) */
+    system_instructions?: string;
+
     /** Temperature for generation (0-1) */
     temperature?: number;
 
     /** Maximum number of suggestions to generate */
-    maxSuggestions?: number;
+    max_suggestions?: number;
 
     /** Number of previous messages to include as context */
-    contextWindow?: number;
-
-    /** Custom system instructions */
-    systemInstructions?: string;
+    context_window?: number;
   };
 }
 
@@ -168,13 +168,13 @@ export interface TranscriptionConfig extends BaseFeatureConfig {
     language?: string;
 
     /** Auto-detect language */
-    detectLanguage?: boolean;
+    detect_language?: boolean;
 
     /** Include timestamps in transcription */
-    includeTimestamps?: boolean;
+    include_timestamps?: boolean;
 
     /** Filter profanity */
-    filterProfanity?: boolean;
+    filter_profanity?: boolean;
   };
 }
 
@@ -185,7 +185,7 @@ export interface SpeechConfig extends BaseFeatureConfig {
   provider: 'elevenlabs' | 'browser';
 
   /** Voice ID (provider-specific) */
-  voiceId?: string;
+  voice_id?: string;
 
   settings?: ElevenLabsSettings | BrowserTTSSettings;
 }
@@ -194,21 +194,33 @@ export interface SpeechConfig extends BaseFeatureConfig {
  * ElevenLabs text-to-speech settings
  */
 export interface ElevenLabsSettings {
+  /** Model ID (eleven_v3, eleven_multilingual_v2, eleven_flash_v2_5, eleven_flash_v2) */
+  model_id?: string;
+
+  /** Speech speed (0.7-1.2) */
+  speed?: number;
+
   /** Voice stability (0-1) */
   stability?: number;
 
-  /** Similarity boost (0-1) */
-  similarity_boost?: number;
+  /** Similarity (0-1) */
+  similarity?: number;
+
+  /** Style exaggeration (0-1) */
+  style?: number;
+
+  /** Speaker boost for clarity */
+  speaker_boost?: boolean;
 }
 
 /**
  * Browser text-to-speech settings
  */
 export interface BrowserTTSSettings {
-  /** Speech speed (0.1-10) */
+  /** Speech speed (0.5-2.0) */
   speed?: number;
 
-  /** Voice pitch (0-2) */
+  /** Voice pitch (-20 to 20) */
   pitch?: number;
 
   /** Volume (0-1) */
@@ -221,12 +233,12 @@ export interface BrowserTTSSettings {
  */
 export interface ProviderConfig {
   gemini?: {
-    apiKey: string;
-    baseUrl?: string;
+    api_key: string;
+    base_url?: string;
   };
-  elevenLabs?: {
-    apiKey: string;
-    baseUrl?: string;
+  eleven_labs?: {
+    api_key: string;
+    base_url?: string;
   };
 }
 
@@ -238,7 +250,7 @@ export interface AIServiceProvider {
   name: string;
   description: string;
   features: AIFeature[];
-  requiresApiKey: boolean;
+  requires_api_key: boolean;
   models?: Array<{
     id: string;
     name: string;
@@ -275,13 +287,15 @@ export interface Account {
   // Provider Config (NEW - Supabase only)
   ai_providers?: ProviderConfig;
 
-  // DEPRECATED: Legacy fields (keep for backward compatibility)
+  // PRESERVED: Fields that remain for specific purposes
+  ai_corpus?: string; // Used by autocomplete training (not part of feature config)
+
+  // DEPRECATED: Legacy fields (keep for backward compatibility during migration)
   speech_provider?: string;
   speech_settings?: BrowserTTSSettings & ElevenLabsSettings;
   voice?: Voice;
-  ai_instructions?: string;
-  ai_corpus?: string;
-  gemini_api_key?: string;
+  ai_instructions?: string; // Migrated to ai_suggestions.settings.system_instructions
+  gemini_api_key?: string; // Migrated to ai_providers.gemini.api_key
 
   // Flags
   terms_accepted?: boolean;
@@ -310,9 +324,10 @@ export const DEFAULT_SUGGESTIONS_CONFIG: SuggestionsConfig = {
   provider: 'gemini',
   model: 'gemini-2.5-flash-lite',
   settings: {
+    system_instructions: '', // Migrated from ai_instructions
     temperature: 0.7,
-    maxSuggestions: 5,
-    contextWindow: 10,
+    max_suggestions: 5,
+    context_window: 10,
   },
 };
 
@@ -321,9 +336,9 @@ export const DEFAULT_TRANSCRIPTION_CONFIG: TranscriptionConfig = {
   provider: 'gemini',
   model: 'gemini-2.5-flash-lite',
   settings: {
-    detectLanguage: true,
-    includeTimestamps: false,
-    filterProfanity: false,
+    detect_language: true,
+    include_timestamps: false,
+    filter_profanity: false,
   },
 };
 

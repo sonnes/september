@@ -165,11 +165,7 @@ export function migrateAccountAIConfig(account: Account): {
   ai_providers: ProviderConfig;
 } {
   // If already migrated, return existing configs
-  if (
-    account.ai_suggestions &&
-    account.ai_transcription &&
-    account.ai_speech
-  ) {
+  if (account.ai_suggestions && account.ai_transcription && account.ai_speech) {
     return {
       ai_suggestions: account.ai_suggestions,
       ai_transcription: account.ai_transcription,
@@ -199,16 +195,16 @@ export function migrateAccountAIConfig(account: Account): {
       ? {
           enabled: true,
           provider: account.speech_provider as 'gemini' | 'elevenlabs' | 'browser',
-          voiceId: account.voice?.id,
+          voice_id: account.voice?.id,
           settings: account.speech_settings || {},
         }
       : DEFAULT_SPEECH_CONFIG,
 
     ai_providers: {
-      gemini: account.gemini_api_key ? { apiKey: account.gemini_api_key } : undefined,
-      elevenLabs:
+      gemini: account.gemini_api_key ? { api_key: account.gemini_api_key } : undefined,
+      eleven_labs:
         account.speech_provider === 'elevenlabs' && (account.speech_settings as any)?.api_key
-          ? { apiKey: (account.speech_settings as any).api_key }
+          ? { api_key: (account.speech_settings as any).api_key }
           : undefined,
     },
   };
@@ -218,11 +214,7 @@ export function migrateAccountAIConfig(account: Account): {
  * Check if account needs migration
  */
 export function needsMigration(account: Account): boolean {
-  return (
-    !account.ai_suggestions ||
-    !account.ai_transcription ||
-    !account.ai_speech
-  );
+  return !account.ai_suggestions || !account.ai_transcription || !account.ai_speech;
 }
 
 /**
@@ -401,11 +393,7 @@ export function useAccountTriplit() {
 // File: hooks/use-ai-features.ts
 import { useAccount } from '@/services/account';
 
-import {
-  getSpeechConfig,
-  getSuggestionsConfig,
-  getTranscriptionConfig,
-} from '@/lib/ai/migration';
+import { getSpeechConfig, getSuggestionsConfig, getTranscriptionConfig } from '@/lib/ai/migration';
 import type { AIFeature, AIProvider } from '@/types/ai-config';
 
 /**
@@ -439,12 +427,12 @@ export function useAIFeatures() {
     return config?.provider ?? null;
   };
 
-  const hasProviderConfig = (provider: AIProvider): boolean => {
+  const has_provider_config = (provider: AIProvider): boolean => {
     if (provider === 'browser') return true; // No config needed
-    return !!account?.ai_providers?.[provider]?.apiKey;
+    return !!account?.ai_providers?.[provider]?.api_key;
   };
 
-  const canUseFeature = (feature: AIFeature): boolean => {
+  const can_use_feature = (feature: AIFeature): boolean => {
     const config = getFeatureConfig(feature);
     if (!config?.enabled) return false;
 
@@ -452,17 +440,17 @@ export function useAIFeatures() {
     if (config.provider === 'browser') return true;
 
     // Check if we have config for the provider
-    return hasProviderConfig(config.provider);
+    return has_provider_config(config.provider);
   };
 
-  const getProviderApiKey = (provider: AIProvider): string | null => {
+  const get_provider_api_key = (provider: AIProvider): string | null => {
     if (provider === 'browser') return null;
-    return account?.ai_providers?.[provider]?.apiKey ?? null;
+    return account?.ai_providers?.[provider]?.api_key ?? null;
   };
 
-  const getProviderBaseUrl = (provider: AIProvider): string | null => {
+  const get_provider_base_url = (provider: AIProvider): string | null => {
     if (provider === 'browser') return null;
-    return account?.ai_providers?.[provider]?.baseUrl ?? null;
+    return account?.ai_providers?.[provider]?.base_url ?? null;
   };
 
   return {
@@ -520,10 +508,10 @@ export async function POST(req: NextRequest) {
 
     // Get API key and base URL for the configured provider
     const providerConfig = account.ai_providers?.[config.provider];
-    const apiKey = providerConfig?.apiKey;
-    const baseUrl = providerConfig?.baseUrl;
+    const api_key = providerConfig?.api_key;
+    const base_url = providerConfig?.base_url;
 
-    if (!apiKey) {
+    if (!api_key) {
       return NextResponse.json(
         { error: `No API key configured for ${config.provider}` },
         { status: 400 }
@@ -538,7 +526,7 @@ export async function POST(req: NextRequest) {
 
     switch (config.provider) {
       case 'gemini': {
-        const gemini = new GeminiService(apiKey, baseUrl);
+        const gemini = new GeminiService(api_key, base_url);
         const result = await gemini.generateSuggestions({
           text,
           messages,
@@ -613,10 +601,10 @@ export async function POST(req: NextRequest) {
 
     // Get API key and base URL
     const providerConfig = account.ai_providers?.[config.provider];
-    const apiKey = providerConfig?.apiKey;
-    const baseUrl = providerConfig?.baseUrl;
+    const api_key = providerConfig?.api_key;
+    const base_url = providerConfig?.base_url;
 
-    if (!apiKey) {
+    if (!api_key) {
       return NextResponse.json(
         { error: `No API key configured for ${config.provider}` },
         { status: 400 }
@@ -636,7 +624,7 @@ export async function POST(req: NextRequest) {
 
     switch (config.provider) {
       case 'gemini': {
-        const gemini = new GeminiService(apiKey, baseUrl);
+        const gemini = new GeminiService(api_key, base_url);
         const result = await gemini.transcribeAudio({ audio });
         transcription = result.text;
         break;

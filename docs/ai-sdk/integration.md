@@ -9,7 +9,7 @@
 interface BaseFeatureConfig {
   enabled: boolean;
   provider: AIProvider;
-  model?: string;           // ✅ Maps to AI SDK model ID
+  model?: string; // ✅ Maps to AI SDK model ID
   settings?: Record<string, unknown>; // ✅ Maps to AI SDK options
 }
 ```
@@ -18,13 +18,13 @@ interface BaseFeatureConfig {
 
 The current data model is designed to work seamlessly with AI SDK:
 
-| Field | AI SDK Mapping | Notes |
-|-------|----------------|-------|
-| `provider` | Provider selection | `'gemini'` → `@ai-sdk/google` |
-| `model` | Model ID string | `'gemini-2.5-flash-lite'` |
-| `settings.temperature` | `temperature` param | Direct mapping |
-| `settings.maxSuggestions` | Custom logic | Post-processing |
-| `settings.contextWindow` | `messages` array | Build context |
+| Field                      | AI SDK Mapping      | Notes                         |
+| -------------------------- | ------------------- | ----------------------------- |
+| `provider`                 | Provider selection  | `'gemini'` → `@ai-sdk/google` |
+| `model`                    | Model ID string     | `'gemini-2.5-flash-lite'`     |
+| `settings.temperature`     | `temperature` param | Direct mapping                |
+| `settings.max_suggestions` | Custom logic        | Post-processing               |
+| `settings.context_window`  | `messages` array    | Build context                 |
 
 ### Provider Credentials
 
@@ -32,8 +32,8 @@ The current data model is designed to work seamlessly with AI SDK:
 // From ai-config-storage.md
 interface ProviderConfig {
   gemini?: {
-    apiKey: string;     // ✅ Used in createGoogleGenerativeAI()
-    baseUrl?: string;   // ✅ Used in createGoogleGenerativeAI()
+    apiKey: string; // ✅ Used in createGoogleGenerativeAI()
+    baseUrl?: string; // ✅ Used in createGoogleGenerativeAI()
   };
 }
 ```
@@ -45,6 +45,7 @@ interface ProviderConfig {
 ### 1. AI Suggestions
 
 **Current Storage:**
+
 ```typescript
 account.ai_suggestions = {
   enabled: true,
@@ -52,17 +53,18 @@ account.ai_suggestions = {
   model: 'gemini-2.5-flash-lite',
   settings: {
     temperature: 0.7,
-    maxSuggestions: 5,
-    contextWindow: 10,
-    systemInstructions: 'Custom prompt...',
+    max_suggestions: 5,
+    context_window: 10,
+    system_instructions: 'Custom prompt...',
   },
 };
 ```
 
 **AI SDK Implementation:**
+
 ```typescript
-import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
+import { generateText } from 'ai';
 
 async function generateSuggestions(
   config: SuggestionsConfig,
@@ -71,31 +73,27 @@ async function generateSuggestions(
   recentMessages: Message[]
 ) {
   // Build context from recent messages
-  const contextMessages = recentMessages
-    .slice(-config.settings.contextWindow)
-    .map(msg => ({
-      role: 'user',
-      content: msg.content,
-    }));
+  const contextMessages = recentMessages.slice(-config.settings.context_window).map(msg => ({
+    role: 'user',
+    content: msg.content,
+  }));
 
   const result = await generateText({
     model: google(config.model, { apiKey }),
-    system: config.settings.systemInstructions,
-    messages: [
-      ...contextMessages,
-      { role: 'user', content: userInput },
-    ],
+    system: config.settings.system_instructions,
+    messages: [...contextMessages, { role: 'user', content: userInput }],
     temperature: config.settings.temperature,
     maxOutputTokens: 100,
   });
 
   // Parse and limit suggestions
   const allSuggestions = result.text.split('\n').filter(Boolean);
-  return allSuggestions.slice(0, config.settings.maxSuggestions);
+  return allSuggestions.slice(0, config.settings.max_suggestions);
 }
 ```
 
 **Using Structured Output:**
+
 ```typescript
 import { generateObject } from 'ai';
 import { z } from 'zod';
@@ -103,9 +101,9 @@ import { z } from 'zod';
 const { object } = await generateObject({
   model: google(config.model, { apiKey }),
   schema: z.object({
-    suggestions: z.array(z.string()).max(config.settings.maxSuggestions),
+    suggestions: z.array(z.string()).max(config.settings.max_suggestions),
   }),
-  system: config.settings.systemInstructions,
+  system: config.settings.system_instructions,
   prompt: userInput,
   temperature: config.settings.temperature,
 });
@@ -116,6 +114,7 @@ return object.suggestions;
 ### 2. AI Transcription
 
 **Current Storage:**
+
 ```typescript
 account.ai_transcription = {
   enabled: true,
@@ -123,16 +122,17 @@ account.ai_transcription = {
   model: 'gemini-2.5-flash',
   settings: {
     language: 'en-US',
-    detectLanguage: true,
-    includeTimestamps: false,
+    detect_language: true,
+    include_timestamps: false,
   },
 };
 ```
 
 **AI SDK Implementation:**
+
 ```typescript
-import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
+import { generateText } from 'ai';
 
 async function transcribeAudio(
   config: TranscriptionConfig,
@@ -147,7 +147,7 @@ async function transcribeAudio(
         content: [
           {
             type: 'text',
-            text: config.settings.detectLanguage
+            text: config.settings.detect_language
               ? 'Transcribe this audio in its original language:'
               : `Transcribe this audio in ${config.settings.language}:`,
           },
@@ -168,11 +168,12 @@ async function transcribeAudio(
 ### 3. Text-to-Speech (ElevenLabs)
 
 **Current Storage:**
+
 ```typescript
 account.ai_speech = {
   enabled: true,
   provider: 'elevenlabs',
-  voiceId: 'voice_123',
+  voice_id: 'voice_123',
   settings: {
     stability: 0.5,
     similarity_boost: 0.75,
@@ -181,6 +182,7 @@ account.ai_speech = {
 ```
 
 **Direct API Implementation (No AI SDK):**
+
 ```typescript
 async function synthesizeSpeech(
   config: SpeechConfig,
@@ -188,21 +190,18 @@ async function synthesizeSpeech(
   text: string
 ): Promise<ArrayBuffer> {
   if (config.provider === 'elevenlabs') {
-    const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${config.voiceId}`,
-      {
-        method: 'POST',
-        headers: {
-          'xi-api-key': apiKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text,
-          model_id: 'eleven_turbo_v2_5',
-          voice_settings: config.settings,
-        }),
-      }
-    );
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${config.voice_id}`, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text,
+        model_id: 'eleven_turbo_v2_5',
+        voice_settings: config.settings,
+      }),
+    });
     return response.arrayBuffer();
   }
 
@@ -220,21 +219,14 @@ async function synthesizeSpeech(
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 
 export class AIProviderFactory {
-  static createGeminiProvider(config: {
-    apiKey: string;
-    baseUrl?: string;
-  }) {
+  static createGeminiProvider(config: { apiKey: string; baseUrl?: string }) {
     return createGoogleGenerativeAI({
       apiKey: config.apiKey,
       baseURL: config.baseUrl,
     });
   }
 
-  static getModel(
-    provider: AIProvider,
-    modelId: string,
-    credentials: ProviderConfig
-  ) {
+  static getModel(provider: AIProvider, modelId: string, credentials: ProviderConfig) {
     switch (provider) {
       case 'gemini': {
         const google = this.createGeminiProvider(credentials.gemini);
@@ -254,6 +246,7 @@ export class AIProviderFactory {
 // services/ai/suggestions.ts
 import { generateObject } from 'ai';
 import { z } from 'zod';
+
 import { AIProviderFactory } from './provider-factory';
 
 export class SuggestionsService {
@@ -267,24 +260,20 @@ export class SuggestionsService {
       return [];
     }
 
-    const model = AIProviderFactory.getModel(
-      config.provider,
-      config.model,
-      credentials
-    );
+    const model = AIProviderFactory.getModel(config.provider, config.model, credentials);
 
     const { object } = await generateObject({
       model,
       schema: z.object({
         suggestions: z.array(z.string()),
       }),
-      system: config.settings.systemInstructions,
+      system: config.settings.system_instructions,
       prompt: input,
       temperature: config.settings.temperature,
       maxOutputTokens: 100,
     });
 
-    return object.suggestions.slice(0, config.settings.maxSuggestions);
+    return object.suggestions.slice(0, config.settings.max_suggestions);
   }
 }
 ```
@@ -339,8 +328,9 @@ bun remove @google/genai
 ```typescript
 // app/api/ai/suggestions/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { SuggestionsService } from '@/services/ai/suggestions';
+
 import { AccountsService } from '@/services/accounts';
+import { SuggestionsService } from '@/services/ai/suggestions';
 
 export async function POST(req: NextRequest) {
   const { userId, input } = await req.json();
@@ -433,7 +423,7 @@ describe('SuggestionsService', () => {
       model: 'gemini-2.5-flash-lite',
       settings: {
         temperature: 0.7,
-        maxSuggestions: 5,
+        max_suggestions: 5,
       },
     };
     const credentials = {
@@ -442,12 +432,7 @@ describe('SuggestionsService', () => {
       },
     };
 
-    const suggestions = await service.generate(
-      config,
-      credentials,
-      'Hello',
-      []
-    );
+    const suggestions = await service.generate(config, credentials, 'Hello', []);
 
     expect(suggestions).toHaveLength(5);
     expect(suggestions[0]).toBeTruthy();

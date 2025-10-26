@@ -41,13 +41,13 @@ export interface SuggestionsConfig extends BaseFeatureConfig {
     temperature?: number;
 
     /** Maximum number of suggestions to generate */
-    maxSuggestions?: number;
+    max_suggestions?: number;
 
     /** Number of previous messages to include as context */
-    contextWindow?: number;
+    context_window?: number;
 
     /** Custom system instructions */
-    systemInstructions?: string;
+    system_instructions?: string;
   };
 }
 
@@ -62,13 +62,13 @@ export interface TranscriptionConfig extends BaseFeatureConfig {
     language?: string;
 
     /** Auto-detect language */
-    detectLanguage?: boolean;
+    detect_language?: boolean;
 
     /** Include timestamps in transcription */
-    includeTimestamps?: boolean;
+    include_timestamps?: boolean;
 
     /** Filter profanity */
-    filterProfanity?: boolean;
+    filter_profanity?: boolean;
   };
 }
 
@@ -104,7 +104,7 @@ export interface SpeechConfig extends BaseFeatureConfig {
   provider: 'elevenlabs' | 'browser';
 
   /** Voice ID (provider-specific) */
-  voiceId?: string;
+  voice_id?: string;
 
   settings?: ElevenLabsSettings | BrowserTTSSettings;
 }
@@ -115,12 +115,28 @@ export interface SpeechConfig extends BaseFeatureConfig {
  */
 export interface ProviderConfig {
   gemini?: {
-    apiKey: string;
-    baseUrl?: string;
+    api_key: string;
+    base_url?: string;
   };
-  elevenLabs?: {
-    apiKey: string;
-    baseUrl?: string;
+  eleven_labs?: {
+    api_key: string;
+    base_url?: string;
+  };
+  openai?: {
+    api_key: string;
+    base_url?: string;
+  };
+  anthropic?: {
+    api_key: string;
+    base_url?: string;
+  };
+  whisper?: {
+    api_key: string;
+    base_url?: string;
+  };
+  assembly_ai?: {
+    api_key: string;
+    base_url?: string;
   };
 }
 
@@ -132,7 +148,7 @@ export interface AIServiceProvider {
   name: string;
   description: string;
   features: AIFeature[];
-  requiresApiKey: boolean;
+  requires_api_key: boolean;
   models?: Array<{
     id: string;
     name: string;

@@ -75,20 +75,20 @@ A redesigned AI configuration system with:
 
 1. **Suggestions**: AI-powered typing suggestions
    - Providers: Gemini, OpenAI, Anthropic
-   - Settings: temperature, maxSuggestions, contextWindow
+   - Settings: temperature, max_suggestions, context_window
 
 2. **Transcription**: Speech-to-text conversion
    - Providers: Gemini, Whisper, AssemblyAI
-   - Settings: language, detectLanguage, filterProfanity
+   - Settings: language, detect_language, filter_profanity
 
 3. **Speech**: Text-to-speech synthesis
    - Providers: Gemini, ElevenLabs, Browser
-   - Settings: voiceId, speed, pitch, volume
+   - Settings: voice_id, speed, pitch, volume
 
 ### Provider Support
 
 | Provider    | Suggestions | Transcription | Speech | API Key Required |
-|-------------|-------------|---------------|--------|------------------|
+| ----------- | ----------- | ------------- | ------ | ---------------- |
 | Gemini      | ✅          | ✅            | ✅     | Yes              |
 | OpenAI      | ✅          | ✅            | ❌     | Yes              |
 | Anthropic   | ✅          | ❌            | ❌     | Yes              |
@@ -131,29 +131,29 @@ This overview links to the following detailed specifications:
 
 **Goal**: Create type definitions and core utilities
 
-- [ ] Create `types/ai-config.ts` with all type definitions
+- [x] Create `types/ai-config.ts` with all type definitions
 - [ ] Create `services/ai/registry.ts` with provider registry
-- [ ] Create `lib/ai/defaults.ts` with default configurations
-- [ ] Create `lib/ai/migration.ts` with migration utilities
-- [ ] Write unit tests for migration logic
+- [x] Create `lib/ai/defaults.ts` with default configurations
 
 **Deliverables**:
+
 - Type-safe configuration system
 - Provider registry
-- Migration utilities tested
+- Default configurations
 
 ### Phase 2: Storage (Week 1-2)
 
 **Goal**: Update database schemas
 
-- [ ] Create Supabase migration SQL file
-- [ ] Update Triplit schema
+- [x] Create Supabase migration SQL file
+- [x] Update Triplit schema
 - [ ] Test migration locally
 - [ ] Deploy migration to staging
 - [ ] Create rollback plan
 - [ ] Verify data integrity
 
 **Deliverables**:
+
 - New database columns
 - Schema documentation
 - Tested rollback procedure
@@ -170,6 +170,7 @@ This overview links to the following detailed specifications:
 - [ ] Update existing hooks to use new configs
 
 **Deliverables**:
+
 - Account service updated
 - Feature access hooks
 - Security utilities
@@ -186,27 +187,12 @@ This overview links to the following detailed specifications:
 - [ ] Add analytics tracking
 
 **Deliverables**:
+
 - Updated API routes
 - Rate limiting implemented
 - Error handling improved
 
-### Phase 5: Data Migration (Week 3)
-
-**Goal**: Migrate existing user data
-
-- [ ] Create migration script for existing accounts
-- [ ] Test migration with sample data
-- [ ] Run migration on staging
-- [ ] Verify data integrity
-- [ ] Monitor for errors
-- [ ] Run migration on production
-
-**Deliverables**:
-- All users migrated to new schema
-- Zero data loss
-- Backward compatibility maintained
-
-### Phase 6: UI Implementation (Week 3-4)
+### Phase 5: UI Implementation (Week 3-4)
 
 **Goal**: Build user interface
 
@@ -219,27 +205,12 @@ This overview links to the following detailed specifications:
 - [ ] Responsive design testing
 
 **Deliverables**:
+
 - Complete settings UI
 - Accessible forms
 - Mobile-responsive
 
-### Phase 7: Testing & Polish (Week 4)
-
-**Goal**: Comprehensive testing
-
-- [ ] Unit tests for all components
-- [ ] Integration tests for flows
-- [ ] E2E tests for critical paths
-- [ ] Performance testing
-- [ ] Security audit
-- [ ] Documentation updates
-
-**Deliverables**:
-- Test coverage > 80%
-- All critical paths tested
-- Documentation complete
-
-### Phase 8: Cleanup (Week 4+)
+### Phase 6: Cleanup (Week 4+)
 
 **Goal**: Remove legacy code
 
@@ -250,60 +221,10 @@ This overview links to the following detailed specifications:
 - [ ] Final security review
 
 **Deliverables**:
+
 - Clean codebase
 - Updated docs
 - No deprecated code
-
----
-
-## Migration Strategy
-
-### Backward Compatibility
-
-**Phase 1-2 (Weeks 1-3)**: Dual Support
-- Both old and new fields exist
-- Read from new fields, fall back to old
-- Write to both old and new fields
-- No breaking changes
-
-**Phase 3 (Weeks 3-4)**: Deprecation Warnings
-- Log warnings when old fields used
-- Encourage users to update settings
-- Monitor usage metrics
-
-**Phase 4 (Week 5+)**: Legacy Removal
-- Stop writing to old fields
-- Remove old field reading logic
-- Drop old database columns (after 90 days)
-
-### Data Migration Script
-
-```typescript
-// File: scripts/migrate-ai-config.ts
-import { AccountsService } from '@/services/account/supabase';
-import { migrateAccountAIConfig } from '@/lib/ai/migration';
-
-async function migrateAllAccounts() {
-  const service = new AccountsService();
-  const accounts = await service.getAll();
-
-  let success = 0;
-  let failed = 0;
-
-  for (const account of accounts) {
-    try {
-      const migrated = migrateAccountAIConfig(account);
-      await service.update(account.id, migrated);
-      success++;
-    } catch (error) {
-      console.error(`Failed to migrate account ${account.id}:`, error);
-      failed++;
-    }
-  }
-
-  console.log(`Migration complete: ${success} succeeded, ${failed} failed`);
-}
-```
 
 ---
 
@@ -332,41 +253,6 @@ async function migrateAllAccounts() {
 
 ---
 
-## Security Checklist
-
-- [ ] API keys never sent to client
-- [ ] API keys encrypted at rest
-- [ ] RLS policies enforced in Supabase
-- [ ] No credentials in Triplit/local storage
-- [ ] Rate limiting implemented
-- [ ] Input validation on all forms
-- [ ] CSRF protection on API routes
-- [ ] Audit logging for config changes
-
----
-
-## Rollback Plan
-
-### Level 1: Configuration Rollback
-- Disable new features via feature flags
-- Revert to old configuration reading
-- No database changes needed
-- **Time**: < 5 minutes
-
-### Level 2: Service Rollback
-- Deploy previous service version
-- Keep database changes
-- Graceful degradation
-- **Time**: < 15 minutes
-
-### Level 3: Full Rollback
-- Revert database migration
-- Deploy previous code version
-- Restore from backup if needed
-- **Time**: < 1 hour
-
----
-
 ## Documentation Updates
 
 Required documentation updates:
@@ -379,28 +265,7 @@ Required documentation updates:
 
 ---
 
-## Future Enhancements
-
-### Post-Launch Improvements
-
-1. **Multi-Provider Support**: Use multiple providers simultaneously
-2. **Usage Analytics**: Dashboard for API usage
-3. **Cost Optimization**: Smart provider routing
-4. **Advanced Settings**: Per-message provider selection
-5. **Caching**: Response caching for common queries
-6. **Webhooks**: Notify on quota limits
-7. **Team Management**: Share API keys across team
-
----
-
-## Questions & Decisions
-
-### Open Questions
-
-1. **Provider Fallback**: Should we automatically fall back to another provider if one fails?
-2. **Cost Limits**: Should we implement spending limits per user/provider?
-3. **Caching Strategy**: What responses should be cached?
-4. **Migration Timeline**: How long should we support legacy fields?
+## Decisions
 
 ### Key Decisions
 

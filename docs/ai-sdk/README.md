@@ -12,11 +12,11 @@ Documentation for AI SDK integration in September app.
 
 ### Providers in September
 
-| Provider | SDK | Use Case | Configuration |
-|----------|-----|----------|---------------|
-| **Gemini** | `@ai-sdk/google` | AI Suggestions, Transcription | `ai_suggestions`, `ai_transcription` |
-| **ElevenLabs** | Direct API | Text-to-Speech | `ai_speech` |
-| **Browser TTS** | Web Speech API | Fallback TTS | `ai_speech` |
+| Provider        | SDK              | Use Case                      | Configuration                        |
+| --------------- | ---------------- | ----------------------------- | ------------------------------------ |
+| **Gemini**      | `@ai-sdk/google` | AI Suggestions, Transcription | `ai_suggestions`, `ai_transcription` |
+| **ElevenLabs**  | Direct API       | Text-to-Speech                | `ai_speech`                          |
+| **Browser TTS** | Web Speech API   | Fallback TTS                  | `ai_speech`                          |
 
 ### Installation
 
@@ -76,8 +76,8 @@ interface SuggestionsConfig {
   model: 'gemini-2.5-flash-lite' | 'gemini-2.5-flash' | 'gemini-2.5-pro';
   settings: {
     temperature?: number;
-    maxSuggestions?: number;
-    contextWindow?: number;
+    max_suggestions?: number;
+    context_window?: number;
   };
 }
 ```
@@ -88,7 +88,7 @@ interface SuggestionsConfig {
 interface SpeechConfig {
   enabled: boolean;
   provider: 'elevenlabs' | 'browser';
-  voiceId?: string;
+  voice_id?: string;
   settings?: {
     stability?: number;
     similarity_boost?: number;

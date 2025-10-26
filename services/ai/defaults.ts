@@ -6,8 +6,8 @@ export const DEFAULT_SUGGESTIONS_CONFIG: SuggestionsConfig = {
   model: 'gemini-2.5-flash-lite',
   settings: {
     temperature: 0.7,
-    maxSuggestions: 5,
-    contextWindow: 10,
+    max_suggestions: 5,
+    context_window: 10,
   },
 };
 
@@ -16,9 +16,9 @@ export const DEFAULT_TRANSCRIPTION_CONFIG: TranscriptionConfig = {
   provider: 'gemini',
   model: 'gemini-2.5-flash-lite',
   settings: {
-    detectLanguage: true,
-    includeTimestamps: false,
-    filterProfanity: false,
+    detect_language: true,
+    include_timestamps: false,
+    filter_profanity: false,
   },
 };
 

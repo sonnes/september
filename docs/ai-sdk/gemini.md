@@ -27,25 +27,25 @@ const google = createGoogleGenerativeAI({
 
 ## Models
 
-| Model ID | Use Case | Context Window |
-|----------|----------|----------------|
-| `gemini-2.5-flash` | Fast text generation | 1M tokens |
-| `gemini-2.5-flash-lite` | Lightweight, faster | 1M tokens |
-| `gemini-2.5-pro` | Advanced reasoning | 2M tokens |
-| `gemini-1.5-flash` | Stable, fast | 1M tokens |
-| `gemini-1.5-pro` | Stable, advanced | 2M tokens |
+| Model ID                | Use Case             | Context Window |
+| ----------------------- | -------------------- | -------------- |
+| `gemini-2.5-flash`      | Fast text generation | 1M tokens      |
+| `gemini-2.5-flash-lite` | Lightweight, faster  | 1M tokens      |
+| `gemini-2.5-pro`        | Advanced reasoning   | 2M tokens      |
+| `gemini-1.5-flash`      | Stable, fast         | 1M tokens      |
+| `gemini-1.5-pro`        | Stable, advanced     | 2M tokens      |
 
 ## Usage in September
 
 ### AI Suggestions
 
 ```typescript
-import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
+import { generateText } from 'ai';
 
 const result = await generateText({
   model: google('gemini-2.5-flash-lite'),
-  system: systemInstructions,
+  system: system_instructions,
   prompt: userInput,
   temperature: 0.7,
   maxOutputTokens: 100,
@@ -57,8 +57,8 @@ const suggestions = result.text;
 ### AI Transcription
 
 ```typescript
-import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
+import { generateText } from 'ai';
 
 const result = await generateText({
   model: google('gemini-2.5-flash'),
@@ -144,6 +144,7 @@ try {
 ## Migration from @google/genai
 
 ### Current Implementation
+
 ```typescript
 import { GoogleGenAI } from '@google/genai';
 
@@ -159,9 +160,10 @@ const response = await ai.models.generateContent({
 ```
 
 ### AI SDK Implementation
+
 ```typescript
-import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
+import { generateText } from 'ai';
 
 const result = await generateText({
   model: google('gemini-2.5-flash-lite'),
