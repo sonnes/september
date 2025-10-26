@@ -5,11 +5,7 @@ import React from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import {
-  DocumentIcon,
-  PlusIcon,
-  TrashIcon,
-} from '@heroicons/react/24/outline';
+import { DocumentIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import moment from 'moment';
 
 import { useDocumentsContext } from '@/components/context/documents-provider';
@@ -19,9 +15,8 @@ interface DocumentsSidebarProps {
   className?: string;
 }
 
-export default function DocumentsSidebar({ }: DocumentsSidebarProps) {
-  const { documents, fetching, current, deleteDocument, putDocument } =
-    useDocumentsContext();
+export default function DocumentsSidebar({}: DocumentsSidebarProps) {
+  const { documents, fetching, current, deleteDocument, putDocument } = useDocumentsContext();
 
   const handleCreateDocument = async () => {
     const newDoc = await putDocument({ name: '', content: '' });
@@ -79,7 +74,7 @@ export default function DocumentsSidebar({ }: DocumentsSidebarProps) {
                   : 'border border-transparent'
               }`}
             >
-              <DocumentIcon className="h-5 w-5 text-zinc-400 mr-3 flex-shrink-0" />
+              <DocumentIcon className="h-5 w-5 text-zinc-400 mr-3 shrink-0" />
               <div className="flex-1 min-w-0">
                 <p
                   className={`text-sm font-medium truncate ${

@@ -181,7 +181,7 @@ export interface TranscriptionConfig extends BaseFeatureConfig {
 /**
  * Configuration for text-to-speech
  */
-export interface SpeechConfig extends BaseFeatureConfig {
+export interface SpeechConfig {
   provider: 'elevenlabs' | 'browser';
 
   /** Voice ID (provider-specific) */
@@ -343,7 +343,6 @@ export const DEFAULT_TRANSCRIPTION_CONFIG: TranscriptionConfig = {
 };
 
 export const DEFAULT_SPEECH_CONFIG: SpeechConfig = {
-  enabled: true,
   provider: 'browser', // Safe default for all users
   settings: {
     speed: 1.0,

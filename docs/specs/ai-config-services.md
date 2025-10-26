@@ -419,6 +419,8 @@ export function useAIFeatures() {
 
   const isFeatureEnabled = (feature: AIFeature): boolean => {
     const config = getFeatureConfig(feature);
+    // Speech is always enabled (no enabled flag)
+    if (feature === 'speech') return true;
     return config?.enabled ?? false;
   };
 
@@ -434,7 +436,11 @@ export function useAIFeatures() {
 
   const can_use_feature = (feature: AIFeature): boolean => {
     const config = getFeatureConfig(feature);
-    if (!config?.enabled) return false;
+    if (!config) return false;
+
+    // Speech is always enabled (no enabled flag)
+    // Other features check the enabled flag
+    if (feature !== 'speech' && !config?.enabled) return false;
 
     // Browser-based features don't need config
     if (config.provider === 'browser') return true;

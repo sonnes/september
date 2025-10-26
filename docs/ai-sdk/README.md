@@ -86,7 +86,6 @@ interface SuggestionsConfig {
 
 ```typescript
 interface SpeechConfig {
-  enabled: boolean;
   provider: 'elevenlabs' | 'browser';
   voice_id?: string;
   settings?: {

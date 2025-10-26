@@ -73,7 +73,6 @@ Based on [`ai-config-storage.md`](../specs/ai-config-storage.md):
 
 ```typescript
 interface SpeechConfig {
-  enabled: boolean;
   provider: 'elevenlabs' | 'gemini' | 'browser';
   voice_id?: string; // ElevenLabs voice ID
   settings?: {

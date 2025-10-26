@@ -26,7 +26,7 @@ export function FeaturesSection() {
             <ul className="space-y-3">
               <li className="flex items-start">
                 <svg
-                  className="w-4 h-4 text-purple-600 mt-1 mr-3 flex-shrink-0"
+                  className="w-4 h-4 text-purple-600 mt-1 mr-3 shrink-0"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -36,7 +36,7 @@ export function FeaturesSection() {
               </li>
               <li className="flex items-start">
                 <svg
-                  className="w-4 h-4 text-purple-600 mt-1 mr-3 flex-shrink-0"
+                  className="w-4 h-4 text-purple-600 mt-1 mr-3 shrink-0"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -46,7 +46,7 @@ export function FeaturesSection() {
               </li>
               <li className="flex items-start">
                 <svg
-                  className="w-4 h-4 text-purple-600 mt-1 mr-3 flex-shrink-0"
+                  className="w-4 h-4 text-purple-600 mt-1 mr-3 shrink-0"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -96,7 +96,7 @@ export function FeaturesSection() {
             <ul className="space-y-3">
               <li className="flex items-start">
                 <svg
-                  className="w-4 h-4 text-blue-600 mt-1 mr-3 flex-shrink-0"
+                  className="w-4 h-4 text-blue-600 mt-1 mr-3 shrink-0"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -106,7 +106,7 @@ export function FeaturesSection() {
               </li>
               <li className="flex items-start">
                 <svg
-                  className="w-4 h-4 text-blue-600 mt-1 mr-3 flex-shrink-0"
+                  className="w-4 h-4 text-blue-600 mt-1 mr-3 shrink-0"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -116,7 +116,7 @@ export function FeaturesSection() {
               </li>
               <li className="flex items-start">
                 <svg
-                  className="w-4 h-4 text-blue-600 mt-1 mr-3 flex-shrink-0"
+                  className="w-4 h-4 text-blue-600 mt-1 mr-3 shrink-0"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -187,7 +187,7 @@ export function FeaturesSection() {
             <ul className="space-y-3">
               <li className="flex items-start">
                 <svg
-                  className="w-4 h-4 text-green-600 mt-1 mr-3 flex-shrink-0"
+                  className="w-4 h-4 text-green-600 mt-1 mr-3 shrink-0"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -197,7 +197,7 @@ export function FeaturesSection() {
               </li>
               <li className="flex items-start">
                 <svg
-                  className="w-4 h-4 text-green-600 mt-1 mr-3 flex-shrink-0"
+                  className="w-4 h-4 text-green-600 mt-1 mr-3 shrink-0"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -207,7 +207,7 @@ export function FeaturesSection() {
               </li>
               <li className="flex items-start">
                 <svg
-                  className="w-4 h-4 text-green-600 mt-1 mr-3 flex-shrink-0"
+                  className="w-4 h-4 text-green-600 mt-1 mr-3 shrink-0"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -264,7 +264,7 @@ export function FeaturesSection() {
             <ul className="space-y-3">
               <li className="flex items-start">
                 <svg
-                  className="w-4 h-4 text-orange-600 mt-1 mr-3 flex-shrink-0"
+                  className="w-4 h-4 text-orange-600 mt-1 mr-3 shrink-0"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -274,7 +274,7 @@ export function FeaturesSection() {
               </li>
               <li className="flex items-start">
                 <svg
-                  className="w-4 h-4 text-orange-600 mt-1 mr-3 flex-shrink-0"
+                  className="w-4 h-4 text-orange-600 mt-1 mr-3 shrink-0"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >

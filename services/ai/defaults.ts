@@ -23,7 +23,6 @@ export const DEFAULT_TRANSCRIPTION_CONFIG: TranscriptionConfig = {
 };
 
 export const DEFAULT_SPEECH_CONFIG: SpeechConfig = {
-  enabled: true,
   provider: 'browser', // Safe default for all users
   settings: {
     speed: 1.0,

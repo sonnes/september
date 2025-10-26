@@ -76,21 +76,33 @@ export interface TranscriptionConfig extends BaseFeatureConfig {
  * ElevenLabs text-to-speech settings
  */
 export interface ElevenLabsSettings extends Record<string, unknown> {
+  /** Model ID for ElevenLabs */
+  model_id?: string;
+
   /** Voice stability (0-1) */
   stability?: number;
 
   /** Similarity boost (0-1) */
-  similarity_boost?: number;
+  similarity?: number;
+
+  /** Style exaggeration (0-1) */
+  style?: number;
+
+  /** Speaker boost for clarity */
+  speaker_boost?: boolean;
+
+  /** Speech speed (0.7-1.2) */
+  speed?: number;
 }
 
 /**
  * Browser text-to-speech settings
  */
 export interface BrowserTTSSettings extends Record<string, unknown> {
-  /** Speech speed (0.1-10) */
+  /** Speech speed (0.5-2.0) */
   speed?: number;
 
-  /** Voice pitch (0-2) */
+  /** Voice pitch (-20 to 20) */
   pitch?: number;
 
   /** Volume (0-1) */
@@ -98,15 +110,32 @@ export interface BrowserTTSSettings extends Record<string, unknown> {
 }
 
 /**
+ * Gemini text-to-speech settings
+ */
+export interface GeminiSpeechSettings extends Record<string, unknown> {
+  /** Model ID for Gemini TTS */
+  model_id?: string;
+
+  /** Voice name for Gemini TTS */
+  voice_name?: string;
+}
+
+/**
  * Configuration for text-to-speech
  */
-export interface SpeechConfig extends BaseFeatureConfig {
-  provider: 'elevenlabs' | 'browser';
+export interface SpeechConfig {
+  provider: 'elevenlabs' | 'browser' | 'gemini';
 
   /** Voice ID (provider-specific) */
   voice_id?: string;
 
-  settings?: ElevenLabsSettings | BrowserTTSSettings;
+  /** Voice name (provider-specific) */
+  voice_name?: string;
+
+  /** Model ID (provider-specific) */
+  model_id?: string;
+
+  settings?: ElevenLabsSettings | BrowserTTSSettings | GeminiSpeechSettings;
 }
 
 /**

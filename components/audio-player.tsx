@@ -30,7 +30,7 @@ export default function AudioPlayer() {
           />
         </div>
 
-        <div className="w-6 h-6 flex-shrink-0">
+        <div className="w-6 h-6 shrink-0">
           {current && (
             <button
               onClick={togglePlayPause}
