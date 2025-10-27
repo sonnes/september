@@ -14,7 +14,34 @@ import { useToast } from '@/hooks/use-toast';
 import { useAccount } from '@/services/account';
 import { AI_PROVIDERS } from '@/services/ai/registry';
 
-import type { AIServiceProvider, ProviderConfig } from '@/types/ai-config';
+import type { AIFeature, AIServiceProvider, ProviderConfig } from '@/types/ai-config';
+
+// Feature colors mapping
+const FEATURE_COLORS: Record<AIFeature, string> = {
+  suggestions: 'bg-blue-100 text-blue-800',
+  transcription: 'bg-green-100 text-green-800',
+  speech: 'bg-purple-100 text-purple-800',
+};
+
+// Feature Pills Component
+interface FeaturePillsProps {
+  features: AIFeature[];
+}
+
+function FeaturePills({ features }: FeaturePillsProps) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {features.map(feature => (
+        <span
+          key={feature}
+          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${FEATURE_COLORS[feature]}`}
+        >
+          {feature}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 // Get providers that require API keys
 const getProvidersWithApiKeys = (): AIServiceProvider[] => {
@@ -65,7 +92,10 @@ function ProviderSection({ control, provider }: ProviderSectionProps) {
       <div className="px-4 sm:px-0">
         <h2 className="text-base/7 font-semibold text-zinc-900">{provider.name}</h2>
         <p className="mt-1 text-sm/6 text-zinc-600">{provider.description}</p>
-        <p className="mt-2 text-xs text-zinc-500">Features: {provider.features.join(', ')}</p>
+        <div className="mt-2">
+          <p className="text-xs text-zinc-500 mb-1">Features:</p>
+          <FeaturePills features={provider.features} />
+        </div>
         <a
           href={getApiKeyUrl(provider.id)}
           target="_blank"
