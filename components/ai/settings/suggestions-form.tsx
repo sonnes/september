@@ -2,10 +2,14 @@
 
 import { useState } from 'react';
 
-import { Control, UseFormSetValue, useWatch } from 'react-hook-form';
+import { Control, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 import { z } from 'zod';
 
+import { Button } from '@/components/ui/button';
 import { FormCheckbox, FormDropdown, FormRange, FormTextarea } from '@/components/ui/form';
+
+import { useAIFeatures } from '@/hooks/use-ai-features';
+import { useCorpus } from '@/hooks/use-ai-settings';
 
 /**
  * Zod schema for Suggestions Configuration
@@ -20,6 +24,7 @@ export const SuggestionsFormSchema = z.object({
       temperature: z.number().min(0).max(1).optional(),
       max_suggestions: z.number().min(1).max(10).optional(),
       context_window: z.number().min(0).max(50).optional(),
+      ai_corpus: z.string().max(20000).optional(),
     })
     .optional(),
 });
@@ -50,15 +55,25 @@ const GEMINI_MODELS = [
 interface SuggestionsFormProps {
   control: Control<SuggestionsFormData>;
   setValue: UseFormSetValue<SuggestionsFormData>;
-  hasApiKey: boolean;
+  watch: UseFormWatch<SuggestionsFormData>;
 }
 
-export function SuggestionsForm({ control, setValue, hasApiKey }: SuggestionsFormProps) {
+export function SuggestionsForm({ control, setValue, watch }: SuggestionsFormProps) {
   const [showExamples, setShowExamples] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const { isGenerating, generateCorpus } = useCorpus();
+  const { getProviderApiKey } = useAIFeatures();
+
+  const aiInstructions = watch('settings.system_instructions');
+  const apiKey = getProviderApiKey('gemini');
+  const hasApiKey = !!apiKey;
 
   const handleExampleClick = (example: string) => {
     setValue('settings.system_instructions', example);
+  };
+
+  const handleGenerateCorpus = async () => {
+    const corpus = await generateCorpus(aiInstructions || '');
+    setValue('settings.ai_corpus', corpus);
   };
 
   return (
@@ -184,108 +199,110 @@ export function SuggestionsForm({ control, setValue, hasApiKey }: SuggestionsFor
       {/* AI Corpus Section */}
       <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
         <div className="px-4 sm:px-0">
-          <h2 className="text-base/7 font-semibold text-zinc-900">AI Corpus</h2>
+          <h2 className="text-base/7 font-semibold text-zinc-900">Content Corpus</h2>
           <p className="mt-1 text-sm/6 text-zinc-600">
-            Your existing AI corpus is used for autocompletion training. It is managed separately in
-            the main AI settings.
+            Provide examples of your daily life, conversations, and other content that the AI can
+            use to provide suggestions.
+          </p>
+          <p className="mt-1 text-sm/6 text-zinc-600">
+            Alternatively, you can generate a corpus from your instructions. This will take a few
+            minutes.
           </p>
         </div>
+
         <div className="md:col-span-2 px-4">
-          <div className="rounded-md bg-zinc-50 p-4">
-            <p className="text-sm text-zinc-600">
-              The AI corpus (training data for autocomplete) is stored in your account settings and
-              shared across features. You can manage it in{' '}
-              <a href="/settings/ai" className="text-indigo-600 hover:text-indigo-500 underline">
-                AI Settings
-              </a>
-              .
-            </p>
+          <div className="max-w-2xl space-y-4">
+            <div>
+              <FormTextarea
+                name="settings.ai_corpus"
+                control={control}
+                placeholder="Enter additional knowledge, documents, or context for the AI..."
+                rows={6}
+                maxLength={5000}
+              />
+            </div>
+
+            <div className="flex justify-start">
+              <Button
+                type="button"
+                onClick={handleGenerateCorpus}
+                disabled={!hasApiKey || isGenerating}
+                color="indigo"
+                variant="outline"
+              >
+                {isGenerating ? 'Generating...' : 'Generate Corpus'}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Advanced Settings (Collapsible) */}
+      {/* Advanced Settings */}
       <div className="border-t border-zinc-200 pt-6">
-        <button
-          type="button"
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="flex w-full items-center justify-between px-4 text-left"
-        >
-          <h3 className="text-base/7 font-semibold text-zinc-900">Advanced Settings</h3>
-          <svg
-            className={`h-5 w-5 text-zinc-500 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
+        <h3 className="text-base/7 font-semibold text-zinc-900">Advanced Settings</h3>
 
-        {showAdvanced && (
-          <div className="mt-6 space-y-6">
-            {/* Temperature */}
-            <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
-              <div className="px-4 sm:px-0">
-                <h4 className="text-sm font-medium text-zinc-900">Temperature</h4>
-                <p className="mt-1 text-sm text-zinc-600">
-                  Controls randomness. Lower values make output more focused and deterministic.
-                </p>
-              </div>
-              <div className="md:col-span-2 px-4">
-                <FormRange
-                  name="settings.temperature"
-                  control={control}
-                  min={0}
-                  max={1}
-                  step={0.1}
-                  showValue
-                  valueFormatter={value => value.toFixed(1)}
-                />
-              </div>
+        <div className="mt-6 space-y-6">
+          {/* Temperature */}
+          <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
+            <div className="px-4 sm:px-0">
+              <h4 className="text-sm font-medium text-zinc-900">Temperature</h4>
+              <p className="mt-1 text-sm text-zinc-600">
+                Controls randomness. Lower values make output more focused and deterministic.
+              </p>
             </div>
-
-            {/* Max Suggestions */}
-            <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
-              <div className="px-4 sm:px-0">
-                <h4 className="text-sm font-medium text-zinc-900">Max Suggestions</h4>
-                <p className="mt-1 text-sm text-zinc-600">
-                  Maximum number of suggestions to generate at once.
-                </p>
-              </div>
-              <div className="md:col-span-2 px-4">
-                <FormRange
-                  name="settings.max_suggestions"
-                  control={control}
-                  min={1}
-                  max={10}
-                  step={1}
-                  showValue
-                />
-              </div>
-            </div>
-
-            {/* Context Window */}
-            <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
-              <div className="px-4 sm:px-0">
-                <h4 className="text-sm font-medium text-zinc-900">Context Window</h4>
-                <p className="mt-1 text-sm text-zinc-600">
-                  Number of previous messages to include as context for suggestions.
-                </p>
-              </div>
-              <div className="md:col-span-2 px-4">
-                <FormRange
-                  name="settings.context_window"
-                  control={control}
-                  min={0}
-                  max={50}
-                  step={5}
-                  showValue
-                />
-              </div>
+            <div className="md:col-span-2 px-4">
+              <FormRange
+                name="settings.temperature"
+                control={control}
+                min={0}
+                max={1}
+                step={0.1}
+                showValue
+                valueFormatter={value => value.toFixed(1)}
+              />
             </div>
           </div>
-        )}
+
+          {/* Max Suggestions */}
+          <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
+            <div className="px-4 sm:px-0">
+              <h4 className="text-sm font-medium text-zinc-900">Max Suggestions</h4>
+              <p className="mt-1 text-sm text-zinc-600">
+                Maximum number of suggestions to generate at once.
+              </p>
+            </div>
+            <div className="md:col-span-2 px-4">
+              <FormRange
+                name="settings.max_suggestions"
+                control={control}
+                min={1}
+                max={10}
+                step={1}
+                showValue
+              />
+            </div>
+          </div>
+
+          {/* Context Window */}
+          <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
+            <div className="px-4 sm:px-0">
+              <h4 className="text-sm font-medium text-zinc-900">Context Window</h4>
+              <p className="mt-1 text-sm text-zinc-600">
+                Number of previous messages to include as context for suggestions.
+              </p>
+            </div>
+            <div className="md:col-span-2 px-4">
+              <FormRange
+                name="settings.context_window"
+                control={control}
+                min={0}
+                max={50}
+                step={5}
+                showValue
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

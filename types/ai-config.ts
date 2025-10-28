@@ -48,6 +48,9 @@ export interface SuggestionsConfig extends BaseFeatureConfig {
 
     /** Custom system instructions */
     system_instructions?: string;
+
+    /** Custom corpus */
+    ai_corpus?: string;
   };
 }
 

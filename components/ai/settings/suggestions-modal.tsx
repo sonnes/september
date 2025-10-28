@@ -101,7 +101,7 @@ export function SuggestionsModal() {
                 <SuggestionsForm
                   control={form.control}
                   setValue={form.setValue}
-                  hasApiKey={hasGeminiApiKey}
+                  watch={form.watch}
                 />
               </form>
             </div>

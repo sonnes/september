@@ -1,18 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
+import { useAIFeatures } from '@/hooks/use-ai-features';
 import { useToast } from '@/hooks/use-toast';
 
-import { useAccount } from '@/services/account';
 import GeminiService from '@/services/gemini';
 
 export function useCorpus() {
-  const { account } = useAccount();
+  const { getProviderApiKey } = useAIFeatures();
   const [isGenerating, setIsGenerating] = useState(false);
   const { showError } = useToast();
 
-  const gemini = new GeminiService(account?.gemini_api_key || '');
+  const apiKey = getProviderApiKey('gemini');
+  const gemini = new GeminiService(apiKey || '');
 
   const generateCorpus = async (persona: string) => {
     setIsGenerating(true);
