@@ -1,21 +1,19 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
+
+import Link from 'next/link';
 
 import { Control, UseFormSetValue, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 
 import { FormCheckbox, FormDropdown, FormRangeWithLabels } from '@/components/ui/form';
-import VoicesList from '@/components/voices/voices-list';
-
-import { useToast } from '@/hooks/use-toast';
 
 import { useAISettings } from '@/services/ai/context';
 import { getModelsForProvider, getProvidersForFeature } from '@/services/ai/registry';
 import { useSpeechContext } from '@/services/speech/context';
 
 import type { AIProvider } from '@/types/ai-config';
-import type { Voice } from '@/types/voice';
 
 /**
  * Zod schema for Speech Configuration
@@ -69,13 +67,9 @@ export function SpeechForm({ control, setValue }: SpeechFormProps) {
   const { getProvider } = useSpeechContext();
   const { getProviderConfig } = useAISettings();
 
-  // Voice state management
-  const [voices, setVoices] = useState<Voice[]>([]);
-  const [voicesLoading, setVoicesLoading] = useState(false);
-  const [voicesError, setVoicesError] = useState<string | null>(null);
-
   const provider = useWatch({ control, name: 'provider' });
   const selectedVoiceId = useWatch({ control, name: 'voice_id' });
+  const selectedVoiceName = useWatch({ control, name: 'voice_name' });
 
   // Get the provider instance
   const providerInstance = useMemo(() => {
@@ -89,44 +83,6 @@ export function SpeechForm({ control, setValue }: SpeechFormProps) {
   const apiKey = useMemo(() => {
     return getProviderConfig(provider as AIProvider)?.api_key;
   }, [provider, getProviderConfig]);
-
-  // Fetch voices when provider changes
-  const fetchVoices = useCallback(async () => {
-    if (!providerInstance) {
-      setVoices([]);
-      return;
-    }
-
-    try {
-      setVoicesLoading(true);
-      setVoicesError(null);
-      setVoices([]);
-
-      const speechVoices = await providerInstance.listVoices({ apiKey: apiKey || undefined });
-      setVoices(speechVoices || []);
-    } catch (err) {
-      setVoicesError(err instanceof Error ? err.message : 'Failed to fetch voices');
-      console.error('Error fetching voices:', err);
-    } finally {
-      setVoicesLoading(false);
-    }
-  }, [providerInstance, apiKey]);
-
-  // Fetch voices when provider or API key changes
-  useEffect(() => {
-    if (providerInstance) {
-      fetchVoices();
-    }
-  }, [providerInstance, fetchVoices]);
-
-  // Handle voice selection
-  const handleSelectVoice = useCallback(
-    (voice: Voice) => {
-      setValue('voice_id', voice.id);
-      setValue('voice_name', voice.name);
-    },
-    [setValue]
-  );
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -162,38 +118,43 @@ export function SpeechForm({ control, setValue }: SpeechFormProps) {
         </div>
       </div>
 
-      {/* Voice Selection */}
+      {/* Current Voice */}
       <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
         <div className="px-4 sm:px-0">
-          <h2 className="text-base/7 font-semibold text-zinc-900">Voice Selection</h2>
+          <h2 className="text-base/7 font-semibold text-zinc-900">Voice</h2>
           <p className="mt-1 text-sm/6 text-zinc-600">
-            Choose a voice for text-to-speech generation. Voices are filtered based on your selected
-            provider.
+            Your currently selected voice for text-to-speech generation.
           </p>
         </div>
         <div className="md:col-span-2 px-4">
-          {voicesLoading && (
-            <div className="w-full">
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-zinc-200 p-8 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-                <p className="mt-4 text-zinc-600">Loading voices...</p>
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-zinc-200 p-4">
+            {selectedVoiceName ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-zinc-900">{selectedVoiceName}</p>
+                  {selectedVoiceId && (
+                    <p className="text-xs text-zinc-500 mt-1">ID: {selectedVoiceId}</p>
+                  )}
+                </div>
+                <Link
+                  href="/voices"
+                  className="text-sm font-medium text-indigo-600 hover:text-indigo-900"
+                >
+                  Change voice →
+                </Link>
               </div>
-            </div>
-          )}
-          {voicesError && (
-            <div className="w-full">
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-zinc-200 p-8 text-center">
-                <p className="mt-4 text-zinc-600">Error loading voices: {voicesError}</p>
+            ) : (
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-zinc-600">No voice selected</p>
+                <Link
+                  href="/voices"
+                  className="text-sm font-medium text-indigo-600 hover:text-indigo-900"
+                >
+                  Select voice →
+                </Link>
               </div>
-            </div>
-          )}
-          {!voicesLoading && !voicesError && (
-            <VoicesList
-              voices={voices}
-              selectedVoiceId={selectedVoiceId}
-              onSelectVoice={handleSelectVoice}
-            />
-          )}
+            )}
+          </div>
         </div>
       </div>
 
