@@ -9,22 +9,19 @@ import { useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 
-import { useAIFeatures } from '@/hooks/use-ai-features';
 import { useToast } from '@/hooks/use-toast';
 
 import { useAISettings } from '@/services/ai';
+
+import { AIProvider } from '@/types/ai-config';
 
 import { SuggestionsForm, SuggestionsFormData, SuggestionsFormSchema } from './suggestions-form';
 
 export function SuggestionsModal() {
   const [isOpen, setIsOpen] = useState(false);
   const { suggestions, updateSuggestions } = useAISettings();
-  const { hasProviderConfig } = useAIFeatures();
   const { show, showError } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Get API key status
-  const hasGeminiApiKey = hasProviderConfig('gemini');
 
   const form = useForm<SuggestionsFormData>({
     resolver: zodResolver(SuggestionsFormSchema),
@@ -121,7 +118,7 @@ export function SuggestionsModal() {
                 <Button
                   type="submit"
                   form="suggestions-form"
-                  disabled={isSubmitting || !hasGeminiApiKey}
+                  disabled={isSubmitting}
                   className="w-full sm:w-auto"
                 >
                   {isSubmitting ? 'Saving...' : 'Save Settings'}

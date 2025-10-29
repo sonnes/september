@@ -2,17 +2,17 @@
 
 import { useState } from 'react';
 
-import { useAIFeatures } from '@/hooks/use-ai-features';
 import { useToast } from '@/hooks/use-toast';
 
+import { useAISettings } from '@/services/ai/context';
 import GeminiService from '@/services/gemini';
 
 export function useCorpus() {
-  const { getProviderApiKey } = useAIFeatures();
+  const { getProviderConfig } = useAISettings();
   const [isGenerating, setIsGenerating] = useState(false);
   const { showError } = useToast();
 
-  const apiKey = getProviderApiKey('gemini');
+  const { api_key: apiKey } = getProviderConfig('gemini') || {};
   const gemini = new GeminiService(apiKey || '');
 
   const generateCorpus = async (persona: string) => {

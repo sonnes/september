@@ -9,7 +9,6 @@ import { useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 
-import { useAIFeatures } from '@/hooks/use-ai-features';
 import { useToast } from '@/hooks/use-toast';
 
 import { useAISettings } from '@/services/ai';
@@ -23,12 +22,9 @@ import {
 export function TranscriptionModal() {
   const [isOpen, setIsOpen] = useState(false);
   const { transcription, updateTranscription } = useAISettings();
-  const { hasProviderConfig } = useAIFeatures();
+
   const { show, showError } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Get API key status
-  const hasGeminiApiKey = hasProviderConfig('gemini');
 
   const form = useForm<TranscriptionFormData>({
     resolver: zodResolver(TranscriptionFormSchema),
@@ -104,7 +100,7 @@ export function TranscriptionModal() {
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               <form id="transcription-form" onSubmit={form.handleSubmit(onSubmit)}>
-                <TranscriptionForm control={form.control} hasApiKey={hasGeminiApiKey} />
+                <TranscriptionForm control={form.control} watch={form.watch} />
               </form>
             </div>
 
@@ -123,7 +119,7 @@ export function TranscriptionModal() {
                 <Button
                   type="submit"
                   form="transcription-form"
-                  disabled={isSubmitting || !hasGeminiApiKey}
+                  disabled={isSubmitting}
                   className="w-full sm:w-auto"
                 >
                   {isSubmitting ? 'Saving...' : 'Save Settings'}

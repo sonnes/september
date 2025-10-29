@@ -1,38 +1,46 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useTextContext } from '@/components/context/text-provider';
 
-import { useToast } from '@/hooks/use-toast';
-
-import { useAccount } from '@/services/account/context';
+import { useAISettings } from '@/services/ai/context';
 import GeminiService from '@/services/gemini';
-import { MessagesService, useMessages } from '@/services/messages';
+import { useMessages } from '@/services/messages';
 
-import supabase from '@/supabase/client';
 import { Message } from '@/types/message';
 import { Suggestion } from '@/types/suggestion';
 
 interface UseSuggestionsReturn {
   suggestions: Suggestion[];
   isLoading: boolean;
-  fetchSuggestions: (text: string, messages: Partial<Message>[]) => Promise<void>;
   clearSuggestions: () => void;
 }
 
 export function useSuggestions(timeout: number = 800): UseSuggestionsReturn {
   const { text } = useTextContext();
   const { messages } = useMessages();
-  const { account } = useAccount();
 
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [debouncedText, setDebouncedText] = useState(text);
   const [isLoading, setIsLoading] = useState(false);
 
-  const gemini = new GeminiService(account?.gemini_api_key || '');
+  const { getProviderConfig, suggestions: suggestionsConfig } = useAISettings();
 
-  const fetchSuggestions = useCallback(
-    async (text: string, messages: Partial<Message>[]) => {
-      if (!account?.gemini_api_key) {
+  const { api_key: apiKey } = useMemo(
+    () => getProviderConfig(suggestionsConfig.provider) || {},
+    [getProviderConfig, suggestionsConfig.provider]
+  );
+  const gemini = new GeminiService(apiKey || '');
+
+  const clearSuggestions = useCallback(() => {
+    setSuggestions([]);
+  }, []);
+
+  // Auto-fetch suggestions when debounced text changes
+  useEffect(() => {
+    if (debouncedText.trim().length === 0 || !apiKey) return;
+
+    const fetchSuggestions = async (text: string, messages: Partial<Message>[]) => {
+      if (!apiKey || isLoading) {
         return;
       }
 
@@ -40,7 +48,7 @@ export function useSuggestions(timeout: number = 800): UseSuggestionsReturn {
 
       try {
         const suggestions = await gemini.generateSuggestions({
-          instructions: account?.ai_instructions || '',
+          instructions: suggestionsConfig.settings?.system_instructions || '',
           text,
           messages,
         });
@@ -51,23 +59,13 @@ export function useSuggestions(timeout: number = 800): UseSuggestionsReturn {
         console.error('Error fetching suggestions:', error);
         setIsLoading(false);
       }
-    },
-    [account]
-  );
-
-  const clearSuggestions = useCallback(() => {
-    setSuggestions([]);
-  }, []);
-
-  // Auto-fetch suggestions when debounced text changes
-  useEffect(() => {
-    if (debouncedText.trim().length === 0) return;
+    };
 
     fetchSuggestions(
       debouncedText,
       messages.slice(0, 5).map(m => ({ text: m.text, type: m.type }))
     );
-  }, [debouncedText, messages, fetchSuggestions]);
+  }, [debouncedText, messages]);
 
   // Debounce text changes
   useEffect(() => {
@@ -82,7 +80,6 @@ export function useSuggestions(timeout: number = 800): UseSuggestionsReturn {
   return {
     suggestions,
     isLoading,
-    fetchSuggestions,
     clearSuggestions,
   };
 }

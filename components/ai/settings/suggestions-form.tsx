@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { Control, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 import { z } from 'zod';
@@ -8,15 +8,19 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { FormCheckbox, FormDropdown, FormRange, FormTextarea } from '@/components/ui/form';
 
-import { useAIFeatures } from '@/hooks/use-ai-features';
 import { useCorpus } from '@/hooks/use-ai-settings';
+
+import { useAISettings } from '@/services/ai/context';
+import { getModelsForProvider } from '@/services/ai/registry';
+
+import { AIProvider } from '@/types/ai-config';
 
 /**
  * Zod schema for Suggestions Configuration
  */
 export const SuggestionsFormSchema = z.object({
   enabled: z.boolean(),
-  provider: z.literal('gemini'),
+  provider: z.enum(['gemini']),
   model: z.enum(['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-pro']),
   settings: z
     .object({
@@ -46,12 +50,6 @@ const EXAMPLE_INSTRUCTIONS = [
   },
 ];
 
-const GEMINI_MODELS = [
-  { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite (Fast, Efficient)' },
-  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Balanced)' },
-  { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (Advanced)' },
-];
-
 interface SuggestionsFormProps {
   control: Control<SuggestionsFormData>;
   setValue: UseFormSetValue<SuggestionsFormData>;
@@ -61,10 +59,20 @@ interface SuggestionsFormProps {
 export function SuggestionsForm({ control, setValue, watch }: SuggestionsFormProps) {
   const [showExamples, setShowExamples] = useState(false);
   const { isGenerating, generateCorpus } = useCorpus();
-  const { getProviderApiKey } = useAIFeatures();
+  const { getProviderConfig } = useAISettings();
 
   const aiInstructions = watch('settings.system_instructions');
-  const apiKey = getProviderApiKey('gemini');
+  const provider = watch('provider');
+
+  const models = useMemo(
+    () => getModelsForProvider(provider as AIProvider),
+    [provider, getModelsForProvider]
+  );
+
+  const apiKey = useMemo(
+    () => getProviderConfig(provider as AIProvider)?.api_key,
+    [provider, getProviderConfig]
+  );
   const hasApiKey = !!apiKey;
 
   const handleExampleClick = (example: string) => {
@@ -124,8 +132,8 @@ export function SuggestionsForm({ control, setValue, watch }: SuggestionsFormPro
           <FormDropdown
             name="model"
             control={control}
-            label="Gemini Model"
-            options={GEMINI_MODELS}
+            label="Model"
+            options={models.map(model => ({ id: model.id, name: model.name }))}
             disabled={!hasApiKey}
           />
         </div>

@@ -1,11 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
-import { Control } from 'react-hook-form';
+import { Control, UseFormWatch } from 'react-hook-form';
 import { z } from 'zod';
 
 import { FormCheckbox, FormDropdown } from '@/components/ui/form';
+
+import { useAISettings } from '@/services/ai/context';
+import { getModelsForProvider } from '@/services/ai/registry';
+
+import { AIProvider } from '@/types/ai-config';
 
 /**
  * Zod schema for Transcription Configuration
@@ -26,24 +31,26 @@ export const TranscriptionFormSchema = z.object({
 
 export type TranscriptionFormData = z.infer<typeof TranscriptionFormSchema>;
 
-const GEMINI_MODELS = [
-  { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite (Fast, Efficient)' },
-  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Balanced)' },
-  { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (Advanced)' },
-];
-
 interface TranscriptionFormProps {
   control: Control<TranscriptionFormData>;
-  hasApiKey: boolean;
+  watch: UseFormWatch<TranscriptionFormData>;
 }
 
-export function TranscriptionForm({ control, hasApiKey }: TranscriptionFormProps) {
+export function TranscriptionForm({ control, watch }: TranscriptionFormProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const { getProviderConfig } = useAISettings();
+  const provider = watch('provider');
+
+  const models = useMemo(
+    () => getModelsForProvider(provider as AIProvider),
+    [provider, getModelsForProvider]
+  );
+  const apiKey = getProviderConfig(provider as AIProvider)?.api_key;
 
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* API Key Warning */}
-      {!hasApiKey && (
+      {!apiKey && (
         <div className="rounded-md bg-amber-50 p-4">
           <p className="text-sm text-amber-800">
             <strong>API Key Required:</strong> You need to configure your Gemini API key in{' '}
@@ -71,7 +78,7 @@ export function TranscriptionForm({ control, hasApiKey }: TranscriptionFormProps
             control={control}
             label="Enable Transcription"
             description="Automatically convert spoken words to text"
-            disabled={!hasApiKey}
+            disabled={!apiKey}
           />
         </div>
       </div>
@@ -89,8 +96,8 @@ export function TranscriptionForm({ control, hasApiKey }: TranscriptionFormProps
             name="model"
             control={control}
             label="Gemini Model"
-            options={GEMINI_MODELS}
-            disabled={!hasApiKey}
+            options={models.map(model => ({ id: model.id, name: model.name }))}
+            disabled={!apiKey}
           />
         </div>
       </div>

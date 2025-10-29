@@ -1,17 +1,22 @@
 'use client';
 
-import { ReactNode, createContext, useContext, useMemo } from 'react';
+import { ReactNode, createContext, useCallback, useContext, useMemo } from 'react';
 
 import { useAccount } from '@/services/account';
 
-import type { SpeechConfig, SuggestionsConfig, TranscriptionConfig } from '@/types/ai-config';
+import { Account } from '@/types/account';
+import type {
+  AIProvider,
+  SpeechConfig,
+  SuggestionsConfig,
+  TranscriptionConfig,
+} from '@/types/ai-config';
 
 import {
   DEFAULT_SPEECH_CONFIG,
   DEFAULT_SUGGESTIONS_CONFIG,
   DEFAULT_TRANSCRIPTION_CONFIG,
 } from './defaults';
-import { getSpeechConfig, getSuggestionsConfig, getTranscriptionConfig } from './utils';
 
 interface AISettingsContextType {
   // AI Feature Configurations
@@ -23,7 +28,44 @@ interface AISettingsContextType {
   updateSuggestions: (config: Partial<SuggestionsConfig>) => Promise<void>;
   updateTranscription: (config: Partial<TranscriptionConfig>) => Promise<void>;
   updateSpeech: (config: Partial<SpeechConfig>) => Promise<void>;
+
+  // Provider Configurations
+  getProviderConfig: (provider: AIProvider) => { api_key?: string; base_url?: string };
 }
+
+const getSpeechConfig = (account: Account) => {
+  if (account?.ai_speech) {
+    return {
+      ...DEFAULT_SPEECH_CONFIG,
+      ...account.ai_speech,
+      settings: {
+        ...DEFAULT_SPEECH_CONFIG.settings,
+        ...account.ai_speech.settings,
+      },
+    };
+  }
+  return DEFAULT_SPEECH_CONFIG;
+};
+
+const getSuggestionsConfig = (account: Account) => {
+  if (account?.ai_suggestions) {
+    return {
+      ...DEFAULT_SUGGESTIONS_CONFIG,
+      ...account.ai_suggestions,
+    };
+  }
+  return DEFAULT_SUGGESTIONS_CONFIG;
+};
+
+const getTranscriptionConfig = (account: Account) => {
+  if (account?.ai_transcription) {
+    return {
+      ...DEFAULT_TRANSCRIPTION_CONFIG,
+      ...account.ai_transcription,
+    };
+  }
+  return DEFAULT_TRANSCRIPTION_CONFIG;
+};
 
 const AISettingsContext = createContext<AISettingsContextType | undefined>(undefined);
 
@@ -84,6 +126,14 @@ export function AISettingsProvider({ children }: AISettingsProviderProps) {
     await updateAccount({ ai_speech: updatedConfig });
   };
 
+  const getProviderConfig = useCallback(
+    (provider: AIProvider): { api_key?: string; base_url?: string } => {
+      if (provider === 'browser') return {};
+      return account?.ai_providers?.[provider] as { api_key?: string; base_url?: string };
+    },
+    [account]
+  );
+
   const contextValue: AISettingsContextType = {
     suggestions,
     transcription,
@@ -91,6 +141,7 @@ export function AISettingsProvider({ children }: AISettingsProviderProps) {
     updateSuggestions,
     updateTranscription,
     updateSpeech,
+    getProviderConfig,
   };
 
   return <AISettingsContext.Provider value={contextValue}>{children}</AISettingsContext.Provider>;

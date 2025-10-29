@@ -143,7 +143,6 @@ export interface SpeechConfig {
 
 /**
  * Provider configuration (sensitive data)
- * NEVER store in Triplit/local storage
  */
 export interface ProviderConfig {
   gemini?: {

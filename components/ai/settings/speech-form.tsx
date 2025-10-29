@@ -8,9 +8,9 @@ import { z } from 'zod';
 import { FormCheckbox, FormDropdown, FormRangeWithLabels } from '@/components/ui/form';
 import VoicesList from '@/components/voices/voices-list';
 
-import { useAIFeatures } from '@/hooks/use-ai-features';
 import { useToast } from '@/hooks/use-toast';
 
+import { useAISettings } from '@/services/ai/context';
 import { getModelsForProvider, getProvidersForFeature } from '@/services/ai/registry';
 import { useSpeechContext } from '@/services/speech/context';
 
@@ -67,7 +67,7 @@ interface SpeechFormProps {
 
 export function SpeechForm({ control, setValue }: SpeechFormProps) {
   const { getProvider } = useSpeechContext();
-  const { getProviderApiKey } = useAIFeatures();
+  const { getProviderConfig } = useAISettings();
 
   // Voice state management
   const [voices, setVoices] = useState<Voice[]>([]);
@@ -87,8 +87,8 @@ export function SpeechForm({ control, setValue }: SpeechFormProps) {
 
   // Get the appropriate API key based on provider
   const apiKey = useMemo(() => {
-    return getProviderApiKey(provider as AIProvider);
-  }, [provider, getProviderApiKey]);
+    return getProviderConfig(provider as AIProvider)?.api_key;
+  }, [provider, getProviderConfig]);
 
   // Fetch voices when provider changes
   const fetchVoices = useCallback(async () => {
