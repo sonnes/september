@@ -7,6 +7,7 @@ import { useMicVAD, utils } from '@ricky0123/vad-react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { useAccount } from '@/services/account/context';
+import { useAISettings } from '@/services/ai/context';
 import { useMessages } from '@/services/messages';
 
 import { cn } from '@/lib/utils';
@@ -54,7 +55,8 @@ function VADController({ onSpeechEnd }: { onSpeechEnd: (blob: Blob) => Promise<v
 export default function Recorder() {
   const [vadActive, setVadActive] = useState(false);
   const { createMessage } = useMessages();
-  const { account, user } = useAccount();
+  const { user } = useAccount();
+  const { getProviderConfig } = useAISettings();
 
   const handleSpeechEnd = async (wav: Blob) => {
     const formData = new FormData();
@@ -88,7 +90,8 @@ export default function Recorder() {
     setVadActive(active => !active);
   };
 
-  const isDisabled = !account?.gemini_api_key?.trim();
+  const geminiApiKey = getProviderConfig('gemini')?.api_key;
+  const isDisabled = !geminiApiKey?.trim();
 
   return (
     <div className="flex items-center">
