@@ -15,15 +15,13 @@ export const schema = S.Collections({
       year_of_diagnosis: S.Optional(S.Number()),
       medical_document_path: S.Optional(S.String()),
 
-      // Speech Settings
-      speech_provider: S.Optional(S.String()),
-      speech_settings: S.Optional(S.Json()),
-      voice: S.Optional(S.Json()),
+      // AI Feature Configurations
+      ai_suggestions: S.Optional(S.Json()),
+      ai_transcription: S.Optional(S.Json()),
+      ai_speech: S.Optional(S.Json()),
 
-      // AI Settings
-      ai_instructions: S.Optional(S.String()),
-      ai_corpus: S.Optional(S.String()),
-      gemini_api_key: S.Optional(S.String()),
+      // Provider Config (sensitive)
+      ai_providers: S.Optional(S.Json()),
 
       // Flags
       terms_accepted: S.Optional(S.Boolean()),

@@ -6,6 +6,7 @@ import { DesktopNav, MobileNav } from '@/components/nav';
 import VoicesPageWrapper from '@/components/voices/voices-page-wrapper';
 
 import { AccountProvider, AccountService } from '@/services/account';
+import { AISettingsProvider } from '@/services/ai/context';
 import { SpeechProvider } from '@/services/speech/context';
 
 import { createClient } from '@/supabase/server';
@@ -35,22 +36,26 @@ export default async function VoicesPage({
 
   return (
     <AccountProvider provider={provider} user={user!} account={account!}>
-      <SpeechProvider>
-        <Layout>
-          <Layout.Header>
-            <DesktopNav user={user} current="/voices" />
-            <MobileNav title="Voices" user={user} current="/voices"></MobileNav>
-            <div className="hidden md:flex items-center justify-between mb-4">
-              <h1 className="text-2xl font-bold tracking-tight text-white">Voices</h1>
-            </div>
-          </Layout.Header>
-          <Layout.Content>
-            <div className="flex gap-8">
-              <VoicesPageWrapper search={search} />
-            </div>
-          </Layout.Content>
-        </Layout>
-      </SpeechProvider>
+      <AISettingsProvider>
+        <SpeechProvider>
+          <Layout>
+            <Layout.Header>
+              <DesktopNav user={user} current="/voices" />
+              <MobileNav title="Voices" user={user} current="/voices"></MobileNav>
+              <div className="hidden md:flex items-center justify-between mb-4">
+                <h1 className="text-2xl font-bold tracking-tight text-white">Voices</h1>
+              </div>
+            </Layout.Header>
+            <Layout.Content>
+              <div className="flex justify-center">
+                <div className="w-full max-w-4xl">
+                  <VoicesPageWrapper search={search} />
+                </div>
+              </div>
+            </Layout.Content>
+          </Layout>
+        </SpeechProvider>
+      </AISettingsProvider>
     </AccountProvider>
   );
 }

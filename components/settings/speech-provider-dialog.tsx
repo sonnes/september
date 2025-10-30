@@ -138,7 +138,7 @@ export function SpeechProviderDialog() {
         <div className="fixed inset-0 flex w-screen items-center justify-center p-0 sm:p-4">
           <DialogPanel className="mx-auto w-full h-full sm:h-auto sm:max-w-2xl sm:max-h-[90vh] bg-white sm:rounded-lg shadow-xl flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-zinc-200 flex-shrink-0">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-zinc-200 shrink-0">
               <DialogTitle className="text-lg font-semibold text-zinc-900">
                 TTS Settings
               </DialogTitle>
@@ -274,7 +274,7 @@ export function SpeechProviderDialog() {
             </div>
 
             {/* Fixed footer with form actions */}
-            <div className="flex-shrink-0 border-t border-zinc-200 bg-white p-4 sm:p-6">
+            <div className="shrink-0 border-t border-zinc-200 bg-white p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3">
                 <Button
                   type="button"

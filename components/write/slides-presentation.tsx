@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 
 import { useDocumentsContext } from '@/components/context/documents-provider';
+
 import { type Slide, parseAndRenderSlides } from '@/lib/slides';
 
 import SlideRenderer from './slide-renderer';
@@ -222,7 +223,7 @@ export default function SlidesPresentation({
         </div>
 
         {/* Navigation and Progress */}
-        <div className="flex-shrink-0 p-4 space-y-4 bg-zinc-50/80 backdrop-blur-sm border-t border-zinc-200">
+        <div className="shrink-0 p-4 space-y-4 bg-zinc-50/80 backdrop-blur-sm border-t border-zinc-200">
           {/* Navigation Controls */}
           <SlidesNavigation
             currentSlide={currentSlideIndex + 1}
@@ -242,15 +243,16 @@ export default function SlidesPresentation({
         <div className="flex items-center justify-center w-8 h-8 bg-black/60 hover:bg-black/80 text-white rounded-full shadow-lg transition-all duration-200 cursor-help">
           <QuestionMarkCircleIcon className="w-5 h-5" />
         </div>
-        
+
         {/* Keyboard shortcuts tooltip */}
-        <div 
+        <div
           className={`
             absolute top-10 right-0 bg-black/90 text-white text-xs px-3 py-2 rounded-lg shadow-xl border border-zinc-600 whitespace-nowrap
             transition-all duration-300 transform
-            ${showHintOnMount 
-              ? 'opacity-100 scale-100 pointer-events-auto' 
-              : 'opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 group-hover:pointer-events-auto'
+            ${
+              showHintOnMount
+                ? 'opacity-100 scale-100 pointer-events-auto'
+                : 'opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 group-hover:pointer-events-auto'
             }
           `}
         >

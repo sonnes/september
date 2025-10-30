@@ -4,13 +4,11 @@ import { useState } from 'react';
 
 import { v4 as uuidv4 } from 'uuid';
 
+import { SpeechModal } from '@/components/ai/settings/speech-modal';
+import { SuggestionsModal } from '@/components/ai/settings/suggestions-modal';
 import { useTextContext } from '@/components/context/text-provider';
 import { KeyboardSelector } from '@/components/keyboards';
-import {
-  AISettingsDialog,
-  SpeechProviderDialog,
-  SpeechSettingsDialog,
-} from '@/components/settings';
+import { SpeechProviderDialog } from '@/components/settings';
 import { Button } from '@/components/ui/button';
 
 import { useAudioPlayer } from '@/hooks/use-audio-player';
@@ -85,9 +83,8 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
           <KeyboardSelector />
-          <SpeechProviderDialog />
-          <AISettingsDialog />
-          <SpeechSettingsDialog />
+          <SuggestionsModal />
+          <SpeechModal />
         </div>
         <Button onClick={handleSubmit} color="zinc" disabled={status === 'loading'}>
           {status === 'loading' ? 'Submitting...' : 'Submit'}

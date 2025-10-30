@@ -24,7 +24,7 @@ const defaultItems = [
   { name: 'Talk', href: '/talk' },
   { name: 'Voices', href: '/voices' },
   // { name: 'Write', href: '/write' },
-  { name: 'Settings', href: '/settings' },
+  { name: 'Settings', href: '/settings/ai' },
 ];
 
 export const MobileNav = ({ items = defaultItems, ...props }: MobileNavProps) => {

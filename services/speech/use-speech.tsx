@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
-import { useAccount } from '@/services/account/context';
+import { useAISettings } from '@/services/ai/context';
 
-import { BrowserTTSSettings, ElevenLabsSettings, GeminiSpeechSettings } from '@/types/account';
+import type { AIProvider } from '@/types/ai-config';
+import type { Voice } from '@/types/voice';
 
 import { BrowserSpeechProvider } from './provider-browser';
 import { ElevenLabsSpeechProvider } from './provider-elevenlabs';
@@ -10,49 +11,72 @@ import { GeminiSpeechProvider } from './provider-gemini';
 import { ListVoicesRequest, SpeechOptions, SpeechProvider } from './types';
 
 export function useSpeech() {
-  const { account } = useAccount();
+  const { speech, getProviderConfig } = useAISettings();
 
   const browser = new BrowserSpeechProvider();
 
   const providers = useMemo(() => {
-    const elevenlabs = new ElevenLabsSpeechProvider(account?.speech_settings?.api_key);
-    const gemini = new GeminiSpeechProvider(account?.speech_settings?.api_key);
+    const elevenlabsApiKey = getProviderConfig('elevenlabs')?.api_key;
+    const geminiApiKey = getProviderConfig('gemini')?.api_key;
+
+    const elevenlabs = new ElevenLabsSpeechProvider(elevenlabsApiKey);
+    const gemini = new GeminiSpeechProvider(geminiApiKey);
 
     return new Map<string, SpeechProvider>([
-      ['browser_tts', browser],
+      ['browser', browser],
       ['elevenlabs', elevenlabs],
       ['gemini', gemini],
     ]);
-  }, [account?.speech_provider]);
+  }, [getProviderConfig]);
 
   const engine = useMemo(() => {
-    return providers.get(account?.speech_provider || 'browser_tts') || browser;
-  }, [account?.speech_provider]);
+    return providers.get(speech.provider);
+  }, [providers, speech.provider]);
 
   const getProviders = useCallback(() => {
     return Array.from(providers.values());
-  }, []);
+  }, [providers]);
 
-  const getProvider = useCallback((id: string) => {
-    return providers.get(id);
-  }, []);
+  const getProvider = useCallback(
+    (id: string) => {
+      return providers.get(id);
+    },
+    [providers]
+  );
+
+  // Construct Voice object from speech config
+  const voice = useMemo<Voice | undefined>(() => {
+    if (!speech.voice_id || !speech.voice_name) {
+      return undefined;
+    }
+    return {
+      id: speech.voice_id,
+      name: speech.voice_name,
+      language: 'en-US', // Default, could be enhanced later
+    };
+  }, [speech.voice_id, speech.voice_name]);
 
   const generateSpeech = useCallback(
     (text: string, options?: SpeechOptions) => {
-      return engine.generateSpeech({
+      return engine?.generateSpeech({
         text,
-        voice: account?.voice,
-        options: { ...account?.speech_settings, ...options },
+        voice: voice,
+        options: { ...speech.settings, ...options } as SpeechOptions,
       });
     },
-    [engine]
+    [engine, voice, speech.settings]
   );
 
   const listVoices = useCallback(
     (request: ListVoicesRequest) => {
-      return engine.listVoices(request);
+      // Inject API key from provider config if not provided
+      const providerApiKey = getProviderConfig(speech.provider as AIProvider)?.api_key;
+      return engine?.listVoices({
+        ...request,
+        apiKey: request.apiKey || providerApiKey,
+      });
     },
-    [engine]
+    [engine, speech.provider, getProviderConfig]
   );
 
   return { listVoices, getProviders, generateSpeech, getProvider };

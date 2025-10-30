@@ -15,6 +15,7 @@ import { UseCasesSection } from '@/components/home/use-cases-section';
 import { AudioPlayerProvider } from '@/hooks/use-audio-player';
 
 import { AccountProvider } from '@/services/account';
+import { AISettingsProvider } from '@/services/ai';
 import { AudioProvider } from '@/services/audio';
 import { MessagesProvider } from '@/services/messages';
 import { SpeechProvider } from '@/services/speech';
@@ -30,27 +31,29 @@ export default function Home() {
 
   return (
     <AccountProvider provider={provider}>
-      <MessagesProvider provider={provider}>
-        <AudioProvider provider={provider}>
-          <SpeechProvider>
-            <AudioPlayerProvider>
-              <main className="bg-white min-h-screen">
-                <Navbar />
-                <HeroSection />
-                {/* <ProblemStatementSection /> */}
-                {/* <PersonalStoryBanner /> */}
-                <FeaturesSection />
-                <HowItWorksSection />
-                <UseCasesSection />
-                <TechnologySection />
-                <FAQSection />
-                <EnhancedCTASection />
-              </main>
-              <Footer />
-            </AudioPlayerProvider>
-          </SpeechProvider>
-        </AudioProvider>
-      </MessagesProvider>
+      <AISettingsProvider>
+        <MessagesProvider provider={provider}>
+          <AudioProvider provider={provider}>
+            <SpeechProvider>
+              <AudioPlayerProvider>
+                <main className="bg-white min-h-screen">
+                  <Navbar />
+                  <HeroSection />
+                  {/* <ProblemStatementSection /> */}
+                  {/* <PersonalStoryBanner /> */}
+                  <FeaturesSection />
+                  <HowItWorksSection />
+                  <UseCasesSection />
+                  <TechnologySection />
+                  <FAQSection />
+                  <EnhancedCTASection />
+                </main>
+                <Footer />
+              </AudioPlayerProvider>
+            </SpeechProvider>
+          </AudioProvider>
+        </MessagesProvider>
+      </AISettingsProvider>
     </AccountProvider>
   );
 }

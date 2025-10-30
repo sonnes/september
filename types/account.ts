@@ -1,3 +1,4 @@
+import { ProviderConfig, SpeechConfig, SuggestionsConfig, TranscriptionConfig } from './ai-config';
 import { Voice } from './voice';
 
 export interface Account {
@@ -13,12 +14,18 @@ export interface Account {
   year_of_diagnosis?: number;
   medical_document_path?: string;
 
-  // Speech Settings
+  // AI Feature Configurations
+  ai_suggestions?: SuggestionsConfig;
+  ai_transcription?: TranscriptionConfig;
+  ai_speech?: SpeechConfig;
+
+  // Provider Config (Supabase only)
+  ai_providers?: ProviderConfig;
+
+  // DEPRECATED: Legacy fields (keep for backward compatibility)
   speech_provider?: string;
   speech_settings?: BrowserTTSSettings & ElevenLabsSettings & GeminiSpeechSettings;
   voice?: Voice;
-
-  // AI Settings
   ai_instructions?: string;
   ai_corpus?: string;
   gemini_api_key?: string;

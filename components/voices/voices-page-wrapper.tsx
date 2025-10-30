@@ -8,7 +8,8 @@ import { TextInput } from '@/components/ui/text-input';
 
 import { useDebounce } from '@/hooks/use-debounce';
 
-import { useAccount } from '@/services/account/context';
+import { useAccount } from '@/services/account';
+import { useAISettings } from '@/services/ai/context';
 import { useSpeechContext } from '@/services/speech/context';
 
 import type { Voice } from '@/types/voice';
@@ -20,7 +21,8 @@ interface VoicesPageWrapperProps {
 }
 
 export default function VoicesPageWrapper({ search: initialSearch }: VoicesPageWrapperProps) {
-  const { account, updateAccount } = useAccount();
+  const { account } = useAccount();
+  const { speech, updateSpeech } = useAISettings();
   const { listVoices } = useSpeechContext();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -33,7 +35,7 @@ export default function VoicesPageWrapper({ search: initialSearch }: VoicesPageW
     try {
       setIsLoading(true);
       const speechVoices = await listVoices({ search: debouncedSearchTerm });
-      setVoices(speechVoices);
+      setVoices(speechVoices || []);
     } catch (err) {
       console.error('Error fetching voices:', err);
     } finally {
@@ -45,14 +47,15 @@ export default function VoicesPageWrapper({ search: initialSearch }: VoicesPageW
   const handleSelectVoice = useCallback(
     async (voice: Voice) => {
       try {
-        await updateAccount({
-          voice: { id: voice.id, name: voice.name, language: voice.language },
+        await updateSpeech({
+          voice_id: voice.id,
+          voice_name: voice.name,
         });
       } catch (err) {
         console.error('Error selecting voice:', err);
       }
     },
-    [updateAccount]
+    [updateSpeech]
   );
 
   // Handle search input changes with debouncing
@@ -60,10 +63,19 @@ export default function VoicesPageWrapper({ search: initialSearch }: VoicesPageW
     setSearchTerm(e.target.value);
   }, []);
 
-  // Fetch voices on mount
+  // Fetch voices on mount and when search term changes
   useEffect(() => {
     fetchVoices();
-  }, [debouncedSearchTerm]);
+  }, [fetchVoices]);
+
+  // Show loading state while account is loading (similar to form.tsx)
+  if (!account) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-sm text-zinc-500">Loading voices...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full space-y-4">
@@ -82,8 +94,7 @@ export default function VoicesPageWrapper({ search: initialSearch }: VoicesPageW
       </div>
 
       {/* Voices List */}
-
-      {(!account || isLoading) && (
+      {isLoading && (
         <div className="w-full">
           <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-zinc-200 p-8 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
@@ -94,7 +105,7 @@ export default function VoicesPageWrapper({ search: initialSearch }: VoicesPageW
       {!isLoading && (
         <VoicesList
           voices={voices}
-          selectedVoiceId={account?.voice?.id}
+          selectedVoiceId={speech?.voice_id}
           onSelectVoice={handleSelectVoice}
         />
       )}
