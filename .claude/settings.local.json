@@ -13,7 +13,14 @@
       "Bash(bun:*)",
       "Bash(du:*)",
       "WebFetch(domain:ai.google.dev)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(git checkout:*)",
+      "Bash(npx tsc:*)",
+      "Bash(pnpm exec tsc:*)",
+      "Bash(pnpm run build:*)",
+      "Bash(pnpm tsc:*)",
+      "Bash(pnpm eslint:*)",
+      "Bash(git add:*)"
     ],
     "defaultMode": "acceptEdits"
   },
