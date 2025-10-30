@@ -4,14 +4,13 @@ import { useMemo } from 'react';
 
 import Link from 'next/link';
 
-import { Control, UseFormSetValue, useWatch } from 'react-hook-form';
+import { Control, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 
 import { FormCheckbox, FormDropdown, FormRangeWithLabels } from '@/components/ui/form';
 
 import { useAISettings } from '@/services/ai/context';
 import { getModelsForProvider, getProvidersForFeature } from '@/services/ai/registry';
-import { useSpeechContext } from '@/services/speech/context';
 
 import type { AIProvider } from '@/types/ai-config';
 
@@ -60,24 +59,16 @@ const getProviderModels = (providerId: string) => {
 
 interface SpeechFormProps {
   control: Control<SpeechFormData>;
-  setValue: UseFormSetValue<SpeechFormData>;
 }
 
-export function SpeechForm({ control, setValue }: SpeechFormProps) {
-  const { getProvider } = useSpeechContext();
+export function SpeechForm({ control }: SpeechFormProps) {
   const { getProviderConfig } = useAISettings();
 
   const provider = useWatch({ control, name: 'provider' });
   const selectedVoiceId = useWatch({ control, name: 'voice_id' });
   const selectedVoiceName = useWatch({ control, name: 'voice_name' });
 
-  // Get the provider instance
-  const providerInstance = useMemo(() => {
-    if (!provider) {
-      return null;
-    }
-    return getProvider(provider);
-  }, [provider, getProvider]);
+  // Provider instance not needed here; defer to services when generating speech
 
   // Get the appropriate API key based on provider
   const apiKey = useMemo(() => {

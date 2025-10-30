@@ -64,10 +64,7 @@ export function SuggestionsForm({ control, setValue, watch }: SuggestionsFormPro
   const aiInstructions = watch('settings.system_instructions');
   const provider = watch('provider');
 
-  const models = useMemo(
-    () => getModelsForProvider(provider as AIProvider),
-    [provider, getModelsForProvider]
-  );
+  const models = useMemo(() => getModelsForProvider(provider as AIProvider), [provider]);
 
   const apiKey = useMemo(
     () => getProviderConfig(provider as AIProvider)?.api_key,

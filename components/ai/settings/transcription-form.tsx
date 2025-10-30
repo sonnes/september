@@ -41,10 +41,7 @@ export function TranscriptionForm({ control, watch }: TranscriptionFormProps) {
   const { getProviderConfig } = useAISettings();
   const provider = watch('provider');
 
-  const models = useMemo(
-    () => getModelsForProvider(provider as AIProvider),
-    [provider, getModelsForProvider]
-  );
+  const models = useMemo(() => getModelsForProvider(provider as AIProvider), [provider]);
   const apiKey = getProviderConfig(provider as AIProvider)?.api_key;
 
   return (

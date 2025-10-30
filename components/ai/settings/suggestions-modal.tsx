@@ -13,8 +13,6 @@ import { useToast } from '@/hooks/use-toast';
 
 import { useAISettings } from '@/services/ai';
 
-import { AIProvider } from '@/types/ai-config';
-
 import { SuggestionsForm, SuggestionsFormData, SuggestionsFormSchema } from './suggestions-form';
 
 export function SuggestionsModal() {

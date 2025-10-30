@@ -8,7 +8,6 @@ import { SpeechModal } from '@/components/ai/settings/speech-modal';
 import { SuggestionsModal } from '@/components/ai/settings/suggestions-modal';
 import { useTextContext } from '@/components/context/text-provider';
 import { KeyboardSelector } from '@/components/keyboards';
-import { SpeechProviderDialog } from '@/components/settings';
 import { Button } from '@/components/ui/button';
 
 import { useAudioPlayer } from '@/hooks/use-audio-player';
@@ -18,6 +17,8 @@ import { useAccount } from '@/services/account/context';
 import { useAudio } from '@/services/audio';
 import { useMessages } from '@/services/messages';
 import { useSpeech } from '@/services/speech/use-speech';
+
+import type { Audio as AudioTrack } from '@/types/audio';
 
 type EditorProps = {
   placeholder?: string;
@@ -37,16 +38,25 @@ export default function Editor({ placeholder = 'Start typing...' }: EditorProps)
   const handleSubmit = async () => {
     setStatus('loading');
 
-    const audio = await generateSpeech(text);
+    const speech = await generateSpeech(text);
+    if (!speech) {
+      setStatus('idle');
+      return;
+    }
 
-    enqueue(audio);
+    const track: AudioTrack = {
+      blob: speech.blob,
+      alignment: speech.alignment,
+      utterance: speech.utterance,
+    };
+    enqueue(track);
 
     const id = uuidv4();
-    const audioPath = audio.blob ? `${id}.mp3` : undefined;
+    const audioPath = speech.blob ? `${id}.mp3` : undefined;
 
     await Promise.all([
-      audioPath && audio.blob
-        ? uploadAudio({ path: audioPath, blob: audio.blob, alignment: audio.alignment })
+      audioPath && speech.blob
+        ? uploadAudio({ path: audioPath, blob: speech.blob, alignment: speech.alignment })
         : Promise.resolve(null),
       createMessage({ id, text, type: 'message', user_id: user.id, audio_path: audioPath }),
     ]);
