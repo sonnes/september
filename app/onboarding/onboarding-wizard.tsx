@@ -1,5 +1,6 @@
 'use client';
 
+import ApiKeysStep from './steps/api-keys';
 import Complete from './steps/complete';
 import Welcome from './steps/welcome';
 import { useOnboarding } from './context';
@@ -243,28 +244,7 @@ export function OnboardingWizard() {
       <div className="max-w-5xl mx-auto py-8">
         {currentStep === 'welcome' && <Welcome />}
 
-        {currentStep === 'api-keys' && (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold text-zinc-900 mb-4">API Keys Step</h2>
-            <p className="text-zinc-600 mb-8">
-              This is a placeholder. The actual form will be rendered here.
-            </p>
-            <div className="flex gap-4 justify-center">
-              <button
-                onClick={goBack}
-                className="px-6 py-3 bg-zinc-200 text-zinc-900 rounded-lg font-medium hover:bg-zinc-300 transition-colors"
-              >
-                Back
-              </button>
-              <button
-                onClick={goNext}
-                className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        )}
+        {currentStep === 'api-keys' && <ApiKeysStep />}
 
         {currentStep === 'speech' && (
           <div className="text-center py-12">

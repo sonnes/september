@@ -22,7 +22,8 @@
       "Bash(pnpm eslint:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(pnpm run lint:*)"
+      "Bash(pnpm run lint:*)",
+      "Bash(pnpm run dev)"
     ],
     "defaultMode": "acceptEdits"
   },
