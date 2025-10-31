@@ -1,11 +1,15 @@
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
+
+import Layout from '@/components/layout';
+import { DesktopNav } from '@/components/nav';
+import { MobileNav } from '@/components/nav';
 
 import { AccountProvider } from '@/services/account/context';
 import AccountsService from '@/services/account/supabase';
+
 import { createClient } from '@/supabase/server';
 
-import { OnboardingWizardContainer } from './onboarding-wizard-container';
+import { OnboardingClient } from './onboarding-client';
 
 export const metadata: Metadata = {
   title: 'Welcome to September',
@@ -16,25 +20,23 @@ export default async function OnboardingPage() {
   const supabase = await createClient();
   const accountsService = new AccountsService(supabase);
 
-  // Get the current user and account
   const [user, account] = await accountsService.getCurrentAccount();
-
-  // Redirect to login if not authenticated
-  if (!user) {
-    redirect('/login');
-  }
-
-  // Redirect to /talk if onboarding is already completed
-  if (account?.onboarding_completed) {
-    redirect('/talk');
-  }
-
   const provider = user ? 'supabase' : 'triplit';
 
-  // Render OnboardingWizard wrapped in AccountProvider
   return (
     <AccountProvider provider={provider} user={user!} account={account!}>
-      <OnboardingWizardContainer />
+      <Layout>
+        <Layout.Header>
+          <DesktopNav user={user} current="/onboarding" />
+          <MobileNav title="Let's get started" user={user} current="/onboarding"></MobileNav>
+          <div className="hidden md:flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold tracking-tight text-white">Let&apos;s get started</h1>
+          </div>
+        </Layout.Header>
+        <Layout.Content>
+          <OnboardingClient />
+        </Layout.Content>
+      </Layout>
     </AccountProvider>
   );
 }

@@ -1,13 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+
 import {
-  CheckCircleIcon,
   ChatBubbleLeftRightIcon,
-  SpeakerWaveIcon,
+  CheckCircleIcon,
   Cog6ToothIcon,
+  SpeakerWaveIcon,
 } from '@heroicons/react/24/outline';
+
 import { Button } from '@/components/ui/button';
+
+import { useOnboarding } from '../context';
 
 /**
  * Completion Step Component
@@ -17,18 +21,20 @@ import { Button } from '@/components/ui/button';
  * Purpose: Celebrate completion and guide user to start using the app.
  */
 
-interface ConfigSummary {
-  hasApiKeys?: boolean;
-  voiceName?: string;
-  suggestionsEnabled?: boolean;
-}
+export default function CompleteStep() {
+  const { formData, onComplete } = useOnboarding();
 
-interface CompleteStepProps {
-  onComplete: () => void;
-  configSummary?: ConfigSummary;
-}
+  const configSummary = {
+    hasApiKeys: !!formData.apiKeys.gemini_api_key || !!formData.apiKeys.elevenlabs_api_key,
+    voiceName: formData.speech.voice_name,
+    suggestionsEnabled: formData.suggestions.enabled,
+  };
 
-export default function CompleteStep({ onComplete, configSummary }: CompleteStepProps) {
+  const handleComplete = async () => {
+    if (onComplete) {
+      await onComplete(formData);
+    }
+  };
   const nextSteps = [
     {
       title: 'Start Talking',
@@ -77,12 +83,10 @@ export default function CompleteStep({ onComplete, configSummary }: CompleteStep
             {/* API Keys */}
             {configSummary.hasApiKeys && (
               <div className="flex items-start">
-                <CheckCircleIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                <CheckCircleIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm font-semibold text-white">API Keys Configured</p>
-                  <p className="text-xs text-zinc-400">
-                    Your AI providers are ready to use
-                  </p>
+                  <p className="text-xs text-zinc-400">Your AI providers are ready to use</p>
                 </div>
               </div>
             )}
@@ -90,7 +94,7 @@ export default function CompleteStep({ onComplete, configSummary }: CompleteStep
             {/* Voice Selection */}
             {configSummary.voiceName && (
               <div className="flex items-start">
-                <CheckCircleIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                <CheckCircleIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm font-semibold text-white">Voice Selected</p>
                   <p className="text-xs text-zinc-400">{configSummary.voiceName}</p>
@@ -101,7 +105,7 @@ export default function CompleteStep({ onComplete, configSummary }: CompleteStep
             {/* AI Suggestions */}
             {configSummary.suggestionsEnabled !== undefined && (
               <div className="flex items-start">
-                <CheckCircleIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                <CheckCircleIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm font-semibold text-white">
                     AI Suggestions {configSummary.suggestionsEnabled ? 'Enabled' : 'Disabled'}
@@ -120,12 +124,10 @@ export default function CompleteStep({ onComplete, configSummary }: CompleteStep
               !configSummary.voiceName &&
               configSummary.suggestionsEnabled === undefined && (
                 <div className="flex items-start">
-                  <CheckCircleIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                  <CheckCircleIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 shrink-0" />
                   <div>
                     <p className="text-sm font-semibold text-white">Setup Complete</p>
-                    <p className="text-xs text-zinc-400">
-                      You can customize your settings anytime
-                    </p>
+                    <p className="text-xs text-zinc-400">You can customize your settings anytime</p>
                   </div>
                 </div>
               )}
@@ -137,7 +139,7 @@ export default function CompleteStep({ onComplete, configSummary }: CompleteStep
       <div className="mb-10">
         <h2 className="text-lg font-bold text-white mb-4 text-center">Next Steps</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {nextSteps.map((step) => {
+          {nextSteps.map(step => {
             const IconComponent = step.icon;
             return (
               <Link
@@ -150,7 +152,9 @@ export default function CompleteStep({ onComplete, configSummary }: CompleteStep
                   ${step.primary ? 'md:col-span-3 ring-2 ring-indigo-600' : ''}
                 `}
               >
-                <div className={`p-3 rounded-lg mb-3 ${step.primary ? 'bg-indigo-600' : 'bg-zinc-700'}`}>
+                <div
+                  className={`p-3 rounded-lg mb-3 ${step.primary ? 'bg-indigo-600' : 'bg-zinc-700'}`}
+                >
                   <IconComponent className="w-6 h-6 text-white" />
                 </div>
                 <h3 className="text-base font-bold text-white mb-2">{step.title}</h3>
@@ -163,7 +167,12 @@ export default function CompleteStep({ onComplete, configSummary }: CompleteStep
 
       {/* Primary CTA */}
       <div className="flex flex-col items-center gap-3">
-        <Button onClick={onComplete} color="indigo" size="lg" className="w-full md:w-auto md:min-w-[300px]">
+        <Button
+          onClick={handleComplete}
+          color="indigo"
+          size="lg"
+          className="w-full md:w-auto md:min-w-[300px]"
+        >
           Start Talking
         </Button>
         <Link

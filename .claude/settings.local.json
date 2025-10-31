@@ -20,7 +20,9 @@
       "Bash(pnpm run build:*)",
       "Bash(pnpm tsc:*)",
       "Bash(pnpm eslint:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(pnpm run lint:*)"
     ],
     "defaultMode": "acceptEdits"
   },

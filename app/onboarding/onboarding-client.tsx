@@ -4,13 +4,13 @@ import { useRouter } from 'next/navigation';
 
 import { useAccount } from '@/services/account';
 
+import { OnboardingProvider } from './context';
 import { OnboardingFormData, OnboardingWizard } from './onboarding-wizard';
 
 /**
- * Container component that handles the onboarding wizard integration
- * and provides the completion handler
+ * Client-side onboarding component that manages state and handles completion
  */
-export function OnboardingWizardContainer() {
+export function OnboardingClient() {
   const router = useRouter();
   const { updateAccount } = useAccount();
 
@@ -41,10 +41,8 @@ export function OnboardingWizardContainer() {
   };
 
   return (
-    <OnboardingWizard
-      onComplete={handleComplete}
-      // You can optionally pass initialStep and initialFormData
-      // for resuming partial onboarding
-    />
+    <OnboardingProvider onComplete={handleComplete}>
+      <OnboardingWizard />
+    </OnboardingProvider>
   );
 }
