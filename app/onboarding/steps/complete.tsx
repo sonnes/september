@@ -65,28 +65,28 @@ export default function CompleteStep() {
       <div className="flex justify-center mb-6">
         <div className="relative">
           <div className="absolute inset-0 bg-green-600 rounded-full blur-xl opacity-50 animate-pulse" />
-          <CheckCircleIcon className="relative w-24 h-24 text-green-500" />
+          <CheckCircleIcon className="relative w-24 h-24 text-green-600" />
         </div>
       </div>
 
       {/* Heading */}
       <div className="text-center mb-10">
-        <h1 className="text-4xl font-bold text-white mb-3">You&apos;re All Set!</h1>
-        <p className="text-xl text-zinc-300">September is ready to help you communicate</p>
+        <h1 className="text-4xl font-bold text-zinc-900 mb-3">You&apos;re All Set!</h1>
+        <p className="text-xl text-zinc-600">September is ready to help you communicate</p>
       </div>
 
       {/* Configuration Summary Card */}
       {configSummary && (
-        <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-6 mb-10">
-          <h2 className="text-lg font-bold text-white mb-4">Configuration Summary</h2>
+        <div className="bg-white border border-zinc-200 rounded-lg p-6 mb-10">
+          <h2 className="text-lg font-bold text-zinc-900 mb-4">Configuration Summary</h2>
           <div className="space-y-3">
             {/* API Keys */}
             {configSummary.hasApiKeys && (
               <div className="flex items-start">
-                <CheckCircleIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 shrink-0" />
+                <CheckCircleIcon className="w-5 h-5 text-green-600 mr-3 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-white">API Keys Configured</p>
-                  <p className="text-xs text-zinc-400">Your AI providers are ready to use</p>
+                  <p className="text-sm font-semibold text-zinc-800">API Keys Configured</p>
+                  <p className="text-xs text-zinc-600">Your AI providers are ready to use</p>
                 </div>
               </div>
             )}
@@ -94,10 +94,10 @@ export default function CompleteStep() {
             {/* Voice Selection */}
             {configSummary.voiceName && (
               <div className="flex items-start">
-                <CheckCircleIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 shrink-0" />
+                <CheckCircleIcon className="w-5 h-5 text-green-600 mr-3 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-white">Voice Selected</p>
-                  <p className="text-xs text-zinc-400">{configSummary.voiceName}</p>
+                  <p className="text-sm font-semibold text-zinc-800">Voice Selected</p>
+                  <p className="text-xs text-zinc-600">{configSummary.voiceName}</p>
                 </div>
               </div>
             )}
@@ -105,12 +105,12 @@ export default function CompleteStep() {
             {/* AI Suggestions */}
             {configSummary.suggestionsEnabled !== undefined && (
               <div className="flex items-start">
-                <CheckCircleIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 shrink-0" />
+                <CheckCircleIcon className="w-5 h-5 text-green-600 mr-3 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-white">
+                  <p className="text-sm font-semibold text-zinc-800">
                     AI Suggestions {configSummary.suggestionsEnabled ? 'Enabled' : 'Disabled'}
                   </p>
-                  <p className="text-xs text-zinc-400">
+                  <p className="text-xs text-zinc-600">
                     {configSummary.suggestionsEnabled
                       ? 'Get smart suggestions while you type'
                       : 'You can enable this later in settings'}
@@ -124,10 +124,10 @@ export default function CompleteStep() {
               !configSummary.voiceName &&
               configSummary.suggestionsEnabled === undefined && (
                 <div className="flex items-start">
-                  <CheckCircleIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 shrink-0" />
+                  <CheckCircleIcon className="w-5 h-5 text-green-600 mr-3 mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-white">Setup Complete</p>
-                    <p className="text-xs text-zinc-400">You can customize your settings anytime</p>
+                    <p className="text-sm font-semibold text-zinc-800">Setup Complete</p>
+                    <p className="text-xs text-zinc-600">You can customize your settings anytime</p>
                   </div>
                 </div>
               )}
@@ -137,7 +137,7 @@ export default function CompleteStep() {
 
       {/* Next Steps Section */}
       <div className="mb-10">
-        <h2 className="text-lg font-bold text-white mb-4 text-center">Next Steps</h2>
+        <h2 className="text-lg font-bold text-zinc-900 mb-4 text-center">Next Steps</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {nextSteps.map(step => {
             const IconComponent = step.icon;
@@ -146,19 +146,19 @@ export default function CompleteStep() {
                 key={step.title}
                 href={step.href}
                 className={`
-                  bg-zinc-800 border border-zinc-700 rounded-lg p-5
-                  hover:border-zinc-600 hover:shadow-lg transition-all
+                  bg-white border border-zinc-200 rounded-lg p-5
+                  hover:border-zinc-300 hover:shadow-lg transition-all
                   flex flex-col items-center text-center
                   ${step.primary ? 'md:col-span-3 ring-2 ring-indigo-600' : ''}
                 `}
               >
                 <div
-                  className={`p-3 rounded-lg mb-3 ${step.primary ? 'bg-indigo-600' : 'bg-zinc-700'}`}
+                  className={`p-3 rounded-lg mb-3 ${step.primary ? 'bg-indigo-600' : 'bg-zinc-100'}`}
                 >
-                  <IconComponent className="w-6 h-6 text-white" />
+                  <IconComponent className={`w-6 h-6 ${step.primary ? 'text-white' : 'text-zinc-700'}`} />
                 </div>
-                <h3 className="text-base font-bold text-white mb-2">{step.title}</h3>
-                <p className="text-xs text-zinc-400">{step.description}</p>
+                <h3 className="text-base font-bold text-zinc-900 mb-2">{step.title}</h3>
+                <p className="text-xs text-zinc-600">{step.description}</p>
               </Link>
             );
           })}
@@ -177,7 +177,7 @@ export default function CompleteStep() {
         </Button>
         <Link
           href="/settings"
-          className="text-sm text-zinc-500 hover:text-zinc-400 transition-colors"
+          className="text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
         >
           Customize Settings
         </Link>

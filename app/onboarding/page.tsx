@@ -6,6 +6,7 @@ import { MobileNav } from '@/components/nav';
 
 import { AccountProvider } from '@/services/account/context';
 import AccountsService from '@/services/account/supabase';
+import { AISettingsProvider } from '@/services/ai';
 
 import { createClient } from '@/supabase/server';
 
@@ -25,18 +26,22 @@ export default async function OnboardingPage() {
 
   return (
     <AccountProvider provider={provider} user={user!} account={account!}>
-      <Layout>
-        <Layout.Header>
-          <DesktopNav user={user} current="/onboarding" />
-          <MobileNav title="Let's get started" user={user} current="/onboarding"></MobileNav>
-          <div className="hidden md:flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold tracking-tight text-white">Let&apos;s get started</h1>
-          </div>
-        </Layout.Header>
-        <Layout.Content>
-          <OnboardingClient />
-        </Layout.Content>
-      </Layout>
+      <AISettingsProvider>
+        <Layout>
+          <Layout.Header>
+            <DesktopNav user={user} current="/onboarding" />
+            <MobileNav title="Let's get started" user={user} current="/onboarding"></MobileNav>
+            <div className="hidden md:flex items-center justify-between mb-4">
+              <h1 className="text-2xl font-bold tracking-tight text-white">
+                Let&apos;s get started
+              </h1>
+            </div>
+          </Layout.Header>
+          <Layout.Content>
+            <OnboardingClient />
+          </Layout.Content>
+        </Layout>
+      </AISettingsProvider>
     </AccountProvider>
   );
 }

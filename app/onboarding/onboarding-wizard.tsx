@@ -1,9 +1,11 @@
 'use client';
 
+import { useOnboarding } from './context';
 import ApiKeysStep from './steps/api-keys';
 import Complete from './steps/complete';
+import SpeechStep from './steps/speech';
+import SuggestionsStep from './steps/suggestions';
 import Welcome from './steps/welcome';
-import { useOnboarding } from './context';
 
 /**
  * Step identifier type for the onboarding wizard
@@ -140,16 +142,6 @@ function ProgressIndicator({ currentStep, completedSteps }: ProgressIndicatorPro
           {/* Background line */}
           <div className="absolute top-4 left-0 right-0 h-0.5 bg-zinc-200" aria-hidden="true" />
 
-          {/* Progress line */}
-          <div className="absolute top-4 left-0 right-0 h-0.5" aria-hidden="true">
-            <div
-              className="h-full bg-indigo-600 transition-all duration-500 ease-in-out"
-              style={{
-                width: `${((currentStepNumber - 1) / (TOTAL_STEPS - 1)) * 100}%`,
-              }}
-            />
-          </div>
-
           {/* Steps */}
           <div className="relative flex justify-between">
             {PROGRESS_STEPS.map(step => {
@@ -228,7 +220,7 @@ function ProgressIndicator({ currentStep, completedSteps }: ProgressIndicatorPro
  */
 export function OnboardingWizard() {
   // Get state and actions from context
-  const { currentStep, completedSteps, goNext, goBack } = useOnboarding();
+  const { currentStep, completedSteps } = useOnboarding();
 
   // Show progress indicator for main steps (not welcome or complete)
   const showProgressIndicator = !['welcome', 'complete'].includes(currentStep);
@@ -246,51 +238,9 @@ export function OnboardingWizard() {
 
         {currentStep === 'api-keys' && <ApiKeysStep />}
 
-        {currentStep === 'speech' && (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold text-zinc-900 mb-4">Speech Setup Step</h2>
-            <p className="text-zinc-600 mb-8">
-              This is a placeholder. The actual form will be rendered here.
-            </p>
-            <div className="flex gap-4 justify-center">
-              <button
-                onClick={goBack}
-                className="px-6 py-3 bg-zinc-200 text-zinc-900 rounded-lg font-medium hover:bg-zinc-300 transition-colors"
-              >
-                Back
-              </button>
-              <button
-                onClick={goNext}
-                className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        )}
+        {currentStep === 'speech' && <SpeechStep />}
 
-        {currentStep === 'suggestions' && (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold text-zinc-900 mb-4">Suggestions Step</h2>
-            <p className="text-zinc-600 mb-8">
-              This is a placeholder. The actual form will be rendered here.
-            </p>
-            <div className="flex gap-4 justify-center">
-              <button
-                onClick={goBack}
-                className="px-6 py-3 bg-zinc-200 text-zinc-900 rounded-lg font-medium hover:bg-zinc-300 transition-colors"
-              >
-                Back
-              </button>
-              <button
-                onClick={goNext}
-                className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-              >
-                Complete Setup
-              </button>
-            </div>
-          </div>
-        )}
+        {currentStep === 'suggestions' && <SuggestionsStep />}
 
         {currentStep === 'complete' && <Complete />}
       </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { useAccount } from '@/services/account';
 import { AI_PROVIDERS } from '@/services/ai/registry';
@@ -154,6 +154,32 @@ export function OnboardingProvider({
   }, [account, initialFormData]);
 
   const [formData, setFormData] = useState<OnboardingFormData>(initialData);
+
+  /**
+   * Update URL hash when current step changes
+   */
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.location.hash = currentStep;
+    }
+  }, [currentStep]);
+
+  /**
+   * Handle browser back/forward navigation
+   */
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      const validSteps: OnboardingStep[] = ['welcome', 'api-keys', 'speech', 'suggestions', 'complete'];
+
+      if (validSteps.includes(hash as OnboardingStep)) {
+        setCurrentStep(hash as OnboardingStep);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   /**
    * Navigate to next step

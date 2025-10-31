@@ -82,37 +82,56 @@ Welcome → API Keys → Speech → Suggestions → Complete → /talk
 
 ---
 
-### Speech Setup (TODO)
+### Speech Setup ([steps/speech.tsx](../app/onboarding/steps/speech.tsx)) ✅
 
 **Purpose:** Select TTS provider and voice
 
 **UI:**
 - Heading: "Set Up Your Voice"
 - Provider selector (browser, gemini, elevenlabs)
-- Voice grid with preview buttons
-- Actions: Back, Skip, Continue
+- Voice selection with link to /voices page
+- Provider-specific settings (speed/pitch/volume for browser, model/stability/similarity/style/speaker_boost for elevenlabs, model for gemini)
+- Actions: Back, Skip for now, Continue
 
-**Notes:**
-- Currently placeholder in [onboarding-wizard.tsx](../app/onboarding/onboarding-wizard.tsx):269
-- Should reuse components from AI settings forms
-- Default to browser TTS if no API keys
+**Implementation:**
+- ✅ Reuses `SpeechForm` component from [components/ai/settings/speech-form.tsx](../components/ai/settings/speech-form.tsx)
+- ✅ Form uses `SpeechFormSchema` with `react-hook-form` and `zodResolver`
+- ✅ Dynamically shows provider options from AI registry
+- ✅ Shows API key warning if provider requires key but none configured
+- ✅ Updates onboarding context with `updateSpeech()`
+- ✅ Integrated in [onboarding-wizard.tsx](../app/onboarding/onboarding-wizard.tsx):249
+- ✅ Pre-populates with existing account settings if available
+- ✅ All fields are optional (allows skipping)
+- ✅ Responsive button layout (full width on mobile, auto on desktop)
 
 ---
 
-### Suggestions (TODO)
+### Suggestions ([steps/suggestions.tsx](../app/onboarding/steps/suggestions.tsx)) ✅
 
 **Purpose:** Configure AI suggestions settings
 
 **UI:**
 - Heading: "Personalize Your AI Assistant"
-- System instructions textarea
 - Enable/disable toggle
-- Actions: Back, Skip, Complete Setup
+- Provider selector (currently only 'gemini')
+- Model selector (gemini-2.5-flash-lite, gemini-2.5-flash, gemini-2.5-pro)
+- System instructions textarea with example templates
+  - Templates: "ALS Person", "Yoda", "Teenager"
+- AI corpus textarea with "Generate Corpus" button
+- Advanced settings: temperature, max_suggestions, context_window
+- Actions: Back, Skip for now, Complete Setup
 
-**Notes:**
-- Currently placeholder in [onboarding-wizard.tsx](../app/onboarding/onboarding-wizard.tsx):292
-- Should reuse components from AI settings forms
-- Smart defaults for advanced settings
+**Implementation:**
+- ✅ Reuses `SuggestionsForm` component from [components/ai/settings/suggestions-form.tsx](../components/ai/settings/suggestions-form.tsx)
+- ✅ Form uses `SuggestionsFormSchema` with `react-hook-form` and `zodResolver`
+- ✅ Example instructions provide quick-start templates
+- ✅ Corpus generation uses `useCorpus` hook from [hooks/use-ai-settings](../hooks/use-ai-settings.tsx)
+- ✅ Shows API key warning if Gemini key not configured
+- ✅ Updates onboarding context with `updateSuggestions()`
+- ✅ Integrated in [onboarding-wizard.tsx](../app/onboarding/onboarding-wizard.tsx):252
+- ✅ Pre-populates with existing account settings if available
+- ✅ All fields are optional (allows skipping)
+- ✅ Responsive button layout (full width on mobile, auto on desktop)
 
 ---
 
@@ -164,30 +183,36 @@ Located in [onboarding-wizard.tsx](../app/onboarding/onboarding-wizard.tsx):113-
 
 1. ~~**API Keys Step**~~ ✅ COMPLETED
    - ~~Create `steps/api-keys.tsx`~~
-   - ~~Import form fields from settings forms~~
+   - ~~Import `APIKeysForm` from `components/settings/api-keys-form.tsx`~~
    - ~~Add to wizard step rendering~~
    - ~~Wire up `updateApiKeys()` from context~~
 
-2. **Speech Step**
-   - Create `steps/speech.tsx`
-   - Import speech form components
-   - Add voice selector/preview
-   - Wire up `updateSpeech()` from context
+2. ~~**Speech Step**~~ ✅ COMPLETED
+   - ~~Create `steps/speech.tsx`~~
+   - ~~Import `SpeechForm` from `components/ai/settings/speech-form.tsx`~~
+   - ~~Wrap in step layout with heading and navigation buttons~~
+   - ~~Wire up form submission to `updateSpeech()` from context~~
+   - ~~Handle back/skip navigation~~
+   - ~~Added link to /voices page for voice selection~~
 
-3. **Suggestions Step**
-   - Create `steps/suggestions.tsx`
-   - Import suggestions form components
-   - Simplify for onboarding (hide advanced settings)
-   - Wire up `updateSuggestions()` from context
+3. ~~**Suggestions Step**~~ ✅ COMPLETED
+   - ~~Create `steps/suggestions.tsx`~~
+   - ~~Import `SuggestionsForm` from `components/ai/settings/suggestions-form.tsx`~~
+   - ~~Wrap in step layout with heading and navigation buttons~~
+   - ~~Wire up form submission to `updateSuggestions()` from context~~
+   - ~~Handle back/skip navigation~~
+   - Full form with all settings included (not simplified)
 
-4. **Form Validation**
-   - Add validation before allowing navigation
-   - Handle skip scenarios
-   - Show appropriate error messages
+4. **Polish & Validation**
+   - Ensure all forms handle optional validation (allow skip)
+   - Add proper error handling and toast notifications
+   - Test form data persistence across steps
+   - Verify completion flow saves all data correctly
 
 5. **Testing**
    - Test full flow end-to-end
-   - Test skip functionality
-   - Test back navigation
-   - Test form data persistence
-   - Test responsive design
+   - Test skip functionality on each step
+   - Test back navigation preserves form data
+   - Test with/without API keys configured
+   - Test responsive design (mobile, tablet, desktop)
+   - Test accessibility (keyboard nav, screen readers)
