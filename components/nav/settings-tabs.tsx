@@ -1,6 +1,6 @@
 'use client';
 
-import { Dropdown, DropdownOption } from '@/components/ui/dropdown';
+import { Dropdown, DropdownOption } from '@/components/uix/dropdown';
 
 interface Tab {
   name: string;

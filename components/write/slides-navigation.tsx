@@ -4,7 +4,7 @@ import React from 'react';
 
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/uix/button';
 
 interface SlidesNavigationProps {
   currentSlide: number;
@@ -44,9 +44,7 @@ export default function SlidesNavigation({
       </Button>
 
       <div className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-lg border border-zinc-300 shadow-lg">
-        <span className="text-sm font-medium text-zinc-700">
-          {currentSlide}
-        </span>
+        <span className="text-sm font-medium text-zinc-700">{currentSlide}</span>
         <span className="text-sm text-zinc-500">/</span>
         <span className="text-sm text-zinc-500">{totalSlides}</span>
       </div>

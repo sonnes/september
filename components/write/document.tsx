@@ -12,8 +12,8 @@ import {
 
 import { useDocumentsContext } from '@/components/context/documents-provider';
 import TiptapEditor from '@/components/editor/tiptap-editor';
-import { Button } from '@/components/ui/button';
-import { TextInput } from '@/components/ui/text-input';
+import { Button } from '@/components/uix/button';
+import { TextInput } from '@/components/uix/text-input';
 
 import UploadForm from './upload-form';
 

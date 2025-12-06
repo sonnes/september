@@ -9,7 +9,7 @@ import { DocumentIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import moment from 'moment';
 
 import { useDocumentsContext } from '@/components/context/documents-provider';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/uix/button';
 
 interface DocumentsSidebarProps {
   className?: string;

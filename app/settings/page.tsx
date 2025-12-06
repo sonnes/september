@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 import Layout from '@/components/layout';
 import { DesktopNav, MobileNav } from '@/components/nav';
-import Alert from '@/components/ui/alert';
+import Alert from '@/components/uix/alert';
 
 import { AccountProvider, AccountService } from '@/services/account';
 import { SpeechProvider } from '@/services/speech';

@@ -5,8 +5,8 @@ import { useMemo, useState } from 'react';
 import { Control, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 import { z } from 'zod';
 
-import { Button } from '@/components/ui/button';
-import { FormCheckbox, FormDropdown, FormRange, FormTextarea } from '@/components/ui/form';
+import { Button } from '@/components/uix/button';
+import { FormCheckbox, FormDropdown, FormRange, FormTextarea } from '@/components/uix/form';
 
 import { useCorpus } from '@/hooks/use-ai-settings';
 

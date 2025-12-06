@@ -7,7 +7,7 @@ import { SpeakerWaveIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/uix/button';
 
 import { useToast } from '@/hooks/use-toast';
 

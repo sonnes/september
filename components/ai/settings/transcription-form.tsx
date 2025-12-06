@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { Control, UseFormWatch } from 'react-hook-form';
 import { z } from 'zod';
 
-import { FormCheckbox, FormDropdown } from '@/components/ui/form';
+import { FormCheckbox, FormDropdown } from '@/components/uix/form';
 
 import { useAISettings } from '@/services/ai/context';
 import { getModelsForProvider } from '@/services/ai/registry';

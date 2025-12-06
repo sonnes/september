@@ -2,9 +2,11 @@
 
 import React, { useState } from 'react';
 
-import { Button } from '@/components/ui/button';
-import FileUploader from '@/components/ui/file-uploader';
+import { Button } from '@/components/uix/button';
+import FileUploader from '@/components/uix/file-uploader';
+
 import { useToast } from '@/hooks/use-toast';
+
 import GeminiService from '@/services/gemini';
 
 import { useAccount } from '../../services/account/context';

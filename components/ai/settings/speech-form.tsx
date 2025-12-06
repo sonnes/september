@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Control, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 
-import { FormCheckbox, FormDropdown, FormRangeWithLabels } from '@/components/ui/form';
+import { FormCheckbox, FormDropdown, FormRangeWithLabels } from '@/components/uix/form';
 
 import { useAISettings } from '@/services/ai/context';
 import { getModelsForProvider, getProvidersForFeature } from '@/services/ai/registry';

@@ -8,7 +8,7 @@ import { SpeechModal } from '@/components/ai/settings/speech-modal';
 import { SuggestionsModal } from '@/components/ai/settings/suggestions-modal';
 import { useTextContext } from '@/components/context/text-provider';
 import { KeyboardSelector } from '@/components/keyboards';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/uix/button';
 
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useSuggestions } from '@/hooks/use-suggestions';

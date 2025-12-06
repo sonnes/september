@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 
 import { PauseIcon, PlayIcon } from '@heroicons/react/24/outline';
 
-import AnimatedText from '@/components/ui/animated-text';
+import AnimatedText from '@/components/uix/animated-text';
 
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 

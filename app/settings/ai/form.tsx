@@ -6,8 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Control, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { Button } from '@/components/ui/button';
-import { FormInput } from '@/components/ui/form';
+import { Button } from '@/components/uix/button';
+import { FormInput } from '@/components/uix/form';
 
 import { useToast } from '@/hooks/use-toast';
 

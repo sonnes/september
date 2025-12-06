@@ -5,8 +5,9 @@ import React from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
-import { Button } from '@/components/ui/button';
-import { TextInput } from '@/components/ui/text-input';
+import { Button } from '@/components/uix/button';
+import { TextInput } from '@/components/uix/text-input';
+
 import { useToast } from '@/hooks/use-toast';
 
 import { signInWithEmail, signInWithGoogle } from './actions';

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
-import { TextInput } from '@/components/ui/text-input';
+import { TextInput } from '@/components/uix/text-input';
 
 import { useDebounce } from '@/hooks/use-debounce';
 
