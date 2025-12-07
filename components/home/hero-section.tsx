@@ -7,7 +7,7 @@ import Editor from '@/components/editor/simple';
 
 export function HeroSection() {
   return (
-    <section className="pt-24 pb-12 bg-gradient-to-br from-whiteto-zinc-50">
+    <section className="pt-24 pb-12 bg-linear-to-br from-whiteto-zinc-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <div className="flex items-center justify-center mb-8">
@@ -24,12 +24,12 @@ export function HeroSection() {
             </a>
           </div>
           <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6">
-            <span className="bg-gradient-to-r from-amber-500 to-amber-600 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-amber-500 to-amber-600 bg-clip-text text-transparent">
               Faster
             </span>{' '}
             Communication
             <br />
-            <span className="bg-gradient-to-r from-amber-500 to-amber-600 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-amber-500 to-amber-600 bg-clip-text text-transparent">
               Fewer
             </span>{' '}
             Keystrokes
@@ -40,10 +40,10 @@ export function HeroSection() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href={'/talk'}
-              className="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:opacity-90 transition shadow-lg hover:shadow-xl"
+              href={'/onboarding'}
+              className="bg-linear-to-r from-amber-500 to-amber-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:opacity-90 transition shadow-lg hover:shadow-xl"
             >
-              Start Communicating
+              Get Started
             </Link>
             <button className="bg-white text-amber-600 px-8 py-4 rounded-full text-lg font-semibold border-2 border-amber-600 hover:bg-amber-50 transition">
               <svg className="inline w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
