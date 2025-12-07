@@ -1,4 +1,4 @@
-import { Check, Keyboard, Mic, Sparkles, MessageCircle } from 'lucide-react';
+import { Check, Keyboard, MessageCircle, Mic, Sparkles } from 'lucide-react';
 
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -181,9 +181,9 @@ export function FeaturesSection() {
         </div>
 
         {/* Feature 4: Accessible Keyboards */}
-        <div className="flex flex-col lg:flex-row-reverse items-center gap-12">
-          <div className="lg:w-1/3">
-            <div className="flex items-center mb-4">
+        <div className="flex flex-col items-center gap-12">
+          <div className="w-full text-center">
+            <div className="flex items-center justify-center mb-4">
               <div className="mr-4">
                 <Keyboard className="w-6 h-6 text-orange-600" />
               </div>
@@ -195,7 +195,7 @@ export function FeaturesSection() {
               Multiple keyboard layouts optimized for different input devices - mouse,
               head-tracking, or eye-gaze.
             </p>
-            <ul className="space-y-3">
+            <ul className="space-y-3 inline-flex flex-col items-start">
               <li className="flex items-start">
                 <Check className="w-4 h-4 text-orange-600 mt-1 mr-3 shrink-0" />
                 <span className="text-gray-700">QWERTY, Circular, and Emoji layouts</span>
@@ -206,7 +206,7 @@ export function FeaturesSection() {
               </li>
             </ul>
           </div>
-          <div className="lg:w-2/3">
+          <div className="w-full">
             <KeyboardDemo />
           </div>
         </div>

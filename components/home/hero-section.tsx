@@ -1,4 +1,5 @@
 import Link from 'next/link';
+
 import { Github, Play } from 'lucide-react';
 
 import { KeyboardProvider } from '@/components/context/keyboard-provider';
@@ -45,13 +46,13 @@ export function HeroSection() {
             >
               <Link href="/onboarding">Get Started</Link>
             </Button>
-            <Button
+            {/* <Button
               variant="outline"
               className="bg-white text-amber-600 px-8 py-4 h-auto rounded-full text-lg font-semibold border-2 border-amber-600 hover:bg-amber-50"
             >
               <Play className="w-5 h-5" />
               Watch Demo
-            </Button>
+            </Button> */}
           </div>
         </div>
 
