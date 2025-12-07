@@ -1,3 +1,10 @@
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+
 import faqs from '@/data/home-faqs.json';
 
 export function FAQSection() {
@@ -7,19 +14,22 @@ export function FAQSection() {
         <h2 className="text-4xl font-bold text-center text-gray-900 mb-16">
           Frequently Asked Questions
         </h2>
-        <div className="space-y-6">
+        <Accordion type="single" collapsible className="space-y-4">
           {faqs.map(faq => (
-            <details key={faq.id} className="bg-gray-50 rounded-lg p-6 cursor-pointer hover:bg-gray-100 transition group">
-              <summary className="font-semibold text-lg list-none flex items-center justify-between">
-                <span>{faq.question}</span>
-                <svg className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M7 10l5 5 5-5z"/>
-                </svg>
-              </summary>
-              <p className="mt-4 text-gray-600 leading-relaxed">{faq.answer}</p>
-            </details>
+            <AccordionItem
+              key={faq.id}
+              value={String(faq.id)}
+              className="bg-gray-50 rounded-lg px-6 border-none data-[state=open]:bg-gray-100"
+            >
+              <AccordionTrigger className="text-lg font-semibold hover:no-underline">
+                {faq.question}
+              </AccordionTrigger>
+              <AccordionContent className="text-gray-600 leading-relaxed">
+                {faq.answer}
+              </AccordionContent>
+            </AccordionItem>
           ))}
-        </div>
+        </Accordion>
       </div>
     </section>
   );
