@@ -3,7 +3,7 @@
 import { Progress } from '@/components/ui/progress';
 
 import { useOnboarding } from './context';
-import { ApiKeysStep } from './steps/api-keys';
+import { AIProvidersStep } from './steps/ai-providers';
 import { CompleteStep } from './steps/complete';
 import { SpeechStep } from './steps/speech';
 import { SuggestionsStep } from './steps/suggestions';
@@ -19,7 +19,7 @@ export function Onboarding() {
       case 0:
         return <WelcomeStep />;
       case 1:
-        return <ApiKeysStep />;
+        return <AIProvidersStep />;
       case 2:
         return <SuggestionsStep />;
       case 3:

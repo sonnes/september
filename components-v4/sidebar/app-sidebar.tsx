@@ -50,13 +50,10 @@ const getNavigationData = () => ({
       title: 'Settings',
       url: '/settings',
       icon: Settings2,
+      isExpanded: true,
       items: [
         {
-          title: 'General',
-          url: '/settings',
-        },
-        {
-          title: 'AI',
+          title: 'AI Providers',
           url: '/settings/ai',
         },
         {

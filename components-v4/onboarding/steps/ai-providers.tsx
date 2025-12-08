@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRight, ExternalLink, Key } from 'lucide-react';
+import { ArrowRight, CheckCircle2, ExternalLink, Key, Sparkles } from 'lucide-react';
 import { Control, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 
 import { useAccount } from '@/components-v4/account';
 import { AI_PROVIDERS } from '@/components-v4/settings';
-import type { AIFeature, AIServiceProvider, ProviderConfig, Providers } from '@/types/ai-config';
+import type { AIFeature, AIServiceProvider, Providers } from '@/types/ai-config';
 
 import { useOnboarding } from '../context';
 
@@ -42,6 +42,11 @@ function FeaturePills({ features }: { features: AIFeature[] }) {
   );
 }
 
+// Get all providers
+const getAllProviders = (): AIServiceProvider[] => {
+  return Object.values(AI_PROVIDERS);
+};
+
 // Get providers that require API keys
 const getProvidersWithApiKeys = (): AIServiceProvider[] => {
   return Object.values(AI_PROVIDERS).filter(provider => provider.requires_api_key);
@@ -62,8 +67,8 @@ const createProviderSchema = () => {
   return z.object(schemaFields);
 };
 
-const APIKeysSchema = createProviderSchema();
-type APIKeysFormData = z.infer<typeof APIKeysSchema>;
+const AIProvidersSchema = createProviderSchema();
+type AIProvidersFormData = z.infer<typeof AIProvidersSchema>;
 
 // API key URLs for different providers
 const API_KEY_URLS: Record<string, string> = {
@@ -72,17 +77,49 @@ const API_KEY_URLS: Record<string, string> = {
 };
 
 interface ProviderCardProps {
-  control: Control<APIKeysFormData>;
+  control: Control<AIProvidersFormData>;
   provider: AIServiceProvider;
+  hasApiKey?: boolean;
 }
 
-function ProviderCard({ control, provider }: ProviderCardProps) {
+function ProviderCard({ control, provider, hasApiKey = false }: ProviderCardProps) {
   const apiKeyField = `${provider.id}_api_key`;
   const baseUrlField = `${provider.id}_base_url`;
   const apiKeyUrl = API_KEY_URLS[provider.id] || '#';
 
+  if (!provider.requires_api_key) {
+    return (
+      <Card className="border-green-200 bg-green-50/50">
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <CardTitle className="text-base">{provider.name}</CardTitle>
+                <CardDescription className="text-sm">{provider.description}</CardDescription>
+              </div>
+            </div>
+            <div className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+              Ready to Use
+            </div>
+          </div>
+          <div className="mt-2">
+            <FeaturePills features={provider.features} />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            This provider is available immediately and doesn&apos;t require any configuration.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <Card>
+    <Card className={hasApiKey ? 'border-green-200 bg-green-50/50' : ''}>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -94,6 +131,11 @@ function ProviderCard({ control, provider }: ProviderCardProps) {
               <CardDescription className="text-sm">{provider.description}</CardDescription>
             </div>
           </div>
+          {hasApiKey && (
+            <div className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+              Configured
+            </div>
+          )}
         </div>
         <div className="mt-2">
           <FeaturePills features={provider.features} />
@@ -111,7 +153,7 @@ function ProviderCard({ control, provider }: ProviderCardProps) {
         </a>
 
         <FormInput
-          name={apiKeyField as keyof APIKeysFormData}
+          name={apiKeyField as keyof AIProvidersFormData}
           control={control}
           label="API Key"
           type="password"
@@ -120,7 +162,7 @@ function ProviderCard({ control, provider }: ProviderCardProps) {
         />
 
         <FormInput
-          name={baseUrlField as keyof APIKeysFormData}
+          name={baseUrlField as keyof AIProvidersFormData}
           control={control}
           label="Custom Base URL (Optional)"
           type="url"
@@ -131,7 +173,7 @@ function ProviderCard({ control, provider }: ProviderCardProps) {
   );
 }
 
-export function ApiKeysStep() {
+export function AIProvidersStep() {
   const { goToNextStep, goToPreviousStep } = useOnboarding();
   const { account, updateAccount } = useAccount();
   const { show, showError } = useToast();
@@ -152,8 +194,8 @@ export function ApiKeysStep() {
     return values;
   }, [account]);
 
-  const form = useForm<APIKeysFormData>({
-    resolver: zodResolver(APIKeysSchema),
+  const form = useForm<AIProvidersFormData>({
+    resolver: zodResolver(AIProvidersSchema),
     defaultValues: defaultValues,
   });
 
@@ -161,7 +203,7 @@ export function ApiKeysStep() {
     form.reset(defaultValues);
   }, [defaultValues, form]);
 
-  const onSubmit = async (data: APIKeysFormData) => {
+  const onSubmit = async (data: AIProvidersFormData) => {
     try {
       // Build the provider config object dynamically
       const providerConfig: Record<string, { api_key: string; base_url?: string }> = {};
@@ -169,8 +211,8 @@ export function ApiKeysStep() {
       getProvidersWithApiKeys().forEach(provider => {
         const apiKeyField = `${provider.id}_api_key`;
         const baseUrlField = `${provider.id}_base_url`;
-        const apiKey = data[apiKeyField as keyof APIKeysFormData] as string;
-        const baseUrl = data[baseUrlField as keyof APIKeysFormData] as string;
+        const apiKey = data[apiKeyField as keyof AIProvidersFormData] as string;
+        const baseUrl = data[baseUrlField as keyof AIProvidersFormData] as string;
 
         // Only include provider if API key is provided
         if (apiKey) {
@@ -188,14 +230,14 @@ export function ApiKeysStep() {
       });
 
       show({
-        title: 'API Keys Saved',
-        message: 'Your API keys have been configured successfully.',
+        title: 'AI Providers Configured',
+        message: 'Your AI provider settings have been saved successfully.',
       });
 
       goToNextStep();
     } catch (err) {
-      console.error('Error saving API keys:', err);
-      showError('Failed to save API keys. Please try again.');
+      console.error('Error saving AI providers:', err);
+      showError('Failed to save AI provider settings. Please try again.');
     }
   };
 
@@ -203,28 +245,45 @@ export function ApiKeysStep() {
     goToNextStep();
   };
 
-  const providers = getProvidersWithApiKeys();
+  const allProviders = getAllProviders();
+  const providersWithApiKeys = getProvidersWithApiKeys();
+
+  // Check which providers have API keys configured
+  const hasApiKey = (providerId: string) => {
+    return !!account?.ai_providers?.[providerId as keyof typeof account.ai_providers]?.api_key;
+  };
 
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold tracking-tight">Configure API Keys</h2>
+        <div className="mb-4 flex justify-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <Sparkles className="h-6 w-6 text-primary" />
+          </div>
+        </div>
+        <h2 className="text-2xl font-bold tracking-tight">AI Providers</h2>
         <p className="mt-2 text-muted-foreground">
-          Connect AI providers to enable suggestions, transcription, and voice synthesis. You can
-          skip this step and configure later in settings.
+          Configure AI providers to power suggestions, transcription, and voice synthesis. Some
+          providers are ready to use immediately, while others require API keys.
         </p>
       </div>
 
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-        <p className="text-sm text-amber-800">
-          <strong>Note:</strong> API keys are optional. September works with browser-based speech
-          without any API keys. Add keys to enable AI-powered features.
+      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+        <p className="text-sm text-blue-800">
+          <strong>Tip:</strong> September works with browser-based speech without any API keys. Add
+          API keys to unlock AI-powered features like intelligent suggestions and high-quality voice
+          synthesis.
         </p>
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {providers.map(provider => (
-          <ProviderCard key={provider.id} control={form.control} provider={provider} />
+        {allProviders.map(provider => (
+          <ProviderCard
+            key={provider.id}
+            control={form.control}
+            provider={provider}
+            hasApiKey={hasApiKey(provider.id)}
+          />
         ))}
 
         <div className="flex items-center justify-between pt-4">

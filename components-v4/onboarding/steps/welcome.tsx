@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, Key, MessageSquare, Settings, Volume2 } from 'lucide-react';
+import { ArrowRight, MessageSquare, Settings, Sparkles, Volume2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,9 +9,9 @@ import { useOnboarding } from '../context';
 
 const SETUP_STEPS = [
   {
-    icon: Key,
-    title: 'API Keys',
-    description: 'Connect AI providers for suggestions and voice synthesis',
+    icon: Sparkles,
+    title: 'AI Providers',
+    description: 'Configure AI providers for suggestions and voice synthesis',
   },
   {
     icon: MessageSquare,
@@ -35,14 +35,10 @@ export function WelcomeStep() {
 
   return (
     <div className="flex flex-col items-center text-center">
-      <div className="mb-8">
-        <h1 className="text-3xl text-indigo-600 font-bold tracking-tight mb-4">
-          Welcome to September
+      <div className="mb-2">
+        <h1 className="text-xl font-bold tracking-tight">
+          Let&apos;s get you set up with September
         </h1>
-        <p className="text-lg text-muted-foreground max-w-xl">
-          September is an assistive communication app that helps you express yourself with
-          AI-powered suggestions and natural voice synthesis.
-        </p>
       </div>
 
       <Card className="w-full max-w-2xl mb-8">

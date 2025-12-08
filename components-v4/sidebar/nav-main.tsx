@@ -26,6 +26,7 @@ export function NavMain({
     title: string;
     url: string;
     icon: LucideIcon;
+    isExpanded?: boolean;
     items?: {
       title: string;
       url: string;
@@ -39,7 +40,7 @@ export function NavMain({
       <SidebarMenu>
         {items.map(item => {
           const isActive = pathname.startsWith(item.url);
-          const [open, setOpen] = useState(isActive);
+          const [open, setOpen] = useState(isActive || item.isExpanded);
           return (
             <Collapsible key={item.title} asChild open={open} onOpenChange={setOpen}>
               <SidebarMenuItem>

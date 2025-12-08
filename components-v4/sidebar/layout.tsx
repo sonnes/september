@@ -8,13 +8,12 @@ import { AppSidebar } from './app-sidebar';
 
 type SidebarLayoutProps = PropsWithChildren & {
   defaultOpen?: boolean;
-  user?: User;
 };
 
-export default function SidebarLayout({ children, defaultOpen = true, user }: SidebarLayoutProps) {
+export default function SidebarLayout({ children, defaultOpen = true }: SidebarLayoutProps) {
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar user={user} />
+      <AppSidebar />
       <SidebarInset className="min-h-screen flex flex-col">{children}</SidebarInset>
     </SidebarProvider>
   );
