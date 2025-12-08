@@ -4,7 +4,7 @@ import { ReactNode, createContext, useCallback, useContext, useState } from 'rea
 
 import { useRouter } from 'next/navigation';
 
-import { useAccount } from '@/services/account/context';
+import { useAccount } from '@/components-v4/account';
 
 interface OnboardingContextValue {
   currentStep: number;

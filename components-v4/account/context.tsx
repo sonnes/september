@@ -48,8 +48,6 @@ export function AccountProvider(props: AccountProviderProps) {
     fetchUser();
   }, [user]);
 
-  console.log(user, loading);
-
   const triplitData = useAccountTriplit();
   const supabaseData = useAccountSupabase(user!);
 

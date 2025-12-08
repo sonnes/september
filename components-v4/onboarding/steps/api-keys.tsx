@@ -13,10 +13,9 @@ import { FormInput } from '@/components/uix/form';
 
 import { useToast } from '@/hooks/use-toast';
 
-import { useAccount } from '@/services/account/context';
-import { AI_PROVIDERS } from '@/services/ai/registry';
-
-import type { AIFeature, AIServiceProvider, ProviderConfig } from '@/types/ai-config';
+import { useAccount } from '@/components-v4/account';
+import { AI_PROVIDERS } from '@/components-v4/settings';
+import type { AIFeature, AIServiceProvider, ProviderConfig, Providers } from '@/types/ai-config';
 
 import { useOnboarding } from '../context';
 
@@ -185,7 +184,7 @@ export function ApiKeysStep() {
       });
 
       await updateAccount({
-        ai_providers: providerConfig as ProviderConfig,
+        ai_providers: providerConfig as Providers,
       });
 
       show({

@@ -9,6 +9,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@ai-sdk/elevenlabs": "^1.0.20",
+    "@ai-sdk/react": "^2.0.109",
     "@elevenlabs/elevenlabs-js": "^2.7.0",
     "@google/genai": "^1.9.0",
     "@headlessui/react": "^2.2.4",
@@ -36,6 +38,7 @@
     "@triplit/client": "^1.0.46",
     "@triplit/react": "^1.0.46",
     "@types/uuid": "^10.0.0",
+    "ai": "^5.0.108",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.0",

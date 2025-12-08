@@ -1,15 +1,10 @@
 import type { Metadata } from 'next';
 
-import { OnboardingProvider } from '@/components/onboarding/context';
-import { Onboarding } from '@/components/onboarding/onboarding';
-
-import { AccountProvider } from '@/services/account/context';
-import AccountsService from '@/services/account/supabase';
-import { AISettingsProvider } from '@/services/ai/context';
-import { SpeechProvider } from '@/services/speech/context';
-
+import { OnboardingProvider } from '@/components-v4/onboarding/context';
+import { Onboarding } from '@/components-v4/onboarding/onboarding';
+import { AISettingsProvider } from '@/components-v4/settings';
 import SidebarLayout from '@/components-v4/sidebar/layout';
-import { createClient } from '@/supabase/server';
+import { SpeechProvider } from '@/components-v4/speech';
 
 export const metadata: Metadata = {
   title: 'Onboarding',
@@ -17,29 +12,21 @@ export const metadata: Metadata = {
 };
 
 export default async function OnboardingPage() {
-  const supabase = await createClient();
-  const accountsService = new AccountsService(supabase);
-  const [user, account] = await accountsService.getCurrentAccount();
-
-  const provider = user ? 'supabase' : 'triplit';
-
   return (
-    <AccountProvider provider={provider} user={user!} account={account!}>
-      <AISettingsProvider>
-        <SpeechProvider>
-          <OnboardingProvider>
-            <SidebarLayout user={user!}>
-              <SidebarLayout.Header>
-                <h1 className="text-2xl font-bold tracking-tight">Get Started</h1>
-              </SidebarLayout.Header>
+    <AISettingsProvider>
+      <SpeechProvider>
+        <OnboardingProvider>
+          <SidebarLayout>
+            <SidebarLayout.Header>
+              <h1 className="text-2xl font-bold tracking-tight">Get Started</h1>
+            </SidebarLayout.Header>
 
-              <SidebarLayout.Content>
-                <Onboarding />
-              </SidebarLayout.Content>
-            </SidebarLayout>
-          </OnboardingProvider>
-        </SpeechProvider>
-      </AISettingsProvider>
-    </AccountProvider>
+            <SidebarLayout.Content>
+              <Onboarding />
+            </SidebarLayout.Content>
+          </SidebarLayout>
+        </OnboardingProvider>
+      </SpeechProvider>
+    </AISettingsProvider>
   );
 }

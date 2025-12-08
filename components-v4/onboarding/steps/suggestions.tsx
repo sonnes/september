@@ -15,33 +15,35 @@ import { Button } from '@/components/ui/button';
 
 import { useToast } from '@/hooks/use-toast';
 
-import { useAccount } from '@/services/account/context';
-import { useAISettings } from '@/services/ai/context';
+import { useAccount } from '@/components-v4/account';
+import { useAISettings } from '@/components-v4/settings';
 
 import { useOnboarding } from '../context';
 
 export function SuggestionsStep() {
   const { goToNextStep, goToPreviousStep } = useOnboarding();
   const { account, updateAccount } = useAccount();
-  const { suggestions } = useAISettings();
+  const { suggestionsConfig } = useAISettings();
   const { show, showError } = useToast();
 
   const defaultValues = useMemo((): SuggestionsFormData => {
     return {
-      enabled: suggestions.enabled ?? false,
-      provider: suggestions.provider ?? 'gemini',
+      enabled: suggestionsConfig.enabled ?? false,
+      provider: suggestionsConfig.provider ?? 'gemini',
       model:
-        (suggestions.model as 'gemini-2.5-flash-lite' | 'gemini-2.5-flash' | 'gemini-2.5-pro') ??
-        'gemini-2.5-flash-lite',
+        (suggestionsConfig.model as
+          | 'gemini-2.5-flash-lite'
+          | 'gemini-2.5-flash'
+          | 'gemini-2.5-pro') ?? 'gemini-2.5-flash-lite',
       settings: {
-        system_instructions: suggestions.settings?.system_instructions ?? '',
-        temperature: suggestions.settings?.temperature ?? 0.7,
-        max_suggestions: suggestions.settings?.max_suggestions ?? 3,
-        context_window: suggestions.settings?.context_window ?? 10,
-        ai_corpus: suggestions.settings?.ai_corpus ?? '',
+        system_instructions: suggestionsConfig.settings?.system_instructions ?? '',
+        temperature: suggestionsConfig.settings?.temperature ?? 0.7,
+        max_suggestions: suggestionsConfig.settings?.max_suggestions ?? 3,
+        context_window: suggestionsConfig.settings?.context_window ?? 10,
+        ai_corpus: suggestionsConfig.settings?.ai_corpus ?? '',
       },
     };
-  }, [suggestions]);
+  }, [suggestionsConfig]);
 
   const form = useForm<SuggestionsFormData>({
     resolver: zodResolver(SuggestionsFormSchema),

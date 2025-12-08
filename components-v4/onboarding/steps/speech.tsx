@@ -13,10 +13,9 @@ import VoicesList from '@/components/voices/voices-list';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useToast } from '@/hooks/use-toast';
 
-import { useAccount } from '@/services/account/context';
-import { useAISettings } from '@/services/ai/context';
-import { useSpeechContext } from '@/services/speech/context';
-
+import { useAccount } from '@/components-v4/account';
+import { useAISettings } from '@/components-v4/settings';
+import { useSpeechContext } from '@/components-v4/speech';
 import type { SpeechConfig } from '@/types/ai-config';
 import type { Voice } from '@/types/voice';
 
@@ -55,12 +54,12 @@ const PROVIDER_OPTIONS: ProviderOption[] = [
 export function SpeechStep() {
   const { goToNextStep, goToPreviousStep } = useOnboarding();
   const { account } = useAccount();
-  const { speech, updateSpeech, getProviderConfig } = useAISettings();
+  const { speechConfig, updateSpeechConfig, getProviderConfig } = useAISettings();
   const { listVoices, getProvider } = useSpeechContext();
   const { show, showError } = useToast();
 
   const [selectedProvider, setSelectedProvider] = useState<SpeechProvider>(
-    speech.provider || 'browser'
+    speechConfig.provider || 'browser'
   );
   const [voices, setVoices] = useState<Voice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<Voice | undefined>();
@@ -108,14 +107,14 @@ export function SpeechStep() {
 
   // Initialize selected voice from current speech config
   useEffect(() => {
-    if (speech.voice_id && speech.voice_name) {
+    if (speechConfig.voice_id && speechConfig.voice_name) {
       setSelectedVoice({
-        id: speech.voice_id,
-        name: speech.voice_name,
+        id: speechConfig.voice_id,
+        name: speechConfig.voice_name,
         language: 'en-US',
       });
     }
-  }, [speech.voice_id, speech.voice_name]);
+  }, [speechConfig.voice_id, speechConfig.voice_name]);
 
   const handleProviderChange = (providerId: SpeechProvider) => {
     setSelectedProvider(providerId);
@@ -140,7 +139,7 @@ export function SpeechStep() {
         speechConfig.voice_name = selectedVoice.name;
       }
 
-      await updateSpeech(speechConfig);
+      await updateSpeechConfig(speechConfig);
 
       show({
         title: 'Voice Settings Saved',

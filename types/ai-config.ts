@@ -141,35 +141,17 @@ export interface SpeechConfig {
   settings?: BrowserTTSSettings | GeminiSpeechSettings | ElevenLabsSettings;
 }
 
+export interface ProviderConfig {
+  api_key?: string;
+  base_url?: string;
+}
+
 /**
  * Provider configuration (sensitive data)
  */
-export interface ProviderConfig {
-  gemini?: {
-    api_key: string;
-    base_url?: string;
-  };
-  openai?: {
-    api_key: string;
-    base_url?: string;
-  };
-  anthropic?: {
-    api_key: string;
-    base_url?: string;
-  };
-  whisper?: {
-    api_key: string;
-    base_url?: string;
-  };
-  'assembly-ai'?: {
-    api_key: string;
-    base_url?: string;
-  };
-  elevenlabs?: {
-    api_key: string;
-    base_url?: string;
-  };
-}
+export type Providers = {
+  [K in AIProvider]?: ProviderConfig;
+};
 
 /**
  * Provider metadata for UI and validation
