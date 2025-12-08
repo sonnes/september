@@ -4,7 +4,7 @@ import * as React from 'react';
 
 import Image from 'next/image';
 
-import { LifeBuoy, MessageSquare, PenTool, Send, Settings2, Volume2 } from 'lucide-react';
+import { Home, LifeBuoy, MessageSquare, PenTool, Send, Settings2, Volume2 } from 'lucide-react';
 
 import {
   Sidebar,
@@ -27,28 +27,29 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar>;
 const getNavigationData = () => ({
   navMain: [
     {
+      title: 'Dashboard',
+      url: '/dashboard',
+      icon: Home,
+    },
+    {
       title: 'Talk',
       url: '/talk',
       icon: MessageSquare,
-      isActive: false,
     },
     {
       title: 'Voices',
       url: '/voices',
       icon: Volume2,
-      isActive: false,
     },
     {
       title: 'Write',
       url: '/write',
       icon: PenTool,
-      isActive: false,
     },
     {
       title: 'Settings',
       url: '/settings',
       icon: Settings2,
-      isActive: false,
       items: [
         {
           title: 'General',
