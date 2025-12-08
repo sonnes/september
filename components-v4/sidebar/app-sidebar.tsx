@@ -22,9 +22,7 @@ import { NavSecondary } from '@/components-v4/sidebar/nav-secondary';
 import { NavUser } from '@/components-v4/sidebar/nav-user';
 import { User } from '@/types/user';
 
-type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
-  user?: User;
-};
+type AppSidebarProps = React.ComponentProps<typeof Sidebar>;
 
 const getNavigationData = () => ({
   navMain: [
@@ -82,7 +80,7 @@ const getNavigationData = () => ({
   projects: [],
 });
 
-export function AppSidebar({ user, ...props }: AppSidebarProps) {
+export function AppSidebar(props: AppSidebarProps) {
   const data = getNavigationData();
 
   return (
@@ -109,7 +107,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={user} />
+        <NavUser />
       </SidebarFooter>
     </Sidebar>
   );

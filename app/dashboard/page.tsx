@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -6,35 +8,32 @@ import {
 } from '@/components/ui/breadcrumb';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Skeleton } from '@/components/ui/skeleton';
 
-import { AccountService } from '@/components-v4/account';
-import { AccountProvider } from '@/components-v4/account';
+import { useAccount } from '@/components-v4/account';
 import SidebarLayout from '@/components-v4/sidebar/layout';
-import { createClient } from '@/supabase/server';
 
-export default async function DashboardPage() {
-  const supabase = await createClient();
-  const accountsService = new AccountService(supabase);
-  const [user, account] = await accountsService.getCurrentAccount();
+import { DashboardSkeleton } from './loading-skeleton';
 
-  const provider = user ? 'supabase' : 'triplit';
+export default function DashboardPage() {
+  const { user, loading } = useAccount();
 
   return (
-    <AccountProvider provider={provider} user={user!} account={account!}>
-      <SidebarLayout user={user!}>
-        <SidebarLayout.Header>
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbPage>Dashboard</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </SidebarLayout.Header>
-        <SidebarLayout.Content>
+    <SidebarLayout>
+      <SidebarLayout.Header>
+        <SidebarTrigger className="-ml-1" />
+        <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbPage>Dashboard</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </SidebarLayout.Header>
+      <SidebarLayout.Content>
+        {loading ? (
+          <DashboardSkeleton />
+        ) : (
           <div className="flex flex-1 flex-col gap-6 p-6">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
@@ -65,8 +64,8 @@ export default async function DashboardPage() {
               </div>
             </div>
           </div>
-        </SidebarLayout.Content>
-      </SidebarLayout>
-    </AccountProvider>
+        )}
+      </SidebarLayout.Content>
+    </SidebarLayout>
   );
 }

@@ -3,6 +3,8 @@ import { Noto_Sans } from 'next/font/google';
 
 import { Toaster } from 'sonner';
 
+import { AccountProvider } from '@/components-v4/account';
+
 import './globals.css';
 
 const notoSans = Noto_Sans({
@@ -73,8 +75,10 @@ export default function RootLayout({
         ></script>
       </head>
       <body className={`${notoSans.className} antialiased h-full`}>
-        {children}
-        <Toaster position="top-center" closeButton duration={15000} />
+        <AccountProvider>
+          {children}
+          <Toaster position="top-center" closeButton duration={15000} />
+        </AccountProvider>
       </body>
     </html>
   );

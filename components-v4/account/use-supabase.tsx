@@ -3,40 +3,16 @@ import { useCallback, useEffect, useState } from 'react';
 import AccountsService from '@/services/account/supabase';
 
 import supabase from '@/supabase/client';
-import { removeRealtimeSubscription, subscribeToUserAccount } from '@/supabase/realtime';
 import type { Account, PutAccountData } from '@/types/account';
 import type { User } from '@/types/user';
 
 const accountService = new AccountsService(supabase);
 
-export function useAccountSupabase({
-  user: initialUser,
-  account: initialAccount,
-}: {
-  user?: User;
-  account?: Account;
-}) {
-  const [user, setUser] = useState<User | undefined>(initialUser);
+export function useAccountSupabase(user: User) {
   const [account, setAccount] = useState<Account | undefined>();
 
-  const getUser = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error('User not found');
-    }
-    setUser(user);
-  };
-
-  useEffect(() => {
-    if (initialUser) return;
-
-    getUser();
-  }, [initialUser]);
-
   const getAccount = useCallback(async () => {
-    if (!user || initialAccount) return;
+    if (!user) return;
 
     const account = await accountService.getAccount(user.id);
 
@@ -45,11 +21,11 @@ export function useAccountSupabase({
     }
 
     setAccount(account);
-  }, [user, initialAccount]);
+  }, [user]);
 
   useEffect(() => {
     getAccount();
-  }, [user, initialAccount]);
+  }, [getAccount]);
 
   const updateAccount = useCallback(
     async (accountData: Partial<PutAccountData>) => {
@@ -87,15 +63,11 @@ export function useAccountSupabase({
     [account]
   );
 
-  const deleteFile = useCallback(
-    async (path: string) => {
-      await supabase.storage.from('documents').remove([path]);
-    },
-    [account]
-  );
+  const deleteFile = useCallback(async (path: string) => {
+    await supabase.storage.from('documents').remove([path]);
+  }, []);
 
   return {
-    user,
     account,
     updateAccount,
     uploadFile,

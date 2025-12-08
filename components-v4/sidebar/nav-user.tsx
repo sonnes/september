@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { BadgeCheck, ChevronsUpDown, LogOut } from 'lucide-react';
@@ -21,25 +20,45 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
+import { Skeleton } from '@/components/ui/skeleton';
 
+import { useAccount } from '@/components-v4/account';
 import supabase from '@/supabase/client';
-import { User } from '@/types/user';
 
-export function NavUser({ user }: { user?: User }) {
+function NavUserSkeleton() {
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton size="lg" className="cursor-default">
+          <Skeleton className="h-8 w-8 rounded-lg" />
+          <div className="grid flex-1 gap-1">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-3 w-32" />
+          </div>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  );
+}
+
+export function NavUser() {
+  const { user, loading } = useAccount();
   const router = useRouter();
-  if (!user) {
-    return null;
+  const { isMobile } = useSidebar();
+
+  if (loading) {
+    return <NavUserSkeleton />;
   }
 
-  const displayName = user.user_metadata?.full_name || 'Guest';
-  const displayEmail = user.email || 'guest@september.app';
-  const initials = user.user_metadata?.full_name?.charAt(0).toUpperCase() || 'G';
-  const { isMobile } = useSidebar();
+  const displayName = user?.user_metadata?.full_name || 'Guest';
+  const displayEmail = user?.email || 'guest@september.to';
+  const initials = user?.user_metadata?.full_name?.charAt(0).toUpperCase() || 'G';
 
   function signOut() {
     supabase.auth.signOut();
     router.push('/');
   }
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -50,7 +69,7 @@ export function NavUser({ user }: { user?: User }) {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.user_metadata?.avatar_url} alt={displayName} />
+                <AvatarImage src={user?.user_metadata?.avatar_url} alt={displayName} />
                 <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
@@ -69,7 +88,7 @@ export function NavUser({ user }: { user?: User }) {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.user_metadata?.avatar_url} alt={displayName} />
+                  <AvatarImage src={user?.user_metadata?.avatar_url} alt={displayName} />
                   <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
