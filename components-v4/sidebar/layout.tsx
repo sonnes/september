@@ -1,13 +1,14 @@
 import { PropsWithChildren } from 'react';
-import { AppSidebar } from './app-sidebar';
+
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+
+import { User } from '@/types/user';
+
+import { AppSidebar } from './app-sidebar';
 
 type SidebarLayoutProps = PropsWithChildren & {
   defaultOpen?: boolean;
-  user?: {
-    email?: string;
-    avatar?: string;
-  } | null;
+  user?: User;
 };
 
 export default function SidebarLayout({ children, defaultOpen = true, user }: SidebarLayoutProps) {

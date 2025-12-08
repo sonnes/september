@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 
-import SidebarLayout from '@/components/sidebar/layout';
 import { OnboardingProvider } from '@/components/onboarding/context';
 import { Onboarding } from '@/components/onboarding/onboarding';
 
@@ -9,6 +8,7 @@ import AccountsService from '@/services/account/supabase';
 import { AISettingsProvider } from '@/services/ai/context';
 import { SpeechProvider } from '@/services/speech/context';
 
+import SidebarLayout from '@/components-v4/sidebar/layout';
 import { createClient } from '@/supabase/server';
 
 export const metadata: Metadata = {
@@ -28,7 +28,7 @@ export default async function OnboardingPage() {
       <AISettingsProvider>
         <SpeechProvider>
           <OnboardingProvider>
-            <SidebarLayout user={user}>
+            <SidebarLayout user={user!}>
               <SidebarLayout.Header>
                 <h1 className="text-2xl font-bold tracking-tight">Get Started</h1>
               </SidebarLayout.Header>

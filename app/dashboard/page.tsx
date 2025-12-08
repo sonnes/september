@@ -1,43 +1,72 @@
-import SidebarLayout from '@/components/sidebar/layout';
 import {
   Breadcrumb,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default function Page() {
+import { AccountService } from '@/components-v4/account';
+import { AccountProvider } from '@/components-v4/account';
+import SidebarLayout from '@/components-v4/sidebar/layout';
+import { createClient } from '@/supabase/server';
+
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const accountsService = new AccountService(supabase);
+  const [user, account] = await accountsService.getCurrentAccount();
+
+  const provider = user ? 'supabase' : 'triplit';
+
   return (
-    <SidebarLayout>
-      <SidebarLayout.Header>
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem className="hidden md:block">
-              <BreadcrumbLink href="#">Building Your Application</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator className="hidden md:block" />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </SidebarLayout.Header>
-      <SidebarLayout.Content>
-        <div className="flex flex-1 flex-col gap-4">
-          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-            <div className="bg-muted/50 aspect-video rounded-xl" />
+    <AccountProvider provider={provider} user={user!} account={account!}>
+      <SidebarLayout user={user!}>
+        <SidebarLayout.Header>
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbPage>Dashboard</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </SidebarLayout.Header>
+        <SidebarLayout.Content>
+          <div className="flex flex-1 flex-col gap-6 p-6">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+              <p className="text-muted-foreground">
+                Welcome back, {user?.user_metadata?.full_name}
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="text-sm font-medium text-muted-foreground">Total Messages</h3>
+                <p className="mt-2 text-3xl font-bold">—</p>
+              </div>
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="text-sm font-medium text-muted-foreground">Recent Activity</h3>
+                <p className="mt-2 text-3xl font-bold">—</p>
+              </div>
+              <div className="rounded-lg border bg-card p-6">
+                <h3 className="text-sm font-medium text-muted-foreground">Quick Stats</h3>
+                <p className="mt-2 text-3xl font-bold">—</p>
+              </div>
+            </div>
+
+            <div className="rounded-lg border bg-card p-6">
+              <h2 className="text-lg font-semibold">Recent Activity</h2>
+              <div className="mt-4 space-y-4">
+                <p className="text-sm text-muted-foreground">No recent activity</p>
+              </div>
+            </div>
           </div>
-          <div className="bg-muted/50 min-h-screen flex-1 rounded-xl md:min-h-min" />
-        </div>
-      </SidebarLayout.Content>
-    </SidebarLayout>
+        </SidebarLayout.Content>
+      </SidebarLayout>
+    </AccountProvider>
   );
 }

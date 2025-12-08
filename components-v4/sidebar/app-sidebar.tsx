@@ -6,10 +6,6 @@ import Image from 'next/image';
 
 import { LifeBuoy, MessageSquare, PenTool, Send, Settings2, Volume2 } from 'lucide-react';
 
-import { NavMain } from '@/components/sidebar/nav-main';
-import { NavProjects } from '@/components/sidebar/nav-projects';
-import { NavSecondary } from '@/components/sidebar/nav-secondary';
-import { NavUser } from '@/components/sidebar/nav-user';
 import {
   Sidebar,
   SidebarContent,
@@ -20,25 +16,17 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 
+import { NavMain } from '@/components-v4/sidebar/nav-main';
+import { NavProjects } from '@/components-v4/sidebar/nav-projects';
+import { NavSecondary } from '@/components-v4/sidebar/nav-secondary';
+import { NavUser } from '@/components-v4/sidebar/nav-user';
+import { User } from '@/types/user';
+
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
-  user?: {
-    email?: string;
-    avatar?: string;
-  } | null;
+  user?: User;
 };
 
-const getNavigationData = (user?: { email?: string; avatar?: string } | null) => ({
-  user: user
-    ? {
-        name: user.email?.split('@')[0] || 'User',
-        email: user.email,
-        avatar: user.avatar,
-      }
-    : {
-        name: 'Guest',
-        email: 'guest@september.app',
-        avatar: '',
-      },
+const getNavigationData = () => ({
   navMain: [
     {
       title: 'Talk',
@@ -95,7 +83,7 @@ const getNavigationData = (user?: { email?: string; avatar?: string } | null) =>
 });
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
-  const data = getNavigationData(user);
+  const data = getNavigationData();
 
   return (
     <Sidebar variant="inset" {...props}>
@@ -121,7 +109,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   );
