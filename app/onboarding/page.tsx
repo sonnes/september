@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 
-import Layout from '@/components/layout';
-import { DesktopNav, MobileNav } from '@/components/nav';
+import SidebarLayout from '@/components/sidebar/layout';
 import { OnboardingProvider } from '@/components/onboarding/context';
 import { Onboarding } from '@/components/onboarding/onboarding';
 
@@ -29,19 +28,15 @@ export default async function OnboardingPage() {
       <AISettingsProvider>
         <SpeechProvider>
           <OnboardingProvider>
-            <Layout>
-              <Layout.Header>
-                <DesktopNav user={user} current="/onboarding" />
-                <MobileNav title="Onboarding" user={user} current="/onboarding" />
-                <div className="hidden md:flex items-center justify-between mb-4">
-                  <h1 className="text-2xl font-bold tracking-tight text-white">Get Started</h1>
-                </div>
-              </Layout.Header>
+            <SidebarLayout user={user}>
+              <SidebarLayout.Header>
+                <h1 className="text-2xl font-bold tracking-tight">Get Started</h1>
+              </SidebarLayout.Header>
 
-              <Layout.Content>
+              <SidebarLayout.Content>
                 <Onboarding />
-              </Layout.Content>
-            </Layout>
+              </SidebarLayout.Content>
+            </SidebarLayout>
           </OnboardingProvider>
         </SpeechProvider>
       </AISettingsProvider>
