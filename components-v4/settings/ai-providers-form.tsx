@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Account } from '@/types/account';
 import type { Providers } from '@/types/ai-config';
 
-import { AI_PROVIDERS, AIProvidersFormData, AIProvidersSchema } from './index';
+import { AIProvidersFormData, AIProvidersSchema, AI_PROVIDERS } from './index';
 
 // Get providers that require API keys
 const getProvidersWithApiKeys = () => {
@@ -18,7 +18,7 @@ const getProvidersWithApiKeys = () => {
 };
 
 interface AIProvidersFormProps {
-  account: Account | null;
+  account?: Account;
   onSubmit: (providers: Providers) => Promise<void>;
   children: (props: {
     form: ReturnType<typeof useForm<AIProvidersFormData>>;

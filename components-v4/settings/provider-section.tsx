@@ -4,10 +4,10 @@ import { CheckCircle2, ExternalLink, Key } from 'lucide-react';
 import { Control } from 'react-hook-form';
 
 import { Card, CardDescription, CardTitle } from '@/components/ui/card';
-import { FormInput } from '@/components/uix/form';
 
 import type { AIFeature, AIServiceProvider } from '@/types/ai-config';
 
+import { FormField } from './form-field';
 import type { AIProvidersFormData } from './schemas';
 
 // Feature colors mapping
@@ -114,7 +114,7 @@ export function ProviderSection({ control, provider, hasApiKey = false }: Provid
 
         {/* Right Column - Form Fields */}
         <div className="space-y-4">
-          <FormInput
+          <FormField
             name={apiKeyField as keyof AIProvidersFormData}
             control={control}
             label="API Key"
@@ -123,7 +123,7 @@ export function ProviderSection({ control, provider, hasApiKey = false }: Provid
             autoComplete="off"
           />
 
-          <FormInput
+          <FormField
             name={baseUrlField as keyof AIProvidersFormData}
             control={control}
             label="Custom Base URL (Optional)"
