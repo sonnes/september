@@ -162,6 +162,7 @@ export interface AIServiceProvider {
   description: string;
   features: AIFeature[];
   requires_api_key: boolean;
+  api_key_url?: string;
   models?: Array<{
     id: string;
     name: string;
