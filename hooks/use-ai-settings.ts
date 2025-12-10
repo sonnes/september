@@ -4,8 +4,9 @@ import { useState } from 'react';
 
 import { useToast } from '@/hooks/use-toast';
 
-import { useAISettings } from '@/services/ai/context';
 import GeminiService from '@/services/gemini';
+
+import { useAISettings } from '@/components-v4/settings';
 
 export function useCorpus() {
   const { getProviderConfig } = useAISettings();

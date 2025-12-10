@@ -57,6 +57,10 @@ const getNavigationData = () => ({
           url: '/settings/ai',
         },
         {
+          title: 'AI Suggestions',
+          url: '/settings/ai/suggestions',
+        },
+        {
           title: 'Voices',
           url: '/settings/voices',
         },

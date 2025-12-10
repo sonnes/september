@@ -4,10 +4,10 @@ import { CheckCircle2, ExternalLink, Key } from 'lucide-react';
 import { Control } from 'react-hook-form';
 
 import { Card, CardDescription, CardTitle } from '@/components/ui/card';
+import { FormField } from '@/components/ui/form';
 
 import type { AIFeature, AIServiceProvider } from '@/types/ai-config';
 
-import { FormField } from './form-field';
 import type { AIProvidersFormData } from './schemas';
 
 // Feature colors mapping
