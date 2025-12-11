@@ -8,19 +8,27 @@ import type { User } from '@/types/user';
 
 const accountService = new AccountsService(supabase);
 
-export function useAccountSupabase(user: User) {
+export function useAccountSupabase(user: User | undefined) {
   const [account, setAccount] = useState<Account | undefined>();
 
   const getAccount = useCallback(async () => {
-    if (!user) return;
-
-    const account = await accountService.getAccount(user.id);
-
-    if (!account) {
-      throw new Error('Account not found');
+    if (!user) {
+      setAccount(undefined);
+      return;
     }
 
-    setAccount(account);
+    try {
+      const account = await accountService.getAccount(user.id);
+
+      if (!account) {
+        throw new Error('Account not found');
+      }
+
+      setAccount(account);
+    } catch (error) {
+      console.error('Error fetching account:', error);
+      setAccount(undefined);
+    }
   }, [user]);
 
   useEffect(() => {

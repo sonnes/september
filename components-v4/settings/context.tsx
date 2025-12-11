@@ -74,20 +74,24 @@ interface AISettingsProviderProps {
 }
 
 export function AISettingsProvider({ children }: AISettingsProviderProps) {
-  const { account, updateAccount } = useAccount();
+  const { account, updateAccount, loading } = useAccount();
 
   // Memoized configurations using helper functions
+  // Use defaults while loading to avoid race conditions with incomplete data
   const suggestions = useMemo(() => {
-    return account ? getSuggestionsConfig(account) : DEFAULT_SUGGESTIONS_CONFIG;
-  }, [account]);
+    if (loading || !account) return DEFAULT_SUGGESTIONS_CONFIG;
+    return getSuggestionsConfig(account);
+  }, [account, loading]);
 
   const transcription = useMemo(() => {
-    return account ? getTranscriptionConfig(account) : DEFAULT_TRANSCRIPTION_CONFIG;
-  }, [account]);
+    if (loading || !account) return DEFAULT_TRANSCRIPTION_CONFIG;
+    return getTranscriptionConfig(account);
+  }, [account, loading]);
 
   const speech = useMemo(() => {
-    return account ? getSpeechConfig(account) : DEFAULT_SPEECH_CONFIG;
-  }, [account]);
+    if (loading || !account) return DEFAULT_SPEECH_CONFIG;
+    return getSpeechConfig(account);
+  }, [account, loading]);
 
   // Update functions
   const updateSuggestions = async (config: Partial<SuggestionsConfig>) => {

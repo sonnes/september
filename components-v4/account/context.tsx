@@ -49,7 +49,7 @@ export function AccountProvider(props: AccountProviderProps) {
   }, [user]);
 
   const triplitData = useAccountTriplit();
-  const supabaseData = useAccountSupabase(user!);
+  const supabaseData = useAccountSupabase(user);
 
   // Use Supabase if user is authenticated, otherwise use Triplit
   const accountData = useMemo(
