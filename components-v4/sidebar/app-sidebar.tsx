@@ -4,7 +4,16 @@ import * as React from 'react';
 
 import Image from 'next/image';
 
-import { Home, LifeBuoy, MessageSquare, PenTool, Send, Settings2, Volume2 } from 'lucide-react';
+import {
+  Home,
+  LifeBuoy,
+  MessageCircle,
+  MessageSquare,
+  PenTool,
+  Send,
+  Settings2,
+  Volume2,
+} from 'lucide-react';
 
 import {
   Sidebar,
@@ -35,6 +44,11 @@ const getNavigationData = () => ({
       title: 'Talk',
       url: '/talk',
       icon: MessageSquare,
+    },
+    {
+      title: 'Chats',
+      url: '/chats',
+      icon: MessageCircle,
     },
     {
       title: 'Voices',
