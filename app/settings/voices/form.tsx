@@ -1,0 +1,152 @@
+'use client';
+
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { TextInput } from '@/components/uix/text-input';
+import VoicesList from '@/components/voices/voices-list';
+
+import { useAccount } from '@/components-v4/account';
+import { useAISettings } from '@/components-v4/settings';
+import { VoiceSettingsFormData, VoicesForm } from '@/components-v4/speech';
+
+export default function VoicesSettingsForm() {
+  const { account } = useAccount();
+  const { updateSpeechConfig } = useAISettings();
+
+  const handleSubmit = async (data: VoiceSettingsFormData) => {
+    await updateSpeechConfig({
+      provider: data.provider,
+      voice_id: data.voice_id,
+      voice_name: data.voice_name,
+    });
+  };
+
+  // Show loading state while account is loading
+  if (!account) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-sm text-zinc-500">Loading voices...</div>
+      </div>
+    );
+  }
+
+  return (
+    <VoicesForm account={account} onSubmit={handleSubmit}>
+      {({
+        form,
+        selectedProvider,
+        availableProviders,
+        voices,
+        isLoadingVoices,
+        searchTerm,
+        onProviderChange,
+        onSearchChange,
+        onVoiceSelect,
+        hasApiKey,
+      }) => {
+        const selectedVoiceId = form.watch('voice_id');
+        const allProviders = Object.values(availableProviders);
+
+        // Filter providers based on available API keys
+        const visibleProviders = allProviders.filter(provider => {
+          if (!provider.requires_api_key) return true;
+          return hasApiKey(provider.id);
+        });
+
+        return (
+          <>
+            <div className="space-y-6 pb-20">
+              {/* Provider Selection */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-zinc-900">Speech Provider</h3>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {visibleProviders.map(provider => (
+                    <Card
+                      key={provider.id}
+                      className={`cursor-pointer transition-all ${
+                        selectedProvider === provider.id
+                          ? 'ring-2 ring-primary border-primary'
+                          : 'hover:border-zinc-300'
+                      }`}
+                      onClick={() => onProviderChange(provider.id as any)}
+                    >
+                      <CardHeader className="p-4">
+                        <CardTitle className="text-sm">{provider.name}</CardTitle>
+                        <CardDescription className="text-xs">{provider.description}</CardDescription>
+                      </CardHeader>
+                    </Card>
+                  ))}
+                </div>
+
+                {visibleProviders.length < allProviders.length && (
+                  <p className="text-xs text-muted-foreground">
+                    Some providers are hidden because their API keys are not configured. Configure API
+                    keys in{' '}
+                    <a href="/settings/ai" className="text-primary hover:underline">
+                      AI Providers settings
+                    </a>
+                    .
+                  </p>
+                )}
+              </div>
+
+              {/* Voice Search */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-zinc-900">Select a Voice</h3>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <MagnifyingGlassIcon className="h-5 w-5 text-zinc-400" />
+                  </div>
+                  <TextInput
+                    type="text"
+                    placeholder="Search voices by name, gender, accent, or description..."
+                    value={searchTerm}
+                    onChange={e => onSearchChange(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              {/* Voices List */}
+              {isLoadingVoices ? (
+                <Card>
+                  <CardContent className="py-8">
+                    <div className="flex flex-col items-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      <p className="mt-4 text-sm text-muted-foreground">Loading voices...</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : voices.length > 0 ? (
+                <VoicesList
+                  voices={voices}
+                  selectedVoiceId={selectedVoiceId}
+                  onSelectVoice={onVoiceSelect}
+                />
+              ) : (
+                <Card>
+                  <CardContent className="py-8">
+                    <p className="text-center text-sm text-muted-foreground">
+                      No voices found. Try a different search term or provider.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Sticky Submit Button */}
+            <div className="fixed bottom-0 left-0 right-0 border-t bg-background p-4 md:left-(--sidebar-width) z-10">
+              <div className="flex justify-end max-w-4xl mx-auto">
+                <Button type="submit" disabled={form.formState.isSubmitting}>
+                  {form.formState.isSubmitting ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </div>
+          </>
+        );
+      }}
+    </VoicesForm>
+  );
+}

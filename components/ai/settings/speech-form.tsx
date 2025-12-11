@@ -128,7 +128,7 @@ export function SpeechForm({ control }: SpeechFormProps) {
                   )}
                 </div>
                 <Link
-                  href="/voices"
+                  href="/settings/voices"
                   className="text-sm font-medium text-indigo-600 hover:text-indigo-900"
                 >
                   Change voice →
@@ -138,7 +138,7 @@ export function SpeechForm({ control }: SpeechFormProps) {
               <div className="flex items-center justify-between">
                 <p className="text-sm text-zinc-600">No voice selected</p>
                 <Link
-                  href="/voices"
+                  href="/settings/voices"
                   className="text-sm font-medium text-indigo-600 hover:text-indigo-900"
                 >
                   Select voice →

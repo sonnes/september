@@ -9,8 +9,8 @@ import { CheckCircle2, Key, MessageSquare, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
-import { useAccount } from '@/services/account/context';
-import { useAISettings } from '@/services/ai/context';
+import { useAccount } from '@/components-v4/account';
+import { useAISettings } from '@/components-v4/settings';
 
 import { useOnboarding } from '../context';
 
@@ -53,7 +53,7 @@ function SummaryItem({ icon, title, status, details }: SummaryItemProps) {
 export function CompleteStep() {
   const { completeOnboarding, goToPreviousStep } = useOnboarding();
   const { account } = useAccount();
-  const { suggestions, speech } = useAISettings();
+  const { suggestionsConfig, speechConfig } = useAISettings();
   const [isCompleting, setIsCompleting] = useState(false);
   const router = useRouter();
 
@@ -68,16 +68,16 @@ export function CompleteStep() {
     : 'No API keys configured. Using browser defaults.';
 
   // Determine suggestions status
-  const suggestionsEnabled = suggestions.enabled;
+  const suggestionsEnabled = suggestionsConfig.enabled;
   const suggestionsDetails = suggestionsEnabled
-    ? `Enabled with ${suggestions.model || 'Gemini'}`
+    ? `Enabled with ${suggestionsConfig.model || 'Gemini'}`
     : 'AI suggestions are disabled';
 
   // Determine voice status
-  const hasVoice = !!speech.voice_id;
+  const hasVoice = !!speechConfig.voice_id;
   const voiceDetails = hasVoice
-    ? `${speech.voice_name} (${speech.provider})`
-    : `Using ${speech.provider} default voice`;
+    ? `${speechConfig.voice_name} (${speechConfig.provider})`
+    : `Using ${speechConfig.provider} default voice`;
 
   const handleComplete = async () => {
     try {
