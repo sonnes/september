@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { CornerDownLeft, Globe, Mic, Plus } from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
 import { cn } from '@/lib/utils';
 
+import Autocomplete from './autocomplete';
 import { useEditor } from './context';
 
 type EditorProps = {
@@ -49,28 +50,32 @@ export default function Editor({
   };
 
   return (
-    <div
-      className={cn(
-        'w-full rounded-2xl border-2 border-input bg-background p-3 transition-colors focus-within:border-ring',
-        className
-      )}
-    >
-      <textarea
-        ref={textareaRef}
-        value={text}
-        onChange={e => setText(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder}
-        rows={1}
-        className="w-full resize-none bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none"
-      />
+    <div className="flex flex-col gap-2">
+      <Autocomplete />
 
-      <div className="mt-3 flex items-center justify-between">
-        <div className="flex items-center gap-1">{children}</div>
+      <div
+        className={cn(
+          'w-full rounded-2xl border-2 border-input bg-background p-3 transition-colors focus-within:border-ring',
+          className
+        )}
+      >
+        <textarea
+          ref={textareaRef}
+          value={text}
+          onChange={e => setText(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          rows={1}
+          className="w-full resize-none bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none"
+        />
 
-        <Button type="button" onClick={handleSubmit} disabled={!text.trim()} size="icon">
-          <CornerDownLeft className="size-4" />
-        </Button>
+        <div className="mt-3 flex items-center justify-between">
+          <div className="flex items-center gap-1">{children}</div>
+
+          <Button type="button" onClick={handleSubmit} disabled={!text.trim()} size="icon">
+            <ArrowUp className="size-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
