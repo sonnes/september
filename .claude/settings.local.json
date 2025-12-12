@@ -16,7 +16,10 @@
       "Bash(node:*)",
       "Bash(grep:*)",
       "Bash(npx shadcn@latest add:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(npx tsc:*)",
+      "Bash(pnpm run lint:*)",
+      "Bash(pnpm exec tsc:*)"
     ],
     "defaultMode": "acceptEdits"
   },

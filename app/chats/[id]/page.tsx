@@ -12,9 +12,16 @@ import {
   ConversationScrollButton,
 } from '@/components/ai-elements/conversation';
 import { Message, MessageContent } from '@/components/ai-elements/message';
-import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from '@/components/ui/breadcrumb';
+import { Separator } from '@/components/ui/separator';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import { ChatPromptInput } from '@/components-v4/chat';
+import SidebarLayout from '@/components-v4/sidebar/layout';
 
 type ChatMessage = {
   key: string;
@@ -163,50 +170,46 @@ export default function ChatPage({ params }: ChatPageProps) {
     return () => clearInterval(interval);
   }, [chatId]);
 
-  const handleSubmit = async (message: PromptInputMessage) => {
-    // Add user message
-    const userMessage: ChatMessage = {
-      key: nanoid(),
-      value: message.text || 'Sent with attachments',
-      from: 'user',
-    };
-
-    setVisibleMessages(prev => [...prev, userMessage]);
-
-    // TODO: Send to API and get assistant response
-    // For now, just add a placeholder response
-    setTimeout(() => {
-      const assistantMessage: ChatMessage = {
-        key: nanoid(),
-        value: 'This is a placeholder response. Connect to your AI API to get real responses.',
-        from: 'assistant',
-      };
-      setVisibleMessages(prev => [...prev, assistantMessage]);
-    }, 1000);
-  };
-
   return (
-    <div className="flex flex-col h-[calc(100vh-120px)]">
-      <Conversation className="relative flex-1">
-        <ConversationContent>
-          {visibleMessages.length === 0 ? (
-            <ConversationEmptyState
-              description="Messages will appear here as the conversation progresses."
-              icon={<MessageSquareIcon className="size-6" />}
-              title="Start a conversation"
-            />
-          ) : (
-            visibleMessages.map(({ key, value, from }) => (
-              <Message from={from} key={key}>
-                <MessageContent>{value}</MessageContent>
-              </Message>
-            ))
-          )}
-        </ConversationContent>
-        <ConversationScrollButton />
-      </Conversation>
-
-      <ChatPromptInput onSubmit={handleSubmit} className="mt-4" />
-    </div>
+    <SidebarLayout>
+      <SidebarLayout.Header>
+        <SidebarTrigger className="-ml-1" />
+        <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbPage>Chats</BreadcrumbPage>
+            </BreadcrumbItem>
+            {chatId && (
+              <BreadcrumbItem>
+                <BreadcrumbPage>{chatId}</BreadcrumbPage>
+              </BreadcrumbItem>
+            )}
+          </BreadcrumbList>
+        </Breadcrumb>
+      </SidebarLayout.Header>
+      <SidebarLayout.Content>
+        <div className="flex flex-1 flex-col gap-6">
+          <Conversation className="relative flex-1">
+            <ConversationContent>
+              {visibleMessages.length === 0 ? (
+                <ConversationEmptyState
+                  description="Messages will appear here as the conversation progresses."
+                  icon={<MessageSquareIcon className="size-6" />}
+                  title="Start a conversation"
+                />
+              ) : (
+                visibleMessages.map(({ key, value, from }) => (
+                  <Message from={from} key={key}>
+                    <MessageContent>{value}</MessageContent>
+                  </Message>
+                ))
+              )}
+            </ConversationContent>
+            <ConversationScrollButton />
+          </Conversation>
+        </div>
+      </SidebarLayout.Content>
+    </SidebarLayout>
   );
 }
