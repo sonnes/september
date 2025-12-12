@@ -1,14 +1,49 @@
+import type { ComponentProps } from 'react';
+
 import Link from 'next/link';
 
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import moment from 'moment';
 
 import { TextInput } from '@/components/uix/text-input';
 
-type Chat = {
-  id: string;
-  title: string;
-  lastMessageTime: string;
+import { cn } from '@/lib/utils';
+import { Chat } from '@/types/chat';
+
+type ChatListEmptyStateProps = ComponentProps<'div'> & {
+  title?: string;
+  description?: string;
+  icon?: React.ReactNode;
 };
+
+function ChatListEmptyState({
+  className,
+  title = 'No chats yet',
+  description = 'Start a new conversation to see your chats here',
+  icon,
+  children,
+  ...props
+}: ChatListEmptyStateProps) {
+  return (
+    <div
+      className={cn(
+        'flex size-full flex-col items-center justify-center gap-3 p-8 text-center',
+        className
+      )}
+      {...props}
+    >
+      {children ?? (
+        <>
+          {icon && <div className="text-zinc-400">{icon}</div>}
+          <div className="space-y-1">
+            <h3 className="font-medium text-sm text-zinc-900">{title}</h3>
+            {description && <p className="text-zinc-500 text-sm">{description}</p>}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 type ChatListProps = {
   chats: Chat[];
@@ -51,14 +86,29 @@ export function ChatList({
       )}
 
       <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
-        {chats.map(chat => (
-          <Link key={chat.id} href={`/chats/${chat.id}`}>
-            <div className="py-3 border-b border-zinc-200 hover:bg-zinc-50 transition-colors">
-              <div className="text-base font-medium text-zinc-900 mb-1">{chat.title}</div>
-              <div className="text-sm text-zinc-500">Last message {chat.lastMessageTime}</div>
-            </div>
-          </Link>
-        ))}
+        {chats.length === 0 ? (
+          <ChatListEmptyState
+            title={searchValue ? 'No chats found' : 'No chats yet'}
+            description={
+              searchValue
+                ? 'Try adjusting your search terms'
+                : 'Start a new conversation to see your chats here'
+            }
+          />
+        ) : (
+          chats.map(chat => (
+            <Link key={chat.id} href={`/chats/${chat.id}`}>
+              <div className="py-3 border-b border-zinc-200 hover:bg-zinc-50 transition-colors">
+                <div className="text-base font-medium text-zinc-900 mb-1">
+                  {chat.title || 'Untitled chat'}
+                </div>
+                <div className="text-sm text-zinc-500">
+                  Last message {moment(chat.updated_at).fromNow()}
+                </div>
+              </div>
+            </Link>
+          ))
+        )}
       </div>
     </>
   );
