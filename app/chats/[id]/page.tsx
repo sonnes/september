@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { MessageSquareIcon } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 
 import {
   Conversation,
@@ -20,8 +21,12 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
+import { useAccount } from '@/components-v4/account';
+import { EditorProvider } from '@/components-v4/editor/context';
+import Editor from '@/components-v4/editor/editor';
 import useMessages from '@/components-v4/messages/use-messages';
 import SidebarLayout from '@/components-v4/sidebar/layout';
+import { triplit } from '@/triplit/client';
 
 type ChatMessage = {
   key: string;
@@ -35,6 +40,7 @@ type ChatPageProps = {
 
 export default function ChatPage({ params }: ChatPageProps) {
   const [chatId, setChatId] = useState<string | null>(null);
+  const { user } = useAccount();
 
   useEffect(() => {
     params.then(resolvedParams => {
@@ -57,6 +63,23 @@ export default function ChatPage({ params }: ChatPageProps) {
     }));
   }, [messages]);
 
+  const handleSubmit = useCallback(
+    async (text: string) => {
+      if (!chatId || !user || !text.trim()) return;
+
+      const messageId = uuidv4();
+      await triplit.insert('messages', {
+        id: messageId,
+        text: text.trim(),
+        type: 'user',
+        user_id: user.id,
+        chat_id: chatId,
+        created_at: new Date(),
+      });
+    },
+    [chatId, user]
+  );
+
   return (
     <SidebarLayout>
       <SidebarLayout.Header>
@@ -76,7 +99,7 @@ export default function ChatPage({ params }: ChatPageProps) {
         </Breadcrumb>
       </SidebarLayout.Header>
       <SidebarLayout.Content>
-        <div className="flex flex-1 flex-col gap-6">
+        <div className="pb-20">
           <Conversation className="relative flex-1">
             <ConversationContent>
               {fetching ? (
@@ -108,6 +131,15 @@ export default function ChatPage({ params }: ChatPageProps) {
             <ConversationScrollButton />
           </Conversation>
         </div>
+
+        {/* Sticky Editor */}
+        <EditorProvider>
+          <div className="fixed bottom-0 left-0 right-0 p-4 md:left-(--sidebar-width) z-10">
+            <div className="max-w-4xl mx-auto">
+              <Editor placeholder="Type a message..." onSubmit={handleSubmit} />
+            </div>
+          </div>
+        </EditorProvider>
       </SidebarLayout.Content>
     </SidebarLayout>
   );
