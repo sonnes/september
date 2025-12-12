@@ -1,8 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { use } from 'react';
 
-import { MessageSquareIcon } from 'lucide-react';
+import {
+  ArrowPathIcon,
+  ChatBubbleLeftRightIcon,
+  ExclamationTriangleIcon,
+} from '@heroicons/react/24/outline';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
@@ -18,6 +23,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
@@ -27,6 +33,8 @@ import Editor from '@/components-v4/editor/editor';
 import useMessages from '@/components-v4/messages/use-messages';
 import SidebarLayout from '@/components-v4/sidebar/layout';
 import { triplit } from '@/triplit/client';
+
+import { ChatMessagesSkeleton } from '../loading-skeleton';
 
 type ChatMessage = {
   key: string;
@@ -39,14 +47,8 @@ type ChatPageProps = {
 };
 
 export default function ChatPage({ params }: ChatPageProps) {
-  const [chatId, setChatId] = useState<string | null>(null);
+  const { id: chatId } = use(params);
   const { user } = useAccount();
-
-  useEffect(() => {
-    params.then(resolvedParams => {
-      setChatId(resolvedParams.id);
-    });
-  }, [params]);
 
   const { messages, fetching, error } = useMessages({
     chatId: chatId || '',
@@ -80,6 +82,9 @@ export default function ChatPage({ params }: ChatPageProps) {
     [chatId, user]
   );
 
+  // Loading state for chat ID resolution
+  const isInitializing = !chatId;
+
   return (
     <SidebarLayout>
       <SidebarLayout.Header>
@@ -102,31 +107,58 @@ export default function ChatPage({ params }: ChatPageProps) {
         <div className="pb-20">
           <Conversation className="relative flex-1">
             <ConversationContent>
-              {fetching ? (
+              {/* Loading State */}
+              {(isInitializing || fetching) && <ChatMessagesSkeleton />}
+
+              {/* Error State */}
+              {!isInitializing && !fetching && error && (
+                <div className="flex flex-col items-center justify-center h-full p-8">
+                  <div className="rounded-lg border border-red-200 bg-red-50 p-6 max-w-md w-full">
+                    <div className="flex flex-col items-center text-center gap-4">
+                      <div className="rounded-full bg-red-100 p-3">
+                        <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-semibold text-red-800">
+                          Failed to load messages
+                        </h3>
+                        <p className="mt-1 text-sm text-red-700">
+                          {error.message || 'Something went wrong while loading this conversation.'}
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.location.reload()}
+                        className="border-red-300 text-red-700 hover:bg-red-100"
+                      >
+                        <ArrowPathIcon className="h-4 w-4 mr-2" />
+                        Try again
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {!isInitializing && !fetching && !error && chatMessages.length === 0 && (
                 <ConversationEmptyState
-                  description="Loading messages..."
-                  icon={<MessageSquareIcon className="size-6" />}
-                  title="Loading"
+                  description="Start typing below to begin your conversation."
+                  icon={<ChatBubbleLeftRightIcon className="size-8 text-zinc-400" />}
+                  title="No messages yet"
                 />
-              ) : error ? (
-                <ConversationEmptyState
-                  description={error.message || 'Failed to load messages'}
-                  icon={<MessageSquareIcon className="size-6" />}
-                  title="Error"
-                />
-              ) : chatMessages.length === 0 ? (
-                <ConversationEmptyState
-                  description="Messages will appear here as the conversation progresses."
-                  icon={<MessageSquareIcon className="size-6" />}
-                  title="Start a conversation"
-                />
-              ) : (
+              )}
+
+              {/* Messages */}
+              {!isInitializing &&
+                !fetching &&
+                !error &&
+                chatMessages.length > 0 &&
                 chatMessages.map(({ key, value, from }) => (
                   <Message from={from} key={key}>
                     <MessageContent>{value}</MessageContent>
                   </Message>
-                ))
-              )}
+                ))}
             </ConversationContent>
             <ConversationScrollButton />
           </Conversation>
