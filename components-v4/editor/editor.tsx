@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 import Autocomplete from './autocomplete';
-import { useEditor } from './context';
+import { useEditorContext } from './context';
 
 type EditorProps = {
   placeholder?: string;
@@ -24,7 +24,7 @@ export default function Editor({
   className,
   children,
 }: EditorProps) {
-  const { text, setText } = useEditor();
+  const { text, setText } = useEditorContext();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize textarea

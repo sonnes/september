@@ -4,11 +4,11 @@ import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
 
 import { MATCH_PUNCTUATION } from '@/lib/utils';
 
-import { useEditor } from './context';
+import { useEditorContext } from './context';
 import { useAutocomplete } from './use-autocomplete';
 
 export default function Autocomplete() {
-  const { text, addWord, setCurrentWord } = useEditor();
+  const { text, addWord, setCurrentWord } = useEditorContext();
   const { isReady, getSpellings, getNextWords } = useAutocomplete();
 
   const [words, setWords] = useState<string[]>([]);

@@ -67,7 +67,7 @@ export function EditorProvider({ children, defaultText = '' }: EditorProviderPro
   );
 }
 
-export function useEditor() {
+export function useEditorContext() {
   const context = useContext(EditorContext);
   if (context === undefined) {
     throw new Error('useEditor must be used within an EditorProvider');
