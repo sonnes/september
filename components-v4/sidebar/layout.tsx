@@ -14,7 +14,7 @@ export default function SidebarLayout({ children, defaultOpen = true }: SidebarL
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
       <AppSidebar />
-      <SidebarInset className="min-h-screen flex flex-col">{children}</SidebarInset>
+      <SidebarInset className="flex flex-col">{children}</SidebarInset>
     </SidebarProvider>
   );
 }
@@ -33,8 +33,8 @@ SidebarLayoutHeader.displayName = 'SidebarLayout.Header';
 
 const SidebarLayoutContent = ({ children }: PropsWithChildren) => {
   return (
-    <main className="flex-1 overflow-y-auto">
-      <div className="p-4 md:p-6">{children}</div>
+    <main className="flex-1 flex flex-col min-h-0">
+      <div className="p-2 md:p-4 flex-1 flex flex-col min-h-0">{children}</div>
     </main>
   );
 };

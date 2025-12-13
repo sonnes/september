@@ -16,9 +16,13 @@ interface UseSuggestionsReturn {
   clearSuggestions: () => void;
 }
 
-export function useSuggestions(timeout: number = 800): UseSuggestionsReturn {
-  const { text } = useEditorContext();
-
+export function useSuggestions({
+  text,
+  timeout = 800,
+}: {
+  text: string;
+  timeout?: number;
+}): UseSuggestionsReturn {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [debouncedText, setDebouncedText] = useState(text);
   const [isLoading, setIsLoading] = useState(false);

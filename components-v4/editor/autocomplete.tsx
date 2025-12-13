@@ -49,7 +49,7 @@ export default function Autocomplete() {
   return (
     <Suggestions>
       {words.map(word => (
-        <Suggestion key={word} onClick={handleSuggestionClick} suggestion={word} />
+        <Suggestion key={word} onClick={handleSuggestionClick} suggestion={word} size="default" />
       ))}
     </Suggestions>
   );

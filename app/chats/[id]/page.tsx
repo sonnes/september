@@ -31,6 +31,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useAccount } from '@/components-v4/account';
 import { EditorProvider } from '@/components-v4/editor/context';
 import Editor from '@/components-v4/editor/editor';
+import { useCreateAudioMessage } from '@/components-v4/messages/use-create-message';
 import useMessages from '@/components-v4/messages/use-messages';
 import SidebarLayout from '@/components-v4/sidebar/layout';
 import { Suggestions } from '@/components-v4/suggestions';
@@ -56,6 +57,7 @@ export default function ChatPage({ params }: ChatPageProps) {
     chatId: chatId || '',
   });
 
+  const { createAudioMessage } = useCreateAudioMessage();
   const chatMessages = useMemo<ChatMessage[]>(() => {
     if (!messages || messages.length === 0) return [];
 
@@ -71,17 +73,14 @@ export default function ChatPage({ params }: ChatPageProps) {
     async (text: string) => {
       if (!chatId || !user || !text.trim()) return;
 
-      const messageId = uuidv4();
-      await triplit.insert('messages', {
-        id: messageId,
+      await createAudioMessage({
+        chat_id: chatId,
         text: text.trim(),
         type: 'user',
         user_id: user.id,
-        chat_id: chatId,
-        created_at: new Date(),
       });
     },
-    [chatId, user]
+    [chatId, user, createAudioMessage]
   );
 
   // Loading state for chat ID resolution

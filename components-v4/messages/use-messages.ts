@@ -44,3 +44,40 @@ export default function useMessages({ chatId }: { chatId: string }) {
     error: error || chatError,
   };
 }
+
+export function useMessageHistory({ query }: { query: string }) {
+  const { user } = useAccount();
+
+  const trimmedQuery = query.trim();
+  const isEmpty = trimmedQuery === '';
+
+  const messagesQuery = isEmpty
+    ? null
+    : triplit
+        .query('messages')
+        .Where('user_id', '=', user?.id || '')
+        .Where('text', 'like', `%${trimmedQuery.toLowerCase()}%`)
+        .Order('created_at', 'DESC')
+        .Limit(10);
+
+  const { results, fetching, error } = useQuery(
+    triplit,
+    messagesQuery || triplit.query('messages').Limit(0)
+  );
+
+  return {
+    messages: isEmpty
+      ? []
+      : (results?.map(message => ({
+          id: message.id,
+          text: message.text,
+          type: message.type,
+          user_id: message.user_id,
+          audio_path: message.audio_path || undefined,
+          chat_id: message.chat_id || undefined,
+          created_at: message.created_at,
+        })) as Message[]) || [],
+    fetching: isEmpty ? false : fetching,
+    error: isEmpty ? undefined : error,
+  };
+}
