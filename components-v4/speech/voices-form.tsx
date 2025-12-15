@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Account } from '@/types/account';
 import type { Voice } from '@/types/voice';
 
-import { AI_PROVIDERS, getProvidersForFeature } from '../settings/registry';
+import { AI_PROVIDERS, getModelsForProvider, getProvidersForFeature } from '../settings/registry';
 import { useSpeechContext } from './context';
 import { VoiceSettingsFormData, VoiceSettingsSchema } from './schemas';
 
@@ -23,12 +23,14 @@ interface VoicesFormProps {
     form: ReturnType<typeof useForm<VoiceSettingsFormData>>;
     selectedProvider: SpeechProvider;
     availableProviders: typeof AI_PROVIDERS;
+    availableModels: Array<{ id: string; name: string; description?: string }>;
     voices: Voice[];
     isLoadingVoices: boolean;
     searchTerm: string;
     onProviderChange: (provider: SpeechProvider) => void;
     onSearchChange: (value: string) => void;
     onVoiceSelect: (voice: Voice) => void;
+    onModelChange: (modelId: string) => void;
     hasApiKey: (providerId: string) => boolean;
   }) => React.ReactNode;
 }
@@ -53,6 +55,7 @@ export function VoicesForm({ account, onSubmit, children }: VoicesFormProps) {
   const currentProvider = (account?.ai_speech?.provider || 'browser') as SpeechProvider;
   const currentVoiceId = account?.ai_speech?.voice_id;
   const currentVoiceName = account?.ai_speech?.voice_name;
+  const currentModelId = account?.ai_speech?.model_id;
 
   const form = useForm<VoiceSettingsFormData>({
     resolver: zodResolver(VoiceSettingsSchema),
@@ -60,6 +63,7 @@ export function VoicesForm({ account, onSubmit, children }: VoicesFormProps) {
       provider: currentProvider,
       voice_id: currentVoiceId || '',
       voice_name: currentVoiceName || '',
+      model_id: currentModelId || '',
     },
   });
 
@@ -67,6 +71,11 @@ export function VoicesForm({ account, onSubmit, children }: VoicesFormProps) {
   const [voices, setVoices] = useState<Voice[]>([]);
   const [isLoadingVoices, setIsLoadingVoices] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Get available models for selected provider
+  const availableModels = useMemo(() => {
+    return getModelsForProvider(selectedProvider);
+  }, [selectedProvider]);
 
   // Check which providers have API keys configured
   const hasApiKey = useCallback(
@@ -109,6 +118,7 @@ export function VoicesForm({ account, onSubmit, children }: VoicesFormProps) {
       form.setValue('provider', provider);
       form.setValue('voice_id', '');
       form.setValue('voice_name', '');
+      form.setValue('model_id', '');
       setSearchTerm('');
     },
     [form]
@@ -122,6 +132,13 @@ export function VoicesForm({ account, onSubmit, children }: VoicesFormProps) {
     (voice: Voice) => {
       form.setValue('voice_id', voice.id);
       form.setValue('voice_name', voice.name);
+    },
+    [form]
+  );
+
+  const handleModelChange = useCallback(
+    (modelId: string) => {
+      form.setValue('model_id', modelId);
     },
     [form]
   );
@@ -146,12 +163,14 @@ export function VoicesForm({ account, onSubmit, children }: VoicesFormProps) {
         form,
         selectedProvider,
         availableProviders: speechProviders,
+        availableModels,
         voices,
         isLoadingVoices,
         searchTerm,
         onProviderChange: handleProviderChange,
         onSearchChange: handleSearchChange,
         onVoiceSelect: handleVoiceSelect,
+        onModelChange: handleModelChange,
         hasApiKey,
       })}
     </form>

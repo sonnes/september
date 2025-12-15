@@ -4,6 +4,14 @@ import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { TextInput } from '@/components/uix/text-input';
 import VoicesList from '@/components/voices/voices-list';
 
@@ -20,6 +28,7 @@ export default function VoicesSettingsForm() {
       provider: data.provider,
       voice_id: data.voice_id,
       voice_name: data.voice_name,
+      model_id: data.model_id,
     });
   };
 
@@ -38,15 +47,18 @@ export default function VoicesSettingsForm() {
         form,
         selectedProvider,
         availableProviders,
+        availableModels,
         voices,
         isLoadingVoices,
         searchTerm,
         onProviderChange,
         onSearchChange,
         onVoiceSelect,
+        onModelChange,
         hasApiKey,
       }) => {
         const selectedVoiceId = form.watch('voice_id');
+        const selectedModelId = form.watch('model_id');
         const allProviders = Object.values(availableProviders);
 
         // Filter providers based on available API keys
@@ -74,7 +86,9 @@ export default function VoicesSettingsForm() {
                     >
                       <CardHeader className="p-4">
                         <CardTitle className="text-sm">{provider.name}</CardTitle>
-                        <CardDescription className="text-xs">{provider.description}</CardDescription>
+                        <CardDescription className="text-xs">
+                          {provider.description}
+                        </CardDescription>
                       </CardHeader>
                     </Card>
                   ))}
@@ -82,8 +96,8 @@ export default function VoicesSettingsForm() {
 
                 {visibleProviders.length < allProviders.length && (
                   <p className="text-xs text-muted-foreground">
-                    Some providers are hidden because their API keys are not configured. Configure API
-                    keys in{' '}
+                    Some providers are hidden because their API keys are not configured. Configure
+                    API keys in{' '}
                     <a href="/settings/ai" className="text-primary hover:underline">
                       AI Providers settings
                     </a>
@@ -91,6 +105,34 @@ export default function VoicesSettingsForm() {
                   </p>
                 )}
               </div>
+
+              {/* Model Selection */}
+              {availableModels.length > 0 && (
+                <div className="space-y-3">
+                  <Label htmlFor="model-select" className="text-sm font-medium text-zinc-900">
+                    Model
+                  </Label>
+                  <Select value={selectedModelId} onValueChange={onModelChange}>
+                    <SelectTrigger id="model-select" className="w-full">
+                      <SelectValue placeholder="Select a model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableModels.map(model => (
+                        <SelectItem key={model.id} value={model.id}>
+                          <div className="flex flex-col">
+                            <span>{model.name}</span>
+                            {model.description && (
+                              <span className="text-xs text-muted-foreground">
+                                {model.description}
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Voice Search */}
               <div className="space-y-3">

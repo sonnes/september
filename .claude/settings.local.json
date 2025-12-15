@@ -19,7 +19,8 @@
       "Bash(mv:*)",
       "Bash(npx tsc:*)",
       "Bash(pnpm run lint:*)",
-      "Bash(pnpm exec tsc:*)"
+      "Bash(pnpm exec tsc:*)",
+      "Bash(git mv:*)"
     ],
     "defaultMode": "acceptEdits"
   },

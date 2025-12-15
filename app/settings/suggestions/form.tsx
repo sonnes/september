@@ -31,7 +31,7 @@ export default function SuggestionsSettingsForm() {
     <div className="flex flex-1 flex-col gap-6 p-6">
       {/* Info Section */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">AI Suggestions Configuration</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Suggestions Configuration</h1>
         <p className="text-muted-foreground">
           Configure AI-powered typing suggestions to help you communicate faster. Customize the AI
           to match your communication style.

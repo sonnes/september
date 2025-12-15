@@ -27,7 +27,7 @@ export default function AISettingsForm() {
     <div className="flex flex-1 flex-col gap-6 p-6">
       {/* Info Section */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">AI Provider Configuration</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Providers Configuration</h1>
         <p className="text-muted-foreground">
           Configure AI providers to power suggestions, transcription, and voice synthesis.
         </p>

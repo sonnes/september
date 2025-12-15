@@ -67,16 +67,16 @@ const getNavigationData = () => ({
       isExpanded: true,
       items: [
         {
-          title: 'AI Providers',
-          url: '/settings/ai',
+          title: 'Providers',
+          url: '/settings/providers',
         },
         {
-          title: 'AI Suggestions',
-          url: '/settings/ai/suggestions',
+          title: 'Suggestions',
+          url: '/settings/suggestions',
         },
         {
-          title: 'Voices',
-          url: '/settings/voices',
+          title: 'Speech',
+          url: '/settings/speech',
         },
       ],
     },

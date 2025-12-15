@@ -17,11 +17,11 @@ import { SpeechProvider } from '@/components-v4/speech';
 import VoicesSettingsForm from './form';
 
 export const metadata: Metadata = {
-  title: 'Voice Settings',
-  description: 'Manage and customize your voice settings for text-to-speech communication',
+  title: 'Speech Settings',
+  description: 'Manage and customize your speech settings for text-to-speech communication',
 };
 
-export default async function VoicesSettingsPage() {
+export default async function SpeechSettingsPage() {
   return (
     <SidebarLayout>
       <SidebarLayout.Header>
@@ -34,7 +34,7 @@ export default async function VoicesSettingsPage() {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Voices</BreadcrumbPage>
+              <BreadcrumbPage>Speech</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
