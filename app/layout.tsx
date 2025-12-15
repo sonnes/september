@@ -4,6 +4,7 @@ import { Noto_Sans } from 'next/font/google';
 import { Toaster } from 'sonner';
 
 import { AccountProvider } from '@/components-v4/account';
+import { AudioPlayerProvider } from '@/components-v4/audio/audio-player';
 import { AISettingsProvider } from '@/components-v4/settings';
 
 import './globals.css';
@@ -77,8 +78,12 @@ export default function RootLayout({
       </head>
       <body className={`${notoSans.className} antialiased h-full`}>
         <AccountProvider>
-          <AISettingsProvider>{children}</AISettingsProvider>
-          <Toaster position="top-center" closeButton duration={15000} />
+          <AISettingsProvider>
+            <AudioPlayerProvider>
+              {children}
+              <Toaster position="top-center" closeButton duration={15000} />
+            </AudioPlayerProvider>
+          </AISettingsProvider>
         </AccountProvider>
       </body>
     </html>

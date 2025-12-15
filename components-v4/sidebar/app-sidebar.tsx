@@ -122,9 +122,7 @@ export function AppSidebar(props: AppSidebarProps) {
         {data.projects.length > 0 && <NavProjects projects={data.projects} />}
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser />
-      </SidebarFooter>
+      <SidebarFooter>{/* <NavUser /> */}</SidebarFooter>
     </Sidebar>
   );
 }

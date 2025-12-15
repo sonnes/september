@@ -1,3 +1,5 @@
+import { useCallback } from 'react';
+
 import { useQuery } from '@triplit/react';
 
 import { useAccount } from '@/components-v4/account';
@@ -19,15 +21,13 @@ export default function useChatList({ searchQuery }: { searchQuery?: string }) {
 
   const { results, fetching, error } = useQuery(triplit, query);
 
-  const createChat = async () => {
+  const createChat = useCallback(async (): Promise<Chat> => {
     if (!user?.id) {
       throw new Error('User not found');
     }
-    const chat = await triplit.insert('chats', {
-      user_id: user.id,
-    });
-    return chat;
-  };
+    const chat = await triplit.insert('chats', { user_id: user.id });
+    return chat as Chat;
+  }, [user]);
 
   return {
     chats:

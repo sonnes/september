@@ -4,6 +4,7 @@ import { useQueryOne } from '@triplit/react';
 
 import { triplit } from '@/triplit/client';
 import type { Account, PutAccountData } from '@/types/account';
+import { User } from '@/types/user';
 
 const ID = 'local-user';
 
@@ -50,6 +51,8 @@ export function useAccountTriplit() {
   }, []);
 
   return {
+    loading: account === undefined,
+    user: account as User | undefined,
     account: account as Account | undefined,
     updateAccount,
     uploadFile,

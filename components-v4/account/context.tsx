@@ -25,43 +25,9 @@ type AccountProviderProps = {
 };
 
 export function AccountProvider(props: AccountProviderProps) {
-  const [user, setUser] = useState<User | undefined>(undefined);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (user) return;
-    // Fetch initial user
-    const fetchUser = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        setUser(user ?? undefined);
-      } catch (error) {
-        console.error('Error fetching user:', error);
-        setUser(undefined);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
-  }, [user]);
-
   const triplitData = useAccountTriplit();
-  const supabaseData = useAccountSupabase(user);
 
-  // Use Supabase if user is authenticated, otherwise use Triplit
-  const accountData = useMemo(
-    () => (user && !loading ? supabaseData : triplitData),
-    [user, loading, supabaseData, triplitData]
-  );
-
-  return (
-    <AccountContext.Provider value={{ loading, user, ...accountData }}>
-      {props.children}
-    </AccountContext.Provider>
-  );
+  return <AccountContext.Provider value={triplitData}>{props.children}</AccountContext.Provider>;
 }
 
 export function useAccount() {

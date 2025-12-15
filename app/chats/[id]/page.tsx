@@ -9,7 +9,6 @@ import {
   ChevronRightIcon,
   ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
-import { v4 as uuidv4 } from 'uuid';
 
 import {
   Conversation,
@@ -29,13 +28,13 @@ import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
 import { useAccount } from '@/components-v4/account';
+import { useAudioPlayer } from '@/components-v4/audio/audio-player';
 import { EditorProvider } from '@/components-v4/editor/context';
 import Editor from '@/components-v4/editor/editor';
 import { useCreateAudioMessage } from '@/components-v4/messages/use-create-message';
 import useMessages from '@/components-v4/messages/use-messages';
 import SidebarLayout from '@/components-v4/sidebar/layout';
 import { Suggestions } from '@/components-v4/suggestions';
-import { triplit } from '@/triplit/client';
 
 import { ChatMessagesSkeleton } from '../loading-skeleton';
 
@@ -52,7 +51,7 @@ type ChatPageProps = {
 export default function ChatPage({ params }: ChatPageProps) {
   const { id: chatId } = use(params);
   const { user } = useAccount();
-
+  const { enqueue } = useAudioPlayer();
   const { chat, messages, fetching, error } = useMessages({
     chatId: chatId || '',
   });
@@ -73,12 +72,17 @@ export default function ChatPage({ params }: ChatPageProps) {
     async (text: string) => {
       if (!chatId || !user || !text.trim()) return;
 
-      await createAudioMessage({
+      const { audio } = await createAudioMessage({
         chat_id: chatId,
         text: text.trim(),
         type: 'user',
         user_id: user.id,
       });
+
+      console.log('audio', audio);
+      if (audio) {
+        enqueue(audio);
+      }
     },
     [chatId, user, createAudioMessage]
   );

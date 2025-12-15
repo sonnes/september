@@ -44,7 +44,7 @@ export function useSuggestions({
     if (debouncedText.trim().length === 0 || !apiKey) return;
 
     const fetchSuggestions = async (text: string, messages: Partial<Message>[]) => {
-      if (!apiKey || isLoading) {
+      if (!apiKey || isLoading || !suggestionsConfig.enabled) {
         return;
       }
 
