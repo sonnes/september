@@ -4,6 +4,7 @@ import { useQuery, useQueryOne } from '@triplit/react';
 
 import { useAccount } from '@/components-v4/account';
 import { triplit } from '@/triplit/client';
+import { Chat } from '@/types/chat';
 import { Message } from '@/types/message';
 
 export default function useMessages({ chatId }: { chatId: string }) {
@@ -22,10 +23,14 @@ export default function useMessages({ chatId }: { chatId: string }) {
 
   const { results, fetching, error } = useQuery(triplit, messagesQuery);
 
-  const chat = useMemo(() => triplit.fetchById('chats', chatId), [chatId]);
-
+  const {
+    result: chat,
+    fetching: chatFetching,
+    error: chatError,
+  } = useQueryOne(triplit, triplit.query('chats').Where('id', '=', chatId));
   return {
-    chat,
+    chat: chat as Chat | undefined,
+
     messages:
       (results?.map(message => ({
         id: message.id,
@@ -36,8 +41,8 @@ export default function useMessages({ chatId }: { chatId: string }) {
         chat_id: message.chat_id || undefined,
         created_at: message.created_at,
       })) as Message[]) || [],
-    fetching: fetching,
-    error: error,
+    fetching: fetching || chatFetching,
+    error: error || chatError,
   };
 }
 
