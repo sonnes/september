@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 
+import { EditorProvider } from '@/components-v4/editor/context';
 import { SpeechProvider } from '@/components-v4/speech/context';
 
 export const metadata: Metadata = {
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <SpeechProvider>{children}</SpeechProvider>;
+  return (
+    <EditorProvider>
+      <SpeechProvider>{children}</SpeechProvider>
+    </EditorProvider>
+  );
 }

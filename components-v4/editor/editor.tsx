@@ -16,6 +16,7 @@ type EditorProps = {
   onSubmit?: (text: string) => void;
   className?: string;
   children?: React.ReactNode;
+  disabled?: boolean;
 };
 
 export default function Editor({
@@ -23,6 +24,7 @@ export default function Editor({
   onSubmit,
   className,
   children,
+  disabled = false,
 }: EditorProps) {
   const { text, setText } = useEditorContext();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -39,7 +41,6 @@ export default function Editor({
   const handleSubmit = () => {
     if (!text.trim()) return;
     onSubmit?.(text);
-    setText('');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -66,13 +67,19 @@ export default function Editor({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           rows={1}
+          disabled={disabled}
           className="w-full resize-none bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none"
         />
 
         <div className="mt-3 flex items-center justify-between">
           <div className="flex items-center gap-1">{children}</div>
 
-          <Button type="button" onClick={handleSubmit} disabled={!text.trim()} size="icon">
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!text.trim() || disabled}
+            size="icon"
+          >
             <ArrowUp className="size-4" />
           </Button>
         </div>
