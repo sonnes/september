@@ -138,7 +138,7 @@ export interface SpeechConfig {
   /** Model ID (provider-specific) */
   model_id?: string;
 
-  settings?: BrowserTTSSettings | GeminiSpeechSettings | ElevenLabsSettings;
+  settings?: BrowserTTSSettings & GeminiSpeechSettings & ElevenLabsSettings;
 }
 
 export interface ProviderConfig {

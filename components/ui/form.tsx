@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 
 // ============================================================================
@@ -191,6 +192,74 @@ export function FormSelect<
           {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
         </Field>
       )}
+    />
+  );
+}
+
+// ============================================================================
+// FormSlider - Slider field wrapper with labels
+// ============================================================================
+
+interface FormSliderProps<
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+> extends Omit<React.ComponentProps<typeof Slider>, 'name' | 'value' | 'onValueChange'> {
+  name: TName;
+  control: Control<TFieldValues>;
+  label?: string;
+  description?: string;
+  leftLabel?: string;
+  rightLabel?: string;
+  showValue?: boolean;
+  valueFormatter?: (value: number) => string;
+}
+
+export function FormSlider<
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+>({
+  name,
+  control,
+  label,
+  description,
+  leftLabel,
+  rightLabel,
+  showValue,
+  valueFormatter = (value: number) => value.toString(),
+  ...props
+}: FormSliderProps<TFieldValues, TName>) {
+  return (
+    <Controller
+      name={name}
+      control={control}
+      render={({ field, fieldState }) => {
+        const value = typeof field.value === 'number' ? field.value : props.min ?? 0;
+        return (
+          <Field data-invalid={fieldState.invalid}>
+            {label && <FieldLabel htmlFor={field.name}>{label}</FieldLabel>}
+            {description && <FieldDescription>{description}</FieldDescription>}
+            <div className="space-y-3">
+              {leftLabel && rightLabel && (
+                <div className="flex items-center justify-between text-xs text-zinc-600">
+                  <span>{leftLabel}</span>
+                  {showValue && (
+                    <span className="font-medium text-zinc-900">{valueFormatter(value)}</span>
+                  )}
+                  <span>{rightLabel}</span>
+                </div>
+              )}
+              <Slider
+                {...props}
+                id={field.name}
+                value={[value]}
+                onValueChange={values => field.onChange(values[0])}
+                aria-invalid={fieldState.invalid}
+              />
+            </div>
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        );
+      }}
     />
   );
 }

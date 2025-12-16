@@ -18,6 +18,7 @@ import { MessageList } from '@/components-v4/messages';
 import { useCreateAudioMessage } from '@/components-v4/messages/use-create-message';
 import useMessages from '@/components-v4/messages/use-messages';
 import SidebarLayout from '@/components-v4/sidebar/layout';
+import { SpeechSettingsModal } from '@/components-v4/speech';
 import { Suggestions } from '@/components-v4/suggestions';
 
 import { ChatMessagesSkeleton } from '../loading-skeleton';
@@ -108,7 +109,9 @@ export default function ChatPage({ params }: ChatPageProps) {
           <div className="fixed bottom-0 left-0 right-0 p-4 md:left-(--sidebar-width) z-10">
             <div className="max-w-4xl mx-auto flex flex-col gap-3">
               <Suggestions />
-              <Editor placeholder="Type a message..." onSubmit={handleSubmit} />
+              <Editor placeholder="Type a message..." onSubmit={handleSubmit}>
+                <SpeechSettingsModal />
+              </Editor>
             </div>
           </div>
         </SidebarLayout.Content>
