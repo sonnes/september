@@ -12,7 +12,6 @@ import {
   PenTool,
   Send,
   Settings2,
-  Volume2,
 } from 'lucide-react';
 
 import {
@@ -49,11 +48,6 @@ const getNavigationData = () => ({
       title: 'Chats',
       url: '/chats',
       icon: MessageCircle,
-    },
-    {
-      title: 'Voices',
-      url: '/voices',
-      icon: Volume2,
     },
     {
       title: 'Write',
