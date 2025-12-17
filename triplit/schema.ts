@@ -70,4 +70,15 @@ export const schema = S.Collections({
       created_at: S.Date({ default: S.Default.now() }),
     }),
   },
+  voice_samples: {
+    schema: S.Schema({
+      id: S.Id(),
+      user_id: S.String(),
+      type: S.String(), // 'upload' | 'recording'
+      sample_id: S.Optional(S.String()), // For recordings (e.g., 'birch-canoe')
+      blob: S.String(), // base64 audio data
+      file_name: S.Optional(S.String()), // For uploads
+      created_at: S.Date({ default: S.Default.now() }),
+    }),
+  },
 });

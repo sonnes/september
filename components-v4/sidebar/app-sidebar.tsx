@@ -9,6 +9,7 @@ import {
   LifeBuoy,
   MessageCircle,
   MessageSquare,
+  Mic,
   PenTool,
   Send,
   Settings2,
@@ -53,6 +54,11 @@ const getNavigationData = () => ({
       title: 'Write',
       url: '/write',
       icon: PenTool,
+    },
+    {
+      title: 'Clone',
+      url: '/clone',
+      icon: Mic,
     },
     {
       title: 'Settings',
