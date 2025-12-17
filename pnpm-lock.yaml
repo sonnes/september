@@ -21,9 +21,6 @@ importers:
       '@ai-sdk/react':
         specifier: ^2.0.109
         version: 2.0.109(react@19.2.1)(zod@4.1.12)
-      '@elevenlabs/elevenlabs-js':
-        specifier: ^2.7.0
-        version: 2.20.1
       '@google/genai':
         specifier: ^1.9.0
         version: 1.27.0
@@ -211,6 +208,9 @@ importers:
         specifier: ^4.0.5
         version: 4.1.12
     devDependencies:
+      '@elevenlabs/elevenlabs-js':
+        specifier: ^2.7.0
+        version: 2.20.1
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.1.16

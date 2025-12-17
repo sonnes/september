@@ -11,6 +11,11 @@ export function useAudioStorage() {
     blob: string;
     alignment?: Alignment;
   }) => {
+    // ensure the blob is a base64 string by prefixing it with 'data:audio/mp3;base64,'
+    if (!blob.startsWith('data:audio/mp3;base64,')) {
+      blob = `data:audio/mp3;base64,${blob}`;
+    }
+
     // Store audio data in Triplit database
     await triplit.insert('audio_files', {
       id: path,

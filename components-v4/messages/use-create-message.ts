@@ -55,6 +55,7 @@ export function useCreateAudioMessage() {
       setStatus('generating-speech');
       const speech = await generateSpeech(message.text);
 
+      console.log('speech', speech);
       if (speech?.blob) {
         message.audio_path = `${message.id}.mp3`;
         setStatus('uploading-audio');

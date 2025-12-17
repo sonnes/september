@@ -103,6 +103,11 @@ export class ElevenLabsSpeechProvider implements SpeechProvider {
         }
       : undefined;
 
+    // ensure the blob is a base64 string by prefixing it with 'data:audio/mp3;base64,'
+    if (!data.audio_base64.startsWith('data:audio/mp3;base64,')) {
+      data.audio_base64 = `data:audio/mp3;base64,${data.audio_base64}`;
+    }
+
     return {
       blob: data.audio_base64,
       alignment,

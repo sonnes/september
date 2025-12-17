@@ -1,6 +1,14 @@
 'use client';
 
-import { ReactNode, createContext, useCallback, useContext, useEffect, useState } from 'react';
+import {
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import {
   AudioPlayerProvider as AudioPlayerProviderBase,
@@ -14,9 +22,13 @@ interface AudioPlayerContextType {
   isPlaying: boolean;
   enqueue: (track: AudioTrack) => void;
   togglePlayPause: () => void;
-  current: AudioTrack | null;
+  current?: AudioTrack;
   isMuted: boolean;
   toggleMute: () => void;
+  // Time tracking
+  currentTime: number;
+  duration: number;
+  seek: (time: number) => void;
 }
 
 const AudioPlayerContext = createContext<AudioPlayerContextType | undefined>(undefined);
@@ -33,9 +45,53 @@ function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
   const [queue, setQueue] = useState<AudioTrack[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [isMuted, setIsMuted] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
 
-  const { load, play, pause, isPlaying } = useAudioPlayerContext();
+  const {
+    load,
+    play,
+    pause,
+    isPlaying,
+    duration,
+    getPosition,
+    seek: audioSeek,
+  } = useAudioPlayerContext();
   const synthesis = typeof window !== 'undefined' ? window.speechSynthesis : null;
+
+  // RAF-based time tracking for smooth updates
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!isPlaying) {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      return;
+    }
+
+    const tick = () => {
+      setCurrentTime(getPosition());
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+  }, [isPlaying, getPosition]);
+
+  const seek = useCallback(
+    (time: number) => {
+      audioSeek(time);
+      setCurrentTime(time);
+    },
+    [audioSeek]
+  );
 
   useEffect(() => {
     if (queue.length > 0 && queue[currentIndex]) {
@@ -115,6 +171,9 @@ function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
     current: queue[currentIndex] || null,
     isMuted,
     toggleMute,
+    currentTime,
+    duration,
+    seek,
   };
 
   return <AudioPlayerContext.Provider value={value}>{children}</AudioPlayerContext.Provider>;
