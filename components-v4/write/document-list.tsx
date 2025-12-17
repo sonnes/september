@@ -1,11 +1,11 @@
-import type { ComponentProps } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 
 import Link from 'next/link';
 
 import { DocumentIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import moment from 'moment';
 
-import { TextInput } from '@/components/uix/text-input';
+import { Input } from '@/components/ui/input';
 
 import { cn } from '@/lib/utils';
 import { Document } from '@/types/document';
@@ -13,7 +13,7 @@ import { Document } from '@/types/document';
 type DocumentListEmptyStateProps = ComponentProps<'div'> & {
   title?: string;
   description?: string;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
 };
 
 function DocumentListEmptyState({
@@ -70,7 +70,7 @@ export function DocumentList({
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <MagnifyingGlassIcon className="h-5 w-5 text-zinc-400" />
         </div>
-        <TextInput
+        <Input
           type="text"
           placeholder={searchPlaceholder}
           value={searchValue}

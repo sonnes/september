@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 
 import { useDocumentsContext } from '@/components/context/documents-provider';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 import { type Slide, parseAndRenderSlides } from '@/lib/slides';
 
@@ -12,29 +13,28 @@ import SlideRenderer from './slide-renderer';
 import SlidesNavigation from './slides-navigation';
 import SlidesProgress from './slides-progress';
 
-interface SlidesPresentationProps {
+type SlidesPresentationProps = {
   markdown?: string;
   documentName?: string;
   className?: string;
-}
+};
 
 export default function SlidesPresentation({
   markdown,
   documentName,
-  className = '',
+  className,
 }: SlidesPresentationProps) {
   const { current } = useDocumentsContext();
+
   const [slides, setSlides] = useState<Slide[]>([]);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showHintOnMount, setShowHintOnMount] = useState(false);
 
-  // Use context document if no markdown prop provided
   const effectiveMarkdown = markdown ?? current?.content ?? '';
   const effectiveDocumentName = documentName ?? current?.name;
 
-  // Parse markdown into slides
   useEffect(() => {
     const processSlides = async () => {
       try {
@@ -57,21 +57,18 @@ export default function SlidesPresentation({
       setSlides([]);
       setLoading(false);
     }
-  }, [effectiveMarkdown, effectiveDocumentName]);
+  }, [effectiveDocumentName, effectiveMarkdown]);
 
-  // Show hint briefly on mount after slides are loaded
   useEffect(() => {
     if (slides.length > 0 && !loading) {
       setShowHintOnMount(true);
-      const timer = setTimeout(() => {
-        setShowHintOnMount(false);
-      }, 3000); // Show for 3 seconds
-
+      const timer = setTimeout(() => setShowHintOnMount(false), 3000);
       return () => clearTimeout(timer);
+    } else {
+      setShowHintOnMount(false);
     }
-  }, [slides.length, loading]);
+  }, [loading, slides.length]);
 
-  // Navigation functions
   const goToNextSlide = useCallback(() => {
     setCurrentSlideIndex(prev => Math.min(prev + 1, slides.length - 1));
   }, [slides.length]);
@@ -87,7 +84,6 @@ export default function SlidesPresentation({
     [slides.length]
   );
 
-  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (slides.length === 0) return;
@@ -112,11 +108,10 @@ export default function SlidesPresentation({
           event.preventDefault();
           goToSlide(slides.length - 1);
           break;
-        default:
-          // Check for number keys (1-9)
-          const slideNumber = parseInt(event.key);
+        default: {
+          const slideNumber = parseInt(event.key, 10);
           if (
-            !isNaN(slideNumber) &&
+            !Number.isNaN(slideNumber) &&
             slideNumber >= 1 &&
             slideNumber <= Math.min(9, slides.length)
           ) {
@@ -124,43 +119,36 @@ export default function SlidesPresentation({
             goToSlide(slideNumber - 1);
           }
           break;
+        }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [slides.length, goToNextSlide, goToPreviousSlide, goToSlide]);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [goToNextSlide, goToPreviousSlide, goToSlide, slides.length]);
 
-  // Touch/swipe navigation
   useEffect(() => {
     let startX = 0;
     let startY = 0;
 
-    const handleTouchStart = (e: TouchEvent) => {
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
+    const handleTouchStart = (event: TouchEvent) => {
+      startX = event.touches[0].clientX;
+      startY = event.touches[0].clientY;
     };
 
-    const handleTouchEnd = (e: TouchEvent) => {
+    const handleTouchEnd = (event: TouchEvent) => {
       if (!startX || !startY) return;
 
-      const endX = e.changedTouches[0].clientX;
-      const endY = e.changedTouches[0].clientY;
+      const endX = event.changedTouches[0].clientX;
+      const endY = event.changedTouches[0].clientY;
       const diffX = startX - endX;
       const diffY = startY - endY;
-
-      // Minimum swipe distance
       const minSwipeDistance = 50;
 
-      // Check if horizontal swipe is more significant than vertical
       if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > minSwipeDistance) {
         if (diffX > 0) {
-          // Swipe left - next slide
           goToNextSlide();
         } else {
-          // Swipe right - previous slide
           goToPreviousSlide();
         }
       }
@@ -177,10 +165,10 @@ export default function SlidesPresentation({
 
   if (loading) {
     return (
-      <div className={`flex items-center justify-center h-full ${className}`}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-zinc-600">Processing slides...</p>
+      <div className={`flex items-center justify-center h-full ${className ?? ''}`}>
+        <div className="flex flex-col items-center gap-3 rounded-lg border bg-card px-6 py-8 shadow-sm">
+          <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-primary" />
+          <p className="text-sm text-muted-foreground">Processing slides...</p>
         </div>
       </div>
     );
@@ -188,10 +176,10 @@ export default function SlidesPresentation({
 
   if (error) {
     return (
-      <div className={`flex items-center justify-center h-full ${className}`}>
-        <div className="text-center max-w-md">
-          <p className="text-indigo-600 mb-4">{error}</p>
-          <p className="text-zinc-500 text-sm">
+      <div className={`flex items-center justify-center h-full ${className ?? ''}`}>
+        <div className="max-w-md rounded-lg border border-destructive/40 bg-destructive/10 px-6 py-5 text-center shadow-sm">
+          <p className="text-sm font-medium text-destructive">{error}</p>
+          <p className="mt-2 text-xs text-destructive/80">
             Make sure your markdown contains slide separators (---) to create multiple slides.
           </p>
         </div>
@@ -201,10 +189,10 @@ export default function SlidesPresentation({
 
   if (slides.length === 0) {
     return (
-      <div className={`flex items-center justify-center h-full ${className}`}>
-        <div className="text-center max-w-md">
-          <p className="text-zinc-600 mb-4">No slides found</p>
-          <p className="text-zinc-500 text-sm">
+      <div className={`flex items-center justify-center h-full ${className ?? ''}`}>
+        <div className="max-w-md rounded-lg border bg-card px-6 py-8 text-center shadow-sm">
+          <p className="text-base font-medium text-foreground">No slides found</p>
+          <p className="mt-2 text-sm text-muted-foreground">
             Add content to your document and use &quot;---&quot; to separate slides.
           </p>
         </div>
@@ -216,56 +204,41 @@ export default function SlidesPresentation({
 
   return (
     <>
-      <div className={`h-full flex flex-col ${className}`}>
-        {/* Slide Content */}
-        <div className="flex-1 min-h-0 relative">
+      <div className={`h-full flex flex-col ${className ?? ''}`}>
+        <div className="flex-1 min-h-0 rounded-lg border bg-background shadow-sm">
           <SlideRenderer slide={currentSlide} className="h-full" />
         </div>
 
-        {/* Navigation and Progress */}
-        <div className="shrink-0 p-4 space-y-4 bg-zinc-50/80 backdrop-blur-sm border-t border-zinc-200">
-          {/* Navigation Controls */}
-          <SlidesNavigation
-            currentSlide={currentSlideIndex + 1}
-            totalSlides={slides.length}
-            onNext={goToNextSlide}
-            onPrevious={goToPreviousSlide}
-          />
-
-          {/* Progress Bar */}
-          <SlidesProgress currentSlide={currentSlideIndex + 1} totalSlides={slides.length} />
+        <div className="shrink-0 border-t bg-muted/50 p-4 backdrop-blur-sm">
+          <div className="space-y-3">
+            <SlidesNavigation
+              currentSlide={currentSlideIndex + 1}
+              totalSlides={slides.length}
+              onNext={goToNextSlide}
+              onPrevious={goToPreviousSlide}
+            />
+            <SlidesProgress currentSlide={currentSlideIndex + 1} totalSlides={slides.length} />
+          </div>
         </div>
       </div>
 
-      {/* Keyboard shortcuts hint */}
-      <div className="fixed top-4 right-4 z-50 group">
-        {/* Question mark icon - always visible */}
-        <div className="flex items-center justify-center w-8 h-8 bg-black/60 hover:bg-black/80 text-white rounded-full shadow-lg transition-all duration-200 cursor-help">
-          <QuestionMarkCircleIcon className="w-5 h-5" />
-        </div>
-
-        {/* Keyboard shortcuts tooltip */}
-        <div
-          className={`
-            absolute top-10 right-0 bg-black/90 text-white text-xs px-3 py-2 rounded-lg shadow-xl border border-zinc-600 whitespace-nowrap
-            transition-all duration-300 transform
-            ${
-              showHintOnMount
-                ? 'opacity-100 scale-100 pointer-events-auto'
-                : 'opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 group-hover:pointer-events-auto'
-            }
-          `}
-        >
-          <div className="text-center text-zinc-200 mb-1 font-medium">Keyboard Shortcuts</div>
-          <div className="space-y-1">
-            <div>← → : Navigate</div>
-            <div>Space : Next slide</div>
-            <div>1-9 : Go to slide</div>
-            <div>Home/End : First/Last</div>
-          </div>
-          {/* Arrow pointing to icon */}
-          <div className="absolute -top-1 right-3 w-2 h-2 bg-black/90 border-l border-t border-zinc-600 rotate-45"></div>
-        </div>
+      <div className="fixed bottom-4 right-4 z-50">
+        <Tooltip defaultOpen={showHintOnMount} delayDuration={0}>
+          <TooltipTrigger asChild>
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-white shadow-lg transition-all duration-200 hover:bg-black/85 cursor-pointer">
+              <QuestionMarkCircleIcon className="h-5 w-5" />
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="w-48 p-3">
+            <div className="mb-1 text-center text-muted-foreground">Keyboard shortcuts</div>
+            <div className="space-y-1">
+              <div>← → : Navigate</div>
+              <div>Space : Next slide</div>
+              <div>1-9 : Go to slide</div>
+              <div>Home/End : First/Last</div>
+            </div>
+          </TooltipContent>
+        </Tooltip>
       </div>
     </>
   );

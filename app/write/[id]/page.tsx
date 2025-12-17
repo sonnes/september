@@ -10,10 +10,11 @@ import { useDocumentsContext } from '@/components/context/documents-provider';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import Document from '@/components/write/document';
 
 import { useAccount } from '@/components-v4/account';
 import SidebarLayout from '@/components-v4/sidebar/layout';
+import Document from '@/components-v4/write/document';
+import { EditableDocumentTitle } from '@/components-v4/write/editable-document-title';
 
 import { DocumentEditorSkeleton } from '../loading-skeleton';
 
@@ -43,7 +44,11 @@ export default function DocumentPage({ params }: DocumentPageProps) {
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
         {current && (
-          <span className="text-sm font-medium truncate">{current.name || 'Untitled'}</span>
+          <EditableDocumentTitle
+            documentId={current.id}
+            name={current.name}
+            className="text-sm font-medium truncate"
+          />
         )}
       </SidebarLayout.Header>
       <SidebarLayout.Content>
@@ -83,7 +88,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
 
           {/* Document Editor */}
           {!isInitializing && !fetching && current && (
-            <div className="max-w-4xl mx-auto w-full p-6">
+            <div className="max-w-4xl mx-auto w-full">
               <Document className="flex-1 min-h-0" />
             </div>
           )}
