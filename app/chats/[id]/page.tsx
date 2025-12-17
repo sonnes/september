@@ -14,6 +14,11 @@ import { useAudioPlayer } from '@/components-v4/audio/audio-player';
 import { EditableChatTitle } from '@/components-v4/chat/editable-chat-title';
 import { EditorProvider, useEditorContext } from '@/components-v4/editor/context';
 import Editor from '@/components-v4/editor/editor';
+import {
+  KeyboardProvider,
+  KeyboardRenderer,
+  KeyboardToggleButton,
+} from '@/components-v4/keyboards';
 import { MessageList } from '@/components-v4/messages';
 import { useCreateAudioMessage } from '@/components-v4/messages/use-create-message';
 import useMessages from '@/components-v4/messages/use-messages';
@@ -36,7 +41,7 @@ export default function ChatPage({ params }: ChatPageProps) {
   });
 
   const { status, createAudioMessage } = useCreateAudioMessage();
-  const { setText } = useEditorContext();
+  const { text, setText } = useEditorContext();
 
   const handleSubmit = useCallback(
     async (text: string) => {
@@ -56,6 +61,30 @@ export default function ChatPage({ params }: ChatPageProps) {
       setText('');
     },
     [chatId, user, createAudioMessage]
+  );
+
+  const handleKeyPress = useCallback(
+    (key: string) => {
+      if (key === 'ENTER') {
+        handleSubmit(text);
+        return;
+      }
+
+      setText(text => {
+        if (key === 'BACKSPACE') {
+          return text.slice(0, -1);
+        } else if (key === 'SPACE') {
+          return text + ' ';
+        } else if (/^[0-9]$/.test(key)) {
+          // Numbers should be added as-is
+          return text + key;
+        } else {
+          // Regular characters (already transformed by keyboard component if needed)
+          return text + key;
+        }
+      });
+    },
+    [text, handleSubmit, setText]
   );
 
   // Loading state for chat ID resolution
@@ -108,18 +137,22 @@ export default function ChatPage({ params }: ChatPageProps) {
         </div>
 
         {/* Sticky Suggestions + Editor */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 md:left-(--sidebar-width) z-10">
-          <div className="max-w-4xl mx-auto flex flex-col gap-3">
-            <Suggestions />
-            <Editor
-              placeholder="Type a message..."
-              onSubmit={handleSubmit}
-              disabled={status !== 'idle'}
-            >
-              <SpeechSettingsModal />
-            </Editor>
+        <KeyboardProvider>
+          <div className="fixed bottom-0 left-0 right-0 p-4 md:left-(--sidebar-width) z-10">
+            <div className="max-w-4xl mx-auto flex flex-col gap-3">
+              <Suggestions />
+              <Editor
+                placeholder="Type a message..."
+                onSubmit={handleSubmit}
+                disabled={status !== 'idle'}
+              >
+                <KeyboardToggleButton />
+                <SpeechSettingsModal />
+              </Editor>
+              <KeyboardRenderer onKeyPress={handleKeyPress} />
+            </div>
           </div>
-        </div>
+        </KeyboardProvider>
       </SidebarLayout.Content>
     </SidebarLayout>
   );
