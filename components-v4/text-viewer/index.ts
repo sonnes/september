@@ -2,16 +2,12 @@ export {
   TextViewer,
   TextViewerWords,
   TextViewerWord,
-  TextViewerProgressBar,
-  TextViewerPlayButton,
   useTextViewerContext,
 } from './text-viewer';
 export type {
   TextViewerProps,
   TextViewerWordsProps,
   TextViewerWordProps,
-  TextViewerProgressBarProps,
-  TextViewerPlayButtonProps,
   WordStatus,
 } from './text-viewer';
 
