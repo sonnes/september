@@ -20,7 +20,9 @@
       "Bash(npx tsc:*)",
       "Bash(pnpm run lint:*)",
       "Bash(pnpm exec tsc:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(pnpm dlx:*)",
+      "Bash(pnpm run build:*)"
     ],
     "defaultMode": "acceptEdits"
   },

@@ -1,54 +1,92 @@
-import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
+'use client';
 
-import { DocumentsProvider } from '@/components/context/documents-provider';
-import Layout from '@/components/layout';
-import { DesktopNav, MobileNav } from '@/components/nav';
-import DocumentsSidebar from '@/components/write/sidebar';
+import { useState } from 'react';
 
-import { AccountProvider } from '@/services/account/context';
-import AccountsService from '@/services/account/supabase';
+import { useRouter } from 'next/navigation';
 
-import { createClient } from '@/supabase/server';
+import { PlusIcon } from '@heroicons/react/24/outline';
 
-export const metadata: Metadata = {
-  title: 'Write',
-  description:
-    "Create and edit documents with September's writing assistant and text-to-speech features.",
-};
+import { useDocumentsContext } from '@/components/context/documents-provider';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from '@/components/ui/breadcrumb';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
-export default async function WritePage() {
-  const supabase = await createClient();
-  const accountsService = new AccountsService(supabase);
+import { useToast } from '@/hooks/use-toast';
 
-  const [user, account] = await accountsService.getCurrentAccount();
+import SidebarLayout from '@/components-v4/sidebar/layout';
+import { DocumentList } from '@/components-v4/write/document-list';
 
-  if (account && !account.is_approved) {
-    redirect('/settings');
-  }
+import { DocumentListSkeleton } from './loading-skeleton';
 
-  const provider = user ? 'supabase' : 'triplit';
+export default function WritePage() {
+  const router = useRouter();
+  const { showError } = useToast();
+  const { documents, fetching, putDocument } = useDocumentsContext();
+  const [searchValue, setSearchValue] = useState('');
+
+  const handleNewDocument = async () => {
+    try {
+      const newDoc = await putDocument({ name: '', content: '' });
+      router.push(`/write/${newDoc.id}`);
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Failed to create document', 'Error');
+    }
+  };
+
+  // Filter documents based on search
+  const filteredDocuments = documents.filter(doc =>
+    doc.name?.toLowerCase().includes(searchValue.toLowerCase())
+  );
 
   return (
-    <AccountProvider provider={provider} user={user!} account={account!}>
-      <DocumentsProvider>
-        <Layout>
-          <Layout.Header>
-            <DesktopNav user={user} current="/write" />
-            <MobileNav title="Write" user={user} current="/write" />
-            <div className="hidden md:flex items-center justify-between mb-4">
-              <h1 className="text-2xl font-bold tracking-tight text-white">Write</h1>
-            </div>
-          </Layout.Header>
+    <SidebarLayout>
+      <SidebarLayout.Header>
+        <SidebarTrigger className="-ml-1" />
+        <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbPage>Write</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </SidebarLayout.Header>
+      <SidebarLayout.Content>
+        <div className="flex flex-1 flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold tracking-tight">Write</h1>
+            <Button
+              onClick={handleNewDocument}
+              variant="default"
+              size="default"
+              disabled={fetching}
+            >
+              <PlusIcon className="h-4 w-4" />
+              New document
+            </Button>
+          </div>
 
-          <Layout.Content>
-            <div className="flex flex-1 h-[calc(100vh-270px)] md:h-[calc(100vh-304px)]">
-              <DocumentsSidebar />
-              <div className="flex-1 max-w-4xl mx-auto p-6 flex flex-col min-h-0"></div>
+          {/* Loading State */}
+          {fetching && <DocumentListSkeleton />}
+
+          {/* Content State (empty handled by DocumentList component) */}
+          {!fetching && (
+            <div className="max-w-3xl mx-auto w-full">
+              <DocumentList
+                documents={filteredDocuments}
+                searchValue={searchValue}
+                onSearchChange={setSearchValue}
+              />
             </div>
-          </Layout.Content>
-        </Layout>
-      </DocumentsProvider>
-    </AccountProvider>
+          )}
+        </div>
+      </SidebarLayout.Content>
+    </SidebarLayout>
   );
 }
