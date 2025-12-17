@@ -1,16 +1,9 @@
 import type { Metadata } from 'next';
 
-import Layout from '@/components/layout';
-import { DesktopNav, MobileNav } from '@/components/nav';
-import { OnboardingProvider } from '@/components/onboarding/context';
-import { Onboarding } from '@/components/onboarding/onboarding';
-
-import { AccountProvider } from '@/services/account/context';
-import AccountsService from '@/services/account/supabase';
-import { AISettingsProvider } from '@/services/ai/context';
-import { SpeechProvider } from '@/services/speech/context';
-
-import { createClient } from '@/supabase/server';
+import { OnboardingProvider } from '@/components-v4/onboarding/context';
+import { Onboarding } from '@/components-v4/onboarding/onboarding';
+import SidebarLayout from '@/components-v4/sidebar/layout';
+import { SpeechProvider } from '@/components-v4/speech';
 
 export const metadata: Metadata = {
   title: 'Onboarding',
@@ -18,33 +11,19 @@ export const metadata: Metadata = {
 };
 
 export default async function OnboardingPage() {
-  const supabase = await createClient();
-  const accountsService = new AccountsService(supabase);
-  const [user, account] = await accountsService.getCurrentAccount();
-
-  const provider = user ? 'supabase' : 'triplit';
-
   return (
-    <AccountProvider provider={provider} user={user!} account={account!}>
-      <AISettingsProvider>
-        <SpeechProvider>
-          <OnboardingProvider>
-            <Layout>
-              <Layout.Header>
-                <DesktopNav user={user} current="/onboarding" />
-                <MobileNav title="Onboarding" user={user} current="/onboarding" />
-                <div className="hidden md:flex items-center justify-between mb-4">
-                  <h1 className="text-2xl font-bold tracking-tight text-white">Get Started</h1>
-                </div>
-              </Layout.Header>
+    <SpeechProvider>
+      <OnboardingProvider>
+        <SidebarLayout>
+          <SidebarLayout.Header>
+            <h1 className="text-2xl font-bold tracking-tight">Get Started</h1>
+          </SidebarLayout.Header>
 
-              <Layout.Content>
-                <Onboarding />
-              </Layout.Content>
-            </Layout>
-          </OnboardingProvider>
-        </SpeechProvider>
-      </AISettingsProvider>
-    </AccountProvider>
+          <SidebarLayout.Content>
+            <Onboarding />
+          </SidebarLayout.Content>
+        </SidebarLayout>
+      </OnboardingProvider>
+    </SpeechProvider>
   );
 }

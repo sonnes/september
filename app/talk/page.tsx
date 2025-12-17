@@ -1,124 +1,107 @@
-import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
+'use client';
 
-import AudioPlayer from '@/components/audio-player';
-import { KeyboardProvider } from '@/components/context/keyboard-provider';
-import { TextProvider } from '@/components/context/text-provider';
-import Autocomplete from '@/components/editor/autocomplete';
-import Editor from '@/components/editor/simple';
-import Suggestions from '@/components/editor/suggestions';
-import { KeyboardRenderer } from '@/components/keyboards';
-import Layout from '@/components/layout';
-import { DesktopNav, MobileNav } from '@/components/nav';
-import { MessageList, TalkActions } from '@/components/talk';
+import { useCallback } from 'react';
 
-import { AudioPlayerProvider } from '@/hooks/use-audio-player';
+import { Separator } from '@/components/ui/separator';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import { AccountProvider } from '@/services/account/context';
-import AccountsService from '@/services/account/supabase';
-import { AISettingsProvider } from '@/services/ai';
-import { AudioProvider } from '@/services/audio/context';
-import { MessagesProvider, MessagesService } from '@/services/messages';
-import { SpeechProvider } from '@/services/speech';
+import { useAccount } from '@/components-v4/account';
+import { useAudioPlayer } from '@/components-v4/audio/audio-player';
+import { useEditorContext } from '@/components-v4/editor/context';
+import Editor from '@/components-v4/editor/editor';
+import {
+  KeyboardProvider,
+  KeyboardRenderer,
+  KeyboardToggleButton,
+} from '@/components-v4/keyboards';
+import { useCreateAudioMessage } from '@/components-v4/messages/use-create-message';
+import SidebarLayout from '@/components-v4/sidebar/layout';
+import { SpeechSettingsModal } from '@/components-v4/speech';
+import { Suggestions } from '@/components-v4/suggestions';
+import { TextViewer, TextViewerWords } from '@/components-v4/text-viewer';
 
-import { loadDemoMessages } from '@/lib/demo-loader';
-import { createClient } from '@/supabase/server';
-import { Message } from '@/types/message';
+export default function TalkPage() {
+  const { user } = useAccount();
+  const { current, enqueue } = useAudioPlayer();
+  const { text, setText } = useEditorContext();
+  const { status, createAudioMessage } = useCreateAudioMessage();
 
-export const metadata: Metadata = {
-  title: 'Talk',
-  description: 'Use voice-to-text and text-to-speech to communicate with others using September.',
-};
+  const handleSubmit = useCallback(
+    async (text: string) => {
+      if (!user || !text.trim()) return;
 
-interface TalkPageProps {
-  searchParams: Promise<{ demo?: string }>;
-}
+      const { audio } = await createAudioMessage({
+        text: text.trim(),
+        type: 'user',
+        user_id: user.id,
+      });
 
-export default async function TalkPage({ searchParams }: TalkPageProps) {
-  const { demo } = await searchParams;
+      if (audio) {
+        enqueue(audio);
+      }
 
-  const supabase = await createClient();
-  const accountsService = new AccountsService(supabase);
-  const messagesService = new MessagesService(supabase);
+      setText('');
+    },
+    [user, createAudioMessage]
+  );
 
-  const [user, account] = await accountsService.getCurrentAccount();
+  const handleKeyPress = useCallback(
+    (key: string) => {
+      if (key === 'ENTER') {
+        handleSubmit(text);
+        return;
+      }
 
-  if (account && !account.is_approved) {
-    redirect('/app/onboarding');
-  }
-
-  const provider = user ? 'supabase' : 'triplit';
-
-  // Load demo messages if demo parameter is present, otherwise load user messages
-  let messages: Message[] = [];
-  if (demo !== undefined) {
-    // Load demo messages - if demo has a value, use it as scenario ID
-    messages = await loadDemoMessages(demo || undefined);
-  } else {
-    messages = user ? await messagesService.getMessages(user.id) : [];
-  }
+      setText(text => {
+        if (key === 'BACKSPACE') {
+          return text.slice(0, -1);
+        } else if (key === 'SPACE') {
+          return text + ' ';
+        } else if (/^[0-9]$/.test(key)) {
+          // Numbers should be added as-is
+          return text + key;
+        } else {
+          // Regular characters (already transformed by keyboard component if needed)
+          return text + key;
+        }
+      });
+    },
+    [text, handleSubmit, setText]
+  );
 
   return (
-    <AccountProvider provider={provider} user={user!} account={account!}>
-      <AISettingsProvider>
-        <MessagesProvider provider={provider} messages={messages!}>
-          <AudioProvider provider={provider}>
-            <SpeechProvider>
-              <AudioPlayerProvider>
-                <Layout>
-                  <Layout.Header>
-                    <DesktopNav user={user} current="/talk" />
-                    <MobileNav title="Talk" user={user} current="/talk">
-                      <TalkActions />
-                    </MobileNav>
-                    <div className="hidden md:flex items-center justify-between mb-4">
-                      <h1 className="text-2xl font-bold tracking-tight text-white">Talk</h1>
-                      <TalkActions />
-                    </div>
-                  </Layout.Header>
+    <SidebarLayout>
+      <SidebarLayout.Header>
+        <SidebarTrigger className="-ml-1" />
+        <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+      </SidebarLayout.Header>
+      <SidebarLayout.Content>
+        <div className="pb-20">
+          {current?.alignment && (
+            <TextViewer alignment={current.alignment}>
+              <TextViewerWords className="text-foreground wrap-break-word" />
+            </TextViewer>
+          )}
+        </div>
 
-                  <Layout.Content>
-                    <TextProvider>
-                      <KeyboardProvider>
-                        <div className="flex h-[calc(100vh-100px)] md:h-[calc(100vh-196px)]">
-                          {/* Left column - Message list */}
-                          <div className="hidden md:block w-1/3  px-2 overflow-y-auto border-r border-zinc-200">
-                            <div className="max-w-full">
-                              <MessageList />
-                            </div>
-                          </div>
-
-                          {/* Main content area */}
-                          <div className="flex-1 flex flex-col px-2 md:px-4 min-w-0 overflow-hidden">
-                            <div className="flex items-center gap-4 border border-zinc-200 rounded-md">
-                              <div className="flex-1 min-w-0">
-                                <AudioPlayer />
-                              </div>
-                            </div>
-
-                            {/* Spacer to push editor to bottom */}
-                            <div className="flex-1"></div>
-
-                            {/* Editor at bottom */}
-                            <div className="flex flex-col py-2">
-                              <Suggestions />
-
-                              <Autocomplete />
-                              <Editor />
-
-                              <KeyboardRenderer />
-                            </div>
-                          </div>
-                        </div>
-                      </KeyboardProvider>
-                    </TextProvider>
-                  </Layout.Content>
-                </Layout>
-              </AudioPlayerProvider>
-            </SpeechProvider>
-          </AudioProvider>
-        </MessagesProvider>
-      </AISettingsProvider>
-    </AccountProvider>
+        {/* Sticky Suggestions + Editor */}
+        <KeyboardProvider>
+          <div className="fixed bottom-0 left-0 right-0 p-4 md:left-(--sidebar-width) z-10">
+            <div className="max-w-4xl mx-auto flex flex-col gap-3">
+              <Suggestions />
+              <Editor
+                placeholder="Type a message..."
+                onSubmit={handleSubmit}
+                disabled={status !== 'idle'}
+              >
+                <KeyboardToggleButton />
+                <SpeechSettingsModal />
+              </Editor>
+              <KeyboardRenderer onKeyPress={handleKeyPress} />
+            </div>
+          </div>
+        </KeyboardProvider>
+      </SidebarLayout.Content>
+    </SidebarLayout>
   );
 }

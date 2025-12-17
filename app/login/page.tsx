@@ -1,7 +1,5 @@
 import { Suspense } from 'react';
 
-import Layout from '@/components/layout';
-
 import LoginForm from './form';
 
 export const metadata = {
@@ -11,15 +9,12 @@ export const metadata = {
 
 export default function LoginPage() {
   return (
-    <Layout>
-      <Layout.Header>&nbsp;</Layout.Header>
-      <Layout.Content>
-        <div className="bg-zinc-50">
-          <Suspense fallback={<div>Loading...</div>}>
-            <LoginForm />
-          </Suspense>
-        </div>
-      </Layout.Content>
-    </Layout>
+    <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
+      <div className="w-full max-w-sm">
+        <Suspense fallback={<div>Loading...</div>}>
+          <LoginForm />
+        </Suspense>
+      </div>
+    </div>
   );
 }

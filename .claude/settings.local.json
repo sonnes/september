@@ -14,7 +14,15 @@
       "Bash(du:*)",
       "WebFetch(domain:ai.google.dev)",
       "Bash(node:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(mv:*)",
+      "Bash(npx tsc:*)",
+      "Bash(pnpm run lint:*)",
+      "Bash(pnpm exec tsc:*)",
+      "Bash(git mv:*)",
+      "Bash(pnpm dlx:*)",
+      "Bash(pnpm run build:*)"
     ],
     "defaultMode": "acceptEdits"
   },

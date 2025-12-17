@@ -150,7 +150,7 @@ Guidelines:
 
 Return the transcription as plain text.`;
 
-const CORPUS_GENERATION_PROMPT = `You need to generate a corpus of synthetic data based on the persona. 
+const CORPUS_GENERATION_PROMPT = `You need to generate a corpus of synthetic data up to 500 sentences based on the persona. 
 The corpus should have wide variety of spoken phrases, sentences, expressions, etc. 
 Include emojis, slang, and other jargon.
 Include mix of formal and informal language.

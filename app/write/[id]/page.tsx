@@ -1,57 +1,99 @@
-import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
+'use client';
 
-import { DocumentsProvider } from '@/components/context/documents-provider';
-import Layout from '@/components/layout';
-import { DesktopNav, MobileNav } from '@/components/nav';
-import Document from '@/components/write/document';
-import DocumentsSidebar from '@/components/write/sidebar';
+import React, { use } from 'react';
 
-import { AccountProvider } from '@/services/account/context';
-import AccountsService from '@/services/account/supabase';
+import { useRouter } from 'next/navigation';
 
-import { createClient } from '@/supabase/server';
+import { ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
-export const metadata: Metadata = {
-  title: 'Write',
-  description:
-    "Create and edit documents with September's writing assistant and text-to-speech features.",
+import { useDocumentsContext } from '@/components/context/documents-provider';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { SidebarTrigger } from '@/components/ui/sidebar';
+
+import { useAccount } from '@/components-v4/account';
+import SidebarLayout from '@/components-v4/sidebar/layout';
+import Document from '@/components-v4/write/document';
+import { EditableDocumentTitle } from '@/components-v4/write/editable-document-title';
+
+import { DocumentEditorSkeleton } from '../loading-skeleton';
+
+type DocumentPageProps = {
+  params: Promise<{ id: string }>;
 };
 
-export default async function DocumentPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default function DocumentPage({ params }: DocumentPageProps) {
+  const { id } = use(params);
+  const router = useRouter();
+  const { user } = useAccount();
+  const { documents, fetching, current, setCurrentId } = useDocumentsContext();
 
-  const supabase = await createClient();
-  const accountsService = new AccountsService(supabase);
+  // Set the current document ID when the page loads
+  React.useEffect(() => {
+    if (id) {
+      setCurrentId(id);
+    }
+  }, [id, setCurrentId]);
 
-  const [user, account] = await accountsService.getCurrentAccount();
-
-  if (!user || !account) {
-    redirect('/login');
-  }
+  // Loading state for document ID resolution
+  const isInitializing = !id || fetching;
 
   return (
-    <AccountProvider provider="supabase" user={user} account={account}>
-      <DocumentsProvider initialId={id}>
-        <Layout>
-          <Layout.Header>
-            <DesktopNav user={user} current="/write" />
-            <MobileNav title="Write" user={user} current="/write" />
-            <div className="hidden md:flex items-center justify-between mb-4">
-              <h1 className="text-2xl font-bold tracking-tight text-white">Write</h1>
-            </div>
-          </Layout.Header>
+    <SidebarLayout>
+      <SidebarLayout.Header>
+        <SidebarTrigger className="-ml-1" />
+        <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+        {current && (
+          <EditableDocumentTitle
+            documentId={current.id}
+            name={current.name}
+            className="text-sm font-medium truncate"
+          />
+        )}
+      </SidebarLayout.Header>
+      <SidebarLayout.Content>
+        <div className="pb-20">
+          {/* Loading State */}
+          {(isInitializing || fetching) && <DocumentEditorSkeleton />}
 
-          <Layout.Content>
-            <div className="flex flex-1 h-[calc(100vh-270px)] md:h-[calc(100vh-304px)]">
-              <DocumentsSidebar />
-              <div className="flex-1 max-w-4xl mx-auto p-6 flex flex-col min-h-0">
-                <Document className="flex-1 min-h-0" />
+          {/* Error State */}
+          {!isInitializing && !fetching && !current && (
+            <div className="flex flex-col items-center justify-center h-full p-8">
+              <div className="rounded-lg border border-red-200 bg-red-50 p-6 max-w-md w-full">
+                <div className="flex flex-col items-center text-center gap-4">
+                  <div className="rounded-full bg-red-100 p-3">
+                    <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-red-800">
+                      Failed to load document
+                    </h3>
+                    <p className="mt-1 text-sm text-red-700">
+                      The document you're looking for doesn't exist or couldn't be loaded.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push('/write')}
+                    className="border-red-300 text-red-700 hover:bg-red-100"
+                  >
+                    <ArrowPathIcon className="h-4 w-4 mr-2" />
+                    Back to documents
+                  </Button>
+                </div>
               </div>
             </div>
-          </Layout.Content>
-        </Layout>
-      </DocumentsProvider>
-    </AccountProvider>
+          )}
+
+          {/* Document Editor */}
+          {!isInitializing && !fetching && current && (
+            <div className="max-w-4xl mx-auto w-full">
+              <Document className="flex-1 min-h-0" />
+            </div>
+          )}
+        </div>
+      </SidebarLayout.Content>
+    </SidebarLayout>
   );
 }

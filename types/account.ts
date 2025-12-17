@@ -1,4 +1,4 @@
-import { ProviderConfig, SpeechConfig, SuggestionsConfig, TranscriptionConfig } from './ai-config';
+import { Providers, SpeechConfig, SuggestionsConfig, TranscriptionConfig } from './ai-config';
 import { Voice } from './voice';
 
 export interface Account {
@@ -20,7 +20,7 @@ export interface Account {
   ai_speech?: SpeechConfig;
 
   // Provider Config (Supabase only)
-  ai_providers?: ProviderConfig;
+  ai_providers?: Providers;
 
   // DEPRECATED: Legacy fields (keep for backward compatibility)
   speech_provider?: string;

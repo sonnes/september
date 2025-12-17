@@ -11,7 +11,6 @@ const defaultTabs = [
   { name: 'Settings', href: '/settings' },
   { name: 'AI', href: '/settings/ai' },
   { name: 'Speech', href: '/settings/speech' },
-  { name: 'Voices', href: '/settings/voices' },
 ];
 
 interface SettingsTabsProps {

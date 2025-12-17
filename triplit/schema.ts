@@ -33,12 +33,22 @@ export const schema = S.Collections({
       updated_at: S.Date({ default: S.Default.now() }),
     }),
   },
+  chats: {
+    schema: S.Schema({
+      id: S.Id({ format: 'uuidv4' }),
+      user_id: S.String(),
+      title: S.Optional(S.String()),
+      created_at: S.Date({ default: S.Default.now() }),
+      updated_at: S.Date({ default: S.Default.now() }),
+    }),
+  },
   messages: {
     schema: S.Schema({
       id: S.Id({ format: 'uuidv4' }),
       text: S.String(),
       type: S.String(),
       user_id: S.String(),
+      chat_id: S.Optional(S.String()),
       audio_path: S.Optional(S.String()),
       created_at: S.Date({ default: S.Default.now() }),
     }),

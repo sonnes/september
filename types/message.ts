@@ -12,6 +12,7 @@ export interface Message {
 
 export interface CreateMessageData {
   id?: string;
+  chat_id?: string;
   text: string;
   type: string;
   user_id: string;
