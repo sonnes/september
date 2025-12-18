@@ -55,3 +55,4 @@ export function getBottomSpecialKeys() {
 
   return [...outerRing, ...middleRing, ...innerRing];
 }
+

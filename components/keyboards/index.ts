@@ -1,4 +1,7 @@
+export { KeyboardProvider, useKeyboardContext, type KeyboardType } from './context';
+export { KeyboardRenderer } from './keyboard-renderer';
+export { KeyboardToggleButton } from './toggle-button';
 export { QwertyKeyboard } from './qwerty';
 export { CircularKeyboard } from './circular';
-export { KeyboardSelector } from './keyboard-selector';
-export { KeyboardRenderer } from './keyboard-renderer';
+export * from './types';
+export * from './keys';

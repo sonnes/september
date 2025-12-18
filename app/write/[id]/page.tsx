@@ -11,10 +11,10 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import { useAccount } from '@/components-v4/account';
-import SidebarLayout from '@/components-v4/sidebar/layout';
-import Document from '@/components-v4/write/document';
-import { EditableDocumentTitle } from '@/components-v4/write/editable-document-title';
+import { useAccount } from '@/components/account';
+import SidebarLayout from '@/components/sidebar/layout';
+import Document from '@/components/write/document';
+import { EditableDocumentTitle } from '@/components/write/editable-document-title';
 
 import { DocumentEditorSkeleton } from '../loading-skeleton';
 

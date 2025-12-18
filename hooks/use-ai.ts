@@ -7,7 +7,7 @@ import { generateText } from 'ai';
 
 import { useToast } from '@/hooks/use-toast';
 
-import { useAISettings } from '@/components-v4/settings';
+import { useAISettings } from '@/components/settings';
 
 const CORPUS_GENERATION_PROMPT = `You need to generate a corpus of synthetic data up to 5000 characters based on the persona. 
 The corpus should have wide variety of spoken phrases, sentences, expressions, etc. 

@@ -2,16 +2,14 @@
 
 import React from 'react';
 
-import { useTextContext } from '@/components/context/text-provider';
-
 import { cn } from '@/lib/utils';
 
 interface QwertyKeyboardProps {
   className?: string;
+  onKeyPress: (key: string) => void;
 }
 
-export function QwertyKeyboard({ className = '' }: QwertyKeyboardProps) {
-  const { text, setText } = useTextContext();
+export function QwertyKeyboard({ className = '', onKeyPress }: QwertyKeyboardProps) {
   const [isShiftPressed, setIsShiftPressed] = React.useState(false);
 
   const handleKeyPress = (key: string) => {
@@ -19,23 +17,15 @@ export function QwertyKeyboard({ className = '' }: QwertyKeyboardProps) {
       setIsShiftPressed(false);
     }
 
-    if (key === 'BACKSPACE') {
-      setText(text.slice(0, -1));
-    } else if (key === 'ENTER') {
-      setText(text + '\n');
-    } else if (key === 'SPACE') {
-      setText(text + ' ');
-    } else if (key === 'SHIFT') {
+    if (key === 'SHIFT') {
       setIsShiftPressed(!isShiftPressed);
-    } else if (/^[0-9]$/.test(key)) {
-      // Numbers should be added as-is
-      setText(text + key);
+    } else if (key === 'BACKSPACE' || key === 'ENTER' || key === 'SPACE' || /^[0-9]$/.test(key)) {
+      // Special keys and numbers pass through as-is
+      onKeyPress(key);
     } else {
-      if (isShiftPressed) {
-        setText(text + key.toUpperCase());
-      } else {
-        setText(text + key.toLowerCase());
-      }
+      // Letter keys - transform based on SHIFT state
+      const transformedKey = isShiftPressed ? key.toUpperCase() : key.toLowerCase();
+      onKeyPress(transformedKey);
     }
   };
 

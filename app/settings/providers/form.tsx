@@ -1,9 +1,9 @@
 'use client';
 
-import { Button } from '@/components/uix/button';
+import { Button } from '@/components/ui/button';
 
-import { useAccount } from '@/components-v4/account';
-import { AIProvidersForm, ProviderSection } from '@/components-v4/settings';
+import { useAccount } from '@/components/account';
+import { AIProvidersForm, ProviderSection } from '@/components/settings';
 import type { Providers } from '@/types/ai-config';
 
 export default function AISettingsForm() {

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
-import { EditorProvider } from '@/components-v4/editor/context';
-import { SpeechProvider } from '@/components-v4/speech/context';
+import { EditorProvider } from '@/components/editor/context';
+import { SpeechProvider } from '@/components/speech/context';
 
 export const metadata: Metadata = {
   title: 'Chats',

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import moment from 'moment';
 import Webcam from 'react-webcam';
 
-import AnimatedText from '@/components/uix/animated-text';
+import AnimatedText from '@/components/ui/animated-text';
 
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useToast } from '@/hooks/use-toast';

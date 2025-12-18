@@ -9,22 +9,22 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import { useAccount } from '@/components-v4/account';
-import { useAudioPlayer } from '@/components-v4/audio/audio-player';
-import { EditableChatTitle } from '@/components-v4/chat/editable-chat-title';
-import { EditorProvider, useEditorContext } from '@/components-v4/editor/context';
-import Editor from '@/components-v4/editor/editor';
+import { useAccount } from '@/components/account';
+import { useAudioPlayer } from '@/components/audio/audio-player';
+import { EditableChatTitle } from '@/components/chat/editable-chat-title';
+import { EditorProvider, useEditorContext } from '@/components/editor/context';
+import Editor from '@/components/editor/editor';
 import {
   KeyboardProvider,
   KeyboardRenderer,
   KeyboardToggleButton,
-} from '@/components-v4/keyboards';
-import { MessageList } from '@/components-v4/messages';
-import { useCreateAudioMessage } from '@/components-v4/messages/use-create-message';
-import useMessages from '@/components-v4/messages/use-messages';
-import SidebarLayout from '@/components-v4/sidebar/layout';
-import { SpeechSettingsModal } from '@/components-v4/speech';
-import { Suggestions } from '@/components-v4/suggestions';
+} from '@/components/keyboards';
+import { MessageList } from '@/components/messages';
+import { useCreateAudioMessage } from '@/components/messages/use-create-message';
+import useMessages from '@/components/messages/use-messages';
+import SidebarLayout from '@/components/sidebar/layout';
+import { SpeechSettingsModal } from '@/components/speech';
+import { Suggestions } from '@/components/suggestions';
 
 import { ChatMessagesSkeleton } from '../loading-skeleton';
 

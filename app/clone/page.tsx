@@ -3,8 +3,8 @@
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import SidebarLayout from '@/components-v4/sidebar/layout';
-import { VoiceCloneForm } from '@/components-v4/voices/clone';
+import SidebarLayout from '@/components/sidebar/layout';
+import { VoiceCloneForm } from '@/components/voices/clone';
 
 export default function ClonePage() {
   return (

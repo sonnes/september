@@ -1,8 +1,15 @@
 import type { Metadata } from 'next';
 
-import Layout from '@/components/layout';
-import { DesktopNav, MobileNav } from '@/components/nav';
-import Alert from '@/components/uix/alert';
+import SidebarLayout from '@/components/sidebar/layout';
+import Alert from '@/components/ui/alert';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from '@/components/ui/breadcrumb';
+import { Separator } from '@/components/ui/separator';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
 import { AccountProvider, AccountService } from '@/services/account';
 import { SpeechProvider } from '@/services/speech';
@@ -25,15 +32,19 @@ export default async function SettingsPage() {
 
   return (
     <AccountProvider provider={provider} user={user!} account={account!}>
-      <Layout>
-        <Layout.Header>
-          <DesktopNav user={user} current="/settings" />
-          <MobileNav title="Settings" user={user} current="/settings"></MobileNav>
-          <div className="hidden md:flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold tracking-tight text-white">Settings</h1>
-          </div>
-        </Layout.Header>
-        <Layout.Content>
+      <SidebarLayout>
+        <SidebarLayout.Header>
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbPage>Settings</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </SidebarLayout.Header>
+        <SidebarLayout.Content>
           {provider === 'supabase' && account && !account.is_approved && (
             <Alert
               type="warning"
@@ -44,8 +55,8 @@ export default async function SettingsPage() {
           <SpeechProvider>
             <SettingsForm />
           </SpeechProvider>
-        </Layout.Content>
-      </Layout>
+        </SidebarLayout.Content>
+      </SidebarLayout>
     </AccountProvider>
   );
 }

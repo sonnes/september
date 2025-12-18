@@ -2,8 +2,8 @@
 
 import { useCallback } from 'react';
 
-import { EditorProvider, useEditorContext } from '@/components-v4/editor/context';
-import { KeyboardProvider, KeyboardRenderer } from '@/components-v4/keyboards';
+import { EditorProvider, useEditorContext } from '@/components/editor/context';
+import { KeyboardProvider, KeyboardRenderer } from '@/components/keyboards';
 
 function TextDisplay() {
   const { text } = useEditorContext();

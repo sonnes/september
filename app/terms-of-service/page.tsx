@@ -1,12 +1,19 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import Layout from '@/components/layout';
-import { DesktopNav, MobileNav } from '@/components/nav';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from '@/components/ui/breadcrumb';
+import { Separator } from '@/components/ui/separator';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
 import { AccountProvider } from '@/services/account/context';
 import AccountsService from '@/services/account/supabase';
 
+import SidebarLayout from '@/components/sidebar/layout';
 import { createClient } from '@/supabase/server';
 
 export const metadata: Metadata = {
@@ -23,32 +30,21 @@ export default async function TermsOfService() {
 
   return (
     <AccountProvider provider={provider} user={user!} account={account!}>
-      <Layout>
-        <Layout.Header>
-          <DesktopNav user={user} current="/terms-of-service" />
-          <MobileNav title="Terms of Service" user={user} current="/terms-of-service">
-            <Link
-              href="/"
-              className="p-2 text-white rounded-full transition-colors cursor-pointer hover:bg-white/10"
-              aria-label="Back to home"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </Link>
-          </MobileNav>
-          <div className="hidden md:flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold tracking-tight text-white">Terms of Service</h1>
-          </div>
-        </Layout.Header>
+      <SidebarLayout>
+        <SidebarLayout.Header>
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbPage>Terms of Service</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </SidebarLayout.Header>
 
-        <Layout.Content>
-          <div className="max-w-4xl mx-auto">
+        <SidebarLayout.Content>
+          <div className="max-w-4xl mx-auto p-6">
             {/* Service Overview */}
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 mb-8">
               <h2 className="text-xl font-semibold text-amber-900 mb-4">
@@ -305,8 +301,8 @@ export default async function TermsOfService() {
               </p>
             </div>
           </div>
-        </Layout.Content>
-      </Layout>
+        </SidebarLayout.Content>
+      </SidebarLayout>
     </AccountProvider>
   );
 }

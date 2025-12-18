@@ -10,12 +10,12 @@ import { Github } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-import { useAccount } from '@/components-v4/account';
-import { useAudioPlayer } from '@/components-v4/audio/audio-player';
-import { EditorProvider, useEditorContext } from '@/components-v4/editor/context';
-import Editor from '@/components-v4/editor/editor';
-import { KeyboardProvider } from '@/components-v4/keyboards';
-import { useCreateAudioMessage } from '@/components-v4/messages/use-create-message';
+import { useAccount } from '@/components/account';
+import { useAudioPlayer } from '@/components/audio/audio-player';
+import { EditorProvider, useEditorContext } from '@/components/editor/context';
+import Editor from '@/components/editor/editor';
+import { KeyboardProvider } from '@/components/keyboards';
+import { useCreateAudioMessage } from '@/components/messages/use-create-message';
 
 function HeroEditor() {
   const { user } = useAccount();

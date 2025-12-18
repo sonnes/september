@@ -11,8 +11,8 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import SidebarLayout from '@/components-v4/sidebar/layout';
-import { SpeechProvider } from '@/components-v4/speech';
+import SidebarLayout from '@/components/sidebar/layout';
+import { SpeechProvider } from '@/components/speech';
 
 import VoicesSettingsForm from './form';
 

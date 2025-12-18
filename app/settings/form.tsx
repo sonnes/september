@@ -5,13 +5,14 @@ import { useEffect, useMemo } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Control, useForm } from 'react-hook-form';
 
-import { AccountFormData, AccountSchema } from '@/components/settings';
-import { Button } from '@/components/uix/button';
-import { FormCheckbox, FormInput } from '@/components/uix/form';
+import { Button } from '@/components/ui/button';
+import { FormCheckbox, FormField } from '@/components/ui/form';
 
 import { useToast } from '@/hooks/use-toast';
 
 import { useAccount } from '@/services/account';
+
+import { AccountFormData, AccountSchema } from '@/components/settings';
 
 // Personal Information Section
 function PersonalInfoSection({ control }: { control: Control<AccountFormData> }) {
@@ -28,19 +29,18 @@ function PersonalInfoSection({ control }: { control: Control<AccountFormData> })
         <div className="px-4">
           <div className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
             <div className="sm:col-span-3">
-              <FormInput
+              <FormField
                 name="name"
                 control={control}
                 label="Full Name"
                 placeholder="Enter your name"
-                required
               />
             </div>
             <div className="sm:col-span-3">
-              <FormInput name="city" control={control} label="City" placeholder="Enter your city" />
+              <FormField name="city" control={control} label="City" placeholder="Enter your city" />
             </div>
             <div className="sm:col-span-3">
-              <FormInput
+              <FormField
                 name="country"
                 control={control}
                 label="Country"

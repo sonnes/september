@@ -4,8 +4,6 @@ import React, { useEffect, useRef } from 'react';
 
 import { Arc, Group, Layer, Rect, Stage, Text } from 'react-konva';
 
-import { useTextContext } from '@/components/context/text-provider';
-
 import {
   CONTROL_BUTTONS,
   getBottomCircleKeys,
@@ -17,6 +15,7 @@ import { CircleKey } from './types';
 
 interface CircularKeyboardProps {
   className?: string;
+  onKeyPress: (key: string) => void;
 }
 
 const BAR_HEIGHT = 45;
@@ -36,8 +35,7 @@ const SHIFT_NUMBER_MAP: { [key: string]: string } = {
   '9': '(',
 };
 
-export function CircularKeyboard({ className = '' }: CircularKeyboardProps) {
-  const { text, setText } = useTextContext();
+export function CircularKeyboard({ className = '', onKeyPress }: CircularKeyboardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [stageSize, setStageSize] = React.useState({ width: 0, height: 0 });
   const [isShiftPressed, setIsShiftPressed] = React.useState(false);
@@ -71,31 +69,30 @@ export function CircularKeyboard({ className = '' }: CircularKeyboardProps) {
     } else if (key === 'Special') {
       setIsSpecialPressed(!isSpecialPressed);
     } else if (key === 'Space') {
-      setText(text + ' ');
+      onKeyPress('SPACE');
+      setIsShiftPressed(false);
     } else if (key === 'Backspace') {
-      setText(text.slice(0, -1));
+      onKeyPress('BACKSPACE');
+      setIsShiftPressed(false);
     } else if (key === 'Enter') {
-      setText(text + '\n');
+      onKeyPress('ENTER');
+      setIsShiftPressed(false);
     } else {
+      let transformedKey = key;
       if (isShiftPressed) {
         if (/^[a-z]$/.test(key)) {
-          setText(text + key.toUpperCase());
+          transformedKey = key.toUpperCase();
         } else if (/^[0-9]$/.test(key)) {
-          setText(text + SHIFT_NUMBER_MAP[key]);
-        } else {
-          setText(text + key);
+          transformedKey = SHIFT_NUMBER_MAP[key];
         }
         setIsShiftPressed(false);
       } else {
         // Letters should be lowercase like qwerty keyboard
         if (/^[a-z]$/.test(key)) {
-          setText(text + key.toLowerCase());
-        } else if (/^[0-9]$/.test(key)) {
-          setText(text + key);
-        } else {
-          setText(text + key);
+          transformedKey = key.toLowerCase();
         }
       }
+      onKeyPress(transformedKey);
     }
   };
 

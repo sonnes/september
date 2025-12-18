@@ -12,12 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { TextInput } from '@/components/uix/text-input';
+import { Input } from '@/components/ui/input';
 import VoicesList from '@/components/voices/voices-list';
 
-import { useAccount } from '@/components-v4/account';
-import { useAISettings } from '@/components-v4/settings';
-import { VoiceSettingsFormData, VoicesForm } from '@/components-v4/speech';
+import { useAccount } from '@/components/account';
+import { useAISettings } from '@/components/settings';
+import { VoiceSettingsFormData, VoicesForm } from '@/components/speech';
 
 export default function VoicesSettingsForm() {
   const { account } = useAccount();
@@ -141,7 +141,7 @@ export default function VoicesSettingsForm() {
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <MagnifyingGlassIcon className="h-5 w-5 text-zinc-400" />
                   </div>
-                  <TextInput
+                  <Input
                     type="text"
                     placeholder="Search voices by name, gender, accent, or description..."
                     value={searchTerm}

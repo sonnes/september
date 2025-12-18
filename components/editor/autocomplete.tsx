@@ -1,19 +1,14 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 
-import { useTextContext } from '@/components/context/text-provider';
+import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
 
-import { useAutocomplete } from '@/hooks/use-autocomplete';
+import { MATCH_PUNCTUATION } from '@/lib/utils';
 
-import { MATCH_PUNCTUATION, cn } from '@/lib/utils';
+import { useEditorContext } from './context';
+import { useAutocomplete } from './use-autocomplete';
 
-interface AutocompleteProps {
-  className?: string;
-}
-
-export default function Autocomplete({ className = '' }: AutocompleteProps) {
-  const { text, addWord, setCurrentWord } = useTextContext();
+export default function Autocomplete() {
+  const { text, addWord, setCurrentWord } = useEditorContext();
   const { isReady, getSpellings, getNextWords } = useAutocomplete();
 
   const [words, setWords] = useState<string[]>([]);
@@ -42,11 +37,6 @@ export default function Autocomplete({ className = '' }: AutocompleteProps) {
   useEffect(() => {
     if (!isReady) return;
 
-    if (text.trim().length === 0) {
-      setWords([]);
-      return;
-    }
-
     if (shouldTriggerPhrasePrediction(text)) {
       const words = getNextWords(text);
       setWords(words);
@@ -57,20 +47,10 @@ export default function Autocomplete({ className = '' }: AutocompleteProps) {
   }, [text, isReady, getSpellings, getNextWords]);
 
   return (
-    <>
-      <div className={cn('flex flex-wrap gap-2 py-2 text-md min-h-[60px] items-center', className)}>
-        {!isReady && <div className="text-zinc-400 animate-pulse">Loading dictionary...</div>}
-        {isReady && !words.length && <div className="text-zinc-400"></div>}
-        {words.map((word, index) => (
-          <button
-            key={index}
-            onClick={() => handleSuggestionClick(word)}
-            className="px-4 py-2 text-sm font-medium text-black bg-white rounded-xl border border-green-500 hover:bg-zinc-100 hover:border-green-600 transition-colors duration-200"
-          >
-            {word}
-          </button>
-        ))}
-      </div>
-    </>
+    <Suggestions>
+      {words.map(word => (
+        <Suggestion key={word} onClick={handleSuggestionClick} suggestion={word} size="default" />
+      ))}
+    </Suggestions>
   );
 }

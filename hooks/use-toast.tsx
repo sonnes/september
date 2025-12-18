@@ -1,6 +1,6 @@
 import { toast as sonnerToast } from 'sonner';
 
-import Alert from '@/components/uix/alert';
+import Alert from '@/components/ui/alert';
 
 interface ToastButton {
   label: string;

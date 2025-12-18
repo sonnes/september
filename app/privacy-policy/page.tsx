@@ -1,11 +1,18 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 
-import Layout from '@/components/layout';
-import { DesktopNav, MobileNav } from '@/components/nav';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from '@/components/ui/breadcrumb';
+import { Separator } from '@/components/ui/separator';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
 import { AccountProvider } from '@/services/account/context';
 import AccountsService from '@/services/account/supabase';
+
+import SidebarLayout from '@/components/sidebar/layout';
 
 import { createClient } from '@/supabase/server';
 
@@ -23,32 +30,21 @@ export default async function PrivacyPolicy() {
 
   return (
     <AccountProvider provider={provider} user={user!} account={account!}>
-      <Layout>
-        <Layout.Header>
-          <DesktopNav user={user} current="/privacy-policy" />
-          <MobileNav title="Privacy Policy" user={user} current="/privacy-policy">
-            <Link
-              href="/"
-              className="p-2 text-white rounded-full transition-colors cursor-pointer hover:bg-white/10"
-              aria-label="Back to home"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </Link>
-          </MobileNav>
-          <div className="hidden md:flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold tracking-tight text-white">Privacy Policy</h1>
-          </div>
-        </Layout.Header>
+      <SidebarLayout>
+        <SidebarLayout.Header>
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbPage>Privacy Policy</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </SidebarLayout.Header>
 
-        <Layout.Content>
-          <div className="max-w-4xl mx-auto">
+        <SidebarLayout.Content>
+          <div className="max-w-4xl mx-auto p-6">
             {/* Data Storage Overview */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
               <h2 className="text-xl font-semibold text-blue-900 mb-4">How Your Data is Stored</h2>
@@ -300,8 +296,8 @@ export default async function PrivacyPolicy() {
               </ul>
             </div>
           </div>
-        </Layout.Content>
-      </Layout>
+        </SidebarLayout.Content>
+      </SidebarLayout>
     </AccountProvider>
   );
 }

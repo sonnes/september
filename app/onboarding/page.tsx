@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 
-import { OnboardingProvider } from '@/components-v4/onboarding/context';
-import { Onboarding } from '@/components-v4/onboarding/onboarding';
-import SidebarLayout from '@/components-v4/sidebar/layout';
-import { SpeechProvider } from '@/components-v4/speech';
+import { OnboardingProvider } from '@/components/onboarding/context';
+import { Onboarding } from '@/components/onboarding/onboarding';
+import SidebarLayout from '@/components/sidebar/layout';
+import { SpeechProvider } from '@/components/speech';
 
 export const metadata: Metadata = {
   title: 'Onboarding',

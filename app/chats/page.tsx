@@ -18,9 +18,9 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 
 import { useToast } from '@/hooks/use-toast';
 
-import { ChatList } from '@/components-v4/chat/chat-list';
-import useChatList from '@/components-v4/chat/use-chat-list';
-import SidebarLayout from '@/components-v4/sidebar/layout';
+import { ChatList } from '@/components/chat/chat-list';
+import useChatList from '@/components/chat/use-chat-list';
+import SidebarLayout from '@/components/sidebar/layout';
 
 import { ChatListSkeleton } from './loading-skeleton';
 

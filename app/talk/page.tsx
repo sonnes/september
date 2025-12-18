@@ -5,20 +5,20 @@ import { useCallback } from 'react';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import { useAccount } from '@/components-v4/account';
-import { useAudioPlayer } from '@/components-v4/audio/audio-player';
-import { useEditorContext } from '@/components-v4/editor/context';
-import Editor from '@/components-v4/editor/editor';
+import { useAccount } from '@/components/account';
+import { useAudioPlayer } from '@/components/audio/audio-player';
+import { useEditorContext } from '@/components/editor/context';
+import Editor from '@/components/editor/editor';
 import {
   KeyboardProvider,
   KeyboardRenderer,
   KeyboardToggleButton,
-} from '@/components-v4/keyboards';
-import { useCreateAudioMessage } from '@/components-v4/messages/use-create-message';
-import SidebarLayout from '@/components-v4/sidebar/layout';
-import { SpeechSettingsModal } from '@/components-v4/speech';
-import { Suggestions } from '@/components-v4/suggestions';
-import { TextViewer, TextViewerWords } from '@/components-v4/text-viewer';
+} from '@/components/keyboards';
+import { useCreateAudioMessage } from '@/components/messages/use-create-message';
+import SidebarLayout from '@/components/sidebar/layout';
+import { SpeechSettingsModal } from '@/components/speech';
+import { Suggestions } from '@/components/suggestions';
+import { TextViewer, TextViewerWords } from '@/components/text-viewer';
 
 export default function TalkPage() {
   const { user } = useAccount();

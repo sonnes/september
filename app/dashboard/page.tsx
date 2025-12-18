@@ -9,8 +9,8 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import { useAccount } from '@/components-v4/account';
-import SidebarLayout from '@/components-v4/sidebar/layout';
+import { useAccount } from '@/components/account';
+import SidebarLayout from '@/components/sidebar/layout';
 
 import { DashboardSkeleton } from './loading-skeleton';
 

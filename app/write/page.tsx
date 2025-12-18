@@ -19,8 +19,8 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 
 import { useToast } from '@/hooks/use-toast';
 
-import SidebarLayout from '@/components-v4/sidebar/layout';
-import { DocumentList } from '@/components-v4/write/document-list';
+import SidebarLayout from '@/components/sidebar/layout';
+import { DocumentList } from '@/components/write/document-list';
 
 import { DocumentListSkeleton } from './loading-skeleton';
 

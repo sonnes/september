@@ -11,7 +11,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import SidebarLayout from '@/components-v4/sidebar/layout';
+import SidebarLayout from '@/components/sidebar/layout';
 
 import SuggestionsSettingsForm from './form';
 
