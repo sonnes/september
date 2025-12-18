@@ -15,6 +15,10 @@ import {
   Settings2,
 } from 'lucide-react';
 
+import { NavMain } from '@/components/sidebar/nav-main';
+import { NavProjects } from '@/components/sidebar/nav-projects';
+import { NavSecondary } from '@/components/sidebar/nav-secondary';
+import { NavUser } from '@/components/sidebar/nav-user';
 import {
   Sidebar,
   SidebarContent,
@@ -23,12 +27,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
 } from '@/components/ui/sidebar';
 
-import { NavMain } from '@/components/sidebar/nav-main';
-import { NavProjects } from '@/components/sidebar/nav-projects';
-import { NavSecondary } from '@/components/sidebar/nav-secondary';
-import { NavUser } from '@/components/sidebar/nav-user';
 import { User } from '@/types/user';
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar>;
@@ -100,14 +101,14 @@ export function AppSidebar(props: AppSidebarProps) {
   const data = getNavigationData();
 
   return (
-    <Sidebar variant="inset" {...props}>
+    <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <a href="/">
-                <div className="flex aspect-square size-12 items-center justify-center rounded-lg overflow-hidden">
-                  <Image src="/logo.png" alt="September" width={48} height={48} />
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg overflow-hidden">
+                  <Image src="/logo.png" alt="September" width={32} height={32} />
                 </div>
                 <div className="grid flex-1 text-left text-xl font-bold leading-tight">
                   <span className="truncate">september</span>
@@ -123,6 +124,7 @@ export function AppSidebar(props: AppSidebarProps) {
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>{/* <NavUser /> */}</SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   );
 }
