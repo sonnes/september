@@ -11,13 +11,13 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { FormCheckbox, FormSelect, FormTextarea } from '@/components/ui/form';
 
+import { useCorpus } from '@/hooks/use-ai';
 import { useToast } from '@/hooks/use-toast';
-import { useCorpus } from '@/hooks/use-ai-settings';
 
 import type { Account } from '@/types/account';
 import type { AIProvider } from '@/types/ai-config';
 
-import { getModelsForProvider } from './registry';
+import { getModelsForProvider } from '../settings/registry';
 
 /**
  * Zod schema for Suggestions Configuration

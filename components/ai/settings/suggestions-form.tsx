@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { Button } from '@/components/uix/button';
 import { FormCheckbox, FormDropdown, FormRange, FormTextarea } from '@/components/uix/form';
 
-import { useCorpus } from '@/hooks/use-ai-settings';
+import { useCorpus } from '@/hooks/use-ai';
 
 import { useAISettings } from '@/services/ai/context';
 import { getModelsForProvider } from '@/services/ai/registry';

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
 import { useAccount } from '@/components-v4/account';
-import { SuggestionsForm, SuggestionsFormData } from '@/components-v4/settings';
+import { SuggestionsForm, SuggestionsFormData } from '@/components-v4/suggestions';
 
 import { useOnboarding } from '../context';
 
