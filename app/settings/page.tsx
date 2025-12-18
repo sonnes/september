@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 
+import { TriangleAlertIcon } from 'lucide-react';
+
 import SidebarLayout from '@/components/sidebar/layout';
-import Alert from '@/components/ui/alert';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -46,11 +47,15 @@ export default async function SettingsPage() {
         </SidebarLayout.Header>
         <SidebarLayout.Content>
           {provider === 'supabase' && account && !account.is_approved && (
-            <Alert
-              type="warning"
-              title="Account Pending Approval"
-              message="Your account is not approved yet. Please wait for approval."
-            />
+            <div className="rounded-md bg-amber-50 p-4 flex items-center">
+              <TriangleAlertIcon className="size-5 text-amber-400 shrink-0" />
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-amber-800">Account Pending Approval</h3>
+                <p className="mt-1 text-sm text-amber-700">
+                  Your account is not approved yet. Please wait for approval.
+                </p>
+              </div>
+            </div>
           )}
           <SpeechProvider>
             <SettingsForm />

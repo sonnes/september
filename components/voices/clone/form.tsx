@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormField, FormTextarea } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 import { ElevenLabsVoiceClone } from './elevenlabs-clone';
 import { useRecording, useUpload } from './context';
@@ -34,7 +34,6 @@ export function VoiceCloneForm() {
   const { recordings } = useRecording();
   const { uploadedFiles } = useUpload();
   const { downloadVoiceSample } = useVoiceStorage();
-  const { show, showError } = useToast();
 
   const form = useForm<CloneVoiceFormData>({
     resolver: zodResolver(CloneVoiceSchema),
@@ -51,7 +50,7 @@ export function VoiceCloneForm() {
 
   const handleSubmit = async (data: CloneVoiceFormData) => {
     if (!elevenlabsApiKey) {
-      showError('ElevenLabs API key is required. Please configure it in settings.');
+      toast.error('ElevenLabs API key is required. Please configure it in settings.');
       return;
     }
 
@@ -59,7 +58,7 @@ export function VoiceCloneForm() {
     const fileIds = uploadedFiles.length > 0 ? uploadedFiles : Object.values(recordings);
 
     if (fileIds.length === 0) {
-      showError('Please upload or record at least one audio sample.');
+      toast.error('Please upload or record at least one audio sample.');
       return;
     }
 
@@ -85,16 +84,15 @@ export function VoiceCloneForm() {
         description: data.description,
       });
 
-      show({
-        title: 'Voice Clone Created',
-        message: `Successfully created voice "${result.name}" with ID: ${result.voice_id}`,
+      toast.success('Voice Clone Created', {
+        description: `Successfully created voice "${result.name}" with ID: ${result.voice_id}`,
       });
 
       // Reset form
       form.reset();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create voice clone';
-      showError(errorMessage);
+      toast.error(errorMessage);
       console.error('Voice cloning error:', err);
     } finally {
       setIsSubmitting(false);

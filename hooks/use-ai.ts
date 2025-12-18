@@ -4,8 +4,7 @@ import { useMemo, useState } from 'react';
 
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateText } from 'ai';
-
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 import { useAISettings } from '@/components/settings';
 
@@ -23,7 +22,6 @@ Since your output will be used as the user's input, do not include any extra not
 export function useCorpus() {
   const { getProviderConfig } = useAISettings();
   const [isGenerating, setIsGenerating] = useState(false);
-  const { showError } = useToast();
 
   const { api_key: apiKey } = getProviderConfig('gemini') || {};
 
@@ -46,14 +44,14 @@ export function useCorpus() {
       });
 
       if (!text) {
-        showError('Failed to generate corpus. Please try again.');
+        toast.error('Failed to generate corpus. Please try again.');
         return;
       }
 
       return text;
     } catch (error) {
       console.error(error);
-      showError(
+      toast.error(
         error instanceof Error ? error.message : 'Failed to generate corpus. Please try again.'
       );
     } finally {

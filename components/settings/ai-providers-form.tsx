@@ -4,8 +4,7 @@ import { useEffect, useMemo } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 import type { Account } from '@/types/account';
 import type { Providers } from '@/types/ai-config';
@@ -28,8 +27,6 @@ interface AIProvidersFormProps {
 }
 
 export function AIProvidersForm({ account, onSubmit, children }: AIProvidersFormProps) {
-  const { show, showError } = useToast();
-
   const defaultValues = useMemo(() => {
     const values: Record<string, string> = {};
 
@@ -79,13 +76,12 @@ export function AIProvidersForm({ account, onSubmit, children }: AIProvidersForm
 
       await onSubmit(providerConfig as Providers);
 
-      show({
-        title: 'Settings Saved',
-        message: 'Your AI provider settings have been updated successfully.',
+      toast.success('Settings Saved', {
+        description: 'Your AI provider settings have been updated successfully.',
       });
     } catch (err) {
       console.error('Error saving AI settings:', err);
-      showError('Failed to update AI settings. Please try again.');
+      toast.error('Failed to update AI settings. Please try again.');
     }
   };
 

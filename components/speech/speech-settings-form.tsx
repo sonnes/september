@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 import { FormCheckbox, FormSelect, FormSlider } from '@/components/ui/form';
 
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 import { getModelsForProvider, getProvidersForFeature } from '@/components/settings';
 import type { Account } from '@/types/account';
@@ -51,7 +51,6 @@ interface SpeechSettingsFormProps {
 }
 
 export function SpeechSettingsForm({ account, onSubmit, children }: SpeechSettingsFormProps) {
-  const { show, showError } = useToast();
 
   const defaultValues = useMemo((): SpeechSettingsFormData => {
     const speechConfig = account?.ai_speech;
@@ -89,13 +88,12 @@ export function SpeechSettingsForm({ account, onSubmit, children }: SpeechSettin
     try {
       await onSubmit(data);
 
-      show({
-        title: 'Settings Saved',
-        message: 'Your text-to-speech settings have been updated successfully.',
+      toast.success('Settings Saved', {
+        description: 'Your text-to-speech settings have been updated successfully.',
       });
     } catch (err) {
       console.error('Error saving speech settings:', err);
-      showError('Failed to update speech settings. Please try again.');
+      toast.error('Failed to update speech settings. Please try again.');
     }
   };
 

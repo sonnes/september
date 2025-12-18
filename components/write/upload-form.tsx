@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 import GeminiService from '@/services/gemini';
 
@@ -25,7 +25,6 @@ function formatFileSize(bytes: number) {
 }
 
 export default function UploadForm({ onTextExtracted }: UploadFormProps) {
-  const { showError } = useToast();
   const { account } = useAccount();
 
   const gemini = useMemo(
@@ -43,7 +42,7 @@ export default function UploadForm({ onTextExtracted }: UploadFormProps) {
 
   const handleSubmit = async () => {
     if (uploadedFiles.length === 0) {
-      showError('Please upload at least one file');
+      toast.error('Please upload at least one file');
       return;
     }
 
@@ -54,7 +53,7 @@ export default function UploadForm({ onTextExtracted }: UploadFormProps) {
       onTextExtracted(extractedText);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Something went wrong';
-      showError(message);
+      toast.error(message);
     } finally {
       setExtracting(false);
     }

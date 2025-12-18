@@ -12,7 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { FormCheckbox, FormSelect, FormTextarea } from '@/components/ui/form';
 
 import { useCorpus } from '@/hooks/use-ai';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 import type { Account } from '@/types/account';
 import type { AIProvider } from '@/types/ai-config';
@@ -65,7 +65,6 @@ interface SuggestionsFormProps {
 
 export function SuggestionsForm({ account, onSubmit, children }: SuggestionsFormProps) {
   const [showExamples, setShowExamples] = useState(false);
-  const { show, showError } = useToast();
   const { isGenerating, generateCorpus } = useCorpus();
 
   const defaultValues = useMemo((): SuggestionsFormData => {
@@ -101,13 +100,12 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
     try {
       await onSubmit(data);
 
-      show({
-        title: 'Settings Saved',
-        message: 'Your AI suggestions settings have been updated successfully.',
+      toast.success('Settings Saved', {
+        description: 'Your AI suggestions settings have been updated successfully.',
       });
     } catch (err) {
       console.error('Error saving suggestions settings:', err);
-      showError('Failed to update suggestions settings. Please try again.');
+      toast.error('Failed to update suggestions settings. Please try again.');
     }
   };
 

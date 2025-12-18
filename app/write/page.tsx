@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 import SidebarLayout from '@/components/sidebar/layout';
 import { DocumentList } from '@/components/write/document-list';
@@ -26,7 +26,6 @@ import { DocumentListSkeleton } from './loading-skeleton';
 
 export default function WritePage() {
   const router = useRouter();
-  const { showError } = useToast();
   const { documents, fetching, putDocument } = useDocumentsContext();
   const [searchValue, setSearchValue] = useState('');
 
@@ -35,7 +34,9 @@ export default function WritePage() {
       const newDoc = await putDocument({ name: '', content: '' });
       router.push(`/write/${newDoc.id}`);
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to create document', 'Error');
+      toast.error('Error', {
+        description: err instanceof Error ? err.message : 'Failed to create document',
+      });
     }
   };
 

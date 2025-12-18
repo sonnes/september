@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 import { signInWithEmail, signInWithGoogle } from './actions';
 import type { LoginResponse } from './actions';
@@ -34,15 +34,14 @@ export default function LoginForm() {
   const [state, formAction, isPending] = useActionState(signInWithEmail, initialState);
   const searchParams = useSearchParams();
   const next = searchParams.get('next') || '/dashboard';
-  const { show } = useToast();
 
   React.useEffect(() => {
     if (state.message) {
-      show({
-        type: state.success ? 'success' : 'error',
-        title: state.success ? 'Success' : 'Error',
-        message: state.message,
-      });
+      if (state.success) {
+        toast.success('Success', { description: state.message });
+      } else {
+        toast.error('Error', { description: state.message });
+      }
     }
     // Only run when state.message changes
     // eslint-disable-next-line react-hooks/exhaustive-deps

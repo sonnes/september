@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import VoicesList from '@/components/voices/voices-list';
 
 import { useDebounce } from '@/hooks/use-debounce';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 import { useAccount } from '@/components/account';
 import { useAISettings } from '@/components/settings';
@@ -56,7 +56,6 @@ export function SpeechStep() {
   const { account } = useAccount();
   const { speechConfig, updateSpeechConfig, getProviderConfig } = useAISettings();
   const { listVoices, getProvider } = useSpeechContext();
-  const { show, showError } = useToast();
 
   const [selectedProvider, setSelectedProvider] = useState<SpeechProvider>(
     speechConfig.provider || 'browser'
@@ -141,15 +140,14 @@ export function SpeechStep() {
 
       await updateSpeechConfig(speechConfig);
 
-      show({
-        title: 'Voice Settings Saved',
-        message: 'Your voice preferences have been configured.',
+      toast.success('Voice Settings Saved', {
+        description: 'Your voice preferences have been configured.',
       });
 
       goToNextStep();
     } catch (err) {
       console.error('Error saving speech settings:', err);
-      showError('Failed to save voice settings. Please try again.');
+      toast.error('Failed to save voice settings. Please try again.');
     } finally {
       setIsSaving(false);
     }

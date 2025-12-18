@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { useQuery } from '@triplit/react';
+import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
-
-import { useToast } from '@/hooks/use-toast';
 
 import { useAccount } from '@/services/account/context';
 
@@ -12,7 +11,6 @@ import { CreateMessageData, Message } from '@/types/message';
 
 export function useMessages() {
   const { user } = useAccount();
-  const { showError } = useToast();
 
   const [messages, setMessages] = useState<Message[]>([]);
 
@@ -37,7 +35,7 @@ export function useMessages() {
         }))
       );
     } else if (error) {
-      showError(error.message);
+      toast.error(error.message);
       console.error(error);
     }
   }, [fetching, results]);

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Noto_Sans } from 'next/font/google';
 
-import { Toaster } from 'sonner';
+import { Toaster } from '@/components/ui/sonner';
 
 import { AccountProvider } from '@/components/account';
 import { AudioPlayerProvider } from '@/components/audio/audio-player';

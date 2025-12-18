@@ -8,7 +8,7 @@ import Webcam from 'react-webcam';
 import AnimatedText from '@/components/ui/animated-text';
 
 import { useAudioPlayer } from '@/hooks/use-audio-player';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 import { useAccount } from '@/services/account/context';
 import { AudioService } from '@/services/audio/supabase';
@@ -43,7 +43,6 @@ export default function MonitorClient() {
 
   const { enqueue } = useAudioPlayer();
   const { user } = useAccount();
-  const { showError } = useToast();
 
   // Realtime subscription for messages
   useEffect(() => {
@@ -54,7 +53,7 @@ export default function MonitorClient() {
       },
       onError: error => {
         console.error('Messages realtime error:', error);
-        showError('Failed to receive real-time updates');
+        toast.error('Failed to receive real-time updates');
       },
       onSubscribe: status => {
         if (status === 'SUBSCRIBED') {
@@ -67,7 +66,7 @@ export default function MonitorClient() {
     return () => {
       removeRealtimeSubscription(channel);
     };
-  }, [user.id, showError]);
+  }, [user.id]);
 
   useEffect(() => {
     async function downloadAudio() {

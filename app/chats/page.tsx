@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 import { ChatList } from '@/components/chat/chat-list';
 import useChatList from '@/components/chat/use-chat-list';
@@ -26,7 +26,6 @@ import { ChatListSkeleton } from './loading-skeleton';
 
 export default function ChatsPage() {
   const router = useRouter();
-  const { showError } = useToast();
   const [searchValue, setSearchValue] = useState('');
   const { chats, fetching, error, createChat } = useChatList({ searchQuery: searchValue });
 
@@ -35,7 +34,9 @@ export default function ChatsPage() {
       const chat = await createChat();
       router.push(`/chats/${chat.id}`);
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to create chat', 'Error');
+      toast.error('Error', {
+        description: err instanceof Error ? err.message : 'Failed to create chat',
+      });
     }
   };
 

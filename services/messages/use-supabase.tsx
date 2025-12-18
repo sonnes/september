@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 import { useAccount } from '@/services/account/context';
 
@@ -14,7 +14,6 @@ const messagesService = new MessagesService(supabase);
 
 export function useMessages({ messages: initialMessages }: { messages: Message[] }) {
   const { user } = useAccount();
-  const { showError } = useToast();
 
   const [messages, setMessages] = useState<Message[]>(initialMessages);
 
@@ -28,10 +27,10 @@ export function useMessages({ messages: initialMessages }: { messages: Message[]
 
       return data;
     } catch (error) {
-      showError(error instanceof Error ? error.message : 'Failed to fetch messages');
+      toast.error(error instanceof Error ? error.message : 'Failed to fetch messages');
       console.error(error);
     }
-  }, [user, showError]);
+  }, [user]);
 
   useEffect(() => {
     if (initialMessages.length === 0) {
@@ -55,7 +54,7 @@ export function useMessages({ messages: initialMessages }: { messages: Message[]
       },
       onError: error => {
         console.error('Messages realtime error:', error);
-        showError('Failed to receive real-time updates');
+        toast.error('Failed to receive real-time updates');
       },
       onSubscribe: status => {
         if (status === 'SUBSCRIBED') {
@@ -68,7 +67,7 @@ export function useMessages({ messages: initialMessages }: { messages: Message[]
     return () => {
       removeRealtimeSubscription(channel);
     };
-  }, [user, showError]);
+  }, [user]);
 
   return {
     messages,
@@ -78,7 +77,6 @@ export function useMessages({ messages: initialMessages }: { messages: Message[]
 
 export function useCreateMessage() {
   const { user } = useAccount();
-  const { showError } = useToast();
 
   const createMessage = useCallback(
     async (message: CreateMessageData) => {
@@ -86,7 +84,7 @@ export function useCreateMessage() {
         const createdMessage = await messagesService.createMessage(message);
         return createdMessage;
       } catch (error) {
-        showError(error instanceof Error ? error.message : 'Failed to create message');
+        toast.error(error instanceof Error ? error.message : 'Failed to create message');
         console.error(error);
       }
     },

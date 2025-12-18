@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { toast } from 'sonner';
+
 import { useAccount } from '@/services/account/context';
 import supabase from '@/supabase/client';
 import { removeRealtimeSubscription, subscribeToUserMessages } from '@/supabase/realtime';
 import { Message } from '@/types/message';
 
-import { useToast } from './use-toast';
-
 export function useMessages({ messages: initialMessages }: { messages: Message[] }) {
   const { user } = useAccount();
-  const { showError } = useToast();
   const [messages, setMessages] = useState<Message[]>(initialMessages);
 
   const getMessages = useCallback(async () => {
@@ -23,14 +22,14 @@ export function useMessages({ messages: initialMessages }: { messages: Message[]
       .limit(100);
 
     if (error) {
-      showError(error.message);
+      toast.error(error.message);
       console.error(error);
       return;
     }
 
     setMessages(data.reverse());
     return data;
-  }, [user, showError]);
+  }, [user]);
 
   useEffect(() => {
     if (initialMessages.length === 0) {
@@ -54,7 +53,7 @@ export function useMessages({ messages: initialMessages }: { messages: Message[]
       },
       onError: error => {
         console.error('Messages realtime error:', error);
-        showError('Failed to receive real-time updates');
+        toast.error('Failed to receive real-time updates');
       },
       onSubscribe: status => {
         if (status === 'SUBSCRIBED') {
@@ -67,7 +66,7 @@ export function useMessages({ messages: initialMessages }: { messages: Message[]
     return () => {
       removeRealtimeSubscription(channel);
     };
-  }, [user, showError]);
+  }, [user]);
 
   return {
     messages,

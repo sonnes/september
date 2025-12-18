@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import moment from 'moment';
 
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 import { useAudioPlayer } from '@/components/audio/audio-player';
 import { useAudioStorage } from '@/components/audio/use-audio-storage';
@@ -22,7 +22,6 @@ function MessageItem({ message }: MessageItemProps) {
   const isUser = message.type === 'user';
   const { enqueue, isPlaying, current, togglePlayPause } = useAudioPlayer();
   const { generateSpeech } = useSpeech();
-  const { showError } = useToast();
   const { downloadAudio } = useAudioStorage();
 
   const [audio, setAudio] = useState<Audio | null>(null);
@@ -68,7 +67,7 @@ function MessageItem({ message }: MessageItemProps) {
       }
     } catch (error) {
       console.error('Error playing audio:', error);
-      showError('Error playing audio');
+      toast.error('Error playing audio');
     } finally {
       setIsLoading(false);
     }

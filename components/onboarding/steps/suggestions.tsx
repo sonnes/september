@@ -4,7 +4,7 @@ import { ArrowRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 import { useAccount } from '@/components/account';
 import { SuggestionsForm, SuggestionsFormData } from '@/components/suggestions';
@@ -14,7 +14,6 @@ import { useOnboarding } from '../context';
 export function SuggestionsStep() {
   const { goToNextStep, goToPreviousStep } = useOnboarding();
   const { account, updateAccount } = useAccount();
-  const { show, showError } = useToast();
 
   const onSubmit = async (data: SuggestionsFormData) => {
     try {
@@ -27,15 +26,14 @@ export function SuggestionsStep() {
         },
       });
 
-      show({
-        title: 'Suggestions Saved',
-        message: 'Your AI suggestions settings have been configured.',
+      toast.success('Suggestions Saved', {
+        description: 'Your AI suggestions settings have been configured.',
       });
 
       goToNextStep();
     } catch (err) {
       console.error('Error saving suggestions settings:', err);
-      showError('Failed to save suggestions settings. Please try again.');
+      toast.error('Failed to save suggestions settings. Please try again.');
     }
   };
 

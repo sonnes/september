@@ -4,15 +4,13 @@ import { useEffect, useMemo } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Control, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
+import { AccountFormData, AccountSchema } from '@/components/settings';
 import { Button } from '@/components/ui/button';
 import { FormCheckbox, FormField } from '@/components/ui/form';
 
-import { useToast } from '@/hooks/use-toast';
-
 import { useAccount } from '@/services/account';
-
-import { AccountFormData, AccountSchema } from '@/components/settings';
 
 // Personal Information Section
 function PersonalInfoSection({ control }: { control: Control<AccountFormData> }) {
@@ -104,7 +102,6 @@ function TermsSection({ control }: { control: Control<AccountFormData> }) {
 
 export default function SettingsForm() {
   const { account, updateAccount } = useAccount();
-  const { show, showError } = useToast();
 
   const defaultValues = useMemo(() => {
     return {
@@ -172,13 +169,12 @@ export default function SettingsForm() {
         terms_accepted: data.terms_accepted,
         privacy_policy_accepted: data.privacy_policy_accepted,
       });
-      show({
-        title: 'Settings',
-        message: 'Your settings have been updated successfully.',
+      toast.success('Settings', {
+        description: 'Your settings have been updated successfully.',
       });
     } catch (err) {
       console.error('Error saving settings:', err);
-      showError('Failed to update settings. Please try again.');
+      toast.error('Failed to update settings. Please try again.');
     }
   };
 

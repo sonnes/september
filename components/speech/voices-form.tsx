@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 import type { Account } from '@/types/account';
 import type { Voice } from '@/types/voice';
@@ -36,7 +36,6 @@ interface VoicesFormProps {
 }
 
 export function VoicesForm({ account, onSubmit, children }: VoicesFormProps) {
-  const { show, showError } = useToast();
   const { getProvider } = useSpeechContext();
 
   // Get speech providers from registry
@@ -147,13 +146,12 @@ export function VoicesForm({ account, onSubmit, children }: VoicesFormProps) {
     try {
       await onSubmit(data);
 
-      show({
-        title: 'Voice Settings Saved',
-        message: 'Your voice preferences have been configured.',
+      toast.success('Voice Settings Saved', {
+        description: 'Your voice preferences have been configured.',
       });
     } catch (err) {
       console.error('Error saving voice settings:', err);
-      showError('Failed to save voice settings. Please try again.');
+      toast.error('Failed to save voice settings. Please try again.');
     }
   };
 
