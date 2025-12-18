@@ -8,15 +8,15 @@ september/
 ├── components/ # reusable components
 │   ├── ui/ # base ui components from shadcn/ui
 ├── hooks/ # global hooks
-├── lib/ # utility functions
+├── lib/ # global utility functions
 ├── packages/ # modular packages
 │   ├── suggestions/ # suggestions module
 │   │   ├── components/ # context provider, forms, components
 │   │   ├── hooks/ # hooks
-│   │   ├── lib/ # utility functions
-│   │   ├── services/ # external services
+│   │   ├── lib/ # module utility functions
 │   │   ├── types/ # zod schemas, types
-│   │   └── README.md # README describing the package
+│   │   ├── index.ts # module public API
+│   │   └── README.md # README describing the package, its architecture, decisions, how to use it, etc.
 │   ├── speech/ # speech synthesis module
 │   │   ├── ...
 │   ├── editor/ # editor module
@@ -37,3 +37,27 @@ september/
 │   ├── ...
 └── README.md # README
 ```
+
+### Hooks
+
+- `use-db-*` hooks are used to interact with the database.
+- `use-auth-*` hooks are used to interact with the authentication.
+- `use-ai-*` hooks are used to interact with the AI SDK/API.
+
+- All state management should be implemented inside the respective module `hooks` folder.
+
+### App
+
+- Every page acts as a composer for one or more modules.
+
+### Error Handling
+
+- Errors must be propagated to the hooks and components that need to handle them.
+- Use `toast` for all error messages inside the hooks. (except for form related errors)
+
+### Forms
+
+- Zod validation errors should be displayed in the form.
+- Use `Alert` component to display error messages next to the action button.
+- Show success messages next to the action button.
+- Show loading state using the `Spinner` component

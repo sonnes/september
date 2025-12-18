@@ -1,160 +1,62 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Project orientation for Claude Code when working with September codebase.
 
-## Important: Always Read README Files
+## What is September?
 
-**Before working in any directory, ALWAYS read the README.md file in that directory first.** Each major directory contains a README with:
+September is an assistive communication app for people with ALS, MND, or speech/motor difficulties. It helps users communicate effectively with fewer keystrokes through AI-powered autocomplete, real-time transcription, and contextual suggestions.
 
-- Directory purpose and organization
-- Key files and their responsibilities
-- Architecture patterns specific to that area
-- Links to relevant files for reference
+## Tech Stack
 
-This ensures you understand the context and patterns before making changes.
+- **Framework**: Next.js 15 (App Router, React 19)
+- **Styling**: Tailwind CSS 4, shadcn/ui components ([docs](https://ui.shadcn.com/llms.txt))
+- **Database**: Dual architecture
+  - Supabase (cloud: auth, storage, shared data)
+  - Triplit (local-first: SQLite, offline sync)
+- **AI**: Google Gemini API, Vercel AI SDK
+- **Voice**: ElevenLabs (TTS, voice cloning)
+- **Forms**: React Hook Form + Zod validation
+- **Package Manager**: pnpm
 
-## Development Commands
+## Project Structure
 
-### Core Commands
+```
+september/
+├── app/                 # Next.js App Router pages
+│   ├── talk/           # Main communication interface
+│   ├── settings/       # App settings (AI, speech)
+│   ├── api/            # Server-side API routes
+│   └── auth/           # Authentication callbacks
+├── components/         # React components (organized by feature)
+├── hooks/              # Custom React hooks
+├── lib/                # Utilities and libraries
+│   └── autocomplete/   # Custom autocomplete implementation
+├── services/           # External service integrations
+├── supabase/           # Cloud database config & migrations
+├── triplit/            # Local-first database schema
+└── types/              # TypeScript type definitions
+```
 
-- `pnpm run dev` - Start development server
-- `pnpm run build` - Build production application
-- `pnpm run start` - Start production server
-- `pnpm run lint` - Run ESLint for code quality checks
+## Development
 
-### Database Operations
+```bash
+pnpm run dev      # Start development server
+pnpm run build    # Build for production
+pnpm run start    # Start production server
+pnpm run lint     # Run ESLint
+```
 
-- Database migrations are in `supabase/migrations/`
-- Local Triplit schema is in `triplit/schema.ts`
-- Use Supabase CLI for database operations
+## Code Patterns
 
-## Architecture Overview
+**Forms**: Always use `react-hook-form` with `zodResolver` for validation. Use form components from [components/ui/form.tsx](components/ui/form.tsx).
 
-September is an assistive communication app built with Next.js 15 App Router, featuring a dual-database architecture and real-time AI-powered features.
+**Styling**: Use shadcn/ui components with Tailwind CSS. Font family is Noto Sans.
 
-### Core Architecture Patterns
+**Components**: Read directory READMEs before working in any major directory (app/, components/, lib/, services/).
 
-**Dual Database Strategy:**
+## Important
 
-- **Supabase (Cloud)**: Authentication, persistent storage, file storage (audio), full-text search
-- **Triplit (Local)**: Local-first data with no sync capabilities
-- Data flows: Authenticated users → Supabase. Unauthenticated users → Triplit.
-
-**Service Layer Pattern:**
-All external integrations use service classes in `services/`:
-
-- `MessagesService` - Message CRUD with full-text search
-- `ElevenLabs` - Voice synthesis and cloning
-- `Gemini` - AI text generation
-- `Speech` providers - Text-to-speech with multiple providers
-
-Domain-specific services follow this structure:
-
-- `{domain}/index.ts` - Exports all domain-specific functionality
-- `{domain}/supabase.ts` - Service class for Supabase operations
-- `{domain}/context.tsx` - React Context provider for client-side state
-- `{domain}/use-supabase.tsx` - Hook for Supabase operations
-- `{domain}/use-triplit.tsx` - Hook for Triplit (local) operations
-
-**Context + Hooks Architecture:**
-
-- React Context providers in `components/context/` manage global state
-- Custom hooks in `hooks/` encapsulate business logic and side effects
-- Pattern: Provider wraps components → Custom hook accesses context → Service handles external calls
-
-**Autocomplete System:**
-
-- Custom implementation in `lib/autocomplete/` using Trie data structures
-- Trains on user's message history + AI corpus
-- Provides word completion, next-word prediction, and phrase suggestions
-- Initialized in `useAutocomplete` hook, integrated via `TypingSuggestions` class
-
-### Key Integration Points
-
-**Authentication Flow:**
-
-- Supabase Auth with middleware protection (`middleware.ts`)
-- Routes protected: `/api/*`, `/app/*`
-- Auth callbacks handled in `app/auth/`
-
-**AI Features:**
-
-- Gemini API integration for text generation (`services/gemini.ts`)
-- User-specific AI corpus stored in accounts table
-- AI settings managed in `/settings/ai`
-
-**Audio Pipeline:**
-
-- ElevenLabs for voice synthesis and cloning
-- Audio files stored in Supabase storage buckets
-- Voice Activity Detection (VAD) for speech input
-- Multiple TTS providers via speech service abstraction
-
-**Message System:**
-
-- Messages stored in Supabase with full-text search capabilities
-- Real-time updates via Supabase realtime
-- Audio attachments linked to messages
-- Search functionality with text preprocessing
-
-### File Organization Patterns
-
-**Component Structure:**
-
-- Feature-based organization under `components/`
-- Each feature has its own directory (e.g., `talk/`, `editor/`, `nav/`)
-- Shared UI components in `components/ui/`
-
-**Type Definitions:**
-
-- All TypeScript types in `types/` directory
-- Organized by domain: `message.ts`, `audio.ts`, `account.ts`, etc.
-
-**API Routes:**
-
-- RESTful structure under `app/api/`
-- Feature-based grouping: `/ai/*`, `/speech/*`, `/transcribe/*`
-- Authentication required for all API routes
-
-### Development Notes
-
-**Environment Setup:**
-
-- Requires Supabase project with proper environment variables
-- ElevenLabs API key for voice features
-- Google Gemini API key for AI features
-
-**Database Schema:**
-
-- Messages table with full-text search enabled
-- Accounts table with AI settings and speech preferences
-- RLS policies implemented for user data isolation
-
-**Styling:**
-
-- Tailwind CSS 4 with custom configuration
-- Noto Sans font family
-- Toast notifications via Sonner
-
-**State Management:**
-
-- No global state management library
-- React Context for shared state
-- Local component state for UI interactions
-- Service classes for external API state
-
-**Form Patterns:**
-
-- ALL forms must use `react-hook-form` with `zodResolver` for validation
-- Use form components from `components/ui/form.tsx` (`FormInput`, `FormTextarea`, `FormCheckbox`, etc.)
-- Follow the pattern from `app/settings/ai/form.tsx`
-- Form validation schemas should be defined with Zod
-- Error handling via toast notifications from `useToast` hook
-- Use `SectionProps` interface for form sections
-
-# important-instruction-reminders
-
-Do what has been asked; nothing more, nothing less.
-NEVER create files unless they're absolutely necessary for achieving your goal.
-ALWAYS prefer editing an existing file to creating a new one.
-NEVER proactively create documentation files (_.md, _.mdc) or README files. Only create documentation files if explicitly requested by the User.
+- Do what has been asked; nothing more, nothing less
+- ALWAYS prefer editing existing files over creating new ones
+- Read directory READMEs before making changes
+- For architecture details, see [README.md](README.md)

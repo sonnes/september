@@ -48,3 +48,6 @@ next-env.d.ts
 
 # worktrees
 .worktrees/
+
+# claude
+.claude/settings.local.json
