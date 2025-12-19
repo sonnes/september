@@ -189,7 +189,7 @@ export function RecordingProvider({
     }
   };
 
-  const stopRecording = () => {
+  const stopRecording = (id: string) => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current = null;
@@ -286,4 +286,3 @@ export function useRecording() {
   if (!context) throw new Error('useRecording must be used within a RecordingProvider');
   return context;
 }
-

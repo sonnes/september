@@ -108,7 +108,7 @@ export function RecordingSection() {
                         variant="outline"
                         size="icon"
                         type="button"
-                        onClick={() => stopRecording()}
+                        onClick={() => stopRecording(currentSample.id)}
                       >
                         <Square className="h-5 w-5" />
                       </Button>
