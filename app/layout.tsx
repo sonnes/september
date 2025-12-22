@@ -1,13 +1,6 @@
 import type { Metadata } from 'next';
 import { Noto_Sans } from 'next/font/google';
 
-import { Toaster } from '@/components/ui/sonner';
-
-import { AccountProvider } from '@/packages/account';
-import { MessagesProvider } from '@/packages/chats';
-import { AudioPlayerProvider } from '@/packages/audio';
-import { AISettingsProvider } from '@/packages/ai';
-
 import './globals.css';
 
 const notoSans = Noto_Sans({
@@ -77,18 +70,7 @@ export default function RootLayout({
           data-website-id="2d4c0126-840c-4397-9ccb-4d618d7df1ce"
         ></script>
       </head>
-      <body className={`${notoSans.className} antialiased h-full`}>
-        <AccountProvider>
-          <MessagesProvider provider="triplit">
-            <AISettingsProvider>
-              <AudioPlayerProvider>
-                {children}
-                <Toaster position="top-center" closeButton duration={15000} />
-              </AudioPlayerProvider>
-            </AISettingsProvider>
-          </MessagesProvider>
-        </AccountProvider>
-      </body>
+      <body className={`${notoSans.className} antialiased h-full`}>{children}</body>
     </html>
   );
 }

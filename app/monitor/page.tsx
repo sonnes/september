@@ -1,24 +1,14 @@
-import type { Metadata } from 'next';
+'use client';
 
-import { AudioPlayerProvider } from '@/packages/audio';
-
+import { ClientProviders } from '@/components/context/client-providers';
 import MonitorClient from './monitor-client';
 
-export const metadata: Metadata = {
-  title: 'Monitor',
-  description: 'Share video and voice with others using September.',
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
-
-export default async function MonitorPage() {
+export default function MonitorPage() {
   return (
-    <AudioPlayerProvider>
+    <ClientProviders>
       <div className="min-h-screen bg-black">
         <MonitorClient />
       </div>
-    </AudioPlayerProvider>
+    </ClientProviders>
   );
 }

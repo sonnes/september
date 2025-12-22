@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 
+import { ClientProviders } from '@/components/context/client-providers';
 import SidebarLayout from '@/components/sidebar/layout';
 import {
   Breadcrumb,
@@ -44,48 +45,50 @@ export default function WritePage() {
   );
 
   return (
-    <SidebarLayout>
-      <SidebarLayout.Header>
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbPage>Write</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </SidebarLayout.Header>
-      <SidebarLayout.Content>
-        <div className="flex flex-1 flex-col gap-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold tracking-tight">Write</h1>
-            <Button
-              onClick={handleNewDocument}
-              variant="default"
-              size="default"
-              disabled={fetching}
-            >
-              <PlusIcon className="h-4 w-4" />
-              New document
-            </Button>
-          </div>
-
-          {/* Loading State */}
-          {fetching && <DocumentListSkeleton />}
-
-          {/* Content State (empty handled by DocumentList component) */}
-          {!fetching && (
-            <div className="max-w-3xl mx-auto w-full">
-              <DocumentList
-                documents={filteredDocuments}
-                searchValue={searchValue}
-                onSearchChange={setSearchValue}
-              />
+    <ClientProviders>
+      <SidebarLayout>
+        <SidebarLayout.Header>
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbPage>Write</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </SidebarLayout.Header>
+        <SidebarLayout.Content>
+          <div className="flex flex-1 flex-col gap-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold tracking-tight">Write</h1>
+              <Button
+                onClick={handleNewDocument}
+                variant="default"
+                size="default"
+                disabled={fetching}
+              >
+                <PlusIcon className="h-4 w-4" />
+                New document
+              </Button>
             </div>
-          )}
-        </div>
-      </SidebarLayout.Content>
-    </SidebarLayout>
+
+            {/* Loading State */}
+            {fetching && <DocumentListSkeleton />}
+
+            {/* Content State (empty handled by DocumentList component) */}
+            {!fetching && (
+              <div className="max-w-3xl mx-auto w-full">
+                <DocumentList
+                  documents={filteredDocuments}
+                  searchValue={searchValue}
+                  onSearchChange={setSearchValue}
+                />
+              </div>
+            )}
+          </div>
+        </SidebarLayout.Content>
+      </SidebarLayout>
+    </ClientProviders>
   );
 }

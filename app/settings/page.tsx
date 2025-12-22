@@ -1,5 +1,6 @@
-import type { Metadata } from 'next';
+'use client';
 
+import { ClientProviders } from '@/components/context/client-providers';
 import SidebarLayout from '@/components/sidebar/layout';
 import {
   Breadcrumb,
@@ -14,30 +15,27 @@ import { SpeechProvider } from '@/packages/speech';
 
 import SettingsForm from './form';
 
-export const metadata: Metadata = {
-  title: 'Settings',
-  description: 'Configure your September communication assistant settings and preferences.',
-};
-
-export default async function SettingsPage() {
+export default function SettingsPage() {
   return (
-    <SidebarLayout>
-      <SidebarLayout.Header>
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbPage>Settings</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </SidebarLayout.Header>
-      <SidebarLayout.Content>
-        <SpeechProvider>
-          <SettingsForm />
-        </SpeechProvider>
-      </SidebarLayout.Content>
-    </SidebarLayout>
+    <ClientProviders>
+      <SidebarLayout>
+        <SidebarLayout.Header>
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbPage>Settings</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </SidebarLayout.Header>
+        <SidebarLayout.Content>
+          <SpeechProvider>
+            <SettingsForm />
+          </SpeechProvider>
+        </SidebarLayout.Content>
+      </SidebarLayout>
+    </ClientProviders>
   );
 }

@@ -1,5 +1,6 @@
-import type { Metadata } from 'next';
+'use client';
 
+import { ClientProviders } from '@/components/context/client-providers';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -15,32 +16,29 @@ import SidebarLayout from '@/components/sidebar/layout';
 
 import AISettingsForm from './form';
 
-export const metadata: Metadata = {
-  title: 'AI Settings',
-  description: 'Configure AI provider API keys for September',
-};
-
-export default async function AISettingsPage() {
+export default function AISettingsPage() {
   return (
-    <SidebarLayout>
-      <SidebarLayout.Header>
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/settings">Settings</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>AI Providers</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </SidebarLayout.Header>
-      <SidebarLayout.Content>
-        <AISettingsForm />
-      </SidebarLayout.Content>
-    </SidebarLayout>
+    <ClientProviders>
+      <SidebarLayout>
+        <SidebarLayout.Header>
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/settings">Settings</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>AI Providers</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </SidebarLayout.Header>
+        <SidebarLayout.Content>
+          <AISettingsForm />
+        </SidebarLayout.Content>
+      </SidebarLayout>
+    </ClientProviders>
   );
 }

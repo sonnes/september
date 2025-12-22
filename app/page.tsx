@@ -1,5 +1,6 @@
-import type { Metadata } from 'next';
+'use client';
 
+import { ClientProviders } from '@/components/context/client-providers';
 import { EnhancedCTASection } from '@/components/home/enhanced-cta-section';
 import { FAQSection } from '@/components/home/faq-section';
 import { FeaturesSection } from '@/components/home/features-section';
@@ -9,17 +10,11 @@ import { HowItWorksSection } from '@/components/home/how-it-works-section';
 import { TechnologySection } from '@/components/home/technology-section';
 import { UseCasesSection } from '@/components/home/use-cases-section';
 
-export const metadata: Metadata = {
-  title: 'September - Faster Communication , Fewer Keystrokes',
-  description:
-    'A communication assistant for people living with ALS, MND, and other speech & motor difficulties.',
-};
-
 export default function Home() {
   const provider = 'triplit';
 
   return (
-    <>
+    <ClientProviders>
       <main className="bg-white min-h-screen">
         <HeroSection />
         {/* <ProblemStatementSection /> */}
@@ -32,6 +27,6 @@ export default function Home() {
         <EnhancedCTASection />
       </main>
       <Footer />
-    </>
+    </ClientProviders>
   );
 }
