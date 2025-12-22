@@ -5,7 +5,7 @@ import { ArrowRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 import { useAccount } from '@/components/account';
-import { AIProvidersForm, ProviderSection } from '@/components/settings';
+import { AIProvidersForm, ProviderSection } from '@/packages/ai';
 import type { Providers } from '@/types/ai-config';
 
 import { useOnboarding } from '../../context';

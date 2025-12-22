@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Control, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import { AccountFormData, AccountSchema } from '@/components/settings';
+import { AccountFormData, AccountSchema } from '@/packages/ai';
 import { Button } from '@/components/ui/button';
 import { FormCheckbox, FormField } from '@/components/ui/form';
 

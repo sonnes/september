@@ -13,11 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import VoicesList from '@/components/voices/voices-list';
-
-import { useAccount } from '@/components/account';
-import { useAISettings } from '@/services/ai';
-import { VoiceSettingsFormData, VoicesForm } from '@/packages/speech';
+import { VoiceSettingsFormData, VoicesForm, VoicesList } from '@/packages/speech';
 
 export default function VoicesSettingsForm() {
   const { account } = useAccount();

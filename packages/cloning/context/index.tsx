@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
-import { useVoiceStorage } from './use-voice-storage';
+import { useVoiceStorage } from '../hooks/use-voice-storage';
 
 type UploadStatus = 'idle' | 'uploading' | 'error';
 

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { AI_PROVIDERS } from '@/services/ai';
+import { AI_PROVIDERS } from '../lib/registry';
 import { Voice } from '@/types/voice';
 
 // Dynamically generate Zod schema from provider registry

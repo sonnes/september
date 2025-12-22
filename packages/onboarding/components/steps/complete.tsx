@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
 import { useAccount } from '@/components/account';
-import { useAISettings } from '@/services/ai';
+import { useAISettings } from '@/packages/ai';
 
 import { useOnboarding } from '../../context';
 

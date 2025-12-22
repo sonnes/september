@@ -8,14 +8,13 @@ import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import VoicesList from '@/components/voices/voices-list';
 
 import { useDebounce } from '@/hooks/use-debounce';
 import { toast } from 'sonner';
 
 import { useAccount } from '@/components/account';
-import { useAISettings } from '@/services/ai';
-import { useSpeechContext } from '@/packages/speech';
+import { useAISettings } from '@/packages/ai';
+import { useSpeechContext, VoicesList } from '@/packages/speech';
 import type { SpeechConfig } from '@/types/ai-config';
 import type { Voice } from '@/types/voice';
 

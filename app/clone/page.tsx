@@ -4,7 +4,7 @@ import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
 import SidebarLayout from '@/components/sidebar/layout';
-import { VoiceCloneForm } from '@/components/voices/clone';
+import { VoiceCloneForm } from '@/packages/cloning';
 
 export default function ClonePage() {
   return (

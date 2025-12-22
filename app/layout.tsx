@@ -5,7 +5,7 @@ import { Toaster } from '@/components/ui/sonner';
 
 import { AccountProvider } from '@/components/account';
 import { AudioPlayerProvider } from '@/packages/audio';
-import { AISettingsProvider } from '@/services/ai';
+import { AISettingsProvider } from '@/packages/ai';
 
 import './globals.css';
 

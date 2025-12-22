@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useAISettings } from '@/services/ai';
+import { useAISettings } from '@/packages/ai';
 
 import GeminiService from '@/services/gemini';
 import { useMessages } from '@/services/messages';

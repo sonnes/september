@@ -6,7 +6,7 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateText } from 'ai';
 import { toast } from 'sonner';
 
-import { useAISettings } from '@/services/ai';
+import { useAISettings } from '@/packages/ai';
 
 const CORPUS_GENERATION_PROMPT = `You need to generate a corpus of synthetic data up to 5000 characters based on the persona. 
 The corpus should have wide variety of spoken phrases, sentences, expressions, etc. 

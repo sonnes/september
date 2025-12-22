@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Field, FieldLabel } from '@/components/ui/field';
 import { cn } from '@/lib/utils';
 
-import { useRecording } from './context';
+import { useRecording } from '../context';
 
 export const SAMPLE_TEXTS = [
   { id: 'birch-canoe', text: 'The birch canoe slid on the smooth planks.' },

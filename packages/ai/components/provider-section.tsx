@@ -8,7 +8,7 @@ import { FormField } from '@/components/ui/form';
 
 import type { AIFeature, AIServiceProvider } from '@/types/ai-config';
 
-import type { AIProvidersFormData } from './schemas';
+import type { AIProvidersFormData } from '../types/schemas';
 
 // Feature colors mapping
 const FEATURE_COLORS: Record<AIFeature, string> = {

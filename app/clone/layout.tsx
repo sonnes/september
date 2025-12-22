@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { RecordingProvider, UploadProvider } from '@/components/voices/clone';
+import { RecordingProvider, UploadProvider } from '@/packages/cloning';
 
 export const metadata: Metadata = {
   title: 'Clone Your Voice',

@@ -16,7 +16,7 @@ import {
   DEFAULT_SPEECH_CONFIG,
   DEFAULT_SUGGESTIONS_CONFIG,
   DEFAULT_TRANSCRIPTION_CONFIG,
-} from './defaults';
+} from '../lib/defaults';
 
 interface AISettingsContextType {
   // AI Feature Configurations

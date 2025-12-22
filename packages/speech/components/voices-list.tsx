@@ -11,7 +11,7 @@ interface VoicesListProps {
   onSelectVoice: (voice: Voice) => void;
 }
 
-export default function VoicesList({ voices, selectedVoiceId, onSelectVoice }: VoicesListProps) {
+export function VoicesList({ voices, selectedVoiceId, onSelectVoice }: VoicesListProps) {
   // Get gender style based on gender value
   const getGenderStyle = (gender?: string) => {
     if (!gender) return 'text-zinc-600 bg-zinc-50 ring-zinc-500/10';

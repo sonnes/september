@@ -14,11 +14,11 @@ import { FormField, FormTextarea } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 
-import { ElevenLabsVoiceClone } from './elevenlabs-clone';
-import { useRecording, useUpload } from './context';
+import { ElevenLabsVoiceClone } from '../lib/elevenlabs-clone';
+import { useRecording, useUpload } from '../context';
 import { RecordingSection } from './record';
 import { UploadSection } from './upload';
-import { useVoiceStorage } from './use-voice-storage';
+import { useVoiceStorage } from '../hooks/use-voice-storage';
 
 const CloneVoiceSchema = z.object({
   name: z.string().min(1, 'Name is required'),

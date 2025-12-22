@@ -9,8 +9,8 @@ import { toast } from 'sonner';
 import type { Account } from '@/types/account';
 import type { Providers } from '@/types/ai-config';
 
-import { AIProvidersFormData, AIProvidersSchema } from './schemas';
-import { AI_PROVIDERS } from '@/services/ai';
+import { AIProvidersFormData, AIProvidersSchema } from '../types/schemas';
+import { AI_PROVIDERS } from '../lib/registry';
 
 // Get providers that require API keys
 const getProvidersWithApiKeys = () => {
