@@ -18,7 +18,7 @@ The voice cloning tool provides a random set of sentences to read out loud. It u
 
 The biggest challenge for people with motor difficulties is the time & effort it takes to type out text that fully expresses their thoughts & emotions. September provides a speech-to-text feature that transcribes conversations around you in real-time.
 
-Thes transcriptions are then used to provide contextually relevant replies or auto-complete suggestions.
+These transcriptions are then used to provide contextually relevant replies or auto-complete suggestions.
 
 ### Auto-Complete
 
@@ -26,76 +26,102 @@ In every conversation, September tries to predict the next words or phrases you 
 
 Additionally, in every conversation, you can provide additional context in the form of notes, documents, images, videos, or links. September indexes all this information to "speak your mind" in your conversations.
 
-## Development
+## Getting Started
 
-This repository uses Next.js, Tailwind CSS, Tailwind UI, and is deployed on Vercel & Supabase.
+### Prerequisites
 
-### Project Structure
+- **Node.js**: v20 or later
+- **Package Manager**: [pnpm](https://pnpm.io/) (preferred) or Bun
 
-September follows a modular Next.js architecture with clear separation of concerns:
+### Setup
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/your-repo/september.git
+   cd september
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   pnpm install
+   ```
+
+3. **Environment Variables**:
+   Copy the example environment file and fill in your credentials:
+   ```bash
+   cp .env.example .env.local
+   ```
+   You will need API keys for:
+   - **Supabase**: URL and Anon Key (for auth and cloud database)
+   - **Google Gemini**: API Key (for AI suggestions and transcription)
+   - **ElevenLabs**: API Key (for high-quality TTS and cloning)
+   - **Google Auth**: Client ID and Secret (for Google Login)
+
+4. **Database Setup**:
+   - **Supabase**: Run the migrations in `supabase/migrations` against your Supabase project.
+   - **Triplit**: No manual setup required for local development (uses IndexedDB in the browser).
+
+### Running the App
+
+```bash
+pnpm run dev
+```
+The application will be available at `http://localhost:3000`.
+
+## Usage
+
+1. **Sign Up/Login**: Create an account or use the local-only mode to explore.
+2. **Talk**: Use the main interface to type or use the accessible keyboard to communicate.
+3. **AI Suggestions**: As you type, AI-powered suggestions will appear. Select them to speed up your communication.
+4. **Voice Settings**: Configure your voice, speed, and pitch in the settings. You can also clone your own voice using the Voice Cloning tool.
+5. **Contextual Info**: Upload documents or notes in the settings to help the AI understand your context better.
+
+## Project Structure
+
+September follows a modular architecture with a clear separation of concerns using domain-driven packages:
 
 ```
 september/
-├── app/                     # Next.js App Router structure
-│   ├── (app)/              # App group with main application pages
-│   │   ├── account/        # User account management
-│   │   ├── settings/       # Application settings (AI, speech)
-│   │   ├── stories/        # Story/deck management
-│   │   └── talk/           # Main communication interface
-│   ├── api/                # API routes for server-side functionality
-│   │   ├── ai/             # AI-powered features (corpus generation)
-│   │   ├── speech/         # Text-to-speech functionality
-│   │   └── transcribe/     # Speech-to-text transcription
-│   └── auth/               # Authentication callbacks
-├── components/             # Reusable React components
-│   ├── context/            # React context providers
-│   ├── editor/             # Text editor with autocomplete
-│   ├── home/               # Landing page components
-│   ├── nav/                # Navigation components
-│   ├── talk/               # Communication grid components
-│   └── ui/                 # Base UI components
-├── hooks/                  # Custom React hooks
-├── lib/                    # Utility libraries
-│   └── autocomplete/       # Custom autocomplete implementation
-├── services/               # External service integrations
-│   ├── speech/             # Speech synthesis providers
-│   ├── elevenlabs.ts       # ElevenLabs voice cloning
-│   ├── gemini.ts          # Google Gemini AI integration
-│   └── messages.ts        # Message management
-├── supabase/              # Database and authentication
-│   ├── migrations/        # Database schema migrations
-│   └── client.ts          # Supabase client configuration
-├── triplit/               # Local-first database
-│   └── schema.ts          # Local database schema
-└── types/                 # TypeScript type definitions
+├── app/                 # Next.js App Router pages (Composers for modules)
+├── components/          # Reusable UI components (shadcn/ui in components/ui)
+├── hooks/               # Global React hooks
+├── lib/                 # Global utilities and libraries
+├── packages/            # Modular features (Domain-driven)
+│   ├── account/        # User account and DB synchronization
+│   ├── ai/             # AI configuration and service registry
+│   ├── audio/          # Audio playback and storage
+│   ├── chats/          # Chat and message management
+│   ├── cloning/        # Voice cloning functionality
+│   ├── documents/      # Document and slide management
+│   ├── editor/         # Autocomplete-enabled text editor
+│   ├── keyboards/      # Custom accessible keyboards
+│   ├── onboarding/     # User onboarding flow
+│   ├── speech/         # TTS and voice management
+│   └── suggestions/    # Contextual typing suggestions
+├── services/           # External service integrations
+├── supabase/           # Cloud database config & migrations
+├── triplit/            # Local-first database schema
+└── types/              # Global TypeScript type definitions
 ```
 
-#### Key Directories
+## Tech Stack
 
-- **`app/`**: Next.js 13+ App Router structure with file-based routing
-- **`components/`**: Organized by feature with reusable UI components
-- **`hooks/`**: Custom React hooks for state management and side effects
-- **`lib/`**: Pure utility functions and custom libraries (like autocomplete)
-- **`services/`**: External API integrations and business logic
-- **`supabase/`**: Cloud database configuration and migrations
-- **`triplit/`**: Local-first database for offline functionality
+- **Framework**: Next.js 15 (App Router, React 19)
+- **Styling**: Tailwind CSS 4, shadcn/ui components
+- **Database**: Dual architecture
+  - **Supabase**: Cloud database for authentication, shared data, and file storage.
+  - **Triplit**: Local-first database (SQLite/IndexedDB) for offline functionality and fast local access.
+- **AI**: Google Gemini API, Vercel AI SDK
+- **Voice**: ElevenLabs for voice synthesis and cloning
+- **Forms**: React Hook Form + Zod validation
 
-### Tech Stack
+## Development Guidelines
 
-- **Framework**: Next.js 15 with App Router
-- **Styling**: Tailwind CSS 4
-- **Database**:
-  - Supabase (cloud, authentication, file storage)
-  - Triplit (local-first, offline sync)
-- **AI Integration**: Google Gemini API
-- **Voice**: ElevenLabs for voice cloning and synthesis
-- **Audio**: Voice Activity Detection (VAD) for speech recognition
-- **State Management**: React Context + custom hooks
-- **Forms**: React Hook Form with Zod validation
+- **Modules**: Always use the `packages/` structure for new features.
+- **Components**: Check the `README.md` in each module directory before making changes.
+- **Styles**: Follow shadcn/ui patterns and Tailwind CSS 4.
+- **Icons**: Use `lucide-react` for standard icons.
 
-### Data
+## License
 
-September uses a combination of local storage - Triplit, and a cloud database - Supabase, to store your data.
-
-- Local storage is used to store your data. It is automatically synced to individual SQLite databases.
-- The cloud database is used for authentication, storing your data, and for the voice cloning feature.
+This project is licensed under the MIT License - see the LICENSE file for details.

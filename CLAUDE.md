@@ -22,19 +22,26 @@ September is an assistive communication app for people with ALS, MND, or speech/
 
 ```
 september/
-├── app/                 # Next.js App Router pages
-│   ├── talk/           # Main communication interface
-│   ├── settings/       # App settings (AI, speech)
-│   ├── api/            # Server-side API routes
-│   └── auth/           # Authentication callbacks
-├── components/         # React components (organized by feature)
-├── hooks/              # Custom React hooks
-├── lib/                # Utilities and libraries
-│   └── autocomplete/   # Custom autocomplete implementation
+├── app/                 # Next.js App Router pages (Composers for modules)
+├── components/          # Reusable UI components (shadcn/ui in components/ui)
+├── hooks/               # Global React hooks
+├── lib/                 # Global utilities and libraries
+├── packages/            # Modular features (Domain-driven)
+│   ├── account/        # User account and DB synchronization
+│   ├── ai/             # AI configuration and service registry
+│   ├── audio/          # Audio playback and storage
+│   ├── chats/          # Chat and message management
+│   ├── cloning/        # Voice cloning functionality
+│   ├── documents/      # Document and slide management
+│   ├── editor/         # Autocomplete-enabled text editor
+│   ├── keyboards/      # Custom accessible keyboards
+│   ├── onboarding/     # User onboarding flow
+│   ├── speech/         # TTS and voice management
+│   └── suggestions/    # Contextual typing suggestions
 ├── services/           # External service integrations
 ├── supabase/           # Cloud database config & migrations
 ├── triplit/            # Local-first database schema
-└── types/              # TypeScript type definitions
+└── types/              # Global TypeScript type definitions
 ```
 
 ## Development
@@ -48,15 +55,24 @@ pnpm run lint     # Run ESLint
 
 ## Code Patterns
 
-**Forms**: Always use `react-hook-form` with `zodResolver` for validation. Use form components from [components/ui/form.tsx](components/ui/form.tsx).
+**Modules**: The codebase is organized into modular packages in `packages/`. Each package should have:
+- `components/`: Context providers, forms, and feature-specific UI.
+- `hooks/`: State management and domain logic (e.g., `use-db-*`, `use-auth-*`, `use-ai-*`).
+- `lib/`: Package-specific utility functions and services.
+- `types/`: Zod schemas and TypeScript interfaces.
+- `index.ts`: Public API for the package.
+- `README.md`: Architectural decisions and usage guides.
+
+**Forms**: Always use `react-hook-form` with `zodResolver` for validation. Use form components from `components/ui/form.tsx`.
 
 **Styling**: Use shadcn/ui components with Tailwind CSS. Font family is Noto Sans.
 
-**Components**: Read directory READMEs before working in any major directory (app/, components/, lib/, services/).
+**Error Handling**: Propagate errors to hooks and components. Use `toast` for user-facing errors (except in forms where Zod errors are used).
 
 ## Important
 
 - Do what has been asked; nothing more, nothing less
 - ALWAYS prefer editing existing files over creating new ones
-- Read directory READMEs before making changes
-- For architecture details, see [README.md](README.md)
+- **READ and UPDATE the README.md in each module directory before and after making changes.**
+- Follow the modular structure in `packages/` for new features or refactors.
+- For architecture details, see [README.md](README.md).
