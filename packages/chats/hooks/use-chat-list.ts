@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 
 import { useQuery } from '@triplit/react';
 
-import { useAccount } from '@/components/account';
+import { useAccount } from '@/packages/account';
 import { triplit } from '@/triplit/client';
 import { Chat } from '@/packages/chats/types/chat';
 

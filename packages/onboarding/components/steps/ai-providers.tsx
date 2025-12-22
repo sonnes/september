@@ -4,7 +4,7 @@ import { ArrowRight, Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
-import { useAccount } from '@/components/account';
+import { useAccount } from '@/packages/account';
 import { AIProvidersForm, ProviderSection } from '@/packages/ai';
 import type { Providers } from '@/types/ai-config';
 

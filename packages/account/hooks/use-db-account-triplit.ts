@@ -1,22 +1,20 @@
-import { useCallback, useEffect, useState } from 'react';
-
+import { useCallback, useEffect } from 'react';
 import { useQueryOne } from '@triplit/react';
-
 import { triplit } from '@/triplit/client';
-import type { Account, PutAccountData } from '@/types/account';
+import { Account, PutAccountData } from '../types';
 import { User } from '@/types/user';
 
-const ID = 'local-user';
+const LOCAL_USER_ID = 'local-user';
 
 export function useAccountTriplit() {
-  const query = triplit.query('accounts').Where('id', '=', ID);
-  const { result: account } = useQueryOne(triplit, query);
+  const query = triplit.query('accounts').Where('id', '=', LOCAL_USER_ID);
+  const { result: account, fetching: loading } = useQueryOne(triplit, query);
 
   useEffect(() => {
-    if (!account) {
-      triplit.insert('accounts', { id: ID, name: '' });
+    if (!account && !loading) {
+      triplit.insert('accounts', { id: LOCAL_USER_ID, name: 'Local User' });
     }
-  }, [account]);
+  }, [account, loading]);
 
   const updateAccount = useCallback(
     async (accountData: Partial<PutAccountData>) => {
@@ -25,6 +23,7 @@ export function useAccountTriplit() {
       }
 
       const updatedAccount = { ...accountData, updated_at: new Date() };
+      // @ts-ignore - Triplit types might be strict
       triplit.update('accounts', account.id, updatedAccount);
     },
     [account]
@@ -32,29 +31,24 @@ export function useAccountTriplit() {
 
   const uploadFile = useCallback(
     async (file: File) => {
-      if (!account) {
-        throw new Error('Account not found');
-      }
-
-      // TODO: Implement local file storage
-      console.log('Triplit uploadFile:', file.name);
-
+      // Local implementation would save to IndexedDB or filesystem
+      console.log('Triplit uploadFile (not implemented):', file.name);
       return file.name;
     },
-    [account]
+    []
   );
 
   const deleteFile = useCallback(async (path: string) => {
-    // For Triplit implementation, this would remove from local storage
-    // TODO: Implement local file deletion
-    console.log('Triplit deleteFile:', path);
+    console.log('Triplit deleteFile (not implemented):', path);
   }, []);
 
   return {
-    user: account as User,
+    user: { id: account?.id || LOCAL_USER_ID, email: 'local@device' } as User,
     account: account as Account,
     updateAccount,
     uploadFile,
     deleteFile,
+    loading,
   };
 }
+

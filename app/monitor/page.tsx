@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
-import { AccountProvider } from '@/services/account/context';
-import AccountsService from '@/services/account/supabase';
+import { AccountProvider } from '@/packages/account';
+import AccountsService from '@/packages/account';
 import { AudioPlayerProvider } from '@/packages/audio';
 
 import { createClient } from '@/supabase/server';

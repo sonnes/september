@@ -14,7 +14,7 @@ import { FormCheckbox, FormSelect, FormTextarea } from '@/components/ui/form';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Spinner } from '@/components/ui/spinner';
 
-import type { Account } from '@/types/account';
+import type { Account } from '@/packages/account';
 import type { AIProvider } from '@/types/ai-config';
 
 import { useCorpus } from '@/packages/suggestions/hooks/use-corpus';

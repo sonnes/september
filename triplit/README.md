@@ -199,8 +199,8 @@ Each domain service has both Supabase and Triplit hooks:
 
 **Account**:
 
-- [../services/account/use-supabase.tsx](../services/account/use-supabase.tsx) - Cloud storage
-- [../services/account/use-triplit.tsx](../services/account/use-triplit.tsx) - Local storage
+- [../packages/account) - Cloud storage
+- [../packages/account) - Local storage
 
 **Audio**:
 

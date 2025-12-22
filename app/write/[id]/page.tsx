@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
-import { useAccount } from '@/components/account';
+import { useAccount } from '@/packages/account';
 import SidebarLayout from '@/components/sidebar/layout';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';

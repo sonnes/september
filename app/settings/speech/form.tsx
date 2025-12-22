@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { VoiceSettingsFormData, VoicesForm, VoicesList } from '@/packages/speech';
-import { useAccount } from '@/components/account';
+import { useAccount } from '@/packages/account';
 import { useAISettings } from '@/packages/ai';
 
 export default function VoicesSettingsForm() {

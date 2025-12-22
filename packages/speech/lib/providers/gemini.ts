@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
-import { GeminiSpeechSettings } from '@/types/account';
+import { GeminiSpeechSettings } from '@/packages/account';
 import { Voice } from '@/types/voice';
 import { ListVoicesRequest, SpeechProvider, SpeechRequest, SpeechResponse } from '@/packages/speech/types';
 

@@ -186,7 +186,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 Services use Supabase for data persistence:
 
 - **Messages Service** - [../services/messages/supabase.ts](../services/messages/supabase.ts)
-- **Account Service** - [../services/account/supabase.ts](../services/account/supabase.ts)
+- **Account Service** - [../packages/account)
 - **Audio Service** - [../services/audio/supabase.ts](../services/audio/supabase.ts)
 
 All services extend the base pattern:

@@ -10,8 +10,8 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import { AccountProvider } from '@/services/account/context';
-import AccountsService from '@/services/account/supabase';
+import { AccountProvider } from '@/packages/account';
+import AccountsService from '@/packages/account';
 
 import SidebarLayout from '@/components/sidebar/layout';
 import { createClient } from '@/supabase/server';

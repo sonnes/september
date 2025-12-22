@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { AI_PROVIDERS } from '@/packages/ai';
 import { useVoicesLogic } from '@/packages/speech/hooks/use-voices-logic';
 import { VoiceSettingsFormData } from '@/packages/speech/types/schemas';
-import type { Account } from '@/types/account';
+import type { Account } from '@/packages/account';
 import type { Voice } from '@/types/voice';
 
 type SpeechProvider = 'browser' | 'gemini' | 'elevenlabs';

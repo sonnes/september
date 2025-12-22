@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { useDebounce } from '@/hooks/use-debounce';
 import { toast } from 'sonner';
 
-import { useAccount } from '@/components/account';
+import { useAccount } from '@/packages/account';
 import { useAISettings } from '@/packages/ai';
 import { useSpeechContext, VoicesList } from '@/packages/speech';
 import type { SpeechConfig } from '@/types/ai-config';

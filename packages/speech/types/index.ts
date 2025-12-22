@@ -1,5 +1,5 @@
 import { Alignment } from '@/packages/audio';
-import { BrowserTTSSettings, ElevenLabsSettings, GeminiSpeechSettings } from '@/types/account';
+import { BrowserTTSSettings, ElevenLabsSettings, GeminiSpeechSettings } from '@/packages/account';
 import { Voice } from '@/types/voice';
 
 export interface SpeechProvider {

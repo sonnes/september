@@ -10,7 +10,7 @@ import { Github } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-import { useAccount } from '@/components/account';
+import { useAccount } from '@/packages/account';
 import { useAudioPlayer } from '@/packages/audio';
 import { EditorProvider, useEditorContext, Editor } from '@/packages/editor';
 import { KeyboardProvider } from '@/packages/keyboards';

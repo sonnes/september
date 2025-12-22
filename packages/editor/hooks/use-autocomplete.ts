@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { useAccount } from '@/components/account';
+import { useAccount } from '@/packages/account';
 
 import { Autocomplete } from '@/lib/autocomplete';
 import { tokenize } from '@/lib/autocomplete/utils';

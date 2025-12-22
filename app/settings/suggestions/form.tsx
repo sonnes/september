@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-import { useAccount } from '@/components/account';
+import { useAccount } from '@/packages/account';
 import { SuggestionsForm, type SuggestionsFormData } from '@/packages/suggestions';
 
 export default function SuggestionsSettingsForm() {

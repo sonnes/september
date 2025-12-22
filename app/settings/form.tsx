@@ -6,11 +6,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Control, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import { AccountFormData, AccountSchema } from '@/packages/ai';
+import { useAccount, AccountFormData, AccountSchema } from '@/packages/account';
 import { Button } from '@/components/ui/button';
 import { FormCheckbox, FormField } from '@/components/ui/form';
-
-import { useAccount } from '@/services/account';
 
 // Personal Information Section
 function PersonalInfoSection({ control }: { control: Control<AccountFormData> }) {

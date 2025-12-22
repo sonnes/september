@@ -9,7 +9,7 @@ import { CheckCircle2, Key, MessageSquare, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
-import { useAccount } from '@/components/account';
+import { useAccount } from '@/packages/account';
 import { useAISettings } from '@/packages/ai';
 
 import { useOnboarding } from '@/packages/onboarding/components/onboarding-provider';

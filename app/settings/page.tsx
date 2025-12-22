@@ -12,7 +12,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import { AccountProvider, AccountService } from '@/services/account';
+import { AccountProvider, AccountService } from '@/packages/account';
 import { SpeechProvider } from '@/packages/speech';
 
 import { createClient } from '@/supabase/server';

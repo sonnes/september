@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-
-import AccountsService from '@/services/account/supabase';
-
+import { SupabaseAccountService } from '../lib/supabase-service';
 import supabase from '@/supabase/client';
 import { removeRealtimeSubscription, subscribeToUserAccount } from '@/supabase/realtime';
-import type { Account, PutAccountData } from '@/types/account';
-import type { User } from '@/types/user';
+import { Account, PutAccountData } from '../types';
+import { User } from '@/types/user';
 
-const accountService = new AccountsService(supabase);
+const accountService = new SupabaseAccountService(supabase);
 
 export function useAccountSupabase({
   user: initialUser,
@@ -24,27 +22,29 @@ export function useAccountSupabase({
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      throw new Error('User not found');
+      // Don't throw if not authenticated, just set to undefined
+      setUser(undefined);
+      return;
     }
     setUser(user);
   };
 
   useEffect(() => {
     if (initialUser) return;
-
     getUser();
   }, [initialUser]);
 
   const getAccount = useCallback(async () => {
     if (!user) return;
 
-    const account = await accountService.getAccount(user.id);
-
-    if (!account) {
-      throw new Error('Account not found');
+    try {
+      const account = await accountService.getAccount(user.id);
+      if (account) {
+        setAccount(account);
+      }
+    } catch (error) {
+      console.error('Error fetching account:', error);
     }
-
-    setAccount(account);
   }, [user]);
 
   const updateAccount = useCallback(
@@ -59,14 +59,16 @@ export function useAccountSupabase({
         throw new Error('Account not found');
       }
 
-      setAccount(account);
+      setAccount(account as Account);
     },
     [user]
   );
 
   useEffect(() => {
-    if (initialAccount) return;
-
+    if (initialAccount) {
+      setAccount(initialAccount);
+      return;
+    }
     getAccount();
   }, [user, initialAccount, getAccount]);
 
@@ -91,7 +93,6 @@ export function useAccountSupabase({
       },
     });
 
-    // Cleanup function to unsubscribe on unmount
     return () => {
       removeRealtimeSubscription(channel);
     };
@@ -120,7 +121,7 @@ export function useAccountSupabase({
     async (path: string) => {
       await supabase.storage.from('documents').remove([path]);
     },
-    [account?.medical_document_path]
+    []
   );
 
   return {
@@ -129,5 +130,7 @@ export function useAccountSupabase({
     updateAccount,
     uploadFile,
     deleteFile,
+    loading: !user && !initialUser, // Simple loading state
   };
 }
+

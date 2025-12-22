@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-import AccountsService from '@/services/account/supabase';
+import AccountsService from '@/packages/account';
 import { createClient } from '@/supabase/server';
 
 export async function GET(request: Request) {

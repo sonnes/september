@@ -9,7 +9,7 @@ import AnimatedText from '@/components/ui/animated-text';
 
 import { toast } from 'sonner';
 
-import { useAccount } from '@/services/account/context';
+import { useAccount } from '@/packages/account';
 import { AudioService, useAudioPlayer } from '@/packages/audio';
 
 import supabase from '@/supabase/client';

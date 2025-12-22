@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import { getModelsForProvider, getProvidersForFeature } from '@/packages/ai';
 import { useSpeechContext } from '@/packages/speech/components/speech-provider';
 import { VoiceSettingsFormData, VoiceSettingsSchema } from '@/packages/speech/types/schemas';
-import type { Account } from '@/types/account';
+import type { Account } from '@/packages/account';
 import type { Voice } from '@/types/voice';
 
 type SpeechProvider = 'browser' | 'gemini' | 'elevenlabs';

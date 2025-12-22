@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import { useAccount } from '@/components/account';
+import { useAccount } from '@/packages/account';
 import supabase from '@/supabase/client';
 
 function NavUserSkeleton() {

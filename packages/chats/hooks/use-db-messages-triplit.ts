@@ -1,15 +1,16 @@
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useQuery, useQueryOne } from '@triplit/react';
+import { toast } from 'sonner';
+import { v4 as uuidv4 } from 'uuid';
 
-import { useAccount } from '@/components/account';
-
+import { useAccount } from '@/packages/account';
 import { triplit } from '@/triplit/client';
+import { Chat } from '../types/chat';
+import { CreateMessageData, Message } from '../types/message';
 
-import { Chat } from '@/packages/chats/types/chat';
-import { Message } from '@/packages/chats/types/message';
-
-export default function useMessages({ chatId }: { chatId: string }) {
+// Hook for messages within a specific chat
+export function useChatMessages({ chatId }: { chatId: string }) {
   const { user } = useAccount();
 
   const messagesQuery = useMemo(
@@ -30,9 +31,9 @@ export default function useMessages({ chatId }: { chatId: string }) {
     fetching: chatFetching,
     error: chatError,
   } = useQueryOne(triplit, triplit.query('chats').Where('id', '=', chatId));
+
   return {
     chat: chat as Chat | undefined,
-
     messages:
       (results?.map(message => ({
         id: message.id,
@@ -46,6 +47,107 @@ export default function useMessages({ chatId }: { chatId: string }) {
     fetching: fetching || chatFetching,
     error: error || chatError,
   };
+}
+
+// Global messages hook (equivalent to services/messages/use-triplit.tsx)
+export function useMessagesTriplit() {
+  const { user } = useAccount();
+  const [messages, setMessages] = useState<Message[]>([]);
+
+  const query = triplit
+    .query('messages')
+    .Where('user_id', '=', user?.id || '')
+    .Order('created_at', 'DESC')
+    .Limit(100);
+
+  const { results, fetching, error } = useQuery(triplit, query);
+
+  useEffect(() => {
+    if (!fetching && results) {
+      setMessages(
+        results.map(item => ({
+          id: item.id,
+          text: item.text,
+          type: item.type,
+          user_id: item.user_id,
+          created_at: item.created_at,
+          audio_path: item.audio_path || undefined,
+          chat_id: item.chat_id || undefined,
+        }))
+      );
+    } else if (error) {
+      toast.error(error.message);
+      console.error(error);
+    }
+  }, [fetching, results, error]);
+
+  const getMessages = useCallback(async () => {
+    return messages;
+  }, [messages]);
+
+  return {
+    messages,
+    getMessages,
+  };
+}
+
+export function useCreateMessageTriplit() {
+  const { user } = useAccount();
+
+  const createMessage = useCallback(
+    async (message: CreateMessageData): Promise<Message | undefined> => {
+      if (!message.id) {
+        message.id = uuidv4();
+      }
+
+      await triplit.insert('messages', {
+        id: message.id,
+        text: message.text,
+        type: message.type,
+        user_id: message.user_id,
+        audio_path: message.audio_path,
+        chat_id: message.chat_id,
+        created_at: new Date(),
+      });
+
+      const result = await triplit.fetchById('messages', message.id);
+      return result as Message | undefined;
+    },
+    [user]
+  );
+
+  return { createMessage };
+}
+
+export function useSearchMessagesTriplit() {
+  const { user } = useAccount();
+
+  const searchMessages = useCallback(
+    async (query: string) => {
+      if (!user) return [];
+
+      const q = triplit
+        .query('messages')
+        .Where('user_id', '=', user.id)
+        .Where('text', 'like', `%${query.trim().toLowerCase()}%`)
+        .Order('created_at', 'DESC')
+        .Limit(10);
+
+      const result = await triplit.fetch(q);
+      return result.map(item => ({
+        id: item.id,
+        text: item.text,
+        type: item.type,
+        user_id: item.user_id,
+        created_at: item.created_at,
+        audio_path: item.audio_path || undefined,
+        chat_id: item.chat_id || undefined,
+      })) as Message[];
+    },
+    [user]
+  );
+
+  return { searchMessages };
 }
 
 export function useMessageHistory({ query, limit = 10 }: { query: string; limit?: number }) {

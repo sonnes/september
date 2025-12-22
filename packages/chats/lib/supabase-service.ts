@@ -1,7 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 
-import { CreateMessageData, Message } from '@/packages/chats';
+import { CreateMessageData, Message } from '../types/message';
 
 export class MessagesService {
   private supabase: SupabaseClient;
@@ -19,6 +19,7 @@ export class MessagesService {
         text: message.text,
         user_id: message.user_id,
         audio_path: message.audio_path,
+        chat_id: message.chat_id,
       })
       .select()
       .single();
@@ -58,3 +59,4 @@ export class MessagesService {
     return data;
   }
 }
+

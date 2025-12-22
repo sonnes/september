@@ -1,9 +1,8 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-
-import { Account, PutAccountData } from '@/types/account';
+import { Account, PutAccountData } from '../types';
 import { User } from '@/types/user';
 
-class AccountService {
+export class SupabaseAccountService {
   private supabase: SupabaseClient;
 
   constructor(client: SupabaseClient) {
@@ -63,4 +62,3 @@ class AccountService {
   }
 }
 
-export default AccountService;

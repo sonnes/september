@@ -7,7 +7,7 @@ import { Search } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { useAccount } from '@/components/account';
+import { useAccount } from '@/packages/account';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormField, FormTextarea } from '@/components/ui/form';

@@ -2,8 +2,8 @@
 
 import { ReactNode, createContext, useCallback, useContext, useMemo } from 'react';
 
-import { useAccount } from '@/components/account';
-import { Account } from '@/types/account';
+import { useAccount } from '@/packages/account';
+import { Account } from '@/packages/account';
 import type {
   AIProvider,
   ProviderConfig,

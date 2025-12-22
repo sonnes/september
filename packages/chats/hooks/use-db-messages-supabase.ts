@@ -2,40 +2,36 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { toast } from 'sonner';
 
-import { useAccount } from '@/services/account/context';
+import { useAccount } from '@/packages/account';
 import supabase from '@/supabase/client';
 import { removeRealtimeSubscription, subscribeToUserMessages } from '@/supabase/realtime';
-import { Message } from '@/packages/chats/types/message';
+import { CreateMessageData, Message } from '../types/message';
+import { MessagesService } from '../lib/supabase-service';
 
-export function useMessages({ messages: initialMessages }: { messages: Message[] }) {
+const messagesService = new MessagesService(supabase);
+
+export function useMessagesSupabase({ messages: initialMessages }: { messages: Message[] }) {
   const { user } = useAccount();
   const [messages, setMessages] = useState<Message[]>(initialMessages);
 
   const getMessages = useCallback(async () => {
     if (!user) return;
 
-    const { data, error } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(100);
-
-    if (error) {
-      toast.error(error.message);
+    try {
+      const data = await messagesService.getMessages(user.id);
+      setMessages(data.reverse());
+      return data;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to fetch messages');
       console.error(error);
-      return;
     }
-
-    setMessages(data.reverse());
-    return data;
   }, [user]);
 
   useEffect(() => {
     if (initialMessages.length === 0) {
       getMessages();
     }
-  }, [user, initialMessages.length]);
+  }, [user, initialMessages.length, getMessages]);
 
   // Realtime subscription for messages
   useEffect(() => {
@@ -72,4 +68,44 @@ export function useMessages({ messages: initialMessages }: { messages: Message[]
     messages,
     getMessages,
   };
+}
+
+export function useCreateMessageSupabase() {
+  const { user } = useAccount();
+
+  const createMessage = useCallback(
+    async (message: CreateMessageData) => {
+      try {
+        const createdMessage = await messagesService.createMessage(message);
+        return createdMessage;
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to create message');
+        console.error(error);
+      }
+    },
+    [user]
+  );
+
+  return { createMessage };
+}
+
+export function useSearchMessagesSupabase() {
+  const { user } = useAccount();
+
+  const searchMessages = useCallback(
+    async (query: string) => {
+      if (!user) return [];
+
+      try {
+        const data = await messagesService.searchMessages(user.id, query);
+        return data as Message[];
+      } catch (error) {
+        console.error('Search error:', error);
+        return [];
+      }
+    },
+    [user]
+  );
+
+  return { searchMessages };
 }

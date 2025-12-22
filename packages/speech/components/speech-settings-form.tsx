@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { FormCheckbox, FormSelect, FormSlider } from '@/components/ui/form';
 import { toast } from 'sonner';
 import { getModelsForProvider, getProvidersForFeature } from '@/packages/ai';
-import type { Account } from '@/types/account';
+import type { Account } from '@/packages/account';
 import type { AIProvider } from '@/types/ai-config';
 
 /**

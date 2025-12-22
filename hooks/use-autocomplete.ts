@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useAccount } from '@/services/account/context';
-import { useMessages } from '@/services/messages';
+import { useAccount } from '@/packages/account';
+import { useMessages } from '@/packages/chats';
 
 import { Autocomplete } from '@/lib/autocomplete';
 import { tokenize } from '@/lib/autocomplete/utils';

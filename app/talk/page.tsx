@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 
-import { useAccount } from '@/components/account';
+import { useAccount } from '@/packages/account';
 import SidebarLayout from '@/components/sidebar/layout';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';

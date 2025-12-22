@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 
 import { toast } from 'sonner';
 
-import { useAccount } from '@/components/account';
+import { useAccount } from '@/packages/account';
 import GeminiService from '@/services/gemini';
 
 type UploadFormProps = {

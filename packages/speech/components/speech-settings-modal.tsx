@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useAccount } from '@/components/account';
+import { useAccount } from '@/packages/account';
 import { SpeechSettingsForm, SpeechSettingsFormData } from '@/packages/speech/components/speech-settings-form';
 
 export function SpeechSettingsModal() {
