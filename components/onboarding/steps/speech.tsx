@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 
 import { useAccount } from '@/components/account';
 import { useAISettings } from '@/components/settings';
-import { useSpeechContext } from '@/components/speech';
+import { useSpeechContext } from '@/packages/speech';
 import type { SpeechConfig } from '@/types/ai-config';
 import type { Voice } from '@/types/voice';
 

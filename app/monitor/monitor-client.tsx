@@ -11,7 +11,7 @@ import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { toast } from 'sonner';
 
 import { useAccount } from '@/services/account/context';
-import { AudioService } from '@/services/audio/supabase';
+import { AudioService } from '@/packages/audio';
 
 import supabase from '@/supabase/client';
 import { removeRealtimeSubscription, subscribeToUserMessages } from '@/supabase/realtime';

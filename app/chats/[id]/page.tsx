@@ -6,10 +6,10 @@ import { use } from 'react';
 import { ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 import { useAccount } from '@/components/account';
-import { useAudioPlayer } from '@/components/audio/audio-player';
-import { KeyboardProvider, KeyboardRenderer, KeyboardToggleButton } from '@/components/keyboards';
+import { useAudioPlayer } from '@/packages/audio';
+import { KeyboardProvider, KeyboardRenderer, KeyboardToggleButton } from '@/packages/keyboards';
 import SidebarLayout from '@/components/sidebar/layout';
-import { SpeechSettingsModal } from '@/components/speech';
+import { SpeechSettingsModal } from '@/packages/speech';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';

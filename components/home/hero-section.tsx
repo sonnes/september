@@ -11,9 +11,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
 import { useAccount } from '@/components/account';
-import { useAudioPlayer } from '@/components/audio/audio-player';
+import { useAudioPlayer } from '@/packages/audio';
 import { EditorProvider, useEditorContext, Editor } from '@/packages/editor';
-import { KeyboardProvider } from '@/components/keyboards';
+import { KeyboardProvider } from '@/packages/keyboards';
 import { useCreateAudioMessage } from '@/packages/chats';
 
 function HeroEditor() {

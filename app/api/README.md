@@ -83,7 +83,7 @@ API routes are thin wrappers around service classes:
 
 - AI generation → [services/gemini.ts](../../services/gemini.ts)
 - Speech synthesis → [services/elevenlabs.ts](../../services/elevenlabs.ts)
-- Speech providers → [services/speech/](../../services/speech/)
+- Speech providers → [packages/speech/](../../packages/speech/)
 
 ## Environment Variables
 

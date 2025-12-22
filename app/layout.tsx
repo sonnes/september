@@ -4,7 +4,7 @@ import { Noto_Sans } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 
 import { AccountProvider } from '@/components/account';
-import { AudioPlayerProvider } from '@/components/audio/audio-player';
+import { AudioPlayerProvider } from '@/packages/audio';
 import { AISettingsProvider } from '@/components/settings';
 
 import './globals.css';

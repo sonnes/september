@@ -1,6 +1,6 @@
 import { ElevenLabs, ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
 
-import { Alignment } from '@/types/audio';
+import { Alignment } from '@/packages/audio';
 
 const apiKey = process.env.ELEVENLABS_API_KEY;
 

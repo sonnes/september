@@ -3,11 +3,11 @@ import { useCallback, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { useAccount } from '@/components/account/context';
-import { useAudioStorage } from '@/components/audio/use-audio-storage';
-import { useSpeech } from '@/components/speech/use-speech';
+import { useAudioStorage } from '@/packages/audio';
+import { useSpeech } from '@/packages/speech';
 
 import { triplit } from '@/triplit/client';
-import { Audio } from '@/types/audio';
+import { Audio } from '@/packages/audio';
 
 import { CreateMessageData } from '../types/message';
 

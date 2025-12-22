@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
 import SidebarLayout from '@/components/sidebar/layout';
-import { SpeechProvider } from '@/components/speech';
+import { SpeechProvider } from '@/packages/speech';
 
 import VoicesSettingsForm from './form';
 

@@ -17,7 +17,7 @@ import VoicesList from '@/components/voices/voices-list';
 
 import { useAccount } from '@/components/account';
 import { useAISettings } from '@/components/settings';
-import { VoiceSettingsFormData, VoicesForm } from '@/components/speech';
+import { VoiceSettingsFormData, VoicesForm } from '@/packages/speech';
 
 export default function VoicesSettingsForm() {
   const { account } = useAccount();

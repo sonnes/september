@@ -6,12 +6,11 @@ import { Loader2 } from 'lucide-react';
 import moment from 'moment';
 import { toast } from 'sonner';
 
-import { useAudioPlayer } from '@/components/audio/audio-player';
-import { useAudioStorage } from '@/components/audio/use-audio-storage';
-import { useSpeech } from '@/components/speech/use-speech';
+import { useAudioPlayer, useAudioStorage } from '@/packages/audio';
+import { useSpeech } from '@/packages/speech';
 
 import { cn } from '@/lib/utils';
-import type { Audio } from '@/types/audio';
+import type { Audio } from '@/packages/audio';
 
 import type { Message } from '../types/message';
 

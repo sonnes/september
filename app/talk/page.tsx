@@ -6,18 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
 import { useAccount } from '@/components/account';
-import { useAudioPlayer } from '@/components/audio/audio-player';
-import { useEditorContext, Editor } from '@/packages/editor';
-import {
-  KeyboardProvider,
-  KeyboardRenderer,
-  KeyboardToggleButton,
-} from '@/components/keyboards';
-import { useCreateAudioMessage } from '@/packages/chats';
-import SidebarLayout from '@/components/sidebar/layout';
-import { SpeechSettingsModal } from '@/components/speech';
-import { Suggestions } from '@/packages/suggestions';
-import { TextViewer, TextViewerWords } from '@/components/text-viewer';
+import { useAudioPlayer, TextViewer, TextViewerWords } from '@/packages/audio';
 
 export default function TalkPage() {
   const { user } = useAccount();
