@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
+import { TriangleAlertIcon } from 'lucide-react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Control, useForm } from 'react-hook-form';
@@ -99,7 +100,7 @@ function TermsSection({ control }: { control: Control<AccountFormData> }) {
 }
 
 export default function SettingsForm() {
-  const { account, updateAccount } = useAccountContext();
+  const { user, account, updateAccount } = useAccountContext();
 
   const defaultValues = useMemo(() => {
     return {
@@ -186,6 +187,17 @@ export default function SettingsForm() {
 
   return (
     <div className="divide-y divide-zinc-400">
+      {user && account && !account.is_approved && (
+        <div className="rounded-md bg-amber-50 p-4 flex items-center mb-6">
+          <TriangleAlertIcon className="size-5 text-amber-400 shrink-0" />
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-amber-800">Account Pending Approval</h3>
+            <p className="mt-1 text-sm text-amber-700">
+              Your account is not approved yet. Please wait for approval.
+            </p>
+          </div>
+        </div>
+      )}
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <PersonalInfoSection control={form.control} />
         <TermsSection control={form.control} />

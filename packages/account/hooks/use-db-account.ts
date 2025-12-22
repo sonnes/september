@@ -1,3 +1,5 @@
+'use client';
+
 import { eq } from '@tanstack/db';
 import { useLiveQuery } from '@tanstack/react-db';
 import { accountCollection } from '../db';

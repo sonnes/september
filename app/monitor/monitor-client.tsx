@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 import moment from 'moment';
 import Webcam from 'react-webcam';
@@ -41,10 +42,18 @@ export default function MonitorClient() {
   };
 
   const { enqueue } = useAudioPlayer();
-  const { user } = useAccountContext();
+  const { user, account } = useAccountContext();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (account && !account.is_approved) {
+      router.push('/onboarding');
+    }
+  }, [account, router]);
 
   // Realtime subscription for messages
   useEffect(() => {
+    if (!user?.id) return;
     const channel = subscribeToUserMessages<Message>(user.id, {
       onInsert: newMessage => {
         if (newMessage.type !== 'message') return;

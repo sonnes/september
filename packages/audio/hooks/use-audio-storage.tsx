@@ -1,3 +1,5 @@
+'use client';
+
 import { triplit } from '@/triplit/client';
 import { Alignment } from '@/packages/audio/types';
 

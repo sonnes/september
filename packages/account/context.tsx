@@ -20,20 +20,10 @@ export const AccountContext = createContext<AccountContextType | undefined>(unde
 
 interface AccountProviderProps {
   children: ReactNode;
-  user?: User | null;
-  account?: Account | null;
-  provider?: 'supabase' | 'triplit';
 }
 
-export function AccountProvider({
-  children,
-  user: initialUser,
-  account: initialAccount,
-}: AccountProviderProps) {
-  const { user: authUser, loading: authLoading } = useAuth();
-
-  // Prioritize auth user, then initialUser, then fallback to local-user
-  const user = authUser || (initialUser ?? undefined);
+export function AccountProvider({ children }: AccountProviderProps) {
+  const { user, loading: authLoading } = useAuth();
   const userId = user?.id || 'local-user';
 
   const { account: dbAccount, insert, update } = useDbAccount(userId);
@@ -43,19 +33,14 @@ export function AccountProvider({
     // If we don't have a dbAccount yet, and we are not waiting for auth,
     // initialize the account in TanStack DB.
     if (!dbAccount && !authLoading) {
-      // If we have initialAccount data (e.g. from hydration), use it
-      if (initialAccount && initialAccount.id === userId) {
-        insert(initialAccount);
-      } else {
-        insert({
-          id: userId,
-          name: user?.user_metadata?.full_name || 'User',
-          created_at: new Date(),
-          updated_at: new Date(),
-        } as Account);
-      }
+      insert({
+        id: userId,
+        name: user?.user_metadata?.full_name || 'User',
+        created_at: new Date(),
+        updated_at: new Date(),
+      } as Account);
     }
-  }, [dbAccount, authLoading, insert, userId, user, initialAccount]);
+  }, [dbAccount, authLoading, insert, userId, user]);
 
   const updateAccount = async (accountData: Partial<PutAccountData>) => {
     await update(userId, { ...accountData, updated_at: new Date() });
@@ -76,13 +61,13 @@ export function AccountProvider({
   const value = useMemo(
     () => ({
       user,
-      account: dbAccount || (initialAccount ?? undefined),
+      account: dbAccount,
       updateAccount,
       uploadFile,
       deleteFile,
-      loading: authLoading || (!dbAccount && !initialAccount),
+      loading: authLoading || !dbAccount,
     }),
-    [user, dbAccount, initialAccount, authLoading]
+    [user, dbAccount, authLoading]
   );
 
   return <AccountContext.Provider value={value}>{children}</AccountContext.Provider>;
