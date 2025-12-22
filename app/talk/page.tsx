@@ -2,11 +2,17 @@
 
 import { useCallback } from 'react';
 
+import { useAccount } from '@/components/account';
+import SidebarLayout from '@/components/sidebar/layout';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import { useAccount } from '@/components/account';
-import { useAudioPlayer, TextViewer, TextViewerWords } from '@/packages/audio';
+import { TextViewer, TextViewerWords, useAudioPlayer } from '@/packages/audio';
+import { useCreateAudioMessage } from '@/packages/chats';
+import { Editor, useEditorContext } from '@/packages/editor';
+import { KeyboardProvider, KeyboardRenderer, KeyboardToggleButton } from '@/packages/keyboards';
+import { SpeechSettingsModal } from '@/packages/speech';
+import { Suggestions } from '@/packages/suggestions';
 
 export default function TalkPage() {
   const { user } = useAccount();

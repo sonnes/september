@@ -6,11 +6,13 @@ import { useRouter } from 'next/navigation';
 
 import { ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
-import {
-  DocumentEditor,
-  EditableDocumentTitle,
-  useDocumentsContext,
-} from '@/packages/documents';
+import { useAccount } from '@/components/account';
+import SidebarLayout from '@/components/sidebar/layout';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { SidebarTrigger } from '@/components/ui/sidebar';
+
+import { DocumentEditor, EditableDocumentTitle, useDocumentsContext } from '@/packages/documents';
 
 import { DocumentEditorSkeleton } from '../loading-skeleton';
 
