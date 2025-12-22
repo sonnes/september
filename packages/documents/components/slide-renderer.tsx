@@ -7,7 +7,7 @@ type SlideRendererProps = {
   className?: string;
 };
 
-export default function SlideRenderer({ slide, className }: SlideRendererProps) {
+export function SlideRenderer({ slide, className }: SlideRendererProps) {
   return (
     <div
       className={`

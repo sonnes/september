@@ -26,7 +26,7 @@ export default async function MonitorPage() {
   const [user, account] = await accountsService.getCurrentAccount();
 
   if (account && !account.is_approved) {
-    redirect('/app/onboarding');
+    redirect('/onboarding');
   }
 
   const provider = user ? 'supabase' : 'triplit';

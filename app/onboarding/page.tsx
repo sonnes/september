@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 
-import { OnboardingProvider } from '@/components/onboarding/context';
-import { Onboarding } from '@/components/onboarding/onboarding';
+import { OnboardingProvider, OnboardingFlow } from '@/packages/onboarding';
 import SidebarLayout from '@/components/sidebar/layout';
 import { SpeechProvider } from '@/packages/speech';
 
@@ -20,7 +19,7 @@ export default async function OnboardingPage() {
           </SidebarLayout.Header>
 
           <SidebarLayout.Content>
-            <Onboarding />
+            <OnboardingFlow />
           </SidebarLayout.Content>
         </SidebarLayout>
       </OnboardingProvider>

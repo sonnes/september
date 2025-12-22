@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { DocumentsProvider } from '@/components/context/documents-provider';
+import { DocumentsProvider } from '@/packages/documents';
 
 export const metadata: Metadata = {
   title: 'Write',

@@ -13,7 +13,7 @@ type SlidesNavigationProps = {
   className?: string;
 };
 
-export default function SlidesNavigation({
+export function SlidesNavigation({
   currentSlide,
   totalSlides,
   onPrevious,
@@ -37,11 +37,13 @@ export default function SlidesNavigation({
         <span className="hidden sm:inline">Previous</span>
       </Button>
 
+
       <div className="flex items-center gap-2 rounded-md border bg-muted/70 px-4 py-2 text-sm text-muted-foreground shadow-sm">
         <span className="font-semibold text-foreground">{currentSlide}</span>
         <span className="text-muted-foreground">/</span>
         <span>{totalSlides}</span>
       </div>
+
 
       <Button
         type="button"

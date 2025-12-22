@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { Account } from '@/types/account';
 import type { Voice } from '@/types/voice';
-import { AI_PROVIDERS, getModelsForProvider, getProvidersForFeature } from '@/components/settings/registry';
+import { AI_PROVIDERS, getModelsForProvider, getProvidersForFeature } from '@/services/ai';
 import { useSpeechContext } from './speech-provider';
 import { VoiceSettingsFormData, VoiceSettingsSchema } from '../types/schemas';
 

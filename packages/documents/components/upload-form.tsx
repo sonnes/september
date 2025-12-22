@@ -8,9 +8,8 @@ import { Label } from '@/components/ui/label';
 
 import { toast } from 'sonner';
 
-import GeminiService from '@/services/gemini';
-
 import { useAccount } from '@/components/account';
+import GeminiService from '@/services/gemini';
 
 type UploadFormProps = {
   onTextExtracted: (text: string) => void;
@@ -24,7 +23,7 @@ function formatFileSize(bytes: number) {
   return `${size.toFixed(size >= 10 ? 0 : 1)} ${units[index]}`;
 }
 
-export default function UploadForm({ onTextExtracted }: UploadFormProps) {
+export function UploadForm({ onTextExtracted }: UploadFormProps) {
   const { account } = useAccount();
 
   const gemini = useMemo(
@@ -107,3 +106,4 @@ export default function UploadForm({ onTextExtracted }: UploadFormProps) {
     </div>
   );
 }
+

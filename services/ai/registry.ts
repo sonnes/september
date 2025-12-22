@@ -4,12 +4,21 @@ import { AIFeature, AIProvider, AIServiceProvider } from '@/types/ai-config';
  * Registry of all supported AI providers
  */
 export const AI_PROVIDERS: Record<AIProvider, AIServiceProvider> = {
+  browser: {
+    id: 'browser',
+    name: 'Browser',
+    description: 'Native browser text-to-speech. No API key required.',
+    features: ['speech'],
+    requires_api_key: false,
+  },
+
   gemini: {
     id: 'gemini',
     name: 'Google Gemini',
     description: "Google's multimodal AI models",
     features: ['suggestions', 'transcription', 'speech'],
     requires_api_key: true,
+    api_key_url: 'https://aistudio.google.com/app/apikey',
     models: [
       {
         id: 'gemini-2.5-flash-lite',
@@ -31,10 +40,11 @@ export const AI_PROVIDERS: Record<AIProvider, AIServiceProvider> = {
 
   elevenlabs: {
     id: 'elevenlabs',
-    name: 'ElevenLabs (High Quality, Requires API Key)',
-    description: 'High-quality text-to-speech synthesis',
+    name: 'ElevenLabs',
+    description: 'High-quality, realistic voice synthesis.',
     features: ['speech'],
     requires_api_key: true,
+    api_key_url: 'https://elevenlabs.io/app/settings/keys',
     models: [
       {
         id: 'eleven_v3',
@@ -57,14 +67,6 @@ export const AI_PROVIDERS: Record<AIProvider, AIServiceProvider> = {
         description: 'Fast generation, English only',
       },
     ],
-  },
-
-  browser: {
-    id: 'browser',
-    name: 'Browser TTS (Free, No API Key)',
-    description: 'Native browser text-to-speech (no API key required)',
-    features: ['speech'],
-    requires_api_key: false,
   },
 };
 

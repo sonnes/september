@@ -8,7 +8,6 @@ import {
   PresentationChartBarIcon,
 } from '@heroicons/react/24/outline';
 
-import { useDocumentsContext } from '@/components/context/documents-provider';
 import { TiptapEditor } from '@/packages/editor';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,14 +21,15 @@ import { Separator } from '@/components/ui/separator';
 
 import { cn } from '@/lib/utils';
 
-import SlidesPresentation from './slides-presentation';
-import UploadForm from './upload-form';
+import { useDocumentsContext } from './documents-provider';
+import { SlidesPresentation } from './slides-presentation';
+import { UploadForm } from './upload-form';
 
-type DocumentProps = {
+type DocumentEditorProps = {
   className?: string;
 };
 
-export default function Document({ className }: DocumentProps) {
+export function DocumentEditor({ className }: DocumentEditorProps) {
   const { current, putDocument } = useDocumentsContext();
 
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
@@ -175,3 +175,4 @@ export default function Document({ className }: DocumentProps) {
     </div>
   );
 }
+

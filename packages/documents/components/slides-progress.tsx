@@ -9,7 +9,7 @@ type SlidesProgressProps = {
   className?: string;
 };
 
-export default function SlidesProgress({ currentSlide, totalSlides, className }: SlidesProgressProps) {
+export function SlidesProgress({ currentSlide, totalSlides, className }: SlidesProgressProps) {
   const progress = totalSlides > 0 ? (currentSlide / totalSlides) * 100 : 0;
 
   return (

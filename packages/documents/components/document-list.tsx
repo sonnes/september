@@ -8,7 +8,7 @@ import moment from 'moment';
 import { Input } from '@/components/ui/input';
 
 import { cn } from '@/lib/utils';
-import { Document } from '@/types/document';
+import { Document } from '../types';
 
 type DocumentListEmptyStateProps = ComponentProps<'div'> & {
   title?: string;
@@ -114,3 +114,4 @@ export function DocumentList({
     </>
   );
 }
+

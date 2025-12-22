@@ -14,3 +14,4 @@ export interface PutDocumentData {
 }
 
 export type PartialDocument = Partial<Document>;
+

@@ -2,11 +2,11 @@
 
 import { ReactNode, createContext, useCallback, useContext, useMemo } from 'react';
 
-import { useAccount } from '@/services/account';
-
+import { useAccount } from '@/components/account';
 import { Account } from '@/types/account';
 import type {
   AIProvider,
+  ProviderConfig,
   SpeechConfig,
   SuggestionsConfig,
   TranscriptionConfig,
@@ -20,17 +20,17 @@ import {
 
 interface AISettingsContextType {
   // AI Feature Configurations
-  suggestions: SuggestionsConfig;
-  transcription: TranscriptionConfig;
-  speech: SpeechConfig;
+  suggestionsConfig: SuggestionsConfig;
+  transcriptionConfig: TranscriptionConfig;
+  speechConfig: SpeechConfig;
 
   // Update functions
-  updateSuggestions: (config: Partial<SuggestionsConfig>) => Promise<void>;
-  updateTranscription: (config: Partial<TranscriptionConfig>) => Promise<void>;
-  updateSpeech: (config: Partial<SpeechConfig>) => Promise<void>;
+  updateSuggestionsConfig: (config: Partial<SuggestionsConfig>) => Promise<void>;
+  updateTranscriptionConfig: (config: Partial<TranscriptionConfig>) => Promise<void>;
+  updateSpeechConfig: (config: Partial<SpeechConfig>) => Promise<void>;
 
   // Provider Configurations
-  getProviderConfig: (provider: AIProvider) => { api_key?: string; base_url?: string };
+  getProviderConfig: (provider: AIProvider) => ProviderConfig | undefined;
 }
 
 const getSpeechConfig = (account: Account) => {
@@ -74,20 +74,24 @@ interface AISettingsProviderProps {
 }
 
 export function AISettingsProvider({ children }: AISettingsProviderProps) {
-  const { account, updateAccount } = useAccount();
+  const { account, updateAccount, loading } = useAccount();
 
   // Memoized configurations using helper functions
+  // Use defaults while loading to avoid race conditions with incomplete data
   const suggestions = useMemo(() => {
-    return account ? getSuggestionsConfig(account) : DEFAULT_SUGGESTIONS_CONFIG;
-  }, [account]);
+    if (loading || !account) return DEFAULT_SUGGESTIONS_CONFIG;
+    return getSuggestionsConfig(account);
+  }, [account, loading]);
 
   const transcription = useMemo(() => {
-    return account ? getTranscriptionConfig(account) : DEFAULT_TRANSCRIPTION_CONFIG;
-  }, [account]);
+    if (loading || !account) return DEFAULT_TRANSCRIPTION_CONFIG;
+    return getTranscriptionConfig(account);
+  }, [account, loading]);
 
   const speech = useMemo(() => {
-    return account ? getSpeechConfig(account) : DEFAULT_SPEECH_CONFIG;
-  }, [account]);
+    if (loading || !account) return DEFAULT_SPEECH_CONFIG;
+    return getSpeechConfig(account);
+  }, [account, loading]);
 
   // Update functions
   const updateSuggestions = async (config: Partial<SuggestionsConfig>) => {
@@ -127,20 +131,20 @@ export function AISettingsProvider({ children }: AISettingsProviderProps) {
   };
 
   const getProviderConfig = useCallback(
-    (provider: AIProvider): { api_key?: string; base_url?: string } => {
-      if (provider === 'browser') return {};
-      return account?.ai_providers?.[provider] as { api_key?: string; base_url?: string };
+    (provider: AIProvider): ProviderConfig | undefined => {
+      if (provider === 'browser') return undefined;
+      return account?.ai_providers?.[provider];
     },
     [account]
   );
 
   const contextValue: AISettingsContextType = {
-    suggestions,
-    transcription,
-    speech,
-    updateSuggestions,
-    updateTranscription,
-    updateSpeech,
+    suggestionsConfig: suggestions,
+    transcriptionConfig: transcription,
+    speechConfig: speech,
+    updateSuggestionsConfig: updateSuggestions,
+    updateTranscriptionConfig: updateTranscription,
+    updateSpeechConfig: updateSpeech,
     getProviderConfig,
   };
 

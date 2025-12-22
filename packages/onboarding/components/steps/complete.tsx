@@ -10,9 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
 import { useAccount } from '@/components/account';
-import { useAISettings } from '@/components/settings';
+import { useAISettings } from '@/services/ai';
 
-import { useOnboarding } from '../context';
+import { useOnboarding } from '../../context';
 
 interface SummaryItemProps {
   icon: React.ReactNode;
@@ -147,3 +147,4 @@ export function CompleteStep() {
     </div>
   );
 }
+

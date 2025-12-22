@@ -4,7 +4,7 @@ import { useQuery } from '@triplit/react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { triplit } from '@/triplit/client';
-import { PutDocumentData } from '@/types/document';
+import { PutDocumentData } from '../types';
 
 export function useDocuments() {
   const query = triplit.query('documents').Order('updated_at', 'DESC');
@@ -34,3 +34,4 @@ export function useDocuments() {
     deleteDocument,
   };
 }
+

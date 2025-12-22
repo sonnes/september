@@ -2,14 +2,14 @@
 
 import { Progress } from '@/components/ui/progress';
 
-import { useOnboarding } from './context';
+import { useOnboarding } from '../context';
 import { AIProvidersStep } from './steps/ai-providers';
 import { CompleteStep } from './steps/complete';
 import { SpeechStep } from './steps/speech';
 import { SuggestionsStep } from './steps/suggestions';
 import { WelcomeStep } from './steps/welcome';
 
-export function Onboarding() {
+export function OnboardingFlow() {
   const { currentStep, totalSteps } = useOnboarding();
 
   const progress = ((currentStep + 1) / totalSteps) * 100;
@@ -47,3 +47,4 @@ export function Onboarding() {
     </div>
   );
 }
+

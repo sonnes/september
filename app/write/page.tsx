@@ -6,21 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { PlusIcon } from '@heroicons/react/24/outline';
 
-import { useDocumentsContext } from '@/components/context/documents-provider';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-} from '@/components/ui/breadcrumb';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { SidebarTrigger } from '@/components/ui/sidebar';
-
-import { toast } from 'sonner';
-
-import SidebarLayout from '@/components/sidebar/layout';
-import { DocumentList } from '@/components/write/document-list';
+import { DocumentList, useDocumentsContext } from '@/packages/documents';
 
 import { DocumentListSkeleton } from './loading-skeleton';
 

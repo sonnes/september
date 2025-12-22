@@ -6,15 +6,11 @@ import { useRouter } from 'next/navigation';
 
 import { ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
-import { useDocumentsContext } from '@/components/context/documents-provider';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { SidebarTrigger } from '@/components/ui/sidebar';
-
-import { useAccount } from '@/components/account';
-import SidebarLayout from '@/components/sidebar/layout';
-import Document from '@/components/write/document';
-import { EditableDocumentTitle } from '@/components/write/editable-document-title';
+import {
+  DocumentEditor,
+  EditableDocumentTitle,
+  useDocumentsContext,
+} from '@/packages/documents';
 
 import { DocumentEditorSkeleton } from '../loading-skeleton';
 
@@ -89,7 +85,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
           {/* Document Editor */}
           {!isInitializing && !fetching && current && (
             <div className="max-w-4xl mx-auto w-full">
-              <Document className="flex-1 min-h-0" />
+              <DocumentEditor className="flex-1 min-h-0" />
             </div>
           )}
         </div>

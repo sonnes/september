@@ -14,12 +14,12 @@ import { useDebounce } from '@/hooks/use-debounce';
 import { toast } from 'sonner';
 
 import { useAccount } from '@/components/account';
-import { useAISettings } from '@/components/settings';
+import { useAISettings } from '@/services/ai';
 import { useSpeechContext } from '@/packages/speech';
 import type { SpeechConfig } from '@/types/ai-config';
 import type { Voice } from '@/types/voice';
 
-import { useOnboarding } from '../context';
+import { useOnboarding } from '../../context';
 
 type SpeechProvider = 'browser' | 'gemini' | 'elevenlabs';
 
@@ -272,3 +272,4 @@ export function SpeechStep() {
     </div>
   );
 }
+

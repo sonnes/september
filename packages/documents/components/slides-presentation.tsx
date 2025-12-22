@@ -4,14 +4,14 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 
-import { useDocumentsContext } from '@/components/context/documents-provider';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 import { type Slide, parseAndRenderSlides } from '@/lib/slides';
 
-import SlideRenderer from './slide-renderer';
-import SlidesNavigation from './slides-navigation';
-import SlidesProgress from './slides-progress';
+import { useDocumentsContext } from './documents-provider';
+import { SlideRenderer } from './slide-renderer';
+import { SlidesNavigation } from './slides-navigation';
+import { SlidesProgress } from './slides-progress';
 
 type SlidesPresentationProps = {
   markdown?: string;
@@ -19,7 +19,7 @@ type SlidesPresentationProps = {
   className?: string;
 };
 
-export default function SlidesPresentation({
+export function SlidesPresentation({
   markdown,
   documentName,
   className,
@@ -243,3 +243,4 @@ export default function SlidesPresentation({
     </>
   );
 }
+

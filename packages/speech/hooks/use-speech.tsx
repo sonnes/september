@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 
-import { useAISettings } from '@/components/settings/context';
+import { useAISettings } from '@/services/ai';
 import type { AIProvider } from '@/types/ai-config';
 import type { Voice } from '@/types/voice';
 

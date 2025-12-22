@@ -7,7 +7,7 @@ import { ChevronDown } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import { getModelsForProvider } from '@/components/settings/registry';
+import { getModelsForProvider } from '@/services/ai';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { FormCheckbox, FormSelect, FormTextarea } from '@/components/ui/form';
