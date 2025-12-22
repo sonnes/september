@@ -10,14 +10,14 @@ import { Github } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 import { useAudioPlayer } from '@/packages/audio';
 import { EditorProvider, useEditorContext, Editor } from '@/packages/editor';
 import { KeyboardProvider } from '@/packages/keyboards';
 import { useCreateAudioMessage } from '@/packages/chats';
 
 function HeroEditor() {
-  const { user } = useAccount();
+  const { user } = useAccountContext();
   const { enqueue } = useAudioPlayer();
   const { setText } = useEditorContext();
   const { status, createAudioMessage } = useCreateAudioMessage();

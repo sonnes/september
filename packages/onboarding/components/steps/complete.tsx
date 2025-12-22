@@ -9,7 +9,7 @@ import { CheckCircle2, Key, MessageSquare, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 import { useAISettings } from '@/packages/ai';
 
 import { useOnboarding } from '@/packages/onboarding/components/onboarding-provider';
@@ -52,7 +52,7 @@ function SummaryItem({ icon, title, status, details }: SummaryItemProps) {
 
 export function CompleteStep() {
   const { completeOnboarding, goToPreviousStep } = useOnboarding();
-  const { account } = useAccount();
+  const { account } = useAccountContext();
   const { suggestionsConfig, speechConfig } = useAISettings();
   const [isCompleting, setIsCompleting] = useState(false);
   const router = useRouter();

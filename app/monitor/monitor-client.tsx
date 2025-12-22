@@ -9,7 +9,7 @@ import AnimatedText from '@/components/ui/animated-text';
 
 import { toast } from 'sonner';
 
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 import { AudioService, useAudioPlayer } from '@/packages/audio';
 
 import supabase from '@/supabase/client';
@@ -41,7 +41,7 @@ export default function MonitorClient() {
   };
 
   const { enqueue } = useAudioPlayer();
-  const { user } = useAccount();
+  const { user } = useAccountContext();
 
   // Realtime subscription for messages
   useEffect(() => {

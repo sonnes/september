@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Control, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import { useAccount, AccountFormData, AccountSchema } from '@/packages/account';
+import { useAccountContext, AccountFormData, AccountSchema } from '@/packages/account';
 import { Button } from '@/components/ui/button';
 import { FormCheckbox, FormField } from '@/components/ui/form';
 
@@ -99,7 +99,7 @@ function TermsSection({ control }: { control: Control<AccountFormData> }) {
 }
 
 export default function SettingsForm() {
-  const { account, updateAccount } = useAccount();
+  const { account, updateAccount } = useAccountContext();
 
   const defaultValues = useMemo(() => {
     return {

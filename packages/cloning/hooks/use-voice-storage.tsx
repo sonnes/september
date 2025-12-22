@@ -1,12 +1,12 @@
 import { useCallback } from 'react';
 
-import { useAccount } from '@/components/account/context';
+import { useAccountContext } from '@/packages/account';
 import { triplit } from '@/triplit/client';
 
 const USER_ID = 'local-user';
 
 export function useVoiceStorage() {
-  const { user } = useAccount();
+  const { user } = useAccountContext();
 
   const uploadVoiceSample = useCallback(
     async ({

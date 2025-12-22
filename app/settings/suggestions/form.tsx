@@ -5,11 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 import { SuggestionsForm, type SuggestionsFormData } from '@/packages/suggestions';
 
 export default function SuggestionsSettingsForm() {
-  const { account, updateAccount } = useAccount();
+  const { account, updateAccount } = useAccountContext();
 
   const handleSubmit = async (data: SuggestionsFormData) => {
     await updateAccount({

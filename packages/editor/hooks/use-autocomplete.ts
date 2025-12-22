@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 
 import { Autocomplete } from '@/lib/autocomplete';
 import { tokenize } from '@/lib/autocomplete/utils';
@@ -19,7 +19,7 @@ interface UseAutocompleteReturn {
 }
 
 export function useAutocomplete(): UseAutocompleteReturn {
-  const { account } = useAccount();
+  const { account } = useAccountContext();
   const [autocomplete, setAutocomplete] = useState<Autocomplete>(new Autocomplete());
   const [isInitialized, setIsInitialized] = useState(false);
 

@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { Account, PutAccountData } from '../types';
+import { Account } from '../types';
 import { User } from '@/types/user';
 
 export class SupabaseAccountService {
@@ -9,6 +9,10 @@ export class SupabaseAccountService {
     this.supabase = client;
   }
 
+  /**
+   * Gets the current authenticated user.
+   * Note: Account data fetching from Supabase is deprecated in favor of TanStack DB.
+   */
   async getCurrentAccount(): Promise<[User | null, Account | null]> {
     const {
       data: { user },
@@ -18,47 +22,6 @@ export class SupabaseAccountService {
       return [null, null];
     }
 
-    const account = await this.getAccount(user.id);
-    return [user, account];
-  }
-
-  async getAccount(id: string) {
-    const { data, error } = await this.supabase.from('accounts').select('*').eq('id', id).single();
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return null;
+    return [user as User, null];
       }
-      throw error;
-    }
-
-    return data as Account;
-  }
-
-  async putAccount(id: string, account: PutAccountData) {
-    const { data, error } = await this.supabase
-      .from('accounts')
-      .upsert({ id, ...account })
-      .select()
-      .single();
-    if (error) {
-      throw error;
-    }
-
-    return data;
-  }
-
-  async updateAccount(id: string, account: Partial<PutAccountData>) {
-    const { data, error } = await this.supabase
-      .from('accounts')
-      .update(account)
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) {
-      throw error;
-    }
-
-    return data;
-  }
 }
-

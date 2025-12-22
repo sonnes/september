@@ -4,14 +4,14 @@ import { useCallback, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 
 const TOTAL_STEPS = 5;
 
 export function useOnboardingLogic() {
   const [currentStep, setCurrentStep] = useState(0);
   const router = useRouter();
-  const { updateAccount } = useAccount();
+  const { updateAccount } = useAccountContext();
 
   const goToNextStep = useCallback(() => {
     setCurrentStep(prev => Math.min(prev + 1, TOTAL_STEPS - 1));

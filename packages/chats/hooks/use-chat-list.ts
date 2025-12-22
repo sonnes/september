@@ -2,12 +2,12 @@ import { useCallback } from 'react';
 
 import { useQuery } from '@triplit/react';
 
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 import { triplit } from '@/triplit/client';
 import { Chat } from '@/packages/chats/types/chat';
 
 export default function useChatList({ searchQuery }: { searchQuery?: string }) {
-  const { user } = useAccount();
+  const { user } = useAccountContext();
 
   const query = triplit
     .query('chats')

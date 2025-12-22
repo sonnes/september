@@ -3,6 +3,7 @@ import { Voice } from '@/types/voice';
 import { z } from 'zod';
 
 export const AccountSchema = z.object({
+  id: z.string().min(1),
   // Personal Information
   name: z.string().min(1, 'Name is required'),
   city: z.string().optional(),
@@ -11,6 +12,15 @@ export const AccountSchema = z.object({
   primary_diagnosis: z.string().optional(),
   year_of_diagnosis: z.number().min(1900).max(new Date().getFullYear()).optional(),
   medical_document_path: z.string().optional(),
+
+  // AI Feature Configurations
+  ai_suggestions: z.any().optional(),
+  ai_transcription: z.any().optional(),
+  ai_speech: z.any().optional(),
+
+  // Provider Config
+  ai_providers: z.any().optional(),
+
   // Speech Settings
   speech_provider: z.string().optional(),
   speech_settings: z
@@ -35,6 +45,12 @@ export const AccountSchema = z.object({
   // Terms and Privacy
   terms_accepted: z.boolean().optional(),
   privacy_policy_accepted: z.boolean().optional(),
+  onboarding_completed: z.boolean().optional(),
+  is_approved: z.boolean().optional(),
+
+  // Timestamps
+  created_at: z.coerce.date().optional(),
+  updated_at: z.coerce.date().optional(),
 });
 
 export type AccountFormData = z.infer<typeof AccountSchema>;
@@ -102,4 +118,4 @@ export interface Account {
   updated_at: Date;
 }
 
-export type PutAccountData = Partial<Omit<Account, 'id' | 'created_at' | 'updated_at'>>;
+export type PutAccountData = Partial<Omit<Account, 'id' | 'created_at'>>;

@@ -5,7 +5,7 @@ import { use } from 'react';
 
 import { ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 import { useAudioPlayer } from '@/packages/audio';
 import { KeyboardProvider, KeyboardRenderer, KeyboardToggleButton } from '@/packages/keyboards';
 import SidebarLayout from '@/components/sidebar/layout';
@@ -31,7 +31,7 @@ type ChatPageProps = {
 
 export default function ChatPage({ params }: ChatPageProps) {
   const { id: chatId } = use(params);
-  const { user } = useAccount();
+  const { user } = useAccountContext();
   const { enqueue } = useAudioPlayer();
   const { chat, messages, fetching, error } = useChatMessages({
     chatId: chatId || '',

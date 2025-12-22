@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import { EditorProvider } from '@/packages/editor';
+import { KeyboardProvider } from '@/packages/keyboards';
 import { SpeechProvider } from '@/packages/speech';
 
 export const metadata: Metadata = {
@@ -11,7 +12,9 @@ export const metadata: Metadata = {
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <EditorProvider>
-      <SpeechProvider>{children}</SpeechProvider>
+      <SpeechProvider>
+        <KeyboardProvider>{children}</KeyboardProvider>
+      </SpeechProvider>
     </EditorProvider>
   );
 }

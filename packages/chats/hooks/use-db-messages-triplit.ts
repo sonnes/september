@@ -4,14 +4,14 @@ import { useQuery, useQueryOne } from '@triplit/react';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 import { triplit } from '@/triplit/client';
 import { Chat } from '../types/chat';
 import { CreateMessageData, Message } from '../types/message';
 
 // Hook for messages within a specific chat
 export function useChatMessages({ chatId }: { chatId: string }) {
-  const { user } = useAccount();
+  const { user } = useAccountContext();
 
   const messagesQuery = useMemo(
     () =>
@@ -51,7 +51,7 @@ export function useChatMessages({ chatId }: { chatId: string }) {
 
 // Global messages hook (equivalent to services/messages/use-triplit.tsx)
 export function useMessagesTriplit() {
-  const { user } = useAccount();
+  const { user } = useAccountContext();
   const [messages, setMessages] = useState<Message[]>([]);
 
   const query = triplit
@@ -92,7 +92,7 @@ export function useMessagesTriplit() {
 }
 
 export function useCreateMessageTriplit() {
-  const { user } = useAccount();
+  const { user } = useAccountContext();
 
   const createMessage = useCallback(
     async (message: CreateMessageData): Promise<Message | undefined> => {
@@ -120,7 +120,7 @@ export function useCreateMessageTriplit() {
 }
 
 export function useSearchMessagesTriplit() {
-  const { user } = useAccount();
+  const { user } = useAccountContext();
 
   const searchMessages = useCallback(
     async (query: string) => {
@@ -151,7 +151,7 @@ export function useSearchMessagesTriplit() {
 }
 
 export function useMessageHistory({ query, limit = 10 }: { query: string; limit?: number }) {
-  const { user } = useAccount();
+  const { user } = useAccountContext();
 
   const trimmedQuery = query.trim();
   const isEmpty = trimmedQuery === '';

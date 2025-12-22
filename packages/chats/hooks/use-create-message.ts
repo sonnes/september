@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 
 import { v4 as uuidv4 } from 'uuid';
 
-import { useAccount } from '@/components/account/context';
+import { useAccountContext } from '@/packages/account';
 import { useAudioStorage } from '@/packages/audio';
 import { useSpeech } from '@/packages/speech';
 
@@ -12,7 +12,7 @@ import { Audio } from '@/packages/audio';
 import { CreateMessageData } from '@/packages/chats/types/message';
 
 export function useCreateMessage() {
-  const { user } = useAccount();
+  const { user } = useAccountContext();
 
   const createMessage = useCallback(
     async (message: CreateMessageData) => {
@@ -33,7 +33,7 @@ export function useCreateMessage() {
 type CreateAudioStatus = 'idle' | 'generating-speech' | 'uploading-audio' | 'saving-message';
 
 export function useCreateAudioMessage() {
-  const { user } = useAccount();
+  const { user } = useAccountContext();
   const { uploadAudio } = useAudioStorage();
   const { createMessage } = useCreateMessage();
 

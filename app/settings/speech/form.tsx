@@ -17,11 +17,11 @@ import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { VoiceSettingsFormData, VoicesForm, VoicesList } from '@/packages/speech';
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 import { useAISettings } from '@/packages/ai';
 
 export default function VoicesSettingsForm() {
-  const { account } = useAccount();
+  const { account } = useAccountContext();
   const { updateSpeechConfig } = useAISettings();
 
   const handleSubmit = async (data: VoiceSettingsFormData) => {

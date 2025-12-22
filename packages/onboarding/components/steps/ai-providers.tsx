@@ -4,7 +4,7 @@ import { ArrowRight, Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 import { AIProvidersForm, ProviderSection } from '@/packages/ai';
 import type { Providers } from '@/types/ai-config';
 
@@ -12,7 +12,7 @@ import { useOnboarding } from '@/packages/onboarding/components/onboarding-provi
 
 export function AIProvidersStep() {
   const { goToNextStep, goToPreviousStep } = useOnboarding();
-  const { account, updateAccount } = useAccount();
+  const { account, updateAccount } = useAccountContext();
 
   const handleSubmit = async (providers: Providers) => {
     await updateAccount({

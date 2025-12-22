@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 import SidebarLayout from '@/components/sidebar/layout';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -23,7 +23,7 @@ type DocumentPageProps = {
 export default function DocumentPage({ params }: DocumentPageProps) {
   const { id } = use(params);
   const router = useRouter();
-  const { user } = useAccount();
+  const { user } = useAccountContext();
   const { documents, fetching, current, setCurrentId } = useDocumentsContext();
 
   // Set the current document ID when the page loads

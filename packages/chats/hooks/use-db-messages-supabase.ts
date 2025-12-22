@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { toast } from 'sonner';
 
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 import supabase from '@/supabase/client';
 import { removeRealtimeSubscription, subscribeToUserMessages } from '@/supabase/realtime';
 import { CreateMessageData, Message } from '../types/message';
@@ -11,7 +11,7 @@ import { MessagesService } from '../lib/supabase-service';
 const messagesService = new MessagesService(supabase);
 
 export function useMessagesSupabase({ messages: initialMessages }: { messages: Message[] }) {
-  const { user } = useAccount();
+  const { user } = useAccountContext();
   const [messages, setMessages] = useState<Message[]>(initialMessages);
 
   const getMessages = useCallback(async () => {
@@ -71,7 +71,7 @@ export function useMessagesSupabase({ messages: initialMessages }: { messages: M
 }
 
 export function useCreateMessageSupabase() {
-  const { user } = useAccount();
+  const { user } = useAccountContext();
 
   const createMessage = useCallback(
     async (message: CreateMessageData) => {
@@ -90,7 +90,7 @@ export function useCreateMessageSupabase() {
 }
 
 export function useSearchMessagesSupabase() {
-  const { user } = useAccount();
+  const { user } = useAccountContext();
 
   const searchMessages = useCallback(
     async (query: string) => {

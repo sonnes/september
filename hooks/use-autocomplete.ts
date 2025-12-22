@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 import { useMessages } from '@/packages/chats';
 
 import { Autocomplete } from '@/lib/autocomplete';
@@ -18,7 +18,7 @@ interface UseAutocompleteReturn {
 }
 
 export function useAutocomplete(): UseAutocompleteReturn {
-  const { account } = useAccount();
+  const { account } = useAccountContext();
   const { messages } = useMessages();
   const [autocomplete, setAutocomplete] = useState<Autocomplete>(new Autocomplete());
   const [isInitialized, setIsInitialized] = useState(false);

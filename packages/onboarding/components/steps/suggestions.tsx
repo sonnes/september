@@ -6,14 +6,14 @@ import { Button } from '@/components/ui/button';
 
 import { toast } from 'sonner';
 
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 import { SuggestionsForm, type SuggestionsFormData } from '@/packages/suggestions';
 
 import { useOnboarding } from '@/packages/onboarding/components/onboarding-provider';
 
 export function SuggestionsStep() {
   const { goToNextStep, goToPreviousStep } = useOnboarding();
-  const { account, updateAccount } = useAccount();
+  const { account, updateAccount } = useAccountContext();
 
   const onSubmit = async (data: SuggestionsFormData) => {
     try {

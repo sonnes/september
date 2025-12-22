@@ -9,13 +9,13 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 import SidebarLayout from '@/components/sidebar/layout';
 
 import { DashboardSkeleton } from './loading-skeleton';
 
 export default function DashboardPage() {
-  const { user, loading } = useAccount();
+  const { user, loading } = useAccountContext();
 
   return (
     <SidebarLayout>

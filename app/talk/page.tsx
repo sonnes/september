@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 import SidebarLayout from '@/components/sidebar/layout';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -10,12 +10,12 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { TextViewer, TextViewerWords, useAudioPlayer } from '@/packages/audio';
 import { useCreateAudioMessage } from '@/packages/chats';
 import { Editor, useEditorContext } from '@/packages/editor';
-import { KeyboardProvider, KeyboardRenderer, KeyboardToggleButton } from '@/packages/keyboards';
+import { KeyboardRenderer, KeyboardToggleButton } from '@/packages/keyboards';
 import { SpeechSettingsModal } from '@/packages/speech';
 import { Suggestions } from '@/packages/suggestions';
 
 export default function TalkPage() {
-  const { user } = useAccount();
+  const { user } = useAccountContext();
   const { current, enqueue } = useAudioPlayer();
   const { text, setText } = useEditorContext();
   const { status, createAudioMessage } = useCreateAudioMessage();
@@ -79,22 +79,20 @@ export default function TalkPage() {
         </div>
 
         {/* Sticky Suggestions + Editor */}
-        <KeyboardProvider>
-          <div className="fixed bottom-0 left-0 right-0 p-4 md:left-(--sidebar-width) z-10">
-            <div className="max-w-4xl mx-auto flex flex-col gap-3">
-              <Suggestions />
-              <Editor
-                placeholder="Type a message..."
-                onSubmit={handleSubmit}
-                disabled={status !== 'idle'}
-              >
-                <KeyboardToggleButton />
-                <SpeechSettingsModal />
-              </Editor>
-              <KeyboardRenderer onKeyPress={handleKeyPress} />
-            </div>
+        <div className="fixed bottom-0 left-0 right-0 p-4 md:left-(--sidebar-width) z-10">
+          <div className="max-w-4xl mx-auto flex flex-col gap-3">
+            <Suggestions />
+            <Editor
+              placeholder="Type a message..."
+              onSubmit={handleSubmit}
+              disabled={status !== 'idle'}
+            >
+              <KeyboardToggleButton />
+              <SpeechSettingsModal />
+            </Editor>
+            <KeyboardRenderer onKeyPress={handleKeyPress} />
           </div>
-        </KeyboardProvider>
+        </div>
       </SidebarLayout.Content>
     </SidebarLayout>
   );

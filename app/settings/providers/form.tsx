@@ -5,12 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 import { AIProvidersForm, ProviderSection } from '@/packages/ai';
 import type { Providers } from '@/types/ai-config';
 
 export default function AISettingsForm() {
-  const { account, updateAccount } = useAccount();
+  const { account, updateAccount } = useAccountContext();
 
   const handleSubmit = async (providers: Providers) => {
     await updateAccount({

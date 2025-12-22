@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 import supabase from '@/supabase/client';
 
 function NavUserSkeleton() {
@@ -42,7 +42,7 @@ function NavUserSkeleton() {
 }
 
 export function NavUser() {
-  const { user, loading } = useAccount();
+  const { user, loading } = useAccountContext();
   const router = useRouter();
   const { isMobile } = useSidebar();
 

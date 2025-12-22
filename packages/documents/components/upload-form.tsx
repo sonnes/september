@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 
 import { toast } from 'sonner';
 
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 import GeminiService from '@/services/gemini';
 
 type UploadFormProps = {
@@ -24,7 +24,7 @@ function formatFileSize(bytes: number) {
 }
 
 export function UploadForm({ onTextExtracted }: UploadFormProps) {
-  const { account } = useAccount();
+  const { account } = useAccountContext();
 
   const gemini = useMemo(
     () => new GeminiService(account?.gemini_api_key || ''),

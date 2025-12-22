@@ -1,20 +1,24 @@
 # Account Package
 
-This package manages user account data, synchronization between Supabase and Triplit, and file management for user documents.
+This package manages user account data using TanStack DB for local-first storage and Supabase for authentication and file storage.
 
 ## Features
 
-- **Multi-DB Support**: Handles synchronization between cloud (Supabase) and local-first (Triplit) databases.
-- **Real-time Sync**: Automatically updates UI when account data changes in the cloud.
-- **File Management**: Provides abstractions for uploading and deleting user documents.
+- **Local-First with TanStack DB**: Primary store for account data, providing fast, reactive updates.
+- **Supabase Authentication**: Integrated authentication state via `useAuth`.
+- **File Management**: abstractions for uploading and deleting user documents via `useStorage` (Supabase Storage).
 - **Configuration**: Manages AI feature settings (suggestions, transcription, speech) at the account level.
 
 ## Architecture
 
-- `components/`: UI components like `AccountProvider`.
-- `hooks/`: React hooks for accessing and managing account data.
-- `lib/`: Business logic and service integrations (e.g., `SupabaseAccountService`).
+- `context.tsx`: Core context provider (`AccountProvider`) and `useAccountContext` hook.
+- `hooks/`: Domain-specific React hooks:
+  - `useDbAccount`: TanStack DB operations for account collection.
+  - `useAuth`: Supabase authentication state.
+  - `useStorage`: Supabase file management.
+- `lib/`: Business logic and service integrations.
 - `types/`: Zod schemas and TypeScript interfaces for account data.
+- `db.ts`: TanStack DB collection definition.
 
 ## Usage
 
@@ -36,11 +40,22 @@ export default function RootLayout({ children }) {
 
 ### Hook
 
-Access account data and actions using `useAccount`:
+Access account data and actions using `useAccountContext`:
 
 ```tsx
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 
-const { account, user, updateAccount } = useAccount();
+const { account, user, updateAccount } = useAccountContext();
 ```
 
+### Direct DB Access
+
+For specialized cases, you can use the domain-specific hooks:
+
+```tsx
+import { useDbAccount, useAuth, useStorage } from '@/packages/account';
+
+const { account, update } = useDbAccount(userId);
+const { user } = useAuth();
+const { uploadFile } = useStorage();
+```

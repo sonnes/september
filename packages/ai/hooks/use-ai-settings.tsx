@@ -2,7 +2,7 @@
 
 import { ReactNode, createContext, useCallback, useContext, useMemo } from 'react';
 
-import { useAccount } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
 import { Account } from '@/packages/account';
 import type {
   AIProvider,
@@ -74,7 +74,7 @@ interface AISettingsProviderProps {
 }
 
 export function AISettingsProvider({ children }: AISettingsProviderProps) {
-  const { account, updateAccount, loading } = useAccount();
+  const { account, updateAccount, loading } = useAccountContext();
 
   // Memoized configurations using helper functions
   // Use defaults while loading to avoid race conditions with incomplete data
