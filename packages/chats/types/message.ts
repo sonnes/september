@@ -1,4 +1,4 @@
-import { Audio } from './audio';
+import { Audio } from '@/types/audio';
 
 export interface Message {
   id: string;

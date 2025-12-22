@@ -1,7 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 
-import { CreateMessageData, Message } from '@/types/message';
+import { CreateMessageData, Message } from '@/packages/chats';
 
 export class MessagesService {
   private supabase: SupabaseClient;

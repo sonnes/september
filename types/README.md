@@ -15,7 +15,7 @@ Centralized type definitions ensure:
 
 ### Core Data Models
 
-**[message.ts](message.ts)** - Message type definitions
+**[packages/chats/types/message.ts](../packages/chats/types/message.ts)** - Message type definitions
 
 - `Message` - Complete message with all fields
 - `CreateMessageData` - Data for creating new messages
@@ -149,7 +149,7 @@ Always import types explicitly:
 
 ```typescript
 import { Account, PutAccountData } from '@/types/account';
-import { CreateMessageData, Message } from '@/types/message';
+import { CreateMessageData, Message } from '@/packages/chats';
 ```
 
 ### Type vs Interface

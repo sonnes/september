@@ -14,7 +14,7 @@ import {
   KeyboardRenderer,
   KeyboardToggleButton,
 } from '@/components/keyboards';
-import { useCreateAudioMessage } from '@/components/messages/use-create-message';
+import { useCreateAudioMessage } from '@/packages/chats';
 import SidebarLayout from '@/components/sidebar/layout';
 import { SpeechSettingsModal } from '@/components/speech';
 import { Suggestions } from '@/components/suggestions';

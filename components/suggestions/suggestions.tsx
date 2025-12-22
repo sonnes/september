@@ -3,7 +3,7 @@
 import { Loader2 } from 'lucide-react';
 
 import { useEditorContext } from '@/components/editor/context';
-import { useMessageHistory } from '@/components/messages/use-messages';
+import { useMessageHistory } from '@/packages/chats';
 import { useSuggestions } from '@/components/suggestions/use-suggestions';
 import { cn } from '@/lib/utils';
 

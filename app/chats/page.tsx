@@ -18,8 +18,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 
 import { toast } from 'sonner';
 
-import { ChatList } from '@/components/chat/chat-list';
-import useChatList from '@/components/chat/use-chat-list';
+import { ChatList, useChatList } from '@/packages/chats';
 import SidebarLayout from '@/components/sidebar/layout';
 
 import { ChatListSkeleton } from './loading-skeleton';

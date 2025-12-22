@@ -8,7 +8,7 @@ import moment from 'moment';
 import { Input } from '@/components/ui/input';
 
 import { cn } from '@/lib/utils';
-import { Chat } from '@/types/chat';
+import { Chat } from '../types/chat';
 
 type ChatListEmptyStateProps = ComponentProps<'div'> & {
   title?: string;

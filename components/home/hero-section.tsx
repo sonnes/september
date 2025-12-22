@@ -15,7 +15,7 @@ import { useAudioPlayer } from '@/components/audio/audio-player';
 import { EditorProvider, useEditorContext } from '@/components/editor/context';
 import Editor from '@/components/editor/editor';
 import { KeyboardProvider } from '@/components/keyboards';
-import { useCreateAudioMessage } from '@/components/messages/use-create-message';
+import { useCreateAudioMessage } from '@/packages/chats';
 
 function HeroEditor() {
   const { user } = useAccount();

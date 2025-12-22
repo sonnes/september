@@ -6,7 +6,7 @@ import { useAISettings } from '@/services/ai/context';
 import GeminiService from '@/services/gemini';
 import { useMessages } from '@/services/messages';
 
-import { Message } from '@/types/message';
+import { Message } from '@/packages/chats';
 import { Suggestion } from '@/types/suggestion';
 
 interface UseSuggestionsReturn {

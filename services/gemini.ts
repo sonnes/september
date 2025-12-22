@@ -1,7 +1,7 @@
 import { Content, GoogleGenAI, Type } from '@google/genai';
 import { v4 as uuidv4 } from 'uuid';
 
-import { Message } from '@/types/message';
+import { Message } from '@/packages/chats';
 
 interface PartialCard {
   id: string;

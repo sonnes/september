@@ -7,7 +7,7 @@ import { useMessages } from '@/services/messages';
 
 import { useEditorContext } from '@/components/editor/context';
 import { useAISettings } from '@/components/settings';
-import { Message } from '@/types/message';
+import { Message } from '@/packages/chats';
 import { Suggestion } from '@/types/suggestion';
 
 interface UseSuggestionsReturn {

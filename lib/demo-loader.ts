@@ -1,7 +1,7 @@
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 
-import { Message } from '@/types/message';
+import { Message } from '@/packages/chats';
 
 interface DemoMessage {
   text: string;

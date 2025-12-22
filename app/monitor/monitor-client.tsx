@@ -15,7 +15,7 @@ import { AudioService } from '@/services/audio/supabase';
 
 import supabase from '@/supabase/client';
 import { removeRealtimeSubscription, subscribeToUserMessages } from '@/supabase/realtime';
-import { Message } from '@/types/message';
+import { Message } from '@/packages/chats';
 
 export default function MonitorClient() {
   const audioService = useMemo(() => new AudioService(supabase), []);

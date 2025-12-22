@@ -2,7 +2,7 @@
 
 import { ReactNode, createContext, useContext } from 'react';
 
-import type { CreateMessageData, Message } from '@/types/message';
+import type { CreateMessageData, Message } from '@/packages/chats';
 
 import {
   useCreateMessage as useCreateMessageSupabase,

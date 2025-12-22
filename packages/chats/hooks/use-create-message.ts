@@ -5,9 +5,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { useAccount } from '@/components/account/context';
 import { useAudioStorage } from '@/components/audio/use-audio-storage';
 import { useSpeech } from '@/components/speech/use-speech';
+
 import { triplit } from '@/triplit/client';
 import { Audio } from '@/types/audio';
-import { CreateMessageData } from '@/types/message';
+
+import { CreateMessageData } from '../types/message';
 
 export function useCreateMessage() {
   const { user } = useAccount();

@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useAccount } from '@/services/account/context';
 
 import { triplit } from '@/triplit/client';
-import { CreateMessageData, Message } from '@/types/message';
+import { CreateMessageData, Message } from '@/packages/chats';
 
 export function useMessages() {
   const { user } = useAccount();

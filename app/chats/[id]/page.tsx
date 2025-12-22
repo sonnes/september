@@ -11,7 +11,12 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 
 import { useAccount } from '@/components/account';
 import { useAudioPlayer } from '@/components/audio/audio-player';
-import { EditableChatTitle } from '@/components/chat/editable-chat-title';
+import {
+  EditableChatTitle,
+  MessageList,
+  useCreateAudioMessage,
+  useMessages,
+} from '@/packages/chats';
 import { EditorProvider, useEditorContext } from '@/components/editor/context';
 import Editor from '@/components/editor/editor';
 import {
@@ -19,9 +24,6 @@ import {
   KeyboardRenderer,
   KeyboardToggleButton,
 } from '@/components/keyboards';
-import { MessageList } from '@/components/messages';
-import { useCreateAudioMessage } from '@/components/messages/use-create-message';
-import useMessages from '@/components/messages/use-messages';
 import SidebarLayout from '@/components/sidebar/layout';
 import { SpeechSettingsModal } from '@/components/speech';
 import { Suggestions } from '@/components/suggestions';
