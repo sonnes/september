@@ -7,8 +7,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 
 import { useAccount } from '@/components/account';
 import { useAudioPlayer } from '@/components/audio/audio-player';
-import { useEditorContext } from '@/components/editor/context';
-import Editor from '@/components/editor/editor';
+import { useEditorContext, Editor } from '@/packages/editor';
 import {
   KeyboardProvider,
   KeyboardRenderer,
@@ -17,7 +16,7 @@ import {
 import { useCreateAudioMessage } from '@/packages/chats';
 import SidebarLayout from '@/components/sidebar/layout';
 import { SpeechSettingsModal } from '@/components/speech';
-import { Suggestions } from '@/components/suggestions';
+import { Suggestions } from '@/packages/suggestions';
 import { TextViewer, TextViewerWords } from '@/components/text-viewer';
 
 export default function TalkPage() {

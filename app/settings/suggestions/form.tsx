@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 
 import { useAccount } from '@/components/account';
-import { SuggestionsForm, SuggestionsFormData } from '@/components/suggestions';
+import { SuggestionsForm, type SuggestionsFormData } from '@/packages/suggestions';
 
 export default function SuggestionsSettingsForm() {
   const { account, updateAccount } = useAccount();

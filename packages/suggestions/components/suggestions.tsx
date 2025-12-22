@@ -2,9 +2,9 @@
 
 import { Loader2 } from 'lucide-react';
 
-import { useEditorContext } from '@/components/editor/context';
+import { useEditorContext } from '@/packages/editor';
 import { useMessageHistory } from '@/packages/chats';
-import { useSuggestions } from '@/components/suggestions/use-suggestions';
+import { useSuggestions } from '../hooks/use-suggestions';
 import { cn } from '@/lib/utils';
 
 interface SuggestionsProps {
@@ -42,7 +42,7 @@ export function Suggestions({ className, timeout = 800 }: SuggestionsProps) {
               <div className="h-5 w-0.5 shrink-0 rounded-full bg-primary" />
               <button
                 onClick={() => handleSuggestionClick(suggestion.text)}
-                className="rounded-lg px-3 py-1 font-medium transition-colors border hover:bg-gray-50"
+                className="rounded-lg px-3 py-1 font-medium transition-colors border hover:bg-gray-50 text-left"
               >
                 {suggestion.text}
               </button>
@@ -54,11 +54,11 @@ export function Suggestions({ className, timeout = 800 }: SuggestionsProps) {
       {!isLoadingMessages && messages.length > 0 && (
         <div className="flex flex-col gap-2">
           {messages.slice(0, 5).map((message, index) => (
-            <div key={`suggestion-${index}`} className="flex items-center gap-3">
+            <div key={`msg-${index}`} className="flex items-center gap-3">
               <div className="h-5 w-0.5 shrink-0 rounded-full bg-orange-500" />
               <button
                 onClick={() => handleSuggestionClick(message.text)}
-                className="rounded-lg px-3 py-1 font-medium transition-colors border hover:bg-gray-50"
+                className="rounded-lg px-3 py-1 font-medium transition-colors border hover:bg-gray-50 text-left"
               >
                 {message.text}
               </button>
@@ -69,3 +69,4 @@ export function Suggestions({ className, timeout = 800 }: SuggestionsProps) {
     </div>
   );
 }
+

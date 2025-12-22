@@ -5,39 +5,18 @@ import { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ChevronDown } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
+import { toast } from 'sonner';
 
+import { getModelsForProvider } from '@/components/settings/registry';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { FormCheckbox, FormSelect, FormTextarea } from '@/components/ui/form';
 
-import { useCorpus } from '@/hooks/use-ai';
-import { toast } from 'sonner';
-
 import type { Account } from '@/types/account';
 import type { AIProvider } from '@/types/ai-config';
 
-import { getModelsForProvider } from '../settings/registry';
-
-/**
- * Zod schema for Suggestions Configuration
- */
-export const SuggestionsFormSchema = z.object({
-  enabled: z.boolean(),
-  provider: z.enum(['gemini']),
-  model: z.enum(['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-pro']),
-  settings: z
-    .object({
-      system_instructions: z.string().max(1000).optional(),
-      temperature: z.number().min(0).max(1).optional(),
-      max_suggestions: z.number().min(1).max(10).optional(),
-      context_window: z.number().min(0).max(50).optional(),
-      ai_corpus: z.string().max(20000).optional(),
-    })
-    .optional(),
-});
-
-export type SuggestionsFormData = z.infer<typeof SuggestionsFormSchema>;
+import { useCorpus } from '../hooks/use-corpus';
+import { type SuggestionsFormData, SuggestionsFormSchema } from '../types';
 
 const EXAMPLE_INSTRUCTIONS = [
   {

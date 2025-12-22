@@ -1,6 +1,9 @@
+'use client';
+
 import { useCallback, useEffect, useState } from 'react';
 
-import { useAccount } from '@/components/account/context';
+import { useAccount } from '@/components/account';
+
 import { Autocomplete } from '@/lib/autocomplete';
 import { tokenize } from '@/lib/autocomplete/utils';
 
@@ -87,7 +90,7 @@ export function useAutocomplete(): UseAutocompleteReturn {
     };
 
     loadData();
-  }, [retrainAutocomplete]);
+  }, [retrainAutocomplete, account?.ai_corpus]);
 
   const getSpellings = useCallback(
     (query: string) => {

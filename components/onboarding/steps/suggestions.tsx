@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 import { useAccount } from '@/components/account';
-import { SuggestionsForm, SuggestionsFormData } from '@/components/suggestions';
+import { SuggestionsForm, type SuggestionsFormData } from '@/packages/suggestions';
 
 import { useOnboarding } from '../context';
 

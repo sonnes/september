@@ -27,13 +27,12 @@ interface TiptapEditorProps {
   className?: string;
 }
 
-export default function TiptapEditor({
+export function TiptapEditor({
   content = '',
   placeholder = 'Start writing...',
   onUpdate,
   className = '',
 }: TiptapEditorProps) {
-
   const editor = useEditor(
     {
       content,
@@ -57,7 +56,8 @@ export default function TiptapEditor({
           },
           blockquote: {
             HTMLAttributes: {
-              class: 'border-l-4 pl-6 py-2 my-4 italic text-zinc-700 bg-zinc-50 rounded-r-md border-indigo-400',
+              class:
+                'border-l-4 pl-6 py-2 my-4 italic text-zinc-700 bg-zinc-50 rounded-r-md border-indigo-400',
             },
           },
           codeBlock: {
@@ -144,7 +144,8 @@ export default function TiptapEditor({
         'flex flex-col h-full',
         // Only apply default styling if no custom className is provided
         !className.includes('border-0') &&
-          !className.includes('shadow-none') && 'border rounded-xl shadow-sm border-indigo-300',
+          !className.includes('shadow-none') &&
+          'border rounded-xl shadow-sm border-indigo-300',
         className
       )}
     >
@@ -157,98 +158,98 @@ export default function TiptapEditor({
             onClick={() => editor.chain().focus().toggleBold().run()}
             className={cn(
               'flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 hover:bg-zinc-100',
-              editor.isActive('bold') 
-                ? 'bg-indigo-100 text-indigo-700 shadow-sm' 
+              editor.isActive('bold')
+                ? 'bg-indigo-100 text-indigo-700 shadow-sm'
                 : 'text-zinc-600 hover:text-zinc-900'
             )}
           >
             <BoldIcon className="h-4 w-4" />
           </button>
-          
+
           {/* Italic */}
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleItalic().run()}
             className={cn(
               'flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 hover:bg-zinc-100',
-              editor.isActive('italic') 
-                ? 'bg-indigo-100 text-indigo-700 shadow-sm' 
+              editor.isActive('italic')
+                ? 'bg-indigo-100 text-indigo-700 shadow-sm'
                 : 'text-zinc-600 hover:text-zinc-900'
             )}
           >
             <ItalicIcon className="h-4 w-4" />
           </button>
-          
+
           {/* Separator */}
           <div className="w-px h-6 bg-zinc-200 mx-2" />
-          
+
           {/* H1 */}
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
             className={cn(
               'flex items-center justify-center px-2 h-8 rounded-md transition-all duration-200 hover:bg-zinc-100',
-              editor.isActive('heading', { level: 1 }) 
-                ? 'bg-indigo-100 text-indigo-700 shadow-sm font-semibold' 
+              editor.isActive('heading', { level: 1 })
+                ? 'bg-indigo-100 text-indigo-700 shadow-sm font-semibold'
                 : 'text-zinc-600 hover:text-zinc-900'
             )}
           >
             <span className="text-sm font-medium">H1</span>
           </button>
-          
+
           {/* H2 */}
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
             className={cn(
               'flex items-center justify-center px-2 h-8 rounded-md transition-all duration-200 hover:bg-zinc-100',
-              editor.isActive('heading', { level: 2 }) 
-                ? 'bg-indigo-100 text-indigo-700 shadow-sm font-semibold' 
+              editor.isActive('heading', { level: 2 })
+                ? 'bg-indigo-100 text-indigo-700 shadow-sm font-semibold'
                 : 'text-zinc-600 hover:text-zinc-900'
             )}
           >
             <span className="text-sm font-medium">H2</span>
           </button>
-          
+
           {/* Separator */}
           <div className="w-px h-6 bg-zinc-200 mx-2" />
-          
+
           {/* Bullet List */}
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             className={cn(
               'flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 hover:bg-zinc-100',
-              editor.isActive('bulletList') 
-                ? 'bg-indigo-100 text-indigo-700 shadow-sm' 
+              editor.isActive('bulletList')
+                ? 'bg-indigo-100 text-indigo-700 shadow-sm'
                 : 'text-zinc-600 hover:text-zinc-900'
             )}
           >
             <ListBulletIcon className="h-4 w-4" />
           </button>
-          
+
           {/* Blockquote */}
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             className={cn(
               'flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 hover:bg-zinc-100',
-              editor.isActive('blockquote') 
-                ? 'bg-indigo-100 text-indigo-700 shadow-sm' 
+              editor.isActive('blockquote')
+                ? 'bg-indigo-100 text-indigo-700 shadow-sm'
                 : 'text-zinc-600 hover:text-zinc-900'
             )}
           >
             <ChatBubbleBottomCenterTextIcon className="h-4 w-4" />
           </button>
-          
+
           {/* Code Block */}
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
             className={cn(
               'flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 hover:bg-zinc-100',
-              editor.isActive('codeBlock') 
-                ? 'bg-indigo-100 text-indigo-700 shadow-sm' 
+              editor.isActive('codeBlock')
+                ? 'bg-indigo-100 text-indigo-700 shadow-sm'
                 : 'text-zinc-600 hover:text-zinc-900'
             )}
           >

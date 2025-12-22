@@ -9,7 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 import { useDocumentsContext } from '@/components/context/documents-provider';
-import TiptapEditor from '@/components/editor/tiptap-editor';
+import { TiptapEditor } from '@/packages/editor';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,

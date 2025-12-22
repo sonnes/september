@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { EditorProvider } from '@/components/editor/context';
+import { EditorProvider } from '@/packages/editor';
 import { SpeechProvider } from '@/components/speech/context';
 
 export const metadata: Metadata = {

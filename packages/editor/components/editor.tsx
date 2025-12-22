@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { ArrowUp } from 'lucide-react';
 
@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 
 import { cn } from '@/lib/utils';
 
-import Autocomplete from './autocomplete';
-import { useEditorContext } from './context';
+import { useEditorContext } from '../context';
+import { Autocomplete } from './autocomplete';
 
 type EditorProps = {
   placeholder?: string;
@@ -19,7 +19,7 @@ type EditorProps = {
   disabled?: boolean;
 };
 
-export default function Editor({
+export function Editor({
   placeholder = 'What would you like to know?',
   onSubmit,
   className,

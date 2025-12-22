@@ -5,28 +5,23 @@ import { use } from 'react';
 
 import { ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
+import { useAccount } from '@/components/account';
+import { useAudioPlayer } from '@/components/audio/audio-player';
+import { KeyboardProvider, KeyboardRenderer, KeyboardToggleButton } from '@/components/keyboards';
+import SidebarLayout from '@/components/sidebar/layout';
+import { SpeechSettingsModal } from '@/components/speech';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import { useAccount } from '@/components/account';
-import { useAudioPlayer } from '@/components/audio/audio-player';
 import {
   EditableChatTitle,
   MessageList,
   useCreateAudioMessage,
   useMessages,
 } from '@/packages/chats';
-import { EditorProvider, useEditorContext } from '@/components/editor/context';
-import Editor from '@/components/editor/editor';
-import {
-  KeyboardProvider,
-  KeyboardRenderer,
-  KeyboardToggleButton,
-} from '@/components/keyboards';
-import SidebarLayout from '@/components/sidebar/layout';
-import { SpeechSettingsModal } from '@/components/speech';
-import { Suggestions } from '@/components/suggestions';
+import { Editor, EditorProvider, useEditorContext } from '@/packages/editor';
+import { Suggestions } from '@/packages/suggestions';
 
 import { ChatMessagesSkeleton } from '../loading-skeleton';
 

@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 
-import { EditorProvider, useEditorContext } from '@/components/editor/context';
+import { EditorProvider, useEditorContext } from '@/packages/editor';
 import { KeyboardProvider, KeyboardRenderer } from '@/components/keyboards';
 
 function TextDisplay() {

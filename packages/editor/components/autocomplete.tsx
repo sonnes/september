@@ -1,17 +1,20 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 
 import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
 
 import { MATCH_PUNCTUATION } from '@/lib/utils';
 
-import { useEditorContext } from './context';
-import { useAutocomplete } from './use-autocomplete';
+import { useEditorContext } from '../context';
+import { useAutocomplete } from '../hooks/use-autocomplete';
 
-export default function Autocomplete() {
+export function Autocomplete() {
   const { text, addWord, setCurrentWord } = useEditorContext();
   const { isReady, getSpellings, getNextWords } = useAutocomplete();
 
   const [words, setWords] = useState<string[]>([]);
+
   // Check if text ends with space or punctuation (trigger for phrase prediction)
   const shouldTriggerPhrasePrediction = (text: string) => {
     const lastChar = text.slice(-1);

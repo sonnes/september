@@ -12,8 +12,7 @@ import { Button } from '@/components/ui/button';
 
 import { useAccount } from '@/components/account';
 import { useAudioPlayer } from '@/components/audio/audio-player';
-import { EditorProvider, useEditorContext } from '@/components/editor/context';
-import Editor from '@/components/editor/editor';
+import { EditorProvider, useEditorContext, Editor } from '@/packages/editor';
 import { KeyboardProvider } from '@/components/keyboards';
 import { useCreateAudioMessage } from '@/packages/chats';
 

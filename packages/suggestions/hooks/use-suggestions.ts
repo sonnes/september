@@ -1,14 +1,15 @@
+'use client';
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useTextContext } from '@/components/context/text-provider';
+import { useAISettings } from '@/components/settings';
 
 import GeminiService from '@/services/gemini';
 import { useMessages } from '@/services/messages';
 
-import { useEditorContext } from '@/components/editor/context';
-import { useAISettings } from '@/components/settings';
 import { Message } from '@/packages/chats';
-import { Suggestion } from '@/types/suggestion';
+
+import { Suggestion } from '../types';
 
 interface UseSuggestionsReturn {
   suggestions: Suggestion[];
@@ -29,11 +30,13 @@ export function useSuggestions({
 
   const { getProviderConfig, suggestionsConfig } = useAISettings();
 
-  const { api_key: apiKey } = useMemo(
-    () => getProviderConfig(suggestionsConfig.provider) || {},
+  const providerConfig = useMemo(
+    () => getProviderConfig(suggestionsConfig.provider),
     [getProviderConfig, suggestionsConfig.provider]
   );
-  const gemini = new GeminiService(apiKey || '');
+
+  const apiKey = providerConfig?.api_key;
+  const gemini = useMemo(() => new GeminiService(apiKey || ''), [apiKey]);
 
   const clearSuggestions = useCallback(() => {
     setSuggestions([]);
@@ -41,7 +44,12 @@ export function useSuggestions({
 
   // Auto-fetch suggestions when debounced text changes
   useEffect(() => {
-    if (debouncedText.trim().length === 0 || !apiKey) return;
+    if (debouncedText.trim().length === 0 || !apiKey) {
+      if (debouncedText.trim().length === 0) {
+        setSuggestions([]);
+      }
+      return;
+    }
 
     const fetchSuggestions = async (text: string, messages: Partial<Message>[]) => {
       if (!apiKey || isLoading || !suggestionsConfig.enabled) {
@@ -51,27 +59,25 @@ export function useSuggestions({
       setIsLoading(true);
 
       try {
-        const suggestions = await gemini.generateSuggestions({
+        const result = await gemini.generateSuggestions({
           instructions: suggestionsConfig.settings?.system_instructions || '',
           text,
           messages,
         });
 
-        setSuggestions(suggestions.suggestions.map(text => ({ text, audio_path: undefined })));
-        setIsLoading(false);
+        setSuggestions(result.suggestions.map(text => ({ text, audio_path: undefined })));
       } catch (error) {
         console.error('Error fetching suggestions:', error);
+      } finally {
         setIsLoading(false);
       }
     };
 
     fetchSuggestions(debouncedText, []);
-  }, [debouncedText]);
+  }, [debouncedText, apiKey, suggestionsConfig.enabled, gemini]);
 
   // Debounce text changes
   useEffect(() => {
-    if (text.trim().length === 0) return;
-
     const timeoutId = setTimeout(() => {
       setDebouncedText(text);
     }, timeout);
@@ -82,5 +88,43 @@ export function useSuggestions({
     suggestions,
     isLoading,
     clearSuggestions,
+  };
+}
+
+interface UseSearchHistoryReturn {
+  history: Suggestion[];
+  isLoading: boolean;
+  fetchHistory: (text: string) => Promise<void>;
+}
+
+export function useSearchHistory(timeout: number = 3000): UseSearchHistoryReturn {
+  const [history, setHistory] = useState<Suggestion[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { searchMessages } = useMessages();
+
+  const fetchHistory = useCallback(
+    async (text: string) => {
+      if (text.trim().length === 0) {
+        setHistory([]);
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const results = await searchMessages(text);
+        setHistory(results.map(m => ({ text: m.text, audio_path: m.audio_path })));
+      } catch (error) {
+        console.error('Error fetching search history:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [searchMessages]
+  );
+
+  return {
+    history,
+    isLoading,
+    fetchHistory,
   };
 }

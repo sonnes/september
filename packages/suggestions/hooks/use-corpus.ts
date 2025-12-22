@@ -23,7 +23,8 @@ export function useCorpus() {
   const { getProviderConfig } = useAISettings();
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const { api_key: apiKey } = getProviderConfig('gemini') || {};
+  const providerConfig = getProviderConfig('gemini');
+  const apiKey = providerConfig?.api_key;
 
   const google = useMemo(
     () =>
@@ -34,6 +35,11 @@ export function useCorpus() {
   );
 
   const generateCorpus = async (persona: string) => {
+    if (!apiKey) {
+      toast.error('API key is required to generate corpus.');
+      return;
+    }
+
     setIsGenerating(true);
 
     try {
