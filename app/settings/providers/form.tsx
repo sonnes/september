@@ -37,7 +37,7 @@ export default function AISettingsForm() {
         </p>
       </div>
 
-      <Alert variant="warning" className="border-amber-200 bg-amber-50">
+      <Alert variant="default" className="border-amber-200 bg-amber-50">
         <AlertCircle className="h-4 w-4 text-amber-600" />
         <AlertTitle className="text-amber-800">Security Note</AlertTitle>
         <AlertDescription className="text-amber-700">

@@ -120,7 +120,7 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
     <div className="space-y-6 sm:space-y-8">
       {/* API Key Warning */}
       {!hasApiKey && (
-        <Alert variant="warning">
+        <Alert variant="default">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>API Key Required</AlertTitle>
           <AlertDescription>

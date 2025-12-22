@@ -43,7 +43,7 @@ export default function SuggestionsSettingsForm() {
       </div>
 
       {!account?.ai_providers?.gemini?.api_key && (
-        <Alert variant="warning" className="border-amber-200 bg-amber-50">
+        <Alert variant="default" className="border-amber-200 bg-amber-50">
           <AlertCircle className="h-4 w-4 text-amber-600" />
           <AlertTitle className="text-amber-800">API Key Required</AlertTitle>
           <AlertDescription className="text-amber-700">

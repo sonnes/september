@@ -98,7 +98,14 @@ function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
       const track = queue[currentIndex];
 
       if (track.utterance) {
-        track.utterance.onend = () => {
+        // Create a new utterance to avoid mutating state
+        const utterance = new SpeechSynthesisUtterance(track.utterance.text);
+        utterance.rate = track.utterance.rate;
+        utterance.pitch = track.utterance.pitch;
+        utterance.volume = track.utterance.volume;
+        utterance.voice = track.utterance.voice;
+        utterance.lang = track.utterance.lang;
+        utterance.onend = () => {
           if (currentIndex < queue.length - 1) {
             setCurrentIndex(idx => idx + 1);
           } else {
@@ -107,7 +114,7 @@ function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
           }
         };
 
-        synthesis?.speak(track.utterance);
+        synthesis?.speak(utterance);
         return;
       }
 

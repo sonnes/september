@@ -31,10 +31,22 @@ type AccountProviderProps =
     };
 
 export function AccountProvider(props: AccountProviderProps) {
-  const accountData =
-    props.provider === 'supabase'
-      ? useAccountSupabase({ user: props.user, account: props.account })
-      : useAccountTriplit();
+  // Call all hooks unconditionally to satisfy React Hooks rules
+  // When provider is 'supabase', we have user and account from props
+  // When provider is 'triplit', we pass undefined but won't use the result
+  const supabaseData = useAccountSupabase(
+    props.provider === 'supabase' 
+      ? { user: props.user, account: props.account }
+      : { user: undefined, account: undefined }
+  );
+  const triplitData = useAccountTriplit();
+
+  // Use the appropriate data based on provider
+  // TypeScript needs help here because it doesn't know that when provider is 'supabase',
+  // supabaseData will have valid user and account
+  const accountData: AccountContextType = props.provider === 'supabase' 
+    ? (supabaseData as AccountContextType)
+    : triplitData;
 
   return <AccountContext.Provider value={accountData}>{props.children}</AccountContext.Provider>;
 }

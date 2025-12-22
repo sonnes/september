@@ -7,11 +7,10 @@ import Webcam from 'react-webcam';
 
 import AnimatedText from '@/components/ui/animated-text';
 
-import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { toast } from 'sonner';
 
 import { useAccount } from '@/services/account/context';
-import { AudioService } from '@/packages/audio';
+import { AudioService, useAudioPlayer } from '@/packages/audio';
 
 import supabase from '@/supabase/client';
 import { removeRealtimeSubscription, subscribeToUserMessages } from '@/supabase/realtime';

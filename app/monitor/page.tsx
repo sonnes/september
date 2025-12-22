@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
-import { AudioPlayerProvider } from '@/hooks/use-audio-player';
-
 import { AccountProvider } from '@/services/account/context';
 import AccountsService from '@/services/account/supabase';
+import { AudioPlayerProvider } from '@/packages/audio';
 
 import { createClient } from '@/supabase/server';
 

@@ -36,16 +36,20 @@ type MessagesProviderProps =
     };
 
 export function MessagesProvider(props: MessagesProviderProps) {
-  const messagesData =
-    props.provider === 'supabase'
-      ? useMessagesSupabase({ messages: props.messages })
-      : useMessagesTriplit();
+  // Call all hooks unconditionally to satisfy React Hooks rules
+  const supabaseMessages = useMessagesSupabase(
+    props.provider === 'supabase' ? { messages: props.messages } : { messages: [] }
+  );
+  const triplitMessages = useMessagesTriplit();
+  const supabaseCreate = useCreateMessageSupabase();
+  const triplitCreate = useCreateMessageTriplit();
+  const supabaseSearch = useSearchMessagesSupabase();
+  const triplitSearch = useSearchMessagesTriplit();
 
-  const { createMessage } =
-    props.provider === 'supabase' ? useCreateMessageSupabase() : useCreateMessageTriplit();
-
-  const { searchMessages } =
-    props.provider === 'supabase' ? useSearchMessagesSupabase() : useSearchMessagesTriplit();
+  // Use the appropriate hooks based on provider
+  const messagesData = props.provider === 'supabase' ? supabaseMessages : triplitMessages;
+  const { createMessage } = props.provider === 'supabase' ? supabaseCreate : triplitCreate;
+  const { searchMessages } = props.provider === 'supabase' ? supabaseSearch : triplitSearch;
 
   return (
     <MessagesContext.Provider value={{ ...messagesData, createMessage, searchMessages }}>

@@ -37,11 +37,15 @@ type AudioProviderProps =
     };
 
 export function AudioProvider(props: AudioProviderProps) {
-  const { uploadAudio } =
-    props.provider === 'supabase' ? useUploadAudioSupabase() : useUploadAudioTriplit();
+  // Call all hooks unconditionally to satisfy React Hooks rules
+  const supabaseUpload = useUploadAudioSupabase();
+  const triplitUpload = useUploadAudioTriplit();
+  const supabaseDownload = useDownloadAudioSupabase();
+  const triplitDownload = useDownloadAudioTriplit();
 
-  const { downloadAudio } =
-    props.provider === 'supabase' ? useDownloadAudioSupabase() : useDownloadAudioTriplit();
+  // Use the appropriate hooks based on provider
+  const { uploadAudio } = props.provider === 'supabase' ? supabaseUpload : triplitUpload;
+  const { downloadAudio } = props.provider === 'supabase' ? supabaseDownload : triplitDownload;
 
   return (
     <AudioContext.Provider value={{ uploadAudio, downloadAudio }}>

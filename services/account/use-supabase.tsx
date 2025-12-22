@@ -13,11 +13,11 @@ export function useAccountSupabase({
   user: initialUser,
   account: initialAccount,
 }: {
-  user: User;
-  account: Account;
-}) {
-  const [user, setUser] = useState<User>(initialUser);
-  const [account, setAccount] = useState<Account>(initialAccount);
+  user: User | undefined;
+  account: Account | undefined;
+} = { user: undefined, account: undefined }) {
+  const [user, setUser] = useState<User | undefined>(initialUser);
+  const [account, setAccount] = useState<Account | undefined>(initialAccount);
 
   const getUser = async () => {
     const {

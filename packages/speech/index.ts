@@ -1,11 +1,11 @@
-export * from '@/packages/speech/components/speech-provider';
+export { SpeechProvider, useSpeechContext } from '@/packages/speech/components/speech-provider';
 export * from '@/packages/speech/components/speech-settings-form';
 export * from '@/packages/speech/components/voices-form';
 export * from '@/packages/speech/components/voices-list';
 export * from '@/packages/speech/components/speech-settings-modal';
 export * from '@/packages/speech/hooks/use-speech';
 export * from '@/packages/speech/hooks/use-voices-logic';
-export * from '@/packages/speech/types';
+export type * from '@/packages/speech/types';
 export * from '@/packages/speech/types/schemas';
 export * from '@/packages/speech/lib/providers/browser';
 export * from '@/packages/speech/lib/providers/elevenlabs';
