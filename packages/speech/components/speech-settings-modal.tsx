@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAccount } from '@/components/account';
 import { SpeechSettingsForm, SpeechSettingsFormData } from '@/packages/speech/components/speech-settings-form';
 
@@ -50,6 +50,7 @@ export function SpeechSettingsModal() {
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col p-0">
+        <DialogTitle className="sr-only">Speech Settings</DialogTitle>
         <div className="flex-1 overflow-y-auto px-6 pt-6">
           <SpeechSettingsForm account={account} onSubmit={handleSubmit} />
         </div>
