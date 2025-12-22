@@ -1,6 +1,6 @@
 import { ElevenLabsSettings } from '@/types/account';
 import { Voice } from '@/types/voice';
-import { ListVoicesRequest, SpeechProvider, SpeechRequest, SpeechResponse } from '../types';
+import { ListVoicesRequest, SpeechProvider, SpeechRequest, SpeechResponse } from '@/packages/speech/types';
 
 const ranks = {
   cloned: 1,

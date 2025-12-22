@@ -21,9 +21,9 @@ import { Separator } from '@/components/ui/separator';
 
 import { cn } from '@/lib/utils';
 
-import { useDocumentsContext } from './documents-provider';
-import { SlidesPresentation } from './slides-presentation';
-import { UploadForm } from './upload-form';
+import { useDocumentsContext } from '@/packages/documents/components/documents-provider';
+import { SlidesPresentation } from '@/packages/documents/components/slides-presentation';
+import { UploadForm } from '@/packages/documents/components/upload-form';
 
 type DocumentEditorProps = {
   className?: string;

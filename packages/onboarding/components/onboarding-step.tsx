@@ -5,7 +5,7 @@ import { CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
-import type { StepProps } from '../types';
+import type { StepProps } from '@/packages/onboarding/types';
 
 export function OnboardingStep({
   title,

@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 
 import { cn } from '@/lib/utils';
 
-import { useEditorContext } from '../context';
-import { Autocomplete } from './autocomplete';
+import { useEditorContext } from '@/packages/editor/components/editor-provider';
+import { Autocomplete } from '@/packages/editor/components/autocomplete';
 
 type EditorProps = {
   placeholder?: string;

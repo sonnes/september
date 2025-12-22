@@ -23,8 +23,8 @@ import {
   type WordStatus,
   useTextViewer,
 } from '../hooks/use-text-viewer';
-import { Alignment } from '../types';
-import { useAudioPlayer } from './audio-player';
+import { Alignment } from '@/packages/audio/types';
+import { useAudioPlayer } from '@/packages/audio/components/audio-player';
 
 // Context for sharing text viewer state
 interface TextViewerContextValue extends UseTextViewerResult {

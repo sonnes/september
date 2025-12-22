@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { useAccount } from '@/services/account/context';
 import supabase from '@/supabase/client';
 import { removeRealtimeSubscription, subscribeToUserMessages } from '@/supabase/realtime';
-import { Message } from '../types/message';
+import { Message } from '@/packages/chats/types/message';
 
 export function useMessages({ messages: initialMessages }: { messages: Message[] }) {
   const { user } = useAccount();

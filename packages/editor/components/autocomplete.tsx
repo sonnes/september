@@ -6,8 +6,8 @@ import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
 
 import { MATCH_PUNCTUATION } from '@/lib/utils';
 
-import { useEditorContext } from '../context';
-import { useAutocomplete } from '../hooks/use-autocomplete';
+import { useEditorContext } from '@/packages/editor/components/editor-provider';
+import { useAutocomplete } from '@/packages/editor/hooks/use-autocomplete';
 
 export function Autocomplete() {
   const { text, addWord, setCurrentWord } = useEditorContext();

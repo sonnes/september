@@ -1,8 +1,7 @@
-export * from './components/keyboard-context';
-export * from './components/keyboard-renderer';
-export * from './components/toggle-button';
-export * from './components/qwerty-keyboard';
-export * from './components/circular-keyboard';
-export * from './types';
-export * from './lib/keys';
-
+export * from '@/packages/keyboards/components/keyboard-context';
+export * from '@/packages/keyboards/components/keyboard-renderer';
+export * from '@/packages/keyboards/components/toggle-button';
+export * from '@/packages/keyboards/components/qwerty-keyboard';
+export * from '@/packages/keyboards/components/circular-keyboard';
+export * from '@/packages/keyboards/types';
+export * from '@/packages/keyboards/lib/keys';

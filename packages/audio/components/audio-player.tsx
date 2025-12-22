@@ -15,7 +15,7 @@ import {
   useAudioPlayerContext,
 } from 'react-use-audio-player';
 
-import { Audio as AudioTrack } from '../types';
+import { Audio as AudioTrack } from '@/packages/audio/types';
 
 // Context value type
 interface AudioPlayerContextType {

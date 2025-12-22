@@ -9,7 +9,7 @@ import { useSpeech } from '@/packages/speech';
 import { triplit } from '@/triplit/client';
 import { Audio } from '@/packages/audio';
 
-import { CreateMessageData } from '../types/message';
+import { CreateMessageData } from '@/packages/chats/types/message';
 
 export function useCreateMessage() {
   const { user } = useAccount();

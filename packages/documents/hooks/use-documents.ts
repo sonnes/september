@@ -4,7 +4,7 @@ import { useQuery } from '@triplit/react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { triplit } from '@/triplit/client';
-import { PutDocumentData } from '../types';
+import { PutDocumentData } from '@/packages/documents/types';
 
 export function useDocuments() {
   const query = triplit.query('documents').Order('updated_at', 'DESC');

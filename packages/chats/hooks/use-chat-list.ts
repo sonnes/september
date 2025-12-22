@@ -4,7 +4,7 @@ import { useQuery } from '@triplit/react';
 
 import { useAccount } from '@/components/account';
 import { triplit } from '@/triplit/client';
-import { Chat } from '../types/chat';
+import { Chat } from '@/packages/chats/types/chat';
 
 export default function useChatList({ searchQuery }: { searchQuery?: string }) {
   const { user } = useAccount();

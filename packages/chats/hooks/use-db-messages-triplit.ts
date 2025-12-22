@@ -6,8 +6,8 @@ import { useAccount } from '@/components/account';
 
 import { triplit } from '@/triplit/client';
 
-import { Chat } from '../types/chat';
-import { Message } from '../types/message';
+import { Chat } from '@/packages/chats/types/chat';
+import { Message } from '@/packages/chats/types/message';
 
 export default function useMessages({ chatId }: { chatId: string }) {
   const { user } = useAccount();

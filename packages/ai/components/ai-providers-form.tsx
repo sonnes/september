@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -8,9 +8,12 @@ import { toast } from 'sonner';
 
 import type { Account } from '@/types/account';
 import type { Providers } from '@/types/ai-config';
+import { Spinner } from '@/components/ui/spinner';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
-import { AIProvidersFormData, AIProvidersSchema } from '../types/schemas';
-import { AI_PROVIDERS } from '../lib/registry';
+import { AIProvidersFormData, AIProvidersSchema } from '@/packages/ai/types/schemas';
+import { AI_PROVIDERS } from '@/packages/ai/lib/registry';
 
 // Get providers that require API keys
 const getProvidersWithApiKeys = () => {
@@ -24,10 +27,15 @@ interface AIProvidersFormProps {
     form: ReturnType<typeof useForm<AIProvidersFormData>>;
     allProviders: typeof AI_PROVIDERS;
     hasApiKey: (providerId: string) => boolean;
+    error: string | null;
+    success: boolean;
   }) => React.ReactNode;
 }
 
 export function AIProvidersForm({ account, onSubmit, children }: AIProvidersFormProps) {
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
   const defaultValues = useMemo(() => {
     const values: Record<string, string> = {};
 
@@ -54,6 +62,8 @@ export function AIProvidersForm({ account, onSubmit, children }: AIProvidersForm
   }, [defaultValues, form]);
 
   const handleSubmit = async (data: AIProvidersFormData) => {
+    setError(null);
+    setSuccess(false);
     try {
       // Build the provider config object dynamically
       const providerConfig: Record<string, { api_key: string; base_url?: string }> = {};
@@ -76,13 +86,12 @@ export function AIProvidersForm({ account, onSubmit, children }: AIProvidersForm
       });
 
       await onSubmit(providerConfig as Providers);
-
-      toast.success('Settings Saved', {
-        description: 'Your AI provider settings have been updated successfully.',
-      });
+      setSuccess(true);
+      toast.success('Settings Saved');
+      setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       console.error('Error saving AI settings:', err);
-      toast.error('Failed to update AI settings. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to update AI settings. Please try again.');
     }
   };
 
@@ -93,7 +102,7 @@ export function AIProvidersForm({ account, onSubmit, children }: AIProvidersForm
 
   return (
     <form onSubmit={form.handleSubmit(handleSubmit)}>
-      {children({ form, allProviders: AI_PROVIDERS, hasApiKey })}
+      {children({ form, allProviders: AI_PROVIDERS, hasApiKey, error, success })}
     </form>
   );
 }

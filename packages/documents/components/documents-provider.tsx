@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useMemo, useState } from 'react';
 
-import { useDocuments } from '../hooks/use-documents';
-import { Document, PutDocumentData } from '../types';
+import { useDocuments } from '@/packages/documents/hooks/use-documents';
+import { Document, PutDocumentData } from '@/packages/documents/types';
 
 interface DocumentsContextType {
   documents: Document[];

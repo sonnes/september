@@ -1,4 +1,4 @@
-import { Message } from './message';
+import { Message } from '@/packages/chats/types/message';
 
 export interface Chat {
   id: string;

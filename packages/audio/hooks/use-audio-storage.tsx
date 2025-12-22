@@ -1,5 +1,5 @@
 import { triplit } from '@/triplit/client';
-import { Alignment } from '../types';
+import { Alignment } from '@/packages/audio/types';
 
 export function useAudioStorage() {
   const uploadAudio = async ({

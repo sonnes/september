@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Alignment, CharacterAlignment, toCharacterAlignment } from '../types';
+import { Alignment, CharacterAlignment, toCharacterAlignment } from '@/packages/audio/types';
 
 type ComposeSegmentsOptions = {
   hideAudioTags?: boolean;

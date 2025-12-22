@@ -4,10 +4,10 @@ import { useAISettings } from '@/packages/ai';
 import type { AIProvider } from '@/types/ai-config';
 import type { Voice } from '@/types/voice';
 
-import { BrowserSpeechProvider } from '../lib/providers/browser';
-import { ElevenLabsSpeechProvider } from '../lib/providers/elevenlabs';
-import { GeminiSpeechProvider } from '../lib/providers/gemini';
-import { ListVoicesRequest, SpeechOptions, SpeechProvider } from '../types';
+import { BrowserSpeechProvider } from '@/packages/speech/lib/providers/browser';
+import { ElevenLabsSpeechProvider } from '@/packages/speech/lib/providers/elevenlabs';
+import { GeminiSpeechProvider } from '@/packages/speech/lib/providers/gemini';
+import { ListVoicesRequest, SpeechOptions, SpeechProvider } from '@/packages/speech/types';
 
 const browser = new BrowserSpeechProvider();
 

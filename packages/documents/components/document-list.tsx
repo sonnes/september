@@ -8,7 +8,7 @@ import moment from 'moment';
 import { Input } from '@/components/ui/input';
 
 import { cn } from '@/lib/utils';
-import { Document } from '../types';
+import { Document } from '@/packages/documents/types';
 
 type DocumentListEmptyStateProps = ComponentProps<'div'> & {
   title?: string;

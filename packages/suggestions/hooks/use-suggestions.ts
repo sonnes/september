@@ -9,7 +9,7 @@ import { useMessages } from '@/services/messages';
 
 import { Message } from '@/packages/chats';
 
-import { Suggestion } from '../types';
+import { Suggestion } from '@/packages/suggestions/types';
 
 interface UseSuggestionsReturn {
   suggestions: Suggestion[];

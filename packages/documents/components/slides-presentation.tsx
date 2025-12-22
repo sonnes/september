@@ -8,10 +8,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 import { type Slide, parseAndRenderSlides } from '@/lib/slides';
 
-import { useDocumentsContext } from './documents-provider';
-import { SlideRenderer } from './slide-renderer';
-import { SlidesNavigation } from './slides-navigation';
-import { SlidesProgress } from './slides-progress';
+import { useDocumentsContext } from '@/packages/documents/components/documents-provider';
+import { SlideRenderer } from '@/packages/documents/components/slide-renderer';
+import { SlidesNavigation } from '@/packages/documents/components/slides-navigation';
+import { SlidesProgress } from '@/packages/documents/components/slides-progress';
 
 type SlidesPresentationProps = {
   markdown?: string;

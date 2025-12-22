@@ -6,9 +6,9 @@ import { Plus } from 'lucide-react';
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import { CircularKeyboard } from './circular-keyboard';
-import { KeyboardType, useKeyboardContext } from './keyboard-context';
-import { QwertyKeyboard } from './qwerty-keyboard';
+import { CircularKeyboard } from '@/packages/keyboards/components/circular-keyboard';
+import { KeyboardType, useKeyboardContext } from '@/packages/keyboards/components/keyboard-context';
+import { QwertyKeyboard } from '@/packages/keyboards/components/qwerty-keyboard';
 
 interface KeyboardRendererProps {
   className?: string;

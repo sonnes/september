@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext } from 'react';
-import { useSpeech } from '../hooks/use-speech';
+import { useSpeech } from '@/packages/speech/hooks/use-speech';
 
 export const SpeechContext = createContext<ReturnType<typeof useSpeech> | null>(null);
 

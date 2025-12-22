@@ -5,7 +5,7 @@ import { ArrowRight, MessageSquare, Settings, Sparkles, Volume2 } from 'lucide-r
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
-import { useOnboarding } from '../../context';
+import { useOnboarding } from '@/packages/onboarding/components/onboarding-provider';
 
 const SETUP_STEPS = [
   {

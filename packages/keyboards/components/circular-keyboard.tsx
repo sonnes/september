@@ -11,7 +11,7 @@ import {
   getTopCircleKeys,
   getTopSpecialKeys,
 } from '../lib/keys';
-import { CircleKey } from '../types';
+import { CircleKey } from '@/packages/keyboards/types';
 
 interface CircularKeyboardProps {
   className?: string;

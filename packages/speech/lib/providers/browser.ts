@@ -1,6 +1,6 @@
 import { BrowserTTSSettings } from '@/types/account';
 import { Voice } from '@/types/voice';
-import { ListVoicesRequest, SpeechProvider, SpeechRequest, SpeechResponse } from '../types';
+import { ListVoicesRequest, SpeechProvider, SpeechRequest, SpeechResponse } from '@/packages/speech/types';
 
 export class BrowserSpeechProvider implements SpeechProvider {
   id = 'browser_tts';

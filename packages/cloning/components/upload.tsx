@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldLabel } from '@/components/ui/field';
 
-import { useUpload } from '../context';
+import { useUpload } from '@/packages/cloning/components/cloning-provider';
 
 export function UploadSection() {
   const { uploadedFiles, status, error, uploadFile, deleteFile } = useUpload();

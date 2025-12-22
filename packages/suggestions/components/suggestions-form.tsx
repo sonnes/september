@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -11,12 +11,14 @@ import { getModelsForProvider } from '@/packages/ai';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { FormCheckbox, FormSelect, FormTextarea } from '@/components/ui/form';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Spinner } from '@/components/ui/spinner';
 
 import type { Account } from '@/types/account';
 import type { AIProvider } from '@/types/ai-config';
 
-import { useCorpus } from '../hooks/use-corpus';
-import { type SuggestionsFormData, SuggestionsFormSchema } from '../types';
+import { useCorpus } from '@/packages/suggestions/hooks/use-corpus';
+import { type SuggestionsFormData, SuggestionsFormSchema } from '@/packages/suggestions/types';
 
 const EXAMPLE_INSTRUCTIONS = [
   {
@@ -39,11 +41,15 @@ interface SuggestionsFormProps {
   children?: (props: {
     form: ReturnType<typeof useForm<SuggestionsFormData>>;
     hasApiKey: boolean;
+    error: string | null;
+    success: boolean;
   }) => React.ReactNode;
 }
 
 export function SuggestionsForm({ account, onSubmit, children }: SuggestionsFormProps) {
   const [showExamples, setShowExamples] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const { isGenerating, generateCorpus } = useCorpus();
 
   const defaultValues = useMemo((): SuggestionsFormData => {
@@ -76,15 +82,19 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
   }, [defaultValues, form]);
 
   const handleSubmit = async (data: SuggestionsFormData) => {
+    setError(null);
+    setSuccess(false);
     try {
       await onSubmit(data);
-
-      toast.success('Settings Saved', {
-        description: 'Your AI suggestions settings have been updated successfully.',
-      });
+      setSuccess(true);
+      toast.success('Settings Saved');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       console.error('Error saving suggestions settings:', err);
-      toast.error('Failed to update suggestions settings. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update suggestions settings. Please try again.';
+      setError(errorMessage);
     }
   };
 
@@ -101,22 +111,26 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
 
   const handleGenerateCorpus = async () => {
     const corpus = await generateCorpus(aiInstructions || '');
-    form.setValue('settings.ai_corpus', corpus);
+    if (corpus) {
+      form.setValue('settings.ai_corpus', corpus);
+    }
   };
 
   const formFields = (
     <div className="space-y-6 sm:space-y-8">
       {/* API Key Warning */}
       {!hasApiKey && (
-        <div className="rounded-md bg-amber-50 p-4 border border-amber-200">
-          <p className="text-sm text-amber-800">
-            <strong>API Key Required:</strong> You need to configure your Gemini API key in{' '}
+        <Alert variant="warning">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>API Key Required</AlertTitle>
+          <AlertDescription>
+            You need to configure your Gemini API key in{' '}
             <a href="/settings/ai" className="underline hover:text-amber-900">
               AI Settings
             </a>{' '}
             to use AI suggestions.
-          </p>
-        </div>
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Enable Toggle */}
@@ -241,6 +255,7 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
                 disabled={!hasApiKey || isGenerating}
                 variant="outline"
               >
+                {isGenerating ? <Spinner className="mr-2 h-4 w-4" /> : null}
                 {isGenerating ? 'Generating...' : 'Generate Corpus'}
               </Button>
             </div>
@@ -254,10 +269,39 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
     return (
       <form onSubmit={form.handleSubmit(handleSubmit)}>
         {formFields}
-        {children({ form, hasApiKey })}
+        {children({ form, hasApiKey, error, success })}
       </form>
     );
   }
 
-  return <form onSubmit={form.handleSubmit(handleSubmit)}>{formFields}</form>;
+  return (
+    <form onSubmit={form.handleSubmit(handleSubmit)}>
+      {formFields}
+      
+      {/* Error and Success Messages */}
+      <div className="mt-6 flex flex-col gap-4">
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
+        {success && (
+          <div className="flex items-center gap-2 text-sm font-medium text-green-600">
+            <CheckCircle2 className="h-4 w-4" />
+            <span>Settings saved successfully!</span>
+          </div>
+        )}
+
+        <div className="flex justify-end">
+          <Button type="submit" disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting ? <Spinner className="mr-2 h-4 w-4" /> : null}
+            {form.formState.isSubmitting ? 'Saving...' : 'Save Settings'}
+          </Button>
+        </div>
+      </div>
+    </form>
+  );
 }

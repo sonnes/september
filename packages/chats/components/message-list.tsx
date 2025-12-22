@@ -12,7 +12,7 @@ import { useSpeech } from '@/packages/speech';
 import { cn } from '@/lib/utils';
 import type { Audio } from '@/packages/audio';
 
-import type { Message } from '../types/message';
+import type { Message } from '@/packages/chats/types/message';
 
 interface MessageItemProps {
   message: Message;

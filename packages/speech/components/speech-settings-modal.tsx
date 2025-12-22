@@ -5,7 +5,7 @@ import { Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { useAccount } from '@/components/account';
-import { SpeechSettingsForm, SpeechSettingsFormData } from './speech-settings-form';
+import { SpeechSettingsForm, SpeechSettingsFormData } from '@/packages/speech/components/speech-settings-form';
 
 export function SpeechSettingsModal() {
   const [isOpen, setIsOpen] = useState(false);

@@ -1,7 +1,6 @@
-export * from './lib/defaults';
-export * from './lib/registry';
-export * from './hooks/use-ai-settings';
-export * from './types/schemas';
-export * from './components/ai-providers-form';
-export * from './components/provider-section';
-
+export * from '@/packages/ai/lib/defaults';
+export * from '@/packages/ai/lib/registry';
+export * from '@/packages/ai/hooks/use-ai-settings';
+export * from '@/packages/ai/types/schemas';
+export * from '@/packages/ai/components/ai-providers-form';
+export * from '@/packages/ai/components/provider-section';

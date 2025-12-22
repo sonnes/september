@@ -1,15 +1,15 @@
 'use client';
 
 import React, { ReactNode, createContext, useContext } from 'react';
-import { Alignment } from '../types';
+import { Alignment } from '@/packages/audio/types';
 import {
   useDownloadAudio as useDownloadAudioSupabase,
   useUploadAudio as useUploadAudioSupabase,
-} from '../hooks/use-supabase-audio';
+} from '@/packages/audio/hooks/use-db-audio-supabase';
 import {
   useDownloadAudio as useDownloadAudioTriplit,
   useUploadAudio as useUploadAudioTriplit,
-} from '../hooks/use-triplit-audio';
+} from '@/packages/audio/hooks/use-db-audio-triplit';
 
 interface AudioContextType {
   uploadAudio: ({
@@ -57,4 +57,3 @@ export function useAudio() {
   }
   return context;
 }
-

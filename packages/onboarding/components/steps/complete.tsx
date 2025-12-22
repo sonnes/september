@@ -12,7 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAccount } from '@/components/account';
 import { useAISettings } from '@/packages/ai';
 
-import { useOnboarding } from '../../context';
+import { useOnboarding } from '@/packages/onboarding/components/onboarding-provider';
 
 interface SummaryItemProps {
   icon: React.ReactNode;

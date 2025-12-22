@@ -7,18 +7,18 @@ import { Search } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { useAccount } from '@/components/account/context';
+import { useAccount } from '@/components/account';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormField, FormTextarea } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 
-import { ElevenLabsVoiceClone } from '../lib/elevenlabs-clone';
-import { useRecording, useUpload } from '../context';
-import { RecordingSection } from './record';
-import { UploadSection } from './upload';
-import { useVoiceStorage } from '../hooks/use-voice-storage';
+import { ElevenLabsVoiceClone } from '@/packages/cloning/lib/elevenlabs-clone';
+import { useRecording, useUpload } from '@/packages/cloning/components/cloning-provider';
+import { RecordingSection } from '@/packages/cloning/components/record';
+import { UploadSection } from '@/packages/cloning/components/upload';
+import { useVoiceStorage } from '@/packages/cloning/hooks/use-voice-storage';
 
 const CloneVoiceSchema = z.object({
   name: z.string().min(1, 'Name is required'),

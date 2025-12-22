@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react';
 
 import { useEditorContext } from '@/packages/editor';
 import { useMessageHistory } from '@/packages/chats';
-import { useSuggestions } from '../hooks/use-suggestions';
+import { useSuggestions } from '@/packages/suggestions/hooks/use-suggestions';
 import { cn } from '@/lib/utils';
 
 interface SuggestionsProps {

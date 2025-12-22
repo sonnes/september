@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { GeminiSpeechSettings } from '@/types/account';
 import { Voice } from '@/types/voice';
-import { ListVoicesRequest, SpeechProvider, SpeechRequest, SpeechResponse } from '../types';
+import { ListVoicesRequest, SpeechProvider, SpeechRequest, SpeechResponse } from '@/packages/speech/types';
 
 /**
  * Convert L16 PCM audio data to WAV format

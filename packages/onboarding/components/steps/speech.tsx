@@ -18,7 +18,7 @@ import { useSpeechContext, VoicesList } from '@/packages/speech';
 import type { SpeechConfig } from '@/types/ai-config';
 import type { Voice } from '@/types/voice';
 
-import { useOnboarding } from '../../context';
+import { useOnboarding } from '@/packages/onboarding/components/onboarding-provider';
 
 type SpeechProvider = 'browser' | 'gemini' | 'elevenlabs';
 

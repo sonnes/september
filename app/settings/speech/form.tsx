@@ -1,6 +1,7 @@
 'use client';
 
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +14,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { VoiceSettingsFormData, VoicesForm, VoicesList } from '@/packages/speech';
+import { useAccount } from '@/components/account';
+import { useAISettings } from '@/packages/ai';
 
 export default function VoicesSettingsForm() {
   const { account } = useAccount();
@@ -28,11 +33,11 @@ export default function VoicesSettingsForm() {
     });
   };
 
-  // Show loading state while account is loading
   if (!account) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-sm text-zinc-500">Loading voices...</div>
+      <div className="flex flex-col items-center justify-center py-12">
+        <Spinner className="h-8 w-8 text-primary" />
+        <p className="mt-4 text-sm text-zinc-500">Loading voices...</p>
       </div>
     );
   }
@@ -52,12 +57,13 @@ export default function VoicesSettingsForm() {
         onVoiceSelect,
         onModelChange,
         hasApiKey,
+        error,
+        success,
       }) => {
         const selectedVoiceId = form.watch('voice_id');
         const selectedModelId = form.watch('model_id');
         const allProviders = Object.values(availableProviders);
 
-        // Filter providers based on available API keys
         const visibleProviders = allProviders.filter(provider => {
           if (!provider.requires_api_key) return true;
           return hasApiKey(provider.id);
@@ -65,7 +71,7 @@ export default function VoicesSettingsForm() {
 
         return (
           <>
-            <div className="space-y-6 pb-20">
+            <div className="space-y-6 pb-24">
               {/* Provider Selection */}
               <div className="space-y-3">
                 <h3 className="text-sm font-medium text-zinc-900">Speech Provider</h3>
@@ -115,7 +121,7 @@ export default function VoicesSettingsForm() {
                     <SelectContent>
                       {availableModels.map(model => (
                         <SelectItem key={model.id} value={model.id}>
-                          <div className="flex flex-col">
+                          <div className="flex flex-col text-left">
                             <span>{model.name}</span>
                             {model.description && (
                               <span className="text-xs text-muted-foreground">
@@ -152,7 +158,7 @@ export default function VoicesSettingsForm() {
                 <Card>
                   <CardContent className="py-8">
                     <div className="flex flex-col items-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      <Spinner className="h-8 w-8 text-primary" />
                       <p className="mt-4 text-sm text-muted-foreground">Loading voices...</p>
                     </div>
                   </CardContent>
@@ -174,12 +180,30 @@ export default function VoicesSettingsForm() {
               )}
             </div>
 
-            {/* Sticky Submit Button */}
-            <div className="fixed bottom-0 left-0 right-0 border-t bg-background p-4 md:left-(--sidebar-width) z-10">
-              <div className="flex justify-end max-w-4xl mx-auto">
-                <Button type="submit" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting ? 'Saving...' : 'Save Changes'}
-                </Button>
+            {/* Sticky Submit Button with status */}
+            <div className="fixed bottom-0 left-0 right-0 border-t bg-background p-4 md:left-[var(--sidebar-width)] z-10 shadow-lg">
+              <div className="max-w-4xl mx-auto flex flex-col gap-4">
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                
+                <div className="flex items-center justify-end gap-4">
+                  {success && (
+                    <div className="flex items-center gap-2 text-sm font-medium text-green-600 animate-in fade-in slide-in-from-right-2">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span>Settings saved!</span>
+                    </div>
+                  )}
+                  
+                  <Button type="submit" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting && <Spinner className="mr-2 h-4 w-4" />}
+                    {form.formState.isSubmitting ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </div>
               </div>
             </div>
           </>

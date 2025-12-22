@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { Alignment } from '../types';
+import { Alignment } from '@/packages/audio/types';
 
 export class AudioService {
   private supabase: SupabaseClient;

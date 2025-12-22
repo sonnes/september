@@ -18,3 +18,11 @@ export interface StepProps extends OnboardingStep {
   isCompleted: boolean;
   onComplete: () => void;
 }
+
+export interface OnboardingContextValue {
+  currentStep: number;
+  totalSteps: number;
+  goToNextStep: () => void;
+  goToPreviousStep: () => void;
+  completeOnboarding: () => Promise<void>;
+}
