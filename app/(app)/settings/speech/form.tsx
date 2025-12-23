@@ -184,7 +184,7 @@ export default function VoicesSettingsForm() {
             </div>
 
             {/* Sticky Submit Button with status */}
-            <div className="fixed bottom-0 left-0 right-0 border-t bg-background p-4 md:left-[var(--sidebar-width)] z-10 shadow-lg">
+            <div className="fixed bottom-0 left-0 right-0 border-t bg-background p-4 md:left-(--sidebar-width) z-10 shadow-lg">
               <div className="max-w-4xl mx-auto flex flex-col gap-4">
                 {error && (
                   <Alert variant="destructive">

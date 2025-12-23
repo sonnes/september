@@ -94,7 +94,7 @@ export function DocumentEditor({ documentId, className }: DocumentEditorProps) {
     () => (
       <Dialog open={isSlidesDialogOpen} onOpenChange={setIsSlidesDialogOpen}>
         <DialogContent showCloseButton className="sm:max-w-[95vw] h-[95vh] p-0 flex flex-col">
-          <div className="h-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg overflow-hidden">
+          <div className="h-full bg-linear-to-br from-gray-50 to-gray-100 rounded-lg overflow-hidden">
             <SlidesPresentation documentId={documentId} className="h-full" />
           </div>
         </DialogContent>

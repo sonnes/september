@@ -178,17 +178,6 @@ function useTranscriptViewer({
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
 
-  const [prevWordsLength, setPrevWordsLength] = useState(words.length);
-  const [prevAlignment, setPrevAlignment] = useState(alignment);
-
-  if (words.length !== prevWordsLength || alignment !== prevAlignment) {
-    setPrevWordsLength(words.length);
-    setPrevAlignment(alignment);
-    setCurrentTime(0);
-    setDuration(guessedDuration);
-    setIsPlaying(false);
-  }
-
   const { segments, words } = useMemo(() => {
     if (segmentComposer) {
       return segmentComposer(alignment);
@@ -209,6 +198,17 @@ function useTranscriptViewer({
     }
     return 0;
   }, [alignment, words]);
+
+  const [prevWordsLength, setPrevWordsLength] = useState(words.length);
+  const [prevAlignment, setPrevAlignment] = useState(alignment);
+
+  if (words.length !== prevWordsLength || alignment !== prevAlignment) {
+    setPrevWordsLength(words.length);
+    setPrevAlignment(alignment);
+    setCurrentTime(0);
+    setDuration(guessedDuration);
+    setIsPlaying(false);
+  }
 
   const findWordIndex = useCallback(
     (time: number) => {
