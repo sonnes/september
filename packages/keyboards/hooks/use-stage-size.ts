@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 export interface StageSize {
   width: number;
@@ -9,17 +9,20 @@ export interface StageSize {
 
 export interface UseStageSizeReturn {
   stageSize: StageSize;
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   isMounted: boolean;
 }
+
+const subscribe = () => () => {};
+const getSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 export function useStageSize(): UseStageSizeReturn {
   const containerRef = useRef<HTMLDivElement>(null);
   const [stageSize, setStageSize] = useState<StageSize>({ width: 0, height: 0 });
-  const [isMounted, setIsMounted] = useState(false);
+  const isMounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   useEffect(() => {
-    setIsMounted(true);
     const updateSize = () => {
       if (containerRef.current) {
         setStageSize({
@@ -34,7 +37,6 @@ export function useStageSize(): UseStageSizeReturn {
 
     return () => {
       window.removeEventListener('resize', updateSize);
-      setIsMounted(false);
     };
   }, []);
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { Alignment, CharacterAlignment, toCharacterAlignment } from '@/packages/audio/types';
 
@@ -162,13 +162,6 @@ export function useTextViewer({
     [characterAlignment, hideAudioTags]
   );
 
-  const [currentWordIndex, setCurrentWordIndex] = useState<number>(() => (words.length ? 0 : -1));
-
-  // Reset when alignment changes
-  useEffect(() => {
-    setCurrentWordIndex(words.length ? 0 : -1);
-  }, [words.length, alignment]);
-
   // Binary search for word at time
   const findWordIndex = useCallback(
     (time: number) => {
@@ -194,48 +187,9 @@ export function useTextViewer({
     [words]
   );
 
-  // Update current word based on external time
-  useEffect(() => {
-    if (!words.length) return;
-
-    const word =
-      currentWordIndex >= 0 && currentWordIndex < words.length
-        ? words[currentWordIndex]
-        : undefined;
-
-    if (!word) {
-      const found = findWordIndex(currentTime);
-      if (found !== -1) setCurrentWordIndex(found);
-      return;
-    }
-
-    // Forward scan
-    let next = currentWordIndex;
-    if (currentTime >= word.endTime && currentWordIndex + 1 < words.length) {
-      while (next + 1 < words.length && currentTime >= words[next + 1].startTime) {
-        next++;
-      }
-      if (currentTime < words[next].endTime) {
-        setCurrentWordIndex(next);
-        return;
-      }
-      setCurrentWordIndex(next);
-      return;
-    }
-
-    // Backward seek
-    if (currentTime < word.startTime) {
-      const found = findWordIndex(currentTime);
-      if (found !== -1) setCurrentWordIndex(found);
-      return;
-    }
-
-    // General fallback
-    const found = findWordIndex(currentTime);
-    if (found !== -1 && found !== currentWordIndex) {
-      setCurrentWordIndex(found);
-    }
-  }, [currentTime, words, currentWordIndex, findWordIndex]);
+  const currentWordIndex = useMemo(() => {
+    return findWordIndex(currentTime);
+  }, [currentTime, findWordIndex]);
 
   // Returns the start time for seeking
   const seekToWord = useCallback(

@@ -10,7 +10,7 @@ type SpeechProvider = 'browser' | 'gemini' | 'elevenlabs';
 export interface UseVoiceFetchingReturn {
   voices: Voice[];
   isLoading: boolean;
-  error?: string;
+  error?: { message: string };
   refetch: (provider: SpeechProvider, search: string) => Promise<void>;
 }
 
@@ -18,7 +18,7 @@ export function useVoiceFetching(provider: SpeechProvider, apiKey?: string): Use
   const { getProvider } = useSpeechContext();
   const [voices, setVoices] = useState<Voice[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<{ message: string }>();
 
   const refetch = useCallback(
     async (searchProvider: SpeechProvider, search: string) => {
@@ -32,7 +32,7 @@ export function useVoiceFetching(provider: SpeechProvider, apiKey?: string): Use
         }
       } catch (err) {
         console.error('Error fetching voices:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch voices');
+        setError({ message: err instanceof Error ? err.message : 'Failed to fetch voices' });
         setVoices([]);
       } finally {
         setIsLoading(false);

@@ -36,7 +36,7 @@ export default function TalkPage() {
 
       setText('');
     },
-    [user, createAudioMessage]
+    [user, createAudioMessage, enqueue, setText]
   );
 
   const handleKeyPress = useCallback(

@@ -16,8 +16,8 @@ import {
   EditableChatTitle,
   MessageList,
   useChats,
-  useMessages,
   useCreateAudioMessage,
+  useMessages,
 } from '@/packages/chats';
 import { Editor, useEditorContext } from '@/packages/editor';
 import { KeyboardProvider, KeyboardRenderer, KeyboardToggleButton } from '@/packages/keyboards';
@@ -35,7 +35,11 @@ export default function ChatPage({ params }: ChatPageProps) {
   const { user } = useAccountContext();
   const { enqueue } = useAudioPlayer();
   const { chats, isLoading: chatsLoading, error: chatsError } = useChats({ userId: user?.id });
-  const { messages, isLoading: messagesLoading, error: messagesError } = useMessages({
+  const {
+    messages,
+    isLoading: messagesLoading,
+    error: messagesError,
+  } = useMessages({
     chatId: chatId || '',
   });
 
@@ -63,7 +67,7 @@ export default function ChatPage({ params }: ChatPageProps) {
 
       setText('');
     },
-    [chatId, user, createAudioMessage]
+    [chatId, user, createAudioMessage, enqueue, setText]
   );
 
   const handleKeyPress = useCallback(

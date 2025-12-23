@@ -1,9 +1,14 @@
 'use client';
 
-import { ReactNode, createContext, useCallback, useContext, useMemo } from 'react';
+import { ReactNode, createContext, useCallback, useMemo } from 'react';
 
 import { useAccountContext } from '@/packages/account';
 import { Account } from '@/packages/account';
+import {
+  DEFAULT_SPEECH_CONFIG,
+  DEFAULT_SUGGESTIONS_CONFIG,
+  DEFAULT_TRANSCRIPTION_CONFIG,
+} from '@/packages/ai/lib/defaults';
 import type {
   AIProvider,
   ProviderConfig,
@@ -12,13 +17,7 @@ import type {
   TranscriptionConfig,
 } from '@/types/ai-config';
 
-import {
-  DEFAULT_SPEECH_CONFIG,
-  DEFAULT_SUGGESTIONS_CONFIG,
-  DEFAULT_TRANSCRIPTION_CONFIG,
-} from '@/packages/ai/lib/defaults';
-
-interface AISettingsContextType {
+export interface AISettingsContextType {
   // AI Feature Configurations
   suggestionsConfig: SuggestionsConfig;
   transcriptionConfig: TranscriptionConfig;
@@ -67,7 +66,7 @@ const getTranscriptionConfig = (account: Account) => {
   return DEFAULT_TRANSCRIPTION_CONFIG;
 };
 
-const AISettingsContext = createContext<AISettingsContextType | undefined>(undefined);
+export const AISettingsContext = createContext<AISettingsContextType | undefined>(undefined);
 
 interface AISettingsProviderProps {
   children: ReactNode;
@@ -149,12 +148,4 @@ export function AISettingsProvider({ children }: AISettingsProviderProps) {
   };
 
   return <AISettingsContext.Provider value={contextValue}>{children}</AISettingsContext.Provider>;
-}
-
-export function useAISettings() {
-  const context = useContext(AISettingsContext);
-  if (context === undefined) {
-    throw new Error('useAISettings must be used within an AISettingsProvider');
-  }
-  return context;
 }

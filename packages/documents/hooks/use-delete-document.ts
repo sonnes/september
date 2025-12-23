@@ -2,32 +2,31 @@
 
 import { useCallback, useState } from 'react';
 
+import { toast } from 'sonner';
+
 import { documentCollection } from '../db';
 
 export interface UseDeleteDocumentReturn {
   deleteDocument: (id: string) => Promise<void>;
   isDeleting: boolean;
-  error?: string;
 }
 
 export function useDeleteDocument(): UseDeleteDocumentReturn {
   const [isDeleting, setIsDeleting] = useState(false);
-  const [error, setError] = useState<string>();
 
   const deleteDocument = useCallback(async (id: string) => {
     setIsDeleting(true);
-    setError(undefined);
     try {
       await documentCollection.delete(id);
+      toast.success('Document deleted');
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to delete document';
-      setError(message);
       console.error('Failed to delete document:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to delete document');
       throw err;
     } finally {
       setIsDeleting(false);
     }
   }, []);
 
-  return { deleteDocument, isDeleting, error };
+  return { deleteDocument, isDeleting };
 }

@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 
+import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 
 import { useAccountContext } from '@/packages/account';
@@ -9,42 +10,62 @@ import { useSpeech } from '@/packages/speech';
 import { chatCollection, messageCollection } from '../db';
 import { CreateMessageData, Message } from '../types';
 
-export function useCreateMessage() {
+export interface UseCreateMessageReturn {
+  createMessage: (message: CreateMessageData) => Promise<Message>;
+  isCreating: boolean;
+}
+
+export function useCreateMessage(): UseCreateMessageReturn {
   const { user } = useAccountContext();
+  const [isCreating, setIsCreating] = useState(false);
 
   const createMessage = useCallback(
     async (message: CreateMessageData) => {
-      const messageId = message.id || uuidv4();
-      const now = new Date();
+      setIsCreating(true);
+      try {
+        const messageId = message.id || uuidv4();
+        const now = new Date();
 
-      const newMessage: Message = {
-        ...message,
-        id: messageId,
-        user_id: message.user_id || user?.id || '',
-        created_at: message.created_at || now,
-      };
+        const newMessage: Message = {
+          ...message,
+          id: messageId,
+          user_id: message.user_id || user?.id || '',
+          created_at: message.created_at || now,
+        };
 
-      // Insert message
-      await messageCollection.insert(newMessage);
+        // Insert message
+        await messageCollection.insert(newMessage);
 
-      // Update chat's updated_at
-      if (message.chat_id) {
-        await chatCollection.update(message.chat_id, draft => {
-          draft.updated_at = now;
-        });
+        // Update chat's updated_at
+        if (message.chat_id) {
+          await chatCollection.update(message.chat_id, draft => {
+            draft.updated_at = now;
+          });
+        }
+
+        return newMessage;
+      } catch (err) {
+        console.error('Failed to create message:', err);
+        toast.error('Failed to send message');
+        throw err;
+      } finally {
+        setIsCreating(false);
       }
-
-      return newMessage;
     },
     [user]
   );
 
-  return { createMessage };
+  return { createMessage, isCreating };
 }
 
 type CreateAudioStatus = 'idle' | 'generating-speech' | 'uploading-audio' | 'saving-message';
 
-export function useCreateAudioMessage() {
+export interface UseCreateAudioMessageReturn {
+  createAudioMessage: (message: CreateMessageData) => Promise<{ message: Message; audio: Audio }>;
+  status: CreateAudioStatus;
+}
+
+export function useCreateAudioMessage(): UseCreateAudioMessageReturn {
   const { user } = useAccountContext();
   const { uploadAudio } = useAudio();
   const { createMessage } = useCreateMessage();
@@ -65,24 +86,30 @@ export function useCreateAudioMessage() {
         message.id = uuidv4();
       }
 
-      setStatus('generating-speech');
-      const speech = await generateSpeech(message.text);
+      try {
+        setStatus('generating-speech');
+        const speech = await generateSpeech(message.text);
 
-      if (speech?.blob) {
-        message.audio_path = `${message.id}.mp3`;
-        setStatus('uploading-audio');
-        await uploadAudio({
-          path: message.audio_path,
-          blob: speech.blob,
-          alignment: speech.alignment,
-        });
+        if (speech?.blob) {
+          message.audio_path = `${message.id}.mp3`;
+          setStatus('uploading-audio');
+          await uploadAudio({
+            path: message.audio_path,
+            blob: speech.blob,
+            alignment: speech.alignment,
+          });
+        }
+
+        setStatus('saving-message');
+        const result = await createMessage(message);
+        return { message: result, audio: speech as Audio };
+      } catch (err) {
+        console.error('Failed to create audio message:', err);
+        toast.error('Failed to generate or send audio message');
+        throw err;
+      } finally {
+        setStatus('idle');
       }
-
-      setStatus('saving-message');
-      const result = await createMessage(message);
-      setStatus('idle');
-
-      return { message: result, audio: speech as Audio };
     },
     [createMessage, generateSpeech, uploadAudio, user?.id]
   );

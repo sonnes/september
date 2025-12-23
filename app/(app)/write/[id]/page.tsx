@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import { useAccountContext } from '@/packages/account';
 import { DocumentEditor, EditableDocumentTitle, useDocuments } from '@/packages/documents';
 
 import { DocumentEditorSkeleton } from '../loading-skeleton';
@@ -23,7 +22,7 @@ type DocumentPageProps = {
 export default function DocumentPage({ params }: DocumentPageProps) {
   const { id } = use(params);
   const router = useRouter();
-  const { user } = useAccountContext();
+
   const { documents, fetching } = useDocuments();
 
   // Find the current document
@@ -65,7 +64,8 @@ export default function DocumentPage({ params }: DocumentPageProps) {
                       Failed to load document
                     </h3>
                     <p className="mt-1 text-sm text-red-700">
-                      The document you're looking for doesn't exist or couldn't be loaded.
+                      The document you&apos;re looking for doesn&apos;t exist or couldn&apos;t be
+                      loaded.
                     </p>
                   </div>
                   <Button

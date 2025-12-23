@@ -3,6 +3,7 @@
 import * as React from 'react';
 
 import Image from 'next/image';
+import Link from 'next/link';
 
 import {
   Home,
@@ -18,7 +19,6 @@ import {
 import { NavMain } from '@/components/sidebar/nav-main';
 import { NavProjects } from '@/components/sidebar/nav-projects';
 import { NavSecondary } from '@/components/sidebar/nav-secondary';
-import { NavUser } from '@/components/sidebar/nav-user';
 import {
   Sidebar,
   SidebarContent,
@@ -29,8 +29,6 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar';
-
-import { User } from '@/types/user';
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar>;
 
@@ -106,14 +104,14 @@ export function AppSidebar(props: AppSidebarProps) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <a href="/">
+              <Link href="/">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg overflow-hidden">
                   <Image src="/logo.png" alt="September" width={32} height={32} />
                 </div>
                 <div className="grid flex-1 text-left text-xl font-bold leading-tight">
                   <span className="truncate">september</span>
                 </div>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

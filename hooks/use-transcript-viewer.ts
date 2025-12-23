@@ -178,6 +178,17 @@ function useTranscriptViewer({
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
 
+  const [prevWordsLength, setPrevWordsLength] = useState(words.length);
+  const [prevAlignment, setPrevAlignment] = useState(alignment);
+
+  if (words.length !== prevWordsLength || alignment !== prevAlignment) {
+    setPrevWordsLength(words.length);
+    setPrevAlignment(alignment);
+    setCurrentTime(0);
+    setDuration(guessedDuration);
+    setIsPlaying(false);
+  }
+
   const { segments, words } = useMemo(() => {
     if (segmentComposer) {
       return segmentComposer(alignment);
@@ -198,15 +209,6 @@ function useTranscriptViewer({
     }
     return 0;
   }, [alignment, words]);
-
-  const [currentWordIndex, setCurrentWordIndex] = useState<number>(() => (words.length ? 0 : -1));
-
-  useEffect(() => {
-    setCurrentTime(0);
-    setDuration(guessedDuration);
-    setIsPlaying(false);
-    setCurrentWordIndex(words.length ? 0 : -1);
-  }, [words.length, alignment, guessedDuration]);
 
   const findWordIndex = useCallback(
     (time: number) => {
@@ -232,49 +234,15 @@ function useTranscriptViewer({
     [words]
   );
 
+  const currentWordIndex = useMemo(() => {
+    return findWordIndex(currentTime);
+  }, [currentTime, findWordIndex]);
+
   const handleTimeUpdate = useCallback(
-    (currentTime: number) => {
-      if (!words.length) return;
-
-      const currentWord =
-        currentWordIndex >= 0 && currentWordIndex < words.length
-          ? words[currentWordIndex]
-          : undefined;
-
-      if (!currentWord) {
-        const found = findWordIndex(currentTime);
-        if (found !== -1) setCurrentWordIndex(found);
-        return;
-      }
-
-      let next = currentWordIndex;
-      if (currentTime >= currentWord.endTime && currentWordIndex + 1 < words.length) {
-        while (next + 1 < words.length && currentTime >= words[next + 1].startTime) {
-          next++;
-        }
-        // If we're inside the next word's window, pick it.
-        if (currentTime < words[next].endTime) {
-          setCurrentWordIndex(next);
-          return;
-        }
-        // If we landed in a timing gap (no word contains currentTime),
-        // snap to the latest word that started at or before currentTime.
-        setCurrentWordIndex(next);
-        return;
-      }
-
-      if (currentTime < currentWord.startTime) {
-        const found = findWordIndex(currentTime);
-        if (found !== -1) setCurrentWordIndex(found);
-        return;
-      }
-
-      const found = findWordIndex(currentTime);
-      if (found !== -1 && found !== currentWordIndex) {
-        setCurrentWordIndex(found);
-      }
+    (time: number) => {
+      setCurrentTime(time);
     },
-    [findWordIndex, currentWordIndex, words]
+    []
   );
 
   useEffect(() => {

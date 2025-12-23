@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, createContext, useContext, useEffect, useMemo } from 'react';
+import { ReactNode, createContext, useCallback, useContext, useEffect, useMemo } from 'react';
 
 import { User } from '@/types/user';
 
@@ -25,7 +25,21 @@ interface AccountProviderProps {
 }
 
 export function AccountProvider({ children }: AccountProviderProps) {
-  const { user, loading: authLoading } = useAuth();
+  const { user: supabaseUser, loading: authLoading } = useAuth();
+
+  const user = useMemo(() => {
+    if (!authLoading && !supabaseUser) {
+      return {
+        id: 'local-user',
+        email: 'guest@september.to',
+        user_metadata: {
+          full_name: 'Guest',
+        },
+      } as User;
+    }
+    return supabaseUser;
+  }, [supabaseUser, authLoading]);
+
   const userId = useMemo(() => user?.id ?? 'local-user', [user]);
 
   const { account: dbAccount, insert, update } = useDbAccount(userId);
@@ -44,21 +58,30 @@ export function AccountProvider({ children }: AccountProviderProps) {
     }
   }, [dbAccount, authLoading, insert, userId, user]);
 
-  const updateAccount = async (accountData: Partial<PutAccountData>) => {
-    await update(userId, { ...accountData, updated_at: new Date() });
-  };
+  const updateAccount = useCallback(
+    async (accountData: Partial<PutAccountData>) => {
+      await update(userId, { ...accountData, updated_at: new Date() });
+    },
+    [update, userId]
+  );
 
-  const uploadFile = async (file: File) => {
-    if (!user) {
-      console.log('Upload skipped: user not authenticated');
-      return file.name;
-    }
-    return supabaseUpload(user.id, file);
-  };
+  const uploadFile = useCallback(
+    async (file: File) => {
+      if (!user) {
+        console.log('Upload skipped: user not authenticated');
+        return file.name;
+      }
+      return supabaseUpload(user.id, file);
+    },
+    [user, supabaseUpload]
+  );
 
-  const deleteFile = async (path: string) => {
-    await supabaseDelete(path);
-  };
+  const deleteFile = useCallback(
+    async (path: string) => {
+      await supabaseDelete(path);
+    },
+    [supabaseDelete]
+  );
 
   const value = useMemo(
     () => ({
@@ -69,7 +92,7 @@ export function AccountProvider({ children }: AccountProviderProps) {
       deleteFile,
       loading: authLoading || !dbAccount,
     }),
-    [user, dbAccount, authLoading]
+    [user, dbAccount, authLoading, updateAccount, uploadFile, deleteFile]
   );
 
   return <AccountContext.Provider value={value}>{children}</AccountContext.Provider>;

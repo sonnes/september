@@ -11,7 +11,7 @@ export interface RealtimeConfig {
   events?: RealtimeEventType[];
 }
 
-export interface RealtimeCallbacks<T = any> {
+export interface RealtimeCallbacks<T = Record<string, unknown>> {
   onInsert?: (newRecord: T) => void;
   onUpdate?: (newRecord: T, oldRecord?: T) => void;
   onDelete?: (oldRecord: T) => void;
@@ -19,7 +19,7 @@ export interface RealtimeCallbacks<T = any> {
   onSubscribe?: (status: string) => void;
 }
 
-export function createRealtimeSubscription<T extends Record<string, any> = any>(
+export function createRealtimeSubscription<T extends Record<string, unknown> = Record<string, unknown>>(
   channelName: string,
   config: RealtimeConfig,
   callbacks: RealtimeCallbacks<T>
@@ -32,7 +32,7 @@ export function createRealtimeSubscription<T extends Record<string, any> = any>(
   // Add event listeners for each specified event
   events.forEach(event => {
     channel.on(
-      'postgres_changes' as any,
+      'postgres_changes',
       {
         event,
         schema,
@@ -83,7 +83,7 @@ export function removeRealtimeSubscription(channel: RealtimeChannel): void {
 }
 
 // Convenience function for common table subscriptions
-export function subscribeToTable<T extends Record<string, any> = any>(
+export function subscribeToTable<T extends Record<string, unknown> = Record<string, unknown>>(
   tableName: string,
   filter: string,
   callbacks: RealtimeCallbacks<T>
@@ -99,16 +99,14 @@ export function subscribeToTable<T extends Record<string, any> = any>(
 }
 
 // Specific subscription helpers
-export function subscribeToUserMessages<T extends Record<string, any> = any>(
-  userId: string,
-  callbacks: RealtimeCallbacks<T>
-): RealtimeChannel {
+export function subscribeToUserMessages<
+  T extends Record<string, unknown> = Record<string, unknown>,
+>(userId: string, callbacks: RealtimeCallbacks<T>): RealtimeChannel {
   return subscribeToTable<T>('messages', `user_id=eq.${userId}`, callbacks);
 }
 
-export function subscribeToUserAccount<T extends Record<string, any> = any>(
-  userId: string,
-  callbacks: RealtimeCallbacks<T>
-): RealtimeChannel {
+export function subscribeToUserAccount<
+  T extends Record<string, unknown> = Record<string, unknown>,
+>(userId: string, callbacks: RealtimeCallbacks<T>): RealtimeChannel {
   return subscribeToTable<T>('accounts', `id=eq.${userId}`, callbacks);
 }

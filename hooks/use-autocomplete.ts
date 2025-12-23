@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useAccountContext } from '@/packages/account';
 import { useMessages } from '@/packages/chats';
@@ -9,7 +9,7 @@ import { Autocomplete } from '@/lib/autocomplete';
 import { tokenize } from '@/lib/autocomplete/utils';
 
 // Cache for static data to avoid refetching
-let cachedDictionary: any = null;
+let cachedDictionary: Record<string, number> | null = null;
 let cachedCorpus: string | null = null;
 let isLoadingStaticData = false;
 
@@ -107,7 +107,7 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
     };
 
     loadData();
-  }, [retrainAutocomplete]);
+  }, [retrainAutocomplete, account?.ai_corpus, includeMessages, messages]);
 
   const getSpellings = useCallback(
     (query: string) => {

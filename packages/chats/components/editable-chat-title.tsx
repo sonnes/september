@@ -18,11 +18,13 @@ export function EditableChatTitle({ chatId, title, className }: EditableChatTitl
   const { updateChat, isUpdating } = useUpdateChat();
   const [isEditing, setIsEditing] = useState(false);
   const [value, setValue] = useState(title || '');
+  const [prevTitle, setPrevTitle] = useState(title);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  if (title !== prevTitle) {
+    setPrevTitle(title);
     setValue(title || '');
-  }, [title]);
+  }
 
   useEffect(() => {
     if (isEditing && inputRef.current) {

@@ -1,10 +1,12 @@
 'use client';
 
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -13,12 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { VoiceSettingsFormData, VoicesForm, VoicesList } from '@/packages/speech';
+
 import { useAccountContext } from '@/packages/account';
 import { useAISettings } from '@/packages/ai';
+import { VoiceSettingsFormData, VoicesForm, VoicesList } from '@/packages/speech';
 
 export default function VoicesSettingsForm() {
   const { account } = useAccountContext();
@@ -84,7 +85,9 @@ export default function VoicesSettingsForm() {
                           ? 'ring-2 ring-primary border-primary'
                           : 'hover:border-zinc-300'
                       }`}
-                      onClick={() => onProviderChange(provider.id as any)}
+                      onClick={() =>
+                        onProviderChange(provider.id as 'browser' | 'gemini' | 'elevenlabs')
+                      }
                     >
                       <CardHeader className="p-4">
                         <CardTitle className="text-sm">{provider.name}</CardTitle>
@@ -190,7 +193,7 @@ export default function VoicesSettingsForm() {
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
-                
+
                 <div className="flex items-center justify-end gap-4">
                   {success && (
                     <div className="flex items-center gap-2 text-sm font-medium text-green-600 animate-in fade-in slide-in-from-right-2">
@@ -198,7 +201,7 @@ export default function VoicesSettingsForm() {
                       <span>Settings saved!</span>
                     </div>
                   )}
-                  
+
                   <Button type="submit" disabled={form.formState.isSubmitting}>
                     {form.formState.isSubmitting && <Spinner className="mr-2 h-4 w-4" />}
                     {form.formState.isSubmitting ? 'Saving...' : 'Save Changes'}

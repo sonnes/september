@@ -29,17 +29,5 @@ export function useAuth() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      setUser({
-        id: 'local-user',
-        email: 'guest@september.to',
-        user_metadata: {
-          full_name: 'Guest',
-        },
-      } as User);
-    }
-  }, [user, loading]);
-
   return { user, loading };
 }

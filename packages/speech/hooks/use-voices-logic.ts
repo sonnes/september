@@ -10,6 +10,7 @@ import { useSpeechContext } from '@/packages/speech/components/speech-provider';
 import { VoiceSettingsFormData, VoiceSettingsSchema } from '@/packages/speech/types/schemas';
 import type { Account } from '@/packages/account';
 import type { Voice } from '@/types/voice';
+import type { AIServiceProvider } from '@/types/ai-config';
 
 type SpeechProvider = 'browser' | 'gemini' | 'elevenlabs';
 
@@ -27,7 +28,7 @@ export function useVoicesLogic(
     return providers.reduce((acc, provider) => {
       acc[provider.id] = provider;
       return acc;
-    }, {} as any);
+    }, {} as Record<string, AIServiceProvider>);
   }, []);
 
   // Get current speech config from account

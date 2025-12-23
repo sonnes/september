@@ -11,8 +11,6 @@ import { TechnologySection } from '@/components/home/technology-section';
 import { UseCasesSection } from '@/components/home/use-cases-section';
 
 export default function Home() {
-  const provider = 'triplit';
-
   return (
     <ClientProviders>
       <main className="bg-white min-h-screen">

@@ -117,7 +117,7 @@ function TranscriptViewerContainer({
       src: audioSrc,
       children: <source src={audioSrc} type={audioType} />,
     }),
-    [audioRef, audioSrc]
+    [audioRef, audioSrc, audioType]
   );
 
   const contextValue = useMemo(
@@ -270,7 +270,8 @@ function TranscriptViewerWords({
 
 function TranscriptViewerAudio({ ...props }: ComponentPropsWithoutRef<'audio'>) {
   const { audioProps } = useTranscriptViewerContext();
-  return <audio data-slot="transcript-audio" {...audioProps} {...props} ref={audioProps.ref} />;
+  const { ref, ...rest } = audioProps;
+  return <audio data-slot="transcript-audio" {...rest} {...props} ref={ref} />;
 }
 
 type RenderChildren = (state: { isPlaying: boolean }) => ReactNode;

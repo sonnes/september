@@ -22,6 +22,7 @@ export function useUpdateChat(): UseUpdateChatReturn {
           updated_at: new Date(),
         });
       });
+      toast.success('Chat updated');
     } catch (error) {
       console.error('Failed to update chat:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to update chat');

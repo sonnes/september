@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react';
 
+import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 
 import { documentCollection } from '../db';
@@ -10,17 +11,14 @@ import type { Document } from '../types';
 export interface UseCreateDocumentReturn {
   createDocument: (data: Omit<Document, 'id' | 'created_at' | 'updated_at'>) => Promise<Document>;
   isCreating: boolean;
-  error?: string;
 }
 
 export function useCreateDocument(): UseCreateDocumentReturn {
   const [isCreating, setIsCreating] = useState(false);
-  const [error, setError] = useState<string>();
 
   const createDocument = useCallback(
-    async (data): Promise<Document> => {
+    async (data: Omit<Document, 'id' | 'created_at' | 'updated_at'>): Promise<Document> => {
       setIsCreating(true);
-      setError(undefined);
       try {
         const now = new Date();
         const newDoc: Document = {
@@ -30,11 +28,11 @@ export function useCreateDocument(): UseCreateDocumentReturn {
           updated_at: now,
         };
         await documentCollection.insert(newDoc);
+        toast.success('Document created');
         return newDoc;
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to create document';
-        setError(message);
         console.error('Failed to create document:', err);
+        toast.error(err instanceof Error ? err.message : 'Failed to create document');
         throw err;
       } finally {
         setIsCreating(false);
@@ -43,5 +41,5 @@ export function useCreateDocument(): UseCreateDocumentReturn {
     []
   );
 
-  return { createDocument, isCreating, error };
+  return { createDocument, isCreating };
 }

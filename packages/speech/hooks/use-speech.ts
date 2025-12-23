@@ -9,11 +9,18 @@ import type { Voice } from '@/types/voice';
 import { BrowserSpeechProvider } from '@/packages/speech/lib/providers/browser';
 import { ElevenLabsSpeechProvider } from '@/packages/speech/lib/providers/elevenlabs';
 import { GeminiSpeechProvider } from '@/packages/speech/lib/providers/gemini';
-import { ListVoicesRequest, SpeechOptions, SpeechProvider } from '@/packages/speech/types';
+import { ListVoicesRequest, SpeechOptions, SpeechProvider, SpeechResult } from '@/packages/speech/types';
 
 const browser = new BrowserSpeechProvider();
 
-export function useSpeech() {
+export interface UseSpeechReturn {
+  listVoices: (request: ListVoicesRequest) => Promise<Voice[]> | undefined;
+  getProviders: () => SpeechProvider[];
+  generateSpeech: (text: string, options?: SpeechOptions) => Promise<SpeechResult> | undefined;
+  getProvider: (id: string) => SpeechProvider | undefined;
+}
+
+export function useSpeech(): UseSpeechReturn {
   const { speechConfig, getProviderConfig } = useAISettings();
 
   const registry = useMemo(() => {
@@ -85,4 +92,3 @@ export function useSpeech() {
 
   return { listVoices, getProviders, generateSpeech, getProvider };
 }
-

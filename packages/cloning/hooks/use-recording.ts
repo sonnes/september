@@ -2,12 +2,25 @@
 
 import { useCallback, useRef, useState } from 'react';
 
+import { toast } from 'sonner';
+
 import { useMediaRecorder } from '@/packages/cloning/hooks/use-media-recorder';
 import { useAudioPlayback } from '@/packages/cloning/hooks/use-audio-playback';
 import { useRecordingState } from '@/packages/cloning/hooks/use-recording-state';
 import { useVoiceStorage } from '@/packages/cloning/hooks/use-voice-storage';
 
-export function useRecordingLogic(initialRecordings: Record<string, string> = {}) {
+export interface UseRecordingReturn {
+  recordings: Record<string, string>;
+  startRecording: (id: string) => Promise<void>;
+  stopRecording: () => void;
+  deleteRecording: (id: string) => Promise<void>;
+  playRecording: (id: string) => Promise<void>;
+  stopPlaying: () => void;
+  status: Record<string, string | null>;
+  errors: Record<string, string | null>;
+}
+
+export function useRecordingLogic(initialRecordings: Record<string, string> = {}): UseRecordingReturn {
   const [recordingStatus, setRecordingStatus] = useState<Record<string, string | null>>({});
   const mediaRecorder = useMediaRecorder();
   const audioPlayback = useAudioPlayback();
@@ -20,11 +33,11 @@ export function useRecordingLogic(initialRecordings: Record<string, string> = {}
       try {
         await recordingState.saveRecording(id, blob);
         setRecordingStatus(prev => ({ ...prev, [id]: null }));
+        toast.success('Recording saved');
       } catch (err) {
-        setRecordingStatus(prev => ({
-          ...prev,
-          [id]: err instanceof Error ? err.message : 'Failed to save recording',
-        }));
+        const message = err instanceof Error ? err.message : 'Failed to save recording';
+        setRecordingStatus(prev => ({ ...prev, [id]: message }));
+        toast.error(message);
       }
     },
     [recordingState]
@@ -50,6 +63,7 @@ export function useRecordingLogic(initialRecordings: Record<string, string> = {}
         audio.addEventListener('error', cleanup);
       } catch (err) {
         console.error('Error playing recording:', err);
+        toast.error('Failed to play recording');
       }
     },
     [recordingState, downloadVoiceSample, audioPlayback]
@@ -60,11 +74,11 @@ export function useRecordingLogic(initialRecordings: Record<string, string> = {}
       setRecordingStatus(prev => ({ ...prev, [id]: null }));
       try {
         await recordingState.deleteRecording(id);
+        toast.success('Recording deleted');
       } catch (err) {
-        setRecordingStatus(prev => ({
-          ...prev,
-          [id]: err instanceof Error ? err.message : 'Failed to delete recording',
-        }));
+        const message = err instanceof Error ? err.message : 'Failed to delete recording';
+        setRecordingStatus(prev => ({ ...prev, [id]: message }));
+        toast.error(message);
         throw err;
       }
     },

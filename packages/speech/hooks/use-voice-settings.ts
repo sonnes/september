@@ -1,24 +1,24 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
 import { getProvidersForFeature } from '@/packages/ai';
-import { useSpeechContext } from '@/packages/speech/components/speech-provider';
 import { useVoiceFetching } from '@/packages/speech/hooks/use-voice-fetching';
 import { useProviderModels } from '@/packages/speech/hooks/use-provider-models';
 import { VoiceSettingsFormData, VoiceSettingsSchema } from '@/packages/speech/types/schemas';
 import type { Account } from '@/packages/account';
 import type { Voice } from '@/types/voice';
+import type { AIServiceProvider } from '@/types/ai-config';
 
 type SpeechProvider = 'browser' | 'gemini' | 'elevenlabs';
 
 export interface UseVoiceSettingsReturn {
   form: ReturnType<typeof useForm<VoiceSettingsFormData>>;
   selectedProvider: SpeechProvider;
-  availableProviders: Record<string, any>;
+  availableProviders: Record<string, AIServiceProvider>;
   availableModels: Array<{ id: string; name: string; description?: string }>;
   voices: Voice[];
   isLoadingVoices: boolean;
@@ -37,7 +37,6 @@ export function useVoiceSettings(
   account: Account | undefined,
   onSubmit: (data: VoiceSettingsFormData) => Promise<void>
 ): UseVoiceSettingsReturn {
-  const { getProvider } = useSpeechContext();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -47,7 +46,7 @@ export function useVoiceSettings(
     return providers.reduce((acc, provider) => {
       acc[provider.id] = provider;
       return acc;
-    }, {} as any);
+    }, {} as Record<string, AIServiceProvider>);
   }, []);
 
   // Get current speech config from account

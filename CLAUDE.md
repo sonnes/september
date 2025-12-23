@@ -56,6 +56,7 @@ pnpm run lint     # Run ESLint
 ## Code Patterns
 
 **Modules**: The codebase is organized into modular packages in `packages/`. Each package should have:
+
 - `components/`: Context providers, forms, and feature-specific UI.
 - `hooks/`: State management and domain logic (e.g., `use-db-*`, `use-auth-*`, `use-ai-*`).
 - `lib/`: Package-specific utility functions and services.
@@ -67,7 +68,21 @@ pnpm run lint     # Run ESLint
 
 **Styling**: Use shadcn/ui components with Tailwind CSS. Font family is Noto Sans.
 
-**Error Handling**: Propagate errors to hooks and components. Use `toast` for user-facing errors (except in forms where Zod errors are used).
+**Error Handling**:
+
+- **Query Hooks** (read operations): Return error object: `{ data, isLoading, error }`. Error shape: `{ message: string }`.
+- **Mutation Hooks** (write operations): Throw errors for component error boundaries. Use toast notifications for user feedback. Log to console for debugging.
+- **Pattern**:
+  ```typescript
+  try {
+    await operation();
+    toast.success('Success message');
+  } catch (err) {
+    console.error('Operation failed:', err);
+    toast.error(err instanceof Error ? err.message : 'Operation failed');
+    throw err;
+  }
+  ```
 
 ## Important
 

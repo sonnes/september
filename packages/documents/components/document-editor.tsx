@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import {
   DocumentDuplicateIcon,
@@ -38,12 +38,13 @@ export function DocumentEditor({ documentId, className }: DocumentEditorProps) {
   const [isSlidesDialogOpen, setIsSlidesDialogOpen] = useState(false);
   const [content, setContent] = useState('');
   const [isDirty, setIsDirty] = useState(false);
+  const [prevDocumentId, setPrevDocumentId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!current) return;
+  if (current && current.id !== prevDocumentId) {
+    setPrevDocumentId(current.id);
     setContent(current.content || '');
     setIsDirty(false);
-  }, [current]); // reset when the selected document changes
+  }
 
   const handleContentChange = useCallback(async (_content: string, markdown: string) => {
     setContent(markdown);

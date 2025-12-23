@@ -1,19 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
 
-import { MATCH_PUNCTUATION } from '@/lib/utils';
-
-import { useEditorContext } from '@/packages/editor/components/editor-provider';
 import { useAutocomplete } from '@/hooks/use-autocomplete';
+
+import { MATCH_PUNCTUATION } from '@/lib/utils';
+import { useEditorContext } from '@/packages/editor/components/editor-provider';
 
 export function Autocomplete() {
   const { text, addWord, setCurrentWord } = useEditorContext();
   const { isReady, getSpellings, getNextWords } = useAutocomplete();
 
-  const [words, setWords] = useState<string[]>([]);
+  const [dismissedText, setDismissedText] = useState<string | null>(null);
 
   // Check if text ends with space or punctuation (trigger for phrase prediction)
   const shouldTriggerPhrasePrediction = (text: string) => {
@@ -25,6 +25,17 @@ export function Autocomplete() {
     return false;
   };
 
+  // Update suggestions when text changes
+  const words = useMemo(() => {
+    if (!isReady || text === dismissedText) return [];
+
+    if (shouldTriggerPhrasePrediction(text)) {
+      return getNextWords(text);
+    } else {
+      return getSpellings(text);
+    }
+  }, [text, isReady, getSpellings, getNextWords, dismissedText]);
+
   // Handle suggestion click
   const handleSuggestionClick = (suggestion: string) => {
     if (shouldTriggerPhrasePrediction(text)) {
@@ -33,21 +44,8 @@ export function Autocomplete() {
       setCurrentWord(suggestion);
     }
 
-    setWords([]);
+    setDismissedText(text);
   };
-
-  // Update suggestions when text changes
-  useEffect(() => {
-    if (!isReady) return;
-
-    if (shouldTriggerPhrasePrediction(text)) {
-      const words = getNextWords(text);
-      setWords(words);
-    } else {
-      const words = getSpellings(text);
-      setWords(words);
-    }
-  }, [text, isReady, getSpellings, getNextWords]);
 
   return (
     <Suggestions>
