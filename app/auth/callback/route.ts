@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-import AccountsService from '@/packages/account';
+import { AccountService } from '@/packages/account';
 import { createClient } from '@/supabase/server';
 
 export async function GET(request: Request) {
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     }
 
     if (data.user) {
-      const accountsService = new AccountsService(supabase);
+      const accountsService = new AccountService(supabase);
       const account = await accountsService.getAccount(data.user.id);
 
       if (!account) {

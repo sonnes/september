@@ -13,13 +13,18 @@ let cachedDictionary: any = null;
 let cachedCorpus: string | null = null;
 let isLoadingStaticData = false;
 
+interface UseAutocompleteOptions {
+  includeMessages?: boolean;
+}
+
 interface UseAutocompleteReturn {
   isReady: boolean;
   getSpellings: (query: string) => string[];
   getNextWords: (query: string) => string[];
 }
 
-export function useAutocomplete(): UseAutocompleteReturn {
+export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutocompleteReturn {
+  const { includeMessages = false } = options;
   const { account } = useAccountContext();
   const { messages } = useMessages();
   const [autocomplete, setAutocomplete] = useState<Autocomplete>(new Autocomplete());
@@ -29,15 +34,20 @@ export function useAutocomplete(): UseAutocompleteReturn {
     if (!cachedDictionary || !cachedCorpus) return;
 
     // Create training text with default data first, then user data
-    const messagesText = messages.map(m => m.text).join('\n');
     const userCorpus = account?.ai_corpus || '';
-    const trainingText = cachedCorpus + '\n' + userCorpus + '\n' + messagesText;
+    let trainingText = cachedCorpus + '\n' + userCorpus;
+
+    // Optionally include message history
+    if (includeMessages && messages.length > 0) {
+      const messagesText = messages.map(m => m.text).join('\n');
+      trainingText += '\n' + messagesText;
+    }
 
     const newAutocomplete = new Autocomplete();
     newAutocomplete.train(trainingText);
     setAutocomplete(newAutocomplete);
     setIsInitialized(true);
-  }, [account, messages]);
+  }, [account, messages, includeMessages]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -82,9 +92,12 @@ export function useAutocomplete(): UseAutocompleteReturn {
       } catch (error) {
         console.warn('Failed to load default dictionary/corpus, using fallback:', error);
         // Fallback to user data only if default loading fails
-        if (account?.ai_corpus || messages.length) {
-          const messagesText = messages.map(m => m.text).join('\n');
-          const trainingText = (account?.ai_corpus || '') + '\n' + messagesText;
+        if (account?.ai_corpus || (includeMessages && messages.length)) {
+          let trainingText = account?.ai_corpus || '';
+          if (includeMessages && messages.length > 0) {
+            const messagesText = messages.map(m => m.text).join('\n');
+            trainingText += '\n' + messagesText;
+          }
           const newAutocomplete = new Autocomplete();
           newAutocomplete.train(trainingText);
           setAutocomplete(newAutocomplete);

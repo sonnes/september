@@ -25,14 +25,27 @@ import { ChatList, MessageList, MessagesProvider } from '@/packages/chats';
 
 ### Hooks
 
+#### Query Hooks
 ```tsx
-import { useChats, useMessages, useCreateChat, useCreateMessage, useCreateAudioMessage } from '@/packages/chats';
+import { useChats, useMessages } from '@/packages/chats';
 
 // Get chats for a user
 const { chats, isLoading, error } = useChats({ userId, searchQuery });
 
 // Get messages for a chat
 const { messages, isLoading, error } = useMessages({ chatId, searchQuery });
+```
+
+#### Mutation Hooks
+```tsx
+import {
+  useCreateChat,
+  useCreateMessage,
+  useCreateAudioMessage,
+  useUpdateChat,
+  useDeleteChat,
+  useDeleteMessage
+} from '@/packages/chats';
 
 // Create a new chat
 const { createChat } = useCreateChat();
@@ -42,6 +55,18 @@ const { createMessage } = useCreateMessage();
 
 // Create an audio message (generates speech and uploads audio)
 const { createAudioMessage, status } = useCreateAudioMessage();
+
+// Update a chat
+const { updateChat, isUpdating } = useUpdateChat();
+await updateChat(chatId, { title: 'New Title' });
+
+// Delete a chat
+const { deleteChat, isDeleting } = useDeleteChat();
+await deleteChat(chatId);
+
+// Delete a message
+const { deleteMessage, isDeleting } = useDeleteMessage();
+await deleteMessage(messageId);
 ```
 
 ### Types

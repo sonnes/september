@@ -6,7 +6,7 @@ import { PencilIcon } from '@heroicons/react/24/outline';
 
 import { Input } from '@/components/ui/input';
 
-import { chatCollection } from '../db';
+import { useUpdateChat } from '../hooks/use-update-chat';
 
 interface EditableChatTitleProps {
   chatId: string;
@@ -15,9 +15,9 @@ interface EditableChatTitleProps {
 }
 
 export function EditableChatTitle({ chatId, title, className }: EditableChatTitleProps) {
+  const { updateChat, isUpdating } = useUpdateChat();
   const [isEditing, setIsEditing] = useState(false);
   const [value, setValue] = useState(title || '');
-  const [isSaving, setIsSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -32,25 +32,19 @@ export function EditableChatTitle({ chatId, title, className }: EditableChatTitl
   }, [isEditing]);
 
   const handleSave = async () => {
-    if (isSaving) return;
+    if (isUpdating) return;
 
     const trimmedValue = value.trim();
     const newTitle = trimmedValue || undefined;
 
     // Only update if the title actually changed
     if (newTitle !== (title || undefined)) {
-      setIsSaving(true);
       try {
-        await chatCollection.update(chatId, draft => {
-          draft.title = newTitle;
-          draft.updated_at = new Date();
-        });
+        await updateChat(chatId, { title: newTitle });
       } catch (error) {
-        console.error('Failed to update chat title:', error);
         // Revert to original value on error
         setValue(title || '');
-      } finally {
-        setIsSaving(false);
+        return;
       }
     }
 
@@ -81,7 +75,7 @@ export function EditableChatTitle({ chatId, title, className }: EditableChatTitl
         onBlur={handleSave}
         onKeyDown={handleKeyDown}
         placeholder="Untitled"
-        disabled={isSaving}
+        disabled={isUpdating}
         className={className}
       />
     );

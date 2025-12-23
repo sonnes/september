@@ -12,8 +12,14 @@ The Editor module provides the communication interface for the September app, in
 ## Architecture
 
 - `components/`: UI components (`Editor`, `TiptapEditor`, `Autocomplete`).
-- `hooks/`: Autocomplete logic (`useAutocomplete`).
+- `hooks/`: Editor state hooks (`useEditor`).
 - `context/`: Editor state management (`EditorProvider`).
+
+## Hooks
+
+- `useEditor`: Access the editor context for text state and operations.
+
+Note: The `useAutocomplete` hook is now a global hook located in `/hooks/use-autocomplete.ts`. It can be configured to include message history using the `includeMessages` option.
 
 ## Usage
 

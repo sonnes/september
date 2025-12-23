@@ -4,15 +4,19 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { triplit } from '@/triplit/client';
 import { Alignment } from '@/packages/audio/types';
+import { formatBase64Audio, parseBase64Audio, base64ToBlob } from '@/packages/audio/lib/audio-utils';
 
 export function useUploadAudio() {
   const uploadAudio = useCallback(
     async ({ path, blob, alignment }: { path: string; blob: string; alignment?: Alignment }) => {
       try {
+        // Ensure the blob is properly formatted with data URI prefix
+        const formattedBlob = formatBase64Audio(blob, 'audio/mp3');
+
         // Store audio data in Triplit database
         await triplit.insert('audio_files', {
           id: path,
-          blob,
+          blob: formattedBlob,
           alignment,
           created_at: new Date(),
         });
@@ -40,14 +44,11 @@ export function useDownloadAudio() {
         throw new Error('Audio file not found');
       }
 
-      // Convert base64 string back to Blob
-      const binaryString = atob(audioFile.blob);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
+      // Parse the base64 data and extract type
+      const { type, base64 } = parseBase64Audio(audioFile.blob);
 
-      return new Blob([bytes], { type: 'audio/mp3' });
+      // Convert base64 string back to Blob
+      return base64ToBlob(base64, type);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to download audio');
       console.error(error);

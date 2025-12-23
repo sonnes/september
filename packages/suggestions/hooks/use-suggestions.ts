@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import GeminiService from '@/services/gemini';
+import { useDebounce } from '@/hooks/use-debounce';
 
 import { useAISettings } from '@/packages/ai';
 import { Message } from '@/packages/chats';
@@ -22,7 +23,7 @@ export function useSuggestions({
   timeout?: number;
 }): UseSuggestionsReturn {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [debouncedText, setDebouncedText] = useState(text);
+  const debouncedText = useDebounce(text, timeout);
   const [isLoading, setIsLoading] = useState(false);
 
   const { getProviderConfig, suggestionsConfig } = useAISettings();
@@ -72,14 +73,6 @@ export function useSuggestions({
 
     fetchSuggestions(debouncedText, []);
   }, [debouncedText, apiKey, suggestionsConfig.enabled, gemini]);
-
-  // Debounce text changes
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setDebouncedText(text);
-    }, timeout);
-    return () => clearTimeout(timeoutId);
-  }, [text, timeout]);
 
   return {
     suggestions,

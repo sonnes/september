@@ -1,7 +1,6 @@
 export * from '@/packages/audio/components/audio-player';
 export * from '@/packages/audio/components/audio-provider';
 export * from '@/packages/audio/components/text-viewer';
-export * from '@/packages/audio/hooks/use-audio-storage';
 export {
   useUploadAudio as useUploadAudioSupabase,
   useDownloadAudio as useDownloadAudioSupabase,
@@ -13,3 +12,4 @@ export {
 export * from '@/packages/audio/hooks/use-text-viewer';
 export * from '@/packages/audio/types';
 export * from '@/packages/audio/lib/audio-service';
+export * from '@/packages/audio/lib/audio-utils';

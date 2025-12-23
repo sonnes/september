@@ -7,7 +7,7 @@ import moment from 'moment';
 import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
-import { useAudioPlayer, useAudioStorage } from '@/packages/audio';
+import { useAudioPlayer, useAudio } from '@/packages/audio';
 import type { Audio } from '@/packages/audio';
 import { useSpeech } from '@/packages/speech';
 
@@ -21,7 +21,7 @@ function MessageItem({ message }: MessageItemProps) {
   const isUser = message.type === 'user';
   const { enqueue, isPlaying, current, togglePlayPause } = useAudioPlayer();
   const { generateSpeech } = useSpeech();
-  const { downloadAudio } = useAudioStorage();
+  const { downloadAudio } = useAudio();
 
   const [audio, setAudio] = useState<Audio | null>(null);
   const [isLoading, setIsLoading] = useState(false);

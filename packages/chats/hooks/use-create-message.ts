@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { useAccountContext } from '@/packages/account';
-import { Audio, useAudioStorage } from '@/packages/audio';
+import { Audio, useAudio } from '@/packages/audio';
 import { useSpeech } from '@/packages/speech';
 
 import { chatCollection, messageCollection } from '../db';
@@ -46,7 +46,7 @@ type CreateAudioStatus = 'idle' | 'generating-speech' | 'uploading-audio' | 'sav
 
 export function useCreateAudioMessage() {
   const { user } = useAccountContext();
-  const { uploadAudio } = useAudioStorage();
+  const { uploadAudio } = useAudio();
   const { createMessage } = useCreateMessage();
   const [status, setStatus] = useState<CreateAudioStatus>('idle');
   const { generateSpeech } = useSpeech();

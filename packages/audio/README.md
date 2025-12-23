@@ -18,9 +18,16 @@ This module handles audio playback and storage for the September app.
 
 ## Hooks
 
+### Storage Hooks
+- `useAudio`: Access the audio storage context (provider-agnostic).
+- `useUploadAudioTriplit`: Direct access to Triplit-based audio upload.
+- `useDownloadAudioTriplit`: Direct access to Triplit-based audio download.
+- `useUploadAudioSupabase`: Direct access to Supabase-based audio upload.
+- `useDownloadAudioSupabase`: Direct access to Supabase-based audio download.
+
+### Playback Hooks
 - `useAudioPlayer`: Access the audio player context.
-- `useAudio`: Access the audio storage context.
-- `useAudioStorage`: Direct access to Triplit-based audio storage.
+- `useTextViewer`: Access the text viewer context for alignment-based highlighting.
 
 ## Usage
 
