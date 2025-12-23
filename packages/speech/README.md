@@ -17,10 +17,20 @@ This module provides text-to-speech capabilities for the September app.
 
 ## Hooks
 
+### Core Hooks
+
 - `useSpeech`: Access low-level speech services.
 - `useSpeechContext`: Access speech services within a provider.
 
+### Voice & Model Hooks
+
+- `useVoiceFetching(provider, apiKey)`: Fetch available voices for a specific provider.
+- `useProviderModels(provider)`: Get available models for a specific provider.
+- `useVoiceSettings()`: Manage voice selection form state and submission.
+
 ## Usage
+
+### Basic Speech Generation
 
 ```tsx
 import { SpeechProvider, useSpeechContext } from '@/packages/speech';
@@ -35,7 +45,7 @@ function App() {
 
 function SpeakButton() {
   const { generateSpeech } = useSpeechContext();
-  
+
   const handleSpeak = async () => {
     await generateSpeech('Hello world');
   };
@@ -44,3 +54,25 @@ function SpeakButton() {
 }
 ```
 
+### Voice Selection
+
+```tsx
+import { useProviderModels, useVoiceFetching } from '@/packages/speech';
+
+function VoiceSelector({ provider, apiKey }) {
+  const { voices, isLoading: voicesLoading } = useVoiceFetching(provider, apiKey);
+  const { models, isLoading: modelsLoading } = useProviderModels(provider);
+
+  if (voicesLoading || modelsLoading) return <div>Loading...</div>;
+
+  return (
+    <select>
+      {voices.map(voice => (
+        <option key={voice.id} value={voice.id}>
+          {voice.name}
+        </option>
+      ))}
+    </select>
+  );
+}
+```

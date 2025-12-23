@@ -5,7 +5,12 @@ import { useEffect, useState } from 'react';
 import supabase from '@/supabase/client';
 import { User } from '@/types/user';
 
-export function useAuth() {
+export interface UseAuthReturn {
+  user: User | undefined;
+  loading: boolean;
+}
+
+export function useAuth(): UseAuthReturn {
   const [user, setUser] = useState<User | undefined>();
   const [loading, setLoading] = useState(true);
 

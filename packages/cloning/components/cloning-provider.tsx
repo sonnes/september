@@ -2,7 +2,7 @@
 
 import { createContext, useContext } from 'react';
 
-import { useRecordingLogic } from '@/packages/cloning/hooks/use-recording';
+import { useRecording } from '@/packages/cloning/hooks/use-recording';
 import { useUploadLogic } from '@/packages/cloning/hooks/use-upload';
 import { RecordingContextType, UploadContextType } from '@/packages/cloning/types';
 
@@ -35,13 +35,13 @@ export function RecordingProvider({
   children: React.ReactNode;
   initialRecordings?: Record<string, string>;
 }) {
-  const recordingLogic = useRecordingLogic(initialRecordings);
+  const recordingLogic = useRecording(initialRecordings);
 
   return <RecordingContext.Provider value={recordingLogic}>{children}</RecordingContext.Provider>;
 }
 
-export function useRecording() {
+export function useRecordingContext() {
   const context = useContext(RecordingContext);
-  if (!context) throw new Error('useRecording must be used within a RecordingProvider');
+  if (!context) throw new Error('useRecordingContext must be used within a RecordingProvider');
   return context;
 }

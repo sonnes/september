@@ -6,7 +6,11 @@ import { triplit } from '@/triplit/client';
 import { Alignment } from '@/packages/audio/types';
 import { formatBase64Audio, parseBase64Audio, base64ToBlob } from '@/packages/audio/lib/audio-utils';
 
-export function useUploadAudio() {
+export interface UseUploadAudioReturn {
+  uploadAudio: (params: { path: string; blob: string; alignment?: Alignment }) => Promise<string>;
+}
+
+export function useUploadAudio(): UseUploadAudioReturn {
   const uploadAudio = useCallback(
     async ({ path, blob, alignment }: { path: string; blob: string; alignment?: Alignment }) => {
       try {
@@ -34,7 +38,11 @@ export function useUploadAudio() {
   return { uploadAudio };
 }
 
-export function useDownloadAudio() {
+export interface UseDownloadAudioReturn {
+  downloadAudio: (path: string) => Promise<Blob>;
+}
+
+export function useDownloadAudio(): UseDownloadAudioReturn {
   const downloadAudio = useCallback(async (path: string) => {
     try {
       // Fetch audio data from Triplit database

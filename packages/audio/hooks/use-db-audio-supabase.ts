@@ -8,7 +8,11 @@ import { AudioService } from '@/packages/audio/lib/audio-service';
 
 const audioService = new AudioService(supabase);
 
-export function useUploadAudio() {
+export interface UseUploadAudioReturn {
+  uploadAudio: (params: { path: string; blob: string; alignment?: Alignment }) => Promise<string>;
+}
+
+export function useUploadAudio(): UseUploadAudioReturn {
   const uploadAudio = useCallback(
     async ({ path, blob, alignment }: { path: string; blob: string; alignment?: Alignment }) => {
       try {
@@ -30,7 +34,11 @@ export function useUploadAudio() {
   return { uploadAudio };
 }
 
-export function useDownloadAudio() {
+export interface UseDownloadAudioReturn {
+  downloadAudio: (path: string) => Promise<Blob>;
+}
+
+export function useDownloadAudio(): UseDownloadAudioReturn {
   const downloadAudio = useCallback(async (path: string) => {
     try {
       const blob = await audioService.downloadAudio(path);

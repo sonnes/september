@@ -14,7 +14,7 @@ import { FormField, FormTextarea } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { useAccountContext } from '@/packages/account';
-import { useRecording, useUpload } from '@/packages/cloning/components/cloning-provider';
+import { useRecordingContext, useUpload } from '@/packages/cloning/components/cloning-provider';
 import { RecordingSection } from '@/packages/cloning/components/record';
 import { UploadSection } from '@/packages/cloning/components/upload';
 import { useVoiceStorage } from '@/packages/cloning/hooks/use-voice-storage';
@@ -31,7 +31,7 @@ export function VoiceCloneForm() {
   const [activeTab, setActiveTab] = useState('upload');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { account } = useAccountContext();
-  const { recordings } = useRecording();
+  const { recordings } = useRecordingContext();
   const { uploadedFiles } = useUpload();
   const { downloadVoiceSample } = useVoiceStorage();
 

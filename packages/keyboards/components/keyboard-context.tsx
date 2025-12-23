@@ -13,7 +13,7 @@ interface KeyboardContextType {
   setKeyboardType: (type: KeyboardType) => void;
 }
 
-const KeyboardContext = createContext<KeyboardContextType | undefined>(undefined);
+export const KeyboardContext = createContext<KeyboardContextType | undefined>(undefined);
 
 interface KeyboardProviderProps {
   defaultVisible?: boolean;
@@ -47,12 +47,4 @@ export function KeyboardProvider({
       {children}
     </KeyboardContext.Provider>
   );
-}
-
-export function useKeyboardContext() {
-  const context = useContext(KeyboardContext);
-  if (context === undefined) {
-    throw new Error('useKeyboardContext must be used within a KeyboardProvider');
-  }
-  return context;
 }

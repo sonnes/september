@@ -7,8 +7,9 @@ import { Plus } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { CircularKeyboard } from '@/packages/keyboards/components/circular-keyboard';
-import { KeyboardType, useKeyboardContext } from '@/packages/keyboards/components/keyboard-context';
+import { KeyboardType } from '@/packages/keyboards/components/keyboard-context';
 import { QwertyKeyboard } from '@/packages/keyboards/components/qwerty-keyboard';
+import { useKeyboardContext } from '@/packages/keyboards/hooks/use-keyboard-context';
 
 interface KeyboardRendererProps {
   className?: string;
@@ -82,4 +83,3 @@ export function KeyboardRenderer({ className = '', onKeyPress }: KeyboardRendere
     </>
   );
 }
-

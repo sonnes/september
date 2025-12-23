@@ -20,7 +20,7 @@ export interface UseRecordingReturn {
   errors: Record<string, string | null>;
 }
 
-export function useRecordingLogic(initialRecordings: Record<string, string> = {}): UseRecordingReturn {
+export function useRecording(initialRecordings: Record<string, string> = {}): UseRecordingReturn {
   const [recordingStatus, setRecordingStatus] = useState<Record<string, string | null>>({});
   const mediaRecorder = useMediaRecorder();
   const audioPlayback = useAudioPlayback();
@@ -108,6 +108,3 @@ export function useRecordingLogic(initialRecordings: Record<string, string> = {}
     errors,
   };
 }
-
-// Export as useRecordingLogic for context usage
-export { useRecordingLogic as useRecording };

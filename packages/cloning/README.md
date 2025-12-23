@@ -17,32 +17,34 @@ This module provides functionality for voice cloning, specifically using the Ele
 
 ## Hooks
 
-- `useVoiceStorage`: Hook for managing voice samples in Triplit.
-- `useRecording`: Context hook for recording state and actions.
-- `useUpload`: Context hook for upload state and actions.
+### Core Hooks
 
-## Context
+- `useRecording`: Main hook for recording voice samples (composes smaller hooks).
+- `useUpload`: Manage audio file uploads for cloning.
+- `useVoiceStorage`: Manage voice samples in Triplit database.
 
-- `RecordingProvider`: Provider for the recording context.
-- `UploadProvider`: Provider for the upload context.
+### Specialized Hooks
 
-## Services
-
-- `ElevenLabsVoiceClone`: Service class for interacting with the ElevenLabs voice cloning API.
+- `useMediaRecorder`: Low-level MediaRecorder API wrapper.
+- `useAudioPlayback`: Manage playback of recorded samples.
+- `useRecordingState`: Manage the state of multiple recording samples.
 
 ## Usage
 
-```tsx
-import { VoiceCloneForm, RecordingProvider, UploadProvider } from '@/packages/cloning';
+### Recording Voice Samples
 
-export function ClonePage() {
+```tsx
+import { RecordingProvider, useRecordingContext } from '@/packages/cloning';
+
+function Recorder() {
+  const { startRecording, stopRecording, status } = useRecordingContext();
+
   return (
-    <UploadProvider>
-      <RecordingProvider>
-        <VoiceCloneForm />
-      </RecordingProvider>
-    </UploadProvider>
+    <div>
+      <p>Status: {status}</p>
+      <button onClick={startRecording}>Start</button>
+      <button onClick={stopRecording}>Stop</button>
+    </div>
   );
 }
 ```
-

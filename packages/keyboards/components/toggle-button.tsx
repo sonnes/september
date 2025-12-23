@@ -3,9 +3,9 @@
 import { Keyboard } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
-import { useKeyboardContext } from '@/packages/keyboards/components/keyboard-context';
+import { cn } from '@/lib/utils';
+import { useKeyboardContext } from '@/packages/keyboards/hooks/use-keyboard-context';
 
 interface KeyboardToggleButtonProps {
   className?: string;
@@ -31,4 +31,3 @@ export function KeyboardToggleButton({ className }: KeyboardToggleButtonProps) {
     </Button>
   );
 }
-

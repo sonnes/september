@@ -1,14 +1,15 @@
 'use client';
 
-import { CheckCircle2, ChevronLeft, ChevronRight, Mic, Play, Square, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+
+import { CheckCircle2, ChevronLeft, ChevronRight, Mic, Play, Square, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldLabel } from '@/components/ui/field';
-import { cn } from '@/lib/utils';
 
-import { useRecording } from '@/packages/cloning/components/cloning-provider';
+import { cn } from '@/lib/utils';
+import { useRecordingContext } from '@/packages/cloning/components/cloning-provider';
 
 export const SAMPLE_TEXTS = [
   { id: 'birch-canoe', text: 'The birch canoe slid on the smooth planks.' },
@@ -33,7 +34,7 @@ export function RecordingSection() {
     stopPlaying,
     status,
     errors,
-  } = useRecording();
+  } = useRecordingContext();
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const nextSlide = () => {
@@ -196,4 +197,3 @@ export function RecordingSection() {
     </Card>
   );
 }
-

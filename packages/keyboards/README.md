@@ -17,7 +17,16 @@ This module provides various keyboard layouts and a renderer for the September a
 - `QwertyKeyboard`: Traditional keyboard layout.
 - `CircularKeyboard`: Circular keyboard layout using Konva.
 
+## Hooks
+
+- `useKeyboardContext`: Access the keyboard visibility and type state.
+- `useShiftState`: Manage shift/caps lock state for keyboards.
+- `useStageSize`: Handle responsive stage sizing for canvas-based keyboards.
+- `useKeyboardInteractions`: Manage hover and interaction states for keyboard keys.
+
 ## Usage
+
+### Basic Keyboard Setup
 
 ```tsx
 import { KeyboardProvider, KeyboardRenderer } from '@/packages/keyboards';
@@ -25,9 +34,23 @@ import { KeyboardProvider, KeyboardRenderer } from '@/packages/keyboards';
 function App() {
   return (
     <KeyboardProvider>
-      <KeyboardRenderer onKeyPress={(key) => console.log(key)} />
+      <KeyboardRenderer onKeyPress={key => console.log(key)} />
     </KeyboardProvider>
   );
 }
 ```
 
+### Using Keyboard Hooks
+
+```tsx
+import { useKeyboardContext, useShiftState } from '@/packages/keyboards';
+
+function CustomKey({ char }) {
+  const { isShiftPressed } = useShiftState();
+  const { hideKeyboard } = useKeyboardContext();
+
+  const displayChar = isShiftPressed ? char.toUpperCase() : char.toLowerCase();
+
+  return <button onClick={hideKeyboard}>{displayChar}</button>;
+}
+```

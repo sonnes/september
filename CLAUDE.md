@@ -72,17 +72,20 @@ pnpm run lint     # Run ESLint
 
 - **Query Hooks** (read operations): Return error object: `{ data, isLoading, error }`. Error shape: `{ message: string }`.
 - **Mutation Hooks** (write operations): Throw errors for component error boundaries. Use toast notifications for user feedback. Log to console for debugging.
+- **Return Types**: All hooks should have explicit return type interfaces for better IDE support and type safety.
 - **Pattern**:
-  ```typescript
-  try {
-    await operation();
-    toast.success('Success message');
-  } catch (err) {
-    console.error('Operation failed:', err);
-    toast.error(err instanceof Error ? err.message : 'Operation failed');
-    throw err;
-  }
-  ```
+
+```typescript
+interface UseOperationReturn {
+  data: T | undefined;
+  isLoading: boolean;
+  error?: { message: string };
+}
+
+export function useOperation(): UseOperationReturn {
+  // ...
+}
+```
 
 ## Important
 

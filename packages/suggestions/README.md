@@ -13,7 +13,7 @@ The Suggestions module provides AI-powered typing suggestions and search history
 The module is organized into:
 
 - `components/`: UI components like `Suggestions` list and `SuggestionsForm`.
-- `hooks/`: State management and API interaction hooks (`useSuggestions`, `useSearchHistory`).
+- `hooks/`: State management and API interaction hooks (`useSuggestions`, `useCorpus`).
 - `types/`: Zod schemas and TypeScript interfaces.
 - `lib/`: Utility functions (if any).
 
@@ -39,7 +39,7 @@ export function MyComponent() {
 import { useSuggestions } from '@/packages/suggestions';
 
 export function MyCustomComponent() {
-  const { suggestions, isLoading } = useSuggestions({ text: "Hello", timeout: 500 });
+  const { suggestions, isLoading } = useSuggestions({ text: 'Hello', timeout: 500 });
   // ...
 }
 ```
@@ -50,11 +50,10 @@ export function MyCustomComponent() {
 import { SuggestionsForm } from '@/packages/suggestions';
 
 export function SettingsPage({ account }) {
-  const handleSubmit = async (data) => {
+  const handleSubmit = async data => {
     // Save settings
   };
 
   return <SuggestionsForm account={account} onSubmit={handleSubmit} />;
 }
 ```
-
