@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+// Keep these as they are used in AI settings
+import { AccountSchema } from '@/packages/account';
 import { AI_PROVIDERS } from '@/packages/ai/lib/registry';
 
 // Dynamically generate Zod schema from provider registry
@@ -24,27 +26,21 @@ export type AIProvidersFormData = z.infer<typeof AIProvidersSchema>;
 export { AccountSchema } from '@/packages/account';
 export type { AccountFormData } from '@/packages/account';
 
-// Keep these as they are used in AI settings
-import { AccountSchema } from '@/packages/account';
-
 export const SpeechProviderSchema = AccountSchema.pick({
-  speech_provider: true,
-  speech_settings: true,
-  voice: true,
+  ai_speech: true,
 });
 
 export type SpeechProviderFormData = z.infer<typeof SpeechProviderSchema>;
 
 export const AISettingsSchema = AccountSchema.pick({
-  gemini_api_key: true,
-  ai_instructions: true,
-  ai_corpus: true,
+  ai_suggestions: true,
+  ai_transcription: true,
 });
 
 export type AISettingsFormData = z.infer<typeof AISettingsSchema>;
 
 export const SpeechSettingsSchema = AccountSchema.pick({
-  speech_settings: true,
+  ai_speech: true,
 });
 
 export type SpeechSettingsFormData = z.infer<typeof SpeechSettingsSchema>;

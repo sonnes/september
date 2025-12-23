@@ -1,11 +1,13 @@
 'use client';
 
 import { ReactNode, createContext, useContext, useEffect, useMemo } from 'react';
+
 import { User } from '@/types/user';
-import { Account, PutAccountData } from './types';
-import { useDbAccount } from './hooks/use-db-account';
+
 import { useAuth } from './hooks/use-auth';
+import { useDbAccount } from './hooks/use-db-account';
 import { useStorage } from './hooks/use-storage';
+import { Account, PutAccountData } from './types';
 
 export interface AccountContextType {
   user?: User;
@@ -24,7 +26,7 @@ interface AccountProviderProps {
 
 export function AccountProvider({ children }: AccountProviderProps) {
   const { user, loading: authLoading } = useAuth();
-  const userId = user?.id || 'local-user';
+  const userId = useMemo(() => user?.id ?? 'local-user', [user]);
 
   const { account: dbAccount, insert, update } = useDbAccount(userId);
   const { uploadFile: supabaseUpload, deleteFile: supabaseDelete } = useStorage();
@@ -35,10 +37,10 @@ export function AccountProvider({ children }: AccountProviderProps) {
     if (!dbAccount && !authLoading) {
       insert({
         id: userId,
-        name: user?.user_metadata?.full_name || 'User',
+        name: user?.user_metadata?.full_name ?? 'Guest',
         created_at: new Date(),
         updated_at: new Date(),
-      } as Account);
+      });
     }
   }, [dbAccount, authLoading, insert, userId, user]);
 
@@ -80,4 +82,3 @@ export function useAccountContext() {
   }
   return context;
 }
-

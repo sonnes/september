@@ -1,6 +1,77 @@
-import { Providers, SpeechConfig, SuggestionsConfig, TranscriptionConfig } from '@/types/ai-config';
-import { Voice } from '@/types/voice';
 import { z } from 'zod';
+
+import { Providers, SpeechConfig, SuggestionsConfig, TranscriptionConfig } from '@/types/ai-config';
+
+export const SuggestionsConfigSchema = z.object({
+  enabled: z.boolean(),
+  provider: z.literal('gemini'),
+  model: z.string().optional(),
+  settings: z
+    .object({
+      temperature: z.number().min(0).max(1).optional(),
+      max_suggestions: z.number().optional(),
+      context_window: z.number().optional(),
+      system_instructions: z.string().optional(),
+      ai_corpus: z.string().optional(),
+    })
+    .optional(),
+});
+
+export const TranscriptionConfigSchema = z.object({
+  enabled: z.boolean(),
+  provider: z.literal('gemini'),
+  model: z.string().optional(),
+  settings: z
+    .object({
+      language: z.string().optional(),
+      detect_language: z.boolean().optional(),
+      include_timestamps: z.boolean().optional(),
+      filter_profanity: z.boolean().optional(),
+    })
+    .optional(),
+});
+
+export const SpeechConfigSchema = z.object({
+  enabled: z.boolean().optional(),
+  provider: z.enum(['browser', 'gemini', 'elevenlabs']),
+  voice_id: z.string().optional(),
+  voice_name: z.string().optional(),
+  model_id: z.string().optional(),
+  settings: z
+    .object({
+      speed: z.number().optional(),
+      pitch: z.number().optional(),
+      volume: z.number().optional(),
+      stability: z.number().optional(),
+      similarity: z.number().optional(),
+      style: z.number().optional(),
+      speaker_boost: z.boolean().optional(),
+      model_id: z.string().optional(),
+      voice_name: z.string().optional(),
+    })
+    .optional(),
+});
+
+export const ProvidersSchema = z.object({
+  gemini: z
+    .object({
+      api_key: z.string().optional(),
+      base_url: z.string().optional(),
+    })
+    .optional(),
+  elevenlabs: z
+    .object({
+      api_key: z.string().optional(),
+      base_url: z.string().optional(),
+    })
+    .optional(),
+  browser: z
+    .object({
+      api_key: z.string().optional(),
+      base_url: z.string().optional(),
+    })
+    .optional(),
+});
 
 export const AccountSchema = z.object({
   id: z.string().min(1),
@@ -14,108 +85,40 @@ export const AccountSchema = z.object({
   medical_document_path: z.string().optional(),
 
   // AI Feature Configurations
-  ai_suggestions: z.any().optional(),
-  ai_transcription: z.any().optional(),
-  ai_speech: z.any().optional(),
+  ai_suggestions: SuggestionsConfigSchema.optional().default({
+    enabled: false,
+    provider: 'gemini',
+    model: 'gemini-2.5-flash-lite',
+    settings: {},
+  }),
+  ai_transcription: TranscriptionConfigSchema.optional().default({
+    enabled: false,
+    provider: 'gemini',
+    model: 'gemini-2.5-flash-lite',
+    settings: {},
+  }),
+  ai_speech: SpeechConfigSchema.optional().default({
+    enabled: true,
+    provider: 'browser',
+    settings: {},
+  }),
 
   // Provider Config
-  ai_providers: z.any().optional(),
+  ai_providers: ProvidersSchema.optional().default({}),
 
-  // Speech Settings
-  speech_provider: z.string().optional(),
-  speech_settings: z
-    .object({
-      speed: z.number().min(0.1).max(10).optional(),
-      pitch: z.number().min(0).max(2).optional(),
-      volume: z.number().min(0).max(1).optional(),
-      api_key: z.string().optional(),
-      model_id: z.string().optional(),
-      voice_name: z.string().optional(),
-      stability: z.number().min(0).max(1).optional(),
-      similarity: z.number().min(0).max(1).optional(),
-      style: z.number().min(0).max(1).optional(),
-      speaker_boost: z.boolean().optional(),
-    })
-    .optional(),
-  voice: z.custom<Voice>().optional(),
-  // AI Settings
-  ai_instructions: z.string().optional(),
-  ai_corpus: z.string().optional(),
-  gemini_api_key: z.string().optional(),
-  // Terms and Privacy
-  terms_accepted: z.boolean().optional(),
-  privacy_policy_accepted: z.boolean().optional(),
-  onboarding_completed: z.boolean().optional(),
-  is_approved: z.boolean().optional(),
+  // Flags
+  terms_accepted: z.boolean().optional().default(false),
+  privacy_policy_accepted: z.boolean().optional().default(false),
+  onboarding_completed: z.boolean().optional().default(false),
+  is_approved: z.boolean().optional().default(false),
 
   // Timestamps
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
 });
 
-export type AccountFormData = z.infer<typeof AccountSchema>;
-
-export interface BrowserTTSSettings {
-  speed?: number;
-  pitch?: number;
-  volume?: number;
-  language?: string;
-}
-
-export interface ElevenLabsSettings {
-  api_key?: string;
-  model_id?: string;
-  speed?: number;
-  stability?: number;
-  similarity?: number;
-  style?: number;
-  speaker_boost?: boolean;
-}
-
-export interface GeminiSpeechSettings {
-  api_key?: string;
-  model_id?: string;
-  voice_name?: string;
-}
-
-export interface Account {
-  id: string;
-
-  // Personal Information
-  name: string;
-  city?: string;
-  country?: string;
-
-  // Medical Information
-  primary_diagnosis?: string;
-  year_of_diagnosis?: number;
-  medical_document_path?: string;
-
-  // AI Feature Configurations
-  ai_suggestions?: SuggestionsConfig;
-  ai_transcription?: TranscriptionConfig;
-  ai_speech?: SpeechConfig;
-
-  // Provider Config (Supabase only)
-  ai_providers?: Providers;
-
-  // DEPRECATED: Legacy fields (keep for backward compatibility)
-  speech_provider?: string;
-  speech_settings?: BrowserTTSSettings & ElevenLabsSettings & GeminiSpeechSettings;
-  voice?: Voice;
-  ai_instructions?: string;
-  ai_corpus?: string;
-  gemini_api_key?: string;
-
-  // Flags
-  terms_accepted?: boolean;
-  privacy_policy_accepted?: boolean;
-  onboarding_completed?: boolean;
-  is_approved?: boolean;
-
-  // Timestamps
-  created_at: Date;
-  updated_at: Date;
-}
+export type Account = z.infer<typeof AccountSchema>;
+export type CreateAccountData = z.input<typeof AccountSchema>;
+export type AccountFormData = Account;
 
 export type PutAccountData = Partial<Omit<Account, 'id' | 'created_at'>>;

@@ -18,7 +18,7 @@ This package manages user account data using TanStack DB for local-first storage
   - `useStorage`: Supabase file management.
 - `lib/`: Business logic and service integrations.
 - `types/`: Zod schemas and TypeScript interfaces for account data.
-- `db.ts`: TanStack DB collection definition.
+- `db.ts`: TanStack DB collection definition using local storage persistence.
 
 ## Usage
 
@@ -30,11 +30,7 @@ Wrap your application in `AccountProvider` (usually in `app/layout.tsx`):
 import { AccountProvider } from '@/packages/account';
 
 export default function RootLayout({ children }) {
-  return (
-    <AccountProvider>
-      {children}
-    </AccountProvider>
-  );
+  return <AccountProvider>{children}</AccountProvider>;
 }
 ```
 
@@ -53,7 +49,7 @@ const { account, user, updateAccount } = useAccountContext();
 For specialized cases, you can use the domain-specific hooks:
 
 ```tsx
-import { useDbAccount, useAuth, useStorage } from '@/packages/account';
+import { useAuth, useDbAccount, useStorage } from '@/packages/account';
 
 const { account, update } = useDbAccount(userId);
 const { user } = useAuth();
