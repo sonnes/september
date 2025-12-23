@@ -2,12 +2,11 @@
 
 import { useCallback } from 'react';
 
-import { ClientProviders } from '@/components/context/client-providers';
-import { useAccountContext } from '@/packages/account';
 import SidebarLayout from '@/components/sidebar/layout';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
+import { useAccountContext } from '@/packages/account';
 import { TextViewer, TextViewerWords, useAudioPlayer } from '@/packages/audio';
 import { useCreateAudioMessage } from '@/packages/chats';
 import { Editor, useEditorContext } from '@/packages/editor';
@@ -65,38 +64,36 @@ export default function TalkPage() {
   );
 
   return (
-    <ClientProviders>
-      <SidebarLayout>
-        <SidebarLayout.Header>
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-        </SidebarLayout.Header>
-        <SidebarLayout.Content>
-          <div className="pb-20">
-            {current?.alignment && (
-              <TextViewer alignment={current.alignment}>
-                <TextViewerWords className="text-foreground wrap-break-word" />
-              </TextViewer>
-            )}
-          </div>
+    <>
+      <SidebarLayout.Header>
+        <SidebarTrigger className="-ml-1" />
+        <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+      </SidebarLayout.Header>
+      <SidebarLayout.Content>
+        <div className="pb-20">
+          {current?.alignment && (
+            <TextViewer alignment={current.alignment}>
+              <TextViewerWords className="text-foreground wrap-break-word" />
+            </TextViewer>
+          )}
+        </div>
 
-          {/* Sticky Suggestions + Editor */}
-          <div className="fixed bottom-0 left-0 right-0 p-4 md:left-(--sidebar-width) z-10">
-            <div className="max-w-4xl mx-auto flex flex-col gap-3">
-              <Suggestions />
-              <Editor
-                placeholder="Type a message..."
-                onSubmit={handleSubmit}
-                disabled={status !== 'idle'}
-              >
-                <KeyboardToggleButton />
-                <SpeechSettingsModal />
-              </Editor>
-              <KeyboardRenderer onKeyPress={handleKeyPress} />
-            </div>
+        {/* Sticky Suggestions + Editor */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 md:left-(--sidebar-width) z-10">
+          <div className="max-w-4xl mx-auto flex flex-col gap-3">
+            <Suggestions />
+            <Editor
+              placeholder="Type a message..."
+              onSubmit={handleSubmit}
+              disabled={status !== 'idle'}
+            >
+              <KeyboardToggleButton />
+              <SpeechSettingsModal />
+            </Editor>
+            <KeyboardRenderer onKeyPress={handleKeyPress} />
           </div>
-        </SidebarLayout.Content>
-      </SidebarLayout>
-    </ClientProviders>
+        </div>
+      </SidebarLayout.Content>
+    </>
   );
 }
