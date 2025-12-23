@@ -6,13 +6,13 @@ import { useRouter } from 'next/navigation';
 
 import { ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
-import { useAccountContext } from '@/packages/account';
 import SidebarLayout from '@/components/sidebar/layout';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import { DocumentEditor, EditableDocumentTitle, useDocumentsContext } from '@/packages/documents';
+import { useAccountContext } from '@/packages/account';
+import { DocumentEditor, EditableDocumentTitle, useDocuments } from '@/packages/documents';
 
 import { DocumentEditorSkeleton } from '../loading-skeleton';
 
@@ -24,14 +24,12 @@ export default function DocumentPage({ params }: DocumentPageProps) {
   const { id } = use(params);
   const router = useRouter();
   const { user } = useAccountContext();
-  const { documents, fetching, current, setCurrentId } = useDocumentsContext();
+  const { documents, fetching } = useDocuments();
 
-  // Set the current document ID when the page loads
-  React.useEffect(() => {
-    if (id) {
-      setCurrentId(id);
-    }
-  }, [id, setCurrentId]);
+  // Find the current document
+  const current = React.useMemo(() => {
+    return id ? documents.find(doc => doc.id === id) || null : null;
+  }, [documents, id]);
 
   // Loading state for document ID resolution
   const isInitializing = !id || fetching;
@@ -87,7 +85,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
           {/* Document Editor */}
           {!isInitializing && !fetching && current && (
             <div className="max-w-4xl mx-auto w-full">
-              <DocumentEditor className="flex-1 min-h-0" />
+              <DocumentEditor documentId={current.id} className="flex-1 min-h-0" />
             </div>
           )}
         </div>

@@ -6,7 +6,7 @@ import { PencilIcon } from '@heroicons/react/24/outline';
 
 import { Input } from '@/components/ui/input';
 
-import { triplit } from '@/triplit/client';
+import { useDocuments } from '@/packages/documents/hooks/use-documents';
 
 interface EditableDocumentTitleProps {
   documentId: string;
@@ -15,6 +15,7 @@ interface EditableDocumentTitleProps {
 }
 
 export function EditableDocumentTitle({ documentId, name, className }: EditableDocumentTitleProps) {
+  const { putDocument } = useDocuments();
   const [isEditing, setIsEditing] = useState(false);
   const [value, setValue] = useState(name || '');
   const [isSaving, setIsSaving] = useState(false);
@@ -41,9 +42,9 @@ export function EditableDocumentTitle({ documentId, name, className }: EditableD
     if (newName !== (name || undefined)) {
       setIsSaving(true);
       try {
-        await triplit.update('documents', documentId, {
+        await putDocument({
+          id: documentId,
           name: newName,
-          updated_at: new Date(),
         });
       } catch (error) {
         console.error('Failed to update document name:', error);
@@ -98,4 +99,3 @@ export function EditableDocumentTitle({ documentId, name, className }: EditableD
     </button>
   );
 }
-

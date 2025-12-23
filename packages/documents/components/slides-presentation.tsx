@@ -7,24 +7,26 @@ import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 import { type Slide, parseAndRenderSlides } from '@/lib/slides';
-
-import { useDocumentsContext } from '@/packages/documents/components/documents-provider';
 import { SlideRenderer } from '@/packages/documents/components/slide-renderer';
 import { SlidesNavigation } from '@/packages/documents/components/slides-navigation';
 import { SlidesProgress } from '@/packages/documents/components/slides-progress';
+import { useDocuments } from '@/packages/documents/hooks/use-documents';
 
 type SlidesPresentationProps = {
   markdown?: string;
   documentName?: string;
   className?: string;
+  documentId?: string;
 };
 
 export function SlidesPresentation({
   markdown,
   documentName,
   className,
+  documentId,
 }: SlidesPresentationProps) {
-  const { current } = useDocumentsContext();
+  const { documents } = useDocuments();
+  const current = documentId ? documents.find(doc => doc.id === documentId) || null : null;
 
   const [slides, setSlides] = useState<Slide[]>([]);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -243,4 +245,3 @@ export function SlidesPresentation({
     </>
   );
 }
-

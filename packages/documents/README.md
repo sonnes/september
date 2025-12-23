@@ -4,7 +4,7 @@ This module handles document management, editing, and slide presentations.
 
 ## Features
 
-- Document CRUD operations (local-first via Triplit)
+- Document CRUD operations (local-first via TanStack DB)
 - Tiptap-based editor
 - Text extraction from uploaded files (via Gemini)
 - Slide presentation from markdown content
@@ -12,28 +12,26 @@ This module handles document management, editing, and slide presentations.
 
 ## Components
 
-- `DocumentsProvider`: Context provider for document state
 - `DocumentList`: List of all documents with search
-- `DocumentEditor`: The main editor interface
+- `DocumentEditor`: The main editor interface (requires `documentId` prop)
 - `EditableDocumentTitle`: Inline editable title for documents
 - `SlidesPresentation`: Full-screen slide viewer
 
 ## Hooks
 
-- `useDocuments`: Core hook for document data
-- `useDocumentsContext`: Access the documents context
+- `useDocuments`: Core hook for document data and CRUD operations
 
 ## Usage
 
 ```tsx
-import { DocumentsProvider, DocumentEditor } from '@/packages/documents';
+import { DocumentEditor, useDocuments } from '@/packages/documents';
 
 export default function WritePage({ params }: { params: { id: string } }) {
-  return (
-    <DocumentsProvider initialId={params.id}>
-      <DocumentEditor />
-    </DocumentsProvider>
-  );
+  const { documents } = useDocuments();
+  const document = documents.find(doc => doc.id === params.id);
+
+  if (!document) return <div>Document not found</div>;
+
+  return <DocumentEditor documentId={document.id} />;
 }
 ```
-

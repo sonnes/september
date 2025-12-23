@@ -8,7 +8,6 @@ import {
   PresentationChartBarIcon,
 } from '@heroicons/react/24/outline';
 
-import { TiptapEditor } from '@/packages/editor';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -20,17 +19,19 @@ import {
 import { Separator } from '@/components/ui/separator';
 
 import { cn } from '@/lib/utils';
-
-import { useDocumentsContext } from '@/packages/documents/components/documents-provider';
 import { SlidesPresentation } from '@/packages/documents/components/slides-presentation';
 import { UploadForm } from '@/packages/documents/components/upload-form';
+import { useDocuments } from '@/packages/documents/hooks/use-documents';
+import { TiptapEditor } from '@/packages/editor';
 
 type DocumentEditorProps = {
+  documentId: string;
   className?: string;
 };
 
-export function DocumentEditor({ className }: DocumentEditorProps) {
-  const { current, putDocument } = useDocumentsContext();
+export function DocumentEditor({ documentId, className }: DocumentEditorProps) {
+  const { documents, putDocument } = useDocuments();
+  const current = documents.find(doc => doc.id === documentId) || null;
 
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isSlidesDialogOpen, setIsSlidesDialogOpen] = useState(false);
@@ -92,12 +93,12 @@ export function DocumentEditor({ className }: DocumentEditorProps) {
       <Dialog open={isSlidesDialogOpen} onOpenChange={setIsSlidesDialogOpen}>
         <DialogContent showCloseButton className="sm:max-w-[95vw] h-[95vh] p-0 flex flex-col">
           <div className="h-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg overflow-hidden">
-            <SlidesPresentation className="h-full" />
+            <SlidesPresentation documentId={documentId} className="h-full" />
           </div>
         </DialogContent>
       </Dialog>
     ),
-    [isSlidesDialogOpen]
+    [isSlidesDialogOpen, documentId]
   );
 
   return (
@@ -175,4 +176,3 @@ export function DocumentEditor({ className }: DocumentEditorProps) {
     </div>
   );
 }
-

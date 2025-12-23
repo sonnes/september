@@ -18,13 +18,13 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import { DocumentList, useDocumentsContext } from '@/packages/documents';
+import { DocumentList, useDocuments } from '@/packages/documents';
 
 import { DocumentListSkeleton } from './loading-skeleton';
 
 export default function WritePage() {
   const router = useRouter();
-  const { documents, fetching, putDocument } = useDocumentsContext();
+  const { documents, fetching, putDocument } = useDocuments();
   const [searchValue, setSearchValue] = useState('');
 
   const handleNewDocument = async () => {
