@@ -15,7 +15,8 @@ import { useAudioPlayer } from '@/packages/audio';
 import {
   EditableChatTitle,
   MessageList,
-  useChatMessages,
+  useChats,
+  useMessages,
   useCreateAudioMessage,
 } from '@/packages/chats';
 import { Editor, useEditorContext } from '@/packages/editor';
@@ -33,9 +34,14 @@ export default function ChatPage({ params }: ChatPageProps) {
   const { id: chatId } = use(params);
   const { user } = useAccountContext();
   const { enqueue } = useAudioPlayer();
-  const { chat, messages, isLoading, error } = useChatMessages({
+  const { chats, isLoading: chatsLoading, error: chatsError } = useChats({ userId: user?.id });
+  const { messages, isLoading: messagesLoading, error: messagesError } = useMessages({
     chatId: chatId || '',
   });
+
+  const chat = chats.find(c => c.id === chatId);
+  const isLoading = chatsLoading || messagesLoading;
+  const error = (chatsError || messagesError) as Error | undefined;
 
   const { status, createAudioMessage } = useCreateAudioMessage();
   const { text, setText } = useEditorContext();

@@ -26,7 +26,22 @@ import { ChatList, MessageList, MessagesProvider } from '@/packages/chats';
 ### Hooks
 
 ```tsx
-import { useChatList, useChats, useMessages, useCreateMessage } from '@/packages/chats';
+import { useChats, useMessages, useCreateChat, useCreateMessage, useCreateAudioMessage } from '@/packages/chats';
+
+// Get chats for a user
+const { chats, isLoading, error } = useChats({ userId, searchQuery });
+
+// Get messages for a chat
+const { messages, isLoading, error } = useMessages({ chatId, searchQuery });
+
+// Create a new chat
+const { createChat } = useCreateChat();
+
+// Create a new message (updates chat's updated_at)
+const { createMessage } = useCreateMessage();
+
+// Create an audio message (generates speech and uploads audio)
+const { createAudioMessage, status } = useCreateAudioMessage();
 ```
 
 ### Types

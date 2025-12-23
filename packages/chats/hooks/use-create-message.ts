@@ -3,8 +3,7 @@ import { useCallback, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { useAccountContext } from '@/packages/account';
-import { useAudioStorage } from '@/packages/audio';
-import { Audio } from '@/packages/audio';
+import { Audio, useAudioStorage } from '@/packages/audio';
 import { useSpeech } from '@/packages/speech';
 
 import { chatCollection, messageCollection } from '../db';
@@ -26,11 +25,11 @@ export function useCreateMessage() {
       };
 
       // Insert message
-      messageCollection.insert(newMessage);
+      await messageCollection.insert(newMessage);
 
       // Update chat's updated_at
       if (message.chat_id) {
-        chatCollection.update(message.chat_id, draft => {
+        await chatCollection.update(message.chat_id, draft => {
           draft.updated_at = now;
         });
       }
@@ -49,7 +48,6 @@ export function useCreateAudioMessage() {
   const { user } = useAccountContext();
   const { uploadAudio } = useAudioStorage();
   const { createMessage } = useCreateMessage();
-
   const [status, setStatus] = useState<CreateAudioStatus>('idle');
   const { generateSpeech } = useSpeech();
 
@@ -81,7 +79,6 @@ export function useCreateAudioMessage() {
       }
 
       setStatus('saving-message');
-
       const result = await createMessage(message);
       setStatus('idle');
 

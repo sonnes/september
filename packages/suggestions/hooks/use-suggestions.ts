@@ -2,13 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useAISettings } from '@/packages/ai';
-
 import GeminiService from '@/services/gemini';
-import { useMessages } from '@/packages/chats';
 
+import { useAISettings } from '@/packages/ai';
 import { Message } from '@/packages/chats';
-
 import { Suggestion } from '@/packages/suggestions/types';
 
 interface UseSuggestionsReturn {
@@ -88,43 +85,5 @@ export function useSuggestions({
     suggestions,
     isLoading,
     clearSuggestions,
-  };
-}
-
-interface UseSearchHistoryReturn {
-  history: Suggestion[];
-  isLoading: boolean;
-  fetchHistory: (text: string) => Promise<void>;
-}
-
-export function useSearchHistory(timeout: number = 3000): UseSearchHistoryReturn {
-  const [history, setHistory] = useState<Suggestion[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const { searchMessages } = useMessages();
-
-  const fetchHistory = useCallback(
-    async (text: string) => {
-      if (text.trim().length === 0) {
-        setHistory([]);
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        const results = await searchMessages(text);
-        setHistory(results.map(m => ({ text: m.text, audio_path: m.audio_path })));
-      } catch (error) {
-        console.error('Error fetching search history:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [searchMessages]
-  );
-
-  return {
-    history,
-    isLoading,
-    fetchHistory,
   };
 }

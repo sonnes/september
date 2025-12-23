@@ -19,14 +19,15 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import { ChatList, useChatList } from '@/packages/chats';
+import { ChatList, useChats, useCreateChat } from '@/packages/chats';
 
 import { ChatListSkeleton } from './loading-skeleton';
 
 export default function ChatsPage() {
   const router = useRouter();
   const [searchValue, setSearchValue] = useState('');
-  const { chats, fetching, error, createChat } = useChatList({ searchQuery: searchValue });
+  const { chats, isLoading: fetching, error } = useChats({ searchQuery: searchValue });
+  const { createChat } = useCreateChat();
 
   const handleNewChat = async () => {
     try {

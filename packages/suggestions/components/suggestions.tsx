@@ -2,10 +2,10 @@
 
 import { Loader2 } from 'lucide-react';
 
-import { useEditorContext } from '@/packages/editor';
-import { useMessageHistory } from '@/packages/chats';
-import { useSuggestions } from '@/packages/suggestions/hooks/use-suggestions';
 import { cn } from '@/lib/utils';
+import { useMessages } from '@/packages/chats';
+import { useEditorContext } from '@/packages/editor';
+import { useSuggestions } from '@/packages/suggestions/hooks/use-suggestions';
 
 interface SuggestionsProps {
   className?: string;
@@ -15,7 +15,7 @@ interface SuggestionsProps {
 export function Suggestions({ className, timeout = 800 }: SuggestionsProps) {
   const { text, setText } = useEditorContext();
   const { suggestions, isLoading, clearSuggestions } = useSuggestions({ text, timeout });
-  const { messages, fetching: isLoadingMessages } = useMessageHistory({ query: text });
+  const { messages, isLoading: isLoadingMessages } = useMessages({ searchQuery: text });
 
   const handleSuggestionClick = (text: string) => {
     setText(text);
@@ -69,4 +69,3 @@ export function Suggestions({ className, timeout = 800 }: SuggestionsProps) {
     </div>
   );
 }
-

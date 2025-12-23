@@ -1,51 +1,71 @@
+import { useCallback, useMemo } from 'react';
+
 import { eq } from '@tanstack/db';
 import { useLiveQuery } from '@tanstack/react-db';
+import { v4 as uuidv4 } from 'uuid';
+
+import { useAccountContext } from '@/packages/account';
 
 import { chatCollection } from '../db';
 import { Chat } from '../types';
 
-export function useChats(userId?: string) {
-  const { data: chats, isLoading } = useLiveQuery(
+export function useChats({ userId, searchQuery }: { userId?: string; searchQuery?: string } = {}) {
+  const {
+    data: chats,
+    isLoading,
+    isError,
+    status,
+  } = useLiveQuery(
     q => {
       let query = q.from({ items: chatCollection });
       if (userId) {
         query = query.where(({ items }) => eq(items.user_id, userId));
       }
-      return query.orderBy(({ items }) => items.created_at, 'desc');
+      return query.orderBy(({ items }) => items.updated_at, 'desc');
     },
     [userId]
   );
 
-  return {
-    chats: (chats || []) as Chat[],
-    isLoading,
-    insert: (item: Chat) => chatCollection.insert(item),
-    update: (id: string, updates: Partial<Chat>) =>
-      chatCollection.update(id, draft => {
-        Object.assign(draft, updates);
-      }),
-    delete: (id: string) => chatCollection.delete(id),
-  };
-}
+  const filteredChats =
+    searchQuery && chats
+      ? chats.filter(chat => chat.title?.toLowerCase().includes(searchQuery.toLowerCase()))
+      : chats;
 
-export function useChat(id: string) {
-  const {
-    data: chat,
-    isLoading,
-    status,
-  } = useLiveQuery(
-    q => q.from({ items: chatCollection }).where(({ items }) => eq(items.id, id)),
-    [id]
+  const error = useMemo(
+    () => (isError ? { message: `Database error: ${status}` } : undefined),
+    [isError, status]
   );
 
   return {
-    chat: chat?.[0] as Chat | undefined,
+    chats: (filteredChats || []) as Chat[],
     isLoading,
-    status,
-    update: (updates: Partial<Chat>) =>
-      chatCollection.update(id, draft => {
-        Object.assign(draft, updates);
-      }),
-    delete: () => chatCollection.delete(id),
+    error,
   };
+}
+
+export function useCreateChat() {
+  const { user } = useAccountContext();
+
+  const createChat = useCallback(
+    async (title: string = 'New Chat'): Promise<Chat> => {
+      if (!user?.id) {
+        throw new Error('User not found');
+}
+
+      const now = new Date();
+      const newChat: Chat = {
+        id: uuidv4(),
+        user_id: user.id,
+        title,
+        created_at: now,
+        updated_at: now,
+      };
+
+      chatCollection.insert(newChat);
+      return newChat;
+    },
+    [user]
+  );
+
+  return { createChat };
 }
