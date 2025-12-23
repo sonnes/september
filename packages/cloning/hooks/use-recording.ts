@@ -1,182 +1,99 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
+import { useMediaRecorder } from '@/packages/cloning/hooks/use-media-recorder';
+import { useAudioPlayback } from '@/packages/cloning/hooks/use-audio-playback';
+import { useRecordingState } from '@/packages/cloning/hooks/use-recording-state';
 import { useVoiceStorage } from '@/packages/cloning/hooks/use-voice-storage';
-import { RecordingStatus } from '@/packages/cloning/types';
 
 export function useRecordingLogic(initialRecordings: Record<string, string> = {}) {
-  const [status, setStatus] = useState<Record<string, RecordingStatus>>({});
-  const [errors, setErrors] = useState<Record<string, string | null>>({});
-  const [recordings, setRecordings] = useState<Record<string, string>>(initialRecordings);
-  const { uploadVoiceSample, deleteVoiceSample, downloadVoiceSample, getVoiceSamples } =
-    useVoiceStorage();
+  const [recordingStatus, setRecordingStatus] = useState<Record<string, string | null>>({});
+  const mediaRecorder = useMediaRecorder();
+  const audioPlayback = useAudioPlayback();
+  const recordingState = useRecordingState(initialRecordings);
+  const { downloadVoiceSample } = useVoiceStorage();
 
-  const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-
-  useEffect(() => {
-    const loadRecordings = async () => {
+  // Connect recording completion to state save
+  const handleRecordingComplete = useCallback(
+    async (id: string, blob: Blob) => {
       try {
-        const samples = await getVoiceSamples('recording');
-        const recordingsMap: Record<string, string> = {};
-        samples.forEach(sample => {
-          if (sample.sample_id) {
-            recordingsMap[sample.sample_id] = sample.id;
-          }
-        });
-        setRecordings(recordingsMap);
+        await recordingState.saveRecording(id, blob);
+        setRecordingStatus(prev => ({ ...prev, [id]: null }));
       } catch (err) {
-        console.error('Error loading recordings:', err);
-      }
-    };
-    loadRecordings();
-  }, [getVoiceSamples]);
-
-  const setErrorFor = useCallback((id: string, error: string | null) => {
-    setErrors(prev => ({ ...prev, [id]: error }));
-  }, []);
-
-  const setStatusFor = useCallback((id: string, status: RecordingStatus) => {
-    setStatus(prev => ({ ...prev, [id]: status }));
-  }, []);
-
-  const startRecording = useCallback(
-    async (id: string) => {
-      setStatusFor(id, 'recording');
-      setErrorFor(id, null);
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        streamRef.current = stream;
-        const mediaRecorder = new MediaRecorder(stream);
-        const chunks: BlobPart[] = [];
-
-        mediaRecorder.ondataavailable = event => {
-          chunks.push(event.data);
-        };
-
-        mediaRecorder.onstop = async () => {
-          const blob = new Blob(chunks, { type: 'audio/webm' });
-          const file = new File([blob], `${id}.webm`, { type: 'audio/webm' });
-
-          try {
-            setStatusFor(id, 'uploading');
-            const sampleId = await uploadVoiceSample({ file, type: 'recording', sampleId: id });
-            setStatusFor(id, 'idle');
-            setRecordings(prev => ({ ...prev, [id]: sampleId }));
-          } catch (err) {
-            setStatusFor(id, 'error');
-            setErrorFor(id, err instanceof Error ? err.message : 'Failed to upload recording');
-          }
-
-          if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-            streamRef.current = null;
-          }
-        };
-
-        mediaRecorderRef.current = mediaRecorder;
-        mediaRecorder.start();
-      } catch (err) {
-        setStatusFor(id, 'error');
-        setErrorFor(id, err instanceof Error ? err.message : 'Failed to start recording');
+        setRecordingStatus(prev => ({
+          ...prev,
+          [id]: err instanceof Error ? err.message : 'Failed to save recording',
+        }));
       }
     },
-    [uploadVoiceSample, setErrorFor, setStatusFor]
+    [recordingState]
   );
 
-  const stopRecording = useCallback((id: string) => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current = null;
-    }
-  }, []);
-
-  const deleteRecording = useCallback(
-    async (id: string) => {
-      setStatusFor(id, 'uploading');
-      setErrorFor(id, null);
-
-      try {
-        const sampleId = recordings[id];
-        if (sampleId) {
-          await deleteVoiceSample(sampleId);
-        }
-        setStatusFor(id, 'idle');
-        setRecordings(prev => {
-          const next = { ...prev };
-          delete next[id];
-          return next;
-        });
-      } catch (err) {
-        setStatusFor(id, 'error');
-        setErrorFor(id, err instanceof Error ? err.message : 'Failed to delete recording');
-        throw err;
-      }
-    },
-    [recordings, deleteVoiceSample, setErrorFor, setStatusFor]
-  );
+  mediaRecorder.onRecordingComplete(handleRecordingComplete);
 
   const playRecording = useCallback(
     async (id: string) => {
-      Object.values(audioRefs.current).forEach(audio => {
-        audio.pause();
-        audio.currentTime = 0;
-      });
-
       try {
-        const sampleId = recordings[id];
+        const sampleId = recordingState.recordings[id];
         if (!sampleId) return;
 
         const blob = await downloadVoiceSample(sampleId);
         const url = URL.createObjectURL(blob);
 
+        await audioPlayback.playRecording(id, url);
+
+        // Clean up URL after playback completes or errors
         const audio = new Audio(url);
-        audioRefs.current[id] = audio;
-
-        audio.onended = () => {
-          URL.revokeObjectURL(url);
-          setStatusFor(id, 'idle');
-        };
-
-        audio.onerror = () => {
-          URL.revokeObjectURL(url);
-          setStatusFor(id, 'error');
-          setErrorFor(id, 'Failed to play recording');
-        };
-
-        await audio.play();
-        setStatusFor(id, 'playing');
+        const cleanup = () => URL.revokeObjectURL(url);
+        audio.addEventListener('ended', cleanup);
+        audio.addEventListener('error', cleanup);
       } catch (err) {
-        setStatusFor(id, 'error');
-        setErrorFor(id, err instanceof Error ? err.message : 'Failed to play recording');
+        console.error('Error playing recording:', err);
       }
     },
-    [recordings, downloadVoiceSample, setErrorFor, setStatusFor]
+    [recordingState, downloadVoiceSample, audioPlayback]
   );
 
-  const stopPlaying = useCallback(
-    (id: string) => {
-      const audio = audioRefs.current[id];
-      if (!audio) return;
-
-      audio.pause();
-      audio.currentTime = 0;
-      setStatusFor(id, 'idle');
+  const deleteRecording = useCallback(
+    async (id: string) => {
+      setRecordingStatus(prev => ({ ...prev, [id]: null }));
+      try {
+        await recordingState.deleteRecording(id);
+      } catch (err) {
+        setRecordingStatus(prev => ({
+          ...prev,
+          [id]: err instanceof Error ? err.message : 'Failed to delete recording',
+        }));
+        throw err;
+      }
     },
-    [setStatusFor]
+    [recordingState]
   );
+
+  // Combine status and errors from all hooks
+  const status = {
+    ...mediaRecorder.recordingStatus,
+    ...audioPlayback.playbackStatus,
+  };
+
+  const errors = {
+    ...mediaRecorder.recordingError,
+    ...audioPlayback.playbackError,
+    ...recordingStatus,
+  };
 
   return {
-    recordings,
-    startRecording,
-    stopRecording,
+    recordings: recordingState.recordings,
+    startRecording: mediaRecorder.startRecording,
+    stopRecording: mediaRecorder.stopRecording,
     deleteRecording,
     playRecording,
-    stopPlaying,
+    stopPlaying: audioPlayback.stopPlaying,
     status,
     errors,
   };
 }
+
+// Export as useRecordingLogic for context usage
+export { useRecordingLogic as useRecording };

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 
 import { Arc, Group, Layer, Rect, Stage, Text } from 'react-konva';
 
@@ -11,7 +11,10 @@ import {
   getTopCircleKeys,
   getTopSpecialKeys,
 } from '../lib/keys';
-import { CircleKey } from '@/packages/keyboards/types';
+import { useShiftState } from '@/packages/keyboards/hooks/use-shift-state';
+import { useStageSize } from '@/packages/keyboards/hooks/use-stage-size';
+import { useKeyboardInteractions } from '@/packages/keyboards/hooks/use-keyboard-interactions';
+import type { CircleKey } from '@/packages/keyboards/types';
 
 interface CircularKeyboardProps {
   className?: string;
@@ -36,47 +39,25 @@ const SHIFT_NUMBER_MAP: { [key: string]: string } = {
 };
 
 export function CircularKeyboard({ className = '', onKeyPress }: CircularKeyboardProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [stageSize, setStageSize] = React.useState({ width: 0, height: 0 });
-  const [isShiftPressed, setIsShiftPressed] = React.useState(false);
+  const { containerRef, stageSize, isMounted } = useStageSize();
+  const { isShiftPressed, toggleShift, resetShift } = useShiftState();
+  const { hoveredKey, onHoverEnter, onHoverLeave } = useKeyboardInteractions();
   const [isSpecialPressed, setIsSpecialPressed] = React.useState(false);
-  const [hoveredKey, setHoveredKey] = React.useState<string | null>(null);
-  const [isMounted, setIsMounted] = React.useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-    const updateSize = () => {
-      if (containerRef.current) {
-        setStageSize({
-          width: containerRef.current.offsetWidth,
-          height: containerRef.current.offsetHeight,
-        });
-      }
-    };
-
-    updateSize();
-    window.addEventListener('resize', updateSize);
-
-    return () => {
-      window.removeEventListener('resize', updateSize);
-      setIsMounted(false);
-    };
-  }, []);
 
   const handleButtonClick = (key: string) => {
     if (key === 'Shift') {
-      setIsShiftPressed(!isShiftPressed);
+      toggleShift();
     } else if (key === 'Special') {
       setIsSpecialPressed(!isSpecialPressed);
     } else if (key === 'Space') {
       onKeyPress('SPACE');
-      setIsShiftPressed(false);
+      resetShift();
     } else if (key === 'Backspace') {
       onKeyPress('BACKSPACE');
-      setIsShiftPressed(false);
+      resetShift();
     } else if (key === 'Enter') {
       onKeyPress('ENTER');
-      setIsShiftPressed(false);
+      resetShift();
     } else {
       let transformedKey = key;
       if (isShiftPressed) {
@@ -85,7 +66,7 @@ export function CircularKeyboard({ className = '', onKeyPress }: CircularKeyboar
         } else if (/^[0-9]$/.test(key)) {
           transformedKey = SHIFT_NUMBER_MAP[key];
         }
-        setIsShiftPressed(false);
+        resetShift();
       } else {
         // Letters should be lowercase like qwerty keyboard
         if (/^[a-z]$/.test(key)) {
@@ -118,8 +99,8 @@ export function CircularKeyboard({ className = '', onKeyPress }: CircularKeyboar
       return (
         <Group
           key={key.key}
-          onMouseEnter={() => setHoveredKey(key.key)}
-          onMouseLeave={() => setHoveredKey(null)}
+          onMouseEnter={() => onHoverEnter(key.key)}
+          onMouseLeave={onHoverLeave}
           onClick={() => handleButtonClick(key.key)}
           onTap={() => handleButtonClick(key.key)}
         >
@@ -196,8 +177,8 @@ export function CircularKeyboard({ className = '', onKeyPress }: CircularKeyboar
         <Group
           key={button.key}
           onClick={() => handleButtonClick(button.key)}
-          onMouseEnter={() => setHoveredKey(button.key)}
-          onMouseLeave={() => setHoveredKey(null)}
+          onMouseEnter={() => onHoverEnter(button.key)}
+          onMouseLeave={onHoverLeave}
         >
           <Rect
             x={xOffset}

@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form';
 
 import { AI_PROVIDERS } from '@/packages/ai';
-import { useVoicesLogic } from '@/packages/speech/hooks/use-voices-logic';
+import { useVoiceSettings } from '@/packages/speech/hooks/use-voice-settings';
 import { VoiceSettingsFormData } from '@/packages/speech/types/schemas';
 import type { Account } from '@/packages/account';
 import type { Voice } from '@/types/voice';
@@ -48,7 +48,7 @@ export function VoicesForm({ account, onSubmit, children }: VoicesFormProps) {
     handleSubmit,
     error,
     success,
-  } = useVoicesLogic(account, onSubmit);
+  } = useVoiceSettings(account, onSubmit);
 
   return (
     <form onSubmit={handleSubmit}>

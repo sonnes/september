@@ -21,7 +21,8 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { SlidesPresentation } from '@/packages/documents/components/slides-presentation';
 import { UploadForm } from '@/packages/documents/components/upload-form';
-import { useDocuments } from '@/packages/documents/hooks/use-documents';
+import { useDocument } from '@/packages/documents/hooks/use-document';
+import { useUpdateDocument } from '@/packages/documents/hooks/use-update-document';
 import { TiptapEditor } from '@/packages/editor';
 
 type DocumentEditorProps = {
@@ -30,8 +31,8 @@ type DocumentEditorProps = {
 };
 
 export function DocumentEditor({ documentId, className }: DocumentEditorProps) {
-  const { documents, putDocument } = useDocuments();
-  const current = documents.find(doc => doc.id === documentId) || null;
+  const { document: current } = useDocument(documentId);
+  const { updateDocument } = useUpdateDocument();
 
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isSlidesDialogOpen, setIsSlidesDialogOpen] = useState(false);
@@ -60,14 +61,14 @@ export function DocumentEditor({ documentId, className }: DocumentEditorProps) {
   const handleTextExtracted = async (text: string) => {
     if (!current) return;
     const existing = current?.content || '';
-    await putDocument({ ...current, content: existing + text });
+    await updateDocument(current.id, { content: existing + text });
     setIsUploadDialogOpen(false);
     setIsDirty(false);
   };
 
   const handleSave = async () => {
     if (!current?.id) return;
-    await putDocument({ ...current, content });
+    await updateDocument(current.id, { content });
     setIsDirty(false);
   };
 

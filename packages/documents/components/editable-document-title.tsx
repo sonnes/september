@@ -6,7 +6,7 @@ import { PencilIcon } from '@heroicons/react/24/outline';
 
 import { Input } from '@/components/ui/input';
 
-import { useDocuments } from '@/packages/documents/hooks/use-documents';
+import { useUpdateDocument } from '@/packages/documents/hooks/use-update-document';
 
 interface EditableDocumentTitleProps {
   documentId: string;
@@ -15,7 +15,7 @@ interface EditableDocumentTitleProps {
 }
 
 export function EditableDocumentTitle({ documentId, name, className }: EditableDocumentTitleProps) {
-  const { putDocument } = useDocuments();
+  const { updateDocument } = useUpdateDocument();
   const [isEditing, setIsEditing] = useState(false);
   const [value, setValue] = useState(name || '');
   const [isSaving, setIsSaving] = useState(false);
@@ -42,8 +42,7 @@ export function EditableDocumentTitle({ documentId, name, className }: EditableD
     if (newName !== (name || undefined)) {
       setIsSaving(true);
       try {
-        await putDocument({
-          id: documentId,
+        await updateDocument(documentId, {
           name: newName,
         });
       } catch (error) {
