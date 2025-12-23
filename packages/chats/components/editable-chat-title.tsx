@@ -6,7 +6,7 @@ import { PencilIcon } from '@heroicons/react/24/outline';
 
 import { Input } from '@/components/ui/input';
 
-import { triplit } from '@/triplit/client';
+import { chatCollection } from '../db';
 
 interface EditableChatTitleProps {
   chatId: string;
@@ -41,9 +41,9 @@ export function EditableChatTitle({ chatId, title, className }: EditableChatTitl
     if (newTitle !== (title || undefined)) {
       setIsSaving(true);
       try {
-        await triplit.update('chats', chatId, {
-          title: newTitle,
-          updated_at: new Date(),
+        await chatCollection.update(chatId, draft => {
+          draft.title = newTitle;
+          draft.updated_at = new Date();
         });
       } catch (error) {
         console.error('Failed to update chat title:', error);

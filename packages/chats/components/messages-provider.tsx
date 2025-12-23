@@ -1,18 +1,11 @@
 'use client';
 
-import { ReactNode, createContext, useContext } from 'react';
+import { ReactNode, createContext, useCallback, useContext } from 'react';
 
-import { CreateMessageData, Message } from '../types/message';
-import {
-  useCreateMessageSupabase,
-  useMessagesSupabase,
-  useSearchMessagesSupabase,
-} from '../hooks/use-db-messages-supabase';
-import {
-  useCreateMessageTriplit,
-  useMessagesTriplit,
-  useSearchMessagesTriplit,
-} from '../hooks/use-db-messages-triplit';
+import { messageCollection } from '../db';
+import { useCreateMessage } from '../hooks/use-create-message';
+import { useDbMessages, useSearchMessages } from '../hooks/use-db-messages';
+import { CreateMessageData, Message } from '../types';
 
 interface MessagesContextType {
   messages: Message[];
@@ -23,41 +16,38 @@ interface MessagesContextType {
 
 export const MessagesContext = createContext<MessagesContextType | undefined>(undefined);
 
-type MessagesProviderProps =
-  | {
-      provider: 'supabase';
-      messages: Message[];
-      children: ReactNode;
-    }
-  | {
-      provider?: 'triplit';
-      messages?: Message[];
-      children: ReactNode;
-    };
+interface MessagesProviderProps {
+  children: ReactNode;
+  chatId?: string;
+}
 
-export function MessagesProvider(props: MessagesProviderProps) {
-  const provider = props.provider || 'triplit';
-  const isSupabase = provider === 'supabase';
+export function MessagesProvider({ children, chatId }: MessagesProviderProps) {
+  const { messages } = useDbMessages(chatId);
+  const { createMessage: createMsg } = useCreateMessage();
 
-  const supabaseMessages = useMessagesSupabase(
-    isSupabase ? { messages: props.messages || [] } : { messages: [] }
+  const getMessages = useCallback(async () => {
+    return messages;
+  }, [messages]);
+
+  const createMessage = useCallback(
+    async (data: CreateMessageData) => {
+      return await createMsg(data);
+    },
+    [createMsg]
   );
-  const triplitMessages = useMessagesTriplit();
 
-  const supabaseCreate = useCreateMessageSupabase();
-  const triplitCreate = useCreateMessageTriplit();
-
-  const supabaseSearch = useSearchMessagesSupabase();
-  const triplitSearch = useSearchMessagesTriplit();
-
-  const messagesData = isSupabase ? supabaseMessages : triplitMessages;
-  const { createMessage } = isSupabase ? supabaseCreate : triplitCreate;
-  const { searchMessages } = isSupabase ? supabaseSearch : triplitSearch;
+  const searchMessages = useCallback(async (query: string) => {
+    if (!query) return [];
+    // For now, doing a simple in-memory search from the collection
+    // In a real app, this might be a specialized query
+    return messageCollection.utils
+      .getAll()
+      .filter((m: Message) => m.text.toLowerCase().includes(query.toLowerCase()));
+  }, []);
 
   return (
-    <MessagesContext.Provider value={{ ...messagesData, createMessage, searchMessages }}>
-      {props.children}
+    <MessagesContext.Provider value={{ messages, getMessages, createMessage, searchMessages }}>
+      {children}
     </MessagesContext.Provider>
   );
 }
-

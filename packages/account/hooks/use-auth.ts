@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
 import supabase from '@/supabase/client';
 import { User } from '@/types/user';
 
@@ -28,6 +29,17 @@ export function useAuth() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!loading && !user) {
+      setUser({
+        id: 'local-user',
+        email: 'guest@september.to',
+        user_metadata: {
+          full_name: 'Guest',
+        },
+      } as User);
+    }
+  }, [user, loading]);
+
   return { user, loading };
 }
-

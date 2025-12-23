@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 
-import { Toaster } from '@/components/ui/sonner';
-
 import { AccountProvider } from '@/packages/account';
 import { AISettingsProvider } from '@/packages/ai';
 import { AudioPlayerProvider } from '@/packages/audio';
@@ -21,12 +19,9 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
   }
   return (
     <AccountProvider>
-      <MessagesProvider provider="triplit">
+      <MessagesProvider>
         <AISettingsProvider>
-          <AudioPlayerProvider>
-            {children}
-            <Toaster position="top-center" closeButton duration={15000} />
-          </AudioPlayerProvider>
+          <AudioPlayerProvider>{children}</AudioPlayerProvider>
         </AISettingsProvider>
       </MessagesProvider>
     </AccountProvider>

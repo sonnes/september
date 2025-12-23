@@ -84,7 +84,7 @@ import { useLiveQuery } from '@tanstack/react-db';
 import { accountCollection } from '../db';
 
 export function useDbAccount(id?: string) {
-  const { data: account } = useLiveQuery(
+  const { data: account, isLoading } = useLiveQuery(
     q => {
       let query = q.from({ items: accountCollection });
       if (id) {
@@ -97,6 +97,7 @@ export function useDbAccount(id?: string) {
 
   return {
     account: account?.[0],
+    isLoading,
     insert: item => accountCollection.insert(item),
     update: (id, updates) => accountCollection.update({ id, ...updates }),
     delete: id => accountCollection.delete(id),

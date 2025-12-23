@@ -6,13 +6,12 @@ import { Loader2 } from 'lucide-react';
 import moment from 'moment';
 import { toast } from 'sonner';
 
+import { cn } from '@/lib/utils';
 import { useAudioPlayer, useAudioStorage } from '@/packages/audio';
+import type { Audio } from '@/packages/audio';
 import { useSpeech } from '@/packages/speech';
 
-import { cn } from '@/lib/utils';
-import type { Audio } from '@/packages/audio';
-
-import type { Message } from '@/packages/chats/types/message';
+import type { Message } from '../types';
 
 interface MessageItemProps {
   message: Message;

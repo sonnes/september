@@ -1,47 +1,43 @@
-'use client';
-
 import { useCallback } from 'react';
 
-import { useQuery } from '@triplit/react';
+import { v4 as uuidv4 } from 'uuid';
 
 import { useAccountContext } from '@/packages/account';
-import { triplit } from '@/triplit/client';
-import { Chat } from '@/packages/chats/types/chat';
 
-export default function useChatList({ searchQuery }: { searchQuery?: string }) {
+import { chatCollection } from '../db';
+import { Chat } from '../types';
+import { useChats } from './use-chats';
+
+export default function useChatList({ searchQuery }: { searchQuery?: string } = {}) {
   const { user } = useAccountContext();
+  const { chats, isLoading } = useChats(user?.id);
 
-  const query = triplit
-    .query('chats')
-    .Where('user_id', '=', user?.id || '')
-    .Order('created_at', 'DESC')
-    .Limit(100);
-
-  if (searchQuery) {
-    query.Where('title', 'like', `%${searchQuery}%`);
-  }
-
-  const { results, fetching, error } = useQuery(triplit, query);
+  const filteredChats = searchQuery
+    ? chats.filter(chat => chat.title?.toLowerCase().includes(searchQuery.toLowerCase()))
+    : chats;
 
   const createChat = useCallback(async (): Promise<Chat> => {
     if (!user?.id) {
       throw new Error('User not found');
     }
-    const chat = await triplit.insert('chats', { user_id: user.id });
-    return chat as Chat;
+
+    const now = new Date();
+    const newChat: Chat = {
+      id: uuidv4(),
+      user_id: user.id,
+      title: 'New Chat',
+      created_at: now,
+      updated_at: now,
+    };
+
+    chatCollection.insert(newChat);
+    return newChat;
   }, [user]);
 
   return {
-    chats:
-      (results?.map(chat => ({
-        id: chat.id,
-        user_id: chat.user_id,
-        title: chat.title ?? undefined,
-        created_at: chat.created_at,
-        updated_at: chat.updated_at,
-      })) as Chat[]) || [],
-    fetching,
-    error,
+    chats: filteredChats,
+    fetching: isLoading,
+    error: undefined,
     createChat,
   };
 }

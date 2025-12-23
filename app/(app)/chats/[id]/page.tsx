@@ -33,7 +33,7 @@ export default function ChatPage({ params }: ChatPageProps) {
   const { id: chatId } = use(params);
   const { user } = useAccountContext();
   const { enqueue } = useAudioPlayer();
-  const { chat, messages, fetching, error } = useChatMessages({
+  const { chat, messages, isLoading, error } = useChatMessages({
     chatId: chatId || '',
   });
 
@@ -97,10 +97,10 @@ export default function ChatPage({ params }: ChatPageProps) {
       <SidebarLayout.Content>
         <div className="pb-20">
           {/* Loading State */}
-          {(isInitializing || fetching) && <ChatMessagesSkeleton />}
+          {(isInitializing || isLoading) && <ChatMessagesSkeleton />}
 
           {/* Error State */}
-          {!isInitializing && !fetching && error && (
+          {!isInitializing && !isLoading && error && (
             <div className="flex flex-col items-center justify-center h-full p-8">
               <div className="rounded-lg border border-red-200 bg-red-50 p-6 max-w-md w-full">
                 <div className="flex flex-col items-center text-center gap-4">
@@ -130,7 +130,7 @@ export default function ChatPage({ params }: ChatPageProps) {
           )}
 
           {/* Messages */}
-          {!isInitializing && !fetching && !error && <MessageList messages={messages || []} />}
+          {!isInitializing && !isLoading && !error && <MessageList messages={messages || []} />}
         </div>
 
         {/* Sticky Suggestions + Editor */}

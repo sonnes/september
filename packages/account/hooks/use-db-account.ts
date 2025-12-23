@@ -7,7 +7,7 @@ import { accountCollection } from '../db';
 import { Account, CreateAccountData, PutAccountData } from '../types';
 
 export function useDbAccount(id?: string) {
-  const { data: account } = useLiveQuery(
+  const { data: account, isLoading } = useLiveQuery(
     q => {
       let query = q.from({ items: accountCollection });
       if (id) {
@@ -20,6 +20,7 @@ export function useDbAccount(id?: string) {
 
   return {
     account: account?.[0] as Account | undefined,
+    isLoading,
     insert: (item: CreateAccountData) => accountCollection.insert(item as Account),
     update: (id: string, updates: PutAccountData) =>
       accountCollection.update(id, draft => {
