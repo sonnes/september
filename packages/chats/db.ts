@@ -1,21 +1,28 @@
-import { createCollection, localStorageCollectionOptions } from '@tanstack/react-db';
+import { createCollection } from '@tanstack/react-db';
+import { indexedDBCollectionOptions } from '@/lib/indexeddb/collection';
 
-import { ChatSchema, MessageSchema } from './types';
+import { ChatSchema, MessageSchema, Chat, Message } from './types';
 
 export const chatCollection = createCollection(
-  localStorageCollectionOptions({
+  indexedDBCollectionOptions<Chat>({
     schema: ChatSchema,
     id: 'chats',
-    storageKey: 'app-chats',
+    kvStoreOptions: {
+      dbName: 'app-chats',
+    },
+    channelName: 'app-chats',
     getKey: item => item.id,
   })
 );
 
 export const messageCollection = createCollection(
-  localStorageCollectionOptions({
+  indexedDBCollectionOptions<Message>({
     schema: MessageSchema,
     id: 'messages',
-    storageKey: 'app-messages',
+    kvStoreOptions: {
+      dbName: 'app-messages',
+    },
+    channelName: 'app-messages',
     getKey: item => item.id,
   })
 );

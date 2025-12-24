@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, afterEach } from 'vitest'
 import 'fake-indexeddb/auto'
-import { KVStore, createKVStore } from '../kv-store'
+import { KVStore, createKVStore } from './kv-store'
 
 describe('KVStore', () => {
   let store: KVStore<unknown>
@@ -47,6 +47,29 @@ describe('KVStore', () => {
       await store.set('key1', 'value1')
       expect(await store.has('key1')).toBe(true)
       expect(await store.has('non-existent')).toBe(false)
+    })
+  })
+
+  describe('atomic update', () => {
+    it('should perform an atomic update', async () => {
+      await store.set('1', { id: '1', name: 'Initial' })
+
+      await store.update('1', (old: any) => {
+        return { ...old!, name: 'Updated' }
+      })
+
+      const result = (await store.get('1')) as any
+      expect(result?.name).toBe('Updated')
+    })
+
+    it('should handle update for non-existent key', async () => {
+      await store.update('new-key', (old) => {
+        expect(old).toBeUndefined()
+        return { id: 'new-key', name: 'Created' }
+      })
+
+      const result = (await store.get('new-key')) as any
+      expect(result?.name).toBe('Created')
     })
   })
 

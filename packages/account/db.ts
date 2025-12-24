@@ -1,11 +1,15 @@
-import { createCollection, localStorageCollectionOptions } from '@tanstack/react-db';
+import { createCollection } from '@tanstack/react-db';
+import { indexedDBCollectionOptions } from '@/lib/indexeddb/collection';
 
-import { AccountSchema } from './types';
+import { AccountSchema, Account } from './types';
 
 export const accountCollection = createCollection(
-  localStorageCollectionOptions({
+  indexedDBCollectionOptions<Account>({
     id: 'user-account',
-    storageKey: 'app-user-account',
+    kvStoreOptions: {
+      dbName: 'app-user-account',
+    },
+    channelName: 'app-user-account',
     getKey: item => item.id,
     schema: AccountSchema,
   })

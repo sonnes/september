@@ -87,6 +87,34 @@ export class KVStore<T = unknown> {
   }
 
   /**
+   * Atomic update of a value by key
+   */
+  async update(
+    key: string,
+    updater: (oldValue: T | undefined) => T
+  ): Promise<void> {
+    const db = await this.db
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(this.storeName, 'readwrite')
+      const store = transaction.objectStore(this.storeName)
+      const request = store.get(key)
+
+      request.onsuccess = () => {
+        try {
+          const newValue = updater(request.result as T | undefined)
+          const putRequest = store.put(newValue, key)
+          putRequest.onerror = () => reject(putRequest.error)
+        } catch (err) {
+          reject(err)
+        }
+      }
+
+      transaction.oncomplete = () => resolve()
+      request.onerror = () => reject(request.error)
+    })
+  }
+
+  /**
    * Delete a value by key
    */
   async delete(key: string): Promise<void> {
