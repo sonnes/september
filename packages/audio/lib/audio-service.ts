@@ -12,16 +12,21 @@ export class AudioService {
     path,
     blob,
     alignment,
+    contentType = 'audio/mp3',
+    metadata = {},
   }: {
     path: string;
     blob: string;
     alignment?: Alignment;
+    contentType?: string;
+    metadata?: Record<string, unknown>;
   }): Promise<string> {
     const buffer = Buffer.from(blob, 'base64');
     const { data, error } = await this.supabase.storage.from('audio').upload(path, buffer, {
-      contentType: 'audio/mp3',
+      contentType,
       upsert: true,
       metadata: {
+        ...metadata,
         alignment: alignment,
       },
     });
@@ -34,6 +39,17 @@ export class AudioService {
 
   async downloadAudio(path: string): Promise<Blob> {
     const { data, error } = await this.supabase.storage.from('audio').download(path);
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteAudio(path: string): Promise<void> {
+    const { error } = await this.supabase.storage.from('audio').remove([path]);
+    if (error) throw error;
+  }
+
+  async listAudio(path: string): Promise<any[]> {
+    const { data, error } = await this.supabase.storage.from('audio').list(path);
     if (error) throw error;
     return data;
   }

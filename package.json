@@ -45,8 +45,6 @@
     "@tiptap/pm": "^3.2.1",
     "@tiptap/react": "^3.2.1",
     "@tiptap/starter-kit": "^3.2.1",
-    "@triplit/client": "^1.0.46",
-    "@triplit/react": "^1.0.46",
     "@types/uuid": "^10.0.0",
     "ai": "^5.0.108",
     "class-variance-authority": "^0.7.1",
@@ -83,7 +81,6 @@
   "devDependencies": {
     "@elevenlabs/elevenlabs-js": "^2.7.0",
     "@tailwindcss/postcss": "^4",
-    "@triplit/cli": "^1.0.57",
     "@trivago/prettier-plugin-sort-imports": "^5.2.2",
     "@types/lodash": "^4.17.20",
     "@types/node": "^20",

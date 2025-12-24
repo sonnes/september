@@ -10,9 +10,7 @@ September is an assistive communication app for people with ALS, MND, or speech/
 
 - **Framework**: Next.js 15 (App Router, React 19)
 - **Styling**: Tailwind CSS 4, shadcn/ui components ([docs](https://ui.shadcn.com/llms.txt))
-- **Database**: Dual architecture
-  - Supabase (cloud: auth, storage, shared data)
-  - Triplit (local-first: SQLite, offline sync)
+- **Database**: Supabase (cloud: auth, storage, shared data)
 - **AI**: Google Gemini API, Vercel AI SDK
 - **Voice**: ElevenLabs (TTS, voice cloning)
 - **Forms**: React Hook Form + Zod validation
@@ -40,7 +38,6 @@ september/
 │   └── suggestions/    # Contextual typing suggestions
 ├── services/           # External service integrations
 ├── supabase/           # Cloud database config & migrations
-├── triplit/            # Local-first database schema
 └── types/              # Global TypeScript type definitions
 ```
 

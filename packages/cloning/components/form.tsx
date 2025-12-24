@@ -65,7 +65,7 @@ export function VoiceCloneForm() {
     setIsSubmitting(true);
 
     try {
-      // Download all files from Triplit and convert to File objects
+      // Download all files from local storage and convert to File objects
       const files: File[] = [];
       for (const id of fileIds) {
         const blob = await downloadVoiceSample(id);

@@ -1,15 +1,12 @@
 'use client';
 
 import React, { ReactNode, createContext, useContext } from 'react';
-import { Alignment } from '@/packages/audio/types';
+
 import {
   useDownloadAudio as useDownloadAudioSupabase,
   useUploadAudio as useUploadAudioSupabase,
 } from '@/packages/audio/hooks/use-db-audio-supabase';
-import {
-  useDownloadAudio as useDownloadAudioTriplit,
-  useUploadAudio as useUploadAudioTriplit,
-} from '@/packages/audio/hooks/use-db-audio-triplit';
+import { Alignment } from '@/packages/audio/types';
 
 interface AudioContextType {
   uploadAudio: ({
@@ -26,26 +23,19 @@ interface AudioContextType {
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
 
-type AudioProviderProps =
-  | {
-      provider: 'supabase';
-      children: ReactNode;
-    }
-  | {
-      provider: 'triplit';
-      children: ReactNode;
-    };
+type AudioProviderProps = {
+  provider: 'supabase';
+  children: ReactNode;
+};
 
 export function AudioProvider(props: AudioProviderProps) {
   // Call all hooks unconditionally to satisfy React Hooks rules
   const supabaseUpload = useUploadAudioSupabase();
-  const triplitUpload = useUploadAudioTriplit();
   const supabaseDownload = useDownloadAudioSupabase();
-  const triplitDownload = useDownloadAudioTriplit();
 
   // Use the appropriate hooks based on provider
-  const { uploadAudio } = props.provider === 'supabase' ? supabaseUpload : triplitUpload;
-  const { downloadAudio } = props.provider === 'supabase' ? supabaseDownload : triplitDownload;
+  const { uploadAudio } = supabaseUpload;
+  const { downloadAudio } = supabaseDownload;
 
   return (
     <AudioContext.Provider value={{ uploadAudio, downloadAudio }}>

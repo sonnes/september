@@ -1,19 +1,21 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { toast } from 'sonner';
 
-import { triplit } from '@/triplit/client';
+import supabase from '@/supabase/client';
+import { useAuth } from '@/packages/account';
+import { AudioService } from '@/packages/audio';
 
-const USER_ID = 'local-user';
+const LOCAL_USER_ID = 'local-user';
 
 export interface VoiceSample {
   id: string;
   user_id: string;
   type: 'upload' | 'recording';
   sample_id?: string;
-  blob: string;
+  blob?: string;
   file_name?: string;
   created_at: Date;
 }
@@ -30,6 +32,10 @@ export interface UseVoiceStorageReturn {
 }
 
 export function useVoiceStorage(): UseVoiceStorageReturn {
+  const { user } = useAuth();
+  const userId = user?.id || LOCAL_USER_ID;
+  const audioService = useMemo(() => new AudioService(supabase), []);
+
   const uploadVoiceSample = useCallback(
     async ({
       file,
@@ -41,95 +47,95 @@ export function useVoiceStorage(): UseVoiceStorageReturn {
       sampleId?: string;
     }) => {
       try {
-        // Convert file to base64
-        const blob = await file.arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(blob)));
+        // Convert file to base64 for AudioService
+        const arrayBuffer = await file.arrayBuffer();
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
         const mimeType = file.type || 'audio/webm';
-        const blobString = `data:${mimeType};base64,${base64}`;
 
-        // Generate ID
-        const id =
+        // Generate path
+        const filename =
           type === 'recording' && sampleId
-            ? `${USER_ID}/${type}/${sampleId}`
-            : `${USER_ID}/${type}/${Date.now()}-${file.name}`;
+            ? `${sampleId}.webm`
+            : `${Date.now()}-${file.name}`;
+        
+        const path = `voice-samples/${userId}/${type}/${filename}`;
 
-        // Store in Triplit
-        await triplit.insert('voice_samples', {
-          id,
-          user_id: USER_ID,
-          type,
-          sample_id: sampleId,
-          blob: blobString,
-          file_name: type === 'upload' ? file.name : undefined,
-          created_at: new Date(),
+        // Store in Supabase Storage via AudioService
+        await audioService.uploadAudio({
+          path,
+          blob: base64,
+          contentType: mimeType,
+          metadata: {
+            user_id: userId,
+            type,
+            sample_id: sampleId,
+            file_name: type === 'upload' ? file.name : undefined,
+          },
         });
 
         toast.success('Voice sample uploaded');
-        return id;
+        return path;
       } catch (err) {
         console.error('Failed to upload voice sample:', err);
         toast.error('Failed to upload voice sample');
         throw err;
       }
     },
-    []
+    [userId, audioService]
   );
 
-  const getVoiceSamples = useCallback(async (type?: 'upload' | 'recording') => {
-    try {
-      let query = triplit.query('voice_samples').Where('user_id', '=', USER_ID);
+  const getVoiceSamples = useCallback(
+    async (type?: 'upload' | 'recording'): Promise<VoiceSample[]> => {
+      try {
+        if (!type) {
+          // If no type, we'd need to list both folders.
+          // For now, let's assume type is always provided as per current usage.
+          const uploads = await getVoiceSamples('upload');
+          const recordings = await getVoiceSamples('recording');
+          return [...uploads, ...recordings];
+        }
 
-      if (type) {
-        query = query.Where('type', '=', type);
+        const folderPath = `voice-samples/${userId}/${type}`;
+        const files = await audioService.listAudio(folderPath);
+
+        return (files || []).map(file => {
+          const metadata = file.metadata || {};
+          return {
+            id: `${folderPath}/${file.name}`,
+            user_id: metadata.user_id || userId,
+            type: (metadata.type as 'upload' | 'recording') || type,
+            sample_id: metadata.sample_id,
+            file_name: metadata.file_name,
+            created_at: new Date(file.created_at),
+          };
+        });
+      } catch (err) {
+        console.error('Failed to fetch voice samples:', err);
+        throw err;
       }
-
-      const samples = await triplit.fetch(query);
-      return (samples || []) as unknown as VoiceSample[];
-    } catch (err) {
-      console.error('Failed to fetch voice samples:', err);
-      throw err;
-    }
-  }, []);
+    },
+    [userId, audioService]
+  );
 
   const deleteVoiceSample = useCallback(async (id: string) => {
     try {
-      await triplit.delete('voice_samples', id);
+      await audioService.deleteAudio(id);
       toast.success('Voice sample deleted');
     } catch (err) {
       console.error('Failed to delete voice sample:', err);
       toast.error('Failed to delete voice sample');
       throw err;
     }
-  }, []);
+  }, [audioService]);
 
   const downloadVoiceSample = useCallback(async (id: string): Promise<Blob> => {
     try {
-      const sample = (await triplit.fetchById('voice_samples', id)) as unknown as VoiceSample;
-
-      if (!sample) {
-        throw new Error('Voice sample not found');
-      }
-
-      // Parse the blob string
-      const parts = sample.blob.split(',');
-      const prefix = parts.length > 1 ? parts[0] : '';
-      const base64 = parts.length > 1 ? parts[1] : parts[0];
-
-      const mimeType = prefix ? prefix.split(';')[0].replace('data:', '').trim() : 'audio/webm';
-
-      // Convert base64 to Blob
-      const binaryString = atob(base64);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-
-      return new Blob([bytes], { type: mimeType });
+      return await audioService.downloadAudio(id);
     } catch (err) {
       console.error('Failed to download voice sample:', err);
       throw err;
     }
-  }, []);
+  }, [audioService]);
 
   return {
     uploadVoiceSample,

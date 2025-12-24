@@ -287,4 +287,3 @@ supabase gen types typescript --local > types/supabase.ts
 - [Services Directory](../services/README.md) - Services that use Supabase
 - [Types Directory](../types/README.md) - TypeScript types for data
 - [Middleware](../middleware.ts) - Authentication middleware
-- [Triplit Directory](../triplit/README.md) - Local database alternative

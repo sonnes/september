@@ -36,21 +36,25 @@ Additionally, in every conversation, you can provide additional context in the f
 ### Setup
 
 1. **Clone the repository**:
+
    ```bash
    git clone https://github.com/your-repo/september.git
    cd september
    ```
 
 2. **Install dependencies**:
+
    ```bash
    pnpm install
    ```
 
 3. **Environment Variables**:
    Copy the example environment file and fill in your credentials:
+
    ```bash
    cp .env.example .env.local
    ```
+
    You will need API keys for:
    - **Supabase**: URL and Anon Key (for auth and cloud database)
    - **Google Gemini**: API Key (for AI suggestions and transcription)
@@ -59,13 +63,13 @@ Additionally, in every conversation, you can provide additional context in the f
 
 4. **Database Setup**:
    - **Supabase**: Run the migrations in `supabase/migrations` against your Supabase project.
-   - **Triplit**: No manual setup required for local development (uses IndexedDB in the browser).
 
 ### Running the App
 
 ```bash
 pnpm run dev
 ```
+
 The application will be available at `http://localhost:3000`.
 
 ## Usage
@@ -100,7 +104,6 @@ september/
 │   └── suggestions/    # Contextual typing suggestions
 ├── services/           # External service integrations
 ├── supabase/           # Cloud database config & migrations
-├── triplit/            # Local-first database schema
 └── types/              # Global TypeScript type definitions
 ```
 
@@ -108,9 +111,7 @@ september/
 
 - **Framework**: Next.js 15 (App Router, React 19)
 - **Styling**: Tailwind CSS 4, shadcn/ui components
-- **Database**: Dual architecture
-  - **Supabase**: Cloud database for authentication, shared data, and file storage.
-  - **Triplit**: Local-first database (SQLite/IndexedDB) for offline functionality and fast local access.
+- **Database**: Supabase for authentication, shared data, and file storage.
 - **AI**: Google Gemini API, Vercel AI SDK
 - **Voice**: ElevenLabs for voice synthesis and cloning
 - **Forms**: React Hook Form + Zod validation
