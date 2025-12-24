@@ -46,8 +46,6 @@ export const SpeechConfigSchema = z.object({
       similarity: z.number().optional(),
       style: z.number().optional(),
       speaker_boost: z.boolean().optional(),
-      model_id: z.string().optional(),
-      voice_name: z.string().optional(),
     })
     .optional(),
 });
@@ -110,7 +108,6 @@ export const AccountSchema = z.object({
   terms_accepted: z.boolean().optional().default(false),
   privacy_policy_accepted: z.boolean().optional().default(false),
   onboarding_completed: z.boolean().optional().default(false),
-  is_approved: z.boolean().optional().default(false),
 
   // Timestamps
   created_at: z.coerce.date().optional(),

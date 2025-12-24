@@ -3,17 +3,27 @@
 import { useEffect, useMemo } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { TriangleAlertIcon } from 'lucide-react';
 import { Control, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import { FormCheckbox, FormField } from '@/components/ui/form';
 
-import { AccountFormData, AccountSchema, useAccountContext } from '@/packages/account';
+import { useAccountContext } from '@/packages/account';
+
+const SettingsSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  city: z.string().optional(),
+  country: z.string().optional(),
+  terms_accepted: z.boolean(),
+  privacy_policy_accepted: z.boolean(),
+});
+
+type SettingsFormData = z.infer<typeof SettingsSchema>;
 
 // Personal Information Section
-function PersonalInfoSection({ control }: { control: Control<AccountFormData> }) {
+function PersonalInfoSection({ control }: { control: Control<SettingsFormData> }) {
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
       <div className="px-4 sm:px-0">
@@ -53,7 +63,7 @@ function PersonalInfoSection({ control }: { control: Control<AccountFormData> })
 }
 
 // Terms and Privacy Section
-function TermsSection({ control }: { control: Control<AccountFormData> }) {
+function TermsSection({ control }: { control: Control<SettingsFormData> }) {
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-8 py-10 md:grid-cols-3">
       <div className="px-4 sm:px-0">
@@ -104,26 +114,35 @@ export default function SettingsForm() {
   const { user, account, updateAccount } = useAccountContext();
 
   const defaultValues = useMemo(() => {
-    return account || ({} as AccountFormData);
+    return {
+      name: account?.name || '',
+      city: account?.city || '',
+      country: account?.country || '',
+      terms_accepted: account?.terms_accepted || false,
+      privacy_policy_accepted: account?.privacy_policy_accepted || false,
+    };
   }, [account]);
 
-  const form = useForm<AccountFormData>({
-    resolver: zodResolver(AccountSchema) as any,
+  const form = useForm<SettingsFormData>({
+    resolver: zodResolver(SettingsSchema),
     defaultValues: defaultValues,
   });
 
   useEffect(() => {
     if (account) {
-      form.reset(account);
+      form.reset({
+        name: account.name,
+        city: account.city || '',
+        country: account.country || '',
+        terms_accepted: account.terms_accepted || false,
+        privacy_policy_accepted: account.privacy_policy_accepted || false,
+      });
     }
   }, [account, form]);
 
-  const onSubmit = async (data: AccountFormData) => {
+  const onSubmit = async (data: SettingsFormData) => {
     try {
-      // Omit fields that shouldn't be updated directly or are handled by the context
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { id, created_at, updated_at, ...updateData } = data;
-      await updateAccount(updateData);
+      await updateAccount(data);
       toast.success('Settings', {
         description: 'Your settings have been updated successfully.',
       });
@@ -143,17 +162,6 @@ export default function SettingsForm() {
 
   return (
     <div className="divide-y divide-zinc-400">
-      {user && account && !account.is_approved && (
-        <div className="rounded-md bg-amber-50 p-4 flex items-center mb-6">
-          <TriangleAlertIcon className="size-5 text-amber-400 shrink-0" />
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-amber-800">Account Pending Approval</h3>
-            <p className="mt-1 text-sm text-amber-700">
-              Your account is not approved yet. Please wait for approval.
-            </p>
-          </div>
-        </div>
-      )}
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <PersonalInfoSection control={form.control} />
         <TermsSection control={form.control} />

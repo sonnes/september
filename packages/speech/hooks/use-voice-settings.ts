@@ -54,6 +54,7 @@ export function useVoiceSettings(
   const currentVoiceId = account?.ai_speech?.voice_id;
   const currentVoiceName = account?.ai_speech?.voice_name;
   const currentModelId = account?.ai_speech?.model_id;
+  const currentSettings = account?.ai_speech?.settings;
 
   const form = useForm<VoiceSettingsFormData>({
     resolver: zodResolver(VoiceSettingsSchema),
@@ -62,6 +63,15 @@ export function useVoiceSettings(
       voice_id: currentVoiceId || '',
       voice_name: currentVoiceName || '',
       model_id: currentModelId || '',
+      settings: {
+        speed: currentSettings?.speed ?? 1.0,
+        pitch: currentSettings?.pitch ?? 1.0,
+        volume: currentSettings?.volume ?? 1.0,
+        stability: currentSettings?.stability ?? 0.5,
+        similarity: currentSettings?.similarity ?? 0.75,
+        style: currentSettings?.style ?? 0.0,
+        speaker_boost: currentSettings?.speaker_boost ?? true,
+      },
     },
   });
 

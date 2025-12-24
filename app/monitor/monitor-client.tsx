@@ -1,21 +1,20 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+
 import { useRouter } from 'next/navigation';
 
 import moment from 'moment';
 import Webcam from 'react-webcam';
+import { toast } from 'sonner';
 
 import AnimatedText from '@/components/ui/animated-text';
 
-import { toast } from 'sonner';
-
 import { useAccountContext } from '@/packages/account';
 import { AudioService, useAudioPlayer } from '@/packages/audio';
-
+import { Message } from '@/packages/chats';
 import supabase from '@/supabase/client';
 import { removeRealtimeSubscription, subscribeToUserMessages } from '@/supabase/realtime';
-import { Message } from '@/packages/chats';
 
 export default function MonitorClient() {
   const audioService = useMemo(() => new AudioService(supabase), []);
@@ -44,12 +43,6 @@ export default function MonitorClient() {
   const { enqueue } = useAudioPlayer();
   const { user, account } = useAccountContext();
   const router = useRouter();
-
-  useEffect(() => {
-    if (account && !account.is_approved) {
-      router.push('/onboarding');
-    }
-  }, [account, router]);
 
   // Realtime subscription for messages
   useEffect(() => {

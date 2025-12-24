@@ -74,6 +74,10 @@ const getNavigationData = () => ({
           url: '/settings/suggestions',
         },
         {
+          title: 'Transcription',
+          url: '/settings/transcription',
+        },
+        {
           title: 'Speech',
           url: '/settings/speech',
         },

@@ -2,14 +2,15 @@
 
 import { useMemo, useState } from 'react';
 
+import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-import { toast } from 'sonner';
+import GeminiService from '@/services/gemini';
 
 import { useAccountContext } from '@/packages/account';
-import GeminiService from '@/services/gemini';
 
 type UploadFormProps = {
   onTextExtracted: (text: string) => void;
@@ -106,4 +107,3 @@ export function UploadForm({ onTextExtracted }: UploadFormProps) {
     </div>
   );
 }
-
