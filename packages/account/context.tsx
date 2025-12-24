@@ -42,13 +42,13 @@ export function AccountProvider({ children }: AccountProviderProps) {
 
   const userId = useMemo(() => user?.id ?? 'local-user', [user]);
 
-  const { account: dbAccount, insert, update } = useDbAccount(userId);
+  const { account: dbAccount, isLoading, insert, update } = useDbAccount(userId);
   const { uploadFile: supabaseUpload, deleteFile: supabaseDelete } = useStorage();
 
   useEffect(() => {
     // If we don't have a dbAccount yet, and we are not waiting for auth,
     // initialize the account in TanStack DB.
-    if (!dbAccount && !authLoading) {
+    if (!dbAccount && !authLoading && !isLoading) {
       insert({
         id: userId,
         name: user?.user_metadata?.full_name ?? 'Guest',
