@@ -8,6 +8,13 @@ export class AudioService {
     this.supabase = client;
   }
 
+  private async checkAuth(): Promise<boolean> {
+    const {
+      data: { session },
+    } = await this.supabase.auth.getSession();
+    return !!session;
+  }
+
   async uploadAudio({
     path,
     blob,
@@ -20,7 +27,10 @@ export class AudioService {
     alignment?: Alignment;
     contentType?: string;
     metadata?: Record<string, unknown>;
-  }): Promise<string> {
+  }): Promise<string|undefined> {
+    if (!(await this.checkAuth())) {
+      return undefined;
+    }
     const buffer = Buffer.from(blob, 'base64');
     const { data, error } = await this.supabase.storage.from('audio').upload(path, buffer, {
       contentType,
@@ -38,17 +48,26 @@ export class AudioService {
   }
 
   async downloadAudio(path: string): Promise<Blob> {
+    if (!(await this.checkAuth())) {
+      return new Blob();
+    }
     const { data, error } = await this.supabase.storage.from('audio').download(path);
     if (error) throw error;
     return data;
   }
 
   async deleteAudio(path: string): Promise<void> {
+    if (!(await this.checkAuth())) {
+      return;
+    }
     const { error } = await this.supabase.storage.from('audio').remove([path]);
     if (error) throw error;
   }
 
   async listAudio(path: string): Promise<any[]> {
+    if (!(await this.checkAuth())) {
+      return [];
+    }
     const { data, error } = await this.supabase.storage.from('audio').list(path);
     if (error) throw error;
     return data;

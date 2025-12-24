@@ -9,7 +9,7 @@ import { AudioService } from '@/packages/audio/lib/audio-service';
 const audioService = new AudioService(supabase);
 
 export interface UseUploadAudioReturn {
-  uploadAudio: (params: { path: string; blob: string; alignment?: Alignment }) => Promise<string>;
+  uploadAudio: (params: { path: string; blob: string; alignment?: Alignment }) => Promise<string|undefined>;
 }
 
 export function useUploadAudio(): UseUploadAudioReturn {

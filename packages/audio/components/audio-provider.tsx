@@ -17,7 +17,7 @@ interface AudioContextType {
     path: string;
     blob: string;
     alignment?: Alignment;
-  }) => Promise<string>;
+  }) => Promise<string | undefined>;
   downloadAudio: (path: string) => Promise<Blob>;
 }
 

@@ -91,10 +91,9 @@ export function useCreateAudioMessage(): UseCreateAudioMessageReturn {
         const speech = await generateSpeech(message.text);
 
         if (speech?.blob) {
-          message.audio_path = `${message.id}.mp3`;
           setStatus('uploading-audio');
-          await uploadAudio({
-            path: message.audio_path,
+          message.audio_path = await uploadAudio({
+            path: `${message.id}.mp3`,
             blob: speech.blob,
             alignment: speech.alignment,
           });
