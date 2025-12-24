@@ -1,4 +1,4 @@
-import { ElevenLabsSettings } from '@/packages/account';
+import { ElevenLabsSettings } from '@/types/ai-config';
 import { Voice } from '@/types/voice';
 import { ListVoicesRequest, SpeechProvider, SpeechRequest, SpeechResponse } from '@/packages/speech/types';
 

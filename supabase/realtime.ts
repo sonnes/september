@@ -32,7 +32,7 @@ export function createRealtimeSubscription<T extends Record<string, unknown> = R
   // Add event listeners for each specified event
   events.forEach(event => {
     channel.on(
-      'postgres_changes',
+      'postgres_changes' as any,
       {
         event,
         schema,

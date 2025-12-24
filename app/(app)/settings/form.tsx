@@ -1,15 +1,16 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
-import { TriangleAlertIcon } from 'lucide-react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { TriangleAlertIcon } from 'lucide-react';
 import { Control, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import { useAccountContext, AccountFormData, AccountSchema } from '@/packages/account';
 import { Button } from '@/components/ui/button';
 import { FormCheckbox, FormField } from '@/components/ui/form';
+
+import { AccountFormData, AccountSchema, useAccountContext } from '@/packages/account';
 
 // Personal Information Section
 function PersonalInfoSection({ control }: { control: Control<AccountFormData> }) {
@@ -103,71 +104,26 @@ export default function SettingsForm() {
   const { user, account, updateAccount } = useAccountContext();
 
   const defaultValues = useMemo(() => {
-    return {
-      // Personal Information
-      name: account?.name || '',
-      city: account?.city || '',
-      country: account?.country || '',
-      // Medical Information
-      primary_diagnosis: account?.primary_diagnosis || '',
-      year_of_diagnosis: account?.year_of_diagnosis || undefined,
-      medical_document_path: account?.medical_document_path || '',
-      // Speech Settings
-      speech_provider: account?.speech_provider || 'browser_tts',
-      speech_settings: {
-        api_key: account?.speech_settings?.api_key || '',
-        model_id: account?.speech_settings?.model_id || '',
-        speed: account?.speech_settings?.speed || 1.0,
-        stability: account?.speech_settings?.stability || 0.5,
-        similarity: account?.speech_settings?.similarity || 0.5,
-        style: account?.speech_settings?.style || 0.5,
-        speaker_boost: account?.speech_settings?.speaker_boost || false,
-        pitch: account?.speech_settings?.pitch || 0,
-        volume: account?.speech_settings?.volume || 1.0,
-      },
-      voice: account?.voice || undefined,
-      // AI Settings
-      gemini_api_key: account?.gemini_api_key || '',
-      ai_instructions: account?.ai_instructions || '',
-      ai_corpus: account?.ai_corpus || '',
-      // Terms and Privacy
-      terms_accepted: account?.terms_accepted || false,
-      privacy_policy_accepted: account?.privacy_policy_accepted || false,
-    };
+    return account || ({} as AccountFormData);
   }, [account]);
 
   const form = useForm<AccountFormData>({
-    resolver: zodResolver(AccountSchema),
+    resolver: zodResolver(AccountSchema) as any,
     defaultValues: defaultValues,
   });
 
   useEffect(() => {
-    form.reset(defaultValues);
-  }, [defaultValues, form]);
+    if (account) {
+      form.reset(account);
+    }
+  }, [account, form]);
 
   const onSubmit = async (data: AccountFormData) => {
     try {
-      await updateAccount({
-        // Personal Information
-        name: data.name,
-        city: data.city,
-        country: data.country,
-        // Medical Information
-        primary_diagnosis: data.primary_diagnosis,
-        year_of_diagnosis: data.year_of_diagnosis,
-        medical_document_path: data.medical_document_path,
-        // Speech Settings
-        speech_provider: data.speech_provider,
-        speech_settings: data.speech_settings,
-        voice: data.voice,
-        // AI Settings
-        gemini_api_key: data.gemini_api_key,
-        ai_instructions: data.ai_instructions,
-        ai_corpus: data.ai_corpus,
-        // Terms and Privacy
-        terms_accepted: data.terms_accepted,
-        privacy_policy_accepted: data.privacy_policy_accepted,
-      });
+      // Omit fields that shouldn't be updated directly or are handled by the context
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id, created_at, updated_at, ...updateData } = data;
+      await updateAccount(updateData);
       toast.success('Settings', {
         description: 'Your settings have been updated successfully.',
       });

@@ -1,4 +1,4 @@
-import { BrowserTTSSettings } from '@/packages/account';
+import { BrowserTTSSettings } from '@/types/ai-config';
 import { Voice } from '@/types/voice';
 import { ListVoicesRequest, SpeechProvider, SpeechRequest, SpeechResponse } from '@/packages/speech/types';
 

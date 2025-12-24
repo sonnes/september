@@ -8,20 +8,21 @@ import { useMediaRecorder } from '@/packages/cloning/hooks/use-media-recorder';
 import { useAudioPlayback } from '@/packages/cloning/hooks/use-audio-playback';
 import { useRecordingState } from '@/packages/cloning/hooks/use-recording-state';
 import { useVoiceStorage } from '@/packages/cloning/hooks/use-voice-storage';
+import { RecordingStatus } from '../types';
 
 export interface UseRecordingReturn {
   recordings: Record<string, string>;
   startRecording: (id: string) => Promise<void>;
-  stopRecording: () => void;
+  stopRecording: (id: string) => void;
   deleteRecording: (id: string) => Promise<void>;
   playRecording: (id: string) => Promise<void>;
-  stopPlaying: () => void;
-  status: Record<string, string | null>;
+  stopPlaying: (id: string) => void;
+  status: Record<string, RecordingStatus>;
   errors: Record<string, string | null>;
 }
 
 export function useRecording(initialRecordings: Record<string, string> = {}): UseRecordingReturn {
-  const [recordingStatus, setRecordingStatus] = useState<Record<string, string | null>>({});
+  const [internalErrors, setInternalErrors] = useState<Record<string, string | null>>({});
   const mediaRecorder = useMediaRecorder();
   const audioPlayback = useAudioPlayback();
   const recordingState = useRecordingState(initialRecordings);
@@ -32,11 +33,11 @@ export function useRecording(initialRecordings: Record<string, string> = {}): Us
     async (id: string, blob: Blob) => {
       try {
         await recordingState.saveRecording(id, blob);
-        setRecordingStatus(prev => ({ ...prev, [id]: null }));
+        setInternalErrors(prev => ({ ...prev, [id]: null }));
         toast.success('Recording saved');
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to save recording';
-        setRecordingStatus(prev => ({ ...prev, [id]: message }));
+        setInternalErrors(prev => ({ ...prev, [id]: message }));
         toast.error(message);
       }
     },
@@ -71,13 +72,13 @@ export function useRecording(initialRecordings: Record<string, string> = {}): Us
 
   const deleteRecording = useCallback(
     async (id: string) => {
-      setRecordingStatus(prev => ({ ...prev, [id]: null }));
+      setInternalErrors(prev => ({ ...prev, [id]: null }));
       try {
         await recordingState.deleteRecording(id);
         toast.success('Recording deleted');
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to delete recording';
-        setRecordingStatus(prev => ({ ...prev, [id]: message }));
+        setInternalErrors(prev => ({ ...prev, [id]: message }));
         toast.error(message);
         throw err;
       }
@@ -94,7 +95,7 @@ export function useRecording(initialRecordings: Record<string, string> = {}): Us
   const errors = {
     ...mediaRecorder.recordingError,
     ...audioPlayback.playbackError,
-    ...recordingStatus,
+    ...internalErrors,
   };
 
   return {

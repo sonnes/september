@@ -110,6 +110,9 @@ export interface BrowserTTSSettings extends Record<string, unknown> {
 
   /** Volume (0-1) */
   volume?: number;
+
+  /** Language code (e.g., 'en-US') */
+  language?: string;
 }
 
 /**

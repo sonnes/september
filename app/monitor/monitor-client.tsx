@@ -74,7 +74,7 @@ export default function MonitorClient() {
     return () => {
       removeRealtimeSubscription(channel);
     };
-  }, [user.id]);
+  }, [user?.id]);
 
   useEffect(() => {
     async function downloadAudio() {

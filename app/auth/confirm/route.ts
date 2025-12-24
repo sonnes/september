@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation';
 
-import { AccountService } from '@/packages/account';
 import { createClient } from '@/supabase/server';
 
 export async function GET(request: Request) {
@@ -29,17 +28,6 @@ export async function GET(request: Request) {
     if (error) {
       // If there's an error, redirect to login with error message
       return redirect(`${host}/login?error=${encodeURIComponent(error.message)}`);
-    }
-
-    if (data.user) {
-      const accountsService = new AccountService(supabase);
-      const account = await accountsService.getAccount(data.user.id);
-
-      if (!account) {
-        await accountsService.putAccount(data.user.id, {
-          name: data.user.user_metadata.full_name,
-        });
-      }
     }
 
     return redirect(`${host}${next}`);

@@ -87,7 +87,11 @@ export function indexedDBCollectionOptions<
       }
     }
 
-    initialSync()
+    if (typeof window !== 'undefined') {
+      initialSync()
+    } else {
+      markReady()
+    }
 
     // 3. Cleanup
     return () => {

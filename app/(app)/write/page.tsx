@@ -18,18 +18,19 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
-import { DocumentList, useDocuments } from '@/packages/documents';
+import { DocumentList, useDocuments, useCreateDocument } from '@/packages/documents';
 
 import { DocumentListSkeleton } from './loading-skeleton';
 
 export default function WritePage() {
   const router = useRouter();
-  const { documents, fetching, putDocument } = useDocuments();
+  const { documents, isLoading } = useDocuments();
+  const { createDocument, isCreating } = useCreateDocument();
   const [searchValue, setSearchValue] = useState('');
 
   const handleNewDocument = async () => {
     try {
-      const newDoc = await putDocument({ name: '', content: '' });
+      const newDoc = await createDocument({ name: '', content: '' });
       router.push(`/write/${newDoc.id}`);
     } catch (err) {
       toast.error('Error', {
@@ -64,7 +65,7 @@ export default function WritePage() {
               onClick={handleNewDocument}
               variant="default"
               size="default"
-              disabled={fetching}
+              disabled={isLoading || isCreating}
             >
               <PlusIcon className="h-4 w-4" />
               New document
@@ -72,10 +73,10 @@ export default function WritePage() {
           </div>
 
           {/* Loading State */}
-          {fetching && <DocumentListSkeleton />}
+          {isLoading && <DocumentListSkeleton />}
 
           {/* Content State (empty handled by DocumentList component) */}
-          {!fetching && (
+          {!isLoading && (
             <div className="max-w-3xl mx-auto w-full">
               <DocumentList
                 documents={filteredDocuments}

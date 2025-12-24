@@ -23,7 +23,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
   const { id } = use(params);
   const router = useRouter();
 
-  const { documents, fetching } = useDocuments();
+  const { documents, isLoading } = useDocuments();
 
   // Find the current document
   const current = React.useMemo(() => {
@@ -31,7 +31,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
   }, [documents, id]);
 
   // Loading state for document ID resolution
-  const isInitializing = !id || fetching;
+  const isInitializing = !id || isLoading;
 
   return (
     <>
@@ -49,10 +49,10 @@ export default function DocumentPage({ params }: DocumentPageProps) {
       <SidebarLayout.Content>
         <div className="pb-20">
           {/* Loading State */}
-          {(isInitializing || fetching) && <DocumentEditorSkeleton />}
+          {(isInitializing || isLoading) && <DocumentEditorSkeleton />}
 
           {/* Error State */}
-          {!isInitializing && !fetching && !current && (
+          {!isInitializing && !isLoading && !current && (
             <div className="flex flex-col items-center justify-center h-full p-8">
               <div className="rounded-lg border border-red-200 bg-red-50 p-6 max-w-md w-full">
                 <div className="flex flex-col items-center text-center gap-4">
@@ -83,7 +83,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
           )}
 
           {/* Document Editor */}
-          {!isInitializing && !fetching && current && (
+          {!isInitializing && !isLoading && current && (
             <div className="max-w-4xl mx-auto w-full">
               <DocumentEditor documentId={current.id} className="flex-1 min-h-0" />
             </div>

@@ -34,7 +34,7 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
     if (!cachedDictionary || !cachedCorpus) return;
 
     // Create training text with default data first, then user data
-    const userCorpus = account?.ai_corpus || '';
+    const userCorpus = account?.ai_suggestions?.settings?.ai_corpus || '';
     let trainingText = cachedCorpus + '\n' + userCorpus;
 
     // Optionally include message history
@@ -92,8 +92,8 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
       } catch (error) {
         console.warn('Failed to load default dictionary/corpus, using fallback:', error);
         // Fallback to user data only if default loading fails
-        if (account?.ai_corpus || (includeMessages && messages.length)) {
-          let trainingText = account?.ai_corpus || '';
+        if (account?.ai_suggestions?.settings?.ai_corpus || (includeMessages && messages.length)) {
+          let trainingText = account?.ai_suggestions?.settings?.ai_corpus || '';
           if (includeMessages && messages.length > 0) {
             const messagesText = messages.map(m => m.text).join('\n');
             trainingText += '\n' + messagesText;
@@ -107,7 +107,7 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
     };
 
     loadData();
-  }, [retrainAutocomplete, account?.ai_corpus, includeMessages, messages]);
+  }, [retrainAutocomplete, account?.ai_suggestions?.settings?.ai_corpus, includeMessages, messages]);
 
   const getSpellings = useCallback(
     (query: string) => {

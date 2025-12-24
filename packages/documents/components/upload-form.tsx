@@ -27,8 +27,8 @@ export function UploadForm({ onTextExtracted }: UploadFormProps) {
   const { account } = useAccountContext();
 
   const gemini = useMemo(
-    () => new GeminiService(account?.gemini_api_key || ''),
-    [account?.gemini_api_key]
+    () => new GeminiService(account?.ai_providers?.gemini?.api_key || ''),
+    [account?.ai_providers?.gemini?.api_key]
   );
 
   const [extracting, setExtracting] = useState(false);

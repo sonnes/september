@@ -17,15 +17,25 @@ export interface KVStoreOptions {
 }
 
 export class KVStore<T = unknown> {
-  private db: Promise<IDBDatabase>
+  private db: Promise<IDBDatabase> | null = null
   private readonly storeName: string
   private readonly dbName: string
+  private readonly version: number
 
   constructor(options: KVStoreOptions) {
     this.dbName = options.dbName
     this.storeName = options.storeName ?? DEFAULT_STORE_NAME
+    this.version = options.version ?? DEFAULT_DB_VERSION
+  }
 
-    this.db = this.openDatabase(options.version ?? DEFAULT_DB_VERSION)
+  private getDB(): Promise<IDBDatabase> {
+    if (typeof indexedDB === 'undefined') {
+      return Promise.reject(new Error('IndexedDB is not supported in this environment'))
+    }
+    if (!this.db) {
+      this.db = this.openDatabase(this.version)
+    }
+    return this.db
   }
 
   private openDatabase(version: number): Promise<IDBDatabase> {
@@ -60,7 +70,7 @@ export class KVStore<T = unknown> {
    * Get a value by key
    */
   async get(key: string): Promise<T | undefined> {
-    const db = await this.db
+    const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readonly')
       const store = transaction.objectStore(this.storeName)
@@ -75,7 +85,7 @@ export class KVStore<T = unknown> {
    * Set a value by key
    */
   async set(key: string, value: T): Promise<void> {
-    const db = await this.db
+    const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readwrite')
       const store = transaction.objectStore(this.storeName)
@@ -93,7 +103,7 @@ export class KVStore<T = unknown> {
     key: string,
     updater: (oldValue: T | undefined) => T
   ): Promise<void> {
-    const db = await this.db
+    const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readwrite')
       const store = transaction.objectStore(this.storeName)
@@ -118,7 +128,7 @@ export class KVStore<T = unknown> {
    * Delete a value by key
    */
   async delete(key: string): Promise<void> {
-    const db = await this.db
+    const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readwrite')
       const store = transaction.objectStore(this.storeName)
@@ -133,7 +143,7 @@ export class KVStore<T = unknown> {
    * Check if a key exists
    */
   async has(key: string): Promise<boolean> {
-    const db = await this.db
+    const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readonly')
       const store = transaction.objectStore(this.storeName)
@@ -148,7 +158,7 @@ export class KVStore<T = unknown> {
    * Get all keys
    */
   async keys(): Promise<string[]> {
-    const db = await this.db
+    const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readonly')
       const store = transaction.objectStore(this.storeName)
@@ -163,7 +173,7 @@ export class KVStore<T = unknown> {
    * Get all values
    */
   async values(): Promise<T[]> {
-    const db = await this.db
+    const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readonly')
       const store = transaction.objectStore(this.storeName)
@@ -178,7 +188,7 @@ export class KVStore<T = unknown> {
    * Get all entries as key-value pairs
    */
   async entries(): Promise<Array<[string, T]>> {
-    const db = await this.db
+    const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readonly')
       const store = transaction.objectStore(this.storeName)
@@ -215,7 +225,7 @@ export class KVStore<T = unknown> {
    * Clear all entries
    */
   async clear(): Promise<void> {
-    const db = await this.db
+    const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readwrite')
       const store = transaction.objectStore(this.storeName)
@@ -230,7 +240,7 @@ export class KVStore<T = unknown> {
    * Get the count of entries
    */
   async count(): Promise<number> {
-    const db = await this.db
+    const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readonly')
       const store = transaction.objectStore(this.storeName)
@@ -245,7 +255,7 @@ export class KVStore<T = unknown> {
    * Get multiple values by keys
    */
   async getMany(keys: string[]): Promise<Array<T | undefined>> {
-    const db = await this.db
+    const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readonly')
       const store = transaction.objectStore(this.storeName)
@@ -283,7 +293,7 @@ export class KVStore<T = unknown> {
    * Set multiple key-value pairs
    */
   async setMany(entries: Array<[string, T]>): Promise<void> {
-    const db = await this.db
+    const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readwrite')
       const store = transaction.objectStore(this.storeName)
@@ -312,7 +322,7 @@ export class KVStore<T = unknown> {
    * Delete multiple keys
    */
   async deleteMany(keys: string[]): Promise<void> {
-    const db = await this.db
+    const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readwrite')
       const store = transaction.objectStore(this.storeName)
@@ -341,7 +351,7 @@ export class KVStore<T = unknown> {
    * Iterate over all entries with a prefix
    */
   async *scan(prefix: string): AsyncIterable<[string, T]> {
-    const db = await this.db
+    const db = await this.getDB()
     const transaction = db.transaction(this.storeName, 'readonly')
     const store = transaction.objectStore(this.storeName)
 
@@ -371,7 +381,7 @@ export class KVStore<T = unknown> {
    * Close the database connection
    */
   async close(): Promise<void> {
-    const db = await this.db
+    const db = await this.getDB()
     db.close()
   }
 
@@ -379,7 +389,7 @@ export class KVStore<T = unknown> {
    * Delete the entire database
    */
   async destroy(): Promise<void> {
-    const db = await this.db
+    const db = await this.getDB()
     db.close()
 
     return new Promise((resolve, reject) => {
