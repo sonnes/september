@@ -29,8 +29,6 @@ export const SpeechSettingsFormSchema = z.object({
       similarity: z.number().min(0).max(1).optional(),
       style: z.number().min(0).max(1).optional(),
       speaker_boost: z.boolean().optional(),
-      // Gemini settings
-      voice_name: z.string().optional(),
     })
     .optional(),
 });
@@ -65,8 +63,6 @@ export function SpeechSettingsForm({ account, onSubmit, children }: SpeechSettin
         similarity: speechConfig?.settings?.similarity ?? 0.75,
         style: speechConfig?.settings?.style ?? 0,
         speaker_boost: speechConfig?.settings?.speaker_boost ?? true,
-        // Gemini settings
-        voice_name: speechConfig?.settings?.voice_name ?? '',
       },
     };
   }, [account?.ai_speech]);
