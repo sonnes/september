@@ -130,7 +130,7 @@ export function CustomKeyboardEditor({
         });
         onSave?.(newKeyboard);
       }
-    } catch (err) {
+    } catch {
       // Error handled by hooks (toast)
     } finally {
       setIsSaving(false);
@@ -180,14 +180,14 @@ export function CustomKeyboardEditor({
       <div>
         <Label htmlFor="chat_id">Assign to Chat (optional)</Label>
         <Select
-          value={form.watch('chat_id') || ''}
-          onValueChange={val => form.setValue('chat_id', val || undefined)}
+          value={form.watch('chat_id') || 'none'}
+          onValueChange={val => form.setValue('chat_id', val === 'none' ? undefined : val)}
         >
           <SelectTrigger>
             <SelectValue placeholder="None" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">None</SelectItem>
+            <SelectItem value="none">None</SelectItem>
             {chats.map(chat => (
               <SelectItem key={chat.id} value={chat.id}>
                 {chat.title || 'Untitled Chat'}

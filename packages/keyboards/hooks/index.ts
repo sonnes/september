@@ -2,3 +2,8 @@ export * from './use-shift-state';
 export * from './use-stage-size';
 export * from './use-keyboard-interactions';
 export * from './use-keyboard-context';
+export * from './use-custom-keyboards';
+export * from './use-custom-keyboard';
+export * from './use-create-keyboard';
+export * from './use-update-keyboard';
+export * from './use-delete-keyboard';
