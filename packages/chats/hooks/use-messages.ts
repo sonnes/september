@@ -9,9 +9,11 @@ import { Message } from '../types';
 export function useMessages({
   chatId,
   searchQuery,
+  limit = 100,
 }: {
   chatId?: string;
   searchQuery?: string;
+  limit?: number;
 } = {}) {
   const {
     data: messages,
@@ -24,10 +26,10 @@ export function useMessages({
       if (chatId) {
         query = query.where(({ items }) => eq(items.chat_id, chatId));
       }
-      if (searchQuery) {
+      if (searchQuery && searchQuery.length > 0) {
         query = query.where(({ items }) => ilike(items.text, `%${searchQuery}%`));
       }
-      return query.orderBy(({ items }) => items.created_at, 'asc');
+      return query.orderBy(({ items }) => items.created_at, 'asc').limit(limit);
     },
     [chatId, searchQuery]
   );

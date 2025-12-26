@@ -147,7 +147,7 @@ export default function ChatPage({ params }: ChatPageProps) {
         <KeyboardProvider>
           <div className="fixed bottom-0 left-0 right-0 p-4 md:left-(--sidebar-width) z-10">
             <div className="max-w-4xl mx-auto flex flex-col gap-3">
-              <Suggestions />
+              <Suggestions chatId={chatId} />
               <Editor
                 placeholder="Type a message..."
                 onSubmit={handleSubmit}
