@@ -5,7 +5,7 @@ export const VoiceSampleSchema = z.object({
   user_id: z.string(),
   type: z.enum(['upload', 'recording']),
   sample_id: z.string().optional(),
-  blob: z.string(),
+  blob: z.string().optional(),
   file_name: z.string().optional(),
   created_at: z.date(),
 });

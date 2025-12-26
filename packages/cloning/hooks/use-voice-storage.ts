@@ -7,18 +7,9 @@ import { toast } from 'sonner';
 import supabase from '@/supabase/client';
 import { useAuth } from '@/packages/account';
 import { AudioService } from '@/packages/audio';
+import { VoiceSample } from '../types';
 
 const LOCAL_USER_ID = 'local-user';
-
-export interface VoiceSample {
-  id: string;
-  user_id: string;
-  type: 'upload' | 'recording';
-  sample_id?: string;
-  blob?: string;
-  file_name?: string;
-  created_at: Date;
-}
 
 export interface UseVoiceStorageReturn {
   uploadVoiceSample: (params: {
