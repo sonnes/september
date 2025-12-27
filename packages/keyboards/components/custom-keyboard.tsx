@@ -3,6 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { useCustomKeyboard } from '../hooks/use-custom-keyboard';
 import { GridButton } from '../types';
 
@@ -36,8 +37,8 @@ export function CustomKeyboard({
   const gridStyle = {
     display: 'grid',
     gridTemplateColumns: `repeat(${Math.min(keyboard.columns, 3)}, minmax(0, 1fr))`,
-    gap: '0.5rem',
-    padding: '1rem',
+    gap: '0.375rem',
+    padding: '0.75rem',
   };
 
   const handleButtonClick = (button: GridButton) => {
@@ -49,39 +50,37 @@ export function CustomKeyboard({
     <div className={cn('bg-white border-t border-zinc-200', className)}>
       <div className="max-w-4xl mx-auto">
         {/* Keyboard title */}
-        <div className="px-4 pt-2 text-sm text-muted-foreground">
+        <div className="px-3 pt-2 pb-1 text-xs text-muted-foreground font-medium">
           {keyboard.name}
         </div>
 
         {/* Grid buttons */}
         <div style={gridStyle}>
           {sortedButtons.map(button => (
-            <button
+            <Button
               key={button.id}
               onClick={() => handleButtonClick(button)}
+              variant="outline"
+              size="sm"
               className={cn(
-                'min-h-16 p-2',
+                'h-12 px-2 py-1',
                 'flex flex-col items-center justify-center',
-                'bg-zinc-100 hover:bg-zinc-200 active:bg-zinc-300',
-                'border border-zinc-300 rounded-md',
-                'text-sm font-medium text-zinc-800',
-                'transition-colors duration-150',
-                'focus:outline-none focus:ring-2 focus:ring-blue-500',
-                'select-none'
+                'text-xs font-medium',
+                'whitespace-normal',
+                'hover:bg-zinc-100 active:bg-zinc-200'
               )}
-              type="button"
             >
               {button.image_url && (
                 <Image
                   src={button.image_url}
                   alt={button.text}
-                  width={32}
-                  height={32}
-                  className="mb-1 object-contain"
+                  width={20}
+                  height={20}
+                  className="mb-0.5 object-contain"
                 />
               )}
-              <span className="text-center break-words">{button.text}</span>
-            </button>
+              <span className="text-center break-words line-clamp-2">{button.text}</span>
+            </Button>
           ))}
         </div>
       </div>
