@@ -203,7 +203,7 @@ export default function ChatPage({ params }: ChatPageProps) {
                 <KeyboardToggleButton />
                 <SpeechSettingsModal />
               </Editor>
-              <KeyboardRenderer onKeyPress={handleKeyPress} />
+              <KeyboardRenderer chatId={chatId} onKeyPress={handleKeyPress} />
             </div>
           </div>
         </KeyboardProvider>

@@ -13,13 +13,14 @@ import { useCustomKeyboards } from '@/packages/keyboards/hooks/use-custom-keyboa
 import { useKeyboardContext } from '@/packages/keyboards/hooks/use-keyboard-context';
 
 interface KeyboardRendererProps {
+  chatId?: string;
   className?: string;
   onKeyPress: (key: string) => void;
 }
 
-export function KeyboardRenderer({ className = '', onKeyPress }: KeyboardRendererProps) {
+export function KeyboardRenderer({ chatId, className = '', onKeyPress }: KeyboardRendererProps) {
   const { isVisible, keyboardType, setKeyboardType, setCustomKeyboardId } = useKeyboardContext();
-  const { keyboards: customKeyboards } = useCustomKeyboards();
+  const { keyboards: customKeyboards } = useCustomKeyboards({ chatId });
   const [activeTab, setActiveTab] = useState<string>(keyboardType);
 
   React.useEffect(() => {

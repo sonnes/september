@@ -1,9 +1,14 @@
 'use client';
 
 import React from 'react';
+
 import Image from 'next/image';
-import { cn } from '@/lib/utils';
+import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+
 import { Button } from '@/components/ui/button';
+
+import { cn } from '@/lib/utils';
+
 import { useCustomKeyboard } from '../hooks/use-custom-keyboard';
 import { GridButton } from '../types';
 
@@ -11,13 +16,11 @@ interface CustomKeyboardProps {
   keyboardId: string;
   className?: string;
   onKeyPress: (key: string) => void;
+  onEdit?: (keyboardId: string) => void;
+  onDelete?: (keyboardId: string) => void;
 }
 
-export function CustomKeyboard({
-  keyboardId,
-  className = '',
-  onKeyPress
-}: CustomKeyboardProps) {
+export function CustomKeyboard({ keyboardId, className = '', onKeyPress, onEdit, onDelete }: CustomKeyboardProps) {
   const { keyboard, isLoading, error } = useCustomKeyboard(keyboardId);
 
   if (isLoading) {
@@ -25,9 +28,11 @@ export function CustomKeyboard({
   }
 
   if (error || !keyboard) {
-    return <div className={cn('p-4 text-center text-red-600', className)}>
-      {error?.message || 'Keyboard not found'}
-    </div>;
+    return (
+      <div className={cn('p-4 text-center text-red-600', className)}>
+        {error?.message || 'Keyboard not found'}
+      </div>
+    );
   }
 
   // Sort buttons by order
@@ -46,12 +51,46 @@ export function CustomKeyboard({
     onKeyPress(value);
   };
 
+  const handleEdit = () => {
+    onEdit?.(keyboardId);
+  };
+
+  const handleDelete = () => {
+    onDelete?.(keyboardId);
+  };
+
   return (
     <div className={cn('bg-white border-t border-zinc-200', className)}>
       <div className="max-w-4xl mx-auto">
-        {/* Keyboard title */}
-        <div className="px-3 pt-2 pb-1 text-xs text-muted-foreground font-medium">
-          {keyboard.name}
+        {/* Keyboard title with edit/delete buttons */}
+        <div className="px-3 pt-2 pb-1 flex items-center justify-between gap-2">
+          <span className="text-xs text-muted-foreground font-medium">
+            {keyboard.name}
+          </span>
+          <div className="flex gap-1">
+            {onEdit && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleEdit}
+                className="h-6 w-6 p-0 hover:bg-zinc-100"
+                title="Edit keyboard"
+              >
+                <PencilIcon className="h-4 w-4 text-zinc-600" />
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDelete}
+                className="h-6 w-6 p-0 hover:bg-red-100"
+                title="Delete keyboard"
+              >
+                <TrashIcon className="h-4 w-4 text-red-600" />
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Grid buttons */}
@@ -65,7 +104,7 @@ export function CustomKeyboard({
               className={cn(
                 'h-12 px-2 py-1',
                 'flex flex-col items-center justify-center',
-                'text-xs font-medium',
+                'text-md font-medium',
                 'whitespace-normal',
                 'hover:bg-zinc-100 active:bg-zinc-200'
               )}
@@ -79,7 +118,7 @@ export function CustomKeyboard({
                   className="mb-0.5 object-contain"
                 />
               )}
-              <span className="text-center break-words line-clamp-2">{button.text}</span>
+              <span className="text-center wrap-break-word line-clamp-2">{button.text}</span>
             </Button>
           ))}
         </div>
