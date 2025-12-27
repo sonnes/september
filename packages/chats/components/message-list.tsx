@@ -119,7 +119,9 @@ export function MessageList({ messages }: MessageListProps) {
   if (messages.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
-        <p className="text-sm text-muted-foreground">No messages yet</p>
+        <p className="text-sm text-muted-foreground">
+          Send your first message to set the context for this chat and auto-generate a custom keyboard
+        </p>
       </div>
     );
   }

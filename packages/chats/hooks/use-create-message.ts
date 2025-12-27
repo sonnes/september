@@ -36,7 +36,7 @@ export function useCreateMessage(): UseCreateMessageReturn {
         // Insert message
         await messageCollection.insert(newMessage);
 
-        // Update chat's updated_at
+        // Update chat's updated_at if chat_id is provided
         if (message.chat_id) {
           await chatCollection.update(message.chat_id, draft => {
             draft.updated_at = now;

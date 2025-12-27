@@ -7,3 +7,4 @@ export * from './use-custom-keyboard';
 export * from './use-create-keyboard';
 export * from './use-update-keyboard';
 export * from './use-delete-keyboard';
+export * from './use-generate-keyboard';

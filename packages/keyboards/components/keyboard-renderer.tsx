@@ -75,27 +75,32 @@ export function KeyboardRenderer({ className = '', onKeyPress }: KeyboardRendere
 
         {/* Custom Keyboard Tabs */}
         {customKeyboards.map(keyboard => (
-          <TabsContent key={`custom-${keyboard.id}`} value={`custom-${keyboard.id}`} className="mt-0">
-            <CustomKeyboard keyboardId={keyboard.id} className={className} onKeyPress={onKeyPress} />
+          <TabsContent
+            key={`custom-${keyboard.id}`}
+            value={`custom-${keyboard.id}`}
+            className="mt-0"
+          >
+            <CustomKeyboard
+              keyboardId={keyboard.id}
+              className={className}
+              onKeyPress={onKeyPress}
+            />
           </TabsContent>
         ))}
 
         {/* Editor Tab */}
         <TabsContent value="add-new" className="mt-0 overflow-y-auto max-h-[600px]">
-          <div className="p-4">
-            <h3 className="text-lg font-semibold mb-4">Create New Keyboard</h3>
-            <CustomKeyboardEditor
-              onSave={keyboard => {
-                setKeyboardType('custom');
-                setCustomKeyboardId(keyboard.id);
-                setActiveTab(`custom-${keyboard.id}`);
-              }}
-              onCancel={() => {
-                // Switch back to first available keyboard
-                setActiveTab('qwerty');
-              }}
-            />
-          </div>
+          <CustomKeyboardEditor
+            onSave={keyboard => {
+              setKeyboardType('custom');
+              setCustomKeyboardId(keyboard.id);
+              setActiveTab(`custom-${keyboard.id}`);
+            }}
+            onCancel={() => {
+              // Switch back to first available keyboard
+              setActiveTab('qwerty');
+            }}
+          />
         </TabsContent>
       </Tabs>
     </div>

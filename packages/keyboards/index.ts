@@ -13,6 +13,7 @@ export { useCustomKeyboard } from '@/packages/keyboards/hooks/use-custom-keyboar
 export { useCreateKeyboard } from '@/packages/keyboards/hooks/use-create-keyboard';
 export { useUpdateKeyboard } from '@/packages/keyboards/hooks/use-update-keyboard';
 export { useDeleteKeyboard } from '@/packages/keyboards/hooks/use-delete-keyboard';
+export { useGenerateKeyboardFromMessage } from '@/packages/keyboards/hooks/use-generate-keyboard';
 
 export { customKeyboardCollection } from '@/packages/keyboards/db';
 

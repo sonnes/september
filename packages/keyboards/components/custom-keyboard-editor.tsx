@@ -17,8 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
 
+import { cn } from '@/lib/utils';
 import { useAccountContext } from '@/packages/account';
 
 import { useCreateKeyboard } from '../hooks/use-create-keyboard';
@@ -80,8 +80,8 @@ export function CustomKeyboardEditor({
         }
       : {
           name: '',
-          columns: 3,
-          buttons: [{ text: '', value: '', image_url: '' }],
+          columns: 4,
+          buttons: Array.from({ length: 16 }, () => ({ text: '', value: '', image_url: '' })),
         },
   });
 
@@ -153,33 +153,35 @@ export function CustomKeyboardEditor({
 
   return (
     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 p-4">
-      {/* Keyboard Name */}
-      <div>
-        <Label htmlFor="name">Keyboard Name</Label>
-        <Input id="name" {...form.register('name')} placeholder="e.g., Medical Terms" />
-        {form.formState.errors.name && (
-          <p className="text-sm text-red-600 mt-1">{form.formState.errors.name.message}</p>
-        )}
-      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Keyboard Name */}
+        <div className="space-y-2">
+          <Label htmlFor="name">Keyboard Name</Label>
+          <Input id="name" {...form.register('name')} placeholder="e.g., Medical Terms" />
+          {form.formState.errors.name && (
+            <p className="text-sm text-red-600 mt-1">{form.formState.errors.name.message}</p>
+          )}
+        </div>
 
-      {/* Columns */}
-      <div>
-        <Label htmlFor="columns">Columns</Label>
-        <Select
-          value={form.watch('columns').toString()}
-          onValueChange={val => form.setValue('columns', parseInt(val))}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {[2, 3, 4, 5, 6].map(num => (
-              <SelectItem key={num} value={num.toString()}>
-                {num} columns
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Columns */}
+        <div className="space-y-2">
+          <Label htmlFor="columns">Columns</Label>
+          <Select
+            value={form.watch('columns').toString()}
+            onValueChange={val => form.setValue('columns', parseInt(val))}
+          >
+            <SelectTrigger id="columns">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[2, 3, 4, 5, 6].map(num => (
+                <SelectItem key={num} value={num.toString()}>
+                  {num} columns
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Buttons Grid */}
@@ -204,61 +206,27 @@ export function CustomKeyboardEditor({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: `repeat(${Math.min(form.watch('columns'), 3)}, minmax(0, 1fr))`,
+            gridTemplateColumns: `repeat(${form.watch('columns')}, minmax(0, 1fr))`,
             gap: '0.5rem',
           }}
           className="mb-4"
         >
           {fields.map((field, index) => (
-            <div
-              key={field.id}
-              className={cn(
-                'relative p-2',
-                'border border-zinc-300 rounded-md',
-                'bg-white hover:bg-zinc-50',
-                'transition-colors'
-              )}
-            >
-              {/* Delete button - positioned in corner */}
+            <div key={field.id} className="flex items-center gap-1">
+              <Input
+                {...form.register(`buttons.${index}.text`)}
+                placeholder="Text"
+                className="text-xs h-8"
+              />
               <button
                 type="button"
                 onClick={() => remove(index)}
                 disabled={fields.length === 1}
-                className={cn(
-                  'absolute top-1 right-1',
-                  'p-1 rounded',
-                  'hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed',
-                  'text-red-600'
-                )}
+                className="p-1.5 rounded-md hover:bg-red-100 disabled:opacity-50 text-red-600 transition-colors"
+                title="Remove button"
               >
-                <Trash2 className="h-3 w-3" />
+                <Trash2 className="h-4 w-4" />
               </button>
-
-              {/* Button text input */}
-              <div className="space-y-1 pr-6">
-                <Input
-                  {...form.register(`buttons.${index}.text`)}
-                  placeholder="Text"
-                  size={1}
-                  className="text-xs h-7"
-                />
-
-                {/* Value input - optional */}
-                <Input
-                  {...form.register(`buttons.${index}.value`)}
-                  placeholder="Value (opt)"
-                  size={1}
-                  className="text-xs h-7"
-                />
-
-                {/* Image URL input - optional */}
-                <Input
-                  {...form.register(`buttons.${index}.image_url`)}
-                  placeholder="Image URL (opt)"
-                  size={1}
-                  className="text-xs h-7"
-                />
-              </div>
             </div>
           ))}
         </div>

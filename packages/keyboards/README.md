@@ -31,6 +31,7 @@ This module provides various keyboard layouts and a renderer for the September a
 - `useCreateKeyboard`: Create new custom keyboard.
 - `useUpdateKeyboard`: Update existing custom keyboard.
 - `useDeleteKeyboard`: Delete custom keyboard.
+- `useGenerateKeyboardFromMessage`: AI-powered keyboard generation from message context.
 
 ## Usage
 
@@ -90,6 +91,65 @@ function ManageKeyboardsPage() {
   );
 }
 ```
+
+### Auto-Generating Keyboards from Chat Context
+
+The keyboards package includes AI-powered keyboard generation that automatically creates custom keyboards based on the first message in a chat.
+
+```tsx
+import { useGenerateKeyboardFromMessage } from '@/packages/keyboards';
+
+function ChatComponent() {
+  const { generateKeyboard, isGenerating } = useGenerateKeyboardFromMessage();
+
+  const handleFirstMessage = async (messageText: string, chatId: string) => {
+    try {
+      const { chatTitle, keyboardTitle, buttons } = await generateKeyboard({
+        messageText,
+        chatId,
+      });
+
+      console.log('Generated chat title:', chatTitle);
+      console.log('Generated keyboard title:', keyboardTitle);
+      console.log('Generated buttons:', buttons); // Array of 24 phrases
+    } catch (error) {
+      console.error('Generation failed:', error);
+    }
+  };
+
+  return (
+    <div>
+      {isGenerating && <p>Generating keyboard...</p>}
+    </div>
+  );
+}
+```
+
+**How It Works:**
+
+1. User sends first message in a chat
+2. AI analyzes message context using Google Gemini 2.5 Flash Lite
+3. Generates full descriptive chat title (max 50 chars) - used for chat context
+4. Generates concise keyboard title (max 2 words) - displayed on keyboard tabs
+5. Generates 24 contextual phrase starters (max 3 words each)
+6. Custom keyboard is automatically created with keyboard title and assigned to the chat
+7. Chat title is updated with full descriptive AI-generated title
+
+**Requirements:**
+
+- Google Gemini API key configured in AI settings
+- First message in chat (existing messages prevent generation)
+- Non-empty message text
+
+**Error Handling:**
+
+- Missing API key: Silent failure, no keyboard created
+- AI generation errors: Console log, toast notification
+- All errors are non-blocking (message creation always succeeds)
+
+**Configuration:**
+
+Uses the Google API key from AI settings (same as suggestions feature). No additional configuration required.
 
 ## Database
 

@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { use } from 'react';
 
+import { toast } from 'sonner';
 import { ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 import SidebarLayout from '@/components/sidebar/layout';
@@ -20,7 +21,7 @@ import {
   useMessages,
 } from '@/packages/chats';
 import { Editor, useEditorContext } from '@/packages/editor';
-import { KeyboardProvider, KeyboardRenderer, KeyboardToggleButton } from '@/packages/keyboards';
+import { KeyboardProvider, KeyboardRenderer, KeyboardToggleButton, useGenerateKeyboardFromMessage, useCreateKeyboard } from '@/packages/keyboards';
 import { SpeechSettingsModal } from '@/packages/speech';
 import { Suggestions } from '@/packages/suggestions';
 
@@ -49,6 +50,41 @@ export default function ChatPage({ params }: ChatPageProps) {
 
   const { status, createAudioMessage } = useCreateAudioMessage();
   const { text, setText } = useEditorContext();
+  const { generateKeyboard } = useGenerateKeyboardFromMessage();
+  const { createKeyboard } = useCreateKeyboard();
+
+  // Trigger keyboard generation when first message is sent
+  useEffect(() => {
+    if (!chatId || !messages || messages.length !== 1) return;
+
+    const firstMessage = messages[0];
+    if (!firstMessage.text || firstMessage.type !== 'user') return;
+
+    // Generate keyboard asynchronously (non-blocking)
+    generateKeyboard({
+      messageText: firstMessage.text,
+      chatId,
+    })
+      .then(async (data) => {
+        // Create keyboard with generated buttons and keyboard-specific title
+        await createKeyboard({
+          name: data.keyboardTitle,
+          chat_id: chatId,
+          columns: 3,
+          user_id: user?.id || '',
+          buttons: data.buttons.map(text => ({ text })),
+        });
+
+        toast.success('Custom keyboard generated for this chat');
+      })
+      .catch((err: Error) => {
+        // Silent failure if API key not configured
+        if (err.message !== 'API key not configured') {
+          console.error('Failed to generate keyboard:', err);
+          toast.error('Failed to generate keyboard suggestions');
+        }
+      });
+  }, [chatId, messages, generateKeyboard, createKeyboard, user?.id]);
 
   const handleSubmit = useCallback(
     async (text: string) => {
