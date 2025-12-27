@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { nanoid } from 'nanoid';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 import { useAccountContext } from '@/packages/account';
@@ -25,7 +26,7 @@ export function useCreateKeyboard(): UseCreateKeyboardReturn {
 
         // Assign order to buttons if not present
         const buttons = data.buttons.map((btn, index) => ({
-          id: uuidv4(),
+          id: nanoid(),
           text: btn.text,
           value: btn.value,
           image_url: btn.image_url,

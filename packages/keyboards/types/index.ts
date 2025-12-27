@@ -15,7 +15,7 @@ export interface CircleKey {
 
 // Grid button represents a single button in custom keyboard
 export interface GridButton {
-  id: string;              // Unique button ID (UUID)
+  id: string;              // Unique button ID (nanoid)
   text: string;            // Button display text (what user sees)
   value?: string;          // Optional: different value sent on press (defaults to text)
   image_url?: string;      // Optional: button icon/image
@@ -63,7 +63,7 @@ export interface CustomKeyboardFormData {
 
 // Zod Validation Schemas
 export const GridButtonSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1, 'Button ID required'),
   text: z.string().min(1, 'Button text is required').max(50, 'Text too long'),
   value: z.string().max(100).optional(),
   image_url: z.string().url().optional(),
