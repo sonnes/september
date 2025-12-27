@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 import { useAccountContext } from '@/packages/account';
 
@@ -181,50 +182,86 @@ export function CustomKeyboardEditor({
         </Select>
       </div>
 
-      {/* Buttons */}
+      {/* Buttons Grid */}
       <div>
-        <Label>Buttons</Label>
-        <div className="space-y-2 mt-2">
+        <div className="flex items-center justify-between mb-2">
+          <Label>Buttons</Label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => append({ text: '', value: '', image_url: '' })}
+          >
+            <Plus className="h-4 w-4 mr-1" /> Add Button
+          </Button>
+        </div>
+
+        {form.formState.errors.buttons && (
+          <p className="text-sm text-red-600 mb-2">{form.formState.errors.buttons.message}</p>
+        )}
+
+        {/* Grid of button inputs */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${Math.min(form.watch('columns'), 3)}, minmax(0, 1fr))`,
+            gap: '0.5rem',
+          }}
+          className="mb-4"
+        >
           {fields.map((field, index) => (
-            <div key={field.id} className="flex gap-2 items-start p-2 border rounded">
-              <div className="flex-1 space-y-2">
-                <Input
-                  {...form.register(`buttons.${index}.text`)}
-                  placeholder="Button text (required)"
-                />
-                <Input
-                  {...form.register(`buttons.${index}.value`)}
-                  placeholder="Value (optional, defaults to text)"
-                />
-                <Input
-                  {...form.register(`buttons.${index}.image_url`)}
-                  placeholder="Image URL (optional)"
-                />
-              </div>
-              <Button
+            <div
+              key={field.id}
+              className={cn(
+                'relative p-2',
+                'border border-zinc-300 rounded-md',
+                'bg-white hover:bg-zinc-50',
+                'transition-colors'
+              )}
+            >
+              {/* Delete button - positioned in corner */}
+              <button
                 type="button"
-                variant="ghost"
-                size="icon"
                 onClick={() => remove(index)}
                 disabled={fields.length === 1}
+                className={cn(
+                  'absolute top-1 right-1',
+                  'p-1 rounded',
+                  'hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed',
+                  'text-red-600'
+                )}
               >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+                <Trash2 className="h-3 w-3" />
+              </button>
+
+              {/* Button text input */}
+              <div className="space-y-1 pr-6">
+                <Input
+                  {...form.register(`buttons.${index}.text`)}
+                  placeholder="Text"
+                  size={1}
+                  className="text-xs h-7"
+                />
+
+                {/* Value input - optional */}
+                <Input
+                  {...form.register(`buttons.${index}.value`)}
+                  placeholder="Value (opt)"
+                  size={1}
+                  className="text-xs h-7"
+                />
+
+                {/* Image URL input - optional */}
+                <Input
+                  {...form.register(`buttons.${index}.image_url`)}
+                  placeholder="Image URL (opt)"
+                  size={1}
+                  className="text-xs h-7"
+                />
+              </div>
             </div>
           ))}
         </div>
-        {form.formState.errors.buttons && (
-          <p className="text-sm text-red-600 mt-1">{form.formState.errors.buttons.message}</p>
-        )}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => append({ text: '', value: '', image_url: '' })}
-          className="mt-2"
-        >
-          <Plus className="h-4 w-4 mr-1" /> Add Button
-        </Button>
       </div>
 
       {/* Actions */}

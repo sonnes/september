@@ -2,16 +2,15 @@
 
 import React, { useState } from 'react';
 
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { CircularKeyboard } from '@/packages/keyboards/components/circular-keyboard';
 import { CustomKeyboard } from '@/packages/keyboards/components/custom-keyboard';
 import { CustomKeyboardEditor } from '@/packages/keyboards/components/custom-keyboard-editor';
 import { KeyboardType } from '@/packages/keyboards/components/keyboard-context';
 import { QwertyKeyboard } from '@/packages/keyboards/components/qwerty-keyboard';
-import { useKeyboardContext } from '@/packages/keyboards/hooks/use-keyboard-context';
 import { useCustomKeyboards } from '@/packages/keyboards/hooks/use-custom-keyboards';
+import { useKeyboardContext } from '@/packages/keyboards/hooks/use-keyboard-context';
 
 interface KeyboardRendererProps {
   className?: string;
@@ -19,17 +18,15 @@ interface KeyboardRendererProps {
 }
 
 export function KeyboardRenderer({ className = '', onKeyPress }: KeyboardRendererProps) {
-  const { isVisible, keyboardType, setKeyboardType } = useKeyboardContext();
+  const { isVisible, keyboardType, setKeyboardType, setCustomKeyboardId } = useKeyboardContext();
   const { keyboards: customKeyboards } = useCustomKeyboards();
-  const [showEditor, setShowEditor] = useState(false);
   const [activeTab, setActiveTab] = useState<string>(keyboardType);
-  const [customKeyboardId, setCustomKeyboardId] = useState<string | undefined>(undefined);
 
   React.useEffect(() => {
     setActiveTab(keyboardType);
   }, [keyboardType]);
 
-  // Build tabs array with hardcoded and custom keyboards
+  // Build tabs array with hardcoded keyboards and custom keyboards
   const tabs = [
     { value: 'qwerty', label: 'QWERTY' },
     { value: 'circular', label: 'Circular' },
@@ -40,77 +37,67 @@ export function KeyboardRenderer({ className = '', onKeyPress }: KeyboardRendere
 
   const handleTabChange = (tabValue: string) => {
     if (tabValue === 'add-new') {
-      setShowEditor(true);
+      // Editor tab is always available
+      setActiveTab(tabValue);
     } else if (tabValue.startsWith('custom-')) {
       const id = tabValue.slice(7); // Remove 'custom-' prefix
       setKeyboardType('custom');
       setCustomKeyboardId(id);
+      setActiveTab(tabValue);
     } else {
       // Hardcoded keyboard (qwerty, circular)
       setKeyboardType(tabValue as KeyboardType);
       setCustomKeyboardId(undefined);
-    }
-    setActiveTab(tabValue);
-  };
-
-  const renderKeyboard = () => {
-    if (keyboardType === 'custom' && customKeyboardId) {
-      return (
-        <CustomKeyboard
-          keyboardId={customKeyboardId}
-          className={className}
-          onKeyPress={onKeyPress}
-        />
-      );
-    }
-
-    // Then continue with existing switch statement for qwerty, circular, etc.
-    switch (keyboardType) {
-      case 'qwerty':
-        return <QwertyKeyboard className={className} onKeyPress={onKeyPress} />;
-      case 'circular':
-        return <CircularKeyboard className={className} onKeyPress={onKeyPress} />;
-      case 'none':
-        return null;
-      default:
-        return null;
+      setActiveTab(tabValue);
     }
   };
 
-  return (
-    <>
-      {isVisible && (
-        <div className={className}>
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-2">
-            <TabsList>
-              {tabs.map(tab => (
-                <TabsTrigger key={tab.value} value={tab.value}>
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-          {renderKeyboard()}
-        </div>
-      )}
+  return isVisible ? (
+    <div className={className}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
+        <TabsList>
+          {tabs.map(tab => (
+            <TabsTrigger key={tab.value} value={tab.value}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      {showEditor && (
-        <Dialog open={showEditor} onOpenChange={setShowEditor}>
-          <DialogContent className="max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create New Keyboard</DialogTitle>
-            </DialogHeader>
+        {/* QWERTY Tab */}
+        <TabsContent value="qwerty" className="mt-0">
+          <QwertyKeyboard className={className} onKeyPress={onKeyPress} />
+        </TabsContent>
+
+        {/* Circular Tab */}
+        <TabsContent value="circular" className="mt-0">
+          <CircularKeyboard className={className} onKeyPress={onKeyPress} />
+        </TabsContent>
+
+        {/* Custom Keyboard Tabs */}
+        {customKeyboards.map(keyboard => (
+          <TabsContent key={`custom-${keyboard.id}`} value={`custom-${keyboard.id}`} className="mt-0">
+            <CustomKeyboard keyboardId={keyboard.id} className={className} onKeyPress={onKeyPress} />
+          </TabsContent>
+        ))}
+
+        {/* Editor Tab */}
+        <TabsContent value="add-new" className="mt-0 overflow-y-auto max-h-[600px]">
+          <div className="p-4">
+            <h3 className="text-lg font-semibold mb-4">Create New Keyboard</h3>
             <CustomKeyboardEditor
-              onSave={(keyboard) => {
-                setShowEditor(false);
+              onSave={keyboard => {
                 setKeyboardType('custom');
                 setCustomKeyboardId(keyboard.id);
+                setActiveTab(`custom-${keyboard.id}`);
               }}
-              onCancel={() => setShowEditor(false)}
+              onCancel={() => {
+                // Switch back to first available keyboard
+                setActiveTab('qwerty');
+              }}
             />
-          </DialogContent>
-        </Dialog>
-      )}
-    </>
-  );
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  ) : null;
 }
