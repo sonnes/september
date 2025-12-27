@@ -24,7 +24,7 @@ export interface GridButton {
 
 // Custom keyboard definition
 export interface CustomKeyboard {
-  id: string;              // UUID
+  id: string;              // nanoid
   user_id: string;         // Owner ID
   name: string;            // Keyboard name (e.g., "Medical Terms", "Daily Phrases")
   buttons: GridButton[];   // List of buttons
@@ -71,11 +71,11 @@ export const GridButtonSchema = z.object({
 });
 
 export const CustomKeyboardSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1, 'Keyboard ID required'),
   user_id: z.string().min(1),
   name: z.string().min(1, 'Name is required').max(50, 'Name too long'),
   buttons: z.array(GridButtonSchema).min(1, 'At least one button required').max(50, 'Too many buttons'),
-  chat_id: z.string().uuid().optional(),
+  chat_id: z.string().min(1).optional(),
   columns: z.number().int().min(2).max(6).default(3),
   created_at: z.coerce.date(),
   updated_at: z.coerce.date(),

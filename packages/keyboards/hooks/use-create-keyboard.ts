@@ -3,7 +3,6 @@
 import { useCallback, useState } from 'react';
 import { nanoid } from 'nanoid';
 import { toast } from 'sonner';
-import { v4 as uuidv4 } from 'uuid';
 import { useAccountContext } from '@/packages/account';
 import { customKeyboardCollection } from '../db';
 import { CreateCustomKeyboardData, CustomKeyboard } from '../types';
@@ -22,7 +21,7 @@ export function useCreateKeyboard(): UseCreateKeyboardReturn {
       setIsCreating(true);
       try {
         const now = new Date();
-        const keyboardId = data.id || uuidv4();
+        const keyboardId = data.id || nanoid();
 
         // Assign order to buttons if not present
         const buttons = data.buttons.map((btn, index) => ({
