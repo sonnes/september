@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { use } from 'react';
 
 import { toast } from 'sonner';
@@ -53,42 +53,12 @@ export default function ChatPage({ params }: ChatPageProps) {
   const { generateKeyboard } = useGenerateKeyboardFromMessage();
   const { createKeyboard } = useCreateKeyboard();
 
-  // Trigger keyboard generation when first message is sent
-  useEffect(() => {
-    if (!chatId || !messages || messages.length !== 1) return;
-
-    const firstMessage = messages[0];
-    if (!firstMessage.text || firstMessage.type !== 'user') return;
-
-    // Generate keyboard asynchronously (non-blocking)
-    generateKeyboard({
-      messageText: firstMessage.text,
-      chatId,
-    })
-      .then(async (data) => {
-        // Create keyboard with generated buttons and keyboard-specific title
-        await createKeyboard({
-          name: data.keyboardTitle,
-          chat_id: chatId,
-          columns: 3,
-          user_id: user?.id || '',
-          buttons: data.buttons.map(text => ({ text })),
-        });
-
-        toast.success('Custom keyboard generated for this chat');
-      })
-      .catch((err: Error) => {
-        // Silent failure if API key not configured
-        if (err.message !== 'API key not configured') {
-          console.error('Failed to generate keyboard:', err);
-          toast.error('Failed to generate keyboard suggestions');
-        }
-      });
-  }, [chatId, messages, generateKeyboard, createKeyboard, user?.id]);
-
   const handleSubmit = useCallback(
     async (text: string) => {
       if (!chatId || !user || !text.trim()) return;
+
+      // Check if this is the first message
+      const isFirstMessage = messages?.length === 0;
 
       const { audio } = await createAudioMessage({
         chat_id: chatId,
@@ -102,8 +72,35 @@ export default function ChatPage({ params }: ChatPageProps) {
       }
 
       setText('');
+
+      // Generate keyboard asynchronously for first message (non-blocking)
+      if (isFirstMessage) {
+        generateKeyboard({
+          messageText: text.trim(),
+          chatId,
+        })
+          .then(async (data) => {
+            // Create keyboard with generated buttons and keyboard-specific title
+            await createKeyboard({
+              name: data.keyboardTitle,
+              chat_id: chatId,
+              columns: 3,
+              user_id: user.id,
+              buttons: data.buttons.map(text => ({ text })),
+            });
+
+            toast.success('Custom keyboard generated for this chat');
+          })
+          .catch((err: Error) => {
+            // Silent failure if API key not configured
+            if (err.message !== 'API key not configured') {
+              console.error('Failed to generate keyboard:', err);
+              toast.error('Failed to generate keyboard suggestions');
+            }
+          });
+      }
     },
-    [chatId, user, createAudioMessage, enqueue, setText]
+    [chatId, user, createAudioMessage, enqueue, setText, messages, generateKeyboard, createKeyboard]
   );
 
   const handleKeyPress = useCallback(
