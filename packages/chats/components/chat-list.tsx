@@ -1,14 +1,27 @@
+import * as React from 'react';
 import type { ComponentProps } from 'react';
 
 import Link from 'next/link';
 
-import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, TrashIcon } from '@heroicons/react/24/outline';
 import moment from 'moment';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 import { cn } from '@/lib/utils';
 
+import { useDeleteChat } from '../hooks/use-delete-chat';
 import { Chat } from '../types';
 
 type ChatListEmptyStateProps = ComponentProps<'div'> & {
@@ -64,6 +77,19 @@ export function ChatList({
   label = 'chats',
 }: ChatListProps) {
   const displayText = count !== undefined ? `${count} ${label}` : undefined;
+  const { deleteChat, isDeleting } = useDeleteChat();
+  const [chatToDelete, setChatToDelete] = React.useState<Chat | null>(null);
+
+  const handleDelete = async () => {
+    if (chatToDelete) {
+      try {
+        await deleteChat(chatToDelete.id);
+        setChatToDelete(null);
+      } catch (error) {
+        // Error handled in hook
+      }
+    }
+  };
 
   return (
     <>
@@ -98,19 +124,59 @@ export function ChatList({
           />
         ) : (
           chats.map(chat => (
-            <Link key={chat.id} href={`/chats/${chat.id}`}>
-              <div className="py-3 border-b border-zinc-200 hover:bg-zinc-50 transition-colors">
-                <div className="text-base font-medium text-zinc-900 mb-1">
+            <div
+              key={chat.id}
+              className="group relative flex items-center justify-between border-b border-zinc-200 hover:bg-zinc-50 transition-colors"
+            >
+              <Link href={`/chats/${chat.id}`} className="flex-1 py-3 px-1 min-w-0">
+                <div className="text-base font-medium text-zinc-900 mb-1 truncate">
                   {chat.title || 'Untitled chat'}
                 </div>
                 <div className="text-sm text-zinc-500">
                   Last message {moment(chat.updated_at).fromNow()}
                 </div>
+              </Link>
+
+              <div className="shrink-0 ml-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setChatToDelete(chat)}
+                  className="h-8 w-8 text-red-600 hover:bg-red-50 focus:ring-0"
+                >
+                  <TrashIcon className="h-5 w-5" />
+                  <span className="sr-only">Delete chat</span>
+                </Button>
               </div>
-            </Link>
+            </div>
           ))
         )}
       </div>
+
+      <AlertDialog open={!!chatToDelete} onOpenChange={open => !open && setChatToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the chat "{chatToDelete?.title || 'Untitled chat'}" and
+              all its messages. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={e => {
+                e.preventDefault();
+                handleDelete();
+              }}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete chat'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

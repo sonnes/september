@@ -81,7 +81,7 @@ export function CustomKeyboardEditor({
       : {
           name: '',
           columns: 4,
-          buttons: Array.from({ length: 16 }, () => ({ text: '', value: '', image_url: '' })),
+          buttons: Array.from({ length: 4 }, () => ({ text: '', value: '', image_url: '' })),
         },
   });
 
