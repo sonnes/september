@@ -1,10 +1,20 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 
 import Image from 'next/image';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 
 import { cn } from '@/lib/utils';
@@ -22,6 +32,7 @@ interface CustomKeyboardProps {
 
 export function CustomKeyboard({ keyboardId, className = '', onKeyPress, onEdit, onDelete }: CustomKeyboardProps) {
   const { keyboard, isLoading, error } = useCustomKeyboard(keyboardId);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   if (isLoading) {
     return <div className={cn('p-4 text-center', className)}>Loading keyboard...</div>;
@@ -55,7 +66,12 @@ export function CustomKeyboard({ keyboardId, className = '', onKeyPress, onEdit,
     onEdit?.(keyboardId);
   };
 
-  const handleDelete = () => {
+  const handleDeleteClick = () => {
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    setIsDeleteDialogOpen(false);
     onDelete?.(keyboardId);
   };
 
@@ -83,7 +99,7 @@ export function CustomKeyboard({ keyboardId, className = '', onKeyPress, onEdit,
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleDelete}
+                onClick={handleDeleteClick}
                 className="h-6 w-6 p-0 hover:bg-red-100"
                 title="Delete keyboard"
               >
@@ -122,6 +138,24 @@ export function CustomKeyboard({ keyboardId, className = '', onKeyPress, onEdit,
             </Button>
           ))}
         </div>
+
+        {/* Delete confirmation dialog */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete keyboard?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete the "{keyboard.name}" keyboard? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
