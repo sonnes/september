@@ -81,6 +81,7 @@
   },
   "devDependencies": {
     "@elevenlabs/elevenlabs-js": "^2.7.0",
+    "@standard-schema/spec": "^1.1.0",
     "@tailwindcss/postcss": "^4",
     "@trivago/prettier-plugin-sort-imports": "^5.2.2",
     "@types/lodash": "^4.17.20",

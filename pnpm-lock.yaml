@@ -217,6 +217,9 @@ importers:
       '@elevenlabs/elevenlabs-js':
         specifier: ^2.7.0
         version: 2.20.1
+      '@standard-schema/spec':
+        specifier: ^1.1.0
+        version: 1.1.0
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.1.16
@@ -1687,9 +1690,6 @@ packages:
 
   '@shikijs/vscode-textmate@10.0.2':
     resolution: {integrity: sha512-83yeghZ2xxin3Nj8z1NMd/NCuca+gsYXswywDy5bHvwlWL8tpTQmzGeUuHd9FC3E/SBEMvzJRwWEOz5gGes9Qg==}
-
-  '@standard-schema/spec@1.0.0':
-    resolution: {integrity: sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==}
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
@@ -5205,7 +5205,7 @@ snapshots:
   '@ai-sdk/provider-utils@3.0.18(zod@4.1.12)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
-      '@standard-schema/spec': 1.0.0
+      '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.0.6
       zod: 4.1.12
 
@@ -6503,8 +6503,6 @@ snapshots:
 
   '@shikijs/vscode-textmate@10.0.2': {}
 
-  '@standard-schema/spec@1.0.0': {}
-
   '@standard-schema/spec@1.1.0': {}
 
   '@standard-schema/utils@0.3.0': {}
@@ -6646,7 +6644,7 @@ snapshots:
 
   '@tanstack/db@0.5.15(typescript@5.9.3)':
     dependencies:
-      '@standard-schema/spec': 1.0.0
+      '@standard-schema/spec': 1.1.0
       '@tanstack/db-ivm': 0.1.14(typescript@5.9.3)
       '@tanstack/pacer-lite': 0.1.1
       typescript: 5.9.3
@@ -7239,7 +7237,7 @@ snapshots:
 
   '@vitest/expect@4.0.16':
     dependencies:
-      '@standard-schema/spec': 1.0.0
+      '@standard-schema/spec': 1.1.0
       '@types/chai': 5.2.3
       '@vitest/spy': 4.0.16
       '@vitest/utils': 4.0.16

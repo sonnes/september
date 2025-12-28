@@ -1,10 +1,10 @@
 import { createCollection } from '@tanstack/react-db';
-import { indexedDBCollectionOptions } from '@/lib/indexeddb/collection';
+import { indexedDBCollectionOptionsV2 } from '@/lib/indexeddb/collection-v2';
 
-import { DocumentSchema, Document } from './types';
+import { DocumentSchema } from './types';
 
 export const documentCollection = createCollection(
-  indexedDBCollectionOptions<Document>({
+  indexedDBCollectionOptionsV2({
     schema: DocumentSchema,
     id: 'documents',
     kvStoreOptions: {

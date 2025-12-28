@@ -7,6 +7,17 @@
 const DEFAULT_STORE_NAME = 'kv-store'
 const DEFAULT_DB_VERSION = 1
 
+/**
+ * Valid IndexedDB key types
+ * Supports string, number, and arrays (tuples) for compound keys
+ *
+ * Examples:
+ *   - "simple-key"           // String key
+ *   - 42                     // Number key
+ *   - ["chats", "s:id1"]     // Tuple key for collection items
+ */
+export type IDBValidKey = string | number | Array<string | number>;
+
 export interface KVStoreOptions {
   /** Name of the IndexedDB database */
   dbName: string
@@ -69,7 +80,7 @@ export class KVStore<T = unknown> {
   /**
    * Get a value by key
    */
-  async get(key: string): Promise<T | undefined> {
+  async get(key: IDBValidKey): Promise<T | undefined> {
     const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readonly')
@@ -84,7 +95,7 @@ export class KVStore<T = unknown> {
   /**
    * Set a value by key
    */
-  async set(key: string, value: T): Promise<void> {
+  async set(key: IDBValidKey, value: T): Promise<void> {
     const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readwrite')
@@ -100,7 +111,7 @@ export class KVStore<T = unknown> {
    * Atomic update of a value by key
    */
   async update(
-    key: string,
+    key: IDBValidKey,
     updater: (oldValue: T | undefined) => T
   ): Promise<void> {
     const db = await this.getDB()
@@ -127,7 +138,7 @@ export class KVStore<T = unknown> {
   /**
    * Delete a value by key
    */
-  async delete(key: string): Promise<void> {
+  async delete(key: IDBValidKey): Promise<void> {
     const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readwrite')
@@ -142,7 +153,7 @@ export class KVStore<T = unknown> {
   /**
    * Check if a key exists
    */
-  async has(key: string): Promise<boolean> {
+  async has(key: IDBValidKey): Promise<boolean> {
     const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readonly')
@@ -157,14 +168,14 @@ export class KVStore<T = unknown> {
   /**
    * Get all keys
    */
-  async keys(): Promise<string[]> {
+  async keys(): Promise<IDBValidKey[]> {
     const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readonly')
       const store = transaction.objectStore(this.storeName)
       const request = store.getAllKeys()
 
-      request.onsuccess = () => resolve(request.result as string[])
+      request.onsuccess = () => resolve(request.result as IDBValidKey[])
       request.onerror = () => reject(request.error)
     })
   }
@@ -187,7 +198,7 @@ export class KVStore<T = unknown> {
   /**
    * Get all entries as key-value pairs
    */
-  async entries(): Promise<Array<[string, T]>> {
+  async entries(): Promise<Array<[IDBValidKey, T]>> {
     const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readonly')
@@ -196,13 +207,13 @@ export class KVStore<T = unknown> {
       const keysRequest = store.getAllKeys()
       const valuesRequest = store.getAll()
 
-      const results: { keys?: string[]; values?: T[] } = {}
+      const results: { keys?: IDBValidKey[]; values?: T[] } = {}
 
       keysRequest.onsuccess = () => {
-        results.keys = keysRequest.result as string[]
+        results.keys = keysRequest.result as IDBValidKey[]
         if (results.values) {
           resolve(
-            results.keys.map((key, i) => [key, results.values![i]] as [string, T])
+            results.keys.map((key, i) => [key, results.values![i]] as [IDBValidKey, T])
           )
         }
       }
@@ -211,7 +222,7 @@ export class KVStore<T = unknown> {
         results.values = valuesRequest.result as T[]
         if (results.keys) {
           resolve(
-            results.keys.map((key, i) => [key, results.values![i]] as [string, T])
+            results.keys.map((key, i) => [key, results.values![i]] as [IDBValidKey, T])
           )
         }
       }
@@ -254,7 +265,7 @@ export class KVStore<T = unknown> {
   /**
    * Get multiple values by keys
    */
-  async getMany(keys: string[]): Promise<Array<T | undefined>> {
+  async getMany(keys: IDBValidKey[]): Promise<Array<T | undefined>> {
     const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readonly')
@@ -292,7 +303,7 @@ export class KVStore<T = unknown> {
   /**
    * Set multiple key-value pairs
    */
-  async setMany(entries: Array<[string, T]>): Promise<void> {
+  async setMany(entries: Array<[IDBValidKey, T]>): Promise<void> {
     const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readwrite')
@@ -321,7 +332,7 @@ export class KVStore<T = unknown> {
   /**
    * Delete multiple keys
    */
-  async deleteMany(keys: string[]): Promise<void> {
+  async deleteMany(keys: IDBValidKey[]): Promise<void> {
     const db = await this.getDB()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readwrite')
@@ -363,6 +374,46 @@ export class KVStore<T = unknown> {
     const keys = await new Promise<string[]>((resolve, reject) => {
       const request = store.getAllKeys(keyRange)
       request.onsuccess = () => resolve(request.result as string[])
+      request.onerror = () => reject(request.error)
+    })
+
+    const values = await new Promise<T[]>((resolve, reject) => {
+      const request = store.getAll(keyRange)
+      request.onsuccess = () => resolve(request.result as T[])
+      request.onerror = () => reject(request.error)
+    })
+
+    for (let i = 0; i < keys.length; i++) {
+      yield [keys[i], values[i]]
+    }
+  }
+
+  /**
+   * Iterate over all entries with an array key prefix
+   * Uses IDBKeyRange to efficiently scan keys starting with the prefix
+   *
+   * Example:
+   *   // Scan all items in the "chats" collection
+   *   for await (const [key, value] of kvStore.scanByPrefix(['chats'])) {
+   *     console.log(key, value); // key = ['chats', 's:id1'], value = {...}
+   *   }
+   */
+  async *scanByPrefix(prefix: Array<string | number>): AsyncIterable<[IDBValidKey, T]> {
+    const db = await this.getDB()
+    const transaction = db.transaction(this.storeName, 'readonly')
+    const store = transaction.objectStore(this.storeName)
+
+    // Create key range for array prefix
+    // Lower bound: prefix array (e.g., ['chats'])
+    // Upper bound: prefix array with max value appended (e.g., ['chats', []])
+    // In IndexedDB, arrays are compared element by element, and [] is greater than any string/number
+    const lower = prefix
+    const upper = [...prefix, []]
+    const keyRange = IDBKeyRange.bound(lower, upper, false, true)
+
+    const keys = await new Promise<IDBValidKey[]>((resolve, reject) => {
+      const request = store.getAllKeys(keyRange)
+      request.onsuccess = () => resolve(request.result as IDBValidKey[])
       request.onerror = () => reject(request.error)
     })
 

@@ -1,10 +1,10 @@
 import { createCollection } from '@tanstack/react-db';
-import { indexedDBCollectionOptions } from '@/lib/indexeddb/collection';
+import { indexedDBCollectionOptionsV2 } from '@/lib/indexeddb/collection-v2';
 
-import { ChatSchema, MessageSchema, Chat, Message } from './types';
+import { ChatSchema, MessageSchema } from './types';
 
 export const chatCollection = createCollection(
-  indexedDBCollectionOptions<Chat>({
+  indexedDBCollectionOptionsV2({
     schema: ChatSchema,
     id: 'chats',
     kvStoreOptions: {
@@ -16,7 +16,7 @@ export const chatCollection = createCollection(
 );
 
 export const messageCollection = createCollection(
-  indexedDBCollectionOptions<Message>({
+  indexedDBCollectionOptionsV2({
     schema: MessageSchema,
     id: 'messages',
     kvStoreOptions: {
