@@ -30,6 +30,12 @@ This module handles document management, editing, and slide presentations.
 - `useUpdateDocument`: Update an existing document.
 - `useDeleteDocument`: Delete a document.
 
+## Types
+
+- `Document`: Full document type with all fields
+- `CreateDocumentData`: Input type for creating documents (omits auto-generated fields)
+- `UpdateDocumentData`: Input type for updating documents (omits id and created_at)
+
 ## Usage
 
 ### Fetching a Single Document
@@ -51,18 +57,20 @@ export default function WritePage({ params }: { params: { id: string } }) {
 ### Creating and Updating Documents
 
 ```tsx
-import { useCreateDocument, useUpdateDocument } from '@/packages/documents';
+import { useCreateDocument, useUpdateDocument, CreateDocumentData, UpdateDocumentData } from '@/packages/documents';
 
 function DocumentActions() {
   const { createDocument, isCreating } = useCreateDocument();
   const { updateDocument, isUpdating } = useUpdateDocument();
 
   const handleCreate = async () => {
-    await createDocument({ title: 'New Document', content: '' });
+    const data: CreateDocumentData = { name: 'New Document', content: '' };
+    await createDocument(data);
   };
 
   const handleUpdate = async (id: string) => {
-    await updateDocument(id, { title: 'Updated Title' });
+    const updates: UpdateDocumentData = { name: 'Updated Title' };
+    await updateDocument(id, updates);
   };
 
   return (
@@ -75,3 +83,11 @@ function DocumentActions() {
   );
 }
 ```
+
+## Database
+
+Documents are stored locally using TanStack DB (IndexedDB):
+- Database name: `app-documents`
+- Multi-tab synchronization via BroadcastChannel
+- Automatic persistence across sessions
+- Collection export: `import { documentCollection } from '@/packages/documents'`

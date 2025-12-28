@@ -1,16 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-
-import { toast } from 'sonner';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-import GeminiService from '@/services/gemini';
-
-import { useAccountContext } from '@/packages/account';
+import { useFileUpload } from '@/packages/documents/hooks/use-file-upload';
 
 type UploadFormProps = {
   onTextExtracted: (text: string) => void;
@@ -25,39 +19,9 @@ function formatFileSize(bytes: number) {
 }
 
 export function UploadForm({ onTextExtracted }: UploadFormProps) {
-  const { account } = useAccountContext();
-
-  const gemini = useMemo(
-    () => new GeminiService(account?.ai_providers?.gemini?.api_key || ''),
-    [account?.ai_providers?.gemini?.api_key]
-  );
-
-  const [extracting, setExtracting] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-
-  const handleFilesSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
-    setUploadedFiles(files);
-  };
-
-  const handleSubmit = async () => {
-    if (uploadedFiles.length === 0) {
-      toast.error('Please upload at least one file');
-      return;
-    }
-
-    setExtracting(true);
-
-    try {
-      const extractedText = await gemini.extractText({ files: uploadedFiles });
-      onTextExtracted(extractedText);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Something went wrong';
-      toast.error(message);
-    } finally {
-      setExtracting(false);
-    }
-  };
+  const { uploadedFiles, extracting, handleFilesSelected, handleSubmit } = useFileUpload({
+    onTextExtracted,
+  });
 
   return (
     <div className="space-y-4">

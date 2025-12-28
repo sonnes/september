@@ -10,11 +10,12 @@ export const DocumentSchema = z.object({
 
 export type Document = z.infer<typeof DocumentSchema>;
 
-export interface PutDocumentData {
+// Input type for creating documents (omits auto-generated fields)
+export type CreateDocumentData = Omit<Document, 'id' | 'created_at' | 'updated_at'> & {
   id?: string;
-  name?: string;
-  content?: string;
   created_at?: Date;
-}
+  updated_at?: Date;
+};
 
-export type PartialDocument = Partial<Document>;
+// Input type for updating documents
+export type UpdateDocumentData = Partial<Omit<Document, 'id' | 'created_at'>>;

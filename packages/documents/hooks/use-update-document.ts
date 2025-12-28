@@ -5,17 +5,17 @@ import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
 import { documentCollection } from '../db';
-import type { Document } from '../types';
+import type { UpdateDocumentData } from '../types';
 
 export interface UseUpdateDocumentReturn {
-  updateDocument: (id: string, updates: Partial<Document>) => Promise<void>;
+  updateDocument: (id: string, updates: UpdateDocumentData) => Promise<void>;
   isUpdating: boolean;
 }
 
 export function useUpdateDocument(): UseUpdateDocumentReturn {
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const updateDocument = useCallback(async (id: string, updates: Partial<Document>) => {
+  const updateDocument = useCallback(async (id: string, updates: UpdateDocumentData) => {
     setIsUpdating(true);
     try {
       await documentCollection.update(id, draft => {

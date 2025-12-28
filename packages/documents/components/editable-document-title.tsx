@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { PencilIcon } from '@heroicons/react/24/outline';
 
 import { Input } from '@/components/ui/input';
 
-import { useUpdateDocument } from '@/packages/documents/hooks/use-update-document';
+import { useEditableTitle } from '@/packages/documents/hooks/use-editable-title';
 
 interface EditableDocumentTitleProps {
   documentId: string;
@@ -15,15 +15,20 @@ interface EditableDocumentTitleProps {
 }
 
 export function EditableDocumentTitle({ documentId, name, className }: EditableDocumentTitleProps) {
-  const { updateDocument } = useUpdateDocument();
-  const [isEditing, setIsEditing] = useState(false);
-  const [value, setValue] = useState(name || '');
-  const [isSaving, setIsSaving] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const {
+    value,
+    setValue,
+    isEditing,
+    isSaving,
+    startEditing,
+    handleSave,
+    handleKeyDown,
+  } = useEditableTitle({
+    documentId,
+    initialName: name,
+  });
 
-  useEffect(() => {
-    setValue(name || '');
-  }, [name]);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -31,46 +36,6 @@ export function EditableDocumentTitle({ documentId, name, className }: EditableD
       inputRef.current.select();
     }
   }, [isEditing]);
-
-  const handleSave = async () => {
-    if (isSaving) return;
-
-    const trimmedValue = value.trim();
-    const newName = trimmedValue || undefined;
-
-    // Only update if the name actually changed
-    if (newName !== (name || undefined)) {
-      setIsSaving(true);
-      try {
-        await updateDocument(documentId, {
-          name: newName,
-        });
-      } catch (error) {
-        console.error('Failed to update document name:', error);
-        // Revert to original value on error
-        setValue(name || '');
-      } finally {
-        setIsSaving(false);
-      }
-    }
-
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    setValue(name || '');
-    setIsEditing(false);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleSave();
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      handleCancel();
-    }
-  };
 
   if (isEditing) {
     return (
@@ -89,7 +54,7 @@ export function EditableDocumentTitle({ documentId, name, className }: EditableD
 
   return (
     <button
-      onClick={() => setIsEditing(true)}
+      onClick={startEditing}
       className="flex items-center gap-2 group hover:opacity-80 transition-opacity"
       type="button"
     >

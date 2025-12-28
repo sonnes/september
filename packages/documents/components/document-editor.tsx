@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 import {
   DocumentDuplicateIcon,
@@ -21,8 +21,7 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { SlidesPresentation } from '@/packages/documents/components/slides-presentation';
 import { UploadForm } from '@/packages/documents/components/upload-form';
-import { useDocument } from '@/packages/documents/hooks/use-document';
-import { useUpdateDocument } from '@/packages/documents/hooks/use-update-document';
+import { useDocumentEditor } from '@/packages/documents/hooks/use-document-editor';
 import { TiptapEditor } from '@/packages/editor';
 
 type DocumentEditorProps = {
@@ -31,47 +30,20 @@ type DocumentEditorProps = {
 };
 
 export function DocumentEditor({ documentId, className }: DocumentEditorProps) {
-  const { document: current } = useDocument(documentId);
-  const { updateDocument } = useUpdateDocument();
-
-  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
-  const [isSlidesDialogOpen, setIsSlidesDialogOpen] = useState(false);
-  const [content, setContent] = useState('');
-  const [isDirty, setIsDirty] = useState(false);
-  const [prevDocumentId, setPrevDocumentId] = useState<string | null>(null);
-
-  if (current && current.id !== prevDocumentId) {
-    setPrevDocumentId(current.id);
-    setContent(current.content || '');
-    setIsDirty(false);
-  }
-
-  const handleContentChange = useCallback(async (_content: string, markdown: string) => {
-    setContent(markdown);
-    setIsDirty(true);
-  }, []);
-
-  const handleUploadFile = () => {
-    setIsUploadDialogOpen(true);
-  };
-
-  const handleSlidesPreview = () => {
-    setIsSlidesDialogOpen(true);
-  };
-
-  const handleTextExtracted = async (text: string) => {
-    if (!current) return;
-    const existing = current?.content || '';
-    await updateDocument(current.id, { content: existing + text });
-    setIsUploadDialogOpen(false);
-    setIsDirty(false);
-  };
-
-  const handleSave = async () => {
-    if (!current?.id) return;
-    await updateDocument(current.id, { content });
-    setIsDirty(false);
-  };
+  const {
+    content,
+    isDirty,
+    document: current,
+    isUploadDialogOpen,
+    isSlidesDialogOpen,
+    handleContentChange,
+    handleSave,
+    handleUploadFile,
+    handleSlidesPreview,
+    handleTextExtracted,
+    setIsUploadDialogOpen,
+    setIsSlidesDialogOpen,
+  } = useDocumentEditor({ documentId });
 
   const uploadDialog = useMemo(
     () => (
@@ -87,7 +59,7 @@ export function DocumentEditor({ documentId, className }: DocumentEditorProps) {
         </DialogContent>
       </Dialog>
     ),
-    [handleTextExtracted, isUploadDialogOpen]
+    [handleTextExtracted, isUploadDialogOpen, setIsUploadDialogOpen]
   );
 
   const slidesDialog = useMemo(
@@ -100,7 +72,7 @@ export function DocumentEditor({ documentId, className }: DocumentEditorProps) {
         </DialogContent>
       </Dialog>
     ),
-    [isSlidesDialogOpen, documentId]
+    [isSlidesDialogOpen, documentId, setIsSlidesDialogOpen]
   );
 
   return (

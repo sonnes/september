@@ -6,10 +6,10 @@ import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 
 import { documentCollection } from '../db';
-import type { Document } from '../types';
+import type { CreateDocumentData, Document } from '../types';
 
 export interface UseCreateDocumentReturn {
-  createDocument: (data: Omit<Document, 'id' | 'created_at' | 'updated_at'>) => Promise<Document>;
+  createDocument: (data: CreateDocumentData) => Promise<Document>;
   isCreating: boolean;
 }
 
@@ -17,7 +17,7 @@ export function useCreateDocument(): UseCreateDocumentReturn {
   const [isCreating, setIsCreating] = useState(false);
 
   const createDocument = useCallback(
-    async (data: Omit<Document, 'id' | 'created_at' | 'updated_at'>): Promise<Document> => {
+    async (data: CreateDocumentData): Promise<Document> => {
       setIsCreating(true);
       try {
         const now = new Date();
