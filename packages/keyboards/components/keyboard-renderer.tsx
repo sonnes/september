@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 
 import { toast } from 'sonner';
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { CircularKeyboard } from '@/packages/keyboards/components/circular-keyboard';
@@ -24,6 +25,7 @@ export function KeyboardRenderer({ chatId, className = '', onKeyPress }: Keyboar
   const { keyboards: customKeyboards } = useCustomKeyboards({ chatId });
   const { deleteKeyboard } = useDeleteKeyboard();
   const [activeTab, setActiveTab] = useState<string>(keyboardType);
+  const [editingKeyboardId, setEditingKeyboardId] = useState<string | undefined>(undefined);
 
   React.useEffect(() => {
     setActiveTab(keyboardType);
@@ -40,7 +42,14 @@ export function KeyboardRenderer({ chatId, className = '', onKeyPress }: Keyboar
 
   const handleTabChange = (tabValue: string) => {
     if (tabValue === 'add-new') {
-      // Editor tab is always available
+      // If we're already on add-new and it's in edit mode,
+      // clicking the tab again shouldn't necessarily reset it.
+      // But if we're coming from another tab, we should reset it
+      // unless we just called handleEditKeyboard (which sets it and then sets activeTab).
+      // Actually, handleEditKeyboard sets activeTab to 'add-new',
+      // so handleTabChange won't be called if we use setActiveTab directly.
+      // Tabs component calls onValueChange only when user clicks.
+      setEditingKeyboardId(undefined);
       setActiveTab(tabValue);
     } else if (tabValue.startsWith('custom-')) {
       const id = tabValue.slice(7); // Remove 'custom-' prefix
@@ -56,6 +65,7 @@ export function KeyboardRenderer({ chatId, className = '', onKeyPress }: Keyboar
   };
 
   const handleEditKeyboard = (keyboardId: string) => {
+    setEditingKeyboardId(keyboardId);
     setActiveTab('add-new');
   };
 
@@ -67,6 +77,12 @@ export function KeyboardRenderer({ chatId, className = '', onKeyPress }: Keyboar
         setActiveTab('qwerty');
         setKeyboardType('qwerty');
         setCustomKeyboardId(undefined);
+      }
+      if (editingKeyboardId === keyboardId) {
+        setEditingKeyboardId(undefined);
+        if (activeTab === 'add-new') {
+          setActiveTab('qwerty');
+        }
       }
       toast.success('Keyboard deleted');
     } catch (error) {
@@ -116,14 +132,18 @@ export function KeyboardRenderer({ chatId, className = '', onKeyPress }: Keyboar
         {/* Editor Tab */}
         <TabsContent value="add-new" className="mt-0 overflow-y-auto max-h-[600px]">
           <CustomKeyboardEditor
+            chatId={chatId}
+            keyboardId={editingKeyboardId}
             onSave={keyboard => {
               setKeyboardType('custom');
               setCustomKeyboardId(keyboard.id);
               setActiveTab(`custom-${keyboard.id}`);
+              setEditingKeyboardId(undefined);
             }}
             onCancel={() => {
               // Switch back to first available keyboard
               setActiveTab('qwerty');
+              setEditingKeyboardId(undefined);
             }}
           />
         </TabsContent>

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 
 import Image from 'next/image';
+
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 import {
@@ -30,7 +31,13 @@ interface CustomKeyboardProps {
   onDelete?: (keyboardId: string) => void;
 }
 
-export function CustomKeyboard({ keyboardId, className = '', onKeyPress, onEdit, onDelete }: CustomKeyboardProps) {
+export function CustomKeyboard({
+  keyboardId,
+  className = '',
+  onKeyPress,
+  onEdit,
+  onDelete,
+}: CustomKeyboardProps) {
   const { keyboard, isLoading, error } = useCustomKeyboard(keyboardId);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
@@ -52,7 +59,7 @@ export function CustomKeyboard({ keyboardId, className = '', onKeyPress, onEdit,
   // Use inline styles for true responsive grid columns
   const gridStyle = {
     display: 'grid',
-    gridTemplateColumns: `repeat(${Math.min(keyboard.columns, 3)}, minmax(0, 1fr))`,
+    gridTemplateColumns: `repeat(${keyboard.columns}, minmax(0, 1fr))`,
     gap: '0.375rem',
     padding: '0.75rem',
   };
@@ -80,9 +87,7 @@ export function CustomKeyboard({ keyboardId, className = '', onKeyPress, onEdit,
       <div className="max-w-4xl mx-auto">
         {/* Keyboard title with edit/delete buttons */}
         <div className="px-3 pt-2 pb-1 flex items-center justify-between gap-2">
-          <span className="text-xs text-muted-foreground font-medium">
-            {keyboard.name}
-          </span>
+          <span className="text-xs text-muted-foreground font-medium">{keyboard.name}</span>
           <div className="flex gap-1">
             {onEdit && (
               <Button
@@ -145,12 +150,16 @@ export function CustomKeyboard({ keyboardId, className = '', onKeyPress, onEdit,
             <AlertDialogHeader>
               <AlertDialogTitle>Delete keyboard?</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete the "{keyboard.name}" keyboard? This action cannot be undone.
+                Are you sure you want to delete the "{keyboard.name}" keyboard? This action cannot
+                be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700">
+              <AlertDialogAction
+                onClick={handleConfirmDelete}
+                className="bg-red-600 hover:bg-red-700"
+              >
                 Delete
               </AlertDialogAction>
             </AlertDialogFooter>

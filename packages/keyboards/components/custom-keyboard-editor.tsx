@@ -110,7 +110,7 @@ export function CustomKeyboardEditor({
     setIsSaving(true);
     try {
       if (isEditing && keyboardId) {
-        await updateKeyboard(keyboardId, {
+        const updatedKeyboard = await updateKeyboard(keyboardId, {
           name: data.name,
           columns: data.columns,
           chat_id: chatId,
@@ -122,10 +122,7 @@ export function CustomKeyboardEditor({
             order: index,
           })),
         });
-        // Refetch to get updated keyboard
-        if (keyboard) {
-          onSave?.(keyboard);
-        }
+        onSave?.(updatedKeyboard);
       } else {
         const newKeyboard = await createKeyboard({
           name: data.name,
@@ -153,6 +150,12 @@ export function CustomKeyboardEditor({
 
   return (
     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 p-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">
+          {isEditing ? `Edit Keyboard: ${keyboard?.name}` : 'Create New Keyboard'}
+        </h2>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Keyboard Name */}
         <div className="space-y-2">
