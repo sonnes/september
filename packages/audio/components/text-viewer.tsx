@@ -2,18 +2,9 @@
 
 import { type HTMLAttributes, type ReactNode, createContext, useContext, useMemo } from 'react';
 
-import { Pause, Play } from 'lucide-react';
-
-import { Button } from '@/components/ui/button';
-import {
-  ScrubBarContainer,
-  ScrubBarProgress,
-  ScrubBarThumb,
-  ScrubBarTimeLabel,
-  ScrubBarTrack,
-} from '@/components/ui/scrub-bar';
-
 import { cn } from '@/lib/utils';
+import { useAudioPlayer } from '@/packages/audio/components/audio-player';
+import { Alignment } from '@/packages/audio/types';
 
 import {
   type GapSegment,
@@ -23,8 +14,6 @@ import {
   type WordStatus,
   useTextViewer,
 } from '../hooks/use-text-viewer';
-import { Alignment } from '@/packages/audio/types';
-import { useAudioPlayer } from '@/packages/audio/components/audio-player';
 
 // Context for sharing text viewer state
 interface TextViewerContextValue extends UseTextViewerResult {
@@ -93,10 +82,11 @@ function TextViewerWord({ word, status, className, children, ...props }: TextVie
       data-kind="word"
       data-status={status}
       className={cn(
-        'transition-colors duration-150',
+        // Consistent padding on all states to prevent layout shift
+        'px-1.5 rounded-sm transition-colors duration-150 will-change-[background-color,color]',
         status === 'spoken' && 'text-foreground',
         status === 'unspoken' && 'text-muted-foreground',
-        status === 'current' && 'bg-black text-white px-1.5 py-0.5 rounded',
+        status === 'current' && 'bg-black text-white',
         className
       )}
       {...props}

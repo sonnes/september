@@ -224,14 +224,30 @@ export function useTextViewer({
     return segments.slice(currentSegmentIndex + 1);
   }, [segments, currentSegmentIndex, nearEnd]);
 
-  return {
-    segments,
-    words,
-    spokenSegments,
-    unspokenSegments,
-    currentWord: nearEnd ? null : currentWord,
-    currentSegmentIndex,
-    currentWordIndex,
-    seekToWord,
-  };
+  const resolvedCurrentWord = nearEnd ? null : currentWord;
+
+  // Memoize the return value to prevent unnecessary context re-renders
+  // Only creates a new object when actual values change
+  return useMemo(
+    () => ({
+      segments,
+      words,
+      spokenSegments,
+      unspokenSegments,
+      currentWord: resolvedCurrentWord,
+      currentSegmentIndex,
+      currentWordIndex,
+      seekToWord,
+    }),
+    [
+      segments,
+      words,
+      spokenSegments,
+      unspokenSegments,
+      resolvedCurrentWord,
+      currentSegmentIndex,
+      currentWordIndex,
+      seekToWord,
+    ]
+  );
 }

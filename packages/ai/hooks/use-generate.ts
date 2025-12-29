@@ -4,11 +4,12 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { webLLM } from '@built-in-ai/web-llm';
-import { generateObject, generateText } from 'ai';
+import { generateObject, generateText, wrapLanguageModel } from 'ai';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { useAISettings } from '@/packages/ai/hooks/use-ai-settings';
+import { cacheMiddleware } from '@/packages/ai/lib/middleware';
 import { AI_PROVIDERS } from '@/packages/ai/lib/registry';
 import { AIProvider } from '@/types/ai-config';
 
@@ -159,9 +160,14 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
       setIsGenerating(true);
 
       try {
+        const model = wrapLanguageModel({
+          model: providerInstance(modelId),
+          middleware: cacheMiddleware,
+        });
+
         if ('schema' in params && params.schema) {
           const { object } = await generateObject({
-            model: providerInstance(modelId),
+            model,
             prompt,
             system,
             temperature,
@@ -172,7 +178,7 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
           return object as z.infer<T>;
         } else {
           const { text } = await generateText({
-            model: providerInstance(modelId),
+            model,
             prompt,
             system,
             temperature,

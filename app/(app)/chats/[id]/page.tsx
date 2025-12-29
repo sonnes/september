@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { use } from 'react';
 
-import { ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, ExclamationTriangleIcon, TvIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 
 import SidebarLayout from '@/components/sidebar/layout';
@@ -31,6 +31,7 @@ import {
 } from '@/packages/keyboards';
 import { SpeechSettingsModal } from '@/packages/speech';
 import { Suggestions } from '@/packages/suggestions';
+import { DisplayMessage } from '@/types/display';
 
 import { ChatMessagesSkeleton } from '../loading-skeleton';
 
@@ -60,6 +61,7 @@ export default function ChatPage({ params }: ChatPageProps) {
   const { generateKeyboard } = useGenerateKeyboardFromMessage();
   const { createKeyboard } = useCreateKeyboard();
   const { updateChat } = useUpdateChat();
+  const popupRef = useRef<Window | null>(null);
 
   const handleSubmit = useCallback(
     async (text: string) => {
@@ -68,16 +70,31 @@ export default function ChatPage({ params }: ChatPageProps) {
       // Check if this is the first message
       const isFirstMessage = messages?.length === 0;
 
-      const { audio } = await createAudioMessage({
+      const { message, audio } = await createAudioMessage({
         chat_id: chatId,
         text: text.trim(),
         type: 'user',
         user_id: user.id,
       });
 
-      if (audio) {
+      // Check if display popup is open
+      const isDisplayOpen = popupRef.current && !popupRef.current.closed;
+
+      // Only play audio in main window if display is NOT open
+      if (audio && !isDisplayOpen) {
         enqueue(audio);
       }
+
+      // Always broadcast message to display popup (audio is optional)
+      const channel = new BroadcastChannel(`chat-display-${chatId}`);
+      channel.postMessage({
+        type: 'new-message',
+        message,
+        audio: audio?.blob,
+        alignment: audio?.alignment,
+        timestamp: Date.now(),
+      } satisfies DisplayMessage);
+      channel.close();
 
       setText('');
 
@@ -114,7 +131,17 @@ export default function ChatPage({ params }: ChatPageProps) {
           });
       }
     },
-    [chatId, user, createAudioMessage, enqueue, setText, messages, generateKeyboard, createKeyboard]
+    [
+      chatId,
+      user,
+      createAudioMessage,
+      enqueue,
+      setText,
+      messages,
+      generateKeyboard,
+      createKeyboard,
+      updateChat,
+    ]
   );
 
   const handleKeyPress = useCallback(
@@ -141,6 +168,36 @@ export default function ChatPage({ params }: ChatPageProps) {
     [text, handleSubmit, setText]
   );
 
+  const handleOpenDisplay = useCallback(() => {
+    // Mobile portrait dimensions
+    const width = 375;
+    const height = 667;
+    const left = 100;
+    const top = 100;
+
+    // Singleton pattern: window.open with same name reuses existing popup
+    const popup = window.open(
+      `/display/${chatId}`,
+      `display-${chatId}`,
+      `width=${width},height=${height},left=${left},top=${top},popup=1`
+    );
+
+    if (popup && !popup.closed) {
+      popup.focus();
+    }
+
+    popupRef.current = popup;
+  }, [chatId]);
+
+  // Close popup when navigating away from chat
+  useEffect(() => {
+    return () => {
+      if (popupRef.current && !popupRef.current.closed) {
+        popupRef.current.close();
+      }
+    };
+  }, [chatId]);
+
   // Loading state for chat ID resolution
   const isInitializing = !chatId;
 
@@ -150,6 +207,17 @@ export default function ChatPage({ params }: ChatPageProps) {
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
         {chat && <EditableChatTitle chatId={chat.id} title={chat.title} />}
+        <div className="ml-auto flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleOpenDisplay}
+            className="flex items-center gap-2"
+          >
+            <TvIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">Display</span>
+          </Button>
+        </div>
       </SidebarLayout.Header>
       <SidebarLayout.Content>
         <div className="pb-20">

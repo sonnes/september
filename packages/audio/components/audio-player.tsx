@@ -58,8 +58,10 @@ function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
   } = useAudioPlayerContext();
   const synthesis = typeof window !== 'undefined' ? window.speechSynthesis : null;
 
-  // RAF-based time tracking for smooth updates
+  // RAF-based time tracking with throttling to reduce re-renders
+  // Only updates state when position changes by more than threshold
   const rafRef = useRef<number | null>(null);
+  const lastReportedTime = useRef<number>(0);
 
   useEffect(() => {
     if (!isPlaying) {
@@ -71,7 +73,13 @@ function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
     }
 
     const tick = () => {
-      setCurrentTime(getPosition());
+      const position = getPosition();
+      // Only update state if time changed by more than 16ms (~1 frame)
+      // This reduces unnecessary re-renders while maintaining smooth tracking
+      if (Math.abs(position - lastReportedTime.current) > 0.016) {
+        lastReportedTime.current = position;
+        setCurrentTime(position);
+      }
       rafRef.current = requestAnimationFrame(tick);
     };
 
