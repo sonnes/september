@@ -12,11 +12,19 @@ export const AI_PROVIDERS: Record<AIProvider, AIServiceProvider> = {
     requires_api_key: false,
   },
 
+  webllm: {
+    id: 'webllm',
+    name: 'Browser AI (Local)',
+    description: 'Open-source, browser-based AI provider. No API key required.',
+    features: ['ai', 'transcription', 'speech'],
+    requires_api_key: false,
+  },
+
   gemini: {
     id: 'gemini',
     name: 'Google Gemini',
     description: "Google's multimodal AI models",
-    features: ['suggestions', 'transcription', 'speech'],
+    features: ['ai', 'transcription', 'speech'],
     requires_api_key: true,
     api_key_url: 'https://aistudio.google.com/app/apikey',
     models: [
@@ -42,7 +50,7 @@ export const AI_PROVIDERS: Record<AIProvider, AIServiceProvider> = {
     id: 'elevenlabs',
     name: 'ElevenLabs',
     description: 'High-quality, realistic voice synthesis.',
-    features: ['speech'],
+    features: ['transcription', 'voice-cloning', 'speech'],
     requires_api_key: true,
     api_key_url: 'https://elevenlabs.io/app/settings/keys',
     models: [

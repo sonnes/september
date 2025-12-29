@@ -1,14 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { generateObject } from 'ai';
+import { Output } from 'ai';
 import { z } from 'zod';
 
 import { useDebounce } from '@/hooks/use-debounce';
 
-import { useAISettings } from '@/packages/ai';
+import { useAISettings, useGenerate } from '@/packages/ai';
 import { Message } from '@/packages/chats';
 import { Suggestion } from '@/packages/suggestions/types';
 
@@ -30,6 +29,12 @@ Examples:
 - Partner: "What time?" | User (typing): "6" -> ["6 PM works for me", "I'll be there by 6", "Around 6:30?", "I'm free after 6", "Let's meet at 6"]
 - Partner: "How are you?" | User (typing): "" -> ["I'm doing well, thanks!", "Good, how about you?", "Not too bad, just busy.", "Great! Excited for today", "I'm okay, hanging in there"]`;
 
+const SuggestionsSchema = z.object({
+  suggestions: z.array(z.string()),
+});
+
+type SuggestionsType = z.infer<typeof SuggestionsSchema>;
+
 interface UseSuggestionsReturn {
   suggestions: Suggestion[];
   isLoading: boolean;
@@ -49,22 +54,10 @@ export function useSuggestions({
   const debouncedText = useDebounce(text, timeout);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { getProviderConfig, suggestionsConfig } = useAISettings();
-
-  const providerConfig = useMemo(
-    () => getProviderConfig(suggestionsConfig.provider),
-    [getProviderConfig, suggestionsConfig.provider]
-  );
-
-  const apiKey = providerConfig?.api_key;
-
-  const google = useMemo(
-    () =>
-      createGoogleGenerativeAI({
-        apiKey: apiKey || '',
-      }),
-    [apiKey]
-  );
+  const { suggestionsConfig } = useAISettings();
+  const { generate, isReady } = useGenerate({
+    model: suggestionsConfig.model,
+  });
 
   const clearSuggestions = useCallback(() => {
     setSuggestions([]);
@@ -72,7 +65,7 @@ export function useSuggestions({
 
   // Auto-fetch suggestions when debounced text changes
   useEffect(() => {
-    if (debouncedText.trim().length === 0 || !apiKey) {
+    if (debouncedText.trim().length === 0 || !isReady) {
       if (debouncedText.trim().length === 0) {
         setSuggestions([]);
       }
@@ -80,37 +73,31 @@ export function useSuggestions({
     }
 
     const fetchSuggestions = async (text: string, messages: Message[]) => {
-      if (!apiKey || isLoading || !suggestionsConfig.enabled) {
+      if (!isReady || isLoading || !suggestionsConfig.enabled) {
         return;
       }
 
       setIsLoading(true);
 
       try {
-        const { object } = await generateObject({
-          model: google(suggestionsConfig.model || 'gemini-2.5-flash-lite'),
-          schema: z.object({
-            suggestions: z.array(z.string()),
-          }),
+        const messagesContent = messages
+          .map(m => `${m.type === 'transcription' ? 'Partner' : 'User'}: ${m.text}`)
+          .join('\n');
+
+        const result = (await generate({
+          prompt: `${messagesContent}\nUser: ${text}`,
           system: SUGGESTIONS_PROMPT.replace(
             '{USER_PERSONA}',
             suggestionsConfig.settings?.system_instructions || ''
           ),
-          messages: [
-            ...messages.map(m => ({
-              role: 'user' as const,
-              content: `${m.type === 'transcription' ? 'Partner' : 'User'}: ${m.text}`,
-            })),
-            {
-              role: 'user' as const,
-              content: `User: ${text}`,
-            },
-          ],
-        });
+          output: Output.object({
+            schema: SuggestionsSchema,
+          }),
+        } as unknown as Parameters<typeof generate>[0])) as SuggestionsType | undefined;
 
-        if (object?.suggestions) {
+        if (result?.suggestions) {
           setSuggestions(
-            object.suggestions.map((suggestionText: string) => ({
+            result.suggestions.map((suggestionText: string) => ({
               text: suggestionText,
               audio_path: undefined,
             }))
@@ -124,7 +111,16 @@ export function useSuggestions({
     };
 
     fetchSuggestions(debouncedText, history);
-  }, [debouncedText, apiKey, suggestionsConfig.enabled, suggestionsConfig.model, google, history]);
+  }, [
+    debouncedText,
+    isReady,
+    suggestionsConfig.enabled,
+    suggestionsConfig.model,
+    suggestionsConfig.settings?.system_instructions,
+    history,
+    generate,
+    isLoading,
+  ]);
 
   return {
     suggestions,

@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useState, useMemo } from 'react';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { generateObject } from 'ai';
+import { useCallback, useState } from 'react';
+
+import { Output } from 'ai';
 import { z } from 'zod';
-import { useAISettings } from '@/packages/ai';
+
+import { useGenerate } from '@/packages/ai';
 
 const KEYBOARD_GENERATION_PROMPT = `You are an assistive communication expert designing custom AAC (Augmentative and Alternative Communication) keyboards for users with speech difficulties.
 
@@ -37,6 +38,8 @@ const KeyboardGenerationSchema = z.object({
   buttons: z.array(z.string().max(50)).length(24),
 });
 
+type KeyboardGenerationType = z.infer<typeof KeyboardGenerationSchema>;
+
 interface GenerateKeyboardParams {
   messageText: string;
   chatId: string;
@@ -55,68 +58,44 @@ interface UseGenerateKeyboardFromMessageReturn {
 }
 
 export function useGenerateKeyboardFromMessage(): UseGenerateKeyboardFromMessageReturn {
-  const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<{ message: string } | undefined>();
-
-  const { getProviderConfig } = useAISettings();
-
-  const providerConfig = useMemo(
-    () => getProviderConfig('gemini'),
-    [getProviderConfig]
-  );
-
-  const apiKey = providerConfig?.api_key;
-
-  const google = useMemo(
-    () =>
-      createGoogleGenerativeAI({
-        apiKey: apiKey || '',
-      }),
-    [apiKey]
-  );
+  const { generate, isGenerating, isReady } = useGenerate();
 
   const generateKeyboard = useCallback(
     async (params: GenerateKeyboardParams): Promise<GeneratedKeyboardData> => {
-      if (!apiKey) {
+      if (!isReady) {
         console.log('Google API key not configured, skipping keyboard generation');
         throw new Error('API key not configured');
       }
 
-      setIsGenerating(true);
       setError(undefined);
 
       try {
-        const { object } = await generateObject({
-          model: google('gemini-2.5-flash-lite'),
-          schema: KeyboardGenerationSchema,
+        const result = (await generate({
+          prompt: `First message: "${params.messageText}"\n\nGenerate a title and 24 phrase starters.`,
           system: KEYBOARD_GENERATION_PROMPT,
-          messages: [
-            {
-              role: 'user' as const,
-              content: `First message: "${params.messageText}"\n\nGenerate a title and 24 phrase starters.`,
-            },
-          ],
-        });
+          output: Output.object({
+            schema: KeyboardGenerationSchema,
+          }),
+        } as unknown as Parameters<typeof generate>[0])) as KeyboardGenerationType | undefined;
 
-        if (!object?.chatTitle || !object?.keyboardTitle || !object?.buttons) {
+        if (!result?.chatTitle || !result?.keyboardTitle || !result?.buttons) {
           throw new Error('Invalid AI response format');
         }
 
         return {
-          chatTitle: object.chatTitle,
-          keyboardTitle: object.keyboardTitle,
-          buttons: object.buttons,
+          chatTitle: result.chatTitle,
+          keyboardTitle: result.keyboardTitle,
+          buttons: result.buttons,
         };
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to generate keyboard suggestions';
         console.error('Error generating keyboard:', err);
         setError({ message: errorMessage });
         throw err;
-      } finally {
-        setIsGenerating(false);
       }
     },
-    [apiKey, google]
+    [generate, isReady]
   );
 
   return {

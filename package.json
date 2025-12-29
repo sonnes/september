@@ -14,6 +14,7 @@
     "@ai-sdk/elevenlabs": "^1.0.20",
     "@ai-sdk/google": "^3.0.1",
     "@ai-sdk/react": "^3.0.3",
+    "@built-in-ai/web-llm": "^0.3.2",
     "@google/genai": "^1.9.0",
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",

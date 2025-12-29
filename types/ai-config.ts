@@ -6,12 +6,12 @@
 /**
  * Supported AI providers
  */
-export type AIProvider = 'gemini' | 'elevenlabs' | 'browser';
+export type AIProvider = 'gemini' | 'elevenlabs' | 'browser' | 'webllm';
 
 /**
  * AI feature identifiers
  */
-export type AIFeature = 'suggestions' | 'transcription' | 'speech';
+export type AIFeature = 'ai' | 'suggestions' | 'transcription' | 'voice-cloning' | 'speech';
 
 /**
  * Base configuration for any AI feature
