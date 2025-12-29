@@ -10,8 +10,8 @@ export interface Suggestion {
  */
 export const SuggestionsFormSchema = z.object({
   enabled: z.boolean(),
-  provider: z.enum(['gemini']),
-  model: z.enum(['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-pro']),
+  provider: z.enum(['gemini', 'webllm']),
+  model: z.string(),
   settings: z
     .object({
       system_instructions: z.string().max(1000).optional(),

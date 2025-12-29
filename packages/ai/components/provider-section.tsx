@@ -12,9 +12,11 @@ import type { AIProvidersFormData } from '@/packages/ai/types/schemas';
 
 // Feature colors mapping
 const FEATURE_COLORS: Record<AIFeature, string> = {
+  ai: 'bg-indigo-100 text-indigo-800',
   suggestions: 'bg-blue-100 text-blue-800',
   transcription: 'bg-green-100 text-green-800',
   speech: 'bg-purple-100 text-purple-800',
+  'voice-cloning': 'bg-pink-100 text-pink-800',
 };
 
 // Feature Pills Component

@@ -2,39 +2,55 @@
 
 import { useCallback, useState } from 'react';
 
-import { Output } from 'ai';
 import { z } from 'zod';
 
-import { useGenerate } from '@/packages/ai';
+import { useAISettings, useGenerate } from '@/packages/ai';
 
-const KEYBOARD_GENERATION_PROMPT = `You are an assistive communication expert designing custom AAC (Augmentative and Alternative Communication) keyboards for users with speech difficulties.
+const KEYBOARD_GENERATION_PROMPT = `Generate an AAC keyboard with titles and 24 phrase starters from a conversation's first message.
 
-Your task is to generate a full chat title, a concise keyboard title, and 24 phrase starters based on the user's first message in a conversation.
+<output_format>
+- chatTitle: Descriptive conversation name (max 50 chars)
+- keyboardTitle: Tab label (max 2 words)
+- buttons: Exactly 24 phrase starters (max 3 words each)
+</output_format>
 
-Requirements:
-1. Chat Title: Short, descriptive name for this conversation (max 50 characters) - used for chat context
-2. Keyboard Title: Concise reference name (MAX 2 WORDS) - displayed on keyboard tabs for quick recognition
-3. Buttons: Exactly 24 contextually relevant phrase starters
-4. Each button text must be MAX 3 words
-5. Each button text must be MAX 50 characters
-6. Phrases should be complete sentence starters that help the user communicate efficiently
-7. Phrases should cover common responses, follow-ups, and related topics
-8. Prioritize practical, frequently-used phrases over complex sentences
+<rules>
+- All phrases must be from the User's point of view (what THEY would say)
+- Phrases should be practical sentence starters for efficient communication
+- Cover common responses, follow-ups, and related topics
+- Prioritize frequently-used phrases over complex ones
+</rules>
 
-Examples:
-- Message: "I need to schedule my doctor appointment"
-  - Chat Title: "Medical Appointments"
-  - Keyboard Title: "Medical"
-  - Buttons: ["Yes, please", "No, thanks", "What time?", "Morning works", "Afternoon better", ...]
-
-- Message: "What should we have for dinner tonight?"
-  - Chat Title: "Dinner Planning"
-  - Keyboard Title: "Dinner"
-  - Buttons: ["Sounds good", "I'm hungry", "Not sure", "Pizza?", "Chicken?", ...]`;
+<examples>
+<example>
+<input>First message: "I need to schedule my doctor appointment"</input>
+<output>
+{
+  "chatTitle": "Medical Appointments",
+  "keyboardTitle": "Medical",
+  "buttons": ["Yes, please", "No, thanks", "What time?", "Morning works", "Afternoon better", "Can you call?", "I'll wait", "Too soon", "Next week?", "Is Monday?", "Need reminder", "Thank you", "Got it", "One moment", "Almost done", "Running late", "On my way", "Be right there", "Need help", "Feeling okay", "Not great", "Much better", "Same time?", "See you"]
+}
+</output>
+</example>
+<example>
+<input>First message: "What should we have for dinner tonight?"</input>
+<output>
+{
+  "chatTitle": "Dinner Planning",
+  "keyboardTitle": "Dinner",
+  "buttons": ["Sounds good", "I'm hungry", "Not sure", "Pizza?", "Chicken?", "Something light", "Order in?", "Cook together", "Your choice", "Anything works", "Not that", "Maybe later", "Too heavy", "Craving pasta", "Salad?", "Leftovers?", "What's quick?", "I'll cook", "You decide", "Surprise me", "Already ate", "Just snacks", "Dessert too?", "Perfect!"]
+}
+</output>
+</example>
+</examples>`;
 
 const KeyboardGenerationSchema = z.object({
   chatTitle: z.string().min(1).max(50),
-  keyboardTitle: z.string().min(1).max(50).regex(/^(\w+\s)?(\w+)$/, 'Max 2 words'),
+  keyboardTitle: z
+    .string()
+    .min(1)
+    .max(50)
+    .regex(/^(\w+\s)?(\w+)$/, 'Max 2 words'),
   buttons: z.array(z.string().max(50)).length(24),
 });
 
@@ -59,7 +75,12 @@ interface UseGenerateKeyboardFromMessageReturn {
 
 export function useGenerateKeyboardFromMessage(): UseGenerateKeyboardFromMessageReturn {
   const [error, setError] = useState<{ message: string } | undefined>();
-  const { generate, isGenerating, isReady } = useGenerate();
+
+  const { suggestionsConfig } = useAISettings();
+  const { generate, isGenerating, isReady } = useGenerate({
+    provider: suggestionsConfig.provider,
+    model: suggestionsConfig.model,
+  });
 
   const generateKeyboard = useCallback(
     async (params: GenerateKeyboardParams): Promise<GeneratedKeyboardData> => {
@@ -71,13 +92,11 @@ export function useGenerateKeyboardFromMessage(): UseGenerateKeyboardFromMessage
       setError(undefined);
 
       try {
-        const result = (await generate({
+        const result = await generate({
           prompt: `First message: "${params.messageText}"\n\nGenerate a title and 24 phrase starters.`,
           system: KEYBOARD_GENERATION_PROMPT,
-          output: Output.object({
-            schema: KeyboardGenerationSchema,
-          }),
-        } as unknown as Parameters<typeof generate>[0])) as KeyboardGenerationType | undefined;
+          schema: KeyboardGenerationSchema,
+        });
 
         if (!result?.chatTitle || !result?.keyboardTitle || !result?.buttons) {
           throw new Error('Invalid AI response format');
@@ -89,7 +108,8 @@ export function useGenerateKeyboardFromMessage(): UseGenerateKeyboardFromMessage
           buttons: result.buttons,
         };
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to generate keyboard suggestions';
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to generate keyboard suggestions';
         console.error('Error generating keyboard:', err);
         setError({ message: errorMessage });
         throw err;

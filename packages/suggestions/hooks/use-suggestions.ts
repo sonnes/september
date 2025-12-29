@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { Output } from 'ai';
 import { z } from 'zod';
 
 import { useDebounce } from '@/hooks/use-debounce';
@@ -11,23 +10,35 @@ import { useAISettings, useGenerate } from '@/packages/ai';
 import { Message } from '@/packages/chats';
 import { Suggestion } from '@/packages/suggestions/types';
 
-const SUGGESTIONS_PROMPT = `You are a predictive text assistant for the User in a conversation with a Partner.
-Generate 5 contextual suggestions that the User would likely say next.
+const SUGGESTIONS_PROMPT = `Generate 5 text completions for the User based on their current typing and conversation context.
+
+<rules>
+- Complete or extend the User's current thought naturally
+- Each suggestion must be a complete, standalone sentence
+- Match the User's tone and style from the persona
+- Return ONLY a JSON array of 5 strings, no other text
+</rules>
 
 <persona>
 {USER_PERSONA}
 </persona>
 
-Rules:
-1. Suggestions must be complete, standalone sentences.
-2. If the User is typing, suggestions should complete or naturally extend their current thought.
-3. If the User is not typing, provide relevant responses to the Partner or new conversation starters.
-4. Match the User's persona, tone, and communication style.
-5. Return ONLY a JSON array of 5 strings.
-
-Examples:
-- Partner: "What time?" | User (typing): "6" -> ["6 PM works for me", "I'll be there by 6", "Around 6:30?", "I'm free after 6", "Let's meet at 6"]
-- Partner: "How are you?" | User (typing): "" -> ["I'm doing well, thanks!", "Good, how about you?", "Not too bad, just busy.", "Great! Excited for today", "I'm okay, hanging in there"]`;
+<examples>
+<example>
+<input>
+Partner: What time?
+User (typing): 6
+</input>
+<output>["6 PM works for me", "6:30 would be better", "6 o'clock sharp", "6 is too early for me", "6 sounds good"]</output>
+</example>
+<example>
+<input>
+Partner: How are you?
+User (typing): I'm
+</input>
+<output>["I'm doing well, thanks!", "I'm good, how about you?", "I'm okay, just tired", "I'm great!", "I'm hanging in there"]</output>
+</example>
+</examples>`;
 
 const SuggestionsSchema = z.object({
   suggestions: z.array(z.string()),
@@ -56,6 +67,7 @@ export function useSuggestions({
 
   const { suggestionsConfig } = useAISettings();
   const { generate, isReady } = useGenerate({
+    provider: suggestionsConfig.provider,
     model: suggestionsConfig.model,
   });
 
@@ -72,36 +84,42 @@ export function useSuggestions({
       return;
     }
 
-    const fetchSuggestions = async (text: string, messages: Message[]) => {
-      if (!isReady || isLoading || !suggestionsConfig.enabled) {
-        return;
-      }
+    if (isLoading || !suggestionsConfig.enabled) {
+      return;
+    }
 
+    const fetchSuggestions = async (text: string, messages: Message[]) => {
       setIsLoading(true);
 
+      console.log('fetchSuggestions', text, messages);
       try {
         const messagesContent = messages
           .map(m => `${m.type === 'transcription' ? 'Partner' : 'User'}: ${m.text}`)
           .join('\n');
 
-        const result = (await generate({
-          prompt: `${messagesContent}\nUser: ${text}`,
+        const result = await generate({
+          prompt: `${messagesContent}\nUser (typing): ${text}`,
           system: SUGGESTIONS_PROMPT.replace(
             '{USER_PERSONA}',
             suggestionsConfig.settings?.system_instructions || ''
           ),
-          output: Output.object({
-            schema: SuggestionsSchema,
-          }),
-        } as unknown as Parameters<typeof generate>[0])) as SuggestionsType | undefined;
+        });
 
-        if (result?.suggestions) {
-          setSuggestions(
-            result.suggestions.map((suggestionText: string) => ({
-              text: suggestionText,
-              audio_path: undefined,
-            }))
-          );
+        if (result) {
+          try {
+            const suggestions = JSON.parse(
+              result.replace('```json', '').replace('```', '').trim()
+            ) as string[];
+            setSuggestions(
+              suggestions.map((suggestionText: string) => ({
+                text: suggestionText,
+                audio_path: undefined,
+              }))
+            );
+          } catch (error) {
+            console.log(result);
+            throw error;
+          }
         }
       } catch (error) {
         console.error('Error fetching suggestions:', error);
@@ -119,7 +137,6 @@ export function useSuggestions({
     suggestionsConfig.settings?.system_instructions,
     history,
     generate,
-    isLoading,
   ]);
 
   return {

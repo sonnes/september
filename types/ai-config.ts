@@ -34,7 +34,7 @@ export interface BaseFeatureConfig {
  * Configuration for AI-powered typing suggestions
  */
 export interface SuggestionsConfig extends BaseFeatureConfig {
-  provider: 'gemini';
+  provider: 'gemini' | 'webllm';
   model?: string;
   settings?: {
     /** Temperature for generation (0-1) */

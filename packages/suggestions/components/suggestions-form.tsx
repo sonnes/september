@@ -7,7 +7,7 @@ import { ChevronDown, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import { getModelsForProvider } from '@/packages/ai';
+import { getModelsForProvider, getProvidersForFeature } from '@/packages/ai';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { FormCheckbox, FormSelect, FormTextarea } from '@/components/ui/form';
@@ -56,12 +56,8 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
     const suggestionsConfig = account?.ai_suggestions;
     return {
       enabled: suggestionsConfig?.enabled ?? false,
-      provider: (suggestionsConfig?.provider as 'gemini') ?? 'gemini',
-      model:
-        (suggestionsConfig?.model as
-          | 'gemini-2.5-flash-lite'
-          | 'gemini-2.5-flash'
-          | 'gemini-2.5-pro') ?? 'gemini-2.5-flash-lite',
+      provider: (suggestionsConfig?.provider as 'gemini' | 'webllm') ?? 'gemini',
+      model: suggestionsConfig?.model ?? 'gemini-2.5-flash-lite',
       settings: {
         system_instructions: suggestionsConfig?.settings?.system_instructions ?? '',
         temperature: suggestionsConfig?.settings?.temperature ?? 0.7,
@@ -101,9 +97,21 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
   const aiInstructions = form.watch('settings.system_instructions');
   const provider = form.watch('provider');
 
+  // Get available suggestions providers from registry
+  const suggestionsProviders = useMemo(() => {
+    return getProvidersForFeature('ai').map(p => ({
+      id: p.id,
+      name: p.name,
+    })).filter(p => p.id === 'gemini' || p.id === 'webllm');
+  }, []);
+
   const models = useMemo(() => getModelsForProvider(provider as AIProvider), [provider]);
 
-  const hasApiKey = !!account?.ai_providers?.gemini?.api_key;
+  // Check if provider requires API key and if it's configured
+  const hasApiKey = useMemo(() => {
+    if (provider === 'webllm') return true; // No API key required for webllm
+    return !!account?.ai_providers?.[provider as keyof typeof account.ai_providers]?.api_key;
+  }, [provider, account]);
 
   const handleExampleClick = (example: string) => {
     form.setValue('settings.system_instructions', example);
@@ -119,7 +127,7 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
   const formFields = (
     <div className="space-y-6 sm:space-y-8">
       {/* API Key Warning */}
-      {!hasApiKey && (
+      {!hasApiKey && provider === 'gemini' && (
         <Alert variant="default">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>API Key Required</AlertTitle>
@@ -128,7 +136,7 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
             <a href="/settings/ai" className="underline hover:text-amber-900">
               AI Settings
             </a>{' '}
-            to use AI suggestions.
+            to use AI suggestions with Gemini.
           </AlertDescription>
         </Alert>
       )}
@@ -153,13 +161,33 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
         </div>
       </div>
 
+      {/* Provider Selection */}
+      <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
+        <div className="px-4 sm:px-0">
+          <h2 className="text-base/7 font-semibold text-zinc-900">AI Provider</h2>
+          <p className="mt-1 text-sm/6 text-zinc-600">
+            Choose between cloud-based Gemini (powerful) or browser-local WebLLM (private, no API key needed).
+          </p>
+        </div>
+        <div className="md:col-span-2 px-4">
+          <FormSelect
+            name="provider"
+            control={form.control}
+            label="Provider"
+            options={suggestionsProviders}
+            disabled={false}
+          />
+        </div>
+      </div>
+
       {/* Model Selection */}
       <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
         <div className="px-4 sm:px-0">
           <h2 className="text-base/7 font-semibold text-zinc-900">Model Selection</h2>
           <p className="mt-1 text-sm/6 text-zinc-600">
-            Choose the AI model to use for generating suggestions. Lite is fastest, Pro is most
-            advanced.
+            {provider === 'gemini'
+              ? 'Choose the Gemini model for suggestions. Lite is fastest, Pro is most advanced.'
+              : 'Choose a WebLLM model for local browser-based suggestions. Smaller models are faster.'}
           </p>
         </div>
         <div className="md:col-span-2 px-4">

@@ -4,7 +4,7 @@ import { Providers, SpeechConfig, SuggestionsConfig, TranscriptionConfig } from 
 
 export const SuggestionsConfigSchema = z.object({
   enabled: z.boolean(),
-  provider: z.literal('gemini'),
+  provider: z.enum(['gemini', 'webllm']),
   model: z.string().optional(),
   settings: z
     .object({
@@ -64,6 +64,12 @@ export const ProvidersSchema = z.object({
     })
     .optional(),
   browser: z
+    .object({
+      api_key: z.string().optional(),
+      base_url: z.string().optional(),
+    })
+    .optional(),
+  webllm: z
     .object({
       api_key: z.string().optional(),
       base_url: z.string().optional(),
