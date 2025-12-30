@@ -1,9 +1,12 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+
 import { nanoid } from 'nanoid';
 import { toast } from 'sonner';
+
 import { useAccountContext } from '@/packages/account';
+
 import { customKeyboardCollection } from '../db';
 import { CreateCustomKeyboardData, CustomKeyboard } from '../types';
 
@@ -38,7 +41,7 @@ export function useCreateKeyboard(): UseCreateKeyboardReturn {
           name: data.name,
           buttons,
           chat_id: data.chat_id,
-          columns: data.columns || 3,
+          columns: data.columns || 4,
           created_at: data.created_at || now,
           updated_at: now,
         };

@@ -54,8 +54,6 @@ const KeyboardGenerationSchema = z.object({
   buttons: z.array(z.string().max(50)).length(24),
 });
 
-type KeyboardGenerationType = z.infer<typeof KeyboardGenerationSchema>;
-
 interface GenerateKeyboardParams {
   messageText: string;
   chatId: string;
@@ -93,7 +91,7 @@ export function useGenerateKeyboardFromMessage(): UseGenerateKeyboardFromMessage
 
       try {
         const result = await generate({
-          prompt: `First message: "${params.messageText}"\n\nGenerate a title and 24 phrase starters.`,
+          prompt: `First message: "${params.messageText}"`,
           system: KEYBOARD_GENERATION_PROMPT,
           schema: KeyboardGenerationSchema,
         });

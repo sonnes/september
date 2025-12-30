@@ -22,7 +22,8 @@ interface KeyboardRendererProps {
 
 export function KeyboardRenderer({ chatId, className = '', onKeyPress }: KeyboardRendererProps) {
   const { isVisible, keyboardType, setKeyboardType, setCustomKeyboardId } = useKeyboardContext();
-  const { keyboards: customKeyboards } = useCustomKeyboards({ chatId });
+  const { keyboards: chatKeyboards } = useCustomKeyboards({ chatId });
+  const { keyboards: globalKeyboards } = useCustomKeyboards();
   const { deleteKeyboard } = useDeleteKeyboard();
   const [activeTab, setActiveTab] = useState<string>(keyboardType);
   const [editingKeyboardId, setEditingKeyboardId] = useState<string | undefined>(undefined);
@@ -36,7 +37,8 @@ export function KeyboardRenderer({ chatId, className = '', onKeyPress }: Keyboar
     { value: 'qwerty', label: 'QWERTY' },
     { value: 'circular', label: 'Circular' },
     // Custom keyboard tabs
-    ...customKeyboards.map(kb => ({ value: `custom-${kb.id}`, label: kb.name })),
+    ...chatKeyboards.map(kb => ({ value: `custom-${kb.id}`, label: kb.name })),
+    ...globalKeyboards.map(kb => ({ value: `custom-${kb.id}`, label: kb.name })),
     { value: 'add-new', label: '+' },
   ];
 
@@ -113,7 +115,23 @@ export function KeyboardRenderer({ chatId, className = '', onKeyPress }: Keyboar
         </TabsContent>
 
         {/* Custom Keyboard Tabs */}
-        {customKeyboards.map(keyboard => (
+        {chatKeyboards.map(keyboard => (
+          <TabsContent
+            key={`custom-${keyboard.id}`}
+            value={`custom-${keyboard.id}`}
+            className="mt-0"
+          >
+            <CustomKeyboard
+              keyboardId={keyboard.id}
+              className={className}
+              onKeyPress={onKeyPress}
+              onEdit={handleEditKeyboard}
+              onDelete={handleDeleteKeyboard}
+            />
+          </TabsContent>
+        ))}
+
+        {globalKeyboards.map(keyboard => (
           <TabsContent
             key={`custom-${keyboard.id}`}
             value={`custom-${keyboard.id}`}

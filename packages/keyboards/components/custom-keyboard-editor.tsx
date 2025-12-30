@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
 import { Plus, Trash2 } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -18,11 +19,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-import { cn } from '@/lib/utils';
 import { useAccountContext } from '@/packages/account';
 
 import { useCreateKeyboard } from '../hooks/use-create-keyboard';
 import { useCustomKeyboard } from '../hooks/use-custom-keyboard';
+import { useGenerateKeyboardFromMessage } from '../hooks/use-generate-keyboard';
 import { useUpdateKeyboard } from '../hooks/use-update-keyboard';
 import { CustomKeyboard } from '../types';
 
@@ -62,6 +63,8 @@ export function CustomKeyboardEditor({
   const { createKeyboard, isCreating } = useCreateKeyboard();
   const { updateKeyboard, isUpdating } = useUpdateKeyboard();
   const [isSaving, setIsSaving] = useState(false);
+  const [generationContext, setGenerationContext] = useState('');
+  const { generateKeyboard, isGenerating, error: generationError } = useGenerateKeyboardFromMessage();
 
   const isEditing = !!keyboardId;
 
@@ -101,7 +104,7 @@ export function CustomKeyboardEditor({
   }, [keyboard, isEditing, form]);
 
   // Dynamic button fields
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: 'buttons',
   });
@@ -141,6 +144,36 @@ export function CustomKeyboardEditor({
       // Error handled by hooks (toast)
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleGenerateButtons = async () => {
+    if (!generationContext.trim()) {
+      return;
+    }
+
+    try {
+      const result = await generateKeyboard({
+        messageText: generationContext,
+        chatId: '', // Not used in manual creation
+      });
+
+      // Auto-populate keyboard name
+      form.setValue('name', result.keyboardTitle);
+
+      // Replace all buttons with generated ones
+      replace(
+        result.buttons.map(text => ({
+          text,
+          value: '',
+          image_url: '',
+        }))
+      );
+
+      toast.success('Buttons generated successfully');
+    } catch (err) {
+      // Error already handled by hook and displayed in UI
+      console.error('Failed to generate buttons:', err);
     }
   };
 
@@ -185,6 +218,41 @@ export function CustomKeyboardEditor({
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      {/* AI Generation Section */}
+      <div className="space-y-2">
+        <Label htmlFor="generation-context">Generate Buttons with AI (Optional)</Label>
+
+        <div className="flex gap-2">
+          <Input
+            id="generation-context"
+            value={generationContext}
+            onChange={(e) => setGenerationContext(e.target.value)}
+            placeholder="Describe the conversation topic (e.g., 'medical appointments')"
+            disabled={isGenerating}
+            className="flex-1"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleGenerateButtons}
+            disabled={isGenerating || !generationContext.trim()}
+          >
+            {isGenerating ? 'Generating...' : 'Generate'}
+          </Button>
+        </div>
+
+        {/* Error state */}
+        {generationError && (
+          <p className="text-sm text-red-600">
+            {generationError.message}
+          </p>
+        )}
+
+        <p className="text-xs text-muted-foreground">
+          AI will generate 24 contextual phrase buttons and suggest a keyboard name based on your description.
+        </p>
       </div>
 
       {/* Buttons Grid */}
