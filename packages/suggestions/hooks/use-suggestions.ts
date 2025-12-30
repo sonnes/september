@@ -15,6 +15,7 @@ const SUGGESTIONS_PROMPT = `Generate 5 possible next messages for the User to se
 - If the User has started typing, complete their thought
 - If the User hasn't typed, provide next message the User would likely send
 - Match the User's tone and style from the persona
+- STRICTLY maintain the same language as the conversation context
 - Return ONLY a JSON array of 5 strings, no other text
 </rules>
 

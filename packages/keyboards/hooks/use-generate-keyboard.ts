@@ -19,6 +19,8 @@ const KEYBOARD_GENERATION_PROMPT = `Generate an AAC keyboard with titles and 24 
 - Phrases should be practical sentence starters for efficient communication
 - Cover common responses, follow-ups, and related topics
 - Prioritize frequently-used phrases over complex ones
+- STRICTLY maintain the same language as the input message
+- Match the style and tone of the input message (e.g. casual, formal)
 </rules>
 
 <examples>
@@ -46,11 +48,7 @@ const KEYBOARD_GENERATION_PROMPT = `Generate an AAC keyboard with titles and 24 
 
 const KeyboardGenerationSchema = z.object({
   chatTitle: z.string().min(1).max(50),
-  keyboardTitle: z
-    .string()
-    .min(1)
-    .max(50)
-    .regex(/^(\w+\s)?(\w+)$/, 'Max 2 words'),
+  keyboardTitle: z.string(),
   buttons: z.array(z.string().max(50)).length(24),
 });
 
