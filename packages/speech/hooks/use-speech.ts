@@ -2,7 +2,9 @@
 
 import { useCallback, useMemo } from 'react';
 
+import { useAccountContext } from '@/packages/account';
 import { useAISettings } from '@/packages/ai';
+import { logTTSGeneration } from '@/packages/analytics';
 import type { AIProvider } from '@/types/ai-config';
 import type { Voice } from '@/types/voice';
 
@@ -21,6 +23,7 @@ export interface UseSpeechReturn {
 }
 
 export function useSpeech(): UseSpeechReturn {
+  const { user } = useAccountContext();
   const { speechConfig, getProviderConfig } = useAISettings();
 
   const registry = useMemo(() => {
@@ -63,13 +66,37 @@ export function useSpeech(): UseSpeechReturn {
 
   const generateSpeech = useCallback(
     (text: string, options?: SpeechOptions) => {
-      return engine?.generateSpeech({
+      if (!engine) return undefined;
+
+      const promise = engine.generateSpeech({
         text,
         voice: voice,
         options: { ...speechConfig.settings, ...options } as SpeechOptions,
       });
+
+      if (!promise) return undefined;
+
+      // Log TTS generation event after completion
+      promise
+        .then(result => {
+          if (user?.id && result) {
+            logTTSGeneration(user.id, {
+              provider: speechConfig.provider === 'elevenlabs' ? 'elevenlabs' : undefined,
+              voice_id: speechConfig.voice_id,
+              text_length: text.length,
+              duration_seconds: 0,
+              latency_ms: 0,
+              success: true,
+            });
+          }
+        })
+        .catch(error => {
+          console.error('TTS generation error:', error);
+        });
+
+      return promise;
     },
-    [engine, voice, speechConfig.settings]
+    [engine, voice, speechConfig.settings, speechConfig.provider, speechConfig.voice_id, user]
   );
 
   const listVoices = useCallback(

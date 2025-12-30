@@ -17,7 +17,7 @@ import { Suggestions } from '@/packages/suggestions';
 export default function TalkPage() {
   const { user } = useAccountContext();
   const { current, enqueue } = useAudioPlayer();
-  const { text, setText } = useEditorContext();
+  const { text, setText, trackKeystroke } = useEditorContext();
   const { status, createAudioMessage } = useCreateAudioMessage();
 
   const handleSubmit = useCallback(
@@ -45,6 +45,8 @@ export default function TalkPage() {
         handleSubmit(text);
         return;
       }
+
+      trackKeystroke();
 
       setText(text => {
         if (key === 'BACKSPACE') {

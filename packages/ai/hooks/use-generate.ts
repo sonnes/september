@@ -8,7 +8,9 @@ import { generateObject, generateText, wrapLanguageModel } from 'ai';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { useAccountContext } from '@/packages/account';
 import { useAISettings } from '@/packages/ai/hooks/use-ai-settings';
+import { logAIGeneration } from '@/packages/analytics';
 import { cacheMiddleware } from '@/packages/ai/lib/middleware';
 import { AI_PROVIDERS } from '@/packages/ai/lib/registry';
 import { AIProvider } from '@/types/ai-config';
@@ -33,6 +35,8 @@ interface BaseGenerateParams {
   system?: string;
   /** Temperature for generation (0-2, default: 1) */
   temperature?: number;
+  /** Feature being used for analytics tracking */
+  feature?: 'suggestions' | 'transcription' | 'summary';
 }
 
 /**
@@ -100,6 +104,7 @@ export interface UseGenerateReturn {
 export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn {
   const { provider, model } = options;
 
+  const { user } = useAccountContext();
   const { getProviderConfig } = useAISettings();
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -131,7 +136,7 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
     async <T extends z.ZodType>(
       params: GenerateTextParams | GenerateObjectParams<T>
     ): Promise<string | z.infer<T> | undefined> => {
-      const { prompt, system, temperature } = params;
+      const { prompt, system, temperature, feature } = params;
 
       // Validate provider support
       if (!provider || !providerInfo) {
@@ -166,7 +171,7 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
         });
 
         if ('schema' in params && params.schema) {
-          const { object } = await generateObject({
+          const { object, usage } = await generateObject({
             model,
             prompt,
             system,
@@ -175,14 +180,40 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
             output: params.output,
           });
 
+          // Log AI generation event
+          if (user?.id && usage) {
+            logAIGeneration(user.id, {
+              generation_type: feature || 'suggestions',
+              provider: provider === 'gemini' ? 'gemini' : undefined,
+              model: modelId,
+              input_length: prompt.length,
+              output_length: JSON.stringify(object).length,
+              latency_ms: 0,
+              success: true,
+            });
+          }
+
           return object as z.infer<T>;
         } else {
-          const { text } = await generateText({
+          const { text, usage } = await generateText({
             model,
             prompt,
             system,
             temperature,
           });
+
+          // Log AI generation event
+          if (user?.id && usage) {
+            logAIGeneration(user.id, {
+              generation_type: feature || 'suggestions',
+              provider: provider === 'gemini' ? 'gemini' : undefined,
+              model: modelId,
+              input_length: prompt.length,
+              output_length: text.length,
+              latency_ms: 0,
+              success: true,
+            });
+          }
 
           return text;
         }
@@ -196,7 +227,7 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
         setIsGenerating(false);
       }
     },
-    [provider, providerInfo, apiKey, providerInstance, modelId]
+    [provider, providerInfo, apiKey, providerInstance, modelId, user]
   ) as UseGenerateReturn['generate'];
 
   return {

@@ -26,7 +26,7 @@ export function Editor({
   children,
   disabled = false,
 }: EditorProps) {
-  const { text, setText } = useEditorContext();
+  const { text, setText, trackKeystroke } = useEditorContext();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize textarea
@@ -44,6 +44,11 @@ export function Editor({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Track keystroke for printable keys, Backspace, and Enter
+    if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Enter') {
+      trackKeystroke();
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();

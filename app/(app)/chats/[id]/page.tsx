@@ -57,7 +57,7 @@ export default function ChatPage({ params }: ChatPageProps) {
   const error = (chatsError || messagesError) as Error | undefined;
 
   const { status, createAudioMessage } = useCreateAudioMessage();
-  const { text, setText } = useEditorContext();
+  const { text, setText, trackKeystroke } = useEditorContext();
   const { generateKeyboard } = useGenerateKeyboardFromMessage();
   const { createKeyboard } = useCreateKeyboard();
   const { updateChat } = useUpdateChat();
@@ -146,6 +146,8 @@ export default function ChatPage({ params }: ChatPageProps) {
 
   const handleKeyPress = useCallback(
     (key: string) => {
+      trackKeystroke();
+
       if (key === 'ENTER') {
         handleSubmit(text);
         return;
@@ -165,7 +167,7 @@ export default function ChatPage({ params }: ChatPageProps) {
         }
       });
     },
-    [text, handleSubmit, setText]
+    [text, handleSubmit, setText, trackKeystroke]
   );
 
   const handleOpenDisplay = useCallback(() => {

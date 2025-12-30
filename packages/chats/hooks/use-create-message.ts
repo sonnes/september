@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 
 import { useAccountContext } from '@/packages/account';
+import { logMessageSent } from '@/packages/analytics';
 import { Audio, useAudio } from '@/packages/audio';
 import { useSpeech } from '@/packages/speech';
 
@@ -40,6 +41,14 @@ export function useCreateMessage(): UseCreateMessageReturn {
         if (message.chat_id) {
           await chatCollection.update(message.chat_id, draft => {
             draft.updated_at = now;
+          });
+        }
+
+        // Log message sent event
+        if (user?.id) {
+          logMessageSent(user.id, {
+            text_length: newMessage.text.length,
+            chat_id: newMessage.chat_id,
           });
         }
 
