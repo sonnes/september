@@ -30,7 +30,9 @@ export function useMediaConverter(): UseMediaConverterReturn {
 
       // Progress listener
       ffmpeg.on('progress', ({ progress: p }) => {
-        setProgress(20 + Math.floor(p * 70)); // 20-90%
+        // Clamp progress to 0-1 range and convert to percentage
+        const clampedProgress = Math.min(Math.max(p, 0), 1);
+        setProgress(20 + Math.floor(clampedProgress * 70)); // 20-90%
       });
 
       // Write input file
