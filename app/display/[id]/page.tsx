@@ -6,6 +6,7 @@ import moment from 'moment';
 import Webcam from 'react-webcam';
 
 import { TextViewer, TextViewerWords, useAudioPlayer } from '@/packages/audio';
+import { RecordingControls, RecordingProvider, useRecordingContext } from '@/packages/recording';
 import { DisplayMessage } from '@/types/display';
 
 function DisplayContent({ chatId }: { chatId: string }) {
@@ -13,6 +14,20 @@ function DisplayContent({ chatId }: { chatId: string }) {
   const [latestMessage, setLatestMessage] = useState<DisplayMessage | null>(null);
 
   const { enqueue, current } = useAudioPlayer();
+  const { audioDestination } = useRecordingContext();
+
+  useEffect(() => {
+    if (current?.blob) {
+      const audio = new Audio(current.blob);
+      audioDestination.connectAudio(audio);
+      audio.play();
+
+      return () => {
+        audio.pause();
+        audioDestination.disconnectAudio();
+      };
+    }
+  }, [current?.blob, audioDestination]);
 
   // Dynamic text sizing based on word count (from old display-client.tsx)
   const getTextSize = (text: string) => {
@@ -114,6 +129,9 @@ function DisplayContent({ chatId }: { chatId: string }) {
           <span>Live</span>
         </div>
       </div>
+
+      {/* Recording Controls */}
+      <RecordingControls />
     </div>
   );
 }
@@ -121,5 +139,9 @@ function DisplayContent({ chatId }: { chatId: string }) {
 export default function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: chatId } = use(params);
 
-  return <DisplayContent chatId={chatId} />;
+  return (
+    <RecordingProvider>
+      <DisplayContent chatId={chatId} />
+    </RecordingProvider>
+  );
 }
