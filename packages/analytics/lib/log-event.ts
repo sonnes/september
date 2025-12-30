@@ -13,14 +13,8 @@ import {
  */
 export interface MessageSentPayload {
   text_length: number;
-  has_voice_input?: boolean;
-  used_autocomplete?: boolean;
-  suggestion_count?: number;
-  selected_suggestion_index?: number;
   chat_id?: string;
   keys_typed?: number;
-  chars_saved?: number;
-  message_type?: string;
 }
 
 /**
@@ -66,14 +60,8 @@ export async function logMessageSent(userId: string, payload: MessageSentPayload
       timestamp: new Date(),
       data: {
         text_length: payload.text_length,
-        has_voice_input: payload.has_voice_input ?? false,
-        used_autocomplete: payload.used_autocomplete ?? false,
-        suggestion_count: payload.suggestion_count ?? 0,
-        selected_suggestion_index: payload.selected_suggestion_index,
         chat_id: payload.chat_id,
         keys_typed: payload.keys_typed ?? 0,
-        chars_saved: payload.chars_saved ?? 0,
-        message_type: payload.message_type ?? 'user',
       },
     };
 

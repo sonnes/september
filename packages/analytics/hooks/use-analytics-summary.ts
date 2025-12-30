@@ -1,21 +1,20 @@
 import { useMemo } from 'react';
 
-import { and, gte, lte, eq } from '@tanstack/db';
+import { and, eq, gte, lte } from '@tanstack/db';
 import { useLiveQuery } from '@tanstack/react-db';
 
 import { analyticsCollection } from '../db';
-import { AnalyticsEvent, MessageSentEvent, AIGenerationEvent, TTSGenerationEvent } from '../types';
-import { getTimeRangeBounds, TimeRange } from '../lib/utils';
+import { TimeRange, getTimeRangeBounds } from '../lib/utils';
+import { AIGenerationEvent, AnalyticsEvent, MessageSentEvent, TTSGenerationEvent } from '../types';
 
 /**
  * Summary statistics for messages
  */
 export interface MessageStats {
   total_messages: number;
-  avg_text_length: number;
-  messages_with_voice: number;
-  messages_with_autocomplete: number;
-  autocomplete_adoption_rate: number;
+  total_keys_typed: number;
+  total_text_length: number;
+  efficiency: number; // (text_length - keys_typed) as percentage of text_length
 }
 
 /**
@@ -134,22 +133,13 @@ export function useAnalyticsSummary({
     const messageSentEvents = allEvents.filter(
       (e): e is MessageSentEvent => e.event_type === 'message_sent'
     );
+    const totalTextLength = messageSentEvents.reduce((sum, e) => sum + e.data.text_length, 0);
+    const totalKeysTyped = messageSentEvents.reduce((sum, e) => sum + e.data.keys_typed, 0);
     const messageStats: MessageStats = {
       total_messages: messageSentEvents.length,
-      avg_text_length:
-        messageSentEvents.length > 0
-          ? messageSentEvents.reduce((sum, e) => sum + e.data.text_length, 0) /
-            messageSentEvents.length
-          : 0,
-      messages_with_voice: messageSentEvents.filter(e => e.data.has_voice_input).length,
-      messages_with_autocomplete: messageSentEvents.filter(e => e.data.used_autocomplete)
-        .length,
-      autocomplete_adoption_rate:
-        messageSentEvents.length > 0
-          ? (messageSentEvents.filter(e => e.data.used_autocomplete).length /
-              messageSentEvents.length) *
-            100
-          : 0,
+      total_keys_typed: totalKeysTyped,
+      total_text_length: totalTextLength,
+      efficiency: totalTextLength > 0 ? ((totalTextLength - totalKeysTyped) / totalTextLength) * 100 : 0,
     };
 
     // Aggregate AI generation stats
@@ -157,7 +147,10 @@ export function useAnalyticsSummary({
       (e): e is AIGenerationEvent => e.event_type === 'ai_generation'
     );
     const aiSuccessCount = aiGenerationEvents.filter(e => e.data.success).length;
-    const aiByProvider: Record<string, { count: number; success_count: number; latencies: number[] }> = {};
+    const aiByProvider: Record<
+      string,
+      { count: number; success_count: number; latencies: number[] }
+    > = {};
 
     for (const event of aiGenerationEvents) {
       const provider = event.data.provider;
@@ -214,7 +207,10 @@ export function useAnalyticsSummary({
       (e): e is TTSGenerationEvent => e.event_type === 'tts_generation'
     );
     const ttsSuccessCount = ttsGenerationEvents.filter(e => e.data.success).length;
-    const ttsByProvider: Record<string, { count: number; success_count: number; latencies: number[] }> = {};
+    const ttsByProvider: Record<
+      string,
+      { count: number; success_count: number; latencies: number[] }
+    > = {};
 
     for (const event of ttsGenerationEvents) {
       const provider = event.data.provider;

@@ -5,7 +5,7 @@ Comprehensive analytics tracking for September, providing event logging, aggrega
 ## Overview
 
 The analytics package enables tracking of key user interactions:
-- **Messages**: Text input, keystroke efficiency, autocomplete adoption
+- **Messages**: Text input, keystroke tracking
 - **AI Generation**: LLM API calls, token usage, latency by provider
 - **TTS Generation**: Text-to-speech calls, audio duration, latency by provider
 
@@ -19,10 +19,8 @@ Events follow a discriminated union pattern with three main types:
 
 #### MessageSentEvent
 Logged when a user sends a message. Tracks:
-- Message metrics (length, type)
+- Message metrics (length)
 - Keystroke data (physical + virtual keyboard)
-- Autocomplete efficiency (characters saved)
-- Voice input usage
 
 ```typescript
 {
@@ -30,12 +28,7 @@ Logged when a user sends a message. Tracks:
   data: {
     text_length: number,
     keys_typed: number,           // Total keystrokes
-    chars_saved: number,          // Characters saved via autocomplete
-    message_type: 'user' | string,
     chat_id?: string,
-    has_voice_input?: boolean,
-    used_autocomplete?: boolean,
-    suggestion_count?: number,
   }
 }
 ```
@@ -101,9 +94,6 @@ The `useAnalyticsSummary` hook provides real-time aggregated metrics:
   messages: {
     total_messages: number,
     avg_text_length: number,
-    messages_with_voice: number,
-    messages_with_autocomplete: number,
-    autocomplete_adoption_rate: number,  // percentage
   },
   ai_generations: {
     total_generations: number,
@@ -151,8 +141,6 @@ import { logMessageSent, logAIGeneration, logTTSGeneration } from '@/packages/an
 logMessageSent(userId, {
   text_length: message.length,
   keys_typed: 42,
-  chars_saved: 12,
-  message_type: 'user',
   chat_id: '...',
 });
 
@@ -193,7 +181,7 @@ function AnalyticsDashboard() {
   return (
     <div>
       <p>Messages Sent: {data?.messages.total_messages}</p>
-      <p>Efficiency: {data?.messages.autocomplete_adoption_rate}%</p>
+      <p>Avg Length: {data?.messages.avg_text_length}</p>
       <p>AI Calls: {data?.ai_generations.total_generations}</p>
     </div>
   );
@@ -229,7 +217,7 @@ Keystroke data combines inputs from:
 
 The `useEditorContext` provides:
 - `trackKeystroke()`: Increment keystroke counter
-- `getAndResetStats()`: Retrieve and reset keystroke/chars_saved counts
+- `getAndResetStats()`: Retrieve and reset keystroke counts
 
 Flow:
 1. Editor component calls `trackKeystroke()` for each physical key press
@@ -256,9 +244,7 @@ To verify analytics are working:
 
 Expected data:
 - `keys_typed` increases with each keystroke
-- `chars_saved` increases with autocomplete selection
 - `latency_ms` shows generation time for AI/TTS
-- Efficiency percentage = charsSaved / (keysTyped + charsSaved) * 100
 
 ## Future Enhancements
 

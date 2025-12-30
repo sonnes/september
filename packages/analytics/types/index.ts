@@ -27,22 +27,10 @@ export const MessageSentEventSchema = BaseEventSchema.extend({
   data: z.object({
     // Length of the message text
     text_length: z.number().int().min(0),
-    // Whether message included voice input
-    has_voice_input: z.boolean().default(false),
-    // Whether message included autocomplete suggestions
-    used_autocomplete: z.boolean().default(false),
-    // Number of autocomplete suggestions shown
-    suggestion_count: z.number().int().min(0).default(0),
-    // Which suggestion was selected (if any)
-    selected_suggestion_index: z.number().int().min(0).optional(),
     // Chat/conversation ID
     chat_id: z.string().uuid().optional(),
     // Total keystrokes (physical keyboard + virtual keyboard)
     keys_typed: z.number().int().min(0).default(0),
-    // Characters saved through autocomplete
-    chars_saved: z.number().int().min(0).default(0),
-    // Message type (e.g., 'user', 'assistant', etc)
-    message_type: z.string().default('user'),
   }),
 });
 

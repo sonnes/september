@@ -14,7 +14,7 @@ import { useAccountContext } from '@/packages/account';
 import { DashboardStats } from '@/packages/analytics';
 
 export default function DashboardPage() {
-  const { user, loading } = useAccountContext();
+  const { loading } = useAccountContext();
 
   return (
     <>
@@ -33,11 +33,6 @@ export default function DashboardPage() {
         <div className="flex flex-1 flex-col gap-6 p-6">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-            {user?.user_metadata?.full_name && (
-              <p className="text-muted-foreground">
-                Welcome back, {user.user_metadata.full_name}
-              </p>
-            )}
           </div>
 
           {!loading && <DashboardStats />}
