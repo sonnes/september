@@ -11,8 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
 import { useAccountContext } from '@/packages/account';
-
-import { DashboardSkeleton } from './loading-skeleton';
+import { DashboardStats } from '@/packages/analytics';
 
 export default function DashboardPage() {
   const { user, loading } = useAccountContext();
@@ -31,40 +30,18 @@ export default function DashboardPage() {
         </Breadcrumb>
       </SidebarLayout.Header>
       <SidebarLayout.Content>
-        {loading ? (
-          <DashboardSkeleton />
-        ) : (
-          <div className="flex flex-1 flex-col gap-6 p-6">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <div className="flex flex-1 flex-col gap-6 p-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            {user?.user_metadata?.full_name && (
               <p className="text-muted-foreground">
-                Welcome back, {user?.user_metadata?.full_name}
+                Welcome back, {user.user_metadata.full_name}
               </p>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <div className="rounded-lg border bg-card p-6">
-                <h3 className="text-sm font-medium text-muted-foreground">Total Messages</h3>
-                <p className="mt-2 text-3xl font-bold">—</p>
-              </div>
-              <div className="rounded-lg border bg-card p-6">
-                <h3 className="text-sm font-medium text-muted-foreground">Recent Activity</h3>
-                <p className="mt-2 text-3xl font-bold">—</p>
-              </div>
-              <div className="rounded-lg border bg-card p-6">
-                <h3 className="text-sm font-medium text-muted-foreground">Quick Stats</h3>
-                <p className="mt-2 text-3xl font-bold">—</p>
-              </div>
-            </div>
-
-            <div className="rounded-lg border bg-card p-6">
-              <h2 className="text-lg font-semibold">Recent Activity</h2>
-              <div className="mt-4 space-y-4">
-                <p className="text-sm text-muted-foreground">No recent activity</p>
-              </div>
-            </div>
+            )}
           </div>
-        )}
+
+          {!loading && <DashboardStats />}
+        </div>
       </SidebarLayout.Content>
     </>
   );

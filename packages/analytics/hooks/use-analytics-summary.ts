@@ -94,7 +94,10 @@ export function useAnalyticsSummary({
   userId?: string;
   timeRange?: TimeRange;
 } = {}): UseAnalyticsSummaryReturn {
-  const { start: startDate, end: endDate } = getTimeRangeBounds(timeRange);
+  const { start: startDate, end: endDate } = useMemo(
+    () => getTimeRangeBounds(timeRange),
+    [timeRange]
+  );
 
   const {
     data: events,
