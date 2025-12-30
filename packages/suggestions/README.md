@@ -39,7 +39,7 @@ export function MyComponent() {
 import { useSuggestions } from '@/packages/suggestions';
 
 export function MyCustomComponent() {
-  const { suggestions, isLoading } = useSuggestions({ text: 'Hello', timeout: 500 });
+  const { suggestions, isLoading } = useSuggestions({ text: 'Hello', history: [] });
   // ...
 }
 ```

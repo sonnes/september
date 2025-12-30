@@ -10,10 +10,9 @@ import { useSuggestions } from '@/packages/suggestions/hooks/use-suggestions';
 interface SuggestionsProps {
   chatId?: string;
   className?: string;
-  timeout?: number;
 }
 
-export function Suggestions({ chatId, className, timeout = 2000 }: SuggestionsProps) {
+export function Suggestions({ chatId, className }: SuggestionsProps) {
   const { text, setText } = useEditorContext();
   const { messages: searchMessages, isLoading: isLoadingSearchMessages } = useMessages({
     searchQuery: text,
@@ -25,7 +24,6 @@ export function Suggestions({ chatId, className, timeout = 2000 }: SuggestionsPr
   });
   const { suggestions, isLoading, clearSuggestions } = useSuggestions({
     text,
-    timeout,
     history: historyMessages,
   });
 

@@ -1,20 +1,19 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { z } from 'zod';
-
-import { useDebounce } from '@/hooks/use-debounce';
 
 import { useAISettings, useGenerate } from '@/packages/ai';
 import { Message } from '@/packages/chats';
 import { Suggestion } from '@/packages/suggestions/types';
 
-const SUGGESTIONS_PROMPT = `Generate 5 text completions for the User based on their current typing and conversation context.
+const SUGGESTIONS_PROMPT = `Generate 5 possible next messages for the User to send, based on the conversation context and their typing style.
 
 <rules>
-- Complete or extend the User's current thought naturally
-- Each suggestion must be a complete, standalone sentence
+- Suggestions must be responses TO the Partner, written AS the User
+- If the User has started typing, complete their thought
+- If the User hasn't typed, provide next message the User would likely send
 - Match the User's tone and style from the persona
 - Return ONLY a JSON array of 5 strings, no other text
 </rules>
@@ -34,9 +33,9 @@ User (typing): 6
 <example>
 <input>
 Partner: How are you?
-User (typing): I'm
+User (typing): 
 </input>
-<output>["I'm doing well, thanks!", "I'm good, how about you?", "I'm okay, just tired", "I'm great!", "I'm hanging in there"]</output>
+<output>["I'm doing well, thanks!", "I'm good, how about you?", "I'm okay, just tired", "I'm great!", "Hanging in there"]</output>
 </example>
 </examples>`;
 
@@ -54,16 +53,19 @@ interface UseSuggestionsReturn {
 
 export function useSuggestions({
   text,
-  timeout = 2000,
   history = [],
 }: {
   text: string;
-  timeout?: number;
   history?: Message[];
 }): UseSuggestionsReturn {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const debouncedText = useDebounce(text, timeout);
   const [isLoading, setIsLoading] = useState(false);
+  const textRef = useRef(text);
+
+  // Update ref when text changes
+  useEffect(() => {
+    textRef.current = text;
+  }, [text]);
 
   const { suggestionsConfig } = useAISettings();
   const { generate, isReady } = useGenerate({
@@ -75,10 +77,10 @@ export function useSuggestions({
     setSuggestions([]);
   }, []);
 
-  // Auto-fetch suggestions when debounced text changes
+  // Auto-fetch suggestions when history changes (e.g. new message received)
   useEffect(() => {
-    if (debouncedText.trim().length === 0 || !isReady) {
-      if (debouncedText.trim().length === 0) {
+    if (history.length === 0 || !isReady) {
+      if (history.length === 0) {
         setSuggestions([]);
       }
       return;
@@ -88,7 +90,7 @@ export function useSuggestions({
       return;
     }
 
-    const fetchSuggestions = async (text: string, messages: Message[]) => {
+    const fetchSuggestions = async (currentText: string, messages: Message[]) => {
       setIsLoading(true);
 
       try {
@@ -97,7 +99,7 @@ export function useSuggestions({
           .join('\n');
 
         const result = await generate({
-          prompt: `${messagesContent}\nUser (typing): ${text}`,
+          prompt: `${messagesContent}\nUser (typing): ${currentText}`,
           system: SUGGESTIONS_PROMPT.replace(
             '{USER_PERSONA}',
             suggestionsConfig.settings?.system_instructions || ''
@@ -126,9 +128,8 @@ export function useSuggestions({
       }
     };
 
-    fetchSuggestions(debouncedText, history);
+    fetchSuggestions(textRef.current, history);
   }, [
-    debouncedText,
     isReady,
     suggestionsConfig.enabled,
     suggestionsConfig.model,
