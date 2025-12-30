@@ -68,6 +68,8 @@ export function useSpeech(): UseSpeechReturn {
     (text: string, options?: SpeechOptions) => {
       if (!engine) return undefined;
 
+      const startTime = performance.now();
+
       const promise = engine.generateSpeech({
         text,
         voice: voice,
@@ -80,12 +82,19 @@ export function useSpeech(): UseSpeechReturn {
       promise
         .then(result => {
           if (user?.id && result) {
+            const latencyMs = Math.round(performance.now() - startTime);
+            // Estimate duration from blob size (16kHz, 16-bit audio = 2 bytes per sample)
+            const durationSeconds =
+              result.blob && typeof result.blob === 'object' && 'size' in result.blob
+                ? (result.blob as Blob).size / (16000 * 2)
+                : 0;
+
             logTTSGeneration(user.id, {
               provider: speechConfig.provider === 'elevenlabs' ? 'elevenlabs' : undefined,
               voice_id: speechConfig.voice_id,
               text_length: text.length,
-              duration_seconds: 0,
-              latency_ms: 0,
+              duration_seconds: durationSeconds,
+              latency_ms: latencyMs,
               success: true,
             });
           }

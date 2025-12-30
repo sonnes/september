@@ -57,7 +57,7 @@ export default function ChatPage({ params }: ChatPageProps) {
   const error = (chatsError || messagesError) as Error | undefined;
 
   const { status, createAudioMessage } = useCreateAudioMessage();
-  const { text, setText, trackKeystroke } = useEditorContext();
+  const { text, setText, trackKeystroke, getAndResetStats } = useEditorContext();
   const { generateKeyboard } = useGenerateKeyboardFromMessage();
   const { createKeyboard } = useCreateKeyboard();
   const { updateChat } = useUpdateChat();
@@ -70,11 +70,15 @@ export default function ChatPage({ params }: ChatPageProps) {
       // Check if this is the first message
       const isFirstMessage = messages?.length === 0;
 
+      // Get editor stats before creating message
+      const editorStats = getAndResetStats();
+
       const { message, audio } = await createAudioMessage({
         chat_id: chatId,
         text: text.trim(),
         type: 'user',
         user_id: user.id,
+        editorStats,
       });
 
       // Check if display popup is open

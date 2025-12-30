@@ -25,4 +25,8 @@ export type Message = z.infer<typeof MessageSchema>;
 export type CreateMessageData = Omit<z.input<typeof MessageSchema>, 'id' | 'created_at'> & {
   id?: string;
   created_at?: Date;
+  editorStats?: {
+    keysTyped: number;
+    charsSaved: number;
+  };
 };

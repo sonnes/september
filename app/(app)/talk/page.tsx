@@ -62,7 +62,7 @@ export default function TalkPage() {
         }
       });
     },
-    [text, handleSubmit, setText]
+    [text, handleSubmit, setText, trackKeystroke]
   );
 
   return (

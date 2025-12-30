@@ -18,6 +18,9 @@ export interface MessageSentPayload {
   suggestion_count?: number;
   selected_suggestion_index?: number;
   chat_id?: string;
+  keys_typed?: number;
+  chars_saved?: number;
+  message_type?: string;
 }
 
 /**
@@ -68,6 +71,9 @@ export async function logMessageSent(userId: string, payload: MessageSentPayload
         suggestion_count: payload.suggestion_count ?? 0,
         selected_suggestion_index: payload.selected_suggestion_index,
         chat_id: payload.chat_id,
+        keys_typed: payload.keys_typed ?? 0,
+        chars_saved: payload.chars_saved ?? 0,
+        message_type: payload.message_type ?? 'user',
       },
     };
 

@@ -170,6 +170,8 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
           middleware: cacheMiddleware,
         });
 
+        const startTime = performance.now();
+
         if ('schema' in params && params.schema) {
           const { object, usage } = await generateObject({
             model,
@@ -180,6 +182,8 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
             output: params.output,
           });
 
+          const latencyMs = Math.round(performance.now() - startTime);
+
           // Log AI generation event
           if (user?.id && usage) {
             logAIGeneration(user.id, {
@@ -188,7 +192,7 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
               model: modelId,
               input_length: prompt.length,
               output_length: JSON.stringify(object).length,
-              latency_ms: 0,
+              latency_ms: latencyMs,
               success: true,
             });
           }
@@ -202,6 +206,8 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
             temperature,
           });
 
+          const latencyMs = Math.round(performance.now() - startTime);
+
           // Log AI generation event
           if (user?.id && usage) {
             logAIGeneration(user.id, {
@@ -210,7 +216,7 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
               model: modelId,
               input_length: prompt.length,
               output_length: text.length,
-              latency_ms: 0,
+              latency_ms: latencyMs,
               success: true,
             });
           }

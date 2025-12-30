@@ -37,6 +37,12 @@ export const MessageSentEventSchema = BaseEventSchema.extend({
     selected_suggestion_index: z.number().int().min(0).optional(),
     // Chat/conversation ID
     chat_id: z.string().uuid().optional(),
+    // Total keystrokes (physical keyboard + virtual keyboard)
+    keys_typed: z.number().int().min(0).default(0),
+    // Characters saved through autocomplete
+    chars_saved: z.number().int().min(0).default(0),
+    // Message type (e.g., 'user', 'assistant', etc)
+    message_type: z.string().default('user'),
   }),
 });
 

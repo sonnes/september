@@ -49,6 +49,9 @@ export function useCreateMessage(): UseCreateMessageReturn {
           logMessageSent(user.id, {
             text_length: newMessage.text.length,
             chat_id: newMessage.chat_id,
+            keys_typed: message.editorStats?.keysTyped ?? 0,
+            chars_saved: message.editorStats?.charsSaved ?? 0,
+            message_type: newMessage.type,
           });
         }
 
