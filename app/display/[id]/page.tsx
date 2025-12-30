@@ -1,35 +1,20 @@
 'use client';
 
-import { use, useEffect, useRef, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 
 import moment from 'moment';
 import Webcam from 'react-webcam';
 
 import { TextViewer, TextViewerWords, useAudioPlayer } from '@/packages/audio';
-import { RecordingControls, RecordingProvider, useRecordingContext } from '@/packages/recording';
 import { DisplayMessage } from '@/types/display';
 
-function DisplayContent({ chatId }: { chatId: string }) {
-  const webcamRef = useRef(null);
+export default function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: chatId } = use(params);
   const [latestMessage, setLatestMessage] = useState<DisplayMessage | null>(null);
 
   const { enqueue, current } = useAudioPlayer();
-  const { audioDestination } = useRecordingContext();
 
-  useEffect(() => {
-    if (current?.blob) {
-      const audio = new Audio(current.blob);
-      audioDestination.connectAudio(audio);
-      audio.play();
-
-      return () => {
-        audio.pause();
-        audioDestination.disconnectAudio();
-      };
-    }
-  }, [current?.blob, audioDestination]);
-
-  // Dynamic text sizing based on word count (from old display-client.tsx)
+  // Dynamic text sizing based on word count
   const getTextSize = (text: string) => {
     const wordCount = text.trim().split(/\s+/).length;
     if (wordCount <= 3) return 'text-8xl lg:text-9xl';
@@ -56,13 +41,7 @@ function DisplayContent({ chatId }: { chatId: string }) {
       const msg = event.data;
       if (msg.type === 'new-message') {
         setLatestMessage(msg);
-
-        // Audio blob passed directly via channel - no download needed
-        if (msg.audio) {
-          // Auto-play audio directly in the callback
-          console.log('enqueueing audio', msg.audio, msg.alignment);
-          enqueue({ blob: msg.audio, alignment: msg.alignment });
-        }
+        enqueue({ blob: msg.audio, alignment: msg.alignment });
       }
     };
 
@@ -76,12 +55,10 @@ function DisplayContent({ chatId }: { chatId: string }) {
       {/* Webcam Video */}
       <Webcam
         audio={false}
-        ref={webcamRef}
         className="absolute inset-0 w-full h-full object-cover"
         style={{ transform: 'scaleX(-1)' }} // Mirror the video
         onUserMediaError={error => {
           console.warn('[Display] Webcam permission denied:', error);
-          // Silent failure - will show black background with text overlay
         }}
       />
 
@@ -129,19 +106,6 @@ function DisplayContent({ chatId }: { chatId: string }) {
           <span>Live</span>
         </div>
       </div>
-
-      {/* Recording Controls */}
-      <RecordingControls />
     </div>
-  );
-}
-
-export default function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: chatId } = use(params);
-
-  return (
-    <RecordingProvider>
-      <DisplayContent chatId={chatId} />
-    </RecordingProvider>
   );
 }

@@ -50,6 +50,18 @@ export function useAudioDestination(): UseAudioDestinationReturn {
       audioContextRef.current = new AudioContext();
       destinationRef.current = audioContextRef.current.createMediaStreamDestination();
     }
+
+    // Create a silent oscillator to keep the audio track active
+    // This prevents MediaRecorder from producing 0-byte chunks
+    if (audioContextRef.current && destinationRef.current) {
+      const oscillator = audioContextRef.current.createOscillator();
+      const gain = audioContextRef.current.createGain();
+      gain.gain.value = 0; // Silent
+      oscillator.connect(gain);
+      gain.connect(destinationRef.current);
+      oscillator.start();
+    }
+
     return destinationRef.current?.stream || null;
   }, []);
 

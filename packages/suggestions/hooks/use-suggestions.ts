@@ -91,7 +91,6 @@ export function useSuggestions({
     const fetchSuggestions = async (text: string, messages: Message[]) => {
       setIsLoading(true);
 
-      console.log('fetchSuggestions', text, messages);
       try {
         const messagesContent = messages
           .map(m => `${m.type === 'transcription' ? 'Partner' : 'User'}: ${m.text}`)
@@ -117,7 +116,6 @@ export function useSuggestions({
               }))
             );
           } catch (error) {
-            console.log(result);
             throw error;
           }
         }

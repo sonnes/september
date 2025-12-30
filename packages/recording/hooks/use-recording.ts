@@ -1,9 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+
 import { mergeStreams } from '../lib/stream-merger';
-import type { RecordingFormat, RecordingStatus, UseRecordingReturn, UseAudioDestinationReturn } from '../types';
-import { useMediaConverter } from './use-media-converter';
+import type {
+  RecordingFormat,
+  RecordingStatus,
+  UseAudioDestinationReturn,
+  UseRecordingReturn,
+} from '../types';
 import { useVideoStream } from './use-video-stream';
 
 export function useRecording(audioDestination: UseAudioDestinationReturn): UseRecordingReturn {
@@ -19,7 +24,6 @@ export function useRecording(audioDestination: UseAudioDestinationReturn): UseRe
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const videoStream = useVideoStream();
-  const converter = useMediaConverter();
 
   // Update duration every second while recording
   useEffect(() => {
@@ -59,44 +63,55 @@ export function useRecording(audioDestination: UseAudioDestinationReturn): UseRe
       // Merge video and audio streams
       const combinedStream = mergeStreams(video, audio);
 
+      // Check for supported MIME type
+      const mimeTypes = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm',
+      ];
+      const mimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
+
+      if (!mimeType) {
+        throw new Error('No supported video MIME type found');
+      }
+
       // Create MediaRecorder with WebM output
       const recorder = new MediaRecorder(combinedStream, {
-        mimeType: 'video/webm;codecs=vp9,opus',
+        mimeType,
         videoBitsPerSecond: 2500000, // 2.5 Mbps
       });
 
-      recorder.ondataavailable = (event) => {
+      recorder.ondataavailable = event => {
         if (event.data.size > 0) {
           chunksRef.current.push(event.data);
         }
       };
 
-      recorder.onstop = async () => {
+      recorder.onstop = () => {
         setStatus('stopping');
 
         // Create WebM blob
         const webmBlob = new Blob(chunksRef.current, { type: 'video/webm' });
 
-        // Try to convert to MP4
-        try {
-          setStatus('converting');
-          const mp4Blob = await converter.convert(webmBlob);
-          setRecordingBlob(mp4Blob);
-          setFormat('mp4');
-          setStatus('ready');
-        } catch (conversionError) {
-          console.warn('[Recording] MP4 conversion failed, using WebM:', conversionError);
-          // Fallback to WebM
-          setRecordingBlob(webmBlob);
-          setFormat('webm');
-          setStatus('ready');
+        // Validate we have actual data
+        if (chunksRef.current.length === 0 || webmBlob.size === 0) {
+          console.error('[Recording] No data recorded');
+          setError('No data was recorded. Please try again.');
+          setStatus('error');
+          videoStream.stopStream();
+          return;
         }
+
+        // Use native WebM format directly
+        setRecordingBlob(webmBlob);
+        setFormat('webm');
+        setStatus('ready');
 
         // Cleanup streams
         videoStream.stopStream();
       };
 
-      recorder.onerror = (event) => {
+      recorder.onerror = event => {
         const errorMessage = 'Recording error occurred';
         console.error('[Recording]', errorMessage, event);
         setError(errorMessage);
@@ -115,10 +130,12 @@ export function useRecording(audioDestination: UseAudioDestinationReturn): UseRe
       setStatus('error');
       videoStream.stopStream();
     }
-  }, [videoStream, audioDestination, converter]);
+  }, [videoStream, audioDestination]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && status === 'recording') {
+      // Request any pending data before stopping
+      mediaRecorderRef.current.requestData();
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current = null;
     }
@@ -153,7 +170,7 @@ export function useRecording(audioDestination: UseAudioDestinationReturn): UseRe
     duration,
     recordingBlob,
     format,
-    conversionProgress: converter.progress,
+    conversionProgress: 0, // No conversion needed
     startRecording,
     stopRecording,
     downloadRecording,

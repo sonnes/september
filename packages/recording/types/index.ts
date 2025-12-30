@@ -2,13 +2,13 @@ import { z } from 'zod';
 
 // Recording status states
 export type RecordingStatus =
-  | 'idle'           // Not recording
-  | 'initializing'   // Setting up streams
-  | 'recording'      // Actively recording
-  | 'stopping'       // Stopping recorder
-  | 'converting'     // Converting WebM to MP4
-  | 'ready'          // Recording ready for download
-  | 'error';         // Error occurred
+  | 'idle' // Not recording
+  | 'initializing' // Setting up streams
+  | 'recording' // Actively recording
+  | 'stopping' // Stopping recorder
+  | 'converting' // Converting WebM to MP4
+  | 'ready' // Recording ready for download
+  | 'error'; // Error occurred
 
 // Recording format
 export type RecordingFormat = 'webm' | 'mp4';
@@ -57,7 +57,7 @@ export interface UseAudioDestinationReturn {
 }
 
 export interface UseMediaConverterReturn {
-  convert: (webmBlob: Blob) => Promise<Blob>;
+  convert: (webmBlob: Blob, duration?: number) => Promise<Blob>;
   isConverting: boolean;
   progress: number; // 0-100
   error: string | null;
