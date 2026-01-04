@@ -45,3 +45,27 @@ export function useMessages({
     error,
   };
 }
+
+export function useFirstMessage(chatId?: string) {
+  const {
+    data: message,
+    isLoading,
+    isError,
+    status,
+  } = useLiveQuery(
+    q => {
+      let query = q
+        .from({ items: messageCollection })
+        .where(({ items }) => eq(items.chat_id, chatId))
+        .orderBy(({ items }) => items.created_at, 'asc')
+        .limit(1);
+      return query;
+    },
+    [chatId]
+  );
+  return {
+    message: message?.[0],
+    isLoading,
+    error: isError ? { message: `Database error: ${status}` } : undefined,
+  };
+}

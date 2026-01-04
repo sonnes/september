@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { z } from 'zod';
 
@@ -8,12 +8,17 @@ import { useAISettings, useGenerate } from '@/packages/ai';
 import { Message } from '@/packages/chats';
 import { Suggestion } from '@/packages/suggestions/types';
 
-const SUGGESTIONS_PROMPT = `Generate 5 possible next messages for the User to send, based on the conversation context and their typing style.
+const SUGGESTIONS_PROMPT = `Generate 5 possible NEXT messages for the User to send in the conversation.
+
+<context>
+- Suggestions are triggered AFTER the User sends a message
+- The User has just sent their last message and is now waiting or ready to respond to what comes next
+- Generate what the User would MOST LIKELY say next as a follow-up or response
+</context>
 
 <rules>
-- Suggestions must be responses TO the Partner, written AS the User
-- If the User has started typing, complete their thought
-- If the User hasn't typed, provide next message the User would likely send
+- Suggestions must be the User's NEXT message, not a continuation of their previous one
+- Generate natural follow-ups or responses based on the conversation flow
 - Match the User's tone and style from the persona
 - STRICTLY maintain the same language as the conversation context
 - Return ONLY a JSON array of 5 strings, no other text
@@ -26,15 +31,14 @@ const SUGGESTIONS_PROMPT = `Generate 5 possible next messages for the User to se
 <examples>
 <example>
 <input>
-Partner: What time?
-User (typing): 6
+Them: Want to grab dinner tonight?
+Me: Sure, sounds good!
 </input>
-<output>["6 PM works for me", "6:30 would be better", "6 o'clock sharp", "6 is too early for me", "6 sounds good"]</output>
+<output>["What time works for you?", "Where should we go?", "I know a great place nearby", "Let me check my schedule", "Should we invite anyone else?"]</output>
 </example>
 <example>
 <input>
-Partner: How are you?
-User (typing): 
+Them: How are you?
 </input>
 <output>["I'm doing well, thanks!", "I'm good, how about you?", "I'm okay, just tired", "I'm great!", "Hanging in there"]</output>
 </example>
@@ -53,20 +57,14 @@ interface UseSuggestionsReturn {
 }
 
 export function useSuggestions({
-  text,
+  context,
   history = [],
 }: {
-  text: string;
+  context?: string;
   history?: Message[];
 }): UseSuggestionsReturn {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const textRef = useRef(text);
-
-  // Update ref when text changes
-  useEffect(() => {
-    textRef.current = text;
-  }, [text]);
 
   const { suggestionsConfig } = useAISettings();
   const { generate, isReady } = useGenerate({
@@ -91,16 +89,16 @@ export function useSuggestions({
       return;
     }
 
-    const fetchSuggestions = async (currentText: string, messages: Message[]) => {
+    const fetchSuggestions = async (messages: Message[]) => {
       setIsLoading(true);
 
       try {
         const messagesContent = messages
-          .map(m => `${m.type === 'transcription' ? 'Partner' : 'User'}: ${m.text}`)
+          .map(m => `${m.type === 'transcription' ? 'Them' : 'Me'}: ${m.text}`)
           .join('\n');
 
         const result = await generate({
-          prompt: `${messagesContent}\nUser (typing): ${currentText}`,
+          prompt: `Context: ${context}\nConversation:\n${messagesContent}`,
           system: SUGGESTIONS_PROMPT.replace(
             '{USER_PERSONA}',
             suggestionsConfig.settings?.system_instructions || ''
@@ -129,7 +127,7 @@ export function useSuggestions({
       }
     };
 
-    fetchSuggestions(textRef.current, history);
+    fetchSuggestions(history);
   }, [
     isReady,
     suggestionsConfig.enabled,

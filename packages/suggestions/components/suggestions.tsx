@@ -3,7 +3,7 @@
 import { Loader2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { useMessages } from '@/packages/chats';
+import { useFirstMessage, useMessages } from '@/packages/chats';
 import { useEditorContext } from '@/packages/editor';
 import { useSuggestions } from '@/packages/suggestions/hooks/use-suggestions';
 
@@ -22,8 +22,9 @@ export function Suggestions({ chatId, className }: SuggestionsProps) {
     chatId,
     limit: 10,
   });
+  const { message: firstMessage } = useFirstMessage(chatId);
   const { suggestions, isLoading, clearSuggestions } = useSuggestions({
-    text,
+    context: firstMessage?.text,
     history: historyMessages,
   });
 

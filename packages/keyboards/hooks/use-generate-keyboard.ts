@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 import { useAISettings, useGenerate } from '@/packages/ai';
 
-const KEYBOARD_GENERATION_PROMPT = `Generate an AAC keyboard with titles and 24 phrase starters from a conversation's first message.
+const KEYBOARD_GENERATION_PROMPT = `Generate an AAC keyboard with titles and 24 phrase starters using the User's point of view from the description given.
 
 <output_format>
 - chatTitle: Descriptive conversation name (max 50 chars)
@@ -21,30 +21,7 @@ const KEYBOARD_GENERATION_PROMPT = `Generate an AAC keyboard with titles and 24 
 - Prioritize frequently-used phrases over complex ones
 - STRICTLY maintain the same language as the input message
 - Match the style and tone of the input message (e.g. casual, formal)
-</rules>
-
-<examples>
-<example>
-<input>First message: "I need to schedule my doctor appointment"</input>
-<output>
-{
-  "chatTitle": "Medical Appointments",
-  "keyboardTitle": "Medical",
-  "buttons": ["Yes, please", "No, thanks", "What time?", "Morning works", "Afternoon better", "Can you call?", "I'll wait", "Too soon", "Next week?", "Is Monday?", "Need reminder", "Thank you", "Got it", "One moment", "Almost done", "Running late", "On my way", "Be right there", "Need help", "Feeling okay", "Not great", "Much better", "Same time?", "See you"]
-}
-</output>
-</example>
-<example>
-<input>First message: "What should we have for dinner tonight?"</input>
-<output>
-{
-  "chatTitle": "Dinner Planning",
-  "keyboardTitle": "Dinner",
-  "buttons": ["Sounds good", "I'm hungry", "Not sure", "Pizza?", "Chicken?", "Something light", "Order in?", "Cook together", "Your choice", "Anything works", "Not that", "Maybe later", "Too heavy", "Craving pasta", "Salad?", "Leftovers?", "What's quick?", "I'll cook", "You decide", "Surprise me", "Already ate", "Just snacks", "Dessert too?", "Perfect!"]
-}
-</output>
-</example>
-</examples>`;
+</rules>`;
 
 const KeyboardGenerationSchema = z.object({
   chatTitle: z.string().min(1).max(50),
