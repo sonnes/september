@@ -28,5 +28,6 @@ export const DEFAULT_SPEECH_CONFIG: SpeechConfig = {
     speed: 1.0,
     pitch: 1.0,
     volume: 1.0,
+    language: 'en-us',
   },
 };

@@ -6,7 +6,7 @@
 /**
  * Supported AI providers
  */
-export type AIProvider = 'gemini' | 'elevenlabs' | 'browser' | 'webllm';
+export type AIProvider = 'gemini' | 'elevenlabs' | 'browser' | 'webllm' | 'kokoro';
 
 /**
  * AI feature identifiers
@@ -127,10 +127,24 @@ export interface GeminiSpeechSettings extends Record<string, unknown> {
 }
 
 /**
+ * Kokoro text-to-speech settings
+ */
+export interface KokoroSpeechSettings extends Record<string, unknown> {
+  /** Speech speed multiplier (0.5-2.0) */
+  speed?: number;
+
+  /** Voice ID for Kokoro TTS */
+  voice?: string;
+
+  /** Language code for phonemization (e.g., 'en-us') */
+  language?: string;
+}
+
+/**
  * Configuration for text-to-speech
  */
 export interface SpeechConfig {
-  provider: 'browser' | 'gemini' | 'elevenlabs';
+  provider: 'browser' | 'gemini' | 'elevenlabs' | 'kokoro';
 
   /** Voice ID (provider-specific) */
   voice_id?: string;
@@ -141,7 +155,7 @@ export interface SpeechConfig {
   /** Model ID (provider-specific) */
   model_id?: string;
 
-  settings?: BrowserTTSSettings & GeminiSpeechSettings & ElevenLabsSettings;
+  settings?: BrowserTTSSettings & GeminiSpeechSettings & ElevenLabsSettings & KokoroSpeechSettings;
 }
 
 export interface ProviderConfig {

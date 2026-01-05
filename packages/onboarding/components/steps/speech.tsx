@@ -20,7 +20,7 @@ import type { Voice } from '@/types/voice';
 
 import { useOnboarding } from '@/packages/onboarding/components/onboarding-provider';
 
-type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs';
+type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs' | 'kokoro';
 
 interface ProviderOption {
   id: SpeechEngineId;

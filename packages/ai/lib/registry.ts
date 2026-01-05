@@ -128,6 +128,21 @@ export const AI_PROVIDERS: Record<AIProvider, AIServiceProvider> = {
       },
     ],
   },
+
+  kokoro: {
+    id: 'kokoro',
+    name: 'Kokoro TTS',
+    description: 'Client-side text-to-speech using Kokoro model. Runs locally via WebGPU, no API key required.',
+    features: ['speech'],
+    requires_api_key: false,
+    models: [
+      {
+        id: 'kokoro-82m-v1.0',
+        name: 'Kokoro 82M v1.0',
+        description: 'High-quality English TTS model (28 voices, US & UK)',
+      },
+    ],
+  },
 };
 
 /**

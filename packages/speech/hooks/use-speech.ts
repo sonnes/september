@@ -9,6 +9,7 @@ import type { AIProvider } from '@/types/ai-config';
 import type { Voice } from '@/types/voice';
 
 import { BrowserSpeechProvider } from '@/packages/speech/lib/providers/browser';
+import { KokoroSpeechProvider } from '@/packages/speech/lib/providers/kokoro';
 import { ElevenLabsSpeechProvider } from '@/packages/speech/lib/providers/elevenlabs';
 import { GeminiSpeechProvider } from '@/packages/speech/lib/providers/gemini';
 import { ListVoicesRequest, SpeechEngine, SpeechOptions, SpeechResponse } from '@/packages/speech/types';
@@ -40,6 +41,9 @@ export function useSpeech(): UseSpeechReturn {
     if (geminiConfig && geminiConfig.api_key) {
       registry.set('gemini', new GeminiSpeechProvider(geminiConfig.api_key));
     }
+
+    // Kokoro requires no API key (client-side only)
+    registry.set('kokoro', new KokoroSpeechProvider());
 
     return registry;
   }, [getProviderConfig]);

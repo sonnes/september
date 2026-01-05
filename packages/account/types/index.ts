@@ -33,7 +33,7 @@ export const TranscriptionConfigSchema = z.object({
 
 export const SpeechConfigSchema = z.object({
   enabled: z.boolean().optional(),
-  provider: z.enum(['browser', 'gemini', 'elevenlabs']),
+  provider: z.enum(['browser', 'gemini', 'elevenlabs', 'kokoro']),
   voice_id: z.string().optional(),
   voice_name: z.string().optional(),
   model_id: z.string().optional(),
@@ -46,6 +46,7 @@ export const SpeechConfigSchema = z.object({
       similarity: z.number().optional(),
       style: z.number().optional(),
       speaker_boost: z.boolean().optional(),
+      language: z.string().optional(),
     })
     .optional(),
 });

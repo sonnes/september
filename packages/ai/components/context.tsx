@@ -131,7 +131,7 @@ export function AISettingsProvider({ children }: AISettingsProviderProps) {
 
   const getProviderConfig = useCallback(
     (provider: AIProvider): ProviderConfig | undefined => {
-      if (provider === 'browser') return undefined;
+      if (provider === 'browser' || provider === 'kokoro') return undefined;
       return account?.ai_providers?.[provider];
     },
     [account]

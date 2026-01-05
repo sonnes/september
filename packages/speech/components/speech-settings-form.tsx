@@ -14,7 +14,7 @@ import type { AIProvider } from '@/types/ai-config';
  * Zod schema for Speech Configuration
  */
 export const SpeechSettingsFormSchema = z.object({
-  provider: z.enum(['elevenlabs', 'browser', 'gemini']),
+  provider: z.enum(['elevenlabs', 'browser', 'gemini', 'kokoro']),
   voice_id: z.string().optional(),
   voice_name: z.string().optional(),
   model_id: z.string().optional(),
@@ -29,6 +29,8 @@ export const SpeechSettingsFormSchema = z.object({
       similarity: z.number().min(0).max(1).optional(),
       style: z.number().min(0).max(1).optional(),
       speaker_boost: z.boolean().optional(),
+      // Kokoro settings
+      language: z.string().optional(),
     })
     .optional(),
 });
@@ -49,7 +51,7 @@ export function SpeechSettingsForm({ account, onSubmit, children }: SpeechSettin
   const defaultValues = useMemo((): SpeechSettingsFormData => {
     const speechConfig = account?.ai_speech;
     return {
-      provider: (speechConfig?.provider as 'elevenlabs' | 'browser' | 'gemini') ?? 'browser',
+      provider: (speechConfig?.provider as 'elevenlabs' | 'browser' | 'gemini' | 'kokoro') ?? 'browser',
       voice_id: speechConfig?.voice_id ?? '',
       voice_name: speechConfig?.voice_name ?? '',
       model_id: speechConfig?.model_id ?? '',
@@ -63,6 +65,8 @@ export function SpeechSettingsForm({ account, onSubmit, children }: SpeechSettin
         similarity: speechConfig?.settings?.similarity ?? 0.75,
         style: speechConfig?.settings?.style ?? 0,
         speaker_boost: speechConfig?.settings?.speaker_boost ?? true,
+        // Kokoro settings
+        language: speechConfig?.settings?.language ?? 'en-us',
       },
     };
   }, [account?.ai_speech]);
@@ -108,7 +112,7 @@ export function SpeechSettingsForm({ account, onSubmit, children }: SpeechSettin
 
   // Check if provider requires API key and if it's configured
   const hasApiKey = useMemo(() => {
-    if (provider === 'browser') return true;
+    if (provider === 'browser' || provider === 'kokoro') return true;
     return !!account?.ai_providers?.[provider as keyof typeof account.ai_providers]?.api_key;
   }, [provider, account]);
 
@@ -437,6 +441,83 @@ export function SpeechSettingsForm({ account, onSubmit, children }: SpeechSettin
                   label="Model"
                   options={models.map(model => ({ id: model.id, name: model.name }))}
                   disabled={!hasApiKey}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Provider-Specific Settings - Kokoro */}
+      {provider === 'kokoro' && (
+        <div className="border-t border-zinc-200 pt-6">
+          <div className="px-4 mb-4">
+            <h3 className="text-base/7 font-semibold text-zinc-900">Kokoro TTS Settings</h3>
+            <p className="mt-1 text-sm/6 text-zinc-600">
+              Configure the settings for Kokoro speech generation. Runs locally in your browser.
+            </p>
+          </div>
+
+          <div className="space-y-6">
+            {/* Model Info (read-only display) */}
+            <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
+              <div className="px-4 sm:px-0">
+                <h4 className="text-sm font-medium text-zinc-900">Model</h4>
+                <p className="mt-1 text-sm text-zinc-600">
+                  Kokoro uses the Kokoro 82M v1.0 model.
+                </p>
+              </div>
+              <div className="md:col-span-2 px-4">
+                <div className="bg-zinc-50 rounded-lg p-3 border border-zinc-200">
+                  <p className="text-sm font-medium text-zinc-900">Kokoro 82M v1.0</p>
+                  <p className="text-xs text-zinc-600 mt-1">
+                    High-quality English TTS with 28 voices (US & UK accents)
+                  </p>
+                  <p className="text-xs text-zinc-500 mt-2">
+                    ℹ️ Model downloads on first use (~160MB). Runs locally via WebGPU.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Speed */}
+            <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
+              <div className="px-4 sm:px-0">
+                <h4 className="text-sm font-medium text-zinc-900">Speed</h4>
+                <p className="mt-1 text-sm text-zinc-600">Controls how fast the voice speaks.</p>
+              </div>
+              <div className="md:col-span-2 px-4">
+                <FormSlider
+                  name="settings.speed"
+                  control={form.control}
+                  min={0.5}
+                  max={2.0}
+                  step={0.1}
+                  leftLabel="Slower"
+                  rightLabel="Faster"
+                  showValue
+                  valueFormatter={value => `${value}x`}
+                />
+              </div>
+            </div>
+
+            {/* Language Selection */}
+            <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
+              <div className="px-4 sm:px-0">
+                <h4 className="text-sm font-medium text-zinc-900">Language</h4>
+                <p className="mt-1 text-sm text-zinc-600">
+                  Select the English variant for pronunciation.
+                </p>
+              </div>
+              <div className="md:col-span-2 px-4">
+                <FormSelect
+                  name="settings.language"
+                  control={form.control}
+                  label="Language"
+                  options={[
+                    { id: 'en-us', name: 'English (US)' },
+                    { id: 'en-gb', name: 'English (UK)' },
+                  ]}
                 />
               </div>
             </div>

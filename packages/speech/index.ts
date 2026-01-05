@@ -12,3 +12,4 @@ export * from '@/packages/speech/types/schemas';
 export * from '@/packages/speech/lib/providers/browser';
 export * from '@/packages/speech/lib/providers/elevenlabs';
 export * from '@/packages/speech/lib/providers/gemini';
+export * from '@/packages/speech/lib/providers/kokoro';

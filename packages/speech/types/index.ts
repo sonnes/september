@@ -1,5 +1,10 @@
 import { Alignment } from '@/packages/audio';
-import { BrowserTTSSettings, ElevenLabsSettings, GeminiSpeechSettings } from '@/types/ai-config';
+import {
+  KokoroSpeechSettings,
+  BrowserTTSSettings,
+  ElevenLabsSettings,
+  GeminiSpeechSettings,
+} from '@/types/ai-config';
 import { Voice } from '@/types/voice';
 
 export interface SpeechEngine {
@@ -15,7 +20,11 @@ export interface SpeechRequest {
   options?: SpeechOptions;
 }
 
-export type SpeechOptions = ElevenLabsSettings | BrowserTTSSettings | GeminiSpeechSettings;
+export type SpeechOptions =
+  | ElevenLabsSettings
+  | BrowserTTSSettings
+  | GeminiSpeechSettings
+  | KokoroSpeechSettings;
 
 export interface SpeechResponse {
   utterance?: SpeechSynthesisUtterance;

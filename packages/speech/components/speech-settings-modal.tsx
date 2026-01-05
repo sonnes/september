@@ -34,6 +34,7 @@ export function SpeechSettingsModal() {
   const currentVoiceName = account?.ai_speech?.voice_name || 'Select voice';
   const hasApiKey =
     account?.ai_speech?.provider === 'browser' ||
+    account?.ai_speech?.provider === 'kokoro' ||
     !!account?.ai_providers?.[account?.ai_speech?.provider as keyof typeof account.ai_providers]
       ?.api_key;
 
