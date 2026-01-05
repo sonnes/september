@@ -4,14 +4,14 @@ import { useMemo } from 'react';
 
 import { getModelsForProvider } from '@/packages/ai';
 
-type SpeechProvider = 'browser' | 'gemini' | 'elevenlabs';
+type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs';
 
 export interface UseProviderModelsReturn {
   models: Array<{ id: string; name: string; description?: string }>;
   defaultModel?: string;
 }
 
-export function useProviderModels(provider: SpeechProvider): UseProviderModelsReturn {
+export function useProviderModels(provider: SpeechEngineId): UseProviderModelsReturn {
   const models = useMemo(() => {
     return getModelsForProvider(provider);
   }, [provider]);

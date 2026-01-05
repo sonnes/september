@@ -2,7 +2,7 @@ import { Alignment } from '@/packages/audio';
 import { BrowserTTSSettings, ElevenLabsSettings, GeminiSpeechSettings } from '@/types/ai-config';
 import { Voice } from '@/types/voice';
 
-export interface SpeechProvider {
+export interface SpeechEngine {
   id: string;
   name: string;
   generateSpeech(request: SpeechRequest): Promise<SpeechResponse>;

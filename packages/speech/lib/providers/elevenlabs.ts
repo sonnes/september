@@ -1,6 +1,11 @@
+import {
+  ListVoicesRequest,
+  SpeechEngine,
+  SpeechRequest,
+  SpeechResponse,
+} from '@/packages/speech/types';
 import { ElevenLabsSettings } from '@/types/ai-config';
 import { Voice } from '@/types/voice';
-import { ListVoicesRequest, SpeechProvider, SpeechRequest, SpeechResponse } from '@/packages/speech/types';
 
 const ranks = {
   cloned: 1,
@@ -35,7 +40,7 @@ interface ElevenLabsResponse {
   normalized_alignment?: ElevenLabsAlignment;
 }
 
-export class ElevenLabsSpeechProvider implements SpeechProvider {
+export class ElevenLabsSpeechProvider implements SpeechEngine {
   id = 'elevenlabs';
   name = 'ElevenLabs';
   private apiKey: string;
@@ -165,4 +170,3 @@ export class ElevenLabsSpeechProvider implements SpeechProvider {
     this.apiKey = apiKey;
   }
 }
-

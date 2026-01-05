@@ -1,8 +1,13 @@
+import {
+  ListVoicesRequest,
+  SpeechEngine,
+  SpeechRequest,
+  SpeechResponse,
+} from '@/packages/speech/types';
 import { BrowserTTSSettings } from '@/types/ai-config';
 import { Voice } from '@/types/voice';
-import { ListVoicesRequest, SpeechProvider, SpeechRequest, SpeechResponse } from '@/packages/speech/types';
 
-export class BrowserSpeechProvider implements SpeechProvider {
+export class BrowserSpeechProvider implements SpeechEngine {
   id = 'browser_tts';
   name = 'Browser TTS';
   private synthesis: SpeechSynthesis | null = null;
@@ -83,4 +88,3 @@ export class BrowserSpeechProvider implements SpeechProvider {
     });
   }
 }
-

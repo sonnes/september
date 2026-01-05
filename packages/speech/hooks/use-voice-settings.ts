@@ -13,17 +13,17 @@ import type { Account } from '@/packages/account';
 import type { Voice } from '@/types/voice';
 import type { AIServiceProvider } from '@/types/ai-config';
 
-type SpeechProvider = 'browser' | 'gemini' | 'elevenlabs';
+type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs';
 
 export interface UseVoiceSettingsReturn {
   form: ReturnType<typeof useForm<VoiceSettingsFormData>>;
-  selectedProvider: SpeechProvider;
+  selectedProvider: SpeechEngineId;
   availableProviders: Record<string, AIServiceProvider>;
   availableModels: Array<{ id: string; name: string; description?: string }>;
   voices: Voice[];
   isLoadingVoices: boolean;
   searchTerm: string;
-  onProviderChange: (provider: SpeechProvider) => void;
+  onProviderChange: (provider: SpeechEngineId) => void;
   onSearchChange: (value: string) => void;
   onVoiceSelect: (voice: Voice) => void;
   onModelChange: (modelId: string) => void;
@@ -50,7 +50,7 @@ export function useVoiceSettings(
   }, []);
 
   // Get current speech config from account
-  const currentProvider = (account?.ai_speech?.provider || 'browser') as SpeechProvider;
+  const currentProvider = (account?.ai_speech?.provider || 'browser') as SpeechEngineId;
   const currentVoiceId = account?.ai_speech?.voice_id;
   const currentVoiceName = account?.ai_speech?.voice_name;
   const currentModelId = account?.ai_speech?.model_id;
@@ -75,7 +75,7 @@ export function useVoiceSettings(
     },
   });
 
-  const [selectedProvider, setSelectedProvider] = useState<SpeechProvider>(currentProvider);
+  const [selectedProvider, setSelectedProvider] = useState<SpeechEngineId>(currentProvider);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Use composed hooks
@@ -93,7 +93,7 @@ export function useVoiceSettings(
   );
 
   const handleProviderChange = useCallback(
-    (provider: SpeechProvider) => {
+    (provider: SpeechEngineId) => {
       setSelectedProvider(provider);
       form.setValue('provider', provider);
       form.setValue('voice_id', '');

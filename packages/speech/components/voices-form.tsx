@@ -8,20 +8,20 @@ import { VoiceSettingsFormData } from '@/packages/speech/types/schemas';
 import type { Account } from '@/packages/account';
 import type { Voice } from '@/types/voice';
 
-type SpeechProvider = 'browser' | 'gemini' | 'elevenlabs';
+type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs';
 
 interface VoicesFormProps {
   account?: Account;
   onSubmit: (data: VoiceSettingsFormData) => Promise<void>;
   children: (props: {
     form: ReturnType<typeof useForm<VoiceSettingsFormData>>;
-    selectedProvider: SpeechProvider;
+    selectedProvider: SpeechEngineId;
     availableProviders: typeof AI_PROVIDERS;
     availableModels: Array<{ id: string; name: string; description?: string }>;
     voices: Voice[];
     isLoadingVoices: boolean;
     searchTerm: string;
-    onProviderChange: (provider: SpeechProvider) => void;
+    onProviderChange: (provider: SpeechEngineId) => void;
     onSearchChange: (value: string) => void;
     onVoiceSelect: (voice: Voice) => void;
     onModelChange: (modelId: string) => void;

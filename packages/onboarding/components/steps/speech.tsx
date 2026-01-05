@@ -20,10 +20,10 @@ import type { Voice } from '@/types/voice';
 
 import { useOnboarding } from '@/packages/onboarding/components/onboarding-provider';
 
-type SpeechProvider = 'browser' | 'gemini' | 'elevenlabs';
+type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs';
 
 interface ProviderOption {
-  id: SpeechProvider;
+  id: SpeechEngineId;
   name: string;
   description: string;
   requiresApiKey: boolean;
@@ -56,7 +56,7 @@ export function SpeechStep() {
   const { speechConfig, updateSpeechConfig, getProviderConfig } = useAISettings();
   const { listVoices, getProvider } = useSpeechContext();
 
-  const [selectedProvider, setSelectedProvider] = useState<SpeechProvider>(
+  const [selectedProvider, setSelectedProvider] = useState<SpeechEngineId>(
     speechConfig.provider || 'browser'
   );
   const [voices, setVoices] = useState<Voice[]>([]);
@@ -114,7 +114,7 @@ export function SpeechStep() {
     }
   }, [speechConfig.voice_id, speechConfig.voice_name]);
 
-  const handleProviderChange = (providerId: SpeechProvider) => {
+  const handleProviderChange = (providerId: SpeechEngineId) => {
     setSelectedProvider(providerId);
     setSelectedVoice(undefined);
     setSearchTerm('');

@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { GeminiSpeechSettings } from '@/types/ai-config';
 import { Voice } from '@/types/voice';
-import { ListVoicesRequest, SpeechProvider, SpeechRequest, SpeechResponse } from '@/packages/speech/types';
+import { ListVoicesRequest, SpeechEngine, SpeechRequest, SpeechResponse } from '@/packages/speech/types';
 
 /**
  * Convert L16 PCM audio data to WAV format
@@ -111,7 +111,7 @@ const GEMINI_VOICES: Array<{ id: string; name: string; characteristic: string; l
     { id: 'Zubenelgenubi', name: 'Zubenelgenubi', characteristic: 'Casual', language: 'en-US' },
   ];
 
-export class GeminiSpeechProvider implements SpeechProvider {
+export class GeminiSpeechProvider implements SpeechEngine {
   id = 'gemini';
   name = 'Gemini Speech';
   private ai: GoogleGenAI;

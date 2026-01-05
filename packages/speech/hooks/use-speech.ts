@@ -11,15 +11,15 @@ import type { Voice } from '@/types/voice';
 import { BrowserSpeechProvider } from '@/packages/speech/lib/providers/browser';
 import { ElevenLabsSpeechProvider } from '@/packages/speech/lib/providers/elevenlabs';
 import { GeminiSpeechProvider } from '@/packages/speech/lib/providers/gemini';
-import { ListVoicesRequest, SpeechOptions, SpeechProvider, SpeechResponse } from '@/packages/speech/types';
+import { ListVoicesRequest, SpeechEngine, SpeechOptions, SpeechResponse } from '@/packages/speech/types';
 
 const browser = new BrowserSpeechProvider();
 
 export interface UseSpeechReturn {
   listVoices: (request: ListVoicesRequest) => Promise<Voice[]> | undefined;
-  getProviders: () => SpeechProvider[];
+  getProviders: () => SpeechEngine[];
   generateSpeech: (text: string, options?: SpeechOptions) => Promise<SpeechResponse> | undefined;
-  getProvider: (id: string) => SpeechProvider | undefined;
+  getProvider: (id: string) => SpeechEngine | undefined;
 }
 
 export function useSpeech(): UseSpeechReturn {
@@ -27,7 +27,7 @@ export function useSpeech(): UseSpeechReturn {
   const { speechConfig, getProviderConfig } = useAISettings();
 
   const registry = useMemo(() => {
-    const registry = new Map<string, SpeechProvider>();
+    const registry = new Map<string, SpeechEngine>();
 
     registry.set('browser', browser);
 
