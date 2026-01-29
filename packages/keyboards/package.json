@@ -1,0 +1,29 @@
+{
+  "name": "@september/keyboards",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./*": "./*"
+  },
+  "dependencies": {
+    "@september/account": "workspace:*",
+    "@september/ai": "workspace:*",
+    "@september/shared": "workspace:*",
+    "@september/ui": "workspace:*",
+    "@heroicons/react": "^2.2.0",
+    "@hookform/resolvers": "^5.2.1",
+    "react-hook-form": "^7.62.0",
+    "@tanstack/db": "^0.5.15",
+    "@tanstack/react-db": "^0.1.59",
+    "konva": "^10.0.2",
+    "react-konva": "^19.0.10",
+    "zod": "^4.0.5",
+    "sonner": "^2.0.6"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

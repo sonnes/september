@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { useSpeechContext } from '@/packages/speech/components/speech-provider';
-import type { Voice } from '@/types/voice';
+import { useSpeechContext } from '@september/speech/components/speech-provider';
+import type { Voice } from '@september/shared/types/voice';
 
 type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs';
 

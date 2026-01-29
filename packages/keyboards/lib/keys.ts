@@ -1,4 +1,4 @@
-import { ControlButton } from '@/packages/keyboards/types';
+import { ControlButton } from '@september/keyboards/types';
 
 export const CONTROL_BUTTONS: ControlButton[] = [
   { key: 'Special', label: '@$%', width: 60 },

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import supabase from '@/supabase/client';
-import { User } from '@/types/user';
+import { User } from '@september/shared/types/user';
 
 export interface UseAuthReturn {
   user: User | undefined;

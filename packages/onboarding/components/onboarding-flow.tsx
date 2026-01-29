@@ -1,13 +1,13 @@
 'use client';
 
-import { Progress } from '@/components/ui/progress';
+import { Progress } from '@september/ui/components/progress';
 
-import { useOnboarding } from '@/packages/onboarding/components/onboarding-provider';
-import { AIProvidersStep } from '@/packages/onboarding/components/steps/ai-providers';
-import { CompleteStep } from '@/packages/onboarding/components/steps/complete';
-import { SpeechStep } from '@/packages/onboarding/components/steps/speech';
-import { SuggestionsStep } from '@/packages/onboarding/components/steps/suggestions';
-import { WelcomeStep } from '@/packages/onboarding/components/steps/welcome';
+import { useOnboarding } from '@september/onboarding/components/onboarding-provider';
+import { AIProvidersStep } from '@september/onboarding/components/steps/ai-providers';
+import { CompleteStep } from '@september/onboarding/components/steps/complete';
+import { SpeechStep } from '@september/onboarding/components/steps/speech';
+import { SuggestionsStep } from '@september/onboarding/components/steps/suggestions';
+import { WelcomeStep } from '@september/onboarding/components/steps/welcome';
 
 export function OnboardingFlow() {
   const { currentStep, totalSteps } = useOnboarding();

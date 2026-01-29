@@ -34,7 +34,7 @@ This module handles audio playback and storage for the September app.
 ### Playback
 
 ```tsx
-import { AudioPlayerProvider, useAudioPlayer } from '@/packages/audio';
+import { AudioPlayerProvider, useAudioPlayer } from '@september/audio';
 
 function Player() {
   const { enqueue, isPlaying, togglePlayPause } = useAudioPlayer();
@@ -50,7 +50,7 @@ function Player() {
 ### Storage
 
 ```tsx
-import { AudioProvider, useAudio } from '@/packages/audio';
+import { AudioProvider, useAudio } from '@september/audio';
 
 function Uploader() {
   const { uploadAudio } = useAudio();

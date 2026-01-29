@@ -1,6 +1,6 @@
 'use client';
 
-import { Slide } from '@/lib/slides';
+import { Slide } from '@september/shared/lib/slides';
 
 type SlideRendererProps = {
   slide: Slide;

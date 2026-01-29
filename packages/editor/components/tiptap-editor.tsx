@@ -12,7 +12,7 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Markdown } from 'tiptap-markdown';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@september/shared/lib/utils';
 
 interface MarkdownStorage {
   markdown?: {

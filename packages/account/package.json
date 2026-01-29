@@ -1,0 +1,23 @@
+{
+  "name": "@september/account",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./*": "./*"
+  },
+  "dependencies": {
+    "@september/shared": "workspace:*",
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.51.0",
+    "@tanstack/db": "^0.5.15",
+    "@tanstack/react-db": "^0.1.59",
+    "zod": "^4.0.5",
+    "sonner": "^2.0.6"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

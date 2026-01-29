@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { DocumentIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import moment from 'moment';
 
-import { Input } from '@/components/ui/input';
+import { Input } from '@september/ui/components/input';
 
-import { cn } from '@/lib/utils';
-import { Document } from '@/packages/documents/types';
+import { cn } from '@september/shared/lib/utils';
+import { Document } from '@september/documents/types';
 
 type DocumentListEmptyStateProps = ComponentProps<'div'> & {
   title?: string;

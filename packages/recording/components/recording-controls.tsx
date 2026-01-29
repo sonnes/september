@@ -1,7 +1,7 @@
 'use client';
 
 import { Circle, Download, Square } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@september/ui/components/button';
 import { useRecordingContext } from './recording-provider';
 
 export function RecordingControls() {

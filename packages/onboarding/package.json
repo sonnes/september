@@ -1,0 +1,25 @@
+{
+  "name": "@september/onboarding",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./*": "./*"
+  },
+  "dependencies": {
+    "@september/account": "workspace:*",
+    "@september/ai": "workspace:*",
+    "@september/shared": "workspace:*",
+    "@september/speech": "workspace:*",
+    "@september/suggestions": "workspace:*",
+    "@september/ui": "workspace:*",
+    "@heroicons/react": "^2.2.0",
+    "zod": "^4.0.5",
+    "sonner": "^2.0.6"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

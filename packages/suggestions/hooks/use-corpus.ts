@@ -2,7 +2,7 @@
 
 import { toast } from 'sonner';
 
-import { useAISettings, useGenerate } from '@/packages/ai';
+import { useAISettings, useGenerate } from '@september/ai';
 
 const CORPUS_GENERATION_PROMPT = `Generate a corpus of synthetic spoken phrases for training an autocompletion system.
 

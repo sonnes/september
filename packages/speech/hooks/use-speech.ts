@@ -2,17 +2,17 @@
 
 import { useCallback, useMemo } from 'react';
 
-import { useAccountContext } from '@/packages/account';
-import { useAISettings } from '@/packages/ai';
-import { logTTSGeneration } from '@/packages/analytics';
-import type { AIProvider } from '@/types/ai-config';
-import type { Voice } from '@/types/voice';
+import { useAccountContext } from '@september/account';
+import { useAISettings } from '@september/ai';
+import { logTTSGeneration } from '@september/analytics';
+import type { AIProvider } from '@september/shared/types/ai-config';
+import type { Voice } from '@september/shared/types/voice';
 
-import { BrowserSpeechProvider } from '@/packages/speech/lib/providers/browser';
-import { KokoroSpeechProvider } from '@/packages/speech/lib/providers/kokoro';
-import { ElevenLabsSpeechProvider } from '@/packages/speech/lib/providers/elevenlabs';
-import { GeminiSpeechProvider } from '@/packages/speech/lib/providers/gemini';
-import { ListVoicesRequest, SpeechEngine, SpeechOptions, SpeechResponse } from '@/packages/speech/types';
+import { BrowserSpeechProvider } from '@september/speech/lib/providers/browser';
+import { KokoroSpeechProvider } from '@september/speech/lib/providers/kokoro';
+import { ElevenLabsSpeechProvider } from '@september/speech/lib/providers/elevenlabs';
+import { GeminiSpeechProvider } from '@september/speech/lib/providers/gemini';
+import { ListVoicesRequest, SpeechEngine, SpeechOptions, SpeechResponse } from '@september/speech/types';
 
 const browser = new BrowserSpeechProvider();
 

@@ -6,14 +6,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import type { Account } from '@/packages/account';
-import type { Providers } from '@/types/ai-config';
-import { Spinner } from '@/components/ui/spinner';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import type { Account } from '@september/account';
+import type { Providers } from '@september/shared/types/ai-config';
+import { Spinner } from '@september/ui/components/spinner';
+import { Alert, AlertDescription, AlertTitle } from '@september/ui/components/alert';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
-import { AIProvidersFormData, AIProvidersSchema } from '@/packages/ai/types/schemas';
-import { AI_PROVIDERS } from '@/packages/ai/lib/registry';
+import { AIProvidersFormData, AIProvidersSchema } from '@september/ai/types/schemas';
+import { AI_PROVIDERS } from '@september/ai/lib/registry';
 
 // Get providers that require API keys
 const getProvidersWithApiKeys = () => {

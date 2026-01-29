@@ -1,5 +1,5 @@
 import { createCollection } from '@tanstack/react-db';
-import { indexedDBCollectionOptionsV2 } from '@/lib/indexeddb/collection-v2';
+import { indexedDBCollectionOptionsV2 } from '@september/shared/lib/indexeddb/collection-v2';
 import { CustomKeyboardSchema } from './types';
 
 export const customKeyboardCollection = createCollection(

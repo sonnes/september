@@ -2,14 +2,14 @@
 
 import { ArrowRight } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@september/ui/components/button';
 
 import { toast } from 'sonner';
 
-import { useAccountContext } from '@/packages/account';
-import { SuggestionsForm, type SuggestionsFormData } from '@/packages/suggestions';
+import { useAccountContext } from '@september/account';
+import { SuggestionsForm, type SuggestionsFormData } from '@september/suggestions';
 
-import { useOnboarding } from '@/packages/onboarding/components/onboarding-provider';
+import { useOnboarding } from '@september/onboarding/components/onboarding-provider';
 
 export function SuggestionsStep() {
   const { goToNextStep, goToPreviousStep } = useOnboarding();

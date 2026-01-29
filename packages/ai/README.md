@@ -20,7 +20,7 @@ This module manages AI provider configurations, registries, and settings. It pro
 ### Using AI Settings
 
 ```tsx
-import { useAISettings } from '@/packages/ai';
+import { useAISettings } from '@september/ai';
 
 function MyComponent() {
   const { suggestionsConfig, updateSuggestionsConfig } = useAISettings();
@@ -31,7 +31,7 @@ function MyComponent() {
 ### Provider Registry
 
 ```tsx
-import { AI_PROVIDERS, getProvidersForFeature } from '@/packages/ai';
+import { AI_PROVIDERS, getProvidersForFeature } from '@september/ai';
 
 const speechProviders = getProvidersForFeature('speech');
 ```
@@ -47,7 +47,7 @@ Hook for generating text or structured objects using AI providers. Reads provide
 Generate plain text using the default output format:
 
 ```tsx
-import { useGenerate } from '@/packages/ai';
+import { useGenerate } from '@september/ai';
 
 function MyComponent() {
   const { generate, isGenerating } = useGenerate();
@@ -73,7 +73,7 @@ function MyComponent() {
 Generate structured objects with Zod schema validation:
 
 ```tsx
-import { useGenerate } from '@/packages/ai';
+import { useGenerate } from '@september/ai';
 import { Output } from 'ai';
 import { z } from 'zod';
 
@@ -106,7 +106,7 @@ function RecipeGenerator() {
 Generate arrays of objects with element schema validation:
 
 ```tsx
-import { useGenerate } from '@/packages/ai';
+import { useGenerate } from '@september/ai';
 import { Output } from 'ai';
 import { z } from 'zod';
 

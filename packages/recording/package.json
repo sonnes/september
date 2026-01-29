@@ -1,0 +1,22 @@
+{
+  "name": "@september/recording",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./*": "./*"
+  },
+  "dependencies": {
+    "@september/shared": "workspace:*",
+    "@september/ui": "workspace:*",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
+    "react-webcam": "^7.2.0",
+    "zod": "^4.0.5"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

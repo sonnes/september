@@ -4,9 +4,9 @@ import { useEffect, useRef } from 'react';
 
 import { PencilIcon } from '@heroicons/react/24/outline';
 
-import { Input } from '@/components/ui/input';
+import { Input } from '@september/ui/components/input';
 
-import { useEditableTitle } from '@/packages/documents/hooks/use-editable-title';
+import { useEditableTitle } from '@september/documents/hooks/use-editable-title';
 
 interface EditableDocumentTitleProps {
   documentId: string;

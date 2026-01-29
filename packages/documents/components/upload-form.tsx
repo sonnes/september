@@ -1,10 +1,10 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button } from '@september/ui/components/button';
+import { Input } from '@september/ui/components/input';
+import { Label } from '@september/ui/components/label';
 
-import { useFileUpload } from '@/packages/documents/hooks/use-file-upload';
+import { useFileUpload } from '@september/documents/hooks/use-file-upload';
 
 type UploadFormProps = {
   onTextExtracted: (text: string) => void;

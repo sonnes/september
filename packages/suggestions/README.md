@@ -22,7 +22,7 @@ The module is organized into:
 ### Using Suggestions in a Component
 
 ```tsx
-import { Suggestions } from '@/packages/suggestions';
+import { Suggestions } from '@september/suggestions';
 
 export function MyComponent() {
   return (
@@ -36,7 +36,7 @@ export function MyComponent() {
 ### Using the Hook
 
 ```tsx
-import { useSuggestions } from '@/packages/suggestions';
+import { useSuggestions } from '@september/suggestions';
 
 export function MyCustomComponent() {
   const { suggestions, isLoading } = useSuggestions({ text: 'Hello', history: [] });
@@ -47,7 +47,7 @@ export function MyCustomComponent() {
 ### Settings Form
 
 ```tsx
-import { SuggestionsForm } from '@/packages/suggestions';
+import { SuggestionsForm } from '@september/suggestions';
 
 export function SettingsPage({ account }) {
   const handleSubmit = async data => {

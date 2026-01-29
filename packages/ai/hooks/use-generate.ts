@@ -8,12 +8,12 @@ import { generateObject, generateText, wrapLanguageModel } from 'ai';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { useAccountContext } from '@/packages/account';
-import { useAISettings } from '@/packages/ai/hooks/use-ai-settings';
-import { logAIGeneration } from '@/packages/analytics';
-import { cacheMiddleware } from '@/packages/ai/lib/middleware';
-import { AI_PROVIDERS } from '@/packages/ai/lib/registry';
-import { AIProvider } from '@/types/ai-config';
+import { useAccountContext } from '@september/account';
+import { useAISettings } from '@september/ai/hooks/use-ai-settings';
+import { logAIGeneration } from '@september/analytics';
+import { cacheMiddleware } from '@september/ai/lib/middleware';
+import { AI_PROVIDERS } from '@september/ai/lib/registry';
+import { AIProvider } from '@september/shared/types/ai-config';
 
 /**
  * Options for configuring the useGenerate hook

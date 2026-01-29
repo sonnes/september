@@ -31,7 +31,7 @@ Additionally, in every conversation, you can provide additional context in the f
 ### Prerequisites
 
 - **Node.js**: v20 or later
-- **Package Manager**: [pnpm](https://pnpm.io/) (preferred) or Bun
+- **Package Manager**: [pnpm](https://pnpm.io/) (required - this is a pnpm workspace)
 
 ### Setup
 
@@ -52,7 +52,7 @@ Additionally, in every conversation, you can provide additional context in the f
    Copy the example environment file and fill in your credentials:
 
    ```bash
-   cp .env.example .env.local
+   cp apps/web/.env.example apps/web/.env.local
    ```
 
    You will need API keys for:
@@ -62,12 +62,12 @@ Additionally, in every conversation, you can provide additional context in the f
    - **Google Auth**: Client ID and Secret (for Google Login)
 
 4. **Database Setup**:
-   - **Supabase**: Run the migrations in `supabase/migrations` against your Supabase project.
+   - **Supabase**: Run the migrations in `apps/web/supabase/migrations` against your Supabase project.
 
 ### Running the App
 
 ```bash
-pnpm run dev
+pnpm --filter @september/web dev
 ```
 
 The application will be available at `http://localhost:3000`.
@@ -82,29 +82,33 @@ The application will be available at `http://localhost:3000`.
 
 ## Project Structure
 
-September follows a modular architecture with a clear separation of concerns using domain-driven packages:
+September is a **pnpm workspace monorepo** with a modular architecture using domain-driven packages:
 
 ```
 september/
-├── app/                 # Next.js App Router pages (Composers for modules)
-├── components/          # Reusable UI components (shadcn/ui in components/ui)
-├── hooks/               # Global React hooks
-├── lib/                 # Global utilities and libraries
-├── packages/            # Modular features (Domain-driven)
-│   ├── account/        # User account and DB synchronization
-│   ├── ai/             # AI configuration and service registry
-│   ├── audio/          # Audio playback and storage
-│   ├── chats/          # Chat and message management
-│   ├── cloning/        # Voice cloning functionality
-│   ├── documents/      # Document and slide management
-│   ├── editor/         # Autocomplete-enabled text editor
-│   ├── keyboards/      # Custom accessible keyboards
-│   ├── onboarding/     # User onboarding flow
-│   ├── speech/         # TTS and voice management
-│   └── suggestions/    # Contextual typing suggestions
-├── services/           # External service integrations
-├── supabase/           # Cloud database config & migrations
-└── types/              # Global TypeScript type definitions
+├── apps/
+│   └── web/                    # Next.js web application (@september/web)
+│       ├── app/                # App Router pages
+│       ├── components/         # Web-specific components
+│       └── services/           # Server-side integrations
+├── packages/
+│   ├── shared/                 # @september/shared - Utilities, hooks, types
+│   ├── ui/                     # @september/ui - shadcn/ui components
+│   ├── account/               # @september/account - User account & DB sync
+│   ├── ai/                    # @september/ai - AI config & service registry
+│   ├── analytics/             # @september/analytics - Usage analytics
+│   ├── audio/                 # @september/audio - Audio playback & storage
+│   ├── chats/                 # @september/chats - Chat & message management
+│   ├── cloning/               # @september/cloning - Voice cloning
+│   ├── documents/             # @september/documents - Document management
+│   ├── editor/                # @september/editor - Autocomplete text editor
+│   ├── keyboards/             # @september/keyboards - Accessible keyboards
+│   ├── onboarding/            # @september/onboarding - User onboarding
+│   ├── recording/             # @september/recording - Audio recording
+│   ├── speech/                # @september/speech - TTS & voice management
+│   └── suggestions/           # @september/suggestions - Contextual suggestions
+├── supabase/                   # Cloud database config & migrations
+└── pnpm-workspace.yaml         # Workspace configuration
 ```
 
 ## Tech Stack
@@ -118,8 +122,9 @@ september/
 
 ## Development Guidelines
 
-- **Modules**: Always use the `packages/` structure for new features.
-- **Components**: Check the `README.md` in each module directory before making changes.
+- **Packages**: Use `packages/` for shared code with `@september/*` naming. Import via package names, not relative paths.
+- **Web App**: Web-specific code lives in `apps/web/`. Use `@/` imports for local files.
+- **Components**: Check the `README.md` in each package directory before making changes.
 - **Styles**: Follow shadcn/ui patterns and Tailwind CSS 4.
 - **Icons**: Use `lucide-react` for standard icons.
 

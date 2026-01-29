@@ -4,11 +4,11 @@ import { useRef } from 'react';
 
 import { Trash2, Upload } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Field, FieldLabel } from '@/components/ui/field';
+import { Button } from '@september/ui/components/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@september/ui/components/card';
+import { Field, FieldLabel } from '@september/ui/components/field';
 
-import { useUpload } from '@/packages/cloning/components/cloning-provider';
+import { useUpload } from '@september/cloning/components/cloning-provider';
 
 export function UploadSection() {
   const { uploadedFiles, status, error, uploadFile, deleteFile } = useUpload();

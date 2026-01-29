@@ -2,10 +2,10 @@
 
 import { Loader2 } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
-import { useFirstMessage, useMessages } from '@/packages/chats';
-import { useEditorContext } from '@/packages/editor';
-import { useSuggestions } from '@/packages/suggestions/hooks/use-suggestions';
+import { cn } from '@september/shared/lib/utils';
+import { useFirstMessage, useMessages } from '@september/chats';
+import { useEditorContext } from '@september/editor';
+import { useSuggestions } from '@september/suggestions/hooks/use-suggestions';
 
 interface SuggestionsProps {
   chatId?: string;

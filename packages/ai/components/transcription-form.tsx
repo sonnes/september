@@ -8,14 +8,14 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { FormCheckbox, FormSelect } from '@/components/ui/form';
-import { Spinner } from '@/components/ui/spinner';
+import { Alert, AlertDescription, AlertTitle } from '@september/ui/components/alert';
+import { Button } from '@september/ui/components/button';
+import { FormCheckbox, FormSelect } from '@september/ui/components/form';
+import { Spinner } from '@september/ui/components/spinner';
 
-import type { Account } from '@/packages/account';
-import { TranscriptionConfigSchema } from '@/packages/account/types';
-import { getModelsForProvider } from '@/packages/ai';
+import type { Account } from '@september/account';
+import { TranscriptionConfigSchema } from '@september/account/types';
+import { getModelsForProvider } from '@september/ai';
 
 export type TranscriptionFormData = z.infer<typeof TranscriptionConfigSchema>;
 

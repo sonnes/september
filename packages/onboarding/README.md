@@ -24,7 +24,7 @@ This module handles the user onboarding flow for September.
 ## Usage
 
 ```tsx
-import { OnboardingProvider, OnboardingFlow } from '@/packages/onboarding';
+import { OnboardingProvider, OnboardingFlow } from '@september/onboarding';
 
 export default function OnboardingPage() {
   return (

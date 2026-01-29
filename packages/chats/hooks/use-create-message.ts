@@ -3,10 +3,10 @@ import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 
-import { useAccountContext } from '@/packages/account';
-import { logMessageSent } from '@/packages/analytics';
-import { Audio, useAudio } from '@/packages/audio';
-import { useSpeech } from '@/packages/speech';
+import { useAccountContext } from '@september/account';
+import { logMessageSent } from '@september/analytics';
+import { Audio, useAudio } from '@september/audio';
+import { useSpeech } from '@september/speech';
 
 import { chatCollection, messageCollection } from '../db';
 import { CreateMessageData, Message } from '../types';

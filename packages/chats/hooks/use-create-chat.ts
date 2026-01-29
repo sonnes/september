@@ -5,7 +5,7 @@ import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 
-import { useAccountContext } from '@/packages/account';
+import { useAccountContext } from '@september/account';
 
 import { chatCollection } from '../db';
 import { Chat } from '../types';

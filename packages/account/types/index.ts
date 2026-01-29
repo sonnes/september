@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { Providers, SpeechConfig, SuggestionsConfig, TranscriptionConfig } from '@/types/ai-config';
+import { Providers, SpeechConfig, SuggestionsConfig, TranscriptionConfig } from '@september/shared/types/ai-config';
 
 export const SuggestionsConfigSchema = z.object({
   enabled: z.boolean(),

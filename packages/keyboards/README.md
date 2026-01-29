@@ -38,7 +38,7 @@ This module provides various keyboard layouts and a renderer for the September a
 ### Creating a Custom Keyboard
 
 ```tsx
-import { CustomKeyboardEditor } from '@/packages/keyboards';
+import { CustomKeyboardEditor } from '@september/keyboards';
 
 function CreateKeyboardPage() {
   const handleSave = (keyboard) => {
@@ -57,7 +57,7 @@ function CreateKeyboardPage() {
 ### Using a Custom Keyboard
 
 ```tsx
-import { CustomKeyboard } from '@/packages/keyboards';
+import { CustomKeyboard } from '@september/keyboards';
 
 function ChatPage() {
   const handleKeyPress = (key) => {
@@ -76,7 +76,7 @@ function ChatPage() {
 ### Managing Custom Keyboards
 
 ```tsx
-import { CustomKeyboardList } from '@/packages/keyboards';
+import { CustomKeyboardList } from '@september/keyboards';
 
 function ManageKeyboardsPage() {
   const handleEdit = (keyboardId) => {
@@ -97,7 +97,7 @@ function ManageKeyboardsPage() {
 The keyboards package includes AI-powered keyboard generation that automatically creates custom keyboards based on the first message in a chat.
 
 ```tsx
-import { useGenerateKeyboardFromMessage } from '@/packages/keyboards';
+import { useGenerateKeyboardFromMessage } from '@september/keyboards';
 
 function ChatComponent() {
   const { generateKeyboard, isGenerating } = useGenerateKeyboardFromMessage();

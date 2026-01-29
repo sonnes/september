@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@september/ui/components/button';
 import { TimeRange } from '../lib/utils';
 
 interface TimeRangeSelectorProps {

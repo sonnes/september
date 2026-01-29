@@ -2,7 +2,7 @@
 
 import { ReactNode, createContext, useCallback, useContext, useEffect, useMemo } from 'react';
 
-import { User } from '@/types/user';
+import { User } from '@september/shared/types/user';
 
 import { useAuth } from './hooks/use-auth';
 import { useDbAccount } from './hooks/use-db-account';

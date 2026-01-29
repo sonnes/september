@@ -5,8 +5,8 @@ import { useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 
 import supabase from '@/supabase/client';
-import { useAuth } from '@/packages/account';
-import { AudioService } from '@/packages/audio';
+import { useAuth } from '@september/account';
+import { AudioService } from '@september/audio';
 import { VoiceSample } from '../types';
 
 const LOCAL_USER_ID = 'local-user';

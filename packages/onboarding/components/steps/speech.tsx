@@ -5,20 +5,20 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { ArrowRight } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Button } from '@september/ui/components/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@september/ui/components/card';
+import { Input } from '@september/ui/components/input';
 
-import { useDebounce } from '@/hooks/use-debounce';
+import { useDebounce } from '@september/shared/hooks/use-debounce';
 import { toast } from 'sonner';
 
-import { useAccountContext } from '@/packages/account';
-import { useAISettings } from '@/packages/ai';
-import { useSpeechContext, VoicesList } from '@/packages/speech';
-import type { SpeechConfig } from '@/types/ai-config';
-import type { Voice } from '@/types/voice';
+import { useAccountContext } from '@september/account';
+import { useAISettings } from '@september/ai';
+import { useSpeechContext, VoicesList } from '@september/speech';
+import type { SpeechConfig } from '@september/shared/types/ai-config';
+import type { Voice } from '@september/shared/types/voice';
 
-import { useOnboarding } from '@/packages/onboarding/components/onboarding-provider';
+import { useOnboarding } from '@september/onboarding/components/onboarding-provider';
 
 type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs' | 'kokoro';
 

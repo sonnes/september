@@ -4,10 +4,10 @@ import { useCallback, useRef, useState } from 'react';
 
 import { toast } from 'sonner';
 
-import { useMediaRecorder } from '@/packages/cloning/hooks/use-media-recorder';
-import { useAudioPlayback } from '@/packages/cloning/hooks/use-audio-playback';
-import { useRecordingState } from '@/packages/cloning/hooks/use-recording-state';
-import { useVoiceStorage } from '@/packages/cloning/hooks/use-voice-storage';
+import { useMediaRecorder } from '@september/cloning/hooks/use-media-recorder';
+import { useAudioPlayback } from '@september/cloning/hooks/use-audio-playback';
+import { useRecordingState } from '@september/cloning/hooks/use-recording-state';
+import { useVoiceStorage } from '@september/cloning/hooks/use-voice-storage';
 import { RecordingStatus } from '../types';
 
 export interface UseRecordingReturn {

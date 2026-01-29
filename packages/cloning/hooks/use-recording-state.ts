@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { useVoiceStorage } from '@/packages/cloning/hooks/use-voice-storage';
+import { useVoiceStorage } from '@september/cloning/hooks/use-voice-storage';
 
 interface UseRecordingStateReturn {
   recordings: Record<string, string>;

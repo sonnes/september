@@ -2,10 +2,10 @@
 
 import { ArrowRight, MessageSquare, Settings, Sparkles, Volume2 } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@september/ui/components/button';
+import { Card, CardContent } from '@september/ui/components/card';
 
-import { useOnboarding } from '@/packages/onboarding/components/onboarding-provider';
+import { useOnboarding } from '@september/onboarding/components/onboarding-provider';
 
 const SETUP_STEPS = [
   {

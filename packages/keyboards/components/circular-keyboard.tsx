@@ -11,10 +11,10 @@ import {
   getTopCircleKeys,
   getTopSpecialKeys,
 } from '../lib/keys';
-import { useShiftState } from '@/packages/keyboards/hooks/use-shift-state';
-import { useStageSize } from '@/packages/keyboards/hooks/use-stage-size';
-import { useKeyboardInteractions } from '@/packages/keyboards/hooks/use-keyboard-interactions';
-import type { CircleKey } from '@/packages/keyboards/types';
+import { useShiftState } from '@september/keyboards/hooks/use-shift-state';
+import { useStageSize } from '@september/keyboards/hooks/use-stage-size';
+import { useKeyboardInteractions } from '@september/keyboards/hooks/use-keyboard-interactions';
+import type { CircleKey } from '@september/keyboards/types';
 
 interface CircularKeyboardProps {
   className?: string;

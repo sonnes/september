@@ -1,0 +1,31 @@
+{
+  "name": "@september/speech",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./*": "./*"
+  },
+  "dependencies": {
+    "@september/account": "workspace:*",
+    "@september/ai": "workspace:*",
+    "@september/analytics": "workspace:*",
+    "@september/audio": "workspace:*",
+    "@september/shared": "workspace:*",
+    "@september/ui": "workspace:*",
+    "@ai-sdk/elevenlabs": "^1.0.20",
+    "@heroicons/react": "^2.2.0",
+    "@elevenlabs/elevenlabs-js": "^2.7.0",
+    "@google/genai": "^1.9.0",
+    "@hookform/resolvers": "^5.2.1",
+    "kokoro-js": "^1.2.1",
+    "react-hook-form": "^7.62.0",
+    "zod": "^4.0.5",
+    "sonner": "^2.0.6"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

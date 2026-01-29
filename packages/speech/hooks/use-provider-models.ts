@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 
-import { getModelsForProvider } from '@/packages/ai';
+import { getModelsForProvider } from '@september/ai';
 
 type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs';
 

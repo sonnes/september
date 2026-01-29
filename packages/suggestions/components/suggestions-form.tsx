@@ -7,18 +7,18 @@ import { ChevronDown, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import { getModelsForProvider, getProvidersForFeature } from '@/packages/ai';
-import { Button } from '@/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { FormCheckbox, FormSelect, FormTextarea } from '@/components/ui/form';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Spinner } from '@/components/ui/spinner';
+import { getModelsForProvider, getProvidersForFeature } from '@september/ai';
+import { Button } from '@september/ui/components/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@september/ui/components/collapsible';
+import { FormCheckbox, FormSelect, FormTextarea } from '@september/ui/components/form';
+import { Alert, AlertDescription, AlertTitle } from '@september/ui/components/alert';
+import { Spinner } from '@september/ui/components/spinner';
 
-import type { Account } from '@/packages/account';
-import type { AIProvider } from '@/types/ai-config';
+import type { Account } from '@september/account';
+import type { AIProvider } from '@september/shared/types/ai-config';
 
-import { useCorpus } from '@/packages/suggestions/hooks/use-corpus';
-import { type SuggestionsFormData, SuggestionsFormSchema } from '@/packages/suggestions/types';
+import { useCorpus } from '@september/suggestions/hooks/use-corpus';
+import { type SuggestionsFormData, SuggestionsFormSchema } from '@september/suggestions/types';
 
 const EXAMPLE_INSTRUCTIONS = [
   {

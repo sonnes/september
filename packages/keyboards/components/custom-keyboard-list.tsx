@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@september/ui/components/button';
 import { useCustomKeyboards } from '../hooks/use-custom-keyboards';
 import { useDeleteKeyboard } from '../hooks/use-delete-keyboard';
 
