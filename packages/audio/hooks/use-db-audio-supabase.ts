@@ -3,8 +3,8 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import supabase from '@/supabase/client';
-import { Alignment } from '@/packages/audio/types';
-import { AudioService } from '@/packages/audio/lib/audio-service';
+import { Alignment } from '@september/audio/types';
+import { AudioService } from '@september/audio/lib/audio-service';
 
 const audioService = new AudioService(supabase);
 

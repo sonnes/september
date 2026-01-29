@@ -20,14 +20,14 @@ This package manages the chat and messaging functionality of the September app. 
 ### Components
 
 ```tsx
-import { ChatList, MessageList, MessagesProvider } from '@/packages/chats';
+import { ChatList, MessageList, MessagesProvider } from '@september/chats';
 ```
 
 ### Hooks
 
 #### Query Hooks
 ```tsx
-import { useChats, useMessages } from '@/packages/chats';
+import { useChats, useMessages } from '@september/chats';
 
 // Get chats for a user
 const { chats, isLoading, error } = useChats({ userId, searchQuery });
@@ -45,7 +45,7 @@ import {
   useUpdateChat,
   useDeleteChat,
   useDeleteMessage
-} from '@/packages/chats';
+} from '@september/chats';
 
 // Create a new chat
 const { createChat } = useCreateChat();
@@ -72,5 +72,5 @@ await deleteMessage(messageId);
 ### Types
 
 ```tsx
-import { Chat, Message } from '@/packages/chats';
+import { Chat, Message } from '@september/chats';
 ```

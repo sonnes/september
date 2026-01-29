@@ -2,8 +2,8 @@
 
 import { useCallback, useRef, useState } from 'react';
 
-import { tokenize } from '@/lib/autocomplete';
-import { EditorStats } from '@/packages/editor/types';
+import { tokenize } from '@september/shared/lib/autocomplete';
+import { EditorStats } from '@september/editor/types';
 
 export function useEditorLogic(defaultText = '') {
   const [text, setText] = useState(defaultText);

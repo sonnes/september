@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import GeminiService from '@/services/gemini';
-import { useAccountContext } from '@/packages/account';
+import { useAccountContext } from '@september/account';
 
 export interface UseFileUploadOptions {
   onTextExtracted?: (text: string) => void;

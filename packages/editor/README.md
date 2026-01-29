@@ -26,7 +26,7 @@ Note: The `useAutocomplete` hook is now a global hook located in `/hooks/use-aut
 ### Using the Editor with Autocomplete
 
 ```tsx
-import { Editor, EditorProvider } from '@/packages/editor';
+import { Editor, EditorProvider } from '@september/editor';
 
 export function MyPage() {
   const handleSubmit = (text: string) => {
@@ -44,7 +44,7 @@ export function MyPage() {
 ### Accessing Editor State
 
 ```tsx
-import { useEditorContext } from '@/packages/editor';
+import { useEditorContext } from '@september/editor';
 
 export function CustomComponent() {
   const { text, setText } = useEditorContext();

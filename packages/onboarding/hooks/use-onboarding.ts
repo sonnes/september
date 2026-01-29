@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { useAccountContext } from '@/packages/account';
+import { useAccountContext } from '@september/account';
 
 const TOTAL_STEPS = 5;
 

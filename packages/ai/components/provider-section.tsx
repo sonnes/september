@@ -3,12 +3,12 @@
 import { CheckCircle2, ExternalLink, Key } from 'lucide-react';
 import { Control } from 'react-hook-form';
 
-import { Card, CardDescription, CardTitle } from '@/components/ui/card';
-import { FormField } from '@/components/ui/form';
+import { Card, CardDescription, CardTitle } from '@september/ui/components/card';
+import { FormField } from '@september/ui/components/form';
 
-import type { AIFeature, AIServiceProvider } from '@/types/ai-config';
+import type { AIFeature, AIServiceProvider } from '@september/shared/types/ai-config';
 
-import type { AIProvidersFormData } from '@/packages/ai/types/schemas';
+import type { AIProvidersFormData } from '@september/ai/types/schemas';
 
 // Feature colors mapping
 const FEATURE_COLORS: Record<AIFeature, string> = {

@@ -46,7 +46,7 @@ This ensures audio plays AND is captured simultaneously.
 ### Basic Setup
 
 ```typescript
-import { RecordingProvider, RecordingControls } from '@/packages/recording';
+import { RecordingProvider, RecordingControls } from '@september/recording';
 
 function App() {
   return (
@@ -61,7 +61,7 @@ function App() {
 ### With Audio Integration
 
 ```typescript
-import { useRecordingContext } from '@/packages/recording';
+import { useRecordingContext } from '@september/recording';
 import { useEffect } from 'react';
 
 function AudioComponent() {
@@ -82,7 +82,7 @@ function AudioComponent() {
 ### Advanced Usage with Custom Controls
 
 ```typescript
-import { useRecording } from '@/packages/recording';
+import { useRecording } from '@september/recording';
 
 function CustomRecorder() {
   const recording = useRecording();

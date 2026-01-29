@@ -4,12 +4,12 @@ import { useEffect, useRef } from 'react';
 
 import { ArrowUp } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@september/ui/components/button';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@september/shared/lib/utils';
 
-import { useEditorContext } from '@/packages/editor/components/editor-provider';
-import { Autocomplete } from '@/packages/editor/components/autocomplete';
+import { useEditorContext } from '@september/editor/components/editor-provider';
+import { Autocomplete } from '@september/editor/components/autocomplete';
 
 type EditorProps = {
   placeholder?: string;

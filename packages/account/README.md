@@ -27,7 +27,7 @@ This package manages user account data using TanStack DB for local-first storage
 Wrap your application in `AccountProvider` (usually in `app/layout.tsx`):
 
 ```tsx
-import { AccountProvider } from '@/packages/account';
+import { AccountProvider } from '@september/account';
 
 export default function RootLayout({ children }) {
   return <AccountProvider>{children}</AccountProvider>;
@@ -39,7 +39,7 @@ export default function RootLayout({ children }) {
 Access account data and actions using `useAccountContext`:
 
 ```tsx
-import { useAccountContext } from '@/packages/account';
+import { useAccountContext } from '@september/account';
 
 const { account, user, updateAccount } = useAccountContext();
 ```
@@ -49,7 +49,7 @@ const { account, user, updateAccount } = useAccountContext();
 For specialized cases, you can use the domain-specific hooks:
 
 ```tsx
-import { useAuth, useDbAccount, useStorage } from '@/packages/account';
+import { useAuth, useDbAccount, useStorage } from '@september/account';
 
 const { account, update } = useDbAccount(userId);
 const { user } = useAuth();

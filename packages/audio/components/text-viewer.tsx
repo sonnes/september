@@ -2,9 +2,9 @@
 
 import { type HTMLAttributes, type ReactNode, createContext, useContext, useMemo } from 'react';
 
-import { cn } from '@/lib/utils';
-import { useAudioPlayer } from '@/packages/audio/components/audio-player';
-import { Alignment } from '@/packages/audio/types';
+import { cn } from '@september/shared/lib/utils';
+import { useAudioPlayer } from '@september/audio/components/audio-player';
+import { Alignment } from '@september/audio/types';
 
 import {
   type GapSegment,

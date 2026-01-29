@@ -1,11 +1,11 @@
-export * from '@/packages/audio/components/audio-player';
-export * from '@/packages/audio/components/audio-provider';
-export * from '@/packages/audio/components/text-viewer';
+export * from '@september/audio/components/audio-player';
+export * from '@september/audio/components/audio-provider';
+export * from '@september/audio/components/text-viewer';
 export {
   useUploadAudio as useUploadAudioSupabase,
   useDownloadAudio as useDownloadAudioSupabase,
-} from '@/packages/audio/hooks/use-db-audio-supabase';
-export * from '@/packages/audio/hooks/use-text-viewer';
-export * from '@/packages/audio/types';
-export * from '@/packages/audio/lib/audio-service';
-export * from '@/packages/audio/lib/audio-utils';
+} from '@september/audio/hooks/use-db-audio-supabase';
+export * from '@september/audio/hooks/use-text-viewer';
+export * from '@september/audio/types';
+export * from '@september/audio/lib/audio-service';
+export * from '@september/audio/lib/audio-utils';

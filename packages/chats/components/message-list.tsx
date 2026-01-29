@@ -6,10 +6,10 @@ import { Loader2 } from 'lucide-react';
 import moment from 'moment';
 import { toast } from 'sonner';
 
-import { cn } from '@/lib/utils';
-import { useAudioPlayer, useAudio } from '@/packages/audio';
-import type { Audio } from '@/packages/audio';
-import { useSpeech } from '@/packages/speech';
+import { cn } from '@september/shared/lib/utils';
+import { useAudioPlayer, useAudio } from '@september/audio';
+import type { Audio } from '@september/audio';
+import { useSpeech } from '@september/speech';
 
 import type { Message } from '../types';
 

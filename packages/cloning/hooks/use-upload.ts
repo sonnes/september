@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { useVoiceStorage } from '@/packages/cloning/hooks/use-voice-storage';
-import { UploadStatus } from '@/packages/cloning/types';
+import { useVoiceStorage } from '@september/cloning/hooks/use-voice-storage';
+import { UploadStatus } from '@september/cloning/types';
 
 export function useUploadLogic(initialUploadedFiles: string[] = []) {
   const [status, setStatus] = useState<UploadStatus>('idle');

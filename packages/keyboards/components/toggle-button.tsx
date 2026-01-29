@@ -2,10 +2,10 @@
 
 import { Keyboard } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@september/ui/components/button';
 
-import { cn } from '@/lib/utils';
-import { useKeyboardContext } from '@/packages/keyboards/hooks/use-keyboard-context';
+import { cn } from '@september/shared/lib/utils';
+import { useKeyboardContext } from '@september/keyboards/hooks/use-keyboard-context';
 
 interface KeyboardToggleButtonProps {
   className?: string;

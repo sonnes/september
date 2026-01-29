@@ -2,11 +2,11 @@
 
 import { useForm } from 'react-hook-form';
 
-import { AI_PROVIDERS } from '@/packages/ai';
-import { useVoiceSettings } from '@/packages/speech/hooks/use-voice-settings';
-import { VoiceSettingsFormData } from '@/packages/speech/types/schemas';
-import type { Account } from '@/packages/account';
-import type { Voice } from '@/types/voice';
+import { AI_PROVIDERS } from '@september/ai';
+import { useVoiceSettings } from '@september/speech/hooks/use-voice-settings';
+import { VoiceSettingsFormData } from '@september/speech/types/schemas';
+import type { Account } from '@september/account';
+import type { Voice } from '@september/shared/types/voice';
 
 type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs';
 

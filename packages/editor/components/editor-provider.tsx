@@ -2,8 +2,8 @@
 
 import { ReactNode, createContext, useContext } from 'react';
 
-import { useEditorLogic } from '@/packages/editor/hooks/use-editor';
-import { EditorContextValue } from '@/packages/editor/types';
+import { useEditorLogic } from '@september/editor/hooks/use-editor';
+import { EditorContextValue } from '@september/editor/types';
 
 const EditorContext = createContext<EditorContextValue | undefined>(undefined);
 

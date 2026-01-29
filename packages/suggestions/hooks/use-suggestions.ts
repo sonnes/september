@@ -4,9 +4,9 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { z } from 'zod';
 
-import { useAISettings, useGenerate } from '@/packages/ai';
-import { Message } from '@/packages/chats';
-import { Suggestion } from '@/packages/suggestions/types';
+import { useAISettings, useGenerate } from '@september/ai';
+import { Message } from '@september/chats';
+import { Suggestion } from '@september/suggestions/types';
 
 const SUGGESTIONS_PROMPT = `Generate 5 possible NEXT messages for the User to send in the conversation.
 

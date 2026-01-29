@@ -3,9 +3,9 @@ import {
   SpeechEngine,
   SpeechRequest,
   SpeechResponse,
-} from '@/packages/speech/types';
-import { BrowserTTSSettings } from '@/types/ai-config';
-import { Voice } from '@/types/voice';
+} from '@september/speech/types';
+import { BrowserTTSSettings } from '@september/shared/types/ai-config';
+import { Voice } from '@september/shared/types/voice';
 
 export class BrowserSpeechProvider implements SpeechEngine {
   id = 'browser_tts';

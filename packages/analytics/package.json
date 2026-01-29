@@ -1,0 +1,22 @@
+{
+  "name": "@september/analytics",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./*": "./*"
+  },
+  "dependencies": {
+    "@september/account": "workspace:*",
+    "@september/shared": "workspace:*",
+    "@tanstack/db": "^0.5.15",
+    "@tanstack/react-db": "^0.1.59",
+    "uuid": "^11.1.0",
+    "zod": "^4.0.5"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

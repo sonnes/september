@@ -2,13 +2,13 @@
 
 import { ArrowRight, Sparkles } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@september/ui/components/button';
 
-import { useAccountContext } from '@/packages/account';
-import { AIProvidersForm, ProviderSection } from '@/packages/ai';
-import type { Providers } from '@/types/ai-config';
+import { useAccountContext } from '@september/account';
+import { AIProvidersForm, ProviderSection } from '@september/ai';
+import type { Providers } from '@september/shared/types/ai-config';
 
-import { useOnboarding } from '@/packages/onboarding/components/onboarding-provider';
+import { useOnboarding } from '@september/onboarding/components/onboarding-provider';
 
 export function AIProvidersStep() {
   const { goToNextStep, goToPreviousStep } = useOnboarding();

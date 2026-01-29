@@ -1,0 +1,27 @@
+{
+  "name": "@september/cloning",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./*": "./*"
+  },
+  "dependencies": {
+    "@september/account": "workspace:*",
+    "@september/audio": "workspace:*",
+    "@september/shared": "workspace:*",
+    "@september/ui": "workspace:*",
+    "@elevenlabs/elevenlabs-js": "^2.7.0",
+    "@hookform/resolvers": "^5.2.1",
+    "react-hook-form": "^7.62.0",
+    "@supabase/supabase-js": "^2.51.0",
+    "react-webcam": "^7.2.0",
+    "zod": "^4.0.5",
+    "sonner": "^2.0.6"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

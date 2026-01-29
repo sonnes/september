@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Account } from '../types';
-import { User } from '@/types/user';
+import { User } from '@september/shared/types/user';
 
 export class SupabaseAccountService {
   private supabase: SupabaseClient;

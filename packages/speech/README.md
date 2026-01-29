@@ -33,7 +33,7 @@ This module provides text-to-speech capabilities for the September app.
 ### Basic Speech Generation
 
 ```tsx
-import { SpeechProvider, useSpeechContext } from '@/packages/speech';
+import { SpeechProvider, useSpeechContext } from '@september/speech';
 
 function App() {
   return (
@@ -57,7 +57,7 @@ function SpeakButton() {
 ### Voice Selection
 
 ```tsx
-import { useProviderModels, useVoiceFetching } from '@/packages/speech';
+import { useProviderModels, useVoiceFetching } from '@september/speech';
 
 function VoiceSelector({ provider, apiKey }) {
   const { voices, isLoading: voicesLoading } = useVoiceFetching(provider, apiKey);

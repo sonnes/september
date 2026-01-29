@@ -34,7 +34,7 @@ This module provides functionality for voice cloning, specifically using the Ele
 ### Recording Voice Samples
 
 ```tsx
-import { RecordingProvider, useRecordingContext } from '@/packages/cloning';
+import { RecordingProvider, useRecordingContext } from '@september/cloning';
 
 function Recorder() {
   const { startRecording, stopRecording, status } = useRecordingContext();

@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 
 import { z } from 'zod';
 
-import { useAISettings, useGenerate } from '@/packages/ai';
+import { useAISettings, useGenerate } from '@september/ai';
 
 const KEYBOARD_GENERATION_PROMPT = `Generate an AAC keyboard with titles and 24 phrase starters using the User's point of view from the description given.
 

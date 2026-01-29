@@ -1,17 +1,17 @@
 // Export types
-export * from '@/packages/analytics/types/index';
+export * from '@september/analytics/types/index';
 
 // Export database configuration
-export * from '@/packages/analytics/db';
+export * from '@september/analytics/db';
 
 // Export logging functions
-export * from '@/packages/analytics/lib/log-event';
+export * from '@september/analytics/lib/log-event';
 
 // Export utility functions
-export * from '@/packages/analytics/lib/utils';
+export * from '@september/analytics/lib/utils';
 
 // Export hooks
-export * from '@/packages/analytics/hooks/use-analytics-summary';
+export * from '@september/analytics/hooks/use-analytics-summary';
 
 // Export components
 export { DashboardStats } from './components/dashboard-stats';

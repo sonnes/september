@@ -15,11 +15,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+} from '@september/ui/components/alert-dialog';
+import { Button } from '@september/ui/components/button';
+import { Input } from '@september/ui/components/input';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@september/shared/lib/utils';
 
 import { useDeleteChat } from '../hooks/use-delete-chat';
 import { Chat } from '../types';

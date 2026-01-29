@@ -4,11 +4,11 @@ import { useEffect, useMemo } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { FormCheckbox, FormSelect, FormSlider } from '@/components/ui/form';
+import { FormCheckbox, FormSelect, FormSlider } from '@september/ui/components/form';
 import { toast } from 'sonner';
-import { getModelsForProvider, getProvidersForFeature } from '@/packages/ai';
-import type { Account } from '@/packages/account';
-import type { AIProvider } from '@/types/ai-config';
+import { getModelsForProvider, getProvidersForFeature } from '@september/ai';
+import type { Account } from '@september/account';
+import type { AIProvider } from '@september/shared/types/ai-config';
 
 /**
  * Zod schema for Speech Configuration

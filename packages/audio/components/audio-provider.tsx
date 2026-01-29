@@ -5,8 +5,8 @@ import React, { ReactNode, createContext, useContext } from 'react';
 import {
   useDownloadAudio as useDownloadAudioSupabase,
   useUploadAudio as useUploadAudioSupabase,
-} from '@/packages/audio/hooks/use-db-audio-supabase';
-import { Alignment } from '@/packages/audio/types';
+} from '@september/audio/hooks/use-db-audio-supabase';
+import { Alignment } from '@september/audio/types';
 
 interface AudioContextType {
   uploadAudio: ({

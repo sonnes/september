@@ -2,8 +2,8 @@
 
 import { ReactNode, createContext, useContext } from 'react';
 
-import { useOnboardingLogic } from '@/packages/onboarding/hooks/use-onboarding';
-import { OnboardingContextValue } from '@/packages/onboarding/types';
+import { useOnboardingLogic } from '@september/onboarding/hooks/use-onboarding';
+import { OnboardingContextValue } from '@september/onboarding/types';
 
 const OnboardingContext = createContext<OnboardingContextValue | undefined>(undefined);
 

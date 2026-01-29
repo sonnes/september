@@ -41,7 +41,7 @@ This module handles document management, editing, and slide presentations.
 ### Fetching a Single Document
 
 ```tsx
-import { DocumentEditor, useDocument } from '@/packages/documents';
+import { DocumentEditor, useDocument } from '@september/documents';
 
 export default function WritePage({ params }: { params: { id: string } }) {
   const { document, isLoading, error } = useDocument(params.id);
@@ -57,7 +57,7 @@ export default function WritePage({ params }: { params: { id: string } }) {
 ### Creating and Updating Documents
 
 ```tsx
-import { useCreateDocument, useUpdateDocument, CreateDocumentData, UpdateDocumentData } from '@/packages/documents';
+import { useCreateDocument, useUpdateDocument, CreateDocumentData, UpdateDocumentData } from '@september/documents';
 
 function DocumentActions() {
   const { createDocument, isCreating } = useCreateDocument();
@@ -90,4 +90,4 @@ Documents are stored locally using TanStack DB (IndexedDB):
 - Database name: `app-documents`
 - Multi-tab synchronization via BroadcastChannel
 - Automatic persistence across sessions
-- Collection export: `import { documentCollection } from '@/packages/documents'`
+- Collection export: `import { documentCollection } from '@september/documents'`

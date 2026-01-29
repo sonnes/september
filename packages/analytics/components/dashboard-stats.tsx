@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { useAccountContext } from '@/packages/account';
+import { useAccountContext } from '@september/account';
 
 import { useAnalyticsSummary } from '../hooks/use-analytics-summary';
 import { TimeRange } from '../lib/utils';

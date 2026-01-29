@@ -4,12 +4,12 @@ import { useState } from 'react';
 
 import { CheckCircle2, ChevronLeft, ChevronRight, Mic, Play, Square, Trash2 } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Field, FieldLabel } from '@/components/ui/field';
+import { Button } from '@september/ui/components/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@september/ui/components/card';
+import { Field, FieldLabel } from '@september/ui/components/field';
 
-import { cn } from '@/lib/utils';
-import { useRecordingContext } from '@/packages/cloning/components/cloning-provider';
+import { cn } from '@september/shared/lib/utils';
+import { useRecordingContext } from '@september/cloning/components/cloning-provider';
 
 export const SAMPLE_TEXTS = [
   { id: 'birch-canoe', text: 'The birch canoe slid on the smooth planks.' },

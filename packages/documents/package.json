@@ -1,0 +1,30 @@
+{
+  "name": "@september/documents",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./*": "./*"
+  },
+  "dependencies": {
+    "@september/account": "workspace:*",
+    "@september/editor": "workspace:*",
+    "@september/shared": "workspace:*",
+    "@september/ui": "workspace:*",
+    "@heroicons/react": "^2.2.0",
+    "@supabase/supabase-js": "^2.51.0",
+    "@tanstack/db": "^0.5.15",
+    "@tanstack/react-db": "^0.1.59",
+    "remark": "^15.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-html": "^16.0.1",
+    "uuid": "^11.1.0",
+    "zod": "^4.0.5",
+    "sonner": "^2.0.6"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

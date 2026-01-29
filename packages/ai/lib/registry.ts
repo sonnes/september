@@ -1,4 +1,4 @@
-import { AIFeature, AIProvider, AIServiceProvider } from '@/types/ai-config';
+import { AIFeature, AIProvider, AIServiceProvider } from '@september/shared/types/ai-config';
 
 /**
  * Registry of all supported AI providers

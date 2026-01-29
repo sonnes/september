@@ -5,7 +5,7 @@ import { useCallback, useState } from 'react';
 import { nanoid } from 'nanoid';
 import { toast } from 'sonner';
 
-import { useAccountContext } from '@/packages/account';
+import { useAccountContext } from '@september/account';
 
 import { customKeyboardCollection } from '../db';
 import { CreateCustomKeyboardData, CustomKeyboard } from '../types';

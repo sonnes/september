@@ -4,13 +4,13 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@september/ui/components/tooltip';
 
-import { type Slide, parseAndRenderSlides } from '@/lib/slides';
-import { SlideRenderer } from '@/packages/documents/components/slide-renderer';
-import { SlidesNavigation } from '@/packages/documents/components/slides-navigation';
-import { SlidesProgress } from '@/packages/documents/components/slides-progress';
-import { useDocuments } from '@/packages/documents/hooks/use-documents';
+import { type Slide, parseAndRenderSlides } from '@september/shared/lib/slides';
+import { SlideRenderer } from '@september/documents/components/slide-renderer';
+import { SlidesNavigation } from '@september/documents/components/slides-navigation';
+import { SlidesProgress } from '@september/documents/components/slides-progress';
+import { useDocuments } from '@september/documents/hooks/use-documents';
 
 type SlidesPresentationProps = {
   markdown?: string;

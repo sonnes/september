@@ -2,20 +2,20 @@
 
 import { ReactNode, createContext, useCallback, useMemo } from 'react';
 
-import { useAccountContext } from '@/packages/account';
-import { Account } from '@/packages/account';
+import { useAccountContext } from '@september/account';
+import { Account } from '@september/account';
 import {
   DEFAULT_SPEECH_CONFIG,
   DEFAULT_SUGGESTIONS_CONFIG,
   DEFAULT_TRANSCRIPTION_CONFIG,
-} from '@/packages/ai/lib/defaults';
+} from '@september/ai/lib/defaults';
 import type {
   AIProvider,
   ProviderConfig,
   SpeechConfig,
   SuggestionsConfig,
   TranscriptionConfig,
-} from '@/types/ai-config';
+} from '@september/shared/types/ai-config';
 
 export interface AISettingsContextType {
   // AI Feature Configurations

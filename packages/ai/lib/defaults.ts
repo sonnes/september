@@ -1,4 +1,4 @@
-import { SpeechConfig, SuggestionsConfig, TranscriptionConfig } from '@/types/ai-config';
+import { SpeechConfig, SuggestionsConfig, TranscriptionConfig } from '@september/shared/types/ai-config';
 
 export const DEFAULT_SUGGESTIONS_CONFIG: SuggestionsConfig = {
   enabled: false,

@@ -8,17 +8,17 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FormField, FormTextarea } from '@/components/ui/form';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@september/ui/components/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@september/ui/components/card';
+import { FormField, FormTextarea } from '@september/ui/components/form';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@september/ui/components/tabs';
 
-import { useAccountContext } from '@/packages/account';
-import { useRecordingContext, useUpload } from '@/packages/cloning/components/cloning-provider';
-import { RecordingSection } from '@/packages/cloning/components/record';
-import { UploadSection } from '@/packages/cloning/components/upload';
-import { useVoiceStorage } from '@/packages/cloning/hooks/use-voice-storage';
-import { ElevenLabsVoiceClone } from '@/packages/cloning/lib/elevenlabs-clone';
+import { useAccountContext } from '@september/account';
+import { useRecordingContext, useUpload } from '@september/cloning/components/cloning-provider';
+import { RecordingSection } from '@september/cloning/components/record';
+import { UploadSection } from '@september/cloning/components/upload';
+import { useVoiceStorage } from '@september/cloning/hooks/use-voice-storage';
+import { ElevenLabsVoiceClone } from '@september/cloning/lib/elevenlabs-clone';
 
 const CloneVoiceSchema = z.object({
   name: z.string().min(1, 'Name is required'),

@@ -4,15 +4,15 @@ import React, { useState } from 'react';
 
 import { toast } from 'sonner';
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@september/ui/components/tabs';
 
-import { CircularKeyboard } from '@/packages/keyboards/components/circular-keyboard';
-import { CustomKeyboard } from '@/packages/keyboards/components/custom-keyboard';
-import { CustomKeyboardEditor } from '@/packages/keyboards/components/custom-keyboard-editor';
-import { KeyboardType } from '@/packages/keyboards/components/keyboard-context';
-import { QwertyKeyboard } from '@/packages/keyboards/components/qwerty-keyboard';
-import { useCustomKeyboards, useDeleteKeyboard } from '@/packages/keyboards/hooks';
-import { useKeyboardContext } from '@/packages/keyboards/hooks/use-keyboard-context';
+import { CircularKeyboard } from '@september/keyboards/components/circular-keyboard';
+import { CustomKeyboard } from '@september/keyboards/components/custom-keyboard';
+import { CustomKeyboardEditor } from '@september/keyboards/components/custom-keyboard-editor';
+import { KeyboardType } from '@september/keyboards/components/keyboard-context';
+import { QwertyKeyboard } from '@september/keyboards/components/qwerty-keyboard';
+import { useCustomKeyboards, useDeleteKeyboard } from '@september/keyboards/hooks';
+import { useKeyboardContext } from '@september/keyboards/hooks/use-keyboard-context';
 
 interface KeyboardRendererProps {
   chatId?: string;

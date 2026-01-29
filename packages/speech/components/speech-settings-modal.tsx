@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { Volume2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useAccountContext } from '@/packages/account';
-import { SpeechSettingsForm, SpeechSettingsFormData } from '@/packages/speech/components/speech-settings-form';
+import { Button } from '@september/ui/components/button';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@september/ui/components/dialog';
+import { useAccountContext } from '@september/account';
+import { SpeechSettingsForm, SpeechSettingsFormData } from '@september/speech/components/speech-settings-form';
 
 export function SpeechSettingsModal() {
   const [isOpen, setIsOpen] = useState(false);

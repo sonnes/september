@@ -3,7 +3,7 @@
 import { PlayIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 
-import type { Voice } from '@/types/voice';
+import type { Voice } from '@september/shared/types/voice';
 
 interface VoicesListProps {
   voices: Voice[];

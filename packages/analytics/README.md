@@ -135,7 +135,7 @@ The `useAnalyticsSummary` hook provides real-time aggregated metrics:
 Import logging functions from the analytics package:
 
 ```typescript
-import { logMessageSent, logAIGeneration, logTTSGeneration } from '@/packages/analytics';
+import { logMessageSent, logAIGeneration, logTTSGeneration } from '@september/analytics';
 
 // Log message sent
 logMessageSent(userId, {
@@ -171,7 +171,7 @@ logTTSGeneration(userId, {
 Use the `useAnalyticsSummary` hook to get real-time aggregated data:
 
 ```typescript
-import { useAnalyticsSummary } from '@/packages/analytics';
+import { useAnalyticsSummary } from '@september/analytics';
 
 function AnalyticsDashboard() {
   const { data, isLoading } = useAnalyticsSummary({ range: 'week' });
@@ -198,7 +198,7 @@ import {
   MetricCard,
   TimeRangeSelector,
   ProviderUsageChart,
-} from '@/packages/analytics';
+} from '@september/analytics';
 
 // Full dashboard
 <DashboardStats />

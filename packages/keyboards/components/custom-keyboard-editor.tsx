@@ -8,18 +8,18 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button } from '@september/ui/components/button';
+import { Input } from '@september/ui/components/input';
+import { Label } from '@september/ui/components/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@september/ui/components/select';
 
-import { useAccountContext } from '@/packages/account';
+import { useAccountContext } from '@september/account';
 
 import { useCreateKeyboard } from '../hooks/use-create-keyboard';
 import { useCustomKeyboard } from '../hooks/use-custom-keyboard';
