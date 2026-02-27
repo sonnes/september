@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct KeyboardView: View {
+    var typingTracker: TypingTracker
     @State private var isShiftActive = false
     @State private var isCapsLockOn = false
-    @State private var typingTracker = TypingTracker()
     @AppStorage("dwellEnabled") private var dwellEnabled = true
 
     private var shiftState: Bool { isShiftActive || isCapsLockOn }

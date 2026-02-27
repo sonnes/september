@@ -4,24 +4,23 @@ struct SuggestionsBarView: View {
     let tracker: TypingTracker
 
     var body: some View {
-        HStack(spacing: 6) {
-            if tracker.suggestions.isEmpty {
-                Text("Type to see suggestions")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.tertiary)
-            } else {
-                ForEach(tracker.suggestions, id: \.self) { word in
-                    SuggestionChip(word: word) {
-                        tracker.applySuggestion(word)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                if tracker.suggestions.isEmpty {
+                    Text("Type to see suggestions")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.tertiary)
+                } else {
+                    ForEach(tracker.suggestions, id: \.self) { word in
+                        SuggestionChip(word: word) {
+                            tracker.applySuggestion(word)
+                        }
                     }
                 }
             }
+            .padding(.horizontal, 8)
         }
         .frame(height: 32, alignment: .leading)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 8)
-        .fixedSize(horizontal: false, vertical: true)
-        .clipped()
     }
 }
 

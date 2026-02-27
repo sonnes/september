@@ -16,19 +16,113 @@ struct SeptemberApp: App {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
   private var panel: FloatingPanel?
+  private var predictionsPanel: NSPanel?
   private var statusItem: NSStatusItem?
   private let accessibility = AccessibilityManager()
+  private let typingTracker = TypingTracker()
+  private var predictionsObservation: Task<Void, Never>?
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     accessibility.requestPermission()
 
-    let hostingView = NSHostingView(rootView: KeyboardView())
+    let hostingView = NSHostingView(rootView: KeyboardView(typingTracker: typingTracker))
     hostingView.translatesAutoresizingMaskIntoConstraints = false
 
     panel = FloatingPanel(contentView: hostingView)
     panel?.orderFront(nil)
 
+    setupPredictionsPanel()
     setupMenuBar()
+  }
+
+  private func setupPredictionsPanel() {
+    guard let keyboardPanel = panel else { return }
+
+    let predictionsView = NSHostingView(rootView: SentencePredictionsView(tracker: typingTracker))
+
+    let predPanel = NSPanel(
+      contentRect: .zero,
+      styleMask: [.nonactivatingPanel],
+      backing: .buffered,
+      defer: false
+    )
+    predPanel.contentView = predictionsView
+    predPanel.level = .floating
+    predPanel.isFloatingPanel = true
+    predPanel.hidesOnDeactivate = false
+    predPanel.isReleasedWhenClosed = false
+    predPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+    predPanel.isOpaque = false
+    predPanel.backgroundColor = .clear
+    predPanel.hasShadow = false
+
+    predictionsPanel = predPanel
+    keyboardPanel.addChildWindow(predPanel, ordered: .above)
+
+    repositionPredictionsPanel()
+
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(keyboardPanelDidMove),
+      name: NSWindow.didMoveNotification,
+      object: keyboardPanel
+    )
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(keyboardPanelDidMove),
+      name: NSWindow.didResizeNotification,
+      object: keyboardPanel
+    )
+
+    // Observe prediction changes to resize the panel
+    startObservingPredictions()
+  }
+
+  private func startObservingPredictions() {
+    predictionsObservation = Task { [weak self] in
+      while !Task.isCancelled {
+        guard let self else { return }
+        _ = withObservationTracking {
+          self.typingTracker.sentencePredictions
+        } onChange: {}
+        try? await Task.sleep(for: .milliseconds(50))
+        // Defer to next run loop to avoid conflicting with AppKit's layout cycle
+        DispatchQueue.main.async { self.repositionPredictionsPanel() }
+      }
+    }
+  }
+
+  @objc private func keyboardPanelDidMove() {
+    repositionPredictionsPanel()
+  }
+
+  private func repositionPredictionsPanel() {
+    guard let keyboardPanel = panel, let predPanel = predictionsPanel else { return }
+
+    if typingTracker.sentencePredictions.isEmpty {
+      if predPanel.isVisible {
+        predPanel.orderOut(nil)
+      }
+      return
+    }
+
+    let width = keyboardPanel.frame.width
+    // Estimate height: ~36pt per prediction + 16pt padding
+    let count = CGFloat(typingTracker.sentencePredictions.count)
+    let height = count * 36 + 16
+
+    let origin = NSPoint(
+      x: keyboardPanel.frame.origin.x,
+      y: keyboardPanel.frame.maxY + 4
+    )
+    predPanel.setFrame(
+      NSRect(origin: origin, size: NSSize(width: width, height: height)),
+      display: true
+    )
+
+    if !predPanel.isVisible {
+      predPanel.orderFront(nil)
+    }
   }
 
   private func setupMenuBar() {

@@ -28,4 +28,17 @@ final class EventInjector {
             send(keyCode: keyCode)
         }
     }
+
+    func typeString(_ text: String) {
+        for char in text {
+            let unichars = Array(String(char).utf16)
+            guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true),
+                  let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false)
+            else { continue }
+            keyDown.keyboardSetUnicodeString(stringLength: unichars.count, unicodeString: unichars)
+            keyUp.keyboardSetUnicodeString(stringLength: unichars.count, unicodeString: unichars)
+            keyDown.post(tap: .cghidEventTap)
+            keyUp.post(tap: .cghidEventTap)
+        }
+    }
 }
