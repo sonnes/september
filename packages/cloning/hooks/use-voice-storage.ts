@@ -4,7 +4,6 @@ import { useCallback, useMemo } from 'react';
 
 import { toast } from 'sonner';
 
-import supabase from '@/supabase/client';
 import { useAuth } from '@september/account';
 import { AudioService } from '@september/audio';
 import { VoiceSample } from '../types';
@@ -25,7 +24,7 @@ export interface UseVoiceStorageReturn {
 export function useVoiceStorage(): UseVoiceStorageReturn {
   const { user } = useAuth();
   const userId = user?.id || LOCAL_USER_ID;
-  const audioService = useMemo(() => new AudioService(supabase), []);
+  const audioService = useMemo(() => new AudioService(), []);
 
   const uploadVoiceSample = useCallback(
     async ({
@@ -51,7 +50,7 @@ export function useVoiceStorage(): UseVoiceStorageReturn {
         
         const path = `voice-samples/${userId}/${type}/${filename}`;
 
-        // Store in Supabase Storage via AudioService
+        // Store via AudioService
         await audioService.uploadAudio({
           path,
           blob: base64,
@@ -93,10 +92,10 @@ export function useVoiceStorage(): UseVoiceStorageReturn {
           const metadata = file.metadata || {};
           return {
             id: `${folderPath}/${file.name}`,
-            user_id: metadata.user_id || userId,
+            user_id: (metadata.user_id as string) || userId,
             type: (metadata.type as 'upload' | 'recording') || type,
-            sample_id: metadata.sample_id,
-            file_name: metadata.file_name,
+            sample_id: metadata.sample_id as string | undefined,
+            file_name: metadata.file_name as string | undefined,
             created_at: new Date(file.created_at),
           };
         });

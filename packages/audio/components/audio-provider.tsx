@@ -3,9 +3,9 @@
 import React, { ReactNode, createContext, useContext } from 'react';
 
 import {
-  useDownloadAudio as useDownloadAudioSupabase,
-  useUploadAudio as useUploadAudioSupabase,
-} from '@september/audio/hooks/use-db-audio-supabase';
+  useDownloadAudio,
+  useUploadAudio,
+} from '@september/audio/hooks/use-db-audio';
 import { Alignment } from '@september/audio/types';
 
 interface AudioContextType {
@@ -24,18 +24,12 @@ interface AudioContextType {
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
 
 type AudioProviderProps = {
-  provider: 'supabase';
   children: ReactNode;
 };
 
 export function AudioProvider(props: AudioProviderProps) {
-  // Call all hooks unconditionally to satisfy React Hooks rules
-  const supabaseUpload = useUploadAudioSupabase();
-  const supabaseDownload = useDownloadAudioSupabase();
-
-  // Use the appropriate hooks based on provider
-  const { uploadAudio } = supabaseUpload;
-  const { downloadAudio } = supabaseDownload;
+  const { uploadAudio } = useUploadAudio();
+  const { downloadAudio } = useDownloadAudio();
 
   return (
     <AudioContext.Provider value={{ uploadAudio, downloadAudio }}>

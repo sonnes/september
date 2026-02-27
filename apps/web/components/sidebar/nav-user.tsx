@@ -1,8 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-
-import { BadgeCheck, ChevronsUpDown, LogOut } from 'lucide-react';
+import { BadgeCheck, ChevronsUpDown } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@september/ui/components/avatar';
 import {
@@ -23,7 +21,6 @@ import {
 import { Skeleton } from '@september/ui/components/skeleton';
 
 import { useAccountContext } from '@september/account';
-import supabase from '@/supabase/client';
 
 function NavUserSkeleton() {
   return (
@@ -43,7 +40,6 @@ function NavUserSkeleton() {
 
 export function NavUser() {
   const { user, loading } = useAccountContext();
-  const router = useRouter();
   const { isMobile } = useSidebar();
 
   if (loading) {
@@ -53,11 +49,6 @@ export function NavUser() {
   const displayName = user?.user_metadata?.full_name || 'Guest';
   const displayEmail = user?.email || 'guest@september.to';
   const initials = user?.user_metadata?.full_name?.charAt(0).toUpperCase() || 'G';
-
-  function signOut() {
-    supabase.auth.signOut();
-    router.push('/');
-  }
 
   return (
     <SidebarMenu>
@@ -106,13 +97,6 @@ export function NavUser() {
                 </a>
               </DropdownMenuItem>
             </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <a onClick={() => signOut()}>
-                <LogOut />
-                Log out
-              </a>
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

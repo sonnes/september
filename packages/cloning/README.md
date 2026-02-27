@@ -7,7 +7,7 @@ This module provides functionality for voice cloning, specifically using the Ele
 - **Audio Upload**: Upload existing audio files for voice cloning.
 - **Voice Recording**: Record voice samples directly in the browser using pre-defined sample texts.
 - **ElevenLabs Integration**: Integration with the ElevenLabs API for creating voice clones.
-- **Supabase Storage**: Voice samples are stored in Supabase Storage before being uploaded to ElevenLabs.
+- **Local Storage**: Voice samples are stored locally in IndexedDB before being uploaded to ElevenLabs.
 
 ## Components
 
@@ -21,7 +21,7 @@ This module provides functionality for voice cloning, specifically using the Ele
 
 - `useRecording`: Main hook for recording voice samples (composes smaller hooks).
 - `useUpload`: Manage audio file uploads for cloning.
-- `useVoiceStorage`: Manage voice samples in Supabase storage.
+- `useVoiceStorage`: Manage voice samples in local storage.
 
 ### Specialized Hooks
 

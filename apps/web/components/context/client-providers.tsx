@@ -19,7 +19,7 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
   return (
     <AccountProvider>
       <AISettingsProvider>
-        <AudioProvider provider="supabase">
+        <AudioProvider>
           <AudioPlayerProvider>{children}</AudioPlayerProvider>
         </AudioProvider>
       </AISettingsProvider>

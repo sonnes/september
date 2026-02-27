@@ -56,13 +56,8 @@ Additionally, in every conversation, you can provide additional context in the f
    ```
 
    You will need API keys for:
-   - **Supabase**: URL and Anon Key (for auth and cloud database)
    - **Google Gemini**: API Key (for AI suggestions and transcription)
    - **ElevenLabs**: API Key (for high-quality TTS and cloning)
-   - **Google Auth**: Client ID and Secret (for Google Login)
-
-4. **Database Setup**:
-   - **Supabase**: Run the migrations in `apps/web/supabase/migrations` against your Supabase project.
 
 ### Running the App
 
@@ -74,7 +69,7 @@ The application will be available at `http://localhost:3000`.
 
 ## Usage
 
-1. **Sign Up/Login**: Create an account or use the local-only mode to explore.
+1. **Start**: Open the app — it runs locally with no sign-up required.
 2. **Talk**: Use the main interface to type or use the accessible keyboard to communicate.
 3. **AI Suggestions**: As you type, AI-powered suggestions will appear. Select them to speed up your communication.
 4. **Voice Settings**: Configure your voice, speed, and pitch in the settings. You can also clone your own voice using the Voice Cloning tool.
@@ -107,7 +102,6 @@ september/
 │   ├── recording/             # @september/recording - Audio recording
 │   ├── speech/                # @september/speech - TTS & voice management
 │   └── suggestions/           # @september/suggestions - Contextual suggestions
-├── supabase/                   # Cloud database config & migrations
 └── pnpm-workspace.yaml         # Workspace configuration
 ```
 
@@ -115,7 +109,7 @@ september/
 
 - **Framework**: Next.js 15 (App Router, React 19)
 - **Styling**: Tailwind CSS 4, shadcn/ui components
-- **Database**: Supabase for authentication, shared data, and file storage.
+- **Local Storage**: IndexedDB (via TanStack DB) for local-first data persistence.
 - **AI**: Google Gemini API, Vercel AI SDK
 - **Voice**: ElevenLabs for voice synthesis and cloning
 - **Forms**: React Hook Form + Zod validation

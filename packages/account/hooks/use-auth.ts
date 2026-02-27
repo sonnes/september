@@ -1,8 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-
-import supabase from '@/supabase/client';
 import { User } from '@september/shared/types/user';
 
 export interface UseAuthReturn {
@@ -10,29 +7,14 @@ export interface UseAuthReturn {
   loading: boolean;
 }
 
+const LOCAL_USER: User = {
+  id: 'local-user',
+  email: 'guest@september.to',
+  user_metadata: {
+    full_name: 'Guest',
+  },
+} as User;
+
 export function useAuth(): UseAuthReturn {
-  const [user, setUser] = useState<User | undefined>();
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Initial fetch
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user ?? undefined);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? undefined);
-      setLoading(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  return { user, loading };
+  return { user: LOCAL_USER, loading: false };
 }

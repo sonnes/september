@@ -10,8 +10,6 @@
   },
   "dependencies": {
     "@september/shared": "workspace:*",
-    "@supabase/ssr": "^0.6.1",
-    "@supabase/supabase-js": "^2.51.0",
     "@tanstack/db": "^0.5.15",
     "@tanstack/react-db": "^0.1.59",
     "zod": "^4.0.5",

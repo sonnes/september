@@ -1,12 +1,11 @@
 # Account Package
 
-This package manages user account data using TanStack DB for local-first storage and Supabase for authentication and file storage.
+This package manages user account data using TanStack DB for local-first storage.
 
 ## Features
 
 - **Local-First with TanStack DB**: Primary store for account data, providing fast, reactive updates.
-- **Supabase Authentication**: Integrated authentication state via `useAuth`.
-- **File Management**: abstractions for uploading and deleting user documents via `useStorage` (Supabase Storage).
+- **Local Auth**: Always runs as a local guest user via `useAuth`.
 - **Configuration**: Manages AI feature settings (suggestions, transcription, speech) at the account level.
 
 ## Architecture
@@ -14,8 +13,7 @@ This package manages user account data using TanStack DB for local-first storage
 - `context.tsx`: Core context provider (`AccountProvider`) and `useAccountContext` hook.
 - `hooks/`: Domain-specific React hooks:
   - `useDbAccount`: TanStack DB operations for account collection.
-  - `useAuth`: Supabase authentication state.
-  - `useStorage`: Supabase file management.
+  - `useAuth`: Local user state.
 - `lib/`: Business logic and service integrations.
 - `types/`: Zod schemas and TypeScript interfaces for account data.
 - `db.ts`: TanStack DB collection definition using local storage persistence.
@@ -49,9 +47,8 @@ const { account, user, updateAccount } = useAccountContext();
 For specialized cases, you can use the domain-specific hooks:
 
 ```tsx
-import { useAuth, useDbAccount, useStorage } from '@september/account';
+import { useAuth, useDbAccount } from '@september/account';
 
 const { account, update } = useDbAccount(userId);
 const { user } = useAuth();
-const { uploadFile } = useStorage();
 ```

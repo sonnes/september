@@ -220,9 +220,6 @@ export default function TermsOfService() {
                 <li>
                   <strong>Google Gemini:</strong> AI text generation and processing
                 </li>
-                <li>
-                  <strong>Supabase:</strong> Database and authentication services
-                </li>
               </ul>
               <p>
                 Your use of these services is subject to their respective terms of service and

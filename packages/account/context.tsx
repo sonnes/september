@@ -6,7 +6,6 @@ import { User } from '@september/shared/types/user';
 
 import { useAuth } from './hooks/use-auth';
 import { useDbAccount } from './hooks/use-db-account';
-import { useStorage } from './hooks/use-storage';
 import { Account, PutAccountData } from './types';
 
 export interface AccountContextType {
@@ -25,29 +24,13 @@ interface AccountProviderProps {
 }
 
 export function AccountProvider({ children }: AccountProviderProps) {
-  const { user: supabaseUser, loading: authLoading } = useAuth();
-
-  const user = useMemo(() => {
-    if (!authLoading && !supabaseUser) {
-      return {
-        id: 'local-user',
-        email: 'guest@september.to',
-        user_metadata: {
-          full_name: 'Guest',
-        },
-      } as User;
-    }
-    return supabaseUser;
-  }, [supabaseUser, authLoading]);
+  const { user, loading: authLoading } = useAuth();
 
   const userId = useMemo(() => user?.id ?? 'local-user', [user]);
 
   const { account: dbAccount, isLoading, insert, update } = useDbAccount(userId);
-  const { uploadFile: supabaseUpload, deleteFile: supabaseDelete } = useStorage();
 
   useEffect(() => {
-    // If we don't have a dbAccount yet, and we are not waiting for auth,
-    // initialize the account in TanStack DB.
     if (!dbAccount && !authLoading && !isLoading) {
       insert({
         id: userId,
@@ -67,20 +50,16 @@ export function AccountProvider({ children }: AccountProviderProps) {
 
   const uploadFile = useCallback(
     async (file: File) => {
-      if (!user) {
-        console.log('Upload skipped: user not authenticated');
-        return file.name;
-      }
-      return supabaseUpload(user.id, file);
+      return file.name;
     },
-    [user, supabaseUpload]
+    []
   );
 
   const deleteFile = useCallback(
-    async (path: string) => {
-      await supabaseDelete(path);
+    async (_path: string) => {
+      // No-op: file storage is handled locally
     },
-    [supabaseDelete]
+    []
   );
 
   const value = useMemo(

@@ -57,9 +57,7 @@ RESTful API endpoints that handle:
 
 ## Authentication
 
-All API routes are protected by Supabase authentication. Requests must include a valid Supabase session cookie.
-
-Unauthenticated requests return `401 Unauthorized`.
+API routes are available without authentication in local-first mode.
 
 ## Error Handling
 
@@ -91,10 +89,7 @@ Required environment variables:
 
 - `GEMINI_API_KEY` - Google Gemini API key for AI generation
 - `ELEVENLABS_API_KEY` - ElevenLabs API key for voice synthesis
-- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
 
 ## Related Documentation
 
 - [Services Directory](../../services/README.md)
-- [Supabase Configuration](../../supabase/README.md)

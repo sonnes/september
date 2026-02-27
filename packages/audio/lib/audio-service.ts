@@ -1,20 +1,19 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import { KVStore } from '@september/shared/lib/indexeddb/kv-store';
 import { Alignment } from '@september/audio/types';
 
+interface StoredAudioItem {
+  blob: ArrayBuffer;
+  contentType: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  name: string;
+}
+
+const kvStore = typeof indexedDB !== 'undefined'
+  ? new KVStore<StoredAudioItem>({ dbName: 'september-audio', storeName: 'audio-files' })
+  : null;
+
 export class AudioService {
-  private supabase: SupabaseClient;
-
-  constructor(client: SupabaseClient) {
-    this.supabase = client;
-  }
-
-  private async checkAuth(): Promise<boolean> {
-    const {
-      data: { session },
-    } = await this.supabase.auth.getSession();
-    return !!session;
-  }
-
   async uploadAudio({
     path,
     blob,
@@ -27,50 +26,51 @@ export class AudioService {
     alignment?: Alignment;
     contentType?: string;
     metadata?: Record<string, unknown>;
-  }): Promise<string|undefined> {
-    if (!(await this.checkAuth())) {
-      return undefined;
-    }
-    const buffer = Buffer.from(blob, 'base64');
-    const { data, error } = await this.supabase.storage.from('audio').upload(path, buffer, {
-      contentType,
-      upsert: true,
-      metadata: {
-        ...metadata,
-        alignment: alignment,
-      },
-    });
-    if (error) {
-      throw error;
-    }
+  }): Promise<string | undefined> {
+    if (!kvStore) return undefined;
 
-    return data.path;
+    const binary = atob(blob);
+    const buffer = new ArrayBuffer(binary.length);
+    const view = new Uint8Array(buffer);
+    for (let i = 0; i < binary.length; i++) {
+      view[i] = binary.charCodeAt(i);
+    }
+    const item: StoredAudioItem = {
+      blob: buffer,
+      contentType,
+      metadata: { ...metadata, alignment },
+      created_at: new Date().toISOString(),
+      name: path.split('/').pop() || path,
+    };
+
+    await kvStore.set(path, item);
+    return path;
   }
 
   async downloadAudio(path: string): Promise<Blob> {
-    if (!(await this.checkAuth())) {
-      return new Blob();
-    }
-    const { data, error } = await this.supabase.storage.from('audio').download(path);
-    if (error) throw error;
-    return data;
+    if (!kvStore) return new Blob();
+
+    const item = await kvStore.get(path);
+    if (!item) throw new Error(`Audio not found: ${path}`);
+    return new Blob([item.blob], { type: item.contentType });
   }
 
   async deleteAudio(path: string): Promise<void> {
-    if (!(await this.checkAuth())) {
-      return;
-    }
-    const { error } = await this.supabase.storage.from('audio').remove([path]);
-    if (error) throw error;
+    if (!kvStore) return;
+    await kvStore.delete(path);
   }
 
-  async listAudio(path: string): Promise<any[]> {
-    if (!(await this.checkAuth())) {
-      return [];
+  async listAudio(prefix: string): Promise<Array<{ name: string; created_at: string; metadata: Record<string, unknown> }>> {
+    if (!kvStore) return [];
+
+    const results: Array<{ name: string; created_at: string; metadata: Record<string, unknown> }> = [];
+    for await (const [key, item] of kvStore.scan(prefix)) {
+      results.push({
+        name: item.name,
+        created_at: item.created_at,
+        metadata: item.metadata,
+      });
     }
-    const { data, error } = await this.supabase.storage.from('audio').list(path);
-    if (error) throw error;
-    return data;
+    return results;
   }
 }
-

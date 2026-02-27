@@ -1,6 +1,6 @@
 /**
  * Message types for display popup BroadcastChannel communication
- * Audio blob is passed directly to avoid redundant Supabase download in popup
+ * Audio blob is passed directly to avoid redundant download in popup
  */
 
 import { Message } from '@september/chats';

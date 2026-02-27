@@ -2,11 +2,10 @@
 
 import { useCallback } from 'react';
 import { toast } from 'sonner';
-import supabase from '@/supabase/client';
 import { Alignment } from '@september/audio/types';
 import { AudioService } from '@september/audio/lib/audio-service';
 
-const audioService = new AudioService(supabase);
+const audioService = new AudioService();
 
 export interface UseUploadAudioReturn {
   uploadAudio: (params: { path: string; blob: string; alignment?: Alignment }) => Promise<string|undefined>;
@@ -52,4 +51,3 @@ export function useDownloadAudio(): UseDownloadAudioReturn {
 
   return { downloadAudio };
 }
-

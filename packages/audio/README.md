@@ -6,8 +6,8 @@ This module handles audio playback and storage for the September app.
 
 - **Audio Player**: Context-based audio player with queue support, playback control, and time tracking.
 - **Text Viewer**: Specialized component for visualizing audio alignment through text highlighting.
-- **Audio Storage**: Abstracted storage for audio files using Supabase.
-- **Audio Service**: Low-level service for interacting with Supabase storage.
+- **Audio Storage**: Abstracted storage for audio files using IndexedDB.
+- **Audio Service**: Low-level service for interacting with local storage.
 
 ## Components
 
@@ -20,9 +20,9 @@ This module handles audio playback and storage for the September app.
 
 ### Storage Hooks
 
-- `useAudio`: Access the audio storage context (provider-agnostic).
-- `useUploadAudioSupabase`: Direct access to Supabase-based audio upload.
-- `useDownloadAudioSupabase`: Direct access to Supabase-based audio download.
+- `useAudio`: Access the audio storage context.
+- `useUploadAudio`: Direct access to audio upload.
+- `useDownloadAudio`: Direct access to audio download.
 
 ### Playback Hooks
 

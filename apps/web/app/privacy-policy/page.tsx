@@ -54,9 +54,6 @@ export default function PrivacyPolicy() {
                     <li>
                       <strong>Google Gemini:</strong> Text/audio for AI features
                     </li>
-                    <li>
-                      <strong>Supabase:</strong> Data for authenticated users
-                    </li>
                   </ul>
                 </div>
               </div>
@@ -130,18 +127,6 @@ export default function PrivacyPolicy() {
                 </ul>
               </div>
 
-              <div className="bg-purple-50 border border-purple-200 rounded p-4 my-4">
-                <h4 className="font-medium text-purple-800 mb-2">
-                  Supabase (Authenticated Users Only)
-                </h4>
-                <ul className="text-sm text-purple-700 list-disc list-inside space-y-1">
-                  <li>All account information and preferences</li>
-                  <li>Messages and conversation history</li>
-                  <li>Audio files and recordings</li>
-                  <li>Search queries and usage patterns</li>
-                </ul>
-              </div>
-
               <h2>3. How We Use Your Information</h2>
               <ul>
                 <li>
@@ -174,7 +159,7 @@ export default function PrivacyPolicy() {
                 </li>
                 <li>
                   <strong>External Services:</strong> Subject to each provider&apos;s retention
-                  policies (ElevenLabs, Google, Supabase)
+                  policies (ElevenLabs, Google)
                 </li>
                 <li>
                   <strong>API Processing:</strong> Most external services process data temporarily
@@ -233,9 +218,6 @@ export default function PrivacyPolicy() {
                 </li>
                 <li>
                   <strong>Google Gemini:</strong> AI-powered text generation and processing
-                </li>
-                <li>
-                  <strong>Supabase:</strong> Cloud database for authenticated users
                 </li>
               </ul>
               <p>

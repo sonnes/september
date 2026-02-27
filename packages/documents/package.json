@@ -14,7 +14,6 @@
     "@september/shared": "workspace:*",
     "@september/ui": "workspace:*",
     "@heroicons/react": "^2.2.0",
-    "@supabase/supabase-js": "^2.51.0",
     "@tanstack/db": "^0.5.15",
     "@tanstack/react-db": "^0.1.59",
     "remark": "^15.0.1",

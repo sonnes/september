@@ -91,7 +91,7 @@ Centralized type definitions ensure:
 
 ### Database Types
 
-Types mirror Supabase database schema:
+Types mirror the data schema:
 
 - Match table column names exactly
 - Include all required and optional fields
@@ -227,15 +227,11 @@ export function isMessage(obj: any): obj is Message {
 
 Types should match database schema exactly:
 
-1. After database migrations, update corresponding types
-2. Use Supabase type generation when possible
-3. Keep deprecated fields for backward compatibility
-4. Document breaking changes
-
-See [../supabase/migrations/](../supabase/migrations/) for schema changes.
+1. After schema changes, update corresponding types
+2. Keep deprecated fields for backward compatibility
+3. Document breaking changes
 
 ## Related Documentation
 
 - [Services Directory](../services/README.md) - Services that use these types
-- [Supabase Directory](../supabase/README.md) - Database schema
 - [Hooks Directory](../hooks/README.md) - Hooks that return typed data
