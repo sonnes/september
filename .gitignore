@@ -61,3 +61,5 @@ DerivedData/
 .claude/settings.local.json
 .claude/plans/
 .claude/research/
+
+.vscode/
