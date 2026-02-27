@@ -107,10 +107,6 @@ enum KeyboardLayout {
         KeyDefinition("", code: KeyCodes.space, width: .space),
         KeyDefinition("⌘", code: KeyCodes.rightCommand, width: .wide, isModifier: true),
         KeyDefinition("⌥", code: KeyCodes.rightOption, width: .standard, isModifier: true),
-        KeyDefinition("←", code: KeyCodes.leftArrow),
-        KeyDefinition("↑", code: KeyCodes.upArrow),
-        KeyDefinition("↓", code: KeyCodes.downArrow),
-        KeyDefinition("→", code: KeyCodes.rightArrow),
     ]
 
     static let allRows: [[KeyDefinition]] = [

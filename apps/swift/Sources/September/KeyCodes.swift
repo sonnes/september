@@ -73,6 +73,13 @@ enum KeyCodes {
     static let rightControl: UInt16 = 0x3E
     static let function: UInt16 = 0x3F
 
+    // Navigation Keys
+    static let pageUp: UInt16 = 0x74
+    static let pageDown: UInt16 = 0x79
+    static let home: UInt16 = 0x73
+    static let end: UInt16 = 0x77
+    static let forwardDelete: UInt16 = 0x75
+
     // Arrow Keys
     static let leftArrow: UInt16 = 0x7B
     static let rightArrow: UInt16 = 0x7C

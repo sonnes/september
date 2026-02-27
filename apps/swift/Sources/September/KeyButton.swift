@@ -21,7 +21,7 @@ struct KeyButton: View {
                 .shadow(color: .black.opacity(0.1), radius: 1, x: 0, y: 1)
         }
         .buttonStyle(.plain)
-        .onHover { isHovered = $0 }
+        .dwell(cornerRadius: 6, isHovered: $isHovered, action: onPress)
     }
 
     @ViewBuilder
