@@ -49,6 +49,14 @@ cache/
 # worktrees
 .worktrees/
 
+# swift
+.build/
+.swiftpm/
+*.xcodeproj/
+xcuserdata/
+DerivedData/
+*.app
+
 # claude
 .claude/settings.local.json
 .claude/plans/
