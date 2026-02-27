@@ -974,7 +974,7 @@ Based on research, here's recommended architecture for September's macOS accessi
 │  │  - Switch Control detection                │ │
 │  │  - Text composition handling               │ │
 │  └────────────────────────────────────────────┘ │
-│                     │                            │
+│                     │                            │c
 │  ┌──────────────────▼──────────────────────────┐ │
 │  │  Text Injection Layer                      │ │
 │  │  - CGEvent.post() (if not sandboxed)       │ │

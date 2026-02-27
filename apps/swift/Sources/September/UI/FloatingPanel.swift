@@ -2,6 +2,8 @@ import AppKit
 import SwiftUI
 
 final class FloatingPanel: NSPanel {
+    private static let frameKey = "FloatingPanelFrame"
+
     init(contentView: NSView) {
         super.init(
             contentRect: .zero,
@@ -27,7 +29,34 @@ final class FloatingPanel: NSPanel {
         let width = max(size.width, 850)
         let height = max(size.height, 320)
         setContentSize(NSSize(width: width, height: height))
-        center()
+
+        if let savedFrame = UserDefaults.standard.string(forKey: Self.frameKey) {
+            let frame = NSRectFromString(savedFrame)
+            if NSScreen.screens.contains(where: { $0.visibleFrame.intersects(frame) }) {
+                setFrame(frame, display: true)
+            } else {
+                center()
+            }
+        } else {
+            center()
+        }
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(savePosition),
+            name: NSWindow.didMoveNotification,
+            object: self
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(savePosition),
+            name: NSWindow.didResizeNotification,
+            object: self
+        )
+    }
+
+    @objc private func savePosition() {
+        UserDefaults.standard.set(NSStringFromRect(frame), forKey: Self.frameKey)
     }
 
     override var canBecomeKey: Bool { false }

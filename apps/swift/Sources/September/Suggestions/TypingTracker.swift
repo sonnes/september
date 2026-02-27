@@ -6,26 +6,69 @@ final class TypingTracker {
     private(set) var currentWord = ""
     private(set) var suggestions: [String] = []
 
-    private let spellChecker = NSSpellChecker.shared
-    private let spellTag = NSSpellChecker.uniqueSpellDocumentTag()
+    private let textReader = FocusedTextReader()
+    private let engine = SuggestionEngine()
+    private var debounceWork: DispatchWorkItem?
+
+    init() {
+        textReader.onFocusChange = { [weak self] in
+            Task { @MainActor in
+                self?.handleFocusChange()
+            }
+        }
+        textReader.onValueChange = { [weak self] in
+            Task { @MainActor in
+                self?.handleValueChange()
+            }
+        }
+        textReader.startObserving()
+    }
+
+    private func handleFocusChange() {
+        currentWord = ""
+        scheduleSuggestionUpdate()
+    }
+
+    private func handleValueChange() {
+        // Text changed externally (physical keyboard, paste, dictation, etc.)
+        // Reset local tracking since it's now out of sync
+        currentWord = ""
+        scheduleSuggestionUpdate()
+    }
 
     func trackKey(keyCode: UInt16, shift: Bool) {
         if let char = character(for: keyCode, shift: shift) {
             currentWord.append(char)
-            updateSuggestions()
         } else if keyCode == KeyCodes.delete {
             if !currentWord.isEmpty {
                 currentWord.removeLast()
-                updateSuggestions()
             }
         } else if isWordBoundary(keyCode) {
-            clear()
+            currentWord = ""
         }
+
+        scheduleSuggestionUpdate()
     }
 
     func applySuggestion(_ word: String) {
-        let deleteCount = currentWord.count
-        for _ in 0..<deleteCount {
+        let partialWord: String
+        if textReader.isTextFieldFocused {
+            let text = textReader.textBeforeCursor
+            if text.last?.isWhitespace == true {
+                partialWord = ""
+            } else {
+                let lastSpace = text.lastIndex(of: " ")
+                if let idx = lastSpace {
+                    partialWord = String(text[text.index(after: idx)...])
+                } else {
+                    partialWord = text
+                }
+            }
+        } else {
+            partialWord = currentWord
+        }
+
+        for _ in 0..<partialWord.count {
             EventInjector.shared.send(keyCode: KeyCodes.delete)
         }
         for char in word {
@@ -33,27 +76,29 @@ final class TypingTracker {
                 EventInjector.shared.send(keyCode: code, shift: shift)
             }
         }
-        // Add a space after the completed word
         EventInjector.shared.send(keyCode: KeyCodes.space)
-        clear()
-    }
-
-    private func clear() {
         currentWord = ""
-        suggestions = []
+        scheduleSuggestionUpdate()
     }
 
-    private func updateSuggestions() {
-        guard !currentWord.isEmpty else {
-            suggestions = []
-            return
+    private func scheduleSuggestionUpdate() {
+        debounceWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            Task { @MainActor in
+                self?.updateSuggestionsFromContext()
+            }
         }
-        suggestions = spellChecker.completions(
-            forPartialWordRange: NSRange(location: 0, length: currentWord.count),
-            in: currentWord,
-            language: nil,
-            inSpellDocumentWithTag: spellTag
-        ) ?? []
+        debounceWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05, execute: work)
+    }
+
+    private func updateSuggestionsFromContext() {
+        if textReader.readFocusedElement() {
+            suggestions = engine.suggestions(for: textReader.textBeforeCursor)
+        } else {
+            // Fallback: use locally tracked currentWord
+            suggestions = engine.suggestions(for: currentWord)
+        }
     }
 
     private func isWordBoundary(_ keyCode: UInt16) -> Bool {

@@ -3,90 +3,98 @@ import SwiftUI
 
 @main
 struct SeptemberApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
+  @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
-    var body: some Scene {
-        // Use Settings as a dummy scene — the real UI is in the floating panel
-        Settings {
-            EmptyView()
-        }
+  var body: some Scene {
+    // Use Settings as a dummy scene — the real UI is in the floating panel
+    Settings {
+      EmptyView()
     }
+  }
 }
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var panel: FloatingPanel?
-    private var statusItem: NSStatusItem?
-    private let accessibility = AccessibilityManager()
+  private var panel: FloatingPanel?
+  private var statusItem: NSStatusItem?
+  private let accessibility = AccessibilityManager()
 
-    func applicationDidFinishLaunching(_ notification: Notification) {
-        accessibility.requestPermission()
+  func applicationDidFinishLaunching(_ notification: Notification) {
+    accessibility.requestPermission()
 
-        let hostingView = NSHostingView(rootView: KeyboardView())
-        hostingView.translatesAutoresizingMaskIntoConstraints = false
+    let hostingView = NSHostingView(rootView: KeyboardView())
+    hostingView.translatesAutoresizingMaskIntoConstraints = false
 
-        panel = FloatingPanel(contentView: hostingView)
-        panel?.orderFront(nil)
+    panel = FloatingPanel(contentView: hostingView)
+    panel?.orderFront(nil)
 
-        setupMenuBar()
+    setupMenuBar()
+  }
+
+  private func setupMenuBar() {
+    statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+
+    if let button = statusItem?.button {
+      button.image = NSImage(systemSymbolName: "keyboard", accessibilityDescription: "September")
     }
 
-    private func setupMenuBar() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+    let menu = NSMenu()
 
-        if let button = statusItem?.button {
-            button.image = NSImage(systemSymbolName: "keyboard", accessibilityDescription: "September")
-        }
+    let showItem = NSMenuItem(
+      title: "Show Keyboard", action: #selector(showKeyboard), keyEquivalent: "k")
+    showItem.keyEquivalentModifierMask = [.command, .shift]
+    menu.addItem(showItem)
 
-        let menu = NSMenu()
+    let hideItem = NSMenuItem(
+      title: "Hide Keyboard", action: #selector(hideKeyboard), keyEquivalent: "k")
+    hideItem.keyEquivalentModifierMask = [.command, .shift, .option]
+    menu.addItem(hideItem)
 
-        let showItem = NSMenuItem(title: "Show Keyboard", action: #selector(showKeyboard), keyEquivalent: "k")
-        showItem.keyEquivalentModifierMask = [.command, .shift]
-        menu.addItem(showItem)
+    menu.addItem(.separator())
 
-        let hideItem = NSMenuItem(title: "Hide Keyboard", action: #selector(hideKeyboard), keyEquivalent: "k")
-        hideItem.keyEquivalentModifierMask = [.command, .shift, .option]
-        menu.addItem(hideItem)
+    let accessibilityItem = NSMenuItem(
+      title: "Accessibility: Checking…", action: nil, keyEquivalent: "")
+    accessibilityItem.tag = 100
+    menu.addItem(accessibilityItem)
+    updateAccessibilityMenuItem()
 
-        menu.addItem(.separator())
+    menu.addItem(.separator())
 
-        let accessibilityItem = NSMenuItem(title: "Accessibility: Checking…", action: nil, keyEquivalent: "")
-        accessibilityItem.tag = 100
-        menu.addItem(accessibilityItem)
-        updateAccessibilityMenuItem()
+    menu.addItem(
+      NSMenuItem(
+        title: "Quit September", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+    )
 
-        menu.addItem(.separator())
+    statusItem?.menu = menu
+  }
 
-        menu.addItem(NSMenuItem(title: "Quit September", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+  private func updateAccessibilityMenuItem() {
+    guard let menu = statusItem?.menu,
+      let item = menu.item(withTag: 100)
+    else { return }
 
-        statusItem?.menu = menu
+    if accessibility.isGranted {
+      item.title = "Accessibility: Granted"
+      item.image = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: nil)
+    } else {
+      item.title = "Grant Accessibility…"
+      item.action = #selector(requestAccessibility)
+      item.target = self
+      item.image = NSImage(
+        systemSymbolName: "exclamationmark.triangle", accessibilityDescription: nil)
     }
+  }
 
-    private func updateAccessibilityMenuItem() {
-        guard let menu = statusItem?.menu,
-              let item = menu.item(withTag: 100) else { return }
+  @objc private func showKeyboard() {
+    panel?.orderFront(nil)
+  }
 
-        if accessibility.isGranted {
-            item.title = "Accessibility: Granted"
-            item.image = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: nil)
-        } else {
-            item.title = "Grant Accessibility…"
-            item.action = #selector(requestAccessibility)
-            item.target = self
-            item.image = NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: nil)
-        }
-    }
+  @objc private func hideKeyboard() {
+    panel?.orderOut(nil)
+  }
 
-    @objc private func showKeyboard() {
-        panel?.orderFront(nil)
-    }
-
-    @objc private func hideKeyboard() {
-        panel?.orderOut(nil)
-    }
-
-    @objc private func requestAccessibility() {
-        accessibility.requestPermission()
-        updateAccessibilityMenuItem()
-    }
+  @objc private func requestAccessibility() {
+    accessibility.requestPermission()
+    updateAccessibilityMenuItem()
+  }
 }

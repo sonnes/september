@@ -4,6 +4,10 @@ import AppKit
 @Observable
 final class AccessibilityManager {
     var isGranted = false
+
+    static var isTrusted: Bool {
+        AXIsProcessTrusted()
+    }
     private var pollTimer: Timer?
 
     func checkPermission() {

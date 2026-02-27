@@ -20,6 +20,7 @@ struct SuggestionsBarView: View {
         .frame(height: 32, alignment: .leading)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 8)
+        .fixedSize(horizontal: false, vertical: true)
         .clipped()
     }
 }
