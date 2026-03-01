@@ -63,3 +63,4 @@ DerivedData/
 .claude/research/
 
 .vscode/
+*.gguf

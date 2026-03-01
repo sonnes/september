@@ -1,3 +1,4 @@
+import AppKit
 import CoreGraphics
 
 @MainActor
@@ -6,6 +7,29 @@ final class EventInjector {
     private let source = CGEventSource(stateID: .hidSystemState)
 
     private init() {}
+
+    /// Insert text by simulating Cmd+V with the pasteboard.
+    /// Saves and restores the user's clipboard contents.
+    func paste(_ text: String) {
+        let pasteboard = NSPasteboard.general
+        let saved = pasteboard.pasteboardItems?.compactMap { item -> (NSPasteboard.PasteboardType, Data)? in
+            guard let type = item.types.first, let data = item.data(forType: type) else { return nil }
+            return (type, data)
+        } ?? []
+
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+
+        send(keyCode: KeyCodes.v, modifiers: .maskCommand)
+
+        // Restore clipboard after a brief delay to let the paste complete
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            pasteboard.clearContents()
+            for (type, data) in saved {
+                pasteboard.setData(data, forType: type)
+            }
+        }
+    }
 
     func send(keyCode: UInt16, modifiers: CGEventFlags = []) {
         guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: true),

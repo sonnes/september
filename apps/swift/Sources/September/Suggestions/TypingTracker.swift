@@ -64,32 +64,7 @@ final class TypingTracker {
   }
 
   func applySuggestion(_ word: String) {
-    let partialWord: String
-    if textReader.isTextFieldFocused {
-      let text = textReader.textBeforeCursor
-      if text.last?.isWhitespace == true {
-        partialWord = ""
-      } else {
-        let lastSpace = text.lastIndex(of: " ")
-        if let idx = lastSpace {
-          partialWord = String(text[text.index(after: idx)...])
-        } else {
-          partialWord = text
-        }
-      }
-    } else {
-      partialWord = currentWord
-    }
-
-    for _ in 0..<partialWord.count {
-      EventInjector.shared.send(keyCode: KeyCodes.delete)
-    }
-    for char in word {
-      if let (code, shift) = keyCode(for: char) {
-        EventInjector.shared.send(keyCode: code, shift: shift)
-      }
-    }
-    EventInjector.shared.send(keyCode: KeyCodes.space)
+    insertReplacement(word + " ")
     currentWord = ""
     scheduleSuggestionUpdate()
   }
@@ -115,31 +90,61 @@ final class TypingTracker {
   }
 
   func applySentencePrediction(_ sentence: String) {
-    // Delete any partial word currently being typed
-    let partialWord: String
-    if textReader.isTextFieldFocused {
-      let text = textReader.textBeforeCursor
-      if text.last?.isWhitespace == true || text.isEmpty {
-        partialWord = ""
-      } else if let idx = text.lastIndex(of: " ") {
-        partialWord = String(text[text.index(after: idx)...])
-      } else {
-        partialWord = text
-      }
-    } else {
-      partialWord = currentWord
-    }
-
-    for _ in 0..<partialWord.count {
-      EventInjector.shared.send(keyCode: KeyCodes.delete)
-    }
-
-    EventInjector.shared.typeString(sentence)
-    EventInjector.shared.send(keyCode: KeyCodes.space)
-
+    insertReplacement(sentence + " ")
     currentWord = ""
     sentencePredictions = []
     scheduleSuggestionUpdate()
+  }
+
+  /// Delete the partial word before the cursor, then insert `text`.
+  /// Tries AX text replacement first, then pasteboard Cmd+V, then CGEvent typing.
+  private func insertReplacement(_ text: String) {
+    // Tier 1: Direct AX text manipulation
+    if textReader.isTextFieldFocused, textReader.readFocusedElement() {
+      let start = utf16PartialWordStart(in: textReader.textBeforeCursor)
+      if textReader.replaceTextBeforeCursor(from: start, with: text) {
+        return
+      }
+      // Tier 2: Delete partial word via AX selection, then paste
+      deletePartialWordViaSelection(from: start)
+      EventInjector.shared.paste(text)
+      return
+    }
+
+    // Tier 3: No AX text field — delete via backspace keys, insert via paste
+    for _ in 0..<currentWord.count {
+      EventInjector.shared.send(keyCode: KeyCodes.delete)
+    }
+    EventInjector.shared.paste(text)
+  }
+
+  /// Select and delete the partial word using AX range selection + forward delete.
+  private func deletePartialWordViaSelection(from start: Int) {
+    guard let element = textReader.focusedTextElement() else { return }
+    let length = max(0, textReader.cursorPosition - start)
+    guard length > 0 else { return }
+    var range = CFRange(location: start, length: length)
+    guard let axRange = AXValueCreate(.cfRange, &range) else { return }
+    if AXUIElementSetAttributeValue(
+      element, kAXSelectedTextRangeAttribute as CFString, axRange
+    ) == .success {
+      EventInjector.shared.send(keyCode: KeyCodes.forwardDelete)
+    }
+  }
+
+  /// Returns the UTF-16 offset where the current partial word starts.
+  private func utf16PartialWordStart(in text: String) -> Int {
+    let ns = text as NSString
+    if ns.length == 0 { return 0 }
+    let lastChar = ns.character(at: ns.length - 1)
+    if CharacterSet.whitespaces.contains(Unicode.Scalar(lastChar)!) {
+      return ns.length
+    }
+    let spaceRange = ns.range(of: " ", options: .backwards)
+    if spaceRange.location != NSNotFound {
+      return spaceRange.location + spaceRange.length
+    }
+    return 0
   }
 
   private func scheduleSentencePredictionUpdate() {

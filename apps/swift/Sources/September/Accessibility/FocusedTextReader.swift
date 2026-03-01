@@ -194,13 +194,74 @@ final class FocusedTextReader {
             AXValueGetValue(axValue as! AXValue, .cfRange, &cfRange)
         }
 
+        let nsText = textValue as NSString
+        let safeCursor = min(cfRange.location, nsText.length)
+
         fullText = textValue
-        cursorPosition = cfRange.location
+        cursorPosition = safeCursor
         isTextFieldFocused = true
-        textBeforeCursor = String(
-            textValue.prefix(min(cfRange.location, textValue.count))
-        )
+        textBeforeCursor = nsText.substring(to: safeCursor)
         return true
+    }
+
+    /// Replace text from UTF-16 `startIndex` to the cursor with `replacement`.
+    /// Selects the range first, then sets the selected text so the cursor
+    /// naturally ends up after the inserted text.
+    @discardableResult
+    func replaceTextBeforeCursor(from startIndex: Int, with replacement: String) -> Bool {
+        guard let element = focusedTextElement() else { return false }
+
+        // Read current text length to clamp offsets
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(
+            element, kAXValueAttribute as CFString, &value
+        ) == .success, let currentText = value as? String else { return false }
+
+        let nsText = currentText as NSString
+        let safeStart = max(0, min(startIndex, nsText.length))
+        let safeCursor = max(safeStart, min(cursorPosition, nsText.length))
+
+        // Select the range to replace (partial word before cursor)
+        var selectRange = CFRange(location: safeStart, length: safeCursor - safeStart)
+        guard let axRange = AXValueCreate(.cfRange, &selectRange) else { return false }
+        guard AXUIElementSetAttributeValue(
+            element, kAXSelectedTextRangeAttribute as CFString, axRange
+        ) == .success else { return false }
+
+        // Replace selected text — cursor moves to end of replacement automatically
+        guard AXUIElementSetAttributeValue(
+            element, kAXSelectedTextAttribute as CFString, replacement as CFTypeRef
+        ) == .success else { return false }
+
+        // Update local state
+        let nsReplacement = replacement as NSString
+        let newCursorPos = safeStart + nsReplacement.length
+        let newText = nsText.replacingCharacters(
+            in: NSRange(location: safeStart, length: safeCursor - safeStart),
+            with: replacement
+        )
+        fullText = newText
+        cursorPosition = newCursorPos
+        textBeforeCursor = (newText as NSString).substring(to: newCursorPos)
+        return true
+    }
+
+    /// Returns the currently focused text element, or nil.
+    func focusedTextElement() -> AXUIElement? {
+        guard AccessibilityManager.isTrusted else { return nil }
+        let systemWide = AXUIElementCreateSystemWide()
+
+        var focusedApp: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(
+            systemWide, kAXFocusedApplicationAttribute as CFString, &focusedApp
+        ) == .success else { return nil }
+
+        var focusedEl: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(
+            focusedApp as! AXUIElement, kAXFocusedUIElementAttribute as CFString, &focusedEl
+        ) == .success else { return nil }
+
+        return (focusedEl as! AXUIElement)
     }
 
     private func clearState() {

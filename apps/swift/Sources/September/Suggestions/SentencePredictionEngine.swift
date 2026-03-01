@@ -3,7 +3,13 @@ import LLM
 
 @Generatable
 struct Predictions {
-  let sentences: [String]
+  let s1: String
+  let s2: String
+  let s3: String
+  let s4: String
+  let s5: String
+
+  var all: [String] { [s1, s2, s3, s4, s5] }
 }
 
 @MainActor
@@ -14,8 +20,8 @@ final class SentencePredictionEngine {
   private var loadTask: Task<LLM?, Never>?
 
   private let systemPrompt = """
-    You are a sentence completion engine. Given text, predict 3 natural \
-    continuations the user might type next. Keep each under 12 words.
+    Autocomplete the user's sentence. Return 5 different short continuations in s1-s5. \
+    Each must be 3-6 words only. No explanations. Only the continuation words.
     """
 
   func predictions(for textBeforeCursor: String) async -> [String] {
@@ -24,9 +30,10 @@ final class SentencePredictionEngine {
     guard let bot else { return [] }
 
     let context = limitedContext(textBeforeCursor, maxWords: 50)
-    let prompt = context.isEmpty
-      ? "Suggest 3 common sentences."
-      : "Continue this text: \(context)"
+    let prompt =
+      context.isEmpty
+      ? "Complete: \"I\""
+      : "Complete: \"\(context)\""
 
     print("[LLM] Input: \(prompt)")
     let start = CFAbsoluteTimeGetCurrent()
@@ -34,7 +41,7 @@ final class SentencePredictionEngine {
       let result = try await bot.respond(to: prompt, as: Predictions.self)
       bot.history.removeAll()
       let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1000
-      let sentences = Array(result.value.sentences.prefix(3))
+      let sentences = result.value.all
       print("[LLM] Output (\(Int(elapsed))ms): \(sentences)")
       return sentences
     } catch {
@@ -48,7 +55,8 @@ final class SentencePredictionEngine {
     isLoadingModel = true
     loadError = nil
 
-    guard let url = Bundle.module.url(forResource: "Qwen3-0.6B-Q4_K_M", withExtension: "gguf") else {
+    guard let url = Bundle.module.url(forResource: "Qwen3-0.6B-Q4_K_M", withExtension: "gguf")
+    else {
       isLoadingModel = false
       loadError = "Model file not found"
       return
@@ -56,7 +64,7 @@ final class SentencePredictionEngine {
 
     let systemPrompt = self.systemPrompt
     loadTask = Task.detached {
-      let loaded = LLM(from: url, template: .chatML(systemPrompt), maxTokenCount: 1024)
+      let loaded = LLM(from: url, template: .chatML(systemPrompt), maxTokenCount: 5120)
       await MainActor.run { print("[LLM] Model loaded: \(loaded != nil)") }
       return loaded
     }
