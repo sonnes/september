@@ -4,7 +4,23 @@ struct SentencePredictionsView: View {
     let tracker: TypingTracker
 
     var body: some View {
-        if !tracker.sentencePredictions.isEmpty {
+        if tracker.isLoadingModel {
+            HStack(spacing: 8) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("Loading model…")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+        } else if let error = tracker.modelLoadError {
+            Text("Model error: \(error)")
+                .font(.system(size: 11))
+                .foregroundStyle(.red)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+        } else if !tracker.sentencePredictions.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(tracker.sentencePredictions, id: \.self) { sentence in
                     SentenceBubble(sentence: sentence) {

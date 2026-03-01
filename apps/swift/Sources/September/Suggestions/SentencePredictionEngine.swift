@@ -1,88 +1,77 @@
 import Foundation
+import LLM
 
-#if canImport(FoundationModels)
-  import FoundationModels
-#endif
+@Generatable
+struct Predictions {
+  let sentences: [String]
+}
 
 @MainActor
 final class SentencePredictionEngine {
-  var isAvailable: Bool {
-    #if canImport(FoundationModels)
-      if #available(macOS 26, *) {
-        return checkAvailability()
-      }
-    #endif
-    return false
-  }
+  private var bot: LLM?
+  private(set) var isLoadingModel = false
+  private(set) var loadError: String?
+  private var loadTask: Task<LLM?, Never>?
 
-  #if canImport(FoundationModels)
-    @available(macOS 26, *)
-    private func checkAvailability() -> Bool {
-      if case .available = SystemLanguageModel.default.availability {
-        return true
-      }
-      return false
-    }
-  #endif
+  private let systemPrompt = """
+    You are a sentence completion engine. Given text, predict 3 natural \
+    continuations the user might type next. Keep each under 12 words.
+    """
 
   func predictions(for textBeforeCursor: String) async -> [String] {
-    #if canImport(FoundationModels)
-      if #available(macOS 26, *) {
-        return await generatePredictions(for: textBeforeCursor)
-      }
-    #endif
-    return []
+    if bot == nil && !isLoadingModel { startModelLoad() }
+    if bot == nil, let loadTask { bot = await loadTask.value }
+    guard let bot else { return [] }
+
+    let context = limitedContext(textBeforeCursor, maxWords: 50)
+    let prompt = context.isEmpty
+      ? "Suggest 3 common sentences."
+      : "Continue this text: \(context)"
+
+    print("[LLM] Input: \(prompt)")
+    let start = CFAbsoluteTimeGetCurrent()
+    do {
+      let result = try await bot.respond(to: prompt, as: Predictions.self)
+      bot.history.removeAll()
+      let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1000
+      let sentences = Array(result.value.sentences.prefix(3))
+      print("[LLM] Output (\(Int(elapsed))ms): \(sentences)")
+      return sentences
+    } catch {
+      bot.history.removeAll()
+      print("[LLM] Error: \(error)")
+      return []
+    }
   }
 
-  #if canImport(FoundationModels)
-    @available(macOS 26, *)
-    private func generatePredictions(for textBeforeCursor: String) async -> [String] {
-      guard case .available = SystemLanguageModel.default.availability else { return [] }
+  private func startModelLoad() {
+    isLoadingModel = true
+    loadError = nil
 
-      let instructions = """
-        You are a sentence completion engine. Given text, predict 5 natural \
-        continuations the user might type next. Return exactly 5 predictions, \
-        one per line. No numbering, no bullets, no quotes. Keep each under 12 words. \
-        Return only the predictions, no other text.
-        """
-
-      do {
-        let session = LanguageModelSession(instructions: instructions)
-        let context = limitedContext(textBeforeCursor, maxWords: 100)
-        let prompt =
-          context.isEmpty
-          ? "Suggest 3 common conversational sentences."
-          : "Continue this text: \(context)"
-
-        print("[Predictions] Input: \(prompt)")
-        let response = try await session.respond(to: prompt)
-        print("[Predictions] Output: \(response.content)")
-        let results = response.content
-          .components(separatedBy: .newlines)
-          .map { $0.trimmingCharacters(in: .whitespaces) }
-          .filter { !$0.isEmpty && !isMetaText($0) }
-          .prefix(3)
-          .map { String($0) }
-        print("[Predictions] Parsed: \(results)")
-        return results
-      } catch {
-        print("[Predictions] Error: \(error)")
-        return []
-      }
+    guard let url = Bundle.module.url(forResource: "Qwen3-0.6B-Q4_K_M", withExtension: "gguf") else {
+      isLoadingModel = false
+      loadError = "Model file not found"
+      return
     }
-  #endif
 
-  private func isMetaText(_ line: String) -> Bool {
-    let lower = line.lowercased()
-    let markers = ["continuation", "prediction", "here are", "sorry", "can't assist",
-                   "cannot assist", "sure,", "of course", "certainly"]
-    return markers.contains { lower.contains($0) }
+    let systemPrompt = self.systemPrompt
+    loadTask = Task.detached {
+      let loaded = LLM(from: url, template: .chatML(systemPrompt), maxTokenCount: 1024)
+      await MainActor.run { print("[LLM] Model loaded: \(loaded != nil)") }
+      return loaded
+    }
+
+    Task {
+      let result = await loadTask?.value
+      bot = result
+      isLoadingModel = false
+      if result == nil { loadError = "Failed to load model" }
+    }
   }
 
   private func limitedContext(_ text: String, maxWords: Int) -> String {
-    let trimmed = text.trimmingCharacters(in: .whitespaces)
-    let words = trimmed.split(separator: " ")
-    if words.count <= maxWords { return trimmed }
+    let words = text.trimmingCharacters(in: .whitespaces).split(separator: " ")
+    if words.count <= maxWords { return text.trimmingCharacters(in: .whitespaces) }
     return words.suffix(maxWords).joined(separator: " ")
   }
 }

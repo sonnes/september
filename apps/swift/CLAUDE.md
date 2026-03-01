@@ -4,7 +4,7 @@ Project orientation for Claude Code when working on `apps/swift/`.
 
 ## What is this?
 
-September's native macOS on-screen keyboard app for users with ALS/MND/motor difficulties. Built with SwiftUI + AppKit as a Swift Package (no Xcode project). Zero external dependencies.
+September's native macOS on-screen keyboard app for users with ALS/MND/motor difficulties. Built with SwiftUI + AppKit as a Swift Package (no Xcode project).
 
 ## Architecture
 
@@ -13,7 +13,7 @@ September's native macOS on-screen keyboard app for users with ALS/MND/motor dif
 - **App Lifecycle**: NSApplicationDelegate (ScenePhase is unreliable on macOS)
 - **Event Injection**: CGEvent for synthetic keyboard input
 - **Text Reading**: AXUIElement + AXObserver to read focused text fields across apps
-- **Suggestions**: NSSpellChecker (word completions) + Foundation Models (sentence predictions, macOS 26+)
+- **Suggestions**: NSSpellChecker (word completions) + LLM.swift/Qwen3-0.6B (sentence predictions, bundled GGUF model)
 
 ## Key Patterns
 
@@ -72,7 +72,7 @@ swift run September   # Run
 - **Accessibility is non-negotiable**: Every interactive element needs `.accessibilityLabel()`. Minimum 60x60pt buttons. WCAG AA contrast. No time-limited interactions.
 - **@MainActor everywhere**: All @Observable classes and UI state must be @MainActor isolated.
 - **async/await only**: No Combine. Use Task and async/await for all async work.
-- **No external dependencies**: Only macOS system frameworks.
+- **One dependency**: [LLM.swift](https://github.com/eastriverlee/LLM.swift) (llama.cpp wrapper for on-device inference).
 - **Read docs first**: Before architectural changes, read the relevant guide in `docs/`.
 - **Update README.md**: After making changes, update the README if the architecture or features changed.
 - **File naming**: Swift files use PascalCase. Docs use lowercase-kebab-case.
@@ -84,4 +84,4 @@ Read these before making architectural decisions:
 - [docs/macos-swiftui-best-practices.md](docs/macos-swiftui-best-practices.md) — Architecture, state, performance
 - [docs/accessibility-implementation-guide.md](docs/accessibility-implementation-guide.md) — VoiceOver, keyboard nav, Switch Control
 - [docs/swift-concurrency-patterns.md](docs/swift-concurrency-patterns.md) — async/await, MainActor, actors
-- [docs/foundation-models-research.md](docs/foundation-models-research.md) — On-device AI with Foundation Models
+- [docs/llm-fallback-summary.md](docs/llm-fallback-summary.md) — LLM research (historical; implementation uses LLM.swift + Qwen3)

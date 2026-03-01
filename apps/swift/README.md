@@ -7,7 +7,7 @@ September is a native on-screen keyboard for Mac & iPad. It is designed for user
 - **On-Screen QWERTY Keyboard** — Full 5-row layout with shift/caps lock, large buttons (44pt+), always-on-top floating panel that never steals focus
 - **Dwell Control** — Hover over a button to activate it after a configurable delay (default 0.6s) with visual progress feedback
 - **Word Suggestions** — Real-time word completions via NSSpellChecker, shown in a top bar while typing
-- **Sentence Predictions** — On-device AI sentence continuations via Apple Foundation Models (macOS 26+), displayed in a floating panel below the keyboard
+- **Sentence Predictions** — On-device AI sentence continuations via LLM.swift + Qwen3-0.6B (bundled GGUF model), displayed in a floating panel above the keyboard
 - **System Shortcuts** — Pre-configured panels for common shortcuts (Cut, Copy, Paste, Undo, Redo, terminal controls, text movement)
 - **Context-Aware** — Reads the focused text field in any app via Accessibility APIs to provide relevant suggestions
 - **Status Bar Menu** — Show/hide keyboard, check accessibility permission status
@@ -33,7 +33,7 @@ Sources/September/
 ├── Suggestions/                # Word & sentence suggestions
 │   ├── TypingTracker           # Coordinates suggestion engines + debouncing
 │   ├── SuggestionEngine        # Word completions (NSSpellChecker)
-│   ├── SentencePredictionEngine # Sentence continuations (Foundation Models)
+│   ├── SentencePredictionEngine # Sentence continuations (LLM.swift + Qwen3)
 │   ├── SuggestionsBarView      # Word suggestions UI
 │   └── SentencePredictionsView # Sentence predictions UI
 └── UI/                         # Custom UI components
@@ -65,9 +65,9 @@ User clicks/dwells on KeyButton
 | Accessibility | AXUIElement, AXObserver, NSAccessibility |
 | Event Injection | CGEvent |
 | Word Suggestions | NSSpellChecker |
-| Sentence AI | Foundation Models (on-device, macOS 26+) |
+| Sentence AI | LLM.swift + Qwen3-0.6B (on-device, bundled GGUF) |
 | Min macOS | 14.0 (Sonoma) |
-| Dependencies | None (system frameworks only) |
+| Dependencies | [LLM.swift](https://github.com/eastriverlee/LLM.swift) (llama.cpp wrapper) |
 
 ## Development
 
@@ -93,4 +93,4 @@ See [docs/](docs/) for research and reference material:
 - [docs/macos-swiftui-best-practices.md](docs/macos-swiftui-best-practices.md) — Architecture reference
 - [docs/accessibility-implementation-guide.md](docs/accessibility-implementation-guide.md) — Accessibility guide
 - [docs/swift-concurrency-patterns.md](docs/swift-concurrency-patterns.md) — Concurrency patterns
-- [docs/foundation-models-research.md](docs/foundation-models-research.md) — Foundation Models deep dive
+- [docs/llm-fallback-summary.md](docs/llm-fallback-summary.md) — LLM research summary

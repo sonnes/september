@@ -6,6 +6,8 @@ final class TypingTracker {
   private(set) var currentWord = ""
   private(set) var suggestions: [String] = []
   private(set) var sentencePredictions: [String] = []
+  var isLoadingModel: Bool { sentenceEngine.isLoadingModel }
+  var modelLoadError: String? { sentenceEngine.loadError }
 
   private let textReader = FocusedTextReader()
   private let engine = SuggestionEngine()
