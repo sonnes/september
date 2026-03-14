@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 /// Truncates display text to a maximum length, keeping the most recent characters.
@@ -10,6 +11,7 @@ func truncateDisplayText(_ text: String, maxLength: Int = 500) -> String {
 /// Display-only — the real input goes to the focused app via CGEvent.
 struct InputBar: View {
     @Binding var displayText: String
+    var onSettingsTapped: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 8) {
@@ -19,7 +21,9 @@ struct InputBar: View {
 
             Text(displayText.isEmpty ? "Type here..." : truncateDisplayText(displayText))
                 .font(Typography.mono())
-                .foregroundStyle(displayText.isEmpty ? DesignColors.shortcutIcon : DesignColors.keyStandardLabel)
+                .foregroundStyle(
+                    displayText.isEmpty ? DesignColors.shortcutIcon : DesignColors.keyStandardLabel
+                )
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -35,12 +39,20 @@ struct InputBar: View {
                 .accessibilityLabel("Clear text")
             }
 
-            // Mode button placeholders
+            // Mode buttons
             HStack(spacing: 4) {
                 modeButton("keyboard", active: true)
                 modeButton("speaker.wave.2", active: false)
                 modeButton("pencil", active: false)
-                modeButton("gearshape", active: false)
+
+                Button(action: onSettingsTapped) {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 14))
+                        .foregroundStyle(DesignColors.shortcutIcon)
+                        .frame(width: 32, height: 32)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Settings")
             }
         }
         .padding(.horizontal, 16)
@@ -66,7 +78,8 @@ struct InputBar: View {
             )
             .overlay(
                 Circle()
-                    .strokeBorder(active ? DesignColors.kbAccent.opacity(0.3) : Color.clear, lineWidth: 1)
+                    .strokeBorder(
+                        active ? DesignColors.kbAccent.opacity(0.3) : Color.clear, lineWidth: 1)
             )
     }
 }
