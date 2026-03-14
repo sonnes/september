@@ -1,0 +1,27 @@
+// swift-tools-version: 5.10
+
+import PackageDescription
+
+let package = Package(
+    name: "September",
+    platforms: [
+        .macOS(.v14),
+    ],
+    targets: [
+        .executableTarget(
+            name: "September",
+            path: "Sources/September",
+            swiftSettings: [
+                .enableExperimentalFeature("StrictConcurrency"),
+            ]
+        ),
+        .testTarget(
+            name: "SeptemberTests",
+            dependencies: ["September"],
+            path: "Tests/SeptemberTests",
+            swiftSettings: [
+                .enableExperimentalFeature("StrictConcurrency"),
+            ]
+        ),
+    ]
+)
