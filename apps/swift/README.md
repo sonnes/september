@@ -24,17 +24,22 @@ swift test           # Run tests
 
 ```
 Sources/September/
-├── App/                     # Entry point, window management
+├── App/                     # Entry point (AppDelegate), FloatingPanel, menu bar
 ├── Core/
 │   ├── Models/              # SwiftData models (Account, Document, Panel)
-│   └── DesignTokens/        # Colors, typography
+│   ├── DesignTokens/        # Colors, typography
+│   └── UI/                  # Shared view modifiers (DwellModifier)
 ├── Features/
-│   ├── Keyboard/            # Type mode
-│   ├── Talk/                # Talk mode
-│   ├── Writer/              # Write mode
-│   └── Settings/            # Settings screens
+│   ├── Keyboard/
+│   │   ├── Models/          # KeyDefinition, KeyboardLayout, KeyCodes, ShortcutDefinition
+│   │   ├── Components/      # KeyBase, KeyView, KeyAppearance, ShortcutButton
+│   │   └── Views/           # KeyboardAssemblyView, MainKeyboardView, InputBar, etc.
+│   ├── Talk/                # Talk mode (placeholder)
+│   ├── Writer/              # Write mode (placeholder)
+│   └── Settings/            # Settings screens (placeholder)
 └── Services/
     ├── AI/                  # AI provider abstraction
+    ├── KeyInput/            # EventInjector (CGEvent), AccessibilityManager, ModifierState
     ├── Speech/              # TTS abstraction (AVSpeech, etc.)
     └── Transcription/       # STT abstraction
 ```
@@ -49,5 +54,6 @@ Sources/September/
 
 ### Dev Notes
 
-- **Schema changes during development:** A `#if DEBUG` guard in `SeptemberApp.swift` will delete and recreate the SwiftData store if the schema is incompatible. This prevents crashes when iterating on models. Remove before shipping.
-- **Fonts:** Typography constants reference JetBrains Mono and Geist with system fallbacks. Fonts are not bundled yet — they will be added when the keyboard UI is built.
+- **Accessibility permission:** The app requires Accessibility permission to inject keystrokes via CGEvent. Grant it in System Settings → Privacy & Security → Accessibility. A banner appears in the keyboard if permission is not granted.
+- **Keyboard styles:** Toggle between Dark Rainbow and Dark Mono via `@AppStorage("keyboardStyle")`. Rainbow applies per-row accent colors; Mono uses uniform neutral.
+- **Fonts:** Typography constants reference JetBrains Mono and Geist with system fallbacks. Fonts are not bundled yet.

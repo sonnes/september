@@ -7,7 +7,7 @@ import SwiftUI
 // Stays on top of all apps without stealing focus — essential for
 // assistive keyboard overlay.
 //
-// Not wired into the app shell yet (Phase 1). Infrastructure only.
+// Wired in Phase 1 via AppDelegate → NSHostingView → KeyboardAssemblyView.
 
 final class FloatingPanel: NSPanel {
     private static let frameKey = "FloatingPanelFrame"
@@ -34,8 +34,8 @@ final class FloatingPanel: NSPanel {
         contentView.layer?.masksToBounds = true
 
         let size = contentView.fittingSize
-        let width = max(size.width, 850)
-        let height = max(size.height, 320)
+        let width = max(size.width, 1600)
+        let height = max(size.height, 450)
         setContentSize(NSSize(width: width, height: height))
 
         restorePosition()
