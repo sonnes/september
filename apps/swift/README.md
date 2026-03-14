@@ -33,16 +33,30 @@ Sources/September/
 │   ├── Keyboard/
 │   │   ├── Models/          # KeyDefinition, KeyboardLayout, KeyCodes, ShortcutDefinition
 │   │   ├── Components/      # KeyBase, KeyView, KeyAppearance, ShortcutButton
-│   │   └── Views/           # KeyboardAssemblyView, MainKeyboardView, InputBar, etc.
+│   │   ├── ViewModels/      # PredictionEngine
+│   │   └── Views/           # KeyboardAssemblyView, MainKeyboardView, InputBar,
+│   │                        # PredictionsPanel, WordSuggestionsBar
 │   ├── Talk/                # Talk mode (placeholder)
 │   ├── Writer/              # Write mode (placeholder)
-│   └── Settings/            # Settings screens (placeholder)
+│   └── Settings/            # AIProviderSettingsView
 └── Services/
-    ├── AI/                  # AI provider abstraction
-    ├── KeyInput/            # EventInjector (CGEvent), AccessibilityManager, ModifierState
+    ├── AI/                  # AIService protocol, OpenAI/Anthropic/Ollama actors,
+    │                        # HTTPClient, AIProviderRegistry, AIServiceFactory
+    ├── KeyInput/            # EventInjector (CGEvent), AccessibilityManager,
+    │                        # ModifierState, AXTextService
     ├── Speech/              # TTS abstraction (AVSpeech, etc.)
     └── Transcription/       # STT abstraction
 ```
+
+### AI Predictions (Phase 2)
+
+The keyboard provides AI-powered sentence predictions and word suggestions:
+
+- **Sentence predictions**: 3 AI-generated completions shown as pill cards above the input bar. Powered by OpenAI, Anthropic, or Ollama (configurable in Settings).
+- **Word suggestions**: 5 spell-check completions from `NSSpellChecker`, shown as chips. Instant, local, no AI needed.
+- **PredictionEngine**: `@MainActor @Observable` class that debounces input (300ms), cancels in-flight requests, and maintains optimistic UI (stale predictions stay visible while loading).
+- **AXTextService**: Reads/writes text in the focused app via macOS Accessibility API. Falls back to `EventInjector.typeString()` for apps that don't support AX text mutation.
+- **Settings**: Tap the gearshape in InputBar to open AI provider settings (provider, model, API key, temperature).
 
 ### Guidelines
 
@@ -54,6 +68,8 @@ Sources/September/
 
 ### Dev Notes
 
-- **Accessibility permission:** The app requires Accessibility permission to inject keystrokes via CGEvent. Grant it in System Settings → Privacy & Security → Accessibility. A banner appears in the keyboard if permission is not granted.
+- **Accessibility permission:** The app requires Accessibility permission to inject keystrokes via CGEvent and read/write text via AXUIElement. Grant it in System Settings → Privacy & Security → Accessibility. A banner appears in the keyboard if permission is not granted.
 - **Keyboard styles:** Toggle between Dark Rainbow and Dark Mono via `@AppStorage("keyboardStyle")`. Rainbow applies per-row accent colors; Mono uses uniform neutral.
 - **Fonts:** Typography constants reference JetBrains Mono and Geist with system fallbacks. Fonts are not bundled yet.
+- **API keys:** Stored in SwiftData (app sandbox protected). Keychain migration planned for Phase 7. Never log full API keys.
+- **AI providers:** Configured via `AIProviderRegistry`. Add new providers by: (1) adding to `AIProvider` enum, (2) creating an actor conforming to `AIService`, (3) adding registry entry, (4) adding factory case.
