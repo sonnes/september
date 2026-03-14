@@ -52,7 +52,7 @@ final class AXTextService {
         {
             // Get the CFRange from the AXValue
             var range = CFRange(location: 0, length: 0)
-            // rangeValue is always AXValue from AX API; CFGetTypeID guards against unexpected types
+            // CF type cast — always succeeds, conditional cast not allowed by compiler
             let axValue = rangeValue as! AXValue  // swiftlint:disable:this force_cast
             if AXValueGetValue(axValue, .cfRange, &range) {
                 // Build new text with insertion at cursor position
@@ -106,6 +106,7 @@ final class AXTextService {
         let result = AXUIElementCopyAttributeValue(
             systemWide, kAXFocusedUIElementAttribute as CFString, &element)
         guard result == .success else { return nil }
+        // CF type cast — always succeeds, conditional cast not allowed by compiler
         return (element as! AXUIElement)  // swiftlint:disable:this force_cast
     }
 }

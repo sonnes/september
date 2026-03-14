@@ -198,7 +198,7 @@ struct AIProviderSettingsView: View {
     private func loadOllamaModels() {
         Task {
             let service = OllamaService()
-            ollamaModels = try await service.listModels()
+            ollamaModels = (try? await service.listModels()) ?? []
         }
     }
 }
