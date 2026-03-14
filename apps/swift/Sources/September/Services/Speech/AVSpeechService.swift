@@ -25,6 +25,10 @@ final class AVSpeechService: NSObject, SpeechService, AVSpeechSynthesizerDelegat
         guard !text.isEmpty else { return }
 
         if synthesizer.isSpeaking {
+            // Cancel previous continuation before stopping so the delegate
+            // callback doesn't resume a stale continuation.
+            speakContinuation?.resume()
+            speakContinuation = nil
             synthesizer.stopSpeaking(at: .immediate)
         }
 

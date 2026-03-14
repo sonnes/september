@@ -55,21 +55,22 @@ enum Typography {
 
     // MARK: - Font Builders
 
+    private static let isPrimaryAvailable = NSFontManager.shared
+        .availableMembers(ofFontFamily: primaryFontName) != nil
+    private static let isSecondaryAvailable = NSFontManager.shared
+        .availableMembers(ofFontFamily: secondaryFontName) != nil
+
     private static func primary(size: CGFloat, weight: Font.Weight) -> Font {
-        if fontAvailable(primaryFontName) {
+        if isPrimaryAvailable {
             return .custom(primaryFontName, size: size).weight(weight)
         }
         return .system(size: size, weight: weight, design: .monospaced)
     }
 
     private static func secondary(size: CGFloat, weight: Font.Weight) -> Font {
-        if fontAvailable(secondaryFontName) {
+        if isSecondaryAvailable {
             return .custom(secondaryFontName, size: size).weight(weight)
         }
         return .system(size: size, weight: weight, design: .default)
-    }
-
-    private static func fontAvailable(_ name: String) -> Bool {
-        NSFontManager.shared.availableMembers(ofFontFamily: name) != nil
     }
 }

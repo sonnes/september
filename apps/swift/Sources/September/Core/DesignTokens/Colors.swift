@@ -26,7 +26,7 @@ enum DesignColors {
     static let kbKey = dynamicColor(light: 0xFFFFFF, dark: 0x3A3A3C)
     static let kbKeySpecial = dynamicColor(light: 0xB8B8BF, dark: 0x2C2C2E)
     static let kbKeyText = dynamicColor(light: 0x1C1C1E, dark: 0xF2F2F7)
-    static let kbKeyShadow = dynamicColor(light: 0x00000026, dark: 0x00000040)
+    static let kbKeyShadow = dynamicColor(light: (0x000000, 0.15), dark: (0x000000, 0.25))
     static let kbAccent = dynamicColor(light: 0x007AFF, dark: 0x0A84FF)
 
     // MARK: Sidebar Tokens
@@ -40,7 +40,7 @@ enum DesignColors {
 
     static let kbCornerRadius: CGFloat = 6
 
-    // MARK: - Helpers
+    // MARK: - Helpers (RGB)
 
     private static func dynamicColor(light: UInt32, dark: UInt32) -> Color {
         Color(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
@@ -49,19 +49,23 @@ enum DesignColors {
         }))
     }
 
-    private static func nsColor(from hex: UInt32) -> NSColor {
-        let hasAlpha = hex > 0xFFFFFF
-        if hasAlpha {
-            let r = CGFloat((hex >> 24) & 0xFF) / 255
-            let g = CGFloat((hex >> 16) & 0xFF) / 255
-            let b = CGFloat((hex >> 8) & 0xFF) / 255
-            let a = CGFloat(hex & 0xFF) / 255
-            return NSColor(red: r, green: g, blue: b, alpha: a)
-        } else {
-            let r = CGFloat((hex >> 16) & 0xFF) / 255
-            let g = CGFloat((hex >> 8) & 0xFF) / 255
-            let b = CGFloat(hex & 0xFF) / 255
-            return NSColor(red: r, green: g, blue: b, alpha: 1)
-        }
+    // MARK: - Helpers (RGB + separate alpha)
+
+    private static func dynamicColor(
+        light: (UInt32, Double),
+        dark: (UInt32, Double)
+    ) -> Color {
+        Color(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
+            let name = appearance.bestMatch(from: [.aqua, .darkAqua])
+            let (hex, alpha) = name == .darkAqua ? dark : light
+            return nsColor(from: hex, alpha: alpha)
+        }))
+    }
+
+    private static func nsColor(from hex: UInt32, alpha: Double = 1.0) -> NSColor {
+        let r = CGFloat((hex >> 16) & 0xFF) / 255
+        let g = CGFloat((hex >> 8) & 0xFF) / 255
+        let b = CGFloat(hex & 0xFF) / 255
+        return NSColor(red: r, green: g, blue: b, alpha: CGFloat(alpha))
     }
 }
