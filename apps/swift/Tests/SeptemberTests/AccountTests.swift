@@ -121,6 +121,64 @@ struct AccountTests {
         #expect(decoded.systemInstructions == nil)
     }
 
+    // MARK: - API Keys
+
+    @Test("API key roundtrip through SwiftData")
+    func apiKeyRoundtrip() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+
+        let account = Account(name: "Key Test")
+        account.setAPIKey("sk-test-key-12345", for: .openai)
+        account.setAPIKey("ant-key-67890", for: .anthropic)
+        context.insert(account)
+        try context.save()
+
+        let fetched = try context.fetch(FetchDescriptor<Account>())
+        #expect(fetched[0].apiKey(for: .openai) == "sk-test-key-12345")
+        #expect(fetched[0].apiKey(for: .anthropic) == "ant-key-67890")
+        #expect(fetched[0].apiKey(for: .ollama) == nil)
+    }
+
+    @Test("API key returns nil for empty string")
+    func apiKeyEmptyString() {
+        let account = Account(name: "Empty Key")
+        account.apiKeys["openai"] = ""
+        #expect(account.apiKey(for: .openai) == nil)
+    }
+
+    @Test("Masked API key shows first 3 and last 4 characters")
+    func maskedApiKey() {
+        let account = Account(name: "Mask Test")
+        account.setAPIKey("sk-1234567890abcdef", for: .openai)
+        #expect(account.maskedAPIKey(for: .openai) == "sk-••••cdef")
+    }
+
+    @Test("Masked API key returns full key when short")
+    func maskedApiKeyShort() {
+        let account = Account(name: "Short Key")
+        account.setAPIKey("abc", for: .openai)
+        #expect(account.maskedAPIKey(for: .openai) == "abc")
+    }
+
+    @Test("Masked API key returns nil when no key")
+    func maskedApiKeyNil() {
+        let account = Account(name: "No Key")
+        #expect(account.maskedAPIKey(for: .openai) == nil)
+    }
+
+    @Test("Set API key updates timestamp")
+    func setApiKeyUpdatesTimestamp() throws {
+        let account = Account(name: "Timestamp Test")
+        let before = account.updatedAt
+        // Small sleep to ensure time difference
+        try Task.checkCancellation()
+        account.setAPIKey("key", for: .openai)
+        #expect(account.updatedAt >= before)
+    }
+
+    // MARK: - Codable Roundtrips
+
     @Test("SpeechConfig Codable roundtrip")
     func speechConfigCodable() throws {
         var config = SpeechConfig()
