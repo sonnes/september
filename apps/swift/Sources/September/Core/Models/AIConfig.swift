@@ -27,7 +27,7 @@ enum TranscriptionProvider: String, Codable, Sendable, CaseIterable {
 // MARK: - AI Suggestions Config
 // Mirrors: packages/account/types/index.ts → SuggestionsConfigSchema
 
-struct SuggestionsConfig: Codable, Sendable {
+struct SuggestionsConfig: Codable, Sendable, Equatable {
     var enabled: Bool = false
     var provider: AIProvider = .openai
     var model: String? = nil

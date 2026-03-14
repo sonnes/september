@@ -1,16 +1,20 @@
 import SwiftUI
 
-/// Central keyboard section: InputBar + all key rows.
+/// Central keyboard section: InputBar + key rows.
 /// 980pt wide, contains function row through modifier row.
+///
+/// Predictions and word suggestions are in a separate floating panel above.
+/// displayText is updated by AX polling in KeyboardAssemblyView.
 struct MainKeyboardView: View {
     let modifierState: ModifierState
     let accessibilityManager: AccessibilityManager
     let keyboardStyle: KeyboardStyle
+    var onSettingsTapped: () -> Void = {}
     @Binding var displayText: String
 
     var body: some View {
         VStack(spacing: 4) {
-            InputBar(displayText: $displayText)
+            InputBar(displayText: $displayText, onSettingsTapped: onSettingsTapped)
                 .padding(.bottom, 8)
 
             ForEach(Array(KeyboardLayout.allRows.enumerated()), id: \.offset) { rowIndex, row in
@@ -41,10 +45,8 @@ struct MainKeyboardView: View {
         let flags = modifierState.modifierFlags()
 
         if flags.isEmpty {
-            // No modifiers — send with shift state from caps/shift
             EventInjector.shared.send(keyCode: key.keyCode, shift: modifierState.effectiveShift)
         } else {
-            // Has modifiers — send with combined flags
             var combinedFlags = flags
             if modifierState.effectiveShift {
                 combinedFlags.insert(.maskShift)
@@ -52,32 +54,6 @@ struct MainKeyboardView: View {
             EventInjector.shared.send(keyCode: key.keyCode, modifiers: combinedFlags)
         }
 
-        // Update display text for visual feedback
-        updateDisplayText(key)
-
-        // Reset non-locked modifiers
         modifierState.resetAfterKeyPress()
-    }
-
-    private func updateDisplayText(_ key: KeyDefinition) {
-        switch key.keyCode {
-        case KeyCodes.delete:
-            if !displayText.isEmpty { displayText.removeLast() }
-        case KeyCodes.space:
-            displayText.append(" ")
-        case KeyCodes.returnKey:
-            displayText.append("\n")
-        case KeyCodes.tab:
-            displayText.append("\t")
-        default:
-            // Only append characters for standard and dual keys (not special/function)
-            guard key.keyType == .standard || key.keyType == .dual else { break }
-            if !key.label.isEmpty {
-                let char = modifierState.effectiveShift
-                    ? (key.shiftLabel ?? key.label.uppercased())
-                    : key.label
-                displayText.append(char)
-            }
-        }
     }
 }

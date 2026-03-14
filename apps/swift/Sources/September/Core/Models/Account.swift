@@ -27,6 +27,10 @@ final class Account {
     var aiTranscription: TranscriptionConfig
     var aiSpeech: SpeechConfig
 
+    // API Keys — keyed by AIProvider.rawValue.
+    // Stored in SwiftData (app sandbox). Keychain migration in Phase 7.
+    var apiKeys: [String: String]
+
     // Flags
     var termsAccepted: Bool
     var privacyPolicyAccepted: Bool
@@ -46,6 +50,7 @@ final class Account {
         aiSuggestions: SuggestionsConfig = SuggestionsConfig(),
         aiTranscription: TranscriptionConfig = TranscriptionConfig(),
         aiSpeech: SpeechConfig = SpeechConfig(),
+        apiKeys: [String: String] = [:],
         termsAccepted: Bool = false,
         privacyPolicyAccepted: Bool = false,
         onboardingCompleted: Bool = false
@@ -59,10 +64,34 @@ final class Account {
         self.aiSuggestions = aiSuggestions
         self.aiTranscription = aiTranscription
         self.aiSpeech = aiSpeech
+        self.apiKeys = apiKeys
         self.termsAccepted = termsAccepted
         self.privacyPolicyAccepted = privacyPolicyAccepted
         self.onboardingCompleted = onboardingCompleted
         self.createdAt = Date()
         self.updatedAt = Date()
+    }
+
+    // MARK: - API Key Helpers
+
+    func apiKey(for provider: AIProvider) -> String? {
+        let key = apiKeys[provider.rawValue]
+        guard let key, !key.isEmpty else { return nil }
+        return key
+    }
+
+    func setAPIKey(_ key: String, for provider: AIProvider) {
+        apiKeys[provider.rawValue] = key
+        updatedAt = Date()
+    }
+
+    /// Masked display: "sk-••••3xQ7". Returns nil if no key stored.
+    func maskedAPIKey(for provider: AIProvider) -> String? {
+        guard let key = apiKey(for: provider), key.count > 7 else {
+            return apiKey(for: provider)
+        }
+        let prefix = key.prefix(3)
+        let suffix = key.suffix(4)
+        return "\(prefix)••••\(suffix)"
     }
 }
