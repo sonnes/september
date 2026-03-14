@@ -36,6 +36,27 @@ enum DesignColors {
     static let sidebarForeground = dynamicColor(light: 0x0A0A0A, dark: 0xFAFAFA)
     static let sidebarBorder = dynamicColor(light: 0xE4E4E7, dark: 0x27272A)
 
+    // MARK: Phase 1 — Key Component Tokens (light/dark from design spec)
+    //
+    // Light values derived from keyboard-light-rainbow.png and design-specifications.png.
+    // Dark values from Issue #10 spec (#1A1A20, #141418, etc.).
+
+    static let keyStandardFill = dynamicColor(light: 0xFFFFFF, dark: 0x1A1A20)
+    static let keyStandardStroke = dynamicColor(light: (0x000000, 0.06), dark: (0xFFFFFF, 0.094))
+    static let keyStandardShadow = dynamicColor(light: (0x000000, 0.08), dark: (0x000000, 0.25))
+    static let keyStandardGlow = dynamicColor(light: (0xFFFFFF, 0.0), dark: (0xFFFFFF, 0.031))
+    static let keyStandardLabel = dynamicColor(light: 0x1C1C1E, dark: 0xF0F0F5)
+
+    static let keySpecialFill = dynamicColor(light: 0xD4D4D8, dark: 0x141418)
+    static let keySpecialStroke = dynamicColor(light: (0x000000, 0.04), dark: (0xFFFFFF, 0.071))
+    static let keySpecialLabel = dynamicColor(light: 0x52525B, dark: 0xA0A0B0)
+
+    static let keyDualTopLabel = dynamicColor(light: 0x71717A, dark: 0x808090)
+    static let keyDualBottomLabel = dynamicColor(light: 0x1C1C1E, dark: 0xF0F0F5)
+
+    static let shortcutIcon = dynamicColor(light: 0x71717A, dark: 0x808090)
+    static let shortcutLabel = dynamicColor(light: 0x3F3F46, dark: 0xC0C0CC)
+
     // MARK: Keyboard Dimensions
 
     static let kbCornerRadius: CGFloat = 6

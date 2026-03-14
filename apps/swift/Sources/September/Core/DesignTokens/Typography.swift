@@ -6,7 +6,7 @@ import SwiftUI
 // Secondary: Geist (sans-serif, used for UI text)
 //
 // Falls back to system fonts if custom fonts are not installed.
-// Font bundling will be added when the keyboard UI is built.
+// TODO: Bundle JetBrains Mono and Geist fonts in Resources/.
 
 enum Typography {
 

@@ -5,7 +5,7 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            TypePlaceholderView()
+            Text("Type")
                 .tabItem { Label("Type", systemImage: "keyboard") }
                 .tag(AppTab.type)
 
