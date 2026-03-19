@@ -51,11 +51,11 @@ struct SettingsView: View {
             if let account = accounts.first {
                 switch selectedTab {
                 case .appearance:
-                    placeholderPane("Appearance")
+                    AppearanceSettingsView()
                 case .aiProvider:
                     AIProviderSettingsView(account: account)
                 case .textToSpeech:
-                    placeholderPane("Text to Speech")
+                    TTSSettingsView(account: account)
                 case .transcription:
                     placeholderPane("Transcription")
                 }

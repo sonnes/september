@@ -26,11 +26,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let modifierState = ModifierState()
     private let predictionEngine = PredictionEngine()
     private let axTextService = AXTextService()
+    private let speechCoordinator = SpeechCoordinator()
     private var modelContainer: ModelContainer?
     private var positionObservations: [NSObjectProtocol] = []
     private var fittingSizeObservation: NSKeyValueObservation?
 
+    @AppStorage("appTheme") private var appTheme: AppTheme = .system
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.appearance = appTheme.nsAppearance
         accessibility.requestPermission()
 
         do {
@@ -67,6 +71,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             accessibilityManager: accessibility,
             predictionEngine: predictionEngine,
             axTextService: axTextService,
+            speechCoordinator: speechCoordinator,
             onSettingsTapped: { [weak self] in self?.openSettings() }
         )
         .modelContainer(modelContainer!)

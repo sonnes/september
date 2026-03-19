@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Keyboard visual style — 4 variants: Light/Dark × Rainbow/Mono.
@@ -10,6 +11,25 @@ enum KeyboardStyle: String, CaseIterable, Sendable {
 
     var isRainbow: Bool {
         self == .lightRainbow || self == .darkRainbow
+    }
+
+    /// Derive full keyboard style from theme + rainbow/mono preference.
+    /// For .system theme, uses the current effective appearance.
+    static func from(theme: AppTheme, rainbow: Bool) -> KeyboardStyle {
+        let isDark: Bool
+        switch theme {
+        case .dark:
+            isDark = true
+        case .light:
+            isDark = false
+        case .system:
+            isDark = NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        }
+        if isDark {
+            return rainbow ? .darkRainbow : .darkMono
+        } else {
+            return rainbow ? .lightRainbow : .lightMono
+        }
     }
 
     /// Returns an accent color for the given row index (0-based).

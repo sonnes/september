@@ -43,4 +43,30 @@ struct AVSpeechServiceTests {
         try await service.speak(text: "")
         #expect(service.isSpeaking == false)
     }
+
+    @Test("Speak with voice and speed does not throw")
+    @MainActor
+    func speakWithVoiceAndSpeed() async throws {
+        let service = AVSpeechService()
+        let voices = await service.voices()
+        guard let voice = voices.first else {
+            Issue.record("No voices available")
+            return
+        }
+        try await service.speak(text: "Hi", voiceId: voice.id, speed: 1.5)
+    }
+
+    @Test("Speak with invalid voice falls back to default")
+    @MainActor
+    func speakWithInvalidVoice() async throws {
+        let service = AVSpeechService()
+        try await service.speak(text: "Hi", voiceId: "nonexistent-voice-id", speed: 1.0)
+    }
+
+    @Test("Default speak calls through protocol extension")
+    @MainActor
+    func defaultSpeakExtension() async throws {
+        let service = AVSpeechService()
+        try await service.speak(text: "Hi")
+    }
 }

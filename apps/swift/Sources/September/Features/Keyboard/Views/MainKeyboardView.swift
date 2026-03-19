@@ -9,13 +9,20 @@ struct MainKeyboardView: View {
     let modifierState: ModifierState
     let accessibilityManager: AccessibilityManager
     let keyboardStyle: KeyboardStyle
+    var isSpeaking: Bool = false
+    var onSpeakTapped: () -> Void = {}
     var onSettingsTapped: () -> Void = {}
     @Binding var displayText: String
 
     var body: some View {
         VStack(spacing: 4) {
-            InputBar(displayText: $displayText, onSettingsTapped: onSettingsTapped)
-                .padding(.bottom, 8)
+            InputBar(
+                displayText: $displayText,
+                isSpeaking: isSpeaking,
+                onSpeakTapped: onSpeakTapped,
+                onSettingsTapped: onSettingsTapped
+            )
+            .padding(.bottom, 8)
 
             ForEach(Array(KeyboardLayout.allRows.enumerated()), id: \.offset) { rowIndex, row in
                 HStack(spacing: 4) {

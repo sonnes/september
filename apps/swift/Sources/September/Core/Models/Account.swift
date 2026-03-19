@@ -94,4 +94,26 @@ final class Account {
         let suffix = key.suffix(4)
         return "\(prefix)••••\(suffix)"
     }
+
+    // MARK: - SpeechProvider API Key Helpers
+
+    func apiKey(for provider: SpeechProvider) -> String? {
+        let key = apiKeys[provider.rawValue]
+        guard let key, !key.isEmpty else { return nil }
+        return key
+    }
+
+    func setAPIKey(_ key: String, for provider: SpeechProvider) {
+        apiKeys[provider.rawValue] = key
+        updatedAt = Date()
+    }
+
+    func maskedAPIKey(for provider: SpeechProvider) -> String? {
+        guard let key = apiKey(for: provider), key.count > 7 else {
+            return apiKey(for: provider)
+        }
+        let prefix = key.prefix(3)
+        let suffix = key.suffix(4)
+        return "\(prefix)••••\(suffix)"
+    }
 }

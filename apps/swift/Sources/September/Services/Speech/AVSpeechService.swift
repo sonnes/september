@@ -21,20 +21,27 @@ final class AVSpeechService: NSObject, SpeechService, AVSpeechSynthesizerDelegat
         synthesizer.delegate = self
     }
 
-    func speak(text: String) async throws {
+    func speak(text: String, voiceId: String?, speed: Double) async throws {
         guard !text.isEmpty else { return }
 
         if synthesizer.isSpeaking {
-            // Cancel previous continuation before stopping so the delegate
-            // callback doesn't resume a stale continuation.
             speakContinuation?.resume()
             speakContinuation = nil
             synthesizer.stopSpeaking(at: .immediate)
         }
 
         let utterance = AVSpeechUtterance(string: text)
-        utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
-        utterance.rate = AVSpeechUtteranceDefaultSpeechRate
+
+        if let voiceId, let voice = AVSpeechSynthesisVoice(identifier: voiceId) {
+            utterance.voice = voice
+        } else {
+            utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+        }
+
+        // Map user speed (0.5–2.0) to AVSpeech rate.
+        // AVSpeechUtteranceDefaultSpeechRate is ~0.5 on the 0.0–1.0 scale.
+        let clampedSpeed = min(max(speed, 0.5), 2.0)
+        utterance.rate = Float(clampedSpeed) * AVSpeechUtteranceDefaultSpeechRate
 
         isSpeaking = true
         await withCheckedContinuation { continuation in

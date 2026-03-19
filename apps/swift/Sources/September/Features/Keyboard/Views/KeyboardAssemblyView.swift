@@ -12,6 +12,7 @@ struct KeyboardAssemblyView: View {
     let accessibilityManager: AccessibilityManager
     let predictionEngine: PredictionEngine
     let axTextService: AXTextService
+    let speechCoordinator: SpeechCoordinator
     var onSettingsTapped: () -> Void = {}
 
     @AppStorage("keyboardStyle") private var keyboardStyle: KeyboardStyle = .darkRainbow
@@ -36,6 +37,8 @@ struct KeyboardAssemblyView: View {
                     modifierState: modifierState,
                     accessibilityManager: accessibilityManager,
                     keyboardStyle: keyboardStyle,
+                    isSpeaking: speechCoordinator.isSpeaking,
+                    onSpeakTapped: handleSpeak,
                     onSettingsTapped: onSettingsTapped,
                     displayText: $displayText
                 )
@@ -63,6 +66,22 @@ struct KeyboardAssemblyView: View {
         }
         .onChange(of: account?.aiSuggestions) { _, _ in
             configureEngine()
+        }
+    }
+
+    // MARK: - Speak Action
+
+    private func handleSpeak() {
+        if speechCoordinator.isSpeaking {
+            speechCoordinator.stop()
+        } else {
+            guard !displayText.isEmpty, let account else { return }
+            let config = account.aiSpeech
+            speechCoordinator.speak(
+                text: displayText,
+                config: config,
+                apiKey: account.apiKey(for: config.provider)
+            )
         }
     }
 
