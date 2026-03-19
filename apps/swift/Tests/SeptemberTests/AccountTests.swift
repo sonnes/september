@@ -177,6 +177,49 @@ struct AccountTests {
         #expect(account.updatedAt >= before)
     }
 
+    // MARK: - SpeechProvider API Keys
+
+    @Test("SpeechProvider API key roundtrip through SwiftData")
+    func speechProviderApiKeyRoundtrip() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+
+        let account = Account(name: "Speech Key Test")
+        account.setAPIKey("sk-openai-tts-key", for: .openaiTTS)
+        account.setAPIKey("el-elevenlabs-key", for: .elevenlabs)
+        context.insert(account)
+        try context.save()
+
+        let fetched = try context.fetch(FetchDescriptor<Account>())
+        #expect(fetched[0].apiKey(for: .openaiTTS) == "sk-openai-tts-key")
+        #expect(fetched[0].apiKey(for: .elevenlabs) == "el-elevenlabs-key")
+        #expect(fetched[0].apiKey(for: .avSpeech) == nil)
+    }
+
+    @Test("SpeechProvider keys do not collide with AIProvider keys")
+    func speechProviderNoCollision() {
+        let account = Account(name: "Collision Test")
+        account.setAPIKey("ai-openai-key", for: .openai)
+        account.setAPIKey("tts-openai-key", for: .openaiTTS)
+
+        #expect(account.apiKey(for: .openai) == "ai-openai-key")
+        #expect(account.apiKey(for: .openaiTTS) == "tts-openai-key")
+    }
+
+    @Test("SpeechProvider masked API key")
+    func speechProviderMaskedKey() {
+        let account = Account(name: "Speech Mask")
+        account.setAPIKey("el-1234567890abcdef", for: .elevenlabs)
+        #expect(account.maskedAPIKey(for: .elevenlabs) == "el-••••cdef")
+    }
+
+    @Test("SpeechProvider API key returns nil for empty string")
+    func speechProviderEmptyKey() {
+        let account = Account(name: "Empty Speech Key")
+        account.apiKeys["openaiTTS"] = ""
+        #expect(account.apiKey(for: .openaiTTS) == nil)
+    }
+
     // MARK: - Codable Roundtrips
 
     @Test("SpeechConfig Codable roundtrip")
