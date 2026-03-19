@@ -11,6 +11,8 @@ func truncateDisplayText(_ text: String, maxLength: Int = 500) -> String {
 /// Display-only — the real input goes to the focused app via CGEvent.
 struct InputBar: View {
     @Binding var displayText: String
+    var isSpeaking: Bool = false
+    var onSpeakTapped: () -> Void = {}
     var onSettingsTapped: () -> Void = {}
 
     var body: some View {
@@ -42,7 +44,43 @@ struct InputBar: View {
             // Mode buttons
             HStack(spacing: 4) {
                 modeButton("keyboard", active: true)
-                modeButton("speaker.wave.2", active: false)
+
+                // Speak / Stop button
+                Button(action: onSpeakTapped) {
+                    Image(systemName: isSpeaking ? "stop.fill" : "speaker.wave.2")
+                        .font(.system(size: 14))
+                        .foregroundStyle(
+                            isSpeaking ? DesignColors.kbAccent : DesignColors.shortcutIcon)
+                        .frame(width: 32, height: 32)
+                        .background(
+                            Circle()
+                                .fill(
+                                    isSpeaking
+                                        ? DesignColors.kbAccent.opacity(0.15) : Color.clear)
+                        )
+                        .overlay(
+                            Circle()
+                                .strokeBorder(
+                                    isSpeaking
+                                        ? DesignColors.kbAccent.opacity(0.5) : Color.clear,
+                                    lineWidth: 1.5
+                                )
+                                .scaleEffect(isSpeaking ? 1.2 : 1.0)
+                                .opacity(isSpeaking ? 0.6 : 0)
+                                .animation(
+                                    isSpeaking
+                                        ? .easeInOut(duration: 0.8).repeatForever(
+                                            autoreverses: true) : .default,
+                                    value: isSpeaking
+                                )
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(isSpeaking ? "Stop speaking" : "Speak text")
+                .accessibilityHint(
+                    isSpeaking
+                        ? "Stops current speech" : "Speaks the typed text aloud")
+
                 modeButton("pencil", active: false)
 
                 Button(action: onSettingsTapped) {
