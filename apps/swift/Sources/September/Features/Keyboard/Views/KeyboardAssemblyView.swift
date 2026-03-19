@@ -13,6 +13,7 @@ struct KeyboardAssemblyView: View {
     let predictionEngine: PredictionEngine
     let axTextService: AXTextService
     let speechCoordinator: SpeechCoordinator
+    var onWriterTapped: () -> Void = {}
     var onSettingsTapped: () -> Void = {}
 
     @AppStorage("keyboardStyle") private var keyboardStyle: KeyboardStyle = .darkRainbow
@@ -39,6 +40,7 @@ struct KeyboardAssemblyView: View {
                     keyboardStyle: keyboardStyle,
                     isSpeaking: speechCoordinator.isSpeaking,
                     onSpeakTapped: handleSpeak,
+                    onWriterTapped: onWriterTapped,
                     onSettingsTapped: onSettingsTapped,
                     displayText: $displayText
                 )

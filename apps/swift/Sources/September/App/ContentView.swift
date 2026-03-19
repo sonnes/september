@@ -13,7 +13,7 @@ struct ContentView: View {
                 .tabItem { Label("Talk", systemImage: "waveform") }
                 .tag(AppTab.talk)
 
-            WritePlaceholderView()
+            Text("Write — opens in floating panel")
                 .tabItem { Label("Write", systemImage: "doc.text") }
                 .tag(AppTab.write)
 
