@@ -65,4 +65,26 @@ struct KeyboardStyleTests {
     func allCases() {
         #expect(KeyboardStyle.allCases.count == 4)
     }
+
+    // MARK: - from(theme:rainbow:)
+
+    @Test("Dark theme + rainbow → darkRainbow")
+    func fromDarkRainbow() {
+        #expect(KeyboardStyle.from(theme: .dark, rainbow: true) == .darkRainbow)
+    }
+
+    @Test("Dark theme + mono → darkMono")
+    func fromDarkMono() {
+        #expect(KeyboardStyle.from(theme: .dark, rainbow: false) == .darkMono)
+    }
+
+    @Test("Light theme + rainbow → lightRainbow")
+    func fromLightRainbow() {
+        #expect(KeyboardStyle.from(theme: .light, rainbow: true) == .lightRainbow)
+    }
+
+    @Test("Light theme + mono → lightMono")
+    func fromLightMono() {
+        #expect(KeyboardStyle.from(theme: .light, rainbow: false) == .lightMono)
+    }
 }
