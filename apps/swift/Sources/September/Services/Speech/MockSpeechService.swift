@@ -8,10 +8,14 @@ import Foundation
 @Observable
 final class MockSpeechService: SpeechService {
     private(set) var isSpeaking = false
+    private(set) var lastVoiceId: String?
+    private(set) var lastSpeed: Double?
 
-    func speak(text: String) async throws {
+    func speak(text: String, voiceId: String?, speed: Double) async throws {
         isSpeaking = true
-        print("[MockSpeechService] Speaking: \(text)")
+        lastVoiceId = voiceId
+        lastSpeed = speed
+        print("[MockSpeechService] Speaking: \(text) voice=\(voiceId ?? "nil") speed=\(speed)")
         try await Task.sleep(for: .milliseconds(500))
         isSpeaking = false
     }
