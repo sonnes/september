@@ -37,7 +37,10 @@ Sources/September/
 │   │   └── Views/           # KeyboardAssemblyView, MainKeyboardView, InputBar,
 │   │                        # PredictionsPanel, WordSuggestionsBar
 │   ├── Talk/                # Talk mode (placeholder)
-│   ├── Writer/              # Write mode (placeholder)
+│   ├── Writer/
+│   │   ├── ViewModels/      # WriterState (focus modes, stats, toggles)
+│   │   ├── Views/           # WriterView, MarkdownTextView, WriterViewWrapper
+│   │   └── Services/        # TextAnalyzer (NLTagger, filler/cliché/redundancy)
 │   └── Settings/
 │       ├── Models/          # AppTheme
 │       └── Views/           # SettingsView, AIProviderSettingsView,
@@ -74,6 +77,22 @@ Three TTS engines with a unified speak button in the input bar:
 - **Speak button**: In InputBar, toggles speak/stop with pulsing animation. Speaks current display text using configured engine.
 - **Settings**: Engine cards, voice dropdown, speed slider, preview button.
 
+### Floating Writer (Phase 6)
+
+A markdown-aware editor in a floating panel with dim overlay:
+
+- **WriterPanel**: Activating `NSPanel` (unlike keyboard's non-activating panel). 720×640, corner radius 10, floating level. User types directly into it.
+- **DimOverlayWindow**: Full-screen `#00000033` overlay behind the writer. Auto-closes when writer closes.
+- **MarkdownTextView**: `NSViewRepresentable` wrapping `NSTextView`. JetBrains Mono 16px, 2× line height, 72px horizontal padding. Markdown syntax highlighting (headings, bold, italic, code, links, blockquotes, checkboxes).
+- **Focus modes**: Sentence, Paragraph, Typewriter. Dims surrounding text to `#C8C8C8`, active text at full color. Typewriter mode scrolls current line to center.
+- **Show Syntax**: Colors parts of speech via `NLTagger` — adjectives (blue), nouns (pink), adverbs (green), verbs (orange), conjunctions (purple).
+- **Style Check**: Highlights filler words, clichés, and redundant phrases. Each category independently togglable.
+- **TextAnalyzer**: Pure static methods for NLP analysis. `findFillers()`, `findCliches()`, `findRedundancies()`, `tagPartsOfSpeech()`.
+- **WriterState**: `@MainActor @Observable` view model. Focus mode, word/char count, read time (200 WPM), syntax/style toggles.
+- **Footer**: Word count, character count, estimated read time, active focus mode indicator.
+- **Persistence**: Documents stored via SwiftData `Document` model. Auto-saves on edit.
+- **Access**: Pencil button in InputBar or ⇧⌘W from menu bar.
+
 ### Appearance (Phase 3)
 
 - **Theme**: Light / Dark / System — applied via `NSApp.appearance`. `DesignColors` dynamic providers auto-resolve.
@@ -85,7 +104,7 @@ Three TTS engines with a unified speak button in the input bar:
 - `@State` for view model ownership, `@Bindable` for two-way binding
 - Strict Swift concurrency: all types crossing threads must be `Sendable`
 - SwiftData for local persistence
-- `NSPanel` + `NSHostingView` for floating windows (non-activating)
+- `NSPanel` + `NSHostingView` for floating windows (non-activating for keyboard, activating for writer)
 
 ### Dev Notes
 

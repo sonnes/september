@@ -20,6 +20,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var keyboardPanel: FloatingPanel?
     private var predictionsPanel: FloatingPanel?
     private var settingsWindow: NSWindow?
+    private var writerPanel: WriterPanel?
+    private var dimOverlay: DimOverlayWindow?
     private var statusItem: NSStatusItem?
     private var menuBarPollingTask: Task<Void, Never>?
     private let accessibility = AccessibilityManager()
@@ -27,6 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let predictionEngine = PredictionEngine()
     private let axTextService = AXTextService()
     private let speechCoordinator = SpeechCoordinator()
+    private let writerState = WriterState()
     private var modelContainer: ModelContainer?
     private var positionObservations: [NSObjectProtocol] = []
     private var fittingSizeObservation: NSKeyValueObservation?
@@ -72,6 +75,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             predictionEngine: predictionEngine,
             axTextService: axTextService,
             speechCoordinator: speechCoordinator,
+            onWriterTapped: { [weak self] in self?.openWriter() },
             onSettingsTapped: { [weak self] in self?.openSettings() }
         )
         .modelContainer(modelContainer!)
@@ -231,6 +235,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(.separator())
 
+        let writerItem = NSMenuItem(
+            title: "Show Writer",
+            action: #selector(showWriter),
+            keyEquivalent: "w"
+        )
+        writerItem.keyEquivalentModifierMask = [.command, .shift]
+        menu.addItem(writerItem)
+
+        menu.addItem(.separator())
+
         let accessibilityItem = NSMenuItem(
             title: "Accessibility: Checking…",
             action: nil,
@@ -295,5 +309,60 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func requestAccessibility() {
         accessibility.requestPermission()
         updateAccessibilityMenuItem()
+    }
+
+    // MARK: - Writer Panel
+
+    func openWriter() {
+        if let existing = writerPanel, existing.isVisible {
+            existing.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        // Dim overlay
+        let overlay = DimOverlayWindow()
+        overlay.orderFront(nil)
+        dimOverlay = overlay
+
+        // Writer content
+        var currentDocument: Document?
+        if let container = modelContainer {
+            let context = ModelContext(container)
+            let descriptor = FetchDescriptor<Document>(
+                sortBy: [SortDescriptor(\.updatedAt, order: .reverse)])
+            currentDocument = (try? context.fetch(descriptor))?.first
+            if currentDocument == nil {
+                let doc = Document(name: "Untitled")
+                context.insert(doc)
+                try? context.save()
+                currentDocument = doc
+            }
+        }
+
+        let writerView = WriterViewWrapper(
+            writerState: writerState,
+            initialDocument: currentDocument
+        )
+        .modelContainer(modelContainer!)
+
+        let hostingView = NSHostingView(rootView: writerView)
+        let panel = WriterPanel(contentView: hostingView)
+        panel.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+
+        // Close overlay when writer closes
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification, object: panel, queue: .main
+        ) { [weak self] _ in
+            self?.dimOverlay?.orderOut(nil)
+            self?.dimOverlay = nil
+        }
+
+        writerPanel = panel
+    }
+
+    @objc private func showWriter() {
+        openWriter()
     }
 }

@@ -11,6 +11,7 @@ struct MainKeyboardView: View {
     let keyboardStyle: KeyboardStyle
     var isSpeaking: Bool = false
     var onSpeakTapped: () -> Void = {}
+    var onWriterTapped: () -> Void = {}
     var onSettingsTapped: () -> Void = {}
     @Binding var displayText: String
 
@@ -20,6 +21,7 @@ struct MainKeyboardView: View {
                 displayText: $displayText,
                 isSpeaking: isSpeaking,
                 onSpeakTapped: onSpeakTapped,
+                onWriterTapped: onWriterTapped,
                 onSettingsTapped: onSettingsTapped
             )
             .padding(.bottom, 8)

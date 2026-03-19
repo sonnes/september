@@ -13,6 +13,7 @@ struct InputBar: View {
     @Binding var displayText: String
     var isSpeaking: Bool = false
     var onSpeakTapped: () -> Void = {}
+    var onWriterTapped: () -> Void = {}
     var onSettingsTapped: () -> Void = {}
 
     var body: some View {
@@ -81,7 +82,12 @@ struct InputBar: View {
                     isSpeaking
                         ? "Stops current speech" : "Speaks the typed text aloud")
 
-                modeButton("pencil", active: false)
+                Button(action: onWriterTapped) {
+                    modeButton("pencil", active: false)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Writer")
+                .accessibilityHint("Opens the floating markdown editor")
 
                 Button(action: onSettingsTapped) {
                     Image(systemName: "gearshape")
