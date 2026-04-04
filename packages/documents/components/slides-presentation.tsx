@@ -1,15 +1,24 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+import {
+  ArrowsPointingOutIcon,
+  PauseIcon,
+  PlayIcon,
+  QuestionMarkCircleIcon,
+  SpeakerWaveIcon,
+  SpeakerXMarkIcon,
+} from '@heroicons/react/24/outline';
 
+import { ReelTextViewer } from '@september/audio';
+import { Button } from '@september/ui/components/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@september/ui/components/tooltip';
 
-import { type Slide, parseAndRenderSlides } from '@september/shared/lib/slides';
-import { SlideRenderer } from '@september/documents/components/slide-renderer';
+import { slideToPlainText, type Slide, parseAndRenderSlides } from '@september/shared/lib/slides';
 import { SlidesNavigation } from '@september/documents/components/slides-navigation';
 import { SlidesProgress } from '@september/documents/components/slides-progress';
+import { useSlideVoiceOver } from '@september/documents/hooks/use-slide-voice-over';
 import { useDocuments } from '@september/documents/hooks/use-documents';
 
 type SlidesPresentationProps = {
@@ -17,6 +26,9 @@ type SlidesPresentationProps = {
   documentName?: string;
   className?: string;
   documentId?: string;
+  defaultVoiceOver?: boolean;
+  defaultAutoPlay?: boolean;
+  showFullscreenButton?: boolean;
 };
 
 export function SlidesPresentation({
@@ -24,6 +36,9 @@ export function SlidesPresentation({
   documentName,
   className,
   documentId,
+  defaultVoiceOver = false,
+  defaultAutoPlay = false,
+  showFullscreenButton = true,
 }: SlidesPresentationProps) {
   const { documents } = useDocuments();
   const current = documentId ? documents.find(doc => doc.id === documentId) || null : null;
@@ -33,6 +48,17 @@ export function SlidesPresentation({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showHintOnMount, setShowHintOnMount] = useState(false);
+  const [isVoiceOver, setIsVoiceOver] = useState(defaultVoiceOver);
+  const [isAutoPlay, setIsAutoPlay] = useState(defaultAutoPlay);
+
+  // Ref so the speak onEnd callback always reads the latest autoplay value
+  const isAutoPlayRef = useRef(isAutoPlay);
+  useEffect(() => {
+    isAutoPlayRef.current = isAutoPlay;
+  }, [isAutoPlay]);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { speak, stop, isGenerating, alignment, currentTime, duration } = useSlideVoiceOver();
 
   const effectiveMarkdown = markdown ?? current?.content ?? '';
   const effectiveDocumentName = documentName ?? current?.name;
@@ -71,6 +97,25 @@ export function SlidesPresentation({
     }
   }, [loading, slides.length]);
 
+  // Speak the current slide whenever the index changes (or voice-over is toggled on)
+  useEffect(() => {
+    if (!isVoiceOver || slides.length === 0 || loading) {
+      stop();
+      return;
+    }
+
+    const text = slideToPlainText(slides[currentSlideIndex]?.content ?? '');
+
+    speak(text, () => {
+      if (isAutoPlayRef.current) {
+        setCurrentSlideIndex(prev => Math.min(prev + 1, slides.length - 1));
+      }
+    });
+
+    return () => stop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSlideIndex, isVoiceOver, slides, loading]);
+
   const goToNextSlide = useCallback(() => {
     setCurrentSlideIndex(prev => Math.min(prev + 1, slides.length - 1));
   }, [slides.length]);
@@ -85,6 +130,23 @@ export function SlidesPresentation({
     },
     [slides.length]
   );
+
+  const handleVoiceToggle = useCallback(() => {
+    setIsVoiceOver(prev => {
+      if (prev) stop();
+      return !prev;
+    });
+  }, [stop]);
+
+  const handleFullscreen = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    } else {
+      el.requestFullscreen().catch(() => {});
+    }
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -206,13 +268,71 @@ export function SlidesPresentation({
 
   return (
     <>
-      <div className={`h-full flex flex-col ${className ?? ''}`}>
-        <div className="flex-1 min-h-0 rounded-lg border bg-background shadow-sm">
-          <SlideRenderer slide={currentSlide} className="h-full" />
+      <div ref={containerRef} className={`h-full flex flex-col ${className ?? ''}`}>
+        {/* Slide area */}
+        <div className="relative flex-1 min-h-0 rounded-lg border bg-background shadow-sm overflow-hidden">
+          <ReelTextViewer
+            text={slideToPlainText(currentSlide.content)}
+            alignment={isVoiceOver ? alignment : undefined}
+            currentTime={currentTime}
+            duration={duration}
+            className="h-full text-foreground"
+          />
         </div>
 
+        {/* Controls bar */}
         <div className="shrink-0 border-t bg-muted/50 p-4 backdrop-blur-sm">
           <div className="space-y-3">
+            {/* Voice-over + autoplay + fullscreen row */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant={isVoiceOver ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={handleVoiceToggle}
+                  title={isVoiceOver ? 'Turn off voice-over' : 'Turn on voice-over'}
+                >
+                  {isVoiceOver ? (
+                    <SpeakerWaveIcon className="h-4 w-4" />
+                  ) : (
+                    <SpeakerXMarkIcon className="h-4 w-4" />
+                  )}
+                  <span className="hidden sm:inline">
+                    {isGenerating ? 'Generating…' : 'Voice'}
+                  </span>
+                </Button>
+
+                <Button
+                  type="button"
+                  variant={isAutoPlay ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setIsAutoPlay(p => !p)}
+                  disabled={!isVoiceOver}
+                  title={isAutoPlay ? 'Disable autoplay' : 'Enable autoplay'}
+                >
+                  {isAutoPlay ? (
+                    <PauseIcon className="h-4 w-4" />
+                  ) : (
+                    <PlayIcon className="h-4 w-4" />
+                  )}
+                  <span className="hidden sm:inline">Auto</span>
+                </Button>
+              </div>
+
+              {showFullscreenButton && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleFullscreen}
+                  title="Toggle fullscreen"
+                >
+                  <ArrowsPointingOutIcon className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+
             <SlidesNavigation
               currentSlide={currentSlideIndex + 1}
               totalSlides={slides.length}

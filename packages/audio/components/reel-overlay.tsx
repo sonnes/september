@@ -7,7 +7,7 @@ import { cn } from '@september/shared/lib/utils';
 import { useTextViewerContext, TextViewer as TextViewerComponent } from './text-viewer';
 import { usePretextLayout } from '../hooks/use-pretext-layout';
 import type { Alignment } from '../types';
-import type { WordStatus } from '../hooks/use-text-viewer';
+import { useTextViewer, type WordStatus } from '../hooks/use-text-viewer';
 
 // ─── Types ─────────────────────────────────────────────────────
 
@@ -103,7 +103,7 @@ function ReelRenderer({
           {lineWords.map((words, lineIdx) => (
             <div
               key={lineIdx}
-              className="bg-black/30 backdrop-blur-sm rounded-2xl px-4 py-2"
+              className="rounded-2xl px-4 py-2"
             >
               <p
                 style={{
@@ -112,14 +112,14 @@ function ReelRenderer({
                   fontFamily,
                   fontWeight: Number(fontWeight),
                 }}
-                className="text-white m-0"
+                className="m-0"
               >
                 {words.map((word, i) => {
                   if (word.isSpace) return word.text;
 
                   const status = getWordStatus?.(word.wordIndex) ?? 'shown';
-                  const isUnspoken = status === 'unspoken';
                   const isCurrent = status === 'current';
+                  const isSpoken = status === 'spoken';
 
                   return (
                     <span
@@ -127,9 +127,8 @@ function ReelRenderer({
                       data-status={status}
                       className={cn(
                         'inline transition-all duration-200 ease-out',
-                        isUnspoken && 'opacity-0',
-                        isCurrent && 'bg-white/20 rounded-md px-1 -mx-1',
-                        !isUnspoken && 'opacity-100',
+                        isCurrent && 'bg-current/10 rounded-md px-1 -mx-1',
+                        isSpoken && 'opacity-60',
                       )}
                     >
                       {word.text}
@@ -183,11 +182,67 @@ function ReelOverlay({ text, fontFamily, fontWeight, ...props }: ReelOverlayProp
   );
 }
 
+// ─── ReelSyncOverlay (standalone — uses alignment + time directly) ──
+
+interface ReelSyncOverlayProps extends HTMLAttributes<HTMLDivElement> {
+  text: string;
+  alignment: Alignment;
+  currentTime: number;
+  duration: number;
+  fontFamily?: string;
+  fontWeight?: string;
+}
+
+function ReelSyncOverlay({
+  text,
+  alignment,
+  currentTime,
+  duration,
+  fontFamily,
+  fontWeight,
+  ...props
+}: ReelSyncOverlayProps) {
+  const { spokenSegments, currentWord, unspokenSegments } = useTextViewer({
+    alignment,
+    currentTime,
+    duration,
+  });
+
+  const getWordStatus = useMemo(() => {
+    const statusMap = new Map<number, WordStatus>();
+
+    for (const seg of spokenSegments) {
+      if (seg.kind === 'word') statusMap.set(seg.wordIndex, 'spoken');
+    }
+    if (currentWord) {
+      statusMap.set(currentWord.wordIndex, 'current');
+    }
+    for (const seg of unspokenSegments) {
+      if (seg.kind === 'word') statusMap.set(seg.wordIndex, 'unspoken');
+    }
+
+    return (wordIndex: number): WordStatus | 'shown' => statusMap.get(wordIndex) ?? 'shown';
+  }, [spokenSegments, currentWord, unspokenSegments]);
+
+  return (
+    <ReelRenderer
+      text={text}
+      fontFamily={fontFamily}
+      fontWeight={fontWeight}
+      getWordStatus={getWordStatus}
+      {...props}
+    />
+  );
+}
+
 // ─── ReelTextViewer (convenience wrapper) ──────────────────────
 
 interface ReelTextViewerProps extends HTMLAttributes<HTMLDivElement> {
   text: string;
   alignment?: Alignment;
+  /** Provide currentTime + duration to bypass AudioPlayer context (e.g. slides) */
+  currentTime?: number;
+  duration?: number;
   fontFamily?: string;
   fontWeight?: string;
 }
@@ -195,11 +250,30 @@ interface ReelTextViewerProps extends HTMLAttributes<HTMLDivElement> {
 function ReelTextViewer({
   text,
   alignment,
+  currentTime,
+  duration,
   fontFamily,
   fontWeight,
   className,
   ...props
 }: ReelTextViewerProps) {
+  // Direct sync mode — alignment + currentTime/duration provided externally
+  if (alignment && currentTime !== undefined && duration !== undefined) {
+    return (
+      <ReelSyncOverlay
+        text={text}
+        alignment={alignment}
+        currentTime={currentTime}
+        duration={duration}
+        fontFamily={fontFamily}
+        fontWeight={fontWeight}
+        className={className}
+        {...props}
+      />
+    );
+  }
+
+  // Audio player mode — alignment provided, sync via useAudioPlayer context
   if (alignment) {
     return (
       <TextViewerComponent
@@ -212,6 +286,7 @@ function ReelTextViewer({
     );
   }
 
+  // Static mode — no audio sync
   return (
     <ReelRenderer
       text={text}
@@ -223,5 +298,5 @@ function ReelTextViewer({
   );
 }
 
-export { ReelOverlay, ReelRenderer, ReelTextViewer };
-export type { ReelOverlayProps, ReelTextViewerProps };
+export { ReelOverlay, ReelRenderer, ReelSyncOverlay, ReelTextViewer };
+export type { ReelOverlayProps, ReelSyncOverlayProps, ReelTextViewerProps };

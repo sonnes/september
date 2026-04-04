@@ -50,7 +50,7 @@ export default function DisplayPage({ params }: { params: Promise<{ id: string }
           <ReelTextViewer
             text={latestMessage.message.text}
             alignment={current?.alignment}
-            className="absolute inset-0"
+            className="absolute inset-0 text-white"
           />
           <div className="absolute bottom-6 left-0 right-0 text-center">
             <span className="text-sm text-white/60 font-medium">

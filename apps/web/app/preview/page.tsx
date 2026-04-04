@@ -26,7 +26,7 @@ export default function PreviewPage() {
           text={displayText}
           fontFamily='"Noto Sans"'
           fontWeight="700"
-          className="absolute inset-0"
+          className="absolute inset-0 text-white"
         />
       </div>
 

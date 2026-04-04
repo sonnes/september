@@ -5,13 +5,12 @@ import React, { use } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
-
-import SidebarLayout from '@/components/sidebar/layout';
+import { DocumentEditor, EditableDocumentTitle, useDocuments } from '@september/documents';
 import { Button } from '@september/ui/components/button';
 import { Separator } from '@september/ui/components/separator';
 import { SidebarTrigger } from '@september/ui/components/sidebar';
 
-import { DocumentEditor, EditableDocumentTitle, useDocuments } from '@september/documents';
+import SidebarLayout from '@/components/sidebar/layout';
 
 import { DocumentEditorSkeleton } from '../loading-skeleton';
 

@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 
 import {
   DocumentDuplicateIcon,
   PaperClipIcon,
+  PlayCircleIcon,
   PresentationChartBarIcon,
 } from '@heroicons/react/24/outline';
 
@@ -45,6 +46,22 @@ export function DocumentEditor({ documentId, className }: DocumentEditorProps) {
     setIsSlidesDialogOpen,
   } = useDocumentEditor({ documentId });
 
+  const popupRef = useRef<Window | null>(null);
+
+  const handlePresent = useCallback(() => {
+    if (!current?.id) return;
+    const url = `/present/${current.id}`;
+    if (popupRef.current && !popupRef.current.closed) {
+      popupRef.current.focus();
+      return;
+    }
+    popupRef.current = window.open(
+      url,
+      `present-${current.id}`,
+      'width=1280,height=720,left=100,top=100,popup=1'
+    );
+  }, [current?.id]);
+
   const uploadDialog = useMemo(
     () => (
       <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
@@ -65,7 +82,12 @@ export function DocumentEditor({ documentId, className }: DocumentEditorProps) {
   const slidesDialog = useMemo(
     () => (
       <Dialog open={isSlidesDialogOpen} onOpenChange={setIsSlidesDialogOpen}>
-        <DialogContent showCloseButton className="sm:max-w-[95vw] h-[95vh] p-0 flex flex-col">
+        <DialogContent
+          showCloseButton
+          className="sm:max-w-[95vw] h-[95vh] p-0 flex flex-col"
+          aria-describedby={undefined}
+        >
+          <DialogTitle className="sr-only">Slides presentation</DialogTitle>
           <div className="h-full bg-linear-to-br from-gray-50 to-gray-100 rounded-lg overflow-hidden">
             <SlidesPresentation documentId={documentId} className="h-full" />
           </div>
@@ -113,6 +135,17 @@ export function DocumentEditor({ documentId, className }: DocumentEditorProps) {
                 <PresentationChartBarIcon className="h-4 w-4" />
                 <span className="hidden sm:inline">Slides</span>
                 <span className="sm:hidden">Preview</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handlePresent}
+                disabled={!current?.id}
+                className="min-w-[120px]"
+              >
+                <PlayCircleIcon className="h-4 w-4" />
+                <span className="hidden sm:inline">Present</span>
               </Button>
             </div>
 

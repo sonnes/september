@@ -54,7 +54,7 @@ export async function renderSlideToHtml(slideContent: string): Promise<string> {
 
 export async function parseAndRenderSlides(markdown: string, documentName?: string): Promise<Slide[]> {
   const slides = parseMarkdownToSlides(markdown, documentName);
-  
+
   const renderedSlides = await Promise.all(
     slides.map(async (slide) => ({
       ...slide,
@@ -63,4 +63,24 @@ export async function parseAndRenderSlides(markdown: string, documentName?: stri
   );
 
   return renderedSlides;
+}
+
+/**
+ * Strips markdown syntax from slide content to produce plain readable text for TTS.
+ */
+export function slideToPlainText(markdown: string): string {
+  return markdown
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`[^`]+`/g, '')
+    .replace(/!\[([^\]]*)\]\([^\)]*\)/g, '$1')
+    .replace(/\[([^\]]+)\]\([^\)]*\)/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/\*{1,3}([^*\n]+)\*{1,3}/g, '$1')
+    .replace(/_{1,3}([^_\n]+)_{1,3}/g, '$1')
+    .replace(/^>\s*/gm, '')
+    .replace(/^[\s]*[-*+]\s+/gm, '')
+    .replace(/^[\s]*\d+\.\s+/gm, '')
+    .replace(/^---+\s*$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }

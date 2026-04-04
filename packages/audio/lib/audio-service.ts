@@ -29,7 +29,8 @@ export class AudioService {
   }): Promise<string | undefined> {
     if (!kvStore) return undefined;
 
-    const binary = atob(blob);
+    const base64 = blob.startsWith('data:') ? blob.split(',')[1] : blob;
+    const binary = atob(base64);
     const buffer = new ArrayBuffer(binary.length);
     const view = new Uint8Array(buffer);
     for (let i = 0; i < binary.length; i++) {
@@ -53,6 +54,16 @@ export class AudioService {
     const item = await kvStore.get(path);
     if (!item) throw new Error(`Audio not found: ${path}`);
     return new Blob([item.blob], { type: item.contentType });
+  }
+
+  async getAudio(path: string): Promise<{ blob: Blob; alignment?: Alignment } | null> {
+    if (!kvStore) return null;
+    const item = await kvStore.get(path);
+    if (!item) return null;
+    return {
+      blob: new Blob([item.blob], { type: item.contentType }),
+      alignment: item.metadata?.alignment as Alignment | undefined,
+    };
   }
 
   async deleteAudio(path: string): Promise<void> {

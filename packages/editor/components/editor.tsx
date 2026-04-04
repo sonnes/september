@@ -38,6 +38,15 @@ export function Editor({
     }
   }, [text]);
 
+  // Refocus when re-enabled after a submit (disabled → enabled transition)
+  const prevDisabledRef = useRef(disabled);
+  useEffect(() => {
+    if (prevDisabledRef.current && !disabled) {
+      textareaRef.current?.focus();
+    }
+    prevDisabledRef.current = disabled;
+  }, [disabled]);
+
   const handleSubmit = () => {
     if (!text.trim()) return;
     onSubmit?.(text);

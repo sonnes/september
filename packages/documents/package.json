@@ -10,8 +10,11 @@
   },
   "dependencies": {
     "@september/account": "workspace:*",
+    "@september/ai": "workspace:*",
+    "@september/audio": "workspace:*",
     "@september/editor": "workspace:*",
     "@september/shared": "workspace:*",
+    "@september/speech": "workspace:*",
     "@september/ui": "workspace:*",
     "@heroicons/react": "^2.2.0",
     "@tanstack/db": "^0.5.15",

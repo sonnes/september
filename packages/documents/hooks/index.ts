@@ -6,3 +6,4 @@ export * from './use-delete-document';
 export * from './use-document-editor';
 export * from './use-editable-title';
 export * from './use-file-upload';
+export * from './use-slide-voice-over';
