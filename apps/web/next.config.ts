@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.env.TURBOPACK_ROOT || undefined,
   },
+  distDir: process.env.CI_VERCEL_BUILD ? '../../.next' : '.next',
   transpilePackages: [
     '@september/account',
     '@september/ai',
