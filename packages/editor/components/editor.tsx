@@ -41,6 +41,8 @@ export function Editor({
   const handleSubmit = () => {
     if (!text.trim()) return;
     onSubmit?.(text);
+    // Refocus after submit so user can keep typing
+    textareaRef.current?.focus();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -73,6 +75,7 @@ export function Editor({
           placeholder={placeholder}
           rows={1}
           disabled={disabled}
+          autoFocus
           className="w-full resize-none bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none"
         />
 
