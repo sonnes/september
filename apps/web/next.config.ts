@@ -1,9 +1,12 @@
 import type { NextConfig } from "next";
 
+const monorepoRoot = process.env.TURBOPACK_ROOT;
+
 const nextConfig: NextConfig = {
-  turbopack: {
-    root: process.env.TURBOPACK_ROOT || undefined,
-  },
+  ...(monorepoRoot && {
+    outputFileTracingRoot: monorepoRoot,
+    turbopack: { root: monorepoRoot },
+  }),
   transpilePackages: [
     '@september/account',
     '@september/ai',
