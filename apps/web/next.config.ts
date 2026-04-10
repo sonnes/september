@@ -1,9 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  ...(process.env.TURBOPACK_ROOT && {
-    turbopack: { root: process.env.TURBOPACK_ROOT },
-  }),
   transpilePackages: [
     '@september/account',
     '@september/ai',
