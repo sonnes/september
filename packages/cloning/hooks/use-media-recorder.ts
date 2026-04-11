@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { MediaRecorderManager } from '@september/cloning/lib/media-recorder-manager';
 import type { RecordingStatus } from '@september/cloning/types';
 
 interface UseMediaRecorderReturn {
@@ -16,62 +17,38 @@ export function useMediaRecorder(): UseMediaRecorderReturn {
   const [recordingStatus, setRecordingStatus] = useState<Record<string, RecordingStatus>>({});
   const [recordingError, setRecordingError] = useState<Record<string, string | null>>({});
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const recordingCompleteCallbackRef = useRef<((id: string, blob: Blob) => void) | null>(null);
+  const managerRef = useRef<MediaRecorderManager | null>(null);
+  const completeCallbackRef = useRef<((id: string, blob: Blob) => void) | null>(null);
 
-  const setStatusFor = useCallback((id: string, status: RecordingStatus) => {
-    setRecordingStatus(prev => ({ ...prev, [id]: status }));
+  if (!managerRef.current) {
+    managerRef.current = new MediaRecorderManager();
+  }
+
+  managerRef.current.setCallbacks({
+    onComplete: (id, blob) => completeCallbackRef.current?.(id, blob),
+    onStatusChange: (id, status) =>
+      setRecordingStatus(prev => ({ ...prev, [id]: status as RecordingStatus })),
+    onError: (id, error) =>
+      setRecordingError(prev => ({ ...prev, [id]: error })),
+  });
+
+  // Release the microphone when the component unmounts
+  useEffect(() => {
+    return () => {
+      managerRef.current?.stopAll();
+    };
   }, []);
 
-  const setErrorFor = useCallback((id: string, error: string | null) => {
-    setRecordingError(prev => ({ ...prev, [id]: error }));
+  const startRecording = useCallback(async (id: string) => {
+    await managerRef.current?.startRecording(id);
   }, []);
-
-  const startRecording = useCallback(
-    async (id: string) => {
-      setStatusFor(id, 'recording');
-      setErrorFor(id, null);
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        streamRef.current = stream;
-        const mediaRecorder = new MediaRecorder(stream);
-        const chunks: BlobPart[] = [];
-
-        mediaRecorder.ondataavailable = event => {
-          chunks.push(event.data);
-        };
-
-        mediaRecorder.onstop = () => {
-          const blob = new Blob(chunks, { type: 'audio/webm' });
-          recordingCompleteCallbackRef.current?.(id, blob);
-
-          if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-            streamRef.current = null;
-          }
-        };
-
-        mediaRecorderRef.current = mediaRecorder;
-        mediaRecorder.start();
-      } catch (err) {
-        setStatusFor(id, 'error');
-        setErrorFor(id, err instanceof Error ? err.message : 'Failed to start recording');
-      }
-    },
-    [setStatusFor, setErrorFor]
-  );
 
   const stopRecording = useCallback((id: string) => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current = null;
-    }
+    managerRef.current?.stopRecording(id);
   }, []);
 
   const onRecordingComplete = useCallback((callback: (id: string, blob: Blob) => void) => {
-    recordingCompleteCallbackRef.current = callback;
+    completeCallbackRef.current = callback;
   }, []);
 
   return {

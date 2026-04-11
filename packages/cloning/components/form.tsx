@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Search } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -14,10 +13,14 @@ import { FormField, FormTextarea } from '@september/ui/components/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@september/ui/components/tabs';
 
 import { useAccountContext } from '@september/account';
-import { useRecordingContext, useUpload } from '@september/cloning/components/cloning-provider';
+import {
+  useRecordingContext,
+  useUpload,
+  useVoiceStorageContext,
+} from '@september/cloning/components/cloning-provider';
 import { RecordingSection } from '@september/cloning/components/record';
 import { UploadSection } from '@september/cloning/components/upload';
-import { useVoiceStorage } from '@september/cloning/hooks/use-voice-storage';
+import { collectSampleIds } from '@september/cloning/lib/collect-sample-ids';
 import { ElevenLabsVoiceClone } from '@september/cloning/lib/elevenlabs-clone';
 
 const CloneVoiceSchema = z.object({
@@ -33,20 +36,17 @@ export function VoiceCloneForm() {
   const { account } = useAccountContext();
   const { recordings } = useRecordingContext();
   const { uploadedFiles } = useUpload();
-  const { downloadVoiceSample } = useVoiceStorage();
+  const { downloadVoiceSample, deleteVoiceSample } = useVoiceStorageContext();
 
   const form = useForm<CloneVoiceFormData>({
     resolver: zodResolver(CloneVoiceSchema),
-    defaultValues: {
-      name: '',
-      description: '',
-    },
+    defaultValues: { name: '', description: '' },
   });
 
-  // Get ElevenLabs API key from account
-  const elevenlabsApiKey = useMemo(() => {
-    return account?.ai_providers?.elevenlabs?.api_key;
-  }, [account]);
+  const elevenlabsApiKey = useMemo(
+    () => account?.ai_providers?.elevenlabs?.api_key,
+    [account]
+  );
 
   const handleSubmit = async (data: CloneVoiceFormData) => {
     if (!elevenlabsApiKey) {
@@ -54,8 +54,8 @@ export function VoiceCloneForm() {
       return;
     }
 
-    // Get all audio files (uploads or recordings)
-    const fileIds = uploadedFiles.length > 0 ? uploadedFiles : Object.values(recordings);
+    // Merge uploads AND recordings — ElevenLabs produces better clones with more data
+    const fileIds = collectSampleIds(uploadedFiles, recordings);
 
     if (fileIds.length === 0) {
       toast.error('Please upload or record at least one audio sample.');
@@ -65,18 +65,16 @@ export function VoiceCloneForm() {
     setIsSubmitting(true);
 
     try {
-      // Download all files from local storage and convert to File objects
-      const files: File[] = [];
-      for (const id of fileIds) {
-        const blob = await downloadVoiceSample(id);
-        // Extract filename from ID or use a default
-        const parts = id.split('/');
-        const filename = parts[parts.length - 1] || `sample-${id}.webm`;
-        const file = new File([blob], filename, { type: blob.type || 'audio/webm' });
-        files.push(file);
-      }
+      // Download all samples in parallel from IndexedDB
+      const files = await Promise.all(
+        fileIds.map(async id => {
+          const blob = await downloadVoiceSample(id);
+          const parts = id.split('/');
+          const filename = parts[parts.length - 1] || `sample-${id}.webm`;
+          return new File([blob], filename, { type: blob.type || 'audio/webm' });
+        })
+      );
 
-      // Create voice clone
       const cloneService = new ElevenLabsVoiceClone(elevenlabsApiKey);
       const result = await cloneService.cloneVoice({
         files,
@@ -85,10 +83,12 @@ export function VoiceCloneForm() {
       });
 
       toast.success('Voice Clone Created', {
-        description: `Successfully created voice "${result.name}" with ID: ${result.voice_id}`,
+        description: `Successfully created voice "${result.name}" (ID: ${result.voice_id})`,
       });
 
-      // Reset form
+      // Clean up local samples — already sent to ElevenLabs, no longer needed
+      await Promise.allSettled(fileIds.map(id => deleteVoiceSample(id)));
+
       form.reset();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create voice clone';
@@ -104,7 +104,6 @@ export function VoiceCloneForm() {
 
   return (
     <div className="space-y-6 pb-24 max-w-2xl">
-      {/* API Key Warning */}
       {!hasApiKey && (
         <Card className="border-amber-200 bg-amber-50">
           <CardContent className="pt-6">
@@ -120,7 +119,6 @@ export function VoiceCloneForm() {
       )}
 
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        {/* Upload and Record Tabs */}
         <Card>
           <CardHeader>
             <CardTitle>Voice Samples</CardTitle>
@@ -144,7 +142,6 @@ export function VoiceCloneForm() {
           </CardContent>
         </Card>
 
-        {/* Voice Details */}
         <Card>
           <CardHeader>
             <CardTitle>Voice Details</CardTitle>
@@ -169,7 +166,6 @@ export function VoiceCloneForm() {
               rows={3}
             />
 
-            {/* Submit Button */}
             <div className="pt-4 border-t">
               <Button
                 type="submit"
@@ -187,26 +183,6 @@ export function VoiceCloneForm() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Find Similar Voices */}
-        {hasSamples && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Find Similar Voices</CardTitle>
-              <CardDescription>
-                Not satisfied with the cloned voice? Try searching for similar voices using the
-                samples you uploaded or recorded.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button variant="outline" type="button" asChild>
-                <a href="/app/voices?search=similar">
-                  <Search className="mr-2 h-4 w-4" /> Search for Similar Voices
-                </a>
-              </Button>
-            </CardContent>
-          </Card>
-        )}
       </form>
     </div>
   );

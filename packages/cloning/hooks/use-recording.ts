@@ -1,13 +1,13 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { toast } from 'sonner';
 
 import { useMediaRecorder } from '@september/cloning/hooks/use-media-recorder';
 import { useAudioPlayback } from '@september/cloning/hooks/use-audio-playback';
 import { useRecordingState } from '@september/cloning/hooks/use-recording-state';
-import { useVoiceStorage } from '@september/cloning/hooks/use-voice-storage';
+import { useVoiceStorage, UseVoiceStorageReturn } from '@september/cloning/hooks/use-voice-storage';
 import { RecordingStatus } from '../types';
 
 export interface UseRecordingReturn {
@@ -21,30 +21,28 @@ export interface UseRecordingReturn {
   errors: Record<string, string | null>;
 }
 
-export function useRecording(initialRecordings: Record<string, string> = {}): UseRecordingReturn {
-  const [internalErrors, setInternalErrors] = useState<Record<string, string | null>>({});
+export function useRecording(
+  initialRecordings: Record<string, string> = {},
+  sharedStorage?: UseVoiceStorageReturn
+): UseRecordingReturn {
   const mediaRecorder = useMediaRecorder();
   const audioPlayback = useAudioPlayback();
-  const recordingState = useRecordingState(initialRecordings);
-  const { downloadVoiceSample } = useVoiceStorage();
+  const recordingState = useRecordingState(initialRecordings, sharedStorage);
+  const ownStorage = useVoiceStorage();
+  const { downloadVoiceSample } = sharedStorage ?? ownStorage;
 
-  // Connect recording completion to state save
-  const handleRecordingComplete = useCallback(
-    async (id: string, blob: Blob) => {
+  // Register the completion handler in useEffect — not during render
+  useEffect(() => {
+    mediaRecorder.onRecordingComplete(async (id: string, blob: Blob) => {
       try {
         await recordingState.saveRecording(id, blob);
-        setInternalErrors(prev => ({ ...prev, [id]: null }));
         toast.success('Recording saved');
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to save recording';
-        setInternalErrors(prev => ({ ...prev, [id]: message }));
         toast.error(message);
       }
-    },
-    [recordingState]
-  );
-
-  mediaRecorder.onRecordingComplete(handleRecordingComplete);
+    });
+  }, [mediaRecorder, recordingState]);
 
   const playRecording = useCallback(
     async (id: string) => {
@@ -53,15 +51,8 @@ export function useRecording(initialRecordings: Record<string, string> = {}): Us
         if (!sampleId) return;
 
         const blob = await downloadVoiceSample(sampleId);
-        const url = URL.createObjectURL(blob);
-
-        await audioPlayback.playRecording(id, url);
-
-        // Clean up URL after playback completes or errors
-        const audio = new Audio(url);
-        const cleanup = () => URL.revokeObjectURL(url);
-        audio.addEventListener('ended', cleanup);
-        audio.addEventListener('error', cleanup);
+        // Pass Blob directly — useAudioPlayback owns URL creation and revocation
+        await audioPlayback.playRecording(id, blob);
       } catch (err) {
         console.error('Error playing recording:', err);
         toast.error('Failed to play recording');
@@ -72,13 +63,11 @@ export function useRecording(initialRecordings: Record<string, string> = {}): Us
 
   const deleteRecording = useCallback(
     async (id: string) => {
-      setInternalErrors(prev => ({ ...prev, [id]: null }));
       try {
         await recordingState.deleteRecording(id);
         toast.success('Recording deleted');
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to delete recording';
-        setInternalErrors(prev => ({ ...prev, [id]: message }));
         toast.error(message);
         throw err;
       }
@@ -86,7 +75,6 @@ export function useRecording(initialRecordings: Record<string, string> = {}): Us
     [recordingState]
   );
 
-  // Combine status and errors from all hooks
   const status = {
     ...mediaRecorder.recordingStatus,
     ...audioPlayback.playbackStatus,
@@ -95,7 +83,6 @@ export function useRecording(initialRecordings: Record<string, string> = {}): Us
   const errors = {
     ...mediaRecorder.recordingError,
     ...audioPlayback.playbackError,
-    ...internalErrors,
   };
 
   return {
