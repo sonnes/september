@@ -17,6 +17,11 @@ import {
 
 import { Audio as AudioTrack } from '@september/audio/types';
 
+interface AudioOutputDevice {
+  deviceId: string;
+  label: string;
+}
+
 // Context value type
 interface AudioPlayerContextType {
   isPlaying: boolean;
@@ -29,6 +34,11 @@ interface AudioPlayerContextType {
   currentTime: number;
   duration: number;
   seek: (time: number) => void;
+  // Audio output device selection
+  outputDevices: AudioOutputDevice[];
+  isDeviceSelectionSupported: boolean;
+  selectedOutputDeviceId: string;
+  setSelectedOutputDeviceId: (id: string) => void;
 }
 
 const AudioPlayerContext = createContext<AudioPlayerContextType | undefined>(undefined);
@@ -41,11 +51,29 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   );
 }
 
+const AUDIO_OUTPUT_STORAGE_KEY = 'september:audio-output-device';
+
+const isDeviceSelectionSupported =
+  typeof navigator !== 'undefined' &&
+  typeof HTMLAudioElement !== 'undefined' &&
+  'setSinkId' in HTMLAudioElement.prototype;
+
 function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
   const [queue, setQueue] = useState<AudioTrack[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [isMuted, setIsMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [outputDevices, setOutputDevices] = useState<AudioOutputDevice[]>([]);
+  const [selectedOutputDeviceId, setSelectedOutputDeviceIdState] = useState<string>(() =>
+    typeof localStorage !== 'undefined'
+      ? (localStorage.getItem(AUDIO_OUTPUT_STORAGE_KEY) ?? '')
+      : ''
+  );
+  const sinkAudioRef = useRef<HTMLAudioElement | null>(null);
+  // State for sinkId audio element (separate from react-use-audio-player)
+  const [isSinkPlaying, setIsSinkPlaying] = useState(false);
+  const [sinkDuration, setSinkDuration] = useState(0);
+  const [sinkCurrentTime, setSinkCurrentTime] = useState(0);
 
   const {
     load,
@@ -58,7 +86,7 @@ function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
   } = useAudioPlayerContext();
   const synthesis = typeof window !== 'undefined' ? window.speechSynthesis : null;
 
-  // RAF-based time tracking with throttling to reduce re-renders
+  // RAF-based time tracking for react-use-audio-player path
   // Only updates state when position changes by more than threshold
   const rafRef = useRef<number | null>(null);
   const lastReportedTime = useRef<number>(0);
@@ -95,11 +123,40 @@ function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
 
   const seek = useCallback(
     (time: number) => {
-      audioSeek(time);
-      setCurrentTime(time);
+      if (sinkAudioRef.current && isSinkPlaying) {
+        sinkAudioRef.current.currentTime = time;
+        setSinkCurrentTime(time);
+      } else {
+        audioSeek(time);
+        setCurrentTime(time);
+      }
     },
-    [audioSeek]
+    [audioSeek, isSinkPlaying]
   );
+
+  // Enumerate audio output devices; re-enumerate when devices change
+  useEffect(() => {
+    if (!isDeviceSelectionSupported) return;
+    const enumerate = () =>
+      navigator.mediaDevices.enumerateDevices().then(devices => {
+        setOutputDevices(
+          devices
+            .filter(d => d.kind === 'audiooutput' && d.deviceId)
+            .map((d, i) => ({ deviceId: d.deviceId, label: d.label || `Speaker ${i + 1}` }))
+        );
+      });
+    enumerate();
+    navigator.mediaDevices.addEventListener('devicechange', enumerate);
+    return () => navigator.mediaDevices.removeEventListener('devicechange', enumerate);
+  }, []);
+
+  // Stop sinkId audio on unmount
+  useEffect(() => () => { sinkAudioRef.current?.pause(); }, []);
+
+  const setSelectedOutputDeviceId = useCallback((id: string) => {
+    localStorage.setItem(AUDIO_OUTPUT_STORAGE_KEY, id);
+    setSelectedOutputDeviceIdState(id);
+  }, []);
 
   useEffect(() => {
     if (queue.length > 0 && queue[currentIndex]) {
@@ -128,24 +185,40 @@ function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
 
       if (track.blob) {
         const blob = queue[currentIndex].blob;
-
         const src = blob?.startsWith('data:') ? blob : `data:audio/mp3;base64,${blob}`;
-        load(src, {
-          autoplay: true,
-          onend: () => {
-            // When the track ends, move to the next one
-            if (currentIndex < queue.length - 1) {
-              setCurrentIndex(idx => idx + 1);
-            } else {
-              // Optionally, clear the queue or reset index
-              setQueue([]);
-              setCurrentIndex(0);
-            }
-          },
-        });
+
+        const advance = () => {
+          setIsSinkPlaying(false);
+          if (currentIndex < queue.length - 1) {
+            setCurrentIndex(idx => idx + 1);
+          } else {
+            setQueue([]);
+            setCurrentIndex(0);
+          }
+        };
+
+        if (selectedOutputDeviceId) {
+          sinkAudioRef.current?.pause();
+          const audioEl = new Audio(src);
+          sinkAudioRef.current = audioEl;
+          audioEl.onplay = () => setIsSinkPlaying(true);
+          audioEl.onpause = () => setIsSinkPlaying(false);
+          audioEl.ondurationchange = () => setSinkDuration(audioEl.duration);
+          audioEl.ontimeupdate = () => setSinkCurrentTime(audioEl.currentTime);
+          audioEl.onended = advance;
+          (audioEl as HTMLAudioElement & { setSinkId(id: string): Promise<void> })
+            .setSinkId(selectedOutputDeviceId)
+            .then(() => audioEl.play())
+            .catch(err => {
+              console.error('setSinkId failed, falling back to default device:', err);
+              audioEl.play();
+            });
+        } else {
+          load(src, { autoplay: true, onend: advance });
+        }
       }
     }
-  }, [queue, currentIndex, load, synthesis]);
+  }, [queue, currentIndex, load, synthesis, selectedOutputDeviceId]);
 
   // Enqueue a new track
   const enqueue = useCallback(
@@ -166,29 +239,38 @@ function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
     [isMuted]
   );
 
-  // Toggle play/pause
+  // Toggle play/pause — handles both sinkId and react-use-audio-player paths
   const togglePlayPause = useCallback(() => {
-    if (isPlaying) {
+    if (sinkAudioRef.current && isSinkPlaying) {
+      sinkAudioRef.current.pause();
+    } else if (sinkAudioRef.current && !isSinkPlaying && sinkAudioRef.current.src) {
+      sinkAudioRef.current.play();
+    } else if (isPlaying) {
       pause();
     } else {
       play();
     }
-  }, [isPlaying, play, pause]);
+  }, [isPlaying, isSinkPlaying, play, pause]);
 
   const toggleMute = useCallback(() => {
     setIsMuted(prev => !prev);
   }, []);
 
+  // Merge state: sinkId path takes precedence when active
   const value: AudioPlayerContextType = {
-    isPlaying,
+    isPlaying: isSinkPlaying || isPlaying,
     enqueue,
     togglePlayPause,
     current: queue[currentIndex] || undefined,
     isMuted,
     toggleMute,
-    currentTime,
-    duration,
+    currentTime: isSinkPlaying ? sinkCurrentTime : currentTime,
+    duration: isSinkPlaying ? sinkDuration : duration,
     seek,
+    outputDevices,
+    isDeviceSelectionSupported,
+    selectedOutputDeviceId,
+    setSelectedOutputDeviceId,
   };
 
   return <AudioPlayerContext.Provider value={value}>{children}</AudioPlayerContext.Provider>;
@@ -199,4 +281,3 @@ export function useAudioPlayer() {
   if (!ctx) throw new Error('useAudioPlayer must be used within AudioPlayerProvider');
   return ctx;
 }
-

@@ -4,7 +4,7 @@ The Suggestions module provides AI-powered typing suggestions and search history
 
 ## Features
 
-- **AI Suggestions**: Real-time sentence and phrase completions using Gemini API.
+- **AI Suggestions**: Real-time sentence and phrase completions using Gemini API. Refetches for every new message in the conversation; stale in-flight responses are dropped so the list always reflects the latest message.
 - **Search History**: Retrieving past messages as suggestions.
 - **Configurable**: Settings for model selection, system instructions, and content corpus.
 
