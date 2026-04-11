@@ -6,6 +6,7 @@ import { use } from 'react';
 import { ArrowPathIcon, ExclamationTriangleIcon, TvIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 
+import MobileNav from '@/components/nav/mobile';
 import SidebarLayout from '@/components/sidebar/layout';
 import { Button } from '@september/ui/components/button';
 import { Separator } from '@september/ui/components/separator';
@@ -210,19 +211,29 @@ export default function ChatPage({ params }: ChatPageProps) {
   return (
     <>
       <SidebarLayout.Header>
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-        {chat && <EditableChatTitle chatId={chat.id} title={chat.title} />}
-        <div className="ml-auto flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleOpenDisplay}
-            className="flex items-center gap-2"
-          >
+        {/* Mobile: branded top bar with logo, chat title, and display action */}
+        <MobileNav title={chat?.title ?? 'Chat'}>
+          <Button variant="ghost" size="icon" onClick={handleOpenDisplay}>
             <TvIcon className="h-4 w-4" />
-            <span className="hidden sm:inline">Display</span>
           </Button>
+        </MobileNav>
+
+        {/* Desktop: inline sidebar trigger + title + actions */}
+        <div className="hidden md:flex items-center gap-2 w-full">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+          {chat && <EditableChatTitle chatId={chat.id} title={chat.title} />}
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleOpenDisplay}
+              className="flex items-center gap-2"
+            >
+              <TvIcon className="h-4 w-4" />
+              <span>Display</span>
+            </Button>
+          </div>
         </div>
       </SidebarLayout.Header>
       <SidebarLayout.Content>
