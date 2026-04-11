@@ -14,6 +14,43 @@ const kvStore = typeof indexedDB !== 'undefined'
   : null;
 
 export class AudioService {
+  /**
+   * Store a Blob or ArrayBuffer directly — no base64 encoding.
+   *
+   * Prefer this over uploadAudio() for any caller that already has binary data
+   * (file uploads, MediaRecorder blobs, fetch responses). The legacy uploadAudio()
+   * accepts a base64 string for backwards-compat with TTS callers.
+   */
+  async uploadAudioBinary({
+    path,
+    blob,
+    contentType = 'audio/webm',
+    metadata = {},
+  }: {
+    path: string;
+    blob: Blob | ArrayBuffer;
+    contentType?: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<string> {
+    if (!kvStore) return path;
+
+    const buffer = blob instanceof Blob ? await blob.arrayBuffer() : blob;
+    const item: StoredAudioItem = {
+      blob: buffer,
+      contentType,
+      metadata,
+      created_at: new Date().toISOString(),
+      name: path.split('/').pop() || path,
+    };
+
+    await kvStore.set(path, item);
+    return path;
+  }
+
+  /**
+   * Legacy upload path for callers that produce base64 strings (TTS, chats).
+   * New callers should use uploadAudioBinary() instead.
+   */
   async uploadAudio({
     path,
     blob,

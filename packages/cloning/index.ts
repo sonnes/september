@@ -8,5 +8,7 @@ export * from '@september/cloning/components/upload';
 export * from '@september/cloning/components/record';
 export * from '@september/cloning/components/form';
 export * from '@september/cloning/lib/elevenlabs-clone';
+export * from '@september/cloning/lib/collect-sample-ids';
+export * from '@september/cloning/lib/media-recorder-manager';
 export * from '@september/cloning/hooks/use-voice-storage';
 export * from '@september/cloning/types';

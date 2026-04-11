@@ -2,25 +2,27 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { useVoiceStorage } from '@september/cloning/hooks/use-voice-storage';
+import { useVoiceStorage, UseVoiceStorageReturn } from '@september/cloning/hooks/use-voice-storage';
 import { UploadStatus } from '@september/cloning/types';
 
-export function useUploadLogic(initialUploadedFiles: string[] = []) {
+/**
+ * When called from CloningProvider, receives the shared voiceStorage so there
+ * is one AudioService instance and one IndexedDB mount-scan across the tree.
+ * When called standalone, creates its own storage instance.
+ */
+export function useUploadLogic(sharedStorage?: UseVoiceStorageReturn) {
+  const ownStorage = useVoiceStorage();
+  const { uploadVoiceSample, deleteVoiceSample, getVoiceSamples } =
+    sharedStorage ?? ownStorage;
+
   const [status, setStatus] = useState<UploadStatus>('idle');
   const [error, setError] = useState<string | null>(null);
-  const [uploadedFiles, setUploadedFiles] = useState<string[]>(initialUploadedFiles);
-  const { uploadVoiceSample, deleteVoiceSample, getVoiceSamples } = useVoiceStorage();
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
 
   useEffect(() => {
-    const loadFiles = async () => {
-      try {
-        const samples = await getVoiceSamples('upload');
-        setUploadedFiles(samples.map(s => s.id));
-      } catch (err) {
-        console.error('Error loading uploaded files:', err);
-      }
-    };
-    loadFiles();
+    getVoiceSamples('upload')
+      .then(samples => setUploadedFiles(samples.map(s => s.id)))
+      .catch(err => console.error('Error loading uploaded files:', err));
   }, [getVoiceSamples]);
 
   const uploadFile = useCallback(

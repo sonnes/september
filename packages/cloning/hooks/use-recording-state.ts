@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { useVoiceStorage } from '@september/cloning/hooks/use-voice-storage';
+import { useVoiceStorage, UseVoiceStorageReturn } from '@september/cloning/hooks/use-voice-storage';
 
 interface UseRecordingStateReturn {
   recordings: Record<string, string>;
@@ -12,60 +12,44 @@ interface UseRecordingStateReturn {
 }
 
 export function useRecordingState(
-  initialRecordings: Record<string, string> = {}
+  initialRecordings: Record<string, string> = {},
+  sharedStorage?: UseVoiceStorageReturn
 ): UseRecordingStateReturn {
   const [recordings, setRecordings] = useState<Record<string, string>>(initialRecordings);
-  const { uploadVoiceSample, deleteVoiceSample, getVoiceSamples } = useVoiceStorage();
+  const ownStorage = useVoiceStorage();
+  const { uploadVoiceSample, deleteVoiceSample, getVoiceSamples } =
+    sharedStorage ?? ownStorage;
 
-  // Load recordings on mount
   useEffect(() => {
-    const loadRecordings = async () => {
-      try {
-        const samples = await getVoiceSamples('recording');
-        const recordingsMap: Record<string, string> = {};
+    getVoiceSamples('recording')
+      .then(samples => {
+        const map: Record<string, string> = {};
         samples.forEach(sample => {
-          if (sample.sample_id) {
-            recordingsMap[sample.sample_id] = sample.id;
-          }
+          if (sample.sample_id) map[sample.sample_id] = sample.id;
         });
-        setRecordings(recordingsMap);
-      } catch (err) {
-        console.error('Error loading recordings:', err);
-      }
-    };
-    loadRecordings();
+        setRecordings(map);
+      })
+      .catch(err => console.error('Error loading recordings:', err));
   }, [getVoiceSamples]);
 
   const saveRecording = useCallback(
     async (id: string, blob: Blob) => {
-      try {
-        const file = new File([blob], `${id}.webm`, { type: 'audio/webm' });
-        const sampleId = await uploadVoiceSample({ file, type: 'recording', sampleId: id });
-        setRecordings(prev => ({ ...prev, [id]: sampleId }));
-      } catch (err) {
-        console.error('Error saving recording:', err);
-        throw err;
-      }
+      const file = new File([blob], `${id}.webm`, { type: 'audio/webm' });
+      const sampleId = await uploadVoiceSample({ file, type: 'recording', sampleId: id });
+      setRecordings(prev => ({ ...prev, [id]: sampleId }));
     },
     [uploadVoiceSample]
   );
 
   const deleteRecording = useCallback(
     async (id: string) => {
-      try {
-        const sampleId = recordings[id];
-        if (sampleId) {
-          await deleteVoiceSample(sampleId);
-        }
-        setRecordings(prev => {
-          const next = { ...prev };
-          delete next[id];
-          return next;
-        });
-      } catch (err) {
-        console.error('Error deleting recording:', err);
-        throw err;
-      }
+      const sampleId = recordings[id];
+      if (sampleId) await deleteVoiceSample(sampleId);
+      setRecordings(prev => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
     },
     [recordings, deleteVoiceSample]
   );
