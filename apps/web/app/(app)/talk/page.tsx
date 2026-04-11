@@ -2,10 +2,6 @@
 
 import { useCallback } from 'react';
 
-import SidebarLayout from '@/components/sidebar/layout';
-import { Separator } from '@september/ui/components/separator';
-import { SidebarTrigger } from '@september/ui/components/sidebar';
-
 import { useAccountContext } from '@september/account';
 import { TextViewer, TextViewerWords, useAudioPlayer } from '@september/audio';
 import { useCreateAudioMessage } from '@september/chats';
@@ -13,6 +9,10 @@ import { Editor, useEditorContext } from '@september/editor';
 import { KeyboardRenderer, KeyboardToggleButton } from '@september/keyboards';
 import { SpeechSettingsModal } from '@september/speech';
 import { Suggestions } from '@september/suggestions';
+import { Separator } from '@september/ui/components/separator';
+import { SidebarTrigger } from '@september/ui/components/sidebar';
+
+import SidebarLayout from '@/components/sidebar/layout';
 
 export default function TalkPage() {
   const { user } = useAccountContext();

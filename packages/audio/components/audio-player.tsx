@@ -39,6 +39,7 @@ interface AudioPlayerContextType {
   isDeviceSelectionSupported: boolean;
   selectedOutputDeviceId: string;
   setSelectedOutputDeviceId: (id: string) => void;
+  refreshOutputDevices: () => Promise<void>;
 }
 
 const AudioPlayerContext = createContext<AudioPlayerContextType | undefined>(undefined);
@@ -134,21 +135,23 @@ function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
     [audioSeek, isSinkPlaying]
   );
 
-  // Enumerate audio output devices; re-enumerate when devices change
+  const refreshOutputDevices = useCallback(async () => {
+    if (!isDeviceSelectionSupported) return;
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    setOutputDevices(
+      devices
+        .filter(d => d.kind === 'audiooutput' && d.deviceId && d.deviceId !== 'default' && d.deviceId !== 'communications')
+        .map((d, i) => ({ deviceId: d.deviceId, label: d.label || `Speaker ${i + 1}` }))
+    );
+  }, []);
+
+  // Enumerate on mount and whenever devices change
   useEffect(() => {
     if (!isDeviceSelectionSupported) return;
-    const enumerate = () =>
-      navigator.mediaDevices.enumerateDevices().then(devices => {
-        setOutputDevices(
-          devices
-            .filter(d => d.kind === 'audiooutput' && d.deviceId)
-            .map((d, i) => ({ deviceId: d.deviceId, label: d.label || `Speaker ${i + 1}` }))
-        );
-      });
-    enumerate();
-    navigator.mediaDevices.addEventListener('devicechange', enumerate);
-    return () => navigator.mediaDevices.removeEventListener('devicechange', enumerate);
-  }, []);
+    refreshOutputDevices();
+    navigator.mediaDevices.addEventListener('devicechange', refreshOutputDevices);
+    return () => navigator.mediaDevices.removeEventListener('devicechange', refreshOutputDevices);
+  }, [refreshOutputDevices]);
 
   // Stop sinkId audio on unmount
   useEffect(() => () => { sinkAudioRef.current?.pause(); }, []);
@@ -211,7 +214,7 @@ function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
             .then(() => audioEl.play())
             .catch(err => {
               console.error('setSinkId failed, falling back to default device:', err);
-              audioEl.play();
+              audioEl.play().catch(() => {});
             });
         } else {
           load(src, { autoplay: true, onend: advance });
@@ -271,6 +274,7 @@ function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
     isDeviceSelectionSupported,
     selectedOutputDeviceId,
     setSelectedOutputDeviceId,
+    refreshOutputDevices,
   };
 
   return <AudioPlayerContext.Provider value={value}>{children}</AudioPlayerContext.Provider>;
