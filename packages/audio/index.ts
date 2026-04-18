@@ -1,5 +1,6 @@
 export * from '@september/audio/components/audio-player';
 export * from '@september/audio/components/audio-provider';
+export * from '@september/audio/components/audio-output-device-selector';
 export * from '@september/audio/components/text-viewer';
 export * from '@september/audio/components/reel-overlay';
 export {

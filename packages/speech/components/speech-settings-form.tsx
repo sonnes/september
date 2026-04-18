@@ -5,8 +5,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { FormCheckbox, FormSelect, FormSlider } from '@september/ui/components/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@september/ui/components/select';
-import { useAudioPlayer } from '@september/audio';
 import { toast } from 'sonner';
 import { getModelsForProvider, getProvidersForFeature } from '@september/ai';
 import type { Account } from '@september/account';
@@ -98,14 +96,6 @@ export function SpeechSettingsForm({ account, onSubmit, children }: SpeechSettin
   const provider = form.watch('provider');
   const selectedVoiceId = form.watch('voice_id');
   const selectedVoiceName = form.watch('voice_name');
-
-  const {
-    outputDevices,
-    isDeviceSelectionSupported,
-    selectedOutputDeviceId,
-    setSelectedOutputDeviceId,
-    refreshOutputDevices,
-  } = useAudioPlayer();
 
   // Get speech providers from registry
   const speechProviders = useMemo(() => {
@@ -535,62 +525,6 @@ export function SpeechSettingsForm({ account, onSubmit, children }: SpeechSettin
         </div>
       )}
 
-      {/* Audio Output Device */}
-      {isDeviceSelectionSupported && (
-        <div className="border-t border-zinc-200 pt-6">
-          <div className="px-4 mb-4">
-            <h3 className="text-base/7 font-semibold text-zinc-900">Audio Output Device</h3>
-            <p className="mt-1 text-sm/6 text-zinc-600">
-              Choose which speaker plays speech. Saved locally on this device.
-            </p>
-            {provider === 'browser' && (
-              <p className="mt-1 text-sm text-amber-700">
-                Browser TTS uses the system default regardless of this setting.
-              </p>
-            )}
-          </div>
-          <div className="px-4">
-            {outputDevices.length === 0 ? (
-              <p className="text-sm text-zinc-500">
-                No additional devices found. Your browser requires microphone permission to list
-                audio output devices.{' '}
-                <button
-                  type="button"
-                  className="underline hover:text-zinc-700"
-                  onClick={() =>
-                    navigator.mediaDevices
-                      .getUserMedia({ audio: true })
-                      .then(stream => {
-                        stream.getTracks().forEach(t => t.stop());
-                        return refreshOutputDevices();
-                      })
-                      .catch(() => {})
-                  }
-                >
-                  Grant permission
-                </button>
-              </p>
-            ) : (
-              <Select
-                value={selectedOutputDeviceId || '__default__'}
-                onValueChange={(id: string) => setSelectedOutputDeviceId(id === '__default__' ? '' : id)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="System Default" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__default__">System Default</SelectItem>
-                  {outputDevices.map((device: { deviceId: string; label: string }) => (
-                    <SelectItem key={device.deviceId} value={device.deviceId}>
-                      {device.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 

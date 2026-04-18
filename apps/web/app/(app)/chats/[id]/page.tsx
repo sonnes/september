@@ -13,7 +13,7 @@ import { Separator } from '@september/ui/components/separator';
 import { SidebarTrigger } from '@september/ui/components/sidebar';
 
 import { useAccountContext } from '@september/account';
-import { useAudioPlayer } from '@september/audio';
+import { AudioOutputDeviceSelector, useAudioPlayer } from '@september/audio';
 import {
   EditableChatTitle,
   MessageList,
@@ -287,6 +287,7 @@ export default function ChatPage({ params }: ChatPageProps) {
               >
                 <KeyboardToggleButton />
                 <SpeechSettingsModal />
+                <AudioOutputDeviceSelector />
               </Editor>
               <KeyboardRenderer chatId={chatId} onKeyPress={handleKeyPress} />
             </div>

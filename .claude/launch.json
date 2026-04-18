@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "September Web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["-C", "apps/web", "exec", "next", "dev", "--port", "3005"],
+      "port": 3005
+    }
+  ]
+}
