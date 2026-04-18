@@ -13,158 +13,166 @@ export function QwertyKeyboard({ className = '', onKeyPress }: QwertyKeyboardPro
   const [isShiftPressed, setIsShiftPressed] = React.useState(false);
 
   const handleKeyPress = (key: string) => {
-    if (key !== 'SHIFT') {
-      setIsShiftPressed(false);
-    }
-
     if (key === 'SHIFT') {
-      setIsShiftPressed(!isShiftPressed);
-    } else if (key === 'BACKSPACE' || key === 'ENTER' || key === 'SPACE' || /^[0-9]$/.test(key)) {
-      // Special keys and numbers pass through as-is
+      setIsShiftPressed(prev => !prev);
+      return;
+    }
+    if (key === 'BACKSPACE' || key === 'ENTER' || key === 'SPACE' || /^[0-9]$/.test(key)) {
       onKeyPress(key);
     } else {
-      // Letter keys - transform based on SHIFT state
-      const transformedKey = isShiftPressed ? key.toUpperCase() : key.toLowerCase();
-      onKeyPress(transformedKey);
+      onKeyPress(isShiftPressed ? key.toUpperCase() : key.toLowerCase());
     }
+    setIsShiftPressed(false);
   };
 
-  const keyRows = [
-    ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', 'BACKSPACE'],
-    ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'ENTER'],
-    ['Z', 'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '?'],
-    ['😀', 'SPACE', 'SHIFT'],
-  ];
+  const letter = (key: string) => (isShiftPressed ? key : key.toLowerCase());
 
-  const numberRow = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
-
-  // Numpad layout for medium screens and up
   const numpadRows = [['7', '8', '9'], ['4', '5', '6'], ['1', '2', '3'], ['0']];
 
-  const getKeyWidth = (key: string) => {
-    if (key === 'ENTER' || key === 'BACKSPACE') {
-      return 'w-16 sm:w-20'; // Wider for special keys
-    }
-    if (key === 'SPACE' || key === 'SHIFT') {
-      return 'w-16 sm:w-20'; // Wider for special keys
-    }
-    return 'w-8 sm:w-10'; // Standard width for letter keys
-  };
-
-  const getKeyContent = (key: string) => {
-    if (key === 'BACKSPACE') {
-      return (
-        <svg
-          className="w-4 h-4 sm:w-5 sm:h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z"
-          />
-        </svg>
-      );
-    }
-    return key;
-  };
-
   return (
-    <div className={`bg-white mt-2 border-t border-zinc-200 p-2 sm:p-4 ${className}`}>
-      <div className="max-w-4xl mx-auto">
-        {/* Mobile layout - traditional QWERTY with number row */}
-        <div className="md:hidden">
-          {[numberRow, ...keyRows].map((row, rowIndex) => (
-            <div key={rowIndex} className="flex justify-center gap-1 sm:gap-2 mb-1 sm:mb-2">
-              {row.map(key => (
-                <button
-                  key={key}
-                  onClick={() => handleKeyPress(key)}
-                  className={`
-                    ${getKeyWidth(key)}
-                    h-10 sm:h-12
-                    flex items-center justify-center
-                    bg-zinc-100 hover:bg-zinc-200 active:bg-zinc-300
-                    border border-zinc-300 rounded-md
-                    text-sm sm:text-base font-medium text-zinc-800
-                    transition-colors duration-150
-                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
-                    select-none
-                  `}
-                  type="button"
-                >
-                  {getKeyContent(key)}
-                </button>
-              ))}
-            </div>
-          ))}
+    <div className={cn('bg-zinc-100 border-t border-border px-2 pt-2.5 pb-3', className)}>
+      <div className="lg:flex lg:gap-3">
+        <div className="flex-1 flex flex-col gap-2">
+          <Row className="lg:hidden">
+            {['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'].map(k => (
+              <Key key={k} onClick={() => handleKeyPress(k)} variant="letter" flex>
+                {k}
+              </Key>
+            ))}
+          </Row>
+
+          <Row>
+            {['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'].map(k => (
+              <Key key={k} onClick={() => handleKeyPress(k)} variant="letter" flex>
+                {letter(k)}
+              </Key>
+            ))}
+          </Row>
+
+          <Row className="px-[5%]">
+            {['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'].map(k => (
+              <Key key={k} onClick={() => handleKeyPress(k)} variant="letter" flex>
+                {letter(k)}
+              </Key>
+            ))}
+          </Row>
+
+          <Row>
+            <Key
+              onClick={() => handleKeyPress('SHIFT')}
+              variant={isShiftPressed ? 'letter' : 'func'}
+              width="w-14"
+            >
+              <ShiftIcon active={isShiftPressed} />
+            </Key>
+            {['Z', 'X', 'C', 'V', 'B', 'N', 'M'].map(k => (
+              <Key key={k} onClick={() => handleKeyPress(k)} variant="letter" flex>
+                {letter(k)}
+              </Key>
+            ))}
+            <Key onClick={() => handleKeyPress('BACKSPACE')} variant="func" width="w-14">
+              <BackspaceIcon />
+            </Key>
+          </Row>
+
+          <Row>
+            <Key onClick={() => handleKeyPress('😀')} variant="func" width="w-14" className="text-xl">
+              😀
+            </Key>
+            <Key
+              onClick={() => handleKeyPress('SPACE')}
+              variant="letter"
+              flex
+              className="text-sm text-muted-foreground"
+            >
+              space
+            </Key>
+            <Key onClick={() => handleKeyPress('ENTER')} variant="primary" width="w-20" className="text-sm">
+              return
+            </Key>
+          </Row>
         </div>
 
-        {/* Desktop layout - QWERTY with separate numpad */}
-        <div className="hidden md:flex gap-4">
-          {/* Main QWERTY keyboard */}
-          <div className="flex-1">
-            {keyRows.map((row, rowIndex) => (
-              <div key={rowIndex} className="flex justify-center gap-2 mb-2">
-                {row.map(key => (
-                  <button
-                    key={key}
-                    onClick={() => handleKeyPress(key)}
-                    className={cn(
-                      getKeyWidth(key),
-                      `h-12`,
-                      `flex items-center justify-center`,
-                      isShiftPressed && key === 'SHIFT'
-                        ? `bg-zinc-200`
-                        : `bg-zinc-100 hover:bg-zinc-200 active:bg-zinc-300`,
-                      `border border-zinc-300 rounded-md`,
-                      `text-base font-medium text-zinc-800`,
-                      `transition-colors duration-150`,
-                      `focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1`,
-                      `select-none`
-                    )}
-                    type="button"
-                  >
-                    {getKeyContent(key)}
-                  </button>
-                ))}
-              </div>
-            ))}
-          </div>
-
-          {/* Numpad */}
-          <div className="w-32">
-            {numpadRows.map((row, rowIndex) => (
-              <div key={rowIndex} className="flex justify-center gap-2 mb-2">
-                {row.map(key => (
-                  <button
-                    key={key}
-                    onClick={() => handleKeyPress(key)}
-                    className={cn(
-                      `w-12`,
-                      `h-12`,
-                      `flex items-center justify-center`,
-                      `bg-zinc-100 hover:bg-zinc-200 active:bg-zinc-300`,
-                      `border border-zinc-300 rounded-md`,
-                      `text-base font-medium text-zinc-800`,
-                      `transition-colors duration-150`,
-                      `focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1`,
-                      `select-none`
-                    )}
-                    type="button"
-                  >
-                    {getKeyContent(key)}
-                  </button>
-                ))}
-              </div>
-            ))}
-          </div>
+        {/* Numpad — lg and above only */}
+        <div className="hidden lg:flex lg:flex-col lg:gap-2 lg:w-36">
+          {numpadRows.map((row, i) => (
+            <Row key={i}>
+              {row.map(k => (
+                <Key key={k} onClick={() => handleKeyPress(k)} variant="letter" flex>
+                  {k}
+                </Key>
+              ))}
+            </Row>
+          ))}
         </div>
       </div>
     </div>
   );
 }
 
+function Row({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={cn('flex gap-1.5', className)}>{children}</div>;
+}
+
+interface KeyProps {
+  children: React.ReactNode;
+  onClick: () => void;
+  variant: 'letter' | 'func' | 'primary';
+  flex?: boolean;
+  width?: string;
+  className?: string;
+}
+
+function Key({ children, onClick, variant, flex, width, className }: KeyProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'flex items-center justify-center h-10',
+        'rounded-md border text-[15px] font-normal',
+        'select-none cursor-pointer transition-colors',
+        variant === 'letter' && 'bg-background border-border text-foreground hover:bg-zinc-50 active:bg-zinc-100',
+        variant === 'func' && 'bg-zinc-200 border-zinc-200 text-foreground hover:bg-zinc-300 active:bg-zinc-300',
+        variant === 'primary' && 'bg-primary border-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80',
+        flex ? 'flex-1' : width,
+        className
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ShiftIcon({ active }: { active: boolean }) {
+  return (
+    <svg className="w-4 h-4" viewBox="0 0 18 18" fill="none">
+      <path
+        d="M9 1L1.5 8.5H6V14.5H12V8.5H16.5L9 1Z"
+        fill={active ? 'currentColor' : 'none'}
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function BackspaceIcon() {
+  return (
+    <svg className="w-[18px] h-[18px]" viewBox="0 0 22 16" fill="none">
+      <path
+        d="M8 1H20C20.5523 1 21 1.44772 21 2V14C21 14.5523 20.5523 15 20 15H8L1 8L8 1Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M13 5.5L9 10.5M9 5.5L13 10.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
