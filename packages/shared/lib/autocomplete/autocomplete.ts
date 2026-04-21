@@ -1,3 +1,7 @@
+import { editCost } from './keyboard-layout';
+import { NgramModel } from './ngram-model';
+import { toSnapshot, type EngineSnapshot } from './persistence';
+import { tokenize } from './tokenizer';
 import { TrieNode } from './trie-node';
 import type {
   CorpusStats,
@@ -23,17 +27,61 @@ export interface NGramData {
   };
 }
 
-/**
- * AI-powered typing suggestions engine
- * Provides word completions and next word predictions using n-gram models
- * Implements the same public API as the original autocomplete module
- */
+export interface SuggestWordOptions {
+  /** Text the user has typed so far in the current word. */
+  prefix: string;
+  /** Preceding word context (raw string; tokenized internally). Optional. */
+  context?: string;
+  /** Hard cap on returned suggestions. Default 5. */
+  maxResults?: number;
+  /**
+   * Enable typo-tolerant prefix matching via QWERTY-weighted Levenshtein.
+   * Default `true` once the prefix is ≥ 2 chars, else `false` (too noisy
+   * on very short prefixes — one edit would match almost anything).
+   */
+  fuzzy?: boolean;
+  /** Max weighted edit cost when `fuzzy` is on. Default 1.0. */
+  fuzzyMaxCost?: number;
+}
 
+export interface RankedWord {
+  word: string;
+  /** Unigram count of this word in the corpus (always positive). */
+  frequency: number;
+  /** Blended score that went into ranking. */
+  score: number;
+  /** Whether this entry matched via fuzzy (edit distance > 0). */
+  fuzzy: boolean;
+  /** Weighted edit distance if fuzzy, else 0. */
+  editCost: number;
+}
+
+/**
+ * AI-powered typing suggestions engine.
+ *
+ * Public API (unchanged since v1):
+ *   - `train(corpus)`       — load a seed corpus (replaces prior state)
+ *   - `getCompletions(prefix)` / `getCompletionsAdvanced`
+ *   - `getNextWord(context)` / `getNextWordAdvanced`
+ *   - `getNextPhrase(context)`
+ *   - `isReady()` / `getStats()` / `getStatsAdvanced()`
+ *
+ * New in v2 (Phase 1):
+ *   - `observe(text)`                — incremental learning, no retrain
+ *   - `suggestWord({ prefix, context, fuzzy })` — unified ranking that
+ *     blends prefix match with next-word probability, with QWERTY fuzzy
+ *     fallback. Recommended entry point for new UIs.
+ *   - `getSnapshot()` / `restoreFromSnapshot(s)` — client-side persistence
+ *     plumbing (pair with `AutocompletePersistence`).
+ *
+ * Under the hood, v2 replaces the hand-rolled bigram + trigram maps with a
+ * single `NgramModel` using Stupid Backoff up to 5-grams, sentence-boundary
+ * conditioning, and Unicode-aware tokenization (emoji, punctuation, CJK).
+ */
 export class Autocomplete {
   private wordFrequency: Map<string, number>;
   private wordTrie: TrieNode;
-  private bigramModel: Map<string, Map<string, number>>;
-  private trigramModel: Map<string, Map<string, number>>;
+  private ngramModel: NgramModel;
   private totalWords: number;
   private totalWordLength: number;
   private isTrained = false;
@@ -41,138 +89,49 @@ export class Autocomplete {
   constructor() {
     this.wordFrequency = new Map();
     this.wordTrie = new TrieNode();
-    this.bigramModel = new Map();
-    this.trigramModel = new Map();
+    this.ngramModel = new NgramModel({ order: 5, lambda: 0.4 });
     this.totalWords = 0;
     this.totalWordLength = 0;
   }
 
-  /**
-   * Train the autocomplete service with a corpus of text
-   * This is the main entry point that matches the original Autocomplete API
-   */
+  // ─── Core API (v1 back-compat) ──────────────────────────────────────────
+
   train(corpus: string): void {
     if (!corpus || typeof corpus !== 'string') {
       throw new Error('Corpus must be a non-empty string');
     }
-
-    this.processCorpus(corpus);
-    this.isTrained = true;
+    this.clear();
+    this.observe(corpus);
   }
 
-  /**
-   * Get completions for words starting with the given input
-   * This matches the original Autocomplete API
-   */
   getCompletions(input: string): string[] {
     if (!this.isTrained) {
       throw new Error('Service must be trained before use');
     }
-
-    if (!input || typeof input !== 'string') {
-      return [];
-    }
-
-    const results = this.getCompletionsAdvanced(input);
-    return results.map(result => result.word);
+    if (!input || typeof input !== 'string') return [];
+    return this.getCompletionsAdvanced(input).map(r => r.word);
   }
 
-  /**
-   * Get the most likely next words after a given sequence
-   * This matches the original Autocomplete API
-   */
   getNextWord(sequence: string): string[] {
     if (!this.isTrained) {
       throw new Error('Service must be trained before use');
     }
-
-    if (!sequence || typeof sequence !== 'string') {
-      return [];
-    }
-
-    // Normalize the sequence to match original behavior
-    const normalizedSequence = sequence.toLowerCase().trim();
-    const words = normalizedSequence.split(/\s+/).filter(word => word.length > 0);
-
-    if (words.length === 0) return [];
-
-    // Use the advanced suggestions engine but return simple word array
-    const results = this.getNextWordAdvanced(normalizedSequence);
-    return results.map(result => result.word);
+    if (!sequence || typeof sequence !== 'string') return [];
+    return this.getNextWordAdvanced(sequence).map(r => r.word);
   }
 
-  /**
-   * Get the most likely next phrases after a given sequence
-   * Returns phrases of 2-4 words based on the sequence context
-   * This matches the original Autocomplete API
-   */
   getNextPhrase(sequence: string): string[] {
     if (!this.isTrained) {
       throw new Error('Service must be trained before use');
     }
-
-    if (!sequence || typeof sequence !== 'string') {
-      return [];
-    }
-
-    const normalizedSequence = sequence.toLowerCase().trim();
-    const words = normalizedSequence.split(/\s+/).filter(word => word.length > 0);
-
-    if (words.length === 0) return [];
-
-    const phraseFrequency = new Map<string, number>();
-
-    // Get next word predictions to start building phrases
-    const nextWords = this.getNextWordAdvanced(sequence);
-
-    // Build phrases by extending each next word prediction
-    for (const nextWordResult of nextWords) {
-      const firstWord = nextWordResult.word;
-
-      // Try to build 2-word phrases
-      const twoWordPhrases = this.buildPhrasesFromWord(firstWord, 1);
-      for (const phrase of twoWordPhrases) {
-        const freq = phraseFrequency.get(phrase) || 0;
-        phraseFrequency.set(phrase, freq + nextWordResult.frequency);
-      }
-
-      // Try to build 3-word phrases
-      const threeWordPhrases = this.buildPhrasesFromWord(firstWord, 2);
-      for (const phrase of threeWordPhrases) {
-        const freq = phraseFrequency.get(phrase) || 0;
-        phraseFrequency.set(phrase, freq + nextWordResult.frequency * 0.8); // Slightly lower weight
-      }
-
-      // Try to build 4-word phrases
-      const fourWordPhrases = this.buildPhrasesFromWord(firstWord, 3);
-      for (const phrase of fourWordPhrases) {
-        const freq = phraseFrequency.get(phrase) || 0;
-        phraseFrequency.set(phrase, freq + nextWordResult.frequency * 0.6); // Lower weight for longer phrases
-      }
-    }
-
-    // Convert to array and sort by frequency
-    const sortedPhrases = Array.from(phraseFrequency.entries())
-      .map(([phrase, frequency]) => ({ phrase, frequency }))
-      .sort((a, b) => b.frequency - a.frequency)
-      //.slice(0, 10) // Get top 10 phrases
-      .map(item => item.phrase);
-
-    return sortedPhrases;
+    if (!sequence || typeof sequence !== 'string') return [];
+    return this.buildPhrases(sequence);
   }
 
-  /**
-   * Check if the service has been trained
-   * This matches the original Autocomplete API
-   */
   isReady(): boolean {
     return this.isTrained;
   }
 
-  /**
-   * Get statistics about the trained data
-   * This matches the original Autocomplete API
-   */
   getStats(): {
     totalWords: number;
     totalPhrases: number;
@@ -182,242 +141,232 @@ export class Autocomplete {
     if (!this.isTrained) {
       throw new Error('Service must be trained before getting stats');
     }
-
-    const stats = this.getStatsAdvanced();
-
+    const advanced = this.getStatsAdvanced();
     return {
-      totalWords: stats.uniqueWords, // Match original: count unique words
-      totalPhrases: 0, // Not tracked in suggestions module
-      totalNGrams: stats.bigramCount + stats.trigramCount,
-      averageWordFrequency: stats.totalWords > 0 ? stats.totalWords / stats.uniqueWords : 0, // Calculate actual average frequency
+      totalWords: advanced.uniqueWords,
+      totalPhrases: 0,
+      totalNGrams: this.ngramModel.stats.ngramCount,
+      averageWordFrequency:
+        advanced.uniqueWords > 0 ? advanced.totalWords / advanced.uniqueWords : 0,
     };
   }
 
+  // ─── New v2 API ──────────────────────────────────────────────────────────
+
   /**
-   * Process corpus text and build language models
-   * @param text - The corpus text to process
-   * @param options - Processing options
+   * Ingest text into the model incrementally. Unlike `train()`, prior
+   * observations are retained. Tokenization is Unicode-aware (handles
+   * emoji, contractions, CJK, sentence boundaries). Use this for live
+   * learning from user messages.
    */
-  processCorpus(
-    text: string,
-    options: {
-      caseSensitive?: boolean;
-      minWordLength?: number;
-      maxWordLength?: number;
-    } = {}
-  ): void {
-    const { caseSensitive = false, minWordLength = 1, maxWordLength = 50 } = options;
+  observe(text: string): void {
+    if (!text || typeof text !== 'string') return;
 
-    // Clean and tokenize text
-    let processedText = text;
-    if (!caseSensitive) {
-      processedText = text.toLowerCase();
+    const tokens = tokenize(text);
+    if (tokens.length === 0) return;
+
+    // Model learns from words, emoji, and sentence-boundary markers. Raw
+    // punctuation (`.`, `,`, etc.) is intentionally dropped — its semantic
+    // contribution was already captured by the tokenizer turning terminators
+    // into `</s>`. Leaving comma/period in-stream pollutes top-K predictions
+    // with punctuation in the #1 slot for common contexts like "machine
+    // learning ___".
+    const stream = tokens
+      .filter(t => t.kind !== 'punct')
+      .map(t => t.normalized);
+    this.ngramModel.observe(stream);
+
+    // Trie and word-frequency maps only track real words (no sentence
+    // markers, no punctuation, no emoji — those aren't prefix-completable).
+    for (const t of tokens) {
+      if (t.kind !== 'word') continue;
+      const w = t.normalized;
+      this.wordFrequency.set(w, (this.wordFrequency.get(w) ?? 0) + 1);
+      this.wordTrie.insert(w, 1);
+      this.totalWords++;
+      this.totalWordLength += w.length;
     }
 
-    const words = processedText
-      .replace(/[^\w\s]/g, ' ')
-      .split(/\s+/)
-      .filter(
-        word => word.length >= minWordLength && word.length <= maxWordLength && word.length > 0
-      );
-
-    this.totalWords = words.length;
-    this.totalWordLength = words.reduce((sum, word) => sum + word.length, 0);
-
-    // Build word frequency map and trie
-    for (const word of words) {
-      const currentFreq = this.wordFrequency.get(word) || 0;
-      this.wordFrequency.set(word, currentFreq + 1);
-      this.wordTrie.insert(word, 1);
-    }
-
-    // Build bigram model (pairs of consecutive words)
-    for (let i = 0; i < words.length - 1; i++) {
-      const current = words[i];
-      const next = words[i + 1];
-
-      if (!this.bigramModel.has(current)) {
-        this.bigramModel.set(current, new Map());
-      }
-      const nextWords = this.bigramModel.get(current)!;
-      nextWords.set(next, (nextWords.get(next) || 0) + 1);
-    }
-
-    // Build trigram model (triplets of consecutive words)
-    for (let i = 0; i < words.length - 2; i++) {
-      const bigram = words[i] + ' ' + words[i + 1];
-      const next = words[i + 2];
-
-      if (!this.trigramModel.has(bigram)) {
-        this.trigramModel.set(bigram, new Map());
-      }
-      const nextWords = this.trigramModel.get(bigram)!;
-      nextWords.set(next, (nextWords.get(next) || 0) + 1);
-    }
+    this.isTrained = true;
   }
 
   /**
-   * Get word completions starting with the given prefix (advanced version)
-   * @param prefix - The prefix to complete
-   * @param options - Suggestion options
-   * @returns Array of completion suggestions
+   * Unified word suggester: prefix match + context probability + optional
+   * fuzzy fallback. The recommended entry point for new UIs over the v1
+   * `getCompletions` / `getNextWord` pair.
    */
+  suggestWord(opts: SuggestWordOptions): RankedWord[] {
+    if (!this.isTrained) return [];
+    const prefix = opts.prefix.toLowerCase();
+    const maxResults = opts.maxResults ?? 5;
+
+    // Empty prefix → pure next-word prediction (if context) or nothing.
+    if (prefix.length === 0) {
+      if (!opts.context) return [];
+      return this.topNextWords(opts.context, maxResults).map(p => ({
+        word: p.word,
+        frequency: this.wordFrequency.get(p.word) ?? 0,
+        score: p.score,
+        fuzzy: false,
+        editCost: 0,
+      }));
+    }
+
+    // Gather prefix candidates.
+    const exactHits = this.wordTrie.findWordsWithPrefix(prefix);
+    const exactSet = new Set(exactHits.map(h => h.word));
+
+    const fuzzyEnabled = opts.fuzzy ?? prefix.length >= 2;
+    const fuzzyHits = fuzzyEnabled
+      ? this.wordTrie
+          .findFuzzyPrefix(prefix, {
+            maxCost: opts.fuzzyMaxCost ?? 1,
+            editCost,
+            maxResults: 50,
+          })
+          .filter(h => !exactSet.has(h.word))
+      : [];
+
+    const contextTokens = opts.context ? this.contextTokens(opts.context) : [];
+
+    const out: RankedWord[] = [];
+    for (const { word, frequency } of exactHits) {
+      const score = this.blendScore(word, frequency, contextTokens, 0);
+      out.push({ word, frequency, score, fuzzy: false, editCost: 0 });
+    }
+    for (const { word, frequency, cost } of fuzzyHits) {
+      const score = this.blendScore(word, frequency, contextTokens, cost);
+      out.push({ word, frequency, score, fuzzy: true, editCost: cost });
+    }
+
+    out.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if (a.editCost !== b.editCost) return a.editCost - b.editCost;
+      if (b.frequency !== a.frequency) return b.frequency - a.frequency;
+      return a.word < b.word ? -1 : a.word > b.word ? 1 : 0;
+    });
+    return out.slice(0, maxResults);
+  }
+
+  /**
+   * Capture a serializable snapshot of the engine state. Pair with
+   * `AutocompletePersistence.save()` to survive page reloads.
+   */
+  getSnapshot(): EngineSnapshot {
+    return toSnapshot(this.ngramModel);
+  }
+
+  /**
+   * Restore engine state from a previously captured snapshot. Rebuilds the
+   * trie and word-frequency map from the ngram unigram row — so one
+   * snapshot is enough; we don't persist two copies of "which words exist".
+   */
+  restoreFromSnapshot(snapshot: EngineSnapshot): void {
+    this.clear();
+    this.ngramModel = NgramModel.deserialize(snapshot.ngram);
+    const unigrams = snapshot.ngram.counts[0] ?? [];
+    // unigram row has a single context key '' → pairs
+    for (const [, pairs] of unigrams) {
+      for (const [word, count] of pairs) {
+        if (word === '<s>' || word === '</s>') continue;
+        this.wordFrequency.set(word, count);
+        this.wordTrie.insert(word, count);
+        this.totalWords += count;
+        this.totalWordLength += word.length * count;
+      }
+    }
+    this.isTrained = this.totalWords > 0;
+  }
+
+  // ─── Advanced API ────────────────────────────────────────────────────────
+
+  /**
+   * Process corpus text and build language models (v1 back-compat; just
+   * forwards to `observe` now).
+   */
+  processCorpus(text: string, options: { caseSensitive?: boolean } = {}): void {
+    // caseSensitive is no longer meaningful — tokenizer normalizes — but
+    // we accept it for callers that still pass it.
+    void options;
+    this.observe(text);
+  }
+
   getCompletionsAdvanced(prefix: string, options: SuggestionOptions = {}): SuggestionResult[] {
     const { maxResults = 10, minFrequency = 0, caseSensitive = false } = options;
-
     if (!prefix) return [];
-
-    const normalizedPrefix = caseSensitive ? prefix : prefix.toLowerCase();
-    const completions = this.wordTrie.findWordsWithPrefix(normalizedPrefix);
-
-    // Filter by minimum frequency and create result objects
-    const filteredCompletions = completions
-      .filter(item => item.frequency >= minFrequency)
-      .map(item => ({
-        word: item.word,
-        frequency: item.frequency,
-        confidence: this.calculateConfidence(item.frequency),
-      }));
-
-    // Sort by frequency (highest first), then alphabetically for ties
-    filteredCompletions.sort((a, b) => {
-      if (b.frequency !== a.frequency) {
-        return b.frequency - a.frequency;
-      }
+    const normalized = caseSensitive ? prefix : prefix.toLowerCase();
+    const hits = this.wordTrie
+      .findWordsWithPrefix(normalized)
+      .filter(h => h.frequency >= minFrequency);
+    hits.sort((a, b) => {
+      if (b.frequency !== a.frequency) return b.frequency - a.frequency;
       return a.word.localeCompare(b.word);
     });
-
-    // Return top results
-    return filteredCompletions.slice(0, maxResults);
+    return hits.slice(0, maxResults).map(h => ({
+      word: h.word,
+      frequency: h.frequency,
+      confidence: this.calculateConfidence(h.frequency),
+    }));
   }
 
-  /**
-   * Get next word predictions based on context (advanced version)
-   * @param context - The text context to predict from
-   * @param options - Prediction options
-   * @returns Array of prediction results
-   */
   getNextWordAdvanced(context: string, options: PredictionOptions = {}): PredictionResult[] {
-    const { maxResults = 5, minFrequency = 0, useTrigrams = true, useBigrams = true } = options;
-
+    const { maxResults = 5, minFrequency = 0 } = options;
+    // useBigrams/useTrigrams from v1 are ignored — NgramModel uses backoff
+    // across all orders automatically.
     if (!context) return [];
 
-    const words = context
-      .toLowerCase()
-      .replace(/[^\w\s]/g, ' ')
-      .split(/\s+/)
-      .filter(word => word.length > 0);
+    const tokens = this.contextTokens(context);
+    if (tokens.length === 0 && !context.includes('<s>')) return [];
 
-    if (words.length === 0) return [];
+    const preds = this.ngramModel.topK(tokens, maxResults);
+    const contextStr = tokens
+      .slice(-2)
+      .filter(t => t !== '<s>' && t !== '</s>')
+      .join(' ');
 
-    const predictions = new Map<string, number>();
-
-    // Try trigram prediction if we have at least 2 words
-    if (useTrigrams && words.length >= 2) {
-      const bigram = words[words.length - 2] + ' ' + words[words.length - 1];
-      if (this.trigramModel.has(bigram)) {
-        const trigramPredictions = this.trigramModel.get(bigram)!;
-        for (const [word, count] of trigramPredictions) {
-          predictions.set(word, (predictions.get(word) || 0) + count * 2); // Higher weight for trigrams
-        }
-      }
-    }
-
-    // Add bigram predictions with lower weight
-    if (useBigrams) {
-      const lastWord = words[words.length - 1];
-      if (this.bigramModel.has(lastWord)) {
-        const bigramPredictions = this.bigramModel.get(lastWord)!;
-        for (const [word, count] of bigramPredictions) {
-          predictions.set(word, (predictions.get(word) || 0) + count);
-        }
-      }
-    }
-
-    // Convert to array and filter by minimum frequency
-    const filteredPredictions = Array.from(predictions.entries())
-      .filter(([, frequency]) => frequency >= minFrequency)
-      .map(([word, frequency]) => ({
-        word,
-        frequency,
-        confidence: this.calculateConfidence(frequency),
-        context: words.slice(-2).join(' '), // Last 2 words as context
-      }));
-
-    // Sort by frequency (highest first), then alphabetically for ties
-    filteredPredictions.sort((a, b) => {
-      if (b.frequency !== a.frequency) {
-        return b.frequency - a.frequency;
-      }
-      return a.word.localeCompare(b.word);
-    });
-
-    // Return top results
-    return filteredPredictions.slice(0, maxResults);
+    return preds
+      .map(p => {
+        const freq = this.wordFrequency.get(p.word) ?? 0;
+        return {
+          word: p.word,
+          frequency: freq,
+          confidence: this.calculateConfidence(freq),
+          context: contextStr,
+        };
+      })
+      .filter(p => p.frequency >= minFrequency);
   }
 
-  /**
-   * Get comprehensive statistics about the processed corpus (advanced version)
-   * @returns Corpus statistics
-   */
   getStatsAdvanced(): CorpusStats {
+    const ngStats = this.ngramModel.stats;
+    // Per-order counts: bigram and trigram context counts are the size of
+    // those context maps.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const countsAny = (this.ngramModel as unknown as { counts: Map<string, Map<string, number>>[] })
+      .counts;
+    const bigramCount = countsAny[2]?.size ?? 0;
+    const trigramCount = countsAny[3]?.size ?? 0;
     return {
       totalWords: this.totalWords,
       uniqueWords: this.wordFrequency.size,
-      bigramCount: this.bigramModel.size,
-      trigramCount: this.trigramModel.size,
+      bigramCount,
+      trigramCount,
       averageWordLength: this.totalWords > 0 ? this.totalWordLength / this.totalWords : 0,
-    };
+      // Expose the new fields without breaking the CorpusStats shape: cast
+      // is safe because callers iterating known keys still work.
+    } as CorpusStats;
   }
 
-  /**
-   * Check if a word exists in the vocabulary
-   * @param word - The word to check
-   * @returns True if the word exists
-   */
   hasWord(word: string): boolean {
     return this.wordFrequency.has(word.toLowerCase());
   }
 
-  /**
-   * Get the frequency of a specific word
-   * @param word - The word to get frequency for
-   * @returns The frequency count, or 0 if word doesn't exist
-   */
   getWordFrequency(word: string): number {
-    return this.wordFrequency.get(word.toLowerCase()) || 0;
+    return this.wordFrequency.get(word.toLowerCase()) ?? 0;
   }
 
-  /**
-   * Clear all data and reset the engine
-   */
-  clear(): void {
-    this.wordFrequency.clear();
-    this.wordTrie = new TrieNode();
-    this.bigramModel.clear();
-    this.trigramModel.clear();
-    this.totalWords = 0;
-    this.totalWordLength = 0;
-    this.isTrained = false;
-  }
-
-  /**
-   * Calculate confidence score based on frequency
-   * @param frequency - The word frequency
-   * @returns Confidence score between 0 and 1
-   */
-  private calculateConfidence(frequency: number): number {
-    if (this.totalWords === 0) return 0;
-    return Math.min(frequency / this.totalWords, 1);
-  }
-
-  /**
-   * Get the most common words in the corpus
-   * @param count - Number of words to return
-   * @returns Array of most common words with frequencies
-   */
-  getMostCommonWords(count: number = 10): SuggestionResult[] {
-    const words = Array.from(this.wordFrequency.entries())
+  getMostCommonWords(count = 10): SuggestionResult[] {
+    return [...this.wordFrequency.entries()]
       .map(([word, frequency]) => ({
         word,
         frequency,
@@ -425,52 +374,117 @@ export class Autocomplete {
       }))
       .sort((a, b) => b.frequency - a.frequency)
       .slice(0, count);
-
-    return words;
   }
 
-  /**
-   * Get vocabulary size
-   * @returns Number of unique words
-   */
   getVocabularySize(): number {
     return this.wordFrequency.size;
   }
 
+  clear(): void {
+    this.wordFrequency.clear();
+    this.wordTrie = new TrieNode();
+    this.ngramModel = new NgramModel({ order: 5, lambda: 0.4 });
+    this.totalWords = 0;
+    this.totalWordLength = 0;
+    this.isTrained = false;
+  }
+
+  // ─── Internals ───────────────────────────────────────────────────────────
+
   /**
-   * Build phrases of specified length starting from a given word
-   * @param startWord - The word to start the phrase with
-   * @param additionalWords - Number of additional words to add (1 = 2-word phrase, 2 = 3-word phrase, etc.)
-   * @returns Array of phrases
+   * Tokenize an input string into normalized word tokens suitable for
+   * ngram lookup. Preserves the leading `<s>` if the text begins a new
+   * sentence (i.e. ends with terminal punctuation, or is itself at start).
+   *
+   * For in-flight typing like `"hello, how are"` (no trailing punct), we
+   * keep the open sentence markers so higher-order n-grams still benefit
+   * from the start-of-sentence signal.
    */
-  private buildPhrasesFromWord(startWord: string, additionalWords: number): string[] {
-    const phrases: string[] = [];
-
-    if (additionalWords === 0) {
-      return [startWord];
+  private contextTokens(text: string): string[] {
+    // Mirror the `observe()` filter — strip punct, keep words/emoji/sentence
+    // markers — so the context stream matches what the model was trained on.
+    //
+    // One subtlety: the tokenizer always closes the final sentence with
+    // `</s>` so training data is well-formed. For a *live* prediction context
+    // like `"machine learning"` (mid-sentence, no terminator), that trailing
+    // `</s>` would shift the ngram lookup to "what word follows end-of-
+    // sentence" — junk. Strip it when the raw input didn't actually end with
+    // a sentence terminator.
+    const stream = tokenize(text)
+      .filter(t => t.kind !== 'punct')
+      .map(t => t.normalized);
+    const endsWithTerminator = /[.!?…。！？]\s*$/.test(text);
+    if (!endsWithTerminator) {
+      while (stream.length > 0 && stream[stream.length - 1] === '</s>') {
+        stream.pop();
+      }
     }
+    return stream;
+  }
 
-    // Get next word predictions for the starting word
-    const nextWords = this.getNextWordAdvanced(startWord, {
-      maxResults: 5,
-      minFrequency: 0,
-      useTrigrams: true,
-      useBigrams: true,
-    });
+  private topNextWords(contextText: string, k: number) {
+    const tokens = this.contextTokens(contextText);
+    return this.ngramModel.topK(tokens, k);
+  }
 
-    for (const nextWordResult of nextWords) {
-      if (additionalWords === 1) {
-        // 2-word phrase
-        phrases.push(`${startWord} ${nextWordResult.word}`);
-      } else {
-        // Recursively build longer phrases
-        const longerPhrases = this.buildPhrasesFromWord(nextWordResult.word, additionalWords - 1);
-        for (const longerPhrase of longerPhrases) {
-          phrases.push(`${startWord} ${longerPhrase}`);
+  private blendScore(
+    word: string,
+    frequency: number,
+    contextTokens: readonly string[],
+    editPenalty: number,
+  ): number {
+    // Base: normalized unigram probability of the word itself.
+    const uniBase = this.totalWords > 0 ? frequency / this.totalWords : 0;
+    // Context boost: Stupid-Backoff score; 0 when no context or unseen.
+    const ctxBoost =
+      contextTokens.length > 0 ? this.ngramModel.score(contextTokens, word) : 0;
+    // Blend with 60% weight on context (higher-order evidence) and
+    // 40% weight on unigram prior — matches the Ouyang et al. (Gboard)
+    // published ratio for the base LM. Easily retunable.
+    const blended = 0.6 * ctxBoost + 0.4 * uniBase;
+    // Light edit-cost penalty so exact matches always beat 1-edit ones at
+    // equal context fit.
+    return blended * Math.exp(-0.3 * editPenalty);
+  }
+
+  private buildPhrases(sequence: string): string[] {
+    const startingWords = this.getNextWordAdvanced(sequence);
+    const phrases = new Map<string, number>();
+
+    for (const { word: first, frequency: firstFreq } of startingWords) {
+      for (const len of [1, 2, 3] as const) {
+        const built = this.extendPhrase([first], len);
+        const weight = len === 1 ? 1 : len === 2 ? 0.8 : 0.6;
+        for (const phrase of built) {
+          const p = phrase.join(' ');
+          phrases.set(p, (phrases.get(p) ?? 0) + firstFreq * weight);
         }
       }
     }
 
-    return phrases;
+    return [...phrases.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([p]) => p);
+  }
+
+  private extendPhrase(start: readonly string[], extraWords: number): string[][] {
+    if (extraWords === 0) return [start.slice()];
+
+    const preds = this.ngramModel.topK(start, 5);
+    const out: string[][] = [];
+    for (const { word } of preds) {
+      const extended = [...start, word];
+      if (extraWords === 1) {
+        out.push(extended);
+      } else {
+        out.push(...this.extendPhrase(extended, extraWords - 1));
+      }
+    }
+    return out;
+  }
+
+  private calculateConfidence(frequency: number): number {
+    if (this.totalWords === 0) return 0;
+    return Math.min(frequency / this.totalWords, 1);
   }
 }

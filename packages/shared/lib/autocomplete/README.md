@@ -1,19 +1,53 @@
 # Typing Suggestions Library
 
-A TypeScript library for AI-powered typing suggestions, providing intelligent word completions and next word predictions using n-gram language models. The library now provides both a simple Autocomplete-style API and an advanced API with rich features.
+A TypeScript library for AI-powered typing suggestions, providing intelligent word completions and next word predictions using n-gram language models. Ships as `@september/shared/lib/autocomplete`.
+
+> **Context.** This library powers typing assistance in an assistive
+> communication app for people with ALS/MND. Keystroke savings are the
+> primary success metric — see `plans/README.md` for the multi-phase upgrade
+> roadmap.
+
+## v2 (Phase 1) — what's new
+
+1. **5-gram + Stupid Backoff LM** (`ngram-model.ts`). Replaces the
+   hand-rolled bigram/trigram maps. Automatically backs off from 5→1-gram
+   with λ=0.4, so unseen high-order contexts degrade gracefully instead of
+   disappearing.
+2. **Unicode-aware tokenizer** (`tokenizer.ts`). Uses `Intl.Segmenter` —
+   correctly handles `don't`, emoji graphemes (including ZWJ sequences),
+   CJK, and sentence boundaries. Sentence-initial `<s>` conditioning means
+   "hey" / "sorry" / etc. rank naturally at message start.
+3. **Fuzzy prefix matching** (`trie-node.ts::findFuzzyPrefix`). QWERTY-
+   proximity-weighted Levenshtein on the trie with a frozen prefix cost
+   (so "hel" → "hello" is cost 0, not penalized for the extra "lo").
+   Pluggable via `keyboard-layout.ts::editCost`.
+4. **Incremental `observe(text)` API.** No more full retrain on every
+   message — new messages are folded in with a sliding window.
+5. **IndexedDB persistence** (`persistence.ts`). One-time cold start per
+   seed corpus; subsequent mounts restore from a snapshot in O(ms).
+6. **Unified `suggestWord({ prefix, context, fuzzy })`.** Blends prefix
+   ranking with context n-gram probability and optional QWERTY fuzzy
+   fallback. Recommended entry point for new UIs.
+
+All pre-v2 APIs (`train`, `getCompletions`, `getNextWord`, `getNextPhrase`,
+`isReady`, `getStats`) keep their signatures and continue to work.
 
 ## Features
 
-- **Word Completions**: Complete partial words based on prefix matching
-- **Next Word Predictions**: Predict the next word using bigram and trigram models
-- **Next Phrase Predictions**: Predict common phrases and word combinations
-- **Trie Data Structure**: Efficient prefix matching for word completions
-- **N-gram Models**: Bigram and trigram language models for context-aware predictions
-- **Frequency-based Ranking**: Suggestions ranked by word frequency and confidence
-- **Customizable Options**: Configurable parameters for filtering and sorting
-- **Utility Functions**: Text processing, similarity matching, and corpus management
-- **Sample Data**: Pre-built corpora for testing and demonstration
-- **Dual API**: Simple Autocomplete-style API and advanced feature-rich API
+- **Word Completions**: Complete partial words based on prefix matching,
+  with optional QWERTY-weighted fuzzy typo tolerance.
+- **Next Word Predictions**: Predict the next word using up to 5-grams with
+  Stupid Backoff smoothing.
+- **Next Phrase Predictions**: Predict common phrases and word combinations.
+- **Trie Data Structure**: Efficient prefix matching with a built-in
+  Levenshtein-on-trie fuzzy search.
+- **Incremental Learning**: `observe(text)` folds new observations into
+  the model without retraining.
+- **Client-side Persistence**: `AutocompletePersistence` + `getSnapshot` /
+  `restoreFromSnapshot` give free cold-start speedup.
+- **Sample Data**: Pre-built corpora for testing and demonstration.
+- **Backward-compatible API**: Simple Autocomplete-style methods alongside
+  the new feature-rich API.
 
 ## Installation
 
