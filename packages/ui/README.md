@@ -21,14 +21,18 @@ All components follow shadcn/ui patterns and are built on Radix primitives:
 | `Avatar` | User profile images |
 | `Badge` | Status indicators |
 | `Button` | Primary action element |
+| `Callout` | Tonal banner (info / warning / success / destructive) |
 | `Card` | Content containers |
 | `Checkbox` | Boolean inputs |
 | `Command` | Command palette / search |
 | `Dialog` | Modal overlays |
 | `DropdownMenu` | Action menus |
+| `EmptyState` | Empty-list illustration with title + action |
+| `ErrorState` | Error block with icon, message, and retry |
 | `Form` | Form components with react-hook-form |
 | `Input` | Text inputs |
 | `Label` | Form labels |
+| `LoadingState` | Page or inline spinner + label |
 | `Progress` | Progress indicators |
 | `ScrollArea` | Custom scrollbars |
 | `Select` | Dropdown selection |

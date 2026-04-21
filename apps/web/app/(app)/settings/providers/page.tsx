@@ -1,16 +1,9 @@
 'use client';
 
+import { Callout } from '@september/ui/components/callout';
+
+import { PageHeader, PageShell, PageTitle } from '@/components/layout';
 import SidebarLayout from '@/components/sidebar/layout';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@september/ui/components/breadcrumb';
-import { Separator } from '@september/ui/components/separator';
-import { SidebarTrigger } from '@september/ui/components/sidebar';
 
 import AISettingsForm from './form';
 
@@ -18,22 +11,24 @@ export default function AISettingsPage() {
   return (
     <>
       <SidebarLayout.Header>
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/settings">Settings</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>AI Providers</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
+        <PageHeader
+          breadcrumbs={[
+            { label: 'Settings', href: '/settings' },
+            { label: 'Providers' },
+          ]}
+        />
       </SidebarLayout.Header>
       <SidebarLayout.Content>
-        <AISettingsForm />
+        <PageShell width="form">
+          <PageTitle
+            title="Providers"
+            description="Configure AI providers to power suggestions, transcription, and voice synthesis."
+          />
+          <Callout tone="warning" title="Security note">
+            API keys are sensitive credentials. Never share them with others.
+          </Callout>
+          <AISettingsForm />
+        </PageShell>
       </SidebarLayout.Content>
     </>
   );

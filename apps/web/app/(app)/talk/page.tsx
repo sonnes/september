@@ -9,9 +9,8 @@ import { Editor, useEditorContext } from '@september/editor';
 import { KeyboardRenderer, KeyboardToggleButton } from '@september/keyboards';
 import { SpeechSettingsModal } from '@september/speech';
 import { Suggestions } from '@september/suggestions';
-import { Separator } from '@september/ui/components/separator';
-import { SidebarTrigger } from '@september/ui/components/sidebar';
 
+import { PageHeader, PageShell, PageTitle } from '@/components/layout';
 import SidebarLayout from '@/components/sidebar/layout';
 
 export default function TalkPage() {
@@ -54,10 +53,8 @@ export default function TalkPage() {
         } else if (key === 'SPACE') {
           return text + ' ';
         } else if (/^[0-9]$/.test(key)) {
-          // Numbers should be added as-is
           return text + key;
         } else {
-          // Regular characters (already transformed by keyboard component if needed)
           return text + key;
         }
       });
@@ -68,21 +65,27 @@ export default function TalkPage() {
   return (
     <>
       <SidebarLayout.Header>
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+        <PageHeader breadcrumbs={[{ label: 'Talk' }]} />
       </SidebarLayout.Header>
       <SidebarLayout.Content>
-        <div className="pb-20">
-          {current?.alignment && (
-            <TextViewer alignment={current.alignment}>
-              <TextViewerWords className="text-foreground wrap-break-word" />
-            </TextViewer>
-          )}
-        </div>
+        <PageShell width="full">
+          <PageTitle
+            title="Talk"
+            description="Speak a one-off message without starting a chat."
+          />
+
+          <div className="pb-24">
+            {current?.alignment && (
+              <TextViewer alignment={current.alignment}>
+                <TextViewerWords className="wrap-break-word text-foreground" />
+              </TextViewer>
+            )}
+          </div>
+        </PageShell>
 
         {/* Sticky Suggestions + Editor */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 md:left-(--sidebar-width) z-10">
-          <div className="max-w-4xl mx-auto flex flex-col gap-3">
+        <div className="fixed right-0 bottom-0 left-0 z-10 p-4 md:left-(--sidebar-width)">
+          <div className="mx-auto flex max-w-4xl flex-col gap-3">
             <Suggestions />
             <Editor
               placeholder="Type a message..."

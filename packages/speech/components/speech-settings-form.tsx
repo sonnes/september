@@ -131,7 +131,7 @@ export function SpeechSettingsForm({ account, onSubmit, children }: SpeechSettin
         <div className="rounded-md bg-amber-50 p-3 border border-amber-200">
           <p className="text-sm text-amber-800">
             <strong>API Key Required:</strong> You need to configure your {provider} API key in{' '}
-            <a href="/settings/ai" className="underline hover:text-amber-900">
+            <a href="/settings/providers" className="underline hover:text-amber-900">
               AI Settings
             </a>{' '}
             to use this speech provider.

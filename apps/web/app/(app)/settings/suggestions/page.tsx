@@ -1,43 +1,41 @@
 'use client';
 
+import { useAccountContext } from '@september/account';
+import { Callout } from '@september/ui/components/callout';
+
+import { PageHeader, PageShell, PageTitle } from '@/components/layout';
 import SidebarLayout from '@/components/sidebar/layout';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@september/ui/components/breadcrumb';
-import { Separator } from '@september/ui/components/separator';
-import { SidebarTrigger } from '@september/ui/components/sidebar';
 
 import SuggestionsSettingsForm from './form';
 
 export default function SuggestionsSettingsPage() {
+  const { account } = useAccountContext();
+  const needsKey = !account?.ai_providers?.gemini?.api_key;
+
   return (
     <>
       <SidebarLayout.Header>
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/settings">Settings</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/settings/ai">AI Providers</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Suggestions</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
+        <PageHeader
+          breadcrumbs={[
+            { label: 'Settings', href: '/settings' },
+            { label: 'Suggestions' },
+          ]}
+        />
       </SidebarLayout.Header>
       <SidebarLayout.Content>
-        <SuggestionsSettingsForm />
+        <PageShell width="form">
+          <PageTitle
+            title="Suggestions"
+            description="Configure AI-powered typing suggestions to help you communicate faster."
+          />
+          {needsKey && (
+            <Callout tone="warning" title="API key required">
+              AI suggestions require a Gemini API key. Configure it in{' '}
+              <a href="/settings/providers">AI Providers</a> to enable suggestions.
+            </Callout>
+          )}
+          <SuggestionsSettingsForm />
+        </PageShell>
       </SidebarLayout.Content>
     </>
   );

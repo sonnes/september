@@ -8,10 +8,16 @@ import { useAccountContext } from '@september/account';
 import { CloningProvider, useVoiceStorageContext } from '@september/cloning';
 import { ElevenLabsVoiceClone, SimilarVoice } from '@september/cloning/lib/elevenlabs-clone';
 import { Button } from '@september/ui/components/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@september/ui/components/card';
-import { Separator } from '@september/ui/components/separator';
-import { SidebarTrigger } from '@september/ui/components/sidebar';
+import { Callout } from '@september/ui/components/callout';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@september/ui/components/card';
 
+import { PageHeader, PageShell, PageTitle } from '@/components/layout';
 import SidebarLayout from '@/components/sidebar/layout';
 
 function SimilarVoicesContent() {
@@ -31,7 +37,6 @@ function SimilarVoicesContent() {
     [account]
   );
 
-  // Check if the user has any stored samples on mount
   useEffect(() => {
     if (!isSimilarSearch) return;
     getVoiceSamples().then(samples => setHasSamples(samples.length > 0));
@@ -70,7 +75,6 @@ function SimilarVoicesContent() {
     }
   }, [elevenlabsApiKey, getVoiceSamples, downloadVoiceSample]);
 
-  // Auto-trigger the search when the page loads with ?search=similar
   const didAutoSearch = useRef(false);
   useEffect(() => {
     if (isSimilarSearch && elevenlabsApiKey && hasSamples && !didAutoSearch.current) {
@@ -81,43 +85,34 @@ function SimilarVoicesContent() {
 
   if (!isSimilarSearch) {
     return (
-      <div className="space-y-6 max-w-2xl">
-        <Card>
-          <CardHeader>
-            <CardTitle>Voices</CardTitle>
-            <CardDescription>
-              Find ElevenLabs library voices that sound similar to yours.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild>
-              <a href="/voices?search=similar">Find Similar Voices</a>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Find similar voices</CardTitle>
+          <CardDescription>
+            Find ElevenLabs library voices that sound closest to yours.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button asChild>
+            <a href="/voices?search=similar">Find similar voices</a>
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6">
       {!elevenlabsApiKey && (
-        <Card className="border-amber-200 bg-amber-50">
-          <CardContent className="pt-6">
-            <p className="text-sm text-amber-800">
-              <strong>API Key Required:</strong> Configure your ElevenLabs API key in{' '}
-              <a href="/settings/ai" className="underline hover:text-amber-900">
-                AI Settings
-              </a>{' '}
-              to search for similar voices.
-            </p>
-          </CardContent>
-        </Card>
+        <Callout tone="warning" title="API key required">
+          Configure your ElevenLabs API key in{' '}
+          <a href="/settings/providers">AI Providers</a> to search for similar voices.
+        </Callout>
       )}
 
       <Card>
         <CardHeader>
-          <CardTitle>Find Similar Voices</CardTitle>
+          <CardTitle>Find similar voices</CardTitle>
           <CardDescription>
             ElevenLabs library voices that sound closest to your recorded samples.
           </CardDescription>
@@ -139,13 +134,13 @@ function SimilarVoicesContent() {
             onClick={handleSearch}
             disabled={isSearching || !elevenlabsApiKey || hasSamples === false}
           >
-            {isSearching ? 'Searching...' : 'Search Again'}
+            {isSearching ? 'Searching...' : 'Search again'}
           </Button>
 
           {results.length > 0 && (
             <ul className="mt-4 divide-y">
               {results.map(voice => (
-                <li key={voice.voice_id} className="py-4 space-y-1">
+                <li key={voice.voice_id} className="space-y-1 py-4">
                   <div className="flex items-center justify-between gap-4">
                     <div className="space-y-0.5">
                       <p className="text-sm font-medium">{voice.name}</p>
@@ -187,13 +182,18 @@ export default function VoicesPage() {
   return (
     <>
       <SidebarLayout.Header>
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+        <PageHeader breadcrumbs={[{ label: 'Voices' }]} />
       </SidebarLayout.Header>
       <SidebarLayout.Content>
-        <CloningProvider>
-          <SimilarVoicesContent />
-        </CloningProvider>
+        <PageShell width="form">
+          <PageTitle
+            title="Voices"
+            description="Browse and match ElevenLabs library voices to your recorded samples."
+          />
+          <CloningProvider>
+            <SimilarVoicesContent />
+          </CloningProvider>
+        </PageShell>
       </SidebarLayout.Content>
     </>
   );

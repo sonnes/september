@@ -1,18 +1,9 @@
 'use client';
 
-import SidebarLayout from '@/components/sidebar/layout';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@september/ui/components/breadcrumb';
-import { Separator } from '@september/ui/components/separator';
-import { SidebarTrigger } from '@september/ui/components/sidebar';
-
 import { SpeechProvider } from '@september/speech';
+
+import { PageHeader, PageShell, PageTitle } from '@/components/layout';
+import SidebarLayout from '@/components/sidebar/layout';
 
 import VoicesSettingsForm from './form';
 
@@ -20,24 +11,23 @@ export default function SpeechSettingsPage() {
   return (
     <>
       <SidebarLayout.Header>
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/settings">Settings</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Speech</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
+        <PageHeader
+          breadcrumbs={[
+            { label: 'Settings', href: '/settings' },
+            { label: 'Speech' },
+          ]}
+        />
       </SidebarLayout.Header>
       <SidebarLayout.Content>
-        <SpeechProvider>
-          <VoicesSettingsForm />
-        </SpeechProvider>
+        <PageShell width="wide">
+          <PageTitle
+            title="Speech"
+            description="Pick the provider, model, and voice used to speak your messages."
+          />
+          <SpeechProvider>
+            <VoicesSettingsForm />
+          </SpeechProvider>
+        </PageShell>
       </SidebarLayout.Content>
     </>
   );

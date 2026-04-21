@@ -4,9 +4,8 @@ import React, { use } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { DocumentEditor, EditableDocumentTitle, useDocuments } from '@september/documents';
-import { Button } from '@september/ui/components/button';
+import { ErrorState } from '@september/ui/components/error-state';
 import { Separator } from '@september/ui/components/separator';
 import { SidebarTrigger } from '@september/ui/components/sidebar';
 
@@ -24,12 +23,10 @@ export default function DocumentPage({ params }: DocumentPageProps) {
 
   const { documents, isLoading } = useDocuments();
 
-  // Find the current document
   const current = React.useMemo(() => {
     return id ? documents.find(doc => doc.id === id) || null : null;
   }, [documents, id]);
 
-  // Loading state for document ID resolution
   const isInitializing = !id || isLoading;
 
   return (
@@ -41,51 +38,25 @@ export default function DocumentPage({ params }: DocumentPageProps) {
           <EditableDocumentTitle
             documentId={current.id}
             name={current.name}
-            className="text-sm font-medium truncate"
+            className="truncate text-sm font-medium"
           />
         )}
       </SidebarLayout.Header>
       <SidebarLayout.Content>
-        <div className="pb-20">
-          {/* Loading State */}
+        <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-6 sm:px-6 md:py-8">
           {(isInitializing || isLoading) && <DocumentEditorSkeleton />}
 
-          {/* Error State */}
           {!isInitializing && !isLoading && !current && (
-            <div className="flex flex-col items-center justify-center h-full p-8">
-              <div className="rounded-lg border border-red-200 bg-red-50 p-6 max-w-md w-full">
-                <div className="flex flex-col items-center text-center gap-4">
-                  <div className="rounded-full bg-red-100 p-3">
-                    <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-semibold text-red-800">
-                      Failed to load document
-                    </h3>
-                    <p className="mt-1 text-sm text-red-700">
-                      The document you&apos;re looking for doesn&apos;t exist or couldn&apos;t be
-                      loaded.
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push('/write')}
-                    className="border-red-300 text-red-700 hover:bg-red-100"
-                  >
-                    <ArrowPathIcon className="h-4 w-4 mr-2" />
-                    Back to documents
-                  </Button>
-                </div>
-              </div>
-            </div>
+            <ErrorState
+              title="Document not found"
+              description="The document you're looking for doesn't exist or couldn't be loaded."
+              onRetry={() => router.push('/write')}
+              retryLabel="Back to documents"
+            />
           )}
 
-          {/* Document Editor */}
           {!isInitializing && !isLoading && current && (
-            <div className="max-w-4xl mx-auto w-full">
-              <DocumentEditor documentId={current.id} className="flex-1 min-h-0" />
-            </div>
+            <DocumentEditor documentId={current.id} className="flex-1 min-h-0" />
           )}
         </div>
       </SidebarLayout.Content>

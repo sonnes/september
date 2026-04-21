@@ -133,7 +133,7 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
           <AlertTitle>API Key Required</AlertTitle>
           <AlertDescription>
             You need to configure your Gemini API key in{' '}
-            <a href="/settings/ai" className="underline hover:text-amber-900">
+            <a href="/settings/providers" className="underline hover:text-amber-900">
               AI Settings
             </a>{' '}
             to use AI suggestions with Gemini.
