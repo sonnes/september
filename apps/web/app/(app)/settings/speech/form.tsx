@@ -8,6 +8,7 @@ import { Button } from '@september/ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@september/ui/components/card';
 import { Input } from '@september/ui/components/input';
 import { Label } from '@september/ui/components/label';
+import { LoadingState } from '@september/ui/components/loading-state';
 import {
   Select,
   SelectContent,
@@ -35,12 +36,7 @@ export default function VoicesSettingsForm() {
   };
 
   if (!account) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <Spinner className="h-8 w-8 text-primary" />
-        <p className="mt-4 text-sm text-zinc-500">Loading voices...</p>
-      </div>
-    );
+    return <LoadingState variant="page" label="Loading voices..." />;
   }
 
   return (
@@ -103,7 +99,7 @@ export default function VoicesSettingsForm() {
                   <p className="text-xs text-muted-foreground">
                     Some providers are hidden because their API keys are not configured. Configure
                     API keys in{' '}
-                    <a href="/settings/ai" className="text-primary hover:underline">
+                    <a href="/settings/providers" className="text-primary hover:underline">
                       AI Providers settings
                     </a>
                     .
