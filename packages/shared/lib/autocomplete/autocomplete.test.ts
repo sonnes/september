@@ -102,4 +102,67 @@ describe('Autocomplete — persistence snapshot round-trip', () => {
     expect(b.getCompletions('mach')).toEqual(a.getCompletions('mach'));
     expect(b.getNextWord('machine learning')).toEqual(a.getNextWord('machine learning'));
   });
+
+  it('reads a v1 (Phase 1) snapshot into the base layer', () => {
+    const a = new Autocomplete();
+    a.train(CORPUS);
+    const snap = a.getSnapshot();
+    // Simulate an old v1 snapshot on disk.
+    const v1 = {
+      version: 1 as const,
+      createdAt: snap.createdAt,
+      ngram: snap.base,
+    };
+
+    const b = new Autocomplete();
+    b.restoreFromSnapshot(v1);
+    expect(b.isReady()).toBe(true);
+    expect(b.getNextWord('machine learning')[0]).toBe('is');
+  });
+
+  it('round-trips user + chat layers through v2 snapshots', () => {
+    const a = new Autocomplete();
+    a.train(CORPUS);
+    for (let i = 0; i < 6; i++) a.observe('hello friend', { chatId: 'buddy-1' });
+    const snap = a.getSnapshot();
+
+    const b = new Autocomplete();
+    b.restoreFromSnapshot(snap);
+    expect(
+      b.suggestWord({ prefix: 'fr', context: 'hello', chatId: 'buddy-1' })[0]?.word,
+    ).toBe('friend');
+  });
+});
+
+describe('Autocomplete — Phase 2 layered personalization', () => {
+  it('observe() without chatId updates only the global user layer', () => {
+    const a = new Autocomplete();
+    a.train('the cat sat. the cat sat.');
+    for (let i = 0; i < 5; i++) a.observe('the cat purrs');
+    // The suggestion should reflect the user's personal shift.
+    const next = a.getNextWord('the cat');
+    expect(next[0]).toBe('purrs');
+  });
+
+  it('chat-specific observe biases predictions in that chat only', () => {
+    const a = new Autocomplete();
+    a.train('see you at the meeting. see you at the meeting.');
+    // Chat A: user often says "see you at the pool"
+    for (let i = 0; i < 20; i++) a.observe('see you at the pool', { chatId: 'A' });
+    // Chat B: user often says "see you at the gym"
+    for (let i = 0; i < 20; i++) a.observe('see you at the gym', { chatId: 'B' });
+
+    const inA = a.getNextWord('see you at the', { chatId: 'A' });
+    const inB = a.getNextWord('see you at the', { chatId: 'B' });
+    expect(inA[0]).toBe('pool');
+    expect(inB[0]).toBe('gym');
+  });
+
+  it('suggestWord({ chatId }) prefers the chat-specific completion over base', () => {
+    const a = new Autocomplete();
+    a.train('see you at the meeting. see you at the meeting.');
+    for (let i = 0; i < 20; i++) a.observe('see you at the pool', { chatId: 'A' });
+    const hit = a.suggestWord({ prefix: 'p', context: 'see you at the', chatId: 'A' });
+    expect(hit[0]?.word).toBe('pool');
+  });
 });

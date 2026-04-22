@@ -26,11 +26,23 @@ Reference architectures that shipped these features in production:
 
 Each phase is independently shippable. Stop at any phase if quality/keystroke-savings targets are hit.
 
-| Phase | Scope | Size | Risk | Ship value |
-|---|---|---|---|---|
-| [1 — Smoothing + fuzzy + persistence](./phase-1-ngram-smoothing.md) | Stupid Backoff 5-grams, Levenshtein automaton w/ QWERTY weighting, incremental `observe()`, IndexedDB persistence, punctuation/emoji tokenizer | ~1 week | Low (pure TS, no deps) | +30–50% keystroke savings on held-out messages |
-| [2 — Personalization layers](./phase-2-personalization.md) | Per-user + per-chat sub-models, recency-decayed counts, blended scoring | ~3–5 days | Low | +15–25% additional savings on active chats |
-| [3 — Neural sentence completion](./phase-3-neural-sentence-completion.md) | WebLLM + Qwen2.5-0.5B (or SmolLM2-360M) for Smart Compose; beam search; cache; WASM fallback for no-WebGPU | ~1–2 weeks | Medium (model download UX, device compat) | Ship-level Smart Compose; largest single win for ALS users |
+| Phase | Scope | Size | Risk | Ship value | Status |
+|---|---|---|---|---|---|
+| [1 — Smoothing + fuzzy + persistence](./phase-1-ngram-smoothing.md) | Stupid Backoff 5-grams, Levenshtein automaton w/ QWERTY weighting, incremental `observe()`, IndexedDB persistence, punctuation/emoji tokenizer | ~1 week | Low (pure TS, no deps) | +30–50% keystroke savings on held-out messages | **Shipped** |
+| [2 — Personalization layers](./phase-2-personalization.md) | Layered `base`/`user`/`chat` `NgramModel`s with blended scoring, adaptive chat weight, recency decay (60-day default half-life), top-K pruning, v2 engine snapshot | ~3–5 days | Low | +15–25% additional savings on active chats | **Shipped** |
+| [3 — Neural sentence completion](./phase-3-neural-sentence-completion.md) | WebLLM + Qwen2.5-0.5B (or SmolLM2-360M) for Smart Compose; beam search; cache; WASM fallback for no-WebGPU | ~1–2 weeks | Medium (model download UX, device compat) | Ship-level Smart Compose; largest single win for ALS users | Planned |
+
+### v2 (Phase 2) — what's new
+
+- **`LayeredAutocomplete`** (`layered-autocomplete.ts`) composes three `NgramModel`s and blends scores:
+  `final_score = α_base·S_base + α_user·S_user + α_chat_eff·S_chat` (defaults 1 / 2 / 3).
+  `α_chat` is adaptive: scaled linearly from 0 up to the configured value over the first 500 chat tokens, so a brand-new chat with 3 "ok"s doesn't drown out the shared corpus.
+- **Recency decay** (`recency.ts`, new `NgramModel.halfLifeMs`). Counts halve every 60 days by default; configurable via `AutocompleteOptions.halfLifeMs` / `halfLifeFromDays()`. `Infinity` disables decay entirely (back-compat). Observations within a 1-hour skip window apply no decay (keeps same-session counts integer).
+- **Top-K pruning** (`NgramModel.prune({ 1, 2, 3, 4, 5 })`). Drops lowest-count n-grams per order to cap per-chat memory; base layer is never pruned.
+- **`NgramModel.compact(nowMs?)`** re-decays every entry to the same reference time and recomputes `contextTotals` in O(|n-grams|) — call on cold start to catch up on idle-time decay.
+- **v2 snapshot format** (`persistence.ts`): `{ base, user, chats: Record<chatId, …> }`. Reader still accepts v1 (Phase 1) snapshots by loading the single ngram into `base`.
+- **`Autocomplete.observe(text, { chatId })`**, **`getNextWord(ctx, { chatId })`**, **`suggestWord({ …, chatId })`** — all context methods thread the chatId through. Without it the engine uses `base + user` only (identical to Phase 1 behaviour after observations accumulate).
+- **Hook integration** (`packages/shared/hooks/use-autocomplete.ts`): accepts `{ chatId }`, routes `useMessages()` deltas through `observe(text, { chatId: message.chat_id })`, and filters to `message.type === 'user'` so only the user's own sent messages feed the LM. The chat-scoped editor in `apps/web/app/(app)/chats/[id]/layout.tsx` wires the URL chatId through `EditorProvider` → editor `<Autocomplete>` automatically.
 
 ## Cross-cutting constraints
 

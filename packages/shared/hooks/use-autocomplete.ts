@@ -8,7 +8,7 @@ import { useMessages } from '@september/chats';
 import {
   Autocomplete,
   AutocompletePersistence,
-  type EngineSnapshot,
+  type AnyEngineSnapshot,
   type SuggestWordOptions,
   type RankedWord,
 } from '@september/shared/lib/autocomplete';
@@ -28,15 +28,24 @@ const PERSIST_DEBOUNCE_MS = 3000;
 /**
  * Cheap fingerprint of the seed corpus — lengths catch version bumps and
  * user-corpus edits without the cost of hashing ~2 MB on every render. If
- * this differs from the stored snapshot's digest, we retrain rather than
- * rehydrate.
+ * this differs from the stored snapshot's digest, we retrain the base
+ * layer but keep the user / chat layers (they represent personal history,
+ * orthogonal to the shared corpus).
  */
 function seedDigest(base: string, userCorpus: string): string {
   return `${base.length}|${userCorpus.length}|${userCorpus.slice(0, 64)}`;
 }
 
 interface UseAutocompleteOptions {
+  /** Include the user's message history in the engine on mount. */
   includeMessages?: boolean;
+  /**
+   * Scope observations and predictions to this chat. When provided, new
+   * messages observed via `useMessages` are attributed to both the global
+   * user layer *and* this chat's layer, and `getNextWords` / `suggestWord`
+   * consult it first.
+   */
+  chatId?: string;
 }
 
 interface UseAutocompleteReturn {
@@ -48,7 +57,7 @@ interface UseAutocompleteReturn {
 }
 
 export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutocompleteReturn {
-  const { includeMessages = false } = options;
+  const { includeMessages = false, chatId } = options;
   const { account } = useAccountContext();
   const { messages } = useMessages();
 
@@ -68,7 +77,7 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
 
   const userId = account?.id;
   const userCorpus = account?.ai_suggestions?.settings?.ai_corpus ?? '';
-  const persistenceKey = userId ? `user:${userId}` : null;
+  const persistenceKey = userId ? AutocompletePersistence.userKey(userId) : null;
 
   const schedulePersist = useCallback(
     (key: string, engine: Autocomplete) => {
@@ -119,7 +128,7 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
       const digest = seedDigest(baseCorpus, userCorpus);
 
       let rehydrated = false;
-      let snapshot: EngineSnapshot | undefined;
+      let snapshot: AnyEngineSnapshot | undefined;
 
       if (persistenceKey) {
         snapshot = await persistence.load(persistenceKey);
@@ -139,12 +148,17 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
       observedMessageIds.current = new Set();
       if (includeMessages) {
         for (const m of messages) {
+          // Only observe messages the user actually sent — we're modelling
+          // *their* typing, not what they receive. Received messages leak
+          // contact-specific vocabulary that the user doesn't type.
+          if (m.type !== 'user') continue;
+
           // Skip messages already in the snapshot (by timestamp cutoff).
           if (snapshot && m.created_at.getTime() <= snapshot.createdAt) {
             observedMessageIds.current.add(m.id);
             continue;
           }
-          engine.observe(m.text);
+          engine.observe(m.text, { chatId: m.chat_id });
           observedMessageIds.current.add(m.id);
         }
       }
@@ -174,7 +188,11 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
     let newCount = 0;
     for (const m of messages) {
       if (observedMessageIds.current.has(m.id)) continue;
-      autocomplete.observe(m.text);
+      if (m.type !== 'user') {
+        observedMessageIds.current.add(m.id);
+        continue;
+      }
+      autocomplete.observe(m.text, { chatId: m.chat_id });
       observedMessageIds.current.add(m.id);
       newCount++;
     }
@@ -209,6 +227,7 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
       const tokens = tokenize(query);
       const lastToken = tokens[tokens.length - 1];
       if (!lastToken) return [];
+      // Prefix completion is global — spellings don't need chatId scoping.
       const spellings = autocomplete.getCompletions(lastToken) || [];
       return spellings.map(s => s.toLowerCase());
     },
@@ -220,17 +239,19 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
       if (!query || query.trim().length < 1 || !autocomplete.isReady()) return [];
       const tokens = tokenize(query);
       const last3 = tokens.slice(-3).join(' ');
-      return autocomplete.getNextWord(last3) || [];
+      return autocomplete.getNextWord(last3, { chatId }) || [];
     },
-    [autocomplete],
+    [autocomplete, chatId],
   );
 
   const suggestWord = useCallback(
     (opts: SuggestWordOptions): RankedWord[] => {
       if (!autocomplete.isReady()) return [];
-      return autocomplete.suggestWord(opts);
+      // Auto-thread the hook-bound chatId if the caller didn't pass one.
+      const merged = opts.chatId ? opts : { ...opts, chatId };
+      return autocomplete.suggestWord(merged);
     },
-    [autocomplete],
+    [autocomplete, chatId],
   );
 
   return useMemo(

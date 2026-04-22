@@ -10,12 +10,16 @@ const EditorContext = createContext<EditorContextValue | undefined>(undefined);
 interface EditorProviderProps {
   children: ReactNode;
   defaultText?: string;
+  /** Optional chat id for per-recipient personalization. */
+  chatId?: string;
 }
 
-export function EditorProvider({ children, defaultText = '' }: EditorProviderProps) {
+export function EditorProvider({ children, defaultText = '', chatId }: EditorProviderProps) {
   const editorLogic = useEditorLogic(defaultText);
 
-  return <EditorContext.Provider value={editorLogic}>{children}</EditorContext.Provider>;
+  return (
+    <EditorContext.Provider value={{ ...editorLogic, chatId }}>{children}</EditorContext.Provider>
+  );
 }
 
 export function useEditorContext() {

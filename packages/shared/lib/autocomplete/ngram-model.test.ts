@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { NgramModel } from './ngram-model';
+import { DAY_MS } from './recency';
 
 describe('NgramModel', () => {
   describe('empty state', () => {
@@ -114,6 +115,103 @@ describe('NgramModel', () => {
         m.score(['<s>', 'hello'], 'world'),
         10,
       );
+    });
+
+    it('v2 snapshot round-trips timestamps when decay is enabled', () => {
+      const m = new NgramModel({ order: 3, halfLifeMs: DAY_MS * 60 });
+      m.observeAt(['hi', 'there'], 1_000_000);
+      const snap = m.serialize();
+      // With decay on, serialize emits a v2 snapshot containing timestamps.
+      expect(snap.version).toBe(2);
+      const m2 = NgramModel.deserialize(snap);
+      // Re-observe just the tail at a much later time → decay should apply
+      // to the earlier count the same way it did in the original.
+      m.observeAt(['hi', 'there'], 1_000_000 + DAY_MS * 60);
+      m2.observeAt(['hi', 'there'], 1_000_000 + DAY_MS * 60);
+      expect(m2.count(['hi'], 'there')).toBeCloseTo(m.count(['hi'], 'there'), 10);
+    });
+  });
+
+  describe('recency decay', () => {
+    it('Infinity half-life behaves like undiscounted counts (Phase 1 behaviour)', () => {
+      const m = new NgramModel({ halfLifeMs: Infinity });
+      m.observeAt(['hi'], 0);
+      m.observeAt(['hi'], DAY_MS * 365);
+      expect(m.count([], 'hi')).toBe(2);
+    });
+
+    it('decays the existing entry before incrementing on observe', () => {
+      const m = new NgramModel({ halfLifeMs: DAY_MS * 60 });
+      m.observeAt(['hi'], 0);
+      // Exactly one half-life later → existing 1 decays to 0.5; +1 → 1.5.
+      m.observeAt(['hi'], DAY_MS * 60);
+      expect(m.count([], 'hi')).toBeCloseTo(1.5, 10);
+    });
+
+    it('skips decay within the skip window (observations stay integer)', () => {
+      const m = new NgramModel({ halfLifeMs: DAY_MS * 60 });
+      m.observeAt(['hi'], 0);
+      m.observeAt(['hi'], 30 * 60 * 1000); // 30 min later, within 1h window
+      expect(m.count([], 'hi')).toBe(2);
+    });
+
+    it('decays cross-order counts consistently', () => {
+      const m = new NgramModel({ halfLifeMs: DAY_MS * 60, order: 2 });
+      m.observeAt(['hi', 'there'], 0);
+      m.observeAt(['hi', 'there'], DAY_MS * 60);
+      // Both unigram 'hi' and bigram (hi)->there halve then +1
+      expect(m.count([], 'hi')).toBeCloseTo(1.5, 10);
+      expect(m.count(['hi'], 'there')).toBeCloseTo(1.5, 10);
+    });
+
+    it('compact() brings every entry to the same reference time and rebuilds totals', () => {
+      const m = new NgramModel({ halfLifeMs: DAY_MS * 60 });
+      m.observeAt(['hi'], 0);
+      m.observeAt(['bye'], 0);
+      m.compact(DAY_MS * 60);
+      expect(m.count([], 'hi')).toBeCloseTo(0.5, 10);
+      expect(m.count([], 'bye')).toBeCloseTo(0.5, 10);
+      // After compaction, scoring is internally consistent:
+      //   P(hi) = 0.5 / (0.5 + 0.5) = 0.5
+      expect(m.score([], 'hi')).toBeCloseTo(0.5, 10);
+    });
+  });
+
+  describe('top-K pruning', () => {
+    it('prunes lowest-count entries first per order', () => {
+      const m = new NgramModel({ order: 1 });
+      // 5 unigrams with distinct counts 1..5
+      m.observe(['a']);
+      m.observe(['b', 'b']);
+      m.observe(['c', 'c', 'c']);
+      m.observe(['d', 'd', 'd', 'd']);
+      m.observe(['e', 'e', 'e', 'e', 'e']);
+      m.prune({ 1: 3 });
+      expect(m.count([], 'a')).toBe(0);
+      expect(m.count([], 'b')).toBe(0);
+      expect(m.count([], 'c')).toBe(3);
+      expect(m.count([], 'd')).toBe(4);
+      expect(m.count([], 'e')).toBe(5);
+    });
+
+    it('leaves orders below their cap unchanged', () => {
+      const m = new NgramModel({ order: 2 });
+      m.observe(['a', 'b']);
+      m.observe(['c', 'd']);
+      m.prune({ 1: 100, 2: 100 });
+      expect(m.count([], 'a')).toBe(1);
+      expect(m.count(['a'], 'b')).toBe(1);
+    });
+  });
+
+  describe('count accessor', () => {
+    it('returns stored n-gram count (0 if absent)', () => {
+      const m = new NgramModel({ order: 3 });
+      m.observe(['the', 'cat', 'sat']);
+      expect(m.count([], 'the')).toBe(1);
+      expect(m.count(['the'], 'cat')).toBe(1);
+      expect(m.count(['the', 'cat'], 'sat')).toBe(1);
+      expect(m.count(['the', 'cat'], 'ran')).toBe(0);
     });
   });
 });

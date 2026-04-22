@@ -8,9 +8,16 @@ export const metadata: Metadata = {
   description: 'Your conversations',
 };
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default async function Layout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
   return (
-    <EditorProvider>
+    <EditorProvider chatId={id}>
       <SpeechProvider>{children}</SpeechProvider>
     </EditorProvider>
   );

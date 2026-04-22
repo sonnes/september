@@ -10,8 +10,11 @@ import { MATCH_PUNCTUATION } from '@september/shared/lib/utils';
 import { useEditorContext } from '@september/editor/components/editor-provider';
 
 export function Autocomplete() {
-  const { text, addWord, setCurrentWord } = useEditorContext();
-  const { isReady, getSpellings, getNextWords } = useAutocomplete();
+  const { text, addWord, setCurrentWord, chatId } = useEditorContext();
+  const { isReady, getSpellings, getNextWords } = useAutocomplete({
+    includeMessages: true,
+    chatId,
+  });
 
   const [dismissedText, setDismissedText] = useState<string | null>(null);
 
