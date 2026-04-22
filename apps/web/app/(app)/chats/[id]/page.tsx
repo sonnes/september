@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { use } from 'react';
 
 import { TvIcon } from '@heroicons/react/24/outline';
-import { PanelRightIcon } from 'lucide-react';
+import { HistoryIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useAccountContext } from '@september/account';
@@ -25,11 +25,17 @@ import {
   useCreateKeyboard,
   useGenerateKeyboardFromMessage,
 } from '@september/keyboards';
-import { cn } from '@september/shared/lib/utils';
 import { DisplayMessage } from '@september/shared/types/display';
 import { SpeechSettingsModal } from '@september/speech';
 import { Suggestions } from '@september/suggestions';
 import { Button } from '@september/ui/components/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@september/ui/components/dialog';
 import { ErrorState } from '@september/ui/components/error-state';
 import { Separator } from '@september/ui/components/separator';
 import { SidebarTrigger } from '@september/ui/components/sidebar';
@@ -66,8 +72,6 @@ export default function ChatPage({ params }: ChatPageProps) {
   const { createKeyboard } = useCreateKeyboard();
   const { updateChat } = useUpdateChat();
   const popupRef = useRef<Window | null>(null);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(true);
-  const toggleHistory = useCallback(() => setIsHistoryOpen(prev => !prev), []);
 
   const handleSubmit = useCallback(
     async (text: string) => {
@@ -199,11 +203,51 @@ export default function ChatPage({ params }: ChatPageProps) {
 
   const isInitializing = !chatId;
 
+  const messagesContent = (
+    <>
+      {(isInitializing || isLoading) && <ChatMessagesSkeleton />}
+
+      {!isInitializing && !isLoading && error && (
+        <div className="py-10">
+          <ErrorState
+            title="Failed to load messages"
+            description={error.message || 'Something went wrong while loading this conversation.'}
+            onRetry={() => window.location.reload()}
+          />
+        </div>
+      )}
+
+      {!isInitializing && !isLoading && !error && <MessageList messages={messages || []} />}
+    </>
+  );
+
+  const historyDialog = (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="View history"
+          className="size-7"
+        >
+          <HistoryIcon className="size-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>History</DialogTitle>
+        </DialogHeader>
+        <div className="max-h-[70vh] overflow-y-auto pr-1">{messagesContent}</div>
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
     <>
       <SidebarLayout.Header>
         {/* Mobile: branded top bar with logo, chat title, and display action */}
         <MobileNav title={chat?.title ?? 'Chat'}>
+          {historyDialog}
           <Button variant="ghost" size="icon" onClick={handleOpenDisplay}>
             <TvIcon className="size-4" />
           </Button>
@@ -219,75 +263,26 @@ export default function ChatPage({ params }: ChatPageProps) {
               <TvIcon className="size-4" />
               <span>Display</span>
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleHistory}
-              aria-label={isHistoryOpen ? 'Hide history' : 'Show history'}
-              aria-pressed={isHistoryOpen}
-              className="size-7"
-            >
-              <PanelRightIcon className="h-4 w-4" />
-            </Button>
+            {historyDialog}
           </div>
         </div>
       </SidebarLayout.Header>
       <SidebarLayout.Content>
         <KeyboardProvider>
-          <div className="flex flex-col md:flex-row flex-1 min-h-0 gap-4">
-            {/* History: top on mobile, collapsible right panel on desktop */}
-            <aside
-              data-state={isHistoryOpen ? 'open' : 'collapsed'}
-              className={cn(
-                'order-1 md:order-2 flex flex-col min-h-0 flex-1',
-                'md:flex-none md:transition-[width,padding,border-color,opacity] md:duration-200 md:ease-linear md:overflow-hidden',
-                isHistoryOpen
-                  ? 'md:w-80 lg:w-96 md:border-l md:pl-4 md:opacity-100'
-                  : 'md:w-0 md:border-l-0 md:pl-0 md:opacity-0 md:pointer-events-none'
-              )}
-              aria-hidden={!isHistoryOpen}
-            >
-              <div className="hidden md:flex items-center mb-2">
-                <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  History
-                </h2>
-              </div>
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                {(isInitializing || isLoading) && <ChatMessagesSkeleton />}
-
-                {!isInitializing && !isLoading && error && (
-                  <div className="py-4">
-                    <ErrorState
-                      title="Failed to load messages"
-                      description={
-                        error.message || 'Something went wrong while loading this conversation.'
-                      }
-                      onRetry={() => window.location.reload()}
-                    />
-                  </div>
-                )}
-
-                {!isInitializing && !isLoading && !error && (
-                  <MessageList messages={messages || []} />
-                )}
-              </div>
-            </aside>
-
-            {/* Editor + keyboards: bottom on mobile, main left column on desktop */}
-            <div className="order-2 md:order-1 flex flex-col justify-end min-h-0 md:flex-1 shrink-0">
-              <div className="w-full max-w-3xl mx-auto flex flex-col gap-3">
-                <Suggestions chatId={chatId} />
-                <Editor
-                  placeholder="Type a message..."
-                  onSubmit={handleSubmit}
-                  disabled={status !== 'idle'}
-                >
-                  <KeyboardToggleButton />
-                  <SpeechSettingsModal />
-                  <AudioOutputDeviceSelector />
-                </Editor>
-                <KeyboardRenderer chatId={chatId} onKeyPress={handleKeyPress} stickyQwerty />
-              </div>
+          {/* Composer: pinned at the bottom of the main area. History lives in the dialog. */}
+          <div className="mt-auto shrink-0">
+            <div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
+              <Suggestions chatId={chatId} />
+              <Editor
+                placeholder="Type a message..."
+                onSubmit={handleSubmit}
+                disabled={status !== 'idle'}
+              >
+                <KeyboardToggleButton />
+                <SpeechSettingsModal />
+                <AudioOutputDeviceSelector />
+              </Editor>
+              <KeyboardRenderer chatId={chatId} onKeyPress={handleKeyPress} stickyQwerty />
             </div>
           </div>
         </KeyboardProvider>
