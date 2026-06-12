@@ -10,142 +10,99 @@ import {
   useState,
 } from 'react';
 
-import {
-  AudioPlayerProvider as AudioPlayerProviderBase,
-  useAudioPlayerContext,
-} from 'react-use-audio-player';
+import type { Audio as AudioTrack } from '../types';
 
-import { Audio as AudioTrack } from '@september/audio/types';
-
-interface AudioOutputDevice {
+export interface AudioOutputDevice {
   deviceId: string;
   label: string;
 }
 
-// Context value type
-interface AudioPlayerContextType {
+export interface AudioPlayerContextType {
   isPlaying: boolean;
   enqueue: (track: AudioTrack) => void;
   togglePlayPause: () => void;
-  current?: AudioTrack;
+  current: AudioTrack | null;
   isMuted: boolean;
   toggleMute: () => void;
-  // Time tracking
   currentTime: number;
   duration: number;
   seek: (time: number) => void;
-  // Audio output device selection
   outputDevices: AudioOutputDevice[];
   isDeviceSelectionSupported: boolean;
-  selectedOutputDeviceId: string;
+  selectedOutputDeviceId: string | null;
   setSelectedOutputDeviceId: (id: string) => void;
   refreshOutputDevices: () => Promise<void>;
 }
 
 const AudioPlayerContext = createContext<AudioPlayerContextType | undefined>(undefined);
 
-export function AudioPlayerProvider({ children }: { children: ReactNode }) {
-  return (
-    <AudioPlayerProviderBase>
-      <AudioPlayerQueueProvider>{children}</AudioPlayerQueueProvider>
-    </AudioPlayerProviderBase>
-  );
-}
-
 const AUDIO_OUTPUT_STORAGE_KEY = 'september:audio-output-device';
 
+// Feature-detected once at module load — stable across renders
 const isDeviceSelectionSupported =
   typeof navigator !== 'undefined' &&
   typeof HTMLAudioElement !== 'undefined' &&
   'setSinkId' in HTMLAudioElement.prototype;
 
-function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
+export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const [queue, setQueue] = useState<AudioTrack[]>([]);
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [outputDevices, setOutputDevices] = useState<AudioOutputDevice[]>([]);
-  const [selectedOutputDeviceId, setSelectedOutputDeviceIdState] = useState<string>(() =>
+  const [selectedOutputDeviceId, setSelectedOutputDeviceIdState] = useState<string | null>(() =>
     typeof localStorage !== 'undefined'
-      ? (localStorage.getItem(AUDIO_OUTPUT_STORAGE_KEY) ?? '')
-      : ''
+      ? (localStorage.getItem(AUDIO_OUTPUT_STORAGE_KEY) ?? null)
+      : null
   );
-  const sinkAudioRef = useRef<HTMLAudioElement | null>(null);
-  // State for sinkId audio element (separate from react-use-audio-player)
-  const [isSinkPlaying, setIsSinkPlaying] = useState(false);
-  const [sinkDuration, setSinkDuration] = useState(0);
-  const [sinkCurrentTime, setSinkCurrentTime] = useState(0);
 
-  const {
-    load,
-    play,
-    pause,
-    isPlaying,
-    duration,
-    getPosition,
-    seek: audioSeek,
-  } = useAudioPlayerContext();
-  const synthesis = typeof window !== 'undefined' ? window.speechSynthesis : null;
-
-  // RAF-based time tracking for react-use-audio-player path
-  // Only updates state when position changes by more than threshold
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const rafRef = useRef<number | null>(null);
-  const lastReportedTime = useRef<number>(0);
+  const lastReportedTime = useRef(0);
 
-  useEffect(() => {
-    if (!isPlaying) {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-      return;
-    }
-
+  // RAF-based time tracking — updates only when time changes by more than ~1 frame
+  const startRaf = useCallback(() => {
+    if (rafRef.current) return;
     const tick = () => {
-      const position = getPosition();
-      // Only update state if time changed by more than 16ms (~1 frame)
-      // This reduces unnecessary re-renders while maintaining smooth tracking
-      if (Math.abs(position - lastReportedTime.current) > 0.016) {
-        lastReportedTime.current = position;
-        setCurrentTime(position);
+      const el = audioRef.current;
+      if (!el) { rafRef.current = null; return; }
+      const t = el.currentTime;
+      if (Math.abs(t - lastReportedTime.current) > 0.016) {
+        lastReportedTime.current = t;
+        setCurrentTime(t);
       }
       rafRef.current = requestAnimationFrame(tick);
     };
-
     rafRef.current = requestAnimationFrame(tick);
+  }, []);
 
-    return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-    };
-  }, [isPlaying, getPosition]);
+  const stopRaf = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  }, []);
 
-  const seek = useCallback(
-    (time: number) => {
-      if (sinkAudioRef.current && isSinkPlaying) {
-        sinkAudioRef.current.currentTime = time;
-        setSinkCurrentTime(time);
-      } else {
-        audioSeek(time);
-        setCurrentTime(time);
-      }
-    },
-    [audioSeek, isSinkPlaying]
-  );
+  // Pause and clean up audio element on unmount
+  useEffect(() => () => {
+    stopRaf();
+    audioRef.current?.pause();
+  }, [stopRaf]);
 
+  // Output device enumeration
   const refreshOutputDevices = useCallback(async () => {
     if (!isDeviceSelectionSupported) return;
     const devices = await navigator.mediaDevices.enumerateDevices();
     setOutputDevices(
-      devices
-        .filter(d => d.kind === 'audiooutput' && d.deviceId && d.deviceId !== 'default' && d.deviceId !== 'communications')
-        .map((d, i) => ({ deviceId: d.deviceId, label: d.label || `Speaker ${i + 1}` }))
+      devices.filter(
+        d => d.kind === 'audiooutput' && d.deviceId && d.deviceId !== 'default' && d.deviceId !== 'communications'
+      // MediaDeviceInfo properties are prototype getters — spreading would drop deviceId
+      ).map((d, i) => ({ deviceId: d.deviceId, label: d.label || `Speaker ${i + 1}` }))
     );
   }, []);
 
-  // Enumerate on mount and whenever devices change
   useEffect(() => {
     if (!isDeviceSelectionSupported) return;
     refreshOutputDevices();
@@ -153,122 +110,127 @@ function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
     return () => navigator.mediaDevices.removeEventListener('devicechange', refreshOutputDevices);
   }, [refreshOutputDevices]);
 
-  // Stop sinkId audio on unmount
-  useEffect(() => () => { sinkAudioRef.current?.pause(); }, []);
-
   const setSelectedOutputDeviceId = useCallback((id: string) => {
     localStorage.setItem(AUDIO_OUTPUT_STORAGE_KEY, id);
-    setSelectedOutputDeviceIdState(id);
+    setSelectedOutputDeviceIdState(id || null);
+    // Apply to currently playing element too
+    if (audioRef.current && id && isDeviceSelectionSupported) {
+      (audioRef.current as HTMLAudioElement & { setSinkId(id: string): Promise<void> })
+        .setSinkId(id)
+        .catch(err => console.error('setSinkId failed on running element:', err));
+    }
   }, []);
 
-  useEffect(() => {
-    if (queue.length > 0 && queue[currentIndex]) {
-      const track = queue[currentIndex];
-
-      if (track.utterance) {
-        // Create a new utterance to avoid mutating state
-        const utterance = new SpeechSynthesisUtterance(track.utterance.text);
-        utterance.rate = track.utterance.rate;
-        utterance.pitch = track.utterance.pitch;
-        utterance.volume = track.utterance.volume;
-        utterance.voice = track.utterance.voice;
-        utterance.lang = track.utterance.lang;
-        utterance.onend = () => {
-          if (currentIndex < queue.length - 1) {
-            setCurrentIndex(idx => idx + 1);
-          } else {
-            setQueue([]);
-            setCurrentIndex(0);
-          }
-        };
-
-        synthesis?.speak(utterance);
-        return;
-      }
-
-      if (track.blob) {
-        const blob = queue[currentIndex].blob;
-        const src = blob?.startsWith('data:') ? blob : `data:audio/mp3;base64,${blob}`;
-
-        const advance = () => {
-          setIsSinkPlaying(false);
-          if (currentIndex < queue.length - 1) {
-            setCurrentIndex(idx => idx + 1);
-          } else {
-            setQueue([]);
-            setCurrentIndex(0);
-          }
-        };
-
-        if (selectedOutputDeviceId) {
-          sinkAudioRef.current?.pause();
-          const audioEl = new Audio(src);
-          sinkAudioRef.current = audioEl;
-          audioEl.onplay = () => setIsSinkPlaying(true);
-          audioEl.onpause = () => setIsSinkPlaying(false);
-          audioEl.ondurationchange = () => setSinkDuration(audioEl.duration);
-          audioEl.ontimeupdate = () => setSinkCurrentTime(audioEl.currentTime);
-          audioEl.onended = advance;
-          (audioEl as HTMLAudioElement & { setSinkId(id: string): Promise<void> })
-            .setSinkId(selectedOutputDeviceId)
-            .then(() => audioEl.play())
-            .catch(err => {
-              console.error('setSinkId failed, falling back to default device:', err);
-              audioEl.play().catch(() => {});
-            });
-        } else {
-          load(src, { autoplay: true, onend: advance });
-        }
-      }
-    }
-  }, [queue, currentIndex, load, synthesis, selectedOutputDeviceId]);
-
-  // Enqueue a new track
-  const enqueue = useCallback(
-    (track: AudioTrack) => {
-      setQueue(prev => {
-        if (isMuted) {
-          return prev;
-        }
-
-        // If nothing is playing, start with this track
-        if (prev.length === 0) {
-          setCurrentIndex(0);
-          return [track];
-        }
-        return [...prev, track];
-      });
-    },
-    [isMuted]
-  );
-
-  // Toggle play/pause — handles both sinkId and react-use-audio-player paths
-  const togglePlayPause = useCallback(() => {
-    if (sinkAudioRef.current && isSinkPlaying) {
-      sinkAudioRef.current.pause();
-    } else if (sinkAudioRef.current && !isSinkPlaying && sinkAudioRef.current.src) {
-      sinkAudioRef.current.play();
-    } else if (isPlaying) {
-      pause();
+  const advance = useCallback((q: AudioTrack[], idx: number) => {
+    if (idx < q.length - 1) {
+      setCurrentIndex(idx + 1);
     } else {
-      play();
+      setQueue([]);
+      setCurrentIndex(0);
     }
-  }, [isPlaying, isSinkPlaying, play, pause]);
-
-  const toggleMute = useCallback(() => {
-    setIsMuted(prev => !prev);
   }, []);
 
-  // Merge state: sinkId path takes precedence when active
+  // Play current track whenever queue/index changes
+  useEffect(() => {
+    if (!queue.length || !queue[currentIndex]) return;
+
+    const track = queue[currentIndex];
+
+    // utterance path
+    if (track.utterance) {
+      const utt = new SpeechSynthesisUtterance(track.utterance.text);
+      utt.rate = track.utterance.rate;
+      utt.pitch = track.utterance.pitch;
+      utt.volume = track.utterance.volume;
+      utt.voice = track.utterance.voice;
+      utt.lang = track.utterance.lang;
+      utt.onend = () => {
+        setIsPlaying(false);
+        advance(queue, currentIndex);
+      };
+      setIsPlaying(true);
+      window.speechSynthesis?.speak(utt);
+      return;
+    }
+
+    // blob path
+    if (track.blob) {
+      const src = track.blob.startsWith('data:') ? track.blob : `data:audio/mp3;base64,${track.blob}`;
+
+      // Clean up previous element
+      audioRef.current?.pause();
+      stopRaf();
+
+      const el = new Audio(src) as HTMLAudioElement;
+      audioRef.current = el;
+      setCurrentTime(0);
+      lastReportedTime.current = 0;
+
+      el.addEventListener('play', () => { setIsPlaying(true); startRaf(); });
+      el.addEventListener('pause', () => { setIsPlaying(false); stopRaf(); });
+      el.addEventListener('ended', () => {
+        setIsPlaying(false);
+        stopRaf();
+        advance(queue, currentIndex);
+      });
+      el.addEventListener('durationchange', () => setDuration(isFinite(el.duration) ? el.duration : 0));
+      el.addEventListener('loadedmetadata', () => setDuration(isFinite(el.duration) ? el.duration : 0));
+
+      if (selectedOutputDeviceId && isDeviceSelectionSupported) {
+        (el as HTMLAudioElement & { setSinkId(id: string): Promise<void> })
+          .setSinkId(selectedOutputDeviceId)
+          .then(() => el.play())
+          .catch(err => {
+            console.error('setSinkId failed, falling back to default device:', err);
+            el.play().catch(() => {});
+          });
+      } else {
+        el.play().catch(() => {});
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queue, currentIndex]);
+
+  const enqueue = useCallback((track: AudioTrack) => {
+    if (isMuted) return;
+    setQueue(prev => {
+      if (prev.length === 0) {
+        setCurrentIndex(0);
+        return [track];
+      }
+      return [...prev, track];
+    });
+  }, [isMuted]);
+
+  const togglePlayPause = useCallback(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    if (isPlaying) {
+      el.pause();
+    } else {
+      el.play().catch(() => {});
+    }
+  }, [isPlaying]);
+
+  const toggleMute = useCallback(() => setIsMuted(prev => !prev), []);
+
+  const seek = useCallback((time: number) => {
+    const el = audioRef.current;
+    if (!el) return;
+    el.currentTime = time;
+    setCurrentTime(time);
+    lastReportedTime.current = time;
+  }, []);
+
   const value: AudioPlayerContextType = {
-    isPlaying: isSinkPlaying || isPlaying,
+    isPlaying,
     enqueue,
     togglePlayPause,
-    current: queue[currentIndex] || undefined,
+    current: queue[currentIndex] ?? null,
     isMuted,
     toggleMute,
-    currentTime: isSinkPlaying ? sinkCurrentTime : currentTime,
-    duration: isSinkPlaying ? sinkDuration : duration,
+    currentTime,
+    duration,
     seek,
     outputDevices,
     isDeviceSelectionSupported,
@@ -280,7 +242,7 @@ function AudioPlayerQueueProvider({ children }: { children: ReactNode }) {
   return <AudioPlayerContext.Provider value={value}>{children}</AudioPlayerContext.Provider>;
 }
 
-export function useAudioPlayer() {
+export function useAudioPlayer(): AudioPlayerContextType {
   const ctx = useContext(AudioPlayerContext);
   if (!ctx) throw new Error('useAudioPlayer must be used within AudioPlayerProvider');
   return ctx;

@@ -2,8 +2,8 @@
 
 import { type HTMLAttributes, createContext, useContext, useMemo } from 'react';
 
-import type { Alignment } from '@september/audio/types';
-import { type TextSegment, type TextWord, type GapSegment, useTextViewer } from '@september/audio/hooks/use-text-viewer';
+import type { Alignment, TextSegment, TextWord, GapSegment } from '@september/audio';
+import { useTextViewer } from '@september/audio';
 import { cn } from '@september/shared';
 
 type WordStatus = 'spoken' | 'current' | 'unspoken';

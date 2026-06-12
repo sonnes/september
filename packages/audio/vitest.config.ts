@@ -5,9 +5,11 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     globals: true,
-    // AudioService uses IndexedDB (fake-indexeddb) but no DOM APIs.
-    // Run in node environment so Blob.arrayBuffer() is available (jsdom omits it).
+    // Storage uses IndexedDB (fake-indexeddb) and Blob/ArrayBuffer.
+    // setupFiles patches global Blob with Node's real Blob (which has arrayBuffer())
+    // because the vitest node polyfill is stripped.
     environment: 'node',
+    setupFiles: [path.resolve(__dirname, './vitest.setup.ts')],
   },
   resolve: {
     alias: {

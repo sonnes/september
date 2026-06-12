@@ -2,7 +2,21 @@
 
 import { useCallback, useMemo } from 'react';
 
-import { Alignment, CharacterAlignment, toCharacterAlignment } from '@september/audio/types';
+import { Alignment } from '../types';
+
+interface CharacterAlignment {
+  characters: string[];
+  characterStartTimesSeconds: number[];
+  characterEndTimesSeconds: number[];
+}
+
+function toCharacterAlignment(alignment: Alignment): CharacterAlignment {
+  return {
+    characters: alignment.characters,
+    characterStartTimesSeconds: alignment.start_times,
+    characterEndTimesSeconds: alignment.end_times,
+  };
+}
 
 type ComposeSegmentsOptions = {
   hideAudioTags?: boolean;

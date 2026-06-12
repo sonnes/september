@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from '@september/ui/components/select';
 
-import { useAudioPlayer } from '@september/audio/components/audio-player';
+import { useAudioPlayer } from './audio-player';
 
 export function AudioOutputDeviceSelector() {
   const {

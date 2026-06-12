@@ -433,9 +433,6 @@ importers:
       '@chenglou/pretext':
         specifier: ^0.0.4
         version: 0.0.4
-      '@elevenlabs/elevenlabs-js':
-        specifier: ^2.7.0
-        version: 2.20.1
       '@september/shared':
         specifier: workspace:*
         version: link:../shared
@@ -445,15 +442,6 @@ importers:
       react:
         specifier: ^19.0.0
         version: 19.2.1
-      react-use-audio-player:
-        specifier: ^4.0.2
-        version: 4.0.2(react@19.2.1)
-      sonner:
-        specifier: ^2.0.6
-        version: 2.0.7(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
-      zod:
-        specifier: ^4.0.5
-        version: 4.1.12
 
   packages/chats:
     dependencies:

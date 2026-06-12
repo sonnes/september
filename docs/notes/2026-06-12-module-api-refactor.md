@@ -32,3 +32,18 @@ Verification:
 - `pnpm exec vitest --run packages/analytics` (13 tests)
 - `pnpm exec tsc --noEmit --pretty false -p apps/web/tsconfig.json`
 - `git diff --check`
+
+## 2026-06-12: Audio
+
+- Deleted transcript viewer (`transcript-viewer.tsx` + `use-transcript-viewer.ts`, 843 lines, zero consumers) per review decision — it had been moved from `@september/ui` in the previous pass but nothing uses it; lives in git history. This dropped the `@elevenlabs/elevenlabs-js` dependency.
+- Audio player rewritten on a single `HTMLAudioElement` engine, dropping `react-use-audio-player` (Howler). The old code ran three parallel playback paths (Howler, hand-rolled sinkId element, speechSynthesis) with duplicated state merged at the end. Public `useAudioPlayer` API unchanged. RAF-based time tracking kept (native `timeupdate` is too coarse for word highlighting).
+- `AudioProvider`/`useAudio` context and the fieldless `AudioService` class replaced with plain functions in `storage.ts` (`uploadAudio`, `uploadAudioBinary`, `downloadAudio`, `getAudio`, `deleteAudio`, `listAudio`). Same IndexedDB layout (`september-audio`/`audio-files`). Functions throw; toasts moved to the chats call sites that had them. One provider removed from the app root.
+- Also deleted: `audio-utils.ts` (zero callers), orphan `use-audio-output-devices.test.ts` (tested a hook that no longer existed). `ReelOverlay`/`ReelSyncOverlay`/`TextViewerWord`/`useTextViewerContext`/`CharacterAlignment` unexported (internal only). `sonner` and `zod` deps dropped (unused after refactor).
+- package.json `exports` narrowed to `"."` only; documents' deep subpath imports moved to the root barrel; internal self-imports (`@september/audio/...`) converted to relative.
+- Subagent review caught two bugs in its player rewrite, fixed by hand: spreading `MediaDeviceInfo` (`{...d}`) drops `deviceId` in real browsers because the properties are prototype getters (tests passed because mocks were plain objects — explicit `{deviceId, label}` mapping restored), and the utterance path never reset `isPlaying` on end.
+
+Verification:
+
+- `pnpm exec vitest --run packages/audio` (32 tests)
+- `pnpm exec tsc --noEmit --pretty false -p apps/web/tsconfig.json`
+- `git diff --check`

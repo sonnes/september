@@ -3,8 +3,8 @@
 import { type HTMLAttributes, type ReactNode, createContext, useContext, useMemo } from 'react';
 
 import { cn } from '@september/shared';
-import { useAudioPlayer } from '@september/audio/components/audio-player';
-import { Alignment } from '@september/audio/types';
+import { useAudioPlayer } from './audio-player';
+import { Alignment } from '../types';
 
 import {
   type GapSegment,

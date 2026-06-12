@@ -2,12 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { Alignment } from '@september/audio/types';
-import { AudioService } from '@september/audio/lib/audio-service';
+import type { Alignment } from '@september/audio';
+import { getAudio, uploadAudio } from '@september/audio';
 import { useAISettings } from '@september/ai';
 import { useSpeech } from '@september/speech/hooks/use-speech';
-
-const audioService = new AudioService();
 
 /** djb2 hash — fast, no async, good enough for cache keys */
 function hashKey(str: string): string {
@@ -123,8 +121,7 @@ export function useSlideVoiceOver(): UseSlideVoiceOverReturn {
       setIsGenerating(true);
 
       // Check cache first
-      audioService
-        .getAudio(path)
+      getAudio(path)
         .then(async cached => {
           if (cached) {
             setIsGenerating(false);
@@ -170,9 +167,7 @@ export function useSlideVoiceOver(): UseSlideVoiceOverReturn {
                   : `data:audio/mp3;base64,${response.blob}`;
 
                 // Save to cache (fire-and-forget)
-                audioService
-                  .uploadAudio({ path, blob: src, alignment: response.alignment })
-                  .catch(() => {});
+                uploadAudio({ path, blob: src, alignment: response.alignment }).catch(() => {});
 
                 playBlob(src, response.alignment, onEnd);
               }

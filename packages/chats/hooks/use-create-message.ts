@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { useAccount } from '@september/account';
 import { track } from '@september/analytics';
-import { Audio, useAudio } from '@september/audio';
+import { Audio, uploadAudio } from '@september/audio';
 import { useSpeech } from '@september/speech';
 
 import { chatCollection, messageCollection } from '../db';
@@ -78,7 +78,6 @@ export interface UseCreateAudioMessageReturn {
 
 export function useCreateAudioMessage(): UseCreateAudioMessageReturn {
   const { user } = useAccount();
-  const { uploadAudio } = useAudio();
   const { createMessage } = useCreateMessage();
   const [status, setStatus] = useState<CreateAudioStatus>('idle');
   const { generateSpeech } = useSpeech();
@@ -121,7 +120,7 @@ export function useCreateAudioMessage(): UseCreateAudioMessageReturn {
         setStatus('idle');
       }
     },
-    [createMessage, generateSpeech, uploadAudio, user?.id]
+    [createMessage, generateSpeech, user?.id]
   );
 
   return { createAudioMessage, status };

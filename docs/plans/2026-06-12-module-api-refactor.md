@@ -11,10 +11,10 @@ Rework the September packages module by module as if each feature were being imp
 - `@september/ui`
 - `@september/ai`
 - `@september/analytics`
+- `@september/audio`
 
 ## Remaining Modules
 
-- `@september/audio`
 - `@september/chats`
 - `@september/cloning`
 - `@september/documents`

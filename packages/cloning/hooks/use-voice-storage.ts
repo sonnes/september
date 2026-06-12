@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 
 import { useCurrentUser } from '@september/account';
-import { AudioService } from '@september/audio';
+import { uploadAudioBinary, listAudio, deleteAudio, downloadAudio } from '@september/audio';
 import { VoiceSample } from '../types';
 
 const LOCAL_USER_ID = 'local-user';
@@ -22,7 +22,6 @@ export interface UseVoiceStorageReturn {
 export function useVoiceStorage(): UseVoiceStorageReturn {
   const { user } = useCurrentUser();
   const userId = user?.id || LOCAL_USER_ID;
-  const audioService = useMemo(() => new AudioService(), []);
 
   const uploadVoiceSample = useCallback(
     async ({
@@ -43,7 +42,7 @@ export function useVoiceStorage(): UseVoiceStorageReturn {
       const path = `voice-samples/${userId}/${type}/${filename}`;
 
       // Binary upload — avoids the base64 call-stack overflow on large files.
-      await audioService.uploadAudioBinary({
+      await uploadAudioBinary({
         path,
         blob: file,
         contentType,
@@ -57,7 +56,7 @@ export function useVoiceStorage(): UseVoiceStorageReturn {
 
       return path;
     },
-    [userId, audioService]
+    [userId]
   );
 
   const getVoiceSamples = useCallback(
@@ -71,7 +70,7 @@ export function useVoiceStorage(): UseVoiceStorageReturn {
       }
 
       const folderPath = `voice-samples/${userId}/${type}`;
-      const files = await audioService.listAudio(folderPath);
+      const files = await listAudio(folderPath);
 
       return (files || []).map(file => {
         const metadata = file.metadata || {};
@@ -85,21 +84,21 @@ export function useVoiceStorage(): UseVoiceStorageReturn {
         };
       });
     },
-    [userId, audioService]
+    [userId]
   );
 
   const deleteVoiceSample = useCallback(
     async (id: string) => {
-      await audioService.deleteAudio(id);
+      await deleteAudio(id);
     },
-    [audioService]
+    []
   );
 
   const downloadVoiceSample = useCallback(
     async (id: string): Promise<Blob> => {
-      return audioService.downloadAudio(id);
+      return downloadAudio(id);
     },
-    [audioService]
+    []
   );
 
   return {

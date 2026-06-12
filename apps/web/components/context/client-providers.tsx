@@ -4,7 +4,7 @@ import { useSyncExternalStore } from 'react';
 
 import { AccountProvider } from '@september/account';
 import { AISettingsProvider } from '@september/ai';
-import { AudioPlayerProvider, AudioProvider } from '@september/audio';
+import { AudioPlayerProvider } from '@september/audio';
 
 const subscribe = () => () => {};
 const getSnapshot = () => true;
@@ -19,9 +19,7 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
   return (
     <AccountProvider>
       <AISettingsProvider>
-        <AudioProvider>
-          <AudioPlayerProvider>{children}</AudioPlayerProvider>
-        </AudioProvider>
+        <AudioPlayerProvider>{children}</AudioPlayerProvider>
       </AISettingsProvider>
     </AccountProvider>
   );
