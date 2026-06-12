@@ -1,52 +1,58 @@
-# Editor Module
+# @september/editor
 
-The Editor module provides the communication interface for the September app, including autocomplete and text entry.
+Communication editor for September. Provides a textarea-based editor with integrated autocomplete, a rich-text TipTap editor, and the context provider that wires them together.
 
-## Features
+## Public API
 
-- **Editor**: A textarea-based editor with integrated autocomplete.
-- **TiptapEditor**: A rich-text editor based on Tiptap with Markdown support.
-- **Autocomplete**: Phrase and word completion system based on local dictionary and synthetic corpus.
-- **Context**: Centralized state management for editor text and operations.
+```ts
+import { EditorProvider, useEditorContext, Editor, TiptapEditor } from '@september/editor';
+import type { EditorContextValue, EditorStats } from '@september/editor';
+```
 
-## Architecture
+| Export | Description |
+|---|---|
+| `EditorProvider` | Context provider. Wrap pages that use the editor. Accepts `defaultText` and optional `chatId` for per-recipient autocomplete personalization. |
+| `useEditorContext` | Access editor state and actions from any child component. Throws if called outside `EditorProvider`. |
+| `Editor` | Textarea editor with built-in autocomplete chip row and submit button. Accepts `onSubmit`, `placeholder`, `disabled`, `children`. |
+| `TiptapEditor` | Rich-text editor (ProseMirror / Tiptap) with Markdown support and formatting toolbar. Accepts `content`, `placeholder`, `onUpdate`, `className`. |
+| `EditorContextValue` | Type for the value returned by `useEditorContext`. |
+| `EditorStats` | Type for keystroke/chars-saved counters returned by `getAndResetStats`. |
 
-- `components/`: UI components (`Editor`, `TiptapEditor`, `Autocomplete`).
-- `hooks/`: Editor state hooks (`useEditor`).
-- `context/`: Editor state management (`EditorProvider`).
+### `EditorContextValue` actions
 
-## Hooks
+| Action | Signature | Description |
+|---|---|---|
+| `setText` | `(value: string \| (prev: string) => string) => void` | Replace full editor text. |
+| `addWord` | `(value: string) => void` | Append a word with trailing space; tracks chars saved. |
+| `setCurrentWord` | `(value: string) => void` | Complete the last partial token; tracks chars saved. |
+| `appendText` | `(value: string) => void` | Append arbitrary text with trailing space. |
+| `reset` | `() => void` | Clear editor text. |
+| `trackKeystroke` | `() => void` | Increment keystroke counter. |
+| `getAndResetStats` | `() => EditorStats` | Return and reset keystroke/chars-saved counters. |
 
-- `useEditor`: Access the editor context for text state and operations.
-- `useAutocomplete`: Editor-owned autocomplete hook. It can include account and chat message history with the `includeMessages` option.
+## Internal (not exported from barrel)
+
+`Autocomplete`, `useEditorLogic`, `useAutocomplete` are package-internal. `useAutocomplete` boots a layered language model from a shared corpus, the user's personal corpus, and chat message history; it personalizes predictions per `chatId`. These are not part of the public API.
 
 ## Usage
 
-### Using the Editor with Autocomplete
-
 ```tsx
-import { Editor, EditorProvider } from '@september/editor';
+import { EditorProvider, Editor, useEditorContext } from '@september/editor';
 
-export function MyPage() {
-  const handleSubmit = (text: string) => {
-    console.log('Submitted:', text);
-  };
-
-  return (
-    <EditorProvider>
-      <Editor onSubmit={handleSubmit} />
-    </EditorProvider>
-  );
+// Wrap with provider (chatId scopes autocomplete to a recipient)
+export function ChatLayout({ chatId, children }) {
+  return <EditorProvider chatId={chatId}>{children}</EditorProvider>;
 }
-```
 
-### Accessing Editor State
+// Render editor inside the provider
+export function ChatPage() {
+  const handleSubmit = (text: string) => { /* send message */ };
+  return <Editor onSubmit={handleSubmit} />;
+}
 
-```tsx
-import { useEditorContext } from '@september/editor';
-
-export function CustomComponent() {
-  const { text, setText } = useEditorContext();
-  // ...
+// Access state from any child
+export function StatsButton() {
+  const { getAndResetStats } = useEditorContext();
+  return <button onClick={() => console.log(getAndResetStats())}>Stats</button>;
 }
 ```

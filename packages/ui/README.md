@@ -48,6 +48,8 @@ All components follow shadcn/ui patterns and are built on Radix primitives:
 | `Textarea` | Multi-line inputs |
 | `Tooltip` | Hover information |
 | `EditableText` | Inline editable text with pencil-on-hover affordance |
+| `Suggestion` | Pill-shaped chip button for a single autocomplete suggestion |
+| `Suggestions` | Horizontal scrollable row that wraps `Suggestion` chips |
 
 ## Usage
 

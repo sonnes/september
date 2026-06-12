@@ -1,10 +1,7 @@
 "use client";
 
-import { Button } from "@september/ui/components/button";
-import {
-  ScrollArea,
-  ScrollBar,
-} from "@september/ui/components/scroll-area";
+import { Button } from "./button";
+import { ScrollArea, ScrollBar } from "./scroll-area";
 import { cn } from "@september/shared";
 import type { ComponentProps } from "react";
 

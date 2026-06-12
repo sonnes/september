@@ -601,15 +601,6 @@ importers:
       tiptap-markdown:
         specifier: ^0.8.10
         version: 0.8.10(@tiptap/core@3.8.0(@tiptap/pm@3.8.0))
-      trie-search:
-        specifier: ^2.2.0
-        version: 2.2.0
-      wink-pos-tagger:
-        specifier: ^2.2.2
-        version: 2.2.2
-      zod:
-        specifier: ^4.0.5
-        version: 4.1.12
 
   packages/keyboards:
     dependencies:

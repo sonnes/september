@@ -2,12 +2,12 @@
 
 import { useMemo, useState } from 'react';
 
-import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
+import { Suggestion, Suggestions } from '@september/ui';
 
-import { useAutocomplete } from '@september/editor/hooks/use-autocomplete';
+import { useAutocomplete } from '../hooks/use-autocomplete';
 
 import { MATCH_PUNCTUATION } from '@september/shared';
-import { useEditorContext } from '@september/editor/components/editor-provider';
+import { useEditorContext } from './editor-provider';
 
 export function Autocomplete() {
   const { text, addWord, setCurrentWord, chatId } = useEditorContext();

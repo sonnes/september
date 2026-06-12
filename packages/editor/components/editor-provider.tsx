@@ -2,8 +2,8 @@
 
 import { ReactNode, createContext, useContext } from 'react';
 
-import { useEditorLogic } from '@september/editor/hooks/use-editor';
-import { EditorContextValue } from '@september/editor/types';
+import { useEditorLogic } from '../hooks/use-editor';
+import { EditorContextValue } from '../types';
 
 const EditorContext = createContext<EditorContextValue | undefined>(undefined);
 
@@ -25,7 +25,7 @@ export function EditorProvider({ children, defaultText = '', chatId }: EditorPro
 export function useEditorContext() {
   const context = useContext(EditorContext);
   if (context === undefined) {
-    throw new Error('useEditor must be used within an EditorProvider');
+    throw new Error('useEditorContext must be used within an EditorProvider');
   }
   return context;
 }

@@ -93,3 +93,17 @@ Verification:
 - `pnpm exec vitest --run packages/documents packages/chats packages/ai packages/ui` (30 tests)
 - `pnpm exec tsc --noEmit --pretty false -p apps/web/tsconfig.json`
 - `git diff --check`
+
+## 2026-06-12: Editor
+
+- Public surface narrowed to the 4 symbols actually consumed (`EditorProvider`, `useEditorContext`, `Editor`, `TiptapEditor`) + `EditorStats`/`EditorContextValue` types. `Autocomplete` component, `useEditorLogic`, `useAutocomplete` are now internal (still relative-importable, just not in the barrel).
+- Fixed a package→app boundary violation: `autocomplete.tsx` imported the suggestion chip from the app (`@/components/ai-elements/suggestion`). Per review, the chip moved into `@september/ui` (`Suggestion`/`Suggestions`); the app copy (its only consumer) was deleted.
+- Dropped the dead v2 `suggestWord` from the `useAutocomplete` hook surface (no caller; the live component uses `getSpellings`/`getNextWords`). The engine's `suggestWord` in shared/autocomplete is untouched, so it can be resurfaced when a UI needs it.
+- Dropped genuinely dead deps `trie-search`, `wink-pos-tagger`, and `zod` — imported nowhere in the package (nor elsewhere in the repo, for the first two). Kept the substantive caching/persistence comments in use-autocomplete.ts.
+- Note: an unrelated `apps/web/app/mock/` prototype (Project Voice–style sentence-suggestion mock) appeared untracked during this session — NOT part of this refactor and deliberately left out of the commit.
+
+Verification:
+
+- `pnpm exec vitest --run packages/editor packages/ui packages/shared` (183 tests)
+- `pnpm exec tsc --noEmit --pretty false -p apps/web/tsconfig.json`
+- `git diff --check`

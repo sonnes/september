@@ -9,8 +9,6 @@ import {
   Autocomplete,
   AutocompletePersistence,
   type AnyEngineSnapshot,
-  type SuggestWordOptions,
-  type RankedWord,
 } from '@september/shared/autocomplete';
 import { tokenize } from '@september/shared/autocomplete';
 
@@ -42,8 +40,7 @@ interface UseAutocompleteOptions {
   /**
    * Scope observations and predictions to this chat. When provided, new
    * messages observed via `useMessages` are attributed to both the global
-   * user layer *and* this chat's layer, and `getNextWords` / `suggestWord`
-   * consult it first.
+   * user layer *and* this chat's layer, and `getNextWords` consult it first.
    */
   chatId?: string;
 }
@@ -52,8 +49,6 @@ interface UseAutocompleteReturn {
   isReady: boolean;
   getSpellings: (query: string) => string[];
   getNextWords: (query: string) => string[];
-  /** New v2 unified word suggester. Prefer this in new UIs. */
-  suggestWord: (opts: SuggestWordOptions) => RankedWord[];
 }
 
 export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutocompleteReturn {
@@ -244,23 +239,12 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
     [autocomplete, chatId],
   );
 
-  const suggestWord = useCallback(
-    (opts: SuggestWordOptions): RankedWord[] => {
-      if (!autocomplete.isReady()) return [];
-      // Auto-thread the hook-bound chatId if the caller didn't pass one.
-      const merged = opts.chatId ? opts : { ...opts, chatId };
-      return autocomplete.suggestWord(merged);
-    },
-    [autocomplete, chatId],
-  );
-
   return useMemo(
     () => ({
       isReady: isInitialized && autocomplete.isReady(),
       getSpellings,
       getNextWords,
-      suggestWord,
     }),
-    [isInitialized, autocomplete, getSpellings, getNextWords, suggestWord],
+    [isInitialized, autocomplete, getSpellings, getNextWords],
   );
 }

@@ -8,8 +8,8 @@ import { Button } from '@september/ui/components/button';
 
 import { cn } from '@september/shared';
 
-import { useEditorContext } from '@september/editor/components/editor-provider';
-import { Autocomplete } from '@september/editor/components/autocomplete';
+import { useEditorContext } from './editor-provider';
+import { Autocomplete } from './autocomplete';
 
 type EditorProps = {
   placeholder?: string;
