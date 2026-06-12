@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 import { useAISettings, useGenerate } from '@september/ai';
 import { Message } from '@september/chats';
-import { Suggestion } from '@september/suggestions/types';
+import { Suggestion } from '../types';
 
 const SUGGESTIONS_PROMPT = `Generate 5 possible NEXT things the User might WANT TO SAY to the person they are speaking with.
 
@@ -129,7 +129,7 @@ export function useSuggestions({
               result.replace('```json', '').replace('```', '').trim()
             ) as string[];
             setSuggestions(
-              parsed.map((text: string) => ({ text, audio_path: undefined }))
+              parsed.map((text: string) => ({ text }))
             );
           } catch (error) {
             console.error('Error parsing suggestions:', error);

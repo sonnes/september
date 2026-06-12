@@ -17,8 +17,8 @@ import { Spinner } from '@september/ui/components/spinner';
 import type { Account } from '@september/account';
 import type { AIProvider } from '@september/shared';
 
-import { useCorpus } from '@september/suggestions/hooks/use-corpus';
-import { type SuggestionsFormData, SuggestionsFormSchema } from '@september/suggestions/types';
+import { useCorpus } from '../hooks/use-corpus';
+import { type SuggestionsFormData, SuggestionsFormSchema } from '../types';
 
 const EXAMPLE_INSTRUCTIONS = [
   {

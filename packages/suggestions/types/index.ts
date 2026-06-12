@@ -2,7 +2,6 @@ import { z } from 'zod';
 
 export interface Suggestion {
   text: string;
-  audio_path?: string;
 }
 
 /**

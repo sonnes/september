@@ -126,6 +126,18 @@ Verification:
 - `@september/recording` (webcam video + TTS-audio capture, ffmpeg MP4 conversion, 538 lines) had zero consumers anywhere in the repo — built but never wired into a page. Per user decision, deleted the whole package rather than refactoring a module with no caller.
 - Removed it from `apps/web/package.json` deps and the `next.config.ts` transpile list. The `@ffmpeg/ffmpeg`/`@ffmpeg/util` deps leave the tree with it; `react-webcam` stays because the display page (`apps/web/app/display/[id]/page.tsx`) uses it via the app's own dependency. Recoverable from git history if a recording feature is ever built.
 
+## 2026-06-12: Suggestions
+
+- Light curate-only pass. Public API: `Suggestions` (composer suggestion strip), `SuggestionsForm` (render-prop settings form), `SuggestionsFormData`. The render-prop was deliberately KEPT — unlike speech, its two consumers supply genuinely different submit chrome (settings page = Save; onboarding step = Back/Skip/Continue with nav), so the children-as-function pattern earns its keep.
+- Made `useSuggestions`, `useCorpus`, the `Suggestion` interface, and `SuggestionsFormSchema` internal (no external importers). Self-imports → relative; exports narrowed.
+- Dropped the always-undefined, never-read `audio_path` field from the `Suggestion` type (suggestions never carried audio).
+- No dep changes.
+
+Verification:
+
+- `pnpm exec tsc --noEmit --pretty false -p apps/web/tsconfig.json`
+- `git diff --check`
+
 ## 2026-06-12: Speech (biggest refactor — needs manual QA)
 
 - Unified two parallel speech-settings stacks that both wrote to `account.ai_speech` but each dropped fields the other had. Deleted the 546-line `SpeechSettingsForm` (modal stack, own schema) and the `VoicesForm` render-prop wrapper; replaced the app's 213-line settings-page render-prop body with a 28-line wrapper. Net −937/+139.

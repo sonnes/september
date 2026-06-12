@@ -5,7 +5,7 @@ import { Loader2 } from 'lucide-react';
 import { cn } from '@september/shared';
 import { useFirstMessage, useMessages } from '@september/chats';
 import { useEditorContext } from '@september/editor';
-import { useSuggestions } from '@september/suggestions/hooks/use-suggestions';
+import { useSuggestions } from '../hooks/use-suggestions';
 
 interface SuggestionsProps {
   chatId?: string;
