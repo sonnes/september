@@ -1,76 +1,59 @@
-# Chats Module
+# @september/chats
 
-This package manages the chat and messaging functionality of the September app. It uses **TanStack DB** for local-first data storage.
+Local-first chat and messaging for September. Backed by TanStack DB (IndexedDB).
 
-## Responsibilities
-
-- **Chat Management**: Listing, creating, and editing chats.
-- **Messaging**: Sending and receiving messages within a chat.
-- **Local-First**: Data is stored locally using TanStack DB.
-
-## Directory Structure
-
-- `components/`: React components for chats and messages.
-- `hooks/`: Custom hooks for interacting with chat and message data.
-- `db.ts`: TanStack DB collection definitions.
-- `types/`: Zod schemas and TypeScript interfaces for chat and message data.
-
-## Usage
+## Public API
 
 ### Components
 
-```tsx
-import { ChatList, MessageList, MessagesProvider } from '@september/chats';
-```
+| Export | Description |
+| --- | --- |
+| `ChatList` | Renders a searchable list of chats with delete confirm dialog |
+| `MessageList` | Renders messages in a chat; handles audio playback |
+| `EditableChatTitle` | Inline editable title with save/revert behaviour |
 
-### Hooks
+### Live-query hooks
 
-#### Query Hooks
-```tsx
-import { useChats, useMessages } from '@september/chats';
+These return live data from IndexedDB and re-render on changes.
 
-// Get chats for a user
+```ts
 const { chats, isLoading, error } = useChats({ userId, searchQuery });
-
-// Get messages for a chat
-const { messages, isLoading, error } = useMessages({ chatId, searchQuery });
+const { messages, isLoading, error } = useMessages({ chatId, searchQuery, limit });
+const { message } = useFirstMessage(chatId);
 ```
 
-#### Mutation Hooks
-```tsx
-import {
-  useCreateChat,
-  useCreateMessage,
-  useCreateAudioMessage,
-  useUpdateChat,
-  useDeleteChat,
-  useDeleteMessage
-} from '@september/chats';
+### Mutations
 
-// Create a new chat
-const { createChat } = useCreateChat();
+Plain async functions that `throw` on failure. Toasts live at call sites.
 
-// Create a new message (updates chat's updated_at)
-const { createMessage } = useCreateMessage();
+```ts
+import { createChat, updateChat, deleteChat, createMessage } from '@september/chats';
 
-// Create an audio message (generates speech and uploads audio)
+const chat = await createChat(userId, 'New Chat');
+await updateChat(chatId, { title: 'Renamed' });
+await deleteChat(chatId);          // cascades messages
+const msg  = await createMessage({ text, type, user_id, chat_id });
+```
+
+### Stateful flow hook
+
+`useCreateAudioMessage` is a hook (not a plain function) because it manages multi-step async state (`generating-speech` → `uploading-audio` → `saving-message`) and accesses `useAccount` / `useSpeech`.
+
+```ts
 const { createAudioMessage, status } = useCreateAudioMessage();
-
-// Update a chat
-const { updateChat, isUpdating } = useUpdateChat();
-await updateChat(chatId, { title: 'New Title' });
-
-// Delete a chat
-const { deleteChat, isDeleting } = useDeleteChat();
-await deleteChat(chatId);
-
-// Delete a message
-const { deleteMessage, isDeleting } = useDeleteMessage();
-await deleteMessage(messageId);
 ```
 
 ### Types
 
-```tsx
-import { Chat, Message } from '@september/chats';
+```ts
+import type { Chat, Message, CreateMessageData } from '@september/chats';
 ```
+
+## Data layout
+
+| Collection | IndexedDB db | Key |
+| --- | --- | --- |
+| `chatCollection` | `app-chats` | `id` (uuid) |
+| `messageCollection` | `app-messages` | `id` (uuid) |
+
+Messages reference their parent chat via `chat_id`. `deleteChat` cascade-deletes all messages with that `chat_id` before removing the chat row.

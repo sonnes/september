@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 
-import { ChatList, useChats, useCreateChat } from '@september/chats';
+import { useAccount } from '@september/account';
+import { ChatList, useChats, createChat } from '@september/chats';
 import { Button } from '@september/ui/components/button';
 import { ErrorState } from '@september/ui/components/error-state';
 
@@ -18,13 +19,18 @@ import { ChatListSkeleton } from './loading-skeleton';
 
 export default function ChatsPage() {
   const router = useRouter();
+  const { user } = useAccount();
   const [searchValue, setSearchValue] = useState('');
   const { chats, isLoading: fetching, error } = useChats({ searchQuery: searchValue });
-  const { createChat } = useCreateChat();
 
   const handleNewChat = async () => {
+    if (!user?.id) {
+      toast.error('Account not ready yet');
+      return;
+    }
     try {
-      const chat = await createChat();
+      const chat = await createChat(user.id);
+      toast.success('Chat created');
       router.push(`/chats/${chat.id}`);
     } catch (err) {
       toast.error('Error', {

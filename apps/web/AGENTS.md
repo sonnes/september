@@ -19,7 +19,7 @@ Use `pnpm` from workspace root — never `npm` or `yarn`.
 - Forms: `react-hook-form` + `zodResolver`. Use `@september/ui/components/form`
 - Styling: shadcn/ui + Tailwind. Font family is Noto Sans
 - Query hooks return `{ data, isLoading, error }` — error shape: `{ message: string }`
-- Mutation hooks throw errors for error boundaries. Toast for user feedback
+- Mutations are plain async functions that throw; toasts live at call sites; hooks are reserved for live queries and stateful flows.
 - All hooks must have explicit return type interfaces
 - Prefer editing existing files over creating new ones
 

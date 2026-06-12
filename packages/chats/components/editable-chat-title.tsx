@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { PencilIcon } from '@heroicons/react/24/outline';
+import { toast } from 'sonner';
 
 import { Input } from '@september/ui/components/input';
 
-import { useUpdateChat } from '../hooks/use-update-chat';
+import { updateChat } from '../mutations';
 
 interface EditableChatTitleProps {
   chatId: string;
@@ -15,8 +16,8 @@ interface EditableChatTitleProps {
 }
 
 export function EditableChatTitle({ chatId, title, className }: EditableChatTitleProps) {
-  const { updateChat, isUpdating } = useUpdateChat();
   const [isEditing, setIsEditing] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [value, setValue] = useState(title || '');
   const [prevTitle, setPrevTitle] = useState(title);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -41,12 +42,18 @@ export function EditableChatTitle({ chatId, title, className }: EditableChatTitl
 
     // Only update if the title actually changed
     if (newTitle !== (title || undefined)) {
+      setIsUpdating(true);
       try {
         await updateChat(chatId, { title: newTitle });
+        toast.success('Chat updated');
       } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to update chat');
         // Revert to original value on error
         setValue(title || '');
+        setIsUpdating(false);
         return;
+      } finally {
+        setIsUpdating(false);
       }
     }
 

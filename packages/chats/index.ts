@@ -1,13 +1,17 @@
-export * from './components/chat-list';
-export * from './components/editable-chat-title';
-export * from './components/message-list';
+// Components
+export { ChatList } from './components/chat-list';
+export { MessageList } from './components/message-list';
+export { EditableChatTitle } from './components/editable-chat-title';
 
-export * from './hooks/use-chats';
-export * from './hooks/use-create-chat';
-export * from './hooks/use-messages';
-export * from './hooks/use-create-message';
-export * from './hooks/use-update-chat';
-export * from './hooks/use-delete-chat';
-export * from './hooks/use-delete-message';
+// Live-query hooks
+export { useChats } from './hooks/use-chats';
+export { useMessages, useFirstMessage } from './hooks/use-messages';
 
-export * from './types/index';
+// Stateful flow hook
+export { useCreateAudioMessage } from './hooks/use-create-audio-message';
+
+// Plain async mutations (throw on failure; toasts live at call sites)
+export { createChat, updateChat, deleteChat, createMessage } from './mutations';
+
+// Types
+export type { Chat, Message, CreateMessageData } from './types';

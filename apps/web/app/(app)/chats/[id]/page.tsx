@@ -12,10 +12,10 @@ import { AudioOutputDeviceSelector, useAudioPlayer } from '@september/audio';
 import {
   EditableChatTitle,
   MessageList,
+  updateChat,
   useChats,
   useCreateAudioMessage,
   useMessages,
-  useUpdateChat,
 } from '@september/chats';
 import { Editor, useEditorContext } from '@september/editor';
 import {
@@ -70,7 +70,6 @@ export default function ChatPage({ params }: ChatPageProps) {
   const { text, setText, trackKeystroke, getAndResetStats } = useEditorContext();
   const { generateKeyboard } = useGenerateKeyboardFromMessage();
   const { createKeyboard } = useCreateKeyboard();
-  const { updateChat } = useUpdateChat();
   const popupRef = useRef<Window | null>(null);
 
   const handleSubmit = useCallback(
@@ -145,7 +144,6 @@ export default function ChatPage({ params }: ChatPageProps) {
       messages,
       generateKeyboard,
       createKeyboard,
-      updateChat,
       getAndResetStats,
     ]
   );

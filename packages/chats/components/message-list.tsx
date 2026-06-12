@@ -3,10 +3,9 @@
 import { useState } from 'react';
 
 import { Loader2 } from 'lucide-react';
-import moment from 'moment';
 import { toast } from 'sonner';
 
-import { cn } from '@september/shared';
+import { cn, timeAgo } from '@september/shared';
 import { useAudioPlayer, downloadAudio } from '@september/audio';
 import type { Audio } from '@september/audio';
 import { useSpeech } from '@september/speech';
@@ -15,6 +14,15 @@ import type { Message } from '../types';
 
 interface MessageItemProps {
   message: Message;
+}
+
+function blobToDataURI(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
 }
 
 function MessageItem({ message }: MessageItemProps) {
@@ -48,9 +56,10 @@ function MessageItem({ message }: MessageItemProps) {
         const blob = await downloadAudio(message.audio_path);
 
         if (blob) {
+          const dataURI = await blobToDataURI(blob);
           const audioTrack: Audio = {
             path: message.audio_path,
-            blob: Buffer.from(await blob.arrayBuffer()).toString('base64'),
+            blob: dataURI,
           };
 
           setAudio(audioTrack);
@@ -104,7 +113,7 @@ function MessageItem({ message }: MessageItemProps) {
         <p className="text-foreground wrap-break-word">{message.text}</p>
       </div>
       <p className={cn('text-xs text-muted-foreground', isUser ? 'text-right' : 'text-left')}>
-        {moment(message.created_at).fromNow()}
+        {timeAgo(message.created_at)}
       </p>
     </div>
   );

@@ -4,7 +4,7 @@ import type { ComponentProps } from 'react';
 import Link from 'next/link';
 
 import { MagnifyingGlassIcon, TrashIcon } from '@heroicons/react/24/outline';
-import moment from 'moment';
+import { toast } from 'sonner';
 
 import {
   AlertDialog,
@@ -19,9 +19,9 @@ import {
 import { Button } from '@september/ui/components/button';
 import { Input } from '@september/ui/components/input';
 
-import { cn } from '@september/shared';
+import { cn, timeAgo } from '@september/shared';
 
-import { useDeleteChat } from '../hooks/use-delete-chat';
+import { deleteChat } from '../mutations';
 import { Chat } from '../types';
 
 type ChatListEmptyStateProps = ComponentProps<'div'> & {
@@ -77,17 +77,20 @@ export function ChatList({
   label = 'chats',
 }: ChatListProps) {
   const displayText = count !== undefined ? `${count} ${label}` : undefined;
-  const { deleteChat, isDeleting } = useDeleteChat();
   const [chatToDelete, setChatToDelete] = React.useState<Chat | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   const handleDelete = async () => {
-    if (chatToDelete) {
-      try {
-        await deleteChat(chatToDelete.id);
-        setChatToDelete(null);
-      } catch (error) {
-        // Error handled in hook
-      }
+    if (!chatToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteChat(chatToDelete.id);
+      toast.success('Chat deleted');
+      setChatToDelete(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete chat');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -133,7 +136,7 @@ export function ChatList({
                   {chat.title || 'Untitled chat'}
                 </div>
                 <div className="text-sm text-zinc-500">
-                  Last message {moment(chat.updated_at).fromNow()}
+                  Last message {timeAgo(chat.updated_at)}
                 </div>
               </Link>
 

@@ -4,7 +4,7 @@ Small shared primitives, hooks, and types used across September packages.
 
 ## Features
 
-- **Utilities**: Common helper functions (`cn` for className merging, `MATCH_PUNCTUATION` for text boundaries)
+- **Utilities**: Common helper functions (`cn` for className merging, `MATCH_PUNCTUATION` for text boundaries, `timeAgo` for human-readable relative time strings)
 - **Hooks**: Reusable React hooks for common patterns
 - **Types**: Shared TypeScript types and Zod schemas
 - **IndexedDB**: Local storage utilities with TanStack DB, exported from `@september/shared/indexeddb`
@@ -36,10 +36,13 @@ packages/shared/
 ### Utilities
 
 ```typescript
-import { cn } from '@september/shared';
+import { cn, timeAgo } from '@september/shared';
 
 // Merge class names with Tailwind conflict resolution
 <div className={cn('px-4 py-2', isActive && 'bg-blue-500')} />
+
+// Human-readable relative time
+timeAgo(message.created_at) // "2 minutes ago"
 ```
 
 ### Hooks

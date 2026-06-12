@@ -47,3 +47,21 @@ Verification:
 - `pnpm exec vitest --run packages/audio` (32 tests)
 - `pnpm exec tsc --noEmit --pretty false -p apps/web/tsconfig.json`
 - `git diff --check`
+
+## 2026-06-12: Chats
+
+- Mutations are now plain async functions (`createChat`, `updateChat`, `deleteChat`, `createMessage`) in `mutations.ts`; the five mutation hooks were deleted. This establishes the convention going forward — `apps/web/CLAUDE.md` (AGENTS.md) updated: mutations are plain functions that throw, toasts at call sites, hooks reserved for live queries and stateful flows. `useCreateAudioMessage` stays a hook (speech pipeline with real status).
+- Root-cause bug fixed across all mutations: `await collection.insert/update/delete()` awaited a TanStack DB `Transaction` (not a Promise), so loading flags and error handling never worked. Now `await tx.isPersisted.promise`. Same bug class found earlier in analytics.
+- `deleteChat` now cascade-deletes the chat's messages (ChatList's dialog always promised this; previously messages orphaned in IndexedDB).
+- `createMessage` strips transient `editorStats` before insert (was previously spread into the stored record).
+- `message-list.tsx`: replaced Node `Buffer` base64 round-trip with `FileReader.readAsDataURL` (no Buffer in client code).
+- Added `timeAgo` (Intl.RelativeTimeFormat) to `@september/shared`; chats dropped `moment`. `documents` and the display page still use moment — migrate in their passes.
+- Dropped dead deps `uuidv7`, `@headlessui/react`; deleted dead `useDeleteMessage`. Exports narrowed to root barrel.
+- chats/page guard: `createChat` requires a user id; page now toasts "Account not ready yet" instead of silently creating a chat with empty `user_id`.
+- Deleted pre-existing orphan `packages/shared/lib/indexeddb/collection.test.ts` — it imported `./collection` (v1), which doesn't exist on this branch; it broke any full run of the shared suite.
+
+Verification:
+
+- `pnpm exec vitest --run packages/chats packages/shared` (196 tests)
+- `pnpm exec tsc --noEmit --pretty false -p apps/web/tsconfig.json`
+- `git diff --check`

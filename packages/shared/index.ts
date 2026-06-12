@@ -1,5 +1,6 @@
 // Utilities
 export { cn, MATCH_PUNCTUATION } from "./lib/utils";
+export { timeAgo } from "./lib/time-ago";
 
 // Hooks
 export { useDebounce } from "./hooks/use-debounce";
