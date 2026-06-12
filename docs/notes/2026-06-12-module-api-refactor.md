@@ -65,3 +65,17 @@ Verification:
 - `pnpm exec vitest --run packages/chats packages/shared` (196 tests)
 - `pnpm exec tsc --noEmit --pretty false -p apps/web/tsconfig.json`
 - `git diff --check`
+
+## 2026-06-12: Cloning
+
+- Dissolved `CloningProvider` and all three contexts. `VoiceCloneForm` is self-contained (owns `useUpload()` + `useRecording()`, prop-drills to its two sections); the clone page renders just `<VoiceCloneForm />`. The `sharedStorage` threading existed to share one AudioService instance — obsolete since audio storage became plain functions.
+- The voices page no longer mounts recording machinery: it calls plain `getVoiceSamples`/`downloadVoiceSample`/`findSimilarVoices` directly. Fixed the subagent's userId sourcing there (`account?.id` → `user?.id` to match the hooks; both resolve to `'local-user'` today but shouldn't be allowed to diverge).
+- `ElevenLabsVoiceClone` class → plain `cloneVoice(apiKey, opts)` / `findSimilarVoices(apiKey, files)` with one shared error parser. `useVoiceStorage` hook → plain functions with explicit userId (same `voice-samples/${userId}/${type}/` path scheme — stored data unaffected).
+- Dropped dead deps `@elevenlabs/elevenlabs-js` (the client uses raw fetch) and `react-webcam`. Dropped never-validating `VoiceSampleSchema` zod and the context types. Exports narrowed to root barrel; self-imports made relative.
+- Kept as-is: `MediaRecorderManager`, `useMediaRecorder`, `useAudioPlayback`, `collectSampleIds` (clean, tested internals).
+
+Verification:
+
+- `pnpm exec vitest --run packages/cloning` (23 tests)
+- `pnpm exec tsc --noEmit --pretty false -p apps/web/tsconfig.json`
+- `git diff --check`

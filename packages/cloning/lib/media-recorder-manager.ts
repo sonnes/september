@@ -11,7 +11,7 @@
  *  - stopAll() is called on React unmount to release the microphone.
  */
 
-import { RecordingStatus } from '@september/cloning/types';
+import { RecordingStatus } from '../types/index';
 
 export type { RecordingStatus };
 

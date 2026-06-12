@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 
-import type { RecordingStatus } from '@september/cloning/types';
+import type { RecordingStatus } from '../types';
 
 interface UseAudioPlaybackReturn {
   playRecording: (id: string, blob: Blob) => Promise<void>;

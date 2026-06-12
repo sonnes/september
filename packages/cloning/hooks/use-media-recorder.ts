@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { MediaRecorderManager } from '@september/cloning/lib/media-recorder-manager';
-import type { RecordingStatus } from '@september/cloning/types';
+import { MediaRecorderManager } from '../lib/media-recorder-manager';
+import type { RecordingStatus } from '../types';
 
 interface UseMediaRecorderReturn {
   startRecording: (id: string) => Promise<void>;

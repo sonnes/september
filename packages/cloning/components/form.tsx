@@ -7,21 +7,19 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { useAccount } from '@september/account';
 import { Button } from '@september/ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@september/ui/components/card';
 import { FormField, FormTextarea } from '@september/ui/components/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@september/ui/components/tabs';
 
-import { useAccount } from '@september/account';
-import {
-  useRecordingContext,
-  useUpload,
-  useVoiceStorageContext,
-} from '@september/cloning/components/cloning-provider';
-import { RecordingSection } from '@september/cloning/components/record';
-import { UploadSection } from '@september/cloning/components/upload';
-import { collectSampleIds } from '@september/cloning/lib/collect-sample-ids';
-import { ElevenLabsVoiceClone } from '@september/cloning/lib/elevenlabs-clone';
+import { cloneVoice } from '../elevenlabs';
+import { useRecording } from '../hooks/use-recording';
+import { useUpload } from '../hooks/use-upload';
+import { collectSampleIds } from '../lib/collect-sample-ids';
+import { deleteVoiceSample, downloadVoiceSample } from '../voice-samples';
+import { RecordingSection } from './record';
+import { UploadSection } from './upload';
 
 const CloneVoiceSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -34,19 +32,15 @@ export function VoiceCloneForm() {
   const [activeTab, setActiveTab] = useState('upload');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { account } = useAccount();
-  const { recordings } = useRecordingContext();
-  const { uploadedFiles } = useUpload();
-  const { downloadVoiceSample, deleteVoiceSample } = useVoiceStorageContext();
+  const upload = useUpload();
+  const recording = useRecording();
 
   const form = useForm<CloneVoiceFormData>({
     resolver: zodResolver(CloneVoiceSchema),
     defaultValues: { name: '', description: '' },
   });
 
-  const elevenlabsApiKey = useMemo(
-    () => account?.ai_providers?.elevenlabs?.api_key,
-    [account]
-  );
+  const elevenlabsApiKey = useMemo(() => account?.ai_providers?.elevenlabs?.api_key, [account]);
 
   const handleSubmit = async (data: CloneVoiceFormData) => {
     if (!elevenlabsApiKey) {
@@ -54,8 +48,7 @@ export function VoiceCloneForm() {
       return;
     }
 
-    // Merge uploads AND recordings — ElevenLabs produces better clones with more data
-    const fileIds = collectSampleIds(uploadedFiles, recordings);
+    const fileIds = collectSampleIds(upload.uploadedFiles, recording.recordings);
 
     if (fileIds.length === 0) {
       toast.error('Please upload or record at least one audio sample.');
@@ -65,7 +58,6 @@ export function VoiceCloneForm() {
     setIsSubmitting(true);
 
     try {
-      // Download all samples in parallel from IndexedDB
       const files = await Promise.all(
         fileIds.map(async id => {
           const blob = await downloadVoiceSample(id);
@@ -75,8 +67,7 @@ export function VoiceCloneForm() {
         })
       );
 
-      const cloneService = new ElevenLabsVoiceClone(elevenlabsApiKey);
-      const result = await cloneService.cloneVoice({
+      const result = await cloneVoice(elevenlabsApiKey, {
         files,
         name: data.name,
         description: data.description,
@@ -86,9 +77,7 @@ export function VoiceCloneForm() {
         description: `Successfully created voice "${result.name}" (ID: ${result.voice_id})`,
       });
 
-      // Clean up local samples — already sent to ElevenLabs, no longer needed
       await Promise.allSettled(fileIds.map(id => deleteVoiceSample(id)));
-
       form.reset();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create voice clone';
@@ -100,7 +89,7 @@ export function VoiceCloneForm() {
   };
 
   const hasApiKey = !!elevenlabsApiKey;
-  const hasSamples = uploadedFiles.length > 0 || Object.keys(recordings).length > 0;
+  const hasSamples = upload.uploadedFiles.length > 0 || Object.keys(recording.recordings).length > 0;
 
   return (
     <div className="space-y-6 pb-24 max-w-2xl">
@@ -133,10 +122,25 @@ export function VoiceCloneForm() {
                 <TabsTrigger value="record">Record Audio</TabsTrigger>
               </TabsList>
               <TabsContent value="upload" className="mt-6">
-                <UploadSection />
+                <UploadSection
+                  uploadedFiles={upload.uploadedFiles}
+                  status={upload.status}
+                  error={upload.error}
+                  uploadFile={upload.uploadFile}
+                  deleteFile={upload.deleteFile}
+                />
               </TabsContent>
               <TabsContent value="record" className="mt-6">
-                <RecordingSection />
+                <RecordingSection
+                  recordings={recording.recordings}
+                  startRecording={recording.startRecording}
+                  stopRecording={recording.stopRecording}
+                  deleteRecording={recording.deleteRecording}
+                  playRecording={recording.playRecording}
+                  stopPlaying={recording.stopPlaying}
+                  status={recording.status}
+                  errors={recording.errors}
+                />
               </TabsContent>
             </Tabs>
           </CardContent>

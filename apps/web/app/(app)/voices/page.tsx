@@ -5,8 +5,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 import { useAccount } from '@september/account';
-import { CloningProvider, useVoiceStorageContext } from '@september/cloning';
-import { ElevenLabsVoiceClone, SimilarVoice } from '@september/cloning/lib/elevenlabs-clone';
+import { findSimilarVoices, getVoiceSamples, downloadVoiceSample } from '@september/cloning';
+import type { SimilarVoice } from '@september/cloning';
 import { Button } from '@september/ui/components/button';
 import { Callout } from '@september/ui/components/callout';
 import {
@@ -24,8 +24,8 @@ function SimilarVoicesContent() {
   const searchParams = useSearchParams();
   const isSimilarSearch = searchParams.get('search') === 'similar';
 
-  const { account } = useAccount();
-  const { getVoiceSamples, downloadVoiceSample } = useVoiceStorageContext();
+  const { user, account } = useAccount();
+  const userId = user?.id || 'local-user';
 
   const [results, setResults] = useState<SimilarVoice[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -39,8 +39,8 @@ function SimilarVoicesContent() {
 
   useEffect(() => {
     if (!isSimilarSearch) return;
-    getVoiceSamples().then(samples => setHasSamples(samples.length > 0));
-  }, [isSimilarSearch, getVoiceSamples]);
+    getVoiceSamples(userId).then(samples => setHasSamples(samples.length > 0));
+  }, [isSimilarSearch, userId]);
 
   const handleSearch = useCallback(async () => {
     if (!elevenlabsApiKey) return;
@@ -49,7 +49,7 @@ function SimilarVoicesContent() {
     setError(null);
 
     try {
-      const samples = await getVoiceSamples();
+      const samples = await getVoiceSamples(userId);
 
       if (samples.length === 0) {
         setError('No voice samples found. Record or upload samples on the Clone page first.');
@@ -65,15 +65,14 @@ function SimilarVoicesContent() {
         })
       );
 
-      const cloneService = new ElevenLabsVoiceClone(elevenlabsApiKey);
-      const voices = await cloneService.findSimilarVoices(files);
+      const voices = await findSimilarVoices(elevenlabsApiKey, files);
       setResults(voices);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to find similar voices');
     } finally {
       setIsSearching(false);
     }
-  }, [elevenlabsApiKey, getVoiceSamples, downloadVoiceSample]);
+  }, [elevenlabsApiKey, userId]);
 
   const didAutoSearch = useRef(false);
   useEffect(() => {
@@ -190,9 +189,7 @@ export default function VoicesPage() {
             title="Voices"
             description="Browse and match ElevenLabs library voices to your recorded samples."
           />
-          <CloningProvider>
-            <SimilarVoicesContent />
-          </CloningProvider>
+          <SimilarVoicesContent />
         </PageShell>
       </SidebarLayout.Content>
     </>

@@ -1,14 +1,15 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { toast } from 'sonner';
 
-import { useMediaRecorder } from '@september/cloning/hooks/use-media-recorder';
-import { useAudioPlayback } from '@september/cloning/hooks/use-audio-playback';
-import { useRecordingState } from '@september/cloning/hooks/use-recording-state';
-import { useVoiceStorage, UseVoiceStorageReturn } from '@september/cloning/hooks/use-voice-storage';
-import { RecordingStatus } from '../types';
+import { useCurrentUser } from '@september/account';
+
+import type { RecordingStatus } from '../types';
+import { deleteVoiceSample, downloadVoiceSample, getVoiceSamples, uploadVoiceSample } from '../voice-samples';
+import { useAudioPlayback } from './use-audio-playback';
+import { useMediaRecorder } from './use-media-recorder';
 
 export interface UseRecordingReturn {
   recordings: Record<string, string>;
@@ -21,50 +22,67 @@ export interface UseRecordingReturn {
   errors: Record<string, string | null>;
 }
 
-export function useRecording(
-  initialRecordings: Record<string, string> = {},
-  sharedStorage?: UseVoiceStorageReturn
-): UseRecordingReturn {
+export function useRecording(): UseRecordingReturn {
+  const { user } = useCurrentUser();
+  const userId = user.id;
+
+  const [recordings, setRecordings] = useState<Record<string, string>>({});
   const mediaRecorder = useMediaRecorder();
   const audioPlayback = useAudioPlayback();
-  const recordingState = useRecordingState(initialRecordings, sharedStorage);
-  const ownStorage = useVoiceStorage();
-  const { downloadVoiceSample } = sharedStorage ?? ownStorage;
 
-  // Register the completion handler in useEffect — not during render
+  // Load existing recordings on mount
+  useEffect(() => {
+    getVoiceSamples(userId, 'recording')
+      .then(samples => {
+        const map: Record<string, string> = {};
+        samples.forEach(sample => {
+          if (sample.sample_id) map[sample.sample_id] = sample.id;
+        });
+        setRecordings(map);
+      })
+      .catch(err => console.error('Error loading recordings:', err));
+  }, [userId]);
+
+  // Register the completion handler
   useEffect(() => {
     mediaRecorder.onRecordingComplete(async (id: string, blob: Blob) => {
       try {
-        await recordingState.saveRecording(id, blob);
+        const file = new File([blob], `${id}.webm`, { type: 'audio/webm' });
+        const sampleId = await uploadVoiceSample({ userId, file, type: 'recording', sampleId: id });
+        setRecordings(prev => ({ ...prev, [id]: sampleId }));
         toast.success('Recording saved');
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to save recording';
         toast.error(message);
       }
     });
-  }, [mediaRecorder, recordingState]);
+  }, [mediaRecorder, userId]);
 
   const playRecording = useCallback(
     async (id: string) => {
       try {
-        const sampleId = recordingState.recordings[id];
+        const sampleId = recordings[id];
         if (!sampleId) return;
-
         const blob = await downloadVoiceSample(sampleId);
-        // Pass Blob directly — useAudioPlayback owns URL creation and revocation
         await audioPlayback.playRecording(id, blob);
       } catch (err) {
         console.error('Error playing recording:', err);
         toast.error('Failed to play recording');
       }
     },
-    [recordingState, downloadVoiceSample, audioPlayback]
+    [recordings, audioPlayback]
   );
 
   const deleteRecording = useCallback(
     async (id: string) => {
       try {
-        await recordingState.deleteRecording(id);
+        const sampleId = recordings[id];
+        if (sampleId) await deleteVoiceSample(sampleId);
+        setRecordings(prev => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
         toast.success('Recording deleted');
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to delete recording';
@@ -72,7 +90,7 @@ export function useRecording(
         throw err;
       }
     },
-    [recordingState]
+    [recordings]
   );
 
   const status = {
@@ -86,7 +104,7 @@ export function useRecording(
   };
 
   return {
-    recordings: recordingState.recordings,
+    recordings,
     startRecording: mediaRecorder.startRecording,
     stopRecording: mediaRecorder.stopRecording,
     deleteRecording,

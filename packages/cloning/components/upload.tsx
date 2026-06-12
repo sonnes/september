@@ -8,10 +8,17 @@ import { Button } from '@september/ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@september/ui/components/card';
 import { Field, FieldLabel } from '@september/ui/components/field';
 
-import { useUpload } from '@september/cloning/components/cloning-provider';
+import type { UploadStatus } from '../types';
 
-export function UploadSection() {
-  const { uploadedFiles, status, error, uploadFile, deleteFile } = useUpload();
+interface UploadSectionProps {
+  uploadedFiles: string[];
+  status: UploadStatus;
+  error: string | null;
+  uploadFile: (file: File) => Promise<string>;
+  deleteFile: (id: string) => Promise<void>;
+}
+
+export function UploadSection({ uploadedFiles, status, error, uploadFile, deleteFile }: UploadSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -20,12 +27,10 @@ export function UploadSection() {
 
     try {
       await uploadFile(file);
-      // Reset input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     } catch (err) {
-      // Error is handled by context
       console.error('Upload error:', err);
     }
   };
@@ -65,7 +70,6 @@ export function UploadSection() {
           {uploadedFiles.length > 0 && (
             <div className="mt-2 space-y-2">
               {uploadedFiles.map(fileId => {
-                // Extract filename from ID (format: local-user/upload/timestamp-filename)
                 const parts = fileId.split('/');
                 const filename = parts[parts.length - 1] || fileId;
 

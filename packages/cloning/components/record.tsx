@@ -9,7 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@sept
 import { Field, FieldLabel } from '@september/ui/components/field';
 
 import { cn } from '@september/shared';
-import { useRecordingContext } from '@september/cloning/components/cloning-provider';
+
+import type { RecordingStatus } from '../types';
 
 export const SAMPLE_TEXTS = [
   { id: 'birch-canoe', text: 'The birch canoe slid on the smooth planks.' },
@@ -24,17 +25,27 @@ export const SAMPLE_TEXTS = [
   { id: 'oak-shade', text: 'Oak is strong and also gives shade.' },
 ];
 
-export function RecordingSection() {
-  const {
-    recordings,
-    startRecording,
-    stopRecording,
-    deleteRecording,
-    playRecording,
-    stopPlaying,
-    status,
-    errors,
-  } = useRecordingContext();
+interface RecordingSectionProps {
+  recordings: Record<string, string>;
+  startRecording: (id: string) => Promise<void>;
+  stopRecording: (id: string) => void;
+  deleteRecording: (id: string) => Promise<void>;
+  playRecording: (id: string) => Promise<void>;
+  stopPlaying: (id: string) => void;
+  status: Record<string, RecordingStatus>;
+  errors: Record<string, string | null>;
+}
+
+export function RecordingSection({
+  recordings,
+  startRecording,
+  stopRecording,
+  deleteRecording,
+  playRecording,
+  stopPlaying,
+  status,
+  errors,
+}: RecordingSectionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const nextSlide = () => {

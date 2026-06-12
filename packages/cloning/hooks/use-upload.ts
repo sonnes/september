@@ -2,36 +2,39 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { useVoiceStorage, UseVoiceStorageReturn } from '@september/cloning/hooks/use-voice-storage';
-import { UploadStatus } from '@september/cloning/types';
+import { useCurrentUser } from '@september/account';
 
-/**
- * When called from CloningProvider, receives the shared voiceStorage so there
- * is one AudioService instance and one IndexedDB mount-scan across the tree.
- * When called standalone, creates its own storage instance.
- */
-export function useUploadLogic(sharedStorage?: UseVoiceStorageReturn) {
-  const ownStorage = useVoiceStorage();
-  const { uploadVoiceSample, deleteVoiceSample, getVoiceSamples } =
-    sharedStorage ?? ownStorage;
+import type { UploadStatus } from '../types';
+import { deleteVoiceSample, getVoiceSamples, uploadVoiceSample } from '../voice-samples';
+
+export interface UseUploadReturn {
+  status: UploadStatus;
+  error: string | null;
+  uploadedFiles: string[];
+  uploadFile: (file: File) => Promise<string>;
+  deleteFile: (id: string) => Promise<void>;
+}
+
+export function useUpload(): UseUploadReturn {
+  const { user } = useCurrentUser();
+  const userId = user.id;
 
   const [status, setStatus] = useState<UploadStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
 
   useEffect(() => {
-    getVoiceSamples('upload')
+    getVoiceSamples(userId, 'upload')
       .then(samples => setUploadedFiles(samples.map(s => s.id)))
       .catch(err => console.error('Error loading uploaded files:', err));
-  }, [getVoiceSamples]);
+  }, [userId]);
 
   const uploadFile = useCallback(
     async (file: File) => {
       setStatus('uploading');
       setError(null);
-
       try {
-        const id = await uploadVoiceSample({ file, type: 'upload' });
+        const id = await uploadVoiceSample({ userId, file, type: 'upload' });
         setStatus('idle');
         setUploadedFiles(prev => [...prev, id]);
         return id;
@@ -42,14 +45,13 @@ export function useUploadLogic(sharedStorage?: UseVoiceStorageReturn) {
         throw err;
       }
     },
-    [uploadVoiceSample]
+    [userId]
   );
 
   const deleteFile = useCallback(
     async (id: string) => {
       setStatus('uploading');
       setError(null);
-
       try {
         await deleteVoiceSample(id);
         setStatus('idle');
@@ -61,14 +63,8 @@ export function useUploadLogic(sharedStorage?: UseVoiceStorageReturn) {
         throw err;
       }
     },
-    [deleteVoiceSample]
+    []
   );
 
-  return {
-    status,
-    error,
-    uploadedFiles,
-    uploadFile,
-    deleteFile,
-  };
+  return { status, error, uploadedFiles, uploadFile, deleteFile };
 }

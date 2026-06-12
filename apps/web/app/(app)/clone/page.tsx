@@ -1,6 +1,6 @@
 'use client';
 
-import { CloningProvider, VoiceCloneForm } from '@september/cloning';
+import { VoiceCloneForm } from '@september/cloning';
 
 import { PageHeader, PageShell, PageTitle } from '@/components/layout';
 import SidebarLayout from '@/components/sidebar/layout';
@@ -17,9 +17,7 @@ export default function ClonePage() {
             title="Clone your voice"
             description="Record or upload samples to create a personal voice."
           />
-          <CloningProvider>
-            <VoiceCloneForm />
-          </CloningProvider>
+          <VoiceCloneForm />
         </PageShell>
       </SidebarLayout.Content>
     </>
