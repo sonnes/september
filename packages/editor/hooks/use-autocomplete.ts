@@ -11,8 +11,8 @@ import {
   type AnyEngineSnapshot,
   type SuggestWordOptions,
   type RankedWord,
-} from '@september/shared/lib/autocomplete';
-import { tokenize } from '@september/shared/lib/autocomplete/utils';
+} from '@september/shared/autocomplete';
+import { tokenize } from '@september/shared/autocomplete';
 
 // Module-level caches. The base corpus is ~2 MB and shared across all users;
 // fetching once per tab is enough.

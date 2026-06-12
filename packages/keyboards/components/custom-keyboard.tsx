@@ -18,7 +18,7 @@ import {
 } from '@september/ui/components/alert-dialog';
 import { Button } from '@september/ui/components/button';
 
-import { cn } from '@september/shared/lib/utils';
+import { cn } from '@september/shared';
 
 import { useCustomKeyboard } from '../hooks/use-custom-keyboard';
 import { GridButton } from '../types';

@@ -4,7 +4,7 @@ import { type HTMLAttributes, createContext, useContext, useMemo } from 'react';
 
 import type { Alignment } from '@september/audio/types';
 import { type TextSegment, type TextWord, type GapSegment, useTextViewer } from '@september/audio/hooks/use-text-viewer';
-import { cn } from '@september/shared/lib/utils';
+import { cn } from '@september/shared';
 
 type WordStatus = 'spoken' | 'current' | 'unspoken';
 

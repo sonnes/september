@@ -2,7 +2,7 @@
 
 import React, { ReactNode, createContext, useContext } from 'react';
 
-import { useText } from '@september/shared/hooks/use-text';
+import { useText } from '@september/shared';
 
 interface TextContextType {
   text: string;

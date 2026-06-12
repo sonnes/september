@@ -10,7 +10,7 @@ import {
   type HTMLAttributes,
 } from "react"
 
-import { cn } from "@september/shared/lib/utils"
+import { cn } from "@september/shared"
 import { Progress } from "@september/ui/components/progress"
 
 function formatTimestamp(value: number) {

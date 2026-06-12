@@ -1,7 +1,7 @@
+import { AccountSchema } from '@september/account';
 import { z } from 'zod';
 
-import { AccountSchema } from '@september/account';
-import { AI_PROVIDERS } from '@september/ai/lib/registry';
+import { AI_PROVIDERS } from '../lib/registry';
 
 // Dynamically generate Zod schema from provider registry
 const createProviderSchema = () => {

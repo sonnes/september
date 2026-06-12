@@ -1,169 +1,137 @@
-# AI Module
+# @september/ai
 
-This module manages AI provider configurations, registries, and settings. It provides a unified interface for different AI features like suggestions, transcription, and speech.
+Shared AI settings, provider metadata, generation, schemas, and settings forms.
 
-## Features
+## Public API
 
-- **Provider Registry**: A centralized list of all supported AI providers (Gemini, ElevenLabs, Browser) and their capabilities.
-- **Unified Settings**: A React context (`AISettingsProvider`) to manage and persist AI preferences across the app.
-- **Provider Forms**: Reusable UI components for configuring API keys and provider-specific settings.
+```ts
+import {
+  AIProvidersForm,
+  type AIProvidersFormData,
+  AIProvidersSchema,
+  AISettingsProvider,
+  AI_PROVIDERS,
+  type GenerateObjectParams,
+  type GenerateTextParams,
+  ProviderSection,
+  SpeechProviderSchema,
+  SpeechSettingsSchema,
+  TranscriptionForm,
+  type TranscriptionFormData,
+  type UseGenerateOptions,
+  type UseGenerateReturn,
+  getModelsForProvider,
+  getProvidersForFeature,
+  supportsFeature,
+  useAISettings,
+  useGenerate,
+} from '@september/ai';
+```
 
-## Structure
+Root exports are curated. Defaults, middleware, and registry internals stay package-private unless a consumer needs them through the public API.
 
-- `components/`: UI components for AI settings.
-- `hooks/`: React hooks for accessing and updating AI settings.
-- `lib/`: Core logic, provider registry, and default configurations.
-- `types/`: Zod schemas and TypeScript type definitions for AI settings.
+## Settings
 
-## Usage
-
-### Using AI Settings
+Wrap app UI with `AISettingsProvider`, then read and update account-backed AI settings with `useAISettings`.
 
 ```tsx
-import { useAISettings } from '@september/ai';
+import { AISettingsProvider, useAISettings } from '@september/ai';
 
-function MyComponent() {
-  const { suggestionsConfig, updateSuggestionsConfig } = useAISettings();
-  // ...
+function AppProviders({ children }: { children: React.ReactNode }) {
+  return <AISettingsProvider>{children}</AISettingsProvider>;
 }
-```
 
-### Provider Registry
-
-```tsx
-import { AI_PROVIDERS, getProvidersForFeature } from '@september/ai';
-
-const speechProviders = getProvidersForFeature('speech');
-```
-
-## Hooks
-
-### useGenerate
-
-Hook for generating text or structured objects using AI providers. Reads provider settings from account and initializes the appropriate provider. Uses the modern Vercel AI SDK Output API for type-safe structured generation.
-
-#### Text Generation (Default)
-
-Generate plain text using the default output format:
-
-```tsx
-import { useGenerate } from '@september/ai';
-
-function MyComponent() {
-  const { generate, isGenerating } = useGenerate();
-
-  const handleGenerate = async () => {
-    const text = await generate({
-      prompt: 'Write a haiku about coding',
-      system: 'You are a creative writer.',
-    });
-    console.log(text);
-  };
+function SuggestionsToggle() {
+  const { suggestionsConfig, updateSuggestionsConfig } = useAISettings();
 
   return (
-    <button onClick={handleGenerate} disabled={isGenerating}>
-      {isGenerating ? 'Generating...' : 'Generate'}
+    <button onClick={() => updateSuggestionsConfig({ enabled: !suggestionsConfig.enabled })}>
+      Toggle suggestions
     </button>
   );
 }
 ```
 
-#### Object Generation with Schema
+## Provider Registry
 
-Generate structured objects with Zod schema validation:
+```ts
+import {
+  AI_PROVIDERS,
+  getModelsForProvider,
+  getProvidersForFeature,
+  supportsFeature,
+} from '@september/ai';
+
+const speechProviders = getProvidersForFeature('speech');
+const geminiModels = getModelsForProvider('gemini');
+const canTranscribe = supportsFeature('gemini', 'transcription');
+```
+
+## Generation
+
+`useGenerate()` defaults to Gemini with `gemini-2.5-flash-lite`. Gemini still requires a configured API key in account settings.
 
 ```tsx
 import { useGenerate } from '@september/ai';
-import { Output } from 'ai';
+
+function HaikuButton() {
+  const { generate, isGenerating, isReady } = useGenerate();
+
+  async function handleClick() {
+    const text = await generate({
+      prompt: 'Write a haiku about coding',
+      system: 'You are a concise writer.',
+      feature: 'suggestions',
+    });
+
+    console.log(text);
+  }
+
+  return (
+    <button onClick={handleClick} disabled={!isReady || isGenerating}>
+      Generate
+    </button>
+  );
+}
+```
+
+Pass a schema for structured output:
+
+```tsx
+import { useGenerate } from '@september/ai';
 import { z } from 'zod';
 
-function RecipeGenerator() {
-  const { generate, isGenerating } = useGenerate();
+const RecipeSchema = z.object({
+  name: z.string(),
+  ingredients: z.array(z.object({ name: z.string(), amount: z.string() })),
+  steps: z.array(z.string()),
+});
 
-  const handleGenerate = async () => {
+function RecipeButton() {
+  const { generate } = useGenerate();
+
+  async function handleClick() {
     const recipe = await generate({
       prompt: 'Generate a lasagna recipe',
-      output: Output.object({
-        schema: z.object({
-          name: z.string(),
-          ingredients: z.array(z.object({
-            name: z.string(),
-            amount: z.string(),
-          })),
-          steps: z.array(z.string()),
-        }),
-      }),
+      schema: RecipeSchema,
     });
-    console.log(recipe); // { name: string, ingredients: [...], steps: [...] }
-  };
 
-  return <button onClick={handleGenerate} disabled={isGenerating}>Generate Recipe</button>;
+    console.log(recipe);
+  }
+
+  return <button onClick={handleClick}>Generate recipe</button>;
 }
 ```
 
-#### Array Generation
+Override provider or model when a caller has a specific generation target:
 
-Generate arrays of objects with element schema validation:
-
-```tsx
-import { useGenerate } from '@september/ai';
-import { Output } from 'ai';
-import { z } from 'zod';
-
-function HeroGenerator() {
-  const { generate, isGenerating } = useGenerate();
-
-  const handleGenerate = async () => {
-    const heroes = await generate({
-      prompt: 'Generate 3 RPG hero descriptions',
-      output: Output.array({
-        element: z.object({
-          name: z.string(),
-          class: z.string(),
-          description: z.string(),
-        }),
-      }),
-    });
-    console.log(heroes); // Array of hero objects
-  };
-
-  return <button onClick={handleGenerate} disabled={isGenerating}>Generate Heroes</button>;
-}
+```ts
+const { generate } = useGenerate({
+  provider: 'gemini',
+  model: 'gemini-2.5-flash-lite',
+});
 ```
 
-#### Hook Options
+## Forms
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `provider` | `AIProvider` | `'gemini'` | AI provider to use (currently only 'gemini' is supported) |
-| `model` | `string` | `'gemini-2.5-flash-lite'` | Model ID to use with the provider |
-
-#### Generate Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `prompt` | `string` | Yes | The user prompt for generation |
-| `system` | `string` | No | Optional system instructions to guide the AI |
-| `temperature` | `number` | No | Temperature for generation (0-2, default: 1) |
-| `maxOutputTokens` | `number` | No | Maximum output tokens to generate |
-| `output` | `Output<T>` | No | Output format specification (default: `Output.text()`) |
-
-#### Output Types
-
-- **Text Generation**: Returns `Promise<string | undefined>`
-- **Object Generation**: Returns `Promise<T | undefined>` where T is inferred from the Zod schema
-- **Array Generation**: Returns `Promise<T[] | undefined>` where T is the element type from schema
-
-#### Returns
-
-```typescript
-interface UseGenerateReturn {
-  /** Function to generate content */
-  generate(params: GenerateParams): Promise<string | object | undefined>;
-  /** Whether generation is currently in progress */
-  isGenerating: boolean;
-  /** Whether the provider is ready (has API key if required) */
-  isReady: boolean;
-}
-```
-
+`AIProvidersForm`, `ProviderSection`, and `TranscriptionForm` are reusable settings forms. `TranscriptionFormData` and `AIProvidersFormData` are exported from the root for consumer submit handlers.

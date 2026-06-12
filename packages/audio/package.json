@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.4",
+    "@elevenlabs/elevenlabs-js": "^2.7.0",
     "@september/shared": "workspace:*",
     "@september/ui": "workspace:*",
     "react-use-audio-player": "^4.0.2",

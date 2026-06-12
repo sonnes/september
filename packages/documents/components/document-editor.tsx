@@ -19,7 +19,7 @@ import {
 } from '@september/ui/components/dialog';
 import { Separator } from '@september/ui/components/separator';
 
-import { cn } from '@september/shared/lib/utils';
+import { cn } from '@september/shared';
 import { SlidesPresentation } from '@september/documents/components/slides-presentation';
 import { UploadForm } from '@september/documents/components/upload-form';
 import { useDocumentEditor } from '@september/documents/hooks/use-document-editor';

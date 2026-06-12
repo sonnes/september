@@ -1,7 +1,7 @@
 import * as React from 'react';
 import type { LucideIcon } from 'lucide-react';
 
-import { cn } from '@september/shared/lib/utils';
+import { cn } from '@september/shared';
 
 type EmptyStateProps = React.ComponentProps<'div'> & {
   icon?: LucideIcon;

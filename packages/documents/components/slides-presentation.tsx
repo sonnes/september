@@ -15,7 +15,7 @@ import { ReelTextViewer } from '@september/audio';
 import { Button } from '@september/ui/components/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@september/ui/components/tooltip';
 
-import { slideToPlainText, type Slide, parseAndRenderSlides } from '@september/shared/lib/slides';
+import { slideToPlainText, type Slide, parseAndRenderSlides } from '@september/shared/slides';
 import { SlidesNavigation } from '@september/documents/components/slides-navigation';
 import { SlidesProgress } from '@september/documents/components/slides-progress';
 import { useSlideVoiceOver } from '@september/documents/hooks/use-slide-voice-over';

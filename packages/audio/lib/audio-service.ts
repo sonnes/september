@@ -1,4 +1,4 @@
-import { KVStore } from '@september/shared/lib/indexeddb/kv-store';
+import { KVStore } from '@september/shared/indexeddb';
 import { Alignment } from '@september/audio/types';
 
 interface StoredAudioItem {

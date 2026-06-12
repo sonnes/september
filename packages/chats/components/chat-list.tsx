@@ -19,7 +19,7 @@ import {
 import { Button } from '@september/ui/components/button';
 import { Input } from '@september/ui/components/input';
 
-import { cn } from '@september/shared/lib/utils';
+import { cn } from '@september/shared';
 
 import { useDeleteChat } from '../hooks/use-delete-chat';
 import { Chat } from '../types';

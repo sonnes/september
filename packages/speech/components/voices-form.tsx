@@ -6,7 +6,7 @@ import { AI_PROVIDERS } from '@september/ai';
 import { useVoiceSettings } from '@september/speech/hooks/use-voice-settings';
 import { VoiceSettingsFormData } from '@september/speech/types/schemas';
 import type { Account } from '@september/account';
-import type { Voice } from '@september/shared/types/voice';
+import type { Voice } from '@september/shared';
 
 type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs';
 

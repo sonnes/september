@@ -9,6 +9,8 @@
     "./*": "./*"
   },
   "dependencies": {
+    "@september/account": "workspace:*",
+    "@september/chats": "workspace:*",
     "@september/shared": "workspace:*",
     "@september/ui": "workspace:*",
     "@heroicons/react": "^2.2.0",

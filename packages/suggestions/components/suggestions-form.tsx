@@ -15,7 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from '@september/ui/components/al
 import { Spinner } from '@september/ui/components/spinner';
 
 import type { Account } from '@september/account';
-import type { AIProvider } from '@september/shared/types/ai-config';
+import type { AIProvider } from '@september/shared';
 
 import { useCorpus } from '@september/suggestions/hooks/use-corpus';
 import { type SuggestionsFormData, SuggestionsFormSchema } from '@september/suggestions/types';

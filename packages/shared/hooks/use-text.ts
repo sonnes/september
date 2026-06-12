@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { tokenize } from '@september/shared/lib/autocomplete';
+import { tokenize } from '@september/shared/autocomplete';
 
 export function useText(defaultText = '') {
   const [text, setText] = useState(defaultText);

@@ -1,11 +1,17 @@
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 
-import { Message } from '@september/chats';
-
 interface DemoMessage {
   text: string;
   type: 'message' | 'transcription';
+}
+
+export interface DemoLoadedMessage {
+  id: string;
+  text: string;
+  type: string;
+  user_id: string;
+  created_at: Date;
 }
 
 interface DemoScenario {
@@ -20,11 +26,10 @@ interface DemoData {
 }
 
 /**
- * Load demo scenarios and convert to Message format
+ * Load demo scenarios and convert to message records.
  * @param scenarioId - Optional scenario ID to load specific scenario
- * @returns Array of Messages in the proper format
  */
-export async function loadDemoMessages(scenarioId?: string): Promise<Message[]> {
+export async function loadDemoMessages(scenarioId?: string): Promise<DemoLoadedMessage[]> {
   try {
     const filePath = join(process.cwd(), 'public', 'demo-scenarios.json');
     const fileContent = await readFile(filePath, 'utf-8');
@@ -37,8 +42,7 @@ export async function loadDemoMessages(scenarioId?: string): Promise<Message[]> 
       throw new Error(`Scenario '${scenarioId}' not found`);
     }
 
-    // Convert demo messages to Message format
-    const messages: Message[] = [];
+    const messages: DemoLoadedMessage[] = [];
     const demoUserId = 'demo-user';
     const pastDate = new Date().getTime() - 1000 * 60 * 20;
 

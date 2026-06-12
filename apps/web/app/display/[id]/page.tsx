@@ -6,7 +6,7 @@ import moment from 'moment';
 import Webcam from 'react-webcam';
 
 import { ReelTextViewer, useAudioPlayer } from '@september/audio';
-import { DisplayMessage } from '@september/shared/types/display';
+import { DisplayMessage } from '@september/shared';
 
 export default function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: chatId } = use(params);

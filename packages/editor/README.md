@@ -18,8 +18,7 @@ The Editor module provides the communication interface for the September app, in
 ## Hooks
 
 - `useEditor`: Access the editor context for text state and operations.
-
-Note: The `useAutocomplete` hook is now a global hook located in `/hooks/use-autocomplete.ts`. It can be configured to include message history using the `includeMessages` option.
+- `useAutocomplete`: Editor-owned autocomplete hook. It can include account and chat message history with the `includeMessages` option.
 
 ## Usage
 

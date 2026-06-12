@@ -1,6 +1,6 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 
-import { cn } from '@september/shared/lib/utils';
+import { cn } from '@september/shared';
 
 const pageShellVariants = cva('mx-auto flex w-full flex-1 flex-col gap-6 px-4 py-6 sm:px-6 md:py-8', {
   variants: {

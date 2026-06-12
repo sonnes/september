@@ -1,11 +1,14 @@
 # UI Package
 
-Shared UI components built with shadcn/ui and Radix primitives.
+Shared generic UI components built with shadcn/ui and Radix primitives.
 
 ## Features
 
 - **shadcn/ui Components**: Pre-styled, accessible UI components
 - **Radix Primitives**: Headless, accessible component foundations
+- **Form Wrappers**: Generic react-hook-form field helpers
+- **App State Components**: Loading, empty, and error states
+- **Layout Helpers**: Reusable layout and media controls
 - **Tailwind CSS**: Utility-first styling with CSS variables
 - **Motion**: Framer Motion for animations
 
@@ -35,6 +38,7 @@ All components follow shadcn/ui patterns and are built on Radix primitives:
 | `LoadingState` | Page or inline spinner + label |
 | `Progress` | Progress indicators |
 | `ScrollArea` | Custom scrollbars |
+| `ScrubBar` | Generic scrub/progress controls for media timelines |
 | `Select` | Dropdown selection |
 | `Sheet` | Slide-out panels |
 | `Sidebar` | Navigation sidebar |

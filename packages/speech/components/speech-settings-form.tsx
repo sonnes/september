@@ -8,7 +8,7 @@ import { FormCheckbox, FormSelect, FormSlider } from '@september/ui/components/f
 import { toast } from 'sonner';
 import { getModelsForProvider, getProvidersForFeature } from '@september/ai';
 import type { Account } from '@september/account';
-import type { AIProvider } from '@september/shared/types/ai-config';
+import type { AIProvider } from '@september/shared';
 
 /**
  * Zod schema for Speech Configuration

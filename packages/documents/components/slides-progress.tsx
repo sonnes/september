@@ -1,7 +1,7 @@
 'use client';
 
 import { Progress } from '@september/ui/components/progress';
-import { cn } from '@september/shared/lib/utils';
+import { cn } from '@september/shared';
 
 type SlidesProgressProps = {
   currentSlide: number;

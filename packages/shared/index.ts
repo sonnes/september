@@ -1,15 +1,14 @@
 // Utilities
-export { cn } from "./lib/utils";
-export { indexedDBCollectionOptionsV2 } from "./lib/indexeddb/collection-v2";
+export { cn, MATCH_PUNCTUATION } from "./lib/utils";
 
 // Hooks
 export { useDebounce } from "./hooks/use-debounce";
-export { useMobile } from "./hooks/use-mobile";
+export { useIsMobile } from "./hooks/use-mobile";
 export { useText } from "./hooks/use-text";
 
 // Types
 export * from "./types/grid";
 export * from "./types/user";
 export * from "./types/voice";
-export * from "./types/display";
 export * from "./types/ai-config";
+export * from "./types/display";

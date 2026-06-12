@@ -5,7 +5,7 @@ import {
   ScrollArea,
   ScrollBar,
 } from "@september/ui/components/scroll-area";
-import { cn } from "@september/shared/lib/utils";
+import { cn } from "@september/shared";
 import type { ComponentProps } from "react";
 
 export type SuggestionsProps = ComponentProps<typeof ScrollArea>;

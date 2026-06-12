@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 import { SidebarTrigger } from '@september/ui/components/sidebar';
 
-import { cn } from '@september/shared/lib/utils';
+import { cn } from '@september/shared';
 
 type MobileNavProps = {
   title?: string | React.ReactNode;

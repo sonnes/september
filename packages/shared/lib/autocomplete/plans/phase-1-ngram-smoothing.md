@@ -146,14 +146,14 @@ packages/shared/lib/autocomplete/
 ├── keyboard-layout.test.ts        NEW
 ├── serialization.ts               NEW — serialize/deserialize engine state
 ├── serialization.test.ts          NEW
-├── persistence.ts                 NEW — thin wrapper over @september/shared/lib/indexeddb/kv-store
+├── persistence.ts                 NEW — thin wrapper over @september/shared/indexeddb
 ├── persistence.test.ts            NEW
 └── plans/                         (this folder)
 ```
 
 > **Test layout note.** Tests are colocated next to source (`foo.test.ts` next to `foo.ts`), matching the existing convention used by `lib/indexeddb/kv-store.test.ts` and `lib/slides/slides.test.ts`. Run with `pnpm test` (vitest + jsdom globally configured).
 >
-> **IDB note.** Reuse the existing `KVStore` helper at `@september/shared/lib/indexeddb/kv-store` rather than a new IDB wrapper. `persistence.ts` is a small typed facade over it.
+> **IDB note.** Reuse the existing `KVStore` helper at `@september/shared/indexeddb` rather than a new IDB wrapper. `persistence.ts` is a small typed facade over it.
 
 `hooks/use-autocomplete.ts` — **modified** to call `observe()` for deltas instead of full retrain; loads persisted state via `storage.ts`.
 

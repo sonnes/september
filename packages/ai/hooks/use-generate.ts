@@ -4,20 +4,20 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { webLLM } from '@built-in-ai/web-llm';
+import { useAccount } from '@september/account';
+import { logAIGeneration } from '@september/analytics';
+import { AIProvider } from '@september/shared';
 import { generateObject, generateText, wrapLanguageModel } from 'ai';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { useAccount } from '@september/account';
-import { useAISettings } from '@september/ai/hooks/use-ai-settings';
-import { logAIGeneration } from '@september/analytics';
-import { cacheMiddleware } from '@september/ai/lib/middleware';
-import { AI_PROVIDERS } from '@september/ai/lib/registry';
-import { AIProvider } from '@september/shared/types/ai-config';
+import { cacheMiddleware } from '../lib/middleware';
+import { AI_PROVIDERS } from '../lib/registry';
+import { useAISettings } from './use-ai-settings';
 
-/**
- * Options for configuring the useGenerate hook
- */
+const DEFAULT_GENERATION_PROVIDER: AIProvider = 'gemini';
+const DEFAULT_GENERATION_MODEL = 'gemini-2.5-flash-lite';
+
 export interface UseGenerateOptions {
   /** AI provider to use (default: 'gemini') */
   provider?: AIProvider;
@@ -25,9 +25,6 @@ export interface UseGenerateOptions {
   model?: string;
 }
 
-/**
- * Base parameters for generation
- */
 interface BaseGenerateParams {
   /** The user prompt */
   prompt: string;
@@ -69,7 +66,6 @@ export interface UseGenerateReturn {
 /**
  * Hook for generating text or structured objects using AI providers.
  * Reads provider settings from account and initializes the appropriate provider.
- * Uses the modern Vercel AI SDK Output API for type-safe structured generation.
  *
  * @example Text generation
  * ```tsx
@@ -102,26 +98,20 @@ export interface UseGenerateReturn {
  * ```
  */
 export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn {
-  const { provider, model } = options;
+  const provider = options.provider ?? DEFAULT_GENERATION_PROVIDER;
+  const modelId = options.model ?? DEFAULT_GENERATION_MODEL;
 
   const { user } = useAccount();
   const { getProviderConfig } = useAISettings();
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Get provider configuration (API key, base URL)
-  const providerConfig = provider ? getProviderConfig(provider) : undefined;
+  const providerConfig = getProviderConfig(provider);
   const apiKey = providerConfig?.api_key;
 
-  // Check if provider requires API key and has one
-  const providerInfo = provider ? AI_PROVIDERS[provider] : undefined;
-  const isReady = !!provider && (!providerInfo?.requires_api_key || !!apiKey);
+  const providerInfo = AI_PROVIDERS[provider];
+  const isReady = !providerInfo.requires_api_key || !!apiKey;
 
-  // Determine the model to use
-  const modelId = model;
-
-  // Memoize provider initialization
   const providerInstance = useMemo(() => {
-    if (!provider) return null;
     if (provider === 'gemini') {
       return createGoogleGenerativeAI({
         apiKey: apiKey || '',
@@ -139,20 +129,14 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
       const { prompt, system, temperature, feature } = params;
 
       // Validate provider support
-      if (!provider || !providerInfo) {
-        toast.error('No AI provider specified.');
+      if (!providerInfo) {
+        toast.error(`Provider "${provider}" is not registered.`);
         return undefined;
       }
 
       // Validate API key for providers that require it
       if (providerInfo.requires_api_key && !apiKey) {
         toast.error(`API key is required for ${providerInfo.name}.`);
-        return undefined;
-      }
-
-      // Validate model
-      if (!modelId) {
-        toast.error('No AI model specified.');
         return undefined;
       }
 

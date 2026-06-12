@@ -25,7 +25,7 @@ import {
   useCreateKeyboard,
   useGenerateKeyboardFromMessage,
 } from '@september/keyboards';
-import { DisplayMessage } from '@september/shared/types/display';
+import { DisplayMessage } from '@september/shared';
 import { SpeechSettingsModal } from '@september/speech';
 import { Suggestions } from '@september/suggestions';
 import { Button } from '@september/ui/components/button';

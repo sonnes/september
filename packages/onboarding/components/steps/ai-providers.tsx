@@ -6,7 +6,7 @@ import { Button } from '@september/ui/components/button';
 
 import { useAccount } from '@september/account';
 import { AIProvidersForm, ProviderSection } from '@september/ai';
-import type { Providers } from '@september/shared/types/ai-config';
+import type { Providers } from '@september/shared';
 
 import { useOnboarding } from '@september/onboarding/components/onboarding-provider';
 

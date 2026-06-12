@@ -10,8 +10,8 @@ import { useVoiceFetching } from '@september/speech/hooks/use-voice-fetching';
 import { useProviderModels } from '@september/speech/hooks/use-provider-models';
 import { VoiceSettingsFormData, VoiceSettingsSchema } from '@september/speech/types/schemas';
 import type { Account } from '@september/account';
-import type { Voice } from '@september/shared/types/voice';
-import type { AIServiceProvider } from '@september/shared/types/ai-config';
+import type { Voice } from '@september/shared';
+import type { AIServiceProvider } from '@september/shared';
 
 type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs';
 

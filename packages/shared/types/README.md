@@ -1,12 +1,12 @@
 # Types Directory
 
-This directory contains all TypeScript type definitions and interfaces used throughout the September application.
+This directory contains pure TypeScript type definitions and interfaces shared across September packages.
 
 ## Purpose
 
 Centralized type definitions ensure:
 
-- Type safety across the application
+- Type safety for cross-package primitives
 - Consistent data structures
 - Better IDE autocomplete and documentation
 - Easier refactoring and maintenance
@@ -15,50 +15,19 @@ Centralized type definitions ensure:
 
 ### Core Data Models
 
-**[packages/chats/types/message.ts](../packages/chats/types/message.ts)** - Message type definitions
-
-- `Message` - Complete message with all fields
-- `CreateMessageData` - Data for creating new messages
-
-**Key Fields**:
-
-- `id`, `text`, `type` (user/ai/system)
-- `user_id` - Owner of the message
-- `audio_path`, `audio` - Optional audio attachment
-- `created_at` - Timestamp
-
-**[packages/account/schema.ts](../../../packages/account/schema.ts)** - User account type definitions
-
-- `Account` - Complete user account with all settings
-- `AccountUpdate` - Partial account data for updates
-- `BrowserTTSSettings` - Browser speech synthesis settings
-- `ElevenLabsSettings` - ElevenLabs TTS configuration
-- `GeminiSpeechSettings` - Gemini TTS configuration
-
-**Key Sections**:
-
-- Personal information (name, city, country)
-- Medical information (diagnosis, medical documents)
-- AI configurations (suggestions, transcription, speech)
-- Provider configurations
-- Feature flags (terms accepted, onboarding)
-- Timestamps
-
-**[document.ts](document.ts)** - Document type definitions
-
-- Document management types
-- Document metadata and content structures
-
-**[audio.ts](audio.ts)** - Audio file type definitions
-
-- Audio metadata
-- Storage paths and URLs
-- Audio attachment structures
+Chat message records live in `@september/chats`; account records live in
+`@september/account`. Shared types may define small structural payloads for
+cross-package protocols, but must not import feature package types.
 
 **[user.ts](user.ts)** - User authentication types
 
 - User profile types
 - Authentication-related types
+
+**[display.ts](display.ts)** - Display popup protocol types
+
+- Structural message payloads
+- Character alignment payloads
 
 ### Feature-Specific Types
 
@@ -67,12 +36,6 @@ Centralized type definitions ensure:
 - Voice selection interfaces
 - Voice provider configurations
 - Voice cloning types
-
-**[suggestion.ts](suggestion.ts)** - Autocomplete and suggestion types
-
-- Suggestion result structures
-- Autocomplete configurations
-- Next-word prediction types
 
 **[grid.ts](grid.ts)** - Keyboard grid types
 
@@ -149,7 +112,8 @@ Always import types explicitly:
 
 ```typescript
 import type { Account, AccountUpdate } from '@september/account';
-import { CreateMessageData, Message } from '@/packages/chats';
+import type { CreateMessageData, Message } from '@september/chats';
+import type { Voice } from '@september/shared';
 ```
 
 ### Type vs Interface

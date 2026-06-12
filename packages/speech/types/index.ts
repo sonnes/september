@@ -4,8 +4,8 @@ import {
   BrowserTTSSettings,
   ElevenLabsSettings,
   GeminiSpeechSettings,
-} from '@september/shared/types/ai-config';
-import { Voice } from '@september/shared/types/voice';
+} from '@september/shared';
+import { Voice } from '@september/shared';
 
 export interface SpeechEngine {
   id: string;

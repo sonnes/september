@@ -6,7 +6,7 @@ import { Loader2 } from 'lucide-react';
 import moment from 'moment';
 import { toast } from 'sonner';
 
-import { cn } from '@september/shared/lib/utils';
+import { cn } from '@september/shared';
 import { useAudioPlayer, useAudio } from '@september/audio';
 import type { Audio } from '@september/audio';
 import { useSpeech } from '@september/speech';

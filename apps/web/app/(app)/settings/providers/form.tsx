@@ -4,7 +4,7 @@ import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 import { useAccount } from '@september/account';
 import { AIProvidersForm, ProviderSection } from '@september/ai';
-import type { Providers } from '@september/shared/types/ai-config';
+import type { Providers } from '@september/shared';
 import { Alert, AlertDescription, AlertTitle } from '@september/ui/components/alert';
 import { Button } from '@september/ui/components/button';
 import { LoadingState } from '@september/ui/components/loading-state';

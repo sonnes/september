@@ -3,7 +3,7 @@
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 import { Button } from '@september/ui/components/button';
-import { cn } from '@september/shared/lib/utils';
+import { cn } from '@september/shared';
 
 type SlidesNavigationProps = {
   currentSlide: number;

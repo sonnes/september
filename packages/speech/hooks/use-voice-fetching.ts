@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { useSpeechContext } from '@september/speech/components/speech-provider';
-import type { Voice } from '@september/shared/types/voice';
+import type { Voice } from '@september/shared';
 
 type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs';
 

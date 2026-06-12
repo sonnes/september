@@ -1,6 +1,6 @@
 'use client';
 
-import { Slide } from '@september/shared/lib/slides';
+import { Slide } from '@september/shared/slides';
 
 type SlideRendererProps = {
   slide: Slide;
@@ -47,4 +47,3 @@ export function SlideRenderer({ slide, className }: SlideRendererProps) {
     </div>
   );
 }
-

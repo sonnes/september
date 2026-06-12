@@ -6,6 +6,7 @@ This module handles audio playback and storage for the September app.
 
 - **Audio Player**: Context-based audio player with queue support, playback control, and time tracking.
 - **Text Viewer**: Specialized component for visualizing audio alignment through text highlighting.
+- **Transcript Viewer**: Audio transcript playback UI with alignment-based word highlighting.
 - **Audio Storage**: Abstracted storage for audio files using IndexedDB.
 - **Audio Service**: Low-level service for interacting with local storage.
 
@@ -15,6 +16,9 @@ This module handles audio playback and storage for the September app.
 - `AudioProvider`: Context provider for audio storage selection.
 - `TextViewer`: Component that synchronizes text highlighting with audio playback.
 - `TextViewerWords`: Component that renders the highlighted words.
+- `TranscriptViewerContainer`: Transcript playback container with audio alignment state.
+- `TranscriptViewerWords`: Transcript word renderer with spoken/current/unspoken states.
+- `TranscriptViewerScrubBar`: Transcript-aware wrapper around the shared UI scrub bar.
 
 ## Hooks
 
@@ -28,6 +32,7 @@ This module handles audio playback and storage for the September app.
 
 - `useAudioPlayer`: Access the audio player context.
 - `useTextViewer`: Access the text viewer context for alignment-based highlighting.
+- `useTranscriptViewer`: Access transcript/audio alignment state and playback controls.
 
 ## Usage
 

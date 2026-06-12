@@ -1,14 +1,12 @@
 'use client';
 
+import type { AIFeature, AIServiceProvider } from '@september/shared';
+import { Card, CardDescription, CardTitle } from '@september/ui/components/card';
+import { FormField } from '@september/ui/components/form';
 import { CheckCircle2, ExternalLink, Key } from 'lucide-react';
 import { Control } from 'react-hook-form';
 
-import { Card, CardDescription, CardTitle } from '@september/ui/components/card';
-import { FormField } from '@september/ui/components/form';
-
-import type { AIFeature, AIServiceProvider } from '@september/shared/types/ai-config';
-
-import type { AIProvidersFormData } from '@september/ai/types/schemas';
+import type { AIProvidersFormData } from '../types/schemas';
 
 // Feature colors mapping
 const FEATURE_COLORS: Record<AIFeature, string> = {

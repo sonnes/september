@@ -4,8 +4,8 @@ import {
   SpeechRequest,
   SpeechResponse,
 } from '@september/speech/types';
-import { ElevenLabsSettings } from '@september/shared/types/ai-config';
-import { Voice } from '@september/shared/types/voice';
+import { ElevenLabsSettings } from '@september/shared';
+import { Voice } from '@september/shared';
 
 const ranks = {
   cloned: 1,

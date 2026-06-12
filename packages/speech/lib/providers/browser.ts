@@ -4,8 +4,8 @@ import {
   SpeechRequest,
   SpeechResponse,
 } from '@september/speech/types';
-import { BrowserTTSSettings } from '@september/shared/types/ai-config';
-import { Voice } from '@september/shared/types/voice';
+import { BrowserTTSSettings } from '@september/shared';
+import { Voice } from '@september/shared';
 
 export class BrowserSpeechProvider implements SpeechEngine {
   id = 'browser_tts';

@@ -7,7 +7,7 @@ import moment from 'moment';
 
 import { Input } from '@september/ui/components/input';
 
-import { cn } from '@september/shared/lib/utils';
+import { cn } from '@september/shared';
 import { Document } from '@september/documents/types';
 
 type DocumentListEmptyStateProps = ComponentProps<'div'> & {

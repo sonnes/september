@@ -5,8 +5,8 @@ import { useCallback, useMemo } from 'react';
 import { useAccount } from '@september/account';
 import { useAISettings } from '@september/ai';
 import { logTTSGeneration } from '@september/analytics';
-import type { AIProvider } from '@september/shared/types/ai-config';
-import type { Voice } from '@september/shared/types/voice';
+import type { AIProvider } from '@september/shared';
+import type { Voice } from '@september/shared';
 
 import { BrowserSpeechProvider } from '@september/speech/lib/providers/browser';
 import { KokoroSpeechProvider } from '@september/speech/lib/providers/kokoro';

@@ -6,7 +6,7 @@ import { ArrowUp } from 'lucide-react';
 
 import { Button } from '@september/ui/components/button';
 
-import { cn } from '@september/shared/lib/utils';
+import { cn } from '@september/shared';
 
 import { useEditorContext } from '@september/editor/components/editor-provider';
 import { Autocomplete } from '@september/editor/components/autocomplete';

@@ -19,9 +19,9 @@ import {
 import { Skeleton } from '@september/ui/components/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@september/ui/components/tooltip';
 
-import { useIsMobile } from '@september/shared/hooks/use-mobile';
+import { useIsMobile } from '@september/shared';
 
-import { cn } from '@september/shared/lib/utils';
+import { cn } from '@september/shared';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;

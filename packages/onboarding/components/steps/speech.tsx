@@ -9,14 +9,14 @@ import { Button } from '@september/ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@september/ui/components/card';
 import { Input } from '@september/ui/components/input';
 
-import { useDebounce } from '@september/shared/hooks/use-debounce';
+import { useDebounce } from '@september/shared';
 import { toast } from 'sonner';
 
 import { useAccount } from '@september/account';
 import { useAISettings } from '@september/ai';
 import { useSpeechContext, VoicesList } from '@september/speech';
-import type { SpeechConfig } from '@september/shared/types/ai-config';
-import type { Voice } from '@september/shared/types/voice';
+import type { SpeechConfig } from '@september/shared';
+import type { Voice } from '@september/shared';
 
 import { useOnboarding } from '@september/onboarding/components/onboarding-provider';
 

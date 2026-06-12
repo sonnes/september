@@ -8,7 +8,7 @@ import { Button } from '@september/ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@september/ui/components/card';
 import { Field, FieldLabel } from '@september/ui/components/field';
 
-import { cn } from '@september/shared/lib/utils';
+import { cn } from '@september/shared';
 import { useRecordingContext } from '@september/cloning/components/cloning-provider';
 
 export const SAMPLE_TEXTS = [

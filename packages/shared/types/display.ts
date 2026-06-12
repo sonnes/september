@@ -1,15 +1,28 @@
 /**
- * Message types for display popup BroadcastChannel communication
- * Audio blob is passed directly to avoid redundant download in popup
+ * Message types for display popup BroadcastChannel communication.
+ * Audio blob is passed directly to avoid redundant download in popup.
  */
 
-import { Message } from '@september/chats';
-import { Alignment } from '@september/audio';
+export interface DisplayMessagePayload {
+  id?: string;
+  text: string;
+  type: string;
+  user_id: string;
+  chat_id?: string;
+  audio_path?: string;
+  created_at: Date;
+}
+
+export interface DisplayAlignment {
+  characters: string[];
+  start_times: number[];
+  end_times: number[];
+}
 
 export type DisplayMessage = {
   type: 'new-message';
-  message: Message;
+  message: DisplayMessagePayload;
   audio?: string; // base64 encoded audio blob
-  alignment?: Alignment; // character-level timing alignment for audio
+  alignment?: DisplayAlignment; // character-level timing alignment for audio
   timestamp: number;
 };

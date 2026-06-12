@@ -3,11 +3,13 @@ export * from '@september/audio/components/audio-provider';
 export * from '@september/audio/components/audio-output-device-selector';
 export * from '@september/audio/components/text-viewer';
 export * from '@september/audio/components/reel-overlay';
+export * from '@september/audio/components/transcript-viewer';
 export {
   useUploadAudio,
   useDownloadAudio,
 } from '@september/audio/hooks/use-db-audio';
 export * from '@september/audio/hooks/use-text-viewer';
+export * from '@september/audio/hooks/use-transcript-viewer';
 export * from '@september/audio/hooks/use-pretext-layout';
 export * from '@september/audio/types';
 export * from '@september/audio/lib/audio-service';

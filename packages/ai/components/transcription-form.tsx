@@ -3,18 +3,17 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { type Account, TranscriptionConfigSchema } from '@september/account';
+import { Alert, AlertDescription, AlertTitle } from '@september/ui/components/alert';
+import { Button } from '@september/ui/components/button';
+import { FormCheckbox, FormSelect } from '@september/ui/components/form';
+import { Spinner } from '@september/ui/components/spinner';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { Alert, AlertDescription, AlertTitle } from '@september/ui/components/alert';
-import { Button } from '@september/ui/components/button';
-import { FormCheckbox, FormSelect } from '@september/ui/components/form';
-import { Spinner } from '@september/ui/components/spinner';
-
-import { TranscriptionConfigSchema, type Account } from '@september/account';
-import { getModelsForProvider } from '@september/ai';
+import { getModelsForProvider } from '../providers';
 
 export type TranscriptionFormData = z.infer<typeof TranscriptionConfigSchema>;
 

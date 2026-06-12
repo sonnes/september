@@ -6,9 +6,9 @@
   "types": "./index.ts",
   "exports": {
     ".": "./index.ts",
-    "./lib/*": "./lib/*",
-    "./types/*": "./types/*",
-    "./hooks/*": "./hooks/*"
+    "./autocomplete": "./lib/autocomplete/index.ts",
+    "./indexeddb": "./lib/indexeddb/index.ts",
+    "./slides": "./lib/slides/index.ts"
   },
   "dependencies": {
     "@standard-schema/spec": "^1.1.0",

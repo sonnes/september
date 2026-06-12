@@ -1,9 +1,27 @@
-export * from '@september/ai/lib/defaults';
-export * from '@september/ai/lib/registry';
-export * from '@september/ai/hooks/use-ai-settings';
-export * from '@september/ai/hooks/use-generate';
-export * from '@september/ai/components/context';
-export * from '@september/ai/types/schemas';
-export * from '@september/ai/components/ai-providers-form';
-export * from '@september/ai/components/provider-section';
-export * from '@september/ai/components/transcription-form';
+export { AISettingsProvider, useAISettings } from './settings';
+export {
+  useGenerate,
+  type GenerateObjectParams,
+  type GenerateTextParams,
+  type UseGenerateOptions,
+  type UseGenerateReturn,
+} from './generation';
+export {
+  AI_PROVIDERS,
+  getModelsForProvider,
+  getProvidersForFeature,
+  supportsFeature,
+} from './providers';
+export {
+  AIProvidersForm,
+  ProviderSection,
+  TranscriptionForm,
+  type TranscriptionFormData,
+} from './components';
+export {
+  AIProvidersSchema,
+  AISettingsSchema,
+  SpeechProviderSchema,
+  SpeechSettingsSchema,
+  type AIProvidersFormData,
+} from './schemas';

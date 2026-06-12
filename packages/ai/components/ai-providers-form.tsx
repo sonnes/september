@@ -3,17 +3,13 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import type { Account } from '@september/account';
+import type { Providers } from '@september/shared';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import type { Account } from '@september/account';
-import type { Providers } from '@september/shared/types/ai-config';
-import { Spinner } from '@september/ui/components/spinner';
-import { Alert, AlertDescription, AlertTitle } from '@september/ui/components/alert';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
-
-import { AIProvidersFormData, AIProvidersSchema } from '@september/ai/types/schemas';
-import { AI_PROVIDERS } from '@september/ai/lib/registry';
+import { AI_PROVIDERS } from '../lib/registry';
+import { AIProvidersFormData, AIProvidersSchema } from '../types/schemas';
 
 // Get providers that require API keys
 const getProvidersWithApiKeys = () => {
@@ -91,7 +87,9 @@ export function AIProvidersForm({ account, onSubmit, children }: AIProvidersForm
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       console.error('Error saving AI settings:', err);
-      setError(err instanceof Error ? err.message : 'Failed to update AI settings. Please try again.');
+      setError(
+        err instanceof Error ? err.message : 'Failed to update AI settings. Please try again.'
+      );
     }
   };
 

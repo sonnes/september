@@ -2,7 +2,7 @@
 
 import { type HTMLAttributes, type ReactNode, createContext, useContext, useMemo } from 'react';
 
-import { cn } from '@september/shared/lib/utils';
+import { cn } from '@september/shared';
 import { useAudioPlayer } from '@september/audio/components/audio-player';
 import { Alignment } from '@september/audio/types';
 

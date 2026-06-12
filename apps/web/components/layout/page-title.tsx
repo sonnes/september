@@ -1,4 +1,4 @@
-import { cn } from '@september/shared/lib/utils';
+import { cn } from '@september/shared';
 
 type PageTitleProps = {
   title: string;

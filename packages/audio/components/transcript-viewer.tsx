@@ -28,9 +28,9 @@ import {
   type TranscriptWord as TranscriptWordType,
   type UseTranscriptViewerResult,
   useTranscriptViewer,
-} from '@september/shared/hooks/use-transcript-viewer';
+} from '@september/audio/hooks/use-transcript-viewer';
 
-import { cn } from '@september/shared/lib/utils';
+import { cn } from '@september/shared';
 
 type TranscriptGap = Extract<TranscriptSegment, { kind: 'gap' }>;
 

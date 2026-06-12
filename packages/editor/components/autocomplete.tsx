@@ -4,9 +4,9 @@ import { useMemo, useState } from 'react';
 
 import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
 
-import { useAutocomplete } from '@september/shared/hooks/use-autocomplete';
+import { useAutocomplete } from '@september/editor/hooks/use-autocomplete';
 
-import { MATCH_PUNCTUATION } from '@september/shared/lib/utils';
+import { MATCH_PUNCTUATION } from '@september/shared';
 import { useEditorContext } from '@september/editor/components/editor-provider';
 
 export function Autocomplete() {
