@@ -19,7 +19,6 @@
     "@september/editor": "workspace:*",
     "@september/keyboards": "workspace:*",
     "@september/onboarding": "workspace:*",
-    "@september/recording": "workspace:*",
     "@september/shared": "workspace:*",
     "@september/speech": "workspace:*",
     "@september/suggestions": "workspace:*",

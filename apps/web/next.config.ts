@@ -12,7 +12,6 @@ const nextConfig: NextConfig = {
     '@september/editor',
     '@september/keyboards',
     '@september/onboarding',
-    '@september/recording',
     '@september/shared',
     '@september/speech',
     '@september/suggestions',

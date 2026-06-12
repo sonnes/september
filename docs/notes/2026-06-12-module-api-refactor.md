@@ -121,6 +121,11 @@ Verification:
 - `pnpm exec tsc --noEmit --pretty false -p apps/web/tsconfig.json`
 - `git diff --check`
 
+## 2026-06-12: Recording (deleted)
+
+- `@september/recording` (webcam video + TTS-audio capture, ffmpeg MP4 conversion, 538 lines) had zero consumers anywhere in the repo — built but never wired into a page. Per user decision, deleted the whole package rather than refactoring a module with no caller.
+- Removed it from `apps/web/package.json` deps and the `next.config.ts` transpile list. The `@ffmpeg/ffmpeg`/`@ffmpeg/util` deps leave the tree with it; `react-webcam` stays because the display page (`apps/web/app/display/[id]/page.tsx`) uses it via the app's own dependency. Recoverable from git history if a recording feature is ever built.
+
 ## 2026-06-12: Onboarding
 
 - Small, clean module. Public API curated to `OnboardingProvider` + `OnboardingFlow` (the only two symbols the page imported). `useOnboarding` stays exported from the provider for the 5 step components but is out of the public barrel.
