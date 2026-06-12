@@ -16,10 +16,10 @@ import { Button } from '@september/ui/components/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@september/ui/components/tooltip';
 
 import { slideToPlainText, type Slide, parseAndRenderSlides } from '@september/shared/slides';
-import { SlidesNavigation } from '@september/documents/components/slides-navigation';
-import { SlidesProgress } from '@september/documents/components/slides-progress';
-import { useSlideVoiceOver } from '@september/documents/hooks/use-slide-voice-over';
-import { useDocuments } from '@september/documents/hooks/use-documents';
+import { SlidesNavigation } from './slides-navigation';
+import { SlidesProgress } from './slides-progress';
+import { useSlideVoiceOver } from '../hooks/use-slide-voice-over';
+import { useDocument } from '../hooks/use-document';
 
 type SlidesPresentationProps = {
   markdown?: string;
@@ -40,8 +40,7 @@ export function SlidesPresentation({
   defaultAutoPlay = false,
   showFullscreenButton = true,
 }: SlidesPresentationProps) {
-  const { documents } = useDocuments();
-  const current = documentId ? documents.find(doc => doc.id === documentId) || null : null;
+  const { document: current } = useDocument(documentId);
 
   const [slides, setSlides] = useState<Slide[]>([]);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);

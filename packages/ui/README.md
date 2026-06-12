@@ -47,6 +47,7 @@ All components follow shadcn/ui patterns and are built on Radix primitives:
 | `Tabs` | Tabbed navigation |
 | `Textarea` | Multi-line inputs |
 | `Tooltip` | Hover information |
+| `EditableText` | Inline editable text with pencil-on-hover affordance |
 
 ## Usage
 

@@ -135,3 +135,13 @@ const { generate } = useGenerate({
 ## Forms
 
 `AIProvidersForm`, `ProviderSection`, and `TranscriptionForm` are reusable settings forms. `TranscriptionFormData` and `AIProvidersFormData` are exported from the root for consumer submit handlers.
+
+## Text Extraction
+
+`extractText` sends one or more files to Gemini 2.5 Flash and returns markdown-formatted text with `---` chunk separators. Throws `Error('Could not extract text from files')` on failure.
+
+```ts
+import { extractText } from '@september/ai';
+
+const markdown = await extractText(apiKey, files);
+```

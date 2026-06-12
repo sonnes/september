@@ -1,12 +1,14 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+
+import { toast } from 'sonner';
+
+import { updateDocument } from '../mutations';
 import { useDocument } from './use-document';
-import { useUpdateDocument } from './use-update-document';
 
 export interface UseDocumentEditorOptions {
   documentId: string;
-  autoSaveDelay?: number; // Optional: implement autosave
 }
 
 export interface UseDocumentEditorReturn {
@@ -34,7 +36,6 @@ export function useDocumentEditor({
   documentId,
 }: UseDocumentEditorOptions): UseDocumentEditorReturn {
   const { document, isLoading } = useDocument(documentId);
-  const { updateDocument } = useUpdateDocument();
 
   const [content, setContent] = useState('');
   const [isDirty, setIsDirty] = useState(false);
@@ -56,9 +57,14 @@ export function useDocumentEditor({
 
   const handleSave = useCallback(async () => {
     if (!document?.id) return;
-    await updateDocument(document.id, { content });
-    setIsDirty(false);
-  }, [document, content, updateDocument]);
+    try {
+      await updateDocument(document.id, { content });
+      toast.success('Document updated');
+      setIsDirty(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save document');
+    }
+  }, [document, content]);
 
   const handleUploadFile = useCallback(() => {
     setIsUploadDialogOpen(true);
@@ -70,11 +76,15 @@ export function useDocumentEditor({
 
   const handleTextExtracted = useCallback(async (text: string) => {
     if (!document) return;
-    const existing = document.content || '';
-    await updateDocument(document.id, { content: existing + text });
-    setIsUploadDialogOpen(false);
-    setIsDirty(false);
-  }, [document, updateDocument]);
+    try {
+      const existing = document.content || '';
+      await updateDocument(document.id, { content: existing + text });
+      setIsUploadDialogOpen(false);
+      setIsDirty(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to append extracted text');
+    }
+  }, [document]);
 
   return {
     content,

@@ -3,6 +3,7 @@ export * from "./components/accordion";
 export * from "./components/alert-dialog";
 export * from "./components/alert";
 export * from "./components/animated-text";
+export * from "./components/editable-text";
 export * from "./components/avatar";
 export * from "./components/badge";
 export * from "./components/breadcrumb";

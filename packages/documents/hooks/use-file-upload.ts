@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
+
 import { toast } from 'sonner';
-import GeminiService from '@/services/gemini';
+
+import { extractText } from '@september/ai';
 import { useAccount } from '@september/account';
 
 export interface UseFileUploadOptions {
@@ -13,7 +15,6 @@ export interface UseFileUploadReturn {
   // State
   uploadedFiles: File[];
   extracting: boolean;
-  gemini: GeminiService;
 
   // Actions
   handleFilesSelected: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -25,11 +26,6 @@ export function useFileUpload({
   onTextExtracted,
 }: UseFileUploadOptions = {}): UseFileUploadReturn {
   const { account } = useAccount();
-
-  const gemini = useMemo(
-    () => new GeminiService(account?.ai_providers?.gemini?.api_key || ''),
-    [account?.ai_providers?.gemini?.api_key]
-  );
 
   const [extracting, setExtracting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -48,16 +44,17 @@ export function useFileUpload({
     setExtracting(true);
 
     try {
-      const extractedText = await gemini.extractText({ files: uploadedFiles });
+      const apiKey = account?.ai_providers?.gemini?.api_key ?? '';
+      const extractedText = await extractText(apiKey, uploadedFiles);
       onTextExtracted?.(extractedText);
-      setUploadedFiles([]); // Clear after success
+      setUploadedFiles([]);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Something went wrong';
       toast.error(message);
     } finally {
       setExtracting(false);
     }
-  }, [uploadedFiles, gemini, onTextExtracted]);
+  }, [uploadedFiles, account?.ai_providers?.gemini?.api_key, onTextExtracted]);
 
   const resetFiles = useCallback(() => {
     setUploadedFiles([]);
@@ -66,7 +63,6 @@ export function useFileUpload({
   return {
     uploadedFiles,
     extracting,
-    gemini,
     handleFilesSelected,
     handleSubmit,
     resetFiles,

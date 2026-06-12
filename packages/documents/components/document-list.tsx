@@ -3,12 +3,11 @@ import type { ComponentProps, ReactNode } from 'react';
 import Link from 'next/link';
 
 import { DocumentIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import moment from 'moment';
 
 import { Input } from '@september/ui/components/input';
 
-import { cn } from '@september/shared';
-import { Document } from '@september/documents/types';
+import { cn, timeAgo } from '@september/shared';
+import { Document } from '../types';
 
 type DocumentListEmptyStateProps = ComponentProps<'div'> & {
   title?: string;
@@ -104,7 +103,7 @@ export function DocumentList({
                   {document.name || 'Untitled document'}
                 </div>
                 <div className="text-sm text-zinc-500">
-                  Updated {moment(document.updated_at).fromNow()}
+                  Updated {timeAgo(document.updated_at)}
                 </div>
               </div>
             </Link>
@@ -114,4 +113,3 @@ export function DocumentList({
     </>
   );
 }
-

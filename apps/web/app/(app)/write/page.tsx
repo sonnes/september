@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 
-import { DocumentList, useCreateDocument, useDocuments } from '@september/documents';
+import { DocumentList, createDocument, useDocuments } from '@september/documents';
 import { Button } from '@september/ui/components/button';
 
 import { PageHeader, PageShell, PageTitle } from '@/components/layout';
@@ -18,17 +18,21 @@ import { DocumentListSkeleton } from './loading-skeleton';
 export default function WritePage() {
   const router = useRouter();
   const { documents, isLoading } = useDocuments();
-  const { createDocument, isCreating } = useCreateDocument();
+  const [isCreating, setIsCreating] = useState(false);
   const [searchValue, setSearchValue] = useState('');
 
   const handleNewDocument = async () => {
+    setIsCreating(true);
     try {
       const newDoc = await createDocument({ name: '', content: '' });
+      toast.success('Document created');
       router.push(`/write/${newDoc.id}`);
     } catch (err) {
       toast.error('Error', {
         description: err instanceof Error ? err.message : 'Failed to create document',
       });
+    } finally {
+      setIsCreating(false);
     }
   };
 

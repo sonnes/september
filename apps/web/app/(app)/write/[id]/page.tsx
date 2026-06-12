@@ -1,10 +1,10 @@
 'use client';
 
-import React, { use } from 'react';
+import { use } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { DocumentEditor, EditableDocumentTitle, useDocuments } from '@september/documents';
+import { DocumentEditor, EditableDocumentTitle, useDocument } from '@september/documents';
 import { ErrorState } from '@september/ui/components/error-state';
 import { Separator } from '@september/ui/components/separator';
 import { SidebarTrigger } from '@september/ui/components/sidebar';
@@ -21,11 +21,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
   const { id } = use(params);
   const router = useRouter();
 
-  const { documents, isLoading } = useDocuments();
-
-  const current = React.useMemo(() => {
-    return id ? documents.find(doc => doc.id === id) || null : null;
-  }, [documents, id]);
+  const { document: current, isLoading } = useDocument(id);
 
   const isInitializing = !id || isLoading;
 

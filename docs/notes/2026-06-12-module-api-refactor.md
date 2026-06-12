@@ -79,3 +79,17 @@ Verification:
 - `pnpm exec vitest --run packages/cloning` (23 tests)
 - `pnpm exec tsc --noEmit --pretty false -p apps/web/tsconfig.json`
 - `git diff --check`
+
+## 2026-06-12: Documents
+
+- Fixed a package→app boundary violation: `use-file-upload` imported the app's `GeminiService` via the `@/` alias. Text extraction moved into `@september/ai` as `extractText(apiKey, files)` (gemini-2.5-flash, same prompt; files passed as ArrayBuffer file parts — no base64 round-trip, no `@google/genai` dep). `apps/web/services/gemini.ts` untouched; note its `extractText` method and the three `/api/*` routes wrapping it now have zero in-repo callers.
+- New `EditableText` in `@september/ui` (click-to-edit, save on blur/Enter, Escape cancel, revert on error) replaces the duplicate title editors; `EditableDocumentTitle` (22 lines) and `EditableChatTitle` (34 lines) are now thin wrappers.
+- Mutation hooks → plain `createDocument`/`updateDocument`/`deleteDocument` per convention (same Transaction-await bug fixed); toasts moved to call sites.
+- `useDocument(id)` now used by SlidesPresentation and both `[id]` pages instead of `useDocuments()` + `.find`; the hook returns `undefined` when called without an id (previously the unfiltered query surfaced an arbitrary first document — fixed on review).
+- Deleted dead `slide-renderer.tsx` and `slide-text-viewer.tsx`; dropped unused `remark`/`remark-gfm`/`remark-html` (slide parsing lives in shared/slides) and `moment` (→ `timeAgo`). Dropped the `documentCollection` root export. Self-imports made relative; exports narrowed to root.
+
+Verification:
+
+- `pnpm exec vitest --run packages/documents packages/chats packages/ai packages/ui` (30 tests)
+- `pnpm exec tsc --noEmit --pretty false -p apps/web/tsconfig.json`
+- `git diff --check`

@@ -4,7 +4,7 @@ import { Button } from '@september/ui/components/button';
 import { Input } from '@september/ui/components/input';
 import { Label } from '@september/ui/components/label';
 
-import { useFileUpload } from '@september/documents/hooks/use-file-upload';
+import { useFileUpload } from '../hooks/use-file-upload';
 
 type UploadFormProps = {
   onTextExtracted: (text: string) => void;

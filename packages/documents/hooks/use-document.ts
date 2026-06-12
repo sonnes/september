@@ -32,7 +32,8 @@ export function useDocument(id?: string): UseDocumentReturn {
   );
 
   return {
-    document: data?.[0],
+    // Without an id the query is unfiltered — never surface an arbitrary document
+    document: id ? data?.[0] : undefined,
     isLoading,
     error,
   };

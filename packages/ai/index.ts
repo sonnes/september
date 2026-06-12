@@ -1,4 +1,5 @@
 export { AISettingsProvider, useAISettings } from './settings';
+export { extractText } from './lib/extract-text';
 export {
   useGenerate,
   type GenerateObjectParams,

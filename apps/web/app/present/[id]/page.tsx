@@ -2,7 +2,7 @@
 
 import { use } from 'react';
 
-import { SlidesPresentation, useDocuments } from '@september/documents';
+import { SlidesPresentation, useDocument } from '@september/documents';
 
 type PresentPageProps = {
   params: Promise<{ id: string }>;
@@ -10,8 +10,7 @@ type PresentPageProps = {
 
 export default function PresentPage({ params }: PresentPageProps) {
   const { id } = use(params);
-  const { documents, isLoading } = useDocuments();
-  const document = documents.find(doc => doc.id === id);
+  const { document, isLoading } = useDocument(id);
 
   if (isLoading) {
     return (
