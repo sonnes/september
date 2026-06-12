@@ -2,18 +2,18 @@
 
 import { useState } from 'react';
 
-import { useAccount } from '@september/account';
-
-import { useAnalyticsSummary } from '../hooks/use-analytics-summary';
-import { TimeRange } from '../lib/utils';
+import { TimeRange, useAnalyticsSummary } from '../use-summary';
 import { MetricCard } from './metric-card';
 import { ProviderUsageChart } from './provider-usage-chart';
 import { TimeRangeSelector } from './time-range-selector';
 
-export function DashboardStats() {
-  const { user } = useAccount();
+interface DashboardStatsProps {
+  userId?: string;
+}
+
+export function DashboardStats({ userId }: DashboardStatsProps) {
   const [timeRange, setTimeRange] = useState<TimeRange>('week');
-  const { summary, isLoading } = useAnalyticsSummary({ userId: user?.id, timeRange });
+  const { summary, isLoading } = useAnalyticsSummary({ userId, timeRange });
 
   if (isLoading) {
     return <DashboardStatsSkeleton />;
@@ -28,24 +28,12 @@ export function DashboardStats() {
   const keystrokesSaved = summary.messages.total_text_length - summary.messages.total_keys_typed;
   const efficiency = Math.round(summary.messages.efficiency);
 
-  // Format AI provider data for the chart
   const aiByProvider = Object.entries(summary.ai_generations.by_provider).map(
-    ([provider, stats]) => ({
-      provider,
-      calls: stats.count,
-      tokens: 0,
-      chars: 0,
-    })
+    ([provider, stats]) => ({ provider, calls: stats.count })
   );
 
-  // Format TTS provider data for the chart
   const ttsByProvider = Object.entries(summary.tts_generations.by_provider).map(
-    ([provider, stats]) => ({
-      provider,
-      calls: stats.count,
-      tokens: 0,
-      chars: 0,
-    })
+    ([provider, stats]) => ({ provider, calls: stats.count })
   );
 
   return (

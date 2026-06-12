@@ -5,7 +5,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { webLLM } from '@built-in-ai/web-llm';
 import { useAccount } from '@september/account';
-import { logAIGeneration } from '@september/analytics';
+import { track } from '@september/analytics';
 import { AIProvider } from '@september/shared';
 import { generateObject, generateText, wrapLanguageModel } from 'ai';
 import { toast } from 'sonner';
@@ -170,7 +170,8 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
 
           // Log AI generation event
           if (user?.id && usage) {
-            logAIGeneration(user.id, {
+            track(user.id, {
+              type: 'ai_generation',
               generation_type: feature || 'suggestions',
               provider: provider === 'gemini' ? 'gemini' : undefined,
               model: modelId,
@@ -194,7 +195,8 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
 
           // Log AI generation event
           if (user?.id && usage) {
-            logAIGeneration(user.id, {
+            track(user.id, {
+              type: 'ai_generation',
               generation_type: feature || 'suggestions',
               provider: provider === 'gemini' ? 'gemini' : undefined,
               model: modelId,

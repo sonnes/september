@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 
 import { useAccount } from '@september/account';
-import { logMessageSent } from '@september/analytics';
+import { track } from '@september/analytics';
 import { Audio, useAudio } from '@september/audio';
 import { useSpeech } from '@september/speech';
 
@@ -46,7 +46,8 @@ export function useCreateMessage(): UseCreateMessageReturn {
 
         // Log message sent event
         if (user?.id) {
-          logMessageSent(user.id, {
+          track(user.id, {
+            type: 'message_sent',
             text_length: newMessage.text.length,
             chat_id: newMessage.chat_id,
             keys_typed: message.editorStats?.keysTyped ?? 0,

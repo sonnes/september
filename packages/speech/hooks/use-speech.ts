@@ -4,7 +4,7 @@ import { useCallback, useMemo } from 'react';
 
 import { useAccount } from '@september/account';
 import { useAISettings } from '@september/ai';
-import { logTTSGeneration } from '@september/analytics';
+import { track } from '@september/analytics';
 import type { AIProvider } from '@september/shared';
 import type { Voice } from '@september/shared';
 
@@ -93,7 +93,8 @@ export function useSpeech(): UseSpeechReturn {
                 ? (result.blob as Blob).size / (16000 * 2)
                 : 0;
 
-            logTTSGeneration(user.id, {
+            track(user.id, {
+              type: 'tts_generation',
               provider: speechConfig.provider === 'elevenlabs' ? 'elevenlabs' : undefined,
               voice_id: speechConfig.voice_id,
               text_length: text.length,

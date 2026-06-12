@@ -7,7 +7,7 @@ import { PageHeader, PageShell, PageTitle } from '@/components/layout';
 import SidebarLayout from '@/components/sidebar/layout';
 
 export default function DashboardPage() {
-  const { loading } = useAccount();
+  const { user, loading } = useAccount();
 
   return (
     <>
@@ -17,7 +17,7 @@ export default function DashboardPage() {
       <SidebarLayout.Content>
         <PageShell width="wide">
           <PageTitle title="Dashboard" description="Your September activity at a glance." />
-          {!loading && <DashboardStats />}
+          {!loading && <DashboardStats userId={user?.id} />}
         </PageShell>
       </SidebarLayout.Content>
     </>
