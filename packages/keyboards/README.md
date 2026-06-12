@@ -1,179 +1,82 @@
-# Keyboards Module
+# @september/keyboards
 
-This module provides various keyboard layouts and a renderer for the September app.
+Keyboard layouts and custom keyboard management for the September AAC app.
 
-## Features
+## Public API
 
-- **QWERTY Keyboard**: A traditional keyboard layout.
-- **Circular Keyboard**: A specialized keyboard layout for eye-tracking or alternative input.
-- **Keyboard Context**: Manages keyboard visibility and type selection.
-- **Keyboard Renderer**: A component that switches between different keyboard layouts.
-
-## Components
-
-- `KeyboardProvider`: Context provider for keyboard state.
-- `KeyboardRenderer`: Main component to render the selected keyboard.
-- `KeyboardToggleButton`: Button to toggle keyboard visibility.
-- `QwertyKeyboard`: Traditional keyboard layout.
-- `CircularKeyboard`: Circular keyboard layout using Konva.
-- `CustomKeyboard`: Render custom grid keyboard from database.
-- `CustomKeyboardEditor`: Create/edit custom keyboards.
-- `CustomKeyboardList`: Manage custom keyboards (view/edit/delete).
-
-## Hooks
-
-- `useKeyboardContext`: Access the keyboard visibility and type state.
-- `useShiftState`: Manage shift/caps lock state for keyboards.
-- `useStageSize`: Handle responsive stage sizing for canvas-based keyboards.
-- `useKeyboardInteractions`: Manage hover and interaction states for keyboard keys.
-- `useCustomKeyboards`: Query custom keyboards from database.
-- `useCustomKeyboard`: Query single custom keyboard by ID.
-- `useCreateKeyboard`: Create new custom keyboard.
-- `useUpdateKeyboard`: Update existing custom keyboard.
-- `useDeleteKeyboard`: Delete custom keyboard.
-- `useGenerateKeyboardFromMessage`: AI-powered keyboard generation from message context.
-
-## Usage
-
-### Creating a Custom Keyboard
-
-```tsx
-import { CustomKeyboardEditor } from '@september/keyboards';
-
-function CreateKeyboardPage() {
-  const handleSave = (keyboard) => {
-    console.log('Created:', keyboard);
-  };
-
-  return (
-    <CustomKeyboardEditor
-      onSave={handleSave}
-      onCancel={() => router.back()}
-    />
-  );
-}
+```ts
+import {
+  KeyboardProvider,
+  KeyboardRenderer,
+  KeyboardToggleButton,
+  createKeyboard,
+  useGenerateKeyboardFromMessage,
+} from '@september/keyboards';
+import type { CustomKeyboard, CreateCustomKeyboardData } from '@september/keyboards';
 ```
 
-### Using a Custom Keyboard
+### Components
 
-```tsx
-import { CustomKeyboard } from '@september/keyboards';
+**`KeyboardProvider`** — context provider; wrap the area that contains a `KeyboardRenderer` and `KeyboardToggleButton`.
 
-function ChatPage() {
-  const handleKeyPress = (key) => {
-    console.log('Key pressed:', key);
-  };
+**`KeyboardRenderer`** — renders all keyboard types (QWERTY, Circular, and any custom keyboards) in a tab strip. Custom keyboard editor is included.
 
-  return (
-    <CustomKeyboard
-      keyboardId="some-uuid"
-      onKeyPress={handleKeyPress}
-    />
-  );
-}
+Props:
+- `chatId?: string` — when set, shows keyboards assigned to this chat or unassigned (`chat_id` null/undefined). When unset, shows only global keyboards.
+- `onKeyPress: (key: string) => void`
+- `stickyQwerty?: boolean` — when true, QWERTY/Circular live in a persistent group below the custom keyboard tab strip instead of sharing the same tab strip.
+- `className?: string`
+
+**`KeyboardToggleButton`** — button that shows/hides the keyboard via `KeyboardProvider` context.
+
+### Mutation
+
+**`createKeyboard(data: CreateCustomKeyboardData): Promise<CustomKeyboard>`**
+
+Plain async function. Assigns nanoid ids to the keyboard and each button, assigns `order` (0-indexed), defaults `columns` to 4. Awaits `tx.isPersisted.promise` before returning — throws on persistence failure. Toast lives at the call site.
+
+```ts
+const keyboard = await createKeyboard({
+  name: 'Medical Terms',
+  user_id: user.id,
+  chat_id: chatId,   // optional: assign to a specific chat
+  columns: 3,
+  buttons: [{ text: 'I need help' }, { text: 'Call the nurse' }],
+});
 ```
 
-### Managing Custom Keyboards
+`updateKeyboard` and `deleteKeyboard` are internal to the package (used by `KeyboardRenderer` / `CustomKeyboardEditor`) and are not exported.
 
-```tsx
-import { CustomKeyboardList } from '@september/keyboards';
+### Hook
 
-function ManageKeyboardsPage() {
-  const handleEdit = (keyboardId) => {
-    router.push(`/keyboards/${keyboardId}/edit`);
-  };
+**`useGenerateKeyboardFromMessage`** — AI keyboard generation from a message string. Calls Google Gemini via `@september/ai`. Returns `{ generateKeyboard, isGenerating, error }`.
 
-  return (
-    <CustomKeyboardList
-      onEdit={handleEdit}
-      onSelect={(id) => console.log('Selected:', id)}
-    />
-  );
+`generateKeyboard({ messageText, chatId })` resolves with `{ chatTitle, keyboardTitle, buttons: string[] }` (24 phrases). Throws `Error('API key not configured')` when no API key is set — callers should silence that specific error.
+
+## Data layout
+
+`CustomKeyboard`:
+```ts
+{
+  id: string;         // nanoid
+  user_id: string;
+  name: string;       // displayed on the keyboard tab
+  buttons: GridButton[];
+  chat_id?: string;   // undefined/null = global; set = chat-specific
+  columns: number;    // 2–6, default 4
+  created_at: Date;
+  updated_at: Date;
 }
+
+GridButton: { id, text, value?, image_url?, order }
 ```
 
-### Auto-Generating Keyboards from Chat Context
+**`chat_id` query rationale:** `useCustomKeyboards` returns keyboards where `chat_id` is null, undefined, or matches the current `chatId`. This means global keyboards always appear alongside chat-specific ones — there is no "hide global" mode.
 
-The keyboards package includes AI-powered keyboard generation that automatically creates custom keyboards based on the first message in a chat.
+## Storage
 
-```tsx
-import { useGenerateKeyboardFromMessage } from '@september/keyboards';
+IndexedDB via TanStack DB. Database: `app-custom-keyboards`. Multi-tab sync via BroadcastChannel.
 
-function ChatComponent() {
-  const { generateKeyboard, isGenerating } = useGenerateKeyboardFromMessage();
+## Internal structure
 
-  const handleFirstMessage = async (messageText: string, chatId: string) => {
-    try {
-      const { chatTitle, keyboardTitle, buttons } = await generateKeyboard({
-        messageText,
-        chatId,
-      });
-
-      console.log('Generated chat title:', chatTitle);
-      console.log('Generated keyboard title:', keyboardTitle);
-      console.log('Generated buttons:', buttons); // Array of 24 phrases
-    } catch (error) {
-      console.error('Generation failed:', error);
-    }
-  };
-
-  return (
-    <div>
-      {isGenerating && <p>Generating keyboard...</p>}
-    </div>
-  );
-}
-```
-
-**How It Works:**
-
-1. User sends first message in a chat
-2. AI analyzes message context using Google Gemini 2.5 Flash Lite
-3. Generates full descriptive chat title (max 50 chars) - used for chat context
-4. Generates concise keyboard title (max 2 words) - displayed on keyboard tabs
-5. Generates 24 contextual phrase starters (max 3 words each)
-6. Custom keyboard is automatically created with keyboard title and assigned to the chat
-7. Chat title is updated with full descriptive AI-generated title
-
-**Requirements:**
-
-- Google Gemini API key configured in AI settings
-- First message in chat (existing messages prevent generation)
-- Non-empty message text
-
-**Error Handling:**
-
-- Missing API key: Silent failure, no keyboard created
-- AI generation errors: Console log, toast notification
-- All errors are non-blocking (message creation always succeeds)
-
-**Configuration:**
-
-Uses the Google API key from AI settings (same as suggestions feature). No additional configuration required.
-
-## Database
-
-Custom keyboards are stored locally using TanStack DB (IndexedDB):
-- Database name: `app-custom-keyboards`
-- Multi-tab synchronization via BroadcastChannel
-- Automatic persistence across sessions
-
-## Architecture Decisions
-
-### Local-First Storage
-Custom keyboards use TanStack DB with IndexedDB for offline-first functionality. This ensures keyboards are available even without network connectivity and provides instant synchronization across browser tabs.
-
-### Keyboard Type Expansion
-The `KeyboardType` type was expanded from `'qwerty' | 'circular' | 'none'` to include `'custom'`. This allows custom keyboards to be selected via the same context mechanism while maintaining backwards compatibility. The specific custom keyboard ID is stored in a separate context property (`customKeyboardId`).
-
-### Grid Layout
-Custom keyboards use a responsive CSS grid layout. The number of columns is user-configurable (2-6), with mobile viewports automatically clamping to a maximum of 3 columns for usability.
-
-### Phase 1 Limitations
-This implementation provides foundation features only:
-- No import/export functionality
-- No drag-and-drop reordering
-- No multi-page keyboards
-- No button icon library (users provide URLs)
-
-Future enhancements can build on this foundation.
+Components `QwertyKeyboard`, `CircularKeyboard`, `CustomKeyboard`, and `CustomKeyboardEditor` are rendered by `KeyboardRenderer` and are not exported from the package root. Hooks `useCustomKeyboards`, `useCustomKeyboard`, `useShiftState`, `useStageSize`, `useKeyboardInteractions`, and `useKeyboardContext` are internal. Mutations `updateKeyboard` and `deleteKeyboard` are internal.

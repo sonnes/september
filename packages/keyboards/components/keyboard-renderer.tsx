@@ -7,13 +7,13 @@ import { toast } from 'sonner';
 import { cn } from '@september/shared';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@september/ui/components/tabs';
 
-import { CircularKeyboard } from '@september/keyboards/components/circular-keyboard';
-import { CustomKeyboard } from '@september/keyboards/components/custom-keyboard';
-import { CustomKeyboardEditor } from '@september/keyboards/components/custom-keyboard-editor';
-import { KeyboardType } from '@september/keyboards/components/keyboard-context';
-import { QwertyKeyboard } from '@september/keyboards/components/qwerty-keyboard';
-import { useCustomKeyboards, useDeleteKeyboard } from '@september/keyboards/hooks';
-import { useKeyboardContext } from '@september/keyboards/hooks/use-keyboard-context';
+import { CircularKeyboard } from './circular-keyboard';
+import { CustomKeyboard } from './custom-keyboard';
+import { CustomKeyboardEditor } from './custom-keyboard-editor';
+import { KeyboardType, useKeyboardContext } from './keyboard-context';
+import { QwertyKeyboard } from './qwerty-keyboard';
+import { deleteKeyboard } from '../mutations';
+import { useCustomKeyboards } from '../hooks/use-custom-keyboards';
 
 interface KeyboardRendererProps {
   chatId?: string;
@@ -38,7 +38,6 @@ export function KeyboardRenderer({
 }: KeyboardRendererProps) {
   const { isVisible, keyboardType, setKeyboardType, setCustomKeyboardId } = useKeyboardContext();
   const { keyboards: customKeyboards } = useCustomKeyboards({ chatId });
-  const { deleteKeyboard } = useDeleteKeyboard();
 
   // In split mode, the custom-tabs row never shows qwerty/circular — those live
   // in the sticky typing group below. Fall back to the first custom keyboard,

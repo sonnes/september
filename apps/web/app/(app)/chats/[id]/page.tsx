@@ -22,7 +22,7 @@ import {
   KeyboardProvider,
   KeyboardRenderer,
   KeyboardToggleButton,
-  useCreateKeyboard,
+  createKeyboard,
   useGenerateKeyboardFromMessage,
 } from '@september/keyboards';
 import { DisplayMessage } from '@september/shared';
@@ -69,7 +69,6 @@ export default function ChatPage({ params }: ChatPageProps) {
   const { status, createAudioMessage } = useCreateAudioMessage();
   const { text, setText, trackKeystroke, getAndResetStats } = useEditorContext();
   const { generateKeyboard } = useGenerateKeyboardFromMessage();
-  const { createKeyboard } = useCreateKeyboard();
   const popupRef = useRef<Window | null>(null);
 
   const handleSubmit = useCallback(
@@ -143,7 +142,6 @@ export default function ChatPage({ params }: ChatPageProps) {
       setText,
       messages,
       generateKeyboard,
-      createKeyboard,
       getAndResetStats,
     ]
   );

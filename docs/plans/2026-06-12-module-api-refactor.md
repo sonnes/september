@@ -16,10 +16,10 @@ Rework the September packages module by module as if each feature were being imp
 - `@september/cloning`
 - `@september/documents`
 - `@september/editor`
+- `@september/keyboards`
 
 ## Remaining Modules
 
-- `@september/keyboards`
 - `@september/onboarding`
 - `@september/recording`
 - `@september/speech`

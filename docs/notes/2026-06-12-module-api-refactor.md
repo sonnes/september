@@ -107,3 +107,16 @@ Verification:
 - `pnpm exec vitest --run packages/editor packages/ui packages/shared` (183 tests)
 - `pnpm exec tsc --noEmit --pretty false -p apps/web/tsconfig.json`
 - `git diff --check`
+
+## 2026-06-12: Keyboards
+
+- Public surface was ~25 barrel exports for an API that's really 5: `KeyboardProvider`, `KeyboardRenderer`, `KeyboardToggleButton`, `useGenerateKeyboardFromMessage`, `createKeyboard`. `KeyboardRenderer` internally orchestrates Qwerty/Circular/Custom keyboards + editor + custom-keyboard query/delete hooks, so all of those are now internal building blocks.
+- Mutations → plain `createKeyboard`/`updateKeyboard`/`deleteKeyboard` (same Transaction fake-await bug fixed); toasts moved to call sites (chat page keeps its single "keyboard generated" toast — removed the old double-toast; CustomKeyboardEditor gained "Keyboard created/updated" + an `isSaving` state; KeyboardRenderer keeps its delete toasts). Only `createKeyboard` is public; update/delete are internal. `createKeyboard` now requires `user_id` (dropped the account fallback — both callers pass it).
+- `updateKeyboard` returns a `{...draft}` shallow copy instead of `JSON.parse(JSON.stringify(draft))`, which was corrupting `Date` fields to strings.
+- Deleted dead `CustomKeyboardList` (zero consumers), the 4-line `use-keyboard-context` backwards-compat re-export, and the `hooks/index.ts` export-star barrel. Added missing `nanoid` dep (was used but undeclared, working only via hoisting). Self-imports → relative; exports narrowed to root.
+
+Verification:
+
+- `pnpm exec vitest --run packages/keyboards` (15 tests)
+- `pnpm exec tsc --noEmit --pretty false -p apps/web/tsconfig.json`
+- `git diff --check`

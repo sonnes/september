@@ -21,10 +21,9 @@ import {
 
 import { useAccount } from '@september/account';
 
-import { useCreateKeyboard } from '../hooks/use-create-keyboard';
+import { createKeyboard, updateKeyboard } from '../mutations';
 import { useCustomKeyboard } from '../hooks/use-custom-keyboard';
 import { useGenerateKeyboardFromMessage } from '../hooks/use-generate-keyboard';
-import { useUpdateKeyboard } from '../hooks/use-update-keyboard';
 import { CustomKeyboard } from '../types';
 
 // Form validation schema - only name, columns, and buttons
@@ -60,8 +59,6 @@ export function CustomKeyboardEditor({
 }: CustomKeyboardEditorProps) {
   const { user } = useAccount();
   const { keyboard, isLoading: isLoadingKeyboard } = useCustomKeyboard(keyboardId);
-  const { createKeyboard, isCreating } = useCreateKeyboard();
-  const { updateKeyboard, isUpdating } = useUpdateKeyboard();
   const [isSaving, setIsSaving] = useState(false);
   const [generationContext, setGenerationContext] = useState('');
   const { generateKeyboard, isGenerating, error: generationError } = useGenerateKeyboardFromMessage();
@@ -125,6 +122,7 @@ export function CustomKeyboardEditor({
             order: index,
           })),
         });
+        toast.success('Keyboard updated');
         onSave?.(updatedKeyboard);
       } else {
         const newKeyboard = await createKeyboard({
@@ -138,10 +136,11 @@ export function CustomKeyboardEditor({
             image_url: btn.image_url || undefined,
           })),
         });
+        toast.success('Keyboard created');
         onSave?.(newKeyboard);
       }
     } catch {
-      // Error handled by hooks (toast)
+      toast.error(isEditing ? 'Failed to update keyboard' : 'Failed to create keyboard');
     } finally {
       setIsSaving(false);
     }
@@ -308,7 +307,7 @@ export function CustomKeyboardEditor({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isCreating || isUpdating || isSaving}>
+        <Button type="submit" disabled={isSaving}>
           {isSaving ? 'Saving...' : isEditing ? 'Update' : 'Create'}
         </Button>
       </div>
