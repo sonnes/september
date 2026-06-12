@@ -5,7 +5,7 @@ import { ArrowRight, MessageSquare, Settings, Sparkles, Volume2 } from 'lucide-r
 import { Button } from '@september/ui/components/button';
 import { Card, CardContent } from '@september/ui/components/card';
 
-import { useOnboarding } from '@september/onboarding/components/onboarding-provider';
+import { useOnboarding } from '../onboarding-provider';
 
 const SETUP_STEPS = [
   {

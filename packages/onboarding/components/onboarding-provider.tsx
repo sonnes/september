@@ -1,9 +1,14 @@
 'use client';
 
-import { ReactNode, createContext, useContext } from 'react';
+import { ReactNode, createContext, useCallback, useContext, useState } from 'react';
 
-import { useOnboardingLogic } from '@september/onboarding/hooks/use-onboarding';
-import { OnboardingContextValue } from '@september/onboarding/types';
+import { useRouter } from 'next/navigation';
+
+import { useAccount } from '@september/account';
+
+import type { OnboardingContextValue } from '../types';
+
+const TOTAL_STEPS = 5;
 
 const OnboardingContext = createContext<OnboardingContextValue | undefined>(undefined);
 
@@ -12,11 +17,32 @@ interface OnboardingProviderProps {
 }
 
 export function OnboardingProvider({ children }: OnboardingProviderProps) {
-  const onboardingLogic = useOnboardingLogic();
+  const [currentStep, setCurrentStep] = useState(0);
+  const router = useRouter();
+  const { updateAccount } = useAccount();
 
-  return (
-    <OnboardingContext.Provider value={onboardingLogic}>{children}</OnboardingContext.Provider>
-  );
+  const goToNextStep = useCallback(() => {
+    setCurrentStep(prev => Math.min(prev + 1, TOTAL_STEPS - 1));
+  }, []);
+
+  const goToPreviousStep = useCallback(() => {
+    setCurrentStep(prev => Math.max(prev - 1, 0));
+  }, []);
+
+  const completeOnboarding = useCallback(async () => {
+    await updateAccount({ onboarding_completed: true });
+    router.push('/talk');
+  }, [updateAccount, router]);
+
+  const value: OnboardingContextValue = {
+    currentStep,
+    totalSteps: TOTAL_STEPS,
+    goToNextStep,
+    goToPreviousStep,
+    completeOnboarding,
+  };
+
+  return <OnboardingContext.Provider value={value}>{children}</OnboardingContext.Provider>;
 }
 
 export function useOnboarding() {

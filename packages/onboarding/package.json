@@ -5,8 +5,7 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "exports": {
-    ".": "./index.ts",
-    "./*": "./*"
+    ".": "./index.ts"
   },
   "dependencies": {
     "@september/account": "workspace:*",
@@ -16,7 +15,6 @@
     "@september/suggestions": "workspace:*",
     "@september/ui": "workspace:*",
     "@heroicons/react": "^2.2.0",
-    "zod": "^4.0.5",
     "sonner": "^2.0.6"
   },
   "peerDependencies": {

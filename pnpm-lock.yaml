@@ -679,9 +679,6 @@ importers:
       sonner:
         specifier: ^2.0.6
         version: 2.0.7(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
-      zod:
-        specifier: ^4.0.5
-        version: 4.1.12
 
   packages/recording:
     dependencies:

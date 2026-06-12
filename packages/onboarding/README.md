@@ -1,27 +1,8 @@
-# Onboarding Module
+# @september/onboarding
 
-This module handles the user onboarding flow for September.
+Multi-step onboarding wizard for September. Two public exports; everything else is internal.
 
-## Features
-
-- Multi-step onboarding process
-- AI provider configuration
-- Suggestion settings
-- Voice selection
-- Progress tracking
-
-## Components
-
-- `OnboardingFlow`: The main component that renders the onboarding steps.
-- `OnboardingStep`: A wrapper component for individual onboarding steps.
-- `steps/`: Individual step components (Welcome, AI Providers, Suggestions, Speech, Complete).
-
-## Context & Hooks
-
-- `OnboardingProvider`: Manages the state of the onboarding process (current step, navigation).
-- `useOnboarding`: Hook to access the onboarding state and navigation functions.
-
-## Usage
+## Public API
 
 ```tsx
 import { OnboardingProvider, OnboardingFlow } from '@september/onboarding';
@@ -35,3 +16,15 @@ export default function OnboardingPage() {
 }
 ```
 
+### `OnboardingProvider`
+
+Owns all onboarding state: current step index, step navigation (`goToNextStep`, `goToPreviousStep`, both clamped), and `completeOnboarding` (saves `onboarding_completed: true` to the account then redirects to `/talk`). Must wrap `OnboardingFlow`.
+
+### `OnboardingFlow`
+
+Renders a progress bar and the appropriate step component based on the current step. The five steps are — in order — Welcome, AI Providers, Suggestions, Speech, and Complete.
+
+## Internals (not exported)
+
+- `useOnboarding` — context consumer hook used by all step components; not in the public barrel.
+- `components/steps/` — bespoke step components; each calls `useOnboarding` directly.

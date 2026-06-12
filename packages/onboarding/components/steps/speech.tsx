@@ -18,7 +18,7 @@ import { useSpeechContext, VoicesList } from '@september/speech';
 import type { SpeechConfig } from '@september/shared';
 import type { Voice } from '@september/shared';
 
-import { useOnboarding } from '@september/onboarding/components/onboarding-provider';
+import { useOnboarding } from '../onboarding-provider';
 
 type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs' | 'kokoro';
 

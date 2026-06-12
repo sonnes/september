@@ -8,7 +8,7 @@ import { useAccount } from '@september/account';
 import { AIProvidersForm, ProviderSection } from '@september/ai';
 import type { Providers } from '@september/shared';
 
-import { useOnboarding } from '@september/onboarding/components/onboarding-provider';
+import { useOnboarding } from '../onboarding-provider';
 
 export function AIProvidersStep() {
   const { goToNextStep, goToPreviousStep } = useOnboarding();

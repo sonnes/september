@@ -120,3 +120,16 @@ Verification:
 - `pnpm exec vitest --run packages/keyboards` (15 tests)
 - `pnpm exec tsc --noEmit --pretty false -p apps/web/tsconfig.json`
 - `git diff --check`
+
+## 2026-06-12: Onboarding
+
+- Small, clean module. Public API curated to `OnboardingProvider` + `OnboardingFlow` (the only two symbols the page imported). `useOnboarding` stays exported from the provider for the 5 step components but is out of the public barrel.
+- Inlined the single-use `useOnboardingLogic` hook directly into `OnboardingProvider` (deleted `hooks/use-onboarding.ts` and the `hooks/` dir) — provider+hook split collapsed to one file.
+- Deleted the dead generic `OnboardingStep` component and its `OnboardingStep`/`OnboardingProps`/`StepProps` types (the 5 steps are bespoke and render directly in the flow's switch; nothing used the wrapper). Kept `OnboardingContextValue`.
+- Dropped unused `zod` dep. Self-imports → relative; exports narrowed to root.
+- On review, removed a redundant `router.push('/talk')` in `complete.tsx` that fired right after `completeOnboarding()` already redirects — and the now-unused `useRouter` import/var with it.
+
+Verification:
+
+- `pnpm exec tsc --noEmit --pretty false -p apps/web/tsconfig.json`
+- `git diff --check`

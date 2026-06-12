@@ -2,12 +2,12 @@
 
 import { Progress } from '@september/ui/components/progress';
 
-import { useOnboarding } from '@september/onboarding/components/onboarding-provider';
-import { AIProvidersStep } from '@september/onboarding/components/steps/ai-providers';
-import { CompleteStep } from '@september/onboarding/components/steps/complete';
-import { SpeechStep } from '@september/onboarding/components/steps/speech';
-import { SuggestionsStep } from '@september/onboarding/components/steps/suggestions';
-import { WelcomeStep } from '@september/onboarding/components/steps/welcome';
+import { useOnboarding } from './onboarding-provider';
+import { AIProvidersStep } from './steps/ai-providers';
+import { CompleteStep } from './steps/complete';
+import { SpeechStep } from './steps/speech';
+import { SuggestionsStep } from './steps/suggestions';
+import { WelcomeStep } from './steps/welcome';
 
 export function OnboardingFlow() {
   const { currentStep, totalSteps } = useOnboarding();
@@ -47,4 +47,3 @@ export function OnboardingFlow() {
     </div>
   );
 }
-

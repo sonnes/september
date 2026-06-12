@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import { CheckCircle2, Key, MessageSquare, Volume2 } from 'lucide-react';
 
 import { Button } from '@september/ui/components/button';
@@ -12,7 +10,7 @@ import { Card, CardContent } from '@september/ui/components/card';
 import { useAccount } from '@september/account';
 import { useAISettings } from '@september/ai';
 
-import { useOnboarding } from '@september/onboarding/components/onboarding-provider';
+import { useOnboarding } from '../onboarding-provider';
 
 interface SummaryItemProps {
   icon: React.ReactNode;
@@ -55,7 +53,6 @@ export function CompleteStep() {
   const { account } = useAccount();
   const { suggestionsConfig, speechConfig } = useAISettings();
   const [isCompleting, setIsCompleting] = useState(false);
-  const router = useRouter();
 
   // Determine API keys status
   const configuredProviders: string[] = [];
@@ -82,8 +79,8 @@ export function CompleteStep() {
   const handleComplete = async () => {
     try {
       setIsCompleting(true);
+      // completeOnboarding persists the flag and redirects to /talk
       await completeOnboarding();
-      router.push('/talk');
     } catch (err) {
       console.error('Error completing onboarding:', err);
       setIsCompleting(false);

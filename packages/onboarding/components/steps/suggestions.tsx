@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { useAccount } from '@september/account';
 import { SuggestionsForm, type SuggestionsFormData } from '@september/suggestions';
 
-import { useOnboarding } from '@september/onboarding/components/onboarding-provider';
+import { useOnboarding } from '../onboarding-provider';
 
 export function SuggestionsStep() {
   const { goToNextStep, goToPreviousStep } = useOnboarding();
