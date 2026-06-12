@@ -126,6 +126,16 @@ Verification:
 - `@september/recording` (webcam video + TTS-audio capture, ffmpeg MP4 conversion, 538 lines) had zero consumers anywhere in the repo — built but never wired into a page. Per user decision, deleted the whole package rather than refactoring a module with no caller.
 - Removed it from `apps/web/package.json` deps and the `next.config.ts` transpile list. The `@ffmpeg/ffmpeg`/`@ffmpeg/util` deps leave the tree with it; `react-webcam` stays because the display page (`apps/web/app/display/[id]/page.tsx`) uses it via the app's own dependency. Recoverable from git history if a recording feature is ever built.
 
+## 2026-06-12: Speech (biggest refactor — needs manual QA)
+
+- Unified two parallel speech-settings stacks that both wrote to `account.ai_speech` but each dropped fields the other had. Deleted the 546-line `SpeechSettingsForm` (modal stack, own schema) and the `VoicesForm` render-prop wrapper; replaced the app's 213-line settings-page render-prop body with a 28-line wrapper. Net −937/+139.
+- One `SpeechSettings` component now drives BOTH the modal (chats/talk) and the settings page: provider cards + model select + inline voice search/list + per-provider advanced sliders + inline save/status. One `VoiceSettingsSchema`, one `useVoiceSettings` hook (over `useVoiceFetching` + `useProviderModels`).
+- Fixed 3 real bugs surfaced by the merge: (1) the chats/talk modal never persisted `model_id`; (2) the settings page never persisted advanced `settings` (sliders); (3) `SpeechEngineId` was typed `browser|gemini|elevenlabs`, so **kokoro couldn't be selected on the settings page** — broadened to include kokoro everywhere.
+- Public API: `SpeechProvider`, `useSpeechContext`, `SpeechSettings`, `SpeechSettingsModal`, `VoicesList` (kept — the onboarding speech step renders it directly with its own nav), `useSpeech`/`UseSpeechReturn`, `VoiceSettingsFormData`. Dropped the `export *` of the 4 TTS providers + raw schemas from the barrel (no external consumers). Self-imports → relative; exports narrowed.
+- **UX normalization (intentional):** both surfaces previously had different sticky submit chrome (dialog footer vs fixed bottom bar); now a single in-form Save button + status. Modal keeps a Cancel in its footer and closes on successful save.
+- Both modal sites (chats/[id]/layout, talk/layout) confirmed to have a `SpeechProvider` ancestor (required now that the modal browses voices inline).
+- **Manual QA required** (two live settings surfaces re-rendered from one source): settings page voice browse + save persists model_id AND settings; chats + talk modal save persists both and closes; onboarding speech step; each provider's advanced sliders; kokoro now selectable on the settings page.
+
 ## 2026-06-12: Onboarding
 
 - Small, clean module. Public API curated to `OnboardingProvider` + `OnboardingFlow` (the only two symbols the page imported). `useOnboarding` stays exported from the provider for the 5 step components but is out of the public barrel.

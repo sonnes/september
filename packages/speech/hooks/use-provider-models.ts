@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 
 import { getModelsForProvider } from '@september/ai';
 
-type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs';
+type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs' | 'kokoro';
 
 export interface UseProviderModelsReturn {
   models: Array<{ id: string; name: string; description?: string }>;

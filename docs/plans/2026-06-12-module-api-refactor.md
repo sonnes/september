@@ -19,10 +19,10 @@ Rework the September packages module by module as if each feature were being imp
 - `@september/keyboards`
 - `@september/onboarding`
 - `@september/recording` (deleted — unused)
+- `@september/speech`
 
 ## Remaining Modules
 
-- `@september/speech`
 - `@september/suggestions`
 
 ## Working Loop

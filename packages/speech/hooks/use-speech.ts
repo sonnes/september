@@ -8,11 +8,11 @@ import { track } from '@september/analytics';
 import type { AIProvider } from '@september/shared';
 import type { Voice } from '@september/shared';
 
-import { BrowserSpeechProvider } from '@september/speech/lib/providers/browser';
-import { KokoroSpeechProvider } from '@september/speech/lib/providers/kokoro';
-import { ElevenLabsSpeechProvider } from '@september/speech/lib/providers/elevenlabs';
-import { GeminiSpeechProvider } from '@september/speech/lib/providers/gemini';
-import { ListVoicesRequest, SpeechEngine, SpeechOptions, SpeechResponse } from '@september/speech/types';
+import { BrowserSpeechProvider } from '../lib/providers/browser';
+import { KokoroSpeechProvider } from '../lib/providers/kokoro';
+import { ElevenLabsSpeechProvider } from '../lib/providers/elevenlabs';
+import { GeminiSpeechProvider } from '../lib/providers/gemini';
+import { ListVoicesRequest, SpeechEngine, SpeechOptions, SpeechResponse } from '../types';
 
 const browser = new BrowserSpeechProvider();
 

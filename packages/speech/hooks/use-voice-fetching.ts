@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { useSpeechContext } from '@september/speech/components/speech-provider';
+import { useSpeechContext } from '../components/speech-provider';
 import type { Voice } from '@september/shared';
 
-type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs';
+type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs' | 'kokoro';
 
 export interface UseVoiceFetchingReturn {
   voices: Voice[];
@@ -14,7 +14,10 @@ export interface UseVoiceFetchingReturn {
   refetch: (provider: SpeechEngineId, search: string) => Promise<void>;
 }
 
-export function useVoiceFetching(provider: SpeechEngineId, apiKey?: string): UseVoiceFetchingReturn {
+export function useVoiceFetching(
+  provider: SpeechEngineId,
+  apiKey?: string
+): UseVoiceFetchingReturn {
   const { getProvider } = useSpeechContext();
   const [voices, setVoices] = useState<Voice[]>([]);
   const [isLoading, setIsLoading] = useState(false);

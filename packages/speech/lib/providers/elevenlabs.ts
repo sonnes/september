@@ -3,7 +3,7 @@ import {
   SpeechEngine,
   SpeechRequest,
   SpeechResponse,
-} from '@september/speech/types';
+} from '../../types';
 import { ElevenLabsSettings } from '@september/shared';
 import { Voice } from '@september/shared';
 

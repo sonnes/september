@@ -6,14 +6,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
 import { getProvidersForFeature } from '@september/ai';
-import { useVoiceFetching } from '@september/speech/hooks/use-voice-fetching';
-import { useProviderModels } from '@september/speech/hooks/use-provider-models';
-import { VoiceSettingsFormData, VoiceSettingsSchema } from '@september/speech/types/schemas';
+import { useVoiceFetching } from './use-voice-fetching';
+import { useProviderModels } from './use-provider-models';
+import { VoiceSettingsFormData, VoiceSettingsSchema } from '../types/schemas';
 import type { Account } from '@september/account';
 import type { Voice } from '@september/shared';
 import type { AIServiceProvider } from '@september/shared';
 
-type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs';
+type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs' | 'kokoro';
+
+export type { SpeechEngineId };
 
 export interface UseVoiceSettingsReturn {
   form: ReturnType<typeof useForm<VoiceSettingsFormData>>;
@@ -71,6 +73,7 @@ export function useVoiceSettings(
         similarity: currentSettings?.similarity ?? 0.75,
         style: currentSettings?.style ?? 0.0,
         speaker_boost: currentSettings?.speaker_boost ?? true,
+        language: currentSettings?.language ?? 'en-us',
       },
     },
   });
