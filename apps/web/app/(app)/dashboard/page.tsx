@@ -1,13 +1,13 @@
 'use client';
 
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 import { DashboardStats } from '@september/analytics';
 
 import { PageHeader, PageShell, PageTitle } from '@/components/layout';
 import SidebarLayout from '@/components/sidebar/layout';
 
 export default function DashboardPage() {
-  const { loading } = useAccountContext();
+  const { loading } = useAccount();
 
   return (
     <>

@@ -1,11 +1,11 @@
 'use client';
 
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 import { TranscriptionForm, type TranscriptionFormData } from '@september/ai';
 import { LoadingState } from '@september/ui/components/loading-state';
 
 export default function TranscriptionSettingsForm() {
-  const { account, updateAccount } = useAccountContext();
+  const { account, updateAccount } = useAccount();
 
   const handleSubmit = async (data: TranscriptionFormData) => {
     await updateAccount({

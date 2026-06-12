@@ -1,28 +1,34 @@
 # Account Package
 
-This package manages user account data using TanStack DB for local-first storage.
+Local-first account state for the web app.
 
-## Features
+## Public API
 
-- **Local-First with TanStack DB**: Primary store for account data, providing fast, reactive updates.
-- **Local Auth**: Always runs as a local guest user via `useAuth`.
-- **Configuration**: Manages AI feature settings (suggestions, transcription, speech) at the account level.
+```ts
+export { AccountProvider, useAccount } from './account-provider';
+export { useCurrentUser } from './use-current-user';
+export {
+  AccountSchema,
+  ProvidersSchema,
+  SpeechConfigSchema,
+  SuggestionsConfigSchema,
+  TranscriptionConfigSchema,
+  type Account,
+  type AccountUpdate,
+} from './schema';
+```
 
 ## Architecture
 
-- `context.tsx`: Core context provider (`AccountProvider`) and `useAccountContext` hook.
-- `hooks/`: Domain-specific React hooks:
-  - `useDbAccount`: TanStack DB operations for account collection.
-  - `useAuth`: Local user state.
-- `lib/`: Business logic and service integrations.
-- `types/`: Zod schemas and TypeScript interfaces for account data.
-- `db.ts`: TanStack DB collection definition using local storage persistence.
+- `schema.ts`: Zod schema and exported account types.
+- `defaults.ts`: Local guest user and default account factory.
+- `account-store.ts`: TanStack DB collection and local persistence hook.
+- `account-provider.tsx`: React context provider and `useAccount` hook.
+- `use-current-user.ts`: Local guest user hook.
 
 ## Usage
 
-### Provider
-
-Wrap your application in `AccountProvider` (usually in `app/layout.tsx`):
+Wrap the app in `AccountProvider`:
 
 ```tsx
 import { AccountProvider } from '@september/account';
@@ -32,23 +38,16 @@ export default function RootLayout({ children }) {
 }
 ```
 
-### Hook
-
-Access account data and actions using `useAccountContext`:
+Read and update account state with `useAccount`:
 
 ```tsx
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 
-const { account, user, updateAccount } = useAccountContext();
+const { account, user, loading, updateAccount } = useAccount();
+
+await updateAccount({ name: 'Guest' });
 ```
 
-### Direct DB Access
-
-For specialized cases, you can use the domain-specific hooks:
-
-```tsx
-import { useAuth, useDbAccount } from '@september/account';
-
-const { account, update } = useDbAccount(userId);
-const { user } = useAuth();
-```
+`AccountProvider` creates the local guest account automatically. `updateAccount` accepts
+`AccountUpdate`, which excludes `id`, `created_at`, and `updated_at`; the provider sets
+`updated_at` internally.

@@ -5,15 +5,13 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "exports": {
-    ".": "./index.ts",
-    "./*": "./*"
+    ".": "./index.ts"
   },
   "dependencies": {
     "@september/shared": "workspace:*",
     "@tanstack/db": "^0.5.15",
     "@tanstack/react-db": "^0.1.59",
-    "zod": "^4.0.5",
-    "sonner": "^2.0.6"
+    "zod": "^4.0.5"
   },
   "peerDependencies": {
     "react": "^19.0.0"

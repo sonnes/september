@@ -2,7 +2,7 @@
 
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 import { AIProvidersForm, ProviderSection } from '@september/ai';
 import type { Providers } from '@september/shared/types/ai-config';
 import { Alert, AlertDescription, AlertTitle } from '@september/ui/components/alert';
@@ -11,7 +11,7 @@ import { LoadingState } from '@september/ui/components/loading-state';
 import { Spinner } from '@september/ui/components/spinner';
 
 export default function AISettingsForm() {
-  const { account, updateAccount } = useAccountContext();
+  const { account, updateAccount } = useAccount();
 
   const handleSubmit = async (providers: Providers) => {
     await updateAccount({

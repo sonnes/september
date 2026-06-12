@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 import { logMessageSent } from '@september/analytics';
 import { Audio, useAudio } from '@september/audio';
 import { useSpeech } from '@september/speech';
@@ -17,7 +17,7 @@ export interface UseCreateMessageReturn {
 }
 
 export function useCreateMessage(): UseCreateMessageReturn {
-  const { user } = useAccountContext();
+  const { user } = useAccount();
   const [isCreating, setIsCreating] = useState(false);
 
   const createMessage = useCallback(
@@ -76,7 +76,7 @@ export interface UseCreateAudioMessageReturn {
 }
 
 export function useCreateAudioMessage(): UseCreateAudioMessageReturn {
-  const { user } = useAccountContext();
+  const { user } = useAccount();
   const { uploadAudio } = useAudio();
   const { createMessage } = useCreateMessage();
   const [status, setStatus] = useState<CreateAudioStatus>('idle');

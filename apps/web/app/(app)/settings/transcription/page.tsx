@@ -1,6 +1,6 @@
 'use client';
 
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 import { Callout } from '@september/ui/components/callout';
 
 import { PageHeader, PageShell, PageTitle } from '@/components/layout';
@@ -9,7 +9,7 @@ import SidebarLayout from '@/components/sidebar/layout';
 import TranscriptionSettingsForm from './form';
 
 export default function TranscriptionSettingsPage() {
-  const { account } = useAccountContext();
+  const { account } = useAccount();
   const needsKey = !account?.ai_providers?.gemini?.api_key;
 
   return (

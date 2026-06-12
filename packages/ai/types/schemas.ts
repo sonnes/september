@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-// Keep these as they are used in AI settings
 import { AccountSchema } from '@september/account';
 import { AI_PROVIDERS } from '@september/ai/lib/registry';
 
@@ -22,9 +21,7 @@ const createProviderSchema = () => {
 export const AIProvidersSchema = createProviderSchema();
 export type AIProvidersFormData = z.infer<typeof AIProvidersSchema>;
 
-// Re-export Account related types from the account package to avoid breaking changes
 export { AccountSchema } from '@september/account';
-export type { AccountFormData } from '@september/account';
 
 export const SpeechProviderSchema = AccountSchema.pick({
   ai_speech: true,

@@ -13,8 +13,7 @@ import { Button } from '@september/ui/components/button';
 import { FormCheckbox, FormSelect } from '@september/ui/components/form';
 import { Spinner } from '@september/ui/components/spinner';
 
-import type { Account } from '@september/account';
-import { TranscriptionConfigSchema } from '@september/account/types';
+import { TranscriptionConfigSchema, type Account } from '@september/account';
 import { getModelsForProvider } from '@september/ai';
 
 export type TranscriptionFormData = z.infer<typeof TranscriptionConfigSchema>;

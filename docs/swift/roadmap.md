@@ -194,6 +194,6 @@ AI predictions, word suggestions, light themes, app-aware shortcuts, settings UI
 The Swift models should align with these canonical domain models from the web app:
 
 - `packages/shared/types/ai-config.ts` — AI provider/feature configuration
-- `packages/account/types/index.ts` — Account schema (all user settings)
+- `packages/account/schema.ts` — Account schema (all user settings)
 - `packages/keyboards/types/index.ts` — Keyboard/button domain types
 - `packages/ai/lib/registry.ts` — AI provider registry pattern

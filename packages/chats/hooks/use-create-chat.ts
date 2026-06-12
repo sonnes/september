@@ -5,7 +5,7 @@ import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 
 import { chatCollection } from '../db';
 import { Chat } from '../types';
@@ -16,7 +16,7 @@ export interface UseCreateChatReturn {
 }
 
 export function useCreateChat(): UseCreateChatReturn {
-  const { user } = useAccountContext();
+  const { user } = useAccount();
   const [isCreating, setIsCreating] = useState(false);
 
   const createChat = useCallback(

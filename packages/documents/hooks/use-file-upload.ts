@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import GeminiService from '@/services/gemini';
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 
 export interface UseFileUploadOptions {
   onTextExtracted?: (text: string) => void;
@@ -24,7 +24,7 @@ export interface UseFileUploadReturn {
 export function useFileUpload({
   onTextExtracted,
 }: UseFileUploadOptions = {}): UseFileUploadReturn {
-  const { account } = useAccountContext();
+  const { account } = useAccount();
 
   const gemini = useMemo(
     () => new GeminiService(account?.ai_providers?.gemini?.api_key || ''),

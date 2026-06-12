@@ -1,5 +1,11 @@
-export * from './types';
-export * from './context';
-export * from './hooks/use-db-account';
-export * from './hooks/use-auth';
-export * from './db';
+export { AccountProvider, useAccount } from './account-provider';
+export { useCurrentUser } from './use-current-user';
+export {
+  AccountSchema,
+  ProvidersSchema,
+  SpeechConfigSchema,
+  SuggestionsConfigSchema,
+  TranscriptionConfigSchema,
+  type Account,
+  type AccountUpdate,
+} from './schema';

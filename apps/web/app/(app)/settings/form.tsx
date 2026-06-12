@@ -8,7 +8,7 @@ import { Control, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 import { Button } from '@september/ui/components/button';
 import { FormCheckbox, FormField } from '@september/ui/components/form';
 import { LoadingState } from '@september/ui/components/loading-state';
@@ -71,7 +71,7 @@ function TermsSection({ control }: { control: Control<SettingsFormData> }) {
 }
 
 export default function SettingsForm() {
-  const { account, updateAccount } = useAccountContext();
+  const { account, updateAccount } = useAccount();
   const [justSaved, setJustSaved] = useState(false);
 
   const defaultValues = useMemo(() => {

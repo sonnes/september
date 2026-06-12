@@ -12,7 +12,7 @@ import { Input } from '@september/ui/components/input';
 import { useDebounce } from '@september/shared/hooks/use-debounce';
 import { toast } from 'sonner';
 
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 import { useAISettings } from '@september/ai';
 import { useSpeechContext, VoicesList } from '@september/speech';
 import type { SpeechConfig } from '@september/shared/types/ai-config';
@@ -52,7 +52,7 @@ const PROVIDER_OPTIONS: ProviderOption[] = [
 
 export function SpeechStep() {
   const { goToNextStep, goToPreviousStep } = useOnboarding();
-  const { account } = useAccountContext();
+  const { account } = useAccount();
   const { speechConfig, updateSpeechConfig, getProviderConfig } = useAISettings();
   const { listVoices, getProvider } = useSpeechContext();
 

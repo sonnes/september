@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from '@september/ui/components/select';
 
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 
 import { useCreateKeyboard } from '../hooks/use-create-keyboard';
 import { useCustomKeyboard } from '../hooks/use-custom-keyboard';
@@ -58,7 +58,7 @@ export function CustomKeyboardEditor({
   onSave,
   onCancel,
 }: CustomKeyboardEditorProps) {
-  const { user } = useAccountContext();
+  const { user } = useAccount();
   const { keyboard, isLoading: isLoadingKeyboard } = useCustomKeyboard(keyboardId);
   const { createKeyboard, isCreating } = useCreateKeyboard();
   const { updateKeyboard, isUpdating } = useUpdateKeyboard();

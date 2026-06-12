@@ -2,8 +2,7 @@
 
 import { ReactNode, createContext, useCallback, useMemo } from 'react';
 
-import { useAccountContext } from '@september/account';
-import { Account } from '@september/account';
+import { useAccount, type Account } from '@september/account';
 import {
   DEFAULT_SPEECH_CONFIG,
   DEFAULT_SUGGESTIONS_CONFIG,
@@ -73,7 +72,7 @@ interface AISettingsProviderProps {
 }
 
 export function AISettingsProvider({ children }: AISettingsProviderProps) {
-  const { account, updateAccount, loading } = useAccountContext();
+  const { account, updateAccount, loading } = useAccount();
 
   // Memoized configurations using helper functions
   // Use defaults while loading to avoid race conditions with incomplete data

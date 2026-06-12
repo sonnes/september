@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@sept
 import { FormField, FormTextarea } from '@september/ui/components/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@september/ui/components/tabs';
 
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 import {
   useRecordingContext,
   useUpload,
@@ -33,7 +33,7 @@ type CloneVoiceFormData = z.infer<typeof CloneVoiceSchema>;
 export function VoiceCloneForm() {
   const [activeTab, setActiveTab] = useState('upload');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { account } = useAccountContext();
+  const { account } = useAccount();
   const { recordings } = useRecordingContext();
   const { uploadedFiles } = useUpload();
   const { downloadVoiceSample, deleteVoiceSample } = useVoiceStorageContext();

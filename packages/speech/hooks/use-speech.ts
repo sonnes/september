@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from 'react';
 
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 import { useAISettings } from '@september/ai';
 import { logTTSGeneration } from '@september/analytics';
 import type { AIProvider } from '@september/shared/types/ai-config';
@@ -24,7 +24,7 @@ export interface UseSpeechReturn {
 }
 
 export function useSpeech(): UseSpeechReturn {
-  const { user } = useAccountContext();
+  const { user } = useAccount();
   const { speechConfig, getProviderConfig } = useAISettings();
 
   const registry = useMemo(() => {

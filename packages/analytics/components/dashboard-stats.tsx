@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 
 import { useAnalyticsSummary } from '../hooks/use-analytics-summary';
 import { TimeRange } from '../lib/utils';
@@ -11,7 +11,7 @@ import { ProviderUsageChart } from './provider-usage-chart';
 import { TimeRangeSelector } from './time-range-selector';
 
 export function DashboardStats() {
-  const { user } = useAccountContext();
+  const { user } = useAccount();
   const [timeRange, setTimeRange] = useState<TimeRange>('week');
   const { summary, isLoading } = useAnalyticsSummary({ userId: user?.id, timeRange });
 

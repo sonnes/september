@@ -7,7 +7,7 @@ import { TvIcon } from '@heroicons/react/24/outline';
 import { HistoryIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 import { AudioOutputDeviceSelector, useAudioPlayer } from '@september/audio';
 import {
   EditableChatTitle,
@@ -51,7 +51,7 @@ type ChatPageProps = {
 
 export default function ChatPage({ params }: ChatPageProps) {
   const { id: chatId } = use(params);
-  const { user } = useAccountContext();
+  const { user } = useAccount();
   const { enqueue } = useAudioPlayer();
   const { chats, isLoading: chatsLoading, error: chatsError } = useChats({ userId: user?.id });
   const {

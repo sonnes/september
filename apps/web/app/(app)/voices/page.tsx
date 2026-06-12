@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 import { CloningProvider, useVoiceStorageContext } from '@september/cloning';
 import { ElevenLabsVoiceClone, SimilarVoice } from '@september/cloning/lib/elevenlabs-clone';
 import { Button } from '@september/ui/components/button';
@@ -24,7 +24,7 @@ function SimilarVoicesContent() {
   const searchParams = useSearchParams();
   const isSimilarSearch = searchParams.get('search') === 'similar';
 
-  const { account } = useAccountContext();
+  const { account } = useAccount();
   const { getVoiceSamples, downloadVoiceSample } = useVoiceStorageContext();
 
   const [results, setResults] = useState<SimilarVoice[]>([]);

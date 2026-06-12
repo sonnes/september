@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 import { useMessages } from '@september/chats';
 
 import {
@@ -58,7 +58,7 @@ interface UseAutocompleteReturn {
 
 export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutocompleteReturn {
   const { includeMessages = false, chatId } = options;
-  const { account } = useAccountContext();
+  const { account } = useAccount();
   const { messages } = useMessages();
 
   const [autocomplete, setAutocomplete] = useState<Autocomplete>(() => new Autocomplete());

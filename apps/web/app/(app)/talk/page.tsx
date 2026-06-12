@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 import { TextViewer, TextViewerWords, useAudioPlayer } from '@september/audio';
 import { useCreateAudioMessage } from '@september/chats';
 import { Editor, useEditorContext } from '@september/editor';
@@ -14,7 +14,7 @@ import { PageHeader, PageShell, PageTitle } from '@/components/layout';
 import SidebarLayout from '@/components/sidebar/layout';
 
 export default function TalkPage() {
-  const { user } = useAccountContext();
+  const { user } = useAccount();
   const { current, enqueue } = useAudioPlayer();
   const { text, setText, trackKeystroke } = useEditorContext();
   const { status, createAudioMessage } = useCreateAudioMessage();

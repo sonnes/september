@@ -4,7 +4,7 @@ import SwiftData
 // MARK: - Account
 //
 // Single user account with personal info, AI configs, and app flags.
-// Mirrors: packages/account/types/index.ts → AccountSchema
+// Mirrors: packages/account/schema.ts → AccountSchema
 //
 // AI config sub-objects are stored as Codable structs. All fields have
 // default values for forward-compatible JSON decoding.

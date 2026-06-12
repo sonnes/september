@@ -27,10 +27,10 @@ Centralized type definitions ensure:
 - `audio_path`, `audio` - Optional audio attachment
 - `created_at` - Timestamp
 
-**[account.ts](account.ts)** - User account type definitions
+**[packages/account/schema.ts](../../../packages/account/schema.ts)** - User account type definitions
 
 - `Account` - Complete user account with all settings
-- `PutAccountData` - Partial account data for updates
+- `AccountUpdate` - Partial account data for updates
 - `BrowserTTSSettings` - Browser speech synthesis settings
 - `ElevenLabsSettings` - ElevenLabs TTS configuration
 - `GeminiSpeechSettings` - Gemini TTS configuration
@@ -124,7 +124,7 @@ export interface CreateMessageData {
 For updating records, use `Partial<>` utility:
 
 ```typescript
-export type PutAccountData = Partial<Omit<Account, 'id' | 'created_at' | 'updated_at'>>;
+export type AccountUpdate = Partial<Omit<Account, 'id' | 'created_at' | 'updated_at'>>;
 ```
 
 This allows updating any field except system-managed ones.
@@ -148,7 +148,7 @@ export interface Account {
 Always import types explicitly:
 
 ```typescript
-import { Account, PutAccountData } from '@/types/account';
+import type { Account, AccountUpdate } from '@september/account';
 import { CreateMessageData, Message } from '@/packages/chats';
 ```
 
@@ -177,7 +177,7 @@ Mark fields as optional (`?`) when:
 ### Naming Conventions
 
 - **Interfaces**: PascalCase (e.g., `Message`, `Account`)
-- **Type aliases**: PascalCase (e.g., `PutAccountData`)
+- **Type aliases**: PascalCase (e.g., `AccountUpdate`)
 - **Settings interfaces**: Suffix with "Settings" or "Config"
 - **Creation types**: Prefix with "Create" or suffix with "Data"
 

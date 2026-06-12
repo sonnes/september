@@ -20,7 +20,7 @@ import {
 } from '@september/ui/components/sidebar';
 import { Skeleton } from '@september/ui/components/skeleton';
 
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 
 function NavUserSkeleton() {
   return (
@@ -39,7 +39,7 @@ function NavUserSkeleton() {
 }
 
 export function NavUser() {
-  const { user, loading } = useAccountContext();
+  const { user, loading } = useAccount();
   const { isMobile } = useSidebar();
 
   if (loading) {

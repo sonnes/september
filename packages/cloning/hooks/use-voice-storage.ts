@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from 'react';
 
-import { useAuth } from '@september/account';
+import { useCurrentUser } from '@september/account';
 import { AudioService } from '@september/audio';
 import { VoiceSample } from '../types';
 
@@ -20,7 +20,7 @@ export interface UseVoiceStorageReturn {
 }
 
 export function useVoiceStorage(): UseVoiceStorageReturn {
-  const { user } = useAuth();
+  const { user } = useCurrentUser();
   const userId = user?.id || LOCAL_USER_ID;
   const audioService = useMemo(() => new AudioService(), []);
 

@@ -1,5 +1,6 @@
 // Utilities
 export { cn } from "./lib/utils";
+export { indexedDBCollectionOptionsV2 } from "./lib/indexeddb/collection-v2";
 
 // Hooks
 export { useDebounce } from "./hooks/use-debounce";

@@ -18,12 +18,12 @@ import {
 } from '@september/ui/components/select';
 import { Spinner } from '@september/ui/components/spinner';
 
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 import { useAISettings } from '@september/ai';
 import { VoiceSettingsFormData, VoicesForm, VoicesList } from '@september/speech';
 
 export default function VoicesSettingsForm() {
-  const { account } = useAccountContext();
+  const { account } = useAccount();
   const { updateSpeechConfig } = useAISettings();
 
   const handleSubmit = async (data: VoiceSettingsFormData) => {

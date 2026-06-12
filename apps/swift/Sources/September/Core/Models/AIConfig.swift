@@ -25,7 +25,7 @@ enum TranscriptionProvider: String, Codable, Sendable, CaseIterable {
 }
 
 // MARK: - AI Suggestions Config
-// Mirrors: packages/account/types/index.ts → SuggestionsConfigSchema
+// Mirrors: packages/account/schema.ts → SuggestionsConfigSchema
 
 struct SuggestionsConfig: Codable, Sendable, Equatable {
     var enabled: Bool = false
@@ -38,7 +38,7 @@ struct SuggestionsConfig: Codable, Sendable, Equatable {
 }
 
 // MARK: - Transcription Config
-// Mirrors: packages/account/types/index.ts → TranscriptionConfigSchema
+// Mirrors: packages/account/schema.ts → TranscriptionConfigSchema
 
 struct TranscriptionConfig: Codable, Sendable {
     var enabled: Bool = false
@@ -51,7 +51,7 @@ struct TranscriptionConfig: Codable, Sendable {
 }
 
 // MARK: - Speech Config
-// Mirrors: packages/account/types/index.ts → SpeechConfigSchema
+// Mirrors: packages/account/schema.ts → SpeechConfigSchema
 
 struct SpeechConfig: Codable, Sendable {
     var enabled: Bool = true

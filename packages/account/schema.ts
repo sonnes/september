@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-import { Providers, SpeechConfig, SuggestionsConfig, TranscriptionConfig } from '@september/shared/types/ai-config';
-
 export const SuggestionsConfigSchema = z.object({
   enabled: z.boolean(),
   provider: z.enum(['gemini', 'webllm']),
@@ -80,16 +78,12 @@ export const ProvidersSchema = z.object({
 
 export const AccountSchema = z.object({
   id: z.string().min(1),
-  // Personal Information
   name: z.string().min(1, 'Name is required'),
   city: z.string().optional(),
   country: z.string().optional(),
-  // Medical Information
   primary_diagnosis: z.string().optional(),
   year_of_diagnosis: z.number().min(1900).max(new Date().getFullYear()).optional(),
   medical_document_path: z.string().optional(),
-
-  // AI Feature Configurations
   ai_suggestions: SuggestionsConfigSchema.optional().default({
     enabled: false,
     provider: 'gemini',
@@ -107,22 +101,13 @@ export const AccountSchema = z.object({
     provider: 'browser',
     settings: {},
   }),
-
-  // Provider Config
   ai_providers: ProvidersSchema.optional().default({}),
-
-  // Flags
   terms_accepted: z.boolean().optional().default(false),
   privacy_policy_accepted: z.boolean().optional().default(false),
   onboarding_completed: z.boolean().optional().default(false),
-
-  // Timestamps
   created_at: z.coerce.date().optional(),
   updated_at: z.coerce.date().optional(),
 });
 
 export type Account = z.infer<typeof AccountSchema>;
-export type CreateAccountData = z.input<typeof AccountSchema>;
-export type AccountFormData = Account;
-
-export type PutAccountData = Partial<Omit<Account, 'id' | 'created_at'>>;
+export type AccountUpdate = Partial<Omit<Account, 'id' | 'created_at' | 'updated_at'>>;

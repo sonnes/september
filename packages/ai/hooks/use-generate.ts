@@ -8,7 +8,7 @@ import { generateObject, generateText, wrapLanguageModel } from 'ai';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { useAccountContext } from '@september/account';
+import { useAccount } from '@september/account';
 import { useAISettings } from '@september/ai/hooks/use-ai-settings';
 import { logAIGeneration } from '@september/analytics';
 import { cacheMiddleware } from '@september/ai/lib/middleware';
@@ -104,7 +104,7 @@ export interface UseGenerateReturn {
 export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn {
   const { provider, model } = options;
 
-  const { user } = useAccountContext();
+  const { user } = useAccount();
   const { getProviderConfig } = useAISettings();
   const [isGenerating, setIsGenerating] = useState(false);
 
