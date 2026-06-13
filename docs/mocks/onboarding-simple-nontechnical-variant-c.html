@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>September Onboarding - Variant C</title>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --page: #f4f4f5;
+        --text: #18181b;
+        --muted: #71717a;
+        --line: #e4e4e7;
+        --soft: #f4f4f5;
+        --primary: #4f46e5;
+        --primary-dark: #4338ca;
+        --primary-soft: #eef2ff;
+        --success: #059669;
+        --success-soft: #ecfdf5;
+        --amber-soft: #fffbeb;
+        --amber-line: #fde68a;
+        --radius: 14px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        overflow-x: hidden;
+        background:
+          linear-gradient(90deg, rgba(244, 244, 245, 0.92), rgba(255, 255, 255, 0.94)),
+          radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.12), transparent 28rem),
+          var(--bg);
+        color: var(--text);
+        font-family: "Noto Sans", Helvetica, Arial, sans-serif;
+      }
+
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      .shell {
+        width: min(100%, 1180px);
+        max-width: 100vw;
+        margin: 0 auto;
+        padding: 28px;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 36px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--primary);
+        font-weight: 800;
+      }
+
+      .mark {
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        background: var(--primary);
+        color: white;
+      }
+
+      .privacy {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(340px, 430px);
+        min-width: 0;
+        gap: 28px;
+        align-items: start;
+      }
+
+      .main {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 1px 2px rgba(24, 24, 27, 0.06);
+        padding: clamp(28px, 5vw, 52px);
+      }
+
+      .kicker {
+        margin: 0 0 10px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 13ch;
+        overflow-wrap: break-word;
+        font-size: clamp(36px, 5.5vw, 56px);
+        line-height: 1.03;
+        letter-spacing: 0;
+      }
+
+      .lede {
+        margin: 16px 0 0;
+        max-width: 58ch;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.62;
+      }
+
+      .task {
+        margin-top: 38px;
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .card {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: white;
+        padding: 20px;
+      }
+
+      .card.selected {
+        border-color: var(--primary);
+        background: var(--primary-soft);
+        box-shadow: 0 0 0 1px var(--primary);
+      }
+
+      .card h2 {
+        margin: 0;
+        font-size: 17px;
+      }
+
+      .card p {
+        margin: 8px 0 0;
+        overflow-wrap: break-word;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .field-stack {
+        display: grid;
+        gap: 16px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: white;
+        color: var(--text);
+        padding: 14px 16px;
+        font-size: 16px;
+      }
+
+      textarea {
+        min-height: 130px;
+        line-height: 1.5;
+      }
+
+      .preview {
+        position: sticky;
+        top: 28px;
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: white;
+        box-shadow: 0 1px 2px rgba(24, 24, 27, 0.06);
+        overflow: hidden;
+      }
+
+      .preview-top {
+        border-bottom: 1px solid var(--line);
+        background: var(--primary);
+        color: white;
+        padding: 20px;
+      }
+
+      .preview-top h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .preview-top p {
+        margin: 6px 0 0;
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 13px;
+      }
+
+      .conversation {
+        display: grid;
+        gap: 12px;
+        padding: 22px;
+      }
+
+      .bubble {
+        max-width: 92%;
+        min-width: 0;
+        border-radius: 16px;
+        padding: 14px 16px;
+        overflow-wrap: break-word;
+        font-size: 15px;
+        line-height: 1.5;
+      }
+
+      .other {
+        background: var(--soft);
+      }
+
+      .me {
+        justify-self: end;
+        background: var(--primary-soft);
+        color: var(--primary-dark);
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        border-top: 1px solid var(--line);
+        padding: 18px 22px 22px;
+      }
+
+      .chip {
+        min-height: 40px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: white;
+        color: var(--text);
+        padding: 0 14px;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .progress {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 22px;
+      }
+
+      .step {
+        min-height: 54px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: white;
+        color: var(--muted);
+        padding: 8px 10px;
+        cursor: pointer;
+      }
+
+      .step[aria-current="step"] {
+        border-color: var(--primary);
+        background: var(--primary-soft);
+        color: var(--primary-dark);
+      }
+
+      .step strong {
+        display: block;
+        color: inherit;
+        font-size: 13px;
+      }
+
+      .step span {
+        display: block;
+        margin-top: 2px;
+        font-size: 12px;
+      }
+
+      .footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-top: 34px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line);
+      }
+
+      .helper {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .btn {
+        min-height: 48px;
+        border: 1px solid var(--primary);
+        border-radius: 10px;
+        background: var(--primary);
+        color: white;
+        padding: 0 18px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      @media (max-width: 940px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .preview {
+          position: static;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .shell {
+          padding: 18px;
+        }
+
+        header,
+        .footer {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .cards,
+        .progress {
+          grid-template-columns: 1fr;
+        }
+
+        .btn {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <div class="brand"><span class="mark">S</span><span>September</span></div>
+        <div class="privacy">Plain setup. Change anything later.</div>
+      </header>
+
+      <div class="layout">
+        <section class="main">
+          <p class="kicker" id="kicker"></p>
+          <h1 id="title"></h1>
+          <p class="lede" id="lede"></p>
+          <div class="task" id="task"></div>
+          <nav class="progress" aria-label="Setup steps">
+            <button class="step" type="button" data-step="0"><strong>1 Welcome</strong><span>See the goal</span></button>
+            <button class="step" type="button" data-step="1"><strong>2 You</strong><span>Personal basics</span></button>
+            <button class="step" type="button" data-step="2"><strong>3 Voice</strong><span>Speech choice</span></button>
+            <button class="step" type="button" data-step="3"><strong>4 Suggestions</strong><span>Services and words</span></button>
+          </nav>
+          <footer class="footer">
+            <span class="helper" id="helper"></span>
+            <button class="btn" type="button" id="next">Continue</button>
+          </footer>
+        </section>
+
+        <aside class="preview" aria-label="Conversation preview">
+          <div class="preview-top">
+            <h2>What setup changes</h2>
+            <p>A live-feeling preview keeps choices tied to speaking.</p>
+          </div>
+          <div class="conversation" id="conversation"></div>
+          <div class="chips" id="chips"></div>
+        </aside>
+      </div>
+    </main>
+
+    <script>
+      const steps = [
+        {
+          kicker: "Step 1 of 4",
+          title: "Say more with less typing.",
+          lede:
+            "September gives you ready-to-use sentence suggestions and speaks the sentence you choose.",
+          helper: "Start with the defaults. Tune later.",
+          button: "Start setup",
+          task: `
+            <div class="cards">
+              <div class="card selected"><h2>Type a few words</h2><p>September offers complete sentences from what you start.</p></div>
+              <div class="card"><h2>Tap a suggestion</h2><p>Pick the sentence that says what you mean.</p></div>
+              <div class="card"><h2>Speak aloud</h2><p>The selected voice reads it for you.</p></div>
+              <div class="card"><h2>Keep control</h2><p>You can edit every suggestion before speaking.</p></div>
+            </div>
+          `,
+          conversation: [
+            ["other", "Would you like tea or water?"],
+            ["me", "Water, please. And could you raise the pillow?"],
+          ],
+          chips: ["Water, please", "Give me a moment", "That helps"],
+        },
+        {
+          kicker: "Step 2 of 4",
+          title: "Make suggestions sound like you.",
+          lede:
+            "Short notes help September choose the right tone, names, and everyday phrases.",
+          helper: "This can be edited from Settings.",
+          button: "Save and continue",
+          task: `
+            <div class="field-stack">
+              <div><label for="name">Name</label><input id="name" value="Ravi" /></div>
+              <div><label for="notes">A few things September should know</label><textarea id="notes">Use short care phrases when I am tired. Use warmer sentences with family. Important names: Amma, Mira, Dr. Shah.</textarea></div>
+            </div>
+          `,
+          conversation: [
+            ["other", "Mira is here."],
+            ["me", "I am happy to see you, Mira."],
+          ],
+          chips: ["Hi Mira", "Tell Amma", "Dr. Shah"],
+        },
+        {
+          kicker: "Step 3 of 4",
+          title: "Choose the speaking voice.",
+          lede:
+            "The built-in voice works immediately. Add another speech service only if you already have one.",
+          helper: "Built-in voice is the recommended first choice.",
+          button: "Use this voice",
+          task: `
+            <div class="cards">
+              <div class="card selected"><h2>Built-in voice</h2><p>Works now. No extra setup needed.</p></div>
+              <div class="card"><h2>ElevenLabs</h2><p>More lifelike voices if connected.</p></div>
+              <div class="card"><h2>Gemini speech</h2><p>Cloud voice options from Google.</p></div>
+              <div class="card"><h2>Voice preview</h2><p>Speak one sample before choosing.</p></div>
+            </div>
+          `,
+          conversation: [
+            ["other", "I can hear you."],
+            ["me", "This is the voice I want to use."],
+          ],
+          chips: ["Preview voice", "Slower", "Clearer"],
+        },
+        {
+          kicker: "Step 4 of 4",
+          title: "Tune the suggestions.",
+          lede:
+            "Start with built-in suggestions, connect an AI service if you want, and add words September should learn from.",
+          helper: "Extra services and personal words are optional.",
+          button: "Finish setup",
+          task: `
+            <div class="cards">
+              <div class="card selected"><h2>Built-in suggestions</h2><p>Recommended. Works without extra setup.</p></div>
+              <div class="card"><h2>Connect OpenRouter</h2><p>One connection for many AI models.</p></div>
+              <div class="card"><h2>Connect Gemini</h2><p>Use Gemini if it is already set up.</p></div>
+              <div class="card"><h2>Add personal words</h2><p>Paste care phrases, names, routines, or notes.</p></div>
+            </div>
+          `,
+          conversation: [
+            ["other", "What do you want to say?"],
+            ["me", "I need a short rest before we continue."],
+          ],
+          chips: ["I need a rest", "Please wait", "Let's continue later"],
+        },
+      ];
+
+      let current = 0;
+      const task = document.getElementById("task");
+      const title = document.getElementById("title");
+      const lede = document.getElementById("lede");
+      const kicker = document.getElementById("kicker");
+      const helper = document.getElementById("helper");
+      const next = document.getElementById("next");
+      const conversation = document.getElementById("conversation");
+      const chips = document.getElementById("chips");
+      const stepButtons = Array.from(document.querySelectorAll(".step"));
+
+      function render() {
+        const step = steps[current];
+        kicker.textContent = step.kicker;
+        title.textContent = step.title;
+        lede.textContent = step.lede;
+        helper.textContent = step.helper;
+        next.textContent = step.button;
+        task.innerHTML = step.task;
+        conversation.innerHTML = step.conversation
+          .map(([who, text]) => `<div class="bubble ${who}">${text}</div>`)
+          .join("");
+        chips.innerHTML = step.chips.map((chip) => `<button class="chip" type="button">${chip}</button>`).join("");
+        stepButtons.forEach((button, index) => {
+          button.setAttribute("aria-current", index === current ? "step" : "false");
+        });
+      }
+
+      stepButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          current = Number(button.dataset.step);
+          render();
+        });
+      });
+
+      next.addEventListener("click", () => {
+        current = Math.min(current + 1, steps.length - 1);
+        render();
+      });
+
+      render();
+    </script>
+  </body>
+</html>

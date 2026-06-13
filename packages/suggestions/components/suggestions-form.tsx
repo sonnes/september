@@ -3,19 +3,21 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ChevronDown, AlertCircle, CheckCircle2 } from 'lucide-react';
+import type { Account } from '@september/account';
+import { getModelsForProvider, getProvidersForFeature } from '@september/ai';
+import type { AIProvider } from '@september/shared';
+import { Alert, AlertDescription, AlertTitle } from '@september/ui/components/alert';
+import { Button } from '@september/ui/components/button';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@september/ui/components/collapsible';
+import { FormCheckbox, FormSelect, FormTextarea } from '@september/ui/components/form';
+import { Spinner } from '@september/ui/components/spinner';
+import { AlertCircle, CheckCircle2, ChevronDown } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-
-import { getModelsForProvider, getProvidersForFeature } from '@september/ai';
-import { Button } from '@september/ui/components/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@september/ui/components/collapsible';
-import { FormCheckbox, FormSelect, FormTextarea } from '@september/ui/components/form';
-import { Alert, AlertDescription, AlertTitle } from '@september/ui/components/alert';
-import { Spinner } from '@september/ui/components/spinner';
-
-import type { Account } from '@september/account';
-import type { AIProvider } from '@september/shared';
 
 import { useCorpus } from '../hooks/use-corpus';
 import { type SuggestionsFormData, SuggestionsFormSchema } from '../types';
@@ -35,9 +37,34 @@ const EXAMPLE_INSTRUCTIONS = [
   },
 ];
 
+export function getSuggestionsFormDefaultValues(account?: Account): SuggestionsFormData {
+  const suggestionsConfig = account?.ai_suggestions;
+  return {
+    enabled: suggestionsConfig?.enabled ?? false,
+    provider: suggestionsConfig?.provider ?? 'gemini',
+    model: suggestionsConfig?.model ?? 'gemini-2.5-flash-lite',
+    settings: {
+      system_instructions: suggestionsConfig?.settings?.system_instructions ?? '',
+      temperature: suggestionsConfig?.settings?.temperature ?? 0.7,
+      max_suggestions: suggestionsConfig?.settings?.max_suggestions ?? 3,
+      context_window: suggestionsConfig?.settings?.context_window ?? 10,
+      ai_corpus: suggestionsConfig?.settings?.ai_corpus ?? '',
+    },
+  };
+}
+
+interface SuggestionsFormFieldsProps {
+  account?: Account;
+  form: ReturnType<typeof useForm<SuggestionsFormData>>;
+  variant?: 'settings' | 'setup';
+  providerKeyAvailable?: (provider: AIProvider) => boolean;
+}
+
 interface SuggestionsFormProps {
   account?: Account;
   onSubmit: (data: SuggestionsFormData) => Promise<void>;
+  variant?: 'settings' | 'setup';
+  providerKeyAvailable?: (provider: AIProvider) => boolean;
   children?: (props: {
     form: ReturnType<typeof useForm<SuggestionsFormData>>;
     hasApiKey: boolean;
@@ -46,63 +73,26 @@ interface SuggestionsFormProps {
   }) => React.ReactNode;
 }
 
-export function SuggestionsForm({ account, onSubmit, children }: SuggestionsFormProps) {
+export function SuggestionsFormFields({
+  account,
+  form,
+  variant = 'settings',
+  providerKeyAvailable,
+}: SuggestionsFormFieldsProps) {
   const [showExamples, setShowExamples] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const { isGenerating, generateCorpus } = useCorpus();
-
-  const defaultValues = useMemo((): SuggestionsFormData => {
-    const suggestionsConfig = account?.ai_suggestions;
-    return {
-      enabled: suggestionsConfig?.enabled ?? false,
-      provider: (suggestionsConfig?.provider as 'gemini' | 'webllm') ?? 'gemini',
-      model: suggestionsConfig?.model ?? 'gemini-2.5-flash-lite',
-      settings: {
-        system_instructions: suggestionsConfig?.settings?.system_instructions ?? '',
-        temperature: suggestionsConfig?.settings?.temperature ?? 0.7,
-        max_suggestions: suggestionsConfig?.settings?.max_suggestions ?? 3,
-        context_window: suggestionsConfig?.settings?.context_window ?? 10,
-        ai_corpus: suggestionsConfig?.settings?.ai_corpus ?? '',
-      },
-    };
-  }, [account?.ai_suggestions]);
-
-  const form = useForm<SuggestionsFormData>({
-    resolver: zodResolver(SuggestionsFormSchema),
-    defaultValues,
-  });
-
-  useEffect(() => {
-    form.reset(defaultValues);
-  }, [defaultValues, form]);
-
-  const handleSubmit = async (data: SuggestionsFormData) => {
-    setError(null);
-    setSuccess(false);
-    try {
-      await onSubmit(data);
-      setSuccess(true);
-      toast.success('Settings Saved');
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(false), 3000);
-    } catch (err) {
-      console.error('Error saving suggestions settings:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update suggestions settings. Please try again.';
-      setError(errorMessage);
-    }
-  };
 
   const aiInstructions = form.watch('settings.system_instructions');
   const provider = form.watch('provider');
 
   // Get available suggestions providers from registry
   const suggestionsProviders = useMemo(() => {
-    return getProvidersForFeature('ai').map(p => ({
-      id: p.id,
-      name: p.name,
-    })).filter(p => p.id === 'gemini' || p.id === 'webllm' || p.id === 'openrouter');
+    return getProvidersForFeature('ai')
+      .map(p => ({
+        id: p.id,
+        name: p.name,
+      }))
+      .filter(p => p.id === 'gemini' || p.id === 'webllm' || p.id === 'openrouter');
   }, []);
 
   const models = useMemo(() => getModelsForProvider(provider as AIProvider), [provider]);
@@ -110,8 +100,30 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
   // Check if provider requires API key and if it's configured
   const hasApiKey = useMemo(() => {
     if (provider === 'webllm') return true; // No API key required for webllm
+    if (providerKeyAvailable) return providerKeyAvailable(provider as AIProvider);
     return !!account?.ai_providers?.[provider as keyof typeof account.ai_providers]?.api_key;
-  }, [provider, account]);
+  }, [provider, account, providerKeyAvailable]);
+
+  const isSetupVariant = variant === 'setup';
+  const providerName = suggestionsProviders.find(p => p.id === provider)?.name ?? 'AI provider';
+  const modelDescription =
+    provider === 'gemini'
+      ? 'Choose the Gemini model for suggestions. Lite is fastest, Pro is most advanced.'
+      : provider === 'openrouter'
+        ? 'Choose the OpenRouter model for suggestions. Lite is fastest, larger models are more capable.'
+        : 'Choose a WebLLM model for local browser-based suggestions. Smaller models are faster.';
+  const formFieldsClass = isSetupVariant ? 'space-y-6' : 'space-y-6 sm:space-y-8';
+  const sectionClass = isSetupVariant
+    ? 'grid grid-cols-1 gap-5 rounded-sm border bg-muted/30 p-6 md:grid-cols-[15rem_1fr] md:gap-8'
+    : 'grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3';
+  const sectionIntroClass = isSetupVariant ? 'px-0' : 'px-4 sm:px-0';
+  const sectionControlClass = isSetupVariant ? 'px-0' : 'md:col-span-2 px-4';
+  const sectionTitleClass = isSetupVariant
+    ? 'text-sm font-semibold text-foreground'
+    : 'text-base/7 font-semibold text-zinc-900';
+  const sectionDescriptionClass = isSetupVariant
+    ? 'mt-1 text-xs leading-relaxed text-muted-foreground'
+    : 'mt-1 text-sm/6 text-zinc-600';
 
   const handleExampleClick = (example: string) => {
     form.setValue('settings.system_instructions', example);
@@ -125,32 +137,38 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
   };
 
   const formFields = (
-    <div className="space-y-6 sm:space-y-8">
+    <div className={formFieldsClass}>
       {/* API Key Warning */}
-      {!hasApiKey && provider === 'gemini' && (
+      {!hasApiKey && provider !== 'webllm' && (
         <Alert variant="default">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>API Key Required</AlertTitle>
           <AlertDescription>
-            You need to configure your Gemini API key in{' '}
-            <a href="/settings/providers" className="underline hover:text-amber-900">
-              AI Settings
-            </a>{' '}
-            to use AI suggestions with Gemini.
+            {isSetupVariant ? (
+              <>Add a {providerName} key above to enable cloud AI suggestions.</>
+            ) : (
+              <>
+                You need to configure your {providerName} API key in{' '}
+                <a href="/settings/providers" className="underline hover:text-amber-900">
+                  AI Settings
+                </a>{' '}
+                to use AI suggestions with {providerName}.
+              </>
+            )}
           </AlertDescription>
         </Alert>
       )}
 
       {/* Enable Toggle */}
-      <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
-        <div className="px-4 sm:px-0">
-          <h2 className="text-base/7 font-semibold text-zinc-900">Enable AI Suggestions</h2>
-          <p className="mt-1 text-sm/6 text-zinc-600">
+      <div className={sectionClass}>
+        <div className={sectionIntroClass}>
+          <h2 className={sectionTitleClass}>Enable AI Suggestions</h2>
+          <p className={sectionDescriptionClass}>
             Turn on AI-powered typing suggestions to help you communicate faster and more
             effectively.
           </p>
         </div>
-        <div className="md:col-span-2 px-4">
+        <div className={sectionControlClass}>
           <FormCheckbox
             name="enabled"
             control={form.control}
@@ -162,14 +180,14 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
       </div>
 
       {/* Provider Selection */}
-      <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
-        <div className="px-4 sm:px-0">
-          <h2 className="text-base/7 font-semibold text-zinc-900">AI Provider</h2>
-          <p className="mt-1 text-sm/6 text-zinc-600">
-            Choose between cloud-based Gemini (powerful) or browser-local WebLLM (private, no API key needed).
+      <div className={sectionClass}>
+        <div className={sectionIntroClass}>
+          <h2 className={sectionTitleClass}>AI Provider</h2>
+          <p className={sectionDescriptionClass}>
+            Choose a cloud LLM provider or browser-local WebLLM for private, no-key suggestions.
           </p>
         </div>
-        <div className="md:col-span-2 px-4">
+        <div className={sectionControlClass}>
           <FormSelect
             name="provider"
             control={form.control}
@@ -181,16 +199,12 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
       </div>
 
       {/* Model Selection */}
-      <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
-        <div className="px-4 sm:px-0">
-          <h2 className="text-base/7 font-semibold text-zinc-900">Model Selection</h2>
-          <p className="mt-1 text-sm/6 text-zinc-600">
-            {provider === 'gemini'
-              ? 'Choose the Gemini model for suggestions. Lite is fastest, Pro is most advanced.'
-              : 'Choose a WebLLM model for local browser-based suggestions. Smaller models are faster.'}
-          </p>
+      <div className={sectionClass}>
+        <div className={sectionIntroClass}>
+          <h2 className={sectionTitleClass}>Model Selection</h2>
+          <p className={sectionDescriptionClass}>{modelDescription}</p>
         </div>
-        <div className="md:col-span-2 px-4">
+        <div className={sectionControlClass}>
           <FormSelect
             name="model"
             control={form.control}
@@ -202,16 +216,16 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
       </div>
 
       {/* System Instructions */}
-      <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
-        <div className="px-4 sm:px-0">
-          <h2 className="text-base/7 font-semibold text-zinc-900">System Instructions</h2>
-          <p className="mt-1 text-sm/6 text-zinc-600">
+      <div className={sectionClass}>
+        <div className={sectionIntroClass}>
+          <h2 className={sectionTitleClass}>System Instructions</h2>
+          <p className={sectionDescriptionClass}>
             Describe how you want the AI to provide suggestions. Include your communication style,
             common topics, and any personal context.
           </p>
         </div>
 
-        <div className="md:col-span-2 px-4">
+        <div className={sectionControlClass}>
           <div className="max-w-2xl space-y-4">
             <FormTextarea
               name="settings.system_instructions"
@@ -223,11 +237,25 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
 
             {/* Example Instructions (Collapsible) */}
             <Collapsible open={showExamples} onOpenChange={setShowExamples}>
-              <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+              <div
+                className={
+                  isSetupVariant
+                    ? 'rounded-sm border bg-background p-5'
+                    : 'rounded-lg border border-zinc-200 bg-zinc-50 p-4'
+                }
+              >
                 <CollapsibleTrigger className="flex w-full items-center justify-between text-left">
-                  <h4 className="text-sm font-medium text-zinc-700">Example Instructions</h4>
+                  <h4
+                    className={
+                      isSetupVariant
+                        ? 'text-sm font-medium text-foreground'
+                        : 'text-sm font-medium text-zinc-700'
+                    }
+                  >
+                    Example Instructions
+                  </h4>
                   <ChevronDown
-                    className={`h-4 w-4 text-zinc-500 transition-transform ${showExamples ? 'rotate-180' : ''}`}
+                    className={`h-4 w-4 text-muted-foreground transition-transform ${showExamples ? 'rotate-180' : ''}`}
                   />
                 </CollapsibleTrigger>
 
@@ -237,10 +265,28 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
                       key={example.name}
                       type="button"
                       onClick={() => handleExampleClick(example.text)}
-                      className="block w-full text-left rounded border border-zinc-200 bg-white p-3 text-sm hover:bg-zinc-50 transition-colors"
+                      className={
+                        isSetupVariant
+                          ? 'block w-full rounded-sm border bg-background p-4 text-left text-sm transition-colors hover:bg-muted/30'
+                          : 'block w-full text-left rounded border border-zinc-200 bg-white p-3 text-sm hover:bg-zinc-50 transition-colors'
+                      }
                     >
-                      <div className="font-medium text-zinc-900 text-sm">{example.name}</div>
-                      <div className="mt-1 text-zinc-600 text-sm leading-relaxed">
+                      <div
+                        className={
+                          isSetupVariant
+                            ? 'text-sm font-medium text-foreground'
+                            : 'font-medium text-zinc-900 text-sm'
+                        }
+                      >
+                        {example.name}
+                      </div>
+                      <div
+                        className={
+                          isSetupVariant
+                            ? 'mt-1 text-sm leading-relaxed text-muted-foreground'
+                            : 'mt-1 text-zinc-600 text-sm leading-relaxed'
+                        }
+                      >
                         {example.text}
                       </div>
                     </button>
@@ -253,20 +299,20 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
       </div>
 
       {/* AI Corpus Section */}
-      <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
-        <div className="px-4 sm:px-0">
-          <h2 className="text-base/7 font-semibold text-zinc-900">Content Corpus</h2>
-          <p className="mt-1 text-sm/6 text-zinc-600">
+      <div className={sectionClass}>
+        <div className={sectionIntroClass}>
+          <h2 className={sectionTitleClass}>Content Corpus</h2>
+          <p className={sectionDescriptionClass}>
             Provide examples of your daily life, conversations, and other content that the AI can
             use to provide suggestions.
           </p>
-          <p className="mt-1 text-sm/6 text-zinc-600">
+          <p className={sectionDescriptionClass}>
             Alternatively, you can generate a corpus from your instructions. This will take a few
             minutes.
           </p>
         </div>
 
-        <div className="md:col-span-2 px-4">
+        <div className={sectionControlClass}>
           <div className="max-w-2xl space-y-4">
             <FormTextarea
               name="settings.ai_corpus"
@@ -293,10 +339,66 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
     </div>
   );
 
+  return formFields;
+}
+
+export function SuggestionsForm({
+  account,
+  onSubmit,
+  variant = 'settings',
+  providerKeyAvailable,
+  children,
+}: SuggestionsFormProps) {
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const defaultValues = useMemo(() => getSuggestionsFormDefaultValues(account), [account]);
+
+  const form = useForm<SuggestionsFormData>({
+    resolver: zodResolver(SuggestionsFormSchema),
+    defaultValues,
+  });
+
+  useEffect(() => {
+    form.reset(defaultValues);
+  }, [defaultValues, form]);
+
+  const handleSubmit = async (data: SuggestionsFormData) => {
+    setError(null);
+    setSuccess(false);
+    try {
+      await onSubmit(data);
+      setSuccess(true);
+      toast.success('Settings Saved');
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      console.error('Error saving suggestions settings:', err);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'Failed to update suggestions settings. Please try again.';
+      setError(errorMessage);
+    }
+  };
+
+  const provider = form.watch('provider');
+  const hasApiKey = useMemo(() => {
+    if (provider === 'webllm') return true;
+    if (providerKeyAvailable) return providerKeyAvailable(provider as AIProvider);
+    return !!account?.ai_providers?.[provider as keyof typeof account.ai_providers]?.api_key;
+  }, [provider, account, providerKeyAvailable]);
+
   if (children) {
     return (
       <form onSubmit={form.handleSubmit(handleSubmit)}>
-        {formFields}
+        <SuggestionsFormFields
+          account={account}
+          form={form}
+          variant={variant}
+          providerKeyAvailable={providerKeyAvailable}
+        />
         {children({ form, hasApiKey, error, success })}
       </form>
     );
@@ -304,8 +406,13 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
 
   return (
     <form onSubmit={form.handleSubmit(handleSubmit)}>
-      {formFields}
-      
+      <SuggestionsFormFields
+        account={account}
+        form={form}
+        variant={variant}
+        providerKeyAvailable={providerKeyAvailable}
+      />
+
       {/* Error and Success Messages */}
       <div className="mt-6 flex flex-col gap-4">
         {error && (
@@ -315,7 +422,7 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        
+
         {success && (
           <div className="flex items-center gap-2 text-sm font-medium text-green-600">
             <CheckCircle2 className="h-4 w-4" />

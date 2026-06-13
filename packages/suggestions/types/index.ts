@@ -12,7 +12,7 @@ export interface Suggestion {
  */
 export const SuggestionsFormSchema = z.object({
   enabled: z.boolean(),
-  provider: z.enum(['gemini', 'webllm']),
+  provider: z.enum(['gemini', 'webllm', 'openrouter']),
   model: z.string(),
   settings: z
     .object({

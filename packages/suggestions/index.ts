@@ -1,9 +1,13 @@
 export { Suggestions } from './components/suggestions';
 export { SuggestionStripes } from './components/suggestion-stripes';
-export { SuggestionsForm } from './components/suggestions-form';
+export {
+  SuggestionsForm,
+  SuggestionsFormFields,
+  getSuggestionsFormDefaultValues,
+} from './components/suggestions-form';
 export { useStripes } from './hooks/use-stripes';
 export type { UseStripesReturn, Stripe } from './hooks/use-stripes';
-export type { SuggestionsFormData, Suggestion } from './types';
+export { SuggestionsFormSchema, type SuggestionsFormData, type Suggestion } from './types';
 export {
   tokenize,
   joinTokens,

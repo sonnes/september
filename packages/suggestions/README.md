@@ -5,13 +5,31 @@ AI-powered partial-sentence-selection suggestions for the September composer.
 ## Public API
 
 ```ts
-import { Suggestions, SuggestionStripes, SuggestionsForm, useStripes } from '@september/suggestions';
-import type { SuggestionsFormData, Suggestion, Stripe, UseStripesReturn } from '@september/suggestions';
+import {
+  SuggestionStripes,
+  Suggestions,
+  SuggestionsForm,
+  SuggestionsFormFields,
+  useStripes,
+} from '@september/suggestions';
+import type {
+  Stripe,
+  Suggestion,
+  SuggestionsFormData,
+  UseStripesReturn,
+} from '@september/suggestions';
 // Pure lib helpers
 import {
-  tokenize, joinTokens, hiddenTokenCount, historyMatches,
-  boardWords, boardPhrases, composeSuggestions, stripeForText, appendTokens,
   MAX_COMPOSED,
+  appendTokens,
+  boardPhrases,
+  boardWords,
+  composeSuggestions,
+  hiddenTokenCount,
+  historyMatches,
+  joinTokens,
+  stripeForText,
+  tokenize,
 } from '@september/suggestions';
 ```
 
@@ -41,18 +59,19 @@ Reads `text` / `setText` from `useEditorContext()`.
 
 ```ts
 const {
-  stripes,       // Stripe[] — composed + filtered (hidden < tokens.length)
-  pinnedChips,   // string[] — board single-words prefix-filtered against text
-  boards,        // CustomKeyboard[] — all keyboards for the chat
+  stripes, // Stripe[] — composed + filtered (hidden < tokens.length)
+  pinnedChips, // string[] — board single-words prefix-filtered against text
+  boards, // CustomKeyboard[] — all keyboards for the chat
   activeBoardId, // string | null
   setActiveBoardId,
-  scanMode,      // boolean
+  scanMode, // boolean
   setScanMode,
-  activeBoard,   // CustomKeyboard | null
+  activeBoard, // CustomKeyboard | null
 } = useStripes({ chatId });
 ```
 
 Internally calls:
+
 - `useSuggestions({ text, context, history })` for LLM completions (debounced 200 ms, aborted on text change).
 - `useMessages({ chatId })` for history source (user messages only).
 - `useCustomKeyboards({ chatId })` for board entries.
@@ -60,22 +79,22 @@ Internally calls:
 
 ### `SuggestionsForm`
 
-Settings form for AI suggestions. Pass `variant="setup"` when embedding it in onboarding so it uses compact field rows; omit the prop for the full settings-page layout.
+Settings form for AI suggestions. Pass `variant="setup"` when embedding it in setup-style flows so it uses roomier field cards; omit the prop for the full settings-page layout. Use `SuggestionsFormFields` with a caller-owned `react-hook-form` instance when suggestion fields need to live inside another form, such as onboarding's merged LLM setup step.
 
 ### Pure lib helpers (`@september/suggestions` — re-exported from `lib/stripes.ts`)
 
-| Export | Purpose |
-|---|---|
-| `tokenize(s)` | Split sentence into word tokens (punctuation as own token) |
-| `joinTokens(t[])` | Join tokens back; punctuation reattaches; trailing space added |
-| `hiddenTokenCount(tokens, typed)` | Leading tokens already covered by typed text |
-| `historyMatches(typed, history[])` | Past messages matching prefix, most-recent-first |
-| `boardWords(entries[])` | Single-token entries (chip source) |
-| `boardPhrases(entries[])` | Multi-token entries (stripe source) |
-| `composeSuggestions({typed, boardPhrases, history, llm})` | Merge + dedup → `Suggestion[]` |
-| `stripeForText(text, typed)` | `{ text, tokens, hidden }` for one suggestion |
-| `appendTokens(text, entry)` | Append entry tokens to text; returns new string |
-| `MAX_COMPOSED` | Cap on composed suggestions (6) |
+| Export                                                    | Purpose                                                        |
+| --------------------------------------------------------- | -------------------------------------------------------------- |
+| `tokenize(s)`                                             | Split sentence into word tokens (punctuation as own token)     |
+| `joinTokens(t[])`                                         | Join tokens back; punctuation reattaches; trailing space added |
+| `hiddenTokenCount(tokens, typed)`                         | Leading tokens already covered by typed text                   |
+| `historyMatches(typed, history[])`                        | Past messages matching prefix, most-recent-first               |
+| `boardWords(entries[])`                                   | Single-token entries (chip source)                             |
+| `boardPhrases(entries[])`                                 | Multi-token entries (stripe source)                            |
+| `composeSuggestions({typed, boardPhrases, history, llm})` | Merge + dedup → `Suggestion[]`                                 |
+| `stripeForText(text, typed)`                              | `{ text, tokens, hidden }` for one suggestion                  |
+| `appendTokens(text, entry)`                               | Append entry tokens to text; returns new string                |
+| `MAX_COMPOSED`                                            | Cap on composed suggestions (6)                                |
 
 ### `Suggestion` type
 
@@ -108,4 +127,4 @@ a suggestion-driven text change would erase the savings. `SuggestionStripes` cal
 - `useSuggestions` — LLM fetch hook
 - `useStripes` — composition hook (exported for advanced use)
 - `lib/reanchor.ts` — `ignoreUnnecessaryDiffs` (ported from Google Project Voice)
-- `SuggestionsFormSchema` — Zod schema backing `SuggestionsFormData`
+- `SuggestionsFormSchema` — Zod schema backing `SuggestionsFormData` (exported from the package root)
