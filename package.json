@@ -7,8 +7,8 @@
     "build": "pnpm --filter @september/web build",
     "start": "pnpm --filter @september/web start",
     "lint": "pnpm -r lint",
-    "test": "vitest --run",
-    "test:watch": "vitest"
+    "test": "pnpm --filter @september/web test",
+    "test:watch": "pnpm --filter @september/web test:watch"
   },
   "devDependencies": {
     "@standard-schema/spec": "^1.1.0",

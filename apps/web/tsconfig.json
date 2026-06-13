@@ -13,18 +13,19 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
-    "plugins": [{ "name": "next" }],
+    "types": ["vite/client"],
     "paths": {
-      "@/*": ["./*"],
-      "@september/*": ["../../packages/*"]
+      "@/*": ["./src/*"],
+      "@september/shared/autocomplete": ["./src/packages/shared/lib/autocomplete/index.ts"],
+      "@september/shared/indexeddb": ["./src/packages/shared/lib/indexeddb/index.ts"],
+      "@september/shared/slides": ["./src/packages/shared/lib/slides/index.ts"],
+      "@september/*": ["./src/packages/*"]
     }
   },
   "include": [
-    "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    "vite.config.ts"
   ],
   "exclude": ["node_modules"]
 }

@@ -1,0 +1,28 @@
+{
+  "name": "@september/chats",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "dependencies": {
+    "@heroicons/react": "^2.2.0",
+    "@september/account": "workspace:*",
+    "@september/analytics": "workspace:*",
+    "@september/audio": "workspace:*",
+    "@september/shared": "workspace:*",
+    "@september/speech": "workspace:*",
+    "@september/ui": "workspace:*",
+    "@tanstack/db": "^0.5.15",
+    "@tanstack/react-db": "^0.1.59",
+    "@tanstack/react-router": "^1.170.15",
+    "sonner": "^2.0.6",
+    "uuid": "^11.1.0",
+    "zod": "^4.0.5"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

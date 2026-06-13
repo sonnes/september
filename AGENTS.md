@@ -4,23 +4,25 @@ September is an assistive communication app for people with ALS, MND, or speech/
 
 ## Apps
 
-| App                | Path           | Stack                          |
-| ------------------ | -------------- | ------------------------------ |
-| Web                | `apps/web/`    | Next.js 15, React 19, Tailwind |
-| macOS (Swift)      | `apps/swift/`  | SwiftUI + AppKit, SwiftData    |
+| App                | Path           | Stack                                      |
+| ------------------ | -------------- | ------------------------------------------ |
+| Web                | `apps/web/`    | TanStack Start (Vite), React 19, Tailwind  |
+| macOS (Swift)      | `apps/swift/`  | SwiftUI + AppKit, SwiftData                |
 
 Each app has its own `CLAUDE.md` with build commands and code style rules. Read the relevant one before working in that app.
 
 ## Monorepo
 
-pnpm workspace. Shared packages in `packages/` with `@september/*` naming.
+pnpm workspace. The web app is self-contained: its formerly-shared `@september/*`
+modules now live inside it at `apps/web/src/packages/*` (resolved via the
+`@september/*` tsconfig path alias, not as workspace packages).
 
 ```
 september/
-├── apps/web/          # Web app
-├── apps/swift/        # macOS app (Swift Package)
-├── packages/          # Shared TS packages (@september/*)
-└── docs/swift/        # macOS design specs, roadmap, assets
+├── apps/web/              # Web app (self-contained)
+│   └── src/packages/      # @september/* modules (resolved via path alias)
+├── apps/swift/            # macOS app (Swift Package)
+└── docs/swift/            # macOS design specs, roadmap, assets
 ```
 
 ## TDD (strict)

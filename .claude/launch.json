@@ -4,7 +4,7 @@
     {
       "name": "September Web",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["-C", "apps/web", "exec", "next", "dev", "--port", "3005"],
+      "runtimeArgs": ["-C", "apps/web", "exec", "vite", "dev", "--port", "3005"],
       "port": 3005
     }
   ]
