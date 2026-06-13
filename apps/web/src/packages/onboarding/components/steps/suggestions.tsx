@@ -30,20 +30,15 @@ export function SuggestionsStep() {
   const [choice, setChoice] = useState<SuggestionsChoice>(
     account?.ai_suggestions?.provider === 'openrouter' ? 'openrouter' : 'built-in'
   );
-  const [showPersonalWords, setShowPersonalWords] = useState(
-    Boolean(account?.ai_suggestions?.settings?.ai_corpus)
-  );
-  const [personalWords, setPersonalWords] = useState(
-    account?.ai_suggestions?.settings?.ai_corpus ?? ''
-  );
+  const [showPersonalWords, setShowPersonalWords] = useState(false);
+  const [personalWords, setPersonalWords] = useState('');
   const [openRouterKey, setOpenRouterKey] = useState(account?.ai_providers?.openrouter?.api_key);
   const [isSaving, setIsSaving] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
-    setPersonalWords(account?.ai_suggestions?.settings?.ai_corpus ?? '');
     setOpenRouterKey(account?.ai_providers?.openrouter?.api_key);
-  }, [account?.ai_providers?.openrouter?.api_key, account?.ai_suggestions?.settings?.ai_corpus]);
+  }, [account?.ai_providers?.openrouter?.api_key]);
 
   useEffect(() => {
     if (!oauthCode || exchangedRef.current || !account) return;
@@ -78,15 +73,31 @@ export function SuggestionsStep() {
 
     try {
       setIsSaving(true);
+
+      // Save provider/model/api_key via the existing helper
       await updateAccount(
         buildSuggestionsSetupUpdate({
           currentSuggestions: account.ai_suggestions,
           currentProviders: account.ai_providers,
-          personalWords,
           serviceChoice: choice,
           openRouterApiKey: openRouterKey,
         })
       );
+
+      // Append personal words to account.context as markdown bullet lines
+      const trimmedWords = personalWords.trim();
+      if (trimmedWords) {
+        const bullets = trimmedWords
+          .split('\n')
+          .map(line => line.trim())
+          .filter(Boolean)
+          .map(line => `- ${line}`)
+          .join('\n');
+        const existingContext = account.context ?? '';
+        const separator = existingContext.length > 0 ? '\n' : '';
+        await updateAccount({ context: existingContext + separator + bullets });
+      }
+
       await completeOnboarding();
     } catch (err) {
       console.error('Error saving suggestions setup:', err);

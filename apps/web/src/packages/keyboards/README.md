@@ -1,6 +1,6 @@
 # @/packages/keyboards
 
-Keyboard layouts and custom keyboard management for the September AAC app.
+Typing keyboard layouts for the September AAC app. Provides QWERTY and Circular keyboard components with a shared context provider.
 
 ## Public API
 
@@ -9,79 +9,36 @@ import {
   KeyboardProvider,
   KeyboardRenderer,
   KeyboardToggleButton,
-  createKeyboard,
-  useGenerateKeyboardFromMessage,
 } from '@/packages/keyboards';
-import type { CustomKeyboard, CreateCustomKeyboardData } from '@/packages/keyboards';
+import type { KeyboardType } from '@/packages/keyboards';
 ```
 
 ### Components
 
 **`KeyboardProvider`** — context provider; wrap the area that contains a `KeyboardRenderer` and `KeyboardToggleButton`.
 
-**`KeyboardRenderer`** — renders all keyboard types (QWERTY, Circular, and any custom keyboards) in a tab strip. Custom keyboard editor is included.
+Props:
+- `defaultVisible?: boolean` — initial visibility (default: `true`)
+- `defaultKeyboardType?: KeyboardType` — `'qwerty'` or `'circular'` (default: `'qwerty'`)
+
+**`KeyboardRenderer`** — renders QWERTY and Circular keyboards in a tab strip.
 
 Props:
-- `chatId?: string` — when set, shows keyboards assigned to this chat or unassigned (`chat_id` null/undefined). When unset, shows only global keyboards.
 - `onKeyPress: (key: string) => void`
-- `stickyQwerty?: boolean` — when true, QWERTY/Circular live in a persistent group below the custom keyboard tab strip instead of sharing the same tab strip.
 - `className?: string`
 
 **`KeyboardToggleButton`** — button that shows/hides the keyboard via `KeyboardProvider` context.
 
-### Mutation
-
-**`createKeyboard(data: CreateCustomKeyboardData): Promise<CustomKeyboard>`**
-
-Plain async function. Assigns nanoid ids to the keyboard and each button, assigns `order` (0-indexed), defaults `columns` to 4. Awaits `tx.isPersisted.promise` before returning — throws on persistence failure. Toast lives at the call site.
+### Types
 
 ```ts
-const keyboard = await createKeyboard({
-  name: 'Medical Terms',
-  user_id: user.id,
-  chat_id: chatId,   // optional: assign to a specific chat
-  columns: 3,
-  buttons: [{ text: 'I need help' }, { text: 'Call the nurse' }],
-});
+type KeyboardType = 'qwerty' | 'circular' | 'none';
 ```
-
-`updateKeyboard` and `deleteKeyboard` are internal to the package (used by `KeyboardRenderer` / `CustomKeyboardEditor`) and are not exported.
-
-### Hook
-
-**`useGenerateKeyboardFromMessage`** — AI keyboard generation from a message string. Calls Google Gemini via `@/packages/ai`. Returns `{ generateKeyboard, isGenerating, error }`.
-
-`generateKeyboard({ messageText, chatId })` resolves with `{ chatTitle, keyboardTitle, buttons: string[] }` (24 phrases). Throws `Error('API key not configured')` when no API key is set — callers should silence that specific error.
-
-## Data layout
-
-`CustomKeyboard`:
-```ts
-{
-  id: string;         // nanoid
-  user_id: string;
-  name: string;       // displayed on the keyboard tab
-  buttons: GridButton[];
-  chat_id?: string;   // undefined/null = global; set = chat-specific
-  columns: number;    // 2–6, default 4
-  created_at: Date;
-  updated_at: Date;
-}
-
-GridButton: { id, text, value?, image_url?, order }
-```
-
-**Button text cap:** `GridButton.text` accepts up to **280 characters** (raised from 50).
-This allows sentence-length board entries that render as partial-selectable stripes in the
-`@/packages/suggestions` compose surface. The `use-generate-keyboard` AI schema and the
-`CustomKeyboardEditor` form schema both honour the same 280-char limit.
-
-**`chat_id` query rationale:** `useCustomKeyboards` returns keyboards where `chat_id` is null, undefined, or matches the current `chatId`. This means global keyboards always appear alongside chat-specific ones — there is no "hide global" mode.
 
 ## Storage
 
-IndexedDB via TanStack DB. Database: `app-custom-keyboards`. Multi-tab sync via BroadcastChannel.
+No storage. QWERTY and Circular are stateless layouts. Keyboard visibility and active type are held in `KeyboardProvider` context (memory only).
 
 ## Internal structure
 
-Components `QwertyKeyboard`, `CircularKeyboard`, `CustomKeyboard`, and `CustomKeyboardEditor` are rendered by `KeyboardRenderer` and are not exported from the package root. Hooks `useCustomKeyboards`, `useCustomKeyboard`, `useShiftState`, `useStageSize`, `useKeyboardInteractions`, and `useKeyboardContext` are internal. Mutations `updateKeyboard` and `deleteKeyboard` are internal.
+`QwertyKeyboard` and `CircularKeyboard` are rendered by `KeyboardRenderer` and are not exported from the package root. `useKeyboardContext` is internal.

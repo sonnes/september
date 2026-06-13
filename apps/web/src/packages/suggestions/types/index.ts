@@ -3,7 +3,7 @@ import { z } from 'zod';
 export interface Suggestion {
   text: string;
   /** Provenance of the suggestion. Optional so existing callers without source remain valid. */
-  source?: 'board' | 'history' | 'llm';
+  source?: 'md' | 'history' | 'llm';
   audio_path?: string;
 }
 
@@ -16,11 +16,9 @@ export const SuggestionsFormSchema = z.object({
   model: z.string(),
   settings: z
     .object({
-      system_instructions: z.string().max(1000).optional(),
       temperature: z.number().min(0).max(1).optional(),
       max_suggestions: z.number().min(1).max(10).optional(),
       context_window: z.number().min(0).max(50).optional(),
-      ai_corpus: z.string().max(20000).optional(),
     })
     .optional(),
 });

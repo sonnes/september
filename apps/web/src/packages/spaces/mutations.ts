@@ -2,56 +2,56 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { track } from '@/packages/analytics';
 
-import { chatCollection, messageCollection } from './db';
-import type { Chat, CreateMessageData, Message } from './types';
+import { spaceCollection, messageCollection } from './db';
+import type { Space, CreateMessageData, Message } from './types';
 
 /**
- * Insert a new chat and await persistence.
+ * Insert a new space and await persistence.
  * Throws on failure — toast lives at the call site.
  */
-export async function createChat(userId: string, title = 'New Chat'): Promise<Chat> {
+export async function createSpace(userId: string, title = 'New Space'): Promise<Space> {
   const now = new Date();
-  const chat: Chat = {
+  const space: Space = {
     id: uuidv4(),
     user_id: userId,
     title,
     created_at: now,
     updated_at: now,
   };
-  const tx = chatCollection.insert(chat);
+  const tx = spaceCollection.insert(space);
   await tx.isPersisted.promise;
-  return chat;
+  return space;
 }
 
 /**
- * Update a chat by id and await persistence.
+ * Update a space by id and await persistence.
  * Throws on failure — toast lives at the call site.
  */
-export async function updateChat(id: string, updates: Partial<Chat>): Promise<void> {
-  const tx = chatCollection.update(id, draft => {
+export async function updateSpace(id: string, updates: Partial<Space>): Promise<void> {
+  const tx = spaceCollection.update(id, draft => {
     Object.assign(draft, { ...updates, updated_at: new Date() });
   });
   await tx.isPersisted.promise;
 }
 
 /**
- * Delete a chat and cascade-delete all its messages, then await persistence.
+ * Delete a space and cascade-delete all its messages, then await persistence.
  * Throws on failure — toast lives at the call site.
  */
-export async function deleteChat(id: string): Promise<void> {
+export async function deleteSpace(id: string): Promise<void> {
   // Collect message ids from loaded state before deletion
   const messageIds = messageCollection.toArray
-    .filter(m => m.chat_id === id)
+    .filter(m => m.space_id === id)
     .map(m => m.id);
 
   const txs = messageIds.map(mid => messageCollection.delete(mid));
-  const chatTx = chatCollection.delete(id);
+  const spaceTx = spaceCollection.delete(id);
 
-  await Promise.all([...txs.map(t => t.isPersisted.promise), chatTx.isPersisted.promise]);
+  await Promise.all([...txs.map(t => t.isPersisted.promise), spaceTx.isPersisted.promise]);
 }
 
 /**
- * Insert a new message, bump the parent chat's updated_at, and fire analytics.
+ * Insert a new message, bump the parent space's updated_at, and fire analytics.
  * Throws on failure — toast lives at the call site.
  */
 export async function createMessage(data: CreateMessageData): Promise<Message> {
@@ -67,17 +67,17 @@ export async function createMessage(data: CreateMessageData): Promise<Message> {
   const tx = messageCollection.insert(message);
   await tx.isPersisted.promise;
 
-  if (data.chat_id) {
-    const chatTx = chatCollection.update(data.chat_id, draft => {
+  if (data.space_id) {
+    const spaceTx = spaceCollection.update(data.space_id, draft => {
       draft.updated_at = now;
     });
-    await chatTx.isPersisted.promise;
+    await spaceTx.isPersisted.promise;
   }
 
   track(data.user_id, {
     type: 'message_sent',
     text_length: message.text.length,
-    chat_id: message.chat_id,
+    space_id: message.space_id,
     keys_typed: editorStats?.keysTyped ?? 0,
   });
 

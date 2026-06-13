@@ -9,7 +9,7 @@ import { indexedDBCollectionOptionsV2 } from '@/packages/shared/lib/indexeddb';
 // ---------------------------------------------------------------------------
 
 export type TrackedEvent =
-  | { type: 'message_sent'; text_length: number; chat_id?: string; keys_typed?: number }
+  | { type: 'message_sent'; text_length: number; space_id?: string; keys_typed?: number }
   | {
       type: 'ai_generation';
       generation_type?: 'suggestions' | 'transcription' | 'summary';
@@ -43,7 +43,7 @@ const MessageSentStoredSchema = z.object({
   timestamp: z.coerce.date(),
   data: z.object({
     text_length: z.number().int().min(0),
-    chat_id: z.string().uuid().optional(),
+    space_id: z.string().uuid().optional(),
     keys_typed: z.number().int().min(0).default(0),
   }),
 });
@@ -125,7 +125,7 @@ export function track(userId: string, event: TrackedEvent): void {
       timestamp,
       data: {
         text_length: event.text_length,
-        chat_id: event.chat_id,
+        space_id: event.space_id,
         keys_typed: event.keys_typed ?? 0,
       },
     };

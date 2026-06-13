@@ -13,7 +13,7 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-export type ChatPanelTab = 'history' | 'voice' | 'boards';
+export type ChatPanelTab = 'history' | 'voice' | 'context';
 
 export interface ChatPanelState {
   open: boolean;

@@ -1,5 +1,5 @@
 {
-  "name": "@september/chats",
+  "name": "@september/spaces",
   "version": "0.1.0",
   "private": true,
   "main": "./index.ts",
@@ -10,6 +10,7 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@september/account": "workspace:*",
+    "@september/ai": "workspace:*",
     "@september/analytics": "workspace:*",
     "@september/audio": "workspace:*",
     "@september/shared": "workspace:*",

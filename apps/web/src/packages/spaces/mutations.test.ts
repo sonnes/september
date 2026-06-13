@@ -4,14 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // Hoisted mocks — must be declared before any imports that transitively use them
 // ---------------------------------------------------------------------------
 
-const { mockChatInsert, mockChatUpdate, mockChatDelete, mockMessageInsert, mockMessageDelete } =
+const { mockSpaceInsert, mockSpaceUpdate, mockSpaceDelete, mockMessageInsert, mockMessageDelete } =
   vi.hoisted(() => {
-    const mockChatInsert = vi.fn();
-    const mockChatUpdate = vi.fn();
-    const mockChatDelete = vi.fn();
+    const mockSpaceInsert = vi.fn();
+    const mockSpaceUpdate = vi.fn();
+    const mockSpaceDelete = vi.fn();
     const mockMessageInsert = vi.fn();
     const mockMessageDelete = vi.fn();
-    return { mockChatInsert, mockChatUpdate, mockChatDelete, mockMessageInsert, mockMessageDelete };
+    return { mockSpaceInsert, mockSpaceUpdate, mockSpaceDelete, mockMessageInsert, mockMessageDelete };
   });
 
 // Simulate a Transaction with isPersisted.promise
@@ -20,7 +20,7 @@ function makeTx(promise: Promise<unknown> = Promise.resolve()) {
 }
 
 // Stable mock collections with a loaded state we can populate per-test
-const chatCollectionState: { state: Map<string, Record<string, unknown>> } = {
+const spaceCollectionState: { state: Map<string, Record<string, unknown>> } = {
   state: new Map(),
 };
 const messageCollectionState: { state: Map<string, Record<string, unknown>> } = {
@@ -28,20 +28,20 @@ const messageCollectionState: { state: Map<string, Record<string, unknown>> } = 
 };
 
 vi.mock('./db', () => ({
-  chatCollection: {
-    insert: (data: unknown) => makeTx(mockChatInsert(data)),
+  spaceCollection: {
+    insert: (data: unknown) => makeTx(mockSpaceInsert(data)),
     update: (id: string, fn: (d: Record<string, unknown>) => void) => {
-      const draft = { ...(chatCollectionState.state.get(id) || {}) };
+      const draft = { ...(spaceCollectionState.state.get(id) || {}) };
       fn(draft);
-      chatCollectionState.state.set(id, draft);
-      return makeTx(mockChatUpdate(id, draft));
+      spaceCollectionState.state.set(id, draft);
+      return makeTx(mockSpaceUpdate(id, draft));
     },
     delete: (id: string) => {
-      chatCollectionState.state.delete(id);
-      return makeTx(mockChatDelete(id));
+      spaceCollectionState.state.delete(id);
+      return makeTx(mockSpaceDelete(id));
     },
     get toArray() {
-      return Array.from(chatCollectionState.state.values());
+      return Array.from(spaceCollectionState.state.values());
     },
   },
   messageCollection: {
@@ -65,114 +65,114 @@ vi.mock('uuid', () => ({
 }));
 
 // Import after mocks
-import { createChat, createMessage, deleteChat, updateChat } from './mutations';
+import { createSpace, createMessage, deleteSpace, updateSpace } from './mutations';
 import { track } from '@/packages/analytics';
 
-describe('createChat', () => {
+describe('createSpace', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    chatCollectionState.state.clear();
+    spaceCollectionState.state.clear();
     messageCollectionState.state.clear();
-    mockChatInsert.mockResolvedValue(undefined);
+    mockSpaceInsert.mockResolvedValue(undefined);
   });
 
-  it('inserts a chat with correct shape', async () => {
-    const chat = await createChat('user-1');
+  it('inserts a space with correct shape', async () => {
+    const space = await createSpace('user-1');
 
-    expect(mockChatInsert).toHaveBeenCalledOnce();
-    const inserted = mockChatInsert.mock.calls[0][0];
+    expect(mockSpaceInsert).toHaveBeenCalledOnce();
+    const inserted = mockSpaceInsert.mock.calls[0][0];
     expect(inserted.id).toBe('fixed-uuid-1234');
     expect(inserted.user_id).toBe('user-1');
-    expect(inserted.title).toBe('New Chat');
+    expect(inserted.title).toBe('New Space');
     expect(inserted.created_at).toBeInstanceOf(Date);
     expect(inserted.updated_at).toBeInstanceOf(Date);
-    expect(chat).toMatchObject({ id: 'fixed-uuid-1234', user_id: 'user-1', title: 'New Chat' });
+    expect(space).toMatchObject({ id: 'fixed-uuid-1234', user_id: 'user-1', title: 'New Space' });
   });
 
   it('accepts a custom title', async () => {
-    await createChat('user-1', 'My Custom Chat');
-    const inserted = mockChatInsert.mock.calls[0][0];
-    expect(inserted.title).toBe('My Custom Chat');
+    await createSpace('user-1', 'My Custom Space');
+    const inserted = mockSpaceInsert.mock.calls[0][0];
+    expect(inserted.title).toBe('My Custom Space');
   });
 
   it('propagates insert errors', async () => {
-    mockChatInsert.mockRejectedValue(new Error('DB failure'));
-    await expect(createChat('user-1')).rejects.toThrow('DB failure');
+    mockSpaceInsert.mockRejectedValue(new Error('DB failure'));
+    await expect(createSpace('user-1')).rejects.toThrow('DB failure');
   });
 });
 
-describe('updateChat', () => {
+describe('updateSpace', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    chatCollectionState.state.clear();
+    spaceCollectionState.state.clear();
     messageCollectionState.state.clear();
-    mockChatUpdate.mockResolvedValue(undefined);
+    mockSpaceUpdate.mockResolvedValue(undefined);
   });
 
   it('applies updates and bumps updated_at', async () => {
     const before = new Date(2020, 0, 1);
-    chatCollectionState.state.set('chat-1', { id: 'chat-1', title: 'Old', updated_at: before });
+    spaceCollectionState.state.set('space-1', { id: 'space-1', title: 'Old', updated_at: before });
 
-    await updateChat('chat-1', { title: 'New Title' });
+    await updateSpace('space-1', { title: 'New Title' });
 
-    const updated = chatCollectionState.state.get('chat-1');
+    const updated = spaceCollectionState.state.get('space-1');
     expect(updated?.title).toBe('New Title');
     expect(updated?.updated_at).toBeInstanceOf(Date);
     expect((updated?.updated_at as Date) > before).toBe(true);
   });
 
   it('propagates errors', async () => {
-    mockChatUpdate.mockRejectedValue(new Error('update failed'));
-    await expect(updateChat('chat-1', {})).rejects.toThrow('update failed');
+    mockSpaceUpdate.mockRejectedValue(new Error('update failed'));
+    await expect(updateSpace('space-1', {})).rejects.toThrow('update failed');
   });
 });
 
-describe('deleteChat', () => {
+describe('deleteSpace', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    chatCollectionState.state.clear();
+    spaceCollectionState.state.clear();
     messageCollectionState.state.clear();
-    mockChatDelete.mockResolvedValue(undefined);
+    mockSpaceDelete.mockResolvedValue(undefined);
     mockMessageDelete.mockResolvedValue(undefined);
   });
 
-  it('deletes the chat and all its messages', async () => {
-    chatCollectionState.state.set('chat-1', { id: 'chat-1' });
-    messageCollectionState.state.set('msg-1', { id: 'msg-1', chat_id: 'chat-1' });
-    messageCollectionState.state.set('msg-2', { id: 'msg-2', chat_id: 'chat-1' });
-    messageCollectionState.state.set('msg-3', { id: 'msg-3', chat_id: 'other-chat' });
+  it('deletes the space and all its messages', async () => {
+    spaceCollectionState.state.set('space-1', { id: 'space-1' });
+    messageCollectionState.state.set('msg-1', { id: 'msg-1', space_id: 'space-1' });
+    messageCollectionState.state.set('msg-2', { id: 'msg-2', space_id: 'space-1' });
+    messageCollectionState.state.set('msg-3', { id: 'msg-3', space_id: 'other-space' });
 
-    await deleteChat('chat-1');
+    await deleteSpace('space-1');
 
     expect(mockMessageDelete).toHaveBeenCalledTimes(2);
     const deletedIds = mockMessageDelete.mock.calls.map((c: unknown[]) => c[0]).sort();
     expect(deletedIds).toEqual(['msg-1', 'msg-2']);
-    expect(mockChatDelete).toHaveBeenCalledWith('chat-1');
+    expect(mockSpaceDelete).toHaveBeenCalledWith('space-1');
   });
 
-  it('works when chat has no messages', async () => {
-    chatCollectionState.state.set('chat-empty', { id: 'chat-empty' });
+  it('works when space has no messages', async () => {
+    spaceCollectionState.state.set('space-empty', { id: 'space-empty' });
 
-    await deleteChat('chat-empty');
+    await deleteSpace('space-empty');
 
     expect(mockMessageDelete).not.toHaveBeenCalled();
-    expect(mockChatDelete).toHaveBeenCalledWith('chat-empty');
+    expect(mockSpaceDelete).toHaveBeenCalledWith('space-empty');
   });
 
   it('propagates errors', async () => {
-    chatCollectionState.state.set('chat-err', { id: 'chat-err' });
-    mockChatDelete.mockRejectedValue(new Error('delete failed'));
-    await expect(deleteChat('chat-err')).rejects.toThrow('delete failed');
+    spaceCollectionState.state.set('space-err', { id: 'space-err' });
+    mockSpaceDelete.mockRejectedValue(new Error('delete failed'));
+    await expect(deleteSpace('space-err')).rejects.toThrow('delete failed');
   });
 });
 
 describe('createMessage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    chatCollectionState.state.clear();
+    spaceCollectionState.state.clear();
     messageCollectionState.state.clear();
     mockMessageInsert.mockResolvedValue(undefined);
-    mockChatUpdate.mockResolvedValue(undefined);
+    mockSpaceUpdate.mockResolvedValue(undefined);
   });
 
   it('fills id and created_at when omitted', async () => {
@@ -182,17 +182,17 @@ describe('createMessage', () => {
     expect(msg.created_at).toBeInstanceOf(Date);
   });
 
-  it('bumps chat updated_at when chat_id is present', async () => {
-    chatCollectionState.state.set('chat-1', { id: 'chat-1', updated_at: new Date(2020, 0, 1) });
+  it('bumps space updated_at when space_id is present', async () => {
+    spaceCollectionState.state.set('space-1', { id: 'space-1', updated_at: new Date(2020, 0, 1) });
 
-    await createMessage({ text: 'Hi', type: 'user', user_id: 'user-1', chat_id: 'chat-1' });
+    await createMessage({ text: 'Hi', type: 'user', user_id: 'user-1', space_id: 'space-1' });
 
-    expect(mockChatUpdate).toHaveBeenCalledWith('chat-1', expect.any(Object));
+    expect(mockSpaceUpdate).toHaveBeenCalledWith('space-1', expect.any(Object));
   });
 
-  it('does not bump chat when chat_id is absent', async () => {
+  it('does not bump space when space_id is absent', async () => {
     await createMessage({ text: 'Hi', type: 'user', user_id: 'user-1' });
-    expect(mockChatUpdate).not.toHaveBeenCalled();
+    expect(mockSpaceUpdate).not.toHaveBeenCalled();
   });
 
   it('calls track with correct data', async () => {
@@ -200,14 +200,14 @@ describe('createMessage', () => {
       text: 'Hello world',
       type: 'user',
       user_id: 'user-1',
-      chat_id: 'chat-1',
+      space_id: 'space-1',
       editorStats: { keysTyped: 5, charsSaved: 2 },
     });
 
     expect(track).toHaveBeenCalledWith('user-1', {
       type: 'message_sent',
       text_length: 11,
-      chat_id: 'chat-1',
+      space_id: 'space-1',
       keys_typed: 5,
     });
   });

@@ -15,7 +15,7 @@ Centralized type definitions ensure:
 
 ### Core Data Models
 
-Chat message records live in `@/packages/chats`; account records live in
+Chat message records live in `@/packages/spaces`; account records live in
 `@/packages/account`. Shared types may define small structural payloads for
 cross-package protocols, but must not import feature package types.
 
@@ -112,7 +112,7 @@ Always import types explicitly:
 
 ```typescript
 import type { Account, AccountUpdate } from '@/packages/account';
-import type { CreateMessageData, Message } from '@/packages/chats';
+import type { CreateMessageData, Message } from '@/packages/spaces';
 import type { Voice } from '@/packages/shared';
 ```
 

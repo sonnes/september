@@ -9,8 +9,6 @@ export const SuggestionsConfigSchema = z.object({
       temperature: z.number().min(0).max(1).optional(),
       max_suggestions: z.number().optional(),
       context_window: z.number().optional(),
-      system_instructions: z.string().optional(),
-      ai_corpus: z.string().optional(),
     })
     .optional(),
 });
@@ -85,6 +83,7 @@ export const ProvidersSchema = z.object({
 export const AccountSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1, 'Name is required'),
+  context: z.string().optional(),
   city: z.string().optional(),
   country: z.string().optional(),
   primary_diagnosis: z.string().optional(),

@@ -4,21 +4,21 @@ import { toast } from 'sonner';
 
 import { EditableText } from '@/packages/ui/components/editable-text';
 
-import { updateChat } from '../mutations';
+import { updateSpace } from '../mutations';
 
-interface EditableChatTitleProps {
-  chatId: string;
+interface EditableSpaceTitleProps {
+  spaceId: string;
   title?: string;
   className?: string;
 }
 
-export function EditableChatTitle({ chatId, title, className }: EditableChatTitleProps) {
+export function EditableSpaceTitle({ spaceId, title, className }: EditableSpaceTitleProps) {
   const handleSave = async (next: string | undefined) => {
     try {
-      await updateChat(chatId, { title: next });
-      toast.success('Chat updated');
+      await updateSpace(spaceId, { title: next });
+      toast.success('Space updated');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to update chat');
+      toast.error(error instanceof Error ? error.message : 'Failed to update space');
       throw error;
     }
   };

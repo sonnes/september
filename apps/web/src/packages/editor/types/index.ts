@@ -13,8 +13,8 @@ export interface EditorContextValue {
   trackKeystroke: () => void;
   getAndResetStats: () => EditorStats;
   /**
-   * The chat the editor is scoped to, if any. Threads through to the
+   * The space the editor is scoped to, if any. Threads through to the
    * autocomplete engine so predictions personalize per recipient.
    */
-  chatId?: string;
+  spaceId?: string;
 }

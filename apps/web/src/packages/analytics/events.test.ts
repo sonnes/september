@@ -38,7 +38,7 @@ describe('track()', () => {
       const event: TrackedEvent = {
         type: 'message_sent',
         text_length: 42,
-        chat_id: 'chat-abc',
+        space_id: 'space-abc',
         keys_typed: 10,
       };
 
@@ -52,7 +52,7 @@ describe('track()', () => {
       expect(inserted.event_type).toBe('message_sent');
       expect(inserted.timestamp).toBeInstanceOf(Date);
       expect(inserted.data.text_length).toBe(42);
-      expect(inserted.data.chat_id).toBe('chat-abc');
+      expect(inserted.data.space_id).toBe('space-abc');
       expect(inserted.data.keys_typed).toBe(10);
     });
 

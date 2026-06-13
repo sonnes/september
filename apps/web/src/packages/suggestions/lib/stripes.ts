@@ -75,17 +75,17 @@ export function boardPhrases(entries: string[]): string[] {
 
 /**
  * Merges already-fetched suggestion lists into one stripe list.
- * Order: board (curated) → history (grounded) → llm (baseline).
+ * Order: md (curated) → history (grounded) → llm (baseline).
  * Case-insensitive dedup; excludes exact-typed text; caps at MAX_COMPOSED.
  */
 export function composeSuggestions({
   typed,
-  boardPhrases: phrases,
+  mdPhrases: phrases,
   history,
   llm,
 }: {
   typed: string;
-  boardPhrases: string[];
+  mdPhrases: string[];
   history: string[];
   llm: string[];
 }): Suggestion[] {
@@ -100,9 +100,9 @@ export function composeSuggestions({
     out.push({ text, source });
   };
 
-  // Board phrases — prefix-filtered when text is non-empty
+  // Md phrases — prefix-filtered when text is non-empty
   for (const phrase of phrases) {
-    if (!lower || phrase.toLowerCase().startsWith(lower)) push(phrase, 'board');
+    if (!lower || phrase.toLowerCase().startsWith(lower)) push(phrase, 'md');
   }
 
   // History — already prefix-filtered by historyMatches

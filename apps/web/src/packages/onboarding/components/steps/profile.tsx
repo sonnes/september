@@ -18,16 +18,14 @@ export function ProfileStep() {
   const { account, updateAccount } = useAccount();
   const copy = ONBOARDING_PRIMARY_COPY.profile;
   const [name, setName] = useState(account?.name ?? '');
-  const [persona, setPersona] = useState(
-    account?.ai_suggestions?.settings?.system_instructions ?? DEFAULT_SPEAKING_STYLE
-  );
+  const [persona, setPersona] = useState(account?.context ?? DEFAULT_SPEAKING_STYLE);
   const [isSaving, setIsSaving] = useState(false);
   const selectedPersona = copy.personas.find(option => option.value === persona);
 
   useEffect(() => {
     if (!account) return;
     setName(account.name);
-    setPersona(account.ai_suggestions?.settings?.system_instructions ?? DEFAULT_SPEAKING_STYLE);
+    setPersona(account.context ?? DEFAULT_SPEAKING_STYLE);
   }, [account]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -40,15 +38,7 @@ export function ProfileStep() {
       setIsSaving(true);
       await updateAccount({
         name: trimmedName,
-        ai_suggestions: {
-          enabled: account?.ai_suggestions?.enabled ?? false,
-          provider: account?.ai_suggestions?.provider ?? 'gemini',
-          model: account?.ai_suggestions?.model ?? 'gemini-2.5-flash-lite',
-          settings: {
-            ...(account?.ai_suggestions?.settings ?? {}),
-            system_instructions: persona.trim(),
-          },
-        },
+        context: persona.trim(),
       });
       goToNextStep();
     } finally {

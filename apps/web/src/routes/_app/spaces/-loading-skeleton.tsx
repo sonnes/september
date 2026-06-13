@@ -1,6 +1,6 @@
 import { Skeleton } from '@/packages/ui/components/skeleton';
 
-export function ChatListSkeleton() {
+export function SpaceListSkeleton() {
   return (
     <div className="max-w-3xl mx-auto w-full">
       {/* Search bar skeleton */}
@@ -8,7 +8,7 @@ export function ChatListSkeleton() {
         <Skeleton className="h-10 w-full rounded-md" />
       </div>
 
-      {/* Chat list items skeleton */}
+      {/* Space list items skeleton */}
       <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
         {Array.from({ length: 5 }).map((_, index) => (
           <div key={index} className="py-3 border-b border-zinc-200">
@@ -21,10 +21,10 @@ export function ChatListSkeleton() {
   );
 }
 
-export function ChatMessagesSkeleton() {
+export function SpaceMessagesSkeleton() {
   return (
     <div className="flex flex-col gap-4 p-4">
-      {/* Alternating message bubbles for realistic chat skeleton */}
+      {/* Alternating message bubbles for realistic space skeleton */}
       {Array.from({ length: 4 }).map((_, index) => (
         <div key={index} className={`flex ${index % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
           <div

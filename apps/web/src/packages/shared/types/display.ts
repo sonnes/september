@@ -8,7 +8,7 @@ export interface DisplayMessagePayload {
   text: string;
   type: string;
   user_id: string;
-  chat_id?: string;
+  space_id?: string;
   audio_path?: string;
   created_at: Date;
 }

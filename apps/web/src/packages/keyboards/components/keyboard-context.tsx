@@ -2,7 +2,7 @@
 
 import React, { ReactNode, createContext, useContext, useState } from 'react';
 
-export type KeyboardType = 'qwerty' | 'circular' | 'custom' | 'none';
+export type KeyboardType = 'qwerty' | 'circular' | 'none';
 
 export interface KeyboardContextType {
   isVisible: boolean;
@@ -11,8 +11,6 @@ export interface KeyboardContextType {
   hideKeyboard: () => void;
   keyboardType: KeyboardType;
   setKeyboardType: (type: KeyboardType) => void;
-  customKeyboardId?: string;  // ID of selected custom keyboard
-  setCustomKeyboardId: (id?: string) => void;
 }
 
 export const KeyboardContext = createContext<KeyboardContextType | undefined>(undefined);
@@ -30,7 +28,6 @@ export function KeyboardProvider({
 }: KeyboardProviderProps) {
   const [isVisible, setIsVisible] = useState(defaultVisible);
   const [keyboardType, setKeyboardType] = useState<KeyboardType>(defaultKeyboardType);
-  const [customKeyboardId, setCustomKeyboardId] = useState<string | undefined>();
 
   const toggleVisibility = () => setIsVisible(prev => !prev);
   const showKeyboard = () => setIsVisible(true);
@@ -45,8 +42,6 @@ export function KeyboardProvider({
         hideKeyboard,
         keyboardType,
         setKeyboardType,
-        customKeyboardId,
-        setCustomKeyboardId,
       }}
     >
       {children}

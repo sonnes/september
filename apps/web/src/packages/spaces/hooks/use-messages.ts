@@ -7,11 +7,11 @@ import { messageCollection } from '../db';
 import { Message } from '../types';
 
 export function useMessages({
-  chatId,
+  spaceId,
   searchQuery,
   limit = 100,
 }: {
-  chatId?: string;
+  spaceId?: string;
   searchQuery?: string;
   limit?: number;
 } = {}) {
@@ -23,15 +23,15 @@ export function useMessages({
   } = useLiveQuery(
     q => {
       let query = q.from({ items: messageCollection });
-      if (chatId) {
-        query = query.where(({ items }) => eq(items.chat_id, chatId));
+      if (spaceId) {
+        query = query.where(({ items }) => eq(items.space_id, spaceId));
       }
       if (searchQuery && searchQuery.length > 0) {
         query = query.where(({ items }) => ilike(items.text, `%${searchQuery}%`));
       }
       return query.orderBy(({ items }) => items.created_at, 'asc').limit(limit);
     },
-    [chatId, searchQuery]
+    [spaceId, searchQuery]
   );
 
   const error = useMemo(
@@ -46,7 +46,7 @@ export function useMessages({
   };
 }
 
-export function useFirstMessage(chatId?: string) {
+export function useFirstMessage(spaceId?: string) {
   const {
     data: message,
     isLoading,
@@ -56,12 +56,12 @@ export function useFirstMessage(chatId?: string) {
     q => {
       const query = q
         .from({ items: messageCollection })
-        .where(({ items }) => eq(items.chat_id, chatId))
+        .where(({ items }) => eq(items.space_id, spaceId))
         .orderBy(({ items }) => items.created_at, 'asc')
         .limit(1);
       return query;
     },
-    [chatId]
+    [spaceId]
   );
   return {
     message: message?.[0],

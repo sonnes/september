@@ -13,7 +13,7 @@ import { useAccount } from '@/packages/account';
 import { useAudioPlayer } from '@/packages/audio';
 import { EditorProvider, useEditorContext, Editor } from '@/packages/editor';
 import { KeyboardProvider } from '@/packages/keyboards';
-import { useCreateAudioMessage } from '@/packages/chats';
+import { useCreateAudioMessage } from '@/packages/spaces';
 
 function HeroEditor() {
   const { user } = useAccount();

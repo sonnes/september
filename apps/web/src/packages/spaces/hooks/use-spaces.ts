@@ -3,27 +3,27 @@ import { useMemo } from 'react';
 import { eq } from '@tanstack/db';
 import { useLiveQuery } from '@tanstack/react-db';
 
-import { chatCollection } from '../db';
-import { Chat } from '../types';
+import { spaceCollection } from '../db';
+import { Space } from '../types';
 
-export interface UseChatsReturn {
-  chats: Chat[];
+export interface UseSpacesReturn {
+  spaces: Space[];
   isLoading: boolean;
   error?: { message: string };
 }
 
-export function useChats({
+export function useSpaces({
   userId,
   searchQuery,
-}: { userId?: string; searchQuery?: string } = {}): UseChatsReturn {
+}: { userId?: string; searchQuery?: string } = {}): UseSpacesReturn {
   const {
-    data: chats,
+    data: spaces,
     isLoading,
     isError,
     status,
   } = useLiveQuery(
     q => {
-      let query = q.from({ items: chatCollection });
+      let query = q.from({ items: spaceCollection });
       if (userId) {
         query = query.where(({ items }) => eq(items.user_id, userId));
       }
@@ -32,10 +32,10 @@ export function useChats({
     [userId]
   );
 
-  const filteredChats =
-    searchQuery && chats
-      ? chats.filter(chat => chat.title?.toLowerCase().includes(searchQuery.toLowerCase()))
-      : chats;
+  const filteredSpaces =
+    searchQuery && spaces
+      ? spaces.filter(space => space.title?.toLowerCase().includes(searchQuery.toLowerCase()))
+      : spaces;
 
   const error = useMemo(
     () => (isError ? { message: `Database error: ${status}` } : undefined),
@@ -43,7 +43,7 @@ export function useChats({
   );
 
   return {
-    chats: (filteredChats || []) as Chat[],
+    spaces: (filteredSpaces || []) as Space[],
     isLoading,
     error,
   };

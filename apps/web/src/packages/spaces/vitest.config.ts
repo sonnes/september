@@ -9,7 +9,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@/packages/chats': path.resolve(__dirname, '.'),
+      '@/packages/spaces': path.resolve(__dirname, '.'),
       '@/packages/shared': path.resolve(__dirname, '../shared'),
       '@/packages/analytics': path.resolve(__dirname, '../analytics'),
     },

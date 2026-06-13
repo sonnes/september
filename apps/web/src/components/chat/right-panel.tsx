@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Clock, Grid2x2, LayoutGrid, Mic, Tv, X, type LucideIcon } from 'lucide-react';
-import { toast } from 'sonner';
+import { useEffect, useRef } from 'react';
+import { Clock, FileText, Grid2x2, Mic, Tv, X, type LucideIcon } from 'lucide-react';
 
 import { Button } from '@/packages/ui/components/button';
 import {
@@ -16,16 +15,11 @@ import {
 
 import { cn } from '@/packages/shared';
 import { useAccount } from '@/packages/account';
-import { MessageList, useMessages } from '@/packages/chats';
+import { MessageList, updateSpace, useMessages, useSpaces } from '@/packages/spaces';
 import { AudioOutputDeviceSelector } from '@/packages/audio';
 import { SpeechSettings } from '@/packages/speech';
 import type { VoiceSettingsFormData } from '@/packages/speech';
-import {
-  CustomKeyboardEditor,
-  useCustomKeyboards,
-  deleteKeyboard,
-  type CustomKeyboard,
-} from '@/packages/keyboards';
+import { TiptapEditor } from '@/packages/editor';
 
 import { useChatPanel, type ChatPanelTab } from './use-chat-panel';
 
@@ -43,7 +37,7 @@ interface ChatRightPanelProps {
 const TAB_META: Record<ChatPanelTab, { title: string; icon: LucideIcon }> = {
   history: { title: 'History', icon: Clock },
   voice: { title: 'Voice', icon: Mic },
-  boards: { title: 'Boards', icon: LayoutGrid },
+  context: { title: 'Context', icon: FileText },
 };
 
 export function ChatRightPanel({ chatId, chatTitle, onOpenDisplay }: ChatRightPanelProps) {
@@ -91,10 +85,10 @@ export function ChatRightPanel({ chatId, chatTitle, onOpenDisplay }: ChatRightPa
               onClick={() => openTab('voice')}
             />
             <OverviewCard
-              icon={LayoutGrid}
-              title="Boards"
-              subtitle="Phrase boards"
-              onClick={() => openTab('boards')}
+              icon={FileText}
+              title="Context"
+              subtitle="Space context"
+              onClick={() => openTab('context')}
             />
             <OverviewCard
               icon={Tv}
@@ -108,7 +102,7 @@ export function ChatRightPanel({ chatId, chatTitle, onOpenDisplay }: ChatRightPa
         ) : activeTab === 'voice' ? (
           <VoiceTab />
         ) : (
-          <BoardsTab chatId={chatId} />
+          <ContextTab spaceId={chatId} />
         )}
       </div>
     </aside>
@@ -234,7 +228,7 @@ function OverviewCard({ icon: Icon, title, subtitle, onClick }: OverviewCardProp
 // ---------------------------------------------------------------------------
 
 function HistoryTab({ chatId }: { chatId: string }) {
-  const { messages, isLoading } = useMessages({ chatId });
+  const { messages, isLoading } = useMessages({ spaceId: chatId });
 
   if (isLoading) {
     return (
@@ -284,122 +278,37 @@ function VoiceTab() {
 }
 
 // ---------------------------------------------------------------------------
-// Boards tab
+// Context tab
 // ---------------------------------------------------------------------------
 
-type BoardsView =
-  | { kind: 'list' }
-  | { kind: 'edit'; keyboardId: string }
-  | { kind: 'create' };
+function ContextTab({ spaceId }: { spaceId: string }) {
+  const { spaces } = useSpaces();
+  const space = spaces.find(s => s.id === spaceId);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-function BoardsTab({ chatId }: { chatId: string }) {
-  const { keyboards, isLoading } = useCustomKeyboards({ chatId });
-  const [view, setView] = useState<BoardsView>({ kind: 'list' });
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-6">
-        <p className="text-sm text-muted-foreground">Loading boards…</p>
-      </div>
-    );
-  }
-
-  if (view.kind === 'create') {
-    return (
-      <CustomKeyboardEditor
-        chatId={chatId}
-        onSave={() => setView({ kind: 'list' })}
-        onCancel={() => setView({ kind: 'list' })}
-      />
-    );
-  }
-
-  if (view.kind === 'edit') {
-    return (
-      <CustomKeyboardEditor
-        keyboardId={view.keyboardId}
-        chatId={chatId}
-        onSave={() => setView({ kind: 'list' })}
-        onCancel={() => setView({ kind: 'list' })}
-      />
-    );
-  }
+  const handleUpdate = (_html: string, markdown: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      updateSpace(spaceId, { context: markdown }).catch(err => {
+        console.error('Failed to save context:', err);
+      });
+    }, 500);
+  };
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">Boards</h3>
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => setView({ kind: 'create' })}
-        >
-          New board
-        </Button>
-      </div>
-
-      {keyboards.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No boards yet. Create one to add phrase shortcuts to this chat.
+    <div className="p-4 space-y-3">
+      <div>
+        <h3 className="text-sm font-medium mb-1">Space context</h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          Add bullet points (- phrase) to seed suggestions for this space.
         </p>
-      ) : (
-        <ul className="space-y-2">
-          {keyboards.map(kb => (
-            <BoardRow
-              key={kb.id}
-              keyboard={kb}
-              onEdit={() => setView({ kind: 'edit', keyboardId: kb.id })}
-            />
-          ))}
-        </ul>
-      )}
+      </div>
+      <TiptapEditor
+        content={space?.context ?? ''}
+        placeholder="- I need some water&#10;- Can you help me"
+        onUpdate={handleUpdate}
+        className="min-h-48"
+      />
     </div>
-  );
-}
-
-interface BoardRowProps {
-  keyboard: CustomKeyboard;
-  onEdit: () => void;
-}
-
-function BoardRow({ keyboard, onEdit }: BoardRowProps) {
-  async function handleDelete() {
-    try {
-      await deleteKeyboard(keyboard.id);
-    } catch {
-      toast.error('Failed to delete board');
-    }
-  }
-
-  return (
-    <li className="flex items-center justify-between gap-2 rounded-md border border-border p-3">
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{keyboard.name}</p>
-        <p className="text-xs text-muted-foreground">
-          {keyboard.buttons.length} button{keyboard.buttons.length !== 1 ? 's' : ''}
-        </p>
-      </div>
-      <div className="flex shrink-0 gap-1">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onEdit}
-          aria-label={`Edit ${keyboard.name}`}
-        >
-          Edit
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="text-destructive hover:text-destructive"
-          onClick={handleDelete}
-          aria-label={`Delete ${keyboard.name}`}
-        >
-          Delete
-        </Button>
-      </div>
-    </li>
   );
 }

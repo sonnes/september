@@ -1,16 +1,16 @@
 import { createCollection } from '@tanstack/react-db';
 import { indexedDBCollectionOptionsV2 } from '@/packages/shared/lib/indexeddb';
 
-import { ChatSchema, MessageSchema } from './types';
+import { SpaceSchema, MessageSchema } from './types';
 
-export const chatCollection = createCollection(
+export const spaceCollection = createCollection(
   indexedDBCollectionOptionsV2({
-    schema: ChatSchema,
-    id: 'chats',
+    schema: SpaceSchema,
+    id: 'spaces',
     kvStoreOptions: {
-      dbName: 'app-chats',
+      dbName: 'app-spaces',
     },
-    channelName: 'app-chats',
+    channelName: 'app-spaces',
     getKey: item => item.id,
   })
 );

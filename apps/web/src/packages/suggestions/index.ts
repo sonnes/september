@@ -20,3 +20,4 @@ export {
   appendTokens,
   MAX_COMPOSED,
 } from './lib/stripes';
+export { parseMdPhrases } from './lib/md';

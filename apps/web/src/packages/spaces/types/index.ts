@@ -1,21 +1,22 @@
 import { z } from 'zod';
 
-export const ChatSchema = z.object({
+export const SpaceSchema = z.object({
   id: z.uuid(),
   user_id: z.string(),
   title: z.string().optional(),
+  context: z.string().optional(),
   created_at: z.coerce.date(),
   updated_at: z.coerce.date(),
 });
 
-export type Chat = z.infer<typeof ChatSchema>;
+export type Space = z.infer<typeof SpaceSchema>;
 
 export const MessageSchema = z.object({
   id: z.uuid(),
   text: z.string(),
   type: z.string(),
   user_id: z.string(),
-  chat_id: z.uuid().optional(),
+  space_id: z.uuid().optional(),
   audio_path: z.string().optional(),
   created_at: z.coerce.date(),
 });

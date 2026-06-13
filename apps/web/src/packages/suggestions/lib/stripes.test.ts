@@ -135,22 +135,22 @@ describe('composeSuggestions', () => {
   it('pins board phrases first when blank', () => {
     const out = composeSuggestions({
       typed: '',
-      boardPhrases: boardPhrases(boardEntries),
+      mdPhrases: boardPhrases(boardEntries),
       history: [],
       llm: [],
     });
     expect(out.length).toBeGreaterThan(0);
-    expect(out[0].source).toBe('board');
+    expect(out[0].source).toBe('md');
   });
 
   it('only pins board phrases matching the typed prefix', () => {
     const out = composeSuggestions({
       typed: 'I would',
-      boardPhrases: boardPhrases(boardEntries),
+      mdPhrases: boardPhrases(boardEntries),
       history: [],
       llm: [],
     });
-    for (const s of out.filter(s => s.source === 'board')) {
+    for (const s of out.filter(s => s.source === 'md')) {
       expect(s.text.toLowerCase().startsWith('i would')).toBe(true);
     }
   });
@@ -158,7 +158,7 @@ describe('composeSuggestions', () => {
   it('dedupes so each sentence appears once', () => {
     const out = composeSuggestions({
       typed: '',
-      boardPhrases: boardPhrases(boardEntries),
+      mdPhrases: boardPhrases(boardEntries),
       history: [],
       llm: [],
     });
@@ -167,13 +167,13 @@ describe('composeSuggestions', () => {
 
   it('returns only LLM suggestions when board is empty and no history', () => {
     const llm = ['Hello world', 'How are you today?'];
-    const out = composeSuggestions({ typed: '', boardPhrases: [], history: [], llm });
+    const out = composeSuggestions({ typed: '', mdPhrases: [], history: [], llm });
     expect(out.every(s => s.source === 'llm')).toBe(true);
   });
 
   it('caps output at MAX_COMPOSED (6)', () => {
     const llm = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-    const out = composeSuggestions({ typed: '', boardPhrases: [], history: [], llm });
+    const out = composeSuggestions({ typed: '', mdPhrases: [], history: [], llm });
     expect(out.length).toBeLessThanOrEqual(6);
   });
 
@@ -181,7 +181,7 @@ describe('composeSuggestions', () => {
     const typed = 'I need water';
     const out = composeSuggestions({
       typed,
-      boardPhrases: [],
+      mdPhrases: [],
       history: [typed, 'I need water now'],
       llm: [typed],
     });
@@ -200,12 +200,12 @@ describe('composeSuggestions with history', () => {
   it('orders board, then history, then llm', () => {
     const out = composeSuggestions({
       typed: 'I would',
-      boardPhrases: boardPhrases(boardEntries),
+      mdPhrases: boardPhrases(boardEntries),
       history: ['I would walk to the park'],
       llm: ['I would love to see you'],
     });
     const sources = out.map(s => s.source);
-    const boardIdx = sources.indexOf('board');
+    const boardIdx = sources.indexOf('md');
     const historyIdx = sources.indexOf('history');
     const llmIdx = sources.indexOf('llm');
     expect(boardIdx).toBeLessThan(historyIdx);
@@ -217,7 +217,7 @@ describe('composeSuggestions with history', () => {
   it('tags history-sourced matches', () => {
     const out = composeSuggestions({
       typed: 'Good even',
-      boardPhrases: [],
+      mdPhrases: [],
       history: ['Good evening everyone'],
       llm: [],
     });
@@ -228,13 +228,13 @@ describe('composeSuggestions with history', () => {
     const phrase = 'I would like some water, please.';
     const out = composeSuggestions({
       typed: 'I would like',
-      boardPhrases: boardPhrases(boardEntries),
+      mdPhrases: boardPhrases(boardEntries),
       history: [phrase],
       llm: [],
     });
     const matches = out.filter(s => s.text.toLowerCase() === phrase.toLowerCase());
     expect(matches).toHaveLength(1);
-    expect(matches[0].source).toBe('board');
+    expect(matches[0].source).toBe('md');
   });
 });
 

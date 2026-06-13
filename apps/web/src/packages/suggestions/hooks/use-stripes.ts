@@ -2,10 +2,9 @@
 
 import { useMemo, useState } from 'react';
 
-import { useFirstMessage, useMessages } from '@/packages/chats';
+import { useAccount } from '@/packages/account';
+import { useMessages, useSpaces } from '@/packages/spaces';
 import { useEditorContext } from '@/packages/editor';
-import { useCustomKeyboards } from '@/packages/keyboards';
-import type { CustomKeyboard } from '@/packages/keyboards';
 
 import {
   boardPhrases,
@@ -13,6 +12,7 @@ import {
   composeSuggestions,
   stripeForText,
 } from '../lib/stripes';
+import { parseMdPhrases } from '../lib/md';
 import { Suggestion } from '../types';
 import { useSuggestions } from './use-suggestions';
 
@@ -26,45 +26,42 @@ export interface Stripe {
 export interface UseStripesReturn {
   stripes: Stripe[];
   pinnedChips: string[];
-  boards: CustomKeyboard[];
-  activeBoardId: string | null;
-  setActiveBoardId: (id: string | null) => void;
   scanMode: boolean;
   setScanMode: (v: boolean) => void;
-  activeBoard: CustomKeyboard | null;
 }
 
 export function useStripes({ chatId }: { chatId?: string }): UseStripesReturn {
   const { text } = useEditorContext();
-  const [activeBoardId, setActiveBoardId] = useState<string | null>(null);
   const [scanMode, setScanMode] = useState(false);
+  const { account } = useAccount();
 
-  // Chat history — recent user messages for history source
-  const { messages: historyMessages } = useMessages({ chatId, limit: 50 });
-  const { message: firstMessage } = useFirstMessage(chatId);
+  // Space history — recent user messages for history source
+  const { messages: historyMessages } = useMessages({ spaceId: chatId, limit: 50 });
+
+  // Source spaceMd from the space's context field
+  const { spaces } = useSpaces();
+  const spaceMd = spaces.find(s => s.id === chatId)?.context ?? '';
+
+  // Global context from the account (CLAUDE.md-style, user + standing facts)
+  const globalMd = account?.context ?? '';
 
   // LLM suggestions — keyed on current text + conversation
   const { suggestions: llmSuggestions } = useSuggestions({
     text,
-    context: firstMessage?.text,
+    globalMd,
+    spaceMd,
     history: historyMessages,
   });
 
-  // Board keyboards
-  const { keyboards } = useCustomKeyboards({ chatId });
-
-  const activeBoard = useMemo(
-    () => (activeBoardId ? (keyboards.find(k => k.id === activeBoardId) ?? null) : null),
-    [activeBoardId, keyboards]
+  // Parse curated phrases from the combined md (global + space)
+  const allMdPhrases = useMemo(
+    () => parseMdPhrases(globalMd + '\n' + spaceMd),
+    [globalMd, spaceMd]
   );
 
-  // Board entries split into phrases / words
-  const boardEntries = useMemo(
-    () => (activeBoard ? activeBoard.buttons.map(b => b.value || b.text) : []),
-    [activeBoard]
-  );
-  const activeBoardPhrases = useMemo(() => boardPhrases(boardEntries), [boardEntries]);
-  const activeBoardWords = useMemo(() => boardWords(boardEntries), [boardEntries]);
+  // Md phrases split into multi-word phrases (stripes) and single-word chips
+  const activeMdPhrases = useMemo(() => boardPhrases(allMdPhrases), [allMdPhrases]);
+  const activeMdWords = useMemo(() => boardWords(allMdPhrases), [allMdPhrases]);
 
   // History texts — user-type messages only, oldest first so historyMatches reverses correctly
   const historyTexts = useMemo(
@@ -79,31 +76,25 @@ export function useStripes({ chatId }: { chatId?: string }): UseStripesReturn {
   const stripes = useMemo<Stripe[]>(() => {
     const composed = composeSuggestions({
       typed: text,
-      boardPhrases: activeBoardPhrases,
+      mdPhrases: activeMdPhrases,
       history: historyTexts,
       llm: llmTexts,
     });
     return composed
       .map(s => ({ ...stripeForText(s.text, text), source: s.source }))
       .filter(s => s.hidden < s.tokens.length);
-  }, [text, activeBoardPhrases, historyTexts, llmTexts]);
+  }, [text, activeMdPhrases, historyTexts, llmTexts]);
 
-  // Pinned chips — board single-words prefix-filtered against current text
+  // Pinned chips — md single-words prefix-filtered against current text
   const pinnedChips = useMemo<string[]>(() => {
     const lower = text.trim().toLowerCase();
-    return activeBoardWords.filter(
-      w => !lower || w.toLowerCase().startsWith(lower)
-    );
-  }, [activeBoardWords, text]);
+    return activeMdWords.filter(w => !lower || w.toLowerCase().startsWith(lower));
+  }, [activeMdWords, text]);
 
   return {
     stripes,
     pinnedChips,
-    boards: keyboards,
-    activeBoardId,
-    setActiveBoardId,
     scanMode,
     setScanMode,
-    activeBoard,
   };
 }

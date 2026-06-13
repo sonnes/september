@@ -4,7 +4,7 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { useAccount } from '@/packages/account';
 import { TextViewer, TextViewerWords, useAudioPlayer } from '@/packages/audio';
-import { useCreateAudioMessage } from '@/packages/chats';
+import { useCreateAudioMessage } from '@/packages/spaces';
 import { Editor, EditorProvider, useEditorContext } from '@/packages/editor';
 import { KeyboardProvider, KeyboardRenderer, KeyboardToggleButton } from '@/packages/keyboards';
 import { SpeechProvider, SpeechSettingsModal } from '@/packages/speech';

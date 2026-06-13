@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useAccount } from '@/packages/account';
-import { useMessages } from '@/packages/chats';
+import { useMessages } from '@/packages/spaces';
 
 import {
   Autocomplete,
@@ -38,11 +38,11 @@ interface UseAutocompleteOptions {
   /** Include the user's message history in the engine on mount. */
   includeMessages?: boolean;
   /**
-   * Scope observations and predictions to this chat. When provided, new
+   * Scope observations and predictions to this space. When provided, new
    * messages observed via `useMessages` are attributed to both the global
-   * user layer *and* this chat's layer, and `getNextWords` consult it first.
+   * user layer *and* this space's layer, and `getNextWords` consult it first.
    */
-  chatId?: string;
+  spaceId?: string;
 }
 
 interface UseAutocompleteReturn {
@@ -52,7 +52,7 @@ interface UseAutocompleteReturn {
 }
 
 export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutocompleteReturn {
-  const { includeMessages = false, chatId } = options;
+  const { includeMessages = false, spaceId } = options;
   const { account } = useAccount();
   const { messages } = useMessages();
 
@@ -71,7 +71,7 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
   const pendingSaveKey = useRef<string | null>(null);
 
   const userId = account?.id;
-  const userCorpus = account?.ai_suggestions?.settings?.ai_corpus ?? '';
+  const userCorpus = account?.context ?? '';
   const persistenceKey = userId ? AutocompletePersistence.userKey(userId) : null;
 
   const schedulePersist = useCallback(
@@ -153,7 +153,7 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
             observedMessageIds.current.add(m.id);
             continue;
           }
-          engine.observe(m.text, { chatId: m.chat_id });
+          engine.observe(m.text, { chatId: m.space_id });
           observedMessageIds.current.add(m.id);
         }
       }
@@ -187,7 +187,7 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
         observedMessageIds.current.add(m.id);
         continue;
       }
-      autocomplete.observe(m.text, { chatId: m.chat_id });
+      autocomplete.observe(m.text, { chatId: m.space_id });
       observedMessageIds.current.add(m.id);
       newCount++;
     }
@@ -234,9 +234,9 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
       if (!query || query.trim().length < 1 || !autocomplete.isReady()) return [];
       const tokens = tokenize(query);
       const last3 = tokens.slice(-3).join(' ');
-      return autocomplete.getNextWord(last3, { chatId }) || [];
+      return autocomplete.getNextWord(last3, { chatId: spaceId }) || [];
     },
-    [autocomplete, chatId],
+    [autocomplete, spaceId],
   );
 
   return useMemo(

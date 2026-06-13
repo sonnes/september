@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { Account } from '@/packages/account';
@@ -8,34 +8,14 @@ import { getModelsForProvider, getProvidersForFeature } from '@/packages/ai';
 import type { AIProvider } from '@/packages/shared';
 import { Alert, AlertDescription, AlertTitle } from '@/packages/ui/components/alert';
 import { Button } from '@/packages/ui/components/button';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/packages/ui/components/collapsible';
-import { FormCheckbox, FormSelect, FormTextarea } from '@/packages/ui/components/form';
+import { FormCheckbox, FormSelect } from '@/packages/ui/components/form';
 import { Spinner } from '@/packages/ui/components/spinner';
-import { AlertCircle, CheckCircle2, ChevronDown } from 'lucide-react';
+import { TiptapEditor } from '@/packages/editor';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import { useCorpus } from '../hooks/use-corpus';
 import { type SuggestionsFormData, SuggestionsFormSchema } from '../types';
-
-const EXAMPLE_INSTRUCTIONS = [
-  {
-    name: 'ALS Person',
-    text: 'I am a person living with ALS. I cannot move or speak. I also work as a software engineer. You should help me with communication. I usually talk about my daily chores, talking to my family, communication during work meetings, etc.',
-  },
-  {
-    name: 'Yoda',
-    text: "I'm a wise and knowledgeable Jedi Master who talks like Yoda in Star Wars.",
-  },
-  {
-    name: 'Teenager',
-    text: 'I am a Gen Z teenager. You need to use modern slang and emojis. You should also be able to talk about the latest trends in technology, music, and fashion.',
-  },
-];
 
 export function getSuggestionsFormDefaultValues(account?: Account): SuggestionsFormData {
   const suggestionsConfig = account?.ai_suggestions;
@@ -44,11 +24,9 @@ export function getSuggestionsFormDefaultValues(account?: Account): SuggestionsF
     provider: suggestionsConfig?.provider ?? 'gemini',
     model: suggestionsConfig?.model ?? 'gemini-2.5-flash-lite',
     settings: {
-      system_instructions: suggestionsConfig?.settings?.system_instructions ?? '',
       temperature: suggestionsConfig?.settings?.temperature ?? 0.7,
       max_suggestions: suggestionsConfig?.settings?.max_suggestions ?? 3,
       context_window: suggestionsConfig?.settings?.context_window ?? 10,
-      ai_corpus: suggestionsConfig?.settings?.ai_corpus ?? '',
     },
   };
 }
@@ -58,11 +36,13 @@ interface SuggestionsFormFieldsProps {
   form: ReturnType<typeof useForm<SuggestionsFormData>>;
   variant?: 'settings' | 'setup';
   providerKeyAvailable?: (provider: AIProvider) => boolean;
+  onUpdateContext?: (markdown: string) => void;
 }
 
 interface SuggestionsFormProps {
   account?: Account;
   onSubmit: (data: SuggestionsFormData) => Promise<void>;
+  onUpdateContext?: (markdown: string) => void;
   variant?: 'settings' | 'setup';
   providerKeyAvailable?: (provider: AIProvider) => boolean;
   children?: (props: {
@@ -78,11 +58,10 @@ export function SuggestionsFormFields({
   form,
   variant = 'settings',
   providerKeyAvailable,
+  onUpdateContext,
 }: SuggestionsFormFieldsProps) {
-  const [showExamples, setShowExamples] = useState(false);
-  const { isGenerating, generateCorpus } = useCorpus();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const aiInstructions = form.watch('settings.system_instructions');
   const provider = form.watch('provider');
 
   // Get available suggestions providers from registry
@@ -125,18 +104,15 @@ export function SuggestionsFormFields({
     ? 'mt-1 text-xs leading-relaxed text-muted-foreground'
     : 'mt-1 text-sm/6 text-zinc-600';
 
-  const handleExampleClick = (example: string) => {
-    form.setValue('settings.system_instructions', example);
+  const handleContextUpdate = (_html: string, markdown: string) => {
+    if (!onUpdateContext) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      onUpdateContext(markdown);
+    }, 500);
   };
 
-  const handleGenerateCorpus = async () => {
-    const corpus = await generateCorpus(aiInstructions || '');
-    if (corpus) {
-      form.setValue('settings.ai_corpus', corpus);
-    }
-  };
-
-  const formFields = (
+  return (
     <div className={formFieldsClass}>
       {/* API Key Warning */}
       {!hasApiKey && provider !== 'webllm' && (
@@ -215,136 +191,32 @@ export function SuggestionsFormFields({
         </div>
       </div>
 
-      {/* System Instructions */}
+      {/* Context */}
       <div className={sectionClass}>
         <div className={sectionIntroClass}>
-          <h2 className={sectionTitleClass}>System Instructions</h2>
+          <h2 className={sectionTitleClass}>Context</h2>
           <p className={sectionDescriptionClass}>
-            Describe how you want the AI to provide suggestions. Include your communication style,
-            common topics, and any personal context.
+            Personal context that shapes how the AI generates suggestions — your persona, daily
+            topics, names, and phrases. Saved automatically.
           </p>
         </div>
-
         <div className={sectionControlClass}>
-          <div className="max-w-2xl space-y-4">
-            <FormTextarea
-              name="settings.system_instructions"
-              control={form.control}
-              placeholder="Describe how you want the AI to provide suggestions..."
-              rows={4}
-              maxLength={1000}
-            />
-
-            {/* Example Instructions (Collapsible) */}
-            <Collapsible open={showExamples} onOpenChange={setShowExamples}>
-              <div
-                className={
-                  isSetupVariant
-                    ? 'rounded-sm border bg-background p-5'
-                    : 'rounded-lg border border-zinc-200 bg-zinc-50 p-4'
-                }
-              >
-                <CollapsibleTrigger className="flex w-full items-center justify-between text-left">
-                  <h4
-                    className={
-                      isSetupVariant
-                        ? 'text-sm font-medium text-foreground'
-                        : 'text-sm font-medium text-zinc-700'
-                    }
-                  >
-                    Example Instructions
-                  </h4>
-                  <ChevronDown
-                    className={`h-4 w-4 text-muted-foreground transition-transform ${showExamples ? 'rotate-180' : ''}`}
-                  />
-                </CollapsibleTrigger>
-
-                <CollapsibleContent className="mt-3 space-y-2">
-                  {EXAMPLE_INSTRUCTIONS.map(example => (
-                    <button
-                      key={example.name}
-                      type="button"
-                      onClick={() => handleExampleClick(example.text)}
-                      className={
-                        isSetupVariant
-                          ? 'block w-full rounded-sm border bg-background p-4 text-left text-sm transition-colors hover:bg-muted/30'
-                          : 'block w-full text-left rounded border border-zinc-200 bg-white p-3 text-sm hover:bg-zinc-50 transition-colors'
-                      }
-                    >
-                      <div
-                        className={
-                          isSetupVariant
-                            ? 'text-sm font-medium text-foreground'
-                            : 'font-medium text-zinc-900 text-sm'
-                        }
-                      >
-                        {example.name}
-                      </div>
-                      <div
-                        className={
-                          isSetupVariant
-                            ? 'mt-1 text-sm leading-relaxed text-muted-foreground'
-                            : 'mt-1 text-zinc-600 text-sm leading-relaxed'
-                        }
-                      >
-                        {example.text}
-                      </div>
-                    </button>
-                  ))}
-                </CollapsibleContent>
-              </div>
-            </Collapsible>
-          </div>
-        </div>
-      </div>
-
-      {/* AI Corpus Section */}
-      <div className={sectionClass}>
-        <div className={sectionIntroClass}>
-          <h2 className={sectionTitleClass}>Content Corpus</h2>
-          <p className={sectionDescriptionClass}>
-            Provide examples of your daily life, conversations, and other content that the AI can
-            use to provide suggestions.
-          </p>
-          <p className={sectionDescriptionClass}>
-            Alternatively, you can generate a corpus from your instructions. This will take a few
-            minutes.
-          </p>
-        </div>
-
-        <div className={sectionControlClass}>
-          <div className="max-w-2xl space-y-4">
-            <FormTextarea
-              name="settings.ai_corpus"
-              control={form.control}
-              placeholder="Enter additional knowledge, documents, or context for the AI..."
-              rows={6}
-              maxLength={5000}
-            />
-
-            <div className="flex justify-start">
-              <Button
-                type="button"
-                onClick={handleGenerateCorpus}
-                disabled={!hasApiKey || isGenerating}
-                variant="outline"
-              >
-                {isGenerating ? <Spinner className="mr-2 h-4 w-4" /> : null}
-                {isGenerating ? 'Generating...' : 'Generate Corpus'}
-              </Button>
-            </div>
-          </div>
+          <TiptapEditor
+            content={account?.context ?? ''}
+            placeholder="- I need some water&#10;- Can you help me"
+            onUpdate={handleContextUpdate}
+            className="min-h-48"
+          />
         </div>
       </div>
     </div>
   );
-
-  return formFields;
 }
 
 export function SuggestionsForm({
   account,
   onSubmit,
+  onUpdateContext,
   variant = 'settings',
   providerKeyAvailable,
   children,
@@ -398,6 +270,7 @@ export function SuggestionsForm({
           form={form}
           variant={variant}
           providerKeyAvailable={providerKeyAvailable}
+          onUpdateContext={onUpdateContext}
         />
         {children({ form, hasApiKey, error, success })}
       </form>
@@ -411,6 +284,7 @@ export function SuggestionsForm({
         form={form}
         variant={variant}
         providerKeyAvailable={providerKeyAvailable}
+        onUpdateContext={onUpdateContext}
       />
 
       {/* Error and Success Messages */}

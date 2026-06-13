@@ -6,7 +6,6 @@ export type SuggestionsServiceChoice = 'built-in' | 'openrouter';
 interface BuildSuggestionsSetupUpdateParams {
   currentSuggestions?: SuggestionsConfig;
   currentProviders?: Providers;
-  personalWords: string;
   serviceChoice: SuggestionsServiceChoice;
   openRouterApiKey?: string;
 }
@@ -21,16 +20,11 @@ const DEFAULT_SUGGESTIONS: SuggestionsConfig = {
 export function buildSuggestionsSetupUpdate({
   currentSuggestions,
   currentProviders,
-  personalWords,
   serviceChoice,
   openRouterApiKey,
 }: BuildSuggestionsSetupUpdateParams): Pick<AccountUpdate, 'ai_providers' | 'ai_suggestions'> {
   const existing = currentSuggestions ?? DEFAULT_SUGGESTIONS;
-  const trimmedPersonalWords = personalWords.trim();
-  const settings = {
-    ...(existing.settings ?? {}),
-    ...(trimmedPersonalWords ? { ai_corpus: trimmedPersonalWords } : {}),
-  };
+  const settings = { ...(existing.settings ?? {}) };
 
   if (serviceChoice === 'openrouter' && openRouterApiKey) {
     return {

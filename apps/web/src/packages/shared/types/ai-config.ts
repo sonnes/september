@@ -45,12 +45,6 @@ export interface SuggestionsConfig extends BaseFeatureConfig {
 
     /** Number of previous messages to include as context */
     context_window?: number;
-
-    /** Custom system instructions */
-    system_instructions?: string;
-
-    /** Custom corpus */
-    ai_corpus?: string;
   };
 }
 

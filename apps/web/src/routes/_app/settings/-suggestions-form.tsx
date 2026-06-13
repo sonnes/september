@@ -21,12 +21,16 @@ export default function SuggestionsSettingsForm() {
     });
   };
 
+  const handleUpdateContext = async (markdown: string) => {
+    await updateAccount({ context: markdown });
+  };
+
   if (!account) {
     return <LoadingState variant="inline" label="Loading account settings..." />;
   }
 
   return (
-    <SuggestionsForm account={account} onSubmit={handleSubmit}>
+    <SuggestionsForm account={account} onSubmit={handleSubmit} onUpdateContext={handleUpdateContext}>
       {({ form, error, success }) => (
         <>
           <div className="flex flex-col gap-4 pt-6 border-t">

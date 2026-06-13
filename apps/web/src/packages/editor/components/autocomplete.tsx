@@ -10,10 +10,10 @@ import { MATCH_PUNCTUATION } from '@/packages/shared';
 import { useEditorContext } from './editor-provider';
 
 export function Autocomplete() {
-  const { text, addWord, setCurrentWord, chatId } = useEditorContext();
+  const { text, addWord, setCurrentWord, spaceId } = useEditorContext();
   const { isReady, getSpellings, getNextWords } = useAutocomplete({
     includeMessages: true,
-    chatId,
+    spaceId,
   });
 
   const [dismissedText, setDismissedText] = useState<string | null>(null);

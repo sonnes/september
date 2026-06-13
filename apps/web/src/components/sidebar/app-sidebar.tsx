@@ -44,8 +44,8 @@ const getNavigationData = () => ({
       icon: MessageSquare,
     },
     {
-      title: 'Chats',
-      url: '/chats',
+      title: 'Spaces',
+      url: '/spaces',
       icon: MessageCircle,
     },
     {

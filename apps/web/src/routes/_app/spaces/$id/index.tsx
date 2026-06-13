@@ -5,29 +5,28 @@ import { createFileRoute } from '@tanstack/react-router';
 import { TvIcon } from '@heroicons/react/24/outline';
 import {
   Delete,
+  FileText,
   HistoryIcon,
-  LayoutGridIcon,
   MessagesSquare,
   MicIcon,
   Trash2,
   Undo2,
   Volume2,
 } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { useAccount } from '@/packages/account';
 import { useAudioPlayer } from '@/packages/audio';
 import {
-  EditableChatTitle,
-  updateChat,
-  useChats,
+  EditableSpaceTitle,
+  updateSpace,
+  useSpaces,
   useCreateAudioMessage,
+  useGenerateSpaceContext,
   useMessages,
-} from '@/packages/chats';
+} from '@/packages/spaces';
 import { Autocomplete, useEditorContext } from '@/packages/editor';
-import { createKeyboard, useGenerateKeyboardFromMessage } from '@/packages/keyboards';
 import { DisplayMessage } from '@/packages/shared';
-import { Suggestions } from '@/packages/suggestions';
+import { Suggestions, parseMdPhrases } from '@/packages/suggestions';
 import { Button } from '@/packages/ui/components/button';
 import {
   ResizableHandle,
@@ -44,11 +43,11 @@ import { ChatPanelProvider, useChatPanel } from '@/components/chat/use-chat-pane
 
 import { pageTitle } from '@/lib/seo';
 
-export const Route = createFileRoute('/_app/chats/$id/')({
+export const Route = createFileRoute('/_app/spaces/$id/')({
   head: () => ({
-    meta: [{ title: pageTitle('Chats') }],
+    meta: [{ title: pageTitle('Spaces') }],
   }),
-  component: ChatPageRoot,
+  component: SpacePageRoot,
 });
 
 // ---------------------------------------------------------------------------
@@ -84,17 +83,17 @@ function RailButton({
 // Inner component — reads useChatPanel() which requires the Provider above it
 // ---------------------------------------------------------------------------
 
-function ChatPageInner({ chatId }: { chatId: string }) {
+function SpacePageInner({ spaceId }: { spaceId: string }) {
   const { user } = useAccount();
   const { enqueue } = useAudioPlayer();
-  const { chats } = useChats({ userId: user?.id });
-  const { messages } = useMessages({ chatId: chatId || '' });
+  const { spaces } = useSpaces({ userId: user?.id });
+  const { messages } = useMessages({ spaceId: spaceId || '' });
 
-  const chat = chats.find(c => c.id === chatId);
+  const space = spaces.find(s => s.id === spaceId);
 
   const { status, createAudioMessage } = useCreateAudioMessage();
+  const { generateContext } = useGenerateSpaceContext();
   const { text, setText, trackKeystroke, getAndResetStats } = useEditorContext();
-  const { generateKeyboard } = useGenerateKeyboardFromMessage();
   const popupRef = useRef<Window | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -120,13 +119,12 @@ function ChatPageInner({ chatId }: { chatId: string }) {
 
   const handleSubmit = useCallback(
     async (text: string) => {
-      if (!chatId || !user || !text.trim()) return;
+      if (!spaceId || !user || !text.trim()) return;
 
-      const isFirstMessage = messages?.length === 0;
       const editorStats = getAndResetStats();
 
       const { message, audio } = await createAudioMessage({
-        chat_id: chatId,
+        space_id: spaceId,
         text: text.trim(),
         type: 'user',
         user_id: user.id,
@@ -139,7 +137,7 @@ function ChatPageInner({ chatId }: { chatId: string }) {
         enqueue(audio);
       }
 
-      const channel = new BroadcastChannel(`chat-display-${chatId}`);
+      const channel = new BroadcastChannel(`chat-display-${spaceId}`);
       channel.postMessage({
         type: 'new-message',
         message,
@@ -152,37 +150,13 @@ function ChatPageInner({ chatId }: { chatId: string }) {
       setText('');
       inputRef.current?.focus();
 
-      if (isFirstMessage) {
-        generateKeyboard({
-          messageText: text.trim(),
-          chatId,
-        })
-          .then(async data => {
-            const keyboard = await createKeyboard({
-              name: data.keyboardTitle,
-              chat_id: chatId,
-              columns: 3,
-              user_id: user.id,
-              buttons: data.buttons.map(text => ({ text })),
-            });
-
-            const chat = updateChat(chatId, {
-              title: data.chatTitle,
-            });
-
-            await Promise.all([keyboard, chat]);
-
-            toast.success('Custom keyboard generated for this chat');
-          })
-          .catch((err: Error) => {
-            if (err.message !== 'API key not configured') {
-              console.error('Failed to generate keyboard:', err);
-              toast.error('Failed to generate keyboard suggestions');
-            }
-          });
+      if (messages.length === 0) {
+        generateContext({ messageText: text.trim() })
+          .then(result => result && updateSpace(spaceId, { title: result.title, context: result.context }))
+          .catch(() => {});
       }
     },
-    [chatId, user, createAudioMessage, enqueue, setText, messages, generateKeyboard, getAndResetStats]
+    [spaceId, user, createAudioMessage, enqueue, setText, getAndResetStats, messages, generateContext]
   );
 
   const handleTextareaKeyDown = useCallback(
@@ -225,8 +199,8 @@ function ChatPageInner({ chatId }: { chatId: string }) {
     const top = 100;
 
     const popup = window.open(
-      `/display/${chatId}`,
-      `display-${chatId}`,
+      `/display/${spaceId}`,
+      `display-${spaceId}`,
       `width=${width},height=${height},left=${left},top=${top},popup=1`
     );
 
@@ -235,7 +209,7 @@ function ChatPageInner({ chatId }: { chatId: string }) {
     }
 
     popupRef.current = popup;
-  }, [chatId]);
+  }, [spaceId]);
 
   useEffect(() => {
     return () => {
@@ -243,7 +217,22 @@ function ChatPageInner({ chatId }: { chatId: string }) {
         popupRef.current.close();
       }
     };
-  }, [chatId]);
+  }, [spaceId]);
+
+  // Pinning: append phrase to space context as a bullet, dedup with parseMdPhrases
+  const handlePin = useCallback(
+    (phrase: string) => {
+      const currentContext = space?.context ?? '';
+      const existing = parseMdPhrases(currentContext);
+      const isDuplicate = existing.some(p => p.toLowerCase() === phrase.toLowerCase());
+      if (isDuplicate) return;
+      const next = currentContext.trimEnd() + '\n- ' + phrase;
+      updateSpace(spaceId, { context: next }).catch(err => {
+        console.error('Failed to pin phrase:', err);
+      });
+    },
+    [space?.context, spaceId]
+  );
 
   // Recently spoken (user) messages — faint log filling the space above the
   // composer, mirroring the mock's spoken-history area.
@@ -281,8 +270,8 @@ function ChatPageInner({ chatId }: { chatId: string }) {
       {/* Console — suggestions + composer grouped on a calm surface so the
           active zone reads as one grounded unit instead of floating on white. */}
       <div className="flex shrink-0 flex-col gap-3 rounded-lg bg-muted/40 p-3">
-        {/* Suggestion surface: stripes + word autocomplete + board selector + board mode */}
-        <Suggestions chatId={chatId} wordSuggestions={<Autocomplete />} />
+        {/* Suggestion surface: stripes + word autocomplete + scan toggle */}
+        <Suggestions chatId={spaceId} wordSuggestions={<Autocomplete />} onPin={handlePin} />
 
         {/* Composer: left rail + big textarea + Speak */}
         <div className="flex items-stretch gap-3">
@@ -323,8 +312,8 @@ function ChatPageInner({ chatId }: { chatId: string }) {
   return (
     <>
       <SidebarLayout.Header>
-        {/* Mobile: branded top bar with logo, chat title, and actions */}
-        <MobileNav title={chat?.title ?? 'Chat'}>
+        {/* Mobile: branded top bar with logo, space title, and actions */}
+        <MobileNav title={space?.title ?? 'Space'}>
           <Button
             variant="ghost"
             size="icon"
@@ -346,11 +335,11 @@ function ChatPageInner({ chatId }: { chatId: string }) {
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Boards"
+            aria-label="Context"
             className="size-7"
-            onClick={() => openTab('boards')}
+            onClick={() => openTab('context')}
           >
-            <LayoutGridIcon className="size-4" />
+            <FileText className="size-4" />
           </Button>
           <Button variant="ghost" size="icon" onClick={handleOpenDisplay} aria-label="Open display">
             <TvIcon className="size-4" />
@@ -361,7 +350,7 @@ function ChatPageInner({ chatId }: { chatId: string }) {
         <div className="hidden w-full items-center gap-2 md:flex">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-          {chat && <EditableChatTitle chatId={chat.id} title={chat.title} />}
+          {space && <EditableSpaceTitle spaceId={space.id} title={space.title} />}
           <div className="ml-auto flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={handleOpenDisplay}>
               <TvIcon className="size-4" />
@@ -385,9 +374,9 @@ function ChatPageInner({ chatId }: { chatId: string }) {
               <MicIcon className="size-4" />
               <span>Voice</span>
             </Button>
-            <Button variant="ghost" size="sm" aria-label="Boards" onClick={() => openTab('boards')}>
-              <LayoutGridIcon className="size-4" />
-              <span>Boards</span>
+            <Button variant="ghost" size="sm" aria-label="Context" onClick={() => openTab('context')}>
+              <FileText className="size-4" />
+              <span>Context</span>
             </Button>
           </div>
         </div>
@@ -416,8 +405,8 @@ function ChatPageInner({ chatId }: { chatId: string }) {
               maxSize="70%"
             >
               <ChatRightPanel
-                chatId={chatId}
-                chatTitle={chat?.title}
+                chatId={spaceId}
+                chatTitle={space?.title}
                 onOpenDisplay={handleOpenDisplay}
               />
             </ResizablePanel>
@@ -434,12 +423,12 @@ function ChatPageInner({ chatId }: { chatId: string }) {
 // Page root — provides ChatPanelProvider, then delegates to inner component
 // ---------------------------------------------------------------------------
 
-function ChatPageRoot() {
-  const { id: chatId } = Route.useParams();
+function SpacePageRoot() {
+  const { id: spaceId } = Route.useParams();
 
   return (
     <ChatPanelProvider>
-      <ChatPageInner chatId={chatId} />
+      <SpacePageInner spaceId={spaceId} />
     </ChatPanelProvider>
   );
 }
