@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const SuggestionsConfigSchema = z.object({
   enabled: z.boolean(),
-  provider: z.enum(['gemini', 'webllm']),
+  provider: z.enum(['gemini', 'webllm', 'openrouter']),
   model: z.string().optional(),
   settings: z
     .object({
@@ -17,7 +17,7 @@ export const SuggestionsConfigSchema = z.object({
 
 export const TranscriptionConfigSchema = z.object({
   enabled: z.boolean(),
-  provider: z.literal('gemini'),
+  provider: z.enum(['gemini', 'openrouter']),
   model: z.string().optional(),
   settings: z
     .object({
@@ -51,6 +51,12 @@ export const SpeechConfigSchema = z.object({
 
 export const ProvidersSchema = z.object({
   gemini: z
+    .object({
+      api_key: z.string().optional(),
+      base_url: z.string().optional(),
+    })
+    .optional(),
+  openrouter: z
     .object({
       api_key: z.string().optional(),
       base_url: z.string().optional(),

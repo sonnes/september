@@ -1,11 +1,11 @@
 'use client';
 
-import { ArrowRight, MessageSquare, Settings, Sparkles, Volume2 } from 'lucide-react';
+import { MessageSquare, Settings, Sparkles, Volume2 } from 'lucide-react';
 
 import { Button } from '@september/ui/components/button';
-import { Card, CardContent } from '@september/ui/components/card';
 
 import { useOnboarding } from '../onboarding-provider';
+import { StepFooter, StepHeader, StepShell } from '../step-chrome';
 
 const SETUP_STEPS = [
   {
@@ -30,41 +30,55 @@ const SETUP_STEPS = [
   },
 ];
 
+const EXAMPLES = [
+  "I'd like a sip of water, please.",
+  'Give me a moment to finish my thought.',
+  "It's good to see you.",
+  'Can you turn the light down a little?',
+];
+
 export function WelcomeStep() {
   const { goToNextStep } = useOnboarding();
 
   return (
-    <div className="flex flex-col items-center text-center">
-      <div className="mb-2">
-        <h1 className="text-xl font-bold tracking-tight">
-          Let&apos;s get you set up with September
-        </h1>
+    <StepShell>
+      <StepHeader
+        eyebrow={
+          <span className="inline-flex items-center gap-2">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <span>September</span>
+          </span>
+        }
+        title="Let's set you up"
+        subtitle="September turns a few keystrokes into full sentences and speaks them aloud. Here's the kind of thing it helps you say:"
+      />
+
+      <div className="flex flex-col gap-2 rounded-sm border bg-muted/30 px-4 py-3">
+        {EXAMPLES.map(example => (
+          <div key={example} className="flex items-center gap-3">
+            <span className="shrink-0 text-base font-bold text-primary">*</span>
+            <span className="text-sm text-foreground">“{example}”</span>
+          </div>
+        ))}
       </div>
 
-      <Card className="w-full max-w-2xl mb-8">
-        <CardContent className="pt-6">
-          <h2 className="text-lg font-semibold mb-4 text-left">What we&apos;ll set up:</h2>
-          <div className="grid gap-4">
-            {SETUP_STEPS.map((step, index) => (
-              <div key={index} className="flex items-start gap-4 text-left">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <step.icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-medium">{step.title}</h3>
-                  <p className="text-sm text-muted-foreground">{step.description}</p>
-                </div>
-              </div>
-            ))}
+      <div className="flex flex-col gap-6">
+        {SETUP_STEPS.map(step => (
+          <div key={step.title} className="flex gap-4">
+            <step.icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div>
+              <p className="font-medium">{step.title}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{step.description}</p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        ))}
+      </div>
 
-      <Button size="lg" onClick={goToNextStep}>
-        Get Started
-        <ArrowRight className="ml-2 h-4 w-4" />
-      </Button>
-    </div>
+      <StepFooter helper="A few quick steps, then you're talking.">
+        <Button size="lg" onClick={goToNextStep}>
+          Get Started
+        </Button>
+      </StepFooter>
+    </StepShell>
   );
 }
-

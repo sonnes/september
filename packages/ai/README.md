@@ -20,11 +20,15 @@ import {
   type TranscriptionFormData,
   type UseGenerateOptions,
   type UseGenerateReturn,
+  type UseTranscribeReturn,
+  completeOpenRouterAuth,
   getModelsForProvider,
   getProvidersForFeature,
+  startOpenRouterAuth,
   supportsFeature,
   useAISettings,
   useGenerate,
+  useTranscribe,
 } from '@september/ai';
 ```
 
@@ -67,9 +71,18 @@ const geminiModels = getModelsForProvider('gemini');
 const canTranscribe = supportsFeature('gemini', 'transcription');
 ```
 
+## Providers
+
+Cloud text generation supports **Gemini** and **OpenRouter** (one key → 300+ models:
+Claude, Gemini, GPT, Llama). `webllm` runs locally in the browser. OpenRouter is
+registry-driven like the others, so it appears automatically in the provider settings
+form, and additionally offers a one-click OAuth "Connect" flow (see below).
+
 ## Generation
 
-`useGenerate()` defaults to Gemini with `gemini-2.5-flash-lite`. Gemini still requires a configured API key in account settings.
+`useGenerate()` defaults to Gemini with `gemini-2.5-flash-lite`. Pass `provider: 'openrouter'`
+(with an OpenRouter model id like `google/gemini-2.5-flash-lite`) to route through OpenRouter.
+Both require a configured API key in account settings.
 
 ```tsx
 import { useGenerate } from '@september/ai';
@@ -130,6 +143,56 @@ const { generate } = useGenerate({
   provider: 'gemini',
   model: 'gemini-2.5-flash-lite',
 });
+```
+
+For multimodal text generation (e.g. transcription), pass `audio`; the `prompt` becomes
+the instruction sent alongside the audio:
+
+```ts
+const text = await generate({
+  prompt: 'Transcribe this audio.',
+  audio: { data: bytes, mediaType: 'audio/webm' },
+  feature: 'transcription',
+});
+```
+
+## Transcription
+
+`useTranscribe()` transcribes an audio `Blob` with the account's transcription provider
+(Gemini or OpenRouter), client-side, using the user's own key — the same path as suggestions.
+
+```tsx
+import { useTranscribe } from '@september/ai';
+
+function Recorder() {
+  const { transcribe, isTranscribing, isReady } = useTranscribe();
+
+  async function handleBlob(blob: Blob) {
+    const text = await transcribe(blob);
+    console.log(text);
+  }
+}
+```
+
+## Connect with OpenRouter (OAuth PKCE)
+
+`startOpenRouterAuth(callbackUrl)` begins a fully client-side PKCE (S256) flow: it generates
+a verifier, stores it in `sessionStorage`, and redirects to OpenRouter. On return,
+`completeOpenRouterAuth(code)` exchanges the `?code` for a **user-controlled** API key that the
+caller saves into the local account (`ai_providers.openrouter.api_key`). No September backend or
+server identity is involved. The `ProviderSection` for OpenRouter renders a "Connect" button
+automatically (driven by the registry `oauth` flag); the providers settings page handles the
+returning `?code`.
+
+```ts
+import { startOpenRouterAuth, completeOpenRouterAuth } from '@september/ai';
+
+// Kick off (full-page redirect):
+await startOpenRouterAuth(`${window.location.origin}/settings/providers`);
+
+// On the callback page:
+const key = await completeOpenRouterAuth(code);
+await updateAccount({ ai_providers: { ...account.ai_providers, openrouter: { api_key: key } } });
 ```
 
 ## Forms

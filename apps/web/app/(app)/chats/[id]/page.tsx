@@ -411,7 +411,11 @@ function ChatPageInner({ chatId }: { chatId: string }) {
               minSize="20%"
               maxSize="70%"
             >
-              <ChatRightPanel chatId={chatId} onOpenDisplay={handleOpenDisplay} />
+              <ChatRightPanel
+                chatId={chatId}
+                chatTitle={chat?.title}
+                onOpenDisplay={handleOpenDisplay}
+              />
             </ResizablePanel>
           </ResizablePanelGroup>
         ) : (

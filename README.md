@@ -32,6 +32,7 @@ Additionally, in every conversation, you can provide additional context in the f
 
 - **Node.js**: v20 or later
 - **Package Manager**: [pnpm](https://pnpm.io/) (required - this is a pnpm workspace)
+- **Swift**: Swift 6+ with macOS Command Line Tools for the native macOS app
 
 ### Setup
 
@@ -67,6 +68,15 @@ pnpm --filter @september/web dev
 
 The application will be available at `http://localhost:3000`.
 
+### Running the macOS App
+
+```bash
+cd apps/swift
+swift run SeptemberMacApp
+```
+
+The Swift app currently boots a basic QWERTY keyboard shell.
+
 ## Usage
 
 1. **Start**: Open the app — it runs locally with no sign-up required.
@@ -82,10 +92,11 @@ September is a **pnpm workspace monorepo** with a modular architecture using dom
 ```
 september/
 ├── apps/
-│   └── web/                    # Next.js web application (@september/web)
-│       ├── app/                # App Router pages
-│       ├── components/         # Web-specific components
-│       └── services/           # Server-side integrations
+│   ├── web/                    # Next.js web application (@september/web)
+│   │   ├── app/                # App Router pages
+│   │   ├── components/         # Web-specific components
+│   │   └── services/           # Server-side integrations
+│   └── swift/                  # Native macOS app (Swift Package)
 ├── packages/
 │   ├── shared/                 # @september/shared - Utilities, hooks, types
 │   ├── ui/                     # @september/ui - shadcn/ui components
@@ -118,6 +129,7 @@ september/
 
 - **Packages**: Use `packages/` for shared code with `@september/*` naming. Import via package names, not relative paths.
 - **Web App**: Web-specific code lives in `apps/web/`. Use `@/` imports for local files.
+- **macOS App**: Native Swift code lives in `apps/swift/`. Run `swift build` and `swift run SeptemberMacLayoutTests` before sharing changes.
 - **Components**: Check the `README.md` in each package directory before making changes.
 - **Styles**: Follow shadcn/ui patterns and Tailwind CSS 4.
 - **Icons**: Use `lucide-react` for standard icons.

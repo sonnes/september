@@ -1,11 +1,13 @@
 'use client';
 
 import type { AIFeature, AIServiceProvider } from '@september/shared';
+import { Button } from '@september/ui/components/button';
 import { Card, CardDescription, CardTitle } from '@september/ui/components/card';
 import { FormField } from '@september/ui/components/form';
-import { CheckCircle2, ExternalLink, Key } from 'lucide-react';
+import { CheckCircle2, ExternalLink, Key, LogIn } from 'lucide-react';
 import { Control } from 'react-hook-form';
 
+import { startOpenRouterAuth } from '../lib/openrouter-oauth';
 import type { AIProvidersFormData } from '../types/schemas';
 
 // Feature colors mapping
@@ -114,6 +116,24 @@ export function ProviderSection({ control, provider, hasApiKey = false }: Provid
 
         {/* Right Column - Form Fields */}
         <div className="space-y-4">
+          {provider.oauth && (
+            <div className="space-y-2">
+              <Button
+                type="button"
+                className="w-full"
+                onClick={() =>
+                  startOpenRouterAuth(`${window.location.origin}${window.location.pathname}`)
+                }
+              >
+                <LogIn className="mr-2 h-4 w-4" />
+                Connect with {provider.name}
+              </Button>
+              <p className="text-center text-xs text-muted-foreground">
+                One click — no API key to copy. Or paste a key manually below.
+              </p>
+            </div>
+          )}
+
           <FormField
             name={apiKeyField as keyof AIProvidersFormData}
             control={control}

@@ -1,11 +1,20 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, Clock, LayoutGrid, Mic, Tv, X, type LucideIcon } from 'lucide-react';
+import { Clock, Grid2x2, LayoutGrid, Mic, Tv, X, type LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@september/ui/components/button';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@september/ui/components/breadcrumb';
 
+import { cn } from '@september/shared';
 import { useAccount } from '@september/account';
 import { MessageList, useMessages } from '@september/chats';
 import { AudioOutputDeviceSelector } from '@september/audio';
@@ -26,16 +35,18 @@ import { useChatPanel, type ChatPanelTab } from './use-chat-panel';
 
 interface ChatRightPanelProps {
   chatId: string;
+  /** Parent chat title — shown as the breadcrumb root in the panel header. */
+  chatTitle?: string;
   onOpenDisplay?: () => void;
 }
 
-const TAB_TITLE: Record<ChatPanelTab, string> = {
-  history: 'History',
-  voice: 'Voice',
-  boards: 'Boards',
+const TAB_META: Record<ChatPanelTab, { title: string; icon: LucideIcon }> = {
+  history: { title: 'History', icon: Clock },
+  voice: { title: 'Voice', icon: Mic },
+  boards: { title: 'Boards', icon: LayoutGrid },
 };
 
-export function ChatRightPanel({ chatId, onOpenDisplay }: ChatRightPanelProps) {
+export function ChatRightPanel({ chatId, chatTitle, onOpenDisplay }: ChatRightPanelProps) {
   const { activeTab, openTab, home, close } = useChatPanel();
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
 
@@ -56,87 +67,140 @@ export function ChatRightPanel({ chatId, onOpenDisplay }: ChatRightPanelProps) {
       aria-label="Chat panel"
       className="relative z-10 flex h-full w-full flex-col border-l border-border/60 bg-background"
     >
-      {activeTab === null ? (
-        <>
-          <header className="flex h-12 shrink-0 items-center justify-between gap-2 px-4">
-            <span className="text-sm font-semibold">Panel</span>
-            <Button
-              ref={closeBtnRef}
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label="Close panel"
-              className="size-9 shrink-0 text-muted-foreground hover:text-foreground"
-              onClick={close}
-            >
-              <X className="size-4" />
-            </Button>
-          </header>
+      <PanelHeader
+        chatTitle={chatTitle ?? 'Chat'}
+        tab={activeTab}
+        onHome={home}
+        onClose={close}
+        closeRef={closeBtnRef}
+      />
 
-          <div className="min-h-0 flex-1 overflow-y-auto p-4">
-            <div className="grid grid-cols-2 gap-3">
-              <OverviewCard
-                icon={Clock}
-                title="History"
-                subtitle="Past messages"
-                onClick={() => openTab('history')}
-              />
-              <OverviewCard
-                icon={Mic}
-                title="Voice"
-                subtitle="Voice & speech"
-                onClick={() => openTab('voice')}
-              />
-              <OverviewCard
-                icon={LayoutGrid}
-                title="Boards"
-                subtitle="Phrase boards"
-                onClick={() => openTab('boards')}
-              />
-              <OverviewCard
-                icon={Tv}
-                title="Display"
-                subtitle="Second screen"
-                onClick={() => onOpenDisplay?.()}
-              />
-            </div>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {activeTab === null ? (
+          <div className="grid grid-cols-2 gap-3 p-4">
+            <OverviewCard
+              icon={Clock}
+              title="History"
+              subtitle="Past messages"
+              onClick={() => openTab('history')}
+            />
+            <OverviewCard
+              icon={Mic}
+              title="Voice"
+              subtitle="Voice & speech"
+              onClick={() => openTab('voice')}
+            />
+            <OverviewCard
+              icon={LayoutGrid}
+              title="Boards"
+              subtitle="Phrase boards"
+              onClick={() => openTab('boards')}
+            />
+            <OverviewCard
+              icon={Tv}
+              title="Display"
+              subtitle="Second screen"
+              onClick={() => onOpenDisplay?.()}
+            />
           </div>
-        </>
-      ) : (
-        <>
-          <header className="flex h-12 shrink-0 items-center gap-1 border-b border-border/50 px-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label="Back to panel"
-              className="size-9 shrink-0 text-muted-foreground hover:text-foreground"
-              onClick={home}
-            >
-              <ChevronLeft className="size-4" />
-            </Button>
-            <span className="flex-1 text-sm font-semibold">{TAB_TITLE[activeTab]}</span>
-            <Button
-              ref={closeBtnRef}
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label="Close panel"
-              className="size-9 shrink-0 text-muted-foreground hover:text-foreground"
-              onClick={close}
-            >
-              <X className="size-4" />
-            </Button>
-          </header>
-
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            {activeTab === 'history' && <HistoryTab chatId={chatId} />}
-            {activeTab === 'voice' && <VoiceTab />}
-            {activeTab === 'boards' && <BoardsTab chatId={chatId} />}
-          </div>
-        </>
-      )}
+        ) : activeTab === 'history' ? (
+          <HistoryTab chatId={chatId} />
+        ) : activeTab === 'voice' ? (
+          <VoiceTab />
+        ) : (
+          <BoardsTab chatId={chatId} />
+        )}
+      </div>
     </aside>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// PanelHeader — tab-bar chrome: a tab-bar row (grid switcher + active
+// tab pill + close) above a breadcrumb row (chat › section).
+// ---------------------------------------------------------------------------
+
+interface PanelHeaderProps {
+  chatTitle: string;
+  /** null = overview card grid; a tab = that section is active. */
+  tab: ChatPanelTab | null;
+  onHome: () => void;
+  onClose: () => void;
+  closeRef: React.RefObject<HTMLButtonElement | null>;
+}
+
+function PanelHeader({ chatTitle, tab, onHome, onClose, closeRef }: PanelHeaderProps) {
+  const meta = tab ? TAB_META[tab] : null;
+  const TabIcon = meta?.icon;
+
+  return (
+    <header className="shrink-0 border-b border-border/60">
+      {/* Row 1 — tab bar: overview switcher · active tab pill · close */}
+      <div className="flex h-12 items-center gap-1.5 px-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="All panels"
+          aria-pressed={tab === null}
+          className={cn(
+            'size-9 shrink-0 text-muted-foreground hover:text-foreground',
+            tab === null && 'bg-muted text-foreground',
+          )}
+          onClick={onHome}
+        >
+          <Grid2x2 className="size-4" />
+        </Button>
+
+        {meta && TabIcon ? (
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1 text-sm font-medium text-foreground">
+            <TabIcon className="size-4" aria-hidden />
+            {meta.title}
+          </span>
+        ) : (
+          <span className="px-1 text-sm font-semibold">Panel</span>
+        )}
+
+        <Button
+          ref={closeRef}
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Close panel"
+          className="ml-auto size-9 shrink-0 text-muted-foreground hover:text-foreground"
+          onClick={onClose}
+        >
+          <X className="size-4" />
+        </Button>
+      </div>
+
+      {/* Row 2 — breadcrumb: chat title › active section */}
+      <div className="flex h-9 items-center px-3 pb-1.5">
+        <Breadcrumb>
+          <BreadcrumbList className="gap-1 sm:gap-1.5">
+            <BreadcrumbItem className="min-w-0">
+              {meta ? (
+                <BreadcrumbLink asChild>
+                  <button type="button" onClick={onHome} className="truncate">
+                    {chatTitle}
+                  </button>
+                </BreadcrumbLink>
+              ) : (
+                <BreadcrumbPage className="truncate">{chatTitle}</BreadcrumbPage>
+              )}
+            </BreadcrumbItem>
+            {meta && (
+              <>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{meta.title}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </>
+            )}
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
+    </header>
   );
 }
 

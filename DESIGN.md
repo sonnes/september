@@ -113,8 +113,10 @@ The sidebar is a **solid indigo panel** in light _and_ dark mode — September's
 
 ## Layout
 
-- **Approach:** shadcn `Sidebar` + `SidebarInset`, grid-disciplined, default open.
-- **Sidebar widths:** `16rem` (256px) desktop · `18rem` mobile sheet · `3rem` icon-collapsed.
+- **Base viewport:** **13" iPad Pro (M4), landscape — 1376×1032.** Primary designs target this size; lay things out here first, then scale up for wider desktops and down for tablet portrait / mobile. The constant lives in `BASE_VIEWPORT_WIDTH` (`@september/shared`); `useIsCompact()` reports when the viewport is at or below it.
+- **Approach:** shadcn `Sidebar` + `SidebarInset`, grid-disciplined.
+- **Sidebar default state:** viewport-driven. At or below the base (≤1376px — both iPad orientations and smaller) the sidebar defaults to its **icon rail**; wider screens default to the full sidebar. A manual toggle (rail or ⌘/Ctrl-B) wins for the session. Below 768px it becomes the mobile sheet.
+- **Sidebar widths:** `16rem` (256px) expanded · `18rem` mobile sheet · `3rem` icon rail.
 - **Inset shell:** content floats as an inset card — `md:m-2 md:ml-0 md:rounded-xl md:shadow-sm` — over the `zinc-100` page, beside the indigo sidebar.
 - **Header:** `SidebarLayout.Header` = `h-16 border-b`, icon + title at `px-4`.
 - **Marketing / legal:** centered single column, `max-w-3xl`, `px-4 py-12 sm:px-6`; eyebrow → H1 → lede header block.
@@ -171,6 +173,8 @@ All UI primitives live in `@september/ui` (`packages/ui/components`) — shadcn 
 | 2026-06-12 | Keep single Noto Sans family           | Coherence + language coverage + legibility for long composed text. No separate display or mono font today.                                                                                                                  |
 | 2026-06-12 | shadcn + semantic tokens only          | All primitives from `@september/ui`; prefer semantic tokens over hardcoded Tailwind color utilities. (Marketing/legal pages currently use raw `zinc-*`/`indigo-*` — acceptable for static prose, migrate opportunistically.) |
 | 2026-06-12 | Soft shadow on cards (not border-only) | A gentle `shadow-sm` depth cue on cards and the inset shell — warmer and softer than a flat border-only surface treatment.                                                                                                   |
+| 2026-06-12 | Base viewport = 13" iPad (1376×1032)   | Design primary screens for the 13" iPad Pro landscape; scale up/down from there. At/below the base the sidebar collapses to an icon rail (`useIsCompact`), reclaiming horizontal space for content on the primary target.    |
+| 2026-06-13 | Onboarding setup UI | Full-screen flow: sidebar hidden during onboarding, centered `max-w-2xl` column over a subtle radial indigo glow, clickable step circles, and a shared step chrome (all-caps 10px eyebrow/labels, 36px hero title, footer action bar). User-approved deviations from the system below; auto-rotating carousel and staggered motion were dropped to respect reading-pace/reduced-motion. |
 
 ### Known gaps (honest state, not yet enforced)
 

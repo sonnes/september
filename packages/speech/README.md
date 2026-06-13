@@ -43,7 +43,7 @@ await generateSpeech('Hello world');
 
 ### `SpeechSettings`
 
-Unified settings form. Renders provider cards, model select, voice search + list, per-provider advanced sliders, and an inline Save button. Driven by `useVoiceSettings` internally.
+Unified settings form, organized into three segmented sub-tabs — **Provider** (provider cards), **Voice** (model select + voice search/list), and **Speech** (per-provider advanced sliders) — above an always-visible inline Save button. Defaults to the Voice tab. Field values persist across tab switches (the form does not unregister unmounted inputs). Driven by `useVoiceSettings` internally.
 
 ```tsx
 <SpeechSettings account={account} onSubmit={async (data) => { /* persist */ }} />

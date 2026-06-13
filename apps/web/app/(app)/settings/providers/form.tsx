@@ -1,9 +1,14 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
+
+import { useRouter, useSearchParams } from 'next/navigation';
+
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { useAccount } from '@september/account';
-import { AIProvidersForm, ProviderSection } from '@september/ai';
+import { AIProvidersForm, ProviderSection, completeOpenRouterAuth } from '@september/ai';
 import type { Providers } from '@september/shared';
 import { Alert, AlertDescription, AlertTitle } from '@september/ui/components/alert';
 import { Button } from '@september/ui/components/button';
@@ -12,6 +17,31 @@ import { Spinner } from '@september/ui/components/spinner';
 
 export default function AISettingsForm() {
   const { account, updateAccount } = useAccount();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const oauthCode = searchParams.get('code');
+  const exchangedRef = useRef(false);
+
+  // Finish "Connect with OpenRouter": on return from the OAuth redirect, exchange
+  // the code for a user API key, save it locally, and strip the code from the URL.
+  useEffect(() => {
+    if (!oauthCode || exchangedRef.current || !account) return;
+    exchangedRef.current = true;
+
+    (async () => {
+      try {
+        const key = await completeOpenRouterAuth(oauthCode);
+        await updateAccount({
+          ai_providers: { ...account.ai_providers, openrouter: { api_key: key } },
+        });
+        toast.success('Connected to OpenRouter');
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Failed to connect to OpenRouter');
+      } finally {
+        router.replace('/settings/providers');
+      }
+    })();
+  }, [oauthCode, account, updateAccount, router]);
 
   const handleSubmit = async (providers: Providers) => {
     await updateAccount({

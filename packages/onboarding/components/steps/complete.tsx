@@ -2,15 +2,17 @@
 
 import { useState } from 'react';
 
-import { CheckCircle2, Key, MessageSquare, Volume2 } from 'lucide-react';
+import { Key, MessageSquare, Volume2 } from 'lucide-react';
 
 import { Button } from '@september/ui/components/button';
+import { Callout } from '@september/ui/components/callout';
 import { Card, CardContent } from '@september/ui/components/card';
 
 import { useAccount } from '@september/account';
 import { useAISettings } from '@september/ai';
 
 import { useOnboarding } from '../onboarding-provider';
+import { StepFooter, StepHeader, StepShell } from '../step-chrome';
 
 interface SummaryItemProps {
   icon: React.ReactNode;
@@ -24,7 +26,7 @@ function SummaryItem({ icon, title, status, details }: SummaryItemProps) {
     <div className="flex items-start gap-4 py-4">
       <div
         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-          status === 'configured' ? 'bg-green-100 text-green-600' : 'bg-zinc-100 text-zinc-400'
+          status === 'configured' ? 'bg-emerald-100 text-emerald-600' : 'bg-zinc-100 text-zinc-400'
         }`}
       >
         {icon}
@@ -33,7 +35,7 @@ function SummaryItem({ icon, title, status, details }: SummaryItemProps) {
         <div className="flex items-center gap-2">
           <h3 className="font-medium">{title}</h3>
           {status === 'configured' ? (
-            <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+            <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
               Configured
             </span>
           ) : (
@@ -88,18 +90,13 @@ export function CompleteStep() {
   };
 
   return (
-    <div className="space-y-8">
-      {/* Success Header */}
-      <div className="text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-          <CheckCircle2 className="h-10 w-10 text-green-600" />
-        </div>
-        <h2 className="mt-4 text-2xl font-bold tracking-tight">You&apos;re All Set!</h2>
-        <p className="mt-2 text-muted-foreground">
-          September is configured and ready to help you communicate. Here&apos;s a summary of your
-          setup.
-        </p>
-      </div>
+    <StepShell>
+      <StepHeader
+        eyebrow="All set"
+        title="You're all set"
+        subtitle="September is configured and ready to help you communicate. Here's a summary of your setup."
+        onBack={goToPreviousStep}
+      />
 
       {/* Configuration Summary */}
       <Card>
@@ -125,23 +122,15 @@ export function CompleteStep() {
         </CardContent>
       </Card>
 
-      {/* Info Banner */}
-      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-        <p className="text-sm text-blue-800">
-          <strong>Tip:</strong> You can always change these settings later from the Settings page.
-        </p>
-      </div>
+      <Callout tone="info">
+        <strong>Tip:</strong> You can always change these settings later from the Settings page.
+      </Callout>
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between pt-4">
-        <Button type="button" variant="ghost" onClick={goToPreviousStep}>
-          Back
-        </Button>
+      <StepFooter helper="Everything here can be changed later in Settings.">
         <Button size="lg" onClick={handleComplete} disabled={isCompleting}>
           {isCompleting ? 'Starting...' : 'Start Talking'}
         </Button>
-      </div>
-    </div>
+      </StepFooter>
+    </StepShell>
   );
 }
-

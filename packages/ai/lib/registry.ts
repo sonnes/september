@@ -98,6 +98,38 @@ export const AI_PROVIDERS: Record<AIProvider, AIServiceProvider> = {
     ],
   },
 
+  openrouter: {
+    id: 'openrouter',
+    name: 'OpenRouter',
+    description: 'One key for 300+ models (Claude, Gemini, GPT, Llama). Connect in one click.',
+    features: ['ai', 'transcription'],
+    requires_api_key: true,
+    oauth: true,
+    api_key_url: 'https://openrouter.ai/keys',
+    models: [
+      {
+        id: 'google/gemini-2.5-flash-lite',
+        name: 'Gemini 2.5 Flash Lite',
+        description: 'Fast, cheap — good default for suggestions and transcription',
+      },
+      {
+        id: 'google/gemini-2.5-flash',
+        name: 'Gemini 2.5 Flash',
+        description: 'Stronger multimodal model (supports audio transcription)',
+      },
+      {
+        id: 'anthropic/claude-haiku-4.5',
+        name: 'Claude Haiku 4.5',
+        description: 'Fast Anthropic model with strong structured output',
+      },
+      {
+        id: 'openai/gpt-5.4-mini',
+        name: 'GPT-5.4 mini',
+        description: 'Cost-effective OpenAI model',
+      },
+    ],
+  },
+
   elevenlabs: {
     id: 'elevenlabs',
     name: 'ElevenLabs',

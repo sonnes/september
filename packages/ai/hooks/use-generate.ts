@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { webLLM } from '@built-in-ai/web-llm';
 import { useAccount } from '@september/account';
 import { track } from '@september/analytics';
@@ -11,6 +12,7 @@ import { generateObject, generateText, wrapLanguageModel } from 'ai';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { AudioInput, buildTextInput } from '../lib/audio-message';
 import { cacheMiddleware } from '../lib/middleware';
 import { AI_PROVIDERS } from '../lib/registry';
 import { useAISettings } from './use-ai-settings';
@@ -34,6 +36,12 @@ interface BaseGenerateParams {
   temperature?: number;
   /** Feature being used for analytics tracking */
   feature?: 'suggestions' | 'transcription' | 'summary';
+  /**
+   * Optional audio input for multimodal text generation (e.g. transcription).
+   * When set, `prompt` becomes the instruction sent alongside the audio.
+   * Text generation only — ignored for schema/object generation.
+   */
+  audio?: AudioInput;
 }
 
 /**
@@ -116,6 +124,11 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
       return createGoogleGenerativeAI({
         apiKey: apiKey || '',
       });
+    } else if (provider === 'openrouter') {
+      return createOpenRouter({
+        apiKey: apiKey || '',
+        headers: { 'HTTP-Referer': 'https://september.to', 'X-Title': 'September' },
+      });
     } else if (provider === 'webllm') {
       return webLLM;
     }
@@ -126,7 +139,7 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
     async <T extends z.ZodType>(
       params: GenerateTextParams | GenerateObjectParams<T>
     ): Promise<string | z.infer<T> | undefined> => {
-      const { prompt, system, temperature, feature } = params;
+      const { prompt, system, temperature, feature, audio } = params;
 
       // Validate provider support
       if (!providerInfo) {
@@ -173,7 +186,7 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
             track(user.id, {
               type: 'ai_generation',
               generation_type: feature || 'suggestions',
-              provider: provider === 'gemini' ? 'gemini' : undefined,
+              provider,
               model: modelId,
               input_length: prompt.length,
               output_length: JSON.stringify(object).length,
@@ -186,9 +199,10 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
         } else {
           const { text, usage } = await generateText({
             model,
-            prompt,
             system,
             temperature,
+            // With audio, send a multimodal message (audio + instruction); otherwise plain prompt.
+            ...buildTextInput(prompt, audio),
           });
 
           const latencyMs = Math.round(performance.now() - startTime);
@@ -198,7 +212,7 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
             track(user.id, {
               type: 'ai_generation',
               generation_type: feature || 'suggestions',
-              provider: provider === 'gemini' ? 'gemini' : undefined,
+              provider,
               model: modelId,
               input_length: prompt.length,
               output_length: text.length,

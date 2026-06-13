@@ -29,6 +29,12 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     setCurrentStep(prev => Math.max(prev - 1, 0));
   }, []);
 
+  // Step circles can only jump back to a reached step. currentStep is always
+  // the furthest reached, since forward motion only happens via goToNextStep.
+  const goToStep = useCallback((step: number) => {
+    setCurrentStep(prev => (step >= 0 && step <= prev ? step : prev));
+  }, []);
+
   const completeOnboarding = useCallback(async () => {
     await updateAccount({ onboarding_completed: true });
     router.push('/talk');
@@ -39,6 +45,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     totalSteps: TOTAL_STEPS,
     goToNextStep,
     goToPreviousStep,
+    goToStep,
     completeOnboarding,
   };
 

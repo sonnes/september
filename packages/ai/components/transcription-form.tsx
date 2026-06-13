@@ -13,7 +13,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { getModelsForProvider } from '../providers';
+import { getModelsForProvider, getProvidersForFeature } from '../providers';
 
 export type TranscriptionFormData = z.infer<typeof TranscriptionConfigSchema>;
 
@@ -35,7 +35,7 @@ export function TranscriptionForm({ account, onSubmit, children }: Transcription
     const config = account?.ai_transcription;
     return {
       enabled: config?.enabled ?? false,
-      provider: (config?.provider as 'gemini') ?? 'gemini',
+      provider: (config?.provider as 'gemini' | 'openrouter') ?? 'gemini',
       model: config?.model ?? 'gemini-2.5-flash-lite',
       settings: {
         language: config?.settings?.language ?? 'en-US',
@@ -69,7 +69,15 @@ export function TranscriptionForm({ account, onSubmit, children }: Transcription
     }
   };
 
-  const models = useMemo(() => getModelsForProvider('gemini'), []);
+  const provider = form.watch('provider');
+  const transcriptionProviders = useMemo(
+    () =>
+      getProvidersForFeature('transcription')
+        .filter(p => p.id === 'gemini' || p.id === 'openrouter')
+        .map(p => ({ id: p.id, name: p.name })),
+    []
+  );
+  const models = useMemo(() => getModelsForProvider(provider), [provider]);
 
   const formContent = (
     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
@@ -83,6 +91,14 @@ export function TranscriptionForm({ account, onSubmit, children }: Transcription
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2">
+          <FormSelect
+            name="provider"
+            control={form.control}
+            label="Provider"
+            description="Which AI provider transcribes your audio."
+            options={transcriptionProviders}
+          />
+
           <FormSelect
             name="model"
             control={form.control}

@@ -6,7 +6,7 @@
 /**
  * Supported AI providers
  */
-export type AIProvider = 'gemini' | 'elevenlabs' | 'browser' | 'webllm' | 'kokoro';
+export type AIProvider = 'gemini' | 'openrouter' | 'elevenlabs' | 'browser' | 'webllm' | 'kokoro';
 
 /**
  * AI feature identifiers
@@ -34,7 +34,7 @@ export interface BaseFeatureConfig {
  * Configuration for AI-powered typing suggestions
  */
 export interface SuggestionsConfig extends BaseFeatureConfig {
-  provider: 'gemini' | 'webllm';
+  provider: 'gemini' | 'webllm' | 'openrouter';
   model?: string;
   settings?: {
     /** Temperature for generation (0-1) */
@@ -58,7 +58,7 @@ export interface SuggestionsConfig extends BaseFeatureConfig {
  * Configuration for speech-to-text transcription
  */
 export interface TranscriptionConfig extends BaseFeatureConfig {
-  provider: 'gemini';
+  provider: 'gemini' | 'openrouter';
   model?: string;
   settings?: {
     /** Language code (e.g., 'en-US') */
@@ -179,6 +179,8 @@ export interface AIServiceProvider {
   description: string;
   features: AIFeature[];
   requires_api_key: boolean;
+  /** Provider supports OAuth "Connect" flow to obtain the API key (e.g. OpenRouter PKCE). */
+  oauth?: boolean;
   api_key_url?: string;
   models?: Array<{
     id: string;

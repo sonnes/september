@@ -60,7 +60,7 @@ Internally calls:
 
 ### `SuggestionsForm`
 
-Settings form (unchanged). See previous README section.
+Settings form for AI suggestions. Pass `variant="setup"` when embedding it in onboarding so it uses compact field rows; omit the prop for the full settings-page layout.
 
 ### Pure lib helpers (`@september/suggestions` — re-exported from `lib/stripes.ts`)
 

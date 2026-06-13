@@ -1,8 +1,7 @@
 'use client';
 
-import { ArrowRight } from 'lucide-react';
-
 import { Button } from '@september/ui/components/button';
+import { Callout } from '@september/ui/components/callout';
 
 import { toast } from 'sonner';
 
@@ -10,6 +9,7 @@ import { useAccount } from '@september/account';
 import { SuggestionsForm, type SuggestionsFormData } from '@september/suggestions';
 
 import { useOnboarding } from '../onboarding-provider';
+import { StepFooter, StepHeader, StepShell } from '../step-chrome';
 
 export function SuggestionsStep() {
   const { goToNextStep, goToPreviousStep } = useOnboarding();
@@ -45,43 +45,33 @@ export function SuggestionsStep() {
   const hasGeminiApiKey = !!account?.ai_providers?.gemini?.api_key;
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold tracking-tight">Configure AI Suggestions</h2>
-        <p className="mt-2 text-muted-foreground">
-          Set up AI-powered typing suggestions to help you communicate faster. Customize the AI to
-          match your communication style.
-        </p>
-      </div>
+    <StepShell>
+      <StepHeader
+        eyebrow="Step 2 — Suggestions"
+        title="AI Suggestions"
+        subtitle="Set up AI-powered typing suggestions to help you communicate faster. Tune the AI to match your style."
+        onBack={goToPreviousStep}
+      />
 
       {!hasGeminiApiKey && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm text-amber-800">
-            <strong>Note:</strong> AI suggestions require a Gemini API key. You can go back to
-            configure it, or skip this step for now.
-          </p>
-        </div>
+        <Callout tone="warning">
+          <strong>Note:</strong> AI suggestions require a Gemini API key. You can go back to
+          configure it, or skip this step for now.
+        </Callout>
       )}
 
       <SuggestionsForm account={account} onSubmit={onSubmit}>
         {({ form }) => (
-          <div className="flex items-center justify-between pt-8 border-t mt-8">
-            <Button type="button" variant="ghost" onClick={goToPreviousStep}>
-              Back
+          <StepFooter helper="Suggestions are optional — you can enable them later in Settings.">
+            <Button type="button" variant="outline" size="lg" onClick={handleSkip}>
+              Skip for Now
             </Button>
-            <div className="flex gap-3">
-              <Button type="button" variant="outline" onClick={handleSkip}>
-                Skip for Now
-              </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Saving...' : 'Save & Continue'}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+            <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? 'Saving...' : 'Save & Continue'}
+            </Button>
+          </StepFooter>
         )}
       </SuggestionsForm>
-    </div>
+    </StepShell>
   );
 }
-

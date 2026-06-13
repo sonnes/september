@@ -102,7 +102,7 @@ export function SuggestionsForm({ account, onSubmit, children }: SuggestionsForm
     return getProvidersForFeature('ai').map(p => ({
       id: p.id,
       name: p.name,
-    })).filter(p => p.id === 'gemini' || p.id === 'webllm');
+    })).filter(p => p.id === 'gemini' || p.id === 'webllm' || p.id === 'openrouter');
   }, []);
 
   const models = useMemo(() => getModelsForProvider(provider as AIProvider), [provider]);

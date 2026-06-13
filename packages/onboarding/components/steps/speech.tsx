@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import { ArrowRight } from 'lucide-react';
 
 import { Button } from '@september/ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@september/ui/components/card';
@@ -19,6 +18,7 @@ import type { SpeechConfig } from '@september/shared';
 import type { Voice } from '@september/shared';
 
 import { useOnboarding } from '../onboarding-provider';
+import { StepFooter, StepHeader, StepShell } from '../step-chrome';
 
 type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs' | 'kokoro';
 
@@ -49,6 +49,8 @@ const PROVIDER_OPTIONS: ProviderOption[] = [
     requiresApiKey: true,
   },
 ];
+
+const SECTION_LABEL = 'text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground';
 
 export function SpeechStep() {
   const { goToNextStep, goToPreviousStep } = useOnboarding();
@@ -128,16 +130,16 @@ export function SpeechStep() {
     try {
       setIsSaving(true);
 
-      const speechConfig: Partial<SpeechConfig> = {
+      const nextSpeechConfig: Partial<SpeechConfig> = {
         provider: selectedProvider,
       };
 
       if (selectedVoice) {
-        speechConfig.voice_id = selectedVoice.id;
-        speechConfig.voice_name = selectedVoice.name;
+        nextSpeechConfig.voice_id = selectedVoice.id;
+        nextSpeechConfig.voice_name = selectedVoice.name;
       }
 
-      await updateSpeechConfig(speechConfig);
+      await updateSpeechConfig(nextSpeechConfig);
 
       toast.success('Voice Settings Saved', {
         description: 'Your voice preferences have been configured.',
@@ -157,18 +159,17 @@ export function SpeechStep() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold tracking-tight">Choose Your Voice</h2>
-        <p className="mt-2 text-muted-foreground">
-          Select a speech provider and voice for text-to-speech. You can always change this later in
-          settings.
-        </p>
-      </div>
+    <StepShell>
+      <StepHeader
+        eyebrow="Step 3 — Voice"
+        title="Choose your voice"
+        subtitle="Pick a speech provider and voice for text-to-speech. You can always change this later in Settings."
+        onBack={goToPreviousStep}
+      />
 
       {/* Provider Selection */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-zinc-900">Speech Provider</h3>
+        <span className={SECTION_LABEL}>Speech Provider</span>
         <div className="grid gap-3 sm:grid-cols-3">
           {availableProviders.map(provider => (
             <Card
@@ -198,7 +199,7 @@ export function SpeechStep() {
 
       {/* Voice Search */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-zinc-900">Select a Voice</h3>
+        <span className={SECTION_LABEL}>Select a Voice</span>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <MagnifyingGlassIcon className="h-4 w-4 text-zinc-400" />
@@ -211,34 +212,34 @@ export function SpeechStep() {
             className="pl-10"
           />
         </div>
-      </div>
 
-      {/* Voices List */}
-      <div className="max-h-[400px] overflow-y-auto">
-        {isLoading ? (
-          <Card>
-            <CardContent className="py-8">
-              <div className="flex flex-col items-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                <p className="mt-4 text-sm text-muted-foreground">Loading voices...</p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : voices.length > 0 ? (
-          <VoicesList
-            voices={voices}
-            selectedVoiceId={selectedVoice?.id}
-            onSelectVoice={handleVoiceSelect}
-          />
-        ) : (
-          <Card>
-            <CardContent className="py-8">
-              <p className="text-center text-sm text-muted-foreground">
-                No voices found. Try a different search term or provider.
-              </p>
-            </CardContent>
-          </Card>
-        )}
+        {/* Voices List */}
+        <div className="max-h-[400px] overflow-y-auto">
+          {isLoading ? (
+            <Card>
+              <CardContent className="py-8">
+                <div className="flex flex-col items-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <p className="mt-4 text-sm text-muted-foreground">Loading voices...</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : voices.length > 0 ? (
+            <VoicesList
+              voices={voices}
+              selectedVoiceId={selectedVoice?.id}
+              onSelectVoice={handleVoiceSelect}
+            />
+          ) : (
+            <Card>
+              <CardContent className="py-8">
+                <p className="text-center text-sm text-muted-foreground">
+                  No voices found. Try a different search term or provider.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
 
       {/* Selected Voice Info */}
@@ -253,22 +254,14 @@ export function SpeechStep() {
         </div>
       )}
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between pt-4 border-t">
-        <Button type="button" variant="ghost" onClick={goToPreviousStep}>
-          Back
+      <StepFooter helper="Browser TTS works without an API key.">
+        <Button type="button" variant="outline" size="lg" onClick={handleSkip}>
+          Skip for Now
         </Button>
-        <div className="flex gap-3">
-          <Button type="button" variant="outline" onClick={handleSkip}>
-            Skip for Now
-          </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? 'Saving...' : 'Save & Continue'}
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-    </div>
+        <Button size="lg" onClick={handleSave} disabled={isSaving}>
+          {isSaving ? 'Saving...' : 'Save & Continue'}
+        </Button>
+      </StepFooter>
+    </StepShell>
   );
 }
-

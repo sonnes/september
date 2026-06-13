@@ -14,6 +14,7 @@
     "@september/shared": "workspace:*",
     "@september/ui": "workspace:*",
     "@ai-sdk/google": "^2.0.45",
+    "@openrouter/ai-sdk-provider": "^1.5.4",
     "@built-in-ai/web-llm": "^0.3.2",
     "@ai-sdk/react": "^2.0.109",
     "@google/genai": "^1.9.0",
