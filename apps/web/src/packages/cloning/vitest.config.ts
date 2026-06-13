@@ -9,10 +9,10 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@september/cloning': path.resolve(__dirname, '.'),
-      '@september/audio': path.resolve(__dirname, '../audio'),
-      '@september/account': path.resolve(__dirname, '../account'),
-      '@september/shared': path.resolve(__dirname, '../shared'),
+      '@/packages/cloning': path.resolve(__dirname, '.'),
+      '@/packages/audio': path.resolve(__dirname, '../audio'),
+      '@/packages/account': path.resolve(__dirname, '../account'),
+      '@/packages/shared': path.resolve(__dirname, '../shared'),
     },
   },
 });

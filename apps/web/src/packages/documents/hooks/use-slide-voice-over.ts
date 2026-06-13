@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { Alignment } from '@september/audio';
-import { getAudio, uploadAudio } from '@september/audio';
-import { useAISettings } from '@september/ai';
-import { useSpeech } from '@september/speech';
+import type { Alignment } from '@/packages/audio';
+import { getAudio, uploadAudio } from '@/packages/audio';
+import { useAISettings } from '@/packages/ai';
+import { useSpeech } from '@/packages/speech';
 
 /** djb2 hash — fast, no async, good enough for cache keys */
 function hashKey(str: string): string {

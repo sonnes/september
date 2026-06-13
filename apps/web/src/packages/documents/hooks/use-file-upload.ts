@@ -4,8 +4,8 @@ import { useCallback, useState } from 'react';
 
 import { toast } from 'sonner';
 
-import { extractText } from '@september/ai';
-import { useAccount } from '@september/account';
+import { extractText } from '@/packages/ai';
+import { useAccount } from '@/packages/account';
 
 export interface UseFileUploadOptions {
   onTextExtracted?: (text: string) => void;

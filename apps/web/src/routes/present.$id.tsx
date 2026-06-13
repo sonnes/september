@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { SlidesPresentation, useDocument } from '@september/documents';
+import { SlidesPresentation, useDocument } from '@/packages/documents';
 
 import { ClientProviders } from '@/components/context/client-providers';
 

@@ -6,22 +6,22 @@ import { Slot } from '@radix-ui/react-slot';
 import { type VariantProps, cva } from 'class-variance-authority';
 import { PanelLeftIcon } from 'lucide-react';
 
-import { Button } from '@september/ui/components/button';
-import { Input } from '@september/ui/components/input';
-import { Separator } from '@september/ui/components/separator';
+import { Button } from '@/packages/ui/components/button';
+import { Input } from '@/packages/ui/components/input';
+import { Separator } from '@/packages/ui/components/separator';
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@september/ui/components/sheet';
-import { Skeleton } from '@september/ui/components/skeleton';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@september/ui/components/tooltip';
+} from '@/packages/ui/components/sheet';
+import { Skeleton } from '@/packages/ui/components/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/packages/ui/components/tooltip';
 
-import { useIsMobile } from '@september/shared';
+import { useIsMobile } from '@/packages/shared';
 
-import { cn } from '@september/shared';
+import { cn } from '@/packages/shared';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;

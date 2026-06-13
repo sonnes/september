@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
 const mockGenerateSpeech = vi.fn();
-vi.mock('@september/speech/hooks/use-speech', () => ({
+vi.mock('@/packages/speech/hooks/use-speech', () => ({
   useSpeech: () => ({ generateSpeech: mockGenerateSpeech }),
 }));
 

@@ -113,7 +113,7 @@ The sidebar is a **solid indigo panel** in light _and_ dark mode — September's
 
 ## Layout
 
-- **Base viewport:** **13" iPad Pro (M4), landscape — 1376×1032.** Primary designs target this size; lay things out here first, then scale up for wider desktops and down for tablet portrait / mobile. The constant lives in `BASE_VIEWPORT_WIDTH` (`@september/shared`); `useIsCompact()` reports when the viewport is at or below it.
+- **Base viewport:** **13" iPad Pro (M4), landscape — 1376×1032.** Primary designs target this size; lay things out here first, then scale up for wider desktops and down for tablet portrait / mobile. The constant lives in `BASE_VIEWPORT_WIDTH` (`@/packages/shared`); `useIsCompact()` reports when the viewport is at or below it.
 - **Approach:** shadcn `Sidebar` + `SidebarInset`, grid-disciplined.
 - **Sidebar default state:** viewport-driven. At or below the base (≤1376px — both iPad orientations and smaller) the sidebar defaults to its **icon rail**; wider screens default to the full sidebar. A manual toggle (rail or ⌘/Ctrl-B) wins for the session. Below 768px it becomes the mobile sheet.
 - **Sidebar widths:** `16rem` (256px) expanded · `18rem` mobile sheet · `3rem` icon rail.
@@ -147,7 +147,7 @@ September is operated under physical constraint. These are requirements, not nic
 
 ## Component Patterns
 
-All UI primitives live in `@september/ui` (`packages/ui/components`) — shadcn wrappers over Radix, composed with `cva`. Icons: `lucide-react`. No raw Radix or hand-rolled primitives in app code.
+All UI primitives live in `@/packages/ui` (`src/packages/ui/components`) — shadcn wrappers over Radix, composed with `cva`. Icons: `lucide-react`. No raw Radix or hand-rolled primitives in app code.
 
 - **Buttons:** `Button` with `rounded-md`, `transition-all`. Variants: `default` (indigo), `destructive`, `outline`, `secondary`, `ghost`, `link`. Sizes: `default` h-9 · `sm` h-8 · `lg` h-10 · `icon` / `icon-sm` / `icon-lg`. Prefer `lg`/`icon-lg` for primary and touch-critical actions.
 - **Suggestion pills:** `Suggestion` / `Suggestions` — `rounded-full`, `outline`, `size="sm"`, `px-4`, in a horizontal `ScrollArea`. The autocomplete/contextual-reply surface; the product's signature interaction. Keep targets comfortable and well-spaced.
@@ -171,7 +171,7 @@ All UI primitives live in `@september/ui` (`packages/ui/components`) — shadcn 
 | 2026-06-12 | Roomy density codified as intended     | 64px header, `rounded-xl` cards, `gap-6` — spacing is an accessibility feature for imprecise input, not a stylistic choice. Deliberately more generous than typical compact productivity density.                            |
 | 2026-06-12 | Accessibility is first-class           | Central to the product. Codifies target size, focus visibility, contrast floors, keyboard/switch operability, reduced motion — some are aspirational vs current code (see gaps).                                             |
 | 2026-06-12 | Keep single Noto Sans family           | Coherence + language coverage + legibility for long composed text. No separate display or mono font today.                                                                                                                  |
-| 2026-06-12 | shadcn + semantic tokens only          | All primitives from `@september/ui`; prefer semantic tokens over hardcoded Tailwind color utilities. (Marketing/legal pages currently use raw `zinc-*`/`indigo-*` — acceptable for static prose, migrate opportunistically.) |
+| 2026-06-12 | shadcn + semantic tokens only          | All primitives from `@/packages/ui`; prefer semantic tokens over hardcoded Tailwind color utilities. (Marketing/legal pages currently use raw `zinc-*`/`indigo-*` — acceptable for static prose, migrate opportunistically.) |
 | 2026-06-12 | Soft shadow on cards (not border-only) | A gentle `shadow-sm` depth cue on cards and the inset shell — warmer and softer than a flat border-only surface treatment.                                                                                                   |
 | 2026-06-12 | Base viewport = 13" iPad (1376×1032)   | Design primary screens for the 13" iPad Pro landscape; scale up/down from there. At/below the base the sidebar collapses to an icon rail (`useIsCompact`), reclaiming horizontal space for content on the primary target.    |
 | 2026-06-13 | Onboarding setup UI | Full-screen flow: sidebar hidden during onboarding, centered `max-w-2xl` column over a subtle radial indigo glow, clickable step circles, and a shared step chrome (all-caps 10px eyebrow/labels, 36px hero title, footer action bar). User-approved deviations from the system below; auto-rotating carousel and staggered motion were dropped to respect reading-pace/reduced-motion. |

@@ -1,11 +1,11 @@
-import { Alignment } from '@september/audio';
+import { Alignment } from '@/packages/audio';
 import {
   KokoroSpeechSettings,
   BrowserTTSSettings,
   ElevenLabsSettings,
   GeminiSpeechSettings,
-} from '@september/shared';
-import { Voice } from '@september/shared';
+} from '@/packages/shared';
+import { Voice } from '@/packages/shared';
 
 export interface SpeechEngine {
   id: string;

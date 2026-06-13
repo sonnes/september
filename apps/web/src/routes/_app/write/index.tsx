@@ -5,8 +5,8 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 
-import { DocumentList, createDocument, useDocuments } from '@september/documents';
-import { Button } from '@september/ui/components/button';
+import { DocumentList, createDocument, useDocuments } from '@/packages/documents';
+import { Button } from '@/packages/ui/components/button';
 
 import { PageHeader, PageShell, PageTitle } from '@/components/layout';
 import SidebarLayout from '@/components/sidebar/layout';

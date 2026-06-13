@@ -4,9 +4,9 @@ import { useEffect, useRef } from 'react';
 
 import { ArrowUp } from 'lucide-react';
 
-import { Button } from '@september/ui/components/button';
+import { Button } from '@/packages/ui/components/button';
 
-import { cn } from '@september/shared';
+import { cn } from '@/packages/shared';
 
 import { useEditorContext } from './editor-provider';
 import { Autocomplete } from './autocomplete';

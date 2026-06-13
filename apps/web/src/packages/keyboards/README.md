@@ -1,4 +1,4 @@
-# @september/keyboards
+# @/packages/keyboards
 
 Keyboard layouts and custom keyboard management for the September AAC app.
 
@@ -11,8 +11,8 @@ import {
   KeyboardToggleButton,
   createKeyboard,
   useGenerateKeyboardFromMessage,
-} from '@september/keyboards';
-import type { CustomKeyboard, CreateCustomKeyboardData } from '@september/keyboards';
+} from '@/packages/keyboards';
+import type { CustomKeyboard, CreateCustomKeyboardData } from '@/packages/keyboards';
 ```
 
 ### Components
@@ -49,7 +49,7 @@ const keyboard = await createKeyboard({
 
 ### Hook
 
-**`useGenerateKeyboardFromMessage`** — AI keyboard generation from a message string. Calls Google Gemini via `@september/ai`. Returns `{ generateKeyboard, isGenerating, error }`.
+**`useGenerateKeyboardFromMessage`** — AI keyboard generation from a message string. Calls Google Gemini via `@/packages/ai`. Returns `{ generateKeyboard, isGenerating, error }`.
 
 `generateKeyboard({ messageText, chatId })` resolves with `{ chatTitle, keyboardTitle, buttons: string[] }` (24 phrases). Throws `Error('API key not configured')` when no API key is set — callers should silence that specific error.
 
@@ -73,7 +73,7 @@ GridButton: { id, text, value?, image_url?, order }
 
 **Button text cap:** `GridButton.text` accepts up to **280 characters** (raised from 50).
 This allows sentence-length board entries that render as partial-selectable stripes in the
-`@september/suggestions` compose surface. The `use-generate-keyboard` AI schema and the
+`@/packages/suggestions` compose surface. The `use-generate-keyboard` AI schema and the
 `CustomKeyboardEditor` form schema both honour the same 280-char limit.
 
 **`chat_id` query rationale:** `useCustomKeyboards` returns keyboards where `chat_id` is null, undefined, or matches the current `chatId`. This means global keyboards always appear alongside chat-specific ones — there is no "hide global" mode.

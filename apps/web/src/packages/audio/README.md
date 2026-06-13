@@ -7,7 +7,7 @@ Assistive audio playback, text-alignment visualization, and local storage for th
 ### Player
 
 ```tsx
-import { AudioPlayerProvider, useAudioPlayer } from '@september/audio';
+import { AudioPlayerProvider, useAudioPlayer } from '@/packages/audio';
 ```
 
 Wrap your tree with `AudioPlayerProvider`. `useAudioPlayer()` returns:
@@ -34,7 +34,7 @@ Wrap your tree with `AudioPlayerProvider`. `useAudioPlayer()` returns:
 ### Device selector UI
 
 ```tsx
-import { AudioOutputDeviceSelector } from '@september/audio';
+import { AudioOutputDeviceSelector } from '@/packages/audio';
 ```
 
 Renders a `<Select>` for choosing the audio output device. Returns `null` when device selection is unsupported or no devices are enumerated.
@@ -42,8 +42,8 @@ Renders a `<Select>` for choosing the audio output device. Returns `null` when d
 ### Viewers
 
 ```tsx
-import { TextViewer, TextViewerWords } from '@september/audio';
-import { ReelRenderer, ReelTextViewer } from '@september/audio';
+import { TextViewer, TextViewerWords } from '@/packages/audio';
+import { ReelRenderer, ReelTextViewer } from '@/packages/audio';
 ```
 
 - **`TextViewer`** — container component that syncs text highlighting with `useAudioPlayer` context. Wrap `TextViewerWords` inside it.
@@ -54,7 +54,7 @@ import { ReelRenderer, ReelTextViewer } from '@september/audio';
 ### Hooks
 
 ```tsx
-import { useTextViewer } from '@september/audio';
+import { useTextViewer } from '@/packages/audio';
 ```
 
 `useTextViewer({ alignment, currentTime, duration? })` returns `{ segments, words, spokenSegments, unspokenSegments, currentWord, seekToWord }` for custom alignment rendering.
@@ -71,7 +71,7 @@ import {
   listAudio,
   uploadAudio,
   uploadAudioBinary,
-} from '@september/audio';
+} from '@/packages/audio';
 ```
 
 | Function            | Signature                                                                                       | Notes                                          |
@@ -92,7 +92,7 @@ Each entry is keyed by path and stores `{ blob: ArrayBuffer, contentType, metada
 ### Types
 
 ```tsx
-import type { Alignment, Audio } from '@september/audio';
+import type { Alignment, Audio } from '@/packages/audio';
 ```
 
 - **`Audio`** — playable track: `{ id?, text?, path?, blob?, alignment?, duration?, utterance? }`

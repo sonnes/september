@@ -4,9 +4,9 @@ import { type ReactNode } from 'react';
 
 import { Loader2, LayoutGrid } from 'lucide-react';
 
-import { cn } from '@september/shared';
-import { useEditorContext } from '@september/editor';
-import { CustomKeyboard } from '@september/keyboards';
+import { cn } from '@/packages/shared';
+import { useEditorContext } from '@/packages/editor';
+import { CustomKeyboard } from '@/packages/keyboards';
 
 import { appendTokens } from '../lib/stripes';
 import { useStripes } from '../hooks/use-stripes';

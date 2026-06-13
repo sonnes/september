@@ -56,7 +56,7 @@ vi.mock('./db', () => ({
   },
 }));
 
-vi.mock('@september/analytics', () => ({
+vi.mock('@/packages/analytics', () => ({
   track: vi.fn(),
 }));
 
@@ -66,7 +66,7 @@ vi.mock('uuid', () => ({
 
 // Import after mocks
 import { createChat, createMessage, deleteChat, updateChat } from './mutations';
-import { track } from '@september/analytics';
+import { track } from '@/packages/analytics';
 
 describe('createChat', () => {
   beforeEach(() => {

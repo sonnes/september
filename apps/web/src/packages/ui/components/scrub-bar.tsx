@@ -10,8 +10,8 @@ import {
   type HTMLAttributes,
 } from "react"
 
-import { cn } from "@september/shared"
-import { Progress } from "@september/ui/components/progress"
+import { cn } from "@/packages/shared"
+import { Progress } from "@/packages/ui/components/progress"
 
 function formatTimestamp(value: number) {
   if (!Number.isFinite(value) || value < 0) return "0:00"

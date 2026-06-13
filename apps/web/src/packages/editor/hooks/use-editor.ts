@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 
-import { tokenize } from '@september/shared/autocomplete';
+import { tokenize } from '@/packages/shared/lib/autocomplete';
 import { EditorStats } from '../types';
 
 export function useEditorLogic(defaultText = '') {

@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { Callout } from '@september/ui/components/callout';
+import { Callout } from '@/packages/ui/components/callout';
 
 import { PageHeader, PageShell, PageTitle } from '@/components/layout';
 import SidebarLayout from '@/components/sidebar/layout';

@@ -4,8 +4,8 @@ import { useRef, useState } from 'react';
 
 import { History, Pin } from 'lucide-react';
 
-import { cn } from '@september/shared';
-import { useEditorContext } from '@september/editor';
+import { cn } from '@/packages/shared';
+import { useEditorContext } from '@/packages/editor';
 
 import { appendTokens, joinTokens } from '../lib/stripes';
 import { Stripe } from '../hooks/use-stripes';

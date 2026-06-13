@@ -4,7 +4,7 @@
  * Design notes:
  *
  *  - Storage is a thin typed facade over the existing
- *    `@september/shared/indexeddb` `KVStore`. One DB, one store, one
+ *    `@/packages/shared/lib/indexeddb` `KVStore`. One DB, one store, one
  *    key per persistence scope:
  *      - `user:<accountId>`              whole engine snapshot (v2)
  *      - `chat:<accountId>:<chatId>`     individual chat layer (single ngram)

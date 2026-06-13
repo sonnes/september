@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 
-import { Separator } from '@september/ui/components/separator';
+import { Separator } from '@/packages/ui/components/separator';
 
 export function Footer() {
   return (

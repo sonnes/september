@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-import { cn } from '@september/shared';
+import { cn } from '@/packages/shared';
 
 interface QwertyKeyboardProps {
   className?: string;

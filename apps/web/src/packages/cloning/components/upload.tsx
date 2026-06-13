@@ -4,9 +4,9 @@ import { useRef } from 'react';
 
 import { Trash2, Upload } from 'lucide-react';
 
-import { Button } from '@september/ui/components/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@september/ui/components/card';
-import { Field, FieldLabel } from '@september/ui/components/field';
+import { Button } from '@/packages/ui/components/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/packages/ui/components/card';
+import { Field, FieldLabel } from '@/packages/ui/components/field';
 
 import type { UploadStatus } from '../types';
 

@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from 'react';
 
-import type { User } from '@september/shared';
+import type { User } from '@/packages/shared';
 
 import { useAccountStore } from './account-store';
 import { createDefaultAccount } from './defaults';

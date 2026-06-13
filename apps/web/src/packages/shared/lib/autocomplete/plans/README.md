@@ -1,6 +1,6 @@
 # Autocomplete Upgrade Plans
 
-This directory plans the evolution of `@september/shared/autocomplete` from a pure trie + bigram/trigram engine into a keyboard-class predictive engine with personalization and neural sentence completion.
+This directory plans the evolution of `@/packages/shared/lib/autocomplete` from a pure trie + bigram/trigram engine into a keyboard-class predictive engine with personalization and neural sentence completion.
 
 > **Product frame.** September is an assistive communication app for people with ALS, MND, and speech/motor difficulties. Every saved keystroke is real quality of life. Optimize for **keystroke savings per session**, not raw latency. A 300 ms pause that produces a 12-word completion is a win, not a regression.
 

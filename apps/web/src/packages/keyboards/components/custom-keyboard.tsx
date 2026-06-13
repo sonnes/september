@@ -14,10 +14,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@september/ui/components/alert-dialog';
-import { Button } from '@september/ui/components/button';
+} from '@/packages/ui/components/alert-dialog';
+import { Button } from '@/packages/ui/components/button';
 
-import { cn } from '@september/shared';
+import { cn } from '@/packages/shared';
 
 import { useCustomKeyboard } from '../hooks/use-custom-keyboard';
 import { GridButton } from '../types';

@@ -2,7 +2,7 @@
 
 import { toast } from 'sonner';
 
-import { EditableText } from '@september/ui/components/editable-text';
+import { EditableText } from '@/packages/ui/components/editable-text';
 
 import { updateChat } from '../mutations';
 

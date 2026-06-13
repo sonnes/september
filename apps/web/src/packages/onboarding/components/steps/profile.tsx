@@ -2,11 +2,11 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 
-import { useAccount } from '@september/account';
-import { Button } from '@september/ui/components/button';
-import { Input } from '@september/ui/components/input';
-import { Label } from '@september/ui/components/label';
-import { Textarea } from '@september/ui/components/textarea';
+import { useAccount } from '@/packages/account';
+import { Button } from '@/packages/ui/components/button';
+import { Input } from '@/packages/ui/components/input';
+import { Label } from '@/packages/ui/components/label';
+import { Textarea } from '@/packages/ui/components/textarea';
 import { Sparkles, UserRound } from 'lucide-react';
 
 import { DEFAULT_SPEAKING_STYLE, ONBOARDING_PRIMARY_COPY } from '../../lib/onboarding-content';

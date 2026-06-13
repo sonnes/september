@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
-import { DocumentEditor, EditableDocumentTitle, useDocument } from '@september/documents';
-import { ErrorState } from '@september/ui/components/error-state';
-import { Separator } from '@september/ui/components/separator';
-import { SidebarTrigger } from '@september/ui/components/sidebar';
+import { DocumentEditor, EditableDocumentTitle, useDocument } from '@/packages/documents';
+import { ErrorState } from '@/packages/ui/components/error-state';
+import { Separator } from '@/packages/ui/components/separator';
+import { SidebarTrigger } from '@/packages/ui/components/sidebar';
 
 import SidebarLayout from '@/components/sidebar/layout';
 

@@ -1,4 +1,4 @@
-# @september/suggestions
+# @/packages/suggestions
 
 AI-powered partial-sentence-selection suggestions for the September composer.
 
@@ -11,13 +11,13 @@ import {
   SuggestionsForm,
   SuggestionsFormFields,
   useStripes,
-} from '@september/suggestions';
+} from '@/packages/suggestions';
 import type {
   Stripe,
   Suggestion,
   SuggestionsFormData,
   UseStripesReturn,
-} from '@september/suggestions';
+} from '@/packages/suggestions';
 // Pure lib helpers
 import {
   MAX_COMPOSED,
@@ -30,7 +30,7 @@ import {
   joinTokens,
   stripeForText,
   tokenize,
-} from '@september/suggestions';
+} from '@/packages/suggestions';
 ```
 
 ### `<Suggestions chatId className?>`
@@ -81,7 +81,7 @@ Internally calls:
 
 Settings form for AI suggestions. Pass `variant="setup"` when embedding it in setup-style flows so it uses roomier field cards; omit the prop for the full settings-page layout. Use `SuggestionsFormFields` with a caller-owned `react-hook-form` instance when suggestion fields need to live inside another form, such as onboarding's merged LLM setup step.
 
-### Pure lib helpers (`@september/suggestions` — re-exported from `lib/stripes.ts`)
+### Pure lib helpers (`@/packages/suggestions` — re-exported from `lib/stripes.ts`)
 
 | Export                                                    | Purpose                                                        |
 | --------------------------------------------------------- | -------------------------------------------------------------- |

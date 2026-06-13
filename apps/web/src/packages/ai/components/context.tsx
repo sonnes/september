@@ -2,14 +2,14 @@
 
 import { ReactNode, createContext, useCallback, useMemo } from 'react';
 
-import { type Account, useAccount } from '@september/account';
+import { type Account, useAccount } from '@/packages/account';
 import type {
   AIProvider,
   ProviderConfig,
   SpeechConfig,
   SuggestionsConfig,
   TranscriptionConfig,
-} from '@september/shared';
+} from '@/packages/shared';
 
 import {
   DEFAULT_SPEECH_CONFIG,

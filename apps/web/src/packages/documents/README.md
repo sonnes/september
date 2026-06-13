@@ -1,4 +1,4 @@
-# @september/documents
+# @/packages/documents
 
 Local-first document authoring and slide presentation for September. Backed by TanStack DB (IndexedDB).
 
@@ -27,7 +27,7 @@ const { document, isLoading, error } = useDocument(id);
 Plain async functions that `throw` on failure. Toasts live at call sites.
 
 ```ts
-import { createDocument, updateDocument, deleteDocument } from '@september/documents';
+import { createDocument, updateDocument, deleteDocument } from '@/packages/documents';
 
 const doc = await createDocument({ content: '' });
 await updateDocument(doc.id, { name: 'My Doc', content: '# Hello' });
@@ -37,7 +37,7 @@ await deleteDocument(doc.id);
 ### Types
 
 ```ts
-import type { Document, CreateDocumentData, UpdateDocumentData } from '@september/documents';
+import type { Document, CreateDocumentData, UpdateDocumentData } from '@/packages/documents';
 ```
 
 ## Data layout

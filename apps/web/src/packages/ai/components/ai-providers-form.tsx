@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { Account } from '@september/account';
-import type { Providers } from '@september/shared';
+import type { Account } from '@/packages/account';
+import type { Providers } from '@/packages/shared';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 

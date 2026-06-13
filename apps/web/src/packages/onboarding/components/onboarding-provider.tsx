@@ -4,7 +4,7 @@ import { ReactNode, createContext, useCallback, useContext, useState } from 'rea
 
 import { useNavigate } from '@tanstack/react-router';
 
-import { useAccount } from '@september/account';
+import { useAccount } from '@/packages/account';
 
 import { ONBOARDING_STEPS } from '../lib/onboarding-content';
 import type { OnboardingContextValue } from '../types';

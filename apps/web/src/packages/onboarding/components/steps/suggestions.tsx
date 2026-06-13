@@ -4,10 +4,10 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useNavigate } from '@tanstack/react-router';
 
-import { useAccount } from '@september/account';
-import { completeOpenRouterAuth, startOpenRouterAuth } from '@september/ai';
-import { Button } from '@september/ui/components/button';
-import { Textarea } from '@september/ui/components/textarea';
+import { useAccount } from '@/packages/account';
+import { completeOpenRouterAuth, startOpenRouterAuth } from '@/packages/ai';
+import { Button } from '@/packages/ui/components/button';
+import { Textarea } from '@/packages/ui/components/textarea';
 import { CheckCircle2, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
 

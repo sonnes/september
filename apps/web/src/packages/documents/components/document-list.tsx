@@ -4,9 +4,9 @@ import { Link } from '@tanstack/react-router';
 
 import { DocumentIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
-import { Input } from '@september/ui/components/input';
+import { Input } from '@/packages/ui/components/input';
 
-import { cn, timeAgo } from '@september/shared';
+import { cn, timeAgo } from '@/packages/shared';
 import { Document } from '../types';
 
 type DocumentListEmptyStateProps = ComponentProps<'div'> & {

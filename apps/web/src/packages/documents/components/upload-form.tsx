@@ -1,8 +1,8 @@
 'use client';
 
-import { Button } from '@september/ui/components/button';
-import { Input } from '@september/ui/components/input';
-import { Label } from '@september/ui/components/label';
+import { Button } from '@/packages/ui/components/button';
+import { Input } from '@/packages/ui/components/input';
+import { Label } from '@/packages/ui/components/label';
 
 import { useFileUpload } from '../hooks/use-file-upload';
 

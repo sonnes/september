@@ -1,9 +1,9 @@
 'use client';
 
-import type { AIFeature, AIServiceProvider } from '@september/shared';
-import { Button } from '@september/ui/components/button';
-import { Card, CardDescription, CardTitle } from '@september/ui/components/card';
-import { FormField } from '@september/ui/components/form';
+import type { AIFeature, AIServiceProvider } from '@/packages/shared';
+import { Button } from '@/packages/ui/components/button';
+import { Card, CardDescription, CardTitle } from '@/packages/ui/components/card';
+import { FormField } from '@/packages/ui/components/form';
 import { CheckCircle2, ExternalLink, Key, LogIn } from 'lucide-react';
 import { Control } from 'react-hook-form';
 

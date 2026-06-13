@@ -2,8 +2,8 @@
 
 import { useCallback } from 'react';
 
-import { EditorProvider, useEditorContext } from '@september/editor';
-import { KeyboardProvider, KeyboardRenderer } from '@september/keyboards';
+import { EditorProvider, useEditorContext } from '@/packages/editor';
+import { KeyboardProvider, KeyboardRenderer } from '@/packages/keyboards';
 
 function TextDisplay() {
   const { text } = useEditorContext();

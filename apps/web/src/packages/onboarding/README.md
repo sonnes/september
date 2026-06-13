@@ -1,11 +1,11 @@
-# @september/onboarding
+# @/packages/onboarding
 
 Multi-step onboarding wizard for September. Two public exports; everything else is internal.
 
 ## Public API
 
 ```tsx
-import { OnboardingFlow, OnboardingProvider } from '@september/onboarding';
+import { OnboardingFlow, OnboardingProvider } from '@/packages/onboarding';
 
 export default function OnboardingPage() {
   return (

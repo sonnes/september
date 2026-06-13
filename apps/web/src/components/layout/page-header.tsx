@@ -9,9 +9,9 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@september/ui/components/breadcrumb';
-import { Separator } from '@september/ui/components/separator';
-import { SidebarTrigger } from '@september/ui/components/sidebar';
+} from '@/packages/ui/components/breadcrumb';
+import { Separator } from '@/packages/ui/components/separator';
+import { SidebarTrigger } from '@/packages/ui/components/sidebar';
 
 export type Breadcrumb = {
   label: string;

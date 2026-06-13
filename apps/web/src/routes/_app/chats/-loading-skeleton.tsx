@@ -1,4 +1,4 @@
-import { Skeleton } from '@september/ui/components/skeleton';
+import { Skeleton } from '@/packages/ui/components/skeleton';
 
 export function ChatListSkeleton() {
   return (

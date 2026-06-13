@@ -2,9 +2,9 @@
 
 import { Link } from '@tanstack/react-router';
 
-import { SidebarTrigger } from '@september/ui/components/sidebar';
+import { SidebarTrigger } from '@/packages/ui/components/sidebar';
 
-import { cn } from '@september/shared';
+import { cn } from '@/packages/shared';
 
 type MobileNavProps = {
   title?: string | React.ReactNode;

@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@september/ui/components/button';
+import { Button } from '@/packages/ui/components/button';
 
 import { ONBOARDING_PRIMARY_COPY } from '../../lib/onboarding-content';
 import { useOnboarding } from '../onboarding-provider';

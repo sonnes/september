@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { toast } from 'sonner';
 
-import { useCurrentUser } from '@september/account';
+import { useCurrentUser } from '@/packages/account';
 
 import type { RecordingStatus } from '../types';
 import { deleteVoiceSample, downloadVoiceSample, getVoiceSamples, uploadVoiceSample } from '../voice-samples';

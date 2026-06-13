@@ -1,4 +1,4 @@
-import { AIFeature, AIProvider, AIServiceProvider } from '@september/shared';
+import { AIFeature, AIProvider, AIServiceProvider } from '@/packages/shared';
 
 import { OPENROUTER_FREE_MODELS, OPENROUTER_FREE_STACK_ID } from './openrouter-model';
 

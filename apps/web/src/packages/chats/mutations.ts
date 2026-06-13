@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 
-import { track } from '@september/analytics';
+import { track } from '@/packages/analytics';
 
 import { chatCollection, messageCollection } from './db';
 import type { Chat, CreateMessageData, Message } from './types';

@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from 'react';
 
-import { useFirstMessage, useMessages } from '@september/chats';
-import { useEditorContext } from '@september/editor';
-import { useCustomKeyboards } from '@september/keyboards';
-import type { CustomKeyboard } from '@september/keyboards';
+import { useFirstMessage, useMessages } from '@/packages/chats';
+import { useEditorContext } from '@/packages/editor';
+import { useCustomKeyboards } from '@/packages/keyboards';
+import type { CustomKeyboard } from '@/packages/keyboards';
 
 import {
   boardPhrases,

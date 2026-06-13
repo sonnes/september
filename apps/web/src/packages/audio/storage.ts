@@ -1,4 +1,4 @@
-import { KVStore } from '@september/shared/indexeddb';
+import { KVStore } from '@/packages/shared/lib/indexeddb';
 
 import type { Alignment } from './types';
 

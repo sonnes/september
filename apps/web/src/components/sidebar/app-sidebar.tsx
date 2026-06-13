@@ -27,7 +27,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-} from '@september/ui/components/sidebar';
+} from '@/packages/ui/components/sidebar';
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar>;
 

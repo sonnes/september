@@ -9,8 +9,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@september/keyboards': path.resolve(__dirname, '.'),
-      '@september/shared': path.resolve(__dirname, '../shared'),
+      '@/packages/keyboards': path.resolve(__dirname, '.'),
+      '@/packages/shared': path.resolve(__dirname, '../shared'),
     },
   },
 });

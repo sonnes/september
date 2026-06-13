@@ -8,7 +8,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@september/ui/components/select';
+} from '@/packages/ui/components/select';
 
 import { useAudioPlayer } from './audio-player';
 

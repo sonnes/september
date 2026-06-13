@@ -1,4 +1,4 @@
-import { AccountSchema } from '@september/account';
+import { AccountSchema } from '@/packages/account';
 import { z } from 'zod';
 
 import { AI_PROVIDERS } from '../lib/registry';
@@ -21,7 +21,7 @@ const createProviderSchema = () => {
 export const AIProvidersSchema = createProviderSchema();
 export type AIProvidersFormData = z.infer<typeof AIProvidersSchema>;
 
-export { AccountSchema } from '@september/account';
+export { AccountSchema } from '@/packages/account';
 
 export const SpeechProviderSchema = AccountSchema.pick({
   ai_speech: true,

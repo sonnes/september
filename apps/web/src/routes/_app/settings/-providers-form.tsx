@@ -5,13 +5,13 @@ import { useNavigate } from '@tanstack/react-router';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { useAccount } from '@september/account';
-import { AIProvidersForm, ProviderSection, completeOpenRouterAuth } from '@september/ai';
-import type { Providers } from '@september/shared';
-import { Alert, AlertDescription, AlertTitle } from '@september/ui/components/alert';
-import { Button } from '@september/ui/components/button';
-import { LoadingState } from '@september/ui/components/loading-state';
-import { Spinner } from '@september/ui/components/spinner';
+import { useAccount } from '@/packages/account';
+import { AIProvidersForm, ProviderSection, completeOpenRouterAuth } from '@/packages/ai';
+import type { Providers } from '@/packages/shared';
+import { Alert, AlertDescription, AlertTitle } from '@/packages/ui/components/alert';
+import { Button } from '@/packages/ui/components/button';
+import { LoadingState } from '@/packages/ui/components/loading-state';
+import { Spinner } from '@/packages/ui/components/spinner';
 
 import { Route } from './providers';
 

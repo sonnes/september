@@ -1,4 +1,4 @@
-import type { User } from '@september/shared';
+import type { User } from '@/packages/shared';
 
 import type { Account } from './schema';
 

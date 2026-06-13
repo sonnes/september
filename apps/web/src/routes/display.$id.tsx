@@ -5,8 +5,8 @@ import { createFileRoute } from '@tanstack/react-router';
 import moment from 'moment';
 import Webcam from 'react-webcam';
 
-import { ReelTextViewer, useAudioPlayer } from '@september/audio';
-import { DisplayMessage } from '@september/shared';
+import { ReelTextViewer, useAudioPlayer } from '@/packages/audio';
+import { DisplayMessage } from '@/packages/shared';
 
 import { ClientProviders } from '@/components/context/client-providers';
 

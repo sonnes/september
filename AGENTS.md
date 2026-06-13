@@ -2,28 +2,26 @@
 
 September is an assistive communication app for people with ALS, MND, or speech/motor difficulties. Fewer keystrokes to full expression.
 
-## Apps
+## App
 
-| App                | Path           | Stack                                      |
-| ------------------ | -------------- | ------------------------------------------ |
-| Web                | `apps/web/`    | TanStack Start (Vite), React 19, Tailwind  |
-| macOS (Swift)      | `apps/swift/`  | SwiftUI + AppKit, SwiftData                |
+A single web app: TanStack Start (Vite), React 19, Tailwind. It lives in
+`apps/web/` and is a standalone pnpm project (its own `package.json`,
+`pnpm-lock.yaml`, and `node_modules` — no workspace). See `apps/web/CLAUDE.md`
+for build commands and code style rules; read it before working in the app.
 
-Each app has its own `CLAUDE.md` with build commands and code style rules. Read the relevant one before working in that app.
-
-## Monorepo
-
-pnpm workspace. The web app is self-contained: its formerly-shared `@september/*`
-modules now live inside it at `apps/web/src/packages/*` (resolved via the
-`@september/*` tsconfig path alias, not as workspace packages).
+The formerly-shared modules live inside the app at `apps/web/src/packages/*`,
+imported via the `@/packages/*` alias (`@/*` → `src/*`), not as workspace
+packages.
 
 ```
 september/
-├── apps/web/              # Web app (self-contained)
-│   └── src/packages/      # @september/* modules (resolved via path alias)
-├── apps/swift/            # macOS app (Swift Package)
-└── docs/swift/            # macOS design specs, roadmap, assets
+├── apps/web/              # Web app (standalone pnpm project)
+│   └── src/packages/      # shared modules (import via @/packages/*)
+└── docs/                  # Plans, notes, concepts
 ```
+
+Run commands from `apps/web/` (e.g. `pnpm -C apps/web <script>`) or via the
+root `Makefile` (`make dev`).
 
 ## TDD (strict)
 

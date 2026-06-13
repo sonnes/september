@@ -1,6 +1,6 @@
-import { useAccount } from '@september/account';
-import { TranscriptionForm, type TranscriptionFormData } from '@september/ai';
-import { LoadingState } from '@september/ui/components/loading-state';
+import { useAccount } from '@/packages/account';
+import { TranscriptionForm, type TranscriptionFormData } from '@/packages/ai';
+import { LoadingState } from '@/packages/ui/components/loading-state';
 
 export default function TranscriptionSettingsForm() {
   const { account, updateAccount } = useAccount();

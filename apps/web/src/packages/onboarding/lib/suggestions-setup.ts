@@ -1,5 +1,5 @@
-import type { AccountUpdate } from '@september/account';
-import type { Providers, SuggestionsConfig } from '@september/shared';
+import type { AccountUpdate } from '@/packages/account';
+import type { Providers, SuggestionsConfig } from '@/packages/shared';
 
 export type SuggestionsServiceChoice = 'built-in' | 'openrouter';
 

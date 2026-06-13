@@ -7,7 +7,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@september/ui/components/sidebar"
+} from "@/packages/ui/components/sidebar"
 
 export function NavSecondary({
   items,

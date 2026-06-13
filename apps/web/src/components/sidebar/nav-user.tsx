@@ -2,7 +2,7 @@
 
 import { BadgeCheck, ChevronsUpDown } from 'lucide-react';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@september/ui/components/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/packages/ui/components/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,16 +11,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@september/ui/components/dropdown-menu';
+} from '@/packages/ui/components/dropdown-menu';
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from '@september/ui/components/sidebar';
-import { Skeleton } from '@september/ui/components/skeleton';
+} from '@/packages/ui/components/sidebar';
+import { Skeleton } from '@/packages/ui/components/skeleton';
 
-import { useAccount } from '@september/account';
+import { useAccount } from '@/packages/account';
 
 function NavUserSkeleton() {
   return (

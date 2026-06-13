@@ -2,18 +2,18 @@
 
 import { Control, Controller, FieldPath, FieldValues } from 'react-hook-form';
 
-import { Checkbox } from '@september/ui/components/checkbox';
-import { Field, FieldDescription, FieldError, FieldLabel } from '@september/ui/components/field';
-import { Input } from '@september/ui/components/input';
+import { Checkbox } from '@/packages/ui/components/checkbox';
+import { Field, FieldDescription, FieldError, FieldLabel } from '@/packages/ui/components/field';
+import { Input } from '@/packages/ui/components/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@september/ui/components/select';
-import { Slider } from '@september/ui/components/slider';
-import { Textarea } from '@september/ui/components/textarea';
+} from '@/packages/ui/components/select';
+import { Slider } from '@/packages/ui/components/slider';
+import { Textarea } from '@/packages/ui/components/textarea';
 
 // ============================================================================
 // FormField - Input field wrapper

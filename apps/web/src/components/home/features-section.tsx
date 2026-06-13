@@ -1,6 +1,6 @@
 import { Check, Keyboard, MessageCircle, Mic, Sparkles } from 'lucide-react';
 
-import { Card, CardContent } from '@september/ui/components/card';
+import { Card, CardContent } from '@/packages/ui/components/card';
 
 import { KeyboardDemo } from './keyboard-demo';
 

@@ -1,5 +1,5 @@
 import { createCollection } from '@tanstack/react-db';
-import { indexedDBCollectionOptionsV2 } from '@september/shared/indexeddb';
+import { indexedDBCollectionOptionsV2 } from '@/packages/shared/lib/indexeddb';
 
 import { ChatSchema, MessageSchema } from './types';
 

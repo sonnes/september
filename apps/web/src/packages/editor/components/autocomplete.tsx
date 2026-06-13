@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from 'react';
 
-import { Suggestion, Suggestions } from '@september/ui';
+import { Suggestion, Suggestions } from '@/packages/ui';
 
 import { useAutocomplete } from '../hooks/use-autocomplete';
 
-import { MATCH_PUNCTUATION } from '@september/shared';
+import { MATCH_PUNCTUATION } from '@/packages/shared';
 import { useEditorContext } from './editor-provider';
 
 export function Autocomplete() {

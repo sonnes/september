@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { useCurrentUser } from '@september/account';
+import { useCurrentUser } from '@/packages/account';
 
 import type { UploadStatus } from '../types';
 import { deleteVoiceSample, getVoiceSamples, uploadVoiceSample } from '../voice-samples';

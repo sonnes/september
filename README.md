@@ -31,8 +31,7 @@ Additionally, in every conversation, you can provide additional context in the f
 ### Prerequisites
 
 - **Node.js**: v20 or later
-- **Package Manager**: [pnpm](https://pnpm.io/) (required - this is a pnpm workspace)
-- **Swift**: Swift 6+ with macOS Command Line Tools for the native macOS app
+- **Package Manager**: [pnpm](https://pnpm.io/)
 
 ### Setup
 
@@ -46,7 +45,7 @@ Additionally, in every conversation, you can provide additional context in the f
 2. **Install dependencies**:
 
    ```bash
-   pnpm install
+   pnpm -C apps/web install
    ```
 
 3. **Environment Variables**:
@@ -63,19 +62,10 @@ Additionally, in every conversation, you can provide additional context in the f
 ### Running the App
 
 ```bash
-pnpm --filter @september/web dev
+make dev          # or: pnpm -C apps/web dev
 ```
 
-The application will be available at `http://localhost:3000`.
-
-### Running the macOS App
-
-```bash
-cd apps/swift
-swift run SeptemberMacApp
-```
-
-The Swift app currently boots a basic QWERTY keyboard shell.
+The application will be available at `http://localhost:3009`.
 
 ## Usage
 
@@ -87,50 +77,47 @@ The Swift app currently boots a basic QWERTY keyboard shell.
 
 ## Project Structure
 
-September is a **pnpm workspace monorepo** with a modular architecture using domain-driven packages:
+September is a single standalone web app in `apps/web/`. Shared modules live
+inside it at `src/packages/*` and are imported via the `@/packages/*` alias
+(`@/*` → `src/*` in `tsconfig.json`).
 
 ```
 september/
-├── apps/
-│   ├── web/                    # Next.js web application (@september/web)
-│   │   ├── app/                # App Router pages
-│   │   ├── components/         # Web-specific components
-│   │   └── services/           # Server-side integrations
-│   └── swift/                  # Native macOS app (Swift Package)
-├── packages/
-│   ├── shared/                 # @september/shared - Utilities, hooks, types
-│   ├── ui/                     # @september/ui - shadcn/ui components
-│   ├── account/               # @september/account - User account & DB sync
-│   ├── ai/                    # @september/ai - AI config & service registry
-│   ├── analytics/             # @september/analytics - Usage analytics
-│   ├── audio/                 # @september/audio - Audio playback & storage
-│   ├── chats/                 # @september/chats - Chat & message management
-│   ├── cloning/               # @september/cloning - Voice cloning
-│   ├── documents/             # @september/documents - Document management
-│   ├── editor/                # @september/editor - Autocomplete text editor
-│   ├── keyboards/             # @september/keyboards - Accessible keyboards
-│   ├── onboarding/            # @september/onboarding - User onboarding
-│   ├── recording/             # @september/recording - Audio recording
-│   ├── speech/                # @september/speech - TTS & voice management
-│   └── suggestions/           # @september/suggestions - Contextual suggestions
-└── pnpm-workspace.yaml         # Workspace configuration
+├── apps/web/                   # Web application (standalone pnpm project)
+│   ├── src/
+│   │   ├── routes/             # TanStack Router file routes
+│   │   └── packages/           # shared modules (import via @/packages/*)
+│   │       ├── shared/         # Utilities, hooks, types
+│   │       ├── ui/             # shadcn/ui components
+│   │       ├── ai/             # AI config & service registry
+│   │       ├── audio/          # Audio playback & storage
+│   │       ├── chats/          # Chat & message management
+│   │       ├── cloning/        # Voice cloning
+│   │       ├── documents/      # Document management
+│   │       ├── editor/         # Autocomplete text editor
+│   │       ├── keyboards/      # Accessible keyboards
+│   │       ├── onboarding/     # User onboarding
+│   │       ├── speech/         # TTS & voice management
+│   │       └── suggestions/    # Contextual suggestions
+│   ├── vite.config.ts
+│   └── vercel.json
+└── docs/                       # Plans, notes, concepts
 ```
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 (App Router, React 19)
+- **Framework**: TanStack Start on Vite (React 19, SPA)
 - **Styling**: Tailwind CSS 4, shadcn/ui components
 - **Local Storage**: IndexedDB (via TanStack DB) for local-first data persistence.
-- **AI**: Google Gemini API, Vercel AI SDK
+- **AI**: Google Gemini API / OpenRouter, Vercel AI SDK
 - **Voice**: ElevenLabs for voice synthesis and cloning
 - **Forms**: React Hook Form + Zod validation
 
 ## Development Guidelines
 
-- **Packages**: Use `packages/` for shared code with `@september/*` naming. Import via package names, not relative paths.
-- **Web App**: Web-specific code lives in `apps/web/`. Use `@/` imports for local files.
-- **macOS App**: Native Swift code lives in `apps/swift/`. Run `swift build` and `swift run SeptemberMacLayoutTests` before sharing changes.
-- **Components**: Check the `README.md` in each package directory before making changes.
+- **Modules**: Shared code lives in `src/packages/`. Import via the `@/packages/*` alias, not relative paths.
+- **App code**: Use `@/` imports for files under `src/`.
+- **Components**: Check the `README.md` in each module directory before making changes.
 - **Styles**: Follow shadcn/ui patterns and Tailwind CSS 4.
 - **Icons**: Use `lucide-react` for standard icons.
 

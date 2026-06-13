@@ -4,19 +4,19 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAccount } from '@september/account';
+import { useAccount } from '@/packages/account';
 import {
   type AIProvidersFormData,
   AIProvidersSchema,
   AI_PROVIDERS,
   ProviderSection,
   useAISettings,
-} from '@september/ai';
-import { useDebounce } from '@september/shared';
-import type { Providers, SpeechConfig, Voice } from '@september/shared';
-import { VoicesList, useSpeechContext } from '@september/speech';
-import { Button } from '@september/ui/components/button';
-import { Input } from '@september/ui/components/input';
+} from '@/packages/ai';
+import { useDebounce } from '@/packages/shared';
+import type { Providers, SpeechConfig, Voice } from '@/packages/shared';
+import { VoicesList, useSpeechContext } from '@/packages/speech';
+import { Button } from '@/packages/ui/components/button';
+import { Input } from '@/packages/ui/components/input';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 

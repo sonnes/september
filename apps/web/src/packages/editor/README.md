@@ -1,12 +1,12 @@
-# @september/editor
+# @/packages/editor
 
 Communication editor for September. Provides a textarea-based editor with integrated autocomplete, a rich-text TipTap editor, and the context provider that wires them together.
 
 ## Public API
 
 ```ts
-import { EditorProvider, useEditorContext, Editor, TiptapEditor } from '@september/editor';
-import type { EditorContextValue, EditorStats } from '@september/editor';
+import { EditorProvider, useEditorContext, Editor, TiptapEditor } from '@/packages/editor';
+import type { EditorContextValue, EditorStats } from '@/packages/editor';
 ```
 
 | Export | Description |
@@ -37,7 +37,7 @@ import type { EditorContextValue, EditorStats } from '@september/editor';
 ## Usage
 
 ```tsx
-import { EditorProvider, Editor, useEditorContext } from '@september/editor';
+import { EditorProvider, Editor, useEditorContext } from '@/packages/editor';
 
 // Wrap with provider (chatId scopes autocomplete to a recipient)
 export function ChatLayout({ chatId, children }) {

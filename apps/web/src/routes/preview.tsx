@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { createFileRoute } from '@tanstack/react-router';
 
-import { ReelRenderer } from '@september/audio';
+import { ReelRenderer } from '@/packages/audio';
 
 export const Route = createFileRoute('/preview')({
   component: PreviewPage,

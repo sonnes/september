@@ -2,7 +2,7 @@
 
 import { type HTMLAttributes, useEffect, useMemo, useRef, useState } from 'react';
 
-import { cn } from '@september/shared';
+import { cn } from '@/packages/shared';
 
 import { useTextViewerContext, TextViewer as TextViewerComponent } from './text-viewer';
 import { usePretextLayout } from '../hooks/use-pretext-layout';

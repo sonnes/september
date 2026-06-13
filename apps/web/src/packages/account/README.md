@@ -31,7 +31,7 @@ export {
 Wrap the app in `AccountProvider`:
 
 ```tsx
-import { AccountProvider } from '@september/account';
+import { AccountProvider } from '@/packages/account';
 
 export default function RootLayout({ children }) {
   return <AccountProvider>{children}</AccountProvider>;
@@ -41,7 +41,7 @@ export default function RootLayout({ children }) {
 Read and update account state with `useAccount`:
 
 ```tsx
-import { useAccount } from '@september/account';
+import { useAccount } from '@/packages/account';
 
 const { account, user, loading, updateAccount } = useAccount();
 

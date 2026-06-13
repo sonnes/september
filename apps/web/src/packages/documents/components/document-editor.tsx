@@ -9,21 +9,21 @@ import {
   PresentationChartBarIcon,
 } from '@heroicons/react/24/outline';
 
-import { Button } from '@september/ui/components/button';
+import { Button } from '@/packages/ui/components/button';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@september/ui/components/dialog';
-import { Separator } from '@september/ui/components/separator';
+} from '@/packages/ui/components/dialog';
+import { Separator } from '@/packages/ui/components/separator';
 
-import { cn } from '@september/shared';
+import { cn } from '@/packages/shared';
 import { SlidesPresentation } from './slides-presentation';
 import { UploadForm } from './upload-form';
 import { useDocumentEditor } from '../hooks/use-document-editor';
-import { TiptapEditor } from '@september/editor';
+import { TiptapEditor } from '@/packages/editor';
 
 type DocumentEditorProps = {
   documentId: string;

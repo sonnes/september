@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import { createRootRoute, HeadContent, Link, Outlet, Scripts } from '@tanstack/react-router';
 
-import { Toaster } from '@september/ui/components/sonner';
+import { Toaster } from '@/packages/ui/components/sonner';
 
 import appCss from '@/styles/globals.css?url';
 import '@fontsource/noto-sans/400.css';

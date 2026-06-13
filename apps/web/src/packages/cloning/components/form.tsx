@@ -7,11 +7,11 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { useAccount } from '@september/account';
-import { Button } from '@september/ui/components/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@september/ui/components/card';
-import { FormField, FormTextarea } from '@september/ui/components/form';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@september/ui/components/tabs';
+import { useAccount } from '@/packages/account';
+import { Button } from '@/packages/ui/components/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/packages/ui/components/card';
+import { FormField, FormTextarea } from '@/packages/ui/components/form';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/packages/ui/components/tabs';
 
 import { cloneVoice } from '../elevenlabs';
 import { useRecording } from '../hooks/use-recording';

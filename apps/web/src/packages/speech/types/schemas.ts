@@ -1,5 +1,5 @@
 import z from 'zod';
-import type { AIProvider } from '@september/shared';
+import type { AIProvider } from '@/packages/shared';
 
 export const VoiceSettingsSchema = z.object({
   provider: z.enum(['browser', 'gemini', 'elevenlabs', 'kokoro'] as const satisfies readonly AIProvider[]),

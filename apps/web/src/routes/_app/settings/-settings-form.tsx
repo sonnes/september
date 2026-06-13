@@ -6,10 +6,10 @@ import { Control, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { useAccount } from '@september/account';
-import { Button } from '@september/ui/components/button';
-import { FormCheckbox, FormField } from '@september/ui/components/form';
-import { LoadingState } from '@september/ui/components/loading-state';
+import { useAccount } from '@/packages/account';
+import { Button } from '@/packages/ui/components/button';
+import { FormCheckbox, FormField } from '@/packages/ui/components/form';
+import { LoadingState } from '@/packages/ui/components/loading-state';
 
 const SettingsSchema = z.object({
   name: z.string().min(1, 'Name is required'),

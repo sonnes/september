@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@september/ui/components/dropdown-menu"
+} from "@/packages/ui/components/dropdown-menu"
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -23,7 +23,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@september/ui/components/sidebar"
+} from "@/packages/ui/components/sidebar"
 
 export function NavProjects({
   projects,

@@ -15,8 +15,8 @@ Centralized type definitions ensure:
 
 ### Core Data Models
 
-Chat message records live in `@september/chats`; account records live in
-`@september/account`. Shared types may define small structural payloads for
+Chat message records live in `@/packages/chats`; account records live in
+`@/packages/account`. Shared types may define small structural payloads for
 cross-package protocols, but must not import feature package types.
 
 **[user.ts](user.ts)** - User authentication types
@@ -111,9 +111,9 @@ export interface Account {
 Always import types explicitly:
 
 ```typescript
-import type { Account, AccountUpdate } from '@september/account';
-import type { CreateMessageData, Message } from '@september/chats';
-import type { Voice } from '@september/shared';
+import type { Account, AccountUpdate } from '@/packages/account';
+import type { CreateMessageData, Message } from '@/packages/chats';
+import type { Voice } from '@/packages/shared';
 ```
 
 ### Type vs Interface

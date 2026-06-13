@@ -1,20 +1,20 @@
 'use client';
 
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import type { Account } from '@september/account';
-import { Alert, AlertDescription, AlertTitle } from '@september/ui/components/alert';
-import { Button } from '@september/ui/components/button';
+import type { Account } from '@/packages/account';
+import { Alert, AlertDescription, AlertTitle } from '@/packages/ui/components/alert';
+import { Button } from '@/packages/ui/components/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@september/ui/components/card';
-import { FormCheckbox, FormSelect, FormSlider } from '@september/ui/components/form';
-import { Input } from '@september/ui/components/input';
-import { Spinner } from '@september/ui/components/spinner';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@september/ui/components/tabs';
+} from '@/packages/ui/components/card';
+import { FormCheckbox, FormSelect, FormSlider } from '@/packages/ui/components/form';
+import { Input } from '@/packages/ui/components/input';
+import { Spinner } from '@/packages/ui/components/spinner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/packages/ui/components/tabs';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 import { useVoiceSettings } from '../hooks/use-voice-settings';

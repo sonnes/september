@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type Account, TranscriptionConfigSchema } from '@september/account';
-import { Alert, AlertDescription, AlertTitle } from '@september/ui/components/alert';
-import { Button } from '@september/ui/components/button';
-import { FormCheckbox, FormSelect } from '@september/ui/components/form';
-import { Spinner } from '@september/ui/components/spinner';
+import { type Account, TranscriptionConfigSchema } from '@/packages/account';
+import { Alert, AlertDescription, AlertTitle } from '@/packages/ui/components/alert';
+import { Button } from '@/packages/ui/components/button';
+import { FormCheckbox, FormSelect } from '@/packages/ui/components/form';
+import { Spinner } from '@/packages/ui/components/spinner';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';

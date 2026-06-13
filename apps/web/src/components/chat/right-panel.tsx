@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Clock, Grid2x2, LayoutGrid, Mic, Tv, X, type LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Button } from '@september/ui/components/button';
+import { Button } from '@/packages/ui/components/button';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -12,20 +12,20 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@september/ui/components/breadcrumb';
+} from '@/packages/ui/components/breadcrumb';
 
-import { cn } from '@september/shared';
-import { useAccount } from '@september/account';
-import { MessageList, useMessages } from '@september/chats';
-import { AudioOutputDeviceSelector } from '@september/audio';
-import { SpeechSettings } from '@september/speech';
-import type { VoiceSettingsFormData } from '@september/speech';
+import { cn } from '@/packages/shared';
+import { useAccount } from '@/packages/account';
+import { MessageList, useMessages } from '@/packages/chats';
+import { AudioOutputDeviceSelector } from '@/packages/audio';
+import { SpeechSettings } from '@/packages/speech';
+import type { VoiceSettingsFormData } from '@/packages/speech';
 import {
   CustomKeyboardEditor,
   useCustomKeyboards,
   deleteKeyboard,
   type CustomKeyboard,
-} from '@september/keyboards';
+} from '@/packages/keyboards';
 
 import { useChatPanel, type ChatPanelTab } from './use-chat-panel';
 

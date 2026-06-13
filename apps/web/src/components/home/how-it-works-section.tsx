@@ -1,5 +1,5 @@
-import { Avatar, AvatarFallback } from '@september/ui/components/avatar';
-import { Card, CardContent } from '@september/ui/components/card';
+import { Avatar, AvatarFallback } from '@/packages/ui/components/avatar';
+import { Card, CardContent } from '@/packages/ui/components/card';
 
 export function HowItWorksSection() {
   return (

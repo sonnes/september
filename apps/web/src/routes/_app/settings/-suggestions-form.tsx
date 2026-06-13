@@ -1,11 +1,11 @@
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
-import { useAccount } from '@september/account';
-import { SuggestionsForm, type SuggestionsFormData } from '@september/suggestions';
-import { Alert, AlertDescription, AlertTitle } from '@september/ui/components/alert';
-import { Button } from '@september/ui/components/button';
-import { LoadingState } from '@september/ui/components/loading-state';
-import { Spinner } from '@september/ui/components/spinner';
+import { useAccount } from '@/packages/account';
+import { SuggestionsForm, type SuggestionsFormData } from '@/packages/suggestions';
+import { Alert, AlertDescription, AlertTitle } from '@/packages/ui/components/alert';
+import { Button } from '@/packages/ui/components/button';
+import { LoadingState } from '@/packages/ui/components/loading-state';
+import { Spinner } from '@/packages/ui/components/spinner';
 
 export default function SuggestionsSettingsForm() {
   const { account, updateAccount } = useAccount();

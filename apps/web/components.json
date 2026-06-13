@@ -13,9 +13,9 @@
   "aliases": {
     "components": "@/components",
     "hooks": "@/hooks",
-    "lib": "@september/shared",
-    "utils": "@september/shared",
-    "ui": "@september/ui/components"
+    "lib": "@/packages/shared",
+    "utils": "@/packages/shared",
+    "ui": "@/packages/ui/components"
   },
   "registries": {
     "@ai-elements": "https://registry.ai-sdk.dev/{name}.json"

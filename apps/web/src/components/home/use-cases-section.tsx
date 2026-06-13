@@ -1,6 +1,6 @@
 import { Briefcase, Heart, Home, Star } from 'lucide-react';
 
-import { Card, CardContent } from '@september/ui/components/card';
+import { Card, CardContent } from '@/packages/ui/components/card';
 
 export function UseCasesSection() {
   return (

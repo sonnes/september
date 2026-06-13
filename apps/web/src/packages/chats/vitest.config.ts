@@ -9,9 +9,9 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@september/chats': path.resolve(__dirname, '.'),
-      '@september/shared': path.resolve(__dirname, '../shared'),
-      '@september/analytics': path.resolve(__dirname, '../analytics'),
+      '@/packages/chats': path.resolve(__dirname, '.'),
+      '@/packages/shared': path.resolve(__dirname, '../shared'),
+      '@/packages/analytics': path.resolve(__dirname, '../analytics'),
     },
   },
 });

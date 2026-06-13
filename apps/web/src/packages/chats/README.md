@@ -1,4 +1,4 @@
-# @september/chats
+# @/packages/chats
 
 Local-first chat and messaging for September. Backed by TanStack DB (IndexedDB).
 
@@ -27,7 +27,7 @@ const { message } = useFirstMessage(chatId);
 Plain async functions that `throw` on failure. Toasts live at call sites.
 
 ```ts
-import { createChat, updateChat, deleteChat, createMessage } from '@september/chats';
+import { createChat, updateChat, deleteChat, createMessage } from '@/packages/chats';
 
 const chat = await createChat(userId, 'New Chat');
 await updateChat(chatId, { title: 'Renamed' });
@@ -46,7 +46,7 @@ const { createAudioMessage, status } = useCreateAudioMessage();
 ### Types
 
 ```ts
-import type { Chat, Message, CreateMessageData } from '@september/chats';
+import type { Chat, Message, CreateMessageData } from '@/packages/chats';
 ```
 
 ## Data layout

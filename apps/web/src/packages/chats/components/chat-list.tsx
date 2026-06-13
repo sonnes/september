@@ -15,11 +15,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@september/ui/components/alert-dialog';
-import { Button } from '@september/ui/components/button';
-import { Input } from '@september/ui/components/input';
+} from '@/packages/ui/components/alert-dialog';
+import { Button } from '@/packages/ui/components/button';
+import { Input } from '@/packages/ui/components/input';
 
-import { cn, timeAgo } from '@september/shared';
+import { cn, timeAgo } from '@/packages/shared';
 
 import { deleteChat } from '../mutations';
 import { Chat } from '../types';

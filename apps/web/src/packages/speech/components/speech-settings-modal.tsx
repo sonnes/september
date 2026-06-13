@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { Volume2 } from 'lucide-react';
-import { Button } from '@september/ui/components/button';
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@september/ui/components/dialog';
-import { useAccount } from '@september/account';
+import { Button } from '@/packages/ui/components/button';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/packages/ui/components/dialog';
+import { useAccount } from '@/packages/account';
 import { SpeechSettings } from './speech-settings';
 import type { VoiceSettingsFormData } from '../types/schemas';
 

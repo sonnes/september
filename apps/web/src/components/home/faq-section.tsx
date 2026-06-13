@@ -3,7 +3,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@september/ui/components/accordion';
+} from '@/packages/ui/components/accordion';
 
 import faqs from '@/data/home-faqs.json';
 

@@ -1,4 +1,4 @@
-# @september/cloning
+# @/packages/cloning
 
 Voice cloning for September using the ElevenLabs API. Users upload existing audio or record new samples directly in the browser, then submit them to ElevenLabs to create a personal voice clone.
 
@@ -7,7 +7,7 @@ Voice cloning for September using the ElevenLabs API. Users upload existing audi
 ### Form component
 
 ```tsx
-import { VoiceCloneForm } from '@september/cloning';
+import { VoiceCloneForm } from '@/packages/cloning';
 
 // Self-contained — no provider needed. Calls useUpload and useRecording internally.
 <VoiceCloneForm />
@@ -16,7 +16,7 @@ import { VoiceCloneForm } from '@september/cloning';
 ### ElevenLabs functions
 
 ```ts
-import { cloneVoice, findSimilarVoices } from '@september/cloning';
+import { cloneVoice, findSimilarVoices } from '@/packages/cloning';
 
 const result = await cloneVoice(apiKey, { files, name, description });
 // result: { voice_id: string; name: string }
@@ -30,7 +30,7 @@ const voices = await findSimilarVoices(apiKey, files);
 Plain async functions — pass `userId` explicitly, no hook required.
 
 ```ts
-import { uploadVoiceSample, getVoiceSamples, deleteVoiceSample, downloadVoiceSample } from '@september/cloning';
+import { uploadVoiceSample, getVoiceSamples, deleteVoiceSample, downloadVoiceSample } from '@/packages/cloning';
 
 const path = await uploadVoiceSample({ userId, file, type: 'upload' });
 const samples = await getVoiceSamples(userId, 'recording'); // or omit type for all
@@ -43,7 +43,7 @@ Sample paths follow the scheme: `voice-samples/{userId}/{type}/{filename}`
 ### Types
 
 ```ts
-import type { VoiceSample, UploadStatus, RecordingStatus, SimilarVoice } from '@september/cloning';
+import type { VoiceSample, UploadStatus, RecordingStatus, SimilarVoice } from '@/packages/cloning';
 ```
 
 ## Architecture

@@ -1,6 +1,6 @@
 # Typing Suggestions Library
 
-A TypeScript library for AI-powered typing suggestions, providing intelligent word completions and next word predictions using n-gram language models. Ships as `@september/shared/autocomplete`.
+A TypeScript library for AI-powered typing suggestions, providing intelligent word completions and next word predictions using n-gram language models. Ships as `@/packages/shared/lib/autocomplete`.
 
 > **Context.** This library powers typing assistance in an assistive
 > communication app for people with ALS/MND. Keystroke savings are the
@@ -54,7 +54,7 @@ All pre-v2 APIs (`train`, `getCompletions`, `getNextWord`, `getNextPhrase`,
 The library is part of the September project and can be imported directly:
 
 ```typescript
-import { TypingSuggestions } from '@september/shared/autocomplete';
+import { TypingSuggestions } from '@/packages/shared/lib/autocomplete';
 ```
 
 ## Quick Start
@@ -62,7 +62,7 @@ import { TypingSuggestions } from '@september/shared/autocomplete';
 ### Simple API (Autocomplete-style)
 
 ```typescript
-import { TypingSuggestions } from '@september/shared/autocomplete';
+import { TypingSuggestions } from '@/packages/shared/lib/autocomplete';
 
 // Create a new suggestions engine
 const engine = new TypingSuggestions();

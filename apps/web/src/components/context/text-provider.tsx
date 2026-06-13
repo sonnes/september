@@ -2,7 +2,7 @@
 
 import React, { ReactNode, createContext, useContext } from 'react';
 
-import { useText } from '@september/shared';
+import { useText } from '@/packages/shared';
 
 interface TextContextType {
   text: string;

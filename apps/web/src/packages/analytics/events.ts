@@ -2,7 +2,7 @@ import { createCollection } from '@tanstack/react-db';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
-import { indexedDBCollectionOptionsV2 } from '@september/shared/indexeddb';
+import { indexedDBCollectionOptionsV2 } from '@/packages/shared/lib/indexeddb';
 
 // ---------------------------------------------------------------------------
 // Public event type — flat discriminated union used by callers

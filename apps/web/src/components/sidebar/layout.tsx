@@ -2,9 +2,9 @@
 
 import { PropsWithChildren } from 'react';
 
-import { SidebarInset, SidebarProvider } from '@september/ui/components/sidebar';
+import { SidebarInset, SidebarProvider } from '@/packages/ui/components/sidebar';
 
-import { User, useIsCompact } from '@september/shared';
+import { User, useIsCompact } from '@/packages/shared';
 
 import { AppSidebar } from './app-sidebar';
 

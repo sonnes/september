@@ -1,6 +1,6 @@
 {
   "framework": null,
-  "buildCommand": "pnpm --filter @september/web build",
+  "buildCommand": "pnpm build",
   "outputDirectory": "dist/client",
   "rewrites": [{ "source": "/(.*)", "destination": "/_shell.html" }],
   "headers": [

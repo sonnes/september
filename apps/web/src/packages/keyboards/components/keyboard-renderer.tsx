@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 
 import { toast } from 'sonner';
 
-import { cn } from '@september/shared';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@september/ui/components/tabs';
+import { cn } from '@/packages/shared';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/packages/ui/components/tabs';
 
 import { CircularKeyboard } from './circular-keyboard';
 import { CustomKeyboard } from './custom-keyboard';

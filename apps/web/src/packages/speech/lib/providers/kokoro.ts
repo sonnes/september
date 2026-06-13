@@ -4,8 +4,8 @@ import {
   SpeechRequest,
   SpeechResponse,
 } from '../../types';
-import { KokoroSpeechSettings } from '@september/shared';
-import { Voice } from '@september/shared';
+import { KokoroSpeechSettings } from '@/packages/shared';
+import { Voice } from '@/packages/shared';
 
 // Static voice definitions (28 Kokoro voices)
 // Based on actual kokoro-js voice list

@@ -5,13 +5,13 @@ import { useCallback, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
-import { getProvidersForFeature } from '@september/ai';
+import { getProvidersForFeature } from '@/packages/ai';
 import { useVoiceFetching } from './use-voice-fetching';
 import { useProviderModels } from './use-provider-models';
 import { VoiceSettingsFormData, VoiceSettingsSchema } from '../types/schemas';
-import type { Account } from '@september/account';
-import type { Voice } from '@september/shared';
-import type { AIServiceProvider } from '@september/shared';
+import type { Account } from '@/packages/account';
+import type { Voice } from '@/packages/shared';
+import type { AIServiceProvider } from '@/packages/shared';
 
 type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs' | 'kokoro';
 

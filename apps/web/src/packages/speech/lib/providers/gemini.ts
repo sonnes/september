@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
-import { GeminiSpeechSettings } from '@september/shared';
-import { Voice } from '@september/shared';
+import { GeminiSpeechSettings } from '@/packages/shared';
+import { Voice } from '@/packages/shared';
 import { ListVoicesRequest, SpeechEngine, SpeechRequest, SpeechResponse } from '../../types';
 
 /**

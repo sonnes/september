@@ -15,27 +15,27 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { useAccount } from '@september/account';
-import { useAudioPlayer } from '@september/audio';
+import { useAccount } from '@/packages/account';
+import { useAudioPlayer } from '@/packages/audio';
 import {
   EditableChatTitle,
   updateChat,
   useChats,
   useCreateAudioMessage,
   useMessages,
-} from '@september/chats';
-import { Autocomplete, useEditorContext } from '@september/editor';
-import { createKeyboard, useGenerateKeyboardFromMessage } from '@september/keyboards';
-import { DisplayMessage } from '@september/shared';
-import { Suggestions } from '@september/suggestions';
-import { Button } from '@september/ui/components/button';
+} from '@/packages/chats';
+import { Autocomplete, useEditorContext } from '@/packages/editor';
+import { createKeyboard, useGenerateKeyboardFromMessage } from '@/packages/keyboards';
+import { DisplayMessage } from '@/packages/shared';
+import { Suggestions } from '@/packages/suggestions';
+import { Button } from '@/packages/ui/components/button';
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from '@september/ui/components/resizable';
-import { Separator } from '@september/ui/components/separator';
-import { SidebarTrigger } from '@september/ui/components/sidebar';
+} from '@/packages/ui/components/resizable';
+import { Separator } from '@/packages/ui/components/separator';
+import { SidebarTrigger } from '@/packages/ui/components/sidebar';
 
 import MobileNav from '@/components/nav/mobile';
 import SidebarLayout from '@/components/sidebar/layout';

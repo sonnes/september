@@ -15,11 +15,7 @@
     "incremental": true,
     "types": ["vite/client"],
     "paths": {
-      "@/*": ["./src/*"],
-      "@september/shared/autocomplete": ["./src/packages/shared/lib/autocomplete/index.ts"],
-      "@september/shared/indexeddb": ["./src/packages/shared/lib/indexeddb/index.ts"],
-      "@september/shared/slides": ["./src/packages/shared/lib/slides/index.ts"],
-      "@september/*": ["./src/packages/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": [

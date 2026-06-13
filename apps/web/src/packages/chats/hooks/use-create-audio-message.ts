@@ -5,10 +5,10 @@ import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 
-import { useAccount } from '@september/account';
-import type { Audio } from '@september/audio';
-import { uploadAudio } from '@september/audio';
-import { useSpeech } from '@september/speech';
+import { useAccount } from '@/packages/account';
+import type { Audio } from '@/packages/audio';
+import { uploadAudio } from '@/packages/audio';
+import { useSpeech } from '@/packages/speech';
 
 import { createMessage } from '../mutations';
 import type { CreateMessageData, Message } from '../types';

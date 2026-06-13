@@ -5,10 +5,10 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 
-import { useAccount } from '@september/account';
-import { ChatList, useChats, createChat } from '@september/chats';
-import { Button } from '@september/ui/components/button';
-import { ErrorState } from '@september/ui/components/error-state';
+import { useAccount } from '@/packages/account';
+import { ChatList, useChats, createChat } from '@/packages/chats';
+import { Button } from '@/packages/ui/components/button';
+import { ErrorState } from '@/packages/ui/components/error-state';
 
 import { PageHeader, PageShell, PageTitle } from '@/components/layout';
 import SidebarLayout from '@/components/sidebar/layout';

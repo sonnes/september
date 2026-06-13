@@ -1,12 +1,12 @@
-# @september/analytics
+# @/packages/analytics
 
 Client-side event tracking for the September app. Fire-and-forget event writes to IndexedDB; a live-query hook aggregates them for the dashboard.
 
 ## Public API
 
 ```ts
-import { track, DashboardStats } from '@september/analytics';
-import type { TrackedEvent } from '@september/analytics';
+import { track, DashboardStats } from '@/packages/analytics';
+import type { TrackedEvent } from '@/packages/analytics';
 ```
 
 Everything else (`analyticsCollection`, `useAnalyticsSummary`, `aggregateByProvider`, individual components) is internal.

@@ -5,10 +5,10 @@ import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { cn, timeAgo } from '@september/shared';
-import { useAudioPlayer, downloadAudio } from '@september/audio';
-import type { Audio } from '@september/audio';
-import { useSpeech } from '@september/speech';
+import { cn, timeAgo } from '@/packages/shared';
+import { useAudioPlayer, downloadAudio } from '@/packages/audio';
+import type { Audio } from '@/packages/audio';
+import { useSpeech } from '@/packages/speech';
 
 import type { Message } from '../types';
 

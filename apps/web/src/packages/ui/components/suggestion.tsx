@@ -2,7 +2,7 @@
 
 import { Button } from "./button";
 import { ScrollArea, ScrollBar } from "./scroll-area";
-import { cn } from "@september/shared";
+import { cn } from "@/packages/shared";
 import type { ComponentProps } from "react";
 
 export type SuggestionsProps = ComponentProps<typeof ScrollArea>;

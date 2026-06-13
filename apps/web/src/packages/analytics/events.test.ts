@@ -16,7 +16,7 @@ vi.mock('@tanstack/react-db', () => ({
   })),
 }));
 
-vi.mock('@september/shared/indexeddb', () => ({
+vi.mock('@/packages/shared/lib/indexeddb', () => ({
   indexedDBCollectionOptionsV2: vi.fn(config => config),
 }));
 

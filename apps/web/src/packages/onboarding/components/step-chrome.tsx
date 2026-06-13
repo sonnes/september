@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 
-import { Button } from '@september/ui/components/button';
+import { Button } from '@/packages/ui/components/button';
 import { ArrowLeft } from 'lucide-react';
 
 export function StepShell({ children }: { children: ReactNode }) {

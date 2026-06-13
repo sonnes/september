@@ -2,13 +2,13 @@ import { useCallback } from 'react';
 
 import { createFileRoute } from '@tanstack/react-router';
 
-import { useAccount } from '@september/account';
-import { TextViewer, TextViewerWords, useAudioPlayer } from '@september/audio';
-import { useCreateAudioMessage } from '@september/chats';
-import { Editor, EditorProvider, useEditorContext } from '@september/editor';
-import { KeyboardProvider, KeyboardRenderer, KeyboardToggleButton } from '@september/keyboards';
-import { SpeechProvider, SpeechSettingsModal } from '@september/speech';
-import { Suggestions } from '@september/suggestions';
+import { useAccount } from '@/packages/account';
+import { TextViewer, TextViewerWords, useAudioPlayer } from '@/packages/audio';
+import { useCreateAudioMessage } from '@/packages/chats';
+import { Editor, EditorProvider, useEditorContext } from '@/packages/editor';
+import { KeyboardProvider, KeyboardRenderer, KeyboardToggleButton } from '@/packages/keyboards';
+import { SpeechProvider, SpeechSettingsModal } from '@/packages/speech';
+import { Suggestions } from '@/packages/suggestions';
 
 import { PageHeader, PageShell, PageTitle } from '@/components/layout';
 import SidebarLayout from '@/components/sidebar/layout';

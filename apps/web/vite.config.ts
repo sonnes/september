@@ -32,7 +32,6 @@ function crossOriginIsolationHeaders() {
 }
 
 export default defineConfig({
-  ssr: { noExternal: [/^@september\//] },
   plugins: [
     crossOriginIsolationHeaders(),
     tsconfigPaths(),

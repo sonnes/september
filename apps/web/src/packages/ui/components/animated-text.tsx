@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { cn } from '@september/shared';
+import { cn } from '@/packages/shared';
 
 interface AnimatedTextProps {
   text: string;

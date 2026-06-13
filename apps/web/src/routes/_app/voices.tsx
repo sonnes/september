@@ -2,18 +2,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { createFileRoute } from '@tanstack/react-router';
 
-import { useAccount } from '@september/account';
-import { findSimilarVoices, getVoiceSamples, downloadVoiceSample } from '@september/cloning';
-import type { SimilarVoice } from '@september/cloning';
-import { Button } from '@september/ui/components/button';
-import { Callout } from '@september/ui/components/callout';
+import { useAccount } from '@/packages/account';
+import { findSimilarVoices, getVoiceSamples, downloadVoiceSample } from '@/packages/cloning';
+import type { SimilarVoice } from '@/packages/cloning';
+import { Button } from '@/packages/ui/components/button';
+import { Callout } from '@/packages/ui/components/callout';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@september/ui/components/card';
+} from '@/packages/ui/components/card';
 
 import { PageHeader, PageShell, PageTitle } from '@/components/layout';
 import SidebarLayout from '@/components/sidebar/layout';

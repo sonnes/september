@@ -1,4 +1,4 @@
-import { uploadAudioBinary, listAudio, deleteAudio, downloadAudio } from '@september/audio';
+import { uploadAudioBinary, listAudio, deleteAudio, downloadAudio } from '@/packages/audio';
 import type { VoiceSample } from './types';
 
 export async function uploadVoiceSample({

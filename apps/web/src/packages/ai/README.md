@@ -1,4 +1,4 @@
-# @september/ai
+# @/packages/ai
 
 Shared AI settings, provider metadata, generation, schemas, and settings forms.
 
@@ -29,7 +29,7 @@ import {
   useAISettings,
   useGenerate,
   useTranscribe,
-} from '@september/ai';
+} from '@/packages/ai';
 ```
 
 Root exports are curated. Defaults, middleware, and registry internals stay package-private unless a consumer needs them through the public API.
@@ -39,7 +39,7 @@ Root exports are curated. Defaults, middleware, and registry internals stay pack
 Wrap app UI with `AISettingsProvider`, then read and update account-backed AI settings with `useAISettings`.
 
 ```tsx
-import { AISettingsProvider, useAISettings } from '@september/ai';
+import { AISettingsProvider, useAISettings } from '@/packages/ai';
 
 function AppProviders({ children }: { children: React.ReactNode }) {
   return <AISettingsProvider>{children}</AISettingsProvider>;
@@ -64,7 +64,7 @@ import {
   getModelsForProvider,
   getProvidersForFeature,
   supportsFeature,
-} from '@september/ai';
+} from '@/packages/ai';
 
 const speechProviders = getProvidersForFeature('speech');
 const geminiModels = getModelsForProvider('gemini');
@@ -98,7 +98,7 @@ list is the single source of truth in `lib/openrouter-model.ts`; refresh the ids
 they rotate.
 
 ```tsx
-import { useGenerate } from '@september/ai';
+import { useGenerate } from '@/packages/ai';
 
 function HaikuButton() {
   const { generate, isGenerating, isReady } = useGenerate();
@@ -124,7 +124,7 @@ function HaikuButton() {
 Pass a schema for structured output:
 
 ```tsx
-import { useGenerate } from '@september/ai';
+import { useGenerate } from '@/packages/ai';
 import { z } from 'zod';
 
 const RecipeSchema = z.object({
@@ -175,7 +175,7 @@ const text = await generate({
 (Gemini or OpenRouter), client-side, using the user's own key — the same path as suggestions.
 
 ```tsx
-import { useTranscribe } from '@september/ai';
+import { useTranscribe } from '@/packages/ai';
 
 function Recorder() {
   const { transcribe, isTranscribing, isReady } = useTranscribe();
@@ -198,7 +198,7 @@ automatically (driven by the registry `oauth` flag); the providers settings page
 returning `?code`.
 
 ```ts
-import { startOpenRouterAuth, completeOpenRouterAuth } from '@september/ai';
+import { startOpenRouterAuth, completeOpenRouterAuth } from '@/packages/ai';
 
 // Kick off (full-page redirect):
 await startOpenRouterAuth(`${window.location.origin}/settings/providers`);
@@ -217,7 +217,7 @@ await updateAccount({ ai_providers: { ...account.ai_providers, openrouter: { api
 `extractText` sends one or more files to Gemini 2.5 Flash and returns markdown-formatted text with `---` chunk separators. Throws `Error('Could not extract text from files')` on failure.
 
 ```ts
-import { extractText } from '@september/ai';
+import { extractText } from '@/packages/ai';
 
 const markdown = await extractText(apiKey, files);
 ```

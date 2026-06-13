@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { z } from 'zod';
 
-import { useAISettings, useGenerate } from '@september/ai';
-import { Message } from '@september/chats';
+import { useAISettings, useGenerate } from '@/packages/ai';
+import { Message } from '@/packages/chats';
 import { ignoreUnnecessaryDiffs } from '../lib/reanchor';
 import { Suggestion } from '../types';
 

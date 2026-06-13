@@ -2,8 +2,8 @@
 
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
-import { Button } from '@september/ui/components/button';
-import { cn } from '@september/shared';
+import { Button } from '@/packages/ui/components/button';
+import { cn } from '@/packages/shared';
 
 type SlidesNavigationProps = {
   currentSlide: number;

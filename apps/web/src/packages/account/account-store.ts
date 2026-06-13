@@ -5,7 +5,7 @@ import { useCallback } from 'react';
 import { eq } from '@tanstack/db';
 import { createCollection, useLiveQuery } from '@tanstack/react-db';
 
-import { indexedDBCollectionOptionsV2 } from '@september/shared/indexeddb';
+import { indexedDBCollectionOptionsV2 } from '@/packages/shared/lib/indexeddb';
 
 import { AccountSchema, type Account } from './schema';
 

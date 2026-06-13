@@ -6,7 +6,7 @@ import { useLocation } from '@tanstack/react-router';
 
 import { ChevronRight, type LucideIcon } from 'lucide-react';
 
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@september/ui/components/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/packages/ui/components/collapsible';
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -17,7 +17,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-} from '@september/ui/components/sidebar';
+} from '@/packages/ui/components/sidebar';
 
 interface NavItem {
   title: string;

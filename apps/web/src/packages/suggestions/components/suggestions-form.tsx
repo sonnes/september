@@ -3,18 +3,18 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { Account } from '@september/account';
-import { getModelsForProvider, getProvidersForFeature } from '@september/ai';
-import type { AIProvider } from '@september/shared';
-import { Alert, AlertDescription, AlertTitle } from '@september/ui/components/alert';
-import { Button } from '@september/ui/components/button';
+import type { Account } from '@/packages/account';
+import { getModelsForProvider, getProvidersForFeature } from '@/packages/ai';
+import type { AIProvider } from '@/packages/shared';
+import { Alert, AlertDescription, AlertTitle } from '@/packages/ui/components/alert';
+import { Button } from '@/packages/ui/components/button';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@september/ui/components/collapsible';
-import { FormCheckbox, FormSelect, FormTextarea } from '@september/ui/components/form';
-import { Spinner } from '@september/ui/components/spinner';
+} from '@/packages/ui/components/collapsible';
+import { FormCheckbox, FormSelect, FormTextarea } from '@/packages/ui/components/form';
+import { Spinner } from '@/packages/ui/components/spinner';
 import { AlertCircle, CheckCircle2, ChevronDown } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';

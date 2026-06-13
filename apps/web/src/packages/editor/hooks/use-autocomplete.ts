@@ -2,15 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useAccount } from '@september/account';
-import { useMessages } from '@september/chats';
+import { useAccount } from '@/packages/account';
+import { useMessages } from '@/packages/chats';
 
 import {
   Autocomplete,
   AutocompletePersistence,
   type AnyEngineSnapshot,
-} from '@september/shared/autocomplete';
-import { tokenize } from '@september/shared/autocomplete';
+} from '@/packages/shared/lib/autocomplete';
+import { tokenize } from '@/packages/shared/lib/autocomplete';
 
 // Module-level caches. The base corpus is ~2 MB and shared across all users;
 // fetching once per tab is enough.

@@ -1,4 +1,4 @@
-# @september/speech
+# @/packages/speech
 
 Text-to-speech for September. Manages engine registry, voice listing, and the unified settings UI.
 
@@ -12,8 +12,8 @@ import {
   SpeechSettingsModal,
   VoicesList,
   useSpeech,
-} from '@september/speech';
-import type { UseSpeechReturn, VoiceSettingsFormData } from '@september/speech';
+} from '@/packages/speech';
+import type { UseSpeechReturn, VoiceSettingsFormData } from '@/packages/speech';
 ```
 
 `SpeechSettings` is a standalone form component — it does **not** require a Dialog wrapper and can be embedded directly in any layout (e.g., a side panel tab). The `SpeechSettingsModal` wraps it in a Dialog for the current chat page; both exports coexist.

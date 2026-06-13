@@ -59,7 +59,7 @@ All components follow shadcn/ui patterns and are built on Radix primitives:
 ### Import from Package Root
 
 ```typescript
-import { Button, Card, Input, Dialog } from '@september/ui';
+import { Button, Card, Input, Dialog } from '@/packages/ui';
 
 <Button variant="default" size="lg">
   Click me
@@ -71,8 +71,8 @@ import { Button, Card, Input, Dialog } from '@september/ui';
 For specific components:
 
 ```typescript
-import { Button } from '@september/ui/components/button';
-import { Card, CardHeader, CardContent } from '@september/ui/components/card';
+import { Button } from '@/packages/ui/components/button';
+import { Card, CardHeader, CardContent } from '@/packages/ui/components/card';
 ```
 
 ### Form Components
@@ -80,8 +80,8 @@ import { Card, CardHeader, CardContent } from '@september/ui/components/card';
 Forms integrate with react-hook-form:
 
 ```typescript
-import { Form, FormField, FormItem, FormLabel, FormControl } from '@september/ui';
-import { Input } from '@september/ui';
+import { Form, FormField, FormItem, FormLabel, FormControl } from '@/packages/ui';
+import { Input } from '@/packages/ui';
 import { useForm } from 'react-hook-form';
 
 function MyForm() {

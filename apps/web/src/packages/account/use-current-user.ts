@@ -1,6 +1,6 @@
 'use client';
 
-import type { User } from '@september/shared';
+import type { User } from '@/packages/shared';
 
 import { LOCAL_USER } from './defaults';
 

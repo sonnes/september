@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { AlertTriangleIcon, RotateCwIcon, type LucideIcon } from 'lucide-react';
 
-import { cn } from '@september/shared';
+import { cn } from '@/packages/shared';
 
 import { Button } from './button';
 

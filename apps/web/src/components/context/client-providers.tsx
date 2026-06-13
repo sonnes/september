@@ -2,9 +2,9 @@
 
 import { useSyncExternalStore } from 'react';
 
-import { AccountProvider } from '@september/account';
-import { AISettingsProvider } from '@september/ai';
-import { AudioPlayerProvider } from '@september/audio';
+import { AccountProvider } from '@/packages/account';
+import { AISettingsProvider } from '@/packages/ai';
+import { AudioPlayerProvider } from '@/packages/audio';
 
 const subscribe = () => () => {};
 const getSnapshot = () => true;

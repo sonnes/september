@@ -7,8 +7,8 @@ Small shared primitives, hooks, and types used across September packages.
 - **Utilities**: Common helper functions (`cn` for className merging, `MATCH_PUNCTUATION` for text boundaries, `timeAgo` for human-readable relative time strings)
 - **Hooks**: Reusable React hooks for common patterns
 - **Types**: Shared TypeScript types and Zod schemas
-- **IndexedDB**: Local storage utilities with TanStack DB, exported from `@september/shared/indexeddb`
-- **Autocomplete**: Trie-based autocomplete engine, exported from `@september/shared/autocomplete`
+- **IndexedDB**: Local storage utilities with TanStack DB, exported from `@/packages/shared/lib/indexeddb`
+- **Autocomplete**: Trie-based autocomplete engine, exported from `@/packages/shared/lib/autocomplete`
 
 ## Structure
 
@@ -37,7 +37,7 @@ packages/shared/
 ### Utilities
 
 ```typescript
-import { cn, timeAgo } from '@september/shared';
+import { cn, timeAgo } from '@/packages/shared';
 
 // Merge class names with Tailwind conflict resolution
 <div className={cn('px-4 py-2', isActive && 'bg-blue-500')} />
@@ -49,7 +49,7 @@ timeAgo(message.created_at) // "2 minutes ago"
 ### Hooks
 
 ```typescript
-import { useDebounce, useIsMobile, useIsCompact } from '@september/shared';
+import { useDebounce, useIsMobile, useIsCompact } from '@/packages/shared';
 
 // Debounce a value
 const debouncedSearch = useDebounce(searchQuery, 300);
@@ -65,7 +65,7 @@ const isCompact = useIsCompact();
 ### Types
 
 ```typescript
-import { AIProvider, SpeechConfig, VoiceSettings } from '@september/shared';
+import { AIProvider, SpeechConfig, VoiceSettings } from '@/packages/shared';
 
 const provider: AIProvider = 'gemini';
 
@@ -79,9 +79,9 @@ const speech: SpeechConfig = {
 Use explicit subpaths for heavier purpose-built modules:
 
 ```typescript
-import { tokenize } from '@september/shared/autocomplete';
-import { indexedDBCollectionOptionsV2 } from '@september/shared/indexeddb';
-import { parseAndRenderSlides } from '@september/shared/slides';
+import { tokenize } from '@/packages/shared/lib/autocomplete';
+import { indexedDBCollectionOptionsV2 } from '@/packages/shared/lib/indexeddb';
+import { parseAndRenderSlides } from '@/packages/shared/lib/slides';
 ```
 
 Keep the root import for broadly useful primitives only: `cn`, simple hooks,

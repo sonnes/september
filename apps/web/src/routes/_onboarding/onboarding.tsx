@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { OnboardingFlow, OnboardingProvider } from '@september/onboarding';
-import { SpeechProvider } from '@september/speech';
+import { OnboardingFlow, OnboardingProvider } from '@/packages/onboarding';
+import { SpeechProvider } from '@/packages/speech';
 
 import { pageTitle } from '@/lib/seo';
 

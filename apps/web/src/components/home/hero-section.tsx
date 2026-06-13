@@ -6,14 +6,14 @@ import { Link } from '@tanstack/react-router';
 
 import { Github } from 'lucide-react';
 
-import { Badge } from '@september/ui/components/badge';
-import { Button } from '@september/ui/components/button';
+import { Badge } from '@/packages/ui/components/badge';
+import { Button } from '@/packages/ui/components/button';
 
-import { useAccount } from '@september/account';
-import { useAudioPlayer } from '@september/audio';
-import { EditorProvider, useEditorContext, Editor } from '@september/editor';
-import { KeyboardProvider } from '@september/keyboards';
-import { useCreateAudioMessage } from '@september/chats';
+import { useAccount } from '@/packages/account';
+import { useAudioPlayer } from '@/packages/audio';
+import { EditorProvider, useEditorContext, Editor } from '@/packages/editor';
+import { KeyboardProvider } from '@/packages/keyboards';
+import { useCreateAudioMessage } from '@/packages/chats';
 
 function HeroEditor() {
   const { user } = useAccount();

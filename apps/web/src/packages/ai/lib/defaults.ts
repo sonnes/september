@@ -1,4 +1,4 @@
-import { SpeechConfig, SuggestionsConfig, TranscriptionConfig } from '@september/shared';
+import { SpeechConfig, SuggestionsConfig, TranscriptionConfig } from '@/packages/shared';
 
 import { OPENROUTER_FREE_STACK_ID } from './openrouter-model';
 

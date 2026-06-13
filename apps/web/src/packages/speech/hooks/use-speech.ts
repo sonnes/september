@@ -2,11 +2,11 @@
 
 import { useCallback, useMemo } from 'react';
 
-import { useAccount } from '@september/account';
-import { useAISettings } from '@september/ai';
-import { track } from '@september/analytics';
-import type { AIProvider } from '@september/shared';
-import type { Voice } from '@september/shared';
+import { useAccount } from '@/packages/account';
+import { useAISettings } from '@/packages/ai';
+import { track } from '@/packages/analytics';
+import type { AIProvider } from '@/packages/shared';
+import type { Voice } from '@/packages/shared';
 
 import { BrowserSpeechProvider } from '../lib/providers/browser';
 import { KokoroSpeechProvider } from '../lib/providers/kokoro';

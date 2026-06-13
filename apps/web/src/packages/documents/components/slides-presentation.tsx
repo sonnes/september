@@ -11,11 +11,11 @@ import {
   SpeakerXMarkIcon,
 } from '@heroicons/react/24/outline';
 
-import { ReelTextViewer } from '@september/audio';
-import { Button } from '@september/ui/components/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@september/ui/components/tooltip';
+import { ReelTextViewer } from '@/packages/audio';
+import { Button } from '@/packages/ui/components/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/packages/ui/components/tooltip';
 
-import { slideToPlainText, type Slide, parseAndRenderSlides } from '@september/shared/slides';
+import { slideToPlainText, type Slide, parseAndRenderSlides } from '@/packages/shared/lib/slides';
 import { SlidesNavigation } from './slides-navigation';
 import { SlidesProgress } from './slides-progress';
 import { useSlideVoiceOver } from '../hooks/use-slide-voice-over';

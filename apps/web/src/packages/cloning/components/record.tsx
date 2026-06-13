@@ -4,11 +4,11 @@ import { useState } from 'react';
 
 import { CheckCircle2, ChevronLeft, ChevronRight, Mic, Play, Square, Trash2 } from 'lucide-react';
 
-import { Button } from '@september/ui/components/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@september/ui/components/card';
-import { Field, FieldLabel } from '@september/ui/components/field';
+import { Button } from '@/packages/ui/components/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/packages/ui/components/card';
+import { Field, FieldLabel } from '@/packages/ui/components/field';
 
-import { cn } from '@september/shared';
+import { cn } from '@/packages/shared';
 
 import type { RecordingStatus } from '../types';
 

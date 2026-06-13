@@ -1,6 +1,6 @@
 'use client';
 
-import { EditableText } from '@september/ui/components/editable-text';
+import { EditableText } from '@/packages/ui/components/editable-text';
 
 import { updateDocument } from '../mutations';
 

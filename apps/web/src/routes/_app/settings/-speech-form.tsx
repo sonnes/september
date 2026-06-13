@@ -1,8 +1,8 @@
-import { useAccount } from '@september/account';
-import { useAISettings } from '@september/ai';
-import { LoadingState } from '@september/ui/components/loading-state';
-import { SpeechSettings } from '@september/speech';
-import type { VoiceSettingsFormData } from '@september/speech';
+import { useAccount } from '@/packages/account';
+import { useAISettings } from '@/packages/ai';
+import { LoadingState } from '@/packages/ui/components/loading-state';
+import { SpeechSettings } from '@/packages/speech';
+import type { VoiceSettingsFormData } from '@/packages/speech';
 
 export default function VoicesSettingsForm() {
   const { account } = useAccount();
