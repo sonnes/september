@@ -26,7 +26,7 @@ const KEYBOARD_GENERATION_PROMPT = `Generate an AAC keyboard with titles and 24 
 const KeyboardGenerationSchema = z.object({
   chatTitle: z.string().min(1).max(50),
   keyboardTitle: z.string(),
-  buttons: z.array(z.string().max(50)).length(24),
+  buttons: z.array(z.string().max(280)).length(24),
 });
 
 interface GenerateKeyboardParams {

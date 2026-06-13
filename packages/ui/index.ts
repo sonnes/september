@@ -37,6 +37,7 @@ export * from "./components/slider";
 export * from "./components/sonner";
 export * from "./components/spinner";
 export * from "./components/suggestion";
+export * from "./components/resizable";
 export * from "./components/tabs";
 export * from "./components/textarea";
 export * from "./components/tooltip";

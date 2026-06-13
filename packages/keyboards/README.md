@@ -71,6 +71,11 @@ const keyboard = await createKeyboard({
 GridButton: { id, text, value?, image_url?, order }
 ```
 
+**Button text cap:** `GridButton.text` accepts up to **280 characters** (raised from 50).
+This allows sentence-length board entries that render as partial-selectable stripes in the
+`@september/suggestions` compose surface. The `use-generate-keyboard` AI schema and the
+`CustomKeyboardEditor` form schema both honour the same 280-char limit.
+
 **`chat_id` query rationale:** `useCustomKeyboards` returns keyboards where `chat_id` is null, undefined, or matches the current `chatId`. This means global keyboards always appear alongside chat-specific ones — there is no "hide global" mode.
 
 ## Storage

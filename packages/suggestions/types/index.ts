@@ -2,6 +2,9 @@ import { z } from 'zod';
 
 export interface Suggestion {
   text: string;
+  /** Provenance of the suggestion. Optional so existing callers without source remain valid. */
+  source?: 'board' | 'history' | 'llm';
+  audio_path?: string;
 }
 
 /**

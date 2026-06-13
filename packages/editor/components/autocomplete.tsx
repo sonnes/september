@@ -50,6 +50,9 @@ export function Autocomplete() {
     setDismissedText(text);
   };
 
+  // Self-hide when there's nothing to predict, so the row leaves no empty gap.
+  if (words.length === 0) return null;
+
   return (
     <Suggestions>
       {words.map(word => (

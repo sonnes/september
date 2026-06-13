@@ -33,7 +33,7 @@ const formSchema = z.object({
   buttons: z
     .array(
       z.object({
-        text: z.string().min(1, 'Text required').max(50),
+        text: z.string().min(1, 'Text required').max(280),
         value: z.string().max(100).optional().or(z.literal('')),
         image_url: z.string().url().optional().or(z.literal('')),
       })

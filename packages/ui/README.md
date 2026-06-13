@@ -50,6 +50,9 @@ All components follow shadcn/ui patterns and are built on Radix primitives:
 | `EditableText` | Inline editable text with pencil-on-hover affordance |
 | `Suggestion` | Pill-shaped chip button for a single autocomplete suggestion |
 | `Suggestions` | Horizontal scrollable row that wraps `Suggestion` chips |
+| `ResizablePanelGroup` | Horizontal or vertical resizable panel container |
+| `ResizablePanel` | Individual panel inside a `ResizablePanelGroup` |
+| `ResizableHandle` | Drag handle between resizable panels (optional grip icon via `withHandle`) |
 
 ## Usage
 

@@ -16,6 +16,8 @@ import {
 import type { UseSpeechReturn, VoiceSettingsFormData } from '@september/speech';
 ```
 
+`SpeechSettings` is a standalone form component — it does **not** require a Dialog wrapper and can be embedded directly in any layout (e.g., a side panel tab). The `SpeechSettingsModal` wraps it in a Dialog for the current chat page; both exports coexist.
+
 Everything else — hooks, providers, schemas — is internal.
 
 ## Components

@@ -5,6 +5,7 @@ export { timeAgo } from "./lib/time-ago";
 // Hooks
 export { useDebounce } from "./hooks/use-debounce";
 export { useIsMobile } from "./hooks/use-mobile";
+export { useIsCompact, isCompactWidth, BASE_VIEWPORT_WIDTH } from "./hooks/use-compact";
 export { useText } from "./hooks/use-text";
 
 // Types

@@ -64,7 +64,7 @@ export interface CustomKeyboardFormData {
 // Zod Validation Schemas
 export const GridButtonSchema = z.object({
   id: z.string().min(1, 'Button ID required'),
-  text: z.string().min(1, 'Button text is required').max(50, 'Text too long'),
+  text: z.string().min(1, 'Button text is required').max(280, 'Text too long'),
   value: z.string().max(100).optional(),
   image_url: z.string().url().optional(),
   order: z.number().int().min(0),

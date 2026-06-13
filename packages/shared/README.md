@@ -21,6 +21,7 @@ packages/shared/
 ├── hooks/
 │   ├── use-debounce.ts       # Debounced value hook
 │   ├── use-mobile.ts         # Mobile detection hook
+│   ├── use-compact.ts        # Base-viewport (iPad 13") detection hook
 │   └── use-text.ts           # Text manipulation hook
 ├── types/
 │   ├── grid.ts               # Grid layout types
@@ -48,13 +49,17 @@ timeAgo(message.created_at) // "2 minutes ago"
 ### Hooks
 
 ```typescript
-import { useDebounce, useIsMobile } from '@september/shared';
+import { useDebounce, useIsMobile, useIsCompact } from '@september/shared';
 
 // Debounce a value
 const debouncedSearch = useDebounce(searchQuery, 300);
 
 // Detect mobile viewport
 const isMobile = useIsMobile();
+
+// Detect the base design viewport (13" iPad and below) — drives the
+// compact app shell, e.g. collapsing the sidebar to an icon rail.
+const isCompact = useIsCompact();
 ```
 
 ### Types

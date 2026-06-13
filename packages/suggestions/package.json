@@ -8,18 +8,22 @@
     ".": "./index.ts"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.1",
     "@september/account": "workspace:*",
     "@september/ai": "workspace:*",
     "@september/chats": "workspace:*",
     "@september/editor": "workspace:*",
     "@september/shared": "workspace:*",
     "@september/ui": "workspace:*",
-    "@hookform/resolvers": "^5.2.1",
+    "diff-match-patch": "^1.0.5",
     "react-hook-form": "^7.62.0",
-    "zod": "^4.0.5",
-    "sonner": "^2.0.6"
+    "sonner": "^2.0.6",
+    "zod": "^4.0.5"
   },
   "peerDependencies": {
     "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/diff-match-patch": "^1.0.36"
   }
 }

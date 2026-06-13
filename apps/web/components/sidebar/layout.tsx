@@ -1,20 +1,24 @@
+'use client';
+
 import { PropsWithChildren } from 'react';
 
 import { SidebarInset, SidebarProvider } from '@september/ui/components/sidebar';
 
-import { User } from '@september/shared';
+import { User, useIsCompact } from '@september/shared';
 
 import { AppSidebar } from './app-sidebar';
 
-type SidebarLayoutProps = PropsWithChildren & {
-  defaultOpen?: boolean;
-};
+export default function SidebarLayout({ children }: PropsWithChildren) {
+  // iPad 13" is the base viewport: at or below it the sidebar defaults to an
+  // icon rail, wider screens to the full sidebar. Keying the provider on the
+  // breakpoint re-applies the viewport default when it flips; a manual toggle
+  // (rail or ⌘/Ctrl-B) wins until then.
+  const isCompact = useIsCompact();
 
-export default function SidebarLayout({ children, defaultOpen = true }: SidebarLayoutProps) {
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
+    <SidebarProvider key={isCompact ? 'compact' : 'wide'} defaultOpen={!isCompact}>
       <AppSidebar />
-      <SidebarInset className="flex flex-col">{children}</SidebarInset>
+      <SidebarInset className="flex min-h-0 flex-col">{children}</SidebarInset>
     </SidebarProvider>
   );
 }
@@ -33,7 +37,7 @@ SidebarLayoutHeader.displayName = 'SidebarLayout.Header';
 
 const SidebarLayoutContent = ({ children }: PropsWithChildren) => {
   return (
-    <main className="flex-1 flex flex-col min-h-0">
+    <main className="flex-1 flex flex-col min-h-0 overflow-y-auto">
       <div className="p-2 md:p-4 flex-1 flex flex-col min-h-0">{children}</div>
     </main>
   );

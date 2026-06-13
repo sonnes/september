@@ -168,6 +168,26 @@ describe('createKeyboard', () => {
 
     expect(kb.id).toBe('custom-id-xyz');
   });
+
+  it('accepts a long-phrase button text up to 280 chars', async () => {
+    mockNanoid
+      .mockReturnValueOnce('kb-long')
+      .mockReturnValueOnce('btn-long-0');
+
+    const longText =
+      'I would like some water, please, and could you also check if my medication is ready? Thank you so much for your help today, I really appreciate it.';
+
+    const kb = await createKeyboard({
+      name: 'Long Phrases',
+      user_id: 'user-1',
+      columns: 3,
+      buttons: [{ text: longText }],
+    });
+
+    expect(kb.buttons[0].text).toBe(longText);
+    expect(longText.length).toBeGreaterThan(50);
+    expect(longText.length).toBeLessThanOrEqual(280);
+  });
 });
 
 describe('updateKeyboard', () => {
