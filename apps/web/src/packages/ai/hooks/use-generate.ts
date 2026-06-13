@@ -14,6 +14,7 @@ import { z } from 'zod';
 
 import { AudioInput, buildTextInput } from '../lib/audio-message';
 import { cacheMiddleware } from '../lib/middleware';
+import { openRouterModelArgs } from '../lib/openrouter-model';
 import { AI_PROVIDERS } from '../lib/registry';
 import { useAISettings } from './use-ai-settings';
 
@@ -162,8 +163,18 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
       setIsGenerating(true);
 
       try {
+        // OpenRouter: expand the free-stack sentinel into a fallback chain;
+        // concrete ids pass through. Other providers take a plain model id.
+        const baseModel =
+          provider === 'openrouter'
+            ? (() => {
+                const { id, settings } = openRouterModelArgs(modelId);
+                return (providerInstance as ReturnType<typeof createOpenRouter>)(id, settings);
+              })()
+            : providerInstance(modelId);
+
         const model = wrapLanguageModel({
-          model: providerInstance(modelId),
+          model: baseModel,
           middleware: cacheMiddleware,
         });
 

@@ -1,9 +1,11 @@
 import { SpeechConfig, SuggestionsConfig, TranscriptionConfig } from '@september/shared';
 
+import { OPENROUTER_FREE_STACK_ID } from './openrouter-model';
+
 export const DEFAULT_SUGGESTIONS_CONFIG: SuggestionsConfig = {
   enabled: false,
-  provider: 'gemini',
-  model: 'gemini-2.5-flash-lite',
+  provider: 'openrouter',
+  model: OPENROUTER_FREE_STACK_ID,
   settings: {
     temperature: 0.7,
     max_suggestions: 5,

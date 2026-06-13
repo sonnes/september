@@ -84,6 +84,19 @@ form, and additionally offers a one-click OAuth "Connect" flow (see below).
 (with an OpenRouter model id like `google/gemini-2.5-flash-lite`) to route through OpenRouter.
 Both require a configured API key in account settings.
 
+### Free OpenRouter stack
+
+Suggestions and keyboard generation default to the **free OpenRouter stack** — the
+`september/free-stack` sentinel model id (see `DEFAULT_SUGGESTIONS_CONFIG`). On the
+OpenRouter path, `openRouterModelArgs` (`lib/openrouter-model.ts`) expands this sentinel
+into the first model of `OPENROUTER_FREE_STACK` plus the rest as an OpenRouter `models`
+fallback chain, with `provider: { sort: 'throughput' }`. The chain rolls to the next
+free model on rate-limit (429)/errors, so connecting OpenRouter (one click, no spend) is
+enough to use suggestions at no cost. Any concrete model id (free or paid) passes through
+unchanged. Suggestions stay **disabled** by default until the user opts in. The free model
+list is the single source of truth in `lib/openrouter-model.ts`; refresh the ids there when
+they rotate.
+
 ```tsx
 import { useGenerate } from '@september/ai';
 

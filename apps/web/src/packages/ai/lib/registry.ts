@@ -1,5 +1,7 @@
 import { AIFeature, AIProvider, AIServiceProvider } from '@september/shared';
 
+import { OPENROUTER_FREE_MODELS, OPENROUTER_FREE_STACK_ID } from './openrouter-model';
+
 /**
  * Registry of all supported AI providers
  */
@@ -107,6 +109,12 @@ export const AI_PROVIDERS: Record<AIProvider, AIServiceProvider> = {
     oauth: true,
     api_key_url: 'https://openrouter.ai/keys',
     models: [
+      {
+        id: OPENROUTER_FREE_STACK_ID,
+        name: 'Free (recommended)',
+        description: 'Free models with automatic fallback. No cost beyond connecting OpenRouter.',
+      },
+      ...OPENROUTER_FREE_MODELS,
       {
         id: 'google/gemini-2.5-flash-lite',
         name: 'Gemini 2.5 Flash Lite',
