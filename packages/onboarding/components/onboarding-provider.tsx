@@ -6,9 +6,10 @@ import { useRouter } from 'next/navigation';
 
 import { useAccount } from '@september/account';
 
+import { ONBOARDING_STEPS } from '../lib/onboarding-content';
 import type { OnboardingContextValue } from '../types';
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = ONBOARDING_STEPS.length;
 
 const OnboardingContext = createContext<OnboardingContextValue | undefined>(undefined);
 
@@ -17,7 +18,13 @@ interface OnboardingProviderProps {
 }
 
 export function OnboardingProvider({ children }: OnboardingProviderProps) {
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(() => {
+    if (typeof window === 'undefined') return 0;
+    const requestedStep = Number(new URLSearchParams(window.location.search).get('step'));
+    return Number.isInteger(requestedStep) && requestedStep >= 1 && requestedStep <= TOTAL_STEPS
+      ? requestedStep - 1
+      : 0;
+  });
   const router = useRouter();
   const { updateAccount } = useAccount();
 

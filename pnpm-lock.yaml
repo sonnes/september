@@ -655,6 +655,9 @@ importers:
       '@heroicons/react':
         specifier: ^2.2.0
         version: 2.2.0(react@19.2.1)
+      '@hookform/resolvers':
+        specifier: ^5.2.1
+        version: 5.2.2(react-hook-form@7.65.0(react@19.2.1))
       '@september/account':
         specifier: workspace:*
         version: link:../account
@@ -667,15 +670,15 @@ importers:
       '@september/speech':
         specifier: workspace:*
         version: link:../speech
-      '@september/suggestions':
-        specifier: workspace:*
-        version: link:../suggestions
       '@september/ui':
         specifier: workspace:*
         version: link:../ui
       react:
         specifier: ^19.0.0
         version: 19.2.1
+      react-hook-form:
+        specifier: ^7.62.0
+        version: 7.65.0(react@19.2.1)
       sonner:
         specifier: ^2.0.6
         version: 2.0.7(react-dom@19.2.1(react@19.2.1))(react@19.2.1)

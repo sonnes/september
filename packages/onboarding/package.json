@@ -8,13 +8,14 @@
     ".": "./index.ts"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.1",
     "@september/account": "workspace:*",
     "@september/ai": "workspace:*",
     "@september/shared": "workspace:*",
     "@september/speech": "workspace:*",
-    "@september/suggestions": "workspace:*",
     "@september/ui": "workspace:*",
     "@heroicons/react": "^2.2.0",
+    "react-hook-form": "^7.62.0",
     "sonner": "^2.0.6"
   },
   "peerDependencies": {
