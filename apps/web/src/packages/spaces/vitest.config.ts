@@ -11,7 +11,7 @@ export default defineConfig({
     alias: {
       '@/packages/spaces': path.resolve(__dirname, '.'),
       '@/packages/shared': path.resolve(__dirname, '../shared'),
-      '@/packages/analytics': path.resolve(__dirname, '../analytics'),
+      '@/packages/usage': path.resolve(__dirname, '../usage'),
     },
   },
 });

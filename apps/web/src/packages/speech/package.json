@@ -10,7 +10,7 @@
   "dependencies": {
     "@september/account": "workspace:*",
     "@september/ai": "workspace:*",
-    "@september/analytics": "workspace:*",
+    "@september/usage": "workspace:*",
     "@september/audio": "workspace:*",
     "@september/shared": "workspace:*",
     "@september/ui": "workspace:*",

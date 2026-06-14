@@ -11,7 +11,7 @@
     "@heroicons/react": "^2.2.0",
     "@september/account": "workspace:*",
     "@september/ai": "workspace:*",
-    "@september/analytics": "workspace:*",
+    "@september/usage": "workspace:*",
     "@september/audio": "workspace:*",
     "@september/shared": "workspace:*",
     "@september/speech": "workspace:*",

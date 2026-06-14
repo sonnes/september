@@ -1,14 +1,10 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-import { webLLM } from '@built-in-ai/web-llm';
 import { useAccount } from '@/packages/account';
-import { track } from '@/packages/analytics';
+import { track } from '@/packages/usage';
 import { AIProvider } from '@/packages/shared';
-import { generateObject, generateText, wrapLanguageModel } from 'ai';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -120,22 +116,6 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
   const providerInfo = AI_PROVIDERS[provider];
   const isReady = !providerInfo.requires_api_key || !!apiKey;
 
-  const providerInstance = useMemo(() => {
-    if (provider === 'gemini') {
-      return createGoogleGenerativeAI({
-        apiKey: apiKey || '',
-      });
-    } else if (provider === 'openrouter') {
-      return createOpenRouter({
-        apiKey: apiKey || '',
-        headers: { 'HTTP-Referer': 'https://september.to', 'X-Title': 'September' },
-      });
-    } else if (provider === 'webllm') {
-      return webLLM;
-    }
-    return null;
-  }, [provider, apiKey]);
-
   const generate = useCallback(
     async <T extends z.ZodType>(
       params: GenerateTextParams | GenerateObjectParams<T>
@@ -154,8 +134,8 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
         return undefined;
       }
 
-      // Validate provider support
-      if (!providerInstance) {
+      // Validate provider support for generation
+      if (provider !== 'gemini' && provider !== 'openrouter' && provider !== 'webllm') {
         toast.error(`Provider "${provider}" is not yet supported for generation.`);
         return undefined;
       }
@@ -163,15 +143,27 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
       setIsGenerating(true);
 
       try {
-        // OpenRouter: expand the free-stack sentinel into a fallback chain;
-        // concrete ids pass through. Other providers take a plain model id.
-        const baseModel =
-          provider === 'openrouter'
-            ? (() => {
-                const { id, settings } = openRouterModelArgs(modelId);
-                return (providerInstance as ReturnType<typeof createOpenRouter>)(id, settings);
-              })()
-            : providerInstance(modelId);
+        // Heavy provider SDKs are imported lazily so they stay out of initial
+        // bundles and only load when a generation actually runs.
+        const { generateObject, generateText, wrapLanguageModel } = await import('ai');
+
+        let baseModel;
+        if (provider === 'openrouter') {
+          const { createOpenRouter } = await import('@openrouter/ai-sdk-provider');
+          const client = createOpenRouter({
+            apiKey: apiKey || '',
+            headers: { 'HTTP-Referer': 'https://september.to', 'X-Title': 'September' },
+          });
+          // Expand the free-stack sentinel into a fallback chain; concrete ids pass through.
+          const { id, settings } = openRouterModelArgs(modelId);
+          baseModel = client(id, settings);
+        } else if (provider === 'webllm') {
+          const { webLLM } = await import('@built-in-ai/web-llm');
+          baseModel = webLLM(modelId);
+        } else {
+          const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
+          baseModel = createGoogleGenerativeAI({ apiKey: apiKey || '' })(modelId);
+        }
 
         const model = wrapLanguageModel({
           model: baseModel,
@@ -244,7 +236,7 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
         setIsGenerating(false);
       }
     },
-    [provider, providerInfo, apiKey, providerInstance, modelId, user]
+    [provider, providerInfo, apiKey, modelId, user]
   ) as UseGenerateReturn['generate'];
 
   return {

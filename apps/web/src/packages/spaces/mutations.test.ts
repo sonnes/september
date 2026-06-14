@@ -56,7 +56,7 @@ vi.mock('./db', () => ({
   },
 }));
 
-vi.mock('@/packages/analytics', () => ({
+vi.mock('@/packages/usage', () => ({
   track: vi.fn(),
 }));
 
@@ -66,7 +66,7 @@ vi.mock('uuid', () => ({
 
 // Import after mocks
 import { createSpace, createMessage, deleteSpace, updateSpace } from './mutations';
-import { track } from '@/packages/analytics';
+import { track } from '@/packages/usage';
 
 describe('createSpace', () => {
   beforeEach(() => {

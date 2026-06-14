@@ -4,7 +4,7 @@ import { useCallback, useMemo } from 'react';
 
 import { useAccount } from '@/packages/account';
 import { useAISettings } from '@/packages/ai';
-import { track } from '@/packages/analytics';
+import { track } from '@/packages/usage';
 import type { AIProvider } from '@/packages/shared';
 import type { Voice } from '@/packages/shared';
 

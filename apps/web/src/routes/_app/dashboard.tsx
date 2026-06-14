@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { useAccount } from '@/packages/account';
-import { DashboardStats } from '@/packages/analytics';
+import { DashboardStats } from '@/packages/usage';
 
 import { PageHeader, PageShell, PageTitle } from '@/components/layout';
 import SidebarLayout from '@/components/sidebar/layout';

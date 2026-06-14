@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import type { GoogleGenAI } from '@google/genai';
 import { GeminiSpeechSettings } from '@/packages/shared';
 import { Voice } from '@/packages/shared';
 import { ListVoicesRequest, SpeechEngine, SpeechRequest, SpeechResponse } from '../../types';
@@ -114,10 +114,20 @@ const GEMINI_VOICES: Array<{ id: string; name: string; characteristic: string; l
 export class GeminiSpeechProvider implements SpeechEngine {
   id = 'gemini';
   name = 'Gemini Speech';
-  private ai: GoogleGenAI;
+  private apiKey: string;
+  private ai?: GoogleGenAI;
 
   constructor(apiKey?: string) {
-    this.ai = new GoogleGenAI({ apiKey: apiKey || '' });
+    this.apiKey = apiKey || '';
+  }
+
+  // The @google/genai SDK is imported lazily so it stays out of initial bundles.
+  private async getClient(): Promise<GoogleGenAI> {
+    if (!this.ai) {
+      const { GoogleGenAI } = await import('@google/genai');
+      this.ai = new GoogleGenAI({ apiKey: this.apiKey });
+    }
+    return this.ai;
   }
 
   async generateSpeech(request: SpeechRequest): Promise<SpeechResponse> {
@@ -126,7 +136,8 @@ export class GeminiSpeechProvider implements SpeechEngine {
     const modelId = 'gemini-2.5-flash-preview-tts';
 
     try {
-      const response = await this.ai.models.generateContent({
+      const ai = await this.getClient();
+      const response = await ai.models.generateContent({
         model: modelId,
         contents: [
           {
@@ -207,7 +218,8 @@ export class GeminiSpeechProvider implements SpeechEngine {
   }
 
   setApiKey(apiKey: string) {
-    this.ai = new GoogleGenAI({ apiKey });
+    this.apiKey = apiKey;
+    this.ai = undefined;
   }
 }
 

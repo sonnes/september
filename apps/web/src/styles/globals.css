@@ -6,7 +6,7 @@
 @source "../packages/shared";
 @source "../packages/account";
 @source "../packages/ai";
-@source "../packages/analytics";
+@source "../packages/usage";
 @source "../packages/audio";
 @source "../packages/chats";
 @source "../packages/cloning";

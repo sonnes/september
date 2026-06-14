@@ -24,8 +24,8 @@ vi.mock('uuid', () => ({
   v4: vi.fn(() => 'test-uuid-1234'),
 }));
 
-import { track } from './events';
-import type { TrackedEvent } from './events';
+import { track } from './store';
+import type { TrackedEvent } from './store';
 
 describe('track()', () => {
   beforeEach(() => {

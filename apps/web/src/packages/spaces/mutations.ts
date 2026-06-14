@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 
-import { track } from '@/packages/analytics';
+import { track } from '@/packages/usage';
 
 import { spaceCollection, messageCollection } from './db';
 import type { Space, CreateMessageData, Message } from './types';

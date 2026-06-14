@@ -1,5 +1,5 @@
 {
-  "name": "@september/analytics",
+  "name": "@september/usage",
   "version": "0.1.0",
   "private": true,
   "main": "./index.ts",

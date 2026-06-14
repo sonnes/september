@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { and, eq, gte, lte } from '@tanstack/db';
 import { useLiveQuery } from '@tanstack/react-db';
 
-import { AnalyticsEvent, analyticsCollection } from './events';
+import { AnalyticsEvent, analyticsCollection } from './store';
 
 // ---------------------------------------------------------------------------
 // Time range utilities

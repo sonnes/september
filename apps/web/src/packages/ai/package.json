@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@september/account": "workspace:*",
-    "@september/analytics": "workspace:*",
+    "@september/usage": "workspace:*",
     "@september/shared": "workspace:*",
     "@september/ui": "workspace:*",
     "@ai-sdk/google": "^2.0.45",
