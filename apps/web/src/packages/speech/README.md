@@ -43,13 +43,19 @@ await generateSpeech('Hello world');
 
 ### `SpeechSettings`
 
-Unified settings form, organized into three segmented sub-tabs — **Provider** (provider cards), **Voice** (model select + voice search/list), and **Speech** (per-provider advanced sliders) — above an always-visible inline Save button. Defaults to the Voice tab. Field values persist across tab switches (the form does not unregister unmounted inputs). Driven by `useVoiceSettings` internally.
+Unified settings form, organized into three sections — **Provider** (provider cards), **Voice** (model select + voice search/list), and **Speech** (per-provider advanced sliders) — above an always-visible inline Save button. Driven by `useVoiceSettings` internally.
+
+By default the three sections render under a segmented tab bar (Voice selected first); field values persist across tab switches (the form does not unregister unmounted inputs). Pass `section` to render a single section's body **without** the tab bar — the chat side panel uses this to promote Provider/Voice/Speech to top-level panels. Keep the same `SpeechSettings` element mounted while only changing `section` so the shared form state survives section switches.
 
 ```tsx
+// Tabbed (modal, settings page)
 <SpeechSettings account={account} onSubmit={async (data) => { /* persist */ }} />
+
+// Single section, no tab bar (chat side panel)
+<SpeechSettings account={account} onSubmit={save} section="provider" />
 ```
 
-Props: `{ account: Account; onSubmit: (data: VoiceSettingsFormData) => Promise<void> }`.
+Props: `{ account: Account; onSubmit: (data: VoiceSettingsFormData) => Promise<void>; section?: 'provider' | 'voice' | 'speech' }`.
 
 The `<form>` has `id="speech-settings-form"` so external submit buttons can target it.
 

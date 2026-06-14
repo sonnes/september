@@ -57,7 +57,7 @@ export function ProfileStep() {
         />
 
         <div className="space-y-6">
-          <div className="grid gap-5 border-l border-border pl-5 md:grid-cols-[15rem_1fr] md:gap-8">
+          <div className="grid gap-5 border-l border-border pl-5 lg:grid-cols-[15rem_1fr] lg:gap-8">
             <div>
               <div className="flex items-center gap-2">
                 <UserRound className="h-4 w-4 text-primary" />
@@ -81,7 +81,7 @@ export function ProfileStep() {
             </div>
           </div>
 
-          <div className="grid gap-5 border-l border-border pl-5 md:grid-cols-[15rem_1fr] md:gap-8">
+          <div className="grid gap-5 border-l border-border pl-5 lg:grid-cols-[15rem_1fr] lg:gap-8">
             <div>
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />

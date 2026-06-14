@@ -131,7 +131,7 @@ export function SpaceList({
               key={space.id}
               className="group relative flex items-center justify-between border-b border-zinc-200 hover:bg-zinc-50 transition-colors"
             >
-              <Link to="/spaces/$id" params={{ id: space.id }} className="flex-1 py-3 px-1 min-w-0">
+              <Link to="/talk/$id" params={{ id: space.id }} className="flex-1 py-3 px-1 min-w-0">
                 <div className="text-base font-medium text-zinc-900 mb-1 truncate">
                   {space.title || 'Untitled space'}
                 </div>

@@ -9,15 +9,18 @@ import {
   HistoryIcon,
   MessagesSquare,
   MicIcon,
+  Plug,
+  SlidersHorizontal,
   Trash2,
   Undo2,
   Volume2,
 } from 'lucide-react';
 
 import { useAccount } from '@/packages/account';
-import { useAudioPlayer } from '@/packages/audio';
+import { AudioOutputDeviceSelector, TextViewer, TextViewerWords, useAudioPlayer } from '@/packages/audio';
 import {
   EditableSpaceTitle,
+  SpaceSwitch,
   updateSpace,
   useSpaces,
   useCreateAudioMessage,
@@ -43,9 +46,9 @@ import { ChatPanelProvider, useChatPanel } from '@/components/chat/use-chat-pane
 
 import { pageTitle } from '@/lib/seo';
 
-export const Route = createFileRoute('/_app/spaces/$id/')({
+export const Route = createFileRoute('/_app/talk/$id/')({
   head: () => ({
-    meta: [{ title: pageTitle('Spaces') }],
+    meta: [{ title: pageTitle('Talk') }],
   }),
   component: SpacePageRoot,
 });
@@ -85,7 +88,7 @@ function RailButton({
 
 function SpacePageInner({ spaceId }: { spaceId: string }) {
   const { user } = useAccount();
-  const { enqueue } = useAudioPlayer();
+  const { enqueue, current } = useAudioPlayer();
   const { spaces } = useSpaces({ userId: user?.id });
   const { messages } = useMessages({ spaceId: spaceId || '' });
 
@@ -115,6 +118,15 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
       setUndoStack(s => [...s.slice(-49), prevTextRef.current]);
       prevTextRef.current = text;
     }
+  }, [text]);
+
+  // Auto-grow the composer textarea to fit its content — borrowed from the
+  // previous /talk editor (Editor component).
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
   }, [text]);
 
   const handleSubmit = useCallback(
@@ -265,45 +277,67 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
             </div>
           ))
         )}
+
+        {/* Now-speaking viewer — borrowed from the old /talk page: live word
+            highlighting for the currently-playing message; tap a word to seek. */}
+        {current?.alignment && (
+          <TextViewer alignment={current.alignment}>
+            <TextViewerWords className="wrap-break-word text-foreground" />
+          </TextViewer>
+        )}
       </div>
 
       {/* Console — suggestions + composer grouped on a calm surface so the
           active zone reads as one grounded unit instead of floating on white. */}
       <div className="flex shrink-0 flex-col gap-3 rounded-lg bg-muted/40 p-3">
-        {/* Suggestion surface: stripes + word autocomplete + scan toggle */}
-        <Suggestions chatId={spaceId} wordSuggestions={<Autocomplete />} onPin={handlePin} />
+        {/* Space switch — jump between spaces, sitting above the editor */}
+        <SpaceSwitch currentSpaceId={spaceId} />
 
-        {/* Composer: left rail + big textarea + Speak */}
-        <div className="flex items-stretch gap-3">
-          <div className="flex flex-col justify-end gap-2">
-            <RailButton label="Undo" onClick={undo} disabled={undoStack.length === 0}>
-              <Undo2 className="size-5" />
-            </RailButton>
-            <RailButton label="Delete last word" onClick={deleteLastWord} disabled={!text}>
-              <Delete className="size-5" />
-            </RailButton>
-            <RailButton label="Clear" onClick={clearText} disabled={!text}>
-              <Trash2 className="size-5" />
-            </RailButton>
+        {/* Suggestion stripes (word autocomplete now lives inside the editor) */}
+        <Suggestions chatId={spaceId} onPin={handlePin} />
+
+        {/* Composer — borrowed from the previous /talk editor: word autocomplete
+            above a bordered box whose bottom row holds the controls. Keeps the
+            space rail (undo / delete / clear) and the Speak button. */}
+        <div className="flex flex-col gap-2">
+          <Autocomplete />
+          <div className="rounded-2xl border-2 border-input bg-background p-3 transition-colors focus-within:border-ring">
+            <textarea
+              ref={inputRef}
+              autoFocus
+              rows={1}
+              value={text}
+              onChange={e => setText(e.target.value)}
+              onKeyDown={handleTextareaKeyDown}
+              placeholder="Type a message…"
+              className="max-h-60 w-full resize-none overflow-y-auto bg-transparent text-2xl font-medium leading-snug text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
+            />
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5">
+                <RailButton label="Undo" onClick={undo} disabled={undoStack.length === 0}>
+                  <Undo2 className="size-5" />
+                </RailButton>
+                <RailButton label="Delete last word" onClick={deleteLastWord} disabled={!text}>
+                  <Delete className="size-5" />
+                </RailButton>
+                <RailButton label="Clear" onClick={clearText} disabled={!text}>
+                  <Trash2 className="size-5" />
+                </RailButton>
+                {/* Speaker picker in the editor toolbar (like the previous
+                    version); self-hides when no output devices are available. */}
+                <AudioOutputDeviceSelector />
+              </div>
+              <button
+                type="button"
+                onClick={() => handleSubmit(text)}
+                disabled={!text.trim() || status !== 'idle'}
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:enabled:scale-[1.02] active:enabled:scale-95 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+              >
+                <Volume2 className="size-4" aria-hidden />
+                Speak
+              </button>
+            </div>
           </div>
-          <textarea
-            ref={inputRef}
-            autoFocus
-            value={text}
-            onChange={e => setText(e.target.value)}
-            onKeyDown={handleTextareaKeyDown}
-            placeholder="Type a message…"
-            className="min-h-36 flex-1 resize-none rounded-lg border bg-card p-5 text-3xl leading-snug outline-none placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-ring md:text-4xl"
-          />
-          <button
-            type="button"
-            onClick={() => handleSubmit(text)}
-            disabled={!text.trim() || status !== 'idle'}
-            className="flex flex-col items-center justify-center gap-2 rounded-lg bg-primary px-6 text-lg font-semibold text-primary-foreground transition-[opacity,transform] hover:enabled:scale-[1.02] active:enabled:scale-95 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
-          >
-            <Volume2 className="size-6" aria-hidden />
-            Speak
-          </button>
         </div>
       </div>
     </div>
@@ -326,11 +360,29 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Voice settings"
+            aria-label="Speech provider"
+            className="size-7"
+            onClick={() => openTab('provider')}
+          >
+            <Plug className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Voice"
             className="size-7"
             onClick={() => openTab('voice')}
           >
             <MicIcon className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Speech settings"
+            className="size-7"
+            onClick={() => openTab('speech')}
+          >
+            <SlidersHorizontal className="size-4" />
           </Button>
           <Button
             variant="ghost"
@@ -368,11 +420,29 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
             <Button
               variant="ghost"
               size="sm"
-              aria-label="Voice settings"
+              aria-label="Speech provider"
+              onClick={() => openTab('provider')}
+            >
+              <Plug className="size-4" />
+              <span>Provider</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="Voice"
               onClick={() => openTab('voice')}
             >
               <MicIcon className="size-4" />
               <span>Voice</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="Speech settings"
+              onClick={() => openTab('speech')}
+            >
+              <SlidersHorizontal className="size-4" />
+              <span>Speech</span>
             </Button>
             <Button variant="ghost" size="sm" aria-label="Context" onClick={() => openTab('context')}>
               <FileText className="size-4" />

@@ -88,7 +88,7 @@ export function OnboardingFlow() {
       </aside>
 
       <main className="grid min-h-0 bg-background md:rounded-xl">
-        <div className="mx-auto flex w-full max-w-4xl flex-col justify-center px-6 py-8 md:px-12 lg:px-16">
+        <div className="mx-auto flex w-full max-w-4xl flex-col justify-center px-6 py-4 lg:py-8 lg:px-16">
           <div className="animate-in fade-in duration-200">{renderStep()}</div>
         </div>
       </main>

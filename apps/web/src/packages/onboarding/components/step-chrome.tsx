@@ -6,7 +6,7 @@ import { Button } from '@/packages/ui/components/button';
 import { ArrowLeft } from 'lucide-react';
 
 export function StepShell({ children }: { children: ReactNode }) {
-  return <div className="flex w-full flex-col gap-9 py-8 md:py-12">{children}</div>;
+  return <div className="flex w-full flex-col gap-6 py-6 lg:gap-9 lg:py-12">{children}</div>;
 }
 
 interface StepHeaderProps {
@@ -22,7 +22,7 @@ export function StepHeader({ eyebrow, title, subtitle, onBack, backDisabled }: S
     <div className="flex items-start justify-between gap-4">
       <div className="flex flex-col gap-2">
         {eyebrow && <span className="text-xs font-semibold text-muted-foreground">{eyebrow}</span>}
-        <h1 className="text-3xl font-bold leading-tight tracking-normal md:text-4xl">{title}</h1>
+        <h1 className="text-3xl font-bold leading-tight tracking-normal lg:text-4xl">{title}</h1>
         {subtitle && (
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
             {subtitle}

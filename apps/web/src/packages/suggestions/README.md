@@ -17,11 +17,10 @@ import {
 
 ### `<Suggestions chatId className?>`
 
-Self-contained suggestions surface. Renders **sentence stripes** (word tiles — click tile _i_ to take the sentence up to that word) and **pinned word chips** sourced from the active space context. Exposes a **scan-mode toggle** (sequential keyboard/switch-access stepping through chips and stripe tiles).
+Self-contained suggestions surface. Renders **sentence stripes** (word tiles — click tile _i_ to take the sentence up to that word) and **pinned word chips** sourced from the active space context.
 
 - Chips come from single-word `- bullet` lines in the global + space context markdown.
 - Stripes merge md phrases, history matches, and LLM completions.
-- Scan mode steps through chips then stripe tokens with Space/Enter; wraps around.
 
 ```tsx
 <Suggestions chatId={spaceId} onPin={handlePin} />
@@ -40,8 +39,6 @@ Reads `text` / `setText` from `useEditorContext()`.
 const {
   stripes,     // Stripe[] — composed + filtered (hidden < tokens.length)
   pinnedChips, // string[] — single-word md bullets prefix-filtered against text
-  scanMode,    // boolean
-  setScanMode,
 } = useStripes({ chatId });
 ```
 
@@ -100,7 +97,7 @@ Prose lines feed the LLM system prompt via `buildSuggestionPrompt`. Bullet lines
 **Partial-take and chip-insert must NOT call `trackKeystroke`.**
 The "keystrokes saved" analytic is `text_length − keys_typed`; calling `trackKeystroke` on
 a suggestion-driven text change would erase the savings. `SuggestionStripes` calls only
-`setText` (not `trackKeystroke`). Scan-mode inserts also only call `setText`.
+`setText` (not `trackKeystroke`).
 
 ## LLM prompt modes
 

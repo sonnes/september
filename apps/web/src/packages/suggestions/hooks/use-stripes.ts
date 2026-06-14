@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 import { useAccount } from '@/packages/account';
 import { useMessages, useSpaces } from '@/packages/spaces';
@@ -26,13 +26,10 @@ export interface Stripe {
 export interface UseStripesReturn {
   stripes: Stripe[];
   pinnedChips: string[];
-  scanMode: boolean;
-  setScanMode: (v: boolean) => void;
 }
 
 export function useStripes({ chatId }: { chatId?: string }): UseStripesReturn {
   const { text } = useEditorContext();
-  const [scanMode, setScanMode] = useState(false);
   const { account } = useAccount();
 
   // Space history — recent user messages for history source
@@ -94,7 +91,5 @@ export function useStripes({ chatId }: { chatId?: string }): UseStripesReturn {
   return {
     stripes,
     pinnedChips,
-    scanMode,
-    setScanMode,
   };
 }

@@ -3,7 +3,7 @@ import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { EditorProvider } from '@/packages/editor';
 import { SpeechProvider } from '@/packages/speech';
 
-export const Route = createFileRoute('/_app/spaces/$id')({
+export const Route = createFileRoute('/_app/talk/$id')({
   component: SpaceLayout,
 });
 

@@ -25,9 +25,15 @@ import { VoicesList } from './voices-list';
 interface SpeechSettingsProps {
   account: Account;
   onSubmit: (data: VoiceSettingsFormData) => Promise<void>;
+  /**
+   * Render only this section's body, without the in-panel tab bar — used by the
+   * chat side panel, which promotes Provider/Voice/Speech to top-level panels.
+   * When omitted, all three render under a tab bar (modal & settings page).
+   */
+  section?: 'provider' | 'voice' | 'speech';
 }
 
-export function SpeechSettings({ account, onSubmit }: SpeechSettingsProps) {
+export function SpeechSettings({ account, onSubmit, section }: SpeechSettingsProps) {
   const {
     form,
     selectedProvider,
@@ -58,12 +64,18 @@ export function SpeechSettings({ account, onSubmit }: SpeechSettingsProps) {
   return (
     <form id="speech-settings-form" onSubmit={handleSubmit}>
       <div className="space-y-6 pb-6">
-        <Tabs defaultValue="voice" className="gap-4">
-          <TabsList className="w-full">
-            <TabsTrigger value="provider">Provider</TabsTrigger>
-            <TabsTrigger value="voice">Voice</TabsTrigger>
-            <TabsTrigger value="speech">Speech</TabsTrigger>
-          </TabsList>
+        <Tabs
+          value={section}
+          defaultValue={section ? undefined : 'voice'}
+          className="gap-4"
+        >
+          {!section && (
+            <TabsList className="w-full">
+              <TabsTrigger value="provider">Provider</TabsTrigger>
+              <TabsTrigger value="voice">Voice</TabsTrigger>
+              <TabsTrigger value="speech">Speech</TabsTrigger>
+            </TabsList>
+          )}
 
           <TabsContent value="provider">
             {/* Provider Selection */}

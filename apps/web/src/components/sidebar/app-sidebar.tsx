@@ -7,7 +7,6 @@ import { Link } from '@tanstack/react-router';
 import {
   Home,
   LifeBuoy,
-  MessageCircle,
   MessageSquare,
   Mic,
   PenTool,
@@ -42,11 +41,6 @@ const getNavigationData = () => ({
       title: 'Talk',
       url: '/talk',
       icon: MessageSquare,
-    },
-    {
-      title: 'Spaces',
-      url: '/spaces',
-      icon: MessageCircle,
     },
     {
       title: 'Write',

@@ -17,11 +17,11 @@ import { pageTitle } from '@/lib/seo';
 
 import { SpaceListSkeleton } from './-loading-skeleton';
 
-export const Route = createFileRoute('/_app/spaces/')({
+export const Route = createFileRoute('/_app/talk/')({
   head: () => ({
     meta: [
-      { title: pageTitle('Spaces') },
-      { name: 'description', content: 'Your spaces' },
+      { title: pageTitle('Talk') },
+      { name: 'description', content: 'Your talks' },
     ],
   }),
   component: SpacesPage,
@@ -41,7 +41,7 @@ function SpacesPage() {
     try {
       const space = await createSpace(user.id);
       toast.success('Space created');
-      navigate({ to: '/spaces/$id', params: { id: space.id } });
+      navigate({ to: '/talk/$id', params: { id: space.id } });
     } catch (err) {
       toast.error('Error', {
         description: err instanceof Error ? err.message : 'Failed to create space',
@@ -52,12 +52,12 @@ function SpacesPage() {
   return (
     <>
       <SidebarLayout.Header>
-        <PageHeader breadcrumbs={[{ label: 'Spaces' }]} />
+        <PageHeader breadcrumbs={[{ label: 'Talk' }]} />
       </SidebarLayout.Header>
       <SidebarLayout.Content>
         <PageShell>
           <PageTitle
-            title="Spaces"
+            title="Talk"
             actions={
               <Button onClick={handleNewSpace} disabled={fetching}>
                 <PlusIcon className="size-4" />

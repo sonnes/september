@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { Clock, FileText, Grid2x2, Mic, Tv, X, type LucideIcon } from 'lucide-react';
+import { Clock, FileText, Grid2x2, Mic, Plug, SlidersHorizontal, Tv, X, type LucideIcon } from 'lucide-react';
 
 import { Button } from '@/packages/ui/components/button';
 import {
@@ -16,7 +16,6 @@ import {
 import { cn } from '@/packages/shared';
 import { useAccount } from '@/packages/account';
 import { MessageList, updateSpace, useMessages, useSpaces } from '@/packages/spaces';
-import { AudioOutputDeviceSelector } from '@/packages/audio';
 import { SpeechSettings } from '@/packages/speech';
 import type { VoiceSettingsFormData } from '@/packages/speech';
 import { TiptapEditor } from '@/packages/editor';
@@ -36,7 +35,9 @@ interface ChatRightPanelProps {
 
 const TAB_META: Record<ChatPanelTab, { title: string; icon: LucideIcon }> = {
   history: { title: 'History', icon: Clock },
+  provider: { title: 'Provider', icon: Plug },
   voice: { title: 'Voice', icon: Mic },
+  speech: { title: 'Speech', icon: SlidersHorizontal },
   context: { title: 'Context', icon: FileText },
 };
 
@@ -79,10 +80,22 @@ export function ChatRightPanel({ chatId, chatTitle, onOpenDisplay }: ChatRightPa
               onClick={() => openTab('history')}
             />
             <OverviewCard
+              icon={Plug}
+              title="Provider"
+              subtitle="Speech engine"
+              onClick={() => openTab('provider')}
+            />
+            <OverviewCard
               icon={Mic}
               title="Voice"
-              subtitle="Voice & speech"
+              subtitle="Pick a voice"
               onClick={() => openTab('voice')}
+            />
+            <OverviewCard
+              icon={SlidersHorizontal}
+              title="Speech"
+              subtitle="Speed & tuning"
+              onClick={() => openTab('speech')}
             />
             <OverviewCard
               icon={FileText}
@@ -99,10 +112,10 @@ export function ChatRightPanel({ chatId, chatTitle, onOpenDisplay }: ChatRightPa
           </div>
         ) : activeTab === 'history' ? (
           <HistoryTab chatId={chatId} />
-        ) : activeTab === 'voice' ? (
-          <VoiceTab />
-        ) : (
+        ) : activeTab === 'context' ? (
           <ContextTab spaceId={chatId} />
+        ) : (
+          <VoiceTab section={activeTab} />
         )}
       </div>
     </aside>
@@ -249,7 +262,7 @@ function HistoryTab({ chatId }: { chatId: string }) {
 // Voice tab
 // ---------------------------------------------------------------------------
 
-function VoiceTab() {
+function VoiceTab({ section }: { section: 'provider' | 'voice' | 'speech' }) {
   const { account, updateAccount } = useAccount();
 
   const handleSubmit = async (data: VoiceSettingsFormData) => {
@@ -268,11 +281,7 @@ function VoiceTab() {
 
   return (
     <div className="p-4 space-y-6">
-      <SpeechSettings account={account} onSubmit={handleSubmit} />
-      <div className="border-t border-border pt-4">
-        <h3 className="text-sm font-medium mb-3">Audio Output</h3>
-        <AudioOutputDeviceSelector />
-      </div>
+      <SpeechSettings account={account} onSubmit={handleSubmit} section={section} />
     </div>
   );
 }
