@@ -1,84 +1,21 @@
 'use client';
 
-import { useState } from 'react';
-
 import { Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { cn, timeAgo } from '@/packages/shared';
-import { useAudioPlayer, downloadAudio } from '@/packages/audio';
-import type { Audio } from '@/packages/audio';
-import { useSpeech } from '@/packages/speech';
 
+import { usePlayMessage } from '../hooks/use-play-message';
 import type { Message } from '../types';
 
 interface MessageItemProps {
   message: Message;
 }
 
-function blobToDataURI(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
-  });
-}
-
 function MessageItem({ message }: MessageItemProps) {
   const isUser = message.type === 'user';
-  const { enqueue, isPlaying, current, togglePlayPause } = useAudioPlayer();
-  const { generateSpeech } = useSpeech();
+  const { play, isLoading, isPlaying: isCurrentlyPlaying } = usePlayMessage(message);
 
-  const [audio, setAudio] = useState<Audio | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const isCurrentTrack = current?.id === message.id;
-  const isCurrentlyPlaying = isCurrentTrack && isPlaying;
-
-  const handleClick = async () => {
-    if (isLoading) return;
-
-    if (isCurrentlyPlaying) {
-      togglePlayPause();
-      return;
-    }
-
-    if (audio) {
-      enqueue(audio);
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-
-      if (message.audio_path) {
-        const blob = await downloadAudio(message.audio_path);
-
-        if (blob) {
-          const dataURI = await blobToDataURI(blob);
-          const audioTrack: Audio = {
-            path: message.audio_path,
-            blob: dataURI,
-          };
-
-          setAudio(audioTrack);
-          enqueue(audioTrack);
-        }
-      } else {
-        const audioTrack = (await generateSpeech(message.text)) as Audio;
-        audioTrack.id = message.id;
-        audioTrack.text = message.text;
-        setAudio(audioTrack);
-        enqueue(audioTrack);
-      }
-    } catch (error) {
-      console.error('Error playing audio:', error);
-      toast.error('Error playing audio');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const handleClick = play;
 
   return (
     <div

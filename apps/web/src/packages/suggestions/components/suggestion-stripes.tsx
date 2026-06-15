@@ -1,14 +1,15 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 
-import { History, Pin } from 'lucide-react';
+import { CornerDownLeft, History, Pin } from 'lucide-react';
 
 import { cn } from '@/packages/shared';
 import { useEditorContext } from '@/packages/editor';
 
 import { appendTokens, joinTokens } from '../lib/stripes';
 import { Stripe } from '../hooks/use-stripes';
+import { STRIPE_BASE, useStripeScale } from '../hooks/use-stripe-scale';
 
 // CRITICAL INVARIANT: partial-take and chip-insert must NOT call trackKeystroke.
 // The "keystrokes saved" analytic is text_length − keys_typed; calling
@@ -44,6 +45,8 @@ interface SuggestionStripesProps {
   className?: string;
   /** Optional: called when the user pins a phrase to the space context. */
   onPin?: (phrase: string) => void;
+  /** Optional: accept the whole stripe (full draft + suggestion) and speak it. */
+  onSubmit?: (text: string) => void;
 }
 
 export function SuggestionStripes({
@@ -51,11 +54,15 @@ export function SuggestionStripes({
   pinnedChips,
   className,
   onPin,
+  onSubmit,
 }: SuggestionStripesProps) {
   const { text, setText } = useEditorContext();
   const [past, setPast] = useState<string[]>([]);
   const [hover, setHover] = useState<HoverState>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+
+  // One uniform scale so the longest stripe fits on a single line (measured
+  // with Pretext). Tiles below size off this instead of fixed text-lg/px-4.
+  const { containerRef, scale } = useStripeScale(stripes);
 
   /** Apply a new text value, saving the current value to the undo stack. */
   const apply = (next: string) => {
@@ -110,14 +117,16 @@ export function SuggestionStripes({
           return (
             <div
               key={stripe.text}
-              className="flex flex-wrap items-center gap-1.5 animate-in fade-in slide-in-from-bottom-1 motion-reduce:animate-none"
-              style={{ animationDelay: `${si * 45}ms`, animationFillMode: 'both' }}
+              className="flex flex-nowrap items-center overflow-x-auto animate-in fade-in slide-in-from-bottom-1 motion-reduce:animate-none"
+              style={{ gap: STRIPE_BASE.gapPx * scale, animationDelay: `${si * 45}ms`, animationFillMode: 'both' }}
               onMouseLeave={() => setHover(null)}
             >
               <SourceMark source={stripe.source} onPin={onPin ? () => onPin(stripe.text) : undefined} />
 
               {/* Selectable token tiles. The already-typed prefix (stripe.hidden
-                  tokens) is omitted — we don't repeat what's already entered. */}
+                  tokens) is omitted — we don't repeat what's already entered.
+                  Sizes scale uniformly (see useStripeScale) so the longest
+                  stripe stays on one line. */}
               {stripe.tokens.map((token, ti) => {
                 if (ti < stripe.hidden) return null;
                 const active = hover !== null && hover.stripe === si && ti <= hover.index;
@@ -129,9 +138,14 @@ export function SuggestionStripes({
                     onMouseEnter={() => setHover({ stripe: si, index: ti })}
                     onFocus={() => setHover({ stripe: si, index: ti })}
                     onClick={() => selectUpTo(si, ti)}
+                    style={{
+                      fontSize: STRIPE_BASE.fontPx * scale,
+                      paddingInline: (isPunct ? STRIPE_BASE.punctPadXPx : STRIPE_BASE.wordPadXPx) * scale,
+                      minHeight: STRIPE_BASE.minHeightPx * scale,
+                    }}
                     className={cn(
-                      'min-h-12 rounded-lg border text-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                      isPunct ? 'px-2.5' : 'px-4 font-medium',
+                      'inline-flex shrink-0 items-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      isPunct ? '' : 'font-medium',
                       active ? lane.active : lane.idle
                     )}
                   >
@@ -139,6 +153,26 @@ export function SuggestionStripes({
                   </button>
                 );
               })}
+
+              {/* Accept the whole stripe (full draft + suggestion) and speak it. */}
+              {onSubmit && (
+                <button
+                  type="button"
+                  onClick={() => onSubmit(joinTokens(stripe.tokens))}
+                  aria-label="Speak this suggestion"
+                  title="Speak this suggestion"
+                  style={{
+                    minHeight: STRIPE_BASE.minHeightPx * scale,
+                    paddingInline: STRIPE_BASE.wordPadXPx * scale,
+                  }}
+                  className="inline-flex shrink-0 items-center justify-center rounded-lg border border-primary/40 bg-primary/10 text-primary transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <CornerDownLeft
+                    style={{ width: STRIPE_BASE.fontPx * scale, height: STRIPE_BASE.fontPx * scale }}
+                    aria-hidden
+                  />
+                </button>
+              )}
             </div>
           );
         })}

@@ -221,11 +221,37 @@ Use `width="wide"`. The editor fills the shell; a sticky bottom compose area
 may break out of the shell width — that's allowed. Header may include
 page-specific actions (e.g. Display button), but still no duplicate title.
 
-### 4.3 Settings subpage (providers, suggestions, transcription, speech)
+### 4.3 Settings (account, providers, suggestions, transcription, speech)
 
-Use `width="form"`. Breadcrumb is `Settings / <Name>`. `PageTitle` is the one
-name of the subject ("Providers"), not "Providers Configuration". Warnings go
-in `<Callout tone="warning">`.
+Settings use a **two-column shell** owned by the `/_app/settings` layout route,
+not the standard `PageShell`. The left column is a persistent sub-nav
+(`SettingsNav`) listing every settings section with an icon, name, and one-line
+description; the active row is highlighted with `bg-muted`. The right column
+renders the active subpage via `<Outlet />`.
+
+The layout owns the header (`PageHeader breadcrumbs={[{ label: 'Settings' }]}`)
+and both columns. Subpages therefore render **content only** — a `PageTitle`
+plus the body — wrapped in a single `flex flex-col gap-6`. They do not render
+`SidebarLayout.Header`, `SidebarLayout.Content`, or `PageShell`.
+
+`PageTitle` is the one name of the subject ("Providers"), not "Providers
+Configuration". Warnings go in `<Callout tone="warning">`.
+
+```tsx
+// routes/_app/settings/providers.tsx — content only
+function ProvidersPage() {
+  return (
+    <div className="flex flex-col gap-6">
+      <PageTitle title="Providers" description="…" />
+      <Callout tone="warning" title="Security note">…</Callout>
+      <AISettingsForm />
+    </div>
+  );
+}
+```
+
+The main sidebar's `Settings` entry is a single link (no expandable sub-items) —
+the `SettingsNav` column is the canonical settings navigation.
 
 ### 4.4 Single-purpose page (talk, clone)
 

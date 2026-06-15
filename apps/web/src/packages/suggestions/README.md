@@ -35,6 +35,15 @@ The `chatId` prop accepts a space id (the name is kept for compatibility with th
 Lower-level stripe render; use when you supply stripes from your own `useStripes` call.
 Reads `text` / `setText` from `useEditorContext()`.
 
+Each stripe renders on a **single line** (`flex-nowrap`). Tile font/padding/min-height
+scale by one uniform factor from `useStripeScale` so the *longest* stripe fits the
+container width — measured with Pretext (`@chenglou/pretext`), the same engine the
+display reel uses. Tiles never wrap; an over-long stripe (past the min-scale floor)
+scrolls horizontally instead.
+
+Pass `onSubmit` to add a trailing **enter** button to each stripe that accepts the
+whole stripe (full draft + suggestion) and speaks it in one tap.
+
 ### `useStripes({ chatId })`
 
 ```ts

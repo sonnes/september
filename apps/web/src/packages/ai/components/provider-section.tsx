@@ -48,7 +48,7 @@ export function ProviderSection({ control, provider, hasApiKey = false }: Provid
   if (!provider.requires_api_key) {
     return (
       <Card className="border-green-200 bg-green-50/50">
-        <div className="grid gap-6 p-6 md:grid-cols-[1fr_1.5fr]">
+        <div className="grid gap-6 p-6 @3xl:grid-cols-[1fr_1.5fr]">
           {/* Left Column - Provider Info */}
           <div className="space-y-4">
             <div className="flex items-start gap-3">
@@ -81,7 +81,7 @@ export function ProviderSection({ control, provider, hasApiKey = false }: Provid
 
   return (
     <Card className={hasApiKey ? 'border-green-200 bg-green-50/50' : ''}>
-      <div className="grid gap-6 p-6 md:grid-cols-[1fr_1.5fr]">
+      <div className="grid gap-6 p-6 @3xl:grid-cols-[1fr_1.5fr]">
         {/* Left Column - Provider Info */}
         <div className="space-y-4">
           <div className="flex items-start gap-3">

@@ -7,6 +7,7 @@ import {
   Delete,
   FileText,
   HistoryIcon,
+  Loader2,
   MessageSquareQuote,
   MessagesSquare,
   MicIcon,
@@ -28,19 +29,16 @@ import {
   useCreateAudioMessage,
   useGenerateSpaceContext,
   useMessages,
+  usePlayMessage,
   useSavedPhrases,
   useSyncSpacePhrases,
   addManualPhrase,
+  type Message,
 } from '@/packages/spaces';
 import { Autocomplete, useEditorContext } from '@/packages/editor';
-import { DisplayMessage } from '@/packages/shared';
+import { cn, DisplayMessage } from '@/packages/shared';
 import { Suggestions } from '@/packages/suggestions';
 import { Button } from '@/packages/ui/components/button';
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@/packages/ui/components/resizable';
 import { Separator } from '@/packages/ui/components/separator';
 import { SidebarTrigger } from '@/packages/ui/components/sidebar';
 
@@ -84,6 +82,34 @@ function RailButton({
     >
       {children}
     </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Transcript bubble — a spoken message; tap to replay (or pause) its audio.
+// ---------------------------------------------------------------------------
+
+function TranscriptBubble({ message }: { message: Message }) {
+  const { play, isLoading, isPlaying } = usePlayMessage(message);
+  return (
+    <div className="flex animate-in fade-in slide-in-from-bottom-1 justify-end motion-reduce:animate-none">
+      <button
+        type="button"
+        onClick={play}
+        aria-label={isPlaying ? 'Pause message' : 'Play message'}
+        className={cn(
+          'flex max-w-[85%] items-start gap-2 rounded-lg rounded-br-sm bg-accent px-4 py-2.5 text-left text-accent-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          isLoading && 'opacity-70'
+        )}
+      >
+        {isLoading ? (
+          <Loader2 className="mt-1 size-4 shrink-0 animate-spin opacity-60" aria-hidden />
+        ) : (
+          <Volume2 className="mt-1 size-4 shrink-0 opacity-60" aria-hidden />
+        )}
+        <p className="text-base leading-snug">{message.text}</p>
+      </button>
+    </div>
   );
 }
 
@@ -240,6 +266,33 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
     };
   }, [spaceId]);
 
+  // Drag-to-resize the detached panel. The panel now lives outside the inset,
+  // so we size it as a share of the sidebar wrapper and adjust widthPct as the
+  // left edge is dragged (drag left → wider panel).
+  const onPanelResize = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault();
+      const wrapper = (e.currentTarget as HTMLElement).closest(
+        '[data-slot="sidebar-wrapper"]'
+      ) as HTMLElement | null;
+      const basis = wrapper?.clientWidth ?? window.innerWidth;
+      const startX = e.clientX;
+      const startPct = widthPct;
+      const onMove = (ev: PointerEvent) => {
+        setWidthPct(startPct + ((startX - ev.clientX) / basis) * 100);
+      };
+      const onUp = () => {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        document.body.style.removeProperty('user-select');
+      };
+      document.body.style.userSelect = 'none';
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+    },
+    [widthPct, setWidthPct]
+  );
+
   // Pinning a suggestion saves it as a pinned (durable) phrase for this space.
   const handlePin = useCallback(
     (phrase: string) => {
@@ -252,8 +305,8 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
   );
 
   // Recently spoken (user) messages — faint log filling the space above the
-  // composer, mirroring the mock's spoken-history area.
-  const spoken = (messages ?? []).filter(m => m.type === 'user').map(m => m.text).slice(-6);
+  // composer, mirroring the mock's spoken-history area. Tap one to replay it.
+  const spoken = (messages ?? []).filter(m => m.type === 'user').slice(-6);
 
   // Compose column — shared between split and full-width layouts
   const composeColumn = (
@@ -270,16 +323,8 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
             </p>
           </div>
         ) : (
-          spoken.map((line, i) => (
-            <div
-              key={i}
-              className="flex animate-in fade-in slide-in-from-bottom-1 justify-end motion-reduce:animate-none"
-            >
-              <div className="flex max-w-[85%] items-start gap-2 rounded-lg rounded-br-sm bg-accent px-4 py-2.5 text-accent-foreground">
-                <Volume2 className="mt-1 size-4 shrink-0 opacity-60" aria-hidden />
-                <p className="text-base leading-snug">{line}</p>
-              </div>
-            </div>
+          spoken.map((message, i) => (
+            <TranscriptBubble key={message.id || i} message={message} />
           ))
         )}
 
@@ -296,7 +341,7 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
           active zone reads as one grounded unit instead of floating on white. */}
       <div className="flex shrink-0 flex-col gap-3 rounded-lg bg-muted/40 p-3">
         {/* Suggestion stripes (word autocomplete now lives inside the editor) */}
-        <Suggestions chatId={spaceId} onPin={handlePin} />
+        <Suggestions chatId={spaceId} onPin={handlePin} onSubmit={handleSubmit} />
 
         {/* Composer — borrowed from the previous /talk editor: word autocomplete
             above a bordered box whose bottom row holds the controls. Keeps the
@@ -431,39 +476,32 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
         </div>
       </SidebarLayout.Header>
 
-      <SidebarLayout.Content>
-        {open ? (
-          <ResizablePanelGroup
-            orientation="horizontal"
-            onLayoutChanged={(layout: Record<string, number>) => {
-              const next = layout['chat-right-panel'];
-              if (typeof next === 'number' && Number.isFinite(next)) {
-                setWidthPct(next);
-              }
-            }}
-            className="h-full"
+      <SidebarLayout.Content>{composeColumn}</SidebarLayout.Content>
+
+      {/* Panel — detached from the inset (the main container) and rendered as
+          its own card in the sidebar flex row. Full-screen overlay on mobile, a
+          resizable side card on desktop. */}
+      {open && (
+        <SidebarLayout.RightPanel>
+          <div
+            style={{ flexBasis: `${widthPct}%` }}
+            className="fixed inset-x-2 top-2 bottom-2 z-40 flex shrink-0 grow-0 flex-col overflow-hidden rounded-xl border bg-background shadow-sm md:static md:inset-auto md:my-2 md:mr-2 md:min-w-72 md:max-w-160"
           >
-            <ResizablePanel id="chat-left-column" defaultSize={`${100 - widthPct}%`} minSize="30%">
-              {composeColumn}
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel
-              id="chat-right-panel"
-              defaultSize={`${widthPct}%`}
-              minSize="20%"
-              maxSize="70%"
-            >
-              <ChatRightPanel
-                chatId={spaceId}
-                chatTitle={space?.title}
-                onOpenDisplay={handleOpenDisplay}
-              />
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        ) : (
-          composeColumn
-        )}
-      </SidebarLayout.Content>
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize panel"
+              onPointerDown={onPanelResize}
+              className="absolute inset-y-0 left-0 z-10 hidden w-1.5 cursor-col-resize hover:bg-border md:block"
+            />
+            <ChatRightPanel
+              chatId={spaceId}
+              chatTitle={space?.title}
+              onOpenDisplay={handleOpenDisplay}
+            />
+          </div>
+        </SidebarLayout.RightPanel>
+      )}
     </>
   );
 }

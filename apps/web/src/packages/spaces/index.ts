@@ -12,6 +12,8 @@ export type { UseSavedPhrasesReturn } from './hooks/use-saved-phrases';
 
 // Stateful flow hooks
 export { useCreateAudioMessage } from './hooks/use-create-audio-message';
+export { usePlayMessage } from './hooks/use-play-message';
+export type { UsePlayMessageResult } from './hooks/use-play-message';
 export { useGenerateSpaceContext } from './hooks/use-generate-space-context';
 export { useGenerateSpacePhrases } from './hooks/use-generate-space-phrases';
 export { useSyncSpacePhrases } from './hooks/use-sync-space-phrases';

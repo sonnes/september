@@ -183,14 +183,14 @@ export function SpeechSettings({ account, onSubmit, section }: SpeechSettingsPro
                 </div>
 
                 <div className="space-y-6">
-                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
-                    <div className="px-4 sm:px-0">
+                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 @3xl:grid-cols-3">
+                    <div className="px-4 @3xl:px-0">
                       <h4 className="text-sm font-medium text-zinc-900">Speed</h4>
                       <p className="mt-1 text-sm text-zinc-600">
                         Controls how fast the voice speaks.
                       </p>
                     </div>
-                    <div className="md:col-span-2 px-4">
+                    <div className="@3xl:col-span-2 px-4">
                       <FormSlider
                         name="settings.speed"
                         control={form.control}
@@ -205,12 +205,12 @@ export function SpeechSettings({ account, onSubmit, section }: SpeechSettingsPro
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
-                    <div className="px-4 sm:px-0">
+                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 @3xl:grid-cols-3">
+                    <div className="px-4 @3xl:px-0">
                       <h4 className="text-sm font-medium text-zinc-900">Pitch</h4>
                       <p className="mt-1 text-sm text-zinc-600">Controls the pitch of the voice.</p>
                     </div>
-                    <div className="md:col-span-2 px-4">
+                    <div className="@3xl:col-span-2 px-4">
                       <FormSlider
                         name="settings.pitch"
                         control={form.control}
@@ -225,14 +225,14 @@ export function SpeechSettings({ account, onSubmit, section }: SpeechSettingsPro
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
-                    <div className="px-4 sm:px-0">
+                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 @3xl:grid-cols-3">
+                    <div className="px-4 @3xl:px-0">
                       <h4 className="text-sm font-medium text-zinc-900">Volume</h4>
                       <p className="mt-1 text-sm text-zinc-600">
                         Controls the volume of the voice.
                       </p>
                     </div>
-                    <div className="md:col-span-2 px-4">
+                    <div className="@3xl:col-span-2 px-4">
                       <FormSlider
                         name="settings.volume"
                         control={form.control}
@@ -261,14 +261,14 @@ export function SpeechSettings({ account, onSubmit, section }: SpeechSettingsPro
                 </div>
 
                 <div className="space-y-6">
-                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
-                    <div className="px-4 sm:px-0">
+                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 @3xl:grid-cols-3">
+                    <div className="px-4 @3xl:px-0">
                       <h4 className="text-sm font-medium text-zinc-900">Speed</h4>
                       <p className="mt-1 text-sm text-zinc-600">
                         Controls how fast the voice speaks.
                       </p>
                     </div>
-                    <div className="md:col-span-2 px-4">
+                    <div className="@3xl:col-span-2 px-4">
                       <FormSlider
                         name="settings.speed"
                         control={form.control}
@@ -284,14 +284,14 @@ export function SpeechSettings({ account, onSubmit, section }: SpeechSettingsPro
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
-                    <div className="px-4 sm:px-0">
+                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 @3xl:grid-cols-3">
+                    <div className="px-4 @3xl:px-0">
                       <h4 className="text-sm font-medium text-zinc-900">Stability</h4>
                       <p className="mt-1 text-sm text-zinc-600">
                         Higher values make the voice more stable and consistent.
                       </p>
                     </div>
-                    <div className="md:col-span-2 px-4">
+                    <div className="@3xl:col-span-2 px-4">
                       <FormSlider
                         name="settings.stability"
                         control={form.control}
@@ -307,14 +307,14 @@ export function SpeechSettings({ account, onSubmit, section }: SpeechSettingsPro
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
-                    <div className="px-4 sm:px-0">
+                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 @3xl:grid-cols-3">
+                    <div className="px-4 @3xl:px-0">
                       <h4 className="text-sm font-medium text-zinc-900">Similarity</h4>
                       <p className="mt-1 text-sm text-zinc-600">
                         Enhances similarity to the original voice at the cost of some clarity.
                       </p>
                     </div>
-                    <div className="md:col-span-2 px-4">
+                    <div className="@3xl:col-span-2 px-4">
                       <FormSlider
                         name="settings.similarity"
                         control={form.control}
@@ -330,14 +330,14 @@ export function SpeechSettings({ account, onSubmit, section }: SpeechSettingsPro
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
-                    <div className="px-4 sm:px-0">
+                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 @3xl:grid-cols-3">
+                    <div className="px-4 @3xl:px-0">
                       <h4 className="text-sm font-medium text-zinc-900">Style Exaggeration</h4>
                       <p className="mt-1 text-sm text-zinc-600">
                         Controls how much the voice style is exaggerated.
                       </p>
                     </div>
-                    <div className="md:col-span-2 px-4">
+                    <div className="@3xl:col-span-2 px-4">
                       <FormSlider
                         name="settings.style"
                         control={form.control}
@@ -353,14 +353,14 @@ export function SpeechSettings({ account, onSubmit, section }: SpeechSettingsPro
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
-                    <div className="px-4 sm:px-0">
+                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 @3xl:grid-cols-3">
+                    <div className="px-4 @3xl:px-0">
                       <h4 className="text-sm font-medium text-zinc-900">Speaker Boost</h4>
                       <p className="mt-1 text-sm text-zinc-600">
                         Enhance speaker clarity and reduce background noise.
                       </p>
                     </div>
-                    <div className="md:col-span-2 px-4">
+                    <div className="@3xl:col-span-2 px-4">
                       <FormCheckbox
                         name="settings.speaker_boost"
                         control={form.control}
@@ -386,14 +386,14 @@ export function SpeechSettings({ account, onSubmit, section }: SpeechSettingsPro
                   </p>
                 </div>
                 {availableModels.length > 0 && (
-                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
-                    <div className="px-4 sm:px-0">
+                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 @3xl:grid-cols-3">
+                    <div className="px-4 @3xl:px-0">
                       <h4 className="text-sm font-medium text-zinc-900">Model</h4>
                       <p className="mt-1 text-sm text-zinc-600">
                         Choose the Gemini model for speech generation.
                       </p>
                     </div>
-                    <div className="md:col-span-2 px-4">
+                    <div className="@3xl:col-span-2 px-4">
                       <FormSelect
                         name="model_id"
                         control={form.control}
@@ -419,14 +419,14 @@ export function SpeechSettings({ account, onSubmit, section }: SpeechSettingsPro
                 </div>
 
                 <div className="space-y-6">
-                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
-                    <div className="px-4 sm:px-0">
+                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 @3xl:grid-cols-3">
+                    <div className="px-4 @3xl:px-0">
                       <h4 className="text-sm font-medium text-zinc-900">Model</h4>
                       <p className="mt-1 text-sm text-zinc-600">
                         Kokoro uses the Kokoro 82M v1.0 model.
                       </p>
                     </div>
-                    <div className="md:col-span-2 px-4">
+                    <div className="@3xl:col-span-2 px-4">
                       <div className="bg-zinc-50 rounded-lg p-3 border border-zinc-200">
                         <p className="text-sm font-medium text-zinc-900">Kokoro 82M v1.0</p>
                         <p className="text-xs text-zinc-600 mt-1">
@@ -439,14 +439,14 @@ export function SpeechSettings({ account, onSubmit, section }: SpeechSettingsPro
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
-                    <div className="px-4 sm:px-0">
+                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 @3xl:grid-cols-3">
+                    <div className="px-4 @3xl:px-0">
                       <h4 className="text-sm font-medium text-zinc-900">Speed</h4>
                       <p className="mt-1 text-sm text-zinc-600">
                         Controls how fast the voice speaks.
                       </p>
                     </div>
-                    <div className="md:col-span-2 px-4">
+                    <div className="@3xl:col-span-2 px-4">
                       <FormSlider
                         name="settings.speed"
                         control={form.control}
@@ -461,14 +461,14 @@ export function SpeechSettings({ account, onSubmit, section }: SpeechSettingsPro
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3">
-                    <div className="px-4 sm:px-0">
+                  <div className="grid grid-cols-1 gap-x-8 gap-y-6 @3xl:grid-cols-3">
+                    <div className="px-4 @3xl:px-0">
                       <h4 className="text-sm font-medium text-zinc-900">Language</h4>
                       <p className="mt-1 text-sm text-zinc-600">
                         Select the English variant for pronunciation.
                       </p>
                     </div>
-                    <div className="md:col-span-2 px-4">
+                    <div className="@3xl:col-span-2 px-4">
                       <FormSelect
                         name="settings.language"
                         control={form.control}

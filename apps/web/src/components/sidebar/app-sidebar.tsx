@@ -56,25 +56,6 @@ const getNavigationData = () => ({
       title: 'Settings',
       url: '/settings',
       icon: Settings2,
-      isExpanded: true,
-      items: [
-        {
-          title: 'Providers',
-          url: '/settings/providers',
-        },
-        {
-          title: 'Suggestions',
-          url: '/settings/suggestions',
-        },
-        {
-          title: 'Transcription',
-          url: '/settings/transcription',
-        },
-        {
-          title: 'Speech',
-          url: '/settings/speech',
-        },
-      ],
     },
   ],
   navSecondary: [
@@ -100,12 +81,12 @@ export function AppSidebar(props: AppSidebarProps) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
+            <SidebarMenuButton size="lg" asChild className="group-data-[collapsible=icon]:justify-center">
               <Link to="/">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg overflow-hidden">
-                  <img src="/logo.png" alt="September" width={32} height={32} loading="lazy" />
+                <div className="flex aspect-square size-8 items-center justify-center overflow-hidden rounded-lg group-data-[collapsible=icon]:size-6">
+                  <img src="/logo.png" alt="September" className="size-full object-contain" width={32} height={32} loading="lazy" />
                 </div>
-                <div className="grid flex-1 text-left text-xl font-bold leading-tight">
+                <div className="grid flex-1 text-left text-xl font-bold leading-tight group-data-[collapsible=icon]:hidden">
                   <span className="truncate">september</span>
                 </div>
               </Link>

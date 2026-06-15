@@ -94,9 +94,9 @@ export function SuggestionsFormFields({
   const formFieldsClass = isSetupVariant ? 'space-y-6' : 'space-y-6 sm:space-y-8';
   const sectionClass = isSetupVariant
     ? 'grid grid-cols-1 gap-5 rounded-sm border bg-muted/30 p-6 md:grid-cols-[15rem_1fr] md:gap-8'
-    : 'grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-3';
-  const sectionIntroClass = isSetupVariant ? 'px-0' : 'px-4 sm:px-0';
-  const sectionControlClass = isSetupVariant ? 'px-0' : 'md:col-span-2 px-4';
+    : 'grid grid-cols-1 gap-x-8 gap-y-6 @3xl:grid-cols-3';
+  const sectionIntroClass = isSetupVariant ? 'px-0' : 'px-4 @3xl:px-0';
+  const sectionControlClass = isSetupVariant ? 'px-0' : '@3xl:col-span-2 px-4';
   const sectionTitleClass = isSetupVariant
     ? 'text-sm font-semibold text-foreground'
     : 'text-base/7 font-semibold text-zinc-900';

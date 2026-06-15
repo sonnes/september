@@ -85,7 +85,7 @@ export function ChatRightPanel({ chatId, chatTitle, onOpenDisplay }: ChatRightPa
   return (
     <aside
       aria-label="Chat panel"
-      className="relative z-10 flex h-full w-full flex-col border-l border-border/60 bg-background"
+      className="relative z-10 flex h-full w-full flex-col bg-background"
     >
       <PanelHeader
         chatTitle={chatTitle ?? 'Chat'}
@@ -313,7 +313,7 @@ function VoiceTab({ section }: { section: 'provider' | 'voice' | 'speech' }) {
   if (!account) return null;
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="@container p-4 space-y-6">
       <SpeechSettings account={account} onSubmit={handleSubmit} section={section} />
     </div>
   );

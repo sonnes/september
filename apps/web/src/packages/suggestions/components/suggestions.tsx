@@ -16,6 +16,8 @@ interface SuggestionsProps {
   wordSuggestions?: ReactNode;
   /** Called when the user pins a phrase to the space context md. */
   onPin?: (phrase: string) => void;
+  /** Accept a whole stripe (full draft + suggestion) and speak it. */
+  onSubmit?: (text: string) => void;
 }
 
 /**
@@ -25,7 +27,7 @@ interface SuggestionsProps {
  *
  * Public API: <Suggestions chatId={chatId} className="…" onPin={handlePin} />
  */
-export function Suggestions({ chatId, className, wordSuggestions, onPin }: SuggestionsProps) {
+export function Suggestions({ chatId, className, wordSuggestions, onPin, onSubmit }: SuggestionsProps) {
   const { stripes, pinnedChips } = useStripes({ chatId });
 
   const isLoading = false; // LLM loading state surfaced through useSuggestions inside useStripes
@@ -50,6 +52,7 @@ export function Suggestions({ chatId, className, wordSuggestions, onPin }: Sugge
           stripes={stripes}
           pinnedChips={pinnedChips}
           onPin={onPin}
+          onSubmit={onSubmit}
         />
       )}
 
