@@ -10,6 +10,7 @@ import {
   MessageSquareQuote,
   MessagesSquare,
   MicIcon,
+  PanelRight,
   Plug,
   SlidersHorizontal,
   Trash2,
@@ -108,7 +109,7 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
   const popupRef = useRef<Window | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const { open, widthPct, setWidthPct, openTab } = useChatPanel();
+  const { open, widthPct, setWidthPct, openTab, openOverview, close } = useChatPanel();
 
   // Undo stack for the composer. Guarded so programmatic restores don't
   // re-push. Captures every text change (typed or suggestion-driven).
@@ -417,56 +418,16 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
           {space && <EditableSpaceTitle spaceId={space.id} title={space.title} />}
-          <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={handleOpenDisplay}>
-              <TvIcon className="size-4" />
-              <span>Display</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label="View history"
-              onClick={() => openTab('history')}
-            >
-              <HistoryIcon className="size-4" />
-              <span>History</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label="Speech provider"
-              onClick={() => openTab('provider')}
-            >
-              <Plug className="size-4" />
-              <span>Provider</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label="Voice"
-              onClick={() => openTab('voice')}
-            >
-              <MicIcon className="size-4" />
-              <span>Voice</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label="Speech settings"
-              onClick={() => openTab('speech')}
-            >
-              <SlidersHorizontal className="size-4" />
-              <span>Speech</span>
-            </Button>
-            <Button variant="ghost" size="sm" aria-label="Saved phrases" onClick={() => openTab('phrases')}>
-              <MessageSquareQuote className="size-4" />
-              <span>Phrases</span>
-            </Button>
-            <Button variant="ghost" size="sm" aria-label="Context" onClick={() => openTab('context')}>
-              <FileText className="size-4" />
-              <span>Context</span>
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Toggle panel"
+            aria-pressed={open}
+            className="ml-auto"
+            onClick={() => (open ? close() : openOverview())}
+          >
+            <PanelRight className="size-4" />
+          </Button>
         </div>
       </SidebarLayout.Header>
 

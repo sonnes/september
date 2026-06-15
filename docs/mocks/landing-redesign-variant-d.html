@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>September — fewer keystrokes to full expression</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper: #f7f3ec;
+    --panel: #efe9dd;
+    --ink: #2b2622;
+    --ink-soft: #6b6258;
+    --hairline: #e3dccf;
+    --clay: #b5543a;
+    --clay-press: #9c462f;
+    --focus: #2b2622;
+
+    --serif: "Fraunces", Georgia, "Times New Roman", serif;
+    --ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+    --content-max: 1080px;
+    --measure: 620px;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--paper);
+    /* very faint paper texture */
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(43, 38, 34, 0.015) 0, transparent 60%),
+      radial-gradient(circle at 80% 70%, rgba(43, 38, 34, 0.018) 0, transparent 55%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+    color: var(--ink);
+    font-family: var(--ui);
+    font-size: 17px;
+    line-height: 1.6;
+    letter-spacing: 0.005em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+
+  a {
+    color: var(--clay);
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* Visible, generous focus everywhere — never hover-only */
+  a:focus-visible,
+  button:focus-visible,
+  .demo-chip:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  .wrap {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding: 0 40px;
+  }
+
+  /* ---------- Header ---------- */
+  header.site {
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 22px 0;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--ink);
+  }
+
+  .brand:hover {
+    text-decoration: none;
+  }
+
+  .mark {
+    width: 26px;
+    height: 26px;
+    flex: 0 0 auto;
+  }
+
+  .wordmark {
+    font-family: var(--serif);
+    font-optical-sizing: auto;
+    font-weight: 500;
+    font-size: 24px;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+
+  .quiet-link {
+    font-family: var(--ui);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    letter-spacing: 0.02em;
+  }
+
+  .quiet-link:hover {
+    color: var(--ink);
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 52px;
+    padding: 0 26px;
+    font-family: var(--ui);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    border-radius: 9px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background-color 0.18s ease, transform 0.05s ease, border-color 0.18s ease;
+    text-align: center;
+  }
+
+  .btn-primary {
+    background-color: var(--clay);
+    color: var(--paper);
+    border-color: var(--clay);
+  }
+
+  .btn-primary:hover {
+    background-color: var(--clay-press);
+    border-color: var(--clay-press);
+    text-decoration: none;
+  }
+
+  .btn-primary:active {
+    transform: translateY(1px);
+  }
+
+  .btn-small {
+    min-height: 46px;
+    padding: 0 20px;
+    font-size: 15px;
+  }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    padding: 96px 0 88px;
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 72px;
+    align-items: center;
+  }
+
+  .hero-copy {
+    max-width: var(--measure);
+  }
+
+  .eyebrow {
+    font-family: var(--ui);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--clay);
+    margin: 0 0 26px;
+  }
+
+  h1.hero-title {
+    font-family: var(--serif);
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-size: clamp(38px, 5vw, 60px);
+    line-height: 1.12;
+    letter-spacing: -0.012em;
+    color: var(--ink);
+    margin: 0 0 28px;
+  }
+
+  .hero-sub {
+    font-family: var(--ui);
+    font-size: 18px;
+    line-height: 1.62;
+    color: var(--ink-soft);
+    margin: 0 0 38px;
+    max-width: 540px;
+  }
+
+  .hero-cta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+
+  .inline-link {
+    font-family: var(--ui);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--clay);
+  }
+
+  /* ---------- Live demo card ---------- */
+  .demo {
+    background-color: var(--paper);
+    border: 1px solid var(--hairline);
+    border-radius: 14px;
+    padding: 26px 26px 30px;
+    box-shadow:
+      0 1px 0 rgba(43, 38, 34, 0.02),
+      0 18px 40px -24px rgba(43, 38, 34, 0.28),
+      0 4px 12px -8px rgba(43, 38, 34, 0.18);
+  }
+
+  .demo-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--serif);
+    font-optical-sizing: auto;
+    font-weight: 500;
+    font-size: 17px;
+    color: var(--ink);
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .demo-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background-color: var(--clay);
+    flex: 0 0 auto;
+  }
+
+  .demo-field {
+    display: flex;
+    align-items: baseline;
+    min-height: 64px;
+    padding: 18px 20px;
+    background-color: #fbf8f2;
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    font-family: var(--serif);
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-size: 24px;
+    line-height: 1.3;
+    color: var(--ink);
+  }
+
+  .demo-field .typed {
+    white-space: pre;
+  }
+
+  .caret {
+    display: inline-block;
+    width: 2px;
+    height: 1.05em;
+    margin-left: 1px;
+    background-color: var(--clay);
+    transform: translateY(2px);
+    animation: blink 1.05s step-end infinite;
+  }
+
+  @keyframes blink {
+    0%,
+    49% {
+      opacity: 1;
+    }
+    50%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  .demo-hint {
+    font-family: var(--ui);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 24px 0 14px;
+  }
+
+  .demo-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .demo-chip {
+    appearance: none;
+    font-family: var(--ui);
+    font-size: 16px;
+    font-weight: 500;
+    min-height: 44px;
+    padding: 0 18px;
+    border-radius: 999px;
+    border: 1px solid var(--hairline);
+    background-color: var(--paper);
+    color: var(--ink);
+    cursor: pointer;
+    transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+  }
+
+  .demo-chip:hover {
+    border-color: var(--ink-soft);
+  }
+
+  .demo-chip.active {
+    background-color: var(--clay);
+    border-color: var(--clay);
+    color: var(--paper);
+  }
+
+  .demo-chip.active:hover {
+    background-color: var(--clay-press);
+    border-color: var(--clay-press);
+  }
+
+  /* ---------- Thesis band ---------- */
+  .thesis {
+    background-color: var(--panel);
+    border-top: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--hairline);
+    padding: 92px 0;
+    text-align: center;
+  }
+
+  .thesis blockquote {
+    margin: 0 auto;
+    max-width: 780px;
+  }
+
+  .thesis-quote {
+    font-family: var(--serif);
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-size: clamp(28px, 3.6vw, 42px);
+    line-height: 1.24;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin: 0 0 22px;
+  }
+
+  .thesis-cite {
+    font-family: var(--ui);
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+    font-style: normal;
+  }
+
+  /* ---------- What it does (editorial list) ---------- */
+  .does {
+    padding: 96px 0 88px;
+  }
+
+  .does-intro {
+    font-family: var(--ui);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--clay);
+    margin: 0 0 56px;
+  }
+
+  .does-list {
+    max-width: 880px;
+  }
+
+  .does-item {
+    display: grid;
+    grid-template-columns: 1fr 1.15fr;
+    gap: 48px;
+    padding: 38px 0;
+    border-top: 1px solid var(--hairline);
+    align-items: baseline;
+  }
+
+  .does-item:last-child {
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .does-item h3 {
+    font-family: var(--serif);
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-size: clamp(26px, 2.8vw, 33px);
+    line-height: 1.18;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin: 0;
+  }
+
+  .does-item p {
+    font-family: var(--ui);
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+
+  /* ---------- Built with ---------- */
+  .built {
+    border-top: 1px solid var(--hairline);
+    padding: 56px 0;
+    text-align: center;
+  }
+
+  .built-line {
+    font-family: var(--ui);
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    color: var(--ink-soft);
+    margin: 0 0 12px;
+  }
+
+  .built-line strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .built-tag {
+    font-family: var(--serif);
+    font-optical-sizing: auto;
+    font-weight: 500;
+    font-size: 20px;
+    color: var(--ink);
+    margin: 0;
+  }
+
+  /* ---------- Closing CTA ---------- */
+  .closing {
+    background-color: var(--panel);
+    border-top: 1px solid var(--hairline);
+    padding: 100px 0 104px;
+    text-align: center;
+  }
+
+  .closing h2 {
+    font-family: var(--serif);
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-size: clamp(34px, 4.4vw, 52px);
+    line-height: 1.14;
+    letter-spacing: -0.012em;
+    color: var(--ink);
+    margin: 0 0 36px;
+  }
+
+  .closing .btn {
+    margin: 0 auto;
+  }
+
+  .closing-fine {
+    font-family: var(--ui);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: var(--ink-soft);
+    margin: 22px 0 0;
+  }
+
+  /* ---------- Footer ---------- */
+  footer.site {
+    border-top: 1px solid var(--hairline);
+    padding: 44px 0 56px;
+  }
+
+  .footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .footer-brand {
+    font-family: var(--serif);
+    font-optical-sizing: auto;
+    font-weight: 500;
+    font-size: 20px;
+    color: var(--ink);
+  }
+
+  .footer-links {
+    display: flex;
+    align-items: center;
+    gap: 26px;
+  }
+
+  .footer-links a {
+    font-family: var(--ui);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    letter-spacing: 0.02em;
+  }
+
+  .footer-links a:hover {
+    color: var(--ink);
+  }
+
+  .footer-copy {
+    font-family: var(--ui);
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin-top: 28px;
+    letter-spacing: 0.02em;
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 920px) {
+    .hero-grid {
+      grid-template-columns: 1fr;
+      gap: 52px;
+    }
+    .hero {
+      padding: 64px 0 64px;
+    }
+    .does-item {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    body {
+      font-size: 16px;
+    }
+    .wrap {
+      padding: 0 22px;
+    }
+    .hero {
+      padding: 48px 0 52px;
+    }
+    .hero-cta {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 18px;
+    }
+    .hero-cta .btn {
+      width: 100%;
+    }
+    .inline-link {
+      text-align: center;
+    }
+    .thesis,
+    .closing {
+      padding: 64px 0;
+    }
+    .does {
+      padding: 64px 0;
+    }
+    .header-actions {
+      gap: 14px;
+    }
+    .demo-field {
+      font-size: 21px;
+    }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ===== Header ===== -->
+  <header class="site">
+    <div class="wrap">
+      <div class="header-row">
+        <a class="brand" href="/onboarding" aria-label="September — open the app">
+          <svg class="mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <circle cx="16" cy="16" r="15" stroke="#b5543a" stroke-width="1.5" />
+            <path d="M16 6 C11 11, 11 21, 16 26 C21 21, 21 11, 16 6 Z" fill="#b5543a" />
+          </svg>
+          <span class="wordmark">September</span>
+        </a>
+        <nav class="header-actions" aria-label="Primary">
+          <a class="quiet-link" href="https://github.com/sonnes/september" rel="noopener">GitHub</a>
+          <a class="btn btn-primary btn-small" href="/onboarding">Open the app</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== Hero ===== -->
+  <main id="main">
+    <section class="hero">
+      <div class="wrap">
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow">Assistive communication</p>
+            <h1 class="hero-title">The fewest keystrokes between you and being understood.</h1>
+            <p class="hero-sub">
+              September completes your thought from a few letters and speaks it
+              in your own voice. Built for people living with ALS, MND, and
+              speech or motor difficulties — and for the people beside them.
+            </p>
+            <div class="hero-cta">
+              <a class="btn btn-primary" href="/onboarding">Open September</a>
+              <a class="inline-link" href="/onboarding">It&rsquo;s free and open source &rarr;</a>
+            </div>
+          </div>
+
+          <!-- Live demo, framed as an elegant inset -->
+          <div class="demo" role="group" aria-label="Live preview of September">
+            <div class="demo-label">
+              <span class="demo-dot" aria-hidden="true"></span>
+              September
+            </div>
+            <div class="demo-field" aria-label="Message: I would like a glass of water">
+              <span class="typed">I would like </span><span class="caret" aria-hidden="true"></span>
+            </div>
+            <p class="demo-hint">Suggestions</p>
+            <div class="demo-chips">
+              <button class="demo-chip active" type="button">a glass of water</button>
+              <button class="demo-chip" type="button">to sit up</button>
+              <button class="demo-chip" type="button">to call my daughter</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Thesis band ===== -->
+    <section class="thesis">
+      <div class="wrap">
+        <blockquote>
+          <p class="thesis-quote">Communication should not cost you your energy.</p>
+          <cite class="thesis-cite">A few letters in. A full sentence out. Spoken aloud.</cite>
+        </blockquote>
+      </div>
+    </section>
+
+    <!-- ===== What it does ===== -->
+    <section class="does">
+      <div class="wrap">
+        <p class="does-intro">What it does</p>
+        <div class="does-list">
+          <article class="does-item">
+            <h3>It learns how you talk.</h3>
+            <p>
+              September draws on your own message history to suggest what comes
+              next. The more you say, the fewer keys it takes — tap a suggestion
+              instead of spelling it out.
+            </p>
+          </article>
+          <article class="does-item">
+            <h3>It speaks in your voice.</h3>
+            <p>
+              Clone your own voice or choose a professional one, so the words
+              that leave the screen still sound like you.
+            </p>
+          </article>
+          <article class="does-item">
+            <h3>It keeps up with the room.</h3>
+            <p>
+              Real-time transcription follows the conversation and offers
+              replies you can send in a tap — so you stay in it, not behind it.
+            </p>
+          </article>
+          <article class="does-item">
+            <h3>It bends to how you move.</h3>
+            <p>
+              QWERTY, circular, and emoji layouts work with a mouse,
+              head-tracking, or eye-gaze. Large, calm targets, generous spacing,
+              and a pace that waits for you.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Built with ===== -->
+    <section class="built">
+      <div class="wrap">
+        <p class="built-line">Built with <strong>ElevenLabs</strong> &middot; <strong>Gemini</strong></p>
+        <p class="built-tag">Free. Open source. Yours.</p>
+      </div>
+    </section>
+
+    <!-- ===== Closing CTA ===== -->
+    <section class="closing">
+      <div class="wrap">
+        <h2>Start with one word.</h2>
+        <a class="btn btn-primary" href="/onboarding">Open September</a>
+        <p class="closing-fine">No signup. Works in your browser.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== Footer ===== -->
+  <footer class="site">
+    <div class="wrap">
+      <div class="footer-row">
+        <span class="footer-brand">September</span>
+        <nav class="footer-links" aria-label="Footer">
+          <a href="/onboarding">Open the app</a>
+          <a href="https://github.com/sonnes/september" rel="noopener">GitHub</a>
+          <a href="https://github.com/sonnes/september" rel="noopener">Source</a>
+        </nav>
+      </div>
+      <p class="footer-copy">&copy; 2026 September. Local-first. Your data stays on your device.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Demo only: tapping a suggestion chip moves the clay highlight and
+    // completes the sentence in the field — mirrors the signature interaction.
+    (function () {
+      var field = document.querySelector(".demo-field .typed");
+      var base = "I would like ";
+      var chips = document.querySelectorAll(".demo-chip");
+      chips.forEach(function (chip) {
+        chip.addEventListener("click", function () {
+          chips.forEach(function (c) {
+            c.classList.remove("active");
+          });
+          chip.classList.add("active");
+          if (field) field.textContent = base + chip.textContent;
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
