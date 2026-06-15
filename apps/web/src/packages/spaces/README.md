@@ -27,7 +27,8 @@ const { phrases, isLoading, error } = useSavedPhrases({ spaceId }); // pinned fi
 ```ts
 import { createSpace, updateSpace, deleteSpace, createMessage } from '@/packages/spaces';
 
-const space = await createSpace(userId, 'New Space');
+const space = await createSpace(userId); // title defaults to "General"
+const appointmentSpace = await createSpace(userId, 'Appointments');
 await updateSpace(spaceId, { title: 'Renamed', context: '...' });
 await deleteSpace(spaceId);          // cascades messages + saved phrases
 const msg  = await createMessage({ text, type, user_id, space_id });

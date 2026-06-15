@@ -19,7 +19,7 @@ export { useGenerateSpacePhrases } from './hooks/use-generate-space-phrases';
 export { useSyncSpacePhrases } from './hooks/use-sync-space-phrases';
 
 // Plain async mutations (throw on failure; toasts live at call sites)
-export { createSpace, updateSpace, deleteSpace, createMessage } from './mutations';
+export { DEFAULT_SPACE_TITLE, createSpace, updateSpace, deleteSpace, createMessage } from './mutations';
 export { addManualPhrase, removePhrase, setPhrasePinned, replaceAiPhrases } from './mutations';
 
 // Pure helpers

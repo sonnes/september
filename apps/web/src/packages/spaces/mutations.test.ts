@@ -134,10 +134,10 @@ describe('createSpace', () => {
     const inserted = mockSpaceInsert.mock.calls[0][0];
     expect(inserted.id).toBe('fixed-uuid-1234');
     expect(inserted.user_id).toBe('user-1');
-    expect(inserted.title).toBe('New Space');
+    expect(inserted.title).toBe('General');
     expect(inserted.created_at).toBeInstanceOf(Date);
     expect(inserted.updated_at).toBeInstanceOf(Date);
-    expect(space).toMatchObject({ id: 'fixed-uuid-1234', user_id: 'user-1', title: 'New Space' });
+    expect(space).toMatchObject({ id: 'fixed-uuid-1234', user_id: 'user-1', title: 'General' });
   });
 
   it('accepts a custom title', async () => {

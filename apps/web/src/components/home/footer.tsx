@@ -1,32 +1,19 @@
 import { Link } from '@tanstack/react-router';
 
-import { Separator } from '@/packages/ui/components/separator';
-
 export function Footer() {
   return (
-    <footer className="bg-zinc-800 text-white py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8">
-          <div>
-            <h3 className="text-2xl font-bold mb-4 text-amber-500">september</h3>
-            <p className="text-zinc-400 text-sm">
-              Communication assistant for people living with ALS, MND, and other conditions.
-            </p>
-          </div>
-        </div>
-        <Separator className="bg-gray-700 mb-6" />
-        <div className="text-center">
-          <p className="text-zinc-400 text-sm">
-            © 2024-{new Date().getFullYear()} September. Built with ❤️ by someone who understands.
-          </p>
-          <div className="mt-4 space-x-6 text-sm">
-            <Link to="/privacy-policy" className="text-zinc-400 hover:text-white transition">
-              Privacy Policy
-            </Link>
-            <Link to="/terms-of-service" className="text-zinc-400 hover:text-white transition">
-              Terms of Service
-            </Link>
-          </div>
+    <footer className="border-t bg-white">
+      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-6 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+        <p className="max-w-none sm:whitespace-nowrap">
+          © {new Date().getFullYear()} September. Communication with fewer keystrokes.
+        </p>
+        <div className="flex shrink-0 gap-6">
+          <Link to="/privacy-policy" className="transition hover:text-zinc-950">
+            Privacy
+          </Link>
+          <Link to="/terms-of-service" className="transition hover:text-zinc-950">
+            Terms
+          </Link>
         </div>
       </div>
     </footer>

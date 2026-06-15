@@ -6,11 +6,13 @@ import { spaceCollection, messageCollection, savedPhraseCollection } from './db'
 import { dedupeAgainstPinned } from './lib/phrases';
 import type { Space, CreateMessageData, Message } from './types';
 
+export const DEFAULT_SPACE_TITLE = 'General';
+
 /**
  * Insert a new space and await persistence.
  * Throws on failure — toast lives at the call site.
  */
-export async function createSpace(userId: string, title = 'New Space'): Promise<Space> {
+export async function createSpace(userId: string, title = DEFAULT_SPACE_TITLE): Promise<Space> {
   const now = new Date();
   const space: Space = {
     id: uuidv4(),

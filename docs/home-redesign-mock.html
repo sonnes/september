@@ -1,0 +1,1547 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>September home redesign mock</title>
+    <style>
+      @font-face {
+        font-family: "Noto Sans";
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url("../apps/web/node_modules/@fontsource/noto-sans/files/noto-sans-latin-400-normal.woff2")
+          format("woff2");
+      }
+
+      @font-face {
+        font-family: "Noto Sans";
+        font-style: normal;
+        font-weight: 500;
+        font-display: swap;
+        src: url("../apps/web/node_modules/@fontsource/noto-sans/files/noto-sans-latin-500-normal.woff2")
+          format("woff2");
+      }
+
+      @font-face {
+        font-family: "Noto Sans";
+        font-style: normal;
+        font-weight: 600;
+        font-display: swap;
+        src: url("../apps/web/node_modules/@fontsource/noto-sans/files/noto-sans-latin-600-normal.woff2")
+          format("woff2");
+      }
+
+      @font-face {
+        font-family: "Noto Sans";
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url("../apps/web/node_modules/@fontsource/noto-sans/files/noto-sans-latin-700-normal.woff2")
+          format("woff2");
+      }
+
+      :root {
+        --background: #ffffff;
+        --foreground: #18181b;
+        --muted: #f4f4f5;
+        --muted-strong: #e4e4e7;
+        --muted-foreground: #71717a;
+        --border: #e4e4e7;
+        --primary: #4f46e5;
+        --primary-strong: #4338ca;
+        --primary-soft: #eef2ff;
+        --primary-foreground: #ffffff;
+        --success: #059669;
+        --success-soft: #d1fae5;
+        --amber: #d97706;
+        --amber-soft: #fef3c7;
+        --sky: #0284c7;
+        --sky-soft: #e0f2fe;
+        --shadow: 0 20px 60px rgba(24, 24, 27, 0.12);
+        --shadow-soft: 0 6px 18px rgba(24, 24, 27, 0.08);
+        --radius: 14px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: var(--muted);
+        color: var(--foreground);
+        font-family: "Noto Sans", Helvetica, sans-serif;
+      }
+
+      body {
+        margin: 0;
+        background: var(--muted);
+        color: var(--foreground);
+        line-height: 1.5;
+        letter-spacing: 0;
+        overflow-x: hidden;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      .page {
+        overflow: hidden;
+      }
+
+      .hero {
+        height: auto;
+        min-height: 0;
+        padding: 12px;
+      }
+
+      .hero-shell {
+        display: flex;
+        min-height: 360px;
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 18px;
+        background: var(--primary);
+        box-shadow: var(--shadow-soft);
+      }
+
+      .hero-copy {
+        position: relative;
+        display: flex;
+        width: 100%;
+        min-width: 0;
+        flex-direction: column;
+        justify-content: flex-start;
+        gap: 56px;
+        overflow: hidden;
+        background: transparent;
+        color: var(--primary-foreground);
+        padding: 24px 28px 34px;
+      }
+
+      .hero-copy::after {
+        display: none;
+      }
+
+      .brand-row,
+      .hero-content,
+      .hero-proof {
+        position: relative;
+        z-index: 1;
+      }
+
+      .brand-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 44px;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .brand img {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: white;
+      }
+
+      .github-link {
+        display: inline-flex;
+        min-height: 44px;
+        align-items: center;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        padding: 0 16px;
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .hero-content {
+        display: flex;
+        max-width: 620px;
+        flex-direction: column;
+        gap: 18px;
+        padding: 0;
+      }
+
+      .eyebrow {
+        width: fit-content;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.13);
+        padding: 7px 12px;
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        max-width: 640px;
+        font-size: clamp(34px, 5vw, 52px);
+        line-height: 1.08;
+        font-weight: 700;
+      }
+
+      .hero-accent {
+        color: #fbbf24;
+      }
+
+      .hero-lede {
+        max-width: 480px;
+        color: rgba(255, 255, 255, 0.86);
+        font-size: 16px;
+        line-height: 1.55;
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .button {
+        display: inline-flex;
+        min-height: 48px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        border: 1px solid transparent;
+        padding: 0 18px;
+        font-size: 15px;
+        font-weight: 700;
+        transition:
+          transform 160ms ease,
+          box-shadow 160ms ease,
+          background 160ms ease;
+      }
+
+      .button:hover {
+        transform: translateY(-1px);
+      }
+
+      .button.primary {
+        background: white;
+        color: var(--primary);
+        box-shadow: 0 12px 26px rgba(24, 24, 27, 0.18);
+      }
+
+      .button.secondary {
+        border-color: rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+      }
+
+      .hero-proof {
+        display: none;
+        grid-template-columns: repeat(3, minmax(0, max-content));
+        gap: 16px;
+        color: rgba(255, 255, 255, 0.84);
+        font-size: 13px;
+      }
+
+      .proof-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .proof-dot {
+        width: 9px;
+        height: 9px;
+        flex: 0 0 auto;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .app-stage {
+        position: relative;
+        min-width: 0;
+        overflow: hidden;
+        background:
+          linear-gradient(90deg, rgba(79, 70, 229, 0.08), transparent 25%),
+          var(--muted);
+        padding: 16px;
+      }
+
+      .live-demo {
+        padding-top: 64px;
+      }
+
+      .live-demo-layout {
+        display: grid;
+        gap: 24px;
+      }
+
+      .live-demo-copy {
+        max-width: 760px;
+      }
+
+      .live-demo-copy .section-header {
+        margin-bottom: 24px;
+      }
+
+      .live-demo .app-stage {
+        min-height: 0;
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+      }
+
+      .live-demo .mock-app {
+        height: 720px;
+      }
+
+      .mock-app {
+        display: grid;
+        grid-template-columns: 64px minmax(0, 1fr);
+        height: 100%;
+        min-width: 0;
+        overflow: hidden;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        background: white;
+        box-shadow: var(--shadow-soft);
+      }
+
+      .demo-rail {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        background: var(--primary);
+        padding: 18px 10px;
+      }
+
+      .rail-nav {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: 12px;
+        padding-top: 34px;
+      }
+
+      .rail-nav.bottom {
+        flex: 0;
+        padding-top: 0;
+      }
+
+      .rail-icon {
+        display: grid;
+        width: 36px;
+        height: 36px;
+        place-items: center;
+        border-radius: 10px;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .rail-icon.active {
+        background: var(--primary-strong);
+        color: white;
+      }
+
+      .rail-icon svg {
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+        stroke-width: 2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .rail-icon img {
+        width: 28px;
+        height: 28px;
+      }
+
+      .demo-main {
+        display: grid;
+        min-width: 0;
+        grid-template-rows: 64px minmax(0, 1fr);
+        background: white;
+      }
+
+      .mock-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border-bottom: 1px solid var(--border);
+        padding: 0 18px;
+      }
+
+      .rail-toggle {
+        display: grid;
+        width: 44px;
+        height: 44px;
+        flex: 0 0 auto;
+        place-items: center;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        color: var(--muted-foreground);
+        font-weight: 700;
+      }
+
+      .rail-toggle svg {
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+        stroke-width: 2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .space-title {
+        min-width: 0;
+      }
+
+      .space-title strong {
+        display: block;
+        overflow: hidden;
+        color: var(--foreground);
+        font-size: 15px;
+        font-weight: 700;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .space-title span {
+        color: var(--muted-foreground);
+        font-size: 12px;
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 8px;
+        margin-left: auto;
+      }
+
+      .icon-button {
+        display: grid;
+        width: 44px;
+        height: 44px;
+        place-items: center;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: white;
+        color: var(--muted-foreground);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .icon-button svg {
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+        stroke-width: 2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .conversation {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        background: white;
+        padding: 18px;
+      }
+
+      .spoken-log {
+        display: flex;
+        min-height: 0;
+        flex: 1;
+        flex-direction: column;
+        justify-content: flex-end;
+        gap: 10px;
+        padding-bottom: 18px;
+      }
+
+      .bubble {
+        display: flex;
+        max-width: 84%;
+        gap: 8px;
+        align-items: flex-start;
+        align-self: flex-end;
+        border-radius: 12px 12px 4px 12px;
+        background: var(--primary-soft);
+        color: var(--primary-strong);
+        padding: 12px 14px;
+        font-size: 17px;
+        font-weight: 500;
+        line-height: 1.35;
+      }
+
+      .bubble.muted {
+        align-self: center;
+        border: 1px dashed var(--border);
+        background: var(--muted);
+        color: var(--muted-foreground);
+        font-size: 14px;
+      }
+
+      .compose-surface {
+        display: grid;
+        min-width: 0;
+        gap: 12px;
+        border-radius: 14px;
+        background: #f8fafc;
+        padding: 12px;
+      }
+
+      .sentence-stack {
+        display: grid;
+        gap: 8px;
+      }
+
+      .sentence-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .sentence-token {
+        display: inline-flex;
+        min-height: 44px;
+        align-items: center;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: white;
+        padding: 0 15px;
+        color: var(--foreground);
+        font-size: 18px;
+        font-weight: 500;
+      }
+
+      .sentence-token.return {
+        border-color: #7dd3fc;
+        background: var(--sky-soft);
+        color: var(--sky);
+        font-weight: 700;
+      }
+
+      .word-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .word-tile {
+        display: inline-flex;
+        min-height: 44px;
+        align-items: center;
+        border-radius: 10px;
+        border: 1px solid #fed7aa;
+        background: white;
+        padding: 0 16px;
+        color: var(--foreground);
+        font-size: 18px;
+        font-weight: 500;
+      }
+
+      .audio-select {
+        display: inline-flex;
+        min-height: 40px;
+        align-items: center;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: white;
+        padding: 0 14px;
+        color: var(--muted-foreground);
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .suggestions-row {
+        display: flex;
+        gap: 8px;
+        overflow: hidden;
+      }
+
+      .pill {
+        display: inline-flex;
+        min-height: 40px;
+        flex: 0 0 auto;
+        align-items: center;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: white;
+        padding: 0 15px;
+        color: var(--primary-strong);
+        font-size: 14px;
+        font-weight: 600;
+        box-shadow: 0 1px 2px rgba(24, 24, 27, 0.04);
+      }
+
+      .pill.kept {
+        border-color: #a7f3d0;
+        background: var(--success-soft);
+        color: var(--success);
+      }
+
+      .composer {
+        min-width: 0;
+        border: 2px solid #d4d4d8;
+        border-radius: 18px;
+        background: white;
+        padding: 14px;
+      }
+
+      .composer-text {
+        min-height: 72px;
+        color: var(--foreground);
+        font-size: 24px;
+        font-weight: 600;
+        line-height: 1.2;
+      }
+
+      .composer-text span {
+        color: var(--muted-foreground);
+      }
+
+      .composer-tools {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .speak-button {
+        display: inline-flex;
+        min-height: 44px;
+        align-items: center;
+        justify-content: center;
+        margin-left: auto;
+        border-radius: 10px;
+        background: var(--primary);
+        color: white;
+        padding: 0 18px;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .space-switch {
+        display: flex;
+        gap: 6px;
+        overflow: hidden;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: white;
+        padding: 4px;
+      }
+
+      .space-chip {
+        display: inline-flex;
+        min-height: 36px;
+        align-items: center;
+        border-radius: 8px;
+        padding: 0 12px;
+        color: var(--muted-foreground);
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .space-chip.active {
+        background: var(--primary);
+        color: white;
+      }
+
+      .section {
+        padding: 76px 20px;
+        background: white;
+      }
+
+      .section.alt {
+        background: var(--muted);
+      }
+
+      .container {
+        width: min(1120px, 100%);
+        min-width: 0;
+        margin: 0 auto;
+      }
+
+      .section-kicker {
+        margin-bottom: 10px;
+        color: var(--primary);
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .section-header {
+        display: grid;
+        max-width: 740px;
+        gap: 14px;
+        margin-bottom: 34px;
+      }
+
+      h2 {
+        color: var(--foreground);
+        font-size: clamp(30px, 4vw, 44px);
+        line-height: 1.05;
+        font-weight: 700;
+      }
+
+      .section-header p {
+        color: var(--muted-foreground);
+        font-size: 17px;
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+      }
+
+      .feature-card {
+        display: grid;
+        gap: 16px;
+        border: 1px solid color-mix(in srgb, var(--feature-color, var(--border)) 32%, var(--border));
+        border-top: 4px solid var(--feature-color, var(--primary));
+        border-radius: var(--radius);
+        background: white;
+        padding: 22px;
+        box-shadow: var(--shadow-soft);
+      }
+
+      .feature-card.space {
+        --feature-color: var(--sky);
+        --feature-soft: var(--sky-soft);
+      }
+
+      .feature-card.phrases {
+        --feature-color: var(--amber);
+        --feature-soft: var(--amber-soft);
+      }
+
+      .feature-card.voice {
+        --feature-color: var(--success);
+        --feature-soft: var(--success-soft);
+      }
+
+      .feature-card h3 {
+        font-size: 18px;
+      }
+
+      .feature-card p {
+        color: var(--muted-foreground);
+        font-size: 14px;
+      }
+
+      .mini-ui {
+        display: grid;
+        gap: 8px;
+        border-radius: 12px;
+        background: var(--feature-soft, #fafafa);
+        padding: 10px;
+      }
+
+      .mini-line {
+        min-height: 34px;
+        border-radius: 9px;
+        background: white;
+        border: 1px solid var(--border);
+      }
+
+      .mini-line.indigo {
+        width: 74%;
+        background: var(--primary-soft);
+        border-color: #c7d2fe;
+      }
+
+      .mini-line.green {
+        width: 58%;
+        background: var(--success-soft);
+        border-color: #a7f3d0;
+      }
+
+      .mini-line.amber {
+        width: 68%;
+        background: var(--amber-soft);
+        border-color: #fde68a;
+      }
+
+      .showcase {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(360px, 0.74fr);
+        gap: 24px;
+        align-items: center;
+      }
+
+      .showcase-copy {
+        display: grid;
+        gap: 20px;
+      }
+
+      .check-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .check-row {
+        display: grid;
+        grid-template-columns: 30px 1fr;
+        gap: 12px;
+        align-items: start;
+      }
+
+      .check-mark {
+        display: grid;
+        width: 30px;
+        height: 30px;
+        place-items: center;
+        border-radius: 999px;
+        background: var(--primary-soft);
+        color: var(--primary);
+        font-weight: 800;
+      }
+
+      .check-row:nth-child(2) .check-mark {
+        background: var(--amber-soft);
+        color: var(--amber);
+      }
+
+      .check-row:nth-child(3) .check-mark {
+        background: var(--success-soft);
+        color: var(--success);
+      }
+
+      .check-row strong {
+        display: block;
+        margin-bottom: 2px;
+        font-size: 15px;
+      }
+
+      .check-row span {
+        color: var(--muted-foreground);
+        font-size: 14px;
+      }
+
+      .device-frame {
+        overflow: hidden;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: white;
+        box-shadow: var(--shadow);
+      }
+
+      .device-frame img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      .trust-band {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 22px;
+      }
+
+      .trust-copy {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 16px;
+        border-radius: 18px;
+        background: var(--primary);
+        color: white;
+        padding: 32px;
+      }
+
+      .trust-copy h2 {
+        color: white;
+      }
+
+      .trust-copy p {
+        color: rgba(255, 255, 255, 0.86);
+      }
+
+      .trust-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
+
+      .trust-item {
+        display: grid;
+        gap: 14px;
+        align-content: start;
+        border: 1px solid color-mix(in srgb, var(--mode-color, var(--border)) 30%, var(--border));
+        border-top: 4px solid var(--mode-color, var(--primary));
+        border-radius: var(--radius);
+        background: white;
+        padding: 22px;
+      }
+
+      .trust-item.privacy {
+        --mode-color: var(--success);
+        --mode-soft: var(--success-soft);
+      }
+
+      .trust-item.free {
+        --mode-color: var(--amber);
+        --mode-soft: var(--amber-soft);
+      }
+
+      .trust-item.advanced {
+        --mode-color: var(--sky);
+        --mode-soft: var(--sky-soft);
+      }
+
+      .trust-item strong {
+        display: block;
+        font-size: 18px;
+      }
+
+      .trust-item p {
+        color: var(--muted-foreground);
+        font-size: 14px;
+      }
+
+      .mode-badge {
+        width: fit-content;
+        border-radius: 999px;
+        background: var(--mode-soft, var(--primary-soft));
+        color: var(--mode-color, var(--primary-strong));
+        padding: 5px 10px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .mode-list {
+        display: grid;
+        gap: 8px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        color: var(--muted-foreground);
+        font-size: 14px;
+      }
+
+      .mode-list li {
+        display: grid;
+        grid-template-columns: 18px 1fr;
+        gap: 8px;
+      }
+
+      .mode-list li::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        margin-top: 8px;
+        border-radius: 999px;
+        background: var(--mode-color, var(--primary));
+      }
+
+      .cta {
+        display: grid;
+        gap: 22px;
+        place-items: center;
+        border-radius: 18px;
+        background: var(--foreground);
+        color: white;
+        padding: 52px 24px;
+        text-align: center;
+      }
+
+      .cta h2 {
+        max-width: 700px;
+        color: white;
+      }
+
+      .cta p {
+        max-width: 620px;
+        color: rgba(255, 255, 255, 0.74);
+      }
+
+      .cta .button.primary {
+        color: var(--foreground);
+      }
+
+      .footer {
+        border-top: 1px solid var(--border);
+        background: white;
+        padding: 28px 20px;
+        color: var(--muted-foreground);
+        font-size: 14px;
+      }
+
+      .footer-inner {
+        display: flex;
+        width: min(1120px, 100%);
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin: 0 auto;
+      }
+
+      .footer-links {
+        display: flex;
+        gap: 18px;
+      }
+
+      @media (max-width: 1050px) {
+        .hero-proof {
+          grid-template-columns: 1fr;
+        }
+
+        .feature-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .showcase,
+        .trust-band {
+          grid-template-columns: 1fr;
+        }
+
+        .trust-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .hero {
+          height: auto;
+          min-height: 0;
+          padding: 8px;
+        }
+
+        .hero-shell {
+          min-height: 360px;
+          border-radius: 14px;
+        }
+
+        .hero-copy {
+          width: 100%;
+          gap: 48px;
+          padding: 18px 18px 28px;
+        }
+
+        .brand-row {
+          gap: 8px;
+        }
+
+        .github-link {
+          display: none;
+        }
+
+        .hero-content {
+          gap: 14px;
+          padding: 0;
+        }
+
+        h1 {
+          font-size: clamp(32px, 9vw, 38px);
+        }
+
+        .hero-accent {
+          display: block;
+        }
+
+        .hero-lede {
+          max-width: 100%;
+          font-size: 15px;
+        }
+
+        .hero-proof {
+          display: none;
+        }
+
+        .live-demo {
+          padding-top: 44px;
+        }
+
+        .app-stage {
+          min-height: 0;
+          padding: 8px;
+        }
+
+        .live-demo .app-stage {
+          min-height: 0;
+        }
+
+        .live-demo .mock-app {
+          height: 500px;
+        }
+
+        .mock-app {
+          grid-template-columns: 1fr;
+          border-radius: 12px;
+        }
+
+        .demo-rail {
+          display: none;
+        }
+
+        .demo-main {
+          grid-template-rows: 52px minmax(0, 1fr);
+        }
+
+        .mock-header {
+          padding: 0 10px;
+        }
+
+        .header-actions {
+          display: none;
+        }
+
+        .conversation {
+          overflow: hidden;
+          padding: 10px;
+        }
+
+        .spoken-log {
+          display: none;
+        }
+
+        .compose-surface {
+          overflow: hidden;
+          margin-top: auto;
+        }
+
+        .pill {
+          min-height: 38px;
+          padding: 0 12px;
+          font-size: 13px;
+        }
+
+        .suggestions-row {
+          flex-wrap: wrap;
+          overflow: visible;
+        }
+
+        .sentence-stack {
+          max-height: 132px;
+          overflow: hidden;
+        }
+
+        .sentence-token,
+        .word-tile {
+          min-height: 38px;
+          padding: 0 12px;
+          font-size: 15px;
+        }
+
+        .composer-text {
+          min-height: 54px;
+          font-size: 19px;
+        }
+
+        .icon-button {
+          width: 40px;
+          height: 40px;
+        }
+
+        .composer-tools {
+          gap: 6px;
+        }
+
+        .speak-button {
+          min-width: 74px;
+          padding: 0 12px;
+        }
+
+        .audio-select {
+          display: none;
+        }
+
+        .space-switch {
+          display: none;
+        }
+
+        .section {
+          padding: 58px 16px;
+        }
+
+        .feature-grid,
+        .trust-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .footer-inner {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <div class="hero-shell">
+          <div class="hero-copy">
+            <div class="brand-row">
+              <a class="brand" href="#">
+                <img src="../apps/web/public/logo.png" alt="" />
+                <span>september</span>
+              </a>
+              <a class="github-link" href="https://github.com/sonnes/september">Open source</a>
+            </div>
+
+            <div class="hero-content">
+              <h1>
+                <span class="hero-accent">Faster</span> Communication.
+                <br />
+                <span class="hero-accent">Fewer</span> Keystrokes.
+              </h1>
+              <p class="hero-lede">
+                September helps you write and speak everyday messages with fewer taps.
+              </p>
+              <div class="hero-actions">
+                <a class="button primary" href="/onboarding">Start setup</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section class="section live-demo" id="how">
+        <div class="container live-demo-layout">
+          <div class="live-demo-copy">
+            <div class="section-header">
+              <div class="section-kicker">Live demo</div>
+              <h2>
+                Type a little.<br />
+                Tap a suggestion.<br />
+                Speak.
+              </h2>
+              <p>
+                The main screen is for one simple job: build a message faster and
+                press Speak when it is ready.
+              </p>
+            </div>
+          </div>
+
+          <div class="app-stage" aria-label="September product preview">
+            <div class="mock-app">
+              <aside class="demo-rail" aria-label="App navigation mock">
+                <div class="rail-icon">
+                  <img src="../apps/web/public/logo.png" alt="" width="28" height="28" />
+                </div>
+                <div class="rail-nav">
+                  <div class="rail-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8"></path><path d="M5 10v10h14V10"></path></svg>
+                  </div>
+                  <div class="rail-icon active">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path></svg>
+                  </div>
+                  <div class="rail-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="m16.5 3.5 4 4L7 21H3v-4z"></path></svg>
+                  </div>
+                  <div class="rail-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><path d="M12 19v3"></path></svg>
+                  </div>
+                </div>
+                <div class="rail-nav bottom">
+                  <div class="rail-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a8 8 0 0 0 0-6"></path><path d="M4.6 9a8 8 0 0 0 0 6"></path></svg>
+                  </div>
+                </div>
+              </aside>
+
+              <div class="demo-main">
+                <div class="mock-header">
+                  <div class="rail-toggle">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M9 4v16"></path></svg>
+                  </div>
+                  <div class="space-title">
+                    <strong>Daily Conversations</strong>
+                  </div>
+                  <div class="header-actions" aria-hidden="true">
+                    <div class="icon-button">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M15 4v16"></path></svg>
+                    </div>
+                  </div>
+                </div>
+
+                <main class="conversation">
+                  <div class="spoken-log">
+                    <div class="bubble muted">Build a sentence below, then tap Speak.</div>
+                    <div class="bubble">Daily conversations</div>
+                    <div class="bubble">Reyu, how was your day today?</div>
+                  </div>
+
+                  <section class="compose-surface" aria-label="Composer mock">
+                    <div class="suggestions-row">
+                      <span class="pill kept">evening</span>
+                      <span class="pill">How was your day?</span>
+                      <span class="pill">Anything interesting?</span>
+                      <span class="pill">Let's talk about it</span>
+                    </div>
+
+                    <div class="sentence-stack" aria-label="Phrase suggestions mock">
+                      <div class="sentence-row">
+                        <span class="sentence-token">evening</span>
+                        <span class="sentence-token">,</span>
+                        <span class="sentence-token">how</span>
+                        <span class="sentence-token">was</span>
+                        <span class="sentence-token">your</span>
+                        <span class="sentence-token">day</span>
+                        <span class="sentence-token">?</span>
+                        <span class="sentence-token return">Enter</span>
+                      </div>
+                      <div class="sentence-row">
+                        <span class="sentence-token">morning</span>
+                        <span class="sentence-token">,</span>
+                        <span class="sentence-token">anything</span>
+                        <span class="sentence-token">interesting</span>
+                        <span class="sentence-token">today</span>
+                        <span class="sentence-token">?</span>
+                        <span class="sentence-token return">Enter</span>
+                      </div>
+                      <div class="sentence-row">
+                        <span class="sentence-token">bye</span>
+                        <span class="sentence-token">for</span>
+                        <span class="sentence-token">now</span>
+                        <span class="sentence-token">,</span>
+                        <span class="sentence-token">just</span>
+                        <span class="sentence-token">want</span>
+                        <span class="sentence-token">to</span>
+                        <span class="sentence-token">talk</span>
+                        <span class="sentence-token return">Enter</span>
+                      </div>
+                    </div>
+
+                    <div class="word-row" aria-label="Word suggestions mock">
+                      <span class="word-tile">morning</span>
+                      <span class="word-tile">to</span>
+                      <span class="word-tile">I</span>
+                      <span class="word-tile">you</span>
+                      <span class="word-tile">the</span>
+                    </div>
+
+                    <div class="composer">
+                      <div class="composer-text">Good</div>
+                      <div class="composer-tools">
+                        <span class="icon-button" aria-hidden="true">
+                          <svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10a6 6 0 0 1 0 12h-1"></path></svg>
+                        </span>
+                        <span class="icon-button" aria-hidden="true">
+                          <svg viewBox="0 0 24 24"><path d="M21 4H8l-6 8 6 8h13z"></path><path d="m18 9-6 6"></path><path d="m12 9 6 6"></path></svg>
+                        </span>
+                        <span class="icon-button" aria-hidden="true">
+                          <svg viewBox="0 0 24 24"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="m19 6-1 14H6L5 6"></path></svg>
+                        </span>
+                        <span class="audio-select">Default speaker</span>
+                        <span class="speak-button">Speak</span>
+                      </div>
+                    </div>
+
+                    <div class="space-switch" aria-label="Space switcher mock">
+                      <span class="space-chip active">Daily Conversations</span>
+                      <span class="space-chip">New</span>
+                    </div>
+                  </section>
+                </main>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section alt">
+        <div class="container">
+          <div class="section-header">
+            <div class="section-kicker">What it helps with</div>
+            <h2>Simple tools for everyday conversations.</h2>
+            <p>
+              September keeps the things you say often close at hand, so you can
+              spend less energy typing and more energy being understood.
+            </p>
+          </div>
+
+          <div class="feature-grid">
+            <article class="feature-card space">
+              <div class="mini-ui" aria-hidden="true">
+                <div class="mini-line indigo"></div>
+                <div class="mini-line"></div>
+                <div class="mini-line"></div>
+              </div>
+              <h3>Conversation spaces</h3>
+              <p>
+                Make one space for care, one for family, and one for appointments.
+                Each space keeps the phrases that fit that situation.
+              </p>
+            </article>
+
+            <article class="feature-card phrases">
+              <div class="mini-ui" aria-hidden="true">
+                <div class="mini-line green"></div>
+                <div class="mini-line indigo"></div>
+                <div class="mini-line"></div>
+              </div>
+              <h3>One-tap phrases</h3>
+              <p>
+                Save things you say often, like requests, greetings, and preferences.
+                Tap a phrase instead of typing it again.
+              </p>
+            </article>
+
+            <article class="feature-card voice">
+              <div class="mini-ui" aria-hidden="true">
+                <div class="mini-line amber"></div>
+                <div class="mini-line"></div>
+                <div class="mini-line indigo"></div>
+              </div>
+              <h3>Speak out loud</h3>
+              <p>
+                Choose a voice and press Speak. You can start with browser voices
+                and connect other voice services later.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container showcase">
+          <div class="showcase-copy">
+            <div class="section-header">
+              <div class="section-kicker">How it works</div>
+              <h2>From thought to spoken message.</h2>
+              <p>
+                The message, suggestions, and Speak button stay together, so the
+                next step is always easy to find.
+              </p>
+            </div>
+
+            <div class="check-list">
+              <div class="check-row">
+                <span class="check-mark">1</span>
+                <div>
+                  <strong>Choose a situation</strong>
+                  <span>Open the space for daily care, family, work, or an appointment.</span>
+                </div>
+              </div>
+              <div class="check-row">
+                <span class="check-mark">2</span>
+                <div>
+                  <strong>Tap words or phrases</strong>
+                  <span>Use suggestions to finish the message with fewer taps.</span>
+                </div>
+              </div>
+              <div class="check-row">
+                <span class="check-mark">3</span>
+                <div>
+                  <strong>Press Speak</strong>
+                  <span>September reads the message aloud when it is ready.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <figure class="device-frame">
+            <img
+              src="../apps/web/public/demo/app.jpeg"
+              alt="Screenshot of the September communication app"
+              loading="lazy"
+            />
+          </figure>
+        </div>
+      </section>
+
+      <section class="section alt">
+        <div class="container trust-band">
+          <div class="trust-copy">
+            <div class="section-kicker" style="color: rgba(255, 255, 255, 0.82)">Setup choices</div>
+            <h2>Choose the setup that feels right.</h2>
+            <p>
+              You can keep everything on this device, use free writing help, or ask
+              a caregiver to connect other services.
+            </p>
+          </div>
+
+          <div class="trust-grid">
+            <article class="trust-item privacy">
+              <span class="mode-badge">Most private</span>
+              <strong>Privacy mode</strong>
+              <p>The most private option. No AI service needed.</p>
+              <ul class="mode-list">
+                <li>Messages, spaces, and saved phrases stay on this device.</li>
+                <li>Use saved phrases and browser speech.</li>
+                <li>Nothing is sent out for suggestions.</li>
+              </ul>
+            </article>
+            <article class="trust-item free">
+              <span class="mode-badge">Free start</span>
+              <strong>Free AI mode</strong>
+              <p>Use OpenRouter, a free AI option, for writing help.</p>
+              <ul class="mode-list">
+                <li>To make suggestions, September may send the current message to OpenRouter.</li>
+                <li>Your spaces and saved phrases still stay on this device.</li>
+                <li>Good when you want help writing longer replies.</li>
+              </ul>
+            </article>
+            <article class="trust-item advanced">
+              <span class="mode-badge">Advanced</span>
+              <strong>Use your own services</strong>
+              <p>For people or caregivers who already have voice or AI accounts.</p>
+              <ul class="mode-list">
+                <li>Add your own Gemini, OpenRouter, or ElevenLabs access key.</li>
+                <li>Choose the voice or writing helper you prefer.</li>
+                <li>September contacts only the services you choose.</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="cta">
+            <h2>Start with one daily conversation.</h2>
+            <p>
+              Create a space, save a phrase, and try speaking one message.
+            </p>
+            <a class="button primary" href="/onboarding">Start setup</a>
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <div class="footer-inner">
+          <span>&copy; 2026 September. Communication with fewer keystrokes.</span>
+          <div class="footer-links">
+            <a href="/privacy-policy">Privacy</a>
+            <a href="/terms-of-service">Terms</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>
