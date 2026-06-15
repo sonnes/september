@@ -21,6 +21,7 @@ track(userId, { type: 'message_sent', text_length: 42, keys_typed: 10 });
 track(userId, {
   type: 'ai_generation',
   input_length: 200, output_length: 150,
+  input_tokens: 54, output_tokens: 38,
   latency_ms: 320, success: true,
 });
 
@@ -37,13 +38,14 @@ Discriminated union on `type`:
 
 | type | required fields | optional fields |
 |---|---|---|
-| `message_sent` | `text_length` | `chat_id`, `keys_typed` (default 0) |
-| `ai_generation` | `input_length`, `output_length`, `latency_ms`, `success` | `generation_type` (default `suggestions`), `provider` (default `gemini`), `model` (default `gemini-2.5-flash-lite`), `error_message` |
+| `message_sent` | `text_length` | `space_id`, `keys_typed` (default 0) |
+| `ai_generation` | `input_length`, `output_length`, `latency_ms`, `success` | `generation_type` (default `suggestions`), `provider` (default `gemini`), `model` (default `gemini-2.5-flash-lite`), `input_tokens`, `output_tokens`, `error_message` |
 | `tts_generation` | `text_length`, `duration_seconds`, `latency_ms`, `success` | `provider` (default `elevenlabs`), `voice_id`, `error_message` |
 
 ### `DashboardStats`
 
-Pre-built analytics dashboard component. Accepts `userId?: string`.
+Pre-built analytics dashboard component. Accepts `userId?: string`. It intentionally
+shows only two stacked cards: communication efficiency and AI token usage.
 
 ```tsx
 <DashboardStats userId={user?.id} />

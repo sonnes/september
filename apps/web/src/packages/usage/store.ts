@@ -17,6 +17,8 @@ export type TrackedEvent =
       model?: string;
       input_length: number;
       output_length: number;
+      input_tokens?: number;
+      output_tokens?: number;
       latency_ms: number;
       success: boolean;
       error_message?: string;
@@ -59,6 +61,8 @@ const AIGenerationStoredSchema = z.object({
     model: z.string().default('gemini-2.5-flash-lite'),
     input_length: z.number().int().min(0),
     output_length: z.number().int().min(0),
+    input_tokens: z.number().int().min(0).optional(),
+    output_tokens: z.number().int().min(0).optional(),
     latency_ms: z.number().int().min(0),
     success: z.boolean(),
     error_message: z.string().optional(),
@@ -141,6 +145,8 @@ export function track(userId: string, event: TrackedEvent): void {
         model: event.model ?? 'gemini-2.5-flash-lite',
         input_length: event.input_length,
         output_length: event.output_length,
+        input_tokens: event.input_tokens,
+        output_tokens: event.output_tokens,
         latency_ms: event.latency_ms,
         success: event.success,
         error_message: event.error_message,

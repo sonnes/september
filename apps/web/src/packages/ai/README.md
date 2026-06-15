@@ -84,6 +84,10 @@ form, and additionally offers a one-click OAuth "Connect" flow (see below).
 (with an OpenRouter model id like `google/gemini-2.5-flash-lite`) to route through OpenRouter.
 Both require a configured API key in account settings.
 
+Successful generations are logged through `@/packages/usage` with provider/model metadata,
+character lengths, and AI SDK token usage (`input_tokens`, `output_tokens`) when the provider
+reports it. The dashboard uses those token fields for AI usage.
+
 ### Free OpenRouter stack
 
 Suggestions and keyboard generation default to the **free OpenRouter stack** — the

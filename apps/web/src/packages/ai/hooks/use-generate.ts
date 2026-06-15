@@ -193,6 +193,8 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
               model: modelId,
               input_length: prompt.length,
               output_length: JSON.stringify(object).length,
+              input_tokens: usage.inputTokens ?? undefined,
+              output_tokens: usage.outputTokens ?? undefined,
               latency_ms: latencyMs,
               success: true,
             });
@@ -219,6 +221,8 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
               model: modelId,
               input_length: prompt.length,
               output_length: text.length,
+              input_tokens: usage.inputTokens ?? undefined,
+              output_tokens: usage.outputTokens ?? undefined,
               latency_ms: latencyMs,
               success: true,
             });

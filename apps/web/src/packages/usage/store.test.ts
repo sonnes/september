@@ -75,6 +75,8 @@ describe('track()', () => {
         model: 'my-model',
         input_length: 100,
         output_length: 200,
+        input_tokens: 12,
+        output_tokens: 34,
         latency_ms: 350,
         success: true,
       };
@@ -90,6 +92,8 @@ describe('track()', () => {
       expect(inserted.data.model).toBe('my-model');
       expect(inserted.data.input_length).toBe(100);
       expect(inserted.data.output_length).toBe(200);
+      expect(inserted.data.input_tokens).toBe(12);
+      expect(inserted.data.output_tokens).toBe(34);
       expect(inserted.data.latency_ms).toBe(350);
       expect(inserted.data.success).toBe(true);
     });

@@ -106,6 +106,10 @@ export interface MessageStats {
 export interface AIGenerationStats extends ProviderStats {
   avg_input_length: number;
   avg_output_length: number;
+  total_input_tokens: number;
+  total_output_tokens: number;
+  total_tokens: number;
+  tokens_by_generation_type: Record<'suggestions' | 'transcription' | 'summary', number>;
 }
 
 export interface TTSStats extends ProviderStats {
@@ -124,6 +128,93 @@ export interface UseAnalyticsSummaryReturn {
   summary: AnalyticsSummary | undefined;
   isLoading: boolean;
   error?: { message: string };
+}
+
+export function summarizeAnalyticsEvents(
+  allEvents: AnalyticsEvent[],
+  startDate: Date,
+  endDate: Date
+): AnalyticsSummary {
+  const messageSentEvents = allEvents.filter(e => e.event_type === 'message_sent') as Extract<
+    AnalyticsEvent,
+    { event_type: 'message_sent' }
+  >[];
+
+  const totalTextLength = messageSentEvents.reduce((s, e) => s + e.data.text_length, 0);
+  const totalKeysTyped = messageSentEvents.reduce((s, e) => s + e.data.keys_typed, 0);
+
+  const aiEvents = allEvents.filter(e => e.event_type === 'ai_generation') as Extract<
+    AnalyticsEvent,
+    { event_type: 'ai_generation' }
+  >[];
+
+  const ttsEvents = allEvents.filter(e => e.event_type === 'tts_generation') as Extract<
+    AnalyticsEvent,
+    { event_type: 'tts_generation' }
+  >[];
+
+  const aiStats = aggregateByProvider(
+    aiEvents.map(e => ({
+      provider: e.data.provider,
+      latency_ms: e.data.latency_ms,
+      success: e.data.success,
+    }))
+  );
+
+  const ttsStats = aggregateByProvider(
+    ttsEvents.map(e => ({
+      provider: e.data.provider,
+      latency_ms: e.data.latency_ms,
+      success: e.data.success,
+    }))
+  );
+
+  const totalInputTokens = aiEvents.reduce((s, e) => s + (e.data.input_tokens ?? 0), 0);
+  const totalOutputTokens = aiEvents.reduce((s, e) => s + (e.data.output_tokens ?? 0), 0);
+  const tokensByGenerationType = aiEvents.reduce(
+    (acc, e) => {
+      acc[e.data.generation_type] += (e.data.input_tokens ?? 0) + (e.data.output_tokens ?? 0);
+      return acc;
+    },
+    { suggestions: 0, transcription: 0, summary: 0 }
+  );
+
+  return {
+    messages: {
+      total_messages: messageSentEvents.length,
+      total_keys_typed: totalKeysTyped,
+      total_text_length: totalTextLength,
+      efficiency:
+        totalTextLength > 0 ? ((totalTextLength - totalKeysTyped) / totalTextLength) * 100 : 0,
+    },
+    ai_generations: {
+      ...aiStats,
+      avg_input_length:
+        aiEvents.length > 0
+          ? aiEvents.reduce((s, e) => s + e.data.input_length, 0) / aiEvents.length
+          : 0,
+      avg_output_length:
+        aiEvents.length > 0
+          ? aiEvents.reduce((s, e) => s + e.data.output_length, 0) / aiEvents.length
+          : 0,
+      total_input_tokens: totalInputTokens,
+      total_output_tokens: totalOutputTokens,
+      total_tokens: totalInputTokens + totalOutputTokens,
+      tokens_by_generation_type: tokensByGenerationType,
+    },
+    tts_generations: {
+      ...ttsStats,
+      avg_text_length:
+        ttsEvents.length > 0
+          ? ttsEvents.reduce((s, e) => s + e.data.text_length, 0) / ttsEvents.length
+          : 0,
+      avg_duration_seconds:
+        ttsEvents.length > 0
+          ? ttsEvents.reduce((s, e) => s + e.data.duration_seconds, 0) / ttsEvents.length
+          : 0,
+    },
+    date_range: { start_date: startDate, end_date: endDate },
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -159,75 +250,7 @@ export function useAnalyticsSummary({
 
   const summary = useMemo(() => {
     if (!events || events.length === 0) return undefined;
-
-    const allEvents = events as AnalyticsEvent[];
-
-    const messageSentEvents = allEvents.filter(e => e.event_type === 'message_sent') as Extract<
-      AnalyticsEvent,
-      { event_type: 'message_sent' }
-    >[];
-
-    const totalTextLength = messageSentEvents.reduce((s, e) => s + e.data.text_length, 0);
-    const totalKeysTyped = messageSentEvents.reduce((s, e) => s + e.data.keys_typed, 0);
-
-    const aiEvents = allEvents.filter(e => e.event_type === 'ai_generation') as Extract<
-      AnalyticsEvent,
-      { event_type: 'ai_generation' }
-    >[];
-
-    const ttsEvents = allEvents.filter(e => e.event_type === 'tts_generation') as Extract<
-      AnalyticsEvent,
-      { event_type: 'tts_generation' }
-    >[];
-
-    const aiStats = aggregateByProvider(
-      aiEvents.map(e => ({
-        provider: e.data.provider,
-        latency_ms: e.data.latency_ms,
-        success: e.data.success,
-      }))
-    );
-
-    const ttsStats = aggregateByProvider(
-      ttsEvents.map(e => ({
-        provider: e.data.provider,
-        latency_ms: e.data.latency_ms,
-        success: e.data.success,
-      }))
-    );
-
-    return {
-      messages: {
-        total_messages: messageSentEvents.length,
-        total_keys_typed: totalKeysTyped,
-        total_text_length: totalTextLength,
-        efficiency:
-          totalTextLength > 0 ? ((totalTextLength - totalKeysTyped) / totalTextLength) * 100 : 0,
-      },
-      ai_generations: {
-        ...aiStats,
-        avg_input_length:
-          aiEvents.length > 0
-            ? aiEvents.reduce((s, e) => s + e.data.input_length, 0) / aiEvents.length
-            : 0,
-        avg_output_length:
-          aiEvents.length > 0
-            ? aiEvents.reduce((s, e) => s + e.data.output_length, 0) / aiEvents.length
-            : 0,
-      },
-      tts_generations: {
-        ...ttsStats,
-        avg_text_length:
-          ttsEvents.length > 0
-            ? ttsEvents.reduce((s, e) => s + e.data.text_length, 0) / ttsEvents.length
-            : 0,
-        avg_duration_seconds:
-          ttsEvents.length > 0
-            ? ttsEvents.reduce((s, e) => s + e.data.duration_seconds, 0) / ttsEvents.length
-            : 0,
-      },
-      date_range: { start_date: startDate, end_date: endDate },
-    };
+    return summarizeAnalyticsEvents(events as AnalyticsEvent[], startDate, endDate);
   }, [events, startDate, endDate]);
 
   const error = useMemo(
