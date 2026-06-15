@@ -18,6 +18,26 @@ const PUNCTUATION = /^[.,!?;:]+$/;
 
 type HoverState = { stripe: number; index: number } | null;
 
+// Per-source colour lanes for the stripe tiles. Source is ALSO shown by icon
+// (SourceMark), so colour reinforces provenance — it is never the only channel.
+const SOURCE_LANE: Record<NonNullable<Stripe['source']>, { idle: string; active: string }> = {
+  // Context (pinned from the space md) — indigo / brand.
+  md: {
+    idle: 'border-primary/40 bg-card text-foreground hover:border-primary/70 hover:bg-primary/5',
+    active: 'border-primary bg-primary/10 text-primary',
+  },
+  // Things you've said before — teal.
+  history: {
+    idle: 'border-chart-2/45 bg-card text-foreground hover:border-chart-2/70 hover:bg-chart-2/5',
+    active: 'border-chart-2 bg-chart-2/10 text-chart-2',
+  },
+  // AI-generated — the calm, unmarked neutral baseline.
+  llm: {
+    idle: 'border-border bg-card text-foreground hover:border-primary/50 hover:bg-primary/5',
+    active: 'border-primary bg-primary/10 text-primary',
+  },
+};
+
 interface SuggestionStripesProps {
   stripes: Stripe[];
   pinnedChips: string[];
@@ -86,7 +106,7 @@ export function SuggestionStripes({
           already-typed prefix is shown as ghost text so the whole sentence reads. */}
       <div className="flex flex-col gap-2">
         {stripes.map((stripe, si) => {
-          const prefix = stripe.hidden > 0 ? joinTokens(stripe.tokens.slice(0, stripe.hidden)).trim() : '';
+          const lane = SOURCE_LANE[stripe.source ?? 'llm'];
           return (
             <div
               key={stripe.text}
@@ -96,14 +116,8 @@ export function SuggestionStripes({
             >
               <SourceMark source={stripe.source} onPin={onPin ? () => onPin(stripe.text) : undefined} />
 
-              {/* Ghost prefix — the part already typed, included on any take */}
-              {prefix && (
-                <span className="select-none px-0.5 text-lg text-muted-foreground/70" aria-hidden>
-                  {prefix}
-                </span>
-              )}
-
-              {/* Selectable token tiles */}
+              {/* Selectable token tiles. The already-typed prefix (stripe.hidden
+                  tokens) is omitted — we don't repeat what's already entered. */}
               {stripe.tokens.map((token, ti) => {
                 if (ti < stripe.hidden) return null;
                 const active = hover !== null && hover.stripe === si && ti <= hover.index;
@@ -118,9 +132,7 @@ export function SuggestionStripes({
                     className={cn(
                       'min-h-12 rounded-lg border text-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                       isPunct ? 'px-2.5' : 'px-4 font-medium',
-                      active
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-border bg-card text-foreground hover:border-primary/50 hover:bg-primary/5'
+                      active ? lane.active : lane.idle
                     )}
                   >
                     {token}
@@ -139,7 +151,7 @@ export function SuggestionStripes({
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Leading provenance marker — distinguishes by icon (not color alone). */
+/** Leading provenance marker — icon paired with the tile's colour lane. */
 function SourceMark({
   source,
   onPin,

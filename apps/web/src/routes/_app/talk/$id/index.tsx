@@ -290,9 +290,6 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
       {/* Console — suggestions + composer grouped on a calm surface so the
           active zone reads as one grounded unit instead of floating on white. */}
       <div className="flex shrink-0 flex-col gap-3 rounded-lg bg-muted/40 p-3">
-        {/* Space switch — jump between spaces, sitting above the editor */}
-        <SpaceSwitch currentSpaceId={spaceId} />
-
         {/* Suggestion stripes (word autocomplete now lives inside the editor) */}
         <Suggestions chatId={spaceId} onPin={handlePin} />
 
@@ -339,6 +336,10 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
             </div>
           </div>
         </div>
+
+        {/* Space switch — sits below the editor so it stays pinned to the
+            bottom edge and doesn't reflow when suggestions or the editor grow. */}
+        <SpaceSwitch currentSpaceId={spaceId} />
       </div>
     </div>
   );

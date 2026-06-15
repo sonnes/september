@@ -21,6 +21,8 @@ Self-contained suggestions surface. Renders **sentence stripes** (word tiles —
 
 - Chips come from single-word `- bullet` lines in the global + space context markdown.
 - Stripes merge md phrases, history matches, and LLM completions.
+- The already-typed prefix (`stripe.hidden` tokens) is **not** rendered — tiles show only the continuation, so typed text is never repeated.
+- Tiles are colour-coded by source, reinforced by the leading `SourceMark` icon (colour is never the only channel): `md`/context → indigo (primary), `history` → teal (`chart-2`), `llm` → neutral baseline. The editor's word autocomplete reuses the same tile shape on a warm `chart-1` lane.
 
 ```tsx
 <Suggestions chatId={spaceId} onPin={handlePin} />

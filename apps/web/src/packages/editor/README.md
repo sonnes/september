@@ -13,7 +13,7 @@ import type { EditorContextValue, EditorStats } from '@/packages/editor';
 |---|---|
 | `EditorProvider` | Context provider. Wrap pages that use the editor. Accepts `defaultText` and optional `chatId` for per-recipient autocomplete personalization. |
 | `useEditorContext` | Access editor state and actions from any child component. Throws if called outside `EditorProvider`. |
-| `Editor` | Textarea editor with built-in autocomplete chip row and submit button. Accepts `onSubmit`, `placeholder`, `disabled`, `children`. |
+| `Editor` | Textarea editor with built-in autocomplete tile row (word tiles share the suggestion-stripe shape on a warm `chart-1` colour lane) and submit button. Accepts `onSubmit`, `placeholder`, `disabled`, `children`. |
 | `TiptapEditor` | Rich-text editor (ProseMirror / Tiptap) with Markdown support and formatting toolbar. Accepts `content`, `placeholder`, `onUpdate`, `className`. |
 | `EditorContextValue` | Type for the value returned by `useEditorContext`. |
 | `EditorStats` | Type for keystroke/chars-saved counters returned by `getAndResetStats`. |

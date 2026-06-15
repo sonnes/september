@@ -2,8 +2,6 @@
 
 import { useMemo, useState } from 'react';
 
-import { Suggestion, Suggestions } from '@/packages/ui';
-
 import { useAutocomplete } from '../hooks/use-autocomplete';
 
 import { MATCH_PUNCTUATION } from '@/packages/shared';
@@ -53,11 +51,21 @@ export function Autocomplete() {
   // Self-hide when there's nothing to predict, so the row leaves no empty gap.
   if (words.length === 0) return null;
 
+  // Word tiles share the sentence-slice shape (rounded-lg bordered box) but
+  // ride their own warm "word" colour lane (chart-1), so they read as the same
+  // family as the stripes while still differentiating by colour.
   return (
-    <Suggestions>
+    <div className="flex flex-wrap gap-1.5">
       {words.map(word => (
-        <Suggestion key={word} onClick={handleSuggestionClick} suggestion={word} size="default" />
+        <button
+          key={word}
+          type="button"
+          onClick={() => handleSuggestionClick(word)}
+          className="min-h-12 rounded-lg border border-chart-1/50 bg-card px-4 text-lg font-medium text-foreground transition-colors hover:border-chart-1/70 hover:bg-chart-1/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {word}
+        </button>
       ))}
-    </Suggestions>
+    </div>
   );
 }
