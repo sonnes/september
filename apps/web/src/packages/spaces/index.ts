@@ -7,13 +7,21 @@ export { SpaceSwitch } from './components/space-switch';
 // Live-query hooks
 export { useSpaces } from './hooks/use-spaces';
 export { useMessages, useFirstMessage } from './hooks/use-messages';
+export { useSavedPhrases } from './hooks/use-saved-phrases';
+export type { UseSavedPhrasesReturn } from './hooks/use-saved-phrases';
 
-// Stateful flow hook
+// Stateful flow hooks
 export { useCreateAudioMessage } from './hooks/use-create-audio-message';
 export { useGenerateSpaceContext } from './hooks/use-generate-space-context';
+export { useGenerateSpacePhrases } from './hooks/use-generate-space-phrases';
+export { useSyncSpacePhrases } from './hooks/use-sync-space-phrases';
 
 // Plain async mutations (throw on failure; toasts live at call sites)
 export { createSpace, updateSpace, deleteSpace, createMessage } from './mutations';
+export { addManualPhrase, removePhrase, setPhrasePinned, replaceAiPhrases } from './mutations';
+
+// Pure helpers
+export { topPhrases, dedupeAgainstPinned, isStale, PHRASES_STALE_AFTER } from './lib/phrases';
 
 // Types
-export type { Space, Message, CreateMessageData } from './types';
+export type { Space, Message, CreateMessageData, SavedPhrase } from './types';

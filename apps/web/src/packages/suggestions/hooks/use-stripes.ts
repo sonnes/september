@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 
 import { useAccount } from '@/packages/account';
-import { useMessages, useSpaces } from '@/packages/spaces';
+import { useMessages, useSpaces, useSavedPhrases, topPhrases } from '@/packages/spaces';
 import { useEditorContext } from '@/packages/editor';
 
 import {
@@ -12,9 +12,11 @@ import {
   composeSuggestions,
   stripeForText,
 } from '../lib/stripes';
-import { parseMdPhrases } from '../lib/md';
 import { Suggestion } from '../types';
 import { useSuggestions } from './use-suggestions';
+
+/** Number of saved phrases surfaced as the curated default in the stripe. */
+const STRIPE_SAVED_LIMIT = 5;
 
 export interface Stripe {
   text: string;
@@ -35,7 +37,7 @@ export function useStripes({ chatId }: { chatId?: string }): UseStripesReturn {
   // Space history — recent user messages for history source
   const { messages: historyMessages } = useMessages({ spaceId: chatId, limit: 50 });
 
-  // Source spaceMd from the space's context field
+  // Source spaceMd from the space's context field (LLM persona/steering only)
   const { spaces } = useSpaces();
   const spaceMd = spaces.find(s => s.id === chatId)?.context ?? '';
 
@@ -50,15 +52,17 @@ export function useStripes({ chatId }: { chatId?: string }): UseStripesReturn {
     history: historyMessages,
   });
 
-  // Parse curated phrases from the combined md (global + space)
-  const allMdPhrases = useMemo(
-    () => parseMdPhrases(globalMd + '\n' + spaceMd),
-    [globalMd, spaceMd]
+  // Curated phrases come from the space's saved-phrases list (top 5, pinned
+  // first) — not from parsing context markdown.
+  const { phrases: savedPhrases } = useSavedPhrases({ spaceId: chatId });
+  const savedTexts = useMemo(
+    () => topPhrases(savedPhrases, STRIPE_SAVED_LIMIT),
+    [savedPhrases]
   );
 
-  // Md phrases split into multi-word phrases (stripes) and single-word chips
-  const activeMdPhrases = useMemo(() => boardPhrases(allMdPhrases), [allMdPhrases]);
-  const activeMdWords = useMemo(() => boardWords(allMdPhrases), [allMdPhrases]);
+  // Saved phrases split into multi-word phrases (stripes) and single-word chips
+  const activeMdPhrases = useMemo(() => boardPhrases(savedTexts), [savedTexts]);
+  const activeMdWords = useMemo(() => boardWords(savedTexts), [savedTexts]);
 
   // History texts — user-type messages only, oldest first so historyMatches reverses correctly
   const historyTexts = useMemo(

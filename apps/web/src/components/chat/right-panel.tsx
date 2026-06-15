@@ -1,7 +1,21 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { Clock, FileText, Grid2x2, Mic, Plug, SlidersHorizontal, Tv, X, type LucideIcon } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Clock,
+  FileText,
+  Grid2x2,
+  MessageSquareQuote,
+  Mic,
+  Pin,
+  Plug,
+  Plus,
+  SlidersHorizontal,
+  Sparkles,
+  Tv,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
 
 import { Button } from '@/packages/ui/components/button';
 import {
@@ -15,10 +29,20 @@ import {
 
 import { cn } from '@/packages/shared';
 import { useAccount } from '@/packages/account';
-import { MessageList, updateSpace, useMessages, useSpaces } from '@/packages/spaces';
+import {
+  MessageList,
+  updateSpace,
+  useMessages,
+  useSpaces,
+  useSavedPhrases,
+  addManualPhrase,
+  removePhrase,
+  setPhrasePinned,
+  type SavedPhrase,
+} from '@/packages/spaces';
 import { SpeechSettings } from '@/packages/speech';
 import type { VoiceSettingsFormData } from '@/packages/speech';
-import { TiptapEditor } from '@/packages/editor';
+import { TiptapEditor, useEditorContext } from '@/packages/editor';
 
 import { useChatPanel, type ChatPanelTab } from './use-chat-panel';
 
@@ -39,6 +63,7 @@ const TAB_META: Record<ChatPanelTab, { title: string; icon: LucideIcon }> = {
   voice: { title: 'Voice', icon: Mic },
   speech: { title: 'Speech', icon: SlidersHorizontal },
   context: { title: 'Context', icon: FileText },
+  phrases: { title: 'Phrases', icon: MessageSquareQuote },
 };
 
 export function ChatRightPanel({ chatId, chatTitle, onOpenDisplay }: ChatRightPanelProps) {
@@ -86,6 +111,12 @@ export function ChatRightPanel({ chatId, chatTitle, onOpenDisplay }: ChatRightPa
               onClick={() => openTab('provider')}
             />
             <OverviewCard
+              icon={MessageSquareQuote}
+              title="Phrases"
+              subtitle="Quick phrases"
+              onClick={() => openTab('phrases')}
+            />
+            <OverviewCard
               icon={Mic}
               title="Voice"
               subtitle="Pick a voice"
@@ -114,6 +145,8 @@ export function ChatRightPanel({ chatId, chatTitle, onOpenDisplay }: ChatRightPa
           <HistoryTab chatId={chatId} />
         ) : activeTab === 'context' ? (
           <ContextTab spaceId={chatId} />
+        ) : activeTab === 'phrases' ? (
+          <PhrasesTab spaceId={chatId} />
         ) : (
           <VoiceTab section={activeTab} />
         )}
@@ -319,5 +352,133 @@ function ContextTab({ spaceId }: { spaceId: string }) {
         className="min-h-48"
       />
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Phrases tab — per-space saved phrases. Tap to insert into the composer;
+// pinned phrases are durable, AI phrases refresh as the conversation grows.
+// ---------------------------------------------------------------------------
+
+function PhrasesTab({ spaceId }: { spaceId: string }) {
+  const { user } = useAccount();
+  const { phrases } = useSavedPhrases({ spaceId });
+  const { text, setText } = useEditorContext();
+  const [draft, setDraft] = useState('');
+
+  const insert = (phrase: string) => {
+    const next = !text || /\s$/.test(text) ? text + phrase : `${text} ${phrase}`;
+    setText(next);
+  };
+
+  const handleAdd = (e: React.FormEvent) => {
+    e.preventDefault();
+    const value = draft.trim();
+    if (!value || !user) return;
+    addManualPhrase(spaceId, user.id, value).catch(err => {
+      console.error('Failed to add phrase:', err);
+    });
+    setDraft('');
+  };
+
+  const pinned = phrases.filter(p => p.pinned);
+  const generated = phrases.filter(p => !p.pinned);
+
+  return (
+    <div className="p-4 space-y-4">
+      <div>
+        <h3 className="text-sm font-medium mb-1">Saved phrases</h3>
+        <p className="text-xs text-muted-foreground">
+          Tap a phrase to drop it into the composer. Pinned phrases stay; AI phrases
+          refresh as the conversation grows.
+        </p>
+      </div>
+
+      <form onSubmit={handleAdd} className="flex items-center gap-2">
+        <input
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          placeholder="Add a phrase…"
+          aria-label="Add a phrase"
+          className="min-w-0 flex-1 rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        />
+        <Button type="submit" size="icon" variant="secondary" disabled={!draft.trim()} aria-label="Add phrase">
+          <Plus className="size-4" />
+        </Button>
+      </form>
+
+      {phrases.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Phrases appear here after your first message.</p>
+      ) : (
+        <div className="space-y-4">
+          {pinned.length > 0 && <PhraseGroup label="Pinned" icon={Pin} rows={pinned} onInsert={insert} />}
+          {generated.length > 0 && (
+            <PhraseGroup label="Suggested" icon={Sparkles} rows={generated} onInsert={insert} />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PhraseGroup({
+  label,
+  icon: Icon,
+  rows,
+  onInsert,
+}: {
+  label: string;
+  icon: LucideIcon;
+  rows: SavedPhrase[];
+  onInsert: (text: string) => void;
+}) {
+  return (
+    <section className="space-y-2">
+      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <Icon className="size-3.5" aria-hidden />
+        {label}
+      </div>
+      <ul className="space-y-1.5">
+        {rows.map(p => (
+          <PhraseRow key={p.id} phrase={p} onInsert={onInsert} />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function PhraseRow({ phrase, onInsert }: { phrase: SavedPhrase; onInsert: (text: string) => void }) {
+  return (
+    <li className="flex items-center gap-1 rounded-md border bg-card">
+      <button
+        type="button"
+        onClick={() => onInsert(phrase.text)}
+        title={phrase.text}
+        className="flex min-h-11 min-w-0 flex-1 items-center truncate px-3 py-2 text-left text-sm text-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {phrase.text}
+      </button>
+      <button
+        type="button"
+        aria-label={phrase.pinned ? 'Unpin phrase' : 'Keep phrase'}
+        title={phrase.pinned ? 'Unpin' : 'Keep'}
+        onClick={() => setPhrasePinned(phrase.id, !phrase.pinned).catch(() => {})}
+        className={cn(
+          'flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          phrase.pinned && 'text-primary'
+        )}
+      >
+        <Pin className={cn('size-4', phrase.pinned && 'fill-current')} aria-hidden />
+      </button>
+      <button
+        type="button"
+        aria-label="Remove phrase"
+        title="Remove"
+        onClick={() => removePhrase(phrase.id).catch(() => {})}
+        className="flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <X className="size-4" aria-hidden />
+      </button>
+    </li>
   );
 }

@@ -17,10 +17,10 @@ import {
 
 ### `<Suggestions chatId className?>`
 
-Self-contained suggestions surface. Renders **sentence stripes** (word tiles — click tile _i_ to take the sentence up to that word) and **pinned word chips** sourced from the active space context.
+Self-contained suggestions surface. Renders **sentence stripes** (word tiles — click tile _i_ to take the sentence up to that word) and **pinned word chips** sourced from the space's saved phrases.
 
-- Chips come from single-word `- bullet` lines in the global + space context markdown.
-- Stripes merge md phrases, history matches, and LLM completions.
+- Curated stripes/chips come from the space's **saved phrases** (top 5, pinned first) via `useSavedPhrases` + `topPhrases` — not from parsing context markdown.
+- Stripes merge saved phrases, history matches, and LLM completions.
 - The already-typed prefix (`stripe.hidden` tokens) is **not** rendered — tiles show only the continuation, so typed text is never repeated.
 - Tiles are colour-coded by source, reinforced by the leading `SourceMark` icon (colour is never the only channel): `md`/context → indigo (primary), `history` → teal (`chart-2`), `llm` → neutral baseline. The editor's word autocomplete reuses the same tile shape on a warm `chart-1` lane.
 
@@ -45,9 +45,9 @@ const {
 ```
 
 Internally calls:
-- `useSuggestions({ text, globalMd, spaceMd, history })` for LLM completions (debounced 200 ms, aborted on text change).
+- `useSuggestions({ text, globalMd, spaceMd, history })` for LLM completions (debounced 200 ms, aborted on text change). `globalMd`/`spaceMd` still steer the LLM persona prompt.
 - `useMessages({ spaceId: chatId })` for history source (user messages only).
-- `parseMdPhrases` on `account.context` (global) and `space.context` (per-space) for curated phrases and chips.
+- `useSavedPhrases({ spaceId: chatId })` + `topPhrases(_, 5)` for the curated phrases and chips (pinned first).
 - `composeSuggestions` to merge and rank; `stripeForText` to build tiles.
 
 ### `SuggestionsForm`
@@ -92,7 +92,7 @@ Suggestions draw from two markdown documents concatenated in order:
 1. **`account.context`** — global md (your voice, standing facts, go-to phrases).
 2. **`space.context`** — per-space md (this audience, intent, curated bullets).
 
-Prose lines feed the LLM system prompt via `buildSuggestionPrompt`. Bullet lines (`- phrase` or `* phrase`) are parsed by `parseMdPhrases` and surface directly as chips and stripe entries. Pinning a suggestion appends `\n- ${phrase}` to the space context.
+Both documents feed the LLM system prompt via `buildSuggestionPrompt` (persona/steering). They are **no longer** parsed for the curated stripe — that source is now the space's saved phrases (see `@/packages/spaces`). Pinning a suggestion calls `addManualPhrase`, saving it as a pinned (durable) phrase for the space.
 
 ## Behavioral invariant
 

@@ -7,6 +7,7 @@ import {
   Delete,
   FileText,
   HistoryIcon,
+  MessageSquareQuote,
   MessagesSquare,
   MicIcon,
   Plug,
@@ -26,10 +27,13 @@ import {
   useCreateAudioMessage,
   useGenerateSpaceContext,
   useMessages,
+  useSavedPhrases,
+  useSyncSpacePhrases,
+  addManualPhrase,
 } from '@/packages/spaces';
 import { Autocomplete, useEditorContext } from '@/packages/editor';
 import { DisplayMessage } from '@/packages/shared';
-import { Suggestions, parseMdPhrases } from '@/packages/suggestions';
+import { Suggestions } from '@/packages/suggestions';
 import { Button } from '@/packages/ui/components/button';
 import {
   ResizableHandle,
@@ -90,9 +94,13 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
   const { user } = useAccount();
   const { enqueue, current } = useAudioPlayer();
   const { spaces } = useSpaces({ userId: user?.id });
-  const { messages } = useMessages({ spaceId: spaceId || '' });
+  const { messages, isLoading: messagesLoading } = useMessages({ spaceId: spaceId || '' });
 
   const space = spaces.find(s => s.id === spaceId);
+
+  // Saved phrases: seed on first message, regenerate on open when stale.
+  const { phrases: savedPhrases } = useSavedPhrases({ spaceId });
+  useSyncSpacePhrases({ space, phrases: savedPhrases, messages, messagesLoading });
 
   const { status, createAudioMessage } = useCreateAudioMessage();
   const { generateContext } = useGenerateSpaceContext();
@@ -231,19 +239,15 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
     };
   }, [spaceId]);
 
-  // Pinning: append phrase to space context as a bullet, dedup with parseMdPhrases
+  // Pinning a suggestion saves it as a pinned (durable) phrase for this space.
   const handlePin = useCallback(
     (phrase: string) => {
-      const currentContext = space?.context ?? '';
-      const existing = parseMdPhrases(currentContext);
-      const isDuplicate = existing.some(p => p.toLowerCase() === phrase.toLowerCase());
-      if (isDuplicate) return;
-      const next = currentContext.trimEnd() + '\n- ' + phrase;
-      updateSpace(spaceId, { context: next }).catch(err => {
+      if (!user) return;
+      addManualPhrase(spaceId, user.id, phrase).catch(err => {
         console.error('Failed to pin phrase:', err);
       });
     },
-    [space?.context, spaceId]
+    [spaceId, user]
   );
 
   // Recently spoken (user) messages — faint log filling the space above the
@@ -388,6 +392,15 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Saved phrases"
+            className="size-7"
+            onClick={() => openTab('phrases')}
+          >
+            <MessageSquareQuote className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             aria-label="Context"
             className="size-7"
             onClick={() => openTab('context')}
@@ -444,6 +457,10 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
             >
               <SlidersHorizontal className="size-4" />
               <span>Speech</span>
+            </Button>
+            <Button variant="ghost" size="sm" aria-label="Saved phrases" onClick={() => openTab('phrases')}>
+              <MessageSquareQuote className="size-4" />
+              <span>Phrases</span>
             </Button>
             <Button variant="ghost" size="sm" aria-label="Context" onClick={() => openTab('context')}>
               <FileText className="size-4" />
