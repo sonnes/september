@@ -1,5 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { track } from '@/packages/usage';
+
+// Import after mocks
+import {
+  DEFAULT_SPACE_SEED,
+  addManualPhrase,
+  createDefaultSpace,
+  createMessage,
+  createSpace,
+  deleteSpace,
+  removePhrase,
+  replaceAiPhrases,
+  setPhrasePinned,
+  updateSpace,
+} from './mutations';
+
 // ---------------------------------------------------------------------------
 // Hoisted mocks — must be declared before any imports that transitively use them
 // ---------------------------------------------------------------------------
@@ -106,19 +122,6 @@ vi.mock('uuid', () => ({
   v4: vi.fn(() => 'fixed-uuid-1234'),
 }));
 
-// Import after mocks
-import {
-  createSpace,
-  createMessage,
-  deleteSpace,
-  updateSpace,
-  addManualPhrase,
-  removePhrase,
-  setPhrasePinned,
-  replaceAiPhrases,
-} from './mutations';
-import { track } from '@/packages/usage';
-
 describe('createSpace', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -137,7 +140,11 @@ describe('createSpace', () => {
     expect(inserted.title).toBe('General');
     expect(inserted.created_at).toBeInstanceOf(Date);
     expect(inserted.updated_at).toBeInstanceOf(Date);
-    expect(space).toMatchObject({ id: 'fixed-uuid-1234', user_id: 'user-1', title: 'General' });
+    expect(space).toMatchObject({
+      id: 'fixed-uuid-1234',
+      user_id: 'user-1',
+      title: 'General',
+    });
   });
 
   it('accepts a custom title', async () => {
@@ -149,6 +156,54 @@ describe('createSpace', () => {
   it('propagates insert errors', async () => {
     mockSpaceInsert.mockRejectedValue(new Error('DB failure'));
     await expect(createSpace('user-1')).rejects.toThrow('DB failure');
+  });
+});
+
+describe('createDefaultSpace', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    spaceCollectionState.state.clear();
+    savedPhraseCollectionState.state.clear();
+    mockSpaceInsert.mockResolvedValue(undefined);
+    mockSavedInsert.mockResolvedValue(undefined);
+  });
+
+  it('creates the default space with starter saved phrases', async () => {
+    const space = await createDefaultSpace('user-1');
+
+    expect(mockSpaceInsert).toHaveBeenCalledOnce();
+    expect(mockSpaceInsert.mock.calls[0][0]).toMatchObject({
+      id: space.id,
+      user_id: 'user-1',
+      title: DEFAULT_SPACE_SEED.title,
+    });
+
+    const insertedPhrases = mockSavedInsert.mock.calls.map(
+      (call: unknown[]) => call[0] as { text: string; pinned: boolean; space_id: string }
+    );
+    expect(insertedPhrases.map(phrase => phrase.text)).toEqual(
+      DEFAULT_SPACE_SEED.phrases.map(phrase => phrase.text)
+    );
+    expect(insertedPhrases.map(phrase => phrase.pinned)).toEqual(
+      DEFAULT_SPACE_SEED.phrases.map(phrase => phrase.pinned)
+    );
+    expect(insertedPhrases.every(phrase => phrase.space_id === space.id)).toBe(true);
+  });
+
+  it('uses generic greeting and reply starter phrases', () => {
+    const texts = DEFAULT_SPACE_SEED.phrases.map(phrase => phrase.text);
+
+    expect(texts).not.toContain('Reyu');
+    expect(texts).toEqual([
+      'Hello',
+      'Please',
+      'Thank you',
+      'Help',
+      'Good morning',
+      'Yes, please.',
+      'No, thank you.',
+    ]);
+    expect(DEFAULT_SPACE_SEED.phrases.filter(phrase => phrase.pinned)).toHaveLength(4);
   });
 });
 
@@ -271,9 +326,9 @@ describe('createMessage', () => {
 
   it('propagates insert errors', async () => {
     mockMessageInsert.mockRejectedValue(new Error('insert failed'));
-    await expect(
-      createMessage({ text: 'Hi', type: 'user', user_id: 'user-1' })
-    ).rejects.toThrow('insert failed');
+    await expect(createMessage({ text: 'Hi', type: 'user', user_id: 'user-1' })).rejects.toThrow(
+      'insert failed'
+    );
   });
 });
 
@@ -403,7 +458,9 @@ describe('replaceAiPhrases', () => {
     expect(mockSavedDelete).toHaveBeenCalledWith('ai-old');
 
     // Inserts the fresh AI texts minus the one duplicating the pinned phrase.
-    const insertedTexts = mockSavedInsert.mock.calls.map((c: unknown[]) => (c[0] as { text: string }).text);
+    const insertedTexts = mockSavedInsert.mock.calls.map(
+      (c: unknown[]) => (c[0] as { text: string }).text
+    );
     expect(insertedTexts).toEqual(['Fresh one', 'Another']);
     for (const c of mockSavedInsert.mock.calls) {
       expect(c[0]).toMatchObject({ space_id: 'space-1', pinned: false });

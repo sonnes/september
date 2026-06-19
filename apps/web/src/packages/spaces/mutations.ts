@@ -2,11 +2,23 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { track } from '@/packages/usage';
 
-import { spaceCollection, messageCollection, savedPhraseCollection } from './db';
+import { messageCollection, savedPhraseCollection, spaceCollection } from './db';
 import { dedupeAgainstPinned } from './lib/phrases';
-import type { Space, CreateMessageData, Message } from './types';
+import type { CreateMessageData, Message, Space } from './types';
 
 export const DEFAULT_SPACE_TITLE = 'General';
+export const DEFAULT_SPACE_SEED = {
+  title: DEFAULT_SPACE_TITLE,
+  phrases: [
+    { text: 'Hello', pinned: true, demoSource: 'md' },
+    { text: 'Please', pinned: true, demoSource: 'md' },
+    { text: 'Thank you', pinned: true, demoSource: 'md' },
+    { text: 'Help', pinned: true, demoSource: 'md' },
+    { text: 'Good morning', pinned: false, demoSource: 'md' },
+    { text: 'Yes, please.', pinned: false, demoSource: 'history' },
+    { text: 'No, thank you.', pinned: false, demoSource: 'llm' },
+  ],
+} as const;
 
 /**
  * Insert a new space and await persistence.
@@ -27,6 +39,28 @@ export async function createSpace(userId: string, title = DEFAULT_SPACE_TITLE): 
 }
 
 /**
+ * Insert the first-run default space plus its starter saved phrases.
+ * Throws on failure — toast lives at the call site.
+ */
+export async function createDefaultSpace(userId: string): Promise<Space> {
+  const space = await createSpace(userId, DEFAULT_SPACE_SEED.title);
+  const now = new Date();
+  const phraseTxs = DEFAULT_SPACE_SEED.phrases.map((phrase, index) =>
+    savedPhraseCollection.insert({
+      id: uuidv4(),
+      space_id: space.id,
+      user_id: userId,
+      text: phrase.text,
+      pinned: phrase.pinned,
+      created_at: new Date(now.getTime() + index),
+    })
+  );
+
+  await Promise.all(phraseTxs.map(tx => tx.isPersisted.promise));
+  return space;
+}
+
+/**
  * Update a space by id and await persistence.
  * Throws on failure — toast lives at the call site.
  */
@@ -43,12 +77,8 @@ export async function updateSpace(id: string, updates: Partial<Space>): Promise<
  */
 export async function deleteSpace(id: string): Promise<void> {
   // Collect message + phrase ids from loaded state before deletion
-  const messageIds = messageCollection.toArray
-    .filter(m => m.space_id === id)
-    .map(m => m.id);
-  const phraseIds = savedPhraseCollection.toArray
-    .filter(p => p.space_id === id)
-    .map(p => p.id);
+  const messageIds = messageCollection.toArray.filter(m => m.space_id === id).map(m => m.id);
+  const phraseIds = savedPhraseCollection.toArray.filter(p => p.space_id === id).map(p => p.id);
 
   const txs = messageIds.map(mid => messageCollection.delete(mid));
   const phraseTxs = phraseIds.map(pid => savedPhraseCollection.delete(pid));
@@ -105,7 +135,11 @@ export async function createMessage(data: CreateMessageData): Promise<Message> {
  * text (case-insensitive), pin it (promotes an AI phrase so regen can't drop
  * it); otherwise insert a new pinned row. No-op on blank text.
  */
-export async function addManualPhrase(spaceId: string, userId: string, text: string): Promise<void> {
+export async function addManualPhrase(
+  spaceId: string,
+  userId: string,
+  text: string
+): Promise<void> {
   const trimmed = text.trim();
   if (!trimmed) return;
   const key = trimmed.toLowerCase();

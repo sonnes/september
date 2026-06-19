@@ -25,13 +25,16 @@ overwritten, reordered, or dropped by the AI.
 
 ## Lifecycle
 
-1. **Seed** — on the first message, `useSyncSpacePhrases` generates the initial
-   AI set from that message and the space context. (Spaces created before this
-   feature backfill the same way the next time they're opened.)
-2. **Regenerate on open** — when a space is reopened and its history has grown
+1. **Starter default** — `createDefaultSpace` gives a new user a `General`
+   space with starter saved phrases before they have typed anything.
+2. **Seed** — on the first message, `useSyncSpacePhrases` generates the initial
+   AI set from that message and the space context, replacing starter AI rows
+   while preserving pinned rows. (Spaces created before this feature backfill
+   the same way the next time they're opened.)
+3. **Regenerate on open** — when a space is reopened and its history has grown
    stale (`isStale` / `PHRASES_STALE_AFTER` new messages since the last sync),
    the AI set is regenerated from recent history + context. Pinned rows stay.
-3. **Keep / promote** — pinning an AI phrase (the tab's "keep" action, or the
+4. **Keep / promote** — pinning an AI phrase (the tab's "keep" action, or the
    suggestion stripe's pin button) flips it to `pinned: true` via
    `addManualPhrase`, locking it in against future regeneration.
 

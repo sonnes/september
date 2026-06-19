@@ -1,4 +1,5 @@
 // Production build entry.
+/* global console, process */
 //
 // We drive Vite's builder via its JS API instead of the `vite build` CLI
 // because the process otherwise never exits. Vite 8 bundles with Rolldown

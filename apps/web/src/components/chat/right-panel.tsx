@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+
 import {
   Clock,
   FileText,
   Grid2x2,
+  type LucideIcon,
   MessageSquareQuote,
   Mic,
   Pin,
@@ -14,10 +16,24 @@ import {
   Sparkles,
   Tv,
   X,
-  type LucideIcon,
 } from 'lucide-react';
 
-import { Button } from '@/packages/ui/components/button';
+import { useAccount } from '@/packages/account';
+import { TiptapEditor, useEditorContext } from '@/packages/editor';
+import { cn } from '@/packages/shared';
+import {
+  MessageList,
+  type SavedPhrase,
+  addManualPhrase,
+  removePhrase,
+  setPhrasePinned,
+  updateSpace,
+  useMessages,
+  useSavedPhrases,
+  useSpaces,
+} from '@/packages/spaces';
+import { SpeechSettings } from '@/packages/speech';
+import type { VoiceSettingsFormData } from '@/packages/speech';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -26,25 +42,9 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/packages/ui/components/breadcrumb';
+import { Button } from '@/packages/ui/components/button';
 
-import { cn } from '@/packages/shared';
-import { useAccount } from '@/packages/account';
-import {
-  MessageList,
-  updateSpace,
-  useMessages,
-  useSpaces,
-  useSavedPhrases,
-  addManualPhrase,
-  removePhrase,
-  setPhrasePinned,
-  type SavedPhrase,
-} from '@/packages/spaces';
-import { SpeechSettings } from '@/packages/speech';
-import type { VoiceSettingsFormData } from '@/packages/speech';
-import { TiptapEditor, useEditorContext } from '@/packages/editor';
-
-import { useChatPanel, type ChatPanelTab } from './use-chat-panel';
+import { type ChatPanelTab, useChatPanel } from './use-chat-panel';
 
 // ---------------------------------------------------------------------------
 // ChatRightPanel
@@ -185,7 +185,7 @@ function PanelHeader({ chatTitle, tab, onHome, onClose, closeRef }: PanelHeaderP
           aria-pressed={tab === null}
           className={cn(
             'size-9 shrink-0 text-muted-foreground hover:text-foreground',
-            tab === null && 'bg-muted text-foreground',
+            tab === null && 'bg-muted text-foreground'
           )}
           onClick={onHome}
         >
@@ -389,8 +389,8 @@ function PhrasesTab({ spaceId }: { spaceId: string }) {
       <div>
         <h3 className="text-sm font-medium mb-1">Saved phrases</h3>
         <p className="text-xs text-muted-foreground">
-          Tap a phrase to drop it into the composer. Pinned phrases stay; AI phrases
-          refresh as the conversation grows.
+          Tap a phrase to drop it into the composer. Pinned phrases stay; AI phrases refresh as the
+          conversation grows.
         </p>
       </div>
 
@@ -402,16 +402,26 @@ function PhrasesTab({ spaceId }: { spaceId: string }) {
           aria-label="Add a phrase"
           className="min-w-0 flex-1 rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
-        <Button type="submit" size="icon" variant="secondary" disabled={!draft.trim()} aria-label="Add phrase">
+        <Button
+          type="submit"
+          size="icon"
+          variant="secondary"
+          disabled={!draft.trim()}
+          aria-label="Add phrase"
+        >
           <Plus className="size-4" />
         </Button>
       </form>
 
       {phrases.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Phrases appear here after your first message.</p>
+        <p className="text-sm text-muted-foreground">
+          Phrases appear here after your first message.
+        </p>
       ) : (
         <div className="space-y-4">
-          {pinned.length > 0 && <PhraseGroup label="Pinned" icon={Pin} rows={pinned} onInsert={insert} />}
+          {pinned.length > 0 && (
+            <PhraseGroup label="Pinned" icon={Pin} rows={pinned} onInsert={insert} />
+          )}
           {generated.length > 0 && (
             <PhraseGroup label="Suggested" icon={Sparkles} rows={generated} onInsert={insert} />
           )}
@@ -447,7 +457,13 @@ function PhraseGroup({
   );
 }
 
-function PhraseRow({ phrase, onInsert }: { phrase: SavedPhrase; onInsert: (text: string) => void }) {
+function PhraseRow({
+  phrase,
+  onInsert,
+}: {
+  phrase: SavedPhrase;
+  onInsert: (text: string) => void;
+}) {
   return (
     <li className="flex items-center gap-1 rounded-md border bg-card">
       <button

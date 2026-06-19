@@ -77,7 +77,7 @@ function FeaturePreview({
     return (
       <div
         data-feature-preview="spaces"
-        className={`grid gap-3 rounded-xl p-3 ${panel}`}
+        className={`grid h-56 content-start gap-3 overflow-hidden rounded-xl p-3 ${panel}`}
         aria-hidden="true"
       >
         <div className="flex gap-2 overflow-hidden">
@@ -97,7 +97,7 @@ function FeaturePreview({
     return (
       <div
         data-feature-preview="phrases"
-        className={`grid gap-3 rounded-xl p-3 ${panel}`}
+        className={`grid h-56 content-start gap-3 overflow-hidden rounded-xl p-3 ${panel}`}
         aria-hidden="true"
       >
         <div className="flex flex-wrap gap-2">
@@ -122,25 +122,31 @@ function FeaturePreview({
   return (
     <div
       data-feature-preview="speak"
-      className={`grid gap-3 rounded-xl p-3 ${panel}`}
+      className={`grid h-56 content-start gap-2 overflow-hidden rounded-xl p-3 ${panel}`}
       aria-hidden="true"
     >
-      <div className="rounded-2xl border-2 bg-white p-3">
-        <Skeleton className="h-12 w-2/3 rounded-lg bg-zinc-100" />
-        <div className="mt-3 flex items-center gap-2">
-          <Skeleton className="size-10 rounded-lg bg-white ring-1 ring-border" />
-          <Skeleton className="size-10 rounded-lg bg-white ring-1 ring-border" />
-          <Skeleton className="h-10 w-24 rounded-full bg-white ring-1 ring-border" />
-          <Skeleton className="ml-auto h-11 w-24 rounded-lg bg-indigo-600" />
+      <div className="rounded-2xl border-2 bg-white p-2">
+        <Skeleton className="h-10 w-2/3 rounded-lg bg-zinc-100" />
+        <div
+          data-feature-preview-controls="speak"
+          className="mt-2 grid grid-cols-[2.5rem_2.5rem_minmax(0,1fr)_4.5rem] items-center gap-2"
+        >
+          <Skeleton className="size-9 rounded-lg bg-white ring-1 ring-border" />
+          <Skeleton className="size-9 rounded-lg bg-white ring-1 ring-border" />
+          <Skeleton className="h-9 min-w-0 rounded-full bg-white ring-1 ring-border" />
+          <Skeleton
+            data-feature-preview-speak-button
+            className="h-10 w-full rounded-lg bg-indigo-600"
+          />
         </div>
       </div>
-      <div className="grid gap-1.5 rounded-xl border bg-zinc-100 p-2">
+      <div className="grid gap-1 rounded-xl border bg-zinc-100 p-2">
         <div className="flex gap-1.5">
-          {['w-8', 'w-8', 'w-8', 'w-8', 'w-8'].map((width, index) => (
-            <Skeleton key={`${width}-${index}`} className={`h-9 ${width} rounded-md bg-white`} />
+          {['w-7', 'w-7', 'w-7', 'w-7', 'w-7'].map((width, index) => (
+            <Skeleton key={`${width}-${index}`} className={`h-7 ${width} rounded-md bg-white`} />
           ))}
         </div>
-        <Skeleton className="h-9 rounded-md bg-white" />
+        <Skeleton className="h-7 rounded-md bg-white" />
       </div>
     </div>
   );

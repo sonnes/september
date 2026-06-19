@@ -5,6 +5,8 @@ import { act } from 'react';
 import { type Root, createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { DEFAULT_SPACE_SEED } from '@/packages/spaces';
+
 import { EnhancedCTASection } from './enhanced-cta-section';
 import { FeaturesSection } from './features-section';
 import { Footer } from './footer';
@@ -14,6 +16,23 @@ import { LiveDemoSection } from './live-demo-section';
 import { SetupChoicesSection } from './setup-choices-section';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+// jsdom lacks ResizeObserver, which the live demo's SuggestionStripes uses to
+// measure its container. Stub it; clientWidth is 0 in jsdom so the scale math
+// short-circuits to 1 and never touches the layout engine.
+class ResizeObserverStub {
+  observe() {
+    /* no-op */
+  }
+  unobserve() {
+    /* no-op */
+  }
+  disconnect() {
+    /* no-op */
+  }
+}
+(globalThis as unknown as { ResizeObserver: typeof ResizeObserverStub }).ResizeObserver =
+  ResizeObserverStub;
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({
@@ -46,21 +65,17 @@ function render(ui: React.ReactElement) {
 }
 
 describe('home redesign sections', () => {
-  it('renders the minimal hero copy and actions', () => {
+  it('renders the hero copy and actions', () => {
     render(<HeroSection />);
 
-    expect(container.textContent).toContain('Faster Communication.');
-    expect(container.textContent).toContain('Fewer Keystrokes.');
+    expect(container.textContent).toContain('Faster Communication');
+    expect(container.textContent).toContain('Fewer Keystrokes');
     expect(container.textContent).toContain(
-      'September helps you write and speak everyday messages with fewer taps.'
+      'A communication assistant for people living with ALS, MND, and other speech & motor difficulties'
     );
-    expect(container.textContent).toContain('Start setup');
-    expect(container.textContent).toContain('Open source');
-    expect(container.textContent).not.toContain('Try Now');
-
-    const panel = container.querySelector('[data-home-hero-panel]');
-    expect(panel?.className).toContain('min-h-[300px]');
-    expect(panel?.className).not.toContain('min-h-[360px]');
+    expect(container.textContent).toContain('Get Started');
+    expect(container.textContent).toContain('Open Source');
+    expect(container.textContent).toContain('Try Now');
   });
 
   it('renders a focused live demo of the core communication flow', () => {
@@ -69,13 +84,21 @@ describe('home redesign sections', () => {
     expect(container.textContent).toContain('Type a little.');
     expect(container.textContent).toContain('Tap a suggestion.');
     expect(container.textContent).toContain('Speak.');
-    expect(container.textContent).toContain('General');
+    expect(container.textContent).toContain(DEFAULT_SPACE_SEED.title);
     expect(container.textContent).not.toContain('Daily Conversations');
+    expect(container.textContent).not.toContain('Reyu');
+    expect(container.textContent).toContain('Hello');
+    expect(container.textContent).toContain('Please');
+    expect(container.textContent).toContain('Thank you');
+    expect(container.textContent).toContain('Help');
     expect(container.textContent).toContain('Good');
-    expect(container.textContent).toContain('How was your day?');
+    expect(container.textContent).toContain('Yes');
+    expect(container.textContent).toContain(DEFAULT_SPACE_SEED.phrases[0].text);
+    expect(container.textContent).toContain(DEFAULT_SPACE_SEED.phrases[1].text.split(' ')[0]);
     expect(container.textContent).not.toContain('QWERTY');
     expect(container.textContent).not.toContain('Circular');
     expect(container.querySelector('textarea')).toBeTruthy();
+    expect(container.querySelector('[aria-label="Demo navigation"]')).toBeNull();
 
     const frame = container.querySelector('[data-live-demo-frame]');
     expect(frame?.className).toContain('lg:h-[560px]');
@@ -113,6 +136,17 @@ describe('home redesign sections', () => {
     expect(container.querySelector('[data-feature-preview="spaces"]')).toBeTruthy();
     expect(container.querySelector('[data-feature-preview="phrases"]')).toBeTruthy();
     expect(container.querySelector('[data-feature-preview="speak"]')).toBeTruthy();
+    const previews = [...container.querySelectorAll('[data-feature-preview]')];
+    expect(previews).toHaveLength(3);
+    expect(previews.every(preview => preview.className.includes('h-56'))).toBe(true);
+    const speakControls = container.querySelector('[data-feature-preview-controls="speak"]');
+    expect(speakControls).toBeTruthy();
+    expect(speakControls!.className).toContain(
+      'grid-cols-[2.5rem_2.5rem_minmax(0,1fr)_4.5rem]'
+    );
+    const speakButton = container.querySelector('[data-feature-preview-speak-button]');
+    expect(speakButton).toBeTruthy();
+    expect(speakButton!.className).toContain('w-full');
     expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThanOrEqual(10);
   });
 

@@ -6,12 +6,12 @@ Local-first spaces and messaging for September. Backed by TanStack DB (IndexedDB
 
 ### Components
 
-| Export | Description |
-| --- | --- |
-| `SpaceList` | Renders a searchable list of spaces with delete confirm dialog |
-| `MessageList` | Renders messages in a space; handles audio playback |
-| `EditableSpaceTitle` | Inline editable title with save/revert behaviour |
-| `SpaceSwitch` | Segmented switch (above the editor) to jump between spaces; trailing button creates a new space. Navigates to `/talk/$id`. |
+| Export               | Description                                                                                                                |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `SpaceList`          | Renders a searchable list of spaces with delete confirm dialog                                                             |
+| `MessageList`        | Renders messages in a space; handles audio playback                                                                        |
+| `EditableSpaceTitle` | Inline editable title with save/revert behaviour                                                                           |
+| `SpaceSwitch`        | Segmented switch (above the editor) to jump between spaces; trailing button creates a new space. Navigates to `/talk/$id`. |
 
 ### Live-query hooks
 
@@ -25,26 +25,46 @@ const { phrases, isLoading, error } = useSavedPhrases({ spaceId }); // pinned fi
 ### Mutations
 
 ```ts
-import { createSpace, updateSpace, deleteSpace, createMessage } from '@/packages/spaces';
+import {
+  DEFAULT_SPACE_SEED,
+  createDefaultSpace,
+  createMessage,
+  createSpace,
+  deleteSpace,
+  updateSpace,
+} from '@/packages/spaces';
+// Saved phrases
+import {
+  addManualPhrase,
+  removePhrase,
+  replaceAiPhrases,
+  setPhrasePinned,
+} from '@/packages/spaces';
 
+const seeded = await createDefaultSpace(userId); // "General" + starter saved phrases
 const space = await createSpace(userId); // title defaults to "General"
 const appointmentSpace = await createSpace(userId, 'Appointments');
 await updateSpace(spaceId, { title: 'Renamed', context: '...' });
-await deleteSpace(spaceId);          // cascades messages + saved phrases
-const msg  = await createMessage({ text, type, user_id, space_id });
+await deleteSpace(spaceId); // cascades messages + saved phrases
+const msg = await createMessage({ text, type, user_id, space_id });
 
-// Saved phrases
-import { addManualPhrase, removePhrase, setPhrasePinned, replaceAiPhrases } from '@/packages/spaces';
 await addManualPhrase(spaceId, userId, 'Call the nurse'); // upsert; pins (promotes AI → pinned)
-await setPhrasePinned(phraseId, false);                   // unpin → regenerable again
+await setPhrasePinned(phraseId, false); // unpin → regenerable again
 await removePhrase(phraseId);
 await replaceAiPhrases(spaceId, userId, aiTexts, messageCount); // seed/regen write
+
+console.log(DEFAULT_SPACE_SEED.title); // "General"
 ```
 
 ### Types
 
 ```ts
-import type { Space, Message, CreateMessageData, SavedPhrase } from '@/packages/spaces';
+import type {
+  CreateMessageData,
+  Message,
+  SavedPhrase,
+  Space,
+} from '@/packages/spaces';
 ```
 
 ## Saved phrases
@@ -54,6 +74,12 @@ Per-space ready-to-use phrases, stored as one row per phrase in
 
 - `pinned: true` — the user kept it (added manually, or pinned a suggestion). Durable.
 - `pinned: false` — AI-generated. Replaced on each regeneration.
+
+`createDefaultSpace(userId)` creates the first-run `General` space from
+`DEFAULT_SPACE_SEED`, including generic greeting and reply starter phrases used
+by the marketing live demo. It leaves `phrases_synced_count` unset, so the first
+real message can still trigger normal AI seeding and replace those starter AI
+rows. Plain `createSpace` only creates the space row.
 
 `useSyncSpacePhrases({ space, phrases, messages, messagesLoading })` owns
 generation triggering: it **seeds** on the first message (and backfills spaces
@@ -68,8 +94,8 @@ default. See `docs/concepts/saved-phrases.md`.
 
 ## Data layout
 
-| Collection | IndexedDB db | Key |
-| --- | --- | --- |
-| `spaceCollection` | `app-spaces` | `id` (uuid) |
-| `messageCollection` | `app-messages` | `id` (uuid) |
+| Collection              | IndexedDB db        | Key         |
+| ----------------------- | ------------------- | ----------- |
+| `spaceCollection`       | `app-spaces`        | `id` (uuid) |
+| `messageCollection`     | `app-messages`      | `id` (uuid) |
 | `savedPhraseCollection` | `app-saved-phrases` | `id` (uuid) |

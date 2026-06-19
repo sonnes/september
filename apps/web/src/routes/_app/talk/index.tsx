@@ -6,7 +6,7 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 
 import { useAccount } from '@/packages/account';
-import { SpaceList, useSpaces, createSpace } from '@/packages/spaces';
+import { SpaceList, useSpaces, createDefaultSpace, createSpace } from '@/packages/spaces';
 import { Button } from '@/packages/ui/components/button';
 import { ErrorState } from '@/packages/ui/components/error-state';
 
@@ -31,7 +31,11 @@ function SpacesPage() {
   const navigate = useNavigate();
   const { user } = useAccount();
   const [searchValue, setSearchValue] = useState('');
-  const { spaces, isLoading: fetching, error } = useSpaces({ searchQuery: searchValue });
+  const { spaces, isLoading: fetching, error } = useSpaces({
+    userId: user?.id,
+    searchQuery: searchValue,
+  });
+  const { spaces: allSpaces } = useSpaces({ userId: user?.id });
 
   const handleNewSpace = async () => {
     if (!user?.id) {
@@ -39,7 +43,8 @@ function SpacesPage() {
       return;
     }
     try {
-      const space = await createSpace(user.id);
+      const isFirstSpace = allSpaces.length === 0;
+      const space = isFirstSpace ? await createDefaultSpace(user.id) : await createSpace(user.id);
       toast.success('Space created');
       navigate({ to: '/talk/$id', params: { id: space.id } });
     } catch (err) {

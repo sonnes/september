@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { createFileRoute } from '@tanstack/react-router';
-
 import { TvIcon } from '@heroicons/react/24/outline';
+import { createFileRoute } from '@tanstack/react-router';
 import {
   Delete,
   FileText,
@@ -19,35 +18,39 @@ import {
   Volume2,
 } from 'lucide-react';
 
+import { ChatRightPanel } from '@/components/chat/right-panel';
+import { ChatPanelProvider, useChatPanel } from '@/components/chat/use-chat-panel';
+import MobileNav from '@/components/nav/mobile';
+import SidebarLayout from '@/components/sidebar/layout';
+
+import { pageTitle } from '@/lib/seo';
 import { useAccount } from '@/packages/account';
-import { AudioOutputDeviceSelector, TextViewer, TextViewerWords, useAudioPlayer } from '@/packages/audio';
+import {
+  AudioOutputDeviceSelector,
+  TextViewer,
+  TextViewerWords,
+  useAudioPlayer,
+} from '@/packages/audio';
+import { Autocomplete, useEditorContext } from '@/packages/editor';
+import { DisplayMessage, cn } from '@/packages/shared';
 import {
   EditableSpaceTitle,
+  type Message,
   SpaceSwitch,
+  addManualPhrase,
   updateSpace,
-  useSpaces,
   useCreateAudioMessage,
   useGenerateSpaceContext,
   useMessages,
   usePlayMessage,
   useSavedPhrases,
+  useSpaces,
   useSyncSpacePhrases,
-  addManualPhrase,
-  type Message,
 } from '@/packages/spaces';
-import { Autocomplete, useEditorContext } from '@/packages/editor';
-import { cn, DisplayMessage } from '@/packages/shared';
 import { Suggestions } from '@/packages/suggestions';
 import { Button } from '@/packages/ui/components/button';
 import { Separator } from '@/packages/ui/components/separator';
 import { SidebarTrigger } from '@/packages/ui/components/sidebar';
-
-import MobileNav from '@/components/nav/mobile';
-import SidebarLayout from '@/components/sidebar/layout';
-import { ChatRightPanel } from '@/components/chat/right-panel';
-import { ChatPanelProvider, useChatPanel } from '@/components/chat/use-chat-panel';
-
-import { pageTitle } from '@/lib/seo';
 
 export const Route = createFileRoute('/_app/talk/$id/')({
   head: () => ({
@@ -168,11 +171,12 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
     async (text: string) => {
       if (!spaceId || !user || !text.trim()) return;
 
+      const trimmed = text.trim();
       const editorStats = getAndResetStats();
 
       const { message, audio } = await createAudioMessage({
         space_id: spaceId,
-        text: text.trim(),
+        text: trimmed,
         type: 'user',
         user_id: user.id,
         editorStats,
@@ -198,12 +202,24 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
       inputRef.current?.focus();
 
       if (messages.length === 0) {
-        generateContext({ messageText: text.trim() })
-          .then(result => result && updateSpace(spaceId, { title: result.title, context: result.context }))
+        generateContext({ messageText: trimmed })
+          .then(
+            result =>
+              result && updateSpace(spaceId, { title: result.title, context: result.context })
+          )
           .catch(() => {});
       }
     },
-    [spaceId, user, createAudioMessage, enqueue, setText, getAndResetStats, messages, generateContext]
+    [
+      spaceId,
+      user,
+      createAudioMessage,
+      enqueue,
+      setText,
+      getAndResetStats,
+      messages,
+      generateContext,
+    ]
   );
 
   const handleTextareaKeyDown = useCallback(
@@ -304,8 +320,7 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
     [spaceId, user]
   );
 
-  // Recently spoken (user) messages — faint log filling the space above the
-  // composer, mirroring the mock's spoken-history area. Tap one to replay it.
+  // Recently spoken messages. Tap one to replay it.
   const spoken = (messages ?? []).filter(m => m.type === 'user').slice(-6);
 
   // Compose column — shared between split and full-width layouts
@@ -323,9 +338,7 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
             </p>
           </div>
         ) : (
-          spoken.map((message, i) => (
-            <TranscriptBubble key={message.id || i} message={message} />
-          ))
+          spoken.map((message, i) => <TranscriptBubble key={message.id || i} message={message} />)
         )}
 
         {/* Now-speaking viewer — borrowed from the old /talk page: live word

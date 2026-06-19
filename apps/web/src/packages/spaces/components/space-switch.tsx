@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { useNavigate } from '@tanstack/react-router';
-
 import { ChevronDown, Plus } from 'lucide-react';
 
 import { useAccount } from '@/packages/account';
@@ -47,6 +46,7 @@ export function SpaceSwitch({ currentSpaceId }: SpaceSwitchProps) {
     if (!row) return;
     const check = () => setCompact(row.scrollWidth > row.clientWidth + 1);
     check();
+    if (typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(check);
     ro.observe(row);
     return () => ro.disconnect();
@@ -122,7 +122,10 @@ export function SpaceSwitch({ currentSpaceId }: SpaceSwitchProps) {
                 <ChevronDown className="size-4 shrink-0 text-muted-foreground" aria-hidden />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-(--radix-dropdown-menu-trigger-width) min-w-48">
+            <DropdownMenuContent
+              align="start"
+              className="w-(--radix-dropdown-menu-trigger-width) min-w-48"
+            >
               <DropdownMenuRadioGroup value={currentSpaceId} onValueChange={open}>
                 {spaces.map(space => (
                   <DropdownMenuRadioItem key={space.id} value={space.id}>
