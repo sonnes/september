@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>September Onboarding - Setup Choice</title>
+    <style>
+      :root {
+        --page: #f4f4f5;
+        --bg: #ffffff;
+        --text: #18181b;
+        --muted: #71717a;
+        --line: #e4e4e7;
+        --soft: #f4f4f5;
+        --primary: #4f46e5;
+        --primary-dark: #4338ca;
+        --primary-soft: #eef2ff;
+        --success: #059669;
+        --success-soft: #ecfdf5;
+        --warning: #d97706;
+        --warning-soft: #fffbeb;
+        --info: #0284c7;
+        --info-soft: #f0f9ff;
+        --radius: 14px;
+        --shadow: 0 1px 2px rgba(24, 24, 27, 0.06);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --page: #18181b;
+          --bg: #27272a;
+          --text: #ffffff;
+          --muted: #a1a1aa;
+          --line: #3f3f46;
+          --soft: #3f3f46;
+          --primary: #6366f1;
+          --primary-dark: #818cf8;
+          --primary-soft: rgba(99, 102, 241, 0.16);
+          --success-soft: rgba(5, 150, 105, 0.16);
+          --warning-soft: rgba(217, 119, 6, 0.14);
+          --info-soft: rgba(2, 132, 199, 0.16);
+          --shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: var(--page);
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        overflow-x: hidden;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 50% 0%, rgba(79, 70, 229, 0.1), transparent 34rem),
+          var(--page);
+        font-family: "Noto Sans", Helvetica, Arial, sans-serif;
+      }
+
+      button {
+        font: inherit;
+      }
+
+      .shell {
+        min-height: 100vh;
+        padding: 28px 20px;
+      }
+
+      .workspace {
+        width: 100%;
+        max-width: 980px;
+        min-width: 0;
+        margin: 0 auto;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 28px;
+        color: var(--primary);
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 36px;
+        height: 36px;
+        place-items: center;
+        border-radius: 10px;
+        background: var(--primary);
+        color: white;
+      }
+
+      .progress {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 28px;
+      }
+
+      .step-dot {
+        display: grid;
+        min-width: 48px;
+        height: 48px;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--bg);
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .step-dot.done {
+        border-color: #bbf7d0;
+        background: var(--success-soft);
+        color: var(--success);
+      }
+
+      .step-dot[aria-current="step"] {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 0 0 4px var(--primary-soft);
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--bg);
+        box-shadow: var(--shadow);
+        min-width: 0;
+        padding: clamp(24px, 4vw, 40px);
+      }
+
+      .header {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 30px;
+      }
+
+      .kicker {
+        margin: 0;
+        color: var(--primary);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      h1 {
+        max-width: 13ch;
+        margin: 0;
+        overflow-wrap: break-word;
+        font-size: clamp(34px, 5vw, 46px);
+        line-height: 1.06;
+        letter-spacing: 0;
+      }
+
+      .lede {
+        max-width: 64ch;
+        margin: 0;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.6;
+        overflow-wrap: break-word;
+      }
+
+      .choices {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        align-items: stretch;
+      }
+
+      .choice {
+        position: relative;
+        display: grid;
+        min-width: 0;
+        min-height: 320px;
+        grid-template-rows: auto auto 1fr auto;
+        gap: 18px;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-top-width: 6px;
+        border-radius: var(--radius);
+        background: var(--bg);
+        color: inherit;
+        padding: 20px;
+        text-align: left;
+        box-shadow: var(--shadow);
+        cursor: pointer;
+      }
+
+      .choice[data-mode="free"] {
+        border-top-color: var(--primary);
+      }
+
+      .choice[data-mode="private"] {
+        border-top-color: var(--success);
+      }
+
+      .choice[data-mode="advanced"] {
+        border-top-color: var(--info);
+      }
+
+      .choice[aria-pressed="true"] {
+        border-color: var(--primary);
+        border-top-color: var(--primary);
+        background: var(--primary-soft);
+        box-shadow: 0 0 0 2px var(--primary);
+      }
+
+      .choice:focus-visible,
+      .step-dot:focus-visible,
+      .btn:focus-visible {
+        outline: 0;
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.28);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-self: start;
+        min-height: 32px;
+        border-radius: 999px;
+        padding: 0 13px;
+        background: var(--soft);
+        color: var(--text);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .choice[data-mode="free"] .badge {
+        background: var(--primary-soft);
+        color: var(--primary-dark);
+      }
+
+      .choice[data-mode="private"] .badge {
+        background: var(--success-soft);
+        color: var(--success);
+      }
+
+      .choice[data-mode="advanced"] .badge {
+        background: var(--info-soft);
+        color: var(--info);
+      }
+
+      .choice-title {
+        margin: 0;
+        font-size: 24px;
+        line-height: 1.15;
+        letter-spacing: 0;
+      }
+
+      .choice-copy {
+        margin: 0;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.55;
+        overflow-wrap: break-word;
+      }
+
+      .points {
+        display: grid;
+        gap: 12px;
+        align-self: start;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .points li {
+        display: grid;
+        grid-template-columns: 10px 1fr;
+        gap: 12px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.5;
+        min-width: 0;
+        overflow-wrap: break-word;
+      }
+
+      .points li::before {
+        width: 8px;
+        height: 8px;
+        margin-top: 7px;
+        border-radius: 999px;
+        background: currentColor;
+        content: "";
+      }
+
+      .select-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding-top: 14px;
+        border-top: 1px solid var(--line);
+      }
+
+      .select-label {
+        color: var(--text);
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .check {
+        display: grid;
+        width: 32px;
+        height: 32px;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--bg);
+        color: transparent;
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .choice[aria-pressed="true"] .check {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: white;
+      }
+
+      .footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line);
+      }
+
+      .summary {
+        min-width: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .summary strong {
+        color: var(--text);
+        font-weight: 800;
+      }
+
+      .actions {
+        display: flex;
+        flex: 0 0 auto;
+        gap: 10px;
+      }
+
+      .btn {
+        min-height: 48px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--bg);
+        color: var(--text);
+        padding: 0 18px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .btn.primary {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: white;
+      }
+
+      .btn.primary:hover {
+        background: var(--primary-dark);
+      }
+
+      [contenteditable="true"] {
+        border-radius: 6px;
+      }
+
+      [contenteditable="true"]:focus {
+        outline: 3px solid rgba(99, 102, 241, 0.28);
+        outline-offset: 3px;
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .choice,
+        .btn,
+        .step-dot {
+          transition:
+            background-color 160ms ease,
+            border-color 160ms ease,
+            box-shadow 160ms ease,
+            transform 160ms ease;
+        }
+
+        .choice:hover {
+          transform: translateY(-1px);
+        }
+      }
+
+      @media (max-width: 1024px) {
+        .workspace {
+          width: min(100%, 780px);
+        }
+
+        .choices {
+          grid-template-columns: 1fr;
+        }
+
+        .choice {
+          min-height: auto;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .shell {
+          padding: 24px 16px;
+        }
+
+        .progress {
+          gap: 8px;
+          margin-bottom: 28px;
+        }
+
+        .step-dot {
+          min-width: 44px;
+          height: 44px;
+        }
+
+        .panel {
+          padding: 24px 18px;
+        }
+
+        h1 {
+          max-width: 12ch;
+        }
+
+        .footer {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .actions {
+          flex-direction: column-reverse;
+        }
+
+        .btn {
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 375px) {
+        .shell {
+          padding: 18px 10px;
+        }
+
+        .brand {
+          margin-bottom: 20px;
+        }
+
+        .progress {
+          justify-content: space-between;
+        }
+
+        .panel {
+          padding: 22px 16px;
+        }
+
+        .choice {
+          padding: 18px 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <div class="workspace">
+        <div class="brand" aria-label="September">
+          <span class="brand-mark">S</span>
+          <span>September</span>
+        </div>
+
+        <nav class="progress" aria-label="Onboarding steps">
+          <button class="step-dot done" type="button" aria-label="Step 1 complete">OK</button>
+          <button class="step-dot" type="button" aria-current="step" aria-label="Step 2, setup choice">2</button>
+          <button class="step-dot" type="button" aria-label="Step 3, about you">3</button>
+          <button class="step-dot" type="button" aria-label="Step 4, voice">4</button>
+          <button class="step-dot" type="button" aria-label="Step 5, finish">5</button>
+        </nav>
+
+        <section class="panel" aria-labelledby="setup-title">
+          <header class="header">
+            <p class="kicker">Step 2 of 5</p>
+            <h1 id="setup-title">Choose your setup.</h1>
+            <p class="lede">
+              Start free, keep everything private, or let a caregiver connect the services you already use.
+            </p>
+          </header>
+
+          <div class="choices" role="group" aria-label="Setup choices">
+            <button class="choice" type="button" data-mode="free" aria-pressed="true">
+              <span class="badge">Recommended start</span>
+              <h2 class="choice-title">Free</h2>
+              <p class="choice-copy">
+                Use free writing help when you want longer replies or softer wording.
+              </p>
+              <ul class="points">
+                <li>Good for getting useful suggestions right away.</li>
+                <li>Only text you ask for help with may be sent for suggestions.</li>
+                <li>Saved phrases and spaces stay on this device.</li>
+              </ul>
+              <span class="select-row">
+                <span class="select-label">Use Free</span>
+                <span class="check" aria-hidden="true">OK</span>
+              </span>
+            </button>
+
+            <button class="choice" type="button" data-mode="private" aria-pressed="false">
+              <span class="badge">Most private</span>
+              <h2 class="choice-title">Private</h2>
+              <p class="choice-copy">
+                No AI service. No cloud suggestions. September stays local-first.
+              </p>
+              <ul class="points">
+                <li>Everything stays on this device.</li>
+                <li>Use saved phrases, boards, and browser speech.</li>
+                <li>Best when trust matters more than writing help.</li>
+              </ul>
+              <span class="select-row">
+                <span class="select-label">Use Private</span>
+                <span class="check" aria-hidden="true">OK</span>
+              </span>
+            </button>
+
+            <button class="choice" type="button" data-mode="advanced" aria-pressed="false">
+              <span class="badge">Caregiver setup</span>
+              <h2 class="choice-title">Advanced</h2>
+              <p class="choice-copy">
+                Connect your own AI, voice, or caregiver-managed services.
+              </p>
+              <ul class="points">
+                <li>Add Gemini, OpenRouter, or ElevenLabs keys.</li>
+                <li>Choose the voice and writing helper you prefer.</li>
+                <li>September contacts only the services you choose.</li>
+              </ul>
+              <span class="select-row">
+                <span class="select-label">Use Advanced</span>
+                <span class="check" aria-hidden="true">OK</span>
+              </span>
+            </button>
+          </div>
+
+          <footer class="footer">
+            <p class="summary" id="summary">
+              <strong>Free selected.</strong> Next, September will ask what kind of help you want while writing.
+            </p>
+            <div class="actions">
+              <button class="btn" type="button">Back</button>
+              <button class="btn primary" type="button">Continue</button>
+            </div>
+          </footer>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      const summaries = {
+        free: "<strong>Free selected.</strong> Next, September will ask what kind of help you want while writing.",
+        private: "<strong>Private selected.</strong> Next, September will set up local phrases, boards, and browser speech.",
+        advanced: "<strong>Advanced selected.</strong> Next, a caregiver can connect AI or voice services.",
+      };
+
+      const choices = Array.from(document.querySelectorAll(".choice"));
+      const summary = document.getElementById("summary");
+
+      choices.forEach((choice) => {
+        choice.addEventListener("click", () => {
+          choices.forEach((item) => item.setAttribute("aria-pressed", "false"));
+          choice.setAttribute("aria-pressed", "true");
+          summary.innerHTML = summaries[choice.dataset.mode];
+        });
+      });
+
+    </script>
+  </body>
+</html>

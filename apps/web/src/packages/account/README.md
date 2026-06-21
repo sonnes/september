@@ -6,6 +6,11 @@ Local-first account state for the web app.
 
 ```ts
 export { AccountProvider, useAccount } from './account-provider';
+export {
+  buildAccountSettingsExport,
+  parseAccountSettingsExport,
+  serializeAccountSettingsExport,
+} from './settings-transfer';
 export { useCurrentUser } from './use-current-user';
 export {
   AccountSchema,
@@ -24,6 +29,7 @@ export {
 - `defaults.ts`: Local guest user and default account factory.
 - `account-store.ts`: TanStack DB collection and local persistence hook.
 - `account-provider.tsx`: React context provider and `useAccount` hook.
+- `settings-transfer.ts`: JSON export/import helpers for account-backed settings.
 - `use-current-user.ts`: Local guest user hook.
 
 ## Usage
@@ -51,3 +57,17 @@ await updateAccount({ name: 'Guest' });
 `AccountProvider` creates the local guest account automatically. `updateAccount` accepts
 `AccountUpdate`, which excludes `id`, `created_at`, and `updated_at`; the provider sets
 `updated_at` internally.
+
+Export and import account-backed settings with the settings transfer helpers:
+
+```ts
+import { parseAccountSettingsExport, serializeAccountSettingsExport } from '@/packages/account';
+
+const json = serializeAccountSettingsExport(account);
+const updates = parseAccountSettingsExport(json);
+
+await updateAccount(updates);
+```
+
+The JSON contains account, provider, suggestion, transcription, and speech settings. It excludes
+internal account fields, but includes provider API keys when they are configured.

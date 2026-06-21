@@ -113,7 +113,6 @@ export function TiptapEditor({
       },
       onUpdate: ({ editor }) => {
         if (!onUpdate) return;
-        if (editor.isFocused) return;
 
         const html = editor.getHTML();
         const markdown = (editor.storage as MarkdownStorage)?.markdown?.getMarkdown() || '';

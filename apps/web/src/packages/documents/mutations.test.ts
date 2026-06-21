@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+// Import after mocks
+import {
+  createDocument,
+  deleteDocument,
+  deleteDocumentsForSpace,
+  updateDocument,
+} from './mutations';
+
 // ---------------------------------------------------------------------------
 // Hoisted mocks — must be declared before any imports that transitively use them
 // ---------------------------------------------------------------------------
@@ -34,15 +42,15 @@ vi.mock('./db', () => ({
       documentState.state.delete(id);
       return makeTx(mockDelete(id));
     },
+    get toArray() {
+      return Array.from(documentState.state.values());
+    },
   },
 }));
 
 vi.mock('uuid', () => ({
   v4: vi.fn(() => 'fixed-uuid-doc'),
 }));
-
-// Import after mocks
-import { createDocument, deleteDocument, updateDocument } from './mutations';
 
 describe('createDocument', () => {
   beforeEach(() => {
@@ -67,6 +75,12 @@ describe('createDocument', () => {
     await createDocument({ content: '', name: 'My Doc' });
     const inserted = mockInsert.mock.calls[0][0];
     expect(inserted.name).toBe('My Doc');
+  });
+
+  it('accepts a space id for notes inside a space', async () => {
+    await createDocument({ content: '', name: 'Morning update', space_id: 'space-1' });
+    const inserted = mockInsert.mock.calls[0][0];
+    expect(inserted.space_id).toBe('space-1');
   });
 
   it('propagates insert errors', async () => {
@@ -119,5 +133,33 @@ describe('deleteDocument', () => {
     documentState.state.set('doc-err', { id: 'doc-err' });
     mockDelete.mockRejectedValue(new Error('delete failed'));
     await expect(deleteDocument('doc-err')).rejects.toThrow('delete failed');
+  });
+});
+
+describe('deleteDocumentsForSpace', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    documentState.state.clear();
+    mockDelete.mockResolvedValue(undefined);
+  });
+
+  it('deletes only documents scoped to the given space', async () => {
+    documentState.state.set('doc-1', { id: 'doc-1', space_id: 'space-1' });
+    documentState.state.set('doc-2', { id: 'doc-2', space_id: 'space-1' });
+    documentState.state.set('doc-3', { id: 'doc-3', space_id: 'space-2' });
+    documentState.state.set('doc-4', { id: 'doc-4' });
+
+    await deleteDocumentsForSpace('space-1');
+
+    const deletedIds = mockDelete.mock.calls.map((call: unknown[]) => call[0]).sort();
+    expect(deletedIds).toEqual(['doc-1', 'doc-2']);
+  });
+
+  it('does not delete global documents when no documents match the space', async () => {
+    documentState.state.set('doc-1', { id: 'doc-1' });
+
+    await deleteDocumentsForSpace('space-1');
+
+    expect(mockDelete).not.toHaveBeenCalled();
   });
 });

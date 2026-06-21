@@ -17,6 +17,7 @@ import {
   Undo2,
   Volume2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { ChatRightPanel } from '@/components/chat/right-panel';
 import { ChatPanelProvider, useChatPanel } from '@/components/chat/use-chat-panel';
@@ -31,6 +32,7 @@ import {
   TextViewerWords,
   useAudioPlayer,
 } from '@/packages/audio';
+import { SpaceNotes, createDocument, updateDocument, useDocuments } from '@/packages/documents';
 import { Autocomplete, useEditorContext } from '@/packages/editor';
 import { DisplayMessage, cn } from '@/packages/shared';
 import {
@@ -62,6 +64,53 @@ export const Route = createFileRoute('/_app/talk/$id/')({
 // ---------------------------------------------------------------------------
 // Left-rail icon button (undo / delete-word / clear) — mock composer rail
 // ---------------------------------------------------------------------------
+
+type SpaceMode = 'talk' | 'notes';
+
+function ModeSwitch({
+  mode,
+  onModeChange,
+  className,
+}: {
+  mode: SpaceMode;
+  onModeChange: (mode: SpaceMode) => void;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn('flex rounded-lg bg-muted p-1 text-sm font-medium', className)}
+      role="tablist"
+      aria-label="Space mode"
+    >
+      <button
+        type="button"
+        role="tab"
+        aria-selected={mode === 'talk'}
+        onClick={() => onModeChange('talk')}
+        className={cn(
+          'inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md px-3 text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          mode === 'talk' && 'bg-background text-foreground shadow-sm'
+        )}
+      >
+        <MessagesSquare className="size-4" aria-hidden />
+        Talk
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={mode === 'notes'}
+        onClick={() => onModeChange('notes')}
+        className={cn(
+          'inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md px-3 text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          mode === 'notes' && 'bg-background text-foreground shadow-sm'
+        )}
+      >
+        <FileText className="size-4" aria-hidden />
+        Notes
+      </button>
+    </div>
+  );
+}
 
 function RailButton({
   label,
@@ -137,6 +186,10 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
   const { text, setText, trackKeystroke, getAndResetStats } = useEditorContext();
   const popupRef = useRef<Window | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const [mode, setMode] = useState<SpaceMode>('talk');
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const { documents: notes } = useDocuments({ spaceId });
+  const selectedNote = notes.find(note => note.id === selectedNoteId) ?? notes[0];
 
   const { open, widthPct, setWidthPct, openTab, openOverview, close } = useChatPanel();
 
@@ -222,16 +275,53 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
     ]
   );
 
+  const handleAppendToNote = useCallback(
+    async (draft: string) => {
+      const trimmed = draft.trim();
+      if (!trimmed) return;
+
+      try {
+        if (selectedNote) {
+          const nextContent = selectedNote.content.trim()
+            ? `${selectedNote.content.trimEnd()}\n\n${trimmed}`
+            : trimmed;
+          await updateDocument(selectedNote.id, { content: nextContent });
+          setSelectedNoteId(selectedNote.id);
+        } else {
+          const note = await createDocument({
+            space_id: spaceId,
+            name: trimmed.split(/\s+/).slice(0, 6).join(' '),
+            content: trimmed,
+          });
+          setSelectedNoteId(note.id);
+        }
+
+        setText('');
+        inputRef.current?.focus();
+        toast.success('Added to note');
+      } catch (err) {
+        toast.error('Error', {
+          description: err instanceof Error ? err.message : 'Failed to add text to note',
+        });
+      }
+    },
+    [selectedNote, spaceId, setText]
+  );
+
   const handleTextareaKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        handleSubmit(text);
+        if (mode === 'notes') {
+          handleAppendToNote(text);
+        } else {
+          handleSubmit(text);
+        }
         return;
       }
       trackKeystroke();
     },
-    [text, handleSubmit, trackKeystroke]
+    [text, mode, handleAppendToNote, handleSubmit, trackKeystroke]
   );
 
   const undo = useCallback(() => {
@@ -323,6 +413,60 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
   // Recently spoken messages. Tap one to replay it.
   const spoken = (messages ?? []).filter(m => m.type === 'user').slice(-6);
 
+  const handleComposerAction = mode === 'notes' ? handleAppendToNote : handleSubmit;
+  const composerButtonLabel = mode === 'notes' ? 'Add to note' : 'Speak';
+  const composerButtonDisabled = !text.trim() || (mode === 'talk' && status !== 'idle');
+  const ComposerIcon = mode === 'notes' ? FileText : Volume2;
+
+  const composerConsole = (
+    <div className="flex shrink-0 flex-col gap-3 rounded-lg bg-muted/40 p-3">
+      <Suggestions chatId={spaceId} onPin={handlePin} onSubmit={handleComposerAction} />
+
+      <div className="flex flex-col gap-2">
+        <Autocomplete />
+        <div className="rounded-2xl border-2 border-input bg-background p-3 transition-colors focus-within:border-ring">
+          <textarea
+            ref={inputRef}
+            autoFocus
+            rows={1}
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={handleTextareaKeyDown}
+            placeholder={
+              mode === 'notes' ? 'Type text to add to this note...' : 'Type a message...'
+            }
+            className="max-h-60 w-full resize-none overflow-y-auto bg-transparent text-2xl font-medium leading-snug text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
+          />
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5">
+              <RailButton label="Undo" onClick={undo} disabled={undoStack.length === 0}>
+                <Undo2 className="size-5" />
+              </RailButton>
+              <RailButton label="Delete last word" onClick={deleteLastWord} disabled={!text}>
+                <Delete className="size-5" />
+              </RailButton>
+              <RailButton label="Clear" onClick={clearText} disabled={!text}>
+                <Trash2 className="size-5" />
+              </RailButton>
+              {mode === 'talk' && <AudioOutputDeviceSelector />}
+            </div>
+            <button
+              type="button"
+              onClick={() => handleComposerAction(text)}
+              disabled={composerButtonDisabled}
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:enabled:scale-[1.02] active:enabled:scale-95 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+            >
+              <ComposerIcon className="size-4" aria-hidden />
+              {composerButtonLabel}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <SpaceSwitch currentSpaceId={spaceId} />
+    </div>
+  );
+
   // Compose column — shared between split and full-width layouts
   const composeColumn = (
     <div className="flex h-full w-full flex-col gap-4">
@@ -350,60 +494,19 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
         )}
       </div>
 
-      {/* Console — suggestions + composer grouped on a calm surface so the
-          active zone reads as one grounded unit instead of floating on white. */}
-      <div className="flex shrink-0 flex-col gap-3 rounded-lg bg-muted/40 p-3">
-        {/* Suggestion stripes (word autocomplete now lives inside the editor) */}
-        <Suggestions chatId={spaceId} onPin={handlePin} onSubmit={handleSubmit} />
+      {composerConsole}
+    </div>
+  );
 
-        {/* Composer — borrowed from the previous /talk editor: word autocomplete
-            above a bordered box whose bottom row holds the controls. Keeps the
-            space rail (undo / delete / clear) and the Speak button. */}
-        <div className="flex flex-col gap-2">
-          <Autocomplete />
-          <div className="rounded-2xl border-2 border-input bg-background p-3 transition-colors focus-within:border-ring">
-            <textarea
-              ref={inputRef}
-              autoFocus
-              rows={1}
-              value={text}
-              onChange={e => setText(e.target.value)}
-              onKeyDown={handleTextareaKeyDown}
-              placeholder="Type a message…"
-              className="max-h-60 w-full resize-none overflow-y-auto bg-transparent text-2xl font-medium leading-snug text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
-            />
-            <div className="mt-3 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-1.5">
-                <RailButton label="Undo" onClick={undo} disabled={undoStack.length === 0}>
-                  <Undo2 className="size-5" />
-                </RailButton>
-                <RailButton label="Delete last word" onClick={deleteLastWord} disabled={!text}>
-                  <Delete className="size-5" />
-                </RailButton>
-                <RailButton label="Clear" onClick={clearText} disabled={!text}>
-                  <Trash2 className="size-5" />
-                </RailButton>
-                {/* Speaker picker in the editor toolbar (like the previous
-                    version); self-hides when no output devices are available. */}
-                <AudioOutputDeviceSelector />
-              </div>
-              <button
-                type="button"
-                onClick={() => handleSubmit(text)}
-                disabled={!text.trim() || status !== 'idle'}
-                className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:enabled:scale-[1.02] active:enabled:scale-95 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
-              >
-                <Volume2 className="size-4" aria-hidden />
-                Speak
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Space switch — sits below the editor so it stays pinned to the
-            bottom edge and doesn't reflow when suggestions or the editor grow. */}
-        <SpaceSwitch currentSpaceId={spaceId} />
-      </div>
+  const notesColumn = (
+    <div className="flex h-full min-h-0 w-full flex-col gap-4">
+      <SpaceNotes
+        spaceId={spaceId}
+        className="min-h-0 flex-1"
+        selectedId={selectedNoteId}
+        onSelectedIdChange={setSelectedNoteId}
+      />
+      {composerConsole}
     </div>
   );
 
@@ -411,7 +514,7 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
     <>
       <SidebarLayout.Header>
         {/* Mobile: branded top bar with logo, space title, and actions */}
-        <MobileNav title={space?.title ?? 'Space'}>
+        <MobileNav title={`${space?.title ?? 'Space'} - ${mode === 'notes' ? 'Notes' : 'Talk'}`}>
           <Button
             variant="ghost"
             size="icon"
@@ -476,12 +579,12 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
           {space && <EditableSpaceTitle spaceId={space.id} title={space.title} />}
+          <ModeSwitch mode={mode} onModeChange={setMode} className="ml-auto w-64" />
           <Button
             variant="ghost"
             size="icon"
             aria-label="Toggle panel"
             aria-pressed={open}
-            className="ml-auto"
             onClick={() => (open ? close() : openOverview())}
           >
             <PanelRight className="size-4" />
@@ -489,7 +592,12 @@ function SpacePageInner({ spaceId }: { spaceId: string }) {
         </div>
       </SidebarLayout.Header>
 
-      <SidebarLayout.Content>{composeColumn}</SidebarLayout.Content>
+      <SidebarLayout.Content>
+        <div className="flex h-full min-h-0 w-full flex-col gap-3">
+          <ModeSwitch mode={mode} onModeChange={setMode} className="md:hidden" />
+          {mode === 'notes' ? notesColumn : composeColumn}
+        </div>
+      </SidebarLayout.Content>
 
       {/* Panel — detached from the inset (the main container) and rendered as
           its own card in the sidebar flex row. Full-screen overlay on mobile, a

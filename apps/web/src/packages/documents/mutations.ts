@@ -39,3 +39,13 @@ export async function deleteDocument(id: string): Promise<void> {
   const tx = documentCollection.delete(id);
   await tx.isPersisted.promise;
 }
+
+/**
+ * Delete every document scoped to a space and await persistence.
+ * Throws on failure — toast lives at the call site.
+ */
+export async function deleteDocumentsForSpace(spaceId: string): Promise<void> {
+  const ids = documentCollection.toArray.filter(doc => doc.space_id === spaceId).map(doc => doc.id);
+  const txs = ids.map(id => documentCollection.delete(id));
+  await Promise.all(txs.map(tx => tx.isPersisted.promise));
+}

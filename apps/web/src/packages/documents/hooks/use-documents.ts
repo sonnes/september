@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 
-import { ilike } from '@tanstack/db';
+import { eq, ilike } from '@tanstack/db';
 import { useLiveQuery } from '@tanstack/react-db';
 
 import { documentCollection } from '../db';
@@ -14,16 +14,27 @@ export interface UseDocumentsReturn {
   error?: { message: string };
 }
 
-export function useDocuments({ searchQuery }: { searchQuery?: string } = {}): UseDocumentsReturn {
-  const { data: documents, isLoading, isError, status } = useLiveQuery(
+export function useDocuments({
+  searchQuery,
+  spaceId,
+}: { searchQuery?: string; spaceId?: string } = {}): UseDocumentsReturn {
+  const {
+    data: documents,
+    isLoading,
+    isError,
+    status,
+  } = useLiveQuery(
     q => {
       let query = q.from({ items: documentCollection });
+      if (spaceId) {
+        query = query.where(({ items }) => eq(items.space_id, spaceId));
+      }
       if (searchQuery) {
         query = query.where(({ items }) => ilike(items.name, `%${searchQuery}%`));
       }
       return query.orderBy(({ items }) => items.updated_at, 'desc');
     },
-    [searchQuery]
+    [searchQuery, spaceId]
   );
 
   const error = useMemo(

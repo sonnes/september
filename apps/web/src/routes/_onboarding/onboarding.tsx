@@ -1,5 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { useEffect } from 'react';
 
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+
+import { useAccount } from '@/packages/account';
 import { OnboardingFlow, OnboardingProvider } from '@/packages/onboarding';
 import { SpeechProvider } from '@/packages/speech';
 
@@ -21,7 +24,21 @@ export const Route = createFileRoute('/_onboarding/onboarding')({
   component: OnboardingPage,
 });
 
-function OnboardingPage() {
+export function OnboardingPage() {
+  const navigate = useNavigate();
+  const { account, loading } = useAccount();
+  const onboardingComplete = account?.onboarding_completed === true;
+
+  useEffect(() => {
+    if (!loading && onboardingComplete) {
+      navigate({ to: '/talk', replace: true });
+    }
+  }, [loading, onboardingComplete, navigate]);
+
+  if (loading || onboardingComplete) {
+    return null;
+  }
+
   return (
     <SpeechProvider>
       <OnboardingProvider>

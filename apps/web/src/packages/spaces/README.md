@@ -45,7 +45,7 @@ const seeded = await createDefaultSpace(userId); // "General" + starter saved ph
 const space = await createSpace(userId); // title defaults to "General"
 const appointmentSpace = await createSpace(userId, 'Appointments');
 await updateSpace(spaceId, { title: 'Renamed', context: '...' });
-await deleteSpace(spaceId); // cascades messages + saved phrases
+await deleteSpace(spaceId); // cascades messages + saved phrases + notes
 const msg = await createMessage({ text, type, user_id, space_id });
 
 await addManualPhrase(spaceId, userId, 'Call the nurse'); // upsert; pins (promotes AI → pinned)
@@ -59,12 +59,7 @@ console.log(DEFAULT_SPACE_SEED.title); // "General"
 ### Types
 
 ```ts
-import type {
-  CreateMessageData,
-  Message,
-  SavedPhrase,
-  Space,
-} from '@/packages/spaces';
+import type { CreateMessageData, Message, SavedPhrase, Space } from '@/packages/spaces';
 ```
 
 ## Saved phrases
@@ -99,3 +94,6 @@ default. See `docs/concepts/saved-phrases.md`.
 | `spaceCollection`       | `app-spaces`        | `id` (uuid) |
 | `messageCollection`     | `app-messages`      | `id` (uuid) |
 | `savedPhraseCollection` | `app-saved-phrases` | `id` (uuid) |
+
+Space notes live in `@/packages/documents` as `documentCollection` rows with
+`space_id` set. `deleteSpace` also removes those scoped note rows.

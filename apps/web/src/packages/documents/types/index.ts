@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const DocumentSchema = z.object({
   id: z.uuid(),
+  space_id: z.uuid().optional(),
   name: z.string().optional(),
   content: z.string(),
   created_at: z.coerce.date(),

@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 
+import { deleteDocumentsForSpace } from '@/packages/documents';
 import { track } from '@/packages/usage';
 
 import { messageCollection, savedPhraseCollection, spaceCollection } from './db';
@@ -72,8 +73,8 @@ export async function updateSpace(id: string, updates: Partial<Space>): Promise<
 }
 
 /**
- * Delete a space and cascade-delete all its messages and saved phrases, then
- * await persistence. Throws on failure — toast lives at the call site.
+ * Delete a space and cascade-delete all its messages, saved phrases, and notes,
+ * then await persistence. Throws on failure — toast lives at the call site.
  */
 export async function deleteSpace(id: string): Promise<void> {
   // Collect message + phrase ids from loaded state before deletion
@@ -87,6 +88,7 @@ export async function deleteSpace(id: string): Promise<void> {
   await Promise.all([
     ...txs.map(t => t.isPersisted.promise),
     ...phraseTxs.map(t => t.isPersisted.promise),
+    deleteDocumentsForSpace(id),
     spaceTx.isPersisted.promise,
   ]);
 }
