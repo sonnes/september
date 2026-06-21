@@ -11,7 +11,7 @@ Local-first note authoring, space-scoped notes, and slide presentation for Septe
 | `NoteEditor`         | Rich text editor with file upload, slides preview, and optional autosave |
 | `EditableNoteTitle`  | Inline editable note title                                               |
 | `SpaceNotes`         | In-place note editor for a Talk space, autosaved as the user writes      |
-| `SpaceNotesPanel`    | Right-panel note selector with voice-over and download actions           |
+| `SpaceNotesPanel`    | Right-panel note selector with voice-over, audio download, and reel export actions |
 | `SlidesPresentation` | Slide-by-slide presentation with voice-over and autoplay                 |
 
 ### Live-query hooks
@@ -63,3 +63,15 @@ placeholder and generates the first title from note content on the first save.
 `SpaceNotes` renders the note editor as the writing surface. `SpaceNotesPanel` renders the note
 selector in the app right panel; the selected note's voice-over and audio download actions are icon
 buttons in that panel.
+
+## Reel export
+
+`SpaceNotesPanel` can export the selected note as a vertical MP4 reel. Export requires the current
+speech provider to be ElevenLabs because the video captions use ElevenLabs character timing. The
+browser generates the MP3 and timing with the user's configured voice, then calls a TanStack Start
+server function to render a 1080x1920 MP4. The server rasterizes SVG caption frames with `sharp`
+and encodes those PNG frames with FFmpeg.
+
+The renderer writes only temporary files and returns a base64 MP4 for download. It expects `ffmpeg`
+to be available on the server runtime path. If `ffmpeg` or `sharp` cannot render the video, the
+dialog reports the failure and leaves the note unchanged.

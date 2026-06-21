@@ -1,6 +1,6 @@
 ---
 title: Space notes
-description: Long-form notes inside a Talk space, using the document editor and the configured speech voice for note voice-over.
+description: Long-form notes inside a Talk space, using the document editor and the configured speech voice for note voice-over and reel export.
 package: notes
 ---
 
@@ -22,5 +22,12 @@ selector lives in the app right panel. Voice-over and audio download actions
 live there for the selected note.
 Voice-over uses the same speech settings as Talk, but it does not create a chat
 message or append text to the transcript.
+
+The selected note can also export a vertical MP4 reel. Reel export uses the
+configured ElevenLabs voice because the MP4 captions need character-level
+timing. The browser generates the note audio and timing, then a TanStack Start
+server function renders a 1080x1920 MP4. The renderer rasterizes SVG caption
+frames with `sharp`, encodes those PNG frames with FFmpeg, and writes temporary
+files only. Note content and audio are not stored on the server.
 
 Deleting a space cascades its messages, saved phrases, and scoped notes.

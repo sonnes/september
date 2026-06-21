@@ -13,9 +13,11 @@ import { LoadingState } from '@/packages/ui/components/loading-state';
 
 import { useNotes } from '../hooks/use-notes';
 import { useSlideVoiceOver } from '../hooks/use-slide-voice-over';
+import { markdownToVoiceText } from '../lib/reel';
 import { createNote as createNoteMutation } from '../mutations';
 import type { Note } from '../types';
 import { EditableNoteTitle } from './editable-note-title';
+import { NoteReelExportDialog } from './note-reel-export-dialog';
 import { NoteEditor } from './note-editor';
 
 type SpaceNotesProps = {
@@ -24,14 +26,6 @@ type SpaceNotesProps = {
   selectedId?: string | null;
   onSelectedIdChange?: (id: string | null, note?: Note) => void;
 };
-
-function markdownToVoiceText(markdown: string): string {
-  return markdown
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/[`*_>#-]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
 
 function notePreview(note: Note): string {
   const preview = markdownToVoiceText(note.content);
@@ -331,6 +325,7 @@ export function SpaceNotesPanel({
                         <Download className="size-4" aria-hidden />
                       )}
                     </Button>
+                    <NoteReelExportDialog note={selectedNote} voiceText={voiceText} />
                   </div>
                 )}
               </div>

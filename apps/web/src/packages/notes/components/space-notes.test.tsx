@@ -14,6 +14,9 @@ const mockSpeak = vi.fn();
 const mockStop = vi.fn();
 const mockCreateNote = vi.fn();
 const mockGenerateSpeech = vi.fn();
+const { mockRenderReel } = vi.hoisted(() => ({
+  mockRenderReel: vi.fn(),
+}));
 
 let mockNotes: Note[] = [];
 
@@ -32,6 +35,23 @@ vi.mock('../hooks/use-slide-voice-over', () => ({
 
 vi.mock('@/packages/speech', () => ({
   useSpeech: () => ({ generateSpeech: mockGenerateSpeech }),
+}));
+
+vi.mock('@/packages/ai', () => ({
+  useAISettings: () => ({ speechConfig: { provider: 'elevenlabs' } }),
+}));
+
+vi.mock('@tanstack/react-start', () => ({
+  createServerFn: () => ({
+    validator: () => ({
+      handler: () => mockRenderReel,
+    }),
+  }),
+  useServerFn: () => mockRenderReel,
+}));
+
+vi.mock('@tanstack/react-start/server', () => ({
+  setResponseHeaders: vi.fn(),
 }));
 
 vi.mock('../mutations', () => ({
@@ -56,6 +76,7 @@ beforeEach(() => {
   mockStop.mockReset();
   mockCreateNote.mockReset();
   mockGenerateSpeech.mockReset();
+  mockRenderReel.mockReset();
   mockNotes = [
     {
       id: 'note-1',
@@ -90,6 +111,7 @@ describe('SpaceNotes', () => {
 
     expect(buttonByLabel('Generate voice-over')).toBeTruthy();
     expect(buttonByLabel('Download audio')).toBeTruthy();
+    expect(buttonByLabel('Export reel')).toBeTruthy();
     expect(container.textContent).not.toContain('Save note');
     expect(container.querySelector('[data-testid="note-editor"]')).toBeNull();
   });
@@ -103,8 +125,10 @@ describe('SpaceNotes', () => {
 
     expect(selectedCard?.querySelector('button[aria-label="Generate voice-over"]')).toBeTruthy();
     expect(selectedCard?.querySelector('button[aria-label="Download audio"]')).toBeTruthy();
+    expect(selectedCard?.querySelector('button[aria-label="Export reel"]')).toBeTruthy();
     expect(selectedCard?.textContent).not.toContain('Generate voice-over');
     expect(selectedCard?.textContent).not.toContain('Download audio');
+    expect(selectedCard?.textContent).not.toContain('Export reel');
   });
 
   it('speaks the selected note from the sidebar action', () => {
