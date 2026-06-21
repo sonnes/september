@@ -1,16 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { SlidesPresentation, useDocument } from '@/packages/documents';
-
 import { ClientProviders } from '@/components/context/client-providers';
 
 import { pageTitle } from '@/lib/seo';
+import { SlidesPresentation, useNote } from '@/packages/notes';
 
 export const Route = createFileRoute('/present/$id')({
   head: () => ({
     meta: [
       { title: pageTitle('Presentation') },
-      { name: 'description', content: 'Document slide presentation' },
+      { name: 'description', content: 'Note slide presentation' },
     ],
   }),
   component: PresentPageWrapper,
@@ -18,7 +17,7 @@ export const Route = createFileRoute('/present/$id')({
 
 function PresentPageContent() {
   const { id } = Route.useParams();
-  const { document, isLoading } = useDocument(id);
+  const { note, isLoading } = useNote(id);
 
   if (isLoading) {
     return (
@@ -28,10 +27,10 @@ function PresentPageContent() {
     );
   }
 
-  if (!document) {
+  if (!note) {
     return (
       <div className="flex h-screen items-center justify-center bg-black">
-        <p className="text-white/60">Document not found.</p>
+        <p className="text-white/60">Note not found.</p>
       </div>
     );
   }
@@ -39,7 +38,7 @@ function PresentPageContent() {
   return (
     <div className="h-screen w-screen overflow-hidden bg-black">
       <SlidesPresentation
-        documentId={id}
+        noteId={id}
         defaultVoiceOver={true}
         defaultAutoPlay={true}
         showFullscreenButton={false}

@@ -1,8 +1,7 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
-
-import { Callout } from '@/packages/ui/components/callout';
+import { Link, createFileRoute } from '@tanstack/react-router';
 
 import { pageTitle } from '@/lib/seo';
+import { Callout } from '@/packages/ui/components/callout';
 
 export const Route = createFileRoute('/_marketing/terms-of-service')({
   head: () => ({
@@ -25,8 +24,8 @@ function TermsOfService() {
       <Callout tone="warning" title="What you're agreeing to" className="mb-8">
         <ul className="mt-1 list-disc space-y-1 pl-5">
           <li>
-            <strong>Service:</strong> September is an assistive communication app for people
-            with speech/motor difficulties.
+            <strong>Service:</strong> September is an assistive communication app for people with
+            speech/motor difficulties.
           </li>
           <li>
             <strong>Data:</strong> Your data is primarily stored locally on your device.
@@ -66,7 +65,7 @@ function TermsOfService() {
             <li>AI-powered conversation suggestions and completions</li>
             <li>Voice cloning and personalization features</li>
             <li>Speech-to-text transcription capabilities</li>
-            <li>Document processing and text extraction</li>
+            <li>Note processing and text extraction</li>
             <li>Local-first data storage with optional cloud sync</li>
           </ul>
         </section>
@@ -86,8 +85,8 @@ function TermsOfService() {
 
           <h3>3.2 API keys and external services</h3>
           <p>
-            If you choose to use external services (ElevenLabs, Google Gemini), you are
-            responsible for:
+            If you choose to use external services (ElevenLabs, Google Gemini), you are responsible
+            for:
           </p>
           <ul>
             <li>Obtaining and maintaining valid API keys</li>
@@ -178,8 +177,8 @@ function TermsOfService() {
 
           <h3>7.2 Third-party services</h3>
           <p>
-            ElevenLabs, Google Gemini, and other integrated services are owned by their
-            respective companies and subject to their own terms of service.
+            ElevenLabs, Google Gemini, and other integrated services are owned by their respective
+            companies and subject to their own terms of service.
           </p>
         </section>
 
@@ -199,9 +198,9 @@ function TermsOfService() {
         <section>
           <h2>9. Indemnification</h2>
           <p>
-            You agree to defend, indemnify, and hold harmless September and its contributors
-            from any claims, damages, or expenses arising from your use of the Service or
-            violation of these Terms.
+            You agree to defend, indemnify, and hold harmless September and its contributors from
+            any claims, damages, or expenses arising from your use of the Service or violation of
+            these Terms.
           </p>
         </section>
 
@@ -217,8 +216,8 @@ function TermsOfService() {
             </li>
           </ul>
           <p>
-            Your use of these services is subject to their respective terms of service and
-            privacy policies.
+            Your use of these services is subject to their respective terms of service and privacy
+            policies.
           </p>
         </section>
 
@@ -235,31 +234,31 @@ function TermsOfService() {
           <h2>12. Termination</h2>
           <h3>12.1 Your rights</h3>
           <p>
-            You may stop using September at any time. Since data is stored locally, you can
-            delete it by clearing your browser data.
+            You may stop using September at any time. Since data is stored locally, you can delete
+            it by clearing your browser data.
           </p>
 
           <h3>12.2 Our rights</h3>
           <p>
-            We may suspend or terminate access to the Service for violations of these Terms or
-            for any reason with or without notice.
+            We may suspend or terminate access to the Service for violations of these Terms or for
+            any reason with or without notice.
           </p>
         </section>
 
         <section>
           <h2>13. Governing law</h2>
           <p>
-            These Terms are governed by the laws of the jurisdiction where the primary
-            maintainer resides. Any disputes will be resolved through appropriate legal channels
-            in that jurisdiction.
+            These Terms are governed by the laws of the jurisdiction where the primary maintainer
+            resides. Any disputes will be resolved through appropriate legal channels in that
+            jurisdiction.
           </p>
         </section>
 
         <section>
           <h2>14. Severability</h2>
           <p>
-            If any provision of these Terms is found unenforceable, the remaining provisions
-            will continue in full force and effect.
+            If any provision of these Terms is found unenforceable, the remaining provisions will
+            continue in full force and effect.
           </p>
         </section>
 

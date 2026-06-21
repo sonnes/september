@@ -3,15 +3,10 @@
 import { useMemo } from 'react';
 
 import { useAccount } from '@/packages/account';
-import { useMessages, useSpaces, useSavedPhrases, topPhrases } from '@/packages/spaces';
 import { useEditorContext } from '@/packages/editor';
+import { topPhrases, useMessages, useSavedPhrases, useSpaces } from '@/packages/spaces';
 
-import {
-  boardPhrases,
-  boardWords,
-  composeSuggestions,
-  stripeForText,
-} from '../lib/stripes';
+import { boardPhrases, boardWords, composeSuggestions, stripeForText } from '../lib/stripes';
 import { Suggestion } from '../types';
 import { useSuggestions } from './use-suggestions';
 
@@ -30,7 +25,26 @@ export interface UseStripesReturn {
   pinnedChips: string[];
 }
 
-export function useStripes({ chatId }: { chatId?: string }): UseStripesReturn {
+type UseStripesOptions = {
+  chatId?: string;
+  historyText?: string;
+};
+
+function historyMessageFromText(text: string) {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+
+  return [
+    {
+      id: `source-${trimmed}`,
+      text: trimmed,
+      type: 'user',
+      created_at: new Date(0),
+    },
+  ];
+}
+
+export function useStripes({ chatId, historyText }: UseStripesOptions): UseStripesReturn {
   const { text } = useEditorContext();
   const { account } = useAccount();
 
@@ -43,22 +57,23 @@ export function useStripes({ chatId }: { chatId?: string }): UseStripesReturn {
 
   // Global context from the account (CLAUDE.md-style, user + standing facts)
   const globalMd = account?.context ?? '';
+  const sourceHistory = useMemo(
+    () => (historyText === undefined ? historyMessages : historyMessageFromText(historyText)),
+    [historyMessages, historyText]
+  );
 
   // LLM suggestions — keyed on current text + conversation
   const { suggestions: llmSuggestions } = useSuggestions({
     text,
     globalMd,
     spaceMd,
-    history: historyMessages,
+    history: sourceHistory,
   });
 
   // Curated phrases come from the space's saved-phrases list (top 5, pinned
   // first) — not from parsing context markdown.
   const { phrases: savedPhrases } = useSavedPhrases({ spaceId: chatId });
-  const savedTexts = useMemo(
-    () => topPhrases(savedPhrases, STRIPE_SAVED_LIMIT),
-    [savedPhrases]
-  );
+  const savedTexts = useMemo(() => topPhrases(savedPhrases, STRIPE_SAVED_LIMIT), [savedPhrases]);
 
   // Saved phrases split into multi-word phrases (stripes) and single-word chips
   const activeMdPhrases = useMemo(() => boardPhrases(savedTexts), [savedTexts]);
@@ -66,8 +81,8 @@ export function useStripes({ chatId }: { chatId?: string }): UseStripesReturn {
 
   // History texts — user-type messages only, oldest first so historyMatches reverses correctly
   const historyTexts = useMemo(
-    () => historyMessages.filter(m => m.type === 'user').map(m => m.text),
-    [historyMessages]
+    () => sourceHistory.filter(m => m.type === 'user').map(m => m.text),
+    [sourceHistory]
   );
 
   // LLM result texts

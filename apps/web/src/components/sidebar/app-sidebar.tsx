@@ -3,20 +3,12 @@
 import * as React from 'react';
 
 import { Link } from '@tanstack/react-router';
-
-import {
-  Home,
-  LifeBuoy,
-  MessageSquare,
-  Mic,
-  PenTool,
-  Send,
-  Settings2,
-} from 'lucide-react';
+import { FileText, Home, LifeBuoy, MessageSquare, Mic, Send, Settings2 } from 'lucide-react';
 
 import { NavMain } from '@/components/sidebar/nav-main';
 import { NavProjects } from '@/components/sidebar/nav-projects';
 import { NavSecondary } from '@/components/sidebar/nav-secondary';
+
 import {
   Sidebar,
   SidebarContent,
@@ -30,7 +22,7 @@ import {
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar>;
 
-const getNavigationData = () => ({
+export const getNavigationData = () => ({
   navMain: [
     {
       title: 'Dashboard',
@@ -43,9 +35,9 @@ const getNavigationData = () => ({
       icon: MessageSquare,
     },
     {
-      title: 'Write',
-      url: '/write',
-      icon: PenTool,
+      title: 'Notes',
+      url: '/notes',
+      icon: FileText,
     },
     {
       title: 'Clone',
@@ -81,10 +73,21 @@ export function AppSidebar(props: AppSidebarProps) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild className="group-data-[collapsible=icon]:justify-center">
+            <SidebarMenuButton
+              size="lg"
+              asChild
+              className="group-data-[collapsible=icon]:justify-center"
+            >
               <Link to="/">
                 <div className="flex aspect-square size-8 items-center justify-center overflow-hidden rounded-lg group-data-[collapsible=icon]:size-6">
-                  <img src="/logo.png" alt="September" className="size-full object-contain" width={32} height={32} loading="lazy" />
+                  <img
+                    src="/logo.png"
+                    alt="September"
+                    className="size-full object-contain"
+                    width={32}
+                    height={32}
+                    loading="lazy"
+                  />
                 </div>
                 <div className="grid flex-1 text-left text-xl font-bold leading-tight group-data-[collapsible=icon]:hidden">
                   <span className="truncate">september</span>

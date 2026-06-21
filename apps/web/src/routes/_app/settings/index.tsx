@@ -5,13 +5,24 @@ import { Download, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
+  type AccountSettingsImportMode,
   parseAccountSettingsExport,
+  resolveAccountSettingsImport,
   serializeAccountSettingsExport,
   useAccount,
+  type AccountUpdate,
 } from '@/packages/account';
 import { SpeechProvider } from '@/packages/speech';
 import { Button } from '@/packages/ui/components/button';
 import { Callout } from '@/packages/ui/components/callout';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/packages/ui/components/dialog';
 
 import { PageTitle } from '@/components/layout';
 
@@ -48,10 +59,11 @@ function SettingsPage() {
   );
 }
 
-function SettingsTransferActions() {
+export function SettingsTransferActions() {
   const { account, updateAccount } = useAccount();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [pendingImport, setPendingImport] = useState<AccountUpdate | null>(null);
 
   const exportSettings = () => {
     if (!account) return;
@@ -80,8 +92,30 @@ function SettingsTransferActions() {
     setIsImporting(true);
 
     try {
-      await updateAccount(parseAccountSettingsExport(await file.text()));
-      toast.success('Settings imported');
+      setPendingImport(parseAccountSettingsExport(await file.text()));
+    } catch (error) {
+      console.error('Error importing settings:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to import settings.');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const applyImport = async (mode: AccountSettingsImportMode) => {
+    if (!account || !pendingImport) return;
+
+    setIsImporting(true);
+
+    try {
+      await updateAccount(
+        resolveAccountSettingsImport({
+          current: account,
+          imported: pendingImport,
+          mode,
+        })
+      );
+      setPendingImport(null);
+      toast.success(mode === 'merge' ? 'Settings merged' : 'Settings overwritten');
     } catch (error) {
       console.error('Error importing settings:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to import settings.');
@@ -113,6 +147,45 @@ function SettingsTransferActions() {
         aria-label="Import settings JSON"
         onChange={importSettings}
       />
+      <Dialog open={pendingImport !== null} onOpenChange={open => !open && setPendingImport(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Import settings</DialogTitle>
+            <DialogDescription>
+              Merge keeps current settings that are not in the file. Overwrite replaces current
+              account, provider, suggestion, transcription, and speech settings with the file.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              disabled={isImporting}
+              onClick={() => setPendingImport(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="lg"
+              disabled={isImporting}
+              onClick={() => applyImport('merge')}
+            >
+              Merge
+            </Button>
+            <Button
+              type="button"
+              size="lg"
+              disabled={isImporting}
+              onClick={() => applyImport('overwrite')}
+            >
+              Overwrite
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

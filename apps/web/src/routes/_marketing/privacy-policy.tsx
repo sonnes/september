@@ -1,8 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { Callout } from '@/packages/ui/components/callout';
-
 import { pageTitle } from '@/lib/seo';
+import { Callout } from '@/packages/ui/components/callout';
 
 export const Route = createFileRoute('/_marketing/privacy-policy')({
   head: () => ({
@@ -55,9 +54,9 @@ function PrivacyPolicy() {
           <h2>1. Introduction</h2>
           <p>
             September (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to
-            protecting your privacy. This Privacy Policy explains how we collect, use, and
-            safeguard your information when you use our communication assistant application
-            designed for people living with ALS, MND, and other neurodegenerative conditions.
+            protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard
+            your information when you use our communication assistant application designed for
+            people living with ALS, MND, and other neurodegenerative conditions.
           </p>
         </section>
 
@@ -65,38 +64,37 @@ function PrivacyPolicy() {
           <h2>2. Information we collect</h2>
           <h3>2.1 Information stored locally</h3>
           <p>
-            September uses a local-first approach for unauthenticated users. The following data
-            is stored in your browser&apos;s local storage:
+            September uses a local-first approach for unauthenticated users. The following data is
+            stored in your browser&apos;s local storage:
           </p>
           <ul>
             <li>
-              <strong>Account information:</strong> Name, location, medical diagnosis details,
-              and onboarding preferences
+              <strong>Account information:</strong> Name, location, medical diagnosis details, and
+              onboarding preferences
             </li>
             <li>
               <strong>Messages:</strong> All conversations, text content, and message metadata
             </li>
             <li>
-              <strong>Audio data:</strong> Speech recordings, voice synthesis settings, and
-              audio alignment data
+              <strong>Audio data:</strong> Speech recordings, voice synthesis settings, and audio
+              alignment data
             </li>
             <li>
-              <strong>AI settings:</strong> Custom instructions, training corpus, and API keys
-              you provide
+              <strong>AI settings:</strong> Custom instructions, training corpus, and API keys you
+              provide
             </li>
             <li>
               <strong>Speech preferences:</strong> Voice selection, speed, pitch, and other TTS
               settings
             </li>
             <li>
-              <strong>Documents:</strong> Any text documents you create or upload
+              <strong>Notes:</strong> Any notes you create or files you upload
             </li>
           </ul>
 
           <h3>2.2 Information sent to external services</h3>
           <p>
-            To provide AI-powered features, we share specific data with external service
-            providers:
+            To provide AI-powered features, we share specific data with external service providers:
           </p>
 
           <Callout tone="warning" title="ElevenLabs (voice synthesis)">
@@ -127,20 +125,19 @@ function PrivacyPolicy() {
               suggestions, and transcription services
             </li>
             <li>
-              <strong>Personalization:</strong> To improve AI responses based on your
-              communication patterns and preferences
+              <strong>Personalization:</strong> To improve AI responses based on your communication
+              patterns and preferences
             </li>
             <li>
-              <strong>Voice synthesis:</strong> To generate speech audio using your selected
-              voice and settings
+              <strong>Voice synthesis:</strong> To generate speech audio using your selected voice
+              and settings
             </li>
             <li>
-              <strong>Document processing:</strong> To extract text from images and documents
-              you upload
+              <strong>Note processing:</strong> To extract text from images and files you upload
             </li>
             <li>
-              <strong>Service improvement:</strong> To enhance our application&apos;s
-              functionality and user experience
+              <strong>Service improvement:</strong> To enhance our application&apos;s functionality
+              and user experience
             </li>
           </ul>
         </section>
@@ -153,12 +150,12 @@ function PrivacyPolicy() {
               the application
             </li>
             <li>
-              <strong>External services:</strong> Subject to each provider&apos;s retention
-              policies (ElevenLabs, Google)
+              <strong>External services:</strong> Subject to each provider&apos;s retention policies
+              (ElevenLabs, Google)
             </li>
             <li>
-              <strong>API processing:</strong> Most external services process data temporarily
-              and don&apos;t retain it long-term
+              <strong>API processing:</strong> Most external services process data temporarily and
+              don&apos;t retain it long-term
             </li>
           </ul>
         </section>
@@ -168,23 +165,23 @@ function PrivacyPolicy() {
           <h3>5.1 Data control</h3>
           <ul>
             <li>
-              <strong>Local data:</strong> You have complete control — clear browser data to
-              delete all local information
+              <strong>Local data:</strong> You have complete control — clear browser data to delete
+              all local information
             </li>
             <li>
-              <strong>API keys:</strong> You can revoke or change your API keys at any time
-              through settings
+              <strong>API keys:</strong> You can revoke or change your API keys at any time through
+              settings
             </li>
             <li>
-              <strong>External services:</strong> Contact service providers directly to manage
-              data they process
+              <strong>External services:</strong> Contact service providers directly to manage data
+              they process
             </li>
           </ul>
 
           <h3>5.2 Data portability</h3>
           <p>
-            Since most data is stored locally, you can export your information by backing up
-            your browser data or using our export features (where available).
+            Since most data is stored locally, you can export your information by backing up your
+            browser data or using our export features (where available).
           </p>
         </section>
 
@@ -192,8 +189,8 @@ function PrivacyPolicy() {
           <h2>6. Security</h2>
           <ul>
             <li>
-              <strong>Local storage:</strong> Protected by your device&apos;s security measures
-              and browser isolation
+              <strong>Local storage:</strong> Protected by your device&apos;s security measures and
+              browser isolation
             </li>
             <li>
               <strong>API communications:</strong> All external service communications use HTTPS
@@ -204,8 +201,8 @@ function PrivacyPolicy() {
               servers for unauthenticated users
             </li>
             <li>
-              <strong>API key security:</strong> Your API keys are stored locally and never sent
-              to our servers
+              <strong>API key security:</strong> Your API keys are stored locally and never sent to
+              our servers
             </li>
           </ul>
         </section>
@@ -230,27 +227,27 @@ function PrivacyPolicy() {
         <section>
           <h2>8. Medical disclaimer</h2>
           <p>
-            September is an assistive communication tool, not a medical device. We do not
-            collect, store, or process personal health information beyond basic diagnosis
-            categories you choose to share for personalization purposes.
+            September is an assistive communication tool, not a medical device. We do not collect,
+            store, or process personal health information beyond basic diagnosis categories you
+            choose to share for personalization purposes.
           </p>
         </section>
 
         <section>
           <h2>9. Children&apos;s privacy</h2>
           <p>
-            Our service is not directed to children under 13. We do not knowingly collect
-            personal information from children under 13. If you believe we have collected
-            information from a child under 13, please contact us immediately.
+            Our service is not directed to children under 13. We do not knowingly collect personal
+            information from children under 13. If you believe we have collected information from a
+            child under 13, please contact us immediately.
           </p>
         </section>
 
         <section>
           <h2>10. Changes to this policy</h2>
           <p>
-            We may update this Privacy Policy from time to time. We will notify you of any
-            changes by posting the new Privacy Policy on this page and updating the &quot;Last
-            updated&quot; date.
+            We may update this Privacy Policy from time to time. We will notify you of any changes
+            by posting the new Privacy Policy on this page and updating the &quot;Last updated&quot;
+            date.
           </p>
         </section>
 

@@ -4,7 +4,7 @@ Small shared primitives, hooks, and types used across September packages.
 
 ## Features
 
-- **Utilities**: Common helper functions (`cn` for className merging, `MATCH_PUNCTUATION` for text boundaries, `timeAgo` for human-readable relative time strings)
+- **Utilities**: Common helper functions (`cn` for className merging, `MATCH_PUNCTUATION` for text boundaries, `timeAgo` for human-readable relative time strings, `entitySlug` / `idFromSlug` for readable local URLs)
 - **Hooks**: Reusable React hooks for common patterns
 - **Types**: Shared TypeScript types and Zod schemas
 - **IndexedDB**: Local storage utilities with TanStack DB, exported from `@/packages/shared/lib/indexeddb`
@@ -16,6 +16,7 @@ Small shared primitives, hooks, and types used across September packages.
 packages/shared/
 ├── lib/
 │   ├── utils.ts              # cn() and other utilities
+│   ├── slug.ts               # readable slug + id helpers
 │   ├── indexeddb/            # IndexedDB collection helpers
 │   └── autocomplete/         # Autocomplete engine
 ├── hooks/
@@ -37,19 +38,23 @@ packages/shared/
 ### Utilities
 
 ```typescript
-import { cn, timeAgo } from '@/packages/shared';
+import { cn, entitySlug, idFromSlug, timeAgo } from '@/packages/shared';
 
 // Merge class names with Tailwind conflict resolution
 <div className={cn('px-4 py-2', isActive && 'bg-blue-500')} />
 
 // Human-readable relative time
 timeAgo(message.created_at) // "2 minutes ago"
+
+// Readable local URL segment with an id suffix
+entitySlug('Morning notes', note.id) // "morning-notes-..."
+idFromSlug(slug) // note id
 ```
 
 ### Hooks
 
 ```typescript
-import { useDebounce, useIsMobile, useIsCompact } from '@/packages/shared';
+import { useDebounce, useIsCompact, useIsMobile } from '@/packages/shared';
 
 // Debounce a value
 const debouncedSearch = useDebounce(searchQuery, 300);
@@ -83,6 +88,9 @@ import { tokenize } from '@/packages/shared/lib/autocomplete';
 import { indexedDBCollectionOptionsV2 } from '@/packages/shared/lib/indexeddb';
 import { parseAndRenderSlides } from '@/packages/shared/lib/slides';
 ```
+
+`parseAndRenderSlides(markdown, noteName)` can prepend the note title as the
+first slide.
 
 Keep the root import for broadly useful primitives only: `cn`, simple hooks,
 and shared pure types. Feature hooks that depend on account, chats, audio, or UI

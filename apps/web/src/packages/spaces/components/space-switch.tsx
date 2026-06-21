@@ -6,7 +6,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { ChevronDown, Plus } from 'lucide-react';
 
 import { useAccount } from '@/packages/account';
-import { cn } from '@/packages/shared';
+import { cn, entitySlug } from '@/packages/shared';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,12 +54,21 @@ export function SpaceSwitch({ currentSpaceId }: SpaceSwitchProps) {
 
   if (spaces.length === 0) return null;
 
-  const open = (id: string) => navigate({ to: '/talk/$id', params: { id } });
+  const open = (id: string) => {
+    const space = spaces.find(s => s.id === id);
+    navigate({
+      to: '/talk/$spaceSlug',
+      params: { spaceSlug: entitySlug(space?.title, id, 'space') },
+    });
+  };
 
   const handleNew = async () => {
     if (!user?.id) return;
     const space = await createSpace(user.id);
-    navigate({ to: '/talk/$id', params: { id: space.id } });
+    navigate({
+      to: '/talk/$spaceSlug',
+      params: { spaceSlug: entitySlug(space.title, space.id, 'space') },
+    });
   };
 
   const current = spaces.find(s => s.id === currentSpaceId);

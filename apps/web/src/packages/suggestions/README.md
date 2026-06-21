@@ -5,17 +5,34 @@ AI-powered partial-sentence-selection suggestions for the September composer.
 ## Public API
 
 ```ts
-import { Suggestions, SuggestionStripes, SuggestionsForm, useStripes } from '@/packages/suggestions';
-import type { SuggestionsFormData, Suggestion, Stripe, UseStripesReturn } from '@/packages/suggestions';
+import {
+  SuggestionStripes,
+  Suggestions,
+  SuggestionsForm,
+  useStripes,
+} from '@/packages/suggestions';
+import type {
+  Stripe,
+  Suggestion,
+  SuggestionsFormData,
+  UseStripesReturn,
+} from '@/packages/suggestions';
 // Pure lib helpers
 import {
-  tokenize, joinTokens, hiddenTokenCount, historyMatches,
-  boardWords, boardPhrases, composeSuggestions, stripeForText, appendTokens,
   MAX_COMPOSED,
+  appendTokens,
+  boardPhrases,
+  boardWords,
+  composeSuggestions,
+  hiddenTokenCount,
+  historyMatches,
+  joinTokens,
+  stripeForText,
+  tokenize,
 } from '@/packages/suggestions';
 ```
 
-### `<Suggestions chatId className?>`
+### `<Suggestions chatId className? historyText?>`
 
 Self-contained suggestions surface. Renders **sentence stripes** (word tiles — click tile _i_ to take the sentence up to that word) and **pinned word chips** sourced from the space's saved phrases.
 
@@ -29,6 +46,7 @@ Self-contained suggestions surface. Renders **sentence stripes** (word tiles —
 ```
 
 The `chatId` prop accepts a space id (the name is kept for compatibility with the layered-autocomplete lower-level API).
+Pass `historyText` when the composer should use note text instead of chat history for LLM suggestions and history-sourced stripe matches, like Notes mode.
 
 ### `<SuggestionStripes stripes pinnedChips className?>`
 
@@ -36,7 +54,7 @@ Lower-level stripe render; use when you supply stripes from your own `useStripes
 Reads `text` / `setText` from `useEditorContext()`.
 
 Each stripe renders on a **single line** (`flex-nowrap`). Tile font/padding/min-height
-scale by one uniform factor from `useStripeScale` so the *longest* stripe fits the
+scale by one uniform factor from `useStripeScale` so the _longest_ stripe fits the
 container width — measured with Pretext (`@chenglou/pretext`), the same engine the
 display reel uses. Tiles never wrap; an over-long stripe (past the min-scale floor)
 scrolls horizontally instead.
@@ -44,18 +62,19 @@ scrolls horizontally instead.
 Pass `onSubmit` to add a trailing **enter** button to each stripe that accepts the
 whole stripe (full draft + suggestion) and speaks it in one tap.
 
-### `useStripes({ chatId })`
+### `useStripes({ chatId, historyText })`
 
 ```ts
 const {
-  stripes,     // Stripe[] — composed + filtered (hidden < tokens.length)
+  stripes, // Stripe[] — composed + filtered (hidden < tokens.length)
   pinnedChips, // string[] — single-word md bullets prefix-filtered against text
-} = useStripes({ chatId });
+} = useStripes({ chatId, historyText });
 ```
 
 Internally calls:
+
 - `useSuggestions({ text, globalMd, spaceMd, history })` for LLM completions (debounced 200 ms, aborted on text change). `globalMd`/`spaceMd` still steer the LLM persona prompt.
-- `useMessages({ spaceId: chatId })` for history source (user messages only).
+- `historyText` when provided; otherwise `useMessages({ spaceId: chatId })` for history source (user messages only).
 - `useSavedPhrases({ spaceId: chatId })` + `topPhrases(_, 5)` for the curated phrases and chips (pinned first).
 - `composeSuggestions` to merge and rank; `stripeForText` to build tiles.
 
@@ -65,23 +84,23 @@ Settings form for AI suggestions (provider, model, temperature, context window).
 
 ### Pure lib helpers (`@/packages/suggestions` — re-exported from `lib/stripes.ts`)
 
-| Export | Purpose |
-|---|---|
-| `tokenize(s)` | Split sentence into word tokens (punctuation as own token) |
-| `joinTokens(t[])` | Join tokens back; punctuation reattaches; trailing space added |
-| `hiddenTokenCount(tokens, typed)` | Leading tokens already covered by typed text |
-| `historyMatches(typed, history[])` | Past messages matching prefix, most-recent-first |
-| `boardWords(entries[])` | Single-token entries (chip source) |
-| `boardPhrases(entries[])` | Multi-token entries (stripe source) |
-| `composeSuggestions({typed, mdPhrases, history, llm})` | Merge + dedup → `Suggestion[]` |
-| `stripeForText(text, typed)` | `{ text, tokens, hidden }` for one suggestion |
-| `appendTokens(text, entry)` | Append entry tokens to text; returns new string |
-| `MAX_COMPOSED` | Cap on composed suggestions (6) |
+| Export                                                 | Purpose                                                        |
+| ------------------------------------------------------ | -------------------------------------------------------------- |
+| `tokenize(s)`                                          | Split sentence into word tokens (punctuation as own token)     |
+| `joinTokens(t[])`                                      | Join tokens back; punctuation reattaches; trailing space added |
+| `hiddenTokenCount(tokens, typed)`                      | Leading tokens already covered by typed text                   |
+| `historyMatches(typed, history[])`                     | Past messages matching prefix, most-recent-first               |
+| `boardWords(entries[])`                                | Single-token entries (chip source)                             |
+| `boardPhrases(entries[])`                              | Multi-token entries (stripe source)                            |
+| `composeSuggestions({typed, mdPhrases, history, llm})` | Merge + dedup → `Suggestion[]`                                 |
+| `stripeForText(text, typed)`                           | `{ text, tokens, hidden }` for one suggestion                  |
+| `appendTokens(text, entry)`                            | Append entry tokens to text; returns new string                |
+| `MAX_COMPOSED`                                         | Cap on composed suggestions (6)                                |
 
 Also from `lib/md.ts`:
 
-| Export | Purpose |
-|---|---|
+| Export               | Purpose                                                              |
+| -------------------- | -------------------------------------------------------------------- |
 | `parseMdPhrases(md)` | Extract `- ` / `* ` bullet lines from a markdown string → `string[]` |
 
 ### `Suggestion` type
@@ -96,12 +115,12 @@ interface Suggestion {
 
 ## Context model
 
-Suggestions draw from two markdown documents concatenated in order:
+Suggestions draw from two markdown context files concatenated in order:
 
 1. **`account.context`** — global md (your voice, standing facts, go-to phrases).
 2. **`space.context`** — per-space md (this audience, intent, curated bullets).
 
-Both documents feed the LLM system prompt via `buildSuggestionPrompt` (persona/steering). They are **no longer** parsed for the curated stripe — that source is now the space's saved phrases (see `@/packages/spaces`). Pinning a suggestion calls `addManualPhrase`, saving it as a pinned (durable) phrase for the space.
+Both files feed the LLM system prompt via `buildSuggestionPrompt` (persona/steering). They are **no longer** parsed for the curated stripe — that source is now the space's saved phrases (see `@/packages/spaces`). Pinning a suggestion calls `addManualPhrase`, saving it as a pinned (durable) phrase for the space.
 
 ## Behavioral invariant
 

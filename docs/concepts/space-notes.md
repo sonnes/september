@@ -1,7 +1,7 @@
 ---
 title: Space notes
 description: Long-form notes inside a Talk space, using the document editor and the configured speech voice for note voice-over.
-package: documents
+package: notes
 ---
 
 # Space notes
@@ -11,13 +11,15 @@ long-form writing without leaving the space. The Talk composer remains the fast
 path for one utterance; Notes mode is for longer prepared text that can be read
 back with the current speech voice.
 
-Notes are stored in `documentCollection` with `space_id` set to the parent
-space. Existing documents without `space_id` remain global documents for the
-legacy Write route.
+Notes are stored in `noteCollection` with `space_id` set to the parent
+space. `/notes` lists all notes across spaces. Notes mode uses
+`/notes/:spaceSlug/:noteSlug` for individual notes; Talk mode uses
+`/talk/:spaceSlug`.
 
-The same rich editor powers global documents and space notes. In note mode, the
-editor autosaves note content and drops the document action footer. Voice-over
-and audio download actions live in the notes sidebar for the selected note.
+The same rich editor powers global notes and space notes. In note mode, the
+editor autosaves note content and drops the document action footer. The note
+selector lives in the app right panel. Voice-over and audio download actions
+live there for the selected note.
 Voice-over uses the same speech settings as Talk, but it does not create a chat
 message or append text to the transcript.
 

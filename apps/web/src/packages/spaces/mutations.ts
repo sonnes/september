@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 
-import { deleteDocumentsForSpace } from '@/packages/documents';
+import { deleteNotesForSpace } from '@/packages/notes';
 import { track } from '@/packages/usage';
 
 import { messageCollection, savedPhraseCollection, spaceCollection } from './db';
@@ -88,7 +88,7 @@ export async function deleteSpace(id: string): Promise<void> {
   await Promise.all([
     ...txs.map(t => t.isPersisted.promise),
     ...phraseTxs.map(t => t.isPersisted.promise),
-    deleteDocumentsForSpace(id),
+    deleteNotesForSpace(id),
     spaceTx.isPersisted.promise,
   ]);
 }

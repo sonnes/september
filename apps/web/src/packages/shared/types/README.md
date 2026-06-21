@@ -163,7 +163,7 @@ Enable strict TypeScript settings:
 - `strictFunctionTypes: true`
 - `noImplicitAny: true`
 
-### Document Complex Types
+### Note Complex Types
 
 Add JSDoc comments for complex types:
 
@@ -193,7 +193,7 @@ Types should match database schema exactly:
 
 1. After schema changes, update corresponding types
 2. Keep deprecated fields for backward compatibility
-3. Document breaking changes
+3. Note breaking changes
 
 ## Related Documentation
 

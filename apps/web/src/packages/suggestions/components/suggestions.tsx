@@ -12,6 +12,8 @@ import { SuggestionStripes } from './suggestion-stripes';
 interface SuggestionsProps {
   chatId?: string;
   className?: string;
+  /** Optional text to use instead of chat history for suggestions. */
+  historyText?: string;
   /** Word-level autocomplete row, rendered below the stripes. */
   wordSuggestions?: ReactNode;
   /** Called when the user pins a phrase to the space context md. */
@@ -27,8 +29,15 @@ interface SuggestionsProps {
  *
  * Public API: <Suggestions chatId={chatId} className="…" onPin={handlePin} />
  */
-export function Suggestions({ chatId, className, wordSuggestions, onPin, onSubmit }: SuggestionsProps) {
-  const { stripes, pinnedChips } = useStripes({ chatId });
+export function Suggestions({
+  chatId,
+  className,
+  historyText,
+  wordSuggestions,
+  onPin,
+  onSubmit,
+}: SuggestionsProps) {
+  const { stripes, pinnedChips } = useStripes({ chatId, historyText });
 
   const isLoading = false; // LLM loading state surfaced through useSuggestions inside useStripes
 

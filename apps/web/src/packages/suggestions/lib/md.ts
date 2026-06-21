@@ -1,5 +1,5 @@
 /**
- * Parse curated bullet phrases from a markdown context document.
+ * Parse curated bullet phrases from markdown context text.
  *
  * Rules:
  * - Matches lines of the form `- text` or `* text` (leading whitespace allowed)

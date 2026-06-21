@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect } from 'react';
+
 import {
   BoldIcon,
   ChatBubbleBottomCenterTextIcon,
@@ -126,8 +128,17 @@ export function TiptapEditor({
         onUpdate?.(html, markdown);
       },
     },
-    [content]
+    []
   );
+
+  useEffect(() => {
+    if (!editor) return;
+
+    const markdown = (editor.storage as MarkdownStorage)?.markdown?.getMarkdown() || '';
+    if (markdown !== content) {
+      editor.commands.setContent(content, { emitUpdate: false });
+    }
+  }, [content, editor]);
 
   if (!editor) {
     return (

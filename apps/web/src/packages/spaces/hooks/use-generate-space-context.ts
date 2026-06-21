@@ -4,11 +4,11 @@ import { z } from 'zod';
 
 import { useAISettings, useGenerate } from '@/packages/ai';
 
-const SPACE_CONTEXT_GENERATION_PROMPT = `From the User's first message, produce a starter context document for this conversation space.
+const SPACE_CONTEXT_GENERATION_PROMPT = `From the User's first message, produce a starter context note for this conversation space.
 
 <output_format>
 - title: Short descriptive name for this space (max 50 chars)
-- context: Markdown document with:
+- context: Markdown note with:
   - One or two prose sentences (first person, from the User's perspective) capturing who they are talking to, the situation, and the intent
   - A short list of practical bullet phrases the User is likely to want to say (using "- " prefix), in the same language and tone as the input
 </output_format>

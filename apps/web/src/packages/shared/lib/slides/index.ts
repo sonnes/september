@@ -8,7 +8,7 @@ export interface Slide {
   html: string;
 }
 
-export function parseMarkdownToSlides(markdown: string, documentName?: string): Slide[] {
+export function parseMarkdownToSlides(markdown: string, noteName?: string): Slide[] {
   if (!markdown?.trim()) {
     return [];
   }
@@ -24,10 +24,10 @@ export function parseMarkdownToSlides(markdown: string, documentName?: string): 
     slideContents[0] = markdown.trim();
   }
 
-  // Add document name as first slide if provided
+  // Add note name as first slide if provided
   const allSlides = [];
-  if (documentName?.trim()) {
-    allSlides.push(`# ${documentName}`);
+  if (noteName?.trim()) {
+    allSlides.push(`# ${noteName}`);
   }
   allSlides.push(...slideContents);
 
@@ -39,9 +39,7 @@ export function parseMarkdownToSlides(markdown: string, documentName?: string): 
 }
 
 export async function renderSlideToHtml(slideContent: string): Promise<string> {
-  const processor = remark()
-    .use(remarkGfm)
-    .use(remarkHtml, { sanitize: false });
+  const processor = remark().use(remarkGfm).use(remarkHtml, { sanitize: false });
 
   try {
     const result = await processor.process(slideContent);
@@ -52,11 +50,11 @@ export async function renderSlideToHtml(slideContent: string): Promise<string> {
   }
 }
 
-export async function parseAndRenderSlides(markdown: string, documentName?: string): Promise<Slide[]> {
-  const slides = parseMarkdownToSlides(markdown, documentName);
+export async function parseAndRenderSlides(markdown: string, noteName?: string): Promise<Slide[]> {
+  const slides = parseMarkdownToSlides(markdown, noteName);
 
   const renderedSlides = await Promise.all(
-    slides.map(async (slide) => ({
+    slides.map(async slide => ({
       ...slide,
       html: await renderSlideToHtml(slide.content),
     }))

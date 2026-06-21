@@ -1,0 +1,1158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>September Note Reel Export Mock</title>
+    <style>
+      @font-face {
+        font-family: "Noto Sans";
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url("../../apps/web/node_modules/@fontsource/noto-sans/files/noto-sans-latin-400-normal.woff2")
+          format("woff2");
+      }
+
+      @font-face {
+        font-family: "Noto Sans";
+        font-style: normal;
+        font-weight: 500;
+        font-display: swap;
+        src: url("../../apps/web/node_modules/@fontsource/noto-sans/files/noto-sans-latin-500-normal.woff2")
+          format("woff2");
+      }
+
+      @font-face {
+        font-family: "Noto Sans";
+        font-style: normal;
+        font-weight: 600;
+        font-display: swap;
+        src: url("../../apps/web/node_modules/@fontsource/noto-sans/files/noto-sans-latin-600-normal.woff2")
+          format("woff2");
+      }
+
+      @font-face {
+        font-family: "Noto Sans";
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url("../../apps/web/node_modules/@fontsource/noto-sans/files/noto-sans-latin-700-normal.woff2")
+          format("woff2");
+      }
+
+      :root {
+        --background: #ffffff;
+        --foreground: #18181b;
+        --muted: #f4f4f5;
+        --muted-foreground: #71717a;
+        --card: #ffffff;
+        --border: #e4e4e7;
+        --input: #d4d4d8;
+        --primary: #4f46e5;
+        --primary-foreground: #ffffff;
+        --accent: #f8fafc;
+        --accent-foreground: #18181b;
+        --warning: #d97706;
+        --warning-background: #fffbeb;
+        --success: #059669;
+        --success-background: #ecfdf5;
+        --destructive: #dc2626;
+        --ring: rgba(79, 70, 229, 0.4);
+        --radius: 10px;
+        --radius-sm: 8px;
+        --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.06);
+        --shadow-md: 0 16px 36px rgba(24, 24, 27, 0.14);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        min-height: 100%;
+        background: var(--muted);
+        color: var(--foreground);
+        font-family: "Noto Sans", Helvetica, sans-serif;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        background: var(--muted);
+        color: var(--foreground);
+        font-size: 14px;
+        line-height: 1.5;
+        letter-spacing: 0;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      button:focus-visible,
+      input:focus-visible,
+      select:focus-visible,
+      textarea:focus-visible {
+        outline: 3px solid var(--ring);
+        outline-offset: 2px;
+      }
+
+      .app {
+        display: grid;
+        min-height: 100vh;
+        grid-template-columns: 236px minmax(0, 1fr);
+        padding: 8px;
+      }
+
+      .sidebar {
+        display: flex;
+        min-height: calc(100vh - 16px);
+        flex-direction: column;
+        gap: 22px;
+        border-radius: var(--radius);
+        background: var(--primary);
+        color: var(--primary-foreground);
+        padding: 16px 12px;
+      }
+
+      .brand {
+        display: flex;
+        min-height: 44px;
+        align-items: center;
+        gap: 10px;
+        padding: 0 8px;
+        font-size: 16px;
+        font-weight: 700;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 32px;
+        height: 32px;
+        place-items: center;
+        border-radius: var(--radius-sm);
+        background: var(--primary-foreground);
+        color: var(--primary);
+        font-weight: 800;
+      }
+
+      .nav {
+        display: grid;
+        gap: 6px;
+      }
+
+      .nav-label {
+        padding: 0 10px 4px;
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .nav-item {
+        display: flex;
+        min-height: 42px;
+        align-items: center;
+        gap: 10px;
+        border: 0;
+        border-radius: var(--radius-sm);
+        background: transparent;
+        color: inherit;
+        padding: 0 10px;
+        text-align: left;
+      }
+
+      .nav-item.active,
+      .nav-item:hover {
+        background: rgba(67, 56, 202, 0.72);
+      }
+
+      .nav-icon {
+        display: grid;
+        width: 26px;
+        height: 26px;
+        place-items: center;
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.16);
+      }
+
+      .main {
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid rgba(24, 24, 27, 0.08);
+        border-radius: 14px;
+        background: var(--background);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .topbar {
+        display: flex;
+        min-height: 64px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        border-bottom: 1px solid var(--border);
+        padding: 0 18px;
+      }
+
+      .breadcrumbs {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 10px;
+        color: var(--muted-foreground);
+        font-size: 13px;
+      }
+
+      .crumb-current {
+        color: var(--foreground);
+        font-weight: 500;
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .icon-button,
+      .button {
+        display: inline-flex;
+        min-height: 40px;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--card);
+        color: var(--foreground);
+        padding: 0 12px;
+        font-weight: 500;
+        text-decoration: none;
+      }
+
+      .icon-button {
+        width: 40px;
+        padding: 0;
+      }
+
+      .button.primary {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: var(--primary-foreground);
+      }
+
+      .button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+
+      .page {
+        display: grid;
+        height: calc(100vh - 82px);
+        min-height: 620px;
+        grid-template-columns: minmax(0, 1fr) 330px;
+        gap: 0;
+      }
+
+      .content {
+        min-width: 0;
+        overflow: auto;
+        border-right: 1px solid var(--border);
+      }
+
+      .page-shell {
+        display: flex;
+        min-height: 100%;
+        flex-direction: column;
+        gap: 18px;
+        padding: 24px;
+      }
+
+      .page-title {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .page-title h1 {
+        color: var(--foreground);
+        font-size: 30px;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+
+      .page-title p {
+        margin-top: 4px;
+        color: var(--muted-foreground);
+        font-size: 14px;
+      }
+
+      .editor-shell {
+        display: flex;
+        min-height: 0;
+        flex: 1;
+        flex-direction: column;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--card);
+      }
+
+      .editor-header {
+        display: flex;
+        min-height: 56px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid var(--border);
+        padding: 0 14px;
+      }
+
+      .editor-header h2 {
+        overflow: hidden;
+        font-size: 16px;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .editor-body {
+        display: grid;
+        gap: 18px;
+        padding: 22px;
+      }
+
+      .note-line {
+        max-width: 760px;
+        color: var(--foreground);
+        font-size: 16px;
+        line-height: 1.75;
+      }
+
+      .note-heading {
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      .selection {
+        border-radius: 7px;
+        background: #eef2ff;
+        box-shadow: 0 0 0 3px #eef2ff;
+      }
+
+      .panel {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        gap: 12px;
+        overflow: hidden;
+        padding: 14px;
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .panel-head h2 {
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .panel-head p {
+        color: var(--muted-foreground);
+        font-size: 12px;
+      }
+
+      .note-list {
+        display: grid;
+        gap: 10px;
+        overflow: auto;
+      }
+
+      .note-card {
+        display: grid;
+        gap: 10px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--card);
+        padding: 12px;
+        text-align: left;
+      }
+
+      .note-card.active {
+        border-color: rgba(79, 70, 229, 0.55);
+        background: #f8faff;
+      }
+
+      .note-button {
+        display: grid;
+        min-height: 66px;
+        gap: 5px;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        text-align: left;
+      }
+
+      .note-name {
+        overflow: hidden;
+        color: var(--foreground);
+        font-size: 14px;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .note-preview {
+        display: -webkit-box;
+        overflow: hidden;
+        color: var(--muted-foreground);
+        font-size: 12px;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+      }
+
+      .note-meta {
+        color: var(--muted-foreground);
+        font-size: 12px;
+      }
+
+      .note-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .callout {
+        display: flex;
+        gap: 10px;
+        border: 1px solid rgba(217, 119, 6, 0.24);
+        border-radius: var(--radius);
+        background: var(--warning-background);
+        padding: 10px;
+        color: #92400e;
+        font-size: 12px;
+      }
+
+      .phone-preview-wrap {
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--accent);
+        padding: 16px;
+      }
+
+      .phone {
+        position: relative;
+        width: 172px;
+        aspect-ratio: 9 / 16;
+        overflow: hidden;
+        border: 8px solid #18181b;
+        border-radius: 28px;
+        background: #0f172a;
+        color: #ffffff;
+        box-shadow: var(--shadow-md);
+      }
+
+      .phone::before {
+        position: absolute;
+        top: 7px;
+        left: 50%;
+        z-index: 3;
+        width: 54px;
+        height: 15px;
+        border-radius: 999px;
+        background: #18181b;
+        content: "";
+        transform: translateX(-50%);
+      }
+
+      .reel-bg {
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(180deg, rgba(24, 24, 27, 0.08), rgba(24, 24, 27, 0.9)),
+          repeating-linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.05) 0,
+            rgba(255, 255, 255, 0.05) 1px,
+            transparent 1px,
+            transparent 18px
+          ),
+          #111827;
+      }
+
+      .reel-caption {
+        position: absolute;
+        right: 16px;
+        bottom: 76px;
+        left: 16px;
+        text-align: center;
+      }
+
+      .caption-line {
+        display: inline;
+        font-size: 22px;
+        font-weight: 700;
+        line-height: 1.15;
+      }
+
+      .caption-current {
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 0 3px;
+      }
+
+      .caption-spoken {
+        opacity: 0.62;
+      }
+
+      .phone-footer {
+        position: absolute;
+        right: 14px;
+        bottom: 18px;
+        left: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 10px;
+      }
+
+      .bars {
+        display: flex;
+        height: 18px;
+        align-items: end;
+        gap: 2px;
+      }
+
+      .bar {
+        width: 3px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .bar:nth-child(1) {
+        height: 9px;
+      }
+
+      .bar:nth-child(2) {
+        height: 16px;
+      }
+
+      .bar:nth-child(3) {
+        height: 12px;
+      }
+
+      .bar:nth-child(4) {
+        height: 18px;
+      }
+
+      .bar:nth-child(5) {
+        height: 7px;
+      }
+
+      .overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(24, 24, 27, 0.38);
+        padding: 24px;
+      }
+
+      .overlay.open {
+        display: flex;
+      }
+
+      .dialog {
+        display: grid;
+        width: min(980px, 100%);
+        max-height: calc(100vh - 48px);
+        grid-template-columns: minmax(0, 1fr) 320px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--background);
+        box-shadow: var(--shadow-md);
+      }
+
+      .dialog-main {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        gap: 16px;
+        overflow: auto;
+        padding: 22px;
+      }
+
+      .dialog-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .dialog-head h2 {
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      .dialog-head p {
+        margin-top: 4px;
+        color: var(--muted-foreground);
+        font-size: 13px;
+      }
+
+      .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .field {
+        display: grid;
+        gap: 6px;
+      }
+
+      .field label {
+        color: var(--foreground);
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      .field select,
+      .field input {
+        min-height: 40px;
+        border: 1px solid var(--input);
+        border-radius: var(--radius-sm);
+        background: var(--background);
+        color: var(--foreground);
+        padding: 0 10px;
+      }
+
+      .status-list {
+        display: grid;
+        gap: 8px;
+        margin-top: 2px;
+      }
+
+      .status-row {
+        display: flex;
+        min-height: 40px;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 0 10px;
+      }
+
+      .status-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 999px;
+        background: var(--border);
+      }
+
+      .status-row.done .status-dot {
+        background: var(--success);
+      }
+
+      .status-row.active .status-dot {
+        background: var(--primary);
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.14);
+      }
+
+      .status-row span {
+        color: var(--foreground);
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      .dialog-preview {
+        display: flex;
+        min-height: 0;
+        flex-direction: column;
+        gap: 12px;
+        border-left: 1px solid var(--border);
+        background: var(--accent);
+        padding: 18px;
+      }
+
+      .dialog-preview .phone {
+        width: 220px;
+        margin: 0 auto;
+      }
+
+      .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        border-top: 1px solid var(--border);
+        padding-top: 4px;
+      }
+
+      .success-box {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid rgba(5, 150, 105, 0.26);
+        border-radius: var(--radius);
+        background: var(--success-background);
+        padding: 10px 12px;
+        color: #065f46;
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      .success-box.show {
+        display: flex;
+      }
+
+      .spinner {
+        width: 15px;
+        height: 15px;
+        border: 2px solid rgba(79, 70, 229, 0.18);
+        border-top-color: var(--primary);
+        border-radius: 999px;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .svg-icon {
+        width: 17px;
+        height: 17px;
+        flex: 0 0 auto;
+      }
+
+      @media (max-width: 980px) {
+        .app {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          display: none;
+        }
+
+        .page {
+          height: auto;
+          min-height: 0;
+          grid-template-columns: 1fr;
+        }
+
+        .content {
+          border-right: 0;
+        }
+
+        .panel {
+          border-top: 1px solid var(--border);
+        }
+
+        .dialog {
+          grid-template-columns: 1fr;
+        }
+
+        .dialog-preview {
+          border-left: 0;
+          border-top: 1px solid var(--border);
+        }
+      }
+
+      @media (max-width: 620px) {
+        .topbar {
+          align-items: flex-start;
+          flex-direction: column;
+          padding: 12px 14px;
+        }
+
+        .toolbar {
+          width: 100%;
+          justify-content: space-between;
+        }
+
+        .page-shell {
+          padding: 16px;
+        }
+
+        .page-title {
+          flex-direction: column;
+        }
+
+        .settings-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .dialog-actions {
+          flex-direction: column-reverse;
+        }
+
+        .dialog-actions .button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" aria-label="Main navigation">
+        <div class="brand">
+          <div class="brand-mark">S</div>
+          <span>September</span>
+        </div>
+
+        <nav class="nav" aria-label="Sections">
+          <div class="nav-label">App</div>
+          <button class="nav-item" type="button">
+            <span class="nav-icon">T</span>
+            <span>Talk</span>
+          </button>
+          <button class="nav-item active" type="button">
+            <span class="nav-icon">N</span>
+            <span>Notes</span>
+          </button>
+          <button class="nav-item" type="button">
+            <span class="nav-icon">V</span>
+            <span>Voices</span>
+          </button>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div class="breadcrumbs" aria-label="Breadcrumbs">
+            <span>Talk</span>
+            <span>/</span>
+            <span>Morning routine</span>
+            <span>/</span>
+            <span class="crumb-current">Notes</span>
+          </div>
+          <div class="toolbar">
+            <button class="icon-button" type="button" aria-label="Speech settings" title="Speech settings">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 6v12m-4-8v4m8-6v8m4-5v2M4 9v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </button>
+            <button class="button" type="button">Present</button>
+          </div>
+        </header>
+
+        <div class="page">
+          <section class="content">
+            <div class="page-shell">
+              <div class="page-title">
+                <div>
+                  <h1>Morning routine</h1>
+                  <p>Space note ready for voice-over and reel export.</p>
+                </div>
+              </div>
+
+              <div class="editor-shell">
+                <div class="editor-header">
+                  <h2>Sunday message</h2>
+                  <button class="button" type="button">
+                    <svg class="svg-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M12 5v14m7-7H5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                    Add section
+                  </button>
+                </div>
+                <div class="editor-body">
+                  <p class="note-line note-heading">Sunday message</p>
+                  <p class="note-line">
+                    Good morning. I want to say thank you for being here with me today.
+                  </p>
+                  <p class="note-line">
+                    <span class="selection">I feel calm when we move slowly, and I want to enjoy breakfast outside.</span>
+                  </p>
+                  <p class="note-line">
+                    Later, please help me call Maya. I have a few things I want her to know.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <aside class="panel" aria-label="Notes panel">
+            <div class="panel-head">
+              <div>
+                <h2>Notes</h2>
+                <p>3 in this space</p>
+              </div>
+              <button class="icon-button" type="button" aria-label="New note" title="New note">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 5v14m7-7H5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </button>
+            </div>
+
+            <div class="callout">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 9v4m0 4h.01M10.3 4.6 2.9 18a2 2 0 0 0 1.7 3h14.8a2 2 0 0 0 1.7-3L13.7 4.6a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span>Reel export uses ElevenLabs voice timing.</span>
+            </div>
+
+            <div class="note-list">
+              <div class="note-card active">
+                <button class="note-button" type="button">
+                  <span class="note-name">Sunday message</span>
+                  <span class="note-preview">Good morning. I want to say thank you for being here with me today.</span>
+                  <span class="note-meta">Updated 3 minutes ago</span>
+                </button>
+                <div class="note-actions">
+                  <button class="icon-button" type="button" aria-label="Play voice-over" title="Play voice-over">
+                    <svg class="svg-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M11 5 6 9H3v6h3l5 4V5Zm4 4a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </button>
+                  <button class="icon-button" type="button" aria-label="Download audio" title="Download audio">
+                    <svg class="svg-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </button>
+                  <button class="button primary" id="openExport" type="button">
+                    <svg class="svg-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M4 5h16v14H4V5Zm4 4h8M8 13h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Export reel
+                  </button>
+                </div>
+              </div>
+
+              <div class="note-card">
+                <button class="note-button" type="button">
+                  <span class="note-name">Lunch choices</span>
+                  <span class="note-preview">Soup sounds good today. Please make the spoon smaller.</span>
+                  <span class="note-meta">Updated yesterday</span>
+                </button>
+              </div>
+
+              <div class="note-card">
+                <button class="note-button" type="button">
+                  <span class="note-name">Call Maya</span>
+                  <span class="note-preview">Tell her I loved the photos and want to hear about school.</span>
+                  <span class="note-meta">Updated 2 days ago</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="phone-preview-wrap">
+              <div class="phone" aria-label="Reel preview">
+                <div class="reel-bg"></div>
+                <div class="reel-caption">
+                  <span class="caption-line caption-spoken">I feel calm when we </span>
+                  <span class="caption-line caption-current">move</span>
+                  <span class="caption-line"> slowly</span>
+                </div>
+                <div class="phone-footer">
+                  <span>Sunday message</span>
+                  <div class="bars" aria-hidden="true">
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </main>
+    </div>
+
+    <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+      <div class="dialog">
+        <section class="dialog-main">
+          <div class="dialog-head">
+            <div>
+              <h2 id="dialogTitle">Export reel</h2>
+              <p>Sunday message · ElevenLabs voice · 9:16 MP4</p>
+            </div>
+            <button class="icon-button" id="closeExport" type="button" aria-label="Close" title="Close">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="settings-grid">
+            <div class="field">
+              <label for="voice">Voice</label>
+              <select id="voice">
+                <option>Rachel · ElevenLabs</option>
+                <option>Adam · ElevenLabs</option>
+                <option>Domi · ElevenLabs</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="length">Clip length</label>
+              <select id="length">
+                <option>One reel · 38 seconds</option>
+                <option>Split every 30 seconds</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="caption">Caption size</label>
+              <select id="caption">
+                <option>Large</option>
+                <option>Medium</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="filename">File name</label>
+              <input id="filename" value="sunday-message-reel.mp4" />
+            </div>
+          </div>
+
+          <div class="status-list" aria-live="polite">
+            <div class="status-row done" id="statusText">
+              <span class="status-dot"></span>
+              <span>Note text ready</span>
+            </div>
+            <div class="status-row" id="statusAudio">
+              <span class="status-dot"></span>
+              <span>Generate voice timing</span>
+            </div>
+            <div class="status-row" id="statusRender">
+              <span class="status-dot"></span>
+              <span>Render MP4</span>
+            </div>
+          </div>
+
+          <div class="success-box" id="successBox">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m5 13 4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span>Reel ready to download.</span>
+          </div>
+
+          <div class="dialog-actions">
+            <button class="button" id="cancelExport" type="button">Cancel</button>
+            <button class="button primary" id="renderButton" type="button">
+              <span id="renderIcon">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span id="renderLabel">Generate reel</span>
+            </button>
+          </div>
+        </section>
+
+        <aside class="dialog-preview">
+          <div class="phone" aria-label="Export preview">
+            <div class="reel-bg"></div>
+            <div class="reel-caption">
+              <span class="caption-line caption-spoken">thank you for being </span>
+              <span class="caption-line caption-current">here</span>
+              <span class="caption-line"> with me</span>
+            </div>
+            <div class="phone-footer">
+              <span>Sunday message</span>
+              <div class="bars" aria-hidden="true">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <script>
+      const overlay = document.getElementById("overlay");
+      const openExport = document.getElementById("openExport");
+      const closeExport = document.getElementById("closeExport");
+      const cancelExport = document.getElementById("cancelExport");
+      const renderButton = document.getElementById("renderButton");
+      const renderIcon = document.getElementById("renderIcon");
+      const renderLabel = document.getElementById("renderLabel");
+      const statusAudio = document.getElementById("statusAudio");
+      const statusRender = document.getElementById("statusRender");
+      const successBox = document.getElementById("successBox");
+
+      function resetDialog() {
+        statusAudio.className = "status-row";
+        statusRender.className = "status-row";
+        successBox.className = "success-box";
+        renderButton.disabled = false;
+        renderIcon.innerHTML =
+          '<svg class="svg-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>';
+        renderLabel.textContent = "Generate reel";
+      }
+
+      function openDialog() {
+        resetDialog();
+        overlay.classList.add("open");
+      }
+
+      function closeDialog() {
+        overlay.classList.remove("open");
+      }
+
+      openExport.addEventListener("click", openDialog);
+      closeExport.addEventListener("click", closeDialog);
+      cancelExport.addEventListener("click", closeDialog);
+
+      overlay.addEventListener("click", event => {
+        if (event.target === overlay) closeDialog();
+      });
+
+      renderButton.addEventListener("click", () => {
+        renderButton.disabled = true;
+        renderIcon.innerHTML = '<span class="spinner"></span>';
+        renderLabel.textContent = "Generating";
+        statusAudio.className = "status-row active";
+        statusRender.className = "status-row";
+        successBox.className = "success-box";
+
+        window.setTimeout(() => {
+          statusAudio.className = "status-row done";
+          statusRender.className = "status-row active";
+          renderLabel.textContent = "Rendering";
+        }, 900);
+
+        window.setTimeout(() => {
+          statusRender.className = "status-row done";
+          successBox.className = "success-box show";
+          renderButton.disabled = false;
+          renderIcon.innerHTML =
+            '<svg class="svg-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>';
+          renderLabel.textContent = "Download MP4";
+        }, 1900);
+      });
+    </script>
+  </body>
+</html>

@@ -9,7 +9,9 @@ export { AccountProvider, useAccount } from './account-provider';
 export {
   buildAccountSettingsExport,
   parseAccountSettingsExport,
+  resolveAccountSettingsImport,
   serializeAccountSettingsExport,
+  type AccountSettingsImportMode,
 } from './settings-transfer';
 export { useCurrentUser } from './use-current-user';
 export {
@@ -61,13 +63,25 @@ await updateAccount({ name: 'Guest' });
 Export and import account-backed settings with the settings transfer helpers:
 
 ```ts
-import { parseAccountSettingsExport, serializeAccountSettingsExport } from '@/packages/account';
+import {
+  parseAccountSettingsExport,
+  resolveAccountSettingsImport,
+  serializeAccountSettingsExport,
+} from '@/packages/account';
 
 const json = serializeAccountSettingsExport(account);
-const updates = parseAccountSettingsExport(json);
+const imported = parseAccountSettingsExport(json);
+const updates = resolveAccountSettingsImport({
+  current: account,
+  imported,
+  mode: 'merge',
+});
 
 await updateAccount(updates);
 ```
 
 The JSON contains account, provider, suggestion, transcription, and speech settings. It excludes
 internal account fields, but includes provider API keys when they are configured.
+
+Import can merge or overwrite. Merge keeps current fields that are not present in the JSON.
+Overwrite clears optional account fields and replaces nested settings with the JSON.

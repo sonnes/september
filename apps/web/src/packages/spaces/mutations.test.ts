@@ -29,7 +29,7 @@ const {
   mockSavedInsert,
   mockSavedUpdate,
   mockSavedDelete,
-  mockDeleteDocumentsForSpace,
+  mockDeleteNotesForSpace,
 } = vi.hoisted(() => {
   const mockSpaceInsert = vi.fn();
   const mockSpaceUpdate = vi.fn();
@@ -39,7 +39,7 @@ const {
   const mockSavedInsert = vi.fn();
   const mockSavedUpdate = vi.fn();
   const mockSavedDelete = vi.fn();
-  const mockDeleteDocumentsForSpace = vi.fn();
+  const mockDeleteNotesForSpace = vi.fn();
   return {
     mockSpaceInsert,
     mockSpaceUpdate,
@@ -49,7 +49,7 @@ const {
     mockSavedInsert,
     mockSavedUpdate,
     mockSavedDelete,
-    mockDeleteDocumentsForSpace,
+    mockDeleteNotesForSpace,
   };
 });
 
@@ -121,8 +121,8 @@ vi.mock('@/packages/usage', () => ({
   track: vi.fn(),
 }));
 
-vi.mock('@/packages/documents', () => ({
-  deleteDocumentsForSpace: mockDeleteDocumentsForSpace,
+vi.mock('@/packages/notes', () => ({
+  deleteNotesForSpace: mockDeleteNotesForSpace,
 }));
 
 vi.mock('uuid', () => ({
@@ -249,7 +249,7 @@ describe('deleteSpace', () => {
     mockSpaceDelete.mockResolvedValue(undefined);
     mockMessageDelete.mockResolvedValue(undefined);
     mockSavedDelete.mockResolvedValue(undefined);
-    mockDeleteDocumentsForSpace.mockResolvedValue(undefined);
+    mockDeleteNotesForSpace.mockResolvedValue(undefined);
   });
 
   it('deletes the space and all its messages, saved phrases, and notes', async () => {
@@ -267,7 +267,7 @@ describe('deleteSpace', () => {
     expect(deletedIds).toEqual(['msg-1', 'msg-2']);
     expect(mockSavedDelete).toHaveBeenCalledTimes(1);
     expect(mockSavedDelete).toHaveBeenCalledWith('ph-1');
-    expect(mockDeleteDocumentsForSpace).toHaveBeenCalledWith('space-1');
+    expect(mockDeleteNotesForSpace).toHaveBeenCalledWith('space-1');
     expect(mockSpaceDelete).toHaveBeenCalledWith('space-1');
   });
 

@@ -1,11 +1,11 @@
 import * as React from 'react';
 import type { ComponentProps } from 'react';
 
-import { Link } from '@tanstack/react-router';
-
 import { MagnifyingGlassIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { Link } from '@tanstack/react-router';
 import { toast } from 'sonner';
 
+import { cn, entitySlug, timeAgo } from '@/packages/shared';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,8 +18,6 @@ import {
 } from '@/packages/ui/components/alert-dialog';
 import { Button } from '@/packages/ui/components/button';
 import { Input } from '@/packages/ui/components/input';
-
-import { cn, timeAgo } from '@/packages/shared';
 
 import { deleteSpace } from '../mutations';
 import { Space } from '../types';
@@ -131,7 +129,11 @@ export function SpaceList({
               key={space.id}
               className="group relative flex items-center justify-between border-b border-zinc-200 hover:bg-zinc-50 transition-colors"
             >
-              <Link to="/talk/$id" params={{ id: space.id }} className="flex-1 py-3 px-1 min-w-0">
+              <Link
+                to="/talk/$spaceSlug"
+                params={{ spaceSlug: entitySlug(space.title, space.id, 'space') }}
+                className="flex-1 py-3 px-1 min-w-0"
+              >
                 <div className="text-base font-medium text-zinc-900 mb-1 truncate">
                   {space.title || 'Untitled space'}
                 </div>
@@ -161,8 +163,8 @@ export function SpaceList({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the space "{spaceToDelete?.title || 'Untitled space'}" and
-              all its messages. This action cannot be undone.
+              This will permanently delete the space "{spaceToDelete?.title || 'Untitled space'}"
+              and all its messages. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -6,12 +6,12 @@ Local-first spaces and messaging for September. Backed by TanStack DB (IndexedDB
 
 ### Components
 
-| Export               | Description                                                                                                                |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `SpaceList`          | Renders a searchable list of spaces with delete confirm dialog                                                             |
-| `MessageList`        | Renders messages in a space; handles audio playback                                                                        |
-| `EditableSpaceTitle` | Inline editable title with save/revert behaviour                                                                           |
-| `SpaceSwitch`        | Segmented switch (above the editor) to jump between spaces; trailing button creates a new space. Navigates to `/talk/$id`. |
+| Export               | Description                                                                                                                       |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `SpaceList`          | Renders a searchable list of spaces with delete confirm dialog                                                                    |
+| `MessageList`        | Renders messages in a space; handles audio playback                                                                               |
+| `EditableSpaceTitle` | Inline editable title with save/revert behaviour                                                                                  |
+| `SpaceSwitch`        | Segmented switch (above the editor) to jump between spaces; trailing button creates a new space. Navigates to `/talk/:spaceSlug`. |
 
 ### Live-query hooks
 
@@ -95,5 +95,5 @@ default. See `docs/concepts/saved-phrases.md`.
 | `messageCollection`     | `app-messages`      | `id` (uuid) |
 | `savedPhraseCollection` | `app-saved-phrases` | `id` (uuid) |
 
-Space notes live in `@/packages/documents` as `documentCollection` rows with
+Space notes live in `@/packages/notes` as `noteCollection` rows with
 `space_id` set. `deleteSpace` also removes those scoped note rows.
