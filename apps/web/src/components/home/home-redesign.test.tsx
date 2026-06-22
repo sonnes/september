@@ -128,6 +128,8 @@ describe('home redesign sections', () => {
     expect(container.textContent).toContain('Conversation spaces');
     expect(container.textContent).toContain('One-tap phrases');
     expect(container.textContent).toContain('Speak out loud');
+    expect(container.textContent).toContain('Notes for longer thoughts');
+    expect(container.textContent).toContain('Reels from notes');
   });
 
   it('uses app-shaped skeleton previews for each feature card', () => {
@@ -136,8 +138,10 @@ describe('home redesign sections', () => {
     expect(container.querySelector('[data-feature-preview="spaces"]')).toBeTruthy();
     expect(container.querySelector('[data-feature-preview="phrases"]')).toBeTruthy();
     expect(container.querySelector('[data-feature-preview="speak"]')).toBeTruthy();
+    expect(container.querySelector('[data-feature-preview="notes"]')).toBeTruthy();
+    expect(container.querySelector('[data-feature-preview="reels"]')).toBeTruthy();
     const previews = [...container.querySelectorAll('[data-feature-preview]')];
-    expect(previews).toHaveLength(3);
+    expect(previews).toHaveLength(5);
     expect(previews.every(preview => preview.className.includes('h-56'))).toBe(true);
     const speakControls = container.querySelector('[data-feature-preview-controls="speak"]');
     expect(speakControls).toBeTruthy();

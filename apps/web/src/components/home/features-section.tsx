@@ -1,4 +1,4 @@
-import { MessageSquare, Mic, Rows3 } from 'lucide-react';
+import { FileText, Film, MessageSquare, Mic, Rows3 } from 'lucide-react';
 
 import { Card, CardContent } from '@/packages/ui/components/card';
 import { Skeleton } from '@/packages/ui/components/skeleton';
@@ -6,7 +6,7 @@ import { Skeleton } from '@/packages/ui/components/skeleton';
 const features = [
   {
     title: 'Conversation spaces',
-    body: 'Keep daily care, family, appointments, and work in separate places so the right words are close by.',
+    body: 'Keep family, projects, appointments, and work in separate places so the right words are close by.',
     icon: MessageSquare,
     accent: 'border-t-sky-600',
     panel: 'bg-sky-50',
@@ -28,6 +28,22 @@ const features = [
     panel: 'bg-emerald-50',
     preview: 'speak',
   },
+  {
+    title: 'Notes for longer thoughts',
+    body: 'Write prepared text inside a space, then use the same voice when it is time to share.',
+    icon: FileText,
+    accent: 'border-t-violet-600',
+    panel: 'bg-violet-50',
+    preview: 'notes',
+  },
+  {
+    title: 'Reels from notes',
+    body: 'Turn a note into a short captioned video you can download and share.',
+    icon: Film,
+    accent: 'border-t-rose-600',
+    panel: 'bg-rose-50',
+    preview: 'reels',
+  },
 ] as const;
 
 export function FeaturesSection() {
@@ -45,7 +61,7 @@ export function FeaturesSection() {
           </p>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {features.map(feature => (
             <Card key={feature.title} className={`overflow-hidden border-t-4 ${feature.accent}`}>
               <CardContent className="grid gap-5 px-6">
@@ -115,6 +131,45 @@ function FeaturePreview({
             <Skeleton className="h-10 w-16 rounded-lg bg-sky-100 ring-1 ring-sky-200" />
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (preview === 'notes') {
+    return (
+      <div
+        data-feature-preview="notes"
+        className={`grid h-56 content-start gap-3 overflow-hidden rounded-xl p-3 ${panel}`}
+        aria-hidden="true"
+      >
+        <div className="rounded-xl border bg-white p-3">
+          <Skeleton className="h-4 w-28 bg-zinc-200" />
+          <Skeleton className="mt-3 h-4 w-full bg-zinc-100" />
+          <Skeleton className="mt-2 h-4 w-5/6 bg-zinc-100" />
+          <Skeleton className="mt-2 h-4 w-2/3 bg-zinc-100" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-9 w-24 rounded-full bg-white/90 ring-1 ring-violet-200" />
+          <Skeleton className="h-9 w-28 rounded-full bg-white/80" />
+        </div>
+      </div>
+    );
+  }
+
+  if (preview === 'reels') {
+    return (
+      <div
+        data-feature-preview="reels"
+        className={`grid h-56 grid-cols-[minmax(0,1fr)_4.5rem] gap-3 overflow-hidden rounded-xl p-3 ${panel}`}
+        aria-hidden="true"
+      >
+        <div className="grid content-start gap-3">
+          <Skeleton className="h-4 w-28 bg-rose-200" />
+          <Skeleton className="h-2 w-full rounded-full bg-white/90" />
+          <Skeleton className="h-10 rounded-lg bg-white/90 ring-1 ring-rose-200" />
+          <Skeleton className="h-10 w-28 rounded-lg bg-indigo-600" />
+        </div>
+        <div className="aspect-[9/16] self-start rounded-lg bg-zinc-950 ring-1 ring-rose-200" />
       </div>
     );
   }

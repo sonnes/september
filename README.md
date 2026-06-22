@@ -26,6 +26,14 @@ In every conversation, September tries to predict the next words or phrases you 
 
 Additionally, in every conversation, you can provide additional context in the form of notes, documents, images, videos, or links. September indexes all this information to "speak your mind" in your conversations.
 
+### Notes
+
+Notes let you prepare longer text inside a conversation space. You can play the note aloud or download the generated audio.
+
+### Reels
+
+Reels turn note text into a captioned video you can download and share.
+
 ## Getting Started
 
 ### Prerequisites
