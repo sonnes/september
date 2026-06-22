@@ -70,10 +70,10 @@ The application will be available at `http://localhost:3009`.
 ## Usage
 
 1. **Start**: Open the app — it runs locally with no sign-up required.
-2. **Talk**: Use the main interface to type or use the accessible keyboard to communicate.
-3. **AI Suggestions**: As you type, AI-powered suggestions will appear. Select them to speed up your communication.
-4. **Voice Settings**: Configure your voice, speed, and pitch in the settings. You can also clone your own voice using the Voice Cloning tool.
-5. **Contextual Info**: Upload documents or notes in the settings to help the AI understand your context better.
+2. **Talk**: Create a conversation space, build a message from phrases or text, then tap Speak.
+3. **Notes**: Write longer prepared text inside a space, then play voice-over or export a reel.
+4. **Help**: Open `/help` for a step-by-step Talk and Notes guide with screenshots.
+5. **Voice Settings**: Configure your voice, speed, and pitch in settings. You can also clone your own voice using the voice cloning tool.
 
 ## Project Structure
 
