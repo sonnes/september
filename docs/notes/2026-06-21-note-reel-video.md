@@ -9,25 +9,30 @@ Records decisions where the research left choices open, deviations, and reviewer
 
 ## Decisions / resolutions
 
-- **Renderer is FFmpeg plus `sharp` for MVP.** The research recommended Remotion for richer
-  React-rendered visuals, but the first shipped slice rasterizes SVG caption frames with `sharp`
-  and encodes those PNG frames with FFmpeg. This keeps the change smaller, avoids a
-  video-rendering framework and license decision, and still produces a real 1080x1920 MP4.
+- **Renderer switched to `ffmpeg.wasm`.** The native FFmpeg + `sharp` checkpoint was committed as
+  `9cbad5f`, then the working tree moved to browser-only rendering. The current slice rasterizes
+  caption frames with Canvas and muxes those PNG frames with the generated audio in `ffmpeg.wasm`.
+  This keeps note text and generated audio in the browser during export.
 
 - **TTS stays browser-side.** The app uses the existing ElevenLabs speech provider, so the user's API
-  key remains in the local account path. The server render receives only audio data, caption timing,
-  and duration.
+  key remains in the local account path. The export no longer calls a server render function.
 
 - **ElevenLabs-only guard.** Export is disabled unless the selected speech provider is ElevenLabs.
   Other providers can still play or download audio, but they do not provide the character timing
   needed for synced captions.
 
-- **No persistent server storage.** The renderer writes temporary audio, PNG frame, and MP4 files,
-  then removes the temp directory after returning a base64 MP4 to the browser.
+- **Export UI is inline.** The first UI used a dialog, but the flow now expands inside the selected
+  note card. This keeps the note list context visible during slow browser-side rendering and avoids
+  a modal focus trap for a task that behaves more like a tool panel.
+
+- **Wasm core loads lazily.** `@ffmpeg/ffmpeg` and `@ffmpeg/util` load only when the user exports a
+  reel. The core files are fetched through `toBlobURL` from jsDelivr for this prototype pass.
+
+- **No persistent server storage.** The renderer writes audio, PNG frame, and MP4 files only into
+  `ffmpeg.wasm`'s in-browser virtual filesystem, then deletes them after creating the download blob.
 
 ## Verification status
 
-- `pnpm test` passes: 54 files, 471 tests.
+- `pnpm test` passes: 54 files, 470 tests.
 - `pnpm lint` passes with existing warnings.
 - `pnpm build` passes.
-- Local FFmpeg smoke rendered a tiny PNG-frame MP4 successfully.

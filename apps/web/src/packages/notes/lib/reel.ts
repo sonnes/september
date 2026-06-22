@@ -27,6 +27,10 @@ function stripMarkdownFence(markdown: string): string {
   );
 }
 
+export function audioDataUri(blob: string): string {
+  return blob.startsWith('data:') ? blob : `data:audio/mp3;base64,${blob}`;
+}
+
 export function markdownToVoiceText(markdown: string): string {
   return stripMarkdownFence(markdown.replace(/\\n/g, '\n'))
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')

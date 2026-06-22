@@ -34,26 +34,24 @@ preview, but it cannot render frames and mux MP3 into MP4.
 
 ## Implemented MVP
 
-The first implementation uses FFmpeg, not Remotion. It keeps the browser-side
-ElevenLabs generation and timing pipeline from this research, then sends the
-audio data URI, caption windows, and duration to a TanStack Start server
-function. The server function writes temporary audio/caption files, renders a
-1080x1920 MP4, returns a base64 MP4, and deletes the temporary files. Local
-FFmpeg did not include text/subtitle filters, so the implementation rasterizes
-SVG caption frames with `sharp` and asks FFmpeg to encode those PNG frames with
-the audio.
+The implementation uses `ffmpeg.wasm`, not Remotion. It keeps the browser-side
+ElevenLabs generation and timing pipeline from this research, renders 1080x1920
+caption frames with Canvas, then writes those PNG frames plus the audio into
+`ffmpeg.wasm`'s virtual filesystem to produce a downloadable MP4.
 
 This deliberately chooses the smaller path for the first product slice:
 
 - no Remotion dependency
 - no Remotion license decision before validation
+- no note/audio upload to the app server
 - real MP4 download from the app
 - simpler tests around caption timing and FFmpeg arguments
 
 The tradeoff: visual styling is simpler than a React-rendered Remotion
-composition. Remotion is still the better follow-up if September needs template
-variants, richer animation, background media, or closer parity with
-`ReelTextViewer`.
+composition, and browser-side encoding is slower than native FFmpeg. Remotion or
+server-native FFmpeg is still the better follow-up if September needs template
+variants, richer animation, background media, faster exports, or closer parity
+with `ReelTextViewer`.
 
 ## External findings
 
@@ -249,10 +247,11 @@ is more fragile than this feature deserves.
 Simple if captions are basic SRT/text overlays. Poor fit for polished, animated,
 React-styled captions. Harder to match app preview.
 
-Chosen for the MVP because it gives a real downloadable MP4 without adding a
-video-rendering framework. The implementation uses `sharp` to rasterize caption
-frames first, so it does not depend on FFmpeg builds that include `drawtext`,
-`subtitles`, or `ass` filters.
+Chosen for the MVP through `ffmpeg.wasm` because it gives a real downloadable
+MP4 without adding a video-rendering framework or sending audio to the app
+server. The implementation rasterizes caption frames in Canvas first, so it does
+not depend on FFmpeg builds that include `drawtext`, `subtitles`, or `ass`
+filters.
 
 ## MVP scope
 

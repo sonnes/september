@@ -14,9 +14,6 @@ const mockSpeak = vi.fn();
 const mockStop = vi.fn();
 const mockCreateNote = vi.fn();
 const mockGenerateSpeech = vi.fn();
-const { mockRenderReel } = vi.hoisted(() => ({
-  mockRenderReel: vi.fn(),
-}));
 
 let mockNotes: Note[] = [];
 
@@ -37,21 +34,12 @@ vi.mock('@/packages/speech', () => ({
   useSpeech: () => ({ generateSpeech: mockGenerateSpeech }),
 }));
 
+vi.mock('@/packages/audio', () => ({
+  ReelTextViewer: ({ text }: { text: string }) => <div data-testid="reel-preview">{text}</div>,
+}));
+
 vi.mock('@/packages/ai', () => ({
   useAISettings: () => ({ speechConfig: { provider: 'elevenlabs' } }),
-}));
-
-vi.mock('@tanstack/react-start', () => ({
-  createServerFn: () => ({
-    validator: () => ({
-      handler: () => mockRenderReel,
-    }),
-  }),
-  useServerFn: () => mockRenderReel,
-}));
-
-vi.mock('@tanstack/react-start/server', () => ({
-  setResponseHeaders: vi.fn(),
 }));
 
 vi.mock('../mutations', () => ({
@@ -76,7 +64,6 @@ beforeEach(() => {
   mockStop.mockReset();
   mockCreateNote.mockReset();
   mockGenerateSpeech.mockReset();
-  mockRenderReel.mockReset();
   mockNotes = [
     {
       id: 'note-1',
@@ -129,6 +116,29 @@ describe('SpaceNotes', () => {
     expect(selectedCard?.textContent).not.toContain('Generate voice-over');
     expect(selectedCard?.textContent).not.toContain('Download audio');
     expect(selectedCard?.textContent).not.toContain('Export reel');
+  });
+
+  it('expands reel export inline inside the selected note card', () => {
+    render(<SpaceNotesPanel spaceId="space-1" />);
+
+    const selectedCard = container
+      .querySelector('[aria-current="true"]')
+      ?.closest('[data-note-card]');
+    const exportButton = selectedCard?.querySelector(
+      'button[aria-label="Export reel"]'
+    ) as HTMLButtonElement;
+
+    expect(selectedCard?.textContent).not.toContain('Reel export');
+    expect(exportButton.getAttribute('aria-expanded')).toBe('false');
+
+    act(() => {
+      exportButton.click();
+    });
+
+    expect(exportButton.getAttribute('aria-expanded')).toBe('true');
+    expect(selectedCard?.textContent).toContain('Reel export');
+    expect(selectedCard?.textContent).toContain('Generate reel');
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull();
   });
 
   it('speaks the selected note from the sidebar action', () => {

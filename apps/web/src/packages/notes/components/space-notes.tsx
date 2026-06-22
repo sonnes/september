@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Download, FileText, Loader2, Plus, Square, Volume2 } from 'lucide-react';
+import { Download, FileText, Film, Loader2, Plus, Square, Volume2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { cn, timeAgo } from '@/packages/shared';
@@ -13,12 +13,12 @@ import { LoadingState } from '@/packages/ui/components/loading-state';
 
 import { useNotes } from '../hooks/use-notes';
 import { useSlideVoiceOver } from '../hooks/use-slide-voice-over';
-import { markdownToVoiceText } from '../lib/reel';
+import { audioDataUri, markdownToVoiceText } from '../lib/reel';
 import { createNote as createNoteMutation } from '../mutations';
 import type { Note } from '../types';
 import { EditableNoteTitle } from './editable-note-title';
-import { NoteReelExportDialog } from './note-reel-export-dialog';
 import { NoteEditor } from './note-editor';
+import { NoteReelExportPanel } from './note-reel-export-panel';
 
 type SpaceNotesProps = {
   spaceId: string;
@@ -41,10 +41,6 @@ function voiceFileName(noteName?: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
   return `${base || 'note'}-voice-over.mp3`;
-}
-
-function downloadableAudioSrc(blob: string): string {
-  return blob.startsWith('data:') ? blob : `data:audio/mp3;base64,${blob}`;
 }
 
 function useNoteSelection({
@@ -175,6 +171,7 @@ export function SpaceNotesPanel({
   const { generateSpeech } = useSpeech();
   const { speak, stop, isGenerating, isPlaying } = useSlideVoiceOver();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [expandedReelNoteId, setExpandedReelNoteId] = useState<string | null>(null);
   const { selectedNote, setSelectedId } = useNoteSelection({
     notes,
     selectedId,
@@ -182,6 +179,7 @@ export function SpaceNotesPanel({
   });
   const { createNote, isCreating } = useCreateSpaceNote(spaceId, setSelectedId);
   const voiceText = markdownToVoiceText(selectedNote?.content ?? '');
+  const isReelPanelOpen = selectedNote?.id === expandedReelNoteId;
 
   const handleVoiceOver = useCallback(() => {
     if (isPlaying || isGenerating) {
@@ -209,7 +207,7 @@ export function SpaceNotesPanel({
       }
 
       const link = document.createElement('a');
-      link.href = downloadableAudioSrc(response.blob);
+      link.href = audioDataUri(response.blob);
       link.download = voiceFileName(selectedNote.name);
       document.body.appendChild(link);
       link.click();
@@ -280,52 +278,75 @@ export function SpaceNotesPanel({
                 </button>
 
                 {isSelected && (
-                  <div className="mt-3 flex items-center gap-2">
-                    <Button
-                      type="button"
-                      size="icon-lg"
-                      onClick={handleVoiceOver}
-                      disabled={!voiceText}
-                      variant={isPlaying || isGenerating ? 'outline' : 'default'}
-                      aria-label={
-                        isGenerating
-                          ? 'Generating voice-over'
-                          : isPlaying
-                            ? 'Stop voice-over'
-                            : 'Generate voice-over'
-                      }
-                      title={
-                        isGenerating
-                          ? 'Generating voice-over'
-                          : isPlaying
-                            ? 'Stop voice-over'
-                            : 'Generate voice-over'
-                      }
-                    >
-                      {isGenerating ? (
-                        <Loader2 className="size-4 animate-spin" aria-hidden />
-                      ) : isPlaying ? (
-                        <Square className="size-4" aria-hidden />
-                      ) : (
-                        <Volume2 className="size-4" aria-hidden />
-                      )}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="icon-lg"
-                      variant="outline"
-                      onClick={handleDownloadVoiceOver}
-                      disabled={!voiceText || isDownloading}
-                      aria-label={isDownloading ? 'Preparing audio' : 'Download audio'}
-                      title={isDownloading ? 'Preparing audio' : 'Download audio'}
-                    >
-                      {isDownloading ? (
-                        <Loader2 className="size-4 animate-spin" aria-hidden />
-                      ) : (
-                        <Download className="size-4" aria-hidden />
-                      )}
-                    </Button>
-                    <NoteReelExportDialog note={selectedNote} voiceText={voiceText} />
+                  <div className="mt-3">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        size="icon-lg"
+                        onClick={handleVoiceOver}
+                        disabled={!voiceText}
+                        variant={isPlaying || isGenerating ? 'outline' : 'default'}
+                        aria-label={
+                          isGenerating
+                            ? 'Generating voice-over'
+                            : isPlaying
+                              ? 'Stop voice-over'
+                              : 'Generate voice-over'
+                        }
+                        title={
+                          isGenerating
+                            ? 'Generating voice-over'
+                            : isPlaying
+                              ? 'Stop voice-over'
+                              : 'Generate voice-over'
+                        }
+                      >
+                        {isGenerating ? (
+                          <Loader2 className="size-4 animate-spin" aria-hidden />
+                        ) : isPlaying ? (
+                          <Square className="size-4" aria-hidden />
+                        ) : (
+                          <Volume2 className="size-4" aria-hidden />
+                        )}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon-lg"
+                        variant="outline"
+                        onClick={handleDownloadVoiceOver}
+                        disabled={!voiceText || isDownloading}
+                        aria-label={isDownloading ? 'Preparing audio' : 'Download audio'}
+                        title={isDownloading ? 'Preparing audio' : 'Download audio'}
+                      >
+                        {isDownloading ? (
+                          <Loader2 className="size-4 animate-spin" aria-hidden />
+                        ) : (
+                          <Download className="size-4" aria-hidden />
+                        )}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon-lg"
+                        variant={isReelPanelOpen ? 'default' : 'outline'}
+                        disabled={!voiceText}
+                        aria-label="Export reel"
+                        title="Export reel"
+                        aria-expanded={isReelPanelOpen}
+                        aria-controls={`note-reel-panel-${note.id}`}
+                        onClick={() =>
+                          setExpandedReelNoteId(current => (current === note.id ? null : note.id))
+                        }
+                      >
+                        <Film className="size-4" aria-hidden />
+                      </Button>
+                    </div>
+                    {isReelPanelOpen && (
+                      <NoteReelExportPanel
+                        id={`note-reel-panel-${note.id}`}
+                        note={selectedNote}
+                        voiceText={voiceText}
+                      />
+                    )}
                   </div>
                 )}
               </div>

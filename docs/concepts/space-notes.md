@@ -18,16 +18,15 @@ space. `/notes` lists all notes across spaces. Notes mode uses
 
 The same rich editor powers global notes and space notes. In note mode, the
 editor autosaves note content and drops the document action footer. The note
-selector lives in the app right panel. Voice-over and audio download actions
-live there for the selected note.
+selector lives in the app right panel. Voice-over, audio download, and reel
+export actions live there for the selected note.
 Voice-over uses the same speech settings as Talk, but it does not create a chat
 message or append text to the transcript.
 
 The selected note can also export a vertical MP4 reel. Reel export uses the
 configured ElevenLabs voice because the MP4 captions need character-level
-timing. The browser generates the note audio and timing, then a TanStack Start
-server function renders a 1080x1920 MP4. The renderer rasterizes SVG caption
-frames with `sharp`, encodes those PNG frames with FFmpeg, and writes temporary
-files only. Note content and audio are not stored on the server.
+timing. The browser generates the note audio and timing, renders 1080x1920
+caption frames with Canvas, and muxes those frames with the audio through
+`ffmpeg.wasm`. Note content and audio stay in the browser during export.
 
 Deleting a space cascades its messages, saved phrases, and scoped notes.

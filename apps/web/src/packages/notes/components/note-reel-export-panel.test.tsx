@@ -6,13 +6,13 @@ import { type Root, createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Note } from '../types';
-import { NoteReelExportDialog } from './note-reel-export-dialog';
+import { NoteReelExportPanel } from './note-reel-export-panel';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
   generateSpeech: vi.fn(),
-  renderReel: vi.fn(),
+  renderWasmReel: vi.fn(),
   speechConfig: { provider: 'elevenlabs' },
 }));
 
@@ -24,12 +24,8 @@ vi.mock('@/packages/ai', () => ({
   useAISettings: () => ({ speechConfig: mocks.speechConfig }),
 }));
 
-vi.mock('@tanstack/react-start', () => ({
-  useServerFn: () => mocks.renderReel,
-}));
-
-vi.mock('../lib/reel-export.functions', () => ({
-  renderNoteReelVideoFn: vi.fn(),
+vi.mock('../lib/reel-renderer.browser', () => ({
+  renderNoteReelVideoWithWasm: mocks.renderWasmReel,
 }));
 
 vi.mock('@/packages/audio', () => ({
@@ -48,6 +44,8 @@ class MockAudio {
 }
 
 vi.stubGlobal('Audio', MockAudio);
+URL.createObjectURL = vi.fn(() => 'blob:note-reel');
+URL.revokeObjectURL = vi.fn();
 
 const note: Note = {
   id: 'note-1',
@@ -69,7 +67,7 @@ let root: Root;
 
 beforeEach(() => {
   mocks.generateSpeech.mockReset();
-  mocks.renderReel.mockReset();
+  mocks.renderWasmReel.mockReset();
   mocks.speechConfig.provider = 'elevenlabs';
   container = document.createElement('div');
   document.body.appendChild(container);
@@ -86,28 +84,18 @@ function render(ui: React.ReactElement) {
   act(() => root.render(ui));
 }
 
-function bodyButton(label: string): HTMLButtonElement {
-  const button = document.body.querySelector(`button[aria-label="${label}"], button`);
-  if (!button) throw new Error(`Button not found: ${label}`);
-  return button as HTMLButtonElement;
-}
-
-describe('NoteReelExportDialog', () => {
+describe('NoteReelExportPanel', () => {
   it('generates speech timing, renders a video, and exposes an MP4 download', async () => {
     mocks.generateSpeech.mockResolvedValue({
       blob: 'data:audio/mp3;base64,QUJD',
       alignment,
     });
-    mocks.renderReel.mockResolvedValue({
-      base64: 'bXA0',
+    mocks.renderWasmReel.mockResolvedValue({
+      blob: new Blob(['mp4'], { type: 'video/mp4' }),
       contentType: 'video/mp4',
     });
 
-    render(<NoteReelExportDialog note={note} voiceText="Hello world" />);
-
-    act(() => {
-      bodyButton('Export reel').click();
-    });
+    render(<NoteReelExportPanel id="note-reel-panel-note-1" note={note} voiceText="Hello world" />);
 
     await act(async () => {
       const generateButton = [...document.body.querySelectorAll('button')].find(
@@ -119,21 +107,19 @@ describe('NoteReelExportDialog', () => {
     });
 
     expect(mocks.generateSpeech).toHaveBeenCalledWith('Hello world');
-    expect(mocks.renderReel).toHaveBeenCalledWith({
-      data: {
-        audioDataUri: 'data:audio/mp3;base64,QUJD',
-        durationSeconds: 1.25,
-        captions: [
-          {
-            startTime: 0,
-            endTime: 1.1,
-            words: [
-              { text: 'Hello', startTime: 0, endTime: 0.5 },
-              { text: 'world', startTime: 0.6, endTime: 1.1 },
-            ],
-          },
-        ],
-      },
+    expect(mocks.renderWasmReel).toHaveBeenCalledWith({
+      audioDataUri: 'data:audio/mp3;base64,QUJD',
+      durationSeconds: 1.25,
+      captions: [
+        {
+          startTime: 0,
+          endTime: 1.1,
+          words: [
+            { text: 'Hello', startTime: 0, endTime: 0.5 },
+            { text: 'world', startTime: 0.6, endTime: 1.1 },
+          ],
+        },
+      ],
     });
     expect(document.body.querySelector('a[download="daily-note-reel.mp4"]')).toBeTruthy();
   });
