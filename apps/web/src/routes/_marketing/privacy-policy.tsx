@@ -24,32 +24,26 @@ function PrivacyPolicy() {
       </header>
 
       <Callout tone="info" title="How your data is stored" className="mb-8">
-        <div className="mt-1 grid gap-4 sm:grid-cols-2">
-          <div>
-            <p className="font-medium text-zinc-900">Local storage (browser)</p>
-            <ul className="mt-1 list-disc space-y-1 pl-5 text-zinc-700">
-              <li>Messages and conversations</li>
-              <li>Account settings and preferences</li>
-              <li>Audio recordings and voice data</li>
-              <li>AI instructions and training corpus</li>
-              <li>Speech synthesis settings</li>
-            </ul>
-          </div>
-          <div>
-            <p className="font-medium text-zinc-900">External services</p>
-            <ul className="mt-1 list-disc space-y-1 pl-5 text-zinc-700">
-              <li>
-                <strong>ElevenLabs:</strong> Text for voice synthesis
-              </li>
-              <li>
-                <strong>Google Gemini:</strong> Text/audio for AI features
-              </li>
-            </ul>
-          </div>
-        </div>
+        <ul className="mt-1 list-disc space-y-1 pl-5">
+          <li>
+            <strong>Local storage:</strong> Messages, settings, recordings, AI instructions, and
+            speech preferences stay in your browser.
+          </li>
+          <li>
+            <strong>External services:</strong> ElevenLabs receives text for voice synthesis;
+            Google Gemini receives text, audio, images, or documents for AI features.
+          </li>
+          <li>
+            <strong>API keys:</strong> Keys you provide are stored locally and can be changed or
+            revoked in settings.
+          </li>
+          <li>
+            <strong>Control:</strong> You can clear browser data to delete local information.
+          </li>
+        </ul>
       </Callout>
 
-      <article className="space-y-8 text-zinc-700 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-zinc-900 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-zinc-900 [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6 [&_p]:leading-relaxed [&_section]:space-y-3">
+      <article className="space-y-8 text-sm text-zinc-700 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-zinc-900 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-zinc-900 [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6 [&_p]:leading-relaxed [&_section]:space-y-3">
         <section>
           <h2>1. Introduction</h2>
           <p>

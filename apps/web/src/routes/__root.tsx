@@ -72,8 +72,13 @@ export const Route = createRootRoute({
       { property: 'og:site_name', content: 'September - Communication Assistant' },
       { property: 'og:locale', content: 'en-US' },
       { property: 'og:type', content: 'website' },
+      { property: 'og:image', content: 'https://september.to/og.png' },
+      { property: 'og:image:width', content: '1200' },
+      { property: 'og:image:height', content: '630' },
+      { property: 'og:image:alt', content: 'September communication assistant preview' },
       { name: 'twitter:title', content: 'September - Communication Assistant' },
       { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:image', content: 'https://september.to/og.png' },
       { name: 'robots', content: 'index, follow' },
     ],
     links: [

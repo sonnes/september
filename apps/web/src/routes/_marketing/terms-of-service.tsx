@@ -43,7 +43,7 @@ function TermsOfService() {
         </ul>
       </Callout>
 
-      <article className="space-y-8 text-zinc-700 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-zinc-900 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-zinc-900 [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6 [&_p]:leading-relaxed [&_section]:space-y-3">
+      <article className="space-y-8 text-sm text-zinc-700 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-zinc-900 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-zinc-900 [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6 [&_p]:leading-relaxed [&_section]:space-y-3">
         <section>
           <h2>1. Acceptance of terms</h2>
           <p>

@@ -120,6 +120,7 @@ september/
 - **AI**: Google Gemini API / OpenRouter, Vercel AI SDK
 - **Voice**: ElevenLabs for voice synthesis and cloning
 - **Forms**: React Hook Form + Zod validation
+- **Social cards**: JSX rendered to Open Graph PNGs with Satori and Sharp
 
 ## Development Guidelines
 
