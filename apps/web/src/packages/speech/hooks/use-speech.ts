@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 
 import { useAccount } from '@/packages/account';
 import { useAISettings } from '@/packages/ai';
-import { PcmStreamPlayer } from '@/packages/audio';
+import { PcmStreamPlayer, useAudioPlayer } from '@/packages/audio';
 import { track } from '@/packages/usage';
 import type { AIProvider, ElevenLabsSettings } from '@/packages/shared';
 import type { Voice } from '@/packages/shared';
@@ -66,6 +66,7 @@ export interface UseSpeechReturn {
 export function useSpeech(): UseSpeechReturn {
   const { user } = useAccount();
   const { speechConfig, getProviderConfig } = useAISettings();
+  const { selectedOutputDeviceId } = useAudioPlayer();
 
   const registry = useMemo(() => {
     const registry = new Map<string, SpeechEngine>();
@@ -172,7 +173,8 @@ export function useSpeech(): UseSpeechReturn {
 
       // The hook owns live playback because it knows the PCM sample rate.
       const player = new PcmStreamPlayer(
-        sampleRateForFormat(settings.output_format || 'pcm_22050')
+        sampleRateForFormat(settings.output_format || 'pcm_22050'),
+        selectedOutputDeviceId ?? undefined
       );
       const hooks: SpeechStreamHooks = { onAudioChunk: int16 => player.push(int16) };
 
@@ -212,7 +214,7 @@ export function useSpeech(): UseSpeechReturn {
 
       return promise;
     },
-    [engine, voice, speechConfig.settings, speechConfig.voice_id, user]
+    [engine, voice, speechConfig.settings, speechConfig.voice_id, user, selectedOutputDeviceId]
   );
 
   const listVoices = useCallback(

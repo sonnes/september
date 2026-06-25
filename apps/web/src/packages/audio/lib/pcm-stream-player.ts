@@ -26,9 +26,16 @@ export class PcmStreamPlayer {
   /** Fires once after the last scheduled chunk finishes playing. */
   onEnded?: () => void;
 
-  constructor(sampleRate: number) {
+  constructor(sampleRate: number, sinkId?: string) {
     this.sampleRate = sampleRate;
     this.ctx = new AudioContext();
+    // Route to the configured output device, mirroring the <audio> setSinkId
+    // path. AudioContext.setSinkId is Chrome 110+; absent elsewhere → default.
+    if (sinkId && 'setSinkId' in this.ctx) {
+      (this.ctx as AudioContext & { setSinkId(id: string): Promise<void> })
+        .setSinkId(sinkId)
+        .catch(err => console.error('AudioContext.setSinkId failed, using default device:', err));
+    }
   }
 
   push(int16: Int16Array): void {

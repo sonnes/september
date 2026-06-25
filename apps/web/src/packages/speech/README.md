@@ -96,6 +96,8 @@ the full file), and resolves with the complete WAV blob + merged alignment for
 persistence/replay — the same `SpeechResponse` shape as `generateSpeech`. Returns
 `undefined` when the active provider has no streaming path, and rejects (after
 stopping live playback) on WS failure, so callers fall back to `generateSpeech`.
+Live playback honours the output device selected in `AudioPlayerProvider` (the
+PCM context is routed via `setSinkId`), matching buffered `<audio>` playback.
 Talk's send flow uses it; note voice-over and reel export stay on REST.
 
 ### ElevenLabs WebSocket streaming (internal)

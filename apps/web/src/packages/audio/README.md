@@ -69,10 +69,12 @@ import { PcmStreamPlayer, pcmToWavDataUri } from '@/packages/audio';
 For the ElevenLabs WebSocket TTS path, which delivers raw 16-bit mono PCM chunks
 as they're generated:
 
-- **`PcmStreamPlayer(sampleRate)`** — gapless live player. `push(int16)` decodes
-  a chunk to an `AudioBuffer` and schedules it back-to-back on an `AudioContext`,
-  so audio starts on the first chunk. `end()` fires `onEnded` once drained;
-  `stop()` cancels immediately (e.g. before a REST fallback plays).
+- **`PcmStreamPlayer(sampleRate, sinkId?)`** — gapless live player. `push(int16)`
+  decodes a chunk to an `AudioBuffer` and schedules it back-to-back on an
+  `AudioContext`, so audio starts on the first chunk. Pass `sinkId` to route the
+  context to a configured output device (`AudioContext.setSinkId`, Chrome 110+;
+  falls back to the default device elsewhere). `end()` fires `onEnded` once
+  drained; `stop()` cancels immediately (e.g. before a REST fallback plays).
 - **`pcmToWavDataUri(chunks, sampleRate)`** — concatenate accumulated
   `Int16Array` chunks into a `data:audio/wav;base64,...` URI for storage, replay,
   and broadcast (the player and storage already accept `data:` URIs).
