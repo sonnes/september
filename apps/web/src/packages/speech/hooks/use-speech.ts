@@ -19,7 +19,11 @@ const browser = new BrowserSpeechProvider();
 export interface UseSpeechReturn {
   listVoices: (request: ListVoicesRequest) => Promise<Voice[]> | undefined;
   getProviders: () => SpeechEngine[];
-  generateSpeech: (text: string, options?: SpeechOptions) => Promise<SpeechResponse> | undefined;
+  generateSpeech: (
+    text: string,
+    options?: SpeechOptions,
+    context?: { previous_text?: string }
+  ) => Promise<SpeechResponse> | undefined;
   getProvider: (id: string) => SpeechEngine | undefined;
 }
 
@@ -69,7 +73,7 @@ export function useSpeech(): UseSpeechReturn {
   }, [speechConfig.voice_id, speechConfig.voice_name]);
 
   const generateSpeech = useCallback(
-    (text: string, options?: SpeechOptions) => {
+    (text: string, options?: SpeechOptions, context?: { previous_text?: string }) => {
       if (!engine) return undefined;
 
       const startTime = performance.now();
@@ -78,6 +82,7 @@ export function useSpeech(): UseSpeechReturn {
         text,
         voice: voice,
         options: { ...speechConfig.settings, ...options } as SpeechOptions,
+        previous_text: context?.previous_text,
       });
 
       if (!promise) return undefined;

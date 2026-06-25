@@ -18,6 +18,8 @@ export interface SpeechRequest {
   text: string;
   voice?: Voice;
   options?: SpeechOptions;
+  /** Text preceding this utterance, for prosodic continuity (ElevenLabs only). */
+  previous_text?: string;
 }
 
 export type SpeechOptions =

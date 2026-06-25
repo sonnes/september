@@ -79,6 +79,7 @@ export class ElevenLabsSpeechProvider implements SpeechEngine {
       model_id: model_id,
       voice_settings: voice_settings,
       output_format: 'mp3_44100_128',
+      ...(request.previous_text ? { previous_text: request.previous_text } : {}),
     };
 
     const response = await fetch(url, {

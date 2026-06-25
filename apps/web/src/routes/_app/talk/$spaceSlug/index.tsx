@@ -305,13 +305,17 @@ export function SpacePageInner({
       const trimmed = text.trim();
       const editorStats = getAndResetStats();
 
-      const { message, audio } = await createAudioMessage({
-        space_id: spaceId,
-        text: trimmed,
-        type: 'user',
-        user_id: user.id,
-        editorStats,
-      });
+      const previousText = messages[messages.length - 1]?.text;
+      const { message, audio } = await createAudioMessage(
+        {
+          space_id: spaceId,
+          text: trimmed,
+          type: 'user',
+          user_id: user.id,
+          editorStats,
+        },
+        { previousText }
+      );
 
       const isDisplayOpen = popupRef.current && !popupRef.current.closed;
 

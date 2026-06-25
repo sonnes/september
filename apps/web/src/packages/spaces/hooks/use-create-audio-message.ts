@@ -16,7 +16,10 @@ import type { CreateMessageData, Message } from '../types';
 type CreateAudioStatus = 'idle' | 'generating-speech' | 'uploading-audio' | 'saving-message';
 
 export interface UseCreateAudioMessageReturn {
-  createAudioMessage: (message: CreateMessageData) => Promise<{ message: Message; audio: Audio }>;
+  createAudioMessage: (
+    message: CreateMessageData,
+    opts?: { previousText?: string }
+  ) => Promise<{ message: Message; audio: Audio }>;
   status: CreateAudioStatus;
 }
 
@@ -26,7 +29,7 @@ export function useCreateAudioMessage(): UseCreateAudioMessageReturn {
   const { generateSpeech } = useSpeech();
 
   const createAudioMessage = useCallback(
-    async (message: CreateMessageData) => {
+    async (message: CreateMessageData, opts?: { previousText?: string }) => {
       if (!message.text) {
         throw new Error('Message text is required');
       }
@@ -46,7 +49,9 @@ export function useCreateAudioMessage(): UseCreateAudioMessageReturn {
 
       try {
         setStatus('generating-speech');
-        const speech = await generateSpeech(message.text);
+        const speech = await generateSpeech(message.text, undefined, {
+          previous_text: opts?.previousText,
+        });
 
         if (speech?.blob) {
           setStatus('uploading-audio');

@@ -83,6 +83,12 @@ Read-only voice list for selecting a voice. Used by onboarding's speech step and
 
 Low-level engine registry. Returns `{ generateSpeech, listVoices, getProviders, getProvider }`.
 
+`generateSpeech(text, options?, context?)` accepts an optional `context.previous_text` —
+the utterance that came before this one. It is forwarded to the engine as
+`SpeechRequest.previous_text` for prosodic continuity and is **only** used by the
+ElevenLabs provider (others ignore it). It is contextual, not voiced. Talk spaces
+pass the prior message's text so consecutive utterances flow naturally.
+
 ## `account.ai_speech` data shape
 
 ```ts
