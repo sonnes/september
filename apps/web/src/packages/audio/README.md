@@ -50,6 +50,7 @@ import { ReelRenderer, ReelTextViewer } from '@/packages/audio';
 - **`TextViewerWords`** — renders word spans with `spoken` / `current` / `unspoken` data attributes.
 - **`ReelTextViewer`** — full-screen reel layout. Accepts `alignment + currentTime + duration` for standalone sync, or alignment alone to sync via `AudioPlayerProvider` context, or neither for static display.
 - **`ReelRenderer`** — low-level responsive text renderer using `@chenglou/pretext` for binary-search font sizing.
+- **`computePretextLayout`** — the pure layout engine behind `ReelRenderer`: given text, container size, and font, it binary-searches the largest font that fits and returns the wrapped lines. Padding scales to the container (`defaultPretextPadding`), so it works from a ~96px thumbnail to a 1080px video frame. The notes reel MP4 export reuses it for caption sizing.
 
 ### Hooks
 

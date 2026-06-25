@@ -37,6 +37,9 @@ export interface UseSlideVoiceOverReturn {
   duration: number;
   speak: (text: string, onEnd?: () => void) => void;
   stop: () => void;
+  seek: (time: number) => void;
+  pause: () => void;
+  resume: () => void;
 }
 
 export function useSlideVoiceOver(): UseSlideVoiceOverReturn {
@@ -185,5 +188,31 @@ export function useSlideVoiceOver(): UseSlideVoiceOverReturn {
     [generateSpeech, stop, playBlob, speechConfig.provider, speechConfig.voice_id]
   );
 
-  return { isGenerating, isPlaying, alignment, currentTime, duration, speak, stop };
+  const seek = useCallback((time: number) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.currentTime = time;
+    setCurrentTime(time);
+  }, []);
+
+  const pause = useCallback(() => {
+    audioRef.current?.pause();
+  }, []);
+
+  const resume = useCallback(() => {
+    audioRef.current?.play().catch(() => {});
+  }, []);
+
+  return {
+    isGenerating,
+    isPlaying,
+    alignment,
+    currentTime,
+    duration,
+    speak,
+    stop,
+    seek,
+    pause,
+    resume,
+  };
 }

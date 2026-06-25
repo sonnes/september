@@ -25,11 +25,21 @@ export interface PretextLayoutOptions {
   minFontSize?: number;
   maxFontSize?: number;
   lineHeightRatio?: number;
+  /** Outer container padding. Defaults to a proportional value (see {@link defaultPretextPadding}). */
   padding?: number;
   /** Extra vertical space per line (e.g. pill padding). Default 16. */
   lineExtraPx?: number;
   /** Gap between lines (e.g. flex gap). Default 8. */
   lineGapPx?: number;
+}
+
+/**
+ * Outer padding scaled to the container so the engine works at any size — from
+ * a ~96px export thumbnail to a 1080px video frame. A fixed 48 zeroed the
+ * available width on small containers.
+ */
+export function defaultPretextPadding(containerWidth: number, containerHeight: number): number {
+  return Math.round(Math.min(containerWidth, containerHeight) * 0.06);
 }
 
 export interface PretextLayoutResult {
@@ -52,7 +62,7 @@ export function computePretextLayout({
   minFontSize = 24,
   maxFontSize = 200,
   lineHeightRatio = 1.2,
-  padding = 48,
+  padding,
   lineExtraPx = 16,
   lineGapPx = 8,
 }: PretextLayoutOptions): PretextLayoutResult {
@@ -60,8 +70,9 @@ export function computePretextLayout({
 
   if (!text || containerWidth <= 0 || containerHeight <= 0) return empty;
 
-  const availableWidth = containerWidth - padding * 2;
-  const availableHeight = containerHeight - padding * 2;
+  const pad = padding ?? defaultPretextPadding(containerWidth, containerHeight);
+  const availableWidth = containerWidth - pad * 2;
+  const availableHeight = containerHeight - pad * 2;
   if (availableWidth <= 0 || availableHeight <= 0) return empty;
 
   // Account for pill padding (px-4 = 32px total) reducing available text width

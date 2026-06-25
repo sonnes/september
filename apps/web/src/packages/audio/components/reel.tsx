@@ -5,7 +5,7 @@ import { type HTMLAttributes, useEffect, useMemo, useRef, useState } from 'react
 import { cn } from '@/packages/shared';
 
 import { useTextViewerContext, TextViewer as TextViewerComponent } from './text-viewer';
-import { usePretextLayout } from '../hooks/use-pretext-layout';
+import { defaultPretextPadding, usePretextLayout } from '../hooks/use-pretext-layout';
 import type { Alignment } from '../types';
 import { useTextViewer, type WordStatus } from '../hooks/use-text-viewer';
 
@@ -87,7 +87,8 @@ function ReelRenderer({
   }, [lines]);
 
   const topOffset = Math.max(0, (dimensions.height - totalHeight) / 2);
-  const padding = 48;
+  // Must match the engine's default so the pills line up with the fitted layout.
+  const padding = defaultPretextPadding(dimensions.width, dimensions.height);
 
   return (
     <div

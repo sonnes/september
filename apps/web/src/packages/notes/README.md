@@ -72,7 +72,21 @@ captions use ElevenLabs character timing. The browser generates the MP3 and timi
 configured voice, renders 1080x1920 PNG caption frames with Canvas, and muxes those frames with the
 audio through `ffmpeg.wasm`.
 
+Caption text is sized and wrapped by the shared pretext engine (`computePretextLayout` from
+`@/packages/audio`) — each caption chunk fills the frame at the largest font that fits and wraps to
+multiple lines, so on-screen text matches the live preview instead of a fixed font. The active word
+is highlighted; already-spoken words dim.
+
 The wasm core loads only when the user exports a reel. If browser rendering or `ffmpeg.wasm` fails,
 the inline panel reports the failure and leaves the note unchanged. Cross-origin isolation headers are
 already required by the app for `SharedArrayBuffer`; those same headers keep a future multithreaded
 ffmpeg core possible.
+
+### Play (story player)
+
+The export panel also has a **Play** button that opens `NoteReelStoryPlayer` — a fullscreen 9:16
+overlay that plays the reel like an Instagram story: one caption chunk at a time with a segmented
+progress bar (one segment per caption), synced to the spoken audio via `useSlideVoiceOver`. Tap
+zones (or arrow keys) skip chunks, tap-center / Space pauses, Esc closes, and playback auto-closes
+at the end. Like export, it needs ElevenLabs for chunk timing. Caption chunks come from the same
+`alignmentToReelWords` + `wordsToReelCaptions` used by the MP4, so the on-screen chunks match.

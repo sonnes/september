@@ -32,6 +32,12 @@ vi.mock('@/packages/audio', () => ({
   ReelTextViewer: ({ text }: { text: string }) => <div data-testid="reel-preview">{text}</div>,
 }));
 
+vi.mock('./note-reel-story-player', () => ({
+  NoteReelStoryPlayer: ({ voiceText }: { voiceText: string }) => (
+    <div data-testid="story-player">{voiceText}</div>
+  ),
+}));
+
 class MockAudio {
   duration = 1.25;
   preload = '';
@@ -123,4 +129,36 @@ describe('NoteReelExportPanel', () => {
     });
     expect(document.body.querySelector('a[download="daily-note-reel.mp4"]')).toBeTruthy();
   });
+
+  it('opens the story player when Play is clicked', () => {
+    render(<NoteReelStoryPanelHarness />);
+
+    expect(document.querySelector('[data-testid="story-player"]')).toBeNull();
+
+    act(() => {
+      const playButton = [...document.body.querySelectorAll('button')].find(
+        button => button.textContent === 'Play'
+      ) as HTMLButtonElement;
+      playButton.click();
+    });
+
+    const player = document.querySelector('[data-testid="story-player"]');
+    expect(player).toBeTruthy();
+    expect(player?.textContent).toBe('Hello world');
+  });
+
+  it('disables Play without an ElevenLabs voice', () => {
+    mocks.speechConfig.provider = 'browser';
+    render(<NoteReelStoryPanelHarness />);
+
+    const playButton = [...document.body.querySelectorAll('button')].find(
+      button => button.textContent === 'Play'
+    ) as HTMLButtonElement;
+
+    expect(playButton.disabled).toBe(true);
+  });
 });
+
+function NoteReelStoryPanelHarness() {
+  return <NoteReelExportPanel id="note-reel-panel-note-1" note={note} voiceText="Hello world" />;
+}

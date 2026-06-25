@@ -1,3 +1,5 @@
+import { computePretextLayout } from '@/packages/audio/hooks/use-pretext-layout';
+
 import type { ReelCaption } from './reel';
 
 const VIDEO_WIDTH = 1080;
@@ -5,7 +7,9 @@ const VIDEO_HEIGHT = 1920;
 const BACKGROUND_COLOR = '#111827';
 const HIGHLIGHT_COLOR = '#fbbf24';
 const TEXT_COLOR = '#ffffff';
-const CAPTION_FONT = '700 84px "Noto Sans", Arial, sans-serif';
+const CAPTION_FONT_FAMILY = '"Noto Sans"';
+const CAPTION_FONT_WEIGHT = '700';
+const LINE_HEIGHT_RATIO = 1.2;
 const WATERMARK_FONT = '600 34px "Noto Sans", Arial, sans-serif';
 const FFMPEG_CORE_VERSION = '0.12.10';
 const FFMPEG_CORE_BASE_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${FFMPEG_CORE_VERSION}/dist/esm`;
@@ -96,25 +100,46 @@ export function buildWasmFfmpegArgs({
   ];
 }
 
-function splitCaptionLines(caption: ReelCaption): Array<Array<{ text: string; index: number }>> {
-  const lines: Array<Array<{ text: string; index: number }>> = [];
-  let current: Array<{ text: string; index: number }> = [];
-  let currentLength = 0;
+interface CaptionLayoutWord {
+  text: string;
+  index: number;
+}
 
-  caption.words.forEach((word, index) => {
-    const nextLength = currentLength + word.text.length + (current.length ? 1 : 0);
-    if (current.length && nextLength > 20) {
-      lines.push(current);
-      current = [];
-      currentLength = 0;
-    }
+export interface CaptionLayout {
+  fontSize: number;
+  totalHeight: number;
+  lines: Array<{ words: CaptionLayoutWord[] }>;
+}
 
-    current.push({ text: word.text, index });
-    currentLength += word.text.length + (current.length > 1 ? 1 : 0);
+/**
+ * Lay out a caption with the shared pretext engine: pick the largest font that
+ * fits the frame and word-wrap it, then map each wrapped line back onto the
+ * caption's words (preserving order) so the active word can be highlighted.
+ * This is the same fit-and-wrap the live preview uses — no fixed font, no
+ * char-count line splitting.
+ */
+export function layoutCaption(caption: ReelCaption, width: number, height: number): CaptionLayout {
+  const text = caption.words.map(word => word.text).join(' ');
+  const { fontSize, lines, totalHeight } = computePretextLayout({
+    text,
+    containerWidth: width,
+    containerHeight: height,
+    fontFamily: CAPTION_FONT_FAMILY,
+    fontWeight: CAPTION_FONT_WEIGHT,
+    // Captions are drawn without pill backgrounds, so no per-line extra padding.
+    lineExtraPx: 0,
+    lineGapPx: 0,
   });
 
-  if (current.length) lines.push(current);
-  return lines.slice(0, 4);
+  let wordIndex = 0;
+  const mappedLines = lines.map(line => ({
+    words: line.text
+      .split(/\s+/)
+      .filter(Boolean)
+      .map(token => ({ text: token, index: wordIndex++ })),
+  }));
+
+  return { fontSize, totalHeight, lines: mappedLines };
 }
 
 function frameSpecs(captions: ReelCaption[], durationSeconds: number): ReelFrameSpec[] {
@@ -165,26 +190,30 @@ function drawGrid(ctx: CanvasRenderingContext2D): void {
 
 function drawCaption(
   ctx: CanvasRenderingContext2D,
-  caption: ReelCaption,
+  layout: CaptionLayout,
   activeWordIndex: number
 ): void {
-  const lines = splitCaptionLines(caption);
-  const firstY = Math.round(VIDEO_HEIGHT / 2 - ((lines.length - 1) * 112) / 2);
+  if (!layout.fontSize) return;
 
-  ctx.font = CAPTION_FONT;
+  const lineHeight = Math.round(layout.fontSize * LINE_HEIGHT_RATIO);
+  ctx.font = `${CAPTION_FONT_WEIGHT} ${layout.fontSize}px ${CAPTION_FONT_FAMILY}, Arial, sans-serif`;
   ctx.textBaseline = 'middle';
 
-  lines.forEach((line, lineIndex) => {
-    const gap = 22;
-    const widths = line.map(word => ctx.measureText(word.text).width);
-    const totalWidth = widths.reduce((sum, width) => sum + width, 0) + gap * (line.length - 1);
-    let x = VIDEO_WIDTH / 2 - totalWidth / 2;
+  const firstY = Math.round(VIDEO_HEIGHT / 2 - layout.totalHeight / 2 + lineHeight / 2);
+  const spaceWidth = ctx.measureText(' ').width;
 
-    line.forEach((word, wordIndex) => {
+  layout.lines.forEach((line, lineIndex) => {
+    const widths = line.words.map(word => ctx.measureText(word.text).width);
+    const totalWidth =
+      widths.reduce((sum, width) => sum + width, 0) + spaceWidth * (line.words.length - 1);
+    let x = VIDEO_WIDTH / 2 - totalWidth / 2;
+    const y = firstY + lineIndex * lineHeight;
+
+    line.words.forEach((word, wordIndex) => {
       ctx.globalAlpha = activeWordIndex >= 0 && word.index < activeWordIndex ? 0.62 : 1;
       ctx.fillStyle = word.index === activeWordIndex ? HIGHLIGHT_COLOR : TEXT_COLOR;
-      ctx.fillText(word.text, x, firstY + lineIndex * 112);
-      x += widths[wordIndex] + gap;
+      ctx.fillText(word.text, x, y);
+      x += widths[wordIndex] + spaceWidth;
     });
   });
 
@@ -236,10 +265,22 @@ function createCanvasFrameRenderer(): (spec: ReelFrameSpec) => Promise<Uint8Arra
 
   const frame = createCanvasContext();
 
+  // A caption's layout (font size + wrapped lines) is identical across all of
+  // its word-frames, so compute the binary-search fit once per caption.
+  const layoutCache = new Map<ReelCaption, CaptionLayout>();
+  const getLayout = (caption: ReelCaption): CaptionLayout => {
+    let layout = layoutCache.get(caption);
+    if (!layout) {
+      layout = layoutCaption(caption, VIDEO_WIDTH, VIDEO_HEIGHT);
+      layoutCache.set(caption, layout);
+    }
+    return layout;
+  };
+
   return async spec => {
     frame.drawImage(background.canvas, 0, 0);
     if (spec.caption) {
-      drawCaption(frame, spec.caption, spec.activeWordIndex ?? -1);
+      drawCaption(frame, getLayout(spec.caption), spec.activeWordIndex ?? -1);
     }
     return canvasToPngBytes(frame.canvas);
   };

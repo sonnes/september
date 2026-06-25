@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Download, Loader2 } from 'lucide-react';
+import { Download, Loader2, Play } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useAISettings } from '@/packages/ai';
@@ -20,6 +20,7 @@ import {
 } from '../lib/reel';
 import { renderNoteReelVideoWithWasm } from '../lib/reel-renderer.browser';
 import type { Note } from '../types';
+import { NoteReelStoryPlayer } from './note-reel-story-player';
 
 type ExportStatus = 'idle' | 'generating-audio' | 'rendering-video' | 'complete';
 
@@ -67,6 +68,7 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
   const [status, setStatus] = useState<ExportStatus>('idle');
   const [downloadHref, setDownloadHref] = useState<string | null>(null);
   const [preview, setPreview] = useState<{ alignment: Alignment; duration: number } | null>(null);
+  const [showPlayer, setShowPlayer] = useState(false);
 
   const isExporting = status === 'generating-audio' || status === 'rendering-video';
   const requiresElevenLabs = speechConfig.provider !== 'elevenlabs';
@@ -178,7 +180,18 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
         </div>
       </div>
 
-      <div className="mt-3 flex justify-end">
+      <div className="mt-3 flex justify-end gap-2">
+        <Button
+          type="button"
+          size="lg"
+          variant="outline"
+          onClick={() => setShowPlayer(true)}
+          disabled={!voiceText || requiresElevenLabs || isExporting}
+        >
+          <Play className="size-4" aria-hidden />
+          Play
+        </Button>
+
         {downloadHref && status === 'complete' ? (
           <Button asChild size="lg">
             <a href={downloadHref} download={fileName}>
@@ -198,6 +211,10 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
           </Button>
         )}
       </div>
+
+      {showPlayer && (
+        <NoteReelStoryPlayer voiceText={voiceText} onClose={() => setShowPlayer(false)} />
+      )}
     </section>
   );
 }

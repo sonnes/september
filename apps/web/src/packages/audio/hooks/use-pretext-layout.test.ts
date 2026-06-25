@@ -129,6 +129,20 @@ describe('computePretextLayout', () => {
     expect(callArg).toContain('700');
   });
 
+  it('produces a non-empty layout in a small (thumbnail-sized) container', () => {
+    // Regression: a fixed padding of 48 zeroed availableWidth at ~96px wide,
+    // so the reel export thumbnail rendered nothing. Padding must scale down.
+    const result = computePretextLayout({
+      text: 'Hello world',
+      containerWidth: 96,
+      containerHeight: 170,
+      fontFamily: 'Noto Sans',
+    });
+
+    expect(result.fontSize).toBeGreaterThan(0);
+    expect(result.lines.length).toBeGreaterThanOrEqual(1);
+  });
+
   it('respects custom min and max font size', () => {
     const result = computePretextLayout({
       text: 'Hello',

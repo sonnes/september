@@ -140,3 +140,29 @@ export function wordsToReelCaptions(
 
   return captions;
 }
+
+/**
+ * Index of the caption to show at `currentTime` for story playback: the last
+ * caption that has started. Clamps to the first caption before playback begins
+ * and stays on the last caption after it ends.
+ */
+export function activeCaptionIndex(captions: ReelCaption[], currentTime: number): number {
+  if (!captions.length) return -1;
+
+  let index = 0;
+  for (let i = 0; i < captions.length; i++) {
+    if (currentTime >= captions[i].startTime) index = i;
+    else break;
+  }
+
+  return index;
+}
+
+/** Playback progress through a single caption, clamped to 0–1. */
+export function captionProgress(caption: ReelCaption, currentTime: number): number {
+  const span = caption.endTime - caption.startTime;
+  if (span <= 0) return currentTime >= caption.endTime ? 1 : 0;
+
+  const progress = (currentTime - caption.startTime) / span;
+  return Math.max(0, Math.min(1, progress));
+}

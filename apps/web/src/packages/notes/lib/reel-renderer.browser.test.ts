@@ -1,11 +1,23 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { computePretextLayout } from '@/packages/audio/hooks/use-pretext-layout';
+
+import type { ReelCaption } from './reel';
 import type { ReelFfmpeg } from './reel-renderer.browser';
 import {
   buildWasmFfmpegArgs,
   dataUriToUint8Array,
+  layoutCaption,
   renderNoteReelVideoWithWasm,
 } from './reel-renderer.browser';
+
+vi.mock('@/packages/audio/hooks/use-pretext-layout', () => ({
+  computePretextLayout: vi.fn(({ text }: { text: string }) => ({
+    fontSize: 84,
+    totalHeight: 100,
+    lines: [{ text, width: 200, y: 0 }],
+  })),
+}));
 
 describe('dataUriToUint8Array', () => {
   it('decodes data URI audio payloads', () => {
@@ -34,6 +46,51 @@ describe('buildWasmFfmpegArgs', () => {
     expect(args).toContain('frames.txt');
     expect(args).toContain('audio.mp3');
     expect(args).toContain('reel.mp4');
+  });
+});
+
+describe('layoutCaption', () => {
+  const caption: ReelCaption = {
+    startTime: 0,
+    endTime: 1,
+    words: [
+      { text: 'Hello', startTime: 0, endTime: 0.5 },
+      { text: 'world', startTime: 0.5, endTime: 1 },
+    ],
+  };
+
+  it('sizes via pretext (not a hardcoded font) and maps words onto lines', () => {
+    const layout = layoutCaption(caption, 1080, 1920);
+
+    expect(layout.fontSize).toBe(84);
+    expect(layout.lines).toHaveLength(1);
+    expect(layout.lines[0].words.map(w => w.text)).toEqual(['Hello', 'world']);
+    expect(layout.lines[0].words.map(w => w.index)).toEqual([0, 1]);
+  });
+
+  it('continues global word indices across wrapped lines', () => {
+    vi.mocked(computePretextLayout).mockReturnValueOnce({
+      fontSize: 60,
+      totalHeight: 200,
+      lines: [
+        { text: 'one two', width: 100, y: 0 },
+        { text: 'three', width: 80, y: 1 },
+      ],
+    });
+
+    const longCaption: ReelCaption = {
+      startTime: 0,
+      endTime: 1,
+      words: [
+        { text: 'one', startTime: 0, endTime: 0.3 },
+        { text: 'two', startTime: 0.3, endTime: 0.6 },
+        { text: 'three', startTime: 0.6, endTime: 1 },
+      ],
+    };
+
+    const layout = layoutCaption(longCaption, 1080, 1920);
+
+    expect(layout.lines.map(line => line.words.map(w => w.index))).toEqual([[0, 1], [2]]);
   });
 });
 
