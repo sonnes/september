@@ -89,6 +89,34 @@ the utterance that came before this one. It is forwarded to the engine as
 ElevenLabs provider (others ignore it). It is contextual, not voiced. Talk spaces
 pass the prior message's text so consecutive utterances flow naturally.
 
+`generateSpeechStream(text, options?, context?)` is the **low-latency streaming**
+path (ElevenLabs only). It opens a stream-input WebSocket, plays decoded PCM
+chunks live as they arrive (so audio starts on the first chunk instead of after
+the full file), and resolves with the complete WAV blob + merged alignment for
+persistence/replay — the same `SpeechResponse` shape as `generateSpeech`. Returns
+`undefined` when the active provider has no streaming path, and rejects (after
+stopping live playback) on WS failure, so callers fall back to `generateSpeech`.
+Talk's send flow uses it; note voice-over and reel export stay on REST.
+
+### ElevenLabs WebSocket streaming (internal)
+
+`stream-input` endpoint: `wss://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream-input`.
+
+- **Auth**: browser WebSockets can't set headers, so `xi-api-key` is sent in the
+  first (BOS) message body. The API key is already used client-side, so no
+  server is involved.
+- **Format**: PCM (`pcm_22050` default) — each chunk is raw samples, trivially
+  schedulable in Web Audio (MP3 chunks aren't independently decodable).
+- **Message sequence**: BOS `{ text: " ", voice_settings, "xi-api-key",
+  previous_text? }` → text `{ text: "<sentence> " }` → EOS `{ text: "" }`. The
+  server streams `{ audio, alignment }` chunks then `{ isFinal: true }`.
+- **Warm socket** (`ElevenLabsWsConnection`): one socket is pre-opened so each
+  speak skips the handshake. Sockets are single-use (server closes after EOS),
+  so `acquire` hands out the warm socket and pre-opens the next. It health-checks
+  (`readyState === OPEN`, else reopen), sets `inactivity_timeout=120`, and drops
+  a stale socket on window `focus`/`visibilitychange` so a backgrounded tab
+  reconnects cleanly. Shared as a module singleton across `useSpeech` instances.
+
 ## `account.ai_speech` data shape
 
 ```ts

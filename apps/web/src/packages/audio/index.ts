@@ -6,4 +6,6 @@ export { ReelTextViewer, ReelRenderer } from './components/reel';
 export { useTextViewer } from './hooks/use-text-viewer';
 export type { TextWord, GapSegment, TextSegment, WordStatus } from './hooks/use-text-viewer';
 export { uploadAudio, uploadAudioBinary, downloadAudio, getAudio, deleteAudio, listAudio } from './storage';
+export { pcmToWavDataUri } from './lib/pcm-to-wav';
+export { PcmStreamPlayer, int16ToFloat32 } from './lib/pcm-stream-player';
 export type { Audio, Alignment } from './types';

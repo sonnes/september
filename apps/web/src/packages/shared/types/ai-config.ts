@@ -90,6 +90,12 @@ export interface ElevenLabsSettings extends Record<string, unknown> {
 
   /** Speech speed (0.7-1.2) */
   speed?: number;
+
+  /** Streaming audio codec/rate (e.g. `pcm_22050`). Used by the WebSocket path. */
+  output_format?: string;
+
+  /** Character thresholds that trigger audio generation on the WebSocket path. */
+  chunk_length_schedule?: number[];
 }
 
 /**

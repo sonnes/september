@@ -1,25 +1,61 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 import { useAccount } from '@/packages/account';
 import { useAISettings } from '@/packages/ai';
+import { PcmStreamPlayer } from '@/packages/audio';
 import { track } from '@/packages/usage';
-import type { AIProvider } from '@/packages/shared';
+import type { AIProvider, ElevenLabsSettings } from '@/packages/shared';
 import type { Voice } from '@/packages/shared';
 
 import { BrowserSpeechProvider } from '../lib/providers/browser';
 import { KokoroSpeechProvider } from '../lib/providers/kokoro';
-import { ElevenLabsSpeechProvider } from '../lib/providers/elevenlabs';
+import {
+  ElevenLabsSpeechProvider,
+  elevenLabsStreamParams,
+  sampleRateForFormat,
+} from '../lib/providers/elevenlabs';
+import { ElevenLabsWsConnection } from '../lib/providers/elevenlabs-ws-connection';
 import { GeminiSpeechProvider } from '../lib/providers/gemini';
-import { ListVoicesRequest, SpeechEngine, SpeechOptions, SpeechResponse } from '../types';
+import {
+  ListVoicesRequest,
+  SpeechEngine,
+  SpeechOptions,
+  SpeechResponse,
+  SpeechStreamHooks,
+} from '../types';
 
 const browser = new BrowserSpeechProvider();
+
+// Kill switch for the ElevenLabs WebSocket streaming path. When set, every
+// caller falls back to the buffered REST synthesis and no sockets are opened.
+const WS_TTS_DISABLED = import.meta.env.VITE_DISABLE_WS_TTS === 'true';
+
+// One warm WebSocket manager shared across every useSpeech instance — avoids
+// each mounted hook opening its own idle socket. Lives for the app's lifetime.
+let wsConnection: ElevenLabsWsConnection | null = null;
+function getWsConnection(): ElevenLabsWsConnection {
+  if (!wsConnection) wsConnection = new ElevenLabsWsConnection();
+  return wsConnection;
+}
 
 export interface UseSpeechReturn {
   listVoices: (request: ListVoicesRequest) => Promise<Voice[]> | undefined;
   getProviders: () => SpeechEngine[];
   generateSpeech: (
+    text: string,
+    options?: SpeechOptions,
+    context?: { previous_text?: string }
+  ) => Promise<SpeechResponse> | undefined;
+  /**
+   * Low-latency streaming synthesis (ElevenLabs WebSocket). Plays PCM chunks
+   * live as they arrive and resolves with the full blob + alignment for
+   * persistence. Returns `undefined` when the active provider has no streaming
+   * path — callers fall back to `generateSpeech`. Rejects (after stopping live
+   * playback) on WS failure, so callers can fall back to REST.
+   */
+  generateSpeechStream: (
     text: string,
     options?: SpeechOptions,
     context?: { previous_text?: string }
@@ -72,6 +108,14 @@ export function useSpeech(): UseSpeechReturn {
     };
   }, [speechConfig.voice_id, speechConfig.voice_name]);
 
+  // Pre-open the first socket so the very first utterance skips the handshake.
+  useEffect(() => {
+    if (WS_TTS_DISABLED || engine?.id !== 'elevenlabs' || !voice?.id) return;
+    getWsConnection().prewarm(
+      elevenLabsStreamParams(voice.id, speechConfig.settings as ElevenLabsSettings)
+    );
+  }, [engine?.id, voice?.id, speechConfig.settings]);
+
   const generateSpeech = useCallback(
     (text: string, options?: SpeechOptions, context?: { previous_text?: string }) => {
       if (!engine) return undefined;
@@ -118,6 +162,59 @@ export function useSpeech(): UseSpeechReturn {
     [engine, voice, speechConfig.settings, speechConfig.provider, speechConfig.voice_id, user]
   );
 
+  const generateSpeechStream = useCallback(
+    (text: string, options?: SpeechOptions, context?: { previous_text?: string }) => {
+      if (WS_TTS_DISABLED || !engine?.generateSpeechStream || !voice?.id) return undefined;
+      const conn = getWsConnection();
+
+      const settings = { ...speechConfig.settings, ...options } as ElevenLabsSettings;
+      const startTime = performance.now();
+
+      // The hook owns live playback because it knows the PCM sample rate.
+      const player = new PcmStreamPlayer(
+        sampleRateForFormat(settings.output_format || 'pcm_22050')
+      );
+      const hooks: SpeechStreamHooks = { onAudioChunk: int16 => player.push(int16) };
+
+      const promise = (async () => {
+        try {
+          const socket = await conn.acquire(elevenLabsStreamParams(voice.id!, settings));
+          const result = await engine.generateSpeechStream!(
+            { text, voice, options: settings, previous_text: context?.previous_text },
+            hooks,
+            socket
+          );
+          player.end();
+          return result;
+        } catch (err) {
+          player.stop();
+          throw err;
+        }
+      })();
+
+      promise
+        .then(result => {
+          if (user?.id && result) {
+            track(user.id, {
+              type: 'tts_generation',
+              provider: 'elevenlabs',
+              voice_id: speechConfig.voice_id,
+              text_length: text.length,
+              duration_seconds: 0,
+              latency_ms: Math.round(performance.now() - startTime),
+              success: true,
+            });
+          }
+        })
+        .catch(() => {
+          // Surfaced to the caller, which falls back to REST.
+        });
+
+      return promise;
+    },
+    [engine, voice, speechConfig.settings, speechConfig.voice_id, user]
+  );
+
   const listVoices = useCallback(
     (request: ListVoicesRequest) => {
       const providerApiKey = getProviderConfig(speechConfig.provider as AIProvider)?.api_key;
@@ -136,5 +233,5 @@ export function useSpeech(): UseSpeechReturn {
     [registry]
   );
 
-  return { listVoices, getProviders, generateSpeech, getProvider };
+  return { listVoices, getProviders, generateSpeech, generateSpeechStream, getProvider };
 }

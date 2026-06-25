@@ -306,7 +306,10 @@ export function SpacePageInner({
       const editorStats = getAndResetStats();
 
       const previousText = messages[messages.length - 1]?.text;
-      const { message, audio } = await createAudioMessage(
+      // When the display popup plays the audio, the main window must not stream
+      // it live — keep the buffered path so the popup gets the full blob.
+      const isDisplayOpen = popupRef.current && !popupRef.current.closed;
+      const { message, audio, playedLive } = await createAudioMessage(
         {
           space_id: spaceId,
           text: trimmed,
@@ -314,12 +317,11 @@ export function SpacePageInner({
           user_id: user.id,
           editorStats,
         },
-        { previousText }
+        { previousText, playLive: !isDisplayOpen }
       );
 
-      const isDisplayOpen = popupRef.current && !popupRef.current.closed;
-
-      if (audio && !isDisplayOpen) {
+      // Skip enqueue when streaming already played the audio live.
+      if (audio && !isDisplayOpen && !playedLive) {
         enqueue(audio);
       }
 
