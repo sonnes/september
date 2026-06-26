@@ -13,6 +13,7 @@ import {
   type AccountUpdate,
 } from '@/packages/account';
 import { SpeechProvider } from '@/packages/speech';
+import { GoogleSyncControl, SYNC_ENABLED } from '@/packages/sync';
 import { Button } from '@/packages/ui/components/button';
 import { Callout } from '@/packages/ui/components/callout';
 import {
@@ -52,6 +53,15 @@ function SettingsPage() {
         Keep exported JSON private. Import replaces current account, provider, suggestion,
         transcription, and speech settings.
       </Callout>
+      {SYNC_ENABLED && (
+        <div className="flex flex-col gap-2">
+          <h2 className="text-sm font-medium">Cloud sync</h2>
+          <p className="text-muted-foreground text-sm">
+            Sign in to back up and sync your spaces, phrases, and notes across devices.
+          </p>
+          <GoogleSyncControl />
+        </div>
+      )}
       <SpeechProvider>
         <SettingsForm />
       </SpeechProvider>

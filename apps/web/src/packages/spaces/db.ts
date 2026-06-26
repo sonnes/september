@@ -1,5 +1,6 @@
 import { createCollection } from '@tanstack/react-db';
 import { indexedDBCollectionOptionsV2 } from '@/packages/shared/lib/indexeddb';
+import { captureLocal } from '@/packages/sync/runtime';
 
 import { SpaceSchema, MessageSchema, SavedPhraseSchema } from './types';
 
@@ -12,6 +13,9 @@ export const spaceCollection = createCollection(
     },
     channelName: 'app-spaces',
     getKey: item => item.id,
+    onInsert: async ({ transaction }) => captureLocal('spaces', 'upsert', transaction.mutations),
+    onUpdate: async ({ transaction }) => captureLocal('spaces', 'upsert', transaction.mutations),
+    onDelete: async ({ transaction }) => captureLocal('spaces', 'delete', transaction.mutations),
   })
 );
 
@@ -24,6 +28,9 @@ export const messageCollection = createCollection(
     },
     channelName: 'app-messages',
     getKey: item => item.id,
+    onInsert: async ({ transaction }) => captureLocal('messages', 'upsert', transaction.mutations),
+    onUpdate: async ({ transaction }) => captureLocal('messages', 'upsert', transaction.mutations),
+    onDelete: async ({ transaction }) => captureLocal('messages', 'delete', transaction.mutations),
   })
 );
 
@@ -36,5 +43,8 @@ export const savedPhraseCollection = createCollection(
     },
     channelName: 'app-saved-phrases',
     getKey: item => item.id,
+    onInsert: async ({ transaction }) => captureLocal('saved-phrases', 'upsert', transaction.mutations),
+    onUpdate: async ({ transaction }) => captureLocal('saved-phrases', 'upsert', transaction.mutations),
+    onDelete: async ({ transaction }) => captureLocal('saved-phrases', 'delete', transaction.mutations),
   })
 );
