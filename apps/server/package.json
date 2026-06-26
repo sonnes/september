@@ -1,0 +1,27 @@
+{
+  "name": "@september/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "sync:assets": "pnpm -C ../web build && rm -rf public && cp -r ../web/dist/client public",
+    "deploy": "pnpm sync:assets && wrangler deploy",
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.0.5"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.16.20",
+    "@cloudflare/workers-types": "^4.20250101.0",
+    "typescript": "^5",
+    "vitest": "^4.1.0",
+    "wrangler": "^4.105.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "workerd", "sharp"]
+  }
+}
