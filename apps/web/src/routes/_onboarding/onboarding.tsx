@@ -14,6 +14,7 @@ export const Route = createFileRoute('/_onboarding/onboarding')({
   validateSearch: (search: Record<string, unknown>) => ({
     step: search.step != null ? Number(search.step) : undefined,
     code: typeof search.code === 'string' ? search.code : undefined,
+    mode: typeof search.mode === 'string' ? search.mode : undefined,
   }),
   head: () => ({
     meta: [

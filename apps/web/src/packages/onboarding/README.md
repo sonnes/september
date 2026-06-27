@@ -1,11 +1,11 @@
 # @/packages/onboarding
 
-Multi-step onboarding wizard for September. Two public exports; everything else is internal.
+Mode-centered onboarding wizard for September. The user picks a **setup mode**, and the mode determines the final step. Public exports below; everything else is internal.
 
 ## Public API
 
 ```tsx
-import { OnboardingFlow, OnboardingProvider } from '@/packages/onboarding';
+import { OnboardingFlow, OnboardingProvider, SETUP_MODES } from '@/packages/onboarding';
 
 export default function OnboardingPage() {
   return (
@@ -16,20 +16,33 @@ export default function OnboardingPage() {
 }
 ```
 
+- `OnboardingProvider` / `OnboardingFlow` — the wizard (see below).
+- `SETUP_MODES` (+ `SetupMode`, `SetupModeAccent`, `SetupModeContent` types) — the shared copy for the three modes (Privacy / Free AI / Advanced), reused by the marketing home "Setup choices" section so copy never drifts.
+
 ### `OnboardingProvider`
 
-Owns all onboarding state: current step index, step navigation (`goToNextStep`, `goToPreviousStep`, both clamped, plus `goToStep(n)` which only jumps back to an already-reached step), and `completeOnboarding` (saves `onboarding_completed: true` to the account then redirects to `/talk`). Must wrap `OnboardingFlow`.
+Owns onboarding state: `currentStep`, the chosen `mode` (`'privacy' | 'free' | 'advanced' | null`) with `setMode`, step navigation (`goToNextStep`, `goToPreviousStep`, both clamped, plus `goToStep(n)` which only jumps back to an already-reached step), and `completeOnboarding` (saves `onboarding_completed: true` then redirects to `/talk`). **Both `step` and `mode` are seeded from the URL** (`?step`, `?mode`) so the OpenRouter OAuth full-page redirect (`/onboarding?step=4&mode=free&code=…`) restores the right finish branch. The mode itself is **not** persisted to the account — it only drives which account fields the finish step writes.
 
 ### `OnboardingFlow`
 
-Renders a **full-screen** flow with a solid indigo setup panel on the left and a calm setup surface on the right. Completed steps are clickable to jump back; upcoming steps are inert. The setup surface uses plain guidance and explicit selection rows instead of card tiles, so passive information does not look like a button. The four steps are — in order — Welcome, You, Voice, and Suggestions.
+Full-screen single-column flow: an **indigo hero header** (brand + setup title/description) over a white surface card. A **horizontal step indicator** sits at the top of the surface — completed steps show a check and are clickable to jump back; upcoming steps are inert. The four steps, in order:
 
-Because it owns the full viewport, mount it on a route **outside** the sidebar shell. In the web app it lives in the `app/(onboarding)/` route group (a layout that supplies `ClientProviders` only), not `(app)/`.
+1. **Welcome** — plain recommended path + example phrases.
+2. **About you** — name (required), speaking-style persona chips + editable text, and an optional "personal words" collapsible (appended to `account.context` as bullet lines).
+3. **Choose setup** — the centerpiece: three selectable mode cards. Selecting one sets `mode`.
+4. **Finish** — branches on `mode`:
+   - **Privacy** (`finish-privacy.tsx`) — summary; applies `buildPrivacyModeUpdate` (browser speech, suggestions disabled, no provider keys).
+   - **Free AI** (`finish-free.tsx`) — one-click **Connect OpenRouter** (OAuth); applies browser speech + OpenRouter suggestions. Finish is gated until connected, with a "use built-in instead" fallback that switches to Privacy.
+   - **Advanced** (`finish-advanced.tsx`) — one combined screen: pick a voice service (+ key + voice) and a writing helper (+ key); applies `buildAdvancedFinishUpdate`.
+
+Because it owns the full viewport, mount it on a route **outside** the sidebar shell — the `_onboarding` route group (supplies `ClientProviders` only).
 
 ## Internals (not exported)
 
-- `useOnboarding` — context consumer hook used by all step components; not in the public barrel.
-- `components/step-chrome.tsx` — shared step chrome for the setup flow: `StepShell`, `StepHeader` (step label → page title → subtitle, optional back icon), and `StepFooter` (helper text + actions). Every step composes these inside the side-panel shell.
-- `components/steps/` — bespoke step components; each calls `useOnboarding` directly and wraps its body in `StepShell`. The Welcome step uses a plain recommended path and static example phrases. The You step includes editable speaking-style text plus default persona chips. The Voice step starts with the built-in voice, uses a compact picker that describes only the selected option, and shows extra service connection details whenever the user chooses one. The Suggestions step finishes onboarding, keeps built-in suggestions as the default path, and lets users optionally connect OpenRouter or add personal words.
-- `lib/onboarding-content.ts` — internal copy and step labels shared by the flow and tests so primary onboarding language stays non-technical.
-- `lib/suggestions-setup.ts` — internal helper for building the Suggestions step account update before completing onboarding.
+- `useOnboarding` — context consumer hook used by all step components.
+- `components/step-chrome.tsx` — `StepShell`, `StepHeader` (label → title → subtitle, optional back icon), `StepFooter` (helper + actions).
+- `lib/onboarding-content.ts` — copy and step labels, shared with tests so primary language stays non-technical.
+- `lib/setup-modes.ts` — `SETUP_MODES` copy plus the account-update builders `buildPrivacyModeUpdate` and `buildAdvancedFinishUpdate` (+ `isSetupMode`).
+- `lib/suggestions-setup.ts` — built-in vs OpenRouter suggestions update (reused by Privacy/Free/Advanced).
+- `lib/provider-config.ts` — bridges the AI key form and the account `ai_providers` shape (`buildProviderConfig`, `getProviderDefaultValues`).
+- `lib/voice-setup.ts` — small predicates for the Advanced voice picker.

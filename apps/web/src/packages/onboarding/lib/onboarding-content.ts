@@ -4,16 +4,16 @@ export const ONBOARDING_STEPS = [
     description: 'What September does',
   },
   {
-    label: 'You',
+    label: 'About you',
     description: 'Name and speaking style',
   },
   {
-    label: 'Voice',
-    description: 'Speech and voice choice',
+    label: 'Choose setup',
+    description: 'Pick how September runs',
   },
   {
-    label: 'Suggestions',
-    description: 'Extra services and words',
+    label: 'Finish',
+    description: 'Apply and start',
   },
 ] as const;
 
@@ -31,7 +31,7 @@ export const ONBOARDING_PRIMARY_COPY = {
     subtitle:
       'September helps you type, speak, and connect naturally. Start with simple defaults, then add more when you are ready.',
     helper: 'Get started in minutes.',
-    primaryAction: 'Start',
+    primaryAction: 'Get started',
     path: [
       {
         title: 'Open in any browser',
@@ -49,11 +49,6 @@ export const ONBOARDING_PRIMARY_COPY = {
         title: 'Full expression',
         description: 'Common needs, feelings, and social phrases stay easy to reach.',
       },
-    ],
-    examples: [
-      'I need a little more time to answer.',
-      'Could you move my chair closer to the window?',
-      'Thank you. That really helps.',
     ],
   },
   profile: {
@@ -79,13 +74,21 @@ export const ONBOARDING_PRIMARY_COPY = {
         value: 'Clear and thoughtful. Add a little context when it helps people understand.',
       },
     ],
+    personalWords: {
+      label: 'Add personal words',
+      description: 'Paste names, care phrases, routines, or topics September should know.',
+      placeholder: 'Amma. Dr. Shah. I need a short rest. Please give me a moment.',
+    },
   },
-  voice: {
+  mode: {
     eyebrow: 'Step 3 of 4',
-    title: 'Set up your voice.',
-    subtitle: 'The built-in voice works right away. Connected voice services are optional.',
-    helper: 'Voice can be changed any time.',
-    primaryAction: 'Use selected voice',
+    title: 'How should September run?',
+    subtitle: 'Pick what fits. You can change any of this later in Settings.',
+    helper: 'You can switch modes anytime in Settings.',
+    primaryAction: 'Continue',
+  },
+  // Voice option labels reused by the Advanced finish step's voice picker.
+  voice: {
     options: [
       {
         id: 'browser',
@@ -104,29 +107,44 @@ export const ONBOARDING_PRIMARY_COPY = {
       },
     ],
   },
-  suggestions: {
-    eyebrow: 'Step 4 of 4',
-    title: 'AI that learns how you talk.',
-    subtitle:
-      'Start with built-in suggestions. Add notes, documents, and memories when you want richer conversations.',
-    helper: 'Extra services and personal words are optional.',
-    primaryAction: 'Start communicating',
-    options: [
-      {
-        id: 'built-in',
-        title: 'Use built-in suggestions',
-        description: 'Recommended. Works without extra setup.',
-      },
-      {
-        id: 'openrouter',
-        title: 'Connect OpenRouter',
-        description: 'Optional extra service for richer suggestions.',
-      },
-      {
-        id: 'personal-words',
-        title: 'Add personal words',
-        description: 'Paste names, care phrases, routines, or topics September should know.',
-      },
-    ],
+  finish: {
+    privacy: {
+      eyebrow: 'Step 4 of 4',
+      title: "You're all set.",
+      subtitle: 'Everything stays on this device. You can connect a service later in Settings.',
+      helper: 'You can change this anytime in Settings.',
+      primaryAction: 'Start communicating',
+      summary: [
+        'Browser speech — no setup, works offline.',
+        'Saved phrases ready on every space.',
+        'Nothing is sent out for suggestions.',
+      ],
+    },
+    free: {
+      eyebrow: 'Step 4 of 4',
+      title: 'Connect free AI.',
+      subtitle: 'One click opens OpenRouter and returns you here. Nothing else in setup changes.',
+      helper: 'Connect OpenRouter or choose built-in.',
+      primaryAction: 'Start communicating',
+      connectTitle: 'Connect OpenRouter',
+      connectBody:
+        'A free option for richer writing help. September only sends the current message when you ask for suggestions.',
+      connectAction: 'Connect OpenRouter',
+      connectingAction: 'Connecting…',
+      connectedNote: 'Connected — ready to finish.',
+      pendingNote: 'Not connected yet.',
+      fallbackTitle: 'Prefer none? Use built-in instead',
+      fallbackBody: 'Switch to Privacy mode — no AI service.',
+    },
+    advanced: {
+      eyebrow: 'Step 4 of 4',
+      title: 'Connect your services.',
+      subtitle: 'Add your own keys and pick the voice and writing helper you prefer.',
+      helper: 'September contacts only the services you choose.',
+      primaryAction: 'Start communicating',
+      voiceLabel: 'Voice',
+      writingLabel: 'Writing help',
+      searchPlaceholder: 'Search voices...',
+    },
   },
 } as const;

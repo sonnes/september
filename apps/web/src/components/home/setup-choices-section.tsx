@@ -1,41 +1,12 @@
-const modes = [
-  {
-    badge: 'Most private',
-    title: 'Privacy mode',
-    body: 'The most private option. No AI service needed.',
-    color: 'border-t-emerald-600',
-    badgeClass: 'bg-emerald-100 text-emerald-700',
-    bullets: [
-      'Everything stays on this device.',
-      'Use saved phrases and browser speech.',
-      'Nothing is sent out for suggestions.',
-    ],
-  },
-  {
-    badge: 'Free start',
-    title: 'Free AI mode',
-    body: 'Use OpenRouter, a free AI option, for writing help.',
-    color: 'border-t-amber-600',
-    badgeClass: 'bg-amber-100 text-amber-700',
-    bullets: [
-      'September may send the current message to OpenRouter for suggestions.',
-      'Spaces and saved phrases still stay on this device.',
-      'Good when you want help writing longer replies.',
-    ],
-  },
-  {
-    badge: 'Advanced',
-    title: 'Use your own services',
-    body: 'For people or caregivers who already have voice or AI accounts.',
-    color: 'border-t-sky-600',
-    badgeClass: 'bg-sky-100 text-sky-700',
-    bullets: [
-      'Add your own Gemini, OpenRouter, or ElevenLabs access key.',
-      'Choose the voice or writing helper you prefer.',
-      'September contacts only the services you choose.',
-    ],
-  },
-];
+import { SETUP_MODES, type SetupModeAccent } from '@/packages/onboarding';
+
+// Marketing styling per mode, keyed off the shared `accent`. Copy itself lives
+// in SETUP_MODES so the home page and onboarding never drift.
+const ACCENT: Record<SetupModeAccent, { edge: string; badge: string }> = {
+  emerald: { edge: 'border-t-emerald-600', badge: 'bg-emerald-100 text-emerald-700' },
+  amber: { edge: 'border-t-amber-600', badge: 'bg-amber-100 text-amber-700' },
+  sky: { edge: 'border-t-sky-600', badge: 'bg-sky-100 text-sky-700' },
+};
 
 export function SetupChoicesSection() {
   return (
@@ -53,26 +24,31 @@ export function SetupChoicesSection() {
         </div>
 
         <div className="grid gap-5 lg:grid-cols-3">
-          {modes.map(mode => (
-            <article
-              key={mode.title}
-              className={`grid content-start gap-4 rounded-xl border border-zinc-200 border-t-4 bg-white p-6 shadow-sm ${mode.color}`}
-            >
-              <span className={`w-fit rounded-full px-3 py-1 text-xs font-bold ${mode.badgeClass}`}>
-                {mode.badge}
-              </span>
-              <h3 className="text-lg font-semibold text-zinc-950">{mode.title}</h3>
-              <p className="text-sm leading-relaxed text-zinc-500">{mode.body}</p>
-              <ul className="grid gap-3 text-sm leading-relaxed text-zinc-500">
-                {mode.bullets.map(bullet => (
-                  <li key={bullet} className="grid grid-cols-[8px_minmax(0,1fr)] gap-4">
-                    <span className="mt-2 size-2 rounded-full bg-current" aria-hidden="true" />
-                    <span>{bullet}</span>
-                  </li>
-                ))}
-              </ul>
-            </article>
-          ))}
+          {SETUP_MODES.map(mode => {
+            const accent = ACCENT[mode.accent];
+            return (
+              <article
+                key={mode.title}
+                className={`grid content-start gap-4 rounded-xl border border-zinc-200 border-t-4 bg-white p-6 shadow-sm ${accent.edge}`}
+              >
+                <span
+                  className={`w-fit rounded-full px-3 py-1 text-xs font-bold ${accent.badge}`}
+                >
+                  {mode.badge}
+                </span>
+                <h3 className="text-lg font-semibold text-zinc-950">{mode.title}</h3>
+                <p className="text-sm leading-relaxed text-zinc-500">{mode.body}</p>
+                <ul className="grid gap-3 text-sm leading-relaxed text-zinc-500">
+                  {mode.bullets.map(bullet => (
+                    <li key={bullet} className="grid grid-cols-[8px_minmax(0,1fr)] gap-4">
+                      <span className="mt-2 size-2 rounded-full bg-current" aria-hidden="true" />
+                      <span>{bullet}</span>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>

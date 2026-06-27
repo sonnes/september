@@ -12,12 +12,12 @@ function collectStrings(value: unknown): string[] {
 }
 
 describe('onboarding content', () => {
-  it('uses the selected four-step flow', () => {
+  it('uses the mode-centered four-step flow with About you before Choose setup', () => {
     expect(ONBOARDING_STEPS.map(step => step.label)).toEqual([
       'Welcome',
-      'You',
-      'Voice',
-      'Suggestions',
+      'About you',
+      'Choose setup',
+      'Finish',
     ]);
   });
 
@@ -25,6 +25,13 @@ describe('onboarding content', () => {
     const copy = collectStrings(ONBOARDING_PRIMARY_COPY).join('\n');
 
     expect(copy).not.toMatch(/\b(LLM|corpus|provider|API key|models?)\b/i);
+  });
+
+  it('centers the flow on a mode choice with branched finish copy', () => {
+    expect(ONBOARDING_PRIMARY_COPY.mode.eyebrow).toBe('Step 3 of 4');
+    expect(ONBOARDING_PRIMARY_COPY.finish.privacy.summary.length).toBeGreaterThan(0);
+    expect(ONBOARDING_PRIMARY_COPY.finish.free.connectAction).toMatch(/OpenRouter/);
+    expect(ONBOARDING_PRIMARY_COPY.finish.advanced.title).toBe('Connect your services.');
   });
 
   it('keeps the welcome step informational instead of card-shaped choices', () => {

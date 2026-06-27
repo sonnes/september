@@ -7,6 +7,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useAccount } from '@/packages/account';
 
 import { ONBOARDING_STEPS } from '../lib/onboarding-content';
+import { type SetupMode, isSetupMode } from '../lib/setup-modes';
 import type { OnboardingContextValue } from '../types';
 
 const TOTAL_STEPS = ONBOARDING_STEPS.length;
@@ -17,16 +18,29 @@ interface OnboardingProviderProps {
   children: ReactNode;
 }
 
-export function OnboardingProvider({ children }: OnboardingProviderProps) {
-  const [currentStep, setCurrentStep] = useState(() => {
-    if (typeof window === 'undefined') return 0;
-    const requestedStep = Number(new URLSearchParams(window.location.search).get('step'));
-    return Number.isInteger(requestedStep) && requestedStep >= 1 && requestedStep <= TOTAL_STEPS
+function readSearch() {
+  if (typeof window === 'undefined') return { step: null as number | null, mode: null as SetupMode | null };
+  const params = new URLSearchParams(window.location.search);
+  const requestedStep = Number(params.get('step'));
+  const step =
+    Number.isInteger(requestedStep) && requestedStep >= 1 && requestedStep <= TOTAL_STEPS
       ? requestedStep - 1
-      : 0;
-  });
+      : null;
+  const rawMode = params.get('mode');
+  return { step, mode: isSetupMode(rawMode) ? rawMode : null };
+}
+
+export function OnboardingProvider({ children }: OnboardingProviderProps) {
+  // Both step and mode are seeded from the URL so the OpenRouter OAuth
+  // full-page redirect (back to `/onboarding?step=4&mode=…`) restores the
+  // right finish branch.
+  const initial = readSearch();
+  const [currentStep, setCurrentStep] = useState(() => initial.step ?? 0);
+  const [mode, setModeState] = useState<SetupMode | null>(() => initial.mode);
   const navigate = useNavigate();
   const { updateAccount } = useAccount();
+
+  const setMode = useCallback((next: SetupMode) => setModeState(next), []);
 
   const goToNextStep = useCallback(() => {
     setCurrentStep(prev => Math.min(prev + 1, TOTAL_STEPS - 1));
@@ -50,6 +64,8 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
   const value: OnboardingContextValue = {
     currentStep,
     totalSteps: TOTAL_STEPS,
+    mode,
+    setMode,
     goToNextStep,
     goToPreviousStep,
     goToStep,

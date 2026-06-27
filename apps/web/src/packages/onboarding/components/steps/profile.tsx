@@ -19,6 +19,8 @@ export function ProfileStep() {
   const copy = ONBOARDING_PRIMARY_COPY.profile;
   const [name, setName] = useState(account?.name ?? '');
   const [persona, setPersona] = useState(account?.context ?? DEFAULT_SPEAKING_STYLE);
+  const [showPersonalWords, setShowPersonalWords] = useState(false);
+  const [personalWords, setPersonalWords] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const selectedPersona = copy.personas.find(option => option.value === persona);
 
@@ -34,12 +36,23 @@ export function ProfileStep() {
     const trimmedName = name.trim();
     if (!trimmedName) return;
 
+    // Speaking style is the base context; optional personal words are appended
+    // as markdown bullet lines.
+    const trimmedWords = personalWords.trim();
+    const bullets = trimmedWords
+      ? trimmedWords
+          .split('\n')
+          .map(line => line.trim())
+          .filter(Boolean)
+          .map(line => `- ${line}`)
+          .join('\n')
+      : '';
+    const base = persona.trim();
+    const context = bullets ? `${base}${base ? '\n' : ''}${bullets}` : base;
+
     try {
       setIsSaving(true);
-      await updateAccount({
-        name: trimmedName,
-        context: persona.trim(),
-      });
+      await updateAccount({ name: trimmedName, context });
       goToNextStep();
     } finally {
       setIsSaving(false);
@@ -132,6 +145,37 @@ export function ProfileStep() {
                 className="min-h-32"
               />
             </div>
+          </div>
+
+          <div className="border-l border-border pl-5">
+            <button
+              type="button"
+              aria-expanded={showPersonalWords}
+              onClick={() => setShowPersonalWords(value => !value)}
+              className="flex items-center gap-2 text-sm font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            >
+              <span aria-hidden="true" className="text-primary">
+                {showPersonalWords ? '▾' : '▸'}
+              </span>
+              {copy.personalWords.label}
+              <span className="font-normal text-muted-foreground">(optional)</span>
+            </button>
+
+            {showPersonalWords && (
+              <div className="mt-3 space-y-3">
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {copy.personalWords.description}
+                </p>
+                <Textarea
+                  id="onboarding-personal-words"
+                  value={personalWords}
+                  onChange={event => setPersonalWords(event.target.value)}
+                  rows={5}
+                  maxLength={5000}
+                  placeholder={copy.personalWords.placeholder}
+                />
+              </div>
+            )}
           </div>
         </div>
 
