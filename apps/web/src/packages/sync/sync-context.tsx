@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 
 import type { User } from '@/packages/shared/types/user';
 
+import { setBlobClient } from './blob-bridge';
 import { SYNC_API_URL, SYNC_ENABLED } from './config';
 import { createSyncClient, type SyncClient } from './lib/api-client';
 import { createAuthStore } from './lib/auth';
@@ -71,6 +72,7 @@ function SyncProviderInner({ children }: { children: ReactNode }) {
     });
     engineRef.current = engine;
     engine.start();
+    setBlobClient(client); // route audio blob mirroring to this user's R2 prefix
 
     const onOnline = () => {
       void engine.flush().catch(() => {});
@@ -81,6 +83,7 @@ function SyncProviderInner({ children }: { children: ReactNode }) {
     return () => {
       window.removeEventListener('online', onOnline);
       engine.stop();
+      setBlobClient(null);
       engineRef.current = null;
     };
   }, [userId, client]);

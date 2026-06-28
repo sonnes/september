@@ -75,4 +75,14 @@ describe('createSyncClient', () => {
     const client = createSyncClient({ baseUrl: 'https://api.test', getToken: () => 'tok' });
     expect(await client.getBlob('missing')).toBeNull();
   });
+
+  it('getBlobResponse preserves the content-type, null on 404', async () => {
+    mockFetch(() => new Response(new Uint8Array([7]), { headers: { 'content-type': 'audio/mpeg' } }));
+    const client = createSyncClient({ baseUrl: 'https://api.test', getToken: () => 'tok' });
+    const res = await client.getBlobResponse('audio/x.mp3');
+    expect(res?.headers.get('content-type')).toBe('audio/mpeg');
+
+    mockFetch(() => new Response('', { status: 404 }));
+    expect(await client.getBlobResponse('missing')).toBeNull();
+  });
 });

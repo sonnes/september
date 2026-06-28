@@ -110,6 +110,13 @@ IndexedDB database: `september-audio`, object store: `audio-files`.
 
 Each entry is keyed by path and stores `{ blob: ArrayBuffer, contentType, metadata, created_at, name }`.
 
+#### Cloud sync (R2)
+
+When the user is signed in (see `@/packages/sync`), storage mirrors blobs to R2 via the
+sync blob-bridge: writes back up fire-and-forget, a local read-miss falls back to R2 and
+caches the bytes locally, and deletes remove the R2 object. Signed out, this is inert and
+storage is purely local.
+
 ### Types
 
 ```tsx

@@ -11,6 +11,7 @@ export interface SyncClient {
   pull: (since: number) => Promise<PullResult>;
   putBlob: (key: string, body: ArrayBuffer | Uint8Array | Blob, contentType?: string) => Promise<void>;
   getBlob: (key: string) => Promise<ArrayBuffer | null>;
+  getBlobResponse: (key: string) => Promise<Response | null>;
   deleteBlob: (key: string) => Promise<void>;
 }
 
@@ -65,11 +66,16 @@ export function createSyncClient({ baseUrl, getToken }: SyncClientOptions): Sync
       );
     },
 
-    async getBlob(key) {
+    async getBlobResponse(key) {
       const res = await fetch(`${baseUrl}/api/blobs/${key}`, { headers: authHeaders() });
       if (res.status === 404) return null;
       await expectOk(res);
-      return res.arrayBuffer();
+      return res;
+    },
+
+    async getBlob(key) {
+      const res = await this.getBlobResponse(key);
+      return res ? res.arrayBuffer() : null;
     },
 
     async deleteBlob(key) {

@@ -57,9 +57,20 @@ stays local. Registry: [registry.ts](registry.ts).
 `pnpm test src/packages/sync` — api-client, auth, cursor, outbox, and engine (27 tests).
 The React/GIS glue is env-gated and validated by build + lint.
 
+## Blob sync (R2)
+
+Audio (and reel) blobs mirror to R2 under the user's `audio/` prefix. The
+[blob-bridge.ts](blob-bridge.ts) leaf holds the active blob client (set by
+`SyncProvider` on sign-in, cleared on sign-out); `@/packages/audio` storage calls it:
+
+- writes (`uploadAudioBinary`/`uploadAudio`) mirror to R2 fire-and-forget,
+- a local read-miss (`downloadAudio`/`getAudio`) falls back to R2 and caches the bytes
+  locally, so a second device fills its IndexedDB on demand,
+- `deleteAudio` removes the R2 object too.
+
+When signed out the bridge is inert, so behaviour is unchanged.
+
 ## Known follow-ups
 
 - **Guest → account migration**: signing in switches identity to the Google `userId`;
-  existing `local-user` rows are not yet migrated into the account.
-- **Blob sync**: `putBlob`/`getBlob` exist on the client; audio/reel mirroring to R2 is
-  not yet wired into the audio storage layer.
+  existing `local-user` rows are not migrated into the account.
