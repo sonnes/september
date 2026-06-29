@@ -113,3 +113,13 @@ describe('unknown api route', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('static assets', () => {
+  it('serves the SPA shell with cross-origin isolation headers', async () => {
+    const res = await SELF.fetch('https://x/');
+    expect(res.status).toBe(200);
+    expect(res.headers.get('cross-origin-opener-policy')).toBe('same-origin');
+    expect(res.headers.get('cross-origin-embedder-policy')).toBe('require-corp');
+    expect(res.headers.get('cross-origin-resource-policy')).toBe('cross-origin');
+  });
+});

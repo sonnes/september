@@ -63,26 +63,46 @@ outbox, pull from the last cursor), reusing the existing `versionKey` conflict m
 - `GET /api/blobs/<key>` — fetch (404 if absent / another user's).
 - `DELETE /api/blobs/<key>` — remove.
 
-## Develop & deploy
+## Develop
 
 ```sh
 pnpm install            # install deps (first run also builds workerd: pnpm rebuild workerd esbuild)
 pnpm test               # vitest under the Workers runtime (Miniflare)
 pnpm typecheck          # tsc --noEmit
-pnpm dev                # wrangler dev (local DO + R2 simulation)
-pnpm sync:assets        # build the web app and copy dist/client into ./public
-pnpm deploy             # sync:assets + wrangler deploy
+pnpm dev                # wrangler dev (local DO + R2 simulation, serves ./public)
 ```
 
-Before first deploy, create the secrets and the R2 bucket:
+## Deploy (replaces the Vercel SPA — single origin)
+
+This Worker serves the built SPA **and** the API from one origin, so the move off
+Vercel is: build the web app, then `wrangler deploy`. Cross-origin isolation
+(COOP/COEP/CORP, needed for WebLLM/ffmpeg `SharedArrayBuffer`) ships via
+`apps/web/public/_headers`, carried into the deployed assets — parity with the old
+`vercel.json`.
+
+**One-time setup** (Workers **Paid** plan required for production DO storage):
 
 ```sh
 wrangler r2 bucket create september-user-blobs
-wrangler secret put SESSION_SIGNING_KEY      # a long random string
+wrangler secret put SESSION_SIGNING_KEY      # a long random string (HMAC session key)
 wrangler secret put GOOGLE_CLIENT_ID         # OAuth Web client id (also public to the SPA)
 ```
 
-Requires the **Workers Paid** plan for production Durable Object storage.
+Create the Google OAuth **Web** client (Google Cloud Console) and add the Worker's
+origin to its authorized JavaScript origins.
+
+**Each deploy** — the web build must receive the sync env at build time (point
+`VITE_SYNC_API_URL` at this Worker's own origin so the SPA and `/api` stay same-origin):
+
+```sh
+VITE_SYNC_API_URL=https://september-server.<account>.workers.dev \
+VITE_GOOGLE_CLIENT_ID=<id>.apps.googleusercontent.com \
+pnpm deploy            # = sync:assets (build web + copy dist/client → ./public) then wrangler deploy
+```
+
+`pnpm sync:assets` alone rebuilds and stages assets without deploying. Leaving the two
+`VITE_*` vars unset produces a local-only build (no sign-in/sync) — the app still works
+fully offline.
 
 ## Layout
 
@@ -95,8 +115,8 @@ Requires the **Workers Paid** plan for production Durable Object storage.
 | [src/types.ts](src/types.ts) | `Env` bindings + constants |
 | [wrangler.jsonc](wrangler.jsonc) | Bindings, DO migrations, assets, R2 |
 
-## Not yet wired
+## Status
 
-The client-side sync engine (outbox + cursor pull integrated into the TanStack DB
-collections), the Google sign-in UI, and migrating the web app's deploy from Vercel to
-this Worker are follow-ups — see `docs/plans/2026-06-26-cloudflare-do-backend.md`.
+Client sync engine, Google sign-in, R2 audio blob mirroring, and single-origin asset
+serving are wired (see `apps/web/src/packages/sync`). Remaining follow-up: guest →
+account data migration on first sign-in. See `docs/plans/2026-06-26-cloudflare-do-backend.md`.
