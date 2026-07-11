@@ -75,7 +75,45 @@ describe('home redesign sections', () => {
     );
     expect(container.textContent).toContain('Get Started');
     expect(container.textContent).toContain('Open Source');
-    expect(container.textContent).toContain('Try Now');
+    // One CTA label everywhere — no competing "Try Now".
+    expect(container.textContent).not.toContain('Try Now');
+  });
+
+  it('answers cost and privacy in the hero', () => {
+    render(<HeroSection />);
+
+    expect(container.textContent).toContain('Free to use.');
+    expect(container.textContent).toContain('Your words can stay on this device.');
+  });
+
+  it('keeps hero actions accessible for motor-impaired users', () => {
+    render(<HeroSection />);
+
+    const getStarted = [...container.querySelectorAll('a')].find(anchor =>
+      anchor.className.includes('bg-amber-500')
+    )!;
+    expect(getStarted).toBeTruthy();
+    expect(getStarted.textContent?.trim()).toBe('Get Started');
+    expect(getStarted.className).not.toContain('text-white');
+    expect(getStarted.className).toContain('text-amber-950');
+
+    // Nav pill and hero CTA share the unified label; both keep 44px height.
+    const onboardingLinks = [...container.querySelectorAll('a')].filter(
+      anchor => anchor.textContent?.trim() === 'Get Started'
+    );
+    expect(onboardingLinks).toHaveLength(2);
+    for (const link of onboardingLinks) {
+      expect(link.className).toContain('h-11');
+      expect(link.className).not.toContain('py-1.5');
+    }
+
+    const logo = container.querySelector('img[alt="September Logo"]')!;
+    expect(logo).toBeTruthy();
+    expect(logo.getAttribute('loading')).not.toBe('lazy');
+
+    // Both GitHub marks come from lucide — no hand-rolled fill SVG.
+    expect(container.querySelectorAll('svg.lucide-github')).toHaveLength(2);
+    expect(container.querySelector('svg[fill="currentColor"]')).toBeNull();
   });
 
   it('renders a focused live demo of the core communication flow', () => {
@@ -105,6 +143,59 @@ describe('home redesign sections', () => {
     expect(frame?.className).not.toContain('lg:h-[760px]');
   });
 
+  it('lets the live demo frame grow on mobile instead of clipping', () => {
+    render(<LiveDemoSection />);
+
+    const frame = container.querySelector('[data-live-demo-frame]')!;
+    // No fixed height below sm — the frame must not clip wrapped chips/stripes.
+    expect(frame.classList.contains('h-[520px]')).toBe(false);
+    expect(frame.classList.contains('min-h-[520px]')).toBe(true);
+    // Fixed heights return at sm+ so the desktop look is unchanged.
+    expect(frame.classList.contains('sm:h-[540px]')).toBe(true);
+    expect(frame.classList.contains('lg:h-[560px]')).toBe(true);
+  });
+
+  it('gives the live demo full section weight and a seeded transcript', () => {
+    render(<LiveDemoSection />);
+
+    // Same rhythm as the other sections: py-16 and the large heading scale.
+    expect(container.querySelector('section')!.className).toContain('py-16');
+    expect(container.querySelector('h2')!.className).toContain('sm:text-5xl');
+
+    // A pre-spoken message so the transcript reads as live, not a screenshot.
+    expect(container.textContent).toContain('Good morning! Ready when you are.');
+
+    // The static speaker pill must not pretend to be a dropdown.
+    expect(container.querySelector('svg.lucide-chevron-down')).toBeNull();
+  });
+
+  it('has no dead #how anchor on the live demo section', () => {
+    render(<LiveDemoSection />);
+
+    expect(container.querySelector('#how')).toBeNull();
+    expect(container.querySelector('section')!.id).toBe('');
+  });
+
+  it('gives the demo Speak button a 44px minimum touch target', () => {
+    render(<LiveDemoSection />);
+
+    const speakButton = [...container.querySelectorAll('button')].find(
+      button => button.textContent?.trim() === 'Speak'
+    )!;
+    expect(speakButton.classList.contains('min-h-11')).toBe(true);
+  });
+
+  it('hides the horizontal scrollbar on suggestion stripe rows', () => {
+    render(<LiveDemoSection />);
+
+    const rows = [...container.querySelectorAll('.overflow-x-auto')];
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row.className).toContain('[scrollbar-width:none]');
+      expect(row.className).toContain('[&::-webkit-scrollbar]:hidden');
+    }
+  });
+
   it('lets the live demo speak the current editor text', () => {
     render(<LiveDemoSection />);
 
@@ -130,6 +221,12 @@ describe('home redesign sections', () => {
     expect(container.textContent).toContain('Speak out loud');
     expect(container.textContent).toContain('Notes for longer thoughts');
     expect(container.textContent).toContain('Reels from notes');
+
+    // Intro sits on bg-zinc-100 — zinc-500 is under AA there, zinc-600 passes.
+    const intro = [...container.querySelectorAll('p')].find(p =>
+      p.textContent?.includes('Each part has a simple job')
+    )!;
+    expect(intro.className).toContain('text-zinc-600');
   });
 
   it('uses app-shaped skeleton previews for each feature card', () => {
@@ -184,7 +281,8 @@ describe('home redesign sections', () => {
     expect(container.textContent).toContain(
       'Create a space, save a phrase, and try speaking one message.'
     );
-    expect(container.textContent).toContain('Start setup');
+    expect(container.textContent).toContain('Get Started');
+    expect(container.textContent).not.toContain('Start setup');
   });
 
   it('keeps footer text and links in a simple layout', () => {

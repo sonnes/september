@@ -1,7 +1,6 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
-  ChevronDown,
   Delete,
   Headphones,
   PanelLeft,
@@ -16,7 +15,8 @@ import { EditorProvider, useEditorContext } from '@/packages/editor';
 import { DEFAULT_SPACE_SEED } from '@/packages/spaces';
 import { type Stripe, SuggestionStripes, stripeForText } from '@/packages/suggestions';
 
-const DEMO_TRANSCRIPT: string[] = [];
+// Seed one spoken message so the transcript reads as live, not a screenshot.
+const DEMO_TRANSCRIPT: string[] = ['Good morning! Ready when you are.'];
 
 const DEMO_SUGGESTIONS: { text: string; source: Stripe['source'] }[] =
   DEFAULT_SPACE_SEED.phrases
@@ -25,14 +25,14 @@ const DEMO_SUGGESTIONS: { text: string; source: Stripe['source'] }[] =
 
 export function LiveDemoSection() {
   return (
-    <section id="how" className="bg-white px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-7xl gap-5">
+    <section className="bg-white px-4 py-16 sm:px-6 lg:px-8">
+      <div className="mx-auto grid max-w-7xl gap-9">
         <div className="max-w-3xl">
-          <p className="mb-2 text-sm font-bold text-indigo-600">Live demo</p>
-          <h2 className="text-2xl font-bold leading-tight tracking-normal text-zinc-950 sm:text-3xl">
+          <p className="mb-3 text-sm font-bold text-indigo-600">Live demo</p>
+          <h2 className="text-3xl font-bold leading-tight tracking-normal text-zinc-950 sm:text-5xl">
             Type a little. Tap a suggestion. Speak.
           </h2>
-          <p className="mt-3 max-w-3xl text-base leading-relaxed text-zinc-500">
+          <p className="mt-4 max-w-3xl text-base leading-relaxed text-zinc-500 sm:text-lg">
             The main screen is for one simple job: build a message faster and press Speak when it is
             ready.
           </p>
@@ -127,7 +127,7 @@ function WorkingDemo() {
     <div className="overflow-hidden rounded-2xl bg-zinc-100 p-2 shadow-sm sm:p-4">
       <div
         data-live-demo-frame
-        className="grid h-[520px] overflow-hidden rounded-xl border bg-white shadow-sm sm:h-[540px] lg:h-[560px]"
+        className="grid min-h-[520px] overflow-hidden rounded-xl border bg-white shadow-sm sm:min-h-0 sm:h-[540px] lg:h-[560px]"
       >
         <div className="grid min-w-0 grid-rows-[52px_minmax(0,1fr)] lg:grid-rows-[60px_minmax(0,1fr)]">
           {/* Header — sidebar trigger + space title + panel toggle */}
@@ -147,7 +147,7 @@ function WorkingDemo() {
           {/* Compose column — transcript above, console (suggestions + composer) below */}
           <div className="flex min-w-0 flex-col gap-4 overflow-hidden px-3 pb-3 sm:px-4 sm:pb-4">
             {/* Transcript — spoken messages anchored to the bottom */}
-            <div className="flex min-h-0 flex-1 flex-col justify-end gap-2.5 overflow-y-auto py-4">
+            <div className="flex min-h-36 flex-1 flex-col justify-end gap-2.5 overflow-y-auto py-4 sm:min-h-0">
               {spoken.map((message, i) => (
                 <div
                   key={`${message}-${i}`}
@@ -197,18 +197,18 @@ function WorkingDemo() {
                       <Trash2 className="size-5" />
                     </RailButton>
                     {/* Static speaker pill — the live selector needs enumerated
-                        output devices; here we mirror its look only. */}
+                        output devices; here we mirror its look only, without the
+                        dropdown chevron so it doesn't pretend to be interactive. */}
                     <span className="hidden h-auto items-center gap-2 rounded-full border border-input bg-background px-3 py-1.5 text-xs text-muted-foreground sm:inline-flex">
                       <Headphones className="size-4 shrink-0" aria-hidden="true" />
                       System Default
-                      <ChevronDown className="size-3.5 opacity-50" aria-hidden="true" />
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => speak()}
                     disabled={!text.trim()}
-                    className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:enabled:scale-[1.02] active:enabled:scale-95 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:enabled:scale-[1.02] active:enabled:scale-95 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
                   >
                     <Volume2 className="size-4" aria-hidden="true" />
                     Speak

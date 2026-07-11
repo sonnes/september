@@ -57,7 +57,7 @@ Each stripe renders on a **single line** (`flex-nowrap`). Tile font/padding/min-
 scale by one uniform factor from `useStripeScale` so the _longest_ stripe fits the
 container width — measured with Pretext (`@chenglou/pretext`), the same engine the
 display reel uses. Tiles never wrap; an over-long stripe (past the min-scale floor)
-scrolls horizontally instead.
+scrolls horizontally instead (with the scrollbar hidden — the row stays scrollable).
 
 Pass `onSubmit` to add a trailing **enter** button to each stripe that accepts the
 whole stripe (full draft + suggestion) and speaks it in one tap.

@@ -17,6 +17,14 @@ describe('setup modes', () => {
     expect(copy).not.toMatch(/\b(LLM|corpus|API key|tokens?)\b/i);
   });
 
+  it('leads the free mode with the benefit, not the vendor', () => {
+    const free = SETUP_MODES.find(mode => mode.id === 'free')!;
+    expect(free.body).not.toMatch(/^Use OpenRouter/);
+    expect(free.body).toMatch(/free writing help/i);
+    // The vendor is still named and explained in the details.
+    expect(free.bullets.join('\n')).toMatch(/OpenRouter, a free AI service/);
+  });
+
   it('recognises valid setup modes', () => {
     expect(isSetupMode('privacy')).toBe(true);
     expect(isSetupMode('free')).toBe(true);

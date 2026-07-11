@@ -117,7 +117,7 @@ export function SuggestionStripes({
           return (
             <div
               key={stripe.text}
-              className="flex flex-nowrap items-center overflow-x-auto animate-in fade-in slide-in-from-bottom-1 motion-reduce:animate-none"
+              className="flex flex-nowrap items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden animate-in fade-in slide-in-from-bottom-1 motion-reduce:animate-none"
               style={{ gap: STRIPE_BASE.gapPx * scale, animationDelay: `${si * 45}ms`, animationFillMode: 'both' }}
               onMouseLeave={() => setHover(null)}
             >

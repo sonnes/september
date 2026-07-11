@@ -37,9 +37,9 @@ export const SETUP_MODES: readonly SetupModeContent[] = [
     accent: 'amber',
     badge: 'Free start',
     title: 'Free AI mode',
-    body: 'Use OpenRouter, a free AI option, for writing help.',
+    body: 'Free writing help when you want it.',
     bullets: [
-      'September may send the current message to OpenRouter for suggestions.',
+      'September may send the current message to OpenRouter, a free AI service, for suggestions.',
       'Spaces and saved phrases still stay on this device.',
       'Good when you want help writing longer replies.',
     ],

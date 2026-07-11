@@ -55,7 +55,7 @@ export function FeaturesSection() {
           <h2 className="text-3xl font-bold leading-tight tracking-normal text-zinc-950 sm:text-5xl">
             Simple tools for everyday conversations.
           </h2>
-          <p className="mt-4 text-base leading-relaxed text-zinc-500 sm:text-lg">
+          <p className="mt-4 text-base leading-relaxed text-zinc-600 sm:text-lg">
             Each part has a simple job: organize the conversation, reduce typing, and make the
             message easy to speak.
           </p>

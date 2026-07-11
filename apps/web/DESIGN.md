@@ -25,7 +25,7 @@ describes how every page assembles those existing pieces the same way.
 
 ### 1.2 Color
 
-Use the CSS variables in `app/globals.css`. Do not hard-code hex values or
+Use the CSS variables in `src/styles/globals.css`. Do not hard-code hex values or
 arbitrary Tailwind palette shades in page code. The only hard-coded palette
 colors that remain are inside the marketing `HeroSection` (which is intentionally
 bold and pre-dates this system) and should not be copied into app pages.
@@ -59,7 +59,7 @@ bold and pre-dates this system) and should not be copied into app pages.
 
 ## 2. Page shell
 
-Every page inside `app/(app)` assembles the same three parts, in this order.
+Every page inside `src/routes/_app/` assembles the same three parts, in this order.
 
 ```tsx
 <SidebarLayout.Header>
@@ -80,7 +80,7 @@ Every page inside `app/(app)` assembles the same three parts, in this order.
 
 ### 2.1 `<PageHeader>`
 
-Lives in `apps/web/components/layout/page-header.tsx`. It contains — and only
+Lives in `apps/web/src/components/layout/page-header.tsx`. It contains — and only
 contains — the sidebar trigger, a separator, and an optional breadcrumb trail.
 It never contains the page title. Pages with a mobile-specific header (e.g.
 chat detail) may replace it; they still must not render the page title inside
@@ -92,7 +92,7 @@ it.
 
 ### 2.2 `<PageShell>`
 
-Lives in `apps/web/components/layout/page-shell.tsx`. Owns content padding and
+Lives in `apps/web/src/components/layout/page-shell.tsx`. Owns content padding and
 width.
 
 - `width="default"` → `max-w-3xl` — lists, short forms
@@ -105,7 +105,7 @@ Padding: `px-4 py-6 sm:px-6 md:py-8`. Pages do not add extra padding.
 
 ### 2.3 `<PageTitle>`
 
-Lives in `apps/web/components/layout/page-title.tsx`. Renders the page title
+Lives in `apps/web/src/components/layout/page-title.tsx`. Renders the page title
 (`h1`), optional description, and optional right-aligned actions.
 
 - Exactly one `PageTitle` per page. If you feel the need for two, split the
@@ -132,7 +132,7 @@ Lives in `apps/web/components/layout/page-title.tsx`. Renders the page title
 ## 3. State components
 
 Four shared primitives replace the ad-hoc loading/error/empty/warning UI
-scattered across pages today. They live in `packages/ui/components/` and wrap
+scattered across pages today. They live in `src/packages/ui/components/` and wrap
 existing shadcn primitives — nothing new visually, just reused.
 
 ### 3.1 `<Callout>`
@@ -223,7 +223,8 @@ page-specific actions (e.g. Display button), but still no duplicate title.
 
 ### 4.3 Settings (account, providers, suggestions, transcription, speech)
 
-Settings use a **two-column shell** owned by the `/_app/settings` layout route,
+Settings use a **two-column shell** owned by the settings layout route
+(`src/routes/_app/settings.tsx`),
 not the standard `PageShell`. The left column is a persistent sub-nav
 (`SettingsNav`) listing every settings section with an icon, name, and one-line
 description; the active row is highlighted with `bg-muted`. The right column
@@ -238,7 +239,7 @@ plus the body — wrapped in a single `flex flex-col gap-6`. They do not render
 Configuration". Warnings go in `<Callout tone="warning">`.
 
 ```tsx
-// routes/_app/settings/providers.tsx — content only
+// src/routes/_app/settings/providers.tsx — content only
 function ProvidersPage() {
   return (
     <div className="flex flex-col gap-6">
@@ -260,16 +261,18 @@ voice"). Sticky bottom compose UIs in `talk` break out of the shell width.
 
 ### 4.5 Marketing / legal (`/`, `/privacy-policy`, `/terms-of-service`)
 
-These are **not** app pages and do not use `SidebarLayout`. They live under
-`app/(marketing)/` with a lightweight layout: the hero nav + the existing
-`Footer`. Legal pages still follow §3 (use `<Callout>` for highlighted
+These are **not** app pages and do not use `SidebarLayout`. The landing page
+is `src/routes/index.tsx` (sections in `src/components/home/`); the legal
+pages live under `src/routes/_marketing/` behind the pathless layout
+`src/routes/_marketing.tsx` — a lightweight layout: the hero nav + the
+existing `Footer`. Legal pages still follow §3 (use `<Callout>` for highlighted
 notices) so a user moving from the app into legal sees consistent banner
 styling.
 
-### 4.6 Broadcast surfaces (`/display/[id]`, `/present/[id]`, `/preview`)
+### 4.6 Broadcast surfaces (`display.$id.tsx`, `present.$id.tsx`, `preview.tsx`)
 
-Intentionally different. Black canvas, full-bleed, large type. They are
-out-of-scope of this document.
+Intentionally different. Black canvas, full-bleed, large type. They live as
+top-level route files in `src/routes/` and are out-of-scope of this document.
 
 ---
 
@@ -284,8 +287,8 @@ Do not do any of these:
 - **Invent a new error layout.** Use `<ErrorState>`.
 - **Add `p-6` inside a `PageShell`.** The shell owns padding.
 - **Pick a random `max-w-*`.** Use `PageShell`'s `width` prop.
-- **Reach into `(app)` chrome from legal pages** by wrapping them in the
-  sidebar. They belong under `(marketing)`.
+- **Reach into `_app` chrome from legal pages** by wrapping them in the
+  sidebar. They belong under `_marketing`.
 
 ---
 
@@ -307,24 +310,31 @@ The audience includes users with ALS/MND and motor difficulties. Therefore:
 ## 7. Where things live
 
 ```
-apps/web/
-  app/
-    (app)/               → app pages, use SidebarLayout + PageShell
-    (marketing)/         → / + /privacy-policy + /terms-of-service
-    display/             → broadcast surfaces, unstyled by this doc
-    present/             → broadcast surfaces
-    preview/             → broadcast surfaces
+apps/web/src/
+  routes/
+    _app/                → app pages, use SidebarLayout + PageShell
+    _app.tsx             → pathless layout for app pages
+    _marketing/          → /privacy-policy + /terms-of-service
+    _marketing.tsx       → pathless layout for legal pages
+    _onboarding/         → onboarding flow
+    index.tsx            → landing page (/)
+    display.$id.tsx      → broadcast surface, unstyled by this doc
+    present.$id.tsx      → broadcast surface
+    preview.tsx          → broadcast surface
   components/
+    home/                → landing page sections
     layout/
       page-header.tsx    → breadcrumbs + sidebar trigger
       page-shell.tsx     → width + padding
       page-title.tsx     → title + description + actions
     sidebar/             → existing sidebar chrome
-packages/ui/components/
-  callout.tsx            → four-tone banner
-  empty-state.tsx        → empty-list illustration + action
-  error-state.tsx        → error + retry
-  loading-state.tsx      → page / inline loading
+  packages/ui/components/
+    callout.tsx          → four-tone banner
+    empty-state.tsx      → empty-list illustration + action
+    error-state.tsx      → error + retry
+    loading-state.tsx    → page / inline loading
+  styles/
+    globals.css          → CSS variables / theme tokens
 ```
 
 ---
