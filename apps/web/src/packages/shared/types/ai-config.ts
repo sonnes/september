@@ -6,7 +6,14 @@
 /**
  * Supported AI providers
  */
-export type AIProvider = 'gemini' | 'openrouter' | 'elevenlabs' | 'browser' | 'webllm' | 'kokoro';
+export type AIProvider =
+  | 'gemini'
+  | 'openrouter'
+  | 'elevenlabs'
+  | 'browser'
+  | 'webllm'
+  | 'kokoro'
+  | 'whisper';
 
 /**
  * AI feature identifiers
@@ -52,7 +59,7 @@ export interface SuggestionsConfig extends BaseFeatureConfig {
  * Configuration for speech-to-text transcription
  */
 export interface TranscriptionConfig extends BaseFeatureConfig {
-  provider: 'gemini' | 'openrouter';
+  provider: 'gemini' | 'openrouter' | 'whisper';
   model?: string;
   settings?: {
     /** Language code (e.g., 'en-US') */
@@ -144,6 +151,9 @@ export interface KokoroSpeechSettings extends Record<string, unknown> {
  * Configuration for text-to-speech
  */
 export interface SpeechConfig {
+  /** Whether speech is enabled (mirrors the persisted schema). */
+  enabled?: boolean;
+
   provider: 'browser' | 'gemini' | 'elevenlabs' | 'kokoro';
 
   /** Voice ID (provider-specific) */

@@ -35,7 +35,7 @@ export function TranscriptionForm({ account, onSubmit, children }: Transcription
     const config = account?.ai_transcription;
     return {
       enabled: config?.enabled ?? false,
-      provider: (config?.provider as 'gemini' | 'openrouter') ?? 'gemini',
+      provider: (config?.provider as 'gemini' | 'openrouter' | 'whisper') ?? 'gemini',
       model: config?.model ?? 'gemini-2.5-flash-lite',
       settings: {
         language: config?.settings?.language ?? 'en-US',
@@ -73,7 +73,7 @@ export function TranscriptionForm({ account, onSubmit, children }: Transcription
   const transcriptionProviders = useMemo(
     () =>
       getProvidersForFeature('transcription')
-        .filter(p => p.id === 'gemini' || p.id === 'openrouter')
+        .filter(p => p.id === 'gemini' || p.id === 'openrouter' || p.id === 'whisper')
         .map(p => ({ id: p.id, name: p.name })),
     []
   );

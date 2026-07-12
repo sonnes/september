@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 
 import { useAccount } from '@/packages/account';
+import { preloadKokoro } from '@/packages/speech';
 import { Button } from '@/packages/ui/components/button';
 
 import { ONBOARDING_PRIMARY_COPY } from '../../lib/onboarding-content';
@@ -25,9 +26,13 @@ export function PrivacyFinishStep() {
         buildPrivacyModeUpdate({
           currentSpeech: account?.ai_speech,
           currentSuggestions: account?.ai_suggestions,
+          currentTranscription: account?.ai_transcription,
           currentProviders: account?.ai_providers,
         })
       );
+      // Start the one-time voice model download now so the first utterance
+      // doesn't stall; progress shows in speech settings if the user looks.
+      preloadKokoro().catch(() => {});
       await completeOnboarding();
     } catch {
       setIsSaving(false);

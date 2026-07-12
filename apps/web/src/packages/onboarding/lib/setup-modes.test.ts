@@ -35,7 +35,7 @@ describe('setup modes', () => {
 });
 
 describe('buildPrivacyModeUpdate', () => {
-  it('forces browser speech, keeps suggestions disabled, and leaves providers untouched', () => {
+  it('switches a cloud voice to the on-device Kokoro default and leaves providers untouched', () => {
     const update = buildPrivacyModeUpdate({
       currentSpeech: {
         enabled: true,
@@ -53,19 +53,74 @@ describe('buildPrivacyModeUpdate', () => {
       currentProviders: { gemini: { api_key: 'gemini-key' } },
     });
 
-    expect(update.ai_speech?.provider).toBe('browser');
-    expect(update.ai_speech?.enabled).toBe(true);
+    expect(update.ai_speech).toMatchObject({
+      enabled: true,
+      provider: 'kokoro',
+      voice_id: 'af_heart',
+      voice_name: 'Heart',
+    });
     // preserved existing voice settings while switching provider
     expect(update.ai_speech?.settings).toEqual({ speed: 1.1 });
-    expect(update.ai_suggestions?.enabled).toBe(false);
     expect(update.ai_providers).toEqual({ gemini: { api_key: 'gemini-key' } });
+  });
+
+  it('keeps an already-chosen Kokoro voice', () => {
+    const update = buildPrivacyModeUpdate({
+      currentSpeech: {
+        enabled: true,
+        provider: 'kokoro',
+        voice_id: 'bm_george',
+        voice_name: 'George',
+        settings: {},
+      },
+    });
+    expect(update.ai_speech).toMatchObject({
+      provider: 'kokoro',
+      voice_id: 'bm_george',
+      voice_name: 'George',
+    });
   });
 
   it('works with no current account state', () => {
     const update = buildPrivacyModeUpdate();
-    expect(update.ai_speech).toEqual({ enabled: true, provider: 'browser', settings: {} });
+    expect(update.ai_speech).toMatchObject({
+      enabled: true,
+      provider: 'kokoro',
+      voice_id: 'af_heart',
+      voice_name: 'Heart',
+    });
     expect(update.ai_suggestions?.enabled).toBe(false);
     expect(update.ai_providers).toEqual({});
+  });
+
+  it('presets local providers for suggestions and transcription without enabling them', () => {
+    const update = buildPrivacyModeUpdate();
+    expect(update.ai_suggestions).toMatchObject({ enabled: false, provider: 'webllm' });
+    expect(update.ai_transcription).toMatchObject({ enabled: false, provider: 'whisper' });
+  });
+
+  it('keeps local suggestions enabled if the user already enabled them', () => {
+    const update = buildPrivacyModeUpdate({
+      currentSuggestions: {
+        enabled: true,
+        provider: 'webllm',
+        model: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
+        settings: {},
+      },
+    });
+    expect(update.ai_suggestions).toMatchObject({ enabled: true, provider: 'webllm' });
+  });
+
+  it('switches cloud suggestions to the local provider, disabled', () => {
+    const update = buildPrivacyModeUpdate({
+      currentSuggestions: {
+        enabled: true,
+        provider: 'openrouter',
+        model: 'google/gemini-2.5-flash-lite',
+        settings: {},
+      },
+    });
+    expect(update.ai_suggestions).toMatchObject({ enabled: false, provider: 'webllm' });
   });
 });
 

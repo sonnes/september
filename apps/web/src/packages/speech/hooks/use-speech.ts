@@ -10,7 +10,7 @@ import type { AIProvider, ElevenLabsSettings } from '@/packages/shared';
 import type { Voice } from '@/packages/shared';
 
 import { BrowserSpeechProvider } from '../lib/providers/browser';
-import { KokoroSpeechProvider } from '../lib/providers/kokoro';
+import { KOKORO_SAMPLE_RATE, KokoroSpeechProvider } from '../lib/providers/kokoro';
 import {
   ElevenLabsSpeechProvider,
   elevenLabsStreamParams,
@@ -165,22 +165,30 @@ export function useSpeech(): UseSpeechReturn {
 
   const generateSpeechStream = useCallback(
     (text: string, options?: SpeechOptions, context?: { previous_text?: string }) => {
-      if (WS_TTS_DISABLED || !engine?.generateSpeechStream || !voice?.id) return undefined;
-      const conn = getWsConnection();
+      if (!engine?.generateSpeechStream) return undefined;
+      // The WS kill switch only concerns the ElevenLabs socket path — Kokoro
+      // streams from its local worker and needs no connection.
+      const isElevenLabs = engine.id === 'elevenlabs';
+      if (isElevenLabs && (WS_TTS_DISABLED || !voice?.id)) return undefined;
 
-      const settings = { ...speechConfig.settings, ...options } as ElevenLabsSettings;
+      const settings = { ...speechConfig.settings, ...options } as SpeechOptions;
       const startTime = performance.now();
 
-      // The hook owns live playback because it knows the PCM sample rate.
-      const player = new PcmStreamPlayer(
-        sampleRateForFormat(settings.output_format || 'pcm_22050'),
-        selectedOutputDeviceId ?? undefined
-      );
+      // The hook owns live playback because it knows the PCM sample rate:
+      // ElevenLabs streams at the configured output format, Kokoro at 24 kHz.
+      const sampleRate = isElevenLabs
+        ? sampleRateForFormat((settings as ElevenLabsSettings).output_format || 'pcm_22050')
+        : KOKORO_SAMPLE_RATE;
+      const player = new PcmStreamPlayer(sampleRate, selectedOutputDeviceId ?? undefined);
       const hooks: SpeechStreamHooks = { onAudioChunk: int16 => player.push(int16) };
 
       const promise = (async () => {
         try {
-          const socket = await conn.acquire(elevenLabsStreamParams(voice.id!, settings));
+          const socket = isElevenLabs
+            ? await getWsConnection().acquire(
+                elevenLabsStreamParams(voice!.id!, settings as ElevenLabsSettings)
+              )
+            : undefined;
           const result = await engine.generateSpeechStream!(
             { text, voice, options: settings, previous_text: context?.previous_text },
             hooks,
@@ -199,7 +207,7 @@ export function useSpeech(): UseSpeechReturn {
           if (user?.id && result) {
             track(user.id, {
               type: 'tts_generation',
-              provider: 'elevenlabs',
+              provider: isElevenLabs ? 'elevenlabs' : undefined,
               voice_id: speechConfig.voice_id,
               text_length: text.length,
               duration_seconds: 0,

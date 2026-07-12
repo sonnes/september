@@ -15,7 +15,7 @@ export const SuggestionsConfigSchema = z.object({
 
 export const TranscriptionConfigSchema = z.object({
   enabled: z.boolean(),
-  provider: z.enum(['gemini', 'openrouter']),
+  provider: z.enum(['gemini', 'openrouter', 'whisper']),
   model: z.string().optional(),
   settings: z
     .object({
@@ -43,6 +43,7 @@ export const SpeechConfigSchema = z.object({
       style: z.number().optional(),
       speaker_boost: z.boolean().optional(),
       language: z.string().optional(),
+      voice: z.string().optional(),
     })
     .optional(),
 });

@@ -172,7 +172,8 @@ export const AI_PROVIDERS: Record<AIProvider, AIServiceProvider> = {
   kokoro: {
     id: 'kokoro',
     name: 'Kokoro TTS',
-    description: 'Client-side text-to-speech using Kokoro model. Runs locally via WebGPU, no API key required.',
+    description:
+      'Natural voice that runs entirely on this device. One-time model download, no API key required.',
     features: ['speech'],
     requires_api_key: false,
     models: [
@@ -180,6 +181,22 @@ export const AI_PROVIDERS: Record<AIProvider, AIServiceProvider> = {
         id: 'kokoro-82m-v1.0',
         name: 'Kokoro 82M v1.0',
         description: 'High-quality English TTS model (28 voices, US & UK)',
+      },
+    ],
+  },
+
+  whisper: {
+    id: 'whisper',
+    name: 'Whisper (Local)',
+    description:
+      'Speech-to-text that runs entirely on this device. One-time model download, no API key required.',
+    features: ['transcription'],
+    requires_api_key: false,
+    models: [
+      {
+        id: 'onnx-community/whisper-base',
+        name: 'Whisper Base',
+        description: 'Multilingual on-device transcription (~80MB download)',
       },
     ],
   },

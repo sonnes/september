@@ -7,6 +7,7 @@ import {
   alignmentToReelWords,
   captionProgress,
   markdownToVoiceText,
+  reelTimingSupported,
   wordsToReelCaptions,
   type ReelCaption,
 } from './reel';
@@ -151,5 +152,17 @@ describe('captionProgress', () => {
   it('clamps outside the caption window', () => {
     expect(captionProgress(caption, 0)).toBe(0);
     expect(captionProgress(caption, 10)).toBe(1);
+  });
+});
+
+describe('reelTimingSupported', () => {
+  it('accepts providers that return caption timing', () => {
+    expect(reelTimingSupported('elevenlabs')).toBe(true);
+    expect(reelTimingSupported('kokoro')).toBe(true);
+  });
+
+  it('rejects providers without timing', () => {
+    expect(reelTimingSupported('browser')).toBe(false);
+    expect(reelTimingSupported('gemini')).toBe(false);
   });
 });

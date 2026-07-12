@@ -1,7 +1,10 @@
 import type { AccountUpdate } from '@/packages/account';
-import type { Providers, SpeechConfig, SuggestionsConfig } from '@/packages/shared';
-
-import { buildSuggestionsSetupUpdate } from './suggestions-setup';
+import type {
+  Providers,
+  SpeechConfig,
+  SuggestionsConfig,
+  TranscriptionConfig,
+} from '@/packages/shared';
 
 export type SetupMode = 'privacy' | 'free' | 'advanced';
 
@@ -28,8 +31,8 @@ export const SETUP_MODES: readonly SetupModeContent[] = [
     body: 'The most private option. No AI service needed.',
     bullets: [
       'Everything stays on this device.',
-      'Use saved phrases and browser speech.',
-      'Nothing is sent out for suggestions.',
+      'A natural voice runs in your browser after a one-time download.',
+      'Nothing you write is ever sent out.',
     ],
   },
   {
@@ -71,32 +74,56 @@ const DEFAULT_BROWSER_SPEECH: SpeechConfig = {
 interface BuildPrivacyModeUpdateParams {
   currentSpeech?: SpeechConfig;
   currentSuggestions?: SuggestionsConfig;
+  currentTranscription?: TranscriptionConfig;
   currentProviders?: Providers;
 }
 
-// Privacy mode: on-device only. Browser speech, suggestions left disabled
-// (built-in path), and provider keys untouched.
+const KOKORO_DEFAULT = { voice_id: 'af_heart', voice_name: 'Heart' };
+const WEBLLM_DEFAULT_MODEL = 'Llama-3.2-1B-Instruct-q4f16_1-MLC';
+const WHISPER_DEFAULT_MODEL = 'onnx-community/whisper-base';
+
+// Privacy mode: on-device only. Kokoro speech (natural voice, one-time model
+// download, nothing sent out), and suggestions/transcription preset to the
+// local providers but left disabled — enabling either is a single toggle in
+// Settings, no key needed. Provider keys are untouched.
 export function buildPrivacyModeUpdate({
   currentSpeech,
   currentSuggestions,
+  currentTranscription,
   currentProviders,
 }: BuildPrivacyModeUpdateParams = {}): Pick<
   AccountUpdate,
-  'ai_speech' | 'ai_suggestions' | 'ai_providers'
+  'ai_speech' | 'ai_suggestions' | 'ai_transcription' | 'ai_providers'
 > {
-  const suggestions = buildSuggestionsSetupUpdate({
-    currentSuggestions,
-    currentProviders,
-    serviceChoice: 'built-in',
-  });
+  // Keep a Kokoro voice the user already picked; otherwise the default voice.
+  const keepKokoroVoice = currentSpeech?.provider === 'kokoro' && currentSpeech.voice_id;
 
   return {
     ai_speech: {
       ...(currentSpeech ?? DEFAULT_BROWSER_SPEECH),
       enabled: true,
-      provider: 'browser',
+      provider: 'kokoro',
+      ...(keepKokoroVoice
+        ? { voice_id: currentSpeech!.voice_id, voice_name: currentSpeech!.voice_name }
+        : KOKORO_DEFAULT),
     },
-    ...suggestions,
+    ai_suggestions: {
+      // Only stays enabled if it was already running on the local provider.
+      enabled: currentSuggestions?.provider === 'webllm' ? currentSuggestions.enabled : false,
+      provider: 'webllm',
+      model:
+        currentSuggestions?.provider === 'webllm' && currentSuggestions.model
+          ? currentSuggestions.model
+          : WEBLLM_DEFAULT_MODEL,
+      settings: { ...(currentSuggestions?.settings ?? {}) },
+    },
+    ai_transcription: {
+      enabled: currentTranscription?.provider === 'whisper' ? currentTranscription.enabled : false,
+      provider: 'whisper',
+      model: WHISPER_DEFAULT_MODEL,
+      settings: { ...(currentTranscription?.settings ?? {}) },
+    },
+    ai_providers: currentProviders ?? {},
   };
 }
 

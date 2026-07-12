@@ -31,7 +31,7 @@ Full-screen single-column flow: an **indigo hero header** (brand + setup title/d
 2. **About you** — name (required), speaking-style persona chips + editable text, and an optional "personal words" collapsible (appended to `account.context` as bullet lines).
 3. **Choose setup** — the centerpiece: three selectable mode cards. Selecting one sets `mode`.
 4. **Finish** — branches on `mode`:
-   - **Privacy** (`finish-privacy.tsx`) — summary; applies `buildPrivacyModeUpdate` (browser speech, suggestions disabled, no provider keys).
+   - **Privacy** (`finish-privacy.tsx`) — summary; applies `buildPrivacyModeUpdate` (on-device Kokoro voice with `af_heart` default, suggestions preset to local WebLLM and transcription to local Whisper — both disabled, no provider keys) and kicks off `preloadKokoro()` so the one-time voice model download runs in the background.
    - **Free AI** (`finish-free.tsx`) — one-click **Connect OpenRouter** (OAuth); applies browser speech + OpenRouter suggestions. Finish is gated until connected, with a "use built-in instead" fallback that switches to Privacy.
    - **Advanced** (`finish-advanced.tsx`) — one combined screen: pick a voice service (+ key + voice) and a writing helper (+ key); applies `buildAdvancedFinishUpdate`.
 

@@ -32,6 +32,16 @@ function crossOriginIsolationHeaders() {
 }
 
 export default defineConfig({
+  // onnxruntime-web (behind kokoro-js / @huggingface/transformers) breaks when
+  // Vite pre-bundles it — .wasm asset URLs get rewritten. Load it untouched.
+  optimizeDeps: {
+    exclude: ['kokoro-js', '@huggingface/transformers'],
+  },
+  // The Kokoro/Whisper workers use dynamic import(), which needs ES-module
+  // worker output (the default iife format can't code-split).
+  worker: {
+    format: 'es' as const,
+  },
   plugins: [
     crossOriginIsolationHeaders(),
     tsconfigPaths(),

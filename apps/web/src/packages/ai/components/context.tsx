@@ -131,7 +131,9 @@ export function AISettingsProvider({ children }: AISettingsProviderProps) {
 
   const getProviderConfig = useCallback(
     (provider: AIProvider): ProviderConfig | undefined => {
-      if (provider === 'browser' || provider === 'kokoro') return undefined;
+      // Local providers run on-device and have no key/config.
+      if (provider === 'browser' || provider === 'kokoro' || provider === 'whisper')
+        return undefined;
       return account?.ai_providers?.[provider];
     },
     [account]

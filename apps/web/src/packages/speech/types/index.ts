@@ -20,14 +20,15 @@ export interface SpeechEngine {
   generateSpeech(request: SpeechRequest): Promise<SpeechResponse>;
   listVoices(request: ListVoicesRequest): Promise<Voice[]>;
   /**
-   * Low-latency streaming synthesis over an already-open WebSocket. Plays PCM
-   * chunks live via `hooks` and resolves with the full blob + alignment.
-   * Implemented by ElevenLabs only; callers fall back to `generateSpeech`.
+   * Low-latency streaming synthesis. Plays PCM chunks live via `hooks` and
+   * resolves with the full blob + alignment. ElevenLabs streams over an
+   * already-open WebSocket (`socket`); Kokoro streams from its local worker
+   * and takes no socket. Callers fall back to `generateSpeech` when absent.
    */
   generateSpeechStream?(
     request: SpeechRequest,
     hooks: SpeechStreamHooks,
-    socket: WebSocket
+    socket?: WebSocket
   ): Promise<SpeechResponse>;
 }
 

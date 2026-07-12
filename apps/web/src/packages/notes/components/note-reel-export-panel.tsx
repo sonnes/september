@@ -16,6 +16,7 @@ import {
   alignmentToReelWords,
   audioDataUri,
   markdownToVoiceText,
+  reelTimingSupported,
   wordsToReelCaptions,
 } from '../lib/reel';
 import { renderNoteReelVideoWithWasm } from '../lib/reel-renderer.browser';
@@ -71,7 +72,7 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
   const [showPlayer, setShowPlayer] = useState(false);
 
   const isExporting = status === 'generating-audio' || status === 'rendering-video';
-  const requiresElevenLabs = speechConfig.provider !== 'elevenlabs';
+  const requiresTimedVoice = !reelTimingSupported(speechConfig.provider);
   const fileName = useMemo(() => reelFileName(note?.name), [note?.name]);
   const previewText = useMemo(
     () => voiceText || markdownToVoiceText(note?.content ?? ''),
@@ -88,8 +89,8 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
   const handleExport = useCallback(async () => {
     if (!note || !voiceText.trim()) return;
 
-    if (requiresElevenLabs) {
-      toast.error('Select an ElevenLabs voice before exporting a reel.');
+    if (requiresTimedVoice) {
+      toast.error('Select an ElevenLabs or Kokoro voice before exporting a reel.');
       return;
     }
 
@@ -107,7 +108,7 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
       const speech = await speechPromise;
 
       if (!speech.blob || !speech.alignment) {
-        throw new Error('ElevenLabs voice timing is required for reel export.');
+        throw new Error('Voice timing is required for reel export.');
       }
 
       const src = audioDataUri(speech.blob);
@@ -135,7 +136,7 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
       setStatus('idle');
       toast.error(err instanceof Error ? err.message : 'Failed to export reel');
     }
-  }, [downloadHref, generateSpeech, note, requiresElevenLabs, voiceText]);
+  }, [downloadHref, generateSpeech, note, requiresTimedVoice, voiceText]);
 
   return (
     <section id={id} aria-label="Reel export" className="mt-3 border-t pt-3">
@@ -151,10 +152,10 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
         </div>
       </div>
 
-      {requiresElevenLabs && (
-        <Callout tone="warning" title="ElevenLabs voice required" className="mt-3">
-          Reel export needs word timing from ElevenLabs. Select an ElevenLabs voice in speech
-          settings, then try again.
+      {requiresTimedVoice && (
+        <Callout tone="warning" title="Timed voice required" className="mt-3">
+          Reel export needs word timing. Select an ElevenLabs or Kokoro voice in speech settings,
+          then try again.
         </Callout>
       )}
 
@@ -186,7 +187,7 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
           size="lg"
           variant="outline"
           onClick={() => setShowPlayer(true)}
-          disabled={!voiceText || requiresElevenLabs || isExporting}
+          disabled={!voiceText || requiresTimedVoice || isExporting}
         >
           <Play className="size-4" aria-hidden />
           Play
@@ -204,7 +205,7 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
             type="button"
             size="lg"
             onClick={handleExport}
-            disabled={!voiceText || requiresElevenLabs || isExporting}
+            disabled={!voiceText || requiresTimedVoice || isExporting}
           >
             {isExporting && <Loader2 className="size-4 animate-spin" aria-hidden />}
             Generate reel

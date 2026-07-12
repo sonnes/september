@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/packages/ui/componen
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 import { useVoiceSettings } from '../hooks/use-voice-settings';
+import { KokoroModelCard } from './kokoro-model-card';
 import type { SpeechEngineId } from '../hooks/use-voice-settings';
 import type { VoiceSettingsFormData } from '../types/schemas';
 import { VoicesList } from './voices-list';
@@ -427,15 +428,7 @@ export function SpeechSettings({ account, onSubmit, section }: SpeechSettingsPro
                       </p>
                     </div>
                     <div className="@3xl:col-span-2 px-4">
-                      <div className="bg-zinc-50 rounded-lg p-3 border border-zinc-200">
-                        <p className="text-sm font-medium text-zinc-900">Kokoro 82M v1.0</p>
-                        <p className="text-xs text-zinc-600 mt-1">
-                          High-quality English TTS with 28 voices (US &amp; UK accents)
-                        </p>
-                        <p className="text-xs text-zinc-500 mt-2">
-                          Model downloads on first use (~160MB). Runs locally via WebGPU.
-                        </p>
-                      </div>
+                      <KokoroModelCard />
                     </div>
                   </div>
 

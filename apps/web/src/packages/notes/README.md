@@ -67,9 +67,9 @@ buttons in that panel.
 ## Reel export
 
 `SpaceNotesPanel` can expand an inline export panel for the selected note and export it as a
-vertical MP4 reel. Export requires the current speech provider to be ElevenLabs because the video
-captions use ElevenLabs character timing. The browser generates the MP3 and timing with the user's
-configured voice, renders 1080x1920 PNG caption frames with Canvas, and muxes those frames with the
+vertical MP4 reel. Export requires a speech provider that returns character timing — ElevenLabs (exact) or Kokoro
+(estimated, fully on-device); see `reelTimingSupported` in `lib/reel.ts`. The browser generates the
+audio and timing with the user's configured voice, renders 1080x1920 PNG caption frames with Canvas, and muxes those frames with the
 audio through `ffmpeg.wasm`.
 
 Caption text is sized and wrapped by the shared pretext engine (`computePretextLayout` from
@@ -88,5 +88,5 @@ The export panel also has a **Play** button that opens `NoteReelStoryPlayer` —
 overlay that plays the reel like an Instagram story: one caption chunk at a time with a segmented
 progress bar (one segment per caption), synced to the spoken audio via `useSlideVoiceOver`. Tap
 zones (or arrow keys) skip chunks, tap-center / Space pauses, Esc closes, and playback auto-closes
-at the end. Like export, it needs ElevenLabs for chunk timing. Caption chunks come from the same
+at the end. Like export, it needs a timed voice (ElevenLabs or Kokoro) for chunk timing. Caption chunks come from the same
 `alignmentToReelWords` + `wordsToReelCaptions` used by the MP4, so the on-screen chunks match.

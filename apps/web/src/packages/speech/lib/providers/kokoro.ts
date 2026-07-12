@@ -1,16 +1,24 @@
+import { pcmToWavDataUri } from '@/packages/audio';
+import { KokoroSpeechSettings } from '@/packages/shared';
+import { Voice } from '@/packages/shared';
+
 import {
   ListVoicesRequest,
   SpeechEngine,
   SpeechRequest,
   SpeechResponse,
+  SpeechStreamHooks,
 } from '../../types';
-import { KokoroSpeechSettings } from '@/packages/shared';
-import { Voice } from '@/packages/shared';
+import { estimateAlignment, type KokoroAlignmentChunk } from './kokoro-alignment';
+import { detectWebGpu, pickKokoroBackend } from './kokoro-backend';
+import { setKokoroModelStatus } from './kokoro-status';
 
-// Static voice definitions (28 Kokoro voices)
-// Based on actual kokoro-js voice list
+export const KOKORO_SAMPLE_RATE = 24000;
+export const KOKORO_DEFAULT_VOICE = 'af_heart';
+
+// Static voice catalog for the Kokoro-82M v1.0 model (kokoro-js voice list).
 const KOKORO_VOICES: Voice[] = [
-  // English US (13 voices)
+  // English US (20 voices)
   { id: 'af_heart', name: 'Heart', language: 'en-us', gender: 'Female' },
   { id: 'af_alloy', name: 'Alloy', language: 'en-us', gender: 'Female' },
   { id: 'af_aoede', name: 'Aoede', language: 'en-us', gender: 'Female' },
@@ -32,7 +40,7 @@ const KOKORO_VOICES: Voice[] = [
   { id: 'am_puck', name: 'Puck', language: 'en-us', gender: 'Male' },
   { id: 'am_santa', name: 'Santa', language: 'en-us', gender: 'Male' },
 
-  // English GB (7 voices)
+  // English GB (8 voices)
   { id: 'bf_emma', name: 'Emma', language: 'en-gb', gender: 'Female' },
   { id: 'bf_isabella', name: 'Isabella', language: 'en-gb', gender: 'Female' },
   { id: 'bf_alice', name: 'Alice', language: 'en-gb', gender: 'Female' },
@@ -43,157 +51,204 @@ const KOKORO_VOICES: Voice[] = [
   { id: 'bm_fable', name: 'Fable', language: 'en-gb', gender: 'Male' },
 ];
 
-/**
- * Convert Float32Array PCM audio to WAV format
- * @param pcmData - Float32Array PCM data (normalized -1 to 1)
- * @param sampleRate - Sample rate (24000 Hz for Kokoro)
- * @param numChannels - Number of channels (1 for mono)
- * @returns Data URL with WAV audio
- */
-function convertFloat32ToWav(
-  pcmData: Float32Array,
-  sampleRate: number,
-  numChannels: number
-): string {
-  // Convert Float32 to Int16 PCM
-  const int16Data = new Int16Array(pcmData.length);
-  for (let i = 0; i < pcmData.length; i++) {
-    const s = Math.max(-1, Math.min(1, pcmData[i])); // Clamp to [-1, 1]
-    int16Data[i] = s < 0 ? s * 0x8000 : s * 0x7fff; // Convert to 16-bit
-  }
+export interface KokoroChunk {
+  text: string;
+  samples: Float32Array;
+  sampleRate: number;
+}
 
-  // Create WAV header
-  const bitsPerSample = 16;
-  const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
-  const blockAlign = (numChannels * bitsPerSample) / 8;
-  const dataSize = int16Data.length * 2; // 2 bytes per sample for 16-bit
-
-  const wavHeader = new ArrayBuffer(44);
-  const view = new DataView(wavHeader);
-
-  // "RIFF" chunk descriptor
-  writeString(view, 0, 'RIFF');
-  view.setUint32(4, 36 + dataSize, true); // File size - 8
-  writeString(view, 8, 'WAVE');
-
-  // "fmt " sub-chunk
-  writeString(view, 12, 'fmt ');
-  view.setUint32(16, 16, true); // Subchunk1Size (16 for PCM)
-  view.setUint16(20, 1, true); // AudioFormat (1 for PCM)
-  view.setUint16(22, numChannels, true); // NumChannels
-  view.setUint32(24, sampleRate, true); // SampleRate
-  view.setUint32(28, byteRate, true); // ByteRate
-  view.setUint16(32, blockAlign, true); // BlockAlign
-  view.setUint16(34, bitsPerSample, true); // BitsPerSample
-
-  // "data" sub-chunk
-  writeString(view, 36, 'data');
-  view.setUint32(40, dataSize, true); // Subchunk2Size
-
-  // Combine header and PCM data
-  const wavData = new Uint8Array(44 + dataSize);
-  wavData.set(new Uint8Array(wavHeader), 0);
-  wavData.set(new Uint8Array(int16Data.buffer), 44);
-
-  // Convert to base64
-  let binary = '';
-  const len = wavData.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(wavData[i]);
-  }
-  const base64 = btoa(binary);
-
-  return `data:audio/wav;base64,${base64}`;
+export interface KokoroGenerateRequest {
+  text: string;
+  voice: string;
+  speed: number;
 }
 
 /**
- * Helper function to write string to DataView
+ * Engine backing a `KokoroSpeechProvider`. The default is the worker-backed
+ * singleton below; tests inject a fake.
  */
-function writeString(view: DataView, offset: number, string: string): void {
-  for (let i = 0; i < string.length; i++) {
-    view.setUint8(offset + i, string.charCodeAt(i));
+export interface KokoroEngineClient {
+  load(): Promise<void>;
+  generate(request: KokoroGenerateRequest, onChunk: (chunk: KokoroChunk) => void): Promise<void>;
+}
+
+interface PendingGeneration {
+  onChunk: (chunk: KokoroChunk) => void;
+  resolve: () => void;
+  reject: (err: Error) => void;
+}
+
+/**
+ * Talks to the Kokoro Web Worker. One worker/model for the whole app —
+ * `useSpeech` recreates provider instances, so state here must not live on
+ * the provider.
+ */
+class KokoroWorkerClient implements KokoroEngineClient {
+  private worker: Worker | null = null;
+  private loadPromise: Promise<void> | null = null;
+  private loadWaiter: { resolve: () => void; reject: (err: Error) => void } | null = null;
+  private nextId = 1;
+  private pending = new Map<number, PendingGeneration>();
+  // Serialize generations — the ONNX session handles one stream at a time.
+  private queue: Promise<void> = Promise.resolve();
+
+  private ensureWorker(): Worker {
+    if (!this.worker) {
+      this.worker = new Worker(new URL('./kokoro-worker.ts', import.meta.url), {
+        type: 'module',
+      });
+      this.worker.onmessage = event => this.handleMessage(event.data);
+    }
+    return this.worker;
   }
+
+  private handleMessage(msg: {
+    type: string;
+    id?: number;
+    progress?: number;
+    device?: 'webgpu' | 'wasm';
+    message?: string;
+    text?: string;
+    sampleRate?: number;
+    samples?: Float32Array;
+  }): void {
+    switch (msg.type) {
+      case 'load-progress':
+        setKokoroModelStatus({ state: 'loading', progress: msg.progress ?? 0 });
+        break;
+      case 'ready':
+        setKokoroModelStatus({ state: 'ready', device: msg.device ?? 'wasm' });
+        this.loadWaiter?.resolve();
+        this.loadWaiter = null;
+        break;
+      case 'load-error': {
+        const err = new Error(msg.message ?? 'Failed to load the Kokoro model');
+        setKokoroModelStatus({ state: 'error', message: err.message });
+        this.loadPromise = null; // allow retry
+        this.loadWaiter?.reject(err);
+        this.loadWaiter = null;
+        break;
+      }
+      case 'chunk':
+        this.pending.get(msg.id!)?.onChunk({
+          text: msg.text ?? '',
+          samples: msg.samples!,
+          sampleRate: msg.sampleRate ?? KOKORO_SAMPLE_RATE,
+        });
+        break;
+      case 'done':
+        this.pending.get(msg.id!)?.resolve();
+        this.pending.delete(msg.id!);
+        break;
+      case 'error':
+        this.pending.get(msg.id!)?.reject(new Error(msg.message ?? 'Kokoro generation failed'));
+        this.pending.delete(msg.id!);
+        break;
+    }
+  }
+
+  load(): Promise<void> {
+    if (!this.loadPromise) {
+      this.loadPromise = (async () => {
+        const worker = this.ensureWorker();
+        setKokoroModelStatus({ state: 'loading', progress: 0 });
+        const backend = pickKokoroBackend(await detectWebGpu());
+        await new Promise<void>((resolve, reject) => {
+          this.loadWaiter = { resolve, reject };
+          worker.postMessage({ type: 'load', ...backend });
+        });
+      })();
+    }
+    return this.loadPromise;
+  }
+
+  generate(request: KokoroGenerateRequest, onChunk: (chunk: KokoroChunk) => void): Promise<void> {
+    const run = () =>
+      new Promise<void>((resolve, reject) => {
+        const id = this.nextId++;
+        this.pending.set(id, { onChunk, resolve, reject });
+        this.ensureWorker().postMessage({ type: 'generate', id, ...request });
+      });
+    const result = this.queue.then(run);
+    this.queue = result.catch(() => {});
+    return result;
+  }
+}
+
+const defaultClient = new KokoroWorkerClient();
+
+/** Start downloading/loading the model ahead of the first utterance. */
+export function preloadKokoro(): Promise<void> {
+  return defaultClient.load();
+}
+
+function float32ToInt16(samples: Float32Array): Int16Array {
+  const out = new Int16Array(samples.length);
+  for (let i = 0; i < samples.length; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    out[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+  }
+  return out;
 }
 
 export class KokoroSpeechProvider implements SpeechEngine {
   id = 'kokoro';
   name = 'Kokoro TTS';
 
-  // Lazy-loaded TTS engine (initialized on first use)
-  private tts: any = null; // Will be KokoroTTS from kokoro-js
-  private isInitialized = false;
-  private initializationPromise: Promise<void> | null = null;
+  constructor(private client: KokoroEngineClient = defaultClient) {}
 
-  constructor() {
-    // Engine initialized lazily on first generateSpeech() call
+  async generateSpeech(request: SpeechRequest): Promise<SpeechResponse> {
+    return this.synthesize(request);
+  }
+
+  async generateSpeechStream(
+    request: SpeechRequest,
+    hooks: SpeechStreamHooks
+  ): Promise<SpeechResponse> {
+    return this.synthesize(request, hooks);
   }
 
   /**
-   * Initialize the TTS model (lazy loading)
-   * Uses kokoro-js npm package for Kokoro TTS
+   * Stream sentence chunks from the worker. With `hooks`, each chunk also
+   * plays live; either way the accumulated audio resolves as a WAV data URI
+   * plus an estimated alignment (Kokoro returns no timing of its own).
    */
-  private async initializeModel(): Promise<void> {
-    if (this.initializationPromise) {
-      return this.initializationPromise;
-    }
+  private async synthesize(
+    request: SpeechRequest,
+    hooks?: SpeechStreamHooks
+  ): Promise<SpeechResponse> {
+    await this.client.load();
 
-    // Check if running in browser environment
-    if (typeof window === 'undefined') {
-      throw new Error('Kokoro TTS is only available in browser environments');
-    }
-
-    this.initializationPromise = (async () => {
-      // Dynamically import kokoro-js to avoid loading on page load
-      const { KokoroTTS } = await import('kokoro-js');
-
-      console.log('[Kokoro] Loading Kokoro TTS model...');
-
-      // Initialize the TTS model with fp32 precision for best quality
-      // Options: "fp32", "fp16", "q8", "q4", "q4f16"
-      this.tts = await KokoroTTS.from_pretrained('onnx-community/Kokoro-82M-ONNX', {
-        dtype: 'q8', // Quantized for faster loading, good quality
-        device: 'webgpu',
-      });
-
-      this.isInitialized = true;
-      console.log('[Kokoro] Model loaded successfully');
-    })();
-
-    return this.initializationPromise;
-  }
-
-  async generateSpeech(request: SpeechRequest): Promise<SpeechResponse> {
-    // Initialize model on first call
-    if (!this.isInitialized) {
-      await this.initializeModel();
-    }
-
-    const settings = request.options as KokoroSpeechSettings;
-    const voiceId = request.voice?.id || settings.voice || 'af_bella';
+    const settings = (request.options ?? {}) as KokoroSpeechSettings;
+    const voiceId = request.voice?.id || settings.voice || KOKORO_DEFAULT_VOICE;
     const speed = settings.speed || 1.0;
 
-    try {
-      // Generate speech using kokoro-js API
-      // The generate method returns an audio object with { data: Float32Array, sampling_rate: number }
-      const audio = await this.tts.generate(request.text, {
-        voice: voiceId,
-        speed,
+    const int16Chunks: Int16Array[] = [];
+    const alignmentChunks: KokoroAlignmentChunk[] = [];
+    let sampleRate = KOKORO_SAMPLE_RATE;
+    let started = false;
+
+    await this.client.generate({ text: request.text, voice: voiceId, speed }, chunk => {
+      sampleRate = chunk.sampleRate;
+      const int16 = float32ToInt16(chunk.samples);
+      int16Chunks.push(int16);
+      alignmentChunks.push({
+        text: chunk.text,
+        durationSeconds: chunk.samples.length / chunk.sampleRate,
       });
+      if (hooks) {
+        if (!started) {
+          started = true;
+          hooks.onStart?.();
+        }
+        hooks.onAudioChunk(int16);
+      }
+    });
 
-      // Get audio data as Float32Array from the audio object
-      const pcmData = audio.data;
-      const sampleRate = audio.sampling_rate || 24000;
-
-      // Convert Float32Array PCM to WAV blob
-      const wavBlob = convertFloat32ToWav(pcmData, sampleRate, 1);
-
-      return {
-        blob: wavBlob,
-      };
-    } catch (err) {
-      console.error('Kokoro speech generation error:', err);
-      throw new Error(`Kokoro TTS error: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    }
+    return {
+      blob: pcmToWavDataUri(int16Chunks, sampleRate),
+      alignment: estimateAlignment(alignmentChunks),
+    };
   }
 
   async listVoices(request: ListVoicesRequest): Promise<Voice[]> {

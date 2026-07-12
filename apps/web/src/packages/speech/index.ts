@@ -4,5 +4,8 @@ export { SpeechSettings } from './components/speech-settings';
 export { VoicesList } from './components/voices-list';
 export { useSpeech } from './hooks/use-speech';
 export type { UseSpeechReturn } from './hooks/use-speech';
+export { useKokoroModelStatus } from './hooks/use-kokoro-model-status';
+export { preloadKokoro } from './lib/providers/kokoro';
+export type { KokoroModelStatus } from './lib/providers/kokoro-status';
 export type { SpeechResponse, SpeechStreamHooks } from './types';
 export type { VoiceSettingsFormData } from './types/schemas';

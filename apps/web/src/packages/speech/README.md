@@ -90,15 +90,41 @@ ElevenLabs provider (others ignore it). It is contextual, not voiced. Talk space
 pass the prior message's text so consecutive utterances flow naturally.
 
 `generateSpeechStream(text, options?, context?)` is the **low-latency streaming**
-path (ElevenLabs only). It opens a stream-input WebSocket, plays decoded PCM
-chunks live as they arrive (so audio starts on the first chunk instead of after
-the full file), and resolves with the complete WAV blob + merged alignment for
-persistence/replay — the same `SpeechResponse` shape as `generateSpeech`. Returns
-`undefined` when the active provider has no streaming path, and rejects (after
-stopping live playback) on WS failure, so callers fall back to `generateSpeech`.
-Live playback honours the output device selected in `AudioPlayerProvider` (the
-PCM context is routed via `setSinkId`), matching buffered `<audio>` playback.
-Talk's send flow uses it; note voice-over and reel export stay on REST.
+path (ElevenLabs and Kokoro). ElevenLabs streams over a stream-input WebSocket;
+Kokoro streams sentence chunks from its local worker. Either way decoded PCM
+chunks play live as they arrive (so audio starts on the first chunk instead of
+after the full file), and the promise resolves with the complete WAV blob +
+alignment for persistence/replay — the same `SpeechResponse` shape as
+`generateSpeech`. Returns `undefined` when the active provider has no streaming
+path, and rejects (after stopping live playback) on failure, so callers fall
+back to `generateSpeech`. Live playback honours the output device selected in
+`AudioPlayerProvider` (the PCM context is routed via `setSinkId`), matching
+buffered `<audio>` playback. Talk's send flow uses it; note voice-over and reel
+export stay on REST. The `VITE_DISABLE_WS_TTS` kill switch only disables the
+ElevenLabs socket path — Kokoro streaming is unaffected.
+
+### Kokoro (on-device TTS, internal)
+
+`KokoroSpeechProvider` runs the Kokoro-82M v1.0 model
+(`onnx-community/Kokoro-82M-v1.0-ONNX`, via kokoro-js) entirely in the browser:
+
+- **Worker**: model load + inference live in a module Web Worker
+  (`lib/providers/kokoro-worker.ts`) so synthesis never blocks the UI. One
+  worker/model per app — module-level singleton, since `useSpeech` recreates
+  provider instances.
+- **Backend**: WebGPU + `fp32` when an adapter is available, else WASM + `q8`
+  (`pickKokoroBackend`); a WebGPU load failure retries once on WASM.
+- **Download**: ~86 MB (WASM) / ~326 MB (WebGPU), fetched once from the
+  Hugging Face CDN and cached by Transformers.js in the browser Cache API.
+  `preloadKokoro()` starts the download ahead of the first utterance (privacy
+  onboarding calls it); `useKokoroModelStatus()` exposes
+  `idle | loading(progress) | ready(device) | error` for UI
+  (`KokoroModelCard` in the speech settings renders it).
+- **Alignment**: Kokoro returns no timing, so the provider estimates a
+  character alignment from each chunk's text + audio duration
+  (`estimateAlignment`) — coarse but sufficient for reel captions.
+- **Output**: 24 kHz mono; buffered responses are WAV data URIs built with the
+  shared `pcmToWavDataUri`.
 
 ### ElevenLabs WebSocket streaming (internal)
 
@@ -139,15 +165,16 @@ Talk's send flow uses it; note voice-over and reel export stay on REST.
     speaker_boost?: boolean;
     // Kokoro
     language?: string;     // 'en-us' | 'en-gb'
+    voice?: string;        // Kokoro voice id fallback (voice_id wins)
   };
 }
 ```
 
 ## Providers (internal)
 
-| Provider     | API key required | Notes                               |
-| ------------ | ---------------- | ----------------------------------- |
-| `browser`    | No               | Web Speech API                      |
-| `kokoro`     | No               | On-device via WebGPU, ~160MB model  |
-| `elevenlabs` | Yes              | High-quality voices                 |
-| `gemini`     | Yes              | Google AI voices                    |
+| Provider     | API key required | Notes                                           |
+| ------------ | ---------------- | ----------------------------------------------- |
+| `browser`    | No               | Web Speech API                                  |
+| `kokoro`     | No               | On-device (WebGPU or WASM), one-time model download |
+| `elevenlabs` | Yes              | High-quality voices                             |
+| `gemini`     | Yes              | Google AI voices                                |

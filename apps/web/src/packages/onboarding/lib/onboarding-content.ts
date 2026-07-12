@@ -115,9 +115,9 @@ export const ONBOARDING_PRIMARY_COPY = {
       helper: 'You can change this anytime in Settings.',
       primaryAction: 'Start communicating',
       summary: [
-        'Browser speech — no setup, works offline.',
+        'A natural voice that runs on this device — it downloads once in the background.',
         'Saved phrases ready on every space.',
-        'Nothing is sent out for suggestions.',
+        'Nothing you write is ever sent out.',
       ],
     },
     free: {

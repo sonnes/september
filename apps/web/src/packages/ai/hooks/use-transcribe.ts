@@ -21,11 +21,14 @@ export interface UseTranscribeReturn {
 }
 
 /**
- * Transcribe audio with the account's transcription provider (Gemini or OpenRouter),
- * client-side, using the user's own API key — the same path as suggestions.
+ * Transcribe audio with the account's transcription provider — Gemini or
+ * OpenRouter client-side with the user's own API key (the same path as
+ * suggestions), or the local `whisper` provider, which runs a Whisper model
+ * in a Web Worker so audio never leaves the device.
  */
 export function useTranscribe(): UseTranscribeReturn {
   const { transcriptionConfig } = useAISettings();
+  const isLocal = transcriptionConfig.provider === 'whisper';
   const { generate, isGenerating, isReady } = useGenerate({
     provider: transcriptionConfig.provider,
     model: transcriptionConfig.model,
@@ -36,6 +39,11 @@ export function useTranscribe(): UseTranscribeReturn {
     async (audio: Blob): Promise<string | undefined> => {
       setIsTranscribing(true);
       try {
+        if (isLocal) {
+          // Lazy import keeps the transformers runtime out of initial bundles.
+          const { transcribeLocally } = await import('../lib/whisper');
+          return (await transcribeLocally(audio)).trim();
+        }
         const bytes = new Uint8Array(await audio.arrayBuffer());
         const text = await generate({
           prompt: TRANSCRIPTION_PROMPT,
@@ -47,12 +55,12 @@ export function useTranscribe(): UseTranscribeReturn {
         setIsTranscribing(false);
       }
     },
-    [generate]
+    [generate, isLocal]
   );
 
   return {
     transcribe,
     isTranscribing: isTranscribing || isGenerating,
-    isReady,
+    isReady: isLocal || isReady,
   };
 }

@@ -27,6 +27,15 @@ function stripMarkdownFence(markdown: string): string {
   );
 }
 
+/**
+ * Providers whose `generateSpeech` returns character alignment, which reel
+ * captions require: ElevenLabs (exact, from the API) and Kokoro (estimated
+ * from per-sentence chunk durations).
+ */
+export function reelTimingSupported(provider: string): boolean {
+  return provider === 'elevenlabs' || provider === 'kokoro';
+}
+
 export function audioDataUri(blob: string): string {
   return blob.startsWith('data:') ? blob : `data:audio/mp3;base64,${blob}`;
 }

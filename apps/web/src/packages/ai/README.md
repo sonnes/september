@@ -175,8 +175,13 @@ const text = await generate({
 
 ## Transcription
 
-`useTranscribe()` transcribes an audio `Blob` with the account's transcription provider
-(Gemini or OpenRouter), client-side, using the user's own key — the same path as suggestions.
+`useTranscribe()` transcribes an audio `Blob` with the account's transcription provider —
+Gemini or OpenRouter client-side with the user's own key (the same path as suggestions), or
+**`whisper`**, which runs `onnx-community/whisper-base` in a Web Worker
+(`lib/whisper-worker.ts`) so audio never leaves the device. The whisper path needs no key
+(`isReady` is always true), decodes the blob to 16 kHz mono via `AudioContext`, prefers WebGPU
+and falls back to WASM, and downloads the model once (~80 MB, cached by Transformers.js in the
+browser Cache API). Privacy-mode onboarding presets `ai_transcription.provider = 'whisper'`.
 
 ```tsx
 import { useTranscribe } from '@/packages/ai';
