@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "sync:assets": "pnpm -C ../web build && rm -rf public && cp -r ../web/dist/client public",
+    "sync:assets": "pnpm -C ../web build && rm -rf public && cp -r ../web/dist/client public && cp public/_shell.html public/index.html",
     "deploy": "pnpm sync:assets && wrangler deploy",
     "test": "vitest --run",
     "test:watch": "vitest",

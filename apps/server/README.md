@@ -95,7 +95,7 @@ origin to its authorized JavaScript origins.
 `VITE_SYNC_API_URL` at this Worker's own origin so the SPA and `/api` stay same-origin):
 
 ```sh
-VITE_SYNC_API_URL=https://september-server.<account>.workers.dev \
+VITE_SYNC_API_URL=https://september.<account>.workers.dev \
 VITE_GOOGLE_CLIENT_ID=<id>.apps.googleusercontent.com \
 pnpm deploy            # = sync:assets (build web + copy dist/client → ./public) then wrangler deploy
 ```
