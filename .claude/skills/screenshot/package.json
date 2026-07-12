@@ -1,0 +1,11 @@
+{
+  "name": "september-screenshot-skill",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Capture September web-app screenshots across screen sizes via playwright-core + installed Chrome.",
+  "bin": { "september-shoot": "./shoot.mjs" },
+  "dependencies": {
+    "playwright-core": "^1.49.0"
+  }
+}
