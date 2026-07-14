@@ -28,7 +28,7 @@ vi.mock('sonner', () => ({
   },
 }));
 
-import { SettingsTransferActions } from './index';
+import { SettingsTransferActions } from './account';
 
 let container: HTMLDivElement;
 let root: Root;

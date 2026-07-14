@@ -120,8 +120,8 @@ function SimilarVoicesContent() {
     <div className="space-y-6">
       {!elevenlabsApiKey && (
         <Callout tone="warning" title="API key required">
-          Configure your ElevenLabs API key in{' '}
-          <a href="/settings/providers">AI Providers</a> to search for similar voices.
+          Connect ElevenLabs in{' '}
+          <a href="/settings/connections/elevenlabs">Setup</a> to search for similar voices.
         </Callout>
       )}
 

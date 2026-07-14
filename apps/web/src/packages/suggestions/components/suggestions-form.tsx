@@ -124,9 +124,9 @@ export function SuggestionsFormFields({
               <>Add a {providerName} key above to enable cloud AI suggestions.</>
             ) : (
               <>
-                You need to configure your {providerName} API key in{' '}
-                <a href="/settings/providers" className="underline hover:text-amber-900">
-                  AI Settings
+                You need to connect {providerName} in{' '}
+                <a href="/settings" className="underline hover:text-amber-900">
+                  Setup
                 </a>{' '}
                 to use AI suggestions with {providerName}.
               </>

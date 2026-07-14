@@ -17,7 +17,9 @@ export default function OnboardingPage() {
 ```
 
 - `OnboardingProvider` / `OnboardingFlow` — the wizard (see below).
-- `SETUP_MODES` (+ `SetupMode`, `SetupModeAccent`, `SetupModeContent` types) — the shared copy for the three modes (Privacy / Free AI / Advanced), reused by the marketing home "Setup choices" section so copy never drifts.
+- `SETUP_MODES` (+ `SetupMode`, `SetupModeAccent`, `SetupModeContent` types) — the shared copy for the three modes (Privacy / Free AI / Advanced), reused by the marketing home "Setup choices" section and the Settings → Setup page so copy never drifts.
+- `inferSetupMode` — which mode an account is in: an explicit `account.setup_mode` wins, otherwise the configs are matched against what the builders produce (fallback `advanced`).
+- `buildPrivacyModeUpdate` / `buildFreeModeUpdate` — account-update builders for the privacy and free modes, applied by the onboarding finish steps and the Settings → Setup mode cards.
 
 ### `OnboardingProvider`
 
@@ -42,7 +44,7 @@ Because it owns the full viewport, mount it on a route **outside** the sidebar s
 - `useOnboarding` — context consumer hook used by all step components.
 - `components/step-chrome.tsx` — `StepShell`, `StepHeader` (label → title → subtitle, optional back icon), `StepFooter` (helper + actions).
 - `lib/onboarding-content.ts` — copy and step labels, shared with tests so primary language stays non-technical.
-- `lib/setup-modes.ts` — `SETUP_MODES` copy plus the account-update builders `buildPrivacyModeUpdate` and `buildAdvancedFinishUpdate` (+ `isSetupMode`).
+- `lib/setup-modes.ts` — `SETUP_MODES` copy plus the account-update builders `buildPrivacyModeUpdate`, `buildFreeModeUpdate`, and `buildAdvancedFinishUpdate` (+ `isSetupMode`, `inferSetupMode`).
 - `lib/suggestions-setup.ts` — built-in vs OpenRouter suggestions update (reused by Privacy/Free/Advanced).
 - `lib/provider-config.ts` — bridges the AI key form and the account `ai_providers` shape (`buildProviderConfig`, `getProviderDefaultValues`).
 - `lib/voice-setup.ts` — small predicates for the Advanced voice picker.

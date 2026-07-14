@@ -103,10 +103,10 @@ export function SpeechSettings({ account, onSubmit, section }: SpeechSettingsPro
 
               {visibleProviders.length < allProviders.length && (
                 <p className="text-xs text-muted-foreground">
-                  Some providers are hidden because their API keys are not configured. Configure API
-                  keys in{' '}
-                  <a href="/settings/providers" className="text-primary hover:underline">
-                    AI Providers settings
+                  Some providers are hidden because their API keys are not configured. Connect them
+                  in{' '}
+                  <a href="/settings" className="text-primary hover:underline">
+                    Setup
                   </a>
                   .
                 </p>

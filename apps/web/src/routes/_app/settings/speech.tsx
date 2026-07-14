@@ -1,30 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { SpeechProvider } from '@/packages/speech';
-
-import { PageTitle } from '@/components/layout';
-
-import { pageTitle } from '@/lib/seo';
-
-import VoicesSettingsForm from './-speech-form';
-
+// Old speech page — renamed to Voice.
 export const Route = createFileRoute('/_app/settings/speech')({
-  head: () => ({
-    meta: [{ title: pageTitle('Speech') }],
-  }),
-  component: SpeechSettingsPage,
+  beforeLoad: () => {
+    throw redirect({ to: '/settings/voice', replace: true });
+  },
 });
-
-function SpeechSettingsPage() {
-  return (
-    <div className="flex flex-col gap-6">
-      <PageTitle
-        title="Speech"
-        description="Pick the provider, model, and voice used to speak your messages."
-      />
-      <SpeechProvider>
-        <VoicesSettingsForm />
-      </SpeechProvider>
-    </div>
-  );
-}

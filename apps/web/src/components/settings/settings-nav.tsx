@@ -2,7 +2,14 @@
 
 import { Link, useLocation } from '@tanstack/react-router';
 
-import { KeyRound, Lightbulb, Mic, User, Volume2, type LucideIcon } from 'lucide-react';
+import {
+  Lightbulb,
+  Mic,
+  SlidersHorizontal,
+  User,
+  Volume2,
+  type LucideIcon,
+} from 'lucide-react';
 
 import { cn } from '@/packages/shared';
 
@@ -13,36 +20,36 @@ type SettingsSection = {
   icon: LucideIcon;
 };
 
-const SECTIONS: SettingsSection[] = [
+export const SETTINGS_SECTIONS: SettingsSection[] = [
   {
-    title: 'Account',
-    description: 'Your personal details and consent.',
+    title: 'Setup',
+    description: 'How September runs, and its connections.',
     href: '/settings',
-    icon: User,
+    icon: SlidersHorizontal,
   },
   {
-    title: 'Providers',
-    description: 'Connect the AI services that power September.',
-    href: '/settings/providers',
-    icon: KeyRound,
+    title: 'Voice',
+    description: 'The voice that speaks for you.',
+    href: '/settings/voice',
+    icon: Volume2,
   },
   {
-    title: 'Suggestions',
-    description: 'Tune AI-powered typing suggestions.',
-    href: '/settings/suggestions',
+    title: 'Writing help',
+    description: 'Sentence suggestions as you type.',
+    href: '/settings/writing',
     icon: Lightbulb,
   },
   {
-    title: 'Transcription',
-    description: 'Configure speech-to-text.',
-    href: '/settings/transcription',
+    title: 'Listening',
+    description: 'Writes down what people say.',
+    href: '/settings/listening',
     icon: Mic,
   },
   {
-    title: 'Speech',
-    description: 'Pick the voice that speaks for you.',
-    href: '/settings/speech',
-    icon: Volume2,
+    title: 'Account',
+    description: 'Your details, sync, and backup.',
+    href: '/settings/account',
+    icon: User,
   },
 ];
 
@@ -50,11 +57,14 @@ export function SettingsNav() {
   const pathname = useLocation({ select: l => l.pathname });
 
   return (
-    <nav className="flex flex-col gap-1">
-      {SECTIONS.map(section => {
+    // Below md the nav is a horizontal row of title-only pills so content stays
+    // above the fold; the full icon + description list appears from md up.
+    <nav className="flex gap-1 overflow-x-auto md:flex-col md:overflow-visible">
+      {SETTINGS_SECTIONS.map(section => {
+        // Connection drill-ins are children of Setup, so Setup stays active there.
         const isActive =
           section.href === '/settings'
-            ? pathname === '/settings'
+            ? pathname === '/settings' || pathname.startsWith('/settings/connections')
             : pathname.startsWith(section.href);
 
         return (
@@ -62,21 +72,21 @@ export function SettingsNav() {
             key={section.href}
             to={section.href}
             className={cn(
-              'flex items-start gap-3 rounded-lg px-3 py-2.5 transition-colors',
+              'flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-3 py-2.5 transition-colors md:items-start md:gap-3',
               isActive ? 'bg-muted' : 'hover:bg-muted/60'
             )}
           >
             <section.icon
               className={cn(
-                'mt-0.5 size-4 shrink-0',
+                'size-4 shrink-0 md:mt-0.5',
                 isActive ? 'text-foreground' : 'text-muted-foreground'
               )}
             />
             <span className="flex flex-col gap-0.5">
-              <span className="text-sm font-medium leading-none text-foreground">
+              <span className="text-sm font-medium leading-none whitespace-nowrap text-foreground">
                 {section.title}
               </span>
-              <span className="text-xs leading-snug text-muted-foreground">
+              <span className="hidden text-xs leading-snug text-muted-foreground md:block">
                 {section.description}
               </span>
             </span>

@@ -108,6 +108,7 @@ export const AccountSchema = z.object({
     settings: {},
   }),
   ai_providers: ProvidersSchema.optional().default({}),
+  setup_mode: z.enum(['privacy', 'free', 'advanced']).optional(),
   terms_accepted: z.boolean().optional().default(false),
   privacy_policy_accepted: z.boolean().optional().default(false),
   onboarding_completed: z.boolean().optional().default(false),

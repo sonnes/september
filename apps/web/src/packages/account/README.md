@@ -27,7 +27,9 @@ export {
 
 ## Architecture
 
-- `schema.ts`: Zod schema and exported account types.
+- `schema.ts`: Zod schema and exported account types. Includes the optional
+  `setup_mode` (`privacy | free | advanced`) — the mode picked on the Settings →
+  Setup page; older accounts without it get their mode inferred from configs.
 - `defaults.ts`: Local guest user and default account factory.
 - `account-store.ts`: TanStack DB collection and local persistence hook.
 - `account-provider.tsx`: React context provider and `useAccount` hook.

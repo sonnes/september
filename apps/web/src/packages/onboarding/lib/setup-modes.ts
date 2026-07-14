@@ -127,6 +127,71 @@ export function buildPrivacyModeUpdate({
   };
 }
 
+interface InferSetupModeParams {
+  setup_mode?: SetupMode;
+  ai_speech?: SpeechConfig;
+  ai_suggestions?: SuggestionsConfig;
+  ai_transcription?: TranscriptionConfig;
+}
+
+// Which mode the account is in. An explicit choice (saved by Settings → Setup)
+// wins; accounts from before the field are matched against what the mode
+// builders produce, falling back to advanced.
+export function inferSetupMode(account: InferSetupModeParams): SetupMode {
+  if (account.setup_mode) return account.setup_mode;
+
+  const speech = account.ai_speech?.provider;
+  const suggestions = account.ai_suggestions?.provider;
+  const transcription = account.ai_transcription?.provider;
+
+  if (speech === 'kokoro' && suggestions === 'webllm' && transcription === 'whisper') {
+    return 'privacy';
+  }
+  if (speech === 'browser' && suggestions === 'openrouter') {
+    return 'free';
+  }
+  return 'advanced';
+}
+
+interface BuildFreeModeUpdateParams {
+  currentSpeech?: SpeechConfig;
+  currentSuggestions?: SuggestionsConfig;
+  currentProviders?: Providers;
+}
+
+// Free mode: browser voice plus OpenRouter writing help — mirrors the
+// onboarding free finish step. Suggestions only turn on when an OpenRouter key
+// is already present; otherwise the provider is preset and connecting the key
+// (one click on the Setup page) is the remaining step.
+export function buildFreeModeUpdate({
+  currentSpeech,
+  currentSuggestions,
+  currentProviders,
+}: BuildFreeModeUpdateParams = {}): Pick<
+  AccountUpdate,
+  'ai_speech' | 'ai_suggestions' | 'ai_providers'
+> {
+  const hasKey = Boolean(currentProviders?.openrouter?.api_key);
+
+  return {
+    ai_speech: {
+      ...(currentSpeech ?? DEFAULT_BROWSER_SPEECH),
+      enabled: true,
+      provider: 'browser',
+    },
+    ai_suggestions: {
+      enabled: hasKey,
+      provider: 'openrouter',
+      model:
+        currentSuggestions?.provider === 'openrouter' && currentSuggestions.model
+          ? currentSuggestions.model
+          : 'google/gemini-2.5-flash-lite',
+      settings: { ...(currentSuggestions?.settings ?? {}) },
+    },
+    ai_providers: currentProviders ?? {},
+  };
+}
+
 export type WritingHelpChoice = 'built-in' | 'openrouter' | 'gemini';
 
 interface BuildAdvancedFinishUpdateParams {

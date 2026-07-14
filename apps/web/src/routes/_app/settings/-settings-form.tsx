@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CheckCircle2 } from 'lucide-react';
 import { Control, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { useAccount } from '@/packages/account';
-import { Button } from '@/packages/ui/components/button';
 import { FormCheckbox, FormField } from '@/packages/ui/components/form';
 import { LoadingState } from '@/packages/ui/components/loading-state';
+
+import { SavedIndicator } from '@/components/settings/feature-section';
+import { useAutosave } from '@/components/settings/use-autosave';
 
 const SettingsSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -26,7 +26,7 @@ function PersonalInfoSection({ control }: { control: Control<SettingsFormData> }
     <section className="space-y-4">
       <div className="space-y-1">
         <h2 className="text-base font-semibold text-foreground">Personal information</h2>
-        <p className="text-sm text-muted-foreground">Your basic details.</p>
+        <p className="text-sm text-muted-foreground">Your basic details. Saved automatically.</p>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField name="name" control={control} label="Full name" placeholder="Enter your name" />
@@ -70,7 +70,6 @@ function TermsSection({ control }: { control: Control<SettingsFormData> }) {
 
 export default function SettingsForm() {
   const { account, updateAccount } = useAccount();
-  const [justSaved, setJustSaved] = useState(false);
 
   const defaultValues = useMemo(() => {
     return {
@@ -87,49 +86,48 @@ export default function SettingsForm() {
     defaultValues: defaultValues,
   });
 
-  useEffect(() => {
-    if (account) {
-      form.reset({
-        name: account.name,
-        city: account.city || '',
-        country: account.country || '',
-        terms_accepted: account.terms_accepted || false,
-        privacy_policy_accepted: account.privacy_policy_accepted || false,
-      });
-    }
-  }, [account, form]);
+  const { status, save, scheduleSave } = useAutosave<SettingsFormData>(async data => {
+    await updateAccount(data);
+    // Mark the form clean so external updates (e.g. a settings import) can
+    // still reset it, without clobbering values while the user is typing.
+    form.reset(data);
+  });
 
-  const onSubmit = async (data: SettingsFormData) => {
-    try {
-      await updateAccount(data);
-      setJustSaved(true);
-      setTimeout(() => setJustSaved(false), 2000);
-      toast.success('Settings saved');
-    } catch (err) {
-      console.error('Error saving settings:', err);
-      toast.error('Failed to update settings. Please try again.');
+  // Saves on change like the feature pages: checkboxes immediately, text
+  // fields debounced. Invalid states (empty name) are held, not saved.
+  useEffect(() => {
+    const subscription = form.watch((values, { name, type }) => {
+      if (type !== 'change') return;
+      const parsed = SettingsSchema.safeParse(values);
+      if (!parsed.success) return;
+      if (name === 'terms_accepted' || name === 'privacy_policy_accepted') {
+        save(parsed.data);
+      } else {
+        scheduleSave(parsed.data);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, save, scheduleSave]);
+
+  // Refresh from external account changes (sync, import) — but never while the
+  // user has unsaved edits in the form.
+  useEffect(() => {
+    if (account && !form.formState.isDirty) {
+      form.reset(defaultValues);
     }
-  };
+  }, [account, defaultValues, form]);
 
   if (!account) {
     return <LoadingState variant="inline" label="Loading account settings..." />;
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+    <form className="space-y-8">
+      <div className="flex h-5 justify-end">
+        <SavedIndicator status={status} />
+      </div>
       <PersonalInfoSection control={form.control} />
       <TermsSection control={form.control} />
-      <div className="flex items-center justify-end gap-3 border-t pt-6">
-        {justSaved && (
-          <div className="flex items-center gap-2 text-sm font-medium text-emerald-600">
-            <CheckCircle2 className="size-4" />
-            <span>Saved</span>
-          </div>
-        )}
-        <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? 'Saving...' : 'Save settings'}
-        </Button>
-      </div>
     </form>
   );
 }

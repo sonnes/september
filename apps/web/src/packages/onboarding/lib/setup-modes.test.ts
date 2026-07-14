@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 import {
   SETUP_MODES,
   buildAdvancedFinishUpdate,
+  buildFreeModeUpdate,
   buildPrivacyModeUpdate,
+  inferSetupMode,
   isSetupMode,
 } from './setup-modes';
 
@@ -121,6 +123,74 @@ describe('buildPrivacyModeUpdate', () => {
       },
     });
     expect(update.ai_suggestions).toMatchObject({ enabled: false, provider: 'webllm' });
+  });
+});
+
+describe('inferSetupMode', () => {
+  it('prefers an explicit setup_mode when present', () => {
+    expect(inferSetupMode({ setup_mode: 'free' })).toBe('free');
+  });
+
+  it('infers privacy when everything runs on-device', () => {
+    expect(
+      inferSetupMode({
+        ai_speech: { enabled: true, provider: 'kokoro', settings: {} },
+        ai_suggestions: { enabled: false, provider: 'webllm', settings: {} },
+        ai_transcription: { enabled: false, provider: 'whisper', settings: {} },
+      })
+    ).toBe('privacy');
+  });
+
+  it('infers free for browser voice + OpenRouter suggestions', () => {
+    expect(
+      inferSetupMode({
+        ai_speech: { enabled: true, provider: 'browser', settings: {} },
+        ai_suggestions: { enabled: true, provider: 'openrouter', settings: {} },
+        ai_transcription: { enabled: false, provider: 'whisper', settings: {} },
+      })
+    ).toBe('free');
+  });
+
+  it('falls back to advanced for mixed or default configs', () => {
+    expect(inferSetupMode({})).toBe('advanced');
+    expect(
+      inferSetupMode({
+        ai_speech: { enabled: true, provider: 'elevenlabs', settings: {} },
+        ai_suggestions: { enabled: true, provider: 'gemini', settings: {} },
+      })
+    ).toBe('advanced');
+  });
+});
+
+describe('buildFreeModeUpdate', () => {
+  it('enables browser speech and OpenRouter suggestions when a key exists', () => {
+    const update = buildFreeModeUpdate({
+      currentSpeech: { enabled: true, provider: 'kokoro', voice_id: 'af_heart', settings: {} },
+      currentSuggestions: { enabled: false, provider: 'webllm', settings: {} },
+      currentProviders: { openrouter: { api_key: 'or-key' } },
+    });
+
+    expect(update.ai_speech).toMatchObject({ enabled: true, provider: 'browser' });
+    expect(update.ai_suggestions).toMatchObject({ enabled: true, provider: 'openrouter' });
+    expect(update.ai_providers).toEqual({ openrouter: { api_key: 'or-key' } });
+  });
+
+  it('leaves suggestions disabled without an OpenRouter key', () => {
+    const update = buildFreeModeUpdate({});
+    expect(update.ai_speech).toMatchObject({ enabled: true, provider: 'browser' });
+    expect(update.ai_suggestions).toMatchObject({ enabled: false, provider: 'openrouter' });
+  });
+
+  it('preserves suggestion settings across the switch', () => {
+    const update = buildFreeModeUpdate({
+      currentSuggestions: {
+        enabled: true,
+        provider: 'gemini',
+        settings: { temperature: 0.3 },
+      },
+      currentProviders: { openrouter: { api_key: 'or-key' } },
+    });
+    expect(update.ai_suggestions?.settings).toEqual({ temperature: 0.3 });
   });
 });
 

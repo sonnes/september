@@ -6,13 +6,14 @@ import { Button } from '@/packages/ui/components/button';
 
 import { ONBOARDING_PRIMARY_COPY } from '../../lib/onboarding-content';
 import { SETUP_MODES, type SetupModeAccent } from '../../lib/setup-modes';
+import { ModeBadge } from '../mode-badge';
 import { useOnboarding } from '../onboarding-provider';
 import { StepFooter, StepHeader, StepShell } from '../step-chrome';
 
-const ACCENT: Record<SetupModeAccent, { edge: string; badge: string }> = {
-  emerald: { edge: 'border-t-emerald-600', badge: 'bg-emerald-100 text-emerald-700' },
-  amber: { edge: 'border-t-amber-600', badge: 'bg-amber-100 text-amber-700' },
-  sky: { edge: 'border-t-sky-600', badge: 'bg-sky-100 text-sky-700' },
+const ACCENT: Record<SetupModeAccent, { edge: string }> = {
+  emerald: { edge: 'border-t-emerald-600' },
+  amber: { edge: 'border-t-amber-600' },
+  sky: { edge: 'border-t-sky-600' },
 };
 
 export function ModeStep() {
@@ -55,9 +56,9 @@ export function ModeStep() {
                 {isSelected && <Check className="size-3" />}
               </span>
 
-              <span className={`w-fit rounded-full px-3 py-1 text-xs font-bold ${accent.badge}`}>
+              <ModeBadge accent={option.accent} className="px-3 py-1 font-bold">
                 {option.badge}
-              </span>
+              </ModeBadge>
               <span className="text-lg font-semibold text-foreground">{option.title}</span>
               <span className="text-sm leading-relaxed text-muted-foreground">{option.body}</span>
               <ul className="grid gap-3 text-sm leading-relaxed text-muted-foreground">

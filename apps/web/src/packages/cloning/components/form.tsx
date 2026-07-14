@@ -97,9 +97,9 @@ export function VoiceCloneForm() {
         <Card className="border-amber-200 bg-amber-50">
           <CardContent className="pt-6">
             <p className="text-sm text-amber-800">
-              <strong>API Key Required:</strong> You need to configure your ElevenLabs API key in{' '}
-              <a href="/settings/providers" className="underline hover:text-amber-900">
-                AI Settings
+              <strong>API Key Required:</strong> You need to connect ElevenLabs in{' '}
+              <a href="/settings/connections/elevenlabs" className="underline hover:text-amber-900">
+                Setup
               </a>{' '}
               to create voice clones.
             </p>

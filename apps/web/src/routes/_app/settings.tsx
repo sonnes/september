@@ -17,8 +17,10 @@ function SettingsLayout() {
       <SidebarLayout.Content>
         <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-4 py-6 sm:px-6 md:flex-row md:gap-10 md:py-8">
           <aside className="md:sticky md:top-0 md:w-64 md:shrink-0 md:self-start">
-            <h2 className="px-3 text-lg font-semibold tracking-tight text-foreground">Settings</h2>
-            <div className="mt-3">
+            <h2 className="hidden px-3 text-lg font-semibold tracking-tight text-foreground md:block">
+              Settings
+            </h2>
+            <div className="md:mt-3">
               <SettingsNav />
             </div>
           </aside>

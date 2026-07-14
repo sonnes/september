@@ -139,3 +139,13 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Tiptap's Placeholder extension only sets data-placeholder; this rule makes
+   it visible in empty editors (e.g. Settings → Writing help → About you). */
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
