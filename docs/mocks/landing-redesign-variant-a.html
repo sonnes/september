@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>September — Start with one word</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --indigo-600: #4f46e5;
+    --indigo-500: #6366f1;
+    --indigo-300: #a5b4fc;
+    --indigo-100: #e0e7ff;
+    --indigo-50:  #eef2ff;
+    --zinc-900: #18181b;
+    --zinc-600: #52525b;
+    --zinc-500: #71717a;
+    --zinc-200: #e4e4e7;
+    --zinc-100: #f4f4f5;
+    --white: #ffffff;
+    --shadow-soft: 0 1px 3px rgba(0,0,0,.07);
+    --shadow-card: 0 1px 3px rgba(0,0,0,.07), 0 8px 24px rgba(0,0,0,.04);
+    --radius-xl: 14px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    font-family: "Noto Sans", system-ui, -apple-system, sans-serif;
+    color: var(--zinc-900);
+    background: var(--white);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  a { color: inherit; text-decoration: none; }
+
+  .wrap {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ---------- Focus styles (visible, never hover-only) ---------- */
+  a:focus-visible,
+  button:focus-visible,
+  .pill:focus-visible,
+  .btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--indigo-300);
+    border-radius: 999px;
+  }
+  .btn:focus-visible { border-radius: 999px; }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(255,255,255,.85);
+    backdrop-filter: saturate(140%) blur(8px);
+    border-bottom: 1px solid var(--zinc-200);
+  }
+  .topbar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 68px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand-mark {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--indigo-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    flex: 0 0 auto;
+  }
+  .brand-name {
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--zinc-900);
+  }
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .ghlink {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--zinc-600);
+    padding: 8px 6px;
+    border-radius: 8px;
+  }
+  .ghlink:hover { color: var(--zinc-900); }
+
+  .pill-cta {
+    display: inline-flex;
+    align-items: center;
+    height: 44px;
+    padding: 0 20px;
+    border-radius: 999px;
+    background: var(--indigo-50);
+    color: var(--indigo-600);
+    font-weight: 600;
+    font-size: 15px;
+    border: 1px solid var(--indigo-100);
+    transition: background .15s ease;
+  }
+  .pill-cta:hover { background: var(--indigo-100); }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 56px;
+    padding: 0 32px;
+    border-radius: 999px;
+    background: var(--indigo-600);
+    color: #fff;
+    font-family: inherit;
+    font-size: 18px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background .15s ease, transform .08s ease;
+    box-shadow: 0 1px 2px rgba(79,70,229,.25), 0 8px 20px rgba(79,70,229,.18);
+  }
+  .btn:hover { background: #4338ca; }
+  .btn:active { transform: translateY(1px); }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    min-height: 86vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 56px 0 72px;
+  }
+  .hero-col {
+    width: 100%;
+    max-width: 760px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .eyebrow {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--indigo-600);
+    letter-spacing: 0.04em;
+    margin: 0 0 22px;
+  }
+  h1.hero-title {
+    margin: 0 0 18px;
+    font-size: 60px;
+    line-height: 1.05;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--zinc-900);
+  }
+  .subline {
+    margin: 0 0 40px;
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--zinc-600);
+    max-width: 560px;
+  }
+
+  /* ---------- Editor card (centerpiece) ---------- */
+  .editor-card {
+    width: 100%;
+    max-width: 680px;
+    background: var(--white);
+    border: 1px solid var(--zinc-200);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-card), 0 0 0 3px var(--indigo-100);
+    text-align: left;
+    overflow: hidden;
+  }
+  .editor-chrome {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--zinc-100);
+  }
+  .dots { display: flex; gap: 7px; }
+  .dot {
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--zinc-200);
+  }
+  .chrome-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--zinc-500);
+    margin-left: 2px;
+  }
+  .editor-field {
+    padding: 32px 28px 28px;
+  }
+  .field-text {
+    font-size: 22px;
+    line-height: 1.5;
+    color: var(--zinc-900);
+    font-weight: 400;
+    min-height: 34px;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+  }
+  .placeholder-rest { color: var(--zinc-500); }
+  .caret {
+    display: inline-block;
+    width: 2px;
+    height: 26px;
+    background: var(--indigo-600);
+    margin-left: 1px;
+    transform: translateY(4px);
+    animation: blink 1.05s step-end infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* ---------- Suggestion pills ---------- */
+  .pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 4px 28px 30px;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 20px;
+    border-radius: 999px;
+    background: var(--white);
+    border: 1px solid var(--zinc-200);
+    color: var(--zinc-600);
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .pill:hover {
+    background: var(--indigo-50);
+    border-color: var(--indigo-100);
+    color: var(--indigo-600);
+  }
+  .pill.active {
+    background: var(--indigo-50);
+    border-color: var(--indigo-300);
+    color: var(--indigo-600);
+  }
+
+  .hero-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 40px;
+    gap: 14px;
+  }
+  .trust {
+    font-size: 14px;
+    color: var(--zinc-500);
+  }
+  .trust .dot-sep { color: var(--zinc-200); margin: 0 8px; }
+
+  /* ---------- Capabilities ---------- */
+  .section { padding: 40px 0 88px; }
+  .section-head {
+    text-align: center;
+    max-width: 620px;
+    margin: 0 auto 48px;
+  }
+  .section-head h2 {
+    margin: 0 0 12px;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--zinc-900);
+  }
+  .section-head p {
+    margin: 0;
+    font-size: 18px;
+    color: var(--zinc-600);
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+  .feature-card {
+    background: var(--white);
+    border: 1px solid var(--zinc-200);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-soft);
+    padding: 30px 28px;
+  }
+  .feat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--indigo-50);
+    color: var(--indigo-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  .feature-card h3 {
+    margin: 0 0 8px;
+    font-size: 19px;
+    font-weight: 600;
+    color: var(--zinc-900);
+  }
+  .feature-card p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--zinc-600);
+  }
+
+  /* ---------- Final CTA ---------- */
+  .final {
+    text-align: center;
+    padding: 16px 0 96px;
+  }
+  .final-inner {
+    max-width: 620px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .final h2 {
+    margin: 0 0 28px;
+    font-size: 36px;
+    line-height: 1.15;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--zinc-900);
+  }
+  .built {
+    margin-top: 22px;
+    font-size: 14px;
+    color: var(--zinc-500);
+  }
+  .built .dot-sep { color: var(--zinc-200); margin: 0 8px; }
+
+  /* ---------- Footer ---------- */
+  footer {
+    border-top: 1px solid var(--zinc-200);
+    padding: 32px 0;
+  }
+  .footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .footer-links {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .footer-links a {
+    font-size: 15px;
+    color: var(--zinc-600);
+  }
+  .footer-links a:hover { color: var(--zinc-900); }
+  .copyright {
+    font-size: 14px;
+    color: var(--zinc-500);
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 900px) {
+    .grid-3 { grid-template-columns: 1fr; max-width: 480px; }
+  }
+  @media (max-width: 720px) {
+    h1.hero-title { font-size: 44px; }
+    .field-text { font-size: 20px; }
+    .ghlink span { display: none; }
+  }
+  @media (max-width: 560px) {
+    h1.hero-title { font-size: 36px; }
+    .hero { min-height: auto; padding: 40px 0 56px; }
+    .editor-field { padding: 26px 20px 22px; }
+    .pill-row { padding: 4px 20px 26px; }
+    .btn { width: 100%; }
+    .final h2 { font-size: 28px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .caret { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ============ TOP BAR ============ -->
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="/onboarding" aria-label="September home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12h4l3 7 4-14 3 7h4" />
+          </svg>
+        </span>
+        <span class="brand-name">september</span>
+      </a>
+      <nav class="topbar-right">
+        <a class="ghlink" href="https://github.com/sonnes/september" aria-label="View source on GitHub">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+          </svg>
+          <span>GitHub</span>
+        </a>
+        <a class="pill-cta" href="/onboarding">Open the app</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ============ HERO ============ -->
+  <main>
+    <section class="hero">
+      <div class="wrap hero-col">
+        <p class="eyebrow">Assistive communication · works in your browser</p>
+        <h1 class="hero-title">Start with one word.</h1>
+        <p class="subline">September turns a few keystrokes into a full sentence — and speaks it in your voice.</p>
+
+        <!-- Centerpiece: editor card -->
+        <div class="editor-card" role="group" aria-label="September editor demo">
+          <div class="editor-chrome">
+            <span class="dots" aria-hidden="true">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            </span>
+            <span class="chrome-label">September</span>
+          </div>
+
+          <div class="editor-field">
+            <div class="field-text" aria-label="Message in progress: I would like">
+              <span>I&nbsp;would&nbsp;like&nbsp;</span><span class="caret" aria-hidden="true"></span>
+            </div>
+          </div>
+
+          <div class="pill-row" role="list" aria-label="Suggested completions">
+            <button class="pill active" role="listitem">a glass of water</button>
+            <button class="pill" role="listitem">to sit up, please</button>
+            <button class="pill" role="listitem">to call my daughter</button>
+            <button class="pill" role="listitem">the window opened</button>
+          </div>
+        </div>
+
+        <!-- Hero CTA -->
+        <div class="hero-cta">
+          <a class="btn" href="/onboarding">
+            Open September — it&rsquo;s free
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h14" /><path d="m13 6 6 6-6 6" />
+            </svg>
+          </a>
+          <p class="trust">No signup <span class="dot-sep">·</span> Runs in your browser <span class="dot-sep">·</span> Open source</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CAPABILITIES ============ -->
+    <section class="section">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Built for the way you communicate</h2>
+          <p>Type less, say more — and stay in every conversation.</p>
+        </div>
+
+        <div class="grid-3">
+          <!-- Voice -->
+          <div class="feature-card">
+            <div class="feat-icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="2" width="6" height="12" rx="3" />
+                <path d="M5 10a7 7 0 0 0 14 0" />
+                <path d="M12 19v3" />
+              </svg>
+            </div>
+            <h3>Speak in your own voice</h3>
+            <p>Clone your voice with ElevenLabs, or pick a natural professional voice — your words, spoken aloud.</p>
+          </div>
+
+          <!-- Transcription -->
+          <div class="feature-card">
+            <div class="feat-icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+                <path d="M8 12h.01" /><path d="M12 12h.01" /><path d="M16 12h.01" />
+              </svg>
+            </div>
+            <h3>Keep up with conversations</h3>
+            <p>Real-time transcription captures what others say, and September suggests replies you can send in a tap.</p>
+          </div>
+
+          <!-- Keyboards / input -->
+          <div class="feature-card">
+            <div class="feat-icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="9" />
+                <circle cx="12" cy="12" r="2.5" />
+                <path d="M12 3v3" /><path d="M12 18v3" /><path d="M3 12h3" /><path d="M18 12h3" />
+              </svg>
+            </div>
+            <h3>Keyboards for any input</h3>
+            <p>QWERTY, circular, and emoji layouts designed for mouse, head-tracking, or eye-gaze — whatever works for you.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FINAL CTA ============ -->
+    <section class="final">
+      <div class="wrap final-inner">
+        <h2>Your next sentence is one word away.</h2>
+        <a class="btn" href="/onboarding">
+          Open September — it&rsquo;s free
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14" /><path d="m13 6 6 6-6 6" />
+          </svg>
+        </a>
+        <p class="built">Built with ElevenLabs + Gemini <span class="dot-sep">·</span> Free &amp; open source</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer>
+    <div class="wrap footer-inner">
+      <a class="brand" href="/onboarding" aria-label="September home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12h4l3 7 4-14 3 7h4" />
+          </svg>
+        </span>
+        <span class="brand-name">september</span>
+      </a>
+      <nav class="footer-links">
+        <a href="/onboarding">Open the app</a>
+        <a href="https://github.com/sonnes/september">GitHub</a>
+        <a href="https://github.com/sonnes/september">Source &amp; license</a>
+      </nav>
+      <p class="copyright">© 2026 September · Free &amp; open source</p>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>September Onboarding - Variant B</title>
+    <style>
+      :root {
+        --page: #f4f4f5;
+        --bg: #ffffff;
+        --text: #18181b;
+        --muted: #71717a;
+        --line: #e4e4e7;
+        --primary: #4f46e5;
+        --primary-dark: #4338ca;
+        --primary-soft: #eef2ff;
+        --sidebar: #6366f1;
+        --sidebar-dark: #4f46e5;
+        --success: #059669;
+        --success-soft: #ecfdf5;
+        --radius: 14px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        overflow-x: hidden;
+        background: var(--page);
+        color: var(--text);
+        font-family: "Noto Sans", Helvetica, Arial, sans-serif;
+      }
+
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      .frame {
+        display: grid;
+        grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+        max-width: 100vw;
+        min-height: 100vh;
+        padding: 12px;
+        gap: 12px;
+      }
+
+      .sidebar {
+        min-width: 0;
+        border-radius: 16px;
+        background: linear-gradient(180deg, var(--sidebar), var(--sidebar-dark));
+        color: white;
+        padding: 28px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 44px;
+        font-weight: 800;
+      }
+
+      .brand-mark {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.16);
+      }
+
+      .sidebar h1 {
+        margin: 0;
+        max-width: 11ch;
+        font-size: 34px;
+        line-height: 1.08;
+        letter-spacing: 0;
+      }
+
+      .sidebar p {
+        margin: 14px 0 34px;
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 15px;
+        line-height: 1.55;
+      }
+
+      .steps {
+        display: grid;
+        gap: 12px;
+      }
+
+      .step {
+        display: grid;
+        grid-template-columns: 38px 1fr;
+        gap: 12px;
+        width: 100%;
+        min-height: 58px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.08);
+        color: white;
+        padding: 10px;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .step[aria-current="step"] {
+        background: white;
+        color: var(--primary-dark);
+      }
+
+      .step-index {
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.14);
+        font-weight: 800;
+      }
+
+      .step[aria-current="step"] .step-index {
+        background: var(--primary-soft);
+      }
+
+      .step-title {
+        display: block;
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .step-copy {
+        display: block;
+        margin-top: 2px;
+        color: currentColor;
+        opacity: 0.72;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      .content {
+        display: grid;
+        min-width: 0;
+        place-items: center;
+        border-radius: 16px;
+        background:
+          radial-gradient(circle at 90% 15%, rgba(99, 102, 241, 0.1), transparent 34rem),
+          var(--bg);
+        padding: clamp(22px, 5vw, 60px);
+      }
+
+      .workspace {
+        width: min(100%, 780px);
+        min-width: 0;
+      }
+
+      .topline {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 28px;
+      }
+
+      .kicker {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .save-note {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      h2 {
+        margin: 0;
+        overflow-wrap: break-word;
+        font-size: clamp(32px, 5vw, 44px);
+        line-height: 1.06;
+        letter-spacing: 0;
+      }
+
+      .lede {
+        margin: 14px 0 0;
+        max-width: 58ch;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.6;
+      }
+
+      .task-area {
+        margin-top: 34px;
+        display: grid;
+        gap: 18px;
+      }
+
+      .recommended {
+        min-width: 0;
+        border: 1px solid var(--primary);
+        border-radius: var(--radius);
+        background: var(--primary-soft);
+        padding: 22px;
+      }
+
+      .recommended-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 30px;
+        border-radius: 999px;
+        background: white;
+        color: var(--primary-dark);
+        padding: 0 12px;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .recommended h3,
+      .option h3 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .recommended p,
+      .option p {
+        margin: 8px 0 0;
+        overflow-wrap: break-word;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .option-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .option {
+        min-width: 0;
+        min-height: 128px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: white;
+        padding: 20px;
+      }
+
+      .field-grid {
+        display: grid;
+        gap: 16px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: white;
+        color: var(--text);
+        padding: 14px 16px;
+        font-size: 16px;
+      }
+
+      textarea {
+        min-height: 120px;
+        line-height: 1.5;
+      }
+
+      .footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-top: 34px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line);
+      }
+
+      .btn {
+        min-height: 48px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: white;
+        color: var(--text);
+        padding: 0 18px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .btn.primary {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: white;
+      }
+
+      .quiet {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      @media (max-width: 860px) {
+        .frame {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          padding: 22px;
+        }
+
+        .sidebar h1,
+        .sidebar p {
+          display: none;
+        }
+
+        .brand {
+          margin-bottom: 18px;
+        }
+
+        .steps {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .step {
+          grid-template-columns: 1fr;
+          min-height: 86px;
+        }
+
+        .step-copy {
+          display: none;
+        }
+
+        .option-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .frame {
+          padding: 0;
+        }
+
+        .sidebar,
+        .content {
+          border-radius: 0;
+        }
+
+        .steps {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .footer,
+        .topline,
+        .recommended-header {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .btn {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="frame">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-mark">S</span>
+          <span>September</span>
+        </div>
+        <h1>Set up without the hard parts.</h1>
+        <p>Recommended choices are ready. People who already use extra services can connect them, but nobody has to start there.</p>
+        <nav class="steps" aria-label="Setup steps">
+          <button class="step" type="button" data-step="0">
+            <span class="step-index">1</span>
+            <span><span class="step-title">Welcome</span><span class="step-copy">What September does</span></span>
+          </button>
+          <button class="step" type="button" data-step="1">
+            <span class="step-index">2</span>
+            <span><span class="step-title">You</span><span class="step-copy">Name and speaking style</span></span>
+          </button>
+          <button class="step" type="button" data-step="2">
+            <span class="step-index">3</span>
+            <span><span class="step-title">Voice</span><span class="step-copy">Speech and voice choice</span></span>
+          </button>
+          <button class="step" type="button" data-step="3">
+            <span class="step-index">4</span>
+            <span><span class="step-title">Suggestions</span><span class="step-copy">Extra services and words</span></span>
+          </button>
+        </nav>
+      </aside>
+
+      <section class="content">
+        <div class="workspace">
+          <div class="topline">
+            <span class="kicker" id="kicker"></span>
+            <span class="save-note">Saved on this device</span>
+          </div>
+          <h2 id="title"></h2>
+          <p class="lede" id="lede"></p>
+          <div class="task-area" id="task"></div>
+          <footer class="footer">
+            <span class="quiet" id="quiet"></span>
+            <button class="btn primary" type="button" id="next">Continue</button>
+          </footer>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const content = [
+        {
+          kicker: "Step 1 of 4",
+          title: "September speaks what you mean.",
+          lede:
+            "Type a little. Pick a suggestion. September says the full sentence aloud.",
+          quiet: "Setup takes about two minutes.",
+          next: "Start",
+          task: `
+            <div class="recommended">
+              <div class="recommended-header">
+                <div>
+                  <h3>Start with simple defaults</h3>
+                  <p>Use the built-in voice and built-in suggestions first. Add services later only if you want them.</p>
+                </div>
+                <span class="badge">Recommended</span>
+              </div>
+            </div>
+            <div class="option-grid">
+              <div class="option"><h3>Short taps</h3><p>Suggestion buttons help reduce typing.</p></div>
+              <div class="option"><h3>Full expression</h3><p>Common needs, feelings, and social phrases stay easy to reach.</p></div>
+            </div>
+          `,
+        },
+        {
+          kicker: "Step 2 of 4",
+          title: "What should September know?",
+          lede:
+            "Keep this short. A caregiver can fill it in now and improve it later.",
+          quiet: "Only the name is required.",
+          next: "Save and continue",
+          task: `
+            <div class="field-grid">
+              <div><label for="name">Name</label><input id="name" value="Ravi" /></div>
+              <div><label for="voice">Speaking style</label><textarea id="voice">Plain, warm, and direct. Use everyday language.</textarea></div>
+            </div>
+          `,
+        },
+        {
+          kicker: "Step 3 of 4",
+          title: "Pick the voice September uses.",
+          lede:
+            "The built-in voice works right away. Connected voice services are optional.",
+          quiet: "Voice can be changed any time.",
+          next: "Use selected voice",
+          task: `
+            <div class="recommended">
+              <div class="recommended-header">
+                <div>
+                  <h3>Built-in voice</h3>
+                  <p>Fastest start. No login and no extra setup.</p>
+                </div>
+                <span class="badge">Selected</span>
+              </div>
+            </div>
+            <div class="option-grid">
+              <div class="option"><h3>ElevenLabs</h3><p>More lifelike voices if ElevenLabs is already set up.</p></div>
+              <div class="option"><h3>Gemini speech</h3><p>Google voice options if you already use Gemini.</p></div>
+            </div>
+          `,
+        },
+        {
+          kicker: "Step 4 of 4",
+          title: "Help suggestions sound familiar.",
+          lede:
+            "Choose where suggestions come from and add the words September should learn.",
+          quiet: "Skip extra services if you do not have them ready.",
+          next: "Finish setup",
+          task: `
+            <div class="recommended">
+              <div class="recommended-header">
+                <div>
+                  <h3>Use built-in suggestions</h3>
+                  <p>Start now. Later, connect OpenRouter or Gemini for stronger suggestions.</p>
+                </div>
+                <span class="badge">Recommended</span>
+              </div>
+            </div>
+            <div class="option-grid">
+              <div class="option"><h3>Connect OpenRouter</h3><p>One connection for many AI models.</p></div>
+              <div class="option"><h3>Add personal words</h3><p>Paste names, care phrases, routines, or topics September should know.</p></div>
+            </div>
+          `,
+        },
+      ];
+
+      const requestedStep = Number(new URLSearchParams(window.location.search).get("step"));
+      let current =
+        Number.isInteger(requestedStep) && requestedStep >= 1 && requestedStep <= content.length
+          ? requestedStep - 1
+          : 0;
+      const steps = Array.from(document.querySelectorAll(".step"));
+      const task = document.getElementById("task");
+      const title = document.getElementById("title");
+      const lede = document.getElementById("lede");
+      const kicker = document.getElementById("kicker");
+      const quiet = document.getElementById("quiet");
+      const next = document.getElementById("next");
+
+      function render() {
+        const item = content[current];
+        kicker.textContent = item.kicker;
+        title.textContent = item.title;
+        lede.textContent = item.lede;
+        quiet.textContent = item.quiet;
+        next.textContent = item.next;
+        task.innerHTML = item.task;
+        steps.forEach((step, index) => {
+          step.setAttribute("aria-current", index === current ? "step" : "false");
+          step.querySelector(".step-index").textContent = index < current ? "OK" : index + 1;
+        });
+      }
+
+      steps.forEach((step) => {
+        step.addEventListener("click", () => {
+          current = Number(step.dataset.step);
+          render();
+        });
+      });
+
+      next.addEventListener("click", () => {
+        current = Math.min(current + 1, content.length - 1);
+        render();
+      });
+
+      render();
+    </script>
+  </body>
+</html>

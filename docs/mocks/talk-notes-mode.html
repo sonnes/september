@@ -1,0 +1,1322 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>September Talk Notes Mode Mock</title>
+    <style>
+      @font-face {
+        font-family: "Noto Sans";
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url("../../apps/web/node_modules/@fontsource/noto-sans/files/noto-sans-latin-400-normal.woff2")
+          format("woff2");
+      }
+
+      @font-face {
+        font-family: "Noto Sans";
+        font-style: normal;
+        font-weight: 500;
+        font-display: swap;
+        src: url("../../apps/web/node_modules/@fontsource/noto-sans/files/noto-sans-latin-500-normal.woff2")
+          format("woff2");
+      }
+
+      @font-face {
+        font-family: "Noto Sans";
+        font-style: normal;
+        font-weight: 600;
+        font-display: swap;
+        src: url("../../apps/web/node_modules/@fontsource/noto-sans/files/noto-sans-latin-600-normal.woff2")
+          format("woff2");
+      }
+
+      @font-face {
+        font-family: "Noto Sans";
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url("../../apps/web/node_modules/@fontsource/noto-sans/files/noto-sans-latin-700-normal.woff2")
+          format("woff2");
+      }
+
+      :root {
+        --page: #f4f4f5;
+        --bg: #ffffff;
+        --card: #ffffff;
+        --text: #18181b;
+        --muted: #71717a;
+        --muted-2: #fafafa;
+        --soft: #f4f4f5;
+        --line: #e4e4e7;
+        --input: #d4d4d8;
+        --primary: #4f46e5;
+        --primary-2: #4338ca;
+        --primary-soft: #eef2ff;
+        --primary-pale: #f7f8ff;
+        --primary-text: #ffffff;
+        --sidebar: #6366f1;
+        --sidebar-active: #4f46e5;
+        --success: #059669;
+        --success-soft: #ecfdf5;
+        --warning: #d97706;
+        --warning-soft: #fffbeb;
+        --shadow: 0 1px 2px rgba(24, 24, 27, 0.06);
+        --shadow-card: 0 12px 30px rgba(24, 24, 27, 0.08);
+        --radius-sm: 8px;
+        --radius: 10px;
+        --radius-lg: 14px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        min-height: 100%;
+        background: var(--page);
+        color: var(--text);
+        font-family: "Noto Sans", Helvetica, sans-serif;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        background: var(--page);
+        color: var(--text);
+        font-size: 14px;
+        line-height: 1.5;
+        letter-spacing: 0;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      button,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      button:focus-visible,
+      textarea:focus-visible {
+        outline: 3px solid rgba(79, 70, 229, 0.45);
+        outline-offset: 3px;
+      }
+
+      .app {
+        display: grid;
+        min-height: 100vh;
+        grid-template-columns: 256px minmax(0, 1fr);
+        padding: 8px;
+      }
+
+      .sidebar {
+        display: flex;
+        min-height: calc(100vh - 16px);
+        flex-direction: column;
+        gap: 24px;
+        border-radius: var(--radius);
+        background: var(--sidebar);
+        color: var(--primary-text);
+        padding: 16px 12px;
+      }
+
+      .brand {
+        display: flex;
+        min-height: 48px;
+        align-items: center;
+        gap: 10px;
+        padding: 0 8px;
+        font-size: 16px;
+        font-weight: 700;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 32px;
+        height: 32px;
+        place-items: center;
+        border-radius: var(--radius-sm);
+        background: var(--primary-text);
+        color: var(--primary);
+        font-weight: 800;
+      }
+
+      .nav-group {
+        display: grid;
+        gap: 6px;
+      }
+
+      .nav-label {
+        padding: 0 10px 4px;
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .nav-item {
+        display: flex;
+        min-height: 44px;
+        align-items: center;
+        gap: 10px;
+        border: 0;
+        border-radius: var(--radius-sm);
+        background: transparent;
+        color: inherit;
+        padding: 0 10px;
+        text-align: left;
+      }
+
+      .nav-item.active,
+      .nav-item:hover {
+        background: var(--sidebar-active);
+      }
+
+      .nav-icon {
+        display: grid;
+        width: 26px;
+        height: 26px;
+        place-items: center;
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.16);
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .main-shell {
+        min-width: 0;
+        border: 1px solid rgba(24, 24, 27, 0.08);
+        border-radius: var(--radius-lg);
+        background: var(--bg);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .topbar {
+        display: flex;
+        min-height: 64px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        border-bottom: 1px solid var(--line);
+        padding: 0 18px;
+      }
+
+      .space-title {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .menu-button,
+      .icon-button {
+        display: grid;
+        width: 44px;
+        height: 44px;
+        place-items: center;
+        border: 1px solid transparent;
+        border-radius: var(--radius-sm);
+        background: transparent;
+        color: var(--muted);
+      }
+
+      .icon-button {
+        border-color: var(--line);
+        background: var(--card);
+      }
+
+      .space-heading {
+        min-width: 0;
+      }
+
+      .space-heading h1 {
+        overflow: hidden;
+        color: var(--text);
+        font-size: 16px;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .space-heading p {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .mode-toggle {
+        display: flex;
+        gap: 4px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--soft);
+        padding: 4px;
+      }
+
+      .mode-toggle button {
+        display: inline-flex;
+        min-height: 44px;
+        min-width: 116px;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border: 0;
+        border-radius: var(--radius-sm);
+        background: transparent;
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .mode-toggle button.active {
+        background: var(--card);
+        color: var(--primary);
+        box-shadow: var(--shadow);
+      }
+
+      .content {
+        display: grid;
+        height: calc(100vh - 82px);
+        min-height: 680px;
+        grid-template-columns: minmax(0, 1fr) 328px;
+        gap: 18px;
+        padding: 18px;
+      }
+
+      .mode-panel {
+        display: none;
+        min-width: 0;
+      }
+
+      .mode-panel.active {
+        display: flex;
+      }
+
+      .talk-panel {
+        height: 100%;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .transcript {
+        display: flex;
+        min-height: 0;
+        flex: 1;
+        flex-direction: column;
+        justify-content: flex-end;
+        gap: 10px;
+        overflow: auto;
+        padding: 16px 2px;
+      }
+
+      .bubble {
+        align-self: flex-end;
+        max-width: min(680px, 86%);
+        border-radius: var(--radius) var(--radius) 3px var(--radius);
+        background: var(--primary-soft);
+        color: var(--primary-2);
+        padding: 12px 14px;
+        font-size: 18px;
+        line-height: 1.35;
+      }
+
+      .console {
+        display: grid;
+        gap: 12px;
+        border-radius: var(--radius);
+        background: rgba(244, 244, 245, 0.64);
+        padding: 12px;
+      }
+
+      .suggestions {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding-bottom: 2px;
+      }
+
+      .pill {
+        flex: 0 0 auto;
+        min-height: 44px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--card);
+        color: var(--text);
+        padding: 0 16px;
+        font-weight: 500;
+      }
+
+      .composer {
+        border: 2px solid var(--input);
+        border-radius: var(--radius-lg);
+        background: var(--card);
+        padding: 12px;
+      }
+
+      .composer textarea {
+        display: block;
+        width: 100%;
+        min-height: 70px;
+        max-height: 240px;
+        resize: vertical;
+        border: 0;
+        background: transparent;
+        color: var(--text);
+        font-size: 24px;
+        font-weight: 500;
+        line-height: 1.35;
+      }
+
+      .composer textarea::placeholder,
+      .note-body::placeholder {
+        color: rgba(113, 113, 122, 0.72);
+      }
+
+      .composer textarea:focus,
+      .note-body:focus {
+        outline: 0;
+      }
+
+      .composer-actions,
+      .note-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding-top: 12px;
+      }
+
+      .tools {
+        display: flex;
+        gap: 8px;
+      }
+
+      .tool-button {
+        display: grid;
+        width: 44px;
+        height: 44px;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        background: var(--card);
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .primary-button,
+      .secondary-button {
+        display: inline-flex;
+        min-height: 44px;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border-radius: var(--radius-sm);
+        padding: 0 18px;
+        font-weight: 700;
+      }
+
+      .primary-button {
+        border: 1px solid var(--primary);
+        background: var(--primary);
+        color: var(--primary-text);
+      }
+
+      .secondary-button {
+        border: 1px solid var(--line);
+        background: var(--card);
+        color: var(--text);
+      }
+
+      .notes-panel {
+        height: 100%;
+        min-height: 0;
+        gap: 18px;
+      }
+
+      .note-list {
+        display: flex;
+        width: 244px;
+        min-width: 220px;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .note-list-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .note-list h2,
+      .context-panel h2 {
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .small-button {
+        display: inline-grid;
+        min-width: 44px;
+        height: 44px;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        background: var(--card);
+        color: var(--primary);
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .note-card {
+        display: grid;
+        gap: 8px;
+        min-height: 110px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--card);
+        padding: 12px;
+        text-align: left;
+        box-shadow: var(--shadow);
+      }
+
+      .note-card.active {
+        border-color: rgba(79, 70, 229, 0.5);
+        background: var(--primary-pale);
+      }
+
+      .note-card-title {
+        color: var(--text);
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .note-card-meta,
+      .note-card-preview {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .note-workspace {
+        display: flex;
+        min-width: 0;
+        flex: 1;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .note-editor {
+        display: flex;
+        min-height: 0;
+        flex: 1;
+        flex-direction: column;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--card);
+        box-shadow: var(--shadow-card);
+      }
+
+      .note-toolbar {
+        display: flex;
+        min-height: 52px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid var(--line);
+        background: var(--muted-2);
+        padding: 0 14px;
+      }
+
+      .format-group {
+        display: flex;
+        gap: 6px;
+      }
+
+      .format-button {
+        display: grid;
+        min-width: 44px;
+        height: 44px;
+        place-items: center;
+        border: 0;
+        border-radius: var(--radius-sm);
+        background: transparent;
+        color: var(--muted);
+        font-weight: 800;
+      }
+
+      .format-button.active,
+      .format-button:hover {
+        background: var(--primary-soft);
+        color: var(--primary);
+      }
+
+      .save-state {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .save-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: var(--success);
+      }
+
+      .note-title {
+        width: 100%;
+        border: 0;
+        border-bottom: 1px solid var(--line);
+        color: var(--text);
+        font-size: clamp(24px, 3vw, 34px);
+        font-weight: 700;
+        line-height: 1.15;
+        padding: 22px 24px 12px;
+      }
+
+      .note-body {
+        width: 100%;
+        min-height: 0;
+        flex: 1;
+        resize: none;
+        border: 0;
+        color: var(--text);
+        font-size: 18px;
+        line-height: 1.7;
+        padding: 20px 24px 28px;
+      }
+
+      .note-footer {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 14px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--card);
+        padding: 12px;
+      }
+
+      .voice-summary {
+        display: grid;
+        gap: 5px;
+      }
+
+      .voice-summary strong {
+        font-size: 14px;
+      }
+
+      .voice-summary span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .space-switch {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        border-radius: var(--radius);
+        background: rgba(244, 244, 245, 0.64);
+        padding: 10px;
+      }
+
+      .space-chip {
+        flex: 0 0 auto;
+        min-height: 44px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--card);
+        color: var(--muted);
+        padding: 0 16px;
+        font-weight: 700;
+      }
+
+      .space-chip.active {
+        border-color: rgba(79, 70, 229, 0.4);
+        background: var(--primary-soft);
+        color: var(--primary);
+      }
+
+      .context-panel {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        gap: 14px;
+        overflow: hidden;
+      }
+
+      .context-card {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--card);
+        padding: 14px;
+        box-shadow: var(--shadow);
+      }
+
+      .context-card h3 {
+        margin-bottom: 8px;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .history {
+        display: grid;
+        gap: 10px;
+      }
+
+      .history-item {
+        display: grid;
+        gap: 4px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 10px;
+      }
+
+      .history-item:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      .history-item p {
+        color: var(--text);
+        font-size: 13px;
+      }
+
+      .history-item span,
+      .stat {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .mini-player {
+        display: grid;
+        gap: 12px;
+      }
+
+      .meter {
+        height: 8px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: var(--soft);
+      }
+
+      .meter span {
+        display: block;
+        width: 62%;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--primary);
+      }
+
+      .status-stack {
+        display: grid;
+        gap: 8px;
+      }
+
+      .status-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .status-badge {
+        border-radius: 999px;
+        background: var(--success-soft);
+        color: var(--success);
+        padding: 3px 8px;
+        font-weight: 700;
+      }
+
+      .is-talk .notes-panel,
+      .is-notes .talk-panel {
+        display: none;
+      }
+
+      .is-talk .talk-panel,
+      .is-notes .notes-panel {
+        display: flex;
+      }
+
+      @media (max-width: 1376px) {
+        .app {
+          grid-template-columns: 56px minmax(0, 1fr);
+        }
+
+        .sidebar {
+          align-items: center;
+          padding: 14px 6px;
+        }
+
+        .brand span,
+        .nav-label,
+        .nav-item span:not(.nav-icon) {
+          display: none;
+        }
+
+        .nav-item {
+          justify-content: center;
+          padding: 0;
+        }
+
+        .content {
+          grid-template-columns: minmax(0, 1fr) 300px;
+        }
+      }
+
+      @media (max-width: 1024px) {
+        .content {
+          height: auto;
+          min-height: calc(100vh - 82px);
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .context-panel {
+          display: none;
+        }
+
+        .notes-panel {
+          flex-direction: column;
+        }
+
+        .note-list {
+          width: 100%;
+          min-width: 0;
+          flex-direction: row;
+          overflow-x: auto;
+        }
+
+        .note-list-head {
+          min-width: 156px;
+        }
+
+        .note-card {
+          min-width: 220px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .app {
+          display: block;
+          padding: 0;
+        }
+
+        .sidebar {
+          display: none;
+        }
+
+        .main-shell {
+          min-height: 100vh;
+          border-radius: 0;
+          border-width: 0;
+        }
+
+        .topbar {
+          min-height: auto;
+          flex-wrap: wrap;
+          align-items: flex-start;
+          padding: 12px;
+        }
+
+        .mode-toggle {
+          order: 2;
+          width: 100%;
+        }
+
+        .mode-toggle button {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .content {
+          padding: 12px;
+        }
+
+        .composer textarea {
+          font-size: 20px;
+        }
+
+        .note-footer {
+          grid-template-columns: 1fr;
+        }
+
+        .note-actions {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .note-actions .primary-button,
+        .note-actions .secondary-button {
+          width: 100%;
+        }
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --page: #18181b;
+          --bg: #18181b;
+          --card: #27272a;
+          --text: #ffffff;
+          --muted: #a1a1aa;
+          --muted-2: #202023;
+          --soft: #3f3f46;
+          --line: #3f3f46;
+          --input: #52525b;
+          --primary: #6366f1;
+          --primary-2: #c7d2fe;
+          --primary-soft: rgba(99, 102, 241, 0.18);
+          --primary-pale: rgba(99, 102, 241, 0.12);
+          --shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+          --shadow-card: 0 14px 30px rgba(0, 0, 0, 0.24);
+        }
+      }
+    </style>
+  </head>
+  <body class="is-notes">
+    <div class="app">
+      <aside class="sidebar" aria-label="Primary">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">S</div>
+          <span>September</span>
+        </div>
+
+        <nav class="nav-group" aria-label="Main navigation">
+          <div class="nav-label">App</div>
+          <button class="nav-item active" type="button">
+            <span class="nav-icon" aria-hidden="true">T</span>
+            <span>Talk</span>
+          </button>
+          <button class="nav-item" type="button">
+            <span class="nav-icon" aria-hidden="true">V</span>
+            <span>Voices</span>
+          </button>
+          <button class="nav-item" type="button">
+            <span class="nav-icon" aria-hidden="true">S</span>
+            <span>Settings</span>
+          </button>
+        </nav>
+      </aside>
+
+      <main class="main-shell">
+        <header class="topbar">
+          <div class="space-title">
+            <button
+              class="menu-button"
+              type="button"
+              aria-label="Toggle sidebar"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                aria-hidden="true"
+              >
+                <path
+                  d="M3 5.5h14M3 10h14M3 14.5h14"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-width="1.8"
+                />
+              </svg>
+            </button>
+            <div class="space-heading">
+              <h1>Family check-in</h1>
+              <p>Mode changes here. The space stays put.</p>
+            </div>
+          </div>
+
+          <div class="mode-toggle" role="tablist" aria-label="Talk mode">
+            <button
+              id="talk-tab"
+              type="button"
+              role="tab"
+              aria-controls="talk-panel"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 20 20"
+                aria-hidden="true"
+              >
+                <path
+                  d="M4.5 5.5h11v7h-6l-3.5 3v-3H4.5z"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linejoin="round"
+                  stroke-width="1.7"
+                />
+              </svg>
+              Talk
+            </button>
+            <button
+              id="notes-tab"
+              class="active"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              aria-controls="notes-panel"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 20 20"
+                aria-hidden="true"
+              >
+                <path
+                  d="M5 3.5h7.5L15 6v10.5H5zM12.5 3.5V6H15M7.5 9h5M7.5 12h5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.7"
+                />
+              </svg>
+              Notes
+            </button>
+          </div>
+
+          <button class="icon-button" type="button" aria-label="Open display">
+            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+              <path
+                d="M3 5h14v8H3zM8 16h4"
+                fill="none"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.7"
+              />
+            </svg>
+          </button>
+        </header>
+
+        <section class="content" aria-label="Family check-in workspace">
+          <section
+            id="talk-panel"
+            class="mode-panel talk-panel"
+            aria-labelledby="talk-tab"
+          >
+            <div class="transcript">
+              <div class="bubble">
+                I can talk for a few minutes after dinner.
+              </div>
+              <div class="bubble">
+                Please read my note from this morning first.
+              </div>
+            </div>
+
+            <div class="console">
+              <div class="suggestions" aria-label="Suggested phrases">
+                <button class="pill" type="button">I need a break</button>
+                <button class="pill" type="button">Can you repeat that?</button>
+                <button class="pill" type="button">That sounds good</button>
+                <button class="pill" type="button">Please wait</button>
+              </div>
+
+              <div class="composer">
+                <textarea
+                  aria-label="Talk composer"
+                  placeholder="Type a message..."
+                ></textarea>
+                <div class="composer-actions">
+                  <div class="tools" aria-label="Composer tools">
+                    <button class="tool-button" type="button" aria-label="Undo">
+                      U
+                    </button>
+                    <button
+                      class="tool-button"
+                      type="button"
+                      aria-label="Delete last word"
+                    >
+                      D
+                    </button>
+                    <button
+                      class="tool-button"
+                      type="button"
+                      aria-label="Clear"
+                    >
+                      C
+                    </button>
+                  </div>
+                  <button class="primary-button" type="button">
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 20 20"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M4 8v4h3l4 3V5L7 8zM14 7.5a3 3 0 0 1 0 5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                      />
+                    </svg>
+                    Speak
+                  </button>
+                </div>
+              </div>
+
+              <div class="space-switch" aria-label="Spaces">
+                <button class="space-chip active" type="button">Family</button>
+                <button class="space-chip" type="button">Care team</button>
+                <button class="space-chip" type="button">Appointments</button>
+                <button class="space-chip" type="button">+</button>
+              </div>
+            </div>
+          </section>
+
+          <section
+            id="notes-panel"
+            class="mode-panel notes-panel active"
+            aria-labelledby="notes-tab"
+          >
+            <aside class="note-list" aria-label="Notes in this space">
+              <div class="note-list-head">
+                <h2>Notes</h2>
+                <button
+                  class="small-button"
+                  type="button"
+                  aria-label="New note"
+                >
+                  +
+                </button>
+              </div>
+              <button class="note-card active" type="button">
+                <span class="note-card-title">Morning update</span>
+                <span class="note-card-preview"
+                  >I slept better. My neck is sore but manageable...</span
+                >
+                <span class="note-card-meta">Saved 9:42 AM</span>
+              </button>
+              <button class="note-card" type="button">
+                <span class="note-card-title">Questions for dinner</span>
+                <span class="note-card-preview"
+                  >Ask about the trip dates and where the charger is...</span
+                >
+                <span class="note-card-meta">Yesterday</span>
+              </button>
+              <button class="note-card" type="button">
+                <span class="note-card-title">Medication reminder</span>
+                <span class="note-card-preview"
+                  >Read this if the evening dose comes up...</span
+                >
+                <span class="note-card-meta">Jun 18</span>
+              </button>
+            </aside>
+
+            <div class="note-workspace">
+              <article class="note-editor" aria-label="Note editor">
+                <div class="note-toolbar">
+                  <div class="format-group" aria-label="Formatting tools">
+                    <button
+                      class="format-button active"
+                      type="button"
+                      aria-label="Bold"
+                    >
+                      B
+                    </button>
+                    <button
+                      class="format-button"
+                      type="button"
+                      aria-label="Italic"
+                    >
+                      I
+                    </button>
+                    <button
+                      class="format-button"
+                      type="button"
+                      aria-label="Heading 1"
+                    >
+                      H1
+                    </button>
+                    <button
+                      class="format-button"
+                      type="button"
+                      aria-label="Bulleted list"
+                    >
+                      List
+                    </button>
+                  </div>
+                  <div class="save-state">
+                    <span class="save-dot" aria-hidden="true"></span>
+                    Autosaved
+                  </div>
+                </div>
+
+                <textarea class="note-title" aria-label="Note title">
+Morning update</textarea
+                >
+                <textarea class="note-body" aria-label="Note body">
+I slept better last night and I want everyone to know I feel calmer this morning.
+
+My neck is sore but manageable. Please help me adjust the pillow before we talk for a long time.
+
+For the family call, I want to say thank you for checking in. I may answer slowly, but I am listening.
+
+If I get tired, please read the rest of this note out loud in my voice.</textarea
+                >
+              </article>
+
+              <footer class="note-footer">
+                <div class="voice-summary">
+                  <strong>Voice-over from this note</strong>
+                  <span
+                    >Generate speech from the full note without turning it into
+                    a chat message.</span
+                  >
+                </div>
+                <div class="note-actions">
+                  <button class="secondary-button" type="button">
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 20 20"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M4 10a6 6 0 0 1 10-4.5M16 10a6 6 0 0 1-10 4.5M14 3.5v3h-3M6 16.5v-3h3"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.7"
+                      />
+                    </svg>
+                    Regenerate
+                  </button>
+                  <button class="primary-button" type="button">
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 20 20"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M4 8v4h3l4 3V5L7 8zM14 7.5a3 3 0 0 1 0 5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                      />
+                    </svg>
+                    Generate voice-over
+                  </button>
+                </div>
+              </footer>
+
+              <div class="space-switch" aria-label="Spaces">
+                <button class="space-chip active" type="button">Family</button>
+                <button class="space-chip" type="button">Care team</button>
+                <button class="space-chip" type="button">Appointments</button>
+                <button class="space-chip" type="button">+</button>
+              </div>
+            </div>
+          </section>
+
+          <aside class="context-panel" aria-label="Space side panel">
+            <div class="context-card">
+              <h2>Now in Family</h2>
+              <div class="status-stack">
+                <div class="status-row">
+                  <span>Mode</span>
+                  <span class="status-badge">Notes</span>
+                </div>
+                <div class="status-row">
+                  <span>Voice</span>
+                  <span>Rachel</span>
+                </div>
+                <div class="status-row">
+                  <span>Provider</span>
+                  <span>Kokoro</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="context-card">
+              <h3>Generated voice-over</h3>
+              <div class="mini-player">
+                <div class="meter" aria-hidden="true"><span></span></div>
+                <div class="status-row">
+                  <span>1:18 generated</span>
+                  <span>Ready</span>
+                </div>
+                <button class="secondary-button" type="button">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 20 20"
+                    aria-hidden="true"
+                  >
+                    <path d="M7 5l8 5-8 5z" fill="currentColor" />
+                  </svg>
+                  Play voice-over
+                </button>
+              </div>
+            </div>
+
+            <div class="context-card">
+              <h3>Recent speech</h3>
+              <div class="history">
+                <div class="history-item">
+                  <p>Please read my note from this morning first.</p>
+                  <span>9:48 AM</span>
+                </div>
+                <div class="history-item">
+                  <p>I can talk for a few minutes after dinner.</p>
+                  <span>Yesterday</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="context-card">
+              <h3>Saved phrases</h3>
+              <p class="stat">
+                "Please wait", "I need a break", and 6 more are still available
+                in Talk mode.
+              </p>
+            </div>
+          </aside>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const body = document.body;
+      const talkTab = document.getElementById("talk-tab");
+      const notesTab = document.getElementById("notes-tab");
+      const talkPanel = document.getElementById("talk-panel");
+      const notesPanel = document.getElementById("notes-panel");
+
+      function setMode(mode) {
+        const isNotes = mode === "notes";
+        body.classList.toggle("is-notes", isNotes);
+        body.classList.toggle("is-talk", !isNotes);
+        notesTab.classList.toggle("active", isNotes);
+        talkTab.classList.toggle("active", !isNotes);
+        notesTab.setAttribute("aria-selected", String(isNotes));
+        talkTab.setAttribute("aria-selected", String(!isNotes));
+        notesPanel.classList.toggle("active", isNotes);
+        talkPanel.classList.toggle("active", !isNotes);
+      }
+
+      talkTab.addEventListener("click", () => setMode("talk"));
+      notesTab.addEventListener("click", () => setMode("notes"));
+    </script>
+  </body>
+</html>
