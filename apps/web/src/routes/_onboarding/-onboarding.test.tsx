@@ -62,7 +62,7 @@ describe('OnboardingPage', () => {
 
     render(<OnboardingPage />);
 
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/talk', replace: true });
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/spaces', replace: true });
     expect(container.textContent).not.toContain('Onboarding flow');
   });
 

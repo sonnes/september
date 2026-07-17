@@ -105,7 +105,7 @@ function NotesIndexPage() {
                 return (
                   <Link
                     key={note.id}
-                    to="/notes/$spaceSlug/$noteSlug"
+                    to="/spaces/$spaceSlug/notes/$noteSlug"
                     params={{
                       spaceSlug: entitySlug(space?.title, note.space_id, 'space'),
                       noteSlug: entitySlug(note.name, note.id, 'note'),

@@ -82,11 +82,11 @@ describe('SpaceSwitch', () => {
     expect(buttonByText('Alpha')?.getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('navigates to /talk/$spaceSlug when another space is selected', () => {
+  it('navigates to /spaces/$spaceSlug when another space is selected', () => {
     render(<SpaceSwitch currentSpaceId={alphaId} />);
     act(() => buttonByText('Beta')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(mockNavigate).toHaveBeenCalledWith({
-      to: '/talk/$spaceSlug',
+      to: '/spaces/$spaceSlug',
       params: { spaceSlug: `beta-${betaId}` },
     });
   });
@@ -100,7 +100,7 @@ describe('SpaceSwitch', () => {
     });
     expect(mockCreateSpace).toHaveBeenCalledWith('user-1');
     expect(mockNavigate).toHaveBeenCalledWith({
-      to: '/talk/$spaceSlug',
+      to: '/spaces/$spaceSlug',
       params: { spaceSlug: `general-${newId}` },
     });
   });

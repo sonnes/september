@@ -1,22 +1,10 @@
-import { Outlet, createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { EditorProvider } from '@/packages/editor';
-import { idFromSlug } from '@/packages/shared';
-import { SpeechProvider } from '@/packages/speech';
+import { redirectTalkSpace } from '../../spaces/-redirects';
 
+// Legacy route — talk mode now lives at /spaces/$spaceSlug/talk.
 export const Route = createFileRoute('/_app/talk/$spaceSlug')({
-  component: SpaceLayout,
+  beforeLoad: ({ params }) => {
+    throw redirect(redirectTalkSpace(params));
+  },
 });
-
-function SpaceLayout() {
-  const { spaceSlug } = Route.useParams();
-  const spaceId = idFromSlug(spaceSlug);
-
-  return (
-    <EditorProvider spaceId={spaceId}>
-      <SpeechProvider>
-        <Outlet />
-      </SpeechProvider>
-    </EditorProvider>
-  );
-}

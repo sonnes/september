@@ -16,9 +16,9 @@ import { ErrorState } from '@/packages/ui/components/error-state';
 
 import { SpaceListSkeleton } from './-loading-skeleton';
 
-export const Route = createFileRoute('/_app/talk/')({
+export const Route = createFileRoute('/_app/spaces/')({
   head: () => ({
-    meta: [{ title: pageTitle('Talk') }, { name: 'description', content: 'Your talks' }],
+    meta: [{ title: pageTitle('Spaces') }, { name: 'description', content: 'Your spaces' }],
   }),
   component: SpacesPage,
 });
@@ -47,7 +47,7 @@ function SpacesPage() {
       const space = isFirstSpace ? await createDefaultSpace(user.id) : await createSpace(user.id);
       toast.success('Space created');
       navigate({
-        to: '/talk/$spaceSlug',
+        to: '/spaces/$spaceSlug/talk',
         params: { spaceSlug: entitySlug(space.title, space.id, 'space') },
       });
     } catch (err) {
@@ -60,12 +60,12 @@ function SpacesPage() {
   return (
     <>
       <SidebarLayout.Header>
-        <PageHeader breadcrumbs={[{ label: 'Talk' }]} />
+        <PageHeader breadcrumbs={[{ label: 'Spaces' }]} />
       </SidebarLayout.Header>
       <SidebarLayout.Content>
         <PageShell>
           <PageTitle
-            title="Talk"
+            title="Spaces"
             actions={
               <Button onClick={handleNewSpace} disabled={fetching}>
                 <PlusIcon className="size-4" />

@@ -130,7 +130,7 @@ export function SpaceList({
               className="group relative flex items-center justify-between border-b border-zinc-200 hover:bg-zinc-50 transition-colors"
             >
               <Link
-                to="/talk/$spaceSlug"
+                to="/spaces/$spaceSlug"
                 params={{ spaceSlug: entitySlug(space.title, space.id, 'space') }}
                 className="flex-1 py-3 px-1 min-w-0"
               >

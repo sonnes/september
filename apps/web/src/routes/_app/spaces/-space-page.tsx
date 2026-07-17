@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { TvIcon } from '@heroicons/react/24/outline';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import {
   Delete,
   FileText,
@@ -20,11 +20,10 @@ import {
 import { toast } from 'sonner';
 
 import { ChatRightPanel } from '@/components/chat/right-panel';
-import { ChatPanelProvider, useChatPanel } from '@/components/chat/use-chat-panel';
+import { useChatPanel } from '@/components/chat/use-chat-panel';
 import MobileNav from '@/components/nav/mobile';
 import SidebarLayout from '@/components/sidebar/layout';
 
-import { pageTitle } from '@/lib/seo';
 import { useAccount } from '@/packages/account';
 import {
   AudioOutputDeviceSelector,
@@ -42,7 +41,7 @@ import {
   useNotes,
 } from '@/packages/notes';
 import { noteContentUpdates } from '@/packages/notes/lib/title';
-import { DisplayMessage, cn, entitySlug, idFromSlug } from '@/packages/shared';
+import { DisplayMessage, cn, entitySlug } from '@/packages/shared';
 import {
   EditableSpaceTitle,
   type Message,
@@ -62,17 +61,15 @@ import { Button } from '@/packages/ui/components/button';
 import { Separator } from '@/packages/ui/components/separator';
 import { SidebarTrigger } from '@/packages/ui/components/sidebar';
 
-import { type SpaceMode, routeForSpaceMode, shouldShowSpaceSidePanel } from '../-space-mode';
-
-export const Route = createFileRoute('/_app/talk/$spaceSlug/')({
-  head: () => ({
-    meta: [{ title: pageTitle('Talk') }],
-  }),
-  component: SpacePageRoot,
-});
+import {
+  type SpaceMode,
+  rememberSpaceMode,
+  routeForSpaceMode,
+  shouldShowSpaceSidePanel,
+} from './-space-mode';
 
 // ---------------------------------------------------------------------------
-// Left-rail icon button (undo / delete-word / clear) — mock composer rail
+// Mode switch — segmented tablist swapping between Talk and Notes surfaces
 // ---------------------------------------------------------------------------
 
 function ModeSwitch({
@@ -217,6 +214,12 @@ export function SpacePageInner({
     ? entitySlug(selectedNote.name, selectedNote.id, 'note')
     : undefined;
 
+  // Remember the last mode this space was opened in, so /spaces/$spaceSlug
+  // reopens where the user left off.
+  useEffect(() => {
+    rememberSpaceMode(spaceId, mode);
+  }, [spaceId, mode]);
+
   useEffect(() => {
     setSelectedNoteId(noteId ?? null);
   }, [noteId]);
@@ -239,7 +242,7 @@ export function SpacePageInner({
       if (routeSpaceSlug === currentSpaceSlug && noteSlug === nextNoteSlug) return;
 
       navigate({
-        to: '/notes/$spaceSlug/$noteSlug',
+        to: '/spaces/$spaceSlug/notes/$noteSlug',
         params: {
           spaceSlug: currentSpaceSlug,
           noteSlug: nextNoteSlug,
@@ -255,7 +258,7 @@ export function SpacePageInner({
     if (selectedNote && currentNoteSlug) {
       if (routeSpaceSlug === currentSpaceSlug && noteSlug === currentNoteSlug) return;
       navigate({
-        to: '/notes/$spaceSlug/$noteSlug',
+        to: '/spaces/$spaceSlug/notes/$noteSlug',
         params: { spaceSlug: currentSpaceSlug, noteSlug: currentNoteSlug },
         replace: true,
       });
@@ -264,7 +267,7 @@ export function SpacePageInner({
 
     if (!noteSlug && routeSpaceSlug !== currentSpaceSlug) {
       navigate({
-        to: '/notes/$spaceSlug',
+        to: '/spaces/$spaceSlug/notes',
         params: { spaceSlug: currentSpaceSlug },
         replace: true,
       });
@@ -734,20 +737,5 @@ export function SpacePageInner({
         </SidebarLayout.RightPanel>
       )}
     </>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Page root — provides ChatPanelProvider, then delegates to inner component
-// ---------------------------------------------------------------------------
-
-function SpacePageRoot() {
-  const { spaceSlug } = Route.useParams();
-  const spaceId = idFromSlug(spaceSlug);
-
-  return (
-    <ChatPanelProvider>
-      <SpacePageInner spaceId={spaceId} mode="talk" routeSpaceSlug={spaceSlug} />
-    </ChatPanelProvider>
   );
 }

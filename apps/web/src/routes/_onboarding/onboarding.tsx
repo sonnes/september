@@ -32,7 +32,7 @@ export function OnboardingPage() {
 
   useEffect(() => {
     if (!loading && onboardingComplete) {
-      navigate({ to: '/talk', replace: true });
+      navigate({ to: '/spaces', replace: true });
     }
   }, [loading, onboardingComplete, navigate]);
 

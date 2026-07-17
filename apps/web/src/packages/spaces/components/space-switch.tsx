@@ -57,7 +57,7 @@ export function SpaceSwitch({ currentSpaceId }: SpaceSwitchProps) {
   const open = (id: string) => {
     const space = spaces.find(s => s.id === id);
     navigate({
-      to: '/talk/$spaceSlug',
+      to: '/spaces/$spaceSlug',
       params: { spaceSlug: entitySlug(space?.title, id, 'space') },
     });
   };
@@ -66,7 +66,7 @@ export function SpaceSwitch({ currentSpaceId }: SpaceSwitchProps) {
     if (!user?.id) return;
     const space = await createSpace(user.id);
     navigate({
-      to: '/talk/$spaceSlug',
+      to: '/spaces/$spaceSlug',
       params: { spaceSlug: entitySlug(space.title, space.id, 'space') },
     });
   };

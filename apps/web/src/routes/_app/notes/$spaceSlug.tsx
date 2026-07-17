@@ -1,18 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { pageTitle } from '@/lib/seo';
+import { redirectNotesSpace } from '../spaces/-redirects';
 
-import { NotesPage } from './-notes-page';
-
+// Legacy route — notes now live at /spaces/$spaceSlug/notes.
 export const Route = createFileRoute('/_app/notes/$spaceSlug')({
-  head: () => ({
-    meta: [{ title: pageTitle('Notes') }],
-  }),
-  component: SpaceNotesPage,
+  beforeLoad: ({ params }) => {
+    throw redirect(redirectNotesSpace(params));
+  },
 });
-
-function SpaceNotesPage() {
-  const { spaceSlug } = Route.useParams();
-
-  return <NotesPage spaceSlug={spaceSlug} />;
-}

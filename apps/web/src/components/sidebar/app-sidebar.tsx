@@ -3,16 +3,7 @@
 import * as React from 'react';
 
 import { Link } from '@tanstack/react-router';
-import {
-  CircleHelp,
-  FileText,
-  Home,
-  LifeBuoy,
-  MessageSquare,
-  Mic,
-  Send,
-  Settings2,
-} from 'lucide-react';
+import { CircleHelp, Home, LifeBuoy, MessageSquare, Mic, Send, Settings2 } from 'lucide-react';
 
 import { NavMain } from '@/components/sidebar/nav-main';
 import { NavProjects } from '@/components/sidebar/nav-projects';
@@ -39,17 +30,12 @@ export const getNavigationData = () => ({
       icon: Home,
     },
     {
-      title: 'Talk',
-      url: '/talk',
+      title: 'Spaces',
+      url: '/spaces',
       icon: MessageSquare,
     },
     {
-      title: 'Notes',
-      url: '/notes',
-      icon: FileText,
-    },
-    {
-      title: 'Clone',
+      title: 'Voice',
       url: '/clone',
       icon: Mic,
     },

@@ -58,7 +58,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
 
   const completeOnboarding = useCallback(async () => {
     await updateAccount({ onboarding_completed: true });
-    navigate({ to: '/talk' });
+    navigate({ to: '/spaces' });
   }, [updateAccount, navigate]);
 
   const value: OnboardingContextValue = {

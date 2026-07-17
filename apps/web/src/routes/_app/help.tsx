@@ -177,7 +177,7 @@ export function HelpPage() {
             actions={
               <div className="flex items-center gap-2">
                 <Button asChild size="lg">
-                  <Link to="/talk">Open Talk</Link>
+                  <Link to="/spaces">Open Spaces</Link>
                 </Button>
                 <Button asChild size="lg" variant="outline">
                   <Link to="/notes">Open Notes</Link>
