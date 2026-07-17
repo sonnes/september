@@ -31,3 +31,20 @@ restate the plan.
   live in `spaces/-redirects.ts` (pure, unit-tested).
 - **Sidebar nav**: Talk→Spaces (`/spaces`), Notes entry dropped,
   Clone→Voice (label only; url stays `/clone`).
+
+## Phase 2 — Bottom dock
+
+- **`SpaceDock`** (`components/nav/space-dock.tsx`) owns space tabs (ported
+  overflow-to-dropdown from `SpaceSwitch`, bumped to `min-h-11` rounded-full
+  pills) + `＋ New` + a right-aligned `ModeGroup`.
+- **`ModeGroup`** (`components/nav/mode-group.tsx`) is a data-driven
+  `tablist` with roving tabindex — arrow keys move focus, Enter/Space/click
+  activate. Takes `ModeOption[]` so Agent slots in later.
+- **Dock placement**: rendered as the last child of the content column,
+  wrapped in `-mx-2 -mb-2 md:-mx-4 md:-mb-4` so its `border-t` runs flush to
+  the inset card edges despite the content padding.
+- **Deferred**: the header `PanelRight` toggle stays until Phase 4 (the
+  panel still uses `open`/`openOverview`/`close`); `SpaceSwitch` is now dead
+  but kept until the Phase 6 cleanup sweep. Its test stays green meanwhile.
+- Mobile mode switching now uses the always-visible dock `ModeGroup` (the
+  old `md:hidden` ModeSwitch is gone).

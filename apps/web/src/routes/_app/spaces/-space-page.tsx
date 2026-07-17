@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import { ChatRightPanel } from '@/components/chat/right-panel';
 import { useChatPanel } from '@/components/chat/use-chat-panel';
 import MobileNav from '@/components/nav/mobile';
+import { SpaceDock } from '@/components/nav/space-dock';
 import SidebarLayout from '@/components/sidebar/layout';
 
 import { useAccount } from '@/packages/account';
@@ -45,7 +46,6 @@ import { DisplayMessage, cn, entitySlug } from '@/packages/shared';
 import {
   EditableSpaceTitle,
   type Message,
-  SpaceSwitch,
   addManualPhrase,
   updateSpace,
   useCreateAudioMessage,
@@ -67,55 +67,6 @@ import {
   routeForSpaceMode,
   shouldShowSpaceSidePanel,
 } from './-space-mode';
-
-// ---------------------------------------------------------------------------
-// Mode switch — segmented tablist swapping between Talk and Notes surfaces
-// ---------------------------------------------------------------------------
-
-function ModeSwitch({
-  mode,
-  onModeChange,
-  className,
-}: {
-  mode: SpaceMode;
-  onModeChange: (mode: SpaceMode) => void;
-  className?: string;
-}) {
-  return (
-    <div
-      className={cn('flex rounded-lg bg-muted p-1 text-sm font-medium', className)}
-      role="tablist"
-      aria-label="Space mode"
-    >
-      <button
-        type="button"
-        role="tab"
-        aria-selected={mode === 'talk'}
-        onClick={() => onModeChange('talk')}
-        className={cn(
-          'inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md px-3 text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-          mode === 'talk' && 'bg-background text-foreground shadow-sm'
-        )}
-      >
-        <MessagesSquare className="size-4" aria-hidden />
-        Talk
-      </button>
-      <button
-        type="button"
-        role="tab"
-        aria-selected={mode === 'notes'}
-        onClick={() => onModeChange('notes')}
-        className={cn(
-          'inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md px-3 text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-          mode === 'notes' && 'bg-background text-foreground shadow-sm'
-        )}
-      >
-        <FileText className="size-4" aria-hidden />
-        Notes
-      </button>
-    </div>
-  );
-}
 
 function RailButton({
   label,
@@ -555,8 +506,6 @@ export function SpacePageInner({
           </div>
         </div>
       </div>
-
-      <SpaceSwitch currentSpaceId={spaceId} />
     </div>
   );
 
@@ -679,13 +628,13 @@ export function SpacePageInner({
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
           {space && <EditableSpaceTitle spaceId={space.id} title={space.title} />}
-          <ModeSwitch mode={mode} onModeChange={handleModeChange} className="ml-auto w-64" />
           <Button
             variant="ghost"
             size="icon"
             aria-label="Toggle panel"
             aria-pressed={open}
             onClick={() => (open ? close() : openOverview())}
+            className="ml-auto"
           >
             <PanelRight className="size-4" />
           </Button>
@@ -694,8 +643,10 @@ export function SpacePageInner({
 
       <SidebarLayout.Content>
         <div className="flex h-full min-h-0 w-full flex-col gap-3">
-          <ModeSwitch mode={mode} onModeChange={handleModeChange} className="md:hidden" />
           {mode === 'notes' ? notesColumn : composeColumn}
+          <div className="-mx-2 -mb-2 md:-mx-4 md:-mb-4">
+            <SpaceDock currentSpaceId={spaceId} mode={mode} onModeChange={handleModeChange} />
+          </div>
         </div>
       </SidebarLayout.Content>
 
