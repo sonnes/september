@@ -72,3 +72,24 @@ restate the plan.
 - **`shouldShowSpaceSidePanel` removed**; the right panel now shows for both
   modes whenever `open` (the notes-specific `SpaceNotesPanel` block is gone).
   The talk panel's drag-resize stays until Phase 4.
+
+## Phase 4 — Right panel → collapsible icon rail
+
+- **`useChatPanel` state** is now `{ state: 'rail' | 'expanded', activeTab }`
+  (tab always set, default `history`). `loadPanelState()` is exported and
+  pure so migration is unit-tested: legacy `{ open, widthPct }` maps to
+  `expanded`/`rail`; malformed JSON and unknown tabs fall back to
+  `rail`/`history`. Actions: `expandTab`, `collapse` (keeps the tab), `toggle`.
+  The provider owns the `⌘/Ctrl-.` toggle listener.
+- **`PanelRail`** (exported from `right-panel.tsx`, replaces `ChatRightPanel`)
+  renders the always-present `w-14` rail (History · Provider · Voice · Speech ·
+  Context · Phrases · divider · Display) plus, when expanded, the `w-80` tool
+  card (icon + title + `PanelRightClose` collapse button, then the existing tab
+  bodies). The overview grid and breadcrumb `PanelHeader` are deleted.
+- **Rail is desktop-only** (`hidden md:flex`); on mobile the expanded card is a
+  full-screen overlay driven by the `MobileNav` buttons (`openTab`→`expandTab`).
+- **Dropped from the page**: `onPanelResize` + drag handle, `widthPct` sizing,
+  and the header `PanelRight` toggle (header is now just trigger · title). The
+  `RightPanel` slot renders `PanelRail` unconditionally in both modes.
+- **No `components/chat/README.md`** — per app convention only `packages/*`
+  carry READMEs, so none was created.

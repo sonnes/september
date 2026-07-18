@@ -5,10 +5,10 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Clock,
   FileText,
-  Grid2x2,
   type LucideIcon,
   MessageSquareQuote,
   Mic,
+  PanelRightClose,
   Pin,
   Plug,
   Plus,
@@ -34,26 +34,16 @@ import {
 } from '@/packages/spaces';
 import { SpeechSettings } from '@/packages/speech';
 import type { VoiceSettingsFormData } from '@/packages/speech';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/packages/ui/components/breadcrumb';
 import { Button } from '@/packages/ui/components/button';
 
 import { type ChatPanelTab, useChatPanel } from './use-chat-panel';
 
 // ---------------------------------------------------------------------------
-// ChatRightPanel
+// PanelRail — always-present right icon rail that expands to a 320px tool card
 // ---------------------------------------------------------------------------
 
-interface ChatRightPanelProps {
+interface PanelRailProps {
   chatId: string;
-  /** Parent chat title — shown as the breadcrumb root in the panel header. */
-  chatTitle?: string;
   onOpenDisplay?: () => void;
 }
 
@@ -66,206 +56,103 @@ const TAB_META: Record<ChatPanelTab, { title: string; icon: LucideIcon }> = {
   phrases: { title: 'Phrases', icon: MessageSquareQuote },
 };
 
-export function ChatRightPanel({ chatId, chatTitle, onOpenDisplay }: ChatRightPanelProps) {
-  const { activeTab, openTab, home, close } = useChatPanel();
-  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+const TAB_ORDER: ChatPanelTab[] = ['history', 'provider', 'voice', 'speech', 'context', 'phrases'];
 
-  // Focus close button on mount. Esc steps back to the overview, then closes.
+function TabBody({ tab, chatId }: { tab: ChatPanelTab; chatId: string }) {
+  switch (tab) {
+    case 'history':
+      return <HistoryTab chatId={chatId} />;
+    case 'context':
+      return <ContextTab spaceId={chatId} />;
+    case 'phrases':
+      return <PhrasesTab spaceId={chatId} />;
+    default:
+      return <VoiceTab section={tab} />;
+  }
+}
+
+export function PanelRail({ chatId, onOpenDisplay }: PanelRailProps) {
+  const { state, activeTab, expandTab, collapse } = useChatPanel();
+  const expanded = state === 'expanded';
+
+  // Esc collapses the expanded card back to the rail.
   useEffect(() => {
-    closeBtnRef.current?.focus();
+    if (!expanded) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key !== 'Escape') return;
-      if (activeTab) home();
-      else close();
+      if (e.key === 'Escape') collapse();
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [activeTab, home, close]);
+  }, [expanded, collapse]);
+
+  const meta = TAB_META[activeTab];
+  const TabIcon = meta.icon;
 
   return (
-    <aside
-      aria-label="Chat panel"
-      className="relative z-10 flex h-full w-full flex-col bg-background"
-    >
-      <PanelHeader
-        chatTitle={chatTitle ?? 'Chat'}
-        tab={activeTab}
-        onHome={home}
-        onClose={close}
-        closeRef={closeBtnRef}
-      />
-
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        {activeTab === null ? (
-          <div className="grid grid-cols-2 gap-3 p-4">
-            <OverviewCard
-              icon={Clock}
-              title="History"
-              subtitle="Past messages"
-              onClick={() => openTab('history')}
-            />
-            <OverviewCard
-              icon={Plug}
-              title="Provider"
-              subtitle="Speech engine"
-              onClick={() => openTab('provider')}
-            />
-            <OverviewCard
-              icon={MessageSquareQuote}
-              title="Phrases"
-              subtitle="Quick phrases"
-              onClick={() => openTab('phrases')}
-            />
-            <OverviewCard
-              icon={Mic}
-              title="Voice"
-              subtitle="Pick a voice"
-              onClick={() => openTab('voice')}
-            />
-            <OverviewCard
-              icon={SlidersHorizontal}
-              title="Speech"
-              subtitle="Speed & tuning"
-              onClick={() => openTab('speech')}
-            />
-            <OverviewCard
-              icon={FileText}
-              title="Context"
-              subtitle="Space context"
-              onClick={() => openTab('context')}
-            />
-            <OverviewCard
-              icon={Tv}
-              title="Display"
-              subtitle="Second screen"
-              onClick={() => onOpenDisplay?.()}
-            />
+    <>
+      {expanded && (
+        <aside
+          aria-label={`${meta.title} panel`}
+          className="fixed inset-x-2 top-2 bottom-2 z-40 flex flex-col overflow-hidden rounded-xl border bg-background shadow-sm md:static md:inset-auto md:my-2 md:w-80"
+        >
+          <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3">
+            <TabIcon className="size-4 text-muted-foreground" aria-hidden />
+            <span className="text-sm font-semibold">{meta.title}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Collapse panel"
+              className="ml-auto size-9 shrink-0 text-muted-foreground hover:text-foreground"
+              onClick={collapse}
+            >
+              <PanelRightClose className="size-4" />
+            </Button>
+          </header>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <TabBody tab={activeTab} chatId={chatId} />
           </div>
-        ) : activeTab === 'history' ? (
-          <HistoryTab chatId={chatId} />
-        ) : activeTab === 'context' ? (
-          <ContextTab spaceId={chatId} />
-        ) : activeTab === 'phrases' ? (
-          <PhrasesTab spaceId={chatId} />
-        ) : (
-          <VoiceTab section={activeTab} />
-        )}
-      </div>
-    </aside>
-  );
-}
+        </aside>
+      )}
 
-// ---------------------------------------------------------------------------
-// PanelHeader — tab-bar chrome: a tab-bar row (grid switcher + active
-// tab pill + close) above a breadcrumb row (chat › section).
-// ---------------------------------------------------------------------------
-
-interface PanelHeaderProps {
-  chatTitle: string;
-  /** null = overview card grid; a tab = that section is active. */
-  tab: ChatPanelTab | null;
-  onHome: () => void;
-  onClose: () => void;
-  closeRef: React.RefObject<HTMLButtonElement | null>;
-}
-
-function PanelHeader({ chatTitle, tab, onHome, onClose, closeRef }: PanelHeaderProps) {
-  const meta = tab ? TAB_META[tab] : null;
-  const TabIcon = meta?.icon;
-
-  return (
-    <header className="shrink-0 border-b border-border/60">
-      {/* Row 1 — tab bar: overview switcher · active tab pill · close */}
-      <div className="flex h-12 items-center gap-1.5 px-2">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label="All panels"
-          aria-pressed={tab === null}
-          className={cn(
-            'size-9 shrink-0 text-muted-foreground hover:text-foreground',
-            tab === null && 'bg-muted text-foreground'
-          )}
-          onClick={onHome}
-        >
-          <Grid2x2 className="size-4" />
-        </Button>
-
-        {meta && TabIcon ? (
-          <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1 text-sm font-medium text-foreground">
-            <TabIcon className="size-4" aria-hidden />
-            {meta.title}
-          </span>
-        ) : (
-          <span className="px-1 text-sm font-semibold">Panel</span>
-        )}
-
-        <Button
-          ref={closeRef}
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label="Close panel"
-          className="ml-auto size-9 shrink-0 text-muted-foreground hover:text-foreground"
-          onClick={onClose}
-        >
-          <X className="size-4" />
-        </Button>
-      </div>
-
-      {/* Row 2 — breadcrumb: chat title › active section */}
-      <div className="flex h-9 items-center px-3 pb-1.5">
-        <Breadcrumb>
-          <BreadcrumbList className="gap-1 sm:gap-1.5">
-            <BreadcrumbItem className="min-w-0">
-              {meta ? (
-                <BreadcrumbLink asChild>
-                  <button type="button" onClick={onHome} className="truncate">
-                    {chatTitle}
-                  </button>
-                </BreadcrumbLink>
-              ) : (
-                <BreadcrumbPage className="truncate">{chatTitle}</BreadcrumbPage>
+      <nav
+        aria-label="Panel rail"
+        className="my-2 mr-2 hidden w-14 shrink-0 flex-col items-center gap-1 rounded-xl border bg-background py-2 shadow-sm md:flex"
+      >
+        {TAB_ORDER.map(tab => {
+          const { title, icon: Icon } = TAB_META[tab];
+          const isActive = expanded && activeTab === tab;
+          return (
+            <button
+              key={tab}
+              type="button"
+              aria-label={title}
+              title={title}
+              aria-pressed={isActive}
+              onClick={() => (isActive ? collapse() : expandTab(tab))}
+              className={cn(
+                'flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                isActive && 'bg-muted text-foreground'
               )}
-            </BreadcrumbItem>
-            {meta && (
-              <>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>{meta.title}</BreadcrumbPage>
-                </BreadcrumbItem>
-              </>
-            )}
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-    </header>
-  );
-}
+            >
+              <Icon className="size-5" aria-hidden />
+            </button>
+          );
+        })}
 
-// ---------------------------------------------------------------------------
-// OverviewCard — large entry tile in the 2×2 grid
-// ---------------------------------------------------------------------------
+        <div className="my-1 h-px w-6 bg-border" aria-hidden />
 
-interface OverviewCardProps {
-  icon: LucideIcon;
-  title: string;
-  subtitle: string;
-  onClick: () => void;
-}
-
-function OverviewCard({ icon: Icon, title, subtitle, onClick }: OverviewCardProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex min-h-32 flex-col items-center justify-center gap-2 rounded-lg bg-muted/50 p-6 text-center transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      <Icon className="size-5 text-muted-foreground" aria-hidden />
-      <div className="text-sm font-semibold">{title}</div>
-      <div className="text-xs text-muted-foreground">{subtitle}</div>
-    </button>
+        <button
+          type="button"
+          aria-label="Display"
+          title="Display"
+          onClick={() => onOpenDisplay?.()}
+          className="flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Tv className="size-5" aria-hidden />
+        </button>
+      </nav>
+    </>
   );
 }
 

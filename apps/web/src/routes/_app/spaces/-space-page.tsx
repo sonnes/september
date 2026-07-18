@@ -10,7 +10,6 @@ import {
   MessageSquareQuote,
   MessagesSquare,
   MicIcon,
-  PanelRight,
   Plug,
   SlidersHorizontal,
   Trash2,
@@ -19,7 +18,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { ChatRightPanel } from '@/components/chat/right-panel';
+import { PanelRail } from '@/components/chat/right-panel';
 import { useChatPanel } from '@/components/chat/use-chat-panel';
 import MobileNav from '@/components/nav/mobile';
 import { SpaceDock } from '@/components/nav/space-dock';
@@ -154,7 +153,7 @@ export function SpacePageInner({
   const { notes } = useNotes({ spaceId });
   const selectedNote = notes.find(note => note.id === selectedNoteId) ?? notes[0];
 
-  const { open, widthPct, setWidthPct, openTab, openOverview, close } = useChatPanel();
+  const { expandTab } = useChatPanel();
   const currentSpaceSlug = entitySlug(space?.title, spaceId, 'space');
   const currentNoteSlug = selectedNote
     ? entitySlug(selectedNote.name, selectedNote.id, 'note')
@@ -417,33 +416,6 @@ export function SpacePageInner({
     };
   }, [spaceId]);
 
-  // Drag-to-resize the detached panel. The panel now lives outside the inset,
-  // so we size it as a share of the sidebar wrapper and adjust widthPct as the
-  // left edge is dragged (drag left → wider panel).
-  const onPanelResize = useCallback(
-    (e: React.PointerEvent) => {
-      e.preventDefault();
-      const wrapper = (e.currentTarget as HTMLElement).closest(
-        '[data-slot="sidebar-wrapper"]'
-      ) as HTMLElement | null;
-      const basis = wrapper?.clientWidth ?? window.innerWidth;
-      const startX = e.clientX;
-      const startPct = widthPct;
-      const onMove = (ev: PointerEvent) => {
-        setWidthPct(startPct + ((startX - ev.clientX) / basis) * 100);
-      };
-      const onUp = () => {
-        document.removeEventListener('pointermove', onMove);
-        document.removeEventListener('pointerup', onUp);
-        document.body.style.removeProperty('user-select');
-      };
-      document.body.style.userSelect = 'none';
-      document.addEventListener('pointermove', onMove);
-      document.addEventListener('pointerup', onUp);
-    },
-    [widthPct, setWidthPct]
-  );
-
   // Pinning a suggestion saves it as a pinned (durable) phrase for this space.
   const handlePin = useCallback(
     (phrase: string) => {
@@ -576,7 +548,7 @@ export function SpacePageInner({
             size="icon"
             aria-label="View history"
             className="size-7"
-            onClick={() => openTab('history')}
+            onClick={() => expandTab('history')}
           >
             <HistoryIcon className="size-4" />
           </Button>
@@ -585,7 +557,7 @@ export function SpacePageInner({
             size="icon"
             aria-label="Speech provider"
             className="size-7"
-            onClick={() => openTab('provider')}
+            onClick={() => expandTab('provider')}
           >
             <Plug className="size-4" />
           </Button>
@@ -594,7 +566,7 @@ export function SpacePageInner({
             size="icon"
             aria-label="Voice"
             className="size-7"
-            onClick={() => openTab('voice')}
+            onClick={() => expandTab('voice')}
           >
             <MicIcon className="size-4" />
           </Button>
@@ -603,7 +575,7 @@ export function SpacePageInner({
             size="icon"
             aria-label="Speech settings"
             className="size-7"
-            onClick={() => openTab('speech')}
+            onClick={() => expandTab('speech')}
           >
             <SlidersHorizontal className="size-4" />
           </Button>
@@ -612,7 +584,7 @@ export function SpacePageInner({
             size="icon"
             aria-label="Saved phrases"
             className="size-7"
-            onClick={() => openTab('phrases')}
+            onClick={() => expandTab('phrases')}
           >
             <MessageSquareQuote className="size-4" />
           </Button>
@@ -621,7 +593,7 @@ export function SpacePageInner({
             size="icon"
             aria-label="Context"
             className="size-7"
-            onClick={() => openTab('context')}
+            onClick={() => expandTab('context')}
           >
             <FileText className="size-4" />
           </Button>
@@ -635,16 +607,6 @@ export function SpacePageInner({
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
           {space && <EditableSpaceTitle spaceId={space.id} title={space.title} />}
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Toggle panel"
-            aria-pressed={open}
-            onClick={() => (open ? close() : openOverview())}
-            className="ml-auto"
-          >
-            <PanelRight className="size-4" />
-          </Button>
         </div>
       </SidebarLayout.Header>
 
@@ -657,30 +619,13 @@ export function SpacePageInner({
         </div>
       </SidebarLayout.Content>
 
-      {/* Panel — detached from the inset (the main container) and rendered as
-          its own card in the sidebar flex row. Full-screen overlay on mobile, a
-          resizable side card on desktop. Present in every mode. */}
-      {open && (
-        <SidebarLayout.RightPanel>
-          <div
-            style={{ flexBasis: `${widthPct}%` }}
-            className="fixed inset-x-2 top-2 bottom-2 z-40 flex shrink-0 grow-0 flex-col overflow-hidden rounded-xl border bg-background shadow-sm md:static md:inset-auto md:my-2 md:mr-2 md:min-w-72 md:max-w-160"
-          >
-            <div
-              role="separator"
-              aria-orientation="vertical"
-              aria-label="Resize panel"
-              onPointerDown={onPanelResize}
-              className="absolute inset-y-0 left-0 z-10 hidden w-1.5 cursor-col-resize hover:bg-border md:block"
-            />
-            <ChatRightPanel
-              chatId={spaceId}
-              chatTitle={space?.title}
-              onOpenDisplay={handleOpenDisplay}
-            />
-          </div>
-        </SidebarLayout.RightPanel>
-      )}
+      {/* Right rail — always present (desktop); expands to a 320px tool card.
+          On mobile it stays hidden until MobileNav expands a tab as an overlay.
+          Detached from the inset and rendered as its own card in the sidebar
+          flex row. Present in every mode. */}
+      <SidebarLayout.RightPanel>
+        <PanelRail chatId={spaceId} onOpenDisplay={handleOpenDisplay} />
+      </SidebarLayout.RightPanel>
     </>
   );
 }

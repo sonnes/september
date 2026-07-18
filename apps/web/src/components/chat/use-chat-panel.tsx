@@ -15,72 +15,61 @@ import {
 
 export type ChatPanelTab = 'history' | 'provider' | 'voice' | 'speech' | 'context' | 'phrases';
 
-export interface ChatPanelState {
-  open: boolean;
-  /** null = the overview card grid; a tab = that section's content. */
-  activeTab: ChatPanelTab | null;
-  widthPct: number;
-}
+/** `rail` = collapsed icon rail; `expanded` = the 320px tool card is open. */
+export type ChatPanelState = 'rail' | 'expanded';
 
-export interface ChatPanelActions {
-  openTab: (tab: ChatPanelTab) => void;
-  /** Open the panel on the overview card grid. */
-  openOverview: () => void;
-  /** Return to the overview without closing the panel. */
-  home: () => void;
-  close: () => void;
+export interface ChatPanelValue {
+  state: ChatPanelState;
+  /** Always set — the tab the panel expands to (persists across collapse). */
+  activeTab: ChatPanelTab;
+  /** Open the panel on a tab. */
+  expandTab: (tab: ChatPanelTab) => void;
+  /** Collapse back to the rail, keeping the active tab. */
+  collapse: () => void;
+  /** Flip between rail and expanded. */
   toggle: () => void;
-  setWidthPct: (n: number) => void;
 }
-
-export type UseChatPanelReturn = ChatPanelState & ChatPanelActions;
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
 const STORAGE_KEY = 'september:chat-panel';
-const DEFAULT_WIDTH_PCT = 38;
-const MIN_WIDTH_PCT = 20;
-const MAX_WIDTH_PCT = 70;
+const TABS: ChatPanelTab[] = ['history', 'provider', 'voice', 'speech', 'context', 'phrases'];
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Persistence — migrates the legacy `{ open, widthPct }` shape on load
 // ---------------------------------------------------------------------------
 
-function clampWidth(n: number): number {
-  if (n < MIN_WIDTH_PCT) return MIN_WIDTH_PCT;
-  if (n > MAX_WIDTH_PCT) return MAX_WIDTH_PCT;
-  return n;
+function isTab(value: unknown): value is ChatPanelTab {
+  return typeof value === 'string' && (TABS as string[]).includes(value);
 }
 
-interface PersistedShape {
-  open?: unknown;
-  widthPct?: unknown;
-}
-
-function loadFromStorage(): { open: boolean; widthPct: number } {
-  const fallback = { open: false, widthPct: DEFAULT_WIDTH_PCT };
+export function loadPanelState(): { state: ChatPanelState; activeTab: ChatPanelTab } {
+  const fallback = { state: 'rail' as const, activeTab: 'history' as const };
   if (typeof window === 'undefined') return fallback;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return fallback;
-    const parsed = JSON.parse(raw) as PersistedShape;
-    const open = typeof parsed.open === 'boolean' ? parsed.open : false;
-    const widthPct =
-      typeof parsed.widthPct === 'number' && Number.isFinite(parsed.widthPct)
-        ? clampWidth(parsed.widthPct)
-        : DEFAULT_WIDTH_PCT;
-    return { open, widthPct };
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const activeTab = isTab(parsed.activeTab) ? parsed.activeTab : 'history';
+    if (parsed.state === 'rail' || parsed.state === 'expanded') {
+      return { state: parsed.state, activeTab };
+    }
+    // Legacy shape: { open: boolean, widthPct: number }.
+    if (typeof parsed.open === 'boolean') {
+      return { state: parsed.open ? 'expanded' : 'rail', activeTab };
+    }
+    return fallback;
   } catch {
     return fallback;
   }
 }
 
-function saveToStorage(open: boolean, widthPct: number): void {
+function savePanelState(state: ChatPanelState, activeTab: ChatPanelTab): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ open, widthPct }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ state, activeTab }));
   } catch {
     // private mode / quota — state still lives in memory
   }
@@ -90,75 +79,46 @@ function saveToStorage(open: boolean, widthPct: number): void {
 // Context
 // ---------------------------------------------------------------------------
 
-const ChatPanelContext = createContext<UseChatPanelReturn | null>(null);
-
-// ---------------------------------------------------------------------------
-// Provider
-// ---------------------------------------------------------------------------
+const ChatPanelContext = createContext<ChatPanelValue | null>(null);
 
 export function ChatPanelProvider({ children }: { children: ReactNode }) {
-  const persisted = loadFromStorage();
+  const initial = loadPanelState();
+  const [state, setState] = useState<ChatPanelState>(initial.state);
+  const [activeTab, setActiveTab] = useState<ChatPanelTab>(initial.activeTab);
 
-  const [open, setOpen] = useState(persisted.open);
-  const [activeTab, setActiveTab] = useState<ChatPanelTab | null>(null);
-  const [widthPct, setWidthPctState] = useState(persisted.widthPct);
-
-  // Persist open + widthPct whenever they change.
   useEffect(() => {
-    saveToStorage(open, widthPct);
-  }, [open, widthPct]);
+    savePanelState(state, activeTab);
+  }, [state, activeTab]);
 
-  const openTab = useCallback((tab: ChatPanelTab) => {
+  const expandTab = useCallback((tab: ChatPanelTab) => {
     setActiveTab(tab);
-    setOpen(true);
+    setState('expanded');
   }, []);
 
-  const openOverview = useCallback(() => {
-    setActiveTab(null);
-    setOpen(true);
-  }, []);
-
-  const home = useCallback(() => {
-    setActiveTab(null);
-  }, []);
-
-  const close = useCallback(() => {
-    setOpen(false);
-  }, []);
+  const collapse = useCallback(() => setState('rail'), []);
 
   const toggle = useCallback(() => {
-    setOpen(prev => !prev);
+    setState(prev => (prev === 'expanded' ? 'rail' : 'expanded'));
   }, []);
 
-  const setWidthPct = useCallback((n: number) => {
-    if (!Number.isFinite(n)) return;
-    setWidthPctState(clampWidth(Math.round(n)));
-  }, []);
+  // ⌘/Ctrl-. toggles the panel (left sidebar keeps ⌘B).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === '.') {
+        e.preventDefault();
+        toggle();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [toggle]);
 
-  const value: UseChatPanelReturn = {
-    open,
-    activeTab,
-    widthPct,
-    openTab,
-    openOverview,
-    home,
-    close,
-    toggle,
-    setWidthPct,
-  };
+  const value: ChatPanelValue = { state, activeTab, expandTab, collapse, toggle };
 
-  return (
-    <ChatPanelContext.Provider value={value}>
-      {children}
-    </ChatPanelContext.Provider>
-  );
+  return <ChatPanelContext.Provider value={value}>{children}</ChatPanelContext.Provider>;
 }
 
-// ---------------------------------------------------------------------------
-// Hook
-// ---------------------------------------------------------------------------
-
-export function useChatPanel(): UseChatPanelReturn {
+export function useChatPanel(): ChatPanelValue {
   const ctx = useContext(ChatPanelContext);
   if (!ctx) {
     throw new Error('useChatPanel must be used within a ChatPanelProvider');
