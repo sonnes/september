@@ -21,6 +21,7 @@
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
     "@fontsource/noto-sans": "^5.2.10",
+    "@fontsource/playfair-display": "^5.2.8",
     "@google/genai": "^1.9.0",
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",

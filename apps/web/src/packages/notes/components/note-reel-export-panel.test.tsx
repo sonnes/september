@@ -33,8 +33,10 @@ vi.mock('@/packages/audio', () => ({
 }));
 
 vi.mock('./note-reel-story-player', () => ({
-  NoteReelStoryPlayer: ({ voiceText }: { voiceText: string }) => (
-    <div data-testid="story-player">{voiceText}</div>
+  NoteReelStoryPlayer: ({ voiceText, pairKey }: { voiceText: string; pairKey?: string }) => (
+    <div data-testid="story-player" data-pair={pairKey}>
+      {voiceText}
+    </div>
   ),
 }));
 
@@ -116,6 +118,7 @@ describe('NoteReelExportPanel', () => {
     expect(mocks.renderWasmReel).toHaveBeenCalledWith({
       audioDataUri: 'data:audio/mp3;base64,QUJD',
       durationSeconds: 1.25,
+      pairKey: 'stone',
       captions: [
         {
           startTime: 0,
@@ -128,6 +131,46 @@ describe('NoteReelExportPanel', () => {
       ],
     });
     expect(document.body.querySelector('a[download="daily-note-reel.mp4"]')).toBeTruthy();
+  });
+
+  it('renders six colour swatches and passes the chosen pair to export and player', async () => {
+    mocks.generateSpeech.mockResolvedValue({ blob: 'data:audio/mp3;base64,QUJD', alignment });
+    mocks.renderWasmReel.mockResolvedValue({
+      blob: new Blob(['mp4'], { type: 'video/mp4' }),
+      contentType: 'video/mp4',
+    });
+
+    render(<NoteReelStoryPanelHarness />);
+
+    const swatches = [...document.body.querySelectorAll('[role="radio"]')];
+    expect(swatches).toHaveLength(6);
+
+    const emerald = swatches.find(el => el.getAttribute('aria-label') === 'Emerald') as HTMLButtonElement;
+    act(() => emerald.click());
+    expect(emerald.getAttribute('aria-checked')).toBe('true');
+
+    act(() => {
+      const playButton = [...document.body.querySelectorAll('button')].find(
+        button => button.textContent === 'Play'
+      ) as HTMLButtonElement;
+      playButton.click();
+    });
+    expect(document.querySelector('[data-testid="story-player"]')?.getAttribute('data-pair')).toBe(
+      'emerald'
+    );
+
+    await act(async () => {
+      const generateButton = [...document.body.querySelectorAll('button')].find(
+        button => button.textContent === 'Generate reel'
+      ) as HTMLButtonElement;
+      generateButton.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.renderWasmReel).toHaveBeenCalledWith(
+      expect.objectContaining({ pairKey: 'emerald' })
+    );
   });
 
   it('opens the story player when Play is clicked', () => {

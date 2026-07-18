@@ -20,6 +20,7 @@ import {
   wordsToReelCaptions,
 } from '../lib/reel';
 import { renderNoteReelVideoWithWasm } from '../lib/reel-renderer.browser';
+import { DEFAULT_PAIR_KEY, REEL_PAIRS, reelPair, type ReelPairKey } from '../lib/reel-theme';
 import type { Note } from '../types';
 import { NoteReelStoryPlayer } from './note-reel-story-player';
 
@@ -70,6 +71,7 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
   const [downloadHref, setDownloadHref] = useState<string | null>(null);
   const [preview, setPreview] = useState<{ alignment: Alignment; duration: number } | null>(null);
   const [showPlayer, setShowPlayer] = useState(false);
+  const [pairKey, setPairKey] = useState<ReelPairKey>(DEFAULT_PAIR_KEY);
 
   const isExporting = status === 'generating-audio' || status === 'rendering-video';
   const requiresTimedVoice = !reelTimingSupported(speechConfig.provider);
@@ -127,6 +129,7 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
         audioDataUri: src,
         captions,
         durationSeconds,
+        pairKey,
       });
 
       setDownloadHref(URL.createObjectURL(result.blob));
@@ -136,7 +139,7 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
       setStatus('idle');
       toast.error(err instanceof Error ? err.message : 'Failed to export reel');
     }
-  }, [downloadHref, generateSpeech, note, requiresTimedVoice, voiceText]);
+  }, [downloadHref, generateSpeech, note, pairKey, requiresTimedVoice, voiceText]);
 
   return (
     <section id={id} aria-label="Reel export" className="mt-3 border-t pt-3">
@@ -169,7 +172,9 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
         </div>
 
         <div className="w-24 shrink-0">
-          <div className="aspect-[9/16] overflow-hidden rounded-lg border bg-foreground text-background">
+          <div
+            className={`aspect-[9/16] overflow-hidden rounded-lg border text-background ${reelPair(pairKey).bgClass}`}
+          >
             <ReelTextViewer
               text={previewText || 'No note text'}
               alignment={preview?.alignment}
@@ -178,6 +183,32 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
               className="h-full"
             />
           </div>
+        </div>
+      </div>
+
+      <div className="mt-3">
+        <div className="mb-2 text-xs font-medium text-muted-foreground">Colour</div>
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Reel colour">
+          {REEL_PAIRS.map(pair => (
+            <button
+              key={pair.key}
+              type="button"
+              role="radio"
+              aria-checked={pairKey === pair.key}
+              aria-label={pair.name}
+              onClick={() => setPairKey(pair.key)}
+              className={`flex size-11 items-center justify-center rounded-full transition-all ${
+                pairKey === pair.key ? 'ring-2 ring-ring ring-offset-2' : ''
+              }`}
+            >
+              <span
+                className="size-7 rounded-full border border-black/10"
+                style={{
+                  background: `linear-gradient(135deg, ${pair.bg} 50%, ${pair.display} 50%)`,
+                }}
+              />
+            </button>
+          ))}
         </div>
       </div>
 
@@ -214,7 +245,11 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
       </div>
 
       {showPlayer && (
-        <NoteReelStoryPlayer voiceText={voiceText} onClose={() => setShowPlayer(false)} />
+        <NoteReelStoryPlayer
+          voiceText={voiceText}
+          pairKey={pairKey}
+          onClose={() => setShowPlayer(false)}
+        />
       )}
     </section>
   );

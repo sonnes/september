@@ -22,7 +22,21 @@ interface LineWord {
 interface ReelRendererProps extends HTMLAttributes<HTMLDivElement> {
   text: string;
   fontFamily?: string;
-  fontWeight?: string;
+  fontWeight?: string | number;
+  /** Line height as a fraction of font size. */
+  lineHeightRatio?: number;
+  /** Cap the fitted font at this fraction of the container width. */
+  maxFontRatio?: number;
+  /** Fit the caption within this fraction of the container height. */
+  boxHeightRatio?: number;
+  /** Base word colour (hex). Defaults to the inherited `currentColor`. */
+  color?: string;
+  /** Active (currently spoken) word colour. Defaults to `color`. */
+  activeColor?: string;
+  /** Opacity for already-spoken words. */
+  spokenOpacity?: number;
+  /** Opacity for not-yet-spoken words. */
+  unspokenOpacity?: number;
   getWordStatus?: (wordIndex: number) => WordStatus | 'shown';
 }
 
@@ -30,6 +44,13 @@ function ReelRenderer({
   text,
   fontFamily = '"Noto Sans"',
   fontWeight = '700',
+  lineHeightRatio = 1.2,
+  maxFontRatio,
+  boxHeightRatio,
+  color,
+  activeColor,
+  spokenOpacity = 0.55,
+  unspokenOpacity = 0.88,
   getWordStatus,
   className,
   ...props
@@ -53,15 +74,29 @@ function ReelRenderer({
     return () => ro.disconnect();
   }, []);
 
+  // Padding is derived from the full frame so it matches the canvas exporter,
+  // which sizes its side padding off the same width/height.
+  const padding = defaultPretextPadding(dimensions.width, dimensions.height);
+  const layoutHeight = boxHeightRatio
+    ? Math.round(dimensions.height * boxHeightRatio)
+    : dimensions.height;
+
   const { fontSize, lines, totalHeight } = usePretextLayout({
     text,
     containerWidth: dimensions.width,
-    containerHeight: dimensions.height,
+    containerHeight: layoutHeight,
     fontFamily,
-    fontWeight,
+    fontWeight: String(fontWeight),
+    lineHeightRatio,
+    maxFontSize:
+      maxFontRatio && dimensions.width ? Math.round(dimensions.width * maxFontRatio) : undefined,
+    padding,
+    // Captions are drawn without pill backgrounds, so no per-line extra padding.
+    lineExtraPx: 0,
+    lineGapPx: 0,
   });
 
-  const lineHeight = fontSize > 0 ? Math.round(fontSize * 1.2) : 0;
+  const lineHeight = fontSize > 0 ? Math.round(fontSize * lineHeightRatio) : 0;
 
   // Split each line into words with global word indices
   const lineWords = useMemo((): LineWord[][] => {
@@ -87,8 +122,6 @@ function ReelRenderer({
   }, [lines]);
 
   const topOffset = Math.max(0, (dimensions.height - totalHeight) / 2);
-  // Must match the engine's default so the pills line up with the fitted layout.
-  const padding = defaultPretextPadding(dimensions.width, dimensions.height);
 
   return (
     <div
@@ -98,46 +131,46 @@ function ReelRenderer({
     >
       {fontSize > 0 && (
         <div
-          className="absolute inset-x-0 flex flex-col gap-2"
+          className="absolute inset-x-0 flex flex-col text-center"
           style={{ top: topOffset, paddingLeft: padding, paddingRight: padding }}
         >
           {lineWords.map((words, lineIdx) => (
-            <div
+            <p
               key={lineIdx}
-              className="rounded-2xl px-4 py-2"
+              style={{
+                fontSize,
+                lineHeight: `${lineHeight}px`,
+                fontFamily,
+                fontWeight: Number(fontWeight),
+                textShadow: '0 2px 14px rgba(0,0,0,0.35)',
+              }}
+              className="m-0"
             >
-              <p
-                style={{
-                  fontSize,
-                  lineHeight: `${lineHeight}px`,
-                  fontFamily,
-                  fontWeight: Number(fontWeight),
-                }}
-                className="m-0"
-              >
-                {words.map((word, i) => {
-                  if (word.isSpace) return word.text;
+              {words.map((word, i) => {
+                if (word.isSpace) return word.text;
 
-                  const status = getWordStatus?.(word.wordIndex) ?? 'shown';
-                  const isCurrent = status === 'current';
-                  const isSpoken = status === 'spoken';
+                const status = getWordStatus?.(word.wordIndex) ?? 'shown';
+                const isCurrent = status === 'current';
+                const wordColor = isCurrent ? (activeColor ?? color) : color;
+                const opacity =
+                  status === 'spoken'
+                    ? spokenOpacity
+                    : status === 'unspoken'
+                      ? unspokenOpacity
+                      : 1;
 
-                  return (
-                    <span
-                      key={`${lineIdx}-${i}`}
-                      data-status={status}
-                      className={cn(
-                        'inline transition-all duration-200 ease-out',
-                        isCurrent && 'bg-current/10 rounded-md px-1 -mx-1',
-                        isSpoken && 'opacity-60',
-                      )}
-                    >
-                      {word.text}
-                    </span>
-                  );
-                })}
-              </p>
-            </div>
+                return (
+                  <span
+                    key={`${lineIdx}-${i}`}
+                    data-status={status}
+                    className="inline transition-[color,opacity] duration-200 ease-out"
+                    style={{ color: wordColor, opacity }}
+                  >
+                    {word.text}
+                  </span>
+                );
+              })}
+            </p>
           ))}
         </div>
       )}

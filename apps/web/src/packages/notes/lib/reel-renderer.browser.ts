@@ -1,16 +1,34 @@
-import { computePretextLayout } from '@/packages/audio/hooks/use-pretext-layout';
+import { computePretextLayout, defaultPretextPadding } from '@/packages/audio/hooks/use-pretext-layout';
 
 import type { ReelCaption } from './reel';
+import {
+  type CaptionRole,
+  captionRoles,
+  DEFAULT_PAIR_KEY,
+  ensureReelFonts,
+  GRAIN_OPACITY,
+  type ReelPair,
+  type ReelPairKey,
+  reelPair,
+  roleColors,
+  type RoleSpec,
+  ROLE_SPECS,
+  SPOKEN_OPACITY,
+  UNSPOKEN_OPACITY,
+  VIGNETTE_CENTER_X_RATIO,
+  VIGNETTE_CENTER_Y_RATIO,
+  VIGNETTE_INNER_STOP,
+  VIGNETTE_OUTER_ALPHA,
+  VIGNETTE_RX_RATIO,
+  VIGNETTE_RY_RATIO,
+  WATERMARK_BOTTOM_RATIO,
+  WATERMARK_FONT_RATIO,
+  WATERMARK_LEFT_RATIO,
+  WATERMARK_TEXT,
+} from './reel-theme';
 
 const VIDEO_WIDTH = 1080;
 const VIDEO_HEIGHT = 1920;
-const BACKGROUND_COLOR = '#111827';
-const HIGHLIGHT_COLOR = '#fbbf24';
-const TEXT_COLOR = '#ffffff';
-const CAPTION_FONT_FAMILY = '"Noto Sans"';
-const CAPTION_FONT_WEIGHT = '700';
-const LINE_HEIGHT_RATIO = 1.2;
-const WATERMARK_FONT = '600 34px "Noto Sans", Arial, sans-serif';
 const FFMPEG_CORE_VERSION = '0.12.10';
 const FFMPEG_CORE_BASE_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${FFMPEG_CORE_VERSION}/dist/esm`;
 
@@ -18,6 +36,8 @@ export interface RenderNoteReelVideoInput {
   audioDataUri: string;
   captions: ReelCaption[];
   durationSeconds: number;
+  /** Tailwind colour pair for the frame look. Defaults to `stone`. */
+  pairKey?: ReelPairKey;
 }
 
 export interface RenderNoteReelVideoResult {
@@ -46,6 +66,7 @@ export interface RenderNoteReelVideoOptions {
 
 interface ReelFrameSpec {
   caption?: ReelCaption;
+  role?: CaptionRole;
   activeWordIndex?: number;
   durationSeconds: number;
 }
@@ -115,17 +136,25 @@ export interface CaptionLayout {
  * Lay out a caption with the shared pretext engine: pick the largest font that
  * fits the frame and word-wrap it, then map each wrapped line back onto the
  * caption's words (preserving order) so the active word can be highlighted.
- * This is the same fit-and-wrap the live preview uses — no fixed font, no
- * char-count line splitting.
+ * This is the same fit-and-wrap the live preview uses — same role spec, same
+ * padding — so the DOM player and the MP4 frame agree.
  */
-export function layoutCaption(caption: ReelCaption, width: number, height: number): CaptionLayout {
+export function layoutCaption(
+  caption: ReelCaption,
+  width: number,
+  height: number,
+  roleSpec: RoleSpec
+): CaptionLayout {
   const text = caption.words.map(word => word.text).join(' ');
   const { fontSize, lines, totalHeight } = computePretextLayout({
     text,
     containerWidth: width,
-    containerHeight: height,
-    fontFamily: CAPTION_FONT_FAMILY,
-    fontWeight: CAPTION_FONT_WEIGHT,
+    containerHeight: Math.round(height * roleSpec.boxHeightRatio),
+    fontFamily: roleSpec.fontFamily,
+    fontWeight: String(roleSpec.fontWeight),
+    lineHeightRatio: roleSpec.lineHeightRatio,
+    maxFontSize: Math.round(width * roleSpec.maxFontRatio),
+    padding: defaultPretextPadding(width, height),
     // Captions are drawn without pill backgrounds, so no per-line extra padding.
     lineExtraPx: 0,
     lineGapPx: 0,
@@ -142,27 +171,33 @@ export function layoutCaption(caption: ReelCaption, width: number, height: numbe
   return { fontSize, totalHeight, lines: mappedLines };
 }
 
-function frameSpecs(captions: ReelCaption[], durationSeconds: number): ReelFrameSpec[] {
+function frameSpecs(
+  captions: ReelCaption[],
+  roles: CaptionRole[],
+  durationSeconds: number
+): ReelFrameSpec[] {
   const specs: ReelFrameSpec[] = [];
   let cursor = 0;
 
-  for (const caption of captions) {
+  captions.forEach((caption, captionIndex) => {
     if (caption.startTime > cursor) {
       specs.push({ durationSeconds: caption.startTime - cursor });
     }
 
+    const role = roles[captionIndex] ?? 'display';
     caption.words.forEach((word, index) => {
       const next = caption.words[index + 1];
       const endTime = next?.startTime ?? caption.endTime;
       specs.push({
         caption,
+        role,
         activeWordIndex: index,
         durationSeconds: Math.max(0.05, endTime - word.startTime),
       });
     });
 
     cursor = caption.endTime;
-  }
+  });
 
   if (durationSeconds > cursor) {
     specs.push({ durationSeconds: durationSeconds - cursor });
@@ -171,32 +206,78 @@ function frameSpecs(captions: ReelCaption[], durationSeconds: number): ReelFrame
   return specs.length ? specs : [{ durationSeconds }];
 }
 
-function drawGrid(ctx: CanvasRenderingContext2D): void {
-  ctx.save();
-  ctx.translate(VIDEO_WIDTH / 2, VIDEO_HEIGHT / 2);
-  ctx.rotate(Math.PI / 4);
-  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-  ctx.lineWidth = 2;
+/** Low-opacity monochrome film grain, drawn once onto the shared background. */
+function drawGrain(ctx: CanvasRenderingContext2D): void {
+  const { width, height } = ctx.canvas;
+  const image = ctx.createImageData(width, height);
+  const data = image.data;
+  const alpha = Math.round(GRAIN_OPACITY * 255);
 
-  for (let x = -VIDEO_HEIGHT; x < VIDEO_HEIGHT; x += 48) {
-    ctx.beginPath();
-    ctx.moveTo(x, -VIDEO_HEIGHT);
-    ctx.lineTo(x, VIDEO_HEIGHT);
-    ctx.stroke();
+  for (let i = 0; i < data.length; i += 4) {
+    const value = (Math.random() * 256) | 0;
+    data[i] = value;
+    data[i + 1] = value;
+    data[i + 2] = value;
+    data[i + 3] = alpha;
   }
 
+  // putImageData replaces pixels; blend the grain over the fill via a tile.
+  const tile = document.createElement('canvas');
+  tile.width = width;
+  tile.height = height;
+  const tileCtx = tile.getContext('2d');
+  if (!tileCtx) return;
+  tileCtx.putImageData(image, 0, 0);
+  ctx.drawImage(tile, 0, 0);
+}
+
+/** Soft radial vignette — transparent centre darkening to the edges. */
+function drawVignette(ctx: CanvasRenderingContext2D): void {
+  const { width, height } = ctx.canvas;
+  const cx = width * VIGNETTE_CENTER_X_RATIO;
+  const cy = height * VIGNETTE_CENTER_Y_RATIO;
+  const rx = width * VIGNETTE_RX_RATIO;
+  const ry = height * VIGNETTE_RY_RATIO;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(rx / ry, 1);
+  const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, ry);
+  gradient.addColorStop(VIGNETTE_INNER_STOP, 'rgba(0,0,0,0)');
+  gradient.addColorStop(1, `rgba(0,0,0,${VIGNETTE_OUTER_ALPHA})`);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(-width * 4, -height * 4, width * 8, height * 8);
   ctx.restore();
+}
+
+function drawWatermark(ctx: CanvasRenderingContext2D, pair: ReelPair): void {
+  const { width, height } = ctx.canvas;
+  const fontSize = Math.round(width * WATERMARK_FONT_RATIO);
+  ctx.font = `600 ${fontSize}px "Noto Sans", Arial, sans-serif`;
+  ctx.fillStyle = pair.support;
+  ctx.globalAlpha = 0.85;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(
+    WATERMARK_TEXT,
+    Math.round(width * WATERMARK_LEFT_RATIO),
+    Math.round(height - height * WATERMARK_BOTTOM_RATIO)
+  );
+  ctx.globalAlpha = 1;
 }
 
 function drawCaption(
   ctx: CanvasRenderingContext2D,
   layout: CaptionLayout,
-  activeWordIndex: number
+  activeWordIndex: number,
+  roleSpec: RoleSpec,
+  colors: { base: string; active: string }
 ): void {
   if (!layout.fontSize) return;
 
-  const lineHeight = Math.round(layout.fontSize * LINE_HEIGHT_RATIO);
-  ctx.font = `${CAPTION_FONT_WEIGHT} ${layout.fontSize}px ${CAPTION_FONT_FAMILY}, Arial, sans-serif`;
+  const lineHeight = Math.round(layout.fontSize * roleSpec.lineHeightRatio);
+  ctx.font = `${roleSpec.fontWeight} ${layout.fontSize}px ${roleSpec.fontFamily}`;
+  ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
   const firstY = Math.round(VIDEO_HEIGHT / 2 - layout.totalHeight / 2 + lineHeight / 2);
@@ -210,8 +291,16 @@ function drawCaption(
     const y = firstY + lineIndex * lineHeight;
 
     line.words.forEach((word, wordIndex) => {
-      ctx.globalAlpha = activeWordIndex >= 0 && word.index < activeWordIndex ? 0.62 : 1;
-      ctx.fillStyle = word.index === activeWordIndex ? HIGHLIGHT_COLOR : TEXT_COLOR;
+      const isActive = word.index === activeWordIndex;
+      ctx.globalAlpha =
+        activeWordIndex < 0
+          ? 1
+          : word.index < activeWordIndex
+            ? SPOKEN_OPACITY
+            : word.index > activeWordIndex
+              ? UNSPOKEN_OPACITY
+              : 1;
+      ctx.fillStyle = isActive ? colors.active : colors.base;
       ctx.fillText(word.text, x, y);
       x += widths[wordIndex] + spaceWidth;
     });
@@ -250,28 +339,25 @@ function createCanvasContext(): CanvasRenderingContext2D {
   return ctx;
 }
 
-function createCanvasFrameRenderer(): (spec: ReelFrameSpec) => Promise<Uint8Array> {
-  // The background (fill, grid, watermark) is identical on every frame, so
-  // render it once and stamp it onto a single reused frame canvas per spec.
+function createCanvasFrameRenderer(pair: ReelPair): (spec: ReelFrameSpec) => Promise<Uint8Array> {
+  // The background (solid fill, grain, vignette, watermark) is identical on
+  // every frame, so render it once and stamp it onto a reused frame canvas.
   const background = createCanvasContext();
-  background.fillStyle = BACKGROUND_COLOR;
+  background.fillStyle = pair.bg;
   background.fillRect(0, 0, VIDEO_WIDTH, VIDEO_HEIGHT);
-  drawGrid(background);
-  background.fillStyle = 'rgba(24,24,27,0.18)';
-  background.fillRect(0, 0, VIDEO_WIDTH, VIDEO_HEIGHT);
-  background.font = WATERMARK_FONT;
-  background.fillStyle = 'rgba(255,255,255,0.78)';
-  background.fillText('September', 90, 1770);
+  drawGrain(background);
+  drawVignette(background);
+  drawWatermark(background, pair);
 
   const frame = createCanvasContext();
 
   // A caption's layout (font size + wrapped lines) is identical across all of
   // its word-frames, so compute the binary-search fit once per caption.
   const layoutCache = new Map<ReelCaption, CaptionLayout>();
-  const getLayout = (caption: ReelCaption): CaptionLayout => {
+  const getLayout = (caption: ReelCaption, roleSpec: RoleSpec): CaptionLayout => {
     let layout = layoutCache.get(caption);
     if (!layout) {
-      layout = layoutCaption(caption, VIDEO_WIDTH, VIDEO_HEIGHT);
+      layout = layoutCaption(caption, VIDEO_WIDTH, VIDEO_HEIGHT, roleSpec);
       layoutCache.set(caption, layout);
     }
     return layout;
@@ -279,8 +365,10 @@ function createCanvasFrameRenderer(): (spec: ReelFrameSpec) => Promise<Uint8Arra
 
   return async spec => {
     frame.drawImage(background.canvas, 0, 0);
-    if (spec.caption) {
-      drawCaption(frame, getLayout(spec.caption), spec.activeWordIndex ?? -1);
+    if (spec.caption && spec.role) {
+      const roleSpec = ROLE_SPECS[spec.role];
+      const colors = roleColors(pair, spec.role);
+      drawCaption(frame, getLayout(spec.caption, roleSpec), spec.activeWordIndex ?? -1, roleSpec, colors);
     }
     return canvasToPngBytes(frame.canvas);
   };
@@ -349,9 +437,14 @@ export async function renderNoteReelVideoWithWasm(
     throw new Error('Audio data is required');
   }
 
+  const pair = reelPair(input.pairKey ?? DEFAULT_PAIR_KEY);
+  const roles = captionRoles(input.captions);
+  // Canvas measureText/fillText need the serif loaded before the first frame.
+  await ensureReelFonts();
+
   const ffmpeg = await (options.loadFfmpeg ?? loadBrowserFfmpeg)();
-  const renderFrame = options.renderFrame ?? createCanvasFrameRenderer();
-  const specs = frameSpecs(input.captions, input.durationSeconds);
+  const renderFrame = options.renderFrame ?? createCanvasFrameRenderer(pair);
+  const specs = frameSpecs(input.captions, roles, input.durationSeconds);
   const audioPath = 'audio.mp3';
   const framesPath = 'frames.txt';
   const outputPath = 'reel.mp4';

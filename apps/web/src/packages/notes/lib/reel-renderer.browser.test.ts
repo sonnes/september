@@ -10,6 +10,7 @@ import {
   layoutCaption,
   renderNoteReelVideoWithWasm,
 } from './reel-renderer.browser';
+import { ROLE_SPECS } from './reel-theme';
 
 vi.mock('@/packages/audio/hooks/use-pretext-layout', () => ({
   computePretextLayout: vi.fn(({ text }: { text: string }) => ({
@@ -17,6 +18,7 @@ vi.mock('@/packages/audio/hooks/use-pretext-layout', () => ({
     totalHeight: 100,
     lines: [{ text, width: 200, y: 0 }],
   })),
+  defaultPretextPadding: (w: number, h: number) => Math.round(Math.min(w, h) * 0.06),
 }));
 
 describe('dataUriToUint8Array', () => {
@@ -59,13 +61,20 @@ describe('layoutCaption', () => {
     ],
   };
 
-  it('sizes via pretext (not a hardcoded font) and maps words onto lines', () => {
-    const layout = layoutCaption(caption, 1080, 1920);
+  it('sizes via pretext with the role spec and maps words onto lines', () => {
+    const layout = layoutCaption(caption, 1080, 1920, ROLE_SPECS.display);
 
     expect(layout.fontSize).toBe(84);
     expect(layout.lines).toHaveLength(1);
     expect(layout.lines[0].words.map(w => w.text)).toEqual(['Hello', 'world']);
     expect(layout.lines[0].words.map(w => w.index)).toEqual([0, 1]);
+    // The display role's serif + max-font ratio reach the engine.
+    expect(computePretextLayout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fontFamily: ROLE_SPECS.display.fontFamily,
+        maxFontSize: Math.round(1080 * ROLE_SPECS.display.maxFontRatio),
+      })
+    );
   });
 
   it('continues global word indices across wrapped lines', () => {
@@ -88,7 +97,7 @@ describe('layoutCaption', () => {
       ],
     };
 
-    const layout = layoutCaption(longCaption, 1080, 1920);
+    const layout = layoutCaption(longCaption, 1080, 1920, ROLE_SPECS.support);
 
     expect(layout.lines.map(line => line.words.map(w => w.index))).toEqual([[0, 1], [2]]);
   });
@@ -131,5 +140,28 @@ describe('renderNoteReelVideoWithWasm', () => {
     expect(new TextDecoder().decode(writes.get('frames.txt'))).toContain("file 'frame-0000.png'");
     expect(result.contentType).toBe('video/mp4');
     expect(result.blob.size).toBe(3);
+  });
+
+  it('accepts a colour pair key', async () => {
+    const renderFrame = vi.fn(async () => new Uint8Array([137, 80, 78, 71]));
+    const ffmpeg: ReelFfmpeg = {
+      writeFile: vi.fn(async () => {}),
+      exec: vi.fn(async () => 0),
+      readFile: vi.fn(async () => new TextEncoder().encode('mp4')),
+      deleteFile: vi.fn(async () => {}),
+    };
+
+    const result = await renderNoteReelVideoWithWasm(
+      {
+        audioDataUri: 'data:audio/mp3;base64,QUJD',
+        captions: [{ startTime: 0, endTime: 1, words: [{ text: 'Hi', startTime: 0, endTime: 1 }] }],
+        durationSeconds: 1,
+        pairKey: 'emerald',
+      },
+      { loadFfmpeg: async () => ffmpeg, renderFrame }
+    );
+
+    expect(renderFrame).toHaveBeenCalled();
+    expect(result.contentType).toBe('video/mp4');
   });
 });

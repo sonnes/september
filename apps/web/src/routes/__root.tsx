@@ -8,6 +8,7 @@ import appCss from '@/styles/globals.css?url';
 import '@fontsource/noto-sans/400.css';
 import '@fontsource/noto-sans/500.css';
 import '@fontsource/noto-sans/700.css';
+import '@fontsource/playfair-display/500.css';
 
 function NotFound() {
   return (
