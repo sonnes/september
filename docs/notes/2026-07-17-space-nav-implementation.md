@@ -93,3 +93,15 @@ restate the plan.
   `RightPanel` slot renders `PanelRail` unconditionally in both modes.
 - **No `components/chat/README.md`** — per app convention only `packages/*`
   carry READMEs, so none was created.
+
+## Phase 5 — Composer restyle
+
+- Input card: `border-2` colour swap → `border` + `shadow-sm` +
+  `focus-within:ring-[3px] ring-ring/20`.
+- Primary action (Speak / Add to note) switched from a raw button to the
+  `Button` component (`size="lg" rounded-full px-6`, default indigo variant).
+- Suggestion primitives and console wrapper left as-is.
+- **Verified in the running app** (screenshots at 1376×1032 + 390-wide): dock,
+  right rail (collapsed + expanded), notes strip + editor-header actions, reel
+  popover, and mobile space-tab dropdown all render with no console/page
+  errors; old `/talk` `/notes` deep links redirect; mode persists per space.

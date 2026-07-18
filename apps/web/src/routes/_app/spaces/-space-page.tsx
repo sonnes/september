@@ -454,7 +454,7 @@ export function SpacePageInner({
 
       <div className="flex flex-col gap-2">
         <Autocomplete />
-        <div className="rounded-2xl border-2 border-input bg-background p-3 transition-colors focus-within:border-ring">
+        <div className="rounded-2xl border bg-background p-3 shadow-sm transition-[box-shadow,border-color] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/20">
           <textarea
             ref={inputRef}
             autoFocus
@@ -478,17 +478,22 @@ export function SpacePageInner({
               <RailButton label="Clear" onClick={clearText} disabled={!text}>
                 <Trash2 className="size-5" />
               </RailButton>
-              {mode === 'talk' && <AudioOutputDeviceSelector />}
             </div>
-            <button
-              type="button"
-              onClick={() => handleComposerAction(text)}
-              disabled={composerButtonDisabled}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:enabled:scale-[1.02] active:enabled:scale-95 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
-            >
-              <ComposerIcon className="size-4" aria-hidden />
-              {composerButtonLabel}
-            </button>
+            {/* Output device sits beside Speak — where the sound comes out,
+                next to the button that makes it. Talk mode only. */}
+            <div className="flex items-center gap-2">
+              {mode === 'talk' && <AudioOutputDeviceSelector />}
+              <Button
+                type="button"
+                size="lg"
+                onClick={() => handleComposerAction(text)}
+                disabled={composerButtonDisabled}
+                className="rounded-full px-6 text-sm font-semibold"
+              >
+                <ComposerIcon className="size-4" aria-hidden />
+                {composerButtonLabel}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
