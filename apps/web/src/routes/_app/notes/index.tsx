@@ -107,8 +107,8 @@ function NotesIndexPage() {
                     key={note.id}
                     to="/spaces/$spaceSlug/notes/$noteSlug"
                     params={{
-                      spaceSlug: entitySlug(space?.title, note.space_id, 'space'),
-                      noteSlug: entitySlug(note.name, note.id, 'note'),
+                      spaceSlug: entitySlug(space?.title, 'space'),
+                      noteSlug: entitySlug(note.name, 'note'),
                     }}
                     className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >

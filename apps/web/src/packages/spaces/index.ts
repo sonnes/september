@@ -5,6 +5,11 @@ export { EditableSpaceTitle } from './components/editable-space-title';
 
 // Live-query hooks
 export { useSpaces } from './hooks/use-spaces';
+export {
+  useSpaceIdFromSlug,
+  spaceIdFromSlug,
+  type UseSpaceIdFromSlugReturn,
+} from './hooks/use-space-id-from-slug';
 export { useMessages, useFirstMessage } from './hooks/use-messages';
 export { useSavedPhrases } from './hooks/use-saved-phrases';
 export type { UseSavedPhrasesReturn } from './hooks/use-saved-phrases';

@@ -144,7 +144,7 @@ export function SuggestionStripes({
                       minHeight: STRIPE_BASE.minHeightPx * scale,
                     }}
                     className={cn(
-                      'inline-flex shrink-0 items-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      'inline-flex shrink-0 items-center rounded-chip border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                       isPunct ? '' : 'font-medium',
                       active ? lane.active : lane.idle
                     )}
@@ -165,7 +165,7 @@ export function SuggestionStripes({
                     minHeight: STRIPE_BASE.minHeightPx * scale,
                     paddingInline: STRIPE_BASE.wordPadXPx * scale,
                   }}
-                  className="inline-flex shrink-0 items-center justify-center rounded-lg border border-primary/40 bg-primary/10 text-primary transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="inline-flex shrink-0 items-center justify-center rounded-control border border-primary/40 bg-primary/10 text-primary transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <CornerDownLeft
                     style={{ width: STRIPE_BASE.fontPx * scale, height: STRIPE_BASE.fontPx * scale }}

@@ -131,7 +131,7 @@ export function SpaceList({
             >
               <Link
                 to="/spaces/$spaceSlug"
-                params={{ spaceSlug: entitySlug(space.title, space.id, 'space') }}
+                params={{ spaceSlug: entitySlug(space.title, 'space') }}
                 className="flex-1 py-3 px-1 min-w-0"
               >
                 <div className="text-base font-medium text-zinc-900 mb-1 truncate">

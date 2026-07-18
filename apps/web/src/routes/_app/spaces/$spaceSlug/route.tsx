@@ -3,7 +3,7 @@ import { Outlet, createFileRoute } from '@tanstack/react-router';
 import { ChatPanelProvider } from '@/components/chat/use-chat-panel';
 
 import { EditorProvider } from '@/packages/editor';
-import { idFromSlug } from '@/packages/shared';
+import { useSpaceIdFromSlug } from '@/packages/spaces';
 import { SpeechProvider } from '@/packages/speech';
 
 export const Route = createFileRoute('/_app/spaces/$spaceSlug')({
@@ -12,7 +12,7 @@ export const Route = createFileRoute('/_app/spaces/$spaceSlug')({
 
 function SpaceLayout() {
   const { spaceSlug } = Route.useParams();
-  const spaceId = idFromSlug(spaceSlug);
+  const { spaceId } = useSpaceIdFromSlug(spaceSlug);
 
   return (
     <EditorProvider spaceId={spaceId}>

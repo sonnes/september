@@ -20,7 +20,16 @@ export default function SidebarLayout({ children }: PropsWithChildren) {
   const [rightPanelSlot, setRightPanelSlot] = useState<HTMLElement | null>(null);
 
   return (
-    <SidebarProvider key={isCompact ? 'compact' : 'wide'} defaultOpen={!isCompact}>
+    <SidebarProvider
+      key={isCompact ? 'compact' : 'wide'}
+      defaultOpen={!isCompact}
+      // Definite viewport height so the inset's `main` (overflow-y-auto) scrolls
+      // internally instead of the whole shell growing past the screen. Without
+      // this anchor the provider is only `min-h-svh` and tall content (e.g. a
+      // long note above the pinned composer) pushes the page taller than the
+      // viewport.
+      className="h-svh"
+    >
       <RightPanelSlotContext.Provider value={rightPanelSlot}>
         <AppSidebar />
         {/* min-w-0 lets the inset shrink when a detached RightPanel sibling

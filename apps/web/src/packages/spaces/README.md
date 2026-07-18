@@ -19,6 +19,12 @@ const { spaces, isLoading, error } = useSpaces({ userId, searchQuery });
 const { messages, isLoading, error } = useMessages({ spaceId, searchQuery, limit });
 const { message } = useFirstMessage(spaceId);
 const { phrases, isLoading, error } = useSavedPhrases({ spaceId }); // pinned first
+
+// Resolve an id-free URL slug ("morning-notes") to a space id. Reactive —
+// `spaceId` is undefined until the spaces load and a title match is found
+// (legacy `…-<uuid>` slugs still resolve). `spaceIdFromSlug(slug, spaces)` is
+// the pure form.
+const { spaceId, isLoading } = useSpaceIdFromSlug(spaceSlug);
 ```
 
 ### Mutations

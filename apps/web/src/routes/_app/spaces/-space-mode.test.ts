@@ -22,57 +22,69 @@ describe('routeForSpaceMode', () => {
 });
 
 describe('last-mode memory', () => {
-  const spaceId = '8720d2fc-787c-421b-8984-0e0eeb9138cb';
+  const spaceSlug = 'school-homework-help';
 
   beforeEach(() => {
     vi.stubGlobal('localStorage', memoryStorage());
   });
 
   it('defaults to talk when nothing is stored', () => {
-    expect(lastSpaceMode(spaceId)).toBe('talk');
+    expect(lastSpaceMode(spaceSlug)).toBe('talk');
   });
 
-  it('remembers the last mode per space', () => {
-    rememberSpaceMode(spaceId, 'notes');
-    expect(lastSpaceMode(spaceId)).toBe('notes');
-    expect(localStorage.getItem(`september:space-mode:${spaceId}`)).toBe('notes');
+  it('remembers the last mode per space slug', () => {
+    rememberSpaceMode(spaceSlug, 'notes');
+    expect(lastSpaceMode(spaceSlug)).toBe('notes');
+    expect(localStorage.getItem(`september:space-mode:${spaceSlug}`)).toBe('notes');
   });
 
   it('keeps modes independent across spaces', () => {
-    const other = '00dd441a-3e6a-413a-a1df-6173ac614386';
-    rememberSpaceMode(spaceId, 'notes');
+    const other = 'teaching-scratch-jr';
+    rememberSpaceMode(spaceSlug, 'notes');
     rememberSpaceMode(other, 'talk');
-    expect(lastSpaceMode(spaceId)).toBe('notes');
+    expect(lastSpaceMode(spaceSlug)).toBe('notes');
     expect(lastSpaceMode(other)).toBe('talk');
   });
 
   it('ignores unknown stored values and falls back to talk', () => {
-    localStorage.setItem(`september:space-mode:${spaceId}`, 'agent');
-    expect(lastSpaceMode(spaceId)).toBe('talk');
+    localStorage.setItem(`september:space-mode:${spaceSlug}`, 'agent');
+    expect(lastSpaceMode(spaceSlug)).toBe('talk');
   });
 });
 
 describe('notesRouteParams', () => {
-  const spaceId = '8720d2fc-787c-421b-8984-0e0eeb9138cb';
-  const noteId = '00dd441a-3e6a-413a-a1df-6173ac614386';
-
-  it('generates slugs from space and note titles', () => {
-    expect(notesRouteParams('General', spaceId, 'Appointment Prep', noteId)).toEqual({
-      spaceSlug: `general-${spaceId}`,
-      noteSlug: `appointment-prep-${noteId}`,
+  it('generates id-free slugs from space and note titles', () => {
+    expect(notesRouteParams('General', 'Appointment Prep')).toEqual({
+      spaceSlug: 'general',
+      noteSlug: 'appointment-prep',
     });
+  });
+
+  it('omits the note slug when no note title is given', () => {
+    expect(notesRouteParams('General')).toEqual({ spaceSlug: 'general' });
   });
 
   it('detects fallback slugs as stale once titles are known', () => {
     expect(
       isNotesRouteCanonical({
-        spaceSlug: `space-${spaceId}`,
-        noteSlug: `untitled-note-${noteId}`,
+        spaceSlug: 'space',
+        noteSlug: 'untitled-note',
         spaceTitle: 'General',
-        spaceId,
         noteTitle: 'Appointment Prep',
-        noteId,
+        hasNote: true,
       })
     ).toBe(false);
+  });
+
+  it('accepts a canonical id-free notes route', () => {
+    expect(
+      isNotesRouteCanonical({
+        spaceSlug: 'general',
+        noteSlug: 'appointment-prep',
+        spaceTitle: 'General',
+        noteTitle: 'Appointment Prep',
+        hasNote: true,
+      })
+    ).toBe(true);
   });
 });

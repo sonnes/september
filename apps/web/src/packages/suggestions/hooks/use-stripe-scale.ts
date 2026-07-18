@@ -9,11 +9,11 @@ import { Stripe } from './use-stripes';
 // Base tile metrics — must mirror the chip styles in SuggestionStripes so the
 // fit math matches what actually renders. Padding values are per-side.
 export const STRIPE_BASE = {
-  fontPx: 18, // text-lg
+  fontPx: 16, // text-base — design-system token size
   gapPx: 6, // gap-1.5
   wordPadXPx: 16, // px-4
   punctPadXPx: 10, // px-2.5
-  minHeightPx: 48, // min-h-12
+  minHeightPx: 46, // control/chip target
 };
 
 const FONT_WEIGHT = '500'; // font-medium

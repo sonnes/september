@@ -48,7 +48,7 @@ function SpacesPage() {
       toast.success('Space created');
       navigate({
         to: '/spaces/$spaceSlug/talk',
-        params: { spaceSlug: entitySlug(space.title, space.id, 'space') },
+        params: { spaceSlug: entitySlug(space.title, 'space') },
       });
     } catch (err) {
       toast.error('Error', {

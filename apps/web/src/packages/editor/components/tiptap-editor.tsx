@@ -155,7 +155,7 @@ export function TiptapEditor({
         // Only apply default styling if no custom className is provided
         !className.includes('border-0') &&
           !className.includes('shadow-none') &&
-          'border rounded-xl shadow-sm border-indigo-300',
+          'border rounded-surface shadow-sm border-indigo-300',
         className
       )}
     >

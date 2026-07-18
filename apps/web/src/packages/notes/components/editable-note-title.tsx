@@ -61,7 +61,7 @@ export function EditableNoteTitle({ noteId, name, className }: EditableNoteTitle
           event.currentTarget.blur();
         }
       }}
-      className={cn('h-11 bg-card text-base font-semibold', className)}
+      className={cn('h-11 bg-card text-title font-semibold', className)}
     />
   );
 }

@@ -29,6 +29,18 @@ body {
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  /* Design-system radius roles (B·s). Four roles, one pill:
+     control → buttons, inputs, icon buttons, enter/rail keys
+     chip    → suggestion word tiles
+     surface → cards, composer, editor, stripe consoles, bubbles
+     pill    → rounded-full: primaries, dock/note tabs, chips */
+  --radius-control: 0.75rem; /* 12px */
+  --radius-chip: 0.875rem; /* 14px */
+  --radius-surface: 1.25rem; /* 20px */
+  /* Type role with no native Tailwind step: note & section titles (17px/600).
+     Other roles map to native utilities — text-xs 12 · text-sm 14 · text-base
+     16 · text-xl 20. */
+  --text-title: 1.0625rem;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -137,6 +149,45 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Scrollbars — calm, rounded, zinc, to match the quiet surface treatment.
+     A slim pill thumb on a transparent track; the 2px transparent border +
+     padding-box clip give it breathing room (an accessibility-friendly larger
+     target than a hairline). Elements that opt out with `scrollbar-width:none`
+     / `[&::-webkit-scrollbar]:hidden` (e.g. suggestion stripes) still hide,
+     since a utility class outweighs these element selectors. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-zinc-300) transparent;
+  }
+  .dark * {
+    scrollbar-color: var(--color-zinc-600) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    background-color: var(--color-zinc-300);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-zinc-400);
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    background-color: var(--color-zinc-600);
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-zinc-500);
   }
 }
 

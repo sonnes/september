@@ -65,7 +65,7 @@ export function SpaceDock({ currentSpaceId, mode, onModeChange }: SpaceDockProps
     const space = spaces.find(s => s.id === id);
     navigate({
       to: '/spaces/$spaceSlug',
-      params: { spaceSlug: entitySlug(space?.title, id, 'space') },
+      params: { spaceSlug: entitySlug(space?.title, 'space') },
     });
   };
 
@@ -74,7 +74,7 @@ export function SpaceDock({ currentSpaceId, mode, onModeChange }: SpaceDockProps
     const space = await createSpace(user.id);
     navigate({
       to: '/spaces/$spaceSlug',
-      params: { spaceSlug: entitySlug(space.title, space.id, 'space') },
+      params: { spaceSlug: entitySlug(space.title, 'space') },
     });
   };
 

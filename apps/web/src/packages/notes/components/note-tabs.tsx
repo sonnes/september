@@ -77,7 +77,7 @@ export function NoteTabs({
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+      <span className="shrink-0 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
         Notes
       </span>
 

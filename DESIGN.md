@@ -42,6 +42,20 @@ Design that serves this thesis: large calm targets, one confident accent, predic
 
 - **Accessibility floor:** Body text never below 14px; mobile inputs render at 16px (`text-base md:text-sm`) to avoid iOS zoom. Avoid all-caps for anything a user must read quickly.
 
+### App surface type roles (B·s, 2026-07-18)
+
+The interactive work surfaces (Talk, Notes) standardize on five type roles. Four map to native Tailwind steps; note/section titles get one semantic token because 17px has no native step.
+
+| Role                 | Utility      | Size / weight | Applies to                                    |
+| -------------------- | ------------ | ------------- | --------------------------------------------- |
+| Label / eyebrow      | `text-xs`    | 12 / 500–600  | Working-set labels, sidebar group labels      |
+| Body & UI            | `text-sm`    | 14 / 400–500  | Default text, buttons, tabs, dock, chips      |
+| Token / bubble       | `text-base`  | 16 / 400–500  | Suggestion word tiles, spoken-message bubbles |
+| Note / section title | `text-title` | 17 / 600      | Note title field, section headings            |
+| Composer input       | `text-xl`    | 20 / 400      | The message/note composer textarea            |
+
+`--text-title` (17px) is defined in `globals.css`. Do not reintroduce arbitrary sizes (`text-[15px]`, `text-[11px]`); snap to a role.
+
 ## Color
 
 - **Approach:** Restrained — zinc neutrals + one indigo accent, in the shadcn token model.
@@ -120,9 +134,18 @@ The sidebar is a **solid indigo panel** in light _and_ dark mode — September's
 - **Inset shell:** content floats as an inset card — `md:m-2 md:ml-0 md:rounded-xl md:shadow-sm` — over the `zinc-100` page, beside the indigo sidebar.
 - **Header:** `SidebarLayout.Header` = `h-16 border-b`, icon + title at `px-4`.
 - **Marketing / legal:** centered single column, `max-w-3xl`, `px-4 py-12 sm:px-6`; eyebrow → H1 → lede header block.
-- **Border radius:** base `--radius: 0.625rem` (10px). Scale: `sm` 6px · `md` 8px · `lg` 10px · `xl` 14px. Cards/sheets use `xl`; buttons/inputs use `md`; pills use `rounded-full`.
+- **Border radius (B·s roles, 2026-07-18):** four named roles plus the pill, defined as `--radius-*` tokens in `globals.css`. This replaces the old "buttons=`md`, cards=`xl`" mapping and collapses the 14 ad-hoc radii the app had drifted into.
+
+  | Role      | Utility           | Value | Applies to                                                     |
+  | --------- | ----------------- | ----- | -------------------------------------------------------------- |
+  | control   | `rounded-control` | 12px  | Buttons, inputs, icon/rail buttons, stripe submit (enter) key  |
+  | chip      | `rounded-chip`    | 14px  | Suggestion word tiles                                          |
+  | surface   | `rounded-surface` | 20px  | Cards, composer, editor, stripe consoles, message bubbles      |
+  | pill      | `rounded-full`    | full  | Primary actions, dock tabs, note tabs, pinned chips, suggestions |
+
+  The legacy shadcn `--radius-sm/md/lg/xl` scale still exists for overlays (dropdowns, popovers, dialogs), which stay slightly tighter than content surfaces on purpose. Nested micro-controls (tiptap toolbar buttons) keep `rounded-md` (8px) so they read as keys inside a surface.
 - **Surface treatment:** border **plus** a soft `shadow-sm` on cards and the inset shell — a gentle depth cue (a deliberate step warmer than a flat, border-only system).
-- **Scrollbars:** platform default (no custom thin-scrollbar styling today).
+- **Scrollbars:** custom, calm, and rounded — a slim zinc pill thumb (`zinc-300`, `zinc-400` on hover; `zinc-600`/`zinc-500` in dark) on a transparent track, `scrollbar-width: thin` + 12px WebKit width with a 3px transparent inset. Defined once in `globals.css`. Surfaces that deliberately hide their scrollbar (suggestion stripes) still do.
 - **Toasts:** Sonner, `position="top-center"`, `closeButton`, `duration={15000}` — long dwell so slow readers aren't rushed.
 
 ## Motion
@@ -149,11 +172,11 @@ September is operated under physical constraint. These are requirements, not nic
 
 All UI primitives live in `@/packages/ui` (`src/packages/ui/components`) — shadcn wrappers over Radix, composed with `cva`. Icons: `lucide-react`. No raw Radix or hand-rolled primitives in app code.
 
-- **Buttons:** `Button` with `rounded-md`, `transition-all`. Variants: `default` (indigo), `destructive`, `outline`, `secondary`, `ghost`, `link`. Sizes: `default` h-9 · `sm` h-8 · `lg` h-10 · `icon` / `icon-sm` / `icon-lg`. Prefer `lg`/`icon-lg` for primary and touch-critical actions.
+- **Buttons:** `Button` with `rounded-control` (12px), `transition-all`. Variants: `default` (indigo), `destructive`, `outline`, `secondary`, `ghost`, `link`. Sizes: `default` h-9 · `sm` h-8 · `lg` h-10 · `icon` / `icon-sm` / `icon-lg`. Prefer `lg`/`icon-lg` for primary and touch-critical actions. Pill actions (Speak, Voice-over, Reel, tabs) override with `rounded-full`.
 - **Suggestion pills:** `Suggestion` / `Suggestions` — `rounded-full`, `outline`, `size="sm"`, `px-4`, in a horizontal `ScrollArea`. The autocomplete/contextual-reply surface; the product's signature interaction. Keep targets comfortable and well-spaced.
-- **Cards:** `Card` — `rounded-xl border py-6 shadow-sm`, `gap-6`; `CardTitle` = `font-semibold leading-none`. Roomy, lightly elevated.
+- **Cards:** `Card` — `rounded-surface border py-6 shadow-sm`, `gap-6`; `CardTitle` = `font-semibold leading-none`. Roomy, lightly elevated.
 - **Badges:** `Badge` — `rounded-full border px-2 py-0.5 text-xs font-medium`. Variants `default`/`secondary`/`destructive`/`outline`.
-- **Inputs / fields:** `Input` = `h-9 rounded-md border shadow-xs`; mobile `text-base`, desktop `text-sm`. Compose with `Field`/`Form` (react-hook-form). Always pair with a visible `Label`.
+- **Inputs / fields:** `Input` = `h-9 rounded-control border shadow-xs`; mobile `text-base`, desktop `text-sm`. Compose with `Field`/`Form` (react-hook-form). Always pair with a visible `Label`.
 - **Callouts:** `Callout` — `rounded-lg border px-4 py-3 text-sm`, tones `info`/`warning`/`success`/`danger`, each with a lucide icon. Use for legal/explanatory notes.
 - **Sidebar nav:** `SidebarMenuButton` items (icon + label), collapsible groups via shadcn `Collapsible`, `SidebarGroupLabel` (`text-xs font-medium`), active state by `data-active`. Indigo surface throughout.
 - **Dropdowns / comboboxes:** shadcn `DropdownMenu` and `Command` + `Popover`.
@@ -176,6 +199,8 @@ All UI primitives live in `@/packages/ui` (`src/packages/ui/components`) — sha
 | 2026-06-12 | Base viewport = 13" iPad (1376×1032)   | Design primary screens for the 13" iPad Pro landscape; scale up/down from there. At/below the base the sidebar collapses to an icon rail (`useIsCompact`), reclaiming horizontal space for content on the primary target.    |
 | 2026-06-13 | Onboarding setup UI | Full-screen flow: sidebar hidden during onboarding, centered `max-w-2xl` column over a subtle radial indigo glow, clickable step circles, and a shared step chrome (all-caps 10px eyebrow/labels, 36px hero title, footer action bar). User-approved deviations from the system below; auto-rotating carousel and staggered motion were dropped to respect reading-pace/reduced-motion. |
 | 2026-06-27 | Onboarding redesigned around setup modes | Mode-centered flow (Welcome → About you → Choose setup → mode-specific Finish). Single column on `bg-zinc-100`, `max-w-4xl`: an **indigo hero header** band (brand + setup title) over a white `rounded-xl` surface card, with a **horizontal step indicator** at the top of the surface (numbered circles, check on completion, connectors fill indigo as you advance). Replaces the prior left indigo step-rail. User-approved. |
+| 2026-07-18 | Custom zinc scrollbars | Replaced platform-default scrollbars with a calm rounded zinc pill thumb on a transparent track (`globals.css`), consistent with the border/surface treatment. Slim but with an inset that keeps a usable target; opt-out surfaces (stripes) still hide. |
+| 2026-07-18 | Radius & type standardized to B·s roles | The app had drifted to 14 distinct radius utilities (`rounded-lg` ×78, `-full` ×76, `-md` ×60, plus `2xl`/`sm`/`xs`…) with same-role elements disagreeing, and arbitrary type sizes (`text-[15px]`, `text-[11px]`). Collapsed to four radius roles (control 12 · chip 14 · surface 20 · pill) + a five-role type scale, defined as `--radius-*`/`--text-title` tokens in `globals.css` and propagated app-wide through the `Button`/`Card`/`Input` primitives. Option **B·s** ("Soft Companion, type one step down") — rounder shapes for warmth, today's 14px body floor for density. User-approved (mock `docs/mocks/2026-07-18-design-system-options.html`). |
 | 2026-07-17 | Editorial serif + Tailwind pairs for exported reels only | The note-reel look (story player + MP4) is a deliberate, scoped deviation from the single-Noto / zinc+indigo system: a serif **display** headline (**Playfair Display** 500, the one non-Noto face, loaded only for this surface) over **Noto Sans** support text, on one of six solid **Tailwind colour pairs** (bg 900/950 · display 200 · support 50, default `stone`), with film grain, a soft vignette, and a "September" watermark. Scope is exported/shareable reel artifacts, **not** app UI — the app chrome stays Noto + zinc + indigo. Roles derive from punctuation deterministically so the DOM player and canvas exporter render identically. Source of truth: `packages/notes/lib/reel-theme.ts`. User-approved (mock `docs/mocks/2026-07-17-reel-redesign.html`). |
 
 ### Known gaps (honest state, not yet enforced)

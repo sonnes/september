@@ -71,7 +71,7 @@ describe('SpaceDock', () => {
     act(() => byText('Beta')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(mockNavigate).toHaveBeenCalledWith({
       to: '/spaces/$spaceSlug',
-      params: { spaceSlug: `beta-${betaId}` },
+      params: { spaceSlug: 'beta' },
     });
   });
 
@@ -85,7 +85,7 @@ describe('SpaceDock', () => {
     expect(mockCreateSpace).toHaveBeenCalledWith('user-1');
     expect(mockNavigate).toHaveBeenCalledWith({
       to: '/spaces/$spaceSlug',
-      params: { spaceSlug: `general-${newId}` },
+      params: { spaceSlug: 'general' },
     });
   });
 

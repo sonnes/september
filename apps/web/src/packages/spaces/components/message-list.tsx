@@ -28,7 +28,7 @@ function MessageItem({ message }: MessageItemProps) {
         onClick={handleClick}
         className={cn(
           'relative flex w-fit max-w-full min-w-0 cursor-pointer flex-col gap-2 overflow-hidden text-sm transition-opacity hover:opacity-90',
-          'group-[.is-user]:ml-auto group-[.is-user]:rounded-lg group-[.is-user]:bg-secondary group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:text-foreground',
+          'group-[.is-user]:ml-auto group-[.is-user]:rounded-surface group-[.is-user]:bg-secondary group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:text-foreground',
           'group-[.is-assistant]:text-foreground',
           isLoading && 'opacity-70'
         )}

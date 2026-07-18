@@ -14,36 +14,35 @@ function isSpaceMode(value: unknown): value is SpaceMode {
   return value === 'talk' || value === 'notes';
 }
 
-/** The last mode this space was opened in — defaults to talk. */
-export function lastSpaceMode(spaceId: string): SpaceMode {
+/**
+ * The last mode this space was opened in — defaults to talk. Keyed by the URL
+ * slug (not the id) so the `/spaces/$spaceSlug` redirect can decide the mode
+ * without first resolving the slug to an id.
+ */
+export function lastSpaceMode(spaceSlug: string): SpaceMode {
   if (typeof window === 'undefined') return 'talk';
   try {
-    const stored = localStorage.getItem(`${MODE_STORAGE_PREFIX}${spaceId}`);
+    const stored = localStorage.getItem(`${MODE_STORAGE_PREFIX}${spaceSlug}`);
     return isSpaceMode(stored) ? stored : 'talk';
   } catch {
     return 'talk';
   }
 }
 
-/** Remember the mode a space was last opened in. */
-export function rememberSpaceMode(spaceId: string, mode: SpaceMode): void {
+/** Remember the mode a space was last opened in, keyed by its URL slug. */
+export function rememberSpaceMode(spaceSlug: string, mode: SpaceMode): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(`${MODE_STORAGE_PREFIX}${spaceId}`, mode);
+    localStorage.setItem(`${MODE_STORAGE_PREFIX}${spaceSlug}`, mode);
   } catch {
     // private mode / quota — the choice just doesn't persist
   }
 }
 
-export function notesRouteParams(
-  spaceTitle: string | undefined,
-  spaceId: string,
-  noteTitle?: string,
-  noteId?: string
-) {
+export function notesRouteParams(spaceTitle: string | undefined, noteTitle?: string) {
   return {
-    spaceSlug: entitySlug(spaceTitle, spaceId, 'space'),
-    ...(noteId ? { noteSlug: entitySlug(noteTitle, noteId, 'note') } : {}),
+    spaceSlug: entitySlug(spaceTitle, 'space'),
+    ...(noteTitle !== undefined ? { noteSlug: entitySlug(noteTitle, 'note') } : {}),
   };
 }
 
@@ -51,17 +50,15 @@ export function isNotesRouteCanonical({
   spaceSlug,
   noteSlug,
   spaceTitle,
-  spaceId,
   noteTitle,
-  noteId,
+  hasNote,
 }: {
   spaceSlug: string;
   noteSlug?: string;
   spaceTitle?: string;
-  spaceId: string;
   noteTitle?: string;
-  noteId?: string;
+  hasNote?: boolean;
 }) {
-  const canonical = notesRouteParams(spaceTitle, spaceId, noteTitle, noteId);
-  return canonical.spaceSlug === spaceSlug && (!noteId || canonical.noteSlug === noteSlug);
+  const canonical = notesRouteParams(spaceTitle, hasNote ? (noteTitle ?? '') : undefined);
+  return canonical.spaceSlug === spaceSlug && (!hasNote || canonical.noteSlug === noteSlug);
 }

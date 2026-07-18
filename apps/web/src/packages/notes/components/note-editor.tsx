@@ -108,7 +108,7 @@ export function NoteEditor({
   return (
     <div className={cn('h-full w-full', className)}>
       <div className="flex h-full flex-col gap-4">
-        <div className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-card shadow-sm">
+        <div className="flex flex-1 flex-col overflow-hidden rounded-surface border bg-card shadow-sm">
           <div className="flex-1 overflow-hidden">
             <TiptapEditor
               content={content}
@@ -120,7 +120,7 @@ export function NoteEditor({
         </div>
 
         {variant === 'full' && (
-          <div className="rounded-lg border bg-card/80 p-3 shadow-sm sm:p-4">
+          <div className="rounded-surface border bg-card/80 p-3 shadow-sm sm:p-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap items-center gap-2">
                 <Button

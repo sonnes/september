@@ -79,7 +79,7 @@ function RailButton({
       title={label}
       onClick={onClick}
       disabled={disabled}
-      className="flex size-11 items-center justify-center rounded-md border bg-card text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="flex size-11 items-center justify-center rounded-control border bg-card text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {children}
     </button>
@@ -99,7 +99,7 @@ function TranscriptBubble({ message }: { message: Message }) {
         onClick={play}
         aria-label={isPlaying ? 'Pause message' : 'Play message'}
         className={cn(
-          'flex max-w-[85%] items-start gap-2 rounded-lg rounded-br-sm bg-accent px-4 py-2.5 text-left text-accent-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          'flex max-w-[85%] items-start gap-2 rounded-surface rounded-br-sm bg-accent px-4 py-2.5 text-left text-accent-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           isLoading && 'opacity-70'
         )}
       >
@@ -153,19 +153,21 @@ export function SpacePageInner({
   // notes in the sub-dock; when open it replaces the note editor.
   const [aboutOpen, setAboutOpen] = useState(false);
   const { notes } = useNotes({ spaceId });
-  const selectedNote = notes.find(note => note.id === selectedNoteId) ?? notes[0];
+  // Prefer the explicitly-selected note, then the note the URL slug resolved to
+  // (`noteId` arrives a render before `selectedNoteId` state catches up on a
+  // cold load), then the first note. Deriving from `noteId` here keeps the
+  // canonical-URL effect from briefly redirecting to notes[0] mid-resolve.
+  const selectedNote = notes.find(note => note.id === (selectedNoteId ?? noteId)) ?? notes[0];
 
   const { expandTab } = useChatPanel();
-  const currentSpaceSlug = entitySlug(space?.title, spaceId, 'space');
-  const currentNoteSlug = selectedNote
-    ? entitySlug(selectedNote.name, selectedNote.id, 'note')
-    : undefined;
+  const currentSpaceSlug = entitySlug(space?.title, 'space');
+  const currentNoteSlug = selectedNote ? entitySlug(selectedNote.name, 'note') : undefined;
 
   // Remember the last mode this space was opened in, so /spaces/$spaceSlug
   // reopens where the user left off.
   useEffect(() => {
-    rememberSpaceMode(spaceId, mode);
-  }, [spaceId, mode]);
+    rememberSpaceMode(routeSpaceSlug ?? currentSpaceSlug, mode);
+  }, [routeSpaceSlug, currentSpaceSlug, mode]);
 
   useEffect(() => {
     setSelectedNoteId(noteId ?? null);
@@ -190,7 +192,7 @@ export function SpacePageInner({
       if (mode !== 'notes' || !id) return;
 
       const note = noteOverride ?? notes.find(item => item.id === id);
-      const nextNoteSlug = entitySlug(note?.name, id, 'note');
+      const nextNoteSlug = entitySlug(note?.name, 'note');
       if (routeSpaceSlug === currentSpaceSlug && noteSlug === nextNoteSlug) return;
 
       navigate({
@@ -357,6 +359,27 @@ export function SpacePageInner({
     [handleSelectedNoteIdChange, selectedNote, spaceId, setText]
   );
 
+  const handleAppendToAbout = useCallback(
+    async (draft: string) => {
+      const trimmed = draft.trim();
+      if (!trimmed) return;
+
+      try {
+        const existing = space?.context ?? '';
+        const nextContext = existing.trim() ? `${existing.trimEnd()}\n\n${trimmed}` : trimmed;
+        await updateSpace(spaceId, { context: nextContext });
+        setText('');
+        inputRef.current?.focus();
+        toast.success('Added to About');
+      } catch (err) {
+        toast.error('Error', {
+          description: err instanceof Error ? err.message : 'Failed to add text to About',
+        });
+      }
+    },
+    [space?.context, spaceId, setText]
+  );
+
   const handleCreateNote = useCallback(async () => {
     try {
       const note = await createNote({ space_id: spaceId, content: '' });
@@ -374,7 +397,7 @@ export function SpacePageInner({
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         if (mode === 'notes') {
-          handleAppendToNote(text);
+          (aboutOpen ? handleAppendToAbout : handleAppendToNote)(text);
         } else {
           handleSubmit(text);
         }
@@ -382,7 +405,7 @@ export function SpacePageInner({
       }
       trackKeystroke();
     },
-    [text, mode, handleAppendToNote, handleSubmit, trackKeystroke]
+    [text, mode, aboutOpen, handleAppendToAbout, handleAppendToNote, handleSubmit, trackKeystroke]
   );
 
   const undo = useCallback(() => {
@@ -447,13 +470,15 @@ export function SpacePageInner({
   // Recently spoken messages. Tap one to replay it.
   const spoken = (messages ?? []).filter(m => m.type === 'user').slice(-6);
 
-  const handleComposerAction = mode === 'notes' ? handleAppendToNote : handleSubmit;
-  const composerButtonLabel = mode === 'notes' ? 'Add to note' : 'Speak';
+  const notesAppend = aboutOpen ? handleAppendToAbout : handleAppendToNote;
+  const handleComposerAction = mode === 'notes' ? notesAppend : handleSubmit;
+  const composerButtonLabel =
+    mode === 'notes' ? (aboutOpen ? 'Add to About' : 'Add to note') : 'Speak';
   const composerButtonDisabled = !text.trim() || (mode === 'talk' && status !== 'idle');
   const ComposerIcon = mode === 'notes' ? FileText : Volume2;
 
   const composerConsole = (
-    <div className="flex shrink-0 flex-col gap-3 rounded-lg bg-muted/40 p-3">
+    <div className="flex shrink-0 flex-col gap-3 rounded-surface bg-muted/40 p-3">
       {mode === 'notes' && (
         <NoteTabs
           notes={notes}
@@ -469,14 +494,20 @@ export function SpacePageInner({
       )}
       <Suggestions
         chatId={spaceId}
-        historyText={mode === 'notes' ? (selectedNote?.content ?? '') : undefined}
+        historyText={
+          mode === 'notes'
+            ? aboutOpen
+              ? (space?.context ?? '')
+              : (selectedNote?.content ?? '')
+            : undefined
+        }
         onPin={handlePin}
         onSubmit={handleComposerAction}
       />
 
       <div className="flex flex-col gap-2">
         <Autocomplete />
-        <div className="rounded-2xl border bg-background p-3 shadow-sm transition-[box-shadow,border-color] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/20">
+        <div className="rounded-surface border bg-background p-3 shadow-sm transition-[box-shadow,border-color] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/20">
           <textarea
             ref={inputRef}
             autoFocus
@@ -485,9 +516,13 @@ export function SpacePageInner({
             onChange={e => setText(e.target.value)}
             onKeyDown={handleTextareaKeyDown}
             placeholder={
-              mode === 'notes' ? 'Type text to add to this note...' : 'Type a message...'
+              mode === 'notes'
+                ? aboutOpen
+                  ? 'Type text to add to About...'
+                  : 'Type text to add to this note...'
+                : 'Type a message...'
             }
-            className="max-h-60 w-full resize-none overflow-y-auto bg-transparent text-2xl font-medium leading-snug text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
+            className="max-h-60 w-full resize-none overflow-y-auto bg-transparent text-xl leading-snug text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
           />
           <div className="mt-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-1.5">
@@ -554,24 +589,11 @@ export function SpacePageInner({
   );
 
   const notesColumn = (
-    <div className="flex h-full min-h-0 w-full flex-col gap-4">
+    <div className="flex min-h-0 flex-1 w-full flex-col gap-4">
       {aboutOpen ? (
         <>
           <SpaceAbout spaceId={spaceId} className="min-h-0 flex-1" />
-          {/* Tab strip so the About surface can hand back to the notes. */}
-          <div className="shrink-0 rounded-lg bg-muted/40 p-3">
-            <NoteTabs
-              notes={notes}
-              selectedId={selectedNoteId}
-              aboutActive
-              onSelectAbout={() => setAboutOpen(true)}
-              onSelect={note => {
-                setAboutOpen(false);
-                handleSelectedNoteIdChange(note.id, note);
-              }}
-              onCreate={handleCreateNote}
-            />
-          </div>
+          {composerConsole}
         </>
       ) : (
         <>

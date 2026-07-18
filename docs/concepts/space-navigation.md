@@ -23,12 +23,22 @@ Everything lives under `/spaces`:
 (reserved: /spaces/$spaceSlug/agent)
 ```
 
+Slugs are **id-free** — `/spaces/school-homework-help`, not
+`…-<uuid>`. `entitySlug(title)` just slugifies the title; resolving a slug
+back to an entity happens reactively against the loaded collection via
+`useSpaceIdFromSlug` / `useNoteIdFromSlug` (which fall back to a legacy UUID
+suffix so old links still resolve). Because resolution needs data that hydrates
+asynchronously, the mode routes show a brief `LoadingState` until the slug
+resolves and redirect to `/spaces` if it never matches.
+
 The `$spaceSlug` layout (`routes/_app/spaces/$spaceSlug/route.tsx`) wraps the
 editor, speech, and chat-panel providers **once** for all modes. The
-`$spaceSlug` index route has no UI: its `beforeLoad` reads `lastSpaceMode(id)`
-and redirects. `SpacePageInner` renders both Talk and Notes and calls
-`rememberSpaceMode(spaceId, mode)` on mount/mode change (localStorage key
-`september:space-mode:<id>`, default `talk`).
+`$spaceSlug` index route has no UI: its `beforeLoad` reads
+`lastSpaceMode(spaceSlug)` and redirects — last-mode memory is keyed by the URL
+**slug**, not the id, so the redirect needs no data lookup. `SpacePageInner`
+renders both Talk and Notes and calls `rememberSpaceMode(spaceSlug, mode)` on
+mount/mode change (localStorage key `september:space-mode:<slug>`, default
+`talk`).
 
 Legacy `/talk`, `/talk/$spaceSlug`, `/notes/$spaceSlug`, and
 `/notes/$spaceSlug/$noteSlug` are permanent `beforeLoad` redirects into the new
@@ -60,7 +70,10 @@ it collapses to an "All notes" list. Its first tab is **About** — the space's
 context, editable as a note in the full editor (`SpaceAbout`,
 `routes/_app/spaces/-space-about.tsx`) rather than buried in the right panel.
 The About surface is bound to `space.context` (still the field `use-stripes`
-reads to seed suggestions), so editing it feeds Talk. Per-note actions
+reads to seed suggestions), so editing it feeds Talk. It carries the same
+composer console as a real note — the `NoteTabs` strip, suggestions, and the
+composer input — with the input appending to `space.context` (button reads "Add
+to About"); only its storage target differs from a note. Per-note actions
 (voice-over, download, reel) live in the notes editor header as `NoteActions`,
 visible exactly when the note is.
 

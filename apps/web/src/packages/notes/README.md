@@ -23,6 +23,11 @@ These return live data from IndexedDB and re-render on changes.
 const { notes, isLoading, error } = useNotes({ searchQuery, spaceId });
 const allSpaceNotes = useNotes({ scope: 'space-notes', searchQuery }); // notes across all spaces
 const { note, isLoading, error } = useNote(id);
+
+// Resolve an id-free note slug within a space. Reactive — `noteId` is undefined
+// until the space's notes load and a name match is found (legacy `…-<uuid>`
+// slugs still resolve). `noteIdFromSlug(slug, notes)` is the pure form.
+const { noteId, isLoading } = useNoteIdFromSlug(spaceId, noteSlug);
 ```
 
 ### Mutations
