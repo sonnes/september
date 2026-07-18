@@ -36,6 +36,8 @@ export { addManualPhrase, removePhrase, setPhrasePinned, replaceAiPhrases } from
 
 // Pure helpers
 export { topPhrases, dedupeAgainstPinned, isStale, PHRASES_STALE_AFTER } from './lib/phrases';
+export { historyPage, HISTORY_PAGE_SIZE } from './lib/history';
+export type { HistoryPage } from './lib/history';
 
 // Types
 export type { Space, Message, CreateMessageData, SavedPhrase } from './types';

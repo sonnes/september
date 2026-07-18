@@ -3,10 +3,8 @@
 import { useEffect, useState } from 'react';
 
 import {
-  Clock,
   type LucideIcon,
   MessageSquareQuote,
-  Mic,
   PanelRightClose,
   Pin,
   Plus,
@@ -19,16 +17,12 @@ import { useAccount } from '@/packages/account';
 import { useEditorContext } from '@/packages/editor';
 import { cn } from '@/packages/shared';
 import {
-  MessageList,
   type SavedPhrase,
   addManualPhrase,
   removePhrase,
   setPhrasePinned,
-  useMessages,
   useSavedPhrases,
 } from '@/packages/spaces';
-import { SpeechSettings } from '@/packages/speech';
-import type { VoiceSettingsFormData } from '@/packages/speech';
 import { Button } from '@/packages/ui/components/button';
 
 import { type ChatPanelTab, useChatPanel } from './use-chat-panel';
@@ -43,23 +37,18 @@ interface PanelRailProps {
 }
 
 const TAB_META: Record<ChatPanelTab, { title: string; icon: LucideIcon }> = {
-  history: { title: 'History', icon: Clock },
   phrases: { title: 'Phrases', icon: MessageSquareQuote },
-  voice: { title: 'Voice', icon: Mic },
 };
 
-// Frequency-ordered: what you reach for most mid-conversation comes first.
-// Context left the panel — it now lives as the space's About note.
-const TAB_ORDER: ChatPanelTab[] = ['history', 'phrases', 'voice'];
+// Voice settings moved to the dedicated /voice page; History to the main
+// column; Context to the space's About note.
+const TAB_ORDER: ChatPanelTab[] = ['phrases'];
 
 function TabBody({ tab, chatId }: { tab: ChatPanelTab; chatId: string }) {
   switch (tab) {
-    case 'history':
-      return <HistoryTab chatId={chatId} />;
     case 'phrases':
-      return <PhrasesTab spaceId={chatId} />;
     default:
-      return <VoiceTab />;
+      return <PhrasesTab spaceId={chatId} />;
   }
 }
 
@@ -145,58 +134,6 @@ export function PanelRail({ chatId, onOpenDisplay }: PanelRailProps) {
         </button>
       </nav>
     </>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// History tab
-// ---------------------------------------------------------------------------
-
-function HistoryTab({ chatId }: { chatId: string }) {
-  const { messages, isLoading } = useMessages({ spaceId: chatId });
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-6">
-        <p className="text-sm text-muted-foreground">Loading messages…</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-4">
-      <MessageList messages={messages} />
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Voice tab
-// ---------------------------------------------------------------------------
-
-// One Voice tab replaces the old Provider / Voice / Speech trio — SpeechSettings
-// renders all three sections under its own tab bar when no `section` is given.
-function VoiceTab() {
-  const { account, updateAccount } = useAccount();
-
-  const handleSubmit = async (data: VoiceSettingsFormData) => {
-    await updateAccount({
-      ai_speech: {
-        provider: data.provider,
-        voice_id: data.voice_id,
-        voice_name: data.voice_name,
-        model_id: data.model_id,
-        settings: data.settings,
-      },
-    });
-  };
-
-  if (!account) return null;
-
-  return (
-    <div className="@container p-4 space-y-6">
-      <SpeechSettings account={account} onSubmit={handleSubmit} />
-    </div>
   );
 }
 

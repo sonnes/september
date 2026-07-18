@@ -1,18 +1,23 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { Play, Search } from 'lucide-react';
+import { createFileRoute } from '@tanstack/react-router';
+import { ChevronLeft, ChevronRight, Mic, Play, Plus, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useAccount } from '@/packages/account';
 import { useAISettings } from '@/packages/ai';
 import { useAudioPlayer, type Audio } from '@/packages/audio';
+import { VoiceCloneForm } from '@/packages/cloning';
 import { inferSetupMode } from '@/packages/onboarding';
 import type { AIProvider, SpeechConfig, Voice } from '@/packages/shared';
 import {
   KokoroModelCard,
+  SpeechProvider,
   VoicesList,
+  paginateVoices,
+  sortClonedFirst,
   useSpeech,
   useVoiceFetching,
 } from '@/packages/speech';
@@ -28,8 +33,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/packages/ui/components/select';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/packages/ui/components/sheet';
 import { Spinner } from '@/packages/ui/components/spinner';
 
+import { PageHeader, PageShell, PageTitle } from '@/components/layout';
 import {
   LabeledSlider,
   MoreOptions,
@@ -39,6 +53,9 @@ import {
 } from '@/components/settings/feature-section';
 import { featureProviderOptions, poweredByNote } from '@/components/settings/feature-providers';
 import { useAutosave } from '@/components/settings/use-autosave';
+import SidebarLayout from '@/components/sidebar/layout';
+
+import { pageTitle } from '@/lib/seo';
 
 type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs' | 'kokoro';
 
@@ -53,7 +70,40 @@ const GEMINI_TTS_MODELS = [
   { id: 'gemini-2.5-pro-preview-tts', name: 'Pro TTS (highest quality)' },
 ];
 
-export default function VoiceForm() {
+const VOICES_PER_PAGE = 5;
+
+export const Route = createFileRoute('/_app/voice')({
+  head: () => ({
+    meta: [
+      { title: pageTitle('Voice') },
+      { name: 'description', content: 'Choose the voice that speaks for you, or clone your own.' },
+    ],
+  }),
+  component: VoicePage,
+});
+
+function VoicePage() {
+  return (
+    <>
+      <SidebarLayout.Header>
+        <PageHeader breadcrumbs={[{ label: 'Voice' }]} />
+      </SidebarLayout.Header>
+      <SidebarLayout.Content>
+        <PageShell width="form">
+          <PageTitle
+            title="Voice"
+            description="Choose the voice that speaks for you — or clone your own."
+          />
+          <SpeechProvider>
+            <VoicePicker />
+          </SpeechProvider>
+        </PageShell>
+      </SidebarLayout.Content>
+    </>
+  );
+}
+
+function VoicePicker() {
   const { account } = useAccount();
   const { updateSpeechConfig } = useAISettings();
   const { generateSpeech } = useSpeech();
@@ -62,21 +112,32 @@ export default function VoiceForm() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [cloneOpen, setCloneOpen] = useState(false);
 
   const speech = account?.ai_speech;
   const provider = (speech?.provider ?? 'browser') as SpeechEngineId;
   const apiKey = account?.ai_providers?.[provider as keyof typeof account.ai_providers]?.api_key;
-  const { voices, isLoading: isLoadingVoices } = useVoiceFetching(provider, apiKey);
+  const { voices, isLoading: isLoadingVoices, refetch } = useVoiceFetching(provider, apiKey);
 
   const filteredVoices = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    if (!term) return voices;
-    return voices.filter(voice =>
-      [voice.name, voice.gender, voice.accent, voice.description]
-        .filter(Boolean)
-        .some(value => String(value).toLowerCase().includes(term))
-    );
+    const matched = term
+      ? voices.filter(voice =>
+          [voice.name, voice.gender, voice.accent, voice.description]
+            .filter(Boolean)
+            .some(value => String(value).toLowerCase().includes(term))
+        )
+      : voices;
+    return sortClonedFirst(matched);
   }, [voices, searchTerm]);
+
+  // A new search or provider resets to the first page.
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, provider]);
+
+  const pageData = paginateVoices(filteredVoices, page, VOICES_PER_PAGE);
 
   if (!account) {
     return <LoadingState variant="inline" label="Loading voice settings..." />;
@@ -122,6 +183,21 @@ export default function VoiceForm() {
     }
   };
 
+  // Clones live on ElevenLabs — switch to it, select the new voice, and surface it.
+  const handleCloned = async (voice: { voice_id: string; name: string }) => {
+    setCloneOpen(false);
+    setSearchTerm('');
+    setPage(1);
+    await save({
+      provider: 'elevenlabs',
+      voice_id: voice.voice_id,
+      voice_name: voice.name,
+      model_id: '',
+    });
+    await refetch('elevenlabs', '');
+    toast.success(`"${voice.name}" is ready and now speaking for you.`);
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <PoweredByLine
@@ -134,23 +210,23 @@ export default function VoiceForm() {
 
       {provider === 'kokoro' && <KokoroModelCard />}
 
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">
-            {speech?.voice_name ? (
-              <>
-                Speaking as <span className="font-medium text-foreground">{speech.voice_name}</span>.
-              </>
-            ) : (
-              'No voice picked yet.'
-            )}
-          </p>
-          <Button type="button" variant="outline" onClick={preview} disabled={isPreviewing}>
-            {isPreviewing ? <Spinner className="size-4" /> : <Play className="size-4" />}
-            Preview
-          </Button>
-        </div>
+      <div className="flex items-center justify-between gap-3 rounded-surface border bg-accent/40 px-4 py-3">
+        <p className="text-sm text-muted-foreground">
+          {speech?.voice_name ? (
+            <>
+              Speaking as <span className="font-medium text-foreground">{speech.voice_name}</span>.
+            </>
+          ) : (
+            'No voice picked yet.'
+          )}
+        </p>
+        <Button type="button" variant="outline" onClick={preview} disabled={isPreviewing}>
+          {isPreviewing ? <Spinner className="size-4" /> : <Play className="size-4" />}
+          Preview
+        </Button>
+      </div>
 
+      <section className="flex flex-col gap-3">
         <div className="relative">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -163,16 +239,77 @@ export default function VoiceForm() {
           />
         </div>
 
+        <Sheet open={cloneOpen} onOpenChange={setCloneOpen}>
+          <SheetTrigger asChild>
+            <button
+              type="button"
+              className="flex items-center gap-3 rounded-surface border border-dashed border-primary/50 bg-accent/40 px-4 py-3 text-left transition-colors outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            >
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-control border bg-background text-primary">
+                <Mic className="size-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium text-foreground">Clone your voice</span>
+                <span className="block text-xs text-muted-foreground">
+                  Record or upload a few samples — we'll build a voice that sounds like you.
+                </span>
+              </span>
+              <span className="flex shrink-0 items-center gap-1.5 text-sm font-medium text-primary">
+                <Plus className="size-4" />
+                Clone
+              </span>
+            </button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-2xl">
+            <SheetHeader>
+              <SheetTitle>Clone your voice</SheetTitle>
+              <SheetDescription>
+                Record or upload samples to create a personal voice. It appears here once it's ready.
+              </SheetDescription>
+            </SheetHeader>
+            <div className="px-4">
+              <VoiceCloneForm onCreated={handleCloned} />
+            </div>
+          </SheetContent>
+        </Sheet>
+
         {isLoadingVoices ? (
           <LoadingState variant="inline" label="Loading voices..." />
-        ) : filteredVoices.length > 0 ? (
-          <div className="max-h-96 overflow-y-auto">
+        ) : pageData.total > 0 ? (
+          <>
             <VoicesList
-              voices={filteredVoices}
+              voices={pageData.items}
               selectedVoiceId={speech?.voice_id}
               onSelectVoice={selectVoice}
             />
-          </div>
+            {pageData.pageCount > 1 && (
+              <div className="flex items-center justify-between gap-3 pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={pageData.page <= 1}
+                >
+                  <ChevronLeft className="size-4" />
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground tabular-nums" aria-live="polite">
+                  Page {pageData.page} of {pageData.pageCount}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(p => Math.min(pageData.pageCount, p + 1))}
+                  disabled={pageData.page >= pageData.pageCount}
+                >
+                  Next
+                  <ChevronRight className="size-4" />
+                </Button>
+              </div>
+            )}
+          </>
         ) : (
           <p className="py-4 text-sm text-muted-foreground">
             No voices found. Try a different search.
@@ -196,7 +333,7 @@ export default function VoiceForm() {
         />
       )}
 
-      <MoreOptions label="More voice options">
+      <MoreOptions label="More voice options" defaultOpen>
         {provider === 'browser' && (
           <>
             <LabeledSlider
@@ -261,9 +398,7 @@ export default function VoiceForm() {
               <Checkbox
                 id="speaker-boost"
                 checked={speech?.settings?.speaker_boost ?? true}
-                onCheckedChange={checked =>
-                  save({ settings: { speaker_boost: checked === true } })
-                }
+                onCheckedChange={checked => save({ settings: { speaker_boost: checked === true } })}
               />
               <Label htmlFor="speaker-boost" className="text-sm font-normal">
                 Speaker boost — clearer voice, less background noise
@@ -308,7 +443,6 @@ export default function VoiceForm() {
             </Select>
           </OptionField>
         )}
-
       </MoreOptions>
     </div>
   );

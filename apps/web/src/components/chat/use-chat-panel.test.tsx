@@ -15,42 +15,44 @@ const STORAGE_KEY = 'september:chat-panel';
 describe('loadPanelState', () => {
   beforeEach(() => vi.stubGlobal('localStorage', memoryStorage()));
 
-  it('defaults to the rail on history with no stored state', () => {
-    expect(loadPanelState()).toEqual({ state: 'rail', activeTab: 'history' });
+  it('defaults to the rail on phrases with no stored state', () => {
+    expect(loadPanelState()).toEqual({ state: 'rail', activeTab: 'phrases' });
   });
 
-  it('migrates the legacy open panel to expanded/history', () => {
+  it('migrates the legacy open panel to expanded/phrases', () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ open: true, widthPct: 44 }));
-    expect(loadPanelState()).toEqual({ state: 'expanded', activeTab: 'history' });
+    expect(loadPanelState()).toEqual({ state: 'expanded', activeTab: 'phrases' });
   });
 
   it('migrates the legacy closed panel to the rail', () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ open: false, widthPct: 44 }));
-    expect(loadPanelState()).toEqual({ state: 'rail', activeTab: 'history' });
+    expect(loadPanelState()).toEqual({ state: 'rail', activeTab: 'phrases' });
   });
 
   it('reads back the new shape and ignores unknown tabs', () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: 'expanded', activeTab: 'voice' }));
-    expect(loadPanelState()).toEqual({ state: 'expanded', activeTab: 'voice' });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: 'expanded', activeTab: 'phrases' }));
+    expect(loadPanelState()).toEqual({ state: 'expanded', activeTab: 'phrases' });
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: 'expanded', activeTab: 'nope' }));
-    expect(loadPanelState()).toEqual({ state: 'expanded', activeTab: 'history' });
+    expect(loadPanelState()).toEqual({ state: 'expanded', activeTab: 'phrases' });
   });
 
-  it('migrates the retired provider/speech tabs to voice', () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: 'expanded', activeTab: 'provider' }));
-    expect(loadPanelState()).toEqual({ state: 'expanded', activeTab: 'voice' });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: 'expanded', activeTab: 'speech' }));
-    expect(loadPanelState()).toEqual({ state: 'expanded', activeTab: 'voice' });
+  it('falls back to phrases for the retired provider/speech/voice tabs', () => {
+    for (const tab of ['provider', 'speech', 'voice']) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: 'expanded', activeTab: tab }));
+      expect(loadPanelState()).toEqual({ state: 'expanded', activeTab: 'phrases' });
+    }
   });
 
-  it('falls back to history for the retired context tab (now the About note)', () => {
+  it('falls back to the default tab for the retired history/context tabs', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: 'expanded', activeTab: 'history' }));
+    expect(loadPanelState()).toEqual({ state: 'expanded', activeTab: 'phrases' });
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: 'expanded', activeTab: 'context' }));
-    expect(loadPanelState()).toEqual({ state: 'expanded', activeTab: 'history' });
+    expect(loadPanelState()).toEqual({ state: 'expanded', activeTab: 'phrases' });
   });
 
   it('falls back cleanly on malformed json', () => {
     localStorage.setItem(STORAGE_KEY, '{not json');
-    expect(loadPanelState()).toEqual({ state: 'rail', activeTab: 'history' });
+    expect(loadPanelState()).toEqual({ state: 'rail', activeTab: 'phrases' });
   });
 });
 
@@ -94,22 +96,22 @@ describe('ChatPanelProvider actions', () => {
   it('starts on the rail', () => {
     mount();
     expect(api.state).toBe('rail');
-    expect(api.activeTab).toBe('history');
+    expect(api.activeTab).toBe('phrases');
   });
 
   it('expandTab opens the panel on that tab', () => {
     mount();
-    act(() => api.expandTab('voice'));
+    act(() => api.expandTab('phrases'));
     expect(api.state).toBe('expanded');
-    expect(api.activeTab).toBe('voice');
+    expect(api.activeTab).toBe('phrases');
   });
 
   it('collapse returns to the rail but keeps the active tab', () => {
     mount();
-    act(() => api.expandTab('voice'));
+    act(() => api.expandTab('phrases'));
     act(() => api.collapse());
     expect(api.state).toBe('rail');
-    expect(api.activeTab).toBe('voice');
+    expect(api.activeTab).toBe('phrases');
   });
 
   it('toggle flips between rail and expanded', () => {

@@ -11,7 +11,6 @@ describe('settings nav', () => {
   it('uses user vocabulary for the feature sections', () => {
     expect(SETTINGS_SECTIONS.map(s => s.title)).toEqual([
       'Setup',
-      'Voice',
       'Writing help',
       'Listening',
       'Account',
@@ -21,7 +20,6 @@ describe('settings nav', () => {
   it('routes each section to the new paths', () => {
     expect(SETTINGS_SECTIONS.map(s => s.href)).toEqual([
       '/settings',
-      '/settings/voice',
       '/settings/writing',
       '/settings/listening',
       '/settings/account',

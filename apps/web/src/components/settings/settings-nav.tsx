@@ -2,14 +2,7 @@
 
 import { Link, useLocation } from '@tanstack/react-router';
 
-import {
-  Lightbulb,
-  Mic,
-  SlidersHorizontal,
-  User,
-  Volume2,
-  type LucideIcon,
-} from 'lucide-react';
+import { Lightbulb, Mic, SlidersHorizontal, User, type LucideIcon } from 'lucide-react';
 
 import { cn } from '@/packages/shared';
 
@@ -26,12 +19,6 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     description: 'How September runs, and its connections.',
     href: '/settings',
     icon: SlidersHorizontal,
-  },
-  {
-    title: 'Voice',
-    description: 'The voice that speaks for you.',
-    href: '/settings/voice',
-    icon: Volume2,
   },
   {
     title: 'Writing help',

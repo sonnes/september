@@ -36,7 +36,7 @@ export const getNavigationData = () => ({
     },
     {
       title: 'Voice',
-      url: '/clone',
+      url: '/voice',
       icon: Mic,
     },
     {

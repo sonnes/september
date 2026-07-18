@@ -32,10 +32,6 @@ vi.mock('@/packages/editor', () => ({
   useEditorContext: () => ({ text: '', setText: vi.fn() }),
 }));
 
-vi.mock('@/packages/speech', () => ({
-  SpeechSettings: () => null,
-}));
-
 let container: HTMLDivElement;
 let root: Root;
 
@@ -59,7 +55,7 @@ function render(onOpenDisplay = vi.fn()) {
       </ChatPanelProvider>
     )
   );
-  return onOpenDisplay;
+  return { onOpenDisplay };
 }
 
 function railButton(label: string) {
@@ -67,47 +63,53 @@ function railButton(label: string) {
 }
 
 describe('PanelRail', () => {
-  it('renders the three tab icons plus Display', () => {
+  it('renders the tab icons plus the Display action', () => {
     render();
-    for (const label of ['History', 'Phrases', 'Voice', 'Display']) {
+    for (const label of ['Phrases', 'Display']) {
       expect(railButton(label)).toBeTruthy();
     }
   });
 
-  it('no longer renders the retired Provider, Speech, and Context tabs', () => {
+  it('no longer renders History in the rail — it lives in the transcript', () => {
+    render();
+    expect(railButton('History')).toBeNull();
+  });
+
+  it('no longer renders the retired Provider, Speech, Voice, and Context tabs', () => {
     render();
     expect(railButton('Provider')).toBeNull();
     expect(railButton('Speech')).toBeNull();
+    expect(railButton('Voice')).toBeNull();
     expect(railButton('Context')).toBeNull();
   });
 
   it('expands to the clicked tab and marks it pressed', () => {
     render();
-    const voice = railButton('Voice')!;
-    expect(voice.getAttribute('aria-pressed')).toBe('false');
-    act(() => voice.dispatchEvent(new MouseEvent('click', { bubbles: true })));
-    expect(railButton('Voice')!.getAttribute('aria-pressed')).toBe('true');
+    const phrases = railButton('Phrases')!;
+    expect(phrases.getAttribute('aria-pressed')).toBe('false');
+    act(() => phrases.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(railButton('Phrases')!.getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector('[aria-label="Collapse panel"]')).toBeTruthy();
   });
 
   it('collapses when the active tab icon is clicked again', () => {
     render();
-    act(() => railButton('Voice')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
-    act(() => railButton('Voice')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
-    expect(railButton('Voice')!.getAttribute('aria-pressed')).toBe('false');
+    act(() => railButton('Phrases')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    act(() => railButton('Phrases')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(railButton('Phrases')!.getAttribute('aria-pressed')).toBe('false');
     expect(container.querySelector('[aria-label="Collapse panel"]')).toBeNull();
   });
 
   it('collapses on Escape', () => {
     render();
-    act(() => railButton('History')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    act(() => railButton('Phrases')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(container.querySelector('[aria-label="Collapse panel"]')).toBeTruthy();
     act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
     expect(container.querySelector('[aria-label="Collapse panel"]')).toBeNull();
   });
 
   it('Display opens the second screen without expanding the panel', () => {
-    const onOpenDisplay = render();
+    const { onOpenDisplay } = render();
     act(() => railButton('Display')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(onOpenDisplay).toHaveBeenCalled();
     expect(container.querySelector('[aria-label="Collapse panel"]')).toBeNull();

@@ -11,6 +11,10 @@ import { VoiceCloneForm } from '@/packages/cloning';
 
 // Self-contained — no provider needed. Calls useUpload and useRecording internally.
 <VoiceCloneForm />
+
+// Optional onCreated fires after a clone is made — the Voice page uses it to
+// switch to ElevenLabs and select the new voice. Receives { voice_id, name }.
+<VoiceCloneForm onCreated={voice => selectVoice(voice)} />
 ```
 
 ### ElevenLabs functions

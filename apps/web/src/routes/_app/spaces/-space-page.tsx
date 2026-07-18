@@ -3,9 +3,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { TvIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from '@tanstack/react-router';
 import {
+  ChevronLeft,
+  ChevronRight,
   Delete,
   FileText,
-  HistoryIcon,
   Loader2,
   MessageSquareQuote,
   MessagesSquare,
@@ -44,6 +45,7 @@ import {
   EditableSpaceTitle,
   type Message,
   addManualPhrase,
+  historyPage,
   updateSpace,
   useCreateAudioMessage,
   useGenerateSpaceContext,
@@ -60,6 +62,10 @@ import { SidebarTrigger } from '@/packages/ui/components/sidebar';
 
 import { SpaceAbout } from './-space-about';
 import { type SpaceMode, rememberSpaceMode, routeForSpaceMode } from './-space-mode';
+
+// The transcript pages through your spoken history newest-first — a page turn
+// back through older messages rather than one endless scroll.
+const TRANSCRIPT_PAGE_SIZE = 8;
 
 function RailButton({
   label,
@@ -152,6 +158,8 @@ export function SpacePageInner({
   // The space's "About" note (bound to space context) is a sibling of the real
   // notes in the sub-dock; when open it replaces the note editor.
   const [aboutOpen, setAboutOpen] = useState(false);
+  // Which transcript page is requested (0 = newest). Clamped into range below.
+  const [transcriptPageInput, setTranscriptPageInput] = useState(0);
   const { notes } = useNotes({ spaceId });
   // Prefer the explicitly-selected note, then the note the URL slug resolved to
   // (`noteId` arrives a render before `selectedNoteId` state catches up on a
@@ -467,8 +475,25 @@ export function SpacePageInner({
     [spaceId, user]
   );
 
-  // Recently spoken messages. Tap one to replay it.
-  const spoken = (messages ?? []).filter(m => m.type === 'user').slice(-6);
+  // Spoken history, paged newest-first. Tap a bubble to replay it.
+  const spokenAll = (messages ?? []).filter(m => m.type === 'user');
+  const {
+    pageCount: transcriptPages,
+    page: transcriptPage,
+    slice: spoken,
+  } = historyPage(spokenAll, transcriptPageInput, TRANSCRIPT_PAGE_SIZE);
+
+  // Snap back to the newest page whenever a new message lands (e.g. after you
+  // Speak) or the space changes, so you never send from behind a stale page.
+  const newestSpokenId = spokenAll[spokenAll.length - 1]?.id;
+  useEffect(() => {
+    setTranscriptPageInput(0);
+  }, [newestSpokenId, spaceId]);
+
+  // Keep the requested page in range as messages come and go.
+  useEffect(() => {
+    if (transcriptPageInput !== transcriptPage) setTranscriptPageInput(transcriptPage);
+  }, [transcriptPageInput, transcriptPage]);
 
   const notesAppend = aboutOpen ? handleAppendToAbout : handleAppendToNote;
   const handleComposerAction = mode === 'notes' ? notesAppend : handleSubmit;
@@ -560,28 +585,62 @@ export function SpacePageInner({
   // Compose column — shared between split and full-width layouts
   const composeColumn = (
     <div className="flex h-full w-full flex-col gap-4">
-      {/* Transcript — your spoken messages, anchored to the bottom */}
-      <div className="flex min-h-0 flex-1 flex-col justify-end gap-2.5 overflow-y-auto py-4">
-        {spoken.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-            <div className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              <MessagesSquare className="size-6" aria-hidden />
-            </div>
-            <p className="max-w-xs text-sm text-muted-foreground">
-              Build a sentence below, then tap Speak. What you say appears here.
-            </p>
-          </div>
-        ) : (
-          spoken.map((message, i) => <TranscriptBubble key={message.id || i} message={message} />)
+      {/* Transcript — your spoken history, paged, newest anchored to the bottom */}
+      <div className="flex min-h-0 flex-1 flex-col">
+        {transcriptPages > 1 && (
+          <nav
+            aria-label="Transcript pages"
+            className="flex shrink-0 items-center justify-between gap-2 pb-2"
+          >
+            <button
+              type="button"
+              aria-label="Older messages"
+              onClick={() => setTranscriptPageInput(transcriptPage + 1)}
+              disabled={transcriptPage >= transcriptPages - 1}
+              className="inline-flex min-h-9 items-center gap-1 rounded-full border bg-card px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ChevronLeft className="size-4" aria-hidden />
+              Older
+            </button>
+            <span className="text-xs text-muted-foreground" aria-live="polite">
+              Page {transcriptPage + 1} of {transcriptPages}
+            </span>
+            <button
+              type="button"
+              aria-label="Newer messages"
+              onClick={() => setTranscriptPageInput(transcriptPage - 1)}
+              disabled={transcriptPage === 0}
+              className="inline-flex min-h-9 items-center gap-1 rounded-full border bg-card px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Newer
+              <ChevronRight className="size-4" aria-hidden />
+            </button>
+          </nav>
         )}
 
-        {/* Now-speaking viewer — borrowed from the old /talk page: live word
-            highlighting for the currently-playing message; tap a word to seek. */}
-        {current?.alignment && (
-          <TextViewer alignment={current.alignment}>
-            <TextViewerWords className="wrap-break-word text-foreground" />
-          </TextViewer>
-        )}
+        <div className="flex min-h-0 flex-1 flex-col justify-end gap-2.5 overflow-y-auto py-4">
+          {spokenAll.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+              <div className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                <MessagesSquare className="size-6" aria-hidden />
+              </div>
+              <p className="max-w-xs text-sm text-muted-foreground">
+                Build a sentence below, then tap Speak. What you say appears here.
+              </p>
+            </div>
+          ) : (
+            spoken.map((message, i) => <TranscriptBubble key={message.id || i} message={message} />)
+          )}
+
+          {/* Now-speaking viewer — borrowed from the old /talk page: live word
+              highlighting for the currently-playing message; tap a word to seek.
+              Only meaningful on the newest page. */}
+          {transcriptPage === 0 && current?.alignment && (
+            <TextViewer alignment={current.alignment}>
+              <TextViewerWords className="wrap-break-word text-foreground" />
+            </TextViewer>
+          )}
+        </div>
       </div>
 
       {composerConsole}
@@ -614,15 +673,6 @@ export function SpacePageInner({
       <SidebarLayout.Header>
         {/* Mobile: branded top bar with logo, space title, and actions */}
         <MobileNav title={`${space?.title ?? 'Space'} - ${mode === 'notes' ? 'Notes' : 'Talk'}`}>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="View history"
-            className="size-7"
-            onClick={() => expandTab('history')}
-          >
-            <HistoryIcon className="size-4" />
-          </Button>
           <Button
             variant="ghost"
             size="icon"

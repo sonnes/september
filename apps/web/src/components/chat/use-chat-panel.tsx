@@ -13,7 +13,7 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-export type ChatPanelTab = 'history' | 'phrases' | 'voice';
+export type ChatPanelTab = 'phrases';
 
 /** `rail` = collapsed icon rail; `expanded` = the 320px tool card is open. */
 export type ChatPanelState = 'rail' | 'expanded';
@@ -35,16 +35,8 @@ export interface ChatPanelValue {
 // ---------------------------------------------------------------------------
 
 const STORAGE_KEY = 'september:chat-panel';
-const TABS: ChatPanelTab[] = ['history', 'phrases', 'voice'];
-
-/**
- * Retired tabs map to survivors: Provider/Speech folded into Voice; Context
- * moved out to the space's About note, so a stored 'context' falls back to
- * History via isTab.
- */
-function normalizeTab(value: unknown): unknown {
-  return value === 'provider' || value === 'speech' ? 'voice' : value;
-}
+const TABS: ChatPanelTab[] = ['phrases'];
+const DEFAULT_TAB: ChatPanelTab = 'phrases';
 
 // ---------------------------------------------------------------------------
 // Persistence — migrates the legacy `{ open, widthPct }` shape on load
@@ -55,14 +47,14 @@ function isTab(value: unknown): value is ChatPanelTab {
 }
 
 export function loadPanelState(): { state: ChatPanelState; activeTab: ChatPanelTab } {
-  const fallback = { state: 'rail' as const, activeTab: 'history' as const };
+  const fallback = { state: 'rail' as const, activeTab: DEFAULT_TAB };
   if (typeof window === 'undefined') return fallback;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return fallback;
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    const normalized = normalizeTab(parsed.activeTab);
-    const activeTab = isTab(normalized) ? normalized : 'history';
+    // Retired tabs (voice/provider/speech/history/context) fall back to phrases.
+    const activeTab = isTab(parsed.activeTab) ? parsed.activeTab : DEFAULT_TAB;
     if (parsed.state === 'rail' || parsed.state === 'expanded') {
       return { state: parsed.state, activeTab };
     }

@@ -127,9 +127,17 @@ export function FeatureToggleRow({
 }
 
 // Progressive disclosure for the tuning controls a page works without.
-export function MoreOptions({ label, children }: { label: string; children: ReactNode }) {
+export function MoreOptions({
+  label,
+  children,
+  defaultOpen,
+}: {
+  label: string;
+  children: ReactNode;
+  defaultOpen?: boolean;
+}) {
   return (
-    <Collapsible className="border-t">
+    <Collapsible defaultOpen={defaultOpen} className="border-t">
       <CollapsibleTrigger className="group flex min-h-11 w-full items-center gap-1.5 py-2 text-sm font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50">
         <ChevronRight className="size-3.5 transition-transform group-data-[state=open]:rotate-90" />
         {label}

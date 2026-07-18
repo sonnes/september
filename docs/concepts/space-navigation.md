@@ -80,13 +80,17 @@ visible exactly when the note is.
 ## The right rail
 
 `PanelRail` (`components/chat/right-panel.tsx`) is an always-present ~3.5rem
-icon rail on the right (desktop only): **History · Phrases · Voice · divider ·
-Display**. The three settings tabs (Provider/Voice/Speech) collapse into one
-**Voice** tab (`SpeechSettings` renders all three sections under its own tab
-bar); **Context** left the panel for the About note. Tapping a tab expands a
-fixed 320px tool card; tapping the active tab, the collapse button, or `Esc`
+icon rail on the right (desktop only): **Phrases · Voice · divider · Display**.
+Phrases and Voice are tabs that expand a fixed 320px tool card; the three
+settings tabs (Provider/Voice/Speech) collapse into one **Voice** tab
+(`SpeechSettings` renders all three sections under its own tab bar). Display is
+an action, not a tab. History left the panel for the Talk transcript (the
+compose column pages your spoken messages newest-first, `TRANSCRIPT_PAGE_SIZE`
+per page, via `historyPage`); **Context** left it for the About note. Tapping a
+tab expands its card; tapping the active tab, the collapse button, or `Esc`
 returns to the rail; `⌘/Ctrl-.` toggles it. State (`rail` | `expanded` +
 `activeTab`) persists to `september:chat-panel` via `useChatPanel`, migrating
 the legacy `{ open, widthPct }` shape and mapping retired tabs
-(`provider`/`speech` → `voice`, `context` → `history`). On mobile the rail is
-hidden and the expanded card is a full-screen overlay opened from `MobileNav`.
+(`provider`/`speech` → `voice`, `history`/`context` → `phrases`). On mobile the
+rail is hidden and the expanded card is a full-screen overlay opened from
+`MobileNav`.

@@ -28,7 +28,12 @@ const CloneVoiceSchema = z.object({
 
 type CloneVoiceFormData = z.infer<typeof CloneVoiceSchema>;
 
-export function VoiceCloneForm() {
+export interface VoiceCloneFormProps {
+  // Called after a clone is created — the page uses it to select the new voice.
+  onCreated?: (voice: { voice_id: string; name: string }) => void;
+}
+
+export function VoiceCloneForm({ onCreated }: VoiceCloneFormProps = {}) {
   const [activeTab, setActiveTab] = useState('upload');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { account } = useAccount();
@@ -79,6 +84,7 @@ export function VoiceCloneForm() {
 
       await Promise.allSettled(fileIds.map(id => deleteVoiceSample(id)));
       form.reset();
+      onCreated?.(result);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create voice clone';
       toast.error(errorMessage);

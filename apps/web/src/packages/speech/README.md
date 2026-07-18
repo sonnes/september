@@ -14,11 +14,15 @@ import {
   KokoroModelCard,
   useSpeech,
   useVoiceFetching,
+  paginateVoices,
+  sortClonedFirst,
 } from '@/packages/speech';
-import type { UseSpeechReturn, VoiceSettingsFormData } from '@/packages/speech';
+import type { UseSpeechReturn, VoiceSettingsFormData, VoicePage } from '@/packages/speech';
 ```
 
-`SpeechSettings` is a standalone form component — it does **not** require a Dialog wrapper and can be embedded directly in any layout (e.g., a side panel tab). The `SpeechSettingsModal` wraps it in a Dialog for the current chat page; both exports coexist. The Settings → Voice page composes its own autosaving form from `VoicesList`, `KokoroModelCard`, and `useVoiceFetching` instead of using `SpeechSettings`.
+`SpeechSettings` is a standalone form component — it does **not** require a Dialog wrapper and can be embedded directly in any layout (e.g., a side panel tab). The `SpeechSettingsModal` wraps it in a Dialog for the current chat page; both exports coexist. The unified **Voice** page (`/voice`) composes its own autosaving picker from `VoicesList`, `KokoroModelCard`, `useVoiceFetching`, and the `paginateVoices`/`sortClonedFirst` list helpers instead of using `SpeechSettings`.
+
+`sortClonedFirst(voices)` returns a stable copy with cloned voices first; `paginateVoices(voices, page, pageSize)` returns a `VoicePage` (`{ items, page, pageCount, total }`) with the 1-based `page` clamped into range. Both are pure helpers in `lib/paginate.ts`.
 
 Everything else — hooks, providers, schemas — is internal.
 

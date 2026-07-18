@@ -3,6 +3,7 @@ export { SpeechSettingsModal } from './components/speech-settings-modal';
 export { SpeechSettings } from './components/speech-settings';
 export { VoicesList } from './components/voices-list';
 export { KokoroModelCard } from './components/kokoro-model-card';
+export { paginateVoices, sortClonedFirst, type VoicePage } from './lib/paginate';
 export { useSpeech } from './hooks/use-speech';
 export { useVoiceFetching } from './hooks/use-voice-fetching';
 export type { UseSpeechReturn } from './hooks/use-speech';
