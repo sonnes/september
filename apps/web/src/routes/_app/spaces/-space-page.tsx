@@ -10,8 +10,6 @@ import {
   MessageSquareQuote,
   MessagesSquare,
   MicIcon,
-  Plug,
-  SlidersHorizontal,
   Trash2,
   Undo2,
   Volume2,
@@ -560,29 +558,11 @@ export function SpacePageInner({
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Speech provider"
-            className="size-7"
-            onClick={() => expandTab('provider')}
-          >
-            <Plug className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
             aria-label="Voice"
             className="size-7"
             onClick={() => expandTab('voice')}
           >
             <MicIcon className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Speech settings"
-            className="size-7"
-            onClick={() => expandTab('speech')}
-          >
-            <SlidersHorizontal className="size-4" />
           </Button>
           <Button
             variant="ghost"

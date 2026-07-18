@@ -67,11 +67,17 @@ function railButton(label: string) {
 }
 
 describe('PanelRail', () => {
-  it('renders the six tab icons plus Display', () => {
+  it('renders the four tab icons plus Display', () => {
     render();
-    for (const label of ['History', 'Provider', 'Voice', 'Speech', 'Context', 'Phrases', 'Display']) {
+    for (const label of ['History', 'Phrases', 'Voice', 'Context', 'Display']) {
       expect(railButton(label)).toBeTruthy();
     }
+  });
+
+  it('no longer renders the retired Provider and Speech tabs', () => {
+    render();
+    expect(railButton('Provider')).toBeNull();
+    expect(railButton('Speech')).toBeNull();
   });
 
   it('expands to the clicked tab and marks it pressed', () => {

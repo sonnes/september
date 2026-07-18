@@ -13,7 +13,7 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-export type ChatPanelTab = 'history' | 'provider' | 'voice' | 'speech' | 'context' | 'phrases';
+export type ChatPanelTab = 'history' | 'phrases' | 'voice' | 'context';
 
 /** `rail` = collapsed icon rail; `expanded` = the 320px tool card is open. */
 export type ChatPanelState = 'rail' | 'expanded';
@@ -35,7 +35,12 @@ export interface ChatPanelValue {
 // ---------------------------------------------------------------------------
 
 const STORAGE_KEY = 'september:chat-panel';
-const TABS: ChatPanelTab[] = ['history', 'provider', 'voice', 'speech', 'context', 'phrases'];
+const TABS: ChatPanelTab[] = ['history', 'phrases', 'voice', 'context'];
+
+/** Provider and Speech merged into the single Voice tab — map old stored values. */
+function normalizeTab(value: unknown): unknown {
+  return value === 'provider' || value === 'speech' ? 'voice' : value;
+}
 
 // ---------------------------------------------------------------------------
 // Persistence — migrates the legacy `{ open, widthPct }` shape on load
@@ -52,7 +57,8 @@ export function loadPanelState(): { state: ChatPanelState; activeTab: ChatPanelT
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return fallback;
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    const activeTab = isTab(parsed.activeTab) ? parsed.activeTab : 'history';
+    const normalized = normalizeTab(parsed.activeTab);
+    const activeTab = isTab(normalized) ? normalized : 'history';
     if (parsed.state === 'rail' || parsed.state === 'expanded') {
       return { state: parsed.state, activeTab };
     }

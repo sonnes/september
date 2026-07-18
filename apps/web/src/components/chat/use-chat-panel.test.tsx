@@ -36,6 +36,13 @@ describe('loadPanelState', () => {
     expect(loadPanelState()).toEqual({ state: 'expanded', activeTab: 'history' });
   });
 
+  it('migrates the retired provider/speech tabs to voice', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: 'expanded', activeTab: 'provider' }));
+    expect(loadPanelState()).toEqual({ state: 'expanded', activeTab: 'voice' });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: 'expanded', activeTab: 'speech' }));
+    expect(loadPanelState()).toEqual({ state: 'expanded', activeTab: 'voice' });
+  });
+
   it('falls back cleanly on malformed json', () => {
     localStorage.setItem(STORAGE_KEY, '{not json');
     expect(loadPanelState()).toEqual({ state: 'rail', activeTab: 'history' });

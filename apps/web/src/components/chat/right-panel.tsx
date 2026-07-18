@@ -10,9 +10,7 @@ import {
   Mic,
   PanelRightClose,
   Pin,
-  Plug,
   Plus,
-  SlidersHorizontal,
   Sparkles,
   Tv,
   X,
@@ -49,14 +47,13 @@ interface PanelRailProps {
 
 const TAB_META: Record<ChatPanelTab, { title: string; icon: LucideIcon }> = {
   history: { title: 'History', icon: Clock },
-  provider: { title: 'Provider', icon: Plug },
-  voice: { title: 'Voice', icon: Mic },
-  speech: { title: 'Speech', icon: SlidersHorizontal },
-  context: { title: 'Context', icon: FileText },
   phrases: { title: 'Phrases', icon: MessageSquareQuote },
+  voice: { title: 'Voice', icon: Mic },
+  context: { title: 'Context', icon: FileText },
 };
 
-const TAB_ORDER: ChatPanelTab[] = ['history', 'provider', 'voice', 'speech', 'context', 'phrases'];
+// Frequency-ordered: what you reach for most mid-conversation comes first.
+const TAB_ORDER: ChatPanelTab[] = ['history', 'phrases', 'voice', 'context'];
 
 function TabBody({ tab, chatId }: { tab: ChatPanelTab; chatId: string }) {
   switch (tab) {
@@ -67,7 +64,7 @@ function TabBody({ tab, chatId }: { tab: ChatPanelTab; chatId: string }) {
     case 'phrases':
       return <PhrasesTab spaceId={chatId} />;
     default:
-      return <VoiceTab section={tab} />;
+      return <VoiceTab />;
   }
 }
 
@@ -182,7 +179,9 @@ function HistoryTab({ chatId }: { chatId: string }) {
 // Voice tab
 // ---------------------------------------------------------------------------
 
-function VoiceTab({ section }: { section: 'provider' | 'voice' | 'speech' }) {
+// One Voice tab replaces the old Provider / Voice / Speech trio — SpeechSettings
+// renders all three sections under its own tab bar when no `section` is given.
+function VoiceTab() {
   const { account, updateAccount } = useAccount();
 
   const handleSubmit = async (data: VoiceSettingsFormData) => {
@@ -201,7 +200,7 @@ function VoiceTab({ section }: { section: 'provider' | 'voice' | 'speech' }) {
 
   return (
     <div className="@container p-4 space-y-6">
-      <SpeechSettings account={account} onSubmit={handleSubmit} section={section} />
+      <SpeechSettings account={account} onSubmit={handleSubmit} />
     </div>
   );
 }
