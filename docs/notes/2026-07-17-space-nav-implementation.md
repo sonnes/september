@@ -48,3 +48,27 @@ restate the plan.
   but kept until the Phase 6 cleanup sweep. Its test stays green meanwhile.
 - Mobile mode switching now uses the always-visible dock `ModeGroup` (the
   old `md:hidden` ModeSwitch is gone).
+
+## Phase 3 — Notes sub-dock + editor-header actions
+
+- **`NoteActions`** (`packages/notes/components/note-actions.tsx`) holds the
+  voice-over/download/reel logic lifted from the retired `SpaceNotesPanel`.
+- **Reel popover, no new dependency.** The plan called for a Popover, but the
+  repo has no popover primitive and `package.json`/lockfile are already dirty
+  from unrelated work — so `NoteActions` uses a small dependency-free
+  disclosure (absolute-positioned card, close on Esc / outside pointerdown)
+  instead of adding `@radix-ui/react-popover`.
+- **`NoteActions` lives inside `SpaceNotes`**, not the page — `SpaceNotes`
+  already derives the selected note, so its editor-header row is
+  `EditableNoteTitle + NoteActions`. The page just renders `SpaceNotes` +
+  `NoteTabs` + composer.
+- **`NoteTabs`** (`packages/notes/components/note-tabs.tsx`) is the notes
+  working-set strip; it renders inside the composer console (above
+  suggestions) only when the space has notes. Selection calls `onSelect(note)`
+  → the page's existing `handleSelectedNoteIdChange` (which navigates).
+- **Overflow**: measured (ResizeObserver) like the dock; when the tab row
+  doesn't fit it collapses to an "All notes" list (title + last-updated) built
+  with the same dependency-free disclosure.
+- **`shouldShowSpaceSidePanel` removed**; the right panel now shows for both
+  modes whenever `open` (the notes-specific `SpaceNotesPanel` block is gone).
+  The talk panel's drag-resize stays until Phase 4.

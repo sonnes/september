@@ -8,10 +8,6 @@ export function routeForSpaceMode(
   return mode === 'notes' ? '/spaces/$spaceSlug/notes' : '/spaces/$spaceSlug/talk';
 }
 
-export function shouldShowSpaceSidePanel(_mode: SpaceMode, open: boolean): boolean {
-  return open;
-}
-
 const MODE_STORAGE_PREFIX = 'september:space-mode:';
 
 function isSpaceMode(value: unknown): value is SpaceMode {

@@ -10,8 +10,9 @@ Local-first note authoring, space-scoped notes, and slide presentation for Septe
 | -------------------- | ---------------------------------------------------------------------------------- |
 | `NoteEditor`         | Rich text editor with file upload, slides preview, and optional autosave           |
 | `EditableNoteTitle`  | Inline editable note title                                                         |
-| `SpaceNotes`         | In-place note editor for a Talk space, autosaved as the user writes                |
-| `SpaceNotesPanel`    | Right-panel note selector with voice-over, audio download, and reel export actions |
+| `SpaceNotes`         | In-place note editor for a Talk space (title + `NoteActions` header), autosaved    |
+| `NoteActions`        | Per-note editor-header actions: voice-over play/stop, audio download, reel popover |
+| `NoteTabs`           | Working-set strip of note tabs above the composer; overflow collapses to a list    |
 | `SlidesPresentation` | Slide-by-slide presentation with voice-over and autoplay                           |
 
 ### Live-query hooks
@@ -60,13 +61,14 @@ placeholder and generates the first title from note content on the first save.
 
 ## Space notes
 
-`SpaceNotes` renders the note editor as the writing surface. `SpaceNotesPanel` renders the note
-selector in the app right panel; the selected note's voice-over and audio download actions are icon
-buttons in that panel.
+`SpaceNotes` renders the note editor as the writing surface, with `EditableNoteTitle` and
+`NoteActions` (voice-over · download · reel) as its editor header. `NoteTabs` renders the note
+selector as a working-set strip directly above the composer — the same slot pinned phrase rows
+occupy in Talk — and navigates to `/spaces/$spaceSlug/notes/$noteSlug` on selection.
 
 ## Reel export
 
-`SpaceNotesPanel` can expand an inline export panel for the selected note and export it as a
+`NoteActions` opens a reel export popover for the selected note and exports it as a
 vertical MP4 reel. Export requires a speech provider that returns character timing — ElevenLabs (exact) or Kokoro
 (estimated, fully on-device); see `reelTimingSupported` in `lib/reel.ts`. The browser generates the
 audio and timing with the user's configured voice, renders 1080x1920 PNG caption frames with Canvas, and muxes those frames with the
@@ -75,10 +77,29 @@ audio through `ffmpeg.wasm`.
 Caption text is sized and wrapped by the shared pretext engine (`computePretextLayout` from
 `@/packages/audio`) — each caption chunk fills the frame at the largest font that fits and wraps to
 multiple lines, so on-screen text matches the live preview instead of a fixed font. The active word
-is highlighted; already-spoken words dim.
+swaps to the pair's contrasting tint; already-spoken words dim.
+
+### Reel theme (`lib/reel-theme.ts`)
+
+`reel-theme.ts` is the single source both renderers (the DOM story player and the canvas exporter)
+consume, so the exported MP4 matches the in-app preview. It holds:
+
+- `REEL_PAIRS` — six Tailwind colour pairs (`bg` 900/950, `display` 200, `support` 50) as hex plus a
+  `bgClass` twin for the DOM side. `DEFAULT_PAIR_KEY` is `stone`; `reelPair(key)` looks one up.
+- `captionRoles(captions)` — the deterministic role rule: a chunk is `display` when it is the first
+  chunk or the previous chunk ended a sentence (`. ! ?`), otherwise `support`. `ROLE_SPECS` gives each
+  role its font (Playfair Display 500 / Noto Sans 700), line-height, max-font ratio, and box-height
+  ratio; `roleColors(pair, role)` gives the base and active word colours.
+- Chrome + word-state constants (grain opacity, vignette geometry, watermark ratios,
+  `SPOKEN_OPACITY`/`UNSPOKEN_OPACITY`) shared by both renderers.
+- `ensureReelFonts()` — both renderers await it before their first layout so `measureText`/`fillText`
+  and the DOM fit use the loaded serif (`document.fonts.ready` alone can miss an unfetched face).
+
+The export panel offers a six-swatch colour picker (default `stone`); the choice reaches both the
+story player and the MP4 via `pairKey` and is not persisted.
 
 The wasm core loads only when the user exports a reel. If browser rendering or `ffmpeg.wasm` fails,
-the inline panel reports the failure and leaves the note unchanged. Cross-origin isolation headers are
+the export popover reports the failure and leaves the note unchanged. Cross-origin isolation headers are
 already required by the app for `SharedArrayBuffer`; those same headers keep a future multithreaded
 ffmpeg core possible.
 

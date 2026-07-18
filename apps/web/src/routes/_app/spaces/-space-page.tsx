@@ -35,8 +35,8 @@ import {
 import { Autocomplete, useEditorContext } from '@/packages/editor';
 import {
   type Note,
+  NoteTabs,
   SpaceNotes,
-  SpaceNotesPanel,
   createNote,
   updateNote,
   useNotes,
@@ -61,12 +61,7 @@ import { Button } from '@/packages/ui/components/button';
 import { Separator } from '@/packages/ui/components/separator';
 import { SidebarTrigger } from '@/packages/ui/components/sidebar';
 
-import {
-  type SpaceMode,
-  rememberSpaceMode,
-  routeForSpaceMode,
-  shouldShowSpaceSidePanel,
-} from './-space-mode';
+import { type SpaceMode, rememberSpaceMode, routeForSpaceMode } from './-space-mode';
 
 function RailButton({
   label,
@@ -346,6 +341,18 @@ export function SpacePageInner({
     [handleSelectedNoteIdChange, selectedNote, spaceId, setText]
   );
 
+  const handleCreateNote = useCallback(async () => {
+    try {
+      const note = await createNote({ space_id: spaceId, content: '' });
+      handleSelectedNoteIdChange(note.id, note);
+      toast.success('Note created');
+    } catch (err) {
+      toast.error('Error', {
+        description: err instanceof Error ? err.message : 'Failed to create note',
+      });
+    }
+  }, [spaceId, handleSelectedNoteIdChange]);
+
   const handleTextareaKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -450,7 +457,6 @@ export function SpacePageInner({
 
   // Recently spoken messages. Tap one to replay it.
   const spoken = (messages ?? []).filter(m => m.type === 'user').slice(-6);
-  const showSidePanel = shouldShowSpaceSidePanel(mode, open);
 
   const handleComposerAction = mode === 'notes' ? handleAppendToNote : handleSubmit;
   const composerButtonLabel = mode === 'notes' ? 'Add to note' : 'Speak';
@@ -459,6 +465,14 @@ export function SpacePageInner({
 
   const composerConsole = (
     <div className="flex shrink-0 flex-col gap-3 rounded-lg bg-muted/40 p-3">
+      {mode === 'notes' && notes.length > 0 && (
+        <NoteTabs
+          notes={notes}
+          selectedId={selectedNoteId}
+          onSelect={note => handleSelectedNoteIdChange(note.id, note)}
+          onCreate={handleCreateNote}
+        />
+      )}
       <Suggestions
         chatId={spaceId}
         historyText={mode === 'notes' ? (selectedNote?.content ?? '') : undefined}
@@ -548,13 +562,6 @@ export function SpacePageInner({
         selectedId={selectedNoteId}
         onSelectedIdChange={handleSelectedNoteIdChange}
       />
-      <div className="md:hidden">
-        <SpaceNotesPanel
-          spaceId={spaceId}
-          selectedId={selectedNoteId}
-          onSelectedIdChange={handleSelectedNoteIdChange}
-        />
-      </div>
       {composerConsole}
     </div>
   );
@@ -652,21 +659,8 @@ export function SpacePageInner({
 
       {/* Panel — detached from the inset (the main container) and rendered as
           its own card in the sidebar flex row. Full-screen overlay on mobile, a
-          resizable side card on desktop. */}
-      {mode === 'notes' && showSidePanel && (
-        <SidebarLayout.RightPanel>
-          <div className="fixed inset-x-2 top-2 bottom-2 z-40 hidden shrink-0 grow-0 flex-col overflow-hidden rounded-xl border bg-background shadow-sm md:static md:inset-auto md:my-2 md:mr-2 md:flex md:w-80">
-            <SpaceNotesPanel
-              spaceId={spaceId}
-              className="h-full"
-              selectedId={selectedNoteId}
-              onSelectedIdChange={handleSelectedNoteIdChange}
-            />
-          </div>
-        </SidebarLayout.RightPanel>
-      )}
-
-      {mode === 'talk' && showSidePanel && (
+          resizable side card on desktop. Present in every mode. */}
+      {open && (
         <SidebarLayout.RightPanel>
           <div
             style={{ flexBasis: `${widthPct}%` }}

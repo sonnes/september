@@ -1,7 +1,9 @@
 // Components
 export { NoteEditor } from './components/note-editor';
 export { EditableNoteTitle } from './components/editable-note-title';
-export { SpaceNotes, SpaceNotesPanel } from './components/space-notes';
+export { SpaceNotes } from './components/space-notes';
+export { NoteActions } from './components/note-actions';
+export { NoteTabs } from './components/note-tabs';
 export { SlidesPresentation } from './components/slides-presentation';
 
 // Live-query hooks
