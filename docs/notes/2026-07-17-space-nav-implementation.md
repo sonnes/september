@@ -114,3 +114,29 @@ restate the plan.
   right rail); marked the exploration plan implemented.
 - `shouldShowSpaceSidePanel` was already removed in Phase 3.
 - Final gate: lint clean, 661 tests pass, build + prerender succeed.
+
+## Post-plan refinements (right panel)
+
+Two user-approved refinements landed after the initial 6-tab build:
+
+- **Voice merge (6→4→3 tabs).** Provider/Voice/Speech were three rail tabs
+  onto one `SpeechSettings` form; collapsed to a single **Voice** tab by
+  rendering `SpeechSettings` with no `section` prop (its own tab bar shows the
+  three sections). Did **not** build the bespoke "live sliders first / identity
+  card / tuning collapsed" layout from the parts mock — that's polish left for
+  later; the structural merge is what shipped. Retired `provider`/`speech`
+  stored tab values migrate to `voice`.
+- **Context → About note (drop Context tab → 3 tabs).** Deviated from the
+  plan's `NoteSchema.kind` + `useContextNote` + data migration. Instead the
+  About tab is a first-class `NoteTabs` tab bound to `space.context` via a small
+  `SpaceAbout` editor (the old `ContextTab` logic relocated). Rationale:
+  `space.context` is read in exactly one place (`use-stripes.ts`), so keeping it
+  the source of truth makes this UX-only with zero reader/migration risk — no
+  new note rows, no drift, suggestions untouched. Upgrade to a real
+  `kind: 'context'` note later if wanted. `AudioOutputDeviceSelector` also moved
+  from the composer's left tool rail to beside Speak (talk mode).
+
+Gate after refinements: lint clean (0 errors), 665 tests pass, build +
+prerender succeed. Committed as `feat(web): merge Provider/Voice/Speech into
+one Voice tab` and `feat(web): move space context into the notes sub-dock as an
+About note`.

@@ -56,17 +56,24 @@ The strip directly above the composer input holds the mode's working set:
 pinned phrase rows in Talk (from `Suggestions`), the `NoteTabs` strip in Notes.
 `NoteTabs` (`@/packages/notes`) renders a tab per note and navigates to
 `/spaces/$spaceSlug/notes/$noteSlug` on selection; when the tabs no longer fit
-it collapses to an "All notes" list. Per-note actions (voice-over, download,
-reel) live in the notes editor header as `NoteActions`, visible exactly when
-the note is.
+it collapses to an "All notes" list. Its first tab is **About** — the space's
+context, editable as a note in the full editor (`SpaceAbout`,
+`routes/_app/spaces/-space-about.tsx`) rather than buried in the right panel.
+The About surface is bound to `space.context` (still the field `use-stripes`
+reads to seed suggestions), so editing it feeds Talk. Per-note actions
+(voice-over, download, reel) live in the notes editor header as `NoteActions`,
+visible exactly when the note is.
 
 ## The right rail
 
 `PanelRail` (`components/chat/right-panel.tsx`) is an always-present ~3.5rem
-icon rail on the right (desktop only): History · Provider · Voice · Speech ·
-Context · Phrases · divider · Display. Tapping a tab expands a fixed 320px tool
-card; tapping the active tab, the collapse button, or `Esc` returns to the
-rail; `⌘/Ctrl-.` toggles it. State (`rail` | `expanded` + `activeTab`) persists
-to `september:chat-panel` via `useChatPanel`, migrating the legacy
-`{ open, widthPct }` shape. On mobile the rail is hidden and the expanded card
-is a full-screen overlay opened from `MobileNav`.
+icon rail on the right (desktop only): **History · Phrases · Voice · divider ·
+Display**. The three settings tabs (Provider/Voice/Speech) collapse into one
+**Voice** tab (`SpeechSettings` renders all three sections under its own tab
+bar); **Context** left the panel for the About note. Tapping a tab expands a
+fixed 320px tool card; tapping the active tab, the collapse button, or `Esc`
+returns to the rail; `⌘/Ctrl-.` toggles it. State (`rail` | `expanded` +
+`activeTab`) persists to `september:chat-panel` via `useChatPanel`, migrating
+the legacy `{ open, widthPct }` shape and mapping retired tabs
+(`provider`/`speech` → `voice`, `context` → `history`). On mobile the rail is
+hidden and the expanded card is a full-screen overlay opened from `MobileNav`.
