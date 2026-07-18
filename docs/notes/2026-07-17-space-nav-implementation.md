@@ -105,3 +105,12 @@ restate the plan.
   right rail (collapsed + expanded), notes strip + editor-header actions, reel
   popover, and mobile space-tab dropdown all render with no console/page
   errors; old `/talk` `/notes` deep links redirect; mode persists per space.
+
+## Phase 6 — Docs & cleanup
+
+- Deleted the now-dead `SpaceSwitch` component + test; dropped its
+  `@/packages/spaces` export and README row (`SpaceDock` replaced it).
+- Added `docs/concepts/space-navigation.md` (routes · dock · working-set slot ·
+  right rail); marked the exploration plan implemented.
+- `shouldShowSpaceSidePanel` was already removed in Phase 3.
+- Final gate: lint clean, 661 tests pass, build + prerender succeed.

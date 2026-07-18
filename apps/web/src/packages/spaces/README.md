@@ -11,7 +11,6 @@ Local-first spaces and messaging for September. Backed by TanStack DB (IndexedDB
 | `SpaceList`          | Renders a searchable list of spaces with delete confirm dialog                                                                    |
 | `MessageList`        | Renders messages in a space; handles audio playback                                                                               |
 | `EditableSpaceTitle` | Inline editable title with save/revert behaviour                                                                                  |
-| `SpaceSwitch`        | Segmented switch (above the editor) to jump between spaces; trailing button creates a new space. Navigates to `/talk/:spaceSlug`. |
 
 ### Live-query hooks
 
