@@ -51,6 +51,12 @@ Write tests BEFORE implementation. Run failing test, write minimum code to pass,
 - Notes record only what is **not** in the plan: decisions made where the spec was silent, deviations from the spec, tradeoffs, and anything the reviewer should know. Don't restate the plan.
 - Link back to the plan in the note's frontmatter (`plan:`) and update the note as the implementation evolves.
 
+## Archiving Old Docs
+
+- When `docs/mocks/`, `docs/notes/`, `docs/plans/`, or `docs/research/` accumulate completed or superseded work, archive it off `main` to the `archive/old-docs` orphan branch rather than deleting it.
+- The archive branch is a detached/orphan branch (no parent, no app code) — history-preserving storage only. Browse with `git show archive/old-docs:<path>`.
+- Keep only current, in-progress docs on `main`; move everything predating the active work to the archive.
+
 ## Design System
 
 Always read `DESIGN.md` before making any visual or UI decisions.
