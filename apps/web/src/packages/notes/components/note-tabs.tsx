@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { FileText, MoreHorizontal, Plus } from 'lucide-react';
+import { FileText, MoreHorizontal, Plus, Sparkles } from 'lucide-react';
 
 import { cn, timeAgo } from '@/packages/shared';
 
@@ -14,6 +14,10 @@ interface NoteTabsProps {
   onSelect: (note: Note) => void;
   onCreate: () => void;
   isCreating?: boolean;
+  /** Whether the space's "About" note is the active surface. */
+  aboutActive?: boolean;
+  /** Select the space's "About" note (bound to the space context). */
+  onSelectAbout?: () => void;
   className?: string;
 }
 
@@ -29,6 +33,8 @@ export function NoteTabs({
   onSelect,
   onCreate,
   isCreating,
+  aboutActive,
+  onSelectAbout,
   className,
 }: NoteTabsProps) {
   const rowRef = useRef<HTMLDivElement>(null);
@@ -75,6 +81,26 @@ export function NoteTabs({
         Notes
       </span>
 
+      {onSelectAbout && (
+        <button
+          type="button"
+          role="tab"
+          aria-current={aboutActive ? 'true' : undefined}
+          aria-selected={aboutActive}
+          onClick={onSelectAbout}
+          className={cn(
+            'inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 text-sm font-medium transition-colors',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            aboutActive
+              ? 'border-primary/50 bg-accent text-accent-foreground'
+              : 'border-border bg-card text-muted-foreground hover:bg-accent hover:text-foreground'
+          )}
+        >
+          <Sparkles className="size-4 shrink-0" aria-hidden />
+          About
+        </button>
+      )}
+
       <div className="relative min-w-0 flex-1">
         <div
           ref={rowRef}
@@ -87,7 +113,7 @@ export function NoteTabs({
           )}
         >
           {notes.map(n => {
-            const isActive = n.id === selected?.id;
+            const isActive = !aboutActive && n.id === selected?.id;
             return (
               <button
                 key={n.id}
@@ -132,7 +158,7 @@ export function NoteTabs({
                 className="absolute bottom-full left-0 z-50 mb-2 max-h-80 w-72 overflow-y-auto rounded-xl border bg-popover p-1 text-popover-foreground shadow-lg"
               >
                 {notes.map(n => {
-                  const isActive = n.id === selected?.id;
+                  const isActive = !aboutActive && n.id === selected?.id;
                   return (
                     <button
                       key={n.id}

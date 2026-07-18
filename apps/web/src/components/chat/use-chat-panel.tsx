@@ -13,7 +13,7 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-export type ChatPanelTab = 'history' | 'phrases' | 'voice' | 'context';
+export type ChatPanelTab = 'history' | 'phrases' | 'voice';
 
 /** `rail` = collapsed icon rail; `expanded` = the 320px tool card is open. */
 export type ChatPanelState = 'rail' | 'expanded';
@@ -35,9 +35,13 @@ export interface ChatPanelValue {
 // ---------------------------------------------------------------------------
 
 const STORAGE_KEY = 'september:chat-panel';
-const TABS: ChatPanelTab[] = ['history', 'phrases', 'voice', 'context'];
+const TABS: ChatPanelTab[] = ['history', 'phrases', 'voice'];
 
-/** Provider and Speech merged into the single Voice tab — map old stored values. */
+/**
+ * Retired tabs map to survivors: Provider/Speech folded into Voice; Context
+ * moved out to the space's About note, so a stored 'context' falls back to
+ * History via isTab.
+ */
 function normalizeTab(value: unknown): unknown {
   return value === 'provider' || value === 'speech' ? 'voice' : value;
 }

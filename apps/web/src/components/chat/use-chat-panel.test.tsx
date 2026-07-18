@@ -43,6 +43,11 @@ describe('loadPanelState', () => {
     expect(loadPanelState()).toEqual({ state: 'expanded', activeTab: 'voice' });
   });
 
+  it('falls back to history for the retired context tab (now the About note)', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: 'expanded', activeTab: 'context' }));
+    expect(loadPanelState()).toEqual({ state: 'expanded', activeTab: 'history' });
+  });
+
   it('falls back cleanly on malformed json', () => {
     localStorage.setItem(STORAGE_KEY, '{not json');
     expect(loadPanelState()).toEqual({ state: 'rail', activeTab: 'history' });

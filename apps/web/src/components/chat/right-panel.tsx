@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   Clock,
-  FileText,
   type LucideIcon,
   MessageSquareQuote,
   Mic,
@@ -17,7 +16,7 @@ import {
 } from 'lucide-react';
 
 import { useAccount } from '@/packages/account';
-import { TiptapEditor, useEditorContext } from '@/packages/editor';
+import { useEditorContext } from '@/packages/editor';
 import { cn } from '@/packages/shared';
 import {
   MessageList,
@@ -25,10 +24,8 @@ import {
   addManualPhrase,
   removePhrase,
   setPhrasePinned,
-  updateSpace,
   useMessages,
   useSavedPhrases,
-  useSpaces,
 } from '@/packages/spaces';
 import { SpeechSettings } from '@/packages/speech';
 import type { VoiceSettingsFormData } from '@/packages/speech';
@@ -49,18 +46,16 @@ const TAB_META: Record<ChatPanelTab, { title: string; icon: LucideIcon }> = {
   history: { title: 'History', icon: Clock },
   phrases: { title: 'Phrases', icon: MessageSquareQuote },
   voice: { title: 'Voice', icon: Mic },
-  context: { title: 'Context', icon: FileText },
 };
 
 // Frequency-ordered: what you reach for most mid-conversation comes first.
-const TAB_ORDER: ChatPanelTab[] = ['history', 'phrases', 'voice', 'context'];
+// Context left the panel — it now lives as the space's About note.
+const TAB_ORDER: ChatPanelTab[] = ['history', 'phrases', 'voice'];
 
 function TabBody({ tab, chatId }: { tab: ChatPanelTab; chatId: string }) {
   switch (tab) {
     case 'history':
       return <HistoryTab chatId={chatId} />;
-    case 'context':
-      return <ContextTab spaceId={chatId} />;
     case 'phrases':
       return <PhrasesTab spaceId={chatId} />;
     default:
@@ -201,42 +196,6 @@ function VoiceTab() {
   return (
     <div className="@container p-4 space-y-6">
       <SpeechSettings account={account} onSubmit={handleSubmit} />
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Context tab
-// ---------------------------------------------------------------------------
-
-function ContextTab({ spaceId }: { spaceId: string }) {
-  const { spaces } = useSpaces();
-  const space = spaces.find(s => s.id === spaceId);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handleUpdate = (_html: string, markdown: string) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      updateSpace(spaceId, { context: markdown }).catch(err => {
-        console.error('Failed to save context:', err);
-      });
-    }, 500);
-  };
-
-  return (
-    <div className="p-4 space-y-3">
-      <div>
-        <h3 className="text-sm font-medium mb-1">Space context</h3>
-        <p className="text-xs text-muted-foreground mb-3">
-          Add bullet points (- phrase) to seed suggestions for this space.
-        </p>
-      </div>
-      <TiptapEditor
-        content={space?.context ?? ''}
-        placeholder="- I need some water&#10;- Can you help me"
-        onUpdate={handleUpdate}
-        className="min-h-48"
-      />
     </div>
   );
 }

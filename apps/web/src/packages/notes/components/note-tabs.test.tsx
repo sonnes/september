@@ -73,6 +73,22 @@ describe('NoteTabs', () => {
     expect(onCreate).toHaveBeenCalled();
   });
 
+  it('renders an About tab that selects the space context and marks it current', () => {
+    const onSelectAbout = vi.fn();
+    render({ aboutActive: true, onSelectAbout });
+    const about = tabByText('About')!;
+    expect(about.getAttribute('aria-current')).toBe('true');
+    // With About active, no note tab is current.
+    expect(tabByText('Fractions')?.getAttribute('aria-current')).toBeNull();
+    act(() => about.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(onSelectAbout).toHaveBeenCalled();
+  });
+
+  it('omits the About tab when onSelectAbout is not provided', () => {
+    render();
+    expect(tabByText('About')).toBeUndefined();
+  });
+
   it('collapses to an overflow list of all notes when the row does not fit', () => {
     const scroll = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollWidth');
     const client = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');

@@ -58,6 +58,7 @@ import { Button } from '@/packages/ui/components/button';
 import { Separator } from '@/packages/ui/components/separator';
 import { SidebarTrigger } from '@/packages/ui/components/sidebar';
 
+import { SpaceAbout } from './-space-about';
 import { type SpaceMode, rememberSpaceMode, routeForSpaceMode } from './-space-mode';
 
 function RailButton({
@@ -148,6 +149,9 @@ export function SpacePageInner({
   const popupRef = useRef<Window | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  // The space's "About" note (bound to space context) is a sibling of the real
+  // notes in the sub-dock; when open it replaces the note editor.
+  const [aboutOpen, setAboutOpen] = useState(false);
   const { notes } = useNotes({ spaceId });
   const selectedNote = notes.find(note => note.id === selectedNoteId) ?? notes[0];
 
@@ -166,6 +170,11 @@ export function SpacePageInner({
   useEffect(() => {
     setSelectedNoteId(noteId ?? null);
   }, [noteId]);
+
+  // Reset the About surface when the space changes.
+  useEffect(() => {
+    setAboutOpen(false);
+  }, [spaceId]);
 
   const handleModeChange = useCallback(
     (nextMode: SpaceMode) => {
@@ -196,7 +205,8 @@ export function SpacePageInner({
   );
 
   useEffect(() => {
-    if (mode !== 'notes' || !routeSpaceSlug) return;
+    // While the About note is open there is no selected note to sync the URL to.
+    if (mode !== 'notes' || !routeSpaceSlug || aboutOpen) return;
 
     if (selectedNote && currentNoteSlug) {
       if (routeSpaceSlug === currentSpaceSlug && noteSlug === currentNoteSlug) return;
@@ -215,7 +225,16 @@ export function SpacePageInner({
         replace: true,
       });
     }
-  }, [currentNoteSlug, currentSpaceSlug, mode, navigate, noteSlug, routeSpaceSlug, selectedNote]);
+  }, [
+    aboutOpen,
+    currentNoteSlug,
+    currentSpaceSlug,
+    mode,
+    navigate,
+    noteSlug,
+    routeSpaceSlug,
+    selectedNote,
+  ]);
 
   // Undo stack for the composer. Guarded so programmatic restores don't
   // re-push. Captures every text change (typed or suggestion-driven).
@@ -435,11 +454,16 @@ export function SpacePageInner({
 
   const composerConsole = (
     <div className="flex shrink-0 flex-col gap-3 rounded-lg bg-muted/40 p-3">
-      {mode === 'notes' && notes.length > 0 && (
+      {mode === 'notes' && (
         <NoteTabs
           notes={notes}
           selectedId={selectedNoteId}
-          onSelect={note => handleSelectedNoteIdChange(note.id, note)}
+          aboutActive={aboutOpen}
+          onSelectAbout={() => setAboutOpen(true)}
+          onSelect={note => {
+            setAboutOpen(false);
+            handleSelectedNoteIdChange(note.id, note);
+          }}
           onCreate={handleCreateNote}
         />
       )}
@@ -531,13 +555,35 @@ export function SpacePageInner({
 
   const notesColumn = (
     <div className="flex h-full min-h-0 w-full flex-col gap-4">
-      <SpaceNotes
-        spaceId={spaceId}
-        className="min-h-0 flex-1"
-        selectedId={selectedNoteId}
-        onSelectedIdChange={handleSelectedNoteIdChange}
-      />
-      {composerConsole}
+      {aboutOpen ? (
+        <>
+          <SpaceAbout spaceId={spaceId} className="min-h-0 flex-1" />
+          {/* Tab strip so the About surface can hand back to the notes. */}
+          <div className="shrink-0 rounded-lg bg-muted/40 p-3">
+            <NoteTabs
+              notes={notes}
+              selectedId={selectedNoteId}
+              aboutActive
+              onSelectAbout={() => setAboutOpen(true)}
+              onSelect={note => {
+                setAboutOpen(false);
+                handleSelectedNoteIdChange(note.id, note);
+              }}
+              onCreate={handleCreateNote}
+            />
+          </div>
+        </>
+      ) : (
+        <>
+          <SpaceNotes
+            spaceId={spaceId}
+            className="min-h-0 flex-1"
+            selectedId={selectedNoteId}
+            onSelectedIdChange={handleSelectedNoteIdChange}
+          />
+          {composerConsole}
+        </>
+      )}
     </div>
   );
 
@@ -572,15 +618,6 @@ export function SpacePageInner({
             onClick={() => expandTab('phrases')}
           >
             <MessageSquareQuote className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Context"
-            className="size-7"
-            onClick={() => expandTab('context')}
-          >
-            <FileText className="size-4" />
           </Button>
           <Button variant="ghost" size="icon" onClick={handleOpenDisplay} aria-label="Open display">
             <TvIcon className="size-4" />
