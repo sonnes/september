@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>September — Reel Redesign Mock (Editorial)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Prata&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root { --indigo: #4f46e5; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Noto Sans", Helvetica, sans-serif;
+    background: #f4f4f5;
+    color: #18181b;
+    padding: 48px 32px 96px;
+  }
+  .page { max-width: 1280px; margin: 0 auto; }
+  .eyebrow { color: var(--indigo); font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+  h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; }
+  .lede { color: #52525b; font-size: 15px; max-width: 660px; line-height: 1.6; margin-bottom: 40px; }
+  h2 { font-size: 20px; font-weight: 600; margin: 56px 0 6px; }
+  .sub { color: #71717a; font-size: 14px; margin-bottom: 20px; max-width: 660px; line-height: 1.5; }
+
+  .stage { display: flex; gap: 48px; align-items: flex-start; flex-wrap: wrap; }
+
+  /* ── Phone / reel frame ─────────────────────────────── */
+  .phone {
+    width: 360px; aspect-ratio: 9/16; border-radius: 28px; overflow: hidden;
+    position: relative; background: #000; box-shadow: 0 24px 60px -20px rgba(24,24,27,.45);
+    flex-shrink: 0;
+  }
+  .bg { position: absolute; inset: 0; transition: background .5s; }
+  /* film grain + soft vignette — identical math in canvas export */
+  .bg::after {
+    content: ""; position: absolute; inset: 0;
+    background:
+      radial-gradient(130% 100% at 50% 35%, transparent 58%, rgba(0,0,0,.32) 100%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+  }
+
+  .progress { position: absolute; top: 0; left: 0; right: 0; display: flex; gap: 4px; padding: 12px 12px 0; z-index: 30; }
+  .progress .seg { flex: 1; height: 2.5px; border-radius: 99px; background: rgba(255,255,255,.25); overflow: hidden; }
+  .progress .seg > i { display: block; height: 100%; width: 0%; background: rgba(255,255,255,.9); border-radius: 99px; }
+
+  .close {
+    position: absolute; top: 26px; right: 12px; z-index: 30;
+    width: 40px; height: 40px; border-radius: 99px; border: none;
+    background: rgba(0,0,0,.3); color: #fff; font-size: 17px; cursor: pointer;
+    backdrop-filter: blur(6px);
+  }
+
+  .caption-zone {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    padding: 32px 26px; z-index: 10; text-align: center;
+  }
+  .caption { max-width: 100%; animation: rise .42s cubic-bezier(.16,1,.3,1); }
+  @keyframes rise { from { transform: translateY(14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .caption { animation: none; } .word { transition: none !important; } }
+
+  .word {
+    display: inline-block; white-space: pre-wrap;
+    transition: color .18s ease-out, opacity .18s ease-out;
+  }
+  .word.spoken { opacity: .55; }
+  .word.unspoken { opacity: .88; }
+
+  .watermark {
+    position: absolute; left: 18px; bottom: 20px; z-index: 20;
+    display: flex; align-items: center; gap: 7px;
+    color: rgba(255,255,255,.85); font-size: 12.5px; font-weight: 600; letter-spacing: .02em;
+  }
+  .watermark .dot { width: 13px; height: 13px; border-radius: 4px; background: #fff2; border: 1.5px solid #fffb; transform: rotate(45deg); }
+
+  .soundbar { position: absolute; right: 18px; bottom: 18px; z-index: 20; display: flex; gap: 2.5px; align-items: flex-end; height: 16px; }
+  .soundbar i { width: 2.5px; background: rgba(255,255,255,.75); border-radius: 2px; animation: eq 0.9s ease-in-out infinite; }
+  .soundbar i:nth-child(1) { height: 40%; animation-delay: 0s; }
+  .soundbar i:nth-child(2) { height: 90%; animation-delay: .15s; }
+  .soundbar i:nth-child(3) { height: 60%; animation-delay: .3s; }
+  .soundbar i:nth-child(4) { height: 100%; animation-delay: .45s; }
+  @keyframes eq { 0%,100% { transform: scaleY(.5);} 50% { transform: scaleY(1);} }
+
+  /* ── Controls ───────────────────────────────────────── */
+  .controls { flex: 1; min-width: 320px; }
+  .control-group { margin-bottom: 28px; }
+  .control-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #71717a; margin-bottom: 10px; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    border: 1px solid #e4e4e7; background: #fff; border-radius: 99px; padding: 8px 16px;
+    font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit;
+    transition: all .15s; display: flex; align-items: center; gap: 8px;
+  }
+  .chip:hover { border-color: #a1a1aa; }
+  .chip.on { border-color: var(--indigo); background: #eef2ff; color: #4338ca; }
+  .swatch { width: 16px; height: 16px; border-radius: 99px; border: 1px solid rgba(0,0,0,.12); }
+  .note { font-size: 13px; color: #71717a; line-height: 1.6; background: #fff; border: 1px solid #e4e4e7; border-radius: 12px; padding: 14px 16px; margin-top: 8px; }
+  .note b { color: #3f3f46; }
+
+  /* ── Gallery ────────────────────────────────────────── */
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 20px; }
+  .tile { border-radius: 18px; overflow: hidden; box-shadow: 0 10px 30px -12px rgba(24,24,27,.35); }
+  .tile .frame {
+    aspect-ratio: 9/16; position: relative; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 12px; padding: 20px 16px; text-align: center;
+  }
+  .tile .name { background: #fff; padding: 10px 14px; font-size: 13px; font-weight: 600; }
+  .tile .name small { display: block; font-weight: 400; color: #71717a; font-size: 11.5px; margin-top: 1px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="eyebrow">September · mock v2</div>
+  <h1>Reel redesign — editorial serif over solid color</h1>
+  <p class="lede">
+    Two typographic roles, like a magazine cover: sentence-opening chunks set as a <b>display headline</b>
+    (elegant serif, tight leading) and mid-sentence chunks as <b>support text</b> (Noto Sans bold, smaller).
+    Colors come from <b>Tailwind pairs</b> — a 900/950 background, a 200-tint for the serif, the hue's 50
+    for support — one pair per reel. Role is derived from punctuation, deterministic, so the DOM player and
+    the canvas MP4 exporter compute the identical sequence. Film grain + soft vignette, no gradients.
+    Font size per chunk comes from the shared pretext fit-and-wrap.
+  </p>
+
+  <div class="stage">
+    <div class="phone" id="phone">
+      <div class="bg" id="bg"></div>
+      <div class="progress" id="progress"></div>
+      <button class="close" aria-label="Close">✕</button>
+      <div class="caption-zone"><div class="caption" id="caption"></div></div>
+      <div class="watermark"><span class="dot"></span>September</div>
+      <div class="soundbar"><i></i><i></i><i></i><i></i></div>
+    </div>
+
+    <div class="controls">
+      <div class="control-group">
+        <div class="control-label">Tailwind color pair (per reel)</div>
+        <div class="chips" id="bgChips"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label">Display serif</div>
+        <div class="chips" id="serifChips"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label">Playback</div>
+        <div class="chips">
+          <button class="chip on" id="playBtn">⏸ Pause</button>
+        </div>
+      </div>
+      <div class="note">
+        <b>Role rule (shared by player + exporter):</b> a chunk whose previous chunk ended a sentence
+        (<code>. ! ?</code>) renders as <b>Display</b> — serif in the pair's <code>200</code> tint,
+        line-height 1.08, active word flips to the <code>50</code>. Any continuation chunk renders as
+        <b>Support</b> — Noto Sans 700 in the <code>50</code>, smaller, active word flips to the
+        <code>200</code>. All colors are stock Tailwind shades (bg <code>900/950</code> · display
+        <code>200</code> · support <code>50</code>), so the DOM player uses utility classes and the canvas
+        exporter uses their hex twins. Word states: spoken .55 · active full · unspoken .88.
+        Same pretext binary-search fit, same explicit line breaks, both renderers.
+      </div>
+    </div>
+  </div>
+
+  <h2>Composed look per background</h2>
+  <p class="sub">Static frames showing the display + support pairing on each solid tone (headline chunk above, continuation chunk below — as consecutive moments of one reel).</p>
+  <div class="gallery" id="gallery"></div>
+</div>
+
+<script>
+  // ─── Shared theme spec ───
+  // Tailwind color pairs: bg = 900/950 shade, display serif = 200 tint of a
+  // companion hue, support sans = 50 near-white of the bg hue. All values are
+  // stock Tailwind palette hexes — in the app these become theme tokens
+  // (bg-stone-900, text-amber-200, ...) and exact hex twins in the canvas exporter.
+  const PAIRS = [
+    { key: 'stone',   name: 'Stone · Amber',   bg: '#1c1917', bgName: 'stone-900',
+      display: '#fde68a', displayName: 'amber-200', support: '#fafaf9', supportName: 'stone-50' },
+    { key: 'emerald', name: 'Emerald',         bg: '#022c22', bgName: 'emerald-950',
+      display: '#a7f3d0', displayName: 'emerald-200', support: '#ecfdf5', supportName: 'emerald-50' },
+    { key: 'slate',   name: 'Slate · Sky',     bg: '#0f172a', bgName: 'slate-900',
+      display: '#bae6fd', displayName: 'sky-200', support: '#f8fafc', supportName: 'slate-50' },
+    { key: 'rose',    name: 'Rose',            bg: '#4c0519', bgName: 'rose-950',
+      display: '#fecdd3', displayName: 'rose-200', support: '#fff1f2', supportName: 'rose-50' },
+    { key: 'purple',  name: 'Purple',          bg: '#3b0764', bgName: 'purple-950',
+      display: '#e9d5ff', displayName: 'purple-200', support: '#faf5ff', supportName: 'purple-50' },
+    { key: 'indigo',  name: 'Indigo',          bg: '#1e1b4b', bgName: 'indigo-950',
+      display: '#c7d2fe', displayName: 'indigo-200', support: '#eef2ff', supportName: 'indigo-50' },
+  ];
+
+  const SERIFS = [
+    { key: 'playfair', name: 'Playfair Display', font: '"Playfair Display", serif', weight: 500 },
+    { key: 'fraunces', name: 'Fraunces',         font: '"Fraunces", serif',         weight: 500 },
+    { key: 'prata',    name: 'Prata',            font: '"Prata", serif',            weight: 400 },
+  ];
+
+  let serifIndex = 0, bgIndex = 0;
+
+  // Two roles instead of five styles — the reference-image hierarchy.
+  // Colors come from the active Tailwind pair; active word swaps the two tones.
+  const ROLES = {
+    display: (pair = PAIRS[bgIndex]) => ({
+      font: SERIFS[serifIndex].font, weight: SERIFS[serifIndex].weight,
+      lineHeight: 1.08, spacing: '0em',
+      color: pair.display, activeColor: pair.support,
+      shadow: '0 2px 18px rgba(0,0,0,.35)',
+      maxRatio: 0.40, boxHeightRatio: 0.62,
+    }),
+    support: (pair = PAIRS[bgIndex]) => ({
+      font: '"Noto Sans", sans-serif', weight: 700,
+      lineHeight: 1.35, spacing: '0.005em',
+      color: pair.support, activeColor: pair.display,
+      shadow: '0 2px 14px rgba(0,0,0,.35)',
+      maxRatio: 0.115, boxHeightRatio: 0.5,
+    }),
+  };
+
+  // Demo captions ≈ output of wordsToReelCaptions (≤6 words per chunk)
+  const CAPTIONS = [
+    'Good morning, everyone.',
+    'Today felt like a good day.',
+    'We watched the rain',
+    'from the porch,',
+    'and Sarah made her famous chai.',
+    'Small moments,',
+    'big joy.',
+  ].map(t => t.split(' '));
+
+  // Role rule: first chunk after a sentence end (or the first chunk) = display.
+  const endsSentence = words => /[.!?]$/.test(words[words.length - 1]);
+  function roleForCaption(i) {
+    if (i === 0) return 'display';
+    return endsSentence(CAPTIONS[i - 1]) ? 'display' : 'support';
+  }
+
+  // ─── Pretext-style fit-and-wrap ───
+  // Mirrors computePretextLayout: binary search the largest font size whose
+  // greedy word-wrap fits the caption box, using real font metrics.
+  const measure = document.createElement('canvas').getContext('2d');
+
+  function setMeasureFont(fontSize, role) {
+    measure.font = `${role.weight} ${fontSize}px ${role.font}`;
+    measure.letterSpacing = role.spacing || '0px';
+  }
+
+  function wrapLines(words, fontSize, role, boxW) {
+    setMeasureFont(fontSize, role);
+    const spaceW = measure.measureText(' ').width;
+    const lines = [];
+    let line = [], lineW = 0, fits = true;
+    for (const word of words) {
+      const w = measure.measureText(word).width;
+      if (w > boxW) fits = false;
+      if (line.length && lineW + spaceW + w > boxW) {
+        lines.push(line); line = [word]; lineW = w;
+      } else {
+        lineW += (line.length ? spaceW : 0) + w;
+        line.push(word);
+      }
+    }
+    if (line.length) lines.push(line);
+    return { lines, fits };
+  }
+
+  function fitCaption(words, role, boxW, boxH) {
+    const minSize = 12, maxSize = Math.round(boxW * role.maxRatio);
+    let lo = minSize, hi = maxSize, best = minSize, bestLines = [words];
+    while (lo <= hi) {
+      const mid = Math.floor((lo + hi) / 2);
+      const { lines, fits } = wrapLines(words, mid, role, boxW);
+      const height = lines.length * Math.round(mid * role.lineHeight);
+      if (fits && height <= boxH) { best = mid; bestLines = lines; lo = mid + 1; }
+      else hi = mid - 1;
+    }
+    return { fontSize: best, lines: bestLines };
+  }
+
+  // ─── State ───
+  let playing = true;
+  let capIndex = 0, wordIndex = 0, timer = null;
+  const wordMs = w => 260 + w.length * 28;
+
+  // ─── Render ───
+  const bgEl = document.getElementById('bg');
+  const capEl = document.getElementById('caption');
+  const progEl = document.getElementById('progress');
+
+  function renderProgress() {
+    progEl.innerHTML = CAPTIONS.map((_, i) => {
+      const fill = i < capIndex ? 100 : i === capIndex ? Math.round(100 * (wordIndex + 1) / CAPTIONS[i].length) : 0;
+      return `<div class="seg"><i style="width:${fill}%"></i></div>`;
+    }).join('');
+  }
+
+  function wordSpan(word, state, role, fontSize) {
+    const color = state === 'active' ? role.activeColor : role.color;
+    const st = `font-family:${role.font};font-weight:${role.weight};font-size:${fontSize}px;` +
+               `line-height:${role.lineHeight};letter-spacing:${role.spacing};` +
+               `color:${color};text-shadow:${role.shadow};`;
+    return `<span class="word ${state}" style="${st}">${word}</span>`;
+  }
+
+  function captionHtml(words, role, fontSize, lines, activeAt) {
+    let idx = 0;
+    return lines.map(line =>
+      `<div>` +
+      line.map(word => {
+        const state = idx < activeAt ? 'spoken' : idx === activeAt ? 'active' : 'unspoken';
+        idx++;
+        return wordSpan(word, state, role, fontSize);
+      }).join(' ') +
+      `</div>`
+    ).join('');
+  }
+
+  function renderCaption(replay) {
+    const words = CAPTIONS[capIndex];
+    const role = ROLES[roleForCaption(capIndex)]();
+    const zone = capEl.parentElement;
+    const boxW = zone.clientWidth - 52;
+    const boxH = Math.round(zone.clientHeight * role.boxHeightRatio);
+    const { fontSize, lines } = fitCaption(words, role, boxW, boxH);
+    if (replay) {
+      capEl.style.animation = 'none'; void capEl.offsetWidth; capEl.style.animation = '';
+    }
+    capEl.innerHTML = captionHtml(words, role, fontSize, lines, wordIndex);
+    renderProgress();
+  }
+
+  function tick() {
+    if (!playing) return;
+    const words = CAPTIONS[capIndex];
+    timer = setTimeout(() => {
+      wordIndex++;
+      let newChunk = false;
+      if (wordIndex >= words.length) {
+        capIndex = (capIndex + 1) % CAPTIONS.length;
+        wordIndex = 0; newChunk = true;
+      }
+      renderCaption(newChunk);
+      tick();
+    }, wordMs(words[wordIndex] || ''));
+  }
+
+  // ─── Controls ───
+  function chip(label, on, cb, extra = '') {
+    const b = document.createElement('button');
+    b.className = 'chip' + (on ? ' on' : '');
+    b.innerHTML = extra + label;
+    b.onclick = cb;
+    return b;
+  }
+
+  const bgChips = document.getElementById('bgChips');
+  const serifChips = document.getElementById('serifChips');
+
+  function renderChips() {
+    bgChips.innerHTML = ''; serifChips.innerHTML = '';
+    PAIRS.forEach((pair, i) => bgChips.appendChild(
+      chip(pair.name, i === bgIndex,
+        () => { bgIndex = i; bgEl.style.background = pair.bg; renderChips(); renderCaption(true); renderGallery(); },
+        `<span class="swatch" style="background:linear-gradient(135deg,${pair.bg} 50%,${pair.display} 50%)"></span>`)
+    ));
+    SERIFS.forEach((s, i) => serifChips.appendChild(
+      chip(s.name, i === serifIndex, () => { serifIndex = i; renderChips(); renderCaption(true); renderGallery(); })
+    ));
+  }
+
+  const playBtn = document.getElementById('playBtn');
+  playBtn.onclick = () => {
+    playing = !playing;
+    playBtn.textContent = playing ? '⏸ Pause' : '▶ Play';
+    if (playing) tick(); else clearTimeout(timer);
+  };
+
+  // ─── Gallery: display + support pairing on each background ───
+  function renderGallery() {
+    const gallery = document.getElementById('gallery');
+    gallery.innerHTML = '';
+    const headline = ['Small', 'moments,'];
+    const support = ['big', 'joy.'];
+    PAIRS.forEach(pair => {
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.innerHTML =
+        `<div class="frame" style="background:${pair.bg}"><div class="head"></div><div class="supp"></div></div>` +
+        `<div class="name">${pair.name}<small>${pair.bgName} · ${pair.displayName} · ${pair.supportName}</small></div>`;
+      gallery.appendChild(tile);
+
+      const frame = tile.querySelector('.frame');
+      const boxW = frame.clientWidth - 30;
+      const display = ROLES.display(pair);
+      const supportRole = ROLES.support(pair);
+      const h = fitCaption(headline, display, boxW, frame.clientHeight * 0.4);
+      const s = fitCaption(support, supportRole, boxW, frame.clientHeight * 0.25);
+      tile.querySelector('.head').innerHTML = captionHtml(headline, display, h.fontSize, h.lines, 1);
+      tile.querySelector('.supp').innerHTML = captionHtml(support, supportRole, s.fontSize, s.lines, -1);
+    });
+  }
+
+  // ─── Boot (fonts must load before canvas measurement is trustworthy) ───
+  bgEl.style.background = PAIRS[0].bg;
+  renderChips();
+  Promise.all([
+    ...SERIFS.map(s => document.fonts.load(`${s.weight} 32px ${s.font}`)),
+    document.fonts.load('700 32px "Noto Sans"'),
+  ]).then(() => { renderCaption(false); renderGallery(); tick(); });
+</script>
+</body>
+</html>

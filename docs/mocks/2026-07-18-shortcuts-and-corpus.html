@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>September — Phrase codes, sentence starters &amp; per-space corpus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --indigo-700:#4338ca; --indigo-600:#4f46e5; --indigo-500:#6366f1; --indigo-400:#818cf8; --indigo-300:#a5b4fc; --indigo-200:#c7d2fe;
+    --indigo-100:#e0e7ff; --indigo-50:#eef2ff;
+    --zinc-900:#18181b; --zinc-800:#27272a; --zinc-700:#3f3f46; --zinc-600:#52525b; --zinc-500:#71717a;
+    --zinc-400:#a1a1aa; --zinc-300:#d4d4d8; --zinc-200:#e4e4e7; --zinc-100:#f4f4f5; --zinc-50:#fafafa;
+    --amber-50:#fffbeb; --amber-200:#fde68a; --amber-800:#92400e;
+    --green-700:#15803d;
+    --r-control:12px; --r-chip:14px; --r-surface:20px;
+  }
+  * { box-sizing:border-box; margin:0; }
+  body {
+    font-family:"Noto Sans", Helvetica, sans-serif;
+    background:var(--zinc-100); color:var(--zinc-900);
+    -webkit-font-smoothing:antialiased; padding:48px 24px 120px;
+  }
+  .page { max-width:1240px; margin:0 auto; }
+  .page > header h1 { font-size:28px; font-weight:700; letter-spacing:-0.02em; }
+  .page > header p.lede { font-size:15px; color:var(--zinc-500); margin-top:8px; max-width:78ch; line-height:1.6; }
+
+  .audit { background:#fff; border:1px solid var(--zinc-200); border-radius:14px; padding:24px; margin-top:28px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  .audit h2 { font-size:16px; font-weight:600; margin-bottom:10px; }
+  .audit p { font-size:14px; color:var(--zinc-700); line-height:1.7; max-width:86ch; }
+  .audit ul, .audit ol { padding-left:18px; font-size:14px; line-height:1.7; color:var(--zinc-700); margin-top:8px; }
+  .audit li { margin-top:4px; }
+  .audit code { background:var(--zinc-100); border-radius:5px; padding:1px 5px; font-size:12.5px; }
+  .audit .rec { margin-top:14px; background:var(--indigo-50); border:1px solid var(--indigo-100); border-radius:12px; padding:14px 18px; font-size:14px; color:var(--zinc-800); line-height:1.6; }
+  .audit .rec b { color:var(--indigo-600); }
+  .audit b { font-weight:600; }
+
+  section.option { margin-top:56px; }
+  .opt-head { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
+  .opt-head .tag { font-size:12px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--indigo-600); background:var(--indigo-50); border:1px solid var(--indigo-100); border-radius:999px; padding:4px 12px; }
+  .opt-head h2 { font-size:22px; font-weight:700; letter-spacing:-0.01em; }
+  .opt-head p { width:100%; font-size:14px; color:var(--zinc-500); max-width:90ch; line-height:1.6; margin-top:6px; }
+
+  /* app frame */
+  .frame { margin-top:22px; border-radius:18px; overflow:hidden; border:1px solid var(--zinc-200); box-shadow:0 8px 30px rgba(24,24,27,.08); display:flex; background:var(--indigo-500); }
+  .rail { width:56px; background:var(--indigo-500); display:flex; flex-direction:column; align-items:center; padding:14px 0; gap:16px; color:#fff; flex-shrink:0; }
+  .rail .logo { font-size:20px; font-weight:700; }
+  .rail .ric { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; opacity:.8; font-size:15px; }
+  .rail .ric.active { background:var(--indigo-600); opacity:1; }
+  .surface { flex:1; background:#fff; margin:8px 8px 8px 0; border-radius:14px; display:flex; flex-direction:column; min-width:0; }
+  .surface.split { flex-direction:row; }
+  .main-col { flex:1; display:flex; flex-direction:column; min-width:0; }
+  .hdr { height:60px; border-bottom:1px solid var(--zinc-200); display:flex; align-items:center; padding:0 22px; gap:10px; flex-shrink:0; font-size:14px; font-weight:600; }
+  .hdr .dim { color:var(--zinc-400); font-weight:400; }
+  .body { padding:26px; display:flex; flex-direction:column; gap:20px; }
+
+  .msgs { display:flex; flex-direction:column; gap:12px; }
+  .bubble { align-self:flex-end; background:var(--indigo-50); border:1px solid var(--indigo-100); border-radius:var(--r-surface); border-bottom-right-radius:8px; padding:12px 18px; font-size:16px; max-width:65%; }
+
+  /* ===== the one stripe component (matches live SuggestionStripes) ===== */
+  .stripes { background:var(--zinc-50); border-radius:16px; padding:18px 16px; display:flex; flex-direction:column; gap:14px; }
+  .srow { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+  .gut { width:26px; display:flex; align-items:center; justify-content:center; color:var(--indigo-400); flex-shrink:0; }
+  .gut svg { width:16px; height:16px; }
+  .gut.muted { color:var(--zinc-300); }
+  .tile { border:1px solid var(--indigo-200); background:#fff; border-radius:var(--r-chip); padding:10px 17px; font-size:17px; color:var(--zinc-900); white-space:nowrap; }
+  .tile.punct { padding:10px 13px; }
+  .key { border:1px solid var(--indigo-200); background:var(--indigo-100); color:var(--indigo-600); border-radius:var(--r-chip); padding:10px 15px; font-size:16px; }
+
+  /* starter rows: dashed tint, ellipsis key instead of enter */
+  .srow.starter .tile { border-style:dashed; border-color:var(--indigo-300); background:var(--indigo-50); color:var(--indigo-700); }
+  .srow.starter .key { border-style:dashed; background:transparent; color:var(--indigo-400); font-weight:700; letter-spacing:1px; }
+
+  /* code-match row: filled gutter chip, tinted tiles, solid enter */
+  .srow.codem .tile { background:var(--indigo-50); border-color:var(--indigo-300); }
+  .srow.codem .key { background:var(--indigo-500); border-color:var(--indigo-500); color:#fff; }
+  .codechip { font-size:12.5px; font-weight:700; color:#fff; background:var(--indigo-500); border-radius:8px; padding:3px 8px; letter-spacing:.03em; }
+  .gut.code { width:auto; }
+
+  .ta { position:relative; font-size:20px; line-height:1.5; color:var(--zinc-900); padding:6px 2px 2px; min-height:44px; }
+  .ta .ghost { color:var(--zinc-400); }
+  .ta .caret { display:inline-block; width:2px; height:1.2em; background:var(--indigo-500); vertical-align:-4px; animation:blink 1.1s step-end infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+  .ta .trig { background:var(--indigo-100); border-radius:6px; padding:0 3px; color:var(--indigo-700); font-weight:500; }
+
+  .console { border:1px solid var(--zinc-200); border-radius:var(--r-surface); box-shadow:0 1px 2px rgba(0,0,0,.04); padding:16px 18px; display:flex; flex-direction:column; gap:14px; }
+  .acts { display:flex; align-items:center; gap:10px; }
+  .acts .spacer { flex:1; }
+  .btn { display:inline-flex; align-items:center; gap:8px; height:40px; padding:0 16px; border-radius:var(--r-control); font-size:14px; font-weight:600; font-family:inherit; border:1px solid var(--zinc-200); background:#fff; color:var(--zinc-700); cursor:default; white-space:nowrap; }
+  .btn.ghost { border-color:transparent; background:transparent; color:var(--zinc-500); }
+  .btn.primary { background:var(--indigo-500); border-color:var(--indigo-500); color:#fff; border-radius:999px; padding:0 26px; height:44px; font-size:15px; }
+  .btn.sm { height:32px; padding:0 12px; font-size:13px; font-weight:500; }
+
+  /* legend */
+  .legend { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-top:18px; }
+  .legend .cell { background:#fff; border:1px solid var(--zinc-200); border-radius:14px; padding:16px; }
+  .legend .cell h4 { font-size:13px; font-weight:600; display:flex; align-items:center; gap:8px; }
+  .legend .cell h4 .codechip { font-size:11px; }
+  .legend .cell h4 svg { width:15px; height:15px; color:var(--indigo-400); }
+  .legend .cell p { font-size:12.5px; color:var(--zinc-500); line-height:1.6; margin-top:6px; }
+
+  /* right panel (phrases tab) */
+  .rpanel { width:340px; border-left:1px solid var(--zinc-200); display:flex; flex-direction:column; flex-shrink:0; }
+  .rpanel .tabs { display:flex; gap:6px; padding:12px 14px; border-bottom:1px solid var(--zinc-200); }
+  .rpanel .tab { border-radius:999px; padding:7px 15px; font-size:13px; font-weight:500; color:var(--zinc-500); }
+  .rpanel .tab.active { background:var(--indigo-50); color:var(--indigo-600); font-weight:600; }
+  .rpanel .pbody { padding:16px 14px; display:flex; flex-direction:column; gap:16px; overflow:hidden; }
+  .pgroup .glabel { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--zinc-400); margin-bottom:8px; }
+  .prow { display:flex; align-items:center; gap:10px; padding:10px 10px; border-radius:12px; border:1px solid transparent; }
+  .prow .ptext { flex:1; font-size:14px; color:var(--zinc-800); line-height:1.4; min-width:0; }
+  .prow .star { color:var(--indigo-400); font-size:13px; }
+  .prow .star.off { color:var(--zinc-300); }
+  .prow.suggested { background:var(--indigo-50); border-color:var(--indigo-100); }
+  .prow .why { display:block; font-size:11.5px; color:var(--zinc-500); margin-top:2px; }
+  .prow .codechip { background:var(--indigo-100); color:var(--indigo-600); }
+  .prow .codechip.st { background:transparent; border:1px dashed var(--indigo-300); color:var(--indigo-500); }
+  .addphrase { border-top:1px solid var(--zinc-200); padding-top:14px; display:flex; flex-direction:column; gap:8px; }
+  .addphrase .row { display:flex; gap:8px; }
+  .addphrase input { height:38px; border:1px solid var(--zinc-200); border-radius:var(--r-control); padding:0 12px; font-size:13px; font-family:inherit; color:var(--zinc-400); background:#fff; }
+  .addphrase input.long { flex:1; }
+  .addphrase input.short { width:86px; }
+  .addphrase .help { font-size:11.5px; color:var(--zinc-400); line-height:1.5; }
+  .warn { display:flex; gap:10px; align-items:flex-start; background:var(--amber-50); border:1px solid var(--amber-200); border-radius:12px; padding:10px 14px; font-size:12.5px; color:var(--amber-800); line-height:1.55; }
+
+  /* flow diagram */
+  .flow { display:flex; align-items:stretch; gap:0; margin-top:22px; flex-wrap:wrap; }
+  .fstep { flex:1; min-width:200px; background:#fff; border:1px solid var(--zinc-200); border-radius:14px; padding:18px; position:relative; margin-right:34px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  .fstep:last-child { margin-right:0; }
+  .fstep::after { content:"→"; position:absolute; right:-27px; top:50%; transform:translateY(-50%); color:var(--zinc-300); font-size:20px; }
+  .fstep:last-child::after { content:none; }
+  .fstep .n { width:26px; height:26px; border-radius:999px; background:var(--indigo-500); color:#fff; font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
+  .fstep h4 { font-size:14px; font-weight:600; }
+  .fstep p { font-size:12.5px; color:var(--zinc-500); line-height:1.55; margin-top:5px; }
+  .fstep code { background:var(--zinc-100); border-radius:5px; padding:1px 4px; font-size:11px; }
+
+  .note { font-size:13px; color:var(--zinc-500); margin-top:12px; line-height:1.6; max-width:88ch; }
+  .note b { color:var(--zinc-700); }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- shared icons -->
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></symbol>
+  <symbol id="i-start" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 17 11 12 6 7"/><polyline points="13 17 18 12 13 7"/></symbol>
+</svg>
+
+<header>
+  <h1>Phrase codes, sentence starters &amp; per-space corpus</h1>
+  <p class="lede">One thesis — fewer keystrokes to full expression — served by extending what already exists. Saved phrases gain an optional <b>code</b> (<code>ty</code> → thank you). AI seeding also produces 3–5-word <b>sentence starters</b> and a <b>per-space corpus</b> that primes the on-device autocomplete. Phrases, starters, and code expansions all render through the <b>one existing stripe component</b> (word tiles + take key), differentiated only by gutter icon, tile tint, and end key.</p>
+</header>
+
+<div class="audit">
+  <h2>Design: no new tables, no new UI components</h2>
+  <ul>
+    <li><b>Data</b> — <code>SavedPhrase</code> gains <code>code?: string</code> and <code>kind: 'phrase' | 'starter'</code>. AI seeding assigns every generated phrase a code too (deterministic, client-side — not the LLM), so codes work from day one; AI codes are replaced with their rows on regen. A <b>user-set</b> code pins the row (user code ⇒ pinned), and pinning a phrase makes its code durable. No new collection.</li>
+    <li><b>One component</b> — the existing suggestion stripe (word-tile rows with partial take: tap word <i>i</i>, take the sentence up to it). Phrases, starters, and code matches are just three row kinds of it — same tiles, same take mechanics, differentiated by icon + color (legend below). No second stripe, no pill variants, no "Say / Start with" sections.</li>
+    <li><b>Expansion</b> — a ranking rule, not a feature: when the word at the caret matches a code, that phrase's row surfaces at the top, tinted, with its code in the gutter. Taking it consumes the typed code. Local lookup — instant, never waits on the LLM debounce.</li>
+    <li><b>Management</b> — the existing Phrases tab gains an optional code field. Frequency-mined proposals appear there as suggested rows with a prefilled code.</li>
+    <li><b>Corpus</b> — invisible; seeds the on-device n-gram engine per space at the existing seed/regen moments.</li>
+  </ul>
+  <div class="rec"><b>The user learns exactly one thing:</b> short codes bring your phrases to the front. Everything else looks and works like the stripe they already use.</div>
+</div>
+
+<!-- ============ ONE COMPONENT, THREE ROW KINDS ============ -->
+<section class="option">
+  <div class="opt-head">
+    <span class="tag">One component</span>
+    <h2>Three row kinds in the same stripe</h2>
+    <p>Empty composer: phrase rows (pin gutter, solid white tiles, ↵ take-and-ready key) and starter rows (chevrons gutter, dashed tinted tiles, a trailing <b>…</b> key instead of ↵ — an opening move, not a complete thought). Tapping any tile still takes the words up to it; tapping a starter's <b>…</b> takes the whole prefix and hands off to autocomplete.</p>
+  </div>
+
+  <div class="frame">
+    <div class="rail"><div class="logo">S</div><div class="ric active">💬</div><div class="ric">📝</div><div class="ric">🎙</div></div>
+    <div class="surface">
+      <div class="main-col">
+        <div class="hdr">Care team &nbsp;<span class="dim">· Talk</span></div>
+        <div class="body">
+          <div class="console">
+            <div class="stripes">
+              <div class="srow">
+                <span class="gut"><svg><use href="#i-pin"/></svg></span>
+                <span class="tile">Please</span><span class="tile">call</span><span class="tile">the</span><span class="tile">nurse</span><span class="key">↵</span>
+              </div>
+              <div class="srow">
+                <span class="gut muted"><svg><use href="#i-pin"/></svg></span>
+                <span class="tile">The</span><span class="tile">pain</span><span class="tile">is</span><span class="tile">about</span><span class="tile">the</span><span class="tile">same</span><span class="tile">today</span><span class="key">↵</span>
+              </div>
+              <div class="srow starter">
+                <span class="gut"><svg><use href="#i-start"/></svg></span>
+                <span class="tile">Can</span><span class="tile">you</span><span class="tile">please</span><span class="tile">check</span><span class="key">…</span>
+              </div>
+              <div class="srow starter">
+                <span class="gut"><svg><use href="#i-start"/></svg></span>
+                <span class="tile">I'm</span><span class="tile">feeling</span><span class="tile">a</span><span class="tile">bit</span><span class="key">…</span>
+              </div>
+            </div>
+            <div class="ta"><span class="ghost">Type a message…</span></div>
+            <div class="acts">
+              <button class="btn ghost">↺</button><button class="btn ghost">⌫</button><button class="btn ghost">🗑</button>
+              <span class="spacer"></span>
+              <button class="btn primary">🔊 Speak</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="cell">
+      <h4><svg><use href="#i-pin"/></svg> Phrase</h4>
+      <p>Complete thought. White tiles, ↵ key takes all of it. Filled pin = pinned by the user; muted pin = AI-suggested, tap the pin to keep it. Exactly today's stripe.</p>
+    </div>
+    <div class="cell">
+      <h4><svg><use href="#i-start"/></svg> Starter</h4>
+      <p>3–5-word opening. Dashed, indigo-tinted tiles; ends in <b>…</b> instead of ↵ because it isn't speakable as-is. Taking it fills the composer and completion continues from the prefix.</p>
+    </div>
+    <div class="cell">
+      <h4><span class="codechip">ty</span> Code match</h4>
+      <p>Surfaces while typing when the caret word equals a phrase's code. Filled code chip in the gutter, tinted tiles, solid ↵. Taking it swaps the typed code for the phrase.</p>
+    </div>
+  </div>
+
+  <p class="note"><b>Color discipline:</b> all three stay inside the single indigo accent — differentiation is fill level (white → dashed tint → solid tint) plus the gutter icon, never a second hue. Semantic colors (amber/emerald) stay reserved for callouts.</p>
+</section>
+
+<!-- ============ CODE MATCH STATE ============ -->
+<section class="option">
+  <div class="opt-head">
+    <span class="tag">Expansion</span>
+    <h2>Typing a code: its row surfaces on top</h2>
+    <p>The user types <code>ty</code>. The stripe's ranking sees the caret word matches a code and pins that phrase's row to the top — code chip in the gutter, tinted tiles, solid ↵. One tap on ↵ (or the last word) swaps the typed <code>ty</code> for "thank you". Partial take still works: tapping "thank" takes just that word. Rows behind it are the normal completion stripe.</p>
+  </div>
+
+  <div class="frame">
+    <div class="rail"><div class="logo">S</div><div class="ric active">💬</div><div class="ric">📝</div><div class="ric">🎙</div></div>
+    <div class="surface">
+      <div class="main-col">
+        <div class="hdr">Family &nbsp;<span class="dim">· Talk</span></div>
+        <div class="body">
+          <div class="msgs"><div class="bubble">Good morning everyone</div></div>
+          <div class="console">
+            <div class="stripes">
+              <div class="srow codem">
+                <span class="gut code"><span class="codechip">ty</span></span>
+                <span class="tile">thank</span><span class="tile">you</span><span class="key">↵</span>
+              </div>
+              <div class="srow">
+                <span class="gut muted"><svg><use href="#i-pin"/></svg></span>
+                <span class="tile">that's</span><span class="tile">very</span><span class="tile">kind</span><span class="tile">of</span><span class="tile">you</span><span class="key">↵</span>
+              </div>
+            </div>
+            <div class="ta">I made it downstairs, <span class="trig">ty</span><span class="caret"></span></div>
+            <div class="acts">
+              <button class="btn ghost">↺</button><button class="btn ghost">⌫</button><button class="btn ghost">🗑</button>
+              <span class="spacer"></span>
+              <button class="btn primary">🔊 Speak</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="note"><b>Matching:</b> exact, case-insensitive, on the word at the caret; the code row always outranks history and LLM rows. <b>Scope:</b> phrases are per-space, so lookup checks the current space first, then other spaces' codes (<code>ty</code> defined anywhere works everywhere); conflicts resolve to the current space. <b>Open question:</b> should Speak with a bare trailing code auto-take the match first (makes <code>hlp</code> two keys total)? Default off for v1.</p>
+</section>
+
+<!-- ============ PHRASES TAB ============ -->
+<section class="option">
+  <div class="opt-head">
+    <span class="tag">Management</span>
+    <h2>Phrases tab, plus one optional field</h2>
+    <p>The existing right-panel Phrases tab is the whole management surface. Rows can carry a code badge; starters show the dashed variant of the same badge treatment. The add form gains an optional code input with a conflict check — no dictionary words, no duplicates. Frequency-mined proposals appear in the Suggested group with a prefilled code and the evidence; Keep pins phrase + code in one tap.</p>
+  </div>
+
+  <div class="frame">
+    <div class="rail"><div class="logo">S</div><div class="ric active">💬</div><div class="ric">📝</div><div class="ric">🎙</div></div>
+    <div class="surface split">
+      <div class="main-col">
+        <div class="hdr">Care team &nbsp;<span class="dim">· Talk</span></div>
+        <div class="body">
+          <div class="msgs">
+            <div class="bubble">The pain is about the same today</div>
+            <div class="bubble">Can you turn the volume down a little</div>
+          </div>
+        </div>
+      </div>
+      <div class="rpanel">
+        <div class="tabs"><span class="tab active">Phrases</span><span class="tab">About</span><span class="tab">History</span></div>
+        <div class="pbody">
+          <div class="pgroup">
+            <div class="glabel">Pinned</div>
+            <div class="prow"><span class="ptext">Please call the nurse, it's urgent</span><span class="codechip">nrs</span><span class="star">★</span></div>
+            <div class="prow"><span class="ptext">Thank you</span><span class="codechip">ty</span><span class="star">★</span></div>
+            <div class="prow"><span class="ptext">I want to go to the bathroom</span><span class="codechip">iwb</span><span class="star">★</span></div>
+            <div class="prow"><span class="ptext">Can you please check</span><span class="codechip st">starter</span><span class="star">★</span></div>
+          </div>
+          <div class="pgroup">
+            <div class="glabel">Suggested</div>
+            <div class="prow suggested"><span class="ptext">Can you turn the volume down a little<span class="why">typed 9× — code <b>tvd</b></span></span><button class="btn sm">Keep</button></div>
+            <div class="prow"><span class="ptext">The physio session went well</span><span class="star off">★</span></div>
+            <div class="prow"><span class="ptext">I'm feeling better than yesterday</span><span class="star off">★</span></div>
+          </div>
+          <div class="addphrase">
+            <div class="row"><input class="long" value="New phrase…" /><input class="short" value="code" /></div>
+            <div class="row"><button class="btn sm">Add</button></div>
+            <div class="help">Code is optional — a short abbreviation that brings this phrase up while you type. Adding a code keeps the phrase.</div>
+            <div class="warn">⚠ &nbsp;<span><b>"its"</b> is a common word — you'd trigger it by accident. Try <b>itx</b>.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="note"><b>Frequency mining (all local, no LLM):</b> over the last ~300 user messages — count exact repeats and maximal 3–8-word n-grams; score = count × keystrokes saved; threshold count ≥ 5 and ≥ 3 words; decay by age. Candidates matching an existing phrase — pinned <b>or</b> AI-seeded (those already carry codes) — are excluded, so mining only proposes what seeding hasn't covered. Codes come from the same deterministic generator seeding uses (content-word initials, mutate on dictionary/duplicate collision — checked against the autocomplete trie already in memory). Runs on app open when ≥ 20 new messages since last scan; persists only the dismissed-set and last-scan count. Dismissed proposals never return.</p>
+</section>
+
+<!-- ============ CORPUS SEED ============ -->
+<section class="option">
+  <div class="opt-head">
+    <span class="tag">Corpus seed</span>
+    <h2>Per-space autocomplete corpus — invisible, generated at seed time</h2>
+    <p>No new UI. When a space's context is first generated (existing seed moment, after the first message), the same pipeline additionally generates ~100 short sentences a person would plausibly say in this space, and feeds them into the on-device n-gram engine scoped to the space. The engine then predicts space-appropriate words from message one — "physio" in the care-team space, "grandkids" in the family space — instead of relying only on the generic base corpus.</p>
+  </div>
+
+  <div class="flow">
+    <div class="fstep"><div class="n">1</div><h4>First message sent</h4><p>Existing trigger: <code>useSyncSpacePhrases</code> decides <code>seed</code>. Space context + title are generated.</p></div>
+    <div class="fstep"><div class="n">2</div><h4>One structured call</h4><p>Generator returns <code>{ phrases, starters, corpus[] }</code> — ~100 sentences, 6–8 phrases, 4–6 starters — from space context + first message.</p></div>
+    <div class="fstep"><div class="n">3</div><h4>Feed the engine</h4><p>Corpus sentences are <code>observe()</code>d into the autocomplete LM with a low weight, tagged with the space id, and persisted with a seed digest.</p></div>
+    <div class="fstep"><div class="n">4</div><h4>Real usage takes over</h4><p>User messages keep the higher weight they have today. On phrase regeneration (staleness ≥ 6 msgs) the corpus can refresh too; a digest check skips no-op regens.</p></div>
+  </div>
+
+  <p class="note"><b>Weighting is the crux:</b> seeded sentences must prime predictions without drowning the user's real voice. Proposal: count each seeded sentence as a single observation, let user messages accumulate naturally on top, and cap the seed layer so it can never outweigh ~20 real messages. The generic <code>corpus.txt</code> base layer stays untouched underneath both.</p>
+</section>
+
+<!-- ============ FURTHER + UNKNOWNS ============ -->
+<div class="audit" style="margin-top:56px;">
+  <h2>What else this unlocks (later, not now)</h2>
+  <ul>
+    <li><b>Speak-on-take for urgent codes</b> — a flag on a phrase (<code>hlp</code>) so taking its code match speaks immediately: two keys from need to voice.</li>
+    <li><b>Fuzzy code match</b> — the QWERTY-fuzzy trie already in the autocomplete package could tolerate one-key-off code typos (<code>tu</code> still surfaces <code>ty</code>'s phrase) for tremor input.</li>
+    <li><b>Template slots</b> — <code>in5</code> → "I'll be ready in 5 minutes" with the number editable on take.</li>
+    <li><b>Import/export</b> — phrases + codes as a small JSON file, shareable between users/caregivers.</li>
+    <li><b>Starter personalization</b> — rank starters by actual pick-rate, not just generation order.</li>
+  </ul>
+
+  <h2 style="margin-top:22px;">Open unknowns (need decisions)</h2>
+  <ol>
+    <li><b>Enter/Speak auto-take</b> — should speaking with a bare trailing code take the match first? Recommended: off for v1, revisit with usage.</li>
+    <li><b>Cross-space code lookup</b> — codes from other spaces match here (recommended), or strictly per-space?</li>
+    <li><b>Starter row budget</b> — with one shared stripe, how many rows total and what mix (e.g. 3 phrases + 2 starters when empty)? The stripe already caps rows; the mix ratio is the new knob.</li>
+    <li><b>Notes mode</b> — does code ranking apply in the Notes composer too? Recommended: yes, same stripe; verify against the tiptap surface.</li>
+    <li><b>Corpus size &amp; cost</b> — is 100 sentences enough to shift a 5-gram model? Needs a quick offline experiment. Also: can WebLLM (privacy mode) produce 100 usable sentences, or does corpus seeding silently require a cloud provider?</li>
+    <li><b>Seed-layer weighting</b> — the cap proposal above is a guess; validate against the engine's actual scoring.</li>
+    <li><b>Starter/code seeding</b> — ship a small starter pack (ty, hru, iwb…) as pinned-with-code rows in <code>DEFAULT_SPACE_SEED</code> so the feature is discoverable day one? Recommended: yes, a handful.</li>
+  </ol>
+</div>
+
+</div>
+</body>
+</html>
