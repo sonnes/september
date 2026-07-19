@@ -7,11 +7,25 @@ export function Footer() {
         <p className="max-w-none sm:whitespace-nowrap">
           © {new Date().getFullYear()} September. Communication with fewer keystrokes.
         </p>
-        <div className="flex shrink-0 gap-6">
-          <Link to="/privacy-policy" className="transition hover:text-zinc-950">
+        <div className="flex shrink-0 flex-wrap items-center gap-6">
+          {/* Anchor links here give small screens a path to the sections — the
+              hero nav hides Features/About below md. */}
+          <a href="#features" className="inline-flex min-h-11 items-center transition hover:text-zinc-950">
+            Features
+          </a>
+          <a href="#about" className="inline-flex min-h-11 items-center transition hover:text-zinc-950">
+            About
+          </a>
+          <Link
+            to="/privacy-policy"
+            className="inline-flex min-h-11 items-center transition hover:text-zinc-950"
+          >
             Privacy
           </Link>
-          <Link to="/terms-of-service" className="transition hover:text-zinc-950">
+          <Link
+            to="/terms-of-service"
+            className="inline-flex min-h-11 items-center transition hover:text-zinc-950"
+          >
             Terms
           </Link>
         </div>

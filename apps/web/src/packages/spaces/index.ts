@@ -32,10 +32,36 @@ export {
   deleteSpace,
   createMessage,
 } from './mutations';
-export { addManualPhrase, removePhrase, setPhrasePinned, replaceAiPhrases } from './mutations';
+export {
+  addManualPhrase,
+  removePhrase,
+  setPhrasePinned,
+  setPhraseCode,
+  replaceAiPhrases,
+} from './mutations';
 
 // Pure helpers
-export { topPhrases, dedupeAgainstPinned, isStale, PHRASES_STALE_AFTER } from './lib/phrases';
+export {
+  topPhrases,
+  topRows,
+  rowKind,
+  sanitizeStarters,
+  dedupeAgainstPinned,
+  isStale,
+  PHRASES_STALE_AFTER,
+} from './lib/phrases';
+export type { PhraseKind } from './lib/phrases';
+export {
+  isCommonWord,
+  normalizeCode,
+  validateCode,
+  generateCode,
+  matchCode,
+  trailingWord,
+} from './lib/codes';
+export type { CodeValidation } from './lib/codes';
+export { mineShortcuts, normalizeMinedText } from './lib/mine';
+export type { MinedShortcut } from './lib/mine';
 export { historyPage, HISTORY_PAGE_SIZE } from './lib/history';
 export type { HistoryPage } from './lib/history';
 

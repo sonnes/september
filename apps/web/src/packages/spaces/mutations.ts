@@ -4,17 +4,22 @@ import { deleteNotesForSpace } from '@/packages/notes';
 import { track } from '@/packages/usage';
 
 import { messageCollection, savedPhraseCollection, spaceCollection } from './db';
-import { dedupeAgainstPinned } from './lib/phrases';
-import type { CreateMessageData, Message, Space } from './types';
+import { generateCode, normalizeCode } from './lib/codes';
+import { dedupeAgainstPinned, rowKind } from './lib/phrases';
+import type { CreateMessageData, Message, SavedPhrase, Space } from './types';
 
 export const DEFAULT_SPACE_TITLE = 'General';
+// The coded rows are the starter pack — discoverable day one, all pinned so
+// the codes are durable and none colliding with common words.
 export const DEFAULT_SPACE_SEED = {
   title: DEFAULT_SPACE_TITLE,
   phrases: [
     { text: 'Hello', pinned: true, demoSource: 'md' },
     { text: 'Please', pinned: true, demoSource: 'md' },
-    { text: 'Thank you', pinned: true, demoSource: 'md' },
+    { text: 'Thank you', pinned: true, code: 'ty', demoSource: 'md' },
     { text: 'Help', pinned: true, demoSource: 'md' },
+    { text: 'I want to go to the bathroom', pinned: true, code: 'iwb', demoSource: 'md' },
+    { text: 'How are you?', pinned: true, code: 'hru', demoSource: 'md' },
     { text: 'Good morning', pinned: false, demoSource: 'md' },
     { text: 'Yes, please.', pinned: false, demoSource: 'history' },
     { text: 'No, thank you.', pinned: false, demoSource: 'llm' },
@@ -53,6 +58,7 @@ export async function createDefaultSpace(userId: string): Promise<Space> {
       user_id: userId,
       text: phrase.text,
       pinned: phrase.pinned,
+      ...('code' in phrase ? { code: phrase.code } : {}),
       created_at: new Date(now.getTime() + index),
     })
   );
@@ -135,25 +141,29 @@ export async function createMessage(data: CreateMessageData): Promise<Message> {
 /**
  * Add a phrase the user wants to keep. Upsert: if the space already has this
  * text (case-insensitive), pin it (promotes an AI phrase so regen can't drop
- * it); otherwise insert a new pinned row. No-op on blank text.
+ * it); otherwise insert a new pinned row. No-op on blank text. An optional
+ * code (validated at the call site) is stored normalized.
  */
 export async function addManualPhrase(
   spaceId: string,
   userId: string,
-  text: string
+  text: string,
+  options: { code?: string; kind?: 'phrase' | 'starter' } = {}
 ): Promise<void> {
   const trimmed = text.trim();
   if (!trimmed) return;
   const key = trimmed.toLowerCase();
+  const code = options.code ? normalizeCode(options.code) : undefined;
 
   const existing = savedPhraseCollection.toArray.find(
     p => p.space_id === spaceId && p.text.trim().toLowerCase() === key
   );
 
   if (existing) {
-    if (!existing.pinned) {
+    if (!existing.pinned || (code && existing.code !== code)) {
       const tx = savedPhraseCollection.update(existing.id, draft => {
         draft.pinned = true;
+        if (code) draft.code = code;
       });
       await tx.isPersisted.promise;
     }
@@ -166,6 +176,8 @@ export async function addManualPhrase(
     user_id: userId,
     text: trimmed,
     pinned: true,
+    ...(code ? { code } : {}),
+    ...(options.kind ? { kind: options.kind } : {}),
     created_at: new Date(),
   });
   await tx.isPersisted.promise;
@@ -186,33 +198,79 @@ export async function setPhrasePinned(phraseId: string, pinned: boolean): Promis
 }
 
 /**
- * The seed/regen write. Replace the space's AI phrases with a fresh set: delete
- * every `pinned: false` row, insert the AI texts that don't duplicate a pinned
- * phrase, and record `phrases_synced_count`. Pinned rows are never touched.
+ * Set or clear a phrase's code. Setting a code pins the row (user code ⇒
+ * pinned — a code the user relies on must survive regeneration); clearing a
+ * code leaves the pin as-is. Validation lives at the call site.
+ */
+export async function setPhraseCode(phraseId: string, code: string | undefined): Promise<void> {
+  const normalized = code ? normalizeCode(code) : undefined;
+  const tx = savedPhraseCollection.update(phraseId, draft => {
+    draft.code = normalized;
+    if (normalized) draft.pinned = true;
+  });
+  await tx.isPersisted.promise;
+}
+
+/**
+ * The seed/regen write. Replace the space's AI phrases and starters with a
+ * fresh set: delete every `pinned: false` row (both kinds), insert the AI
+ * texts that don't duplicate a pinned row of the same kind, and record
+ * `phrases_synced_count`. Pinned rows are never touched.
+ *
+ * Each fresh AI phrase gets a deterministic code (`generateCode`) so codes
+ * work without any setup; the collision set is every code still in the
+ * collection (any space, any kind) plus codes assigned earlier in the batch.
+ * AI codes are replaced along with their rows on the next regen. Starters get
+ * no auto-code — a prefix's initials are rarely a memorable trigger.
  */
 export async function replaceAiPhrases(
   spaceId: string,
   userId: string,
-  aiTexts: string[],
+  ai: { phrases: string[]; starters: string[] },
   syncedCount: number
 ): Promise<void> {
-  const rows = savedPhraseCollection.toArray.filter(p => p.space_id === spaceId);
-  const pinnedTexts = rows.filter(p => p.pinned).map(p => p.text);
-  const oldAiIds = rows.filter(p => !p.pinned).map(p => p.id);
-  const fresh = dedupeAgainstPinned(pinnedTexts, aiTexts);
+  const all = savedPhraseCollection.toArray as SavedPhrase[];
+  const rows = all.filter(p => p.space_id === spaceId);
+  const pinnedTextsOf = (kind: 'phrase' | 'starter') =>
+    rows.filter(p => p.pinned && rowKind(p) === kind).map(p => p.text);
+  const oldAiIds = new Set(rows.filter(p => !p.pinned).map(p => p.id));
+
+  const freshPhrases = dedupeAgainstPinned(pinnedTextsOf('phrase'), ai.phrases);
+  const freshStarters = dedupeAgainstPinned(pinnedTextsOf('starter'), ai.starters);
+
+  // Codes surviving this write: every coded row except the AI rows replaced here.
+  const existingCodes = all
+    .filter(p => p.code && !oldAiIds.has(p.id))
+    .map(p => p.code as string);
 
   const now = new Date();
-  const deletes = oldAiIds.map(id => savedPhraseCollection.delete(id));
-  const inserts = fresh.map(text =>
-    savedPhraseCollection.insert({
-      id: uuidv4(),
-      space_id: spaceId,
-      user_id: userId,
-      text,
-      pinned: false,
-      created_at: now,
-    })
-  );
+  const deletes = [...oldAiIds].map(id => savedPhraseCollection.delete(id));
+  const inserts = [
+    ...freshPhrases.map(text => {
+      const code = generateCode(text, { existingCodes });
+      if (code) existingCodes.push(code);
+      return savedPhraseCollection.insert({
+        id: uuidv4(),
+        space_id: spaceId,
+        user_id: userId,
+        text,
+        pinned: false,
+        ...(code ? { code } : {}),
+        created_at: now,
+      });
+    }),
+    ...freshStarters.map(text =>
+      savedPhraseCollection.insert({
+        id: uuidv4(),
+        space_id: spaceId,
+        user_id: userId,
+        text,
+        pinned: false,
+        kind: 'starter' as const,
+        created_at: now,
+      })
+    ),
+  ];
 
   await Promise.all([...deletes, ...inserts].map(t => t.isPersisted.promise));
   await updateSpace(spaceId, { phrases_synced_count: syncedCount });

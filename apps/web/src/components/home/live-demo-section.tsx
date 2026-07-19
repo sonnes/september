@@ -15,8 +15,15 @@ import { EditorProvider, useEditorContext } from '@/packages/editor';
 import { DEFAULT_SPACE_SEED } from '@/packages/spaces';
 import { type Stripe, SuggestionStripes, stripeForText } from '@/packages/suggestions';
 
+import { SectionHeader } from './section-header';
+import { useDemoSpeech } from './use-demo-speech';
+
 // Seed one spoken message so the transcript reads as live, not a screenshot.
 const DEMO_TRANSCRIPT: string[] = ['Good morning! Ready when you are.'];
+
+// Marketing keeps a curated subset of the seed's pinned words — everyday and
+// dignified for a public page (no care-need phrases here).
+const DEMO_PINNED = ['Hello', 'Please', 'Thank you', 'Help'];
 
 const DEMO_SUGGESTIONS: { text: string; source: Stripe['source'] }[] =
   DEFAULT_SPACE_SEED.phrases
@@ -25,18 +32,14 @@ const DEMO_SUGGESTIONS: { text: string; source: Stripe['source'] }[] =
 
 export function LiveDemoSection() {
   return (
-    <section className="bg-white px-4 py-16 sm:px-6 lg:px-8">
+    <section id="features" className="scroll-mt-4 bg-white px-4 py-16 sm:px-6 lg:px-8">
       <div className="mx-auto grid max-w-7xl gap-9">
-        <div className="max-w-3xl">
-          <p className="mb-3 text-sm font-bold text-indigo-600">Live demo</p>
-          <h2 className="text-3xl font-bold leading-tight tracking-normal text-zinc-950 sm:text-5xl">
-            Type a little. Tap a suggestion. Speak.
-          </h2>
-          <p className="mt-4 max-w-3xl text-base leading-relaxed text-zinc-500 sm:text-lg">
-            The main screen is for one simple job: build a message faster and press Speak when it is
-            ready.
-          </p>
-        </div>
+        <SectionHeader
+          eyebrow="Talk"
+          title="Type a little. Tap the rest. Speak."
+          lede="This is September’s main screen. Suggestions finish your sentence so a message takes a few taps, not a hundred keystrokes. Press Speak and it’s said out loud."
+          hint="Try it: type “go”, tap the suggestion, press Speak — your browser will say it."
+        />
 
         <EditorProvider defaultText="">
           <WorkingDemo />
@@ -48,10 +51,9 @@ export function LiveDemoSection() {
 
 function WorkingDemo() {
   const { text, setText } = useEditorContext();
+  const { speak: speakAloud } = useDemoSpeech();
   const [spoken, setSpoken] = useState(DEMO_TRANSCRIPT);
-  const [pinned, setPinned] = useState<string[]>(() =>
-    DEFAULT_SPACE_SEED.phrases.filter(phrase => phrase.pinned).map(phrase => phrase.text)
-  );
+  const [pinned, setPinned] = useState<string[]>(DEMO_PINNED);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Undo stack mirrors the real composer: capture each text change so undo can
@@ -92,10 +94,11 @@ function WorkingDemo() {
       const message = value.trim();
       if (!message) return;
       setSpoken(current => [...current.slice(-5), message]);
+      speakAloud(message);
       setText('');
       inputRef.current?.focus();
     },
-    [setText, text]
+    [setText, speakAloud, text]
   );
 
   const undo = useCallback(() => {
@@ -124,7 +127,7 @@ function WorkingDemo() {
   }, []);
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-zinc-100 p-2 shadow-sm sm:p-4">
+    <div className="overflow-hidden rounded-2xl bg-indigo-50 p-2 shadow-sm ring-1 ring-indigo-100 sm:p-4">
       <div
         data-live-demo-frame
         className="grid min-h-[520px] overflow-hidden rounded-xl border bg-white shadow-sm sm:min-h-0 sm:h-[540px] lg:h-[560px]"
@@ -163,12 +166,15 @@ function WorkingDemo() {
 
             {/* Console — suggestions + composer + space tabs on a calm surface */}
             <div className="flex shrink-0 flex-col gap-3 rounded-lg bg-muted/40 p-3">
-              <SuggestionStripes
-                stripes={stripes}
-                pinnedChips={pinned}
-                onPin={handlePin}
-                onSubmit={speak}
-              />
+              {/* Right-edge fade signals the stripe rows scroll on narrow screens. */}
+              <div className="[mask-image:linear-gradient(to_right,black_92%,transparent)] sm:[mask-image:none]">
+                <SuggestionStripes
+                  stripes={stripes}
+                  pinnedChips={pinned}
+                  onPin={handlePin}
+                  onSubmit={speak}
+                />
+              </div>
 
               <div className="rounded-2xl border-2 border-input bg-background p-3 transition-colors focus-within:border-ring">
                 <textarea

@@ -12,16 +12,26 @@ import { ChatPanelProvider } from './use-chat-panel';
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 // Tab bodies pull live data — stub the packages they read so the rail renders.
-vi.mock('@/packages/spaces', () => ({
-  useMessages: () => ({ messages: [], isLoading: false }),
-  useSavedPhrases: () => ({ phrases: [] }),
-  useSpaces: () => ({ spaces: [] }),
-  MessageList: () => null,
-  updateSpace: vi.fn(),
-  addManualPhrase: vi.fn(),
-  setPhrasePinned: vi.fn(),
-  removePhrase: vi.fn(),
-}));
+// Pure helpers (codes/phrases/mine libs) are safe to use for real.
+vi.mock('@/packages/spaces', async () => {
+  const codes = await vi.importActual<object>('@/packages/spaces/lib/codes');
+  const phrases = await vi.importActual<object>('@/packages/spaces/lib/phrases');
+  const mine = await vi.importActual<object>('@/packages/spaces/lib/mine');
+  return {
+    ...codes,
+    ...phrases,
+    ...mine,
+    useMessages: () => ({ messages: [], isLoading: false }),
+    useSavedPhrases: () => ({ phrases: [] }),
+    useSpaces: () => ({ spaces: [] }),
+    MessageList: () => null,
+    updateSpace: vi.fn(),
+    addManualPhrase: vi.fn(),
+    setPhrasePinned: vi.fn(),
+    setPhraseCode: vi.fn(),
+    removePhrase: vi.fn(),
+  };
+});
 
 vi.mock('@/packages/account', () => ({
   useAccount: () => ({ account: {}, updateAccount: vi.fn(), user: { id: 'u1' } }),

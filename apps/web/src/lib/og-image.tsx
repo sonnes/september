@@ -54,7 +54,8 @@ const styles = {
     letterSpacing: 0,
   },
   headlineAccent: {
-    color: '#fbbf24',
+    // amber-300 — matches the hero's headline gold.
+    color: '#fcd34d',
     fontSize: 74,
   },
   body: {
@@ -109,21 +110,15 @@ const styles = {
   },
   pills: {
     display: 'flex',
-    gap: 12,
+    gap: 10,
     marginTop: -42,
   },
   pill: {
     display: 'flex',
-    padding: '7px 22px',
+    padding: '7px 16px',
     borderRadius: 999,
-    backgroundColor: '#eef2ff',
-    color: '#4f46e5',
     fontSize: 16,
     fontWeight: 800,
-  },
-  amberPill: {
-    backgroundColor: '#fef3c7',
-    color: '#b45309',
   },
   brandName: {
     color: '#4f46e5',
@@ -132,6 +127,15 @@ const styles = {
     lineHeight: 1,
   },
 } satisfies Record<string, CSSProperties>;
+
+// One pill per landing feature section, in its section's colour lane.
+const FEATURE_LANES = [
+  { label: 'Talk', bg: '#eef2ff', text: '#4f46e5' },
+  { label: 'Spaces', bg: '#e0f2fe', text: '#0369a1' },
+  { label: 'Voice', bg: '#d1fae5', text: '#047857' },
+  { label: 'Notes', bg: '#ede9fe', text: '#6d28d9' },
+  { label: 'Reels', bg: '#ffe4e6', text: '#be123c' },
+] as const;
 
 function fontBufferToArrayBuffer(buffer: Buffer): ArrayBuffer {
   return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
@@ -188,9 +192,14 @@ export function SeptemberOgImage({ logoDataUri }: SeptemberOgImageProps) {
           </div>
 
           <div style={styles.pills}>
-            <div style={styles.pill}>Talk</div>
-            <div style={{ ...styles.pill, ...styles.amberPill }}>Speak</div>
-            <div style={styles.pill}>Share</div>
+            {FEATURE_LANES.map(lane => (
+              <div
+                key={lane.label}
+                style={{ ...styles.pill, backgroundColor: lane.bg, color: lane.text }}
+              >
+                {lane.label}
+              </div>
+            ))}
           </div>
 
           <div style={styles.brandName}>september</div>

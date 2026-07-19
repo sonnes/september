@@ -48,6 +48,14 @@ await deleteNote(note.id);
 import type { CreateNoteData, Note, UpdateNoteData } from '@/packages/notes';
 ```
 
+### Reel theme re-exports
+
+The shared reel look tokens (`reelPair`, `ROLE_SPECS`, `captionRoles`,
+`ensureReelFonts`, grain/vignette/watermark constants) and the `ReelCaption`/
+`ReelWord` shells are re-exported from the package index so the marketing
+landing page can render the same frame chrome without the voice-over pipeline.
+See "Reel theme" below for their semantics.
+
 ## Data layout
 
 | Collection       | IndexedDB db    | Key         |

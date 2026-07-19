@@ -12,9 +12,11 @@ import {
   deleteSpace,
   removePhrase,
   replaceAiPhrases,
+  setPhraseCode,
   setPhrasePinned,
   updateSpace,
 } from './mutations';
+import { isCommonWord } from './lib/codes';
 
 // ---------------------------------------------------------------------------
 // Hoisted mocks — must be declared before any imports that transitively use them
@@ -206,11 +208,37 @@ describe('createDefaultSpace', () => {
       'Please',
       'Thank you',
       'Help',
+      'I want to go to the bathroom',
+      'How are you?',
       'Good morning',
       'Yes, please.',
       'No, thank you.',
     ]);
-    expect(DEFAULT_SPACE_SEED.phrases.filter(phrase => phrase.pinned)).toHaveLength(4);
+    expect(DEFAULT_SPACE_SEED.phrases.filter(phrase => phrase.pinned)).toHaveLength(6);
+  });
+
+  it('ships a discoverable starter pack of codes (none a common word)', () => {
+    const coded = DEFAULT_SPACE_SEED.phrases.filter(p => 'code' in p && p.code);
+    const byText = Object.fromEntries(coded.map(p => [p.text, (p as { code: string }).code]));
+    expect(byText).toEqual({
+      'Thank you': 'ty',
+      'I want to go to the bathroom': 'iwb',
+      'How are you?': 'hru',
+    });
+    for (const { code } of coded as { code: string }[]) {
+      expect(isCommonWord(code)).toBe(false);
+    }
+    // Every coded seed row is pinned — codes are durable.
+    expect(coded.every(p => p.pinned)).toBe(true);
+  });
+
+  it('persists codes on the inserted seed rows', async () => {
+    await createDefaultSpace('user-1');
+    const insertedPhrases = mockSavedInsert.mock.calls.map(
+      (call: unknown[]) => call[0] as { text: string; code?: string }
+    );
+    const thankYou = insertedPhrases.find(p => p.text === 'Thank you');
+    expect(thankYou?.code).toBe('ty');
   });
 });
 
@@ -400,6 +428,64 @@ describe('addManualPhrase', () => {
     await addManualPhrase('space-1', 'user-1', '   ');
     expect(mockSavedInsert).not.toHaveBeenCalled();
   });
+
+  it('stores a normalized code and kind when provided', async () => {
+    await addManualPhrase('space-1', 'user-1', 'What is for dinner', { code: ' WFD ' });
+
+    const row = mockSavedInsert.mock.calls[0][0];
+    expect(row).toMatchObject({ text: 'What is for dinner', code: 'wfd', pinned: true });
+  });
+
+  it('sets the code when promoting an existing AI phrase', async () => {
+    savedPhraseCollectionState.state.set('p1', {
+      id: 'p1',
+      space_id: 'space-1',
+      user_id: 'u',
+      text: 'What is for dinner',
+      pinned: false,
+      created_at: new Date(0),
+    });
+
+    await addManualPhrase('space-1', 'user-1', 'what is for dinner', { code: 'wfd' });
+
+    const updated = savedPhraseCollectionState.state.get('p1');
+    expect(updated).toMatchObject({ pinned: true, code: 'wfd' });
+  });
+
+  it('can add a starter', async () => {
+    await addManualPhrase('space-1', 'user-1', 'Can you please', { kind: 'starter' });
+    expect(mockSavedInsert.mock.calls[0][0]).toMatchObject({
+      text: 'Can you please',
+      kind: 'starter',
+      pinned: true,
+    });
+  });
+});
+
+describe('setPhraseCode', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    savedPhraseCollectionState.state.clear();
+    mockSavedUpdate.mockResolvedValue(undefined);
+  });
+
+  it('sets a normalized code and pins the row (user code ⇒ pinned)', async () => {
+    savedPhraseCollectionState.state.set('p1', { id: 'p1', text: 'Thank you', pinned: false });
+
+    await setPhraseCode('p1', ' TY ');
+
+    expect(savedPhraseCollectionState.state.get('p1')).toMatchObject({ code: 'ty', pinned: true });
+  });
+
+  it('clears a code without unpinning', async () => {
+    savedPhraseCollectionState.state.set('p1', { id: 'p1', text: 'x', pinned: true, code: 'ty' });
+
+    await setPhraseCode('p1', undefined);
+
+    const row = savedPhraseCollectionState.state.get('p1');
+    expect(row?.code).toBeUndefined();
+    expect(row?.pinned).toBe(true);
+  });
 });
 
 describe('removePhrase / setPhrasePinned', () => {
@@ -460,7 +546,12 @@ describe('replaceAiPhrases', () => {
       created_at: new Date(0),
     });
 
-    await replaceAiPhrases('space-1', 'user-1', ['Fresh one', 'call the NURSE', 'Another'], 7);
+    await replaceAiPhrases(
+      'space-1',
+      'user-1',
+      { phrases: ['Fresh one', 'call the NURSE', 'Another'], starters: [] },
+      7
+    );
 
     // Deletes only this space's old AI row.
     expect(mockSavedDelete).toHaveBeenCalledTimes(1);
@@ -483,5 +574,86 @@ describe('replaceAiPhrases', () => {
       'space-1',
       expect.objectContaining({ phrases_synced_count: 7 })
     );
+  });
+
+  it('assigns deterministic codes to AI phrases, avoiding existing codes and dictionary words', async () => {
+    spaceCollectionState.state.set('space-1', { id: 'space-1', updated_at: new Date(0) });
+    // A pinned code here and an AI code in another space both join the collision set.
+    savedPhraseCollectionState.state.set('pin', {
+      id: 'pin',
+      space_id: 'space-1',
+      user_id: 'u',
+      text: 'Thank you so much',
+      code: 'pcn',
+      pinned: true,
+      created_at: new Date(0),
+    });
+    savedPhraseCollectionState.state.set('other-ai', {
+      id: 'other-ai',
+      space_id: 'space-2',
+      user_id: 'u',
+      text: 'x',
+      code: 'iwd',
+      pinned: false,
+      created_at: new Date(0),
+    });
+
+    await replaceAiPhrases(
+      'space-1',
+      'user-1',
+      { phrases: ['Please call the nurse', 'I want dinner'], starters: [] },
+      3
+    );
+
+    const inserted = mockSavedInsert.mock.calls.map(
+      (c: unknown[]) => c[0] as { text: string; code?: string }
+    );
+    const codes = inserted.map(r => r.code);
+    // 'pcn' taken by the pinned row, 'iwd' taken cross-space — both mutate.
+    expect(codes.every(Boolean)).toBe(true);
+    expect(codes).not.toContain('pcn');
+    expect(codes).not.toContain('iwd');
+    expect(new Set(codes).size).toBe(codes.length);
+    for (const code of codes) expect(isCommonWord(code!)).toBe(false);
+  });
+
+  it('inserts starters with kind starter and no auto-code, deduped per kind', async () => {
+    spaceCollectionState.state.set('space-1', { id: 'space-1', updated_at: new Date(0) });
+    savedPhraseCollectionState.state.set('pin-starter', {
+      id: 'pin-starter',
+      space_id: 'space-1',
+      user_id: 'u',
+      text: 'Can you please',
+      kind: 'starter',
+      pinned: true,
+      created_at: new Date(0),
+    });
+    savedPhraseCollectionState.state.set('ai-old-starter', {
+      id: 'ai-old-starter',
+      space_id: 'space-1',
+      user_id: 'u',
+      text: 'Old starter here',
+      kind: 'starter',
+      pinned: false,
+      created_at: new Date(0),
+    });
+
+    await replaceAiPhrases(
+      'space-1',
+      'user-1',
+      { phrases: [], starters: ['can you PLEASE', "I'm feeling a bit"] },
+      3
+    );
+
+    // Old AI starter replaced; pinned starter untouched.
+    expect(mockSavedDelete).toHaveBeenCalledWith('ai-old-starter');
+    expect(savedPhraseCollectionState.state.get('pin-starter')?.pinned).toBe(true);
+
+    const inserted = mockSavedInsert.mock.calls.map(
+      (c: unknown[]) => c[0] as { text: string; kind?: string; code?: string }
+    );
+    expect(inserted).toHaveLength(1);
+    expect(inserted[0]).toMatchObject({ text: "I'm feeling a bit", kind: 'starter', pinned: false });
+    expect(inserted[0].code).toBeUndefined();
   });
 });

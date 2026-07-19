@@ -14,8 +14,6 @@ const SuggestionsSchema = z.object({
   suggestions: z.array(z.string()),
 });
 
-type SuggestionsType = z.infer<typeof SuggestionsSchema>;
-
 /** Debounce delay (ms) for re-fetching on text change. */
 const DEBOUNCE_MS = 200;
 
@@ -89,24 +87,16 @@ export function useSuggestions({
       });
 
       try {
-        const result = await generate({ prompt, system });
+        const result = await generate({ prompt, system, schema: SuggestionsSchema });
 
         if (signal.aborted || requestId !== requestIdRef.current) return;
 
         if (result) {
-          try {
-            const parsed = JSON.parse(
-              (result as string).replace('```json', '').replace('```', '').trim()
-            ) as string[];
+          const reconciled = isCompletion
+            ? result.suggestions.map(s => ignoreUnnecessaryDiffs(text.trim(), s))
+            : result.suggestions;
 
-            const reconciled = isCompletion
-              ? parsed.map(s => ignoreUnnecessaryDiffs(text.trim(), s))
-              : parsed;
-
-            setSuggestions(reconciled.map((s: string) => ({ text: s, source: 'llm' as const })));
-          } catch (error) {
-            console.error('Error parsing suggestions:', error);
-          }
+          setSuggestions(reconciled.map(s => ({ text: s, source: 'llm' as const })));
         }
         setIsLoading(false);
       } catch (error: unknown) {

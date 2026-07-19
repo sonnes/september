@@ -20,3 +20,19 @@ export { createNote, updateNote, deleteNote, deleteNotesForSpace } from './mutat
 
 // Types
 export type { Note, CreateNoteData, UpdateNoteData } from './types';
+
+// Reel theme + caption shells — the shared look tokens both reel renderers use.
+// Exported for the marketing landing page's reel prototype, which renders the
+// same frame chrome without the full voice-over pipeline.
+export {
+  GRAIN_OPACITY,
+  REEL_GRAIN_SVG,
+  REEL_VIGNETTE_GRADIENT,
+  ROLE_SPECS,
+  WATERMARK_TEXT,
+  captionRoles,
+  ensureReelFonts,
+  reelPair,
+} from './lib/reel-theme';
+export type { CaptionRole, ReelPair, ReelPairKey } from './lib/reel-theme';
+export type { ReelCaption, ReelWord } from './lib/reel';

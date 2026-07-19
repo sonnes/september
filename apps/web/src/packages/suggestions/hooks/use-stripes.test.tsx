@@ -17,6 +17,7 @@ const mockUseSuggestions = vi.fn(() => ({
 }));
 
 let mockText = 'Doc';
+let mockPhrases: Array<Record<string, unknown>> = [];
 
 vi.mock('@/packages/editor', () => ({
   useEditorContext: () => ({ text: mockText }),
@@ -26,21 +27,30 @@ vi.mock('@/packages/account', () => ({
   useAccount: () => ({ account: { context: 'global md' } }),
 }));
 
-vi.mock('@/packages/spaces', () => ({
-  useMessages: () => ({
-    messages: [
-      {
-        id: 'chat-history',
-        text: 'Doc from chat history',
-        type: 'user',
-        created_at: new Date('2026-01-01T00:00:00Z'),
-      },
-    ],
-  }),
-  useSpaces: () => ({ spaces: [{ id: 'space-1', context: 'space md' }] }),
-  useSavedPhrases: () => ({ phrases: [] }),
-  topPhrases: () => [],
-}));
+vi.mock('@/packages/spaces', async () => {
+  // The pure helpers are safe to use for real (no db import); only the
+  // live-query hooks are stubbed.
+  const codes = await vi.importActual<object>('@/packages/spaces/lib/codes');
+  const phrases = await vi.importActual<object>('@/packages/spaces/lib/phrases');
+  return {
+    ...codes,
+    ...phrases,
+    useMessages: () => ({
+      messages: [
+        {
+          id: 'chat-history',
+          text: 'Doc from chat history',
+          type: 'user',
+          created_at: new Date('2026-01-01T00:00:00Z'),
+        },
+      ],
+    }),
+    useSpaces: () => ({ spaces: [{ id: 'space-1', context: 'space md' }] }),
+    useSavedPhrases: ({ spaceId }: { spaceId?: string } = {}) => ({
+      phrases: spaceId ? mockPhrases.filter(p => p.space_id === spaceId) : mockPhrases,
+    }),
+  };
+});
 
 vi.mock('./use-suggestions', () => ({
   useSuggestions: (args: unknown) => mockUseSuggestions(args),
@@ -58,6 +68,7 @@ function Probe(props: { chatId: string; historyText?: string }) {
 beforeEach(() => {
   mockUseSuggestions.mockClear();
   mockText = 'Doc';
+  mockPhrases = [];
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
@@ -90,5 +101,79 @@ describe('useStripes', () => {
     expect(latest.stripes).toEqual([
       expect.objectContaining({ text: 'Doc content continues', source: 'history' }),
     ]);
+  });
+
+  it('surfaces a code match as the top stripe with the trigger consumed', () => {
+    mockPhrases = [
+      {
+        id: 'p1',
+        space_id: 'space-1',
+        user_id: 'u',
+        text: 'Thank you',
+        code: 'ty',
+        pinned: true,
+        created_at: new Date(0),
+      },
+    ];
+    mockText = 'I made it, ty';
+    render(<Probe chatId="space-1" />);
+
+    const [first] = latest.stripes;
+    expect(first).toMatchObject({ source: 'code', code: 'ty', text: 'I made it, Thank you' });
+    // Only the phrase's tokens remain visible — the typed prefix is hidden.
+    expect(first.tokens.slice(first.hidden)).toEqual(['Thank', 'you']);
+  });
+
+  it('matches codes from other spaces', () => {
+    mockPhrases = [
+      {
+        id: 'p2',
+        space_id: 'space-2',
+        user_id: 'u',
+        text: 'I want to go to the bathroom',
+        code: 'iwb',
+        pinned: true,
+        created_at: new Date(0),
+      },
+    ];
+    mockText = 'iwb';
+    render(<Probe chatId="space-1" />);
+
+    expect(latest.stripes[0]).toMatchObject({ source: 'code', code: 'iwb' });
+  });
+
+  it('shows no code stripe without an exact trailing-word match', () => {
+    mockPhrases = [
+      {
+        id: 'p1',
+        space_id: 'space-1',
+        user_id: 'u',
+        text: 'Thank you',
+        code: 'ty',
+        pinned: true,
+        created_at: new Date(0),
+      },
+    ];
+    mockText = 'ty '; // completed word — no longer a live trigger
+    render(<Probe chatId="space-1" />);
+
+    expect(latest.stripes.some(s => s.source === 'code')).toBe(false);
+  });
+
+  it('mixes starter rows after phrase rows when the composer is empty', () => {
+    mockPhrases = [
+      { id: 'a', space_id: 'space-1', user_id: 'u', text: 'Please call the nurse', pinned: true, created_at: new Date(0) },
+      { id: 'b', space_id: 'space-1', user_id: 'u', text: "I'm feeling a bit", kind: 'starter', pinned: false, created_at: new Date(0) },
+      { id: 'c', space_id: 'space-1', user_id: 'u', text: 'Can you please check', kind: 'starter', pinned: true, created_at: new Date(0) },
+    ];
+    mockText = '';
+    render(<Probe chatId="space-1" />);
+
+    const sources = latest.stripes.map(s => s.source);
+    expect(sources).toContain('starter');
+    expect(sources.indexOf('md')).toBeLessThan(sources.indexOf('starter'));
+    // Pinned starter first within the starter group.
+    const starterTexts = latest.stripes.filter(s => s.source === 'starter').map(s => s.text);
+    expect(starterTexts[0]).toBe('Can you please check');
   });
 });

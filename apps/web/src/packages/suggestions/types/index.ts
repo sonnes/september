@@ -2,8 +2,12 @@ import { z } from 'zod';
 
 export interface Suggestion {
   text: string;
-  /** Provenance of the suggestion. Optional so existing callers without source remain valid. */
-  source?: 'md' | 'history' | 'llm';
+  /**
+   * Provenance of the suggestion. Optional so existing callers without source
+   * remain valid. 'code' = phrase surfaced by its typed code; 'starter' = an
+   * AI sentence-opening prefix (not speakable as-is).
+   */
+  source?: 'md' | 'history' | 'llm' | 'code' | 'starter';
   audio_path?: string;
 }
 

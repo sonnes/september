@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { CornerDownLeft, History, Pin } from 'lucide-react';
+import { ChevronsRight, CornerDownLeft, Ellipsis, History, Pin } from 'lucide-react';
 
 import { cn } from '@/packages/shared';
 import { useEditorContext } from '@/packages/editor';
@@ -36,6 +36,17 @@ const SOURCE_LANE: Record<NonNullable<Stripe['source']>, { idle: string; active:
   llm: {
     idle: 'border-border bg-card text-foreground hover:border-primary/50 hover:bg-primary/5',
     active: 'border-primary bg-primary/10 text-primary',
+  },
+  // Phrase surfaced by its typed code — strongest tint; taking it swaps the
+  // typed code for the phrase.
+  code: {
+    idle: 'border-primary/70 bg-primary/10 text-foreground hover:border-primary hover:bg-primary/15',
+    active: 'border-primary bg-primary/20 text-primary',
+  },
+  // Sentence starter — an opening move, not a complete thought: dashed tint.
+  starter: {
+    idle: 'border-dashed border-primary/50 bg-primary/5 text-foreground hover:border-primary/80 hover:bg-primary/10',
+    active: 'border-dashed border-primary bg-primary/10 text-primary',
   },
 };
 
@@ -117,11 +128,16 @@ export function SuggestionStripes({
           return (
             <div
               key={stripe.text}
+              data-source={stripe.source}
               className="flex flex-nowrap items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden animate-in fade-in slide-in-from-bottom-1 motion-reduce:animate-none"
               style={{ gap: STRIPE_BASE.gapPx * scale, animationDelay: `${si * 45}ms`, animationFillMode: 'both' }}
               onMouseLeave={() => setHover(null)}
             >
-              <SourceMark source={stripe.source} onPin={onPin ? () => onPin(stripe.text) : undefined} />
+              <SourceMark
+                source={stripe.source}
+                code={stripe.code}
+                onPin={onPin ? () => onPin(stripe.text) : undefined}
+              />
 
               {/* Selectable token tiles. The already-typed prefix (stripe.hidden
                   tokens) is omitted — we don't repeat what's already entered.
@@ -154,24 +170,50 @@ export function SuggestionStripes({
                 );
               })}
 
-              {/* Accept the whole stripe (full draft + suggestion) and speak it. */}
-              {onSubmit && (
+              {/* End key. Starters take the whole prefix into the composer (an
+                  opening move — never spoken as-is); everything else speaks the
+                  full draft + suggestion. */}
+              {stripe.source === 'starter' ? (
                 <button
                   type="button"
-                  onClick={() => onSubmit(joinTokens(stripe.tokens))}
-                  aria-label="Speak this suggestion"
-                  title="Speak this suggestion"
+                  onClick={() => selectUpTo(si, stripe.tokens.length - 1)}
+                  aria-label="Start with this prefix"
+                  title="Start with this prefix"
                   style={{
                     minHeight: STRIPE_BASE.minHeightPx * scale,
                     paddingInline: STRIPE_BASE.wordPadXPx * scale,
                   }}
-                  className="inline-flex shrink-0 items-center justify-center rounded-control border border-primary/40 bg-primary/10 text-primary transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="inline-flex shrink-0 items-center justify-center rounded-control border border-dashed border-primary/40 text-primary/70 transition-colors hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <CornerDownLeft
+                  <Ellipsis
                     style={{ width: STRIPE_BASE.fontPx * scale, height: STRIPE_BASE.fontPx * scale }}
                     aria-hidden
                   />
                 </button>
+              ) : (
+                onSubmit && (
+                  <button
+                    type="button"
+                    onClick={() => onSubmit(joinTokens(stripe.tokens))}
+                    aria-label="Speak this suggestion"
+                    title="Speak this suggestion"
+                    style={{
+                      minHeight: STRIPE_BASE.minHeightPx * scale,
+                      paddingInline: STRIPE_BASE.wordPadXPx * scale,
+                    }}
+                    className={cn(
+                      'inline-flex shrink-0 items-center justify-center rounded-control border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      stripe.source === 'code'
+                        ? 'border-primary bg-primary text-primary-foreground hover:bg-primary/90'
+                        : 'border-primary/40 bg-primary/10 text-primary hover:bg-primary/20'
+                    )}
+                  >
+                    <CornerDownLeft
+                      style={{ width: STRIPE_BASE.fontPx * scale, height: STRIPE_BASE.fontPx * scale }}
+                      aria-hidden
+                    />
+                  </button>
+                )
               )}
             </div>
           );
@@ -188,11 +230,29 @@ export function SuggestionStripes({
 /** Leading provenance marker — icon paired with the tile's colour lane. */
 function SourceMark({
   source,
+  code,
   onPin,
 }: {
   source: Stripe['source'];
+  code?: string;
   onPin?: () => void;
 }) {
+  if (source === 'code') {
+    return (
+      <span
+        className="inline-flex shrink-0 items-center rounded-md bg-primary px-1.5 py-0.5 text-xs font-bold text-primary-foreground"
+        aria-label={`Code ${code}`}
+        title={`You typed the code "${code}"`}
+      >
+        {code}
+      </span>
+    );
+  }
+  if (source === 'starter') {
+    return (
+      <ChevronsRight className="size-4 shrink-0 text-primary/60" aria-label="Sentence starter" />
+    );
+  }
   if (source === 'md') {
     return (
       <button

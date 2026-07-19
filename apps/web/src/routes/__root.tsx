@@ -39,7 +39,7 @@ function NotFound() {
 
 function RootDocument({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className="h-full bg-zinc-100">
+    <html lang="en" className="h-full scroll-smooth bg-zinc-100 motion-reduce:scroll-auto">
       <head>
         <HeadContent />
       </head>
@@ -61,13 +61,13 @@ export const Route = createRootRoute({
       {
         name: 'description',
         content:
-          'September is a communication assistant for people living with neurodegenerative conditions like ALS, MND, or other speech & motor difficulties.',
+          'Faster communication, fewer keystrokes. September is a free, open-source communication assistant for people living with ALS, MND, and other speech & motor difficulties.',
       },
       { property: 'og:title', content: 'September - Communication Assistant' },
       {
         property: 'og:description',
         content:
-          'September is a communication assistant for people living with neurodegenerative conditions like ALS, MND, or other speech & motor difficulties.',
+          'Faster communication, fewer keystrokes. September is a free, open-source communication assistant for people living with ALS, MND, and other speech & motor difficulties.',
       },
       { property: 'og:url', content: 'https://september.to' },
       { property: 'og:site_name', content: 'September - Communication Assistant' },

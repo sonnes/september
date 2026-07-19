@@ -81,11 +81,14 @@ export function boardPhrases(entries: string[]): string[] {
 export function composeSuggestions({
   typed,
   mdPhrases: phrases,
+  starters = [],
   history,
   llm,
 }: {
   typed: string;
   mdPhrases: string[];
+  /** Sentence-opening prefixes — rendered as starter rows, not speakable as-is. */
+  starters?: string[];
   history: string[];
   llm: string[];
 }): Suggestion[] {
@@ -103,6 +106,11 @@ export function composeSuggestions({
   // Md phrases — prefix-filtered when text is non-empty
   for (const phrase of phrases) {
     if (!lower || phrase.toLowerCase().startsWith(lower)) push(phrase, 'md');
+  }
+
+  // Starters — same prefix filtering; deduped against phrases by `seen`
+  for (const starter of starters) {
+    if (!lower || starter.toLowerCase().startsWith(lower)) push(starter, 'starter');
   }
 
   // History — already prefix-filtered by historyMatches
@@ -135,4 +143,14 @@ export function stripeForText(
  */
 export function appendTokens(text: string, entry: string): string {
   return joinTokens([...tokenize(text), ...tokenize(entry)]);
+}
+
+/**
+ * The composer text with its trailing word (a typed code) replaced by the
+ * phrase. This IS the take-consumes-trigger transform: a code stripe's text is
+ * this full replacement, so the existing partial-take path (`selectUpTo` →
+ * stripe tokens) consumes the trigger with no new take logic.
+ */
+export function codeExpansionText(typed: string, phraseText: string): string {
+  return typed.replace(/\S+$/, phraseText);
 }

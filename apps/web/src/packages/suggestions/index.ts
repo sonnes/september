@@ -18,6 +18,7 @@ export {
   composeSuggestions,
   stripeForText,
   appendTokens,
+  codeExpansionText,
   MAX_COMPOSED,
 } from './lib/stripes';
 export { parseMdPhrases } from './lib/md';

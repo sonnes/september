@@ -43,6 +43,7 @@ import {
   addManualPhrase,
   removePhrase,
   replaceAiPhrases,
+  setPhraseCode,
   setPhrasePinned,
 } from '@/packages/spaces';
 
@@ -54,11 +55,30 @@ await deleteSpace(spaceId); // cascades messages + saved phrases + notes
 const msg = await createMessage({ text, type, user_id, space_id });
 
 await addManualPhrase(spaceId, userId, 'Call the nurse'); // upsert; pins (promotes AI → pinned)
+await addManualPhrase(spaceId, userId, 'What is for dinner', { code: 'wfd' }); // with a code
 await setPhrasePinned(phraseId, false); // unpin → regenerable again
+await setPhraseCode(phraseId, 'ty'); // set/clear a code; setting pins the row
 await removePhrase(phraseId);
-await replaceAiPhrases(spaceId, userId, aiTexts, messageCount); // seed/regen write
+// seed/regen write — phrases + starters, AI phrases get auto-codes
+await replaceAiPhrases(spaceId, userId, { phrases, starters }, messageCount);
 
 console.log(DEFAULT_SPACE_SEED.title); // "General"
+```
+
+### Phrase codes & mining (pure helpers)
+
+```ts
+import {
+  generateCode, // deterministic code from a phrase's content-word initials
+  isCommonWord, // built-in short-word dictionary (default `isWord` check)
+  matchCode, // exact case-insensitive lookup; current space wins conflicts
+  mineShortcuts, // frequency-mine repeated phrases → { text, code, count }[]
+  normalizeCode,
+  normalizeMinedText, // canonical key used by mining + the dismissed-set
+  sanitizeStarters, // clamp LLM starter output to 2–6-word prefixes
+  trailingWord, // the word at the composer caret ('' after whitespace)
+  validateCode, // format/dictionary/duplicate check with a mutation suggestion
+} from '@/packages/spaces';
 ```
 
 ### Types
@@ -75,6 +95,24 @@ Per-space ready-to-use phrases, stored as one row per phrase in
 - `pinned: true` — the user kept it (added manually, or pinned a suggestion). Durable.
 - `pinned: false` — AI-generated. Replaced on each regeneration.
 
+Two optional fields extend the row:
+
+- **`kind`** — `'phrase'` (complete, speakable; the default when absent) or
+  `'starter'` (a 3–5-word sentence-opening prefix). Starters share the whole
+  pin/regen lifecycle.
+- **`code`** — a short abbreviation (stored lowercase) that surfaces the phrase
+  at the top of the suggestion stripe while typing (`ty` → "Thank you").
+  A **user-set** code pins its row (user code ⇒ pinned). Seeding assigns codes
+  to AI phrases too — deterministically via `generateCode`, never by the LLM —
+  and those AI codes are replaced along with their rows on regen. Codes are
+  unique app-wide and matched across spaces (current space wins conflicts).
+
+**Shortcut mining** (`mineShortcuts`) proposes phrase+code pairs from repeated
+messages — local counting only, no LLM. Candidates matching any existing phrase
+(pinned or AI-seeded) or a dismissed entry are excluded. The Phrases tab shows
+proposals as "Shortcut ideas"; dismissals persist in `localStorage`
+(`september:mined-dismissed`, keyed by `normalizeMinedText`).
+
 `createDefaultSpace(userId)` creates the first-run `General` space from
 `DEFAULT_SPACE_SEED`, including generic greeting and reply starter phrases used
 by the marketing live demo. It leaves `phrases_synced_count` unset, so the first
@@ -87,10 +125,14 @@ that predate the feature) and **regenerates on open** once the history has grown
 stale (see `isStale` / `PHRASES_STALE_AFTER`). `replaceAiPhrases` only ever
 rewrites `pinned: false` rows — **pinned phrases are never overwritten, reordered,
 or dropped** (`dedupeAgainstPinned` keeps fresh AI texts clear of pinned ones).
+The prompt (`buildPhrasesPrompt`) marks pinned rows `[pinned]` so the model
+skips them, and embeds history as `Me:`/`Them:` lines (`formatPhraseHistory`)
+so transcriptions aren't attributed to the user.
 `Space.phrases_synced_count` records the message count at the last generation.
 
-The suggestion stripe shows the top 5 (`topPhrases`, pinned first) as its curated
-default. See `docs/concepts/saved-phrases.md`.
+The suggestion stripe's curated default mixes phrase rows (`topPhrases`, pinned
+first) with up to 2 starter rows (`topRows(_, 2, 'starter')`) inside a 5-row
+budget. See `docs/concepts/saved-phrases.md`.
 
 ## Data layout
 

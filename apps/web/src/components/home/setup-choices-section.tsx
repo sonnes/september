@@ -12,12 +12,14 @@ export function SetupChoicesSection() {
   return (
     <section className="bg-zinc-100 px-4 py-16 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-6 rounded-2xl bg-indigo-600 p-6 text-white sm:p-8">
-          <p className="mb-4 text-sm font-bold text-white/85">Setup choices</p>
-          <h2 className="text-3xl font-bold leading-tight tracking-normal sm:text-5xl">
+        {/* Plain header — the indigo privacy band sits directly above; two
+            indigo bands in adjacent viewports read as repetition. */}
+        <div className="mb-9 max-w-3xl">
+          <p className="mb-3 text-sm font-bold text-indigo-600">Setup choices</p>
+          <h2 className="text-3xl font-bold leading-tight tracking-normal text-zinc-950 sm:text-5xl">
             Choose the setup that feels right.
           </h2>
-          <p className="mt-4 max-w-4xl text-base leading-relaxed text-white/90 sm:text-lg">
+          <p className="mt-4 text-base leading-relaxed text-zinc-600 sm:text-lg">
             You can keep everything on this device, use free writing help, or ask a caregiver to
             connect other services.
           </p>

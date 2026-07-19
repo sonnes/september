@@ -15,13 +15,19 @@ export type Space = z.infer<typeof SpaceSchema>;
 
 // Saved phrase — one ready-to-use phrase per space. The `pinned` flag is the
 // AI/manual distinction: true = user-kept (durable), false = AI-generated
-// (replaced on regeneration).
+// (replaced on regeneration). A user-set `code` pins its row; AI-seeded codes
+// are replaced with their rows. `kind` is optional so rows persisted before
+// the field existed stay valid — absent means 'phrase' (see rowKind).
 export const SavedPhraseSchema = z.object({
   id: z.uuid(),
   space_id: z.uuid(),
   user_id: z.string(),
   text: z.string(),
   pinned: z.boolean(),
+  // Short abbreviation (stored lowercase) that surfaces this phrase in the
+  // suggestion stripe while typing.
+  code: z.string().optional(),
+  kind: z.enum(['phrase', 'starter']).optional(),
   created_at: z.coerce.date(),
 });
 

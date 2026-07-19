@@ -18,16 +18,13 @@ const OPENING_PROMPT = `Generate 5 possible NEXT things the User might WANT TO S
 - Suggestions must be things the User (Me) would say out loud next — never replies FROM the other person
 - Do NOT generate answers to a question the User just asked (they asked it, they don't need to answer it)
 - Prefer natural continuations of the User's own thread: follow-up questions they might ask, additional things they might add, new related topics, closers, clarifications, or small talk that fits the moment
-- Keep suggestions short, speakable, and natural — this is spoken conversation, not written text
+- Keep suggestions speakable and natural — 5-7 words each; this is spoken conversation, not written text
 - Offer variety across the 5 suggestions (e.g. one question, one statement, one topic shift) so the User has real choices
-- Match the User's tone and style from the persona
+- Match the User's tone and style from the user context, when provided
 - STRICTLY maintain the same language as the conversation context
-- Return ONLY a JSON array of 5 strings, no other text
 </rules>
 
-<persona>
-{USER_PERSONA}
-</persona>
+{USER_CONTEXT}
 
 <examples>
 <example>
@@ -36,14 +33,14 @@ const OPENING_PROMPT = `Generate 5 possible NEXT things the User might WANT TO S
 Me: How are you today?
 Me: It's good to see you
 </input>
-<output>["It's been a while", "What have you been up to?", "You look great", "Do you have time to catch up?", "Tell me what's new with you"]</output>
+<output>{"suggestions": ["It's been such a long time", "What have you been up to?", "You are looking really well today", "Do you have time to catch up?", "Tell me what's new with you"]}</output>
 </example>
 <example>
 <description>User is opening a conversation with a single greeting. Suggestions are natural next things to say, not responses.</description>
 <input>
 Me: Hello
 </input>
-<output>["How have you been?", "Thanks for coming over", "I wanted to talk with you", "Can you sit with me for a bit?", "It's good to see you"]</output>
+<output>{"suggestions": ["How have you been doing lately?", "Thank you for coming to see me", "I wanted to talk with you", "Can you sit with me a while?", "It is so good to see you"]}</output>
 </example>
 </examples>`;
 
@@ -62,18 +59,15 @@ const COMPLETION_PROMPT = `Complete the User's partial input into 5 full spoken 
 <rules>
 - Each of the 5 completions MUST begin with the user's current input verbatim — do NOT rephrase or reword the typed prefix
 - Complete the sentence naturally in the same language as the typed input
-- Keep completions short, speakable, and natural — this is spoken conversation
-- Honor the user's persona, tone, and the conversation flow
-- Return ONLY a JSON array of 5 strings, no other text
+- Keep completions speakable and natural — full sentences of 5-7 words (including the typed prefix) when the input allows; this is spoken conversation
+- Honor the user context (when provided), the User's tone, and the conversation flow
 </rules>
 
-<persona>
-{USER_PERSONA}
-</persona>
+{USER_CONTEXT}
 
 <example>
 <input_text>I need</input_text>
-<output>["I need some water, please.", "I need help with this.", "I need to rest for a while.", "I need you to call my doctor.", "I need a moment, thank you."]</output>
+<output>{"suggestions": ["I need some water, please.", "I need help with this.", "I need to rest for a while.", "I need you to call my doctor.", "I need a moment, thank you."]}</output>
 </example>`;
 
 export interface BuildSuggestionPromptInput {
@@ -89,16 +83,26 @@ export interface BuildSuggestionPromptResult {
 }
 
 /**
+ * The `{USER_CONTEXT}` slot filled with the assembled global + space context
+ * wrapped in a <user_context> block, or removed entirely when there is none
+ * (so no empty tag or dangling reference remains).
+ */
+function applyUserContext(template: string, context: string): string {
+  const block = context ? `<user_context>\n${context}\n</user_context>` : '';
+  return template.replace('{USER_CONTEXT}', block).replace(/\n{3,}/g, '\n\n');
+}
+
+/**
  * Pure context serializer for the suggestions LLM call.
  *
  * Assembles `system` and `user` strings from the global markdown context,
  * per-space markdown context, conversation history, and the current typed text.
+ * Context lives only in the system prompt (via `{USER_CONTEXT}`); the user
+ * message carries the typed input and conversation.
  *
  * Branches on whether `typed` has content:
  * - non-empty → completion mode (COMPLETION_PROMPT)
  * - empty/whitespace → opening mode (OPENING_PROMPT)
- *
- * The assembled `context` replaces the old `{USER_PERSONA}` placeholder.
  */
 export function buildSuggestionPrompt(
   input: BuildSuggestionPromptInput
@@ -118,16 +122,10 @@ export function buildSuggestionPrompt(
 
   const isCompletion = typed.trim().length > 0;
 
-  let system: string;
-  let user: string;
-
-  if (isCompletion) {
-    system = COMPLETION_PROMPT.replace('{USER_PERSONA}', context);
-    user = `Current input: "${typed}"\n\nContext: ${context}\nConversation:\n${messagesContent}`;
-  } else {
-    system = OPENING_PROMPT.replace('{USER_PERSONA}', context);
-    user = `Context: ${context}\nConversation:\n${messagesContent}`;
-  }
+  const system = applyUserContext(isCompletion ? COMPLETION_PROMPT : OPENING_PROMPT, context);
+  const user = isCompletion
+    ? `Current input: "${typed}"\n\nConversation:\n${messagesContent}`
+    : `Conversation:\n${messagesContent}`;
 
   return { system, user };
 }

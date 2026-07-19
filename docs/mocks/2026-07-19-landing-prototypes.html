@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>September — Landing redesign: every feature is a working prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700&family=Playfair+Display:wght@500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --indigo-700:#4338ca; --indigo-600:#4f46e5; --indigo-500:#6366f1; --indigo-400:#818cf8; --indigo-300:#a5b4fc;
+    --indigo-200:#c7d2fe; --indigo-100:#e0e7ff; --indigo-50:#eef2ff;
+    --zinc-950:#09090b; --zinc-900:#18181b; --zinc-800:#27272a; --zinc-700:#3f3f46; --zinc-600:#52525b; --zinc-500:#71717a;
+    --zinc-400:#a1a1aa; --zinc-300:#d4d4d8; --zinc-200:#e4e4e7; --zinc-100:#f4f4f5; --zinc-50:#fafafa;
+    --amber-500:#f59e0b; --amber-400:#fbbf24; --amber-950:#451a03; --amber-100:#fef3c7; --amber-700:#b45309;
+    --emerald-100:#d1fae5; --emerald-700:#047857; --sky-100:#e0f2fe; --sky-700:#0369a1;
+    --stone-950:#0c0a09; --stone-200:#e7e5e4; --stone-50:#fafaf9;
+    --r-control:12px; --r-chip:14px; --r-surface:20px;
+  }
+  * { box-sizing:border-box; margin:0; }
+  body {
+    font-family:"Noto Sans", Helvetica, sans-serif;
+    background:var(--zinc-100); color:var(--zinc-900);
+    -webkit-font-smoothing:antialiased; padding:48px 24px 120px;
+  }
+  .page { max-width:1240px; margin:0 auto; }
+  .page > header h1 { font-size:28px; font-weight:700; letter-spacing:-0.02em; }
+  .page > header p.lede { font-size:15px; color:var(--zinc-500); margin-top:8px; max-width:80ch; line-height:1.6; }
+
+  /* ——— annotation chrome (not part of the page design) ——— */
+  .audit { background:#fff; border:1px solid var(--zinc-200); border-radius:14px; padding:24px; margin-top:28px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  .audit h2 { font-size:16px; font-weight:600; margin-bottom:10px; }
+  .audit p, .audit li { font-size:14px; color:var(--zinc-700); line-height:1.7; }
+  .audit p { max-width:86ch; }
+  .audit ul, .audit ol { padding-left:18px; margin-top:8px; }
+  .audit li { margin-top:4px; }
+  .audit code { background:var(--zinc-100); border-radius:5px; padding:1px 5px; font-size:12.5px; }
+  .audit .rec { margin-top:14px; background:var(--indigo-50); border:1px solid var(--indigo-100); border-radius:12px; padding:14px 18px; font-size:14px; color:var(--zinc-800); line-height:1.6; }
+  .audit .rec b { color:var(--indigo-600); }
+  .audit b { font-weight:600; }
+  .slabel { display:flex; align-items:baseline; gap:10px; margin:56px 0 12px; }
+  .slabel .tag { font-size:11px; font-weight:700; letter-spacing:.08em; color:#fff; background:var(--zinc-700); border-radius:6px; padding:3px 8px; }
+  .slabel .note { font-size:13px; color:var(--zinc-500); }
+
+  /* ——— the mocked page itself ——— */
+  .canvas { background:#fff; border:1px solid var(--zinc-200); border-radius:18px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+
+  .eyebrow { font-size:14px; font-weight:700; color:var(--indigo-600); margin-bottom:10px; }
+  .h2 { font-size:34px; font-weight:700; letter-spacing:-0.01em; line-height:1.15; color:var(--zinc-950); }
+  .sub { margin-top:14px; font-size:17px; line-height:1.65; color:var(--zinc-500); max-width:60ch; }
+  .tryhint { display:inline-flex; align-items:center; gap:8px; margin-top:18px; background:var(--indigo-50); border:1px solid var(--indigo-100);
+    color:var(--indigo-700); border-radius:999px; padding:8px 16px; font-size:14px; font-weight:500; }
+  .tryhint::before { content:"▸"; font-size:12px; }
+
+  /* hero */
+  .hero { margin:12px; border-radius:16px; background:var(--indigo-600); color:#fff; padding:0; overflow:hidden; }
+  .hero nav { display:flex; justify-content:space-between; align-items:center; padding:22px 36px; }
+  .hero .brand { display:flex; align-items:center; gap:10px; font-size:22px; font-weight:700; }
+  .hero .brand .dot { width:34px; height:34px; border-radius:10px; background:#fff3; display:grid; place-items:center; font-size:17px; }
+  .hero nav .links { display:flex; gap:20px; align-items:center; font-size:14px; }
+  .hero nav .links a { color:#fffc; text-decoration:none; font-weight:500; }
+  .hero nav .cta-sm { background:#fff; color:var(--indigo-600); border-radius:999px; padding:10px 18px; font-weight:600; font-size:13px; }
+  .hero .body { display:grid; grid-template-columns:1.05fr 1fr; gap:48px; padding:24px 36px 44px; align-items:center; }
+  .hero h1.big { font-size:46px; line-height:1.12; font-weight:700; }
+  .hero h1.big em { font-style:normal; color:var(--amber-400); }
+  .hero .right p.lead { font-size:18px; line-height:1.6; color:#fffd; max-width:44ch; }
+  .hero .ctas { display:flex; gap:14px; align-items:center; margin-top:22px; flex-wrap:wrap; }
+  .hero .cta-main { background:var(--amber-500); color:var(--amber-950); font-weight:600; font-size:15px; border:none; border-radius:999px; padding:14px 30px; cursor:pointer; box-shadow:0 6px 16px rgba(0,0,0,.18); }
+  .hero .pill-ghost { border:1px solid #fff4; background:#fff1; color:#fff; border-radius:999px; padding:9px 16px; font-size:13px; font-weight:500; }
+  .hero .fine { margin-top:16px; font-size:14px; color:#fffc; }
+  .hero .demo-note { margin-top:8px; font-size:14px; color:var(--amber-200, #fde68a); font-weight:500; }
+
+  /* feature sections */
+  section.feat { padding:72px 36px; }
+  section.feat.alt { background:var(--zinc-50); border-top:1px solid var(--zinc-200); border-bottom:1px solid var(--zinc-200); }
+  .split { display:grid; grid-template-columns:minmax(0,0.8fr) minmax(0,1.1fr); gap:56px; align-items:center; max-width:1160px; margin:0 auto; }
+  .split.rev { grid-template-columns:minmax(0,1.1fr) minmax(0,0.8fr); }
+  .split.rev .copy { order:2; }
+  .split.rev .proto { order:1; }
+  @media (max-width:900px){ .split, .split.rev { grid-template-columns:1fr; } .split.rev .copy{order:1} .split.rev .proto{order:2} .hero .body{grid-template-columns:1fr} }
+
+  /* prototype frames */
+  .frame { background:var(--zinc-100); border:1px solid var(--zinc-200); border-radius:var(--r-surface); padding:14px; box-shadow:0 1px 2px rgba(0,0,0,.05); }
+  .frame .inner { background:#fff; border:1px solid var(--zinc-200); border-radius:16px; padding:16px; }
+  .frame .caption { display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--zinc-400); padding:0 4px 10px; }
+  .frame .caption .live { color:var(--emerald-700); display:flex; align-items:center; gap:6px; text-transform:none; letter-spacing:0; font-size:12px; }
+  .frame .caption .live::before { content:""; width:8px; height:8px; border-radius:99px; background:var(--emerald-700); }
+
+  /* shared demo bits */
+  .bubbles { display:flex; flex-direction:column; gap:10px; align-items:flex-end; min-height:96px; justify-content:flex-end; padding:6px 2px 14px; }
+  .bubble { max-width:85%; background:var(--indigo-100); color:var(--indigo-700); border-radius:14px; border-bottom-right-radius:4px; padding:10px 16px; font-size:16px; line-height:1.45; display:flex; gap:8px; align-items:flex-start; animation:pop .18s ease-out; }
+  .bubble .spk { opacity:.55; font-size:13px; margin-top:2px; }
+  @keyframes pop { from { transform:translateY(4px); opacity:0 } to { transform:none; opacity:1 } }
+  @media (prefers-reduced-motion: reduce){ .bubble{animation:none} }
+
+  .tiles { display:flex; flex-wrap:wrap; gap:8px; padding:2px; }
+  .tile { border:1px solid var(--zinc-200); background:#fff; color:var(--zinc-800); border-radius:var(--r-chip); padding:11px 16px; font-size:16px; cursor:pointer; font-family:inherit; transition:background .12s; min-height:44px; }
+  .tile:hover { background:var(--indigo-50); border-color:var(--indigo-200); }
+  .tile:focus-visible, button:focus-visible, textarea:focus-visible, select:focus-visible { outline:3px solid var(--indigo-300); outline-offset:1px; }
+  .tile.pinned { border-color:var(--indigo-200); background:var(--indigo-50); color:var(--indigo-700); border-radius:999px; }
+  .tile.code { border-color:var(--indigo-400); background:var(--indigo-600); color:#fff; font-weight:500; }
+  .tile b { font-weight:700; }
+
+  .composer { border:2px solid var(--zinc-200); border-radius:var(--r-surface); padding:14px; margin-top:10px; transition:border-color .12s; }
+  .composer:focus-within { border-color:var(--indigo-400); }
+  .composer textarea { width:100%; border:none; resize:none; font-family:inherit; font-size:20px; line-height:1.45; color:var(--zinc-900); background:transparent; }
+  .composer textarea:focus { outline:none; }
+  .composer .row { display:flex; justify-content:space-between; align-items:center; margin-top:10px; gap:10px; }
+  .composer .rail { display:flex; gap:6px; }
+  .railbtn { width:44px; height:44px; display:grid; place-items:center; border:1px solid var(--zinc-200); background:#fff; border-radius:var(--r-control); color:var(--zinc-500); cursor:pointer; font-size:16px; }
+  .railbtn:hover { background:var(--zinc-100); }
+  .speakbtn { display:inline-flex; align-items:center; gap:8px; background:var(--indigo-600); color:#fff; border:none; border-radius:999px; min-height:44px; padding:0 26px; font-size:15px; font-weight:600; font-family:inherit; cursor:pointer; }
+  .speakbtn:disabled { opacity:.4; cursor:default; }
+  .speakbtn:not(:disabled):hover { background:var(--indigo-700); }
+
+  /* spaces demo */
+  .space-tabs { display:flex; gap:6px; background:var(--zinc-100); border:1px solid var(--zinc-200); border-radius:999px; padding:5px; width:fit-content; margin-bottom:14px; }
+  .space-tab { border:none; background:transparent; font-family:inherit; font-size:14px; font-weight:500; color:var(--zinc-500); border-radius:999px; padding:10px 18px; cursor:pointer; min-height:40px; }
+  .space-tab[aria-pressed="true"] { background:var(--indigo-600); color:#fff; }
+
+  /* voice demo */
+  .voice-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .voice-row select { flex:1; min-width:220px; min-height:44px; font-family:inherit; font-size:15px; border:1px solid var(--zinc-200); border-radius:var(--r-control); padding:0 12px; background:#fff; color:var(--zinc-900); }
+  .voice-cloned { margin-top:12px; display:flex; align-items:center; gap:10px; border:1px dashed var(--indigo-300); background:var(--indigo-50); border-radius:var(--r-control); padding:12px 16px; font-size:14px; color:var(--indigo-700); }
+
+  /* notes demo */
+  .note-title { font-size:17px; font-weight:600; color:var(--zinc-950); padding:2px 2px 10px; }
+  .note-body { font-size:16px; line-height:1.7; color:var(--zinc-700); padding:0 2px; }
+  .note-body span.sent { border-radius:6px; padding:1px 3px; transition:background .15s; }
+  .note-body span.sent.on { background:var(--indigo-100); color:var(--indigo-700); }
+
+  /* reel demo */
+  .reel-wrap { display:flex; gap:20px; align-items:center; }
+  .reel { width:240px; aspect-ratio:9/16; border-radius:18px; background:var(--stone-950); position:relative; overflow:hidden; flex:none;
+    display:flex; flex-direction:column; justify-content:center; padding:26px; box-shadow:0 10px 30px rgba(0,0,0,.25); }
+  .reel::after { content:""; position:absolute; inset:0; background:radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.5)); pointer-events:none; }
+  .reel .display { font-family:"Playfair Display", Georgia, serif; font-weight:500; font-size:24px; line-height:1.3; color:var(--stone-200); }
+  .reel .support { margin-top:14px; font-size:12.5px; line-height:1.6; color:var(--stone-50); opacity:.85; }
+  .reel .wm { position:absolute; bottom:14px; left:0; right:0; text-align:center; font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:#fff8; z-index:1; }
+  .reel .prog { position:absolute; top:12px; left:16px; right:16px; height:3px; background:#fff3; border-radius:99px; z-index:1; }
+  .reel .prog i { display:block; height:100%; width:0%; background:#fff; border-radius:99px; transition:width .3s linear; }
+  .reel-side { display:flex; flex-direction:column; gap:12px; }
+  .reel-side .meta { font-size:13px; color:var(--zinc-500); line-height:1.6; max-width:24ch; }
+
+  /* privacy band */
+  .band { margin:0 12px 12px; border-radius:16px; background:var(--indigo-600); color:#fff; padding:56px 44px; }
+  .band .eyebrow { color:var(--indigo-200); }
+  .band .h2 { color:#fff; }
+  .band .sub { color:#fffd; }
+  .band ul.facts { list-style:none; padding:0; margin-top:24px; display:flex; gap:12px; flex-wrap:wrap; }
+  .band ul.facts li { border:1px solid #fff4; background:#fff1; border-radius:999px; padding:10px 18px; font-size:14px; font-weight:500; }
+
+  /* setup cards */
+  .setup { padding:72px 36px; background:var(--zinc-50); border-top:1px solid var(--zinc-200); }
+  .setup .grid3 { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:20px; margin-top:36px; max-width:1160px; margin-inline:auto; }
+  @media (max-width:900px){ .setup .grid3 { grid-template-columns:1fr; } }
+  .setup .head { max-width:1160px; margin:0 auto; }
+  .mode { background:#fff; border:1px solid var(--zinc-200); border-top:4px solid; border-radius:16px; padding:26px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  .mode .badge { display:inline-block; border-radius:999px; padding:5px 12px; font-size:12px; font-weight:700; margin-bottom:14px; }
+  .mode h3 { font-size:18px; font-weight:600; }
+  .mode p { margin-top:8px; font-size:14px; line-height:1.65; color:var(--zinc-500); }
+  .mode ul { margin-top:12px; padding-left:18px; font-size:14px; line-height:1.7; color:var(--zinc-500); }
+  .mode.emerald { border-top-color:var(--emerald-700); } .mode.emerald .badge { background:var(--emerald-100); color:var(--emerald-700); }
+  .mode.amber { border-top-color:var(--amber-700); } .mode.amber .badge { background:var(--amber-100); color:var(--amber-700); }
+  .mode.sky { border-top-color:var(--sky-700); } .mode.sky .badge { background:var(--sky-100); color:var(--sky-700); }
+
+  /* final cta + footer */
+  .final { padding:80px 36px; text-align:center; }
+  .final .h2 { font-size:38px; }
+  .final .sub { margin-inline:auto; }
+  .final .cta-main { margin-top:28px; background:var(--indigo-600); color:#fff; font-weight:600; font-size:16px; border:none; border-radius:999px; padding:16px 40px; cursor:pointer; }
+  .footer { border-top:1px solid var(--zinc-200); padding:24px 36px; display:flex; justify-content:space-between; font-size:13px; color:var(--zinc-500); flex-wrap:wrap; gap:10px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <h1>Landing redesign — every feature is a working prototype</h1>
+  <p class="lede">
+    Proposed structure and copy for the September home page. The organizing idea: <b>don't describe the product — hand it over.</b>
+    The current page has one live demo and five skeleton screenshots; this redesign gives every feature its own small, real,
+    touchable prototype. Everything interactive below actually works (speech uses your browser's voices) — try each one.
+  </p>
+</header>
+
+<div class="audit">
+  <h2>What changes vs. the current page</h2>
+  <ul>
+    <li><b>Features section (5 skeleton cards) is dissolved</b> into five full feature sections, each pairing copy with a live mini-prototype: phrases &amp; codes, spaces, voice, notes, reels.</li>
+    <li><b>How-it-works (numbered 1-2-3 cards) is dropped.</b> The hero demo teaches the same three steps by doing, and each prototype carries a one-line "Try it" hint instead.</li>
+    <li><b>The live demo moves up into the flagship "Talk" section</b> directly under the hero — the first thing after the promise is the product itself, now with real text-to-speech.</li>
+    <li><b>Privacy gets its own indigo band</b> (currently a footnote line in the hero). It's a differentiator; it earns a section.</li>
+    <li>Setup choices, final CTA, and footer keep their current copy source (<code>SETUP_MODES</code>) and roughly their current shape.</li>
+    <li>Page rhythm: white ↔ zinc-50 alternating sections, copy/prototype sides alternating, one indigo band mid-page and the indigo hero on top.</li>
+  </ul>
+  <div class="rec">
+    <b>Implementation note:</b> the "Talk" prototype is today's <code>LiveDemoSection</code> plus real speech via the existing speech provider.
+    Each smaller prototype reuses app primitives (<code>SuggestionStripes</code>, seed phrases from <code>DEFAULT_SPACE_SEED</code>) rather than bespoke marketing code.
+    The phrase-codes demo depends on the approved <code>2026-07-18-phrase-codes-starters-corpus</code> plan — it ships with that feature, or the section launches with pinned phrases only.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="slabel"><span class="tag">S0 · HERO</span><span class="note">kept structure, one new line that frames the whole page: the demos are real</span></div>
+
+<div class="canvas">
+  <div class="hero">
+    <nav>
+      <span class="brand"><span class="dot">◗</span> september</span>
+      <span class="links"><a href="#">GitHub</a><span class="cta-sm">Get Started</span></span>
+    </nav>
+    <div class="body">
+      <h1 class="big"><em>Faster</em> Communication<br /><em>Fewer</em> Keystrokes</h1>
+      <div class="right">
+        <p class="lead">A communication assistant for people living with ALS, MND, and other speech &amp; motor difficulties.</p>
+        <div class="ctas">
+          <button class="cta-main">Get Started</button>
+          <span class="pill-ghost">⌂ Open Source</span>
+        </div>
+        <p class="fine">Free to use. Your words can stay on this device.</p>
+        <p class="demo-note">Everything on this page is the real thing — try it as you scroll.</p>
+      </div>
+    </div>
+  </div>
+
+<!-- ============================================================ -->
+<!-- S1 · TALK -->
+  <section class="feat" id="s1">
+    <div style="max-width:1160px; margin:0 auto;">
+      <p class="eyebrow">Talk</p>
+      <h2 class="h2">Type a little. Tap the rest. Speak.</h2>
+      <p class="sub">This is September's main screen. Suggestions finish your sentence so a message takes a few taps, not a hundred keystrokes. Press <b>Speak</b> and it's said out loud.</p>
+      <span class="tryhint">Try it: type <b>&nbsp;wa&nbsp;</b>, tap the suggestion, press Speak — your browser will say it.</span>
+
+      <div class="frame" style="margin-top:26px;">
+        <div class="caption"><span>Talk — live</span><span class="live">working prototype</span></div>
+        <div class="inner">
+          <div class="bubbles" id="talk-bubbles">
+            <div class="bubble"><span class="spk">🔊</span>Good morning! Ready when you are.</div>
+          </div>
+          <div style="background:var(--zinc-50); border:1px solid var(--zinc-200); border-radius:16px; padding:12px;">
+            <div class="tiles" id="talk-tiles"></div>
+            <div class="composer">
+              <textarea id="talk-input" rows="1" placeholder="Type a message…" aria-label="Message"></textarea>
+              <div class="row">
+                <div class="rail">
+                  <button class="railbtn" id="talk-undo" title="Undo" aria-label="Undo">↶</button>
+                  <button class="railbtn" id="talk-delword" title="Delete last word" aria-label="Delete last word">⌫</button>
+                  <button class="railbtn" id="talk-clear" title="Clear" aria-label="Clear">🗑</button>
+                </div>
+                <button class="speakbtn" id="talk-speak" disabled>🔊 Speak</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<!-- ============================================================ -->
+<!-- S2 · PHRASES & CODES -->
+  <section class="feat alt" id="s2">
+    <div class="split">
+      <div class="copy">
+        <p class="eyebrow">Saved phrases &amp; codes</p>
+        <h2 class="h2">Your everyday sentences, two letters away.</h2>
+        <p class="sub">Save the sentences you say all the time and give them short codes. Type <b>ty</b> and "Thank you" surfaces instantly — one tap swaps it in. Pinned phrases stay ready before you type anything, and September quietly suggests new ones from how you talk.</p>
+        <span class="tryhint">Type <b>&nbsp;ty&nbsp;</b>, <b>&nbsp;hlp&nbsp;</b>, or <b>&nbsp;iwb&nbsp;</b> — then tap the phrase.</span>
+      </div>
+      <div class="proto">
+        <div class="frame">
+          <div class="caption"><span>Phrase codes</span><span class="live">working prototype</span></div>
+          <div class="inner">
+            <div class="tiles" id="code-tiles">
+              <button class="tile pinned">Hello</button>
+              <button class="tile pinned">Thank you</button>
+              <button class="tile pinned">Help</button>
+            </div>
+            <div class="composer">
+              <textarea id="code-input" rows="1" placeholder="Try: I made it, ty" aria-label="Message with codes"></textarea>
+            </div>
+            <p style="margin-top:10px; font-size:13px; color:var(--zinc-400); padding:0 4px;">
+              Codes here: <b>ty</b> → Thank you · <b>hlp</b> → I need some help please · <b>iwb</b> → I want to go to the bathroom
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<!-- ============================================================ -->
+<!-- S3 · SPACES -->
+  <section class="feat" id="s3">
+    <div class="split rev">
+      <div class="copy">
+        <p class="eyebrow">Spaces</p>
+        <h2 class="h2">The right words for the room you're in.</h2>
+        <p class="sub">A space for family, one for the clinic, one for going out. Each keeps its own phrases, suggestions, and notes — so changing the conversation changes the words that are close at hand.</p>
+        <span class="tryhint">Switch spaces and watch the phrases change. Tap one to say it.</span>
+      </div>
+      <div class="proto">
+        <div class="frame">
+          <div class="caption"><span>Spaces</span><span class="live">working prototype</span></div>
+          <div class="inner">
+            <div class="space-tabs" role="group" aria-label="Spaces">
+              <button class="space-tab" data-space="family" aria-pressed="true">Family</button>
+              <button class="space-tab" data-space="clinic" aria-pressed="false">Clinic</button>
+              <button class="space-tab" data-space="cafe" aria-pressed="false">Café</button>
+            </div>
+            <div class="tiles" id="space-tiles"></div>
+            <div class="bubbles" id="space-bubbles" style="min-height:64px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<!-- ============================================================ -->
+<!-- S4 · VOICE -->
+  <section class="feat alt" id="s4">
+    <div class="split">
+      <div class="copy">
+        <p class="eyebrow">Voice</p>
+        <h2 class="h2">A voice that sounds like you.</h2>
+        <p class="sub">Pick a natural voice, or clone your own from a short recording — even an old video. Every spoken message, note voice-over, and reel then uses the voice you chose.</p>
+        <span class="tryhint">Pick one of your device's voices and preview it.</span>
+      </div>
+      <div class="proto">
+        <div class="frame">
+          <div class="caption"><span>Voice</span><span class="live">working prototype — your device's voices</span></div>
+          <div class="inner">
+            <div class="voice-row">
+              <select id="voice-select" aria-label="Choose a voice"></select>
+              <button class="speakbtn" id="voice-preview">▶ Preview</button>
+            </div>
+            <div class="voice-cloned">
+              <span style="font-size:18px;">✦</span>
+              <span><b>In the app:</b> clone your own voice from a 30-second recording. Cloned voices appear here, first in the list.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<!-- ============================================================ -->
+<!-- S5 · NOTES -->
+  <section class="feat" id="s5">
+    <div class="split rev">
+      <div class="copy">
+        <p class="eyebrow">Notes</p>
+        <h2 class="h2">Longer thoughts, ready ahead of time.</h2>
+        <p class="sub">Write a toast, an update for the doctor, or a story for the grandkids — inside the space it belongs to. When the moment comes, September reads it aloud in your voice, sentence by sentence.</p>
+        <span class="tryhint">Press Play — the note is read aloud as each sentence lights up.</span>
+      </div>
+      <div class="proto">
+        <div class="frame">
+          <div class="caption"><span>Notes</span><span class="live">working prototype</span></div>
+          <div class="inner">
+            <p class="note-title">For Anna's birthday</p>
+            <p class="note-body" id="note-body"></p>
+            <div style="margin-top:16px;">
+              <button class="speakbtn" id="note-play">▶ Play voice-over</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<!-- ============================================================ -->
+<!-- S6 · REELS -->
+  <section class="feat alt" id="s6">
+    <div class="split">
+      <div class="copy">
+        <p class="eyebrow">Reels</p>
+        <h2 class="h2">Turn a note into something you can share.</h2>
+        <p class="sub">Any note can become a short captioned video — your words in your voice, in an editorial style made for sending to the people who are far away.</p>
+        <span class="tryhint">Press play on the reel.</span>
+      </div>
+      <div class="proto">
+        <div class="frame">
+          <div class="caption"><span>Reels</span><span class="live">working prototype</span></div>
+          <div class="inner">
+            <div class="reel-wrap">
+              <div class="reel" id="reel">
+                <div class="prog"><i id="reel-prog"></i></div>
+                <div class="display" id="reel-display">Sixty years young.</div>
+                <div class="support" id="reel-support"></div>
+                <div class="wm">September</div>
+              </div>
+              <div class="reel-side">
+                <button class="speakbtn" id="reel-play">▶ Play reel</button>
+                <p class="meta">Exports as an MP4 with captions and your voice — ready for family chats.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<!-- ============================================================ -->
+<!-- S7 · PRIVACY BAND -->
+  <div class="band" id="s7">
+    <p class="eyebrow">Private by design</p>
+    <h2 class="h2">Your words can stay on this device.</h2>
+    <p class="sub">September can run its speech, transcription, and suggestions entirely in your browser. In privacy mode, nothing you write or say leaves your device — and there's no account to create.</p>
+    <ul class="facts">
+      <li>On-device voice &amp; suggestions</li>
+      <li>No account needed</li>
+      <li>Open source</li>
+      <li>Free to use</li>
+    </ul>
+  </div>
+
+<!-- ============================================================ -->
+<!-- S8 · SETUP CHOICES -->
+  <section class="setup" id="s8">
+    <div class="head">
+      <p class="eyebrow">Setup choices</p>
+      <h2 class="h2">Choose the setup that feels right.</h2>
+      <p class="sub">You can keep everything on this device, use free writing help, or ask a caregiver to connect other services. Copy stays sourced from <code style="font-size:14px;">SETUP_MODES</code> — unchanged.</p>
+    </div>
+    <div class="grid3">
+      <article class="mode emerald">
+        <span class="badge">Most private</span>
+        <h3>Privacy mode</h3>
+        <p>The most private option. No AI service needed.</p>
+        <ul><li>Everything stays on this device.</li><li>A natural voice runs in your browser after a one-time download.</li><li>Nothing you write is ever sent out.</li></ul>
+      </article>
+      <article class="mode amber">
+        <span class="badge">Free start</span>
+        <h3>Free AI mode</h3>
+        <p>Free writing help when you want it.</p>
+        <ul><li>Suggestions from a free AI service.</li><li>(bullets verbatim from <b>SETUP_MODES</b>)</li></ul>
+      </article>
+      <article class="mode sky">
+        <span class="badge">Full setup</span>
+        <h3>Connected mode</h3>
+        <p>Connect voice &amp; AI services, with help from a caregiver.</p>
+        <ul><li>(bullets verbatim from <b>SETUP_MODES</b>)</li></ul>
+      </article>
+    </div>
+  </section>
+
+<!-- ============================================================ -->
+<!-- S9 · FINAL CTA + FOOTER -->
+  <section class="final" id="s9">
+    <p class="eyebrow">Get started</p>
+    <h2 class="h2">Being understood shouldn't be hard work.</h2>
+    <p class="sub">Set up September in a few minutes — on your own, or with a caregiver beside you. It's free, and it starts working before you create anything.</p>
+    <button class="cta-main">Get Started — it's free</button>
+  </section>
+  <div class="footer">
+    <span>september — an open-source communication assistant</span>
+    <span>GitHub · Privacy · Terms</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="audit" style="margin-top:40px;">
+  <h2>Copy &amp; behavior decisions (for review)</h2>
+  <ul>
+    <li><b>Hero headline kept</b> ("Faster Communication / Fewer Keystrokes") — it's established and on-thesis. New supporting line "<i>Everything on this page is the real thing — try it as you scroll</i>" sets the contract for the prototypes.</li>
+    <li><b>Every section = eyebrow + H2 + one-paragraph lede + one "Try it" pill.</b> No bullet lists in feature copy; the prototype carries the detail.</li>
+    <li><b>"Try it" hints are text, not hover</b> — no hover-gated affordances, per DESIGN.md.</li>
+    <li><b>Speech uses <code>speechSynthesis</code></b> in this mock; the real page should use the same speech provider as the app (browser voice by default) so the demo <i>is</i> the product.</li>
+    <li><b>All targets ≥44px</b>, visible focus rings, reduced-motion respected (bubble animation only).</li>
+    <li>Reel prototype uses the scoped editorial deviation (Playfair display on stone-950) — matches <code>reel-theme.ts</code>, loaded only for that frame.</li>
+    <li>Section order argument: Talk first (the product's job), then the two "fewer keystrokes" multipliers (codes, spaces), then identity (voice), then long-form (notes → reels), then trust (privacy), then choice (setup), then ask (CTA).</li>
+    <li><b>Open question:</b> ship the phrase-codes section with the codes demo (depends on the phrase-codes plan) or launch with pinned-phrases-only copy and add codes when the feature lands.</li>
+  </ul>
+</div>
+
+</div>
+
+<script>
+(function(){
+  var synth = window.speechSynthesis;
+  function say(text, voice){
+    if(!synth) return;
+    try {
+      synth.cancel();
+      var u = new SpeechSynthesisUtterance(text);
+      if(voice) u.voice = voice;
+      synth.speak(u);
+      return u;
+    } catch(e){ return null; }
+  }
+  function autogrow(ta){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; }
+
+  /* ---------- S1 Talk ---------- */
+  var SUGGESTIONS = ['Good morning', 'Water please', 'Yes, please.', 'No, thank you.', 'Can you come here?', 'I would like to rest for a bit.'];
+  var talkInput = document.getElementById('talk-input');
+  var talkTiles = document.getElementById('talk-tiles');
+  var talkBubbles = document.getElementById('talk-bubbles');
+  var talkSpeak = document.getElementById('talk-speak');
+  var undoStack = [];
+
+  function renderTalkTiles(){
+    var q = talkInput.value.trim().toLowerCase();
+    talkTiles.innerHTML = '';
+    SUGGESTIONS
+      .filter(function(s){ return !q || s.toLowerCase().indexOf(q) === 0; })
+      .slice(0,6)
+      .forEach(function(s){
+        var b = document.createElement('button');
+        b.className = 'tile';
+        if(q && s.toLowerCase().indexOf(q)===0){
+          b.innerHTML = '<b>'+s.slice(0,q.length)+'</b>'+s.slice(q.length);
+        } else { b.textContent = s; }
+        b.addEventListener('click', function(){
+          undoStack.push(talkInput.value);
+          talkInput.value = s + ' ';
+          talkInput.focus(); syncTalk();
+        });
+        talkTiles.appendChild(b);
+      });
+    if(!talkTiles.children.length){
+      var hint = document.createElement('span');
+      hint.style.cssText='font-size:13px;color:var(--zinc-400);padding:8px 4px;';
+      hint.textContent='Press Speak when you’re ready.';
+      talkTiles.appendChild(hint);
+    }
+  }
+  function syncTalk(){ talkSpeak.disabled = !talkInput.value.trim(); renderTalkTiles(); autogrow(talkInput); }
+  function speakTalk(){
+    var msg = talkInput.value.trim();
+    if(!msg) return;
+    var d = document.createElement('div');
+    d.className='bubble';
+    d.innerHTML='<span class="spk">🔊</span>';
+    d.appendChild(document.createTextNode(msg));
+    talkBubbles.appendChild(d);
+    while(talkBubbles.children.length>4) talkBubbles.removeChild(talkBubbles.firstChild);
+    say(msg);
+    undoStack.push(talkInput.value);
+    talkInput.value=''; syncTalk(); talkInput.focus();
+  }
+  talkInput.addEventListener('input', function(){ undoStack.push(talkInput.value); syncTalk(); });
+  talkInput.addEventListener('keydown', function(e){ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); speakTalk(); } });
+  talkSpeak.addEventListener('click', speakTalk);
+  document.getElementById('talk-undo').addEventListener('click', function(){
+    if(undoStack.length){ talkInput.value = undoStack.pop(); syncTalk(); } talkInput.focus();
+  });
+  document.getElementById('talk-delword').addEventListener('click', function(){
+    talkInput.value = talkInput.value.replace(/\s*\S+\s*$/,''); syncTalk(); talkInput.focus();
+  });
+  document.getElementById('talk-clear').addEventListener('click', function(){ talkInput.value=''; syncTalk(); talkInput.focus(); });
+  renderTalkTiles();
+
+  /* ---------- S2 Codes ---------- */
+  var CODES = { ty:'Thank you', hlp:'I need some help please', iwb:'I want to go to the bathroom' };
+  var codeInput = document.getElementById('code-input');
+  var codeTiles = document.getElementById('code-tiles');
+  var basePinned = codeTiles.innerHTML;
+  function trailingWord(t){ var m = t.match(/(\S+)\s*$/); return m ? m[1].toLowerCase() : ''; }
+  function renderCodes(){
+    var w = trailingWord(codeInput.value);
+    codeTiles.innerHTML = basePinned;
+    if(CODES[w]){
+      var b = document.createElement('button');
+      b.className='tile code';
+      b.innerHTML = '<b>'+w+'</b>&nbsp;→ '+CODES[w];
+      b.addEventListener('click', function(){
+        codeInput.value = codeInput.value.replace(/\S+\s*$/, CODES[w] + ' ');
+        say(CODES[w]);
+        renderCodes(); codeInput.focus();
+      });
+      codeTiles.insertBefore(b, codeTiles.firstChild);
+    }
+    autogrow(codeInput);
+  }
+  codeInput.addEventListener('input', renderCodes);
+  renderCodes();
+
+  /* ---------- S3 Spaces ---------- */
+  var SPACES = {
+    family: ['Good morning', 'I love you', 'What’s for dinner?', 'Turn the TV up, please'],
+    clinic: ['My left arm feels weaker', 'Can you repeat that slowly?', 'I’d like my caregiver present', 'When is the next appointment?'],
+    cafe:   ['A flat white, please', 'Table by the window?', 'Could I see the menu?', 'The bill, please']
+  };
+  var spaceTiles = document.getElementById('space-tiles');
+  var spaceBubbles = document.getElementById('space-bubbles');
+  function renderSpace(key){
+    spaceTiles.innerHTML='';
+    SPACES[key].forEach(function(s, i){
+      var b = document.createElement('button');
+      b.className = 'tile' + (i===0 ? ' pinned' : '');
+      b.textContent = s;
+      b.addEventListener('click', function(){
+        var d = document.createElement('div');
+        d.className='bubble'; d.innerHTML='<span class="spk">🔊</span>';
+        d.appendChild(document.createTextNode(s));
+        spaceBubbles.appendChild(d);
+        while(spaceBubbles.children.length>2) spaceBubbles.removeChild(spaceBubbles.firstChild);
+        say(s);
+      });
+      spaceTiles.appendChild(b);
+    });
+  }
+  document.querySelectorAll('.space-tab').forEach(function(tab){
+    tab.addEventListener('click', function(){
+      document.querySelectorAll('.space-tab').forEach(function(t){ t.setAttribute('aria-pressed','false'); });
+      tab.setAttribute('aria-pressed','true');
+      spaceBubbles.innerHTML='';
+      renderSpace(tab.dataset.space);
+    });
+  });
+  renderSpace('family');
+
+  /* ---------- S4 Voice ---------- */
+  var voiceSelect = document.getElementById('voice-select');
+  var voices = [];
+  function loadVoices(){
+    voices = (synth ? synth.getVoices() : []).filter(function(v){ return /^en/i.test(v.lang); }).slice(0,10);
+    voiceSelect.innerHTML='';
+    if(!voices.length){
+      var o = document.createElement('option');
+      o.textContent = 'No voices available in this browser';
+      voiceSelect.appendChild(o);
+      return;
+    }
+    voices.forEach(function(v,i){
+      var o = document.createElement('option');
+      o.value = i; o.textContent = v.name + ' (' + v.lang + ')';
+      voiceSelect.appendChild(o);
+    });
+  }
+  loadVoices();
+  if(synth) synth.onvoiceschanged = loadVoices;
+  document.getElementById('voice-preview').addEventListener('click', function(){
+    var v = voices[voiceSelect.value|0];
+    say('Hello — this is how September can sound.', v);
+  });
+
+  /* ---------- S5 Notes ---------- */
+  var NOTE = [
+    'Anna, sixty looks wonderful on you.',
+    'I may be short on words these days, but never about you.',
+    'Thank you for every morning coffee and every long evening.',
+    'Here’s to the next chapter — together.'
+  ];
+  var noteBody = document.getElementById('note-body');
+  NOTE.forEach(function(s,i){
+    var sp = document.createElement('span');
+    sp.className='sent'; sp.textContent = s;
+    noteBody.appendChild(sp);
+    if(i<NOTE.length-1) noteBody.appendChild(document.createTextNode(' '));
+  });
+  var notePlaying = false;
+  document.getElementById('note-play').addEventListener('click', function(){
+    if(notePlaying || !synth){ synth && synth.cancel(); notePlaying=false; clearNote(); return; }
+    notePlaying = true;
+    var sents = noteBody.querySelectorAll('.sent');
+    var i = 0;
+    function next(){
+      clearNote();
+      if(i >= sents.length){ notePlaying=false; return; }
+      sents[i].classList.add('on');
+      var u = say(sents[i].textContent, voices[voiceSelect.value|0]);
+      i++;
+      if(u) u.onend = next; else setTimeout(next, 1800);
+    }
+    function clearNote(){ sents.forEach ? sents.forEach(function(s){s.classList.remove('on');}) : null; }
+    next();
+  });
+
+  /* ---------- S6 Reel ---------- */
+  var REEL = [
+    { display:'Sixty years young.', support:'' },
+    { display:'Short on words,', support:'never about you.' },
+    { display:'Every morning coffee.', support:'Every long evening.' },
+    { display:'Here’s to the next chapter.', support:'— together' }
+  ];
+  var reelDisplay = document.getElementById('reel-display');
+  var reelSupport = document.getElementById('reel-support');
+  var reelProg = document.getElementById('reel-prog');
+  var reelTimer = null;
+  document.getElementById('reel-play').addEventListener('click', function(){
+    if(reelTimer){ clearInterval(reelTimer); reelTimer=null; }
+    var i = 0;
+    function frame(){
+      if(i >= REEL.length){ clearInterval(reelTimer); reelTimer=null; reelProg.style.width='100%'; return; }
+      reelDisplay.textContent = REEL[i].display;
+      reelSupport.textContent = REEL[i].support;
+      reelProg.style.width = ((i+1)/REEL.length*100)+'%';
+      i++;
+    }
+    frame();
+    reelTimer = setInterval(frame, 2200);
+  });
+})();
+</script>
+</body>
+</html>

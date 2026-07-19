@@ -24,29 +24,26 @@ export function HeroSection() {
 
           <div className="flex items-center gap-3 sm:gap-6">
             <a
-              href="https://github.com/sonnes/september"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-primary-foreground/80 transition hover:text-primary-foreground"
+              href="#features"
+              className="inline-flex min-h-11 items-center px-1 text-sm font-medium text-primary-foreground/80 transition hover:text-primary-foreground"
             >
-              <Github className="h-5 w-5" />
-              <span className="hidden text-sm font-medium sm:inline">GitHub</span>
+              Features
             </a>
-            <Link
-              to="/onboarding"
-              className="inline-flex h-11 items-center rounded-full bg-primary-foreground px-4 text-xs font-semibold text-indigo-600 transition hover:bg-primary-foreground/90 sm:px-5 sm:text-sm"
+            <a
+              href="#about"
+              className="inline-flex min-h-11 items-center px-1 text-sm font-medium text-primary-foreground/80 transition hover:text-primary-foreground"
             >
-              Get Started
-            </Link>
+              About
+            </a>
           </div>
         </nav>
 
         {/* Main Content — headline left, supporting copy + CTAs right (stacks on mobile) */}
         <div className="flex flex-1 flex-col gap-6 p-4 pt-4 sm:gap-8 sm:p-6 sm:pt-5 lg:flex-row lg:items-center lg:gap-12 lg:p-9 lg:pt-6">
           <h1 className="text-3xl font-bold leading-tight text-primary-foreground sm:text-4xl xl:text-5xl lg:flex-1">
-            <span className="text-amber-400">Faster</span> Communication
+            <span className="text-amber-300">Faster</span> Communication
             <br />
-            <span className="text-amber-400">Fewer</span> Keystrokes
+            <span className="text-amber-300">Fewer</span> Keystrokes
           </h1>
 
           <div className="flex flex-col gap-4 sm:gap-6 lg:flex-1">
@@ -58,7 +55,7 @@ export function HeroSection() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
               <Button
                 asChild
-                className="h-11 rounded-full bg-amber-500 px-6 text-sm font-semibold text-amber-950 shadow-lg transition hover:bg-amber-400 hover:shadow-xl sm:h-12 sm:px-8 sm:text-base"
+                className="h-11 rounded-full bg-primary-foreground px-6 text-sm font-semibold text-indigo-600 shadow-lg transition hover:bg-primary-foreground/90 hover:shadow-xl sm:h-12 sm:px-8 sm:text-base"
               >
                 <Link to="/onboarding">Get Started</Link>
               </Button>
@@ -80,6 +77,9 @@ export function HeroSection() {
 
             <p className="text-sm text-primary-foreground/80">
               Free to use. Your words can stay on this device.
+            </p>
+            <p className="text-sm font-medium text-primary-foreground">
+              Everything on this page is the real thing — try it as you scroll.
             </p>
           </div>
         </div>

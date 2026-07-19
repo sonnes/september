@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { decidePhraseSync } from '../lib/phrases';
+import { decidePhraseSync, formatPhraseHistory, rowKind } from '../lib/phrases';
 import { replaceAiPhrases } from '../mutations';
 import { Message, SavedPhrase, Space } from '../types';
 import { useGenerateSpacePhrases } from './use-generate-space-phrases';
@@ -56,13 +56,15 @@ export function useSyncSpacePhrases({
     inFlight.current = true;
     setIsSyncing(true);
 
-    const existing = phrases.map(p => p.text);
-    const history = messages.slice(-HISTORY_WINDOW).map(m => m.text);
+    const toPromptRow = (p: SavedPhrase) => ({ text: p.text, pinned: p.pinned });
+    const existing = phrases.filter(p => rowKind(p) === 'phrase').map(toPromptRow);
+    const existingStarters = phrases.filter(p => rowKind(p) === 'starter').map(toPromptRow);
+    const history = formatPhraseHistory(messages.slice(-HISTORY_WINDOW));
     const messageCount = messages.length;
 
-    generatePhrases({ existing, history, context: space.context })
+    generatePhrases({ existing, existingStarters, history, context: space.context })
       .then(ai => {
-        if (ai && ai.length > 0) {
+        if (ai && (ai.phrases.length > 0 || ai.starters.length > 0)) {
           return replaceAiPhrases(space.id, space.user_id, ai, messageCount);
         }
       })

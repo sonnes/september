@@ -59,16 +59,25 @@ describe('buildSuggestionPrompt — context assembly', () => {
     expect(system).toContain('global context\n\nspace context');
   });
 
-  it('uses empty string when both globalMd and spaceMd are empty', () => {
+  it('omits the user-context block entirely when both globalMd and spaceMd are empty', () => {
     const { system } = buildSuggestionPrompt({
       globalMd: '',
       spaceMd: '',
       history: [],
       typed: '',
     });
-    // Should not blow up; system prompt still has the template structure
-    expect(typeof system).toBe('string');
     expect(system.length).toBeGreaterThan(0);
+    expect(system).not.toContain('<user_context>');
+  });
+
+  it('wraps the assembled context in a <user_context> block when present', () => {
+    const { system } = buildSuggestionPrompt({
+      globalMd: 'global context',
+      spaceMd: '',
+      history: [],
+      typed: '',
+    });
+    expect(system).toContain('<user_context>\nglobal context\n</user_context>');
   });
 
   it('trims whitespace from globalMd and spaceMd before joining', () => {
@@ -156,16 +165,18 @@ describe('buildSuggestionPrompt — opening mode (typed empty or whitespace)', (
     expect(system).toContain('NEXT things the User might WANT TO SAY');
   });
 
-  it('includes context and conversation in user message for opening mode', () => {
-    const { user } = buildSuggestionPrompt({
+  it('puts conversation in the user message and context only in system', () => {
+    const { system, user } = buildSuggestionPrompt({
       globalMd: '',
       spaceMd: 'space md',
       history: [msg('user', 'Hello')],
       typed: '',
     });
-    expect(user).toContain('Context:');
     expect(user).toContain('Conversation:');
     expect(user).not.toContain('Current input:');
+    // Context is not duplicated into the user message
+    expect(user).not.toContain('space md');
+    expect(system).toContain('space md');
   });
 });
 
@@ -202,6 +213,17 @@ describe('buildSuggestionPrompt — completion mode (typed non-empty)', () => {
     expect(user).toContain('Me: Hello');
   });
 
+  it('does not duplicate context into the completion user message', () => {
+    const { system, user } = buildSuggestionPrompt({
+      globalMd: 'my context',
+      spaceMd: '',
+      history: [],
+      typed: 'I need',
+    });
+    expect(user).not.toContain('my context');
+    expect(system).toContain('my context');
+  });
+
   it('does NOT use opening prompt phrasing in completion mode', () => {
     const { system } = buildSuggestionPrompt({
       globalMd: '',
@@ -214,27 +236,79 @@ describe('buildSuggestionPrompt — completion mode (typed non-empty)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Context substitution replaces {USER_PERSONA}
+// Context substitution replaces {USER_CONTEXT}
 // ---------------------------------------------------------------------------
 
-describe('buildSuggestionPrompt — no {USER_PERSONA} placeholder in output', () => {
-  it('does not leave {USER_PERSONA} in opening system prompt', () => {
+describe('buildSuggestionPrompt — no placeholder left in output', () => {
+  it('does not leave {USER_CONTEXT} in opening system prompt', () => {
     const { system } = buildSuggestionPrompt({
       globalMd: 'my context',
       spaceMd: '',
       history: [],
       typed: '',
     });
-    expect(system).not.toContain('{USER_PERSONA}');
+    expect(system).not.toContain('{USER_CONTEXT}');
   });
 
-  it('does not leave {USER_PERSONA} in completion system prompt', () => {
+  it('does not leave {USER_CONTEXT} in completion system prompt', () => {
     const { system } = buildSuggestionPrompt({
       globalMd: 'my context',
       spaceMd: '',
       history: [],
       typed: 'I need',
     });
-    expect(system).not.toContain('{USER_PERSONA}');
+    expect(system).not.toContain('{USER_CONTEXT}');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Length bound: predictions asked for as 5-7 word sentences
+// ---------------------------------------------------------------------------
+
+describe('buildSuggestionPrompt — 5-7 word bound', () => {
+  it('states the 5-7 word bound in opening mode', () => {
+    const { system } = buildSuggestionPrompt({
+      globalMd: '',
+      spaceMd: '',
+      history: [],
+      typed: '',
+    });
+    expect(system).toContain('5-7 words');
+  });
+
+  it('states the 5-7 word bound in completion mode', () => {
+    const { system } = buildSuggestionPrompt({
+      globalMd: '',
+      spaceMd: '',
+      history: [],
+      typed: 'I need',
+    });
+    expect(system).toContain('5-7 words');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Structured output: no raw-JSON instructions (schema enforces the shape)
+// ---------------------------------------------------------------------------
+
+describe('buildSuggestionPrompt — output format left to the schema', () => {
+  it('does not instruct raw JSON output in opening mode', () => {
+    const { system } = buildSuggestionPrompt({
+      globalMd: '',
+      spaceMd: '',
+      history: [],
+      typed: '',
+    });
+    expect(system).not.toContain('Return ONLY a JSON array');
+  });
+
+  it('does not instruct raw JSON output in completion mode', () => {
+    const { system } = buildSuggestionPrompt({
+      globalMd: '',
+      spaceMd: '',
+      history: [],
+      typed: 'I need',
+    });
+    expect(system).not.toContain('Return ONLY a JSON array');
   });
 });

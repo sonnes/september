@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   appendTokens,
+  codeExpansionText,
   boardPhrases,
   boardWords,
   composeSuggestions,
@@ -268,5 +269,64 @@ describe('appendTokens', () => {
 
   it('works when base text is empty', () => {
     expect(appendTokens('', 'Hello')).toBe('Hello ');
+  });
+});
+
+describe('codeExpansionText', () => {
+  it('replaces the trailing word with the phrase', () => {
+    expect(codeExpansionText('I made it, ty', 'Thank you')).toBe('I made it, Thank you');
+  });
+
+  it('replaces a bare code with the phrase alone', () => {
+    expect(codeExpansionText('ty', 'Thank you')).toBe('Thank you');
+  });
+
+  it('preserves the prefix exactly, including case', () => {
+    expect(codeExpansionText('Well then, IWB', 'I want to go to the bathroom')).toBe(
+      'Well then, I want to go to the bathroom'
+    );
+  });
+
+  it('produces a stripe whose hidden prefix is the typed text minus the code', () => {
+    const typed = 'I made it, ty';
+    const stripe = stripeForText(codeExpansionText(typed, 'thank you'), typed);
+    // "I made it ," are hidden; "thank you" shows as takeable tiles.
+    expect(stripe.tokens.slice(stripe.hidden)).toEqual(['thank', 'you']);
+  });
+});
+
+describe('composeSuggestions with starters', () => {
+  it('appends starters after md phrases when nothing is typed', () => {
+    const out = composeSuggestions({
+      typed: '',
+      mdPhrases: ['Please call the nurse'],
+      starters: ["I'm feeling a bit"],
+      history: [],
+      llm: ['Hello there'],
+    });
+    expect(out.map(s => s.source)).toEqual(['md', 'starter', 'llm']);
+  });
+
+  it('prefix-filters starters against typed text', () => {
+    const out = composeSuggestions({
+      typed: "I'm fee",
+      mdPhrases: [],
+      starters: ["I'm feeling a bit", 'Can you please'],
+      history: [],
+      llm: [],
+    });
+    expect(out).toEqual([expect.objectContaining({ text: "I'm feeling a bit", source: 'starter' })]);
+  });
+
+  it('dedupes starters against phrases case-insensitively', () => {
+    const out = composeSuggestions({
+      typed: '',
+      mdPhrases: ['Can you please'],
+      starters: ['can you PLEASE'],
+      history: [],
+      llm: [],
+    });
+    expect(out).toHaveLength(1);
+    expect(out[0].source).toBe('md');
   });
 });
