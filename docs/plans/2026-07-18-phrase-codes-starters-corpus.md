@@ -1,6 +1,6 @@
 # Phrase codes, sentence starters & per-space corpus
 
-- **Mock (approved direction):** `docs/mocks/2026-07-18-shortcuts-and-corpus.html`
+- **Mock (approved direction):** archived — `git show archive/old-docs:docs/mocks/2026-07-18-shortcuts-and-corpus.html`
 - **Notes file (during implementation):** `docs/notes/2026-07-18-phrase-codes-starters-corpus.md`
 - **Status:** Phases 1–5 implemented (2026-07-19); Phase 6 pending its 6a experiment gate
 
