@@ -50,12 +50,22 @@ async function decodeTo16kMono(audio: Blob): Promise<Float32Array> {
   }
 }
 
+export interface LocalTranscription {
+  text: string;
+  /** Length of the decoded audio — the unit cloud providers would have billed. */
+  audio_seconds: number;
+}
+
 /** Transcribe an audio blob entirely on this device. */
-export async function transcribeLocally(audio: Blob): Promise<string> {
+export async function transcribeLocally(audio: Blob): Promise<LocalTranscription> {
   const samples = await decodeTo16kMono(audio);
-  return new Promise<string>((resolve, reject) => {
+  const audioSeconds = samples.length / WHISPER_SAMPLE_RATE;
+
+  const text = await new Promise<string>((resolve, reject) => {
     const id = nextId++;
     pending.set(id, { resolve, reject });
     ensureWorker().postMessage({ type: 'transcribe', id, samples }, [samples.buffer]);
   });
+
+  return { text, audio_seconds: audioSeconds };
 }

@@ -18,6 +18,7 @@ import {
 import { cn, type AIProvider } from '@/packages/shared';
 import { Button } from '@/packages/ui/components/button';
 import { LoadingState } from '@/packages/ui/components/loading-state';
+import { ProviderSpendChip } from '@/packages/usage';
 
 import { Route } from './index';
 
@@ -172,10 +173,13 @@ function ConnectionRow({
   name,
   state,
   action,
+  spend,
 }: {
   name: string;
   state: ReactNode;
   action?: ReactNode;
+  /** Optional running cost for this connection, shown beside its action. */
+  spend?: ReactNode;
 }) {
   return (
     <div className="flex min-h-11 items-center gap-4 py-3">
@@ -183,6 +187,7 @@ function ConnectionRow({
         <div className="text-sm font-semibold text-foreground">{name}</div>
         <div className="text-sm text-muted-foreground">{state}</div>
       </div>
+      {spend}
       {action}
     </div>
   );
@@ -202,6 +207,8 @@ function KeyTail({ apiKey }: { apiKey: string }) {
 }
 
 function PrivacyConnections() {
+  const { user } = useAccount();
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-start gap-3 rounded-lg bg-emerald-50 px-4 py-3 text-sm dark:bg-emerald-950">
@@ -215,16 +222,19 @@ function PrivacyConnections() {
         <ConnectionRow
           name="On-device voice"
           state="Downloads once (~90 MB) the first time it speaks. Works offline after."
+          spend={<ProviderSpendChip provider="kokoro" userId={user?.id} />}
           action={<span className="text-sm font-medium text-muted-foreground">On this device</span>}
         />
         <ConnectionRow
           name="On-device listening"
           state="Downloads once (~80 MB) when you turn on Listening."
+          spend={<ProviderSpendChip provider="whisper" userId={user?.id} />}
           action={<span className="text-sm font-medium text-muted-foreground">On this device</span>}
         />
         <ConnectionRow
           name="On-device writing help"
           state="Downloads once (~880 MB) when you turn on Writing help."
+          spend={<ProviderSpendChip provider="webllm" userId={user?.id} />}
           action={<span className="text-sm font-medium text-muted-foreground">On this device</span>}
         />
       </ConnectionList>
@@ -233,7 +243,7 @@ function PrivacyConnections() {
 }
 
 function FreeConnections() {
-  const { account } = useAccount();
+  const { account, user } = useAccount();
   const openRouterKey = account?.ai_providers?.openrouter?.api_key;
 
   return (
@@ -247,6 +257,7 @@ function FreeConnections() {
             'Powers writing help with free models. No card required.'
           )
         }
+        spend={<ProviderSpendChip provider="openrouter" userId={user?.id} />}
         action={
           openRouterKey ? (
             <Button asChild type="button" variant="outline">
@@ -267,6 +278,7 @@ function FreeConnections() {
       <ConnectionRow
         name="Browser voice"
         state="Built into this device. Nothing to set up."
+        spend={<ProviderSpendChip provider="browser" userId={user?.id} />}
         action={<span className="text-sm font-medium text-muted-foreground">Ready</span>}
       />
     </ConnectionList>
@@ -274,7 +286,7 @@ function FreeConnections() {
 }
 
 function AdvancedConnections() {
-  const { account } = useAccount();
+  const { account, user } = useAccount();
 
   return (
     <ConnectionList>
@@ -293,6 +305,7 @@ function AdvancedConnections() {
                 `Not set up yet. ${PROVIDER_PURPOSE[id]}`
               )
             }
+            spend={<ProviderSpendChip provider={id} userId={user?.id} />}
             action={
               <Button asChild type="button" variant={apiKey ? 'outline' : 'default'}>
                 <Link to="/settings/connections/$provider" params={{ provider: id }}>

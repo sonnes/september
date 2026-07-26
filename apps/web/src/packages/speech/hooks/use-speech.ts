@@ -5,10 +5,10 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useAccount } from '@/packages/account';
 import { useAISettings } from '@/packages/ai';
 import { PcmStreamPlayer, useAudioPlayer } from '@/packages/audio';
-import { track } from '@/packages/usage';
 import type { AIProvider, ElevenLabsSettings } from '@/packages/shared';
 import type { Voice } from '@/packages/shared';
 
+import { meterSpeech, speechModelId } from '../lib/meter';
 import { BrowserSpeechProvider } from '../lib/providers/browser';
 import { KOKORO_SAMPLE_RATE, KokoroSpeechProvider } from '../lib/providers/kokoro';
 import {
@@ -121,44 +121,27 @@ export function useSpeech(): UseSpeechReturn {
     (text: string, options?: SpeechOptions, context?: { previous_text?: string }) => {
       if (!engine) return undefined;
 
-      const startTime = performance.now();
+      const settings = { ...speechConfig.settings, ...options } as SpeechOptions;
 
       const promise = engine.generateSpeech({
         text,
         voice: voice,
-        options: { ...speechConfig.settings, ...options } as SpeechOptions,
+        options: settings,
         previous_text: context?.previous_text,
       });
 
       if (!promise) return undefined;
 
-      // Log TTS generation event after completion
-      promise
-        .then(result => {
-          if (user?.id && result) {
-            const latencyMs = Math.round(performance.now() - startTime);
-            // Estimate duration from blob size (16kHz, 16-bit audio = 2 bytes per sample)
-            const durationSeconds =
-              result.blob && typeof result.blob === 'object' && 'size' in result.blob
-                ? (result.blob as Blob).size / (16000 * 2)
-                : 0;
-
-            track(user.id, {
-              type: 'tts_generation',
-              provider: speechConfig.provider === 'elevenlabs' ? 'elevenlabs' : undefined,
-              voice_id: speechConfig.voice_id,
-              text_length: text.length,
-              duration_seconds: durationSeconds,
-              latency_ms: latencyMs,
-              success: true,
-            });
-          }
-        })
-        .catch(error => {
-          console.error('TTS generation error:', error);
-        });
-
-      return promise;
+      return meterSpeech(
+        user?.id,
+        {
+          provider: speechConfig.provider,
+          model: speechModelId(speechConfig.provider, settings),
+          voiceId: speechConfig.voice_id,
+          text,
+        },
+        promise
+      );
     },
     [engine, voice, speechConfig.settings, speechConfig.provider, speechConfig.voice_id, user]
   );
@@ -172,7 +155,6 @@ export function useSpeech(): UseSpeechReturn {
       if (isElevenLabs && (WS_TTS_DISABLED || !voice?.id)) return undefined;
 
       const settings = { ...speechConfig.settings, ...options } as SpeechOptions;
-      const startTime = performance.now();
 
       // The hook owns live playback because it knows the PCM sample rate:
       // ElevenLabs streams at the configured output format, Kokoro at 24 kHz.
@@ -202,27 +184,28 @@ export function useSpeech(): UseSpeechReturn {
         }
       })();
 
-      promise
-        .then(result => {
-          if (user?.id && result) {
-            track(user.id, {
-              type: 'tts_generation',
-              provider: isElevenLabs ? 'elevenlabs' : undefined,
-              voice_id: speechConfig.voice_id,
-              text_length: text.length,
-              duration_seconds: 0,
-              latency_ms: Math.round(performance.now() - startTime),
-              success: true,
-            });
-          }
-        })
-        .catch(() => {
-          // Surfaced to the caller, which falls back to REST.
-        });
-
-      return promise;
+      // A failed socket attempt is recorded too — the caller falls back to REST,
+      // which records its own call, so both attempts stay visible.
+      return meterSpeech(
+        user?.id,
+        {
+          provider: speechConfig.provider,
+          model: speechModelId(speechConfig.provider, settings),
+          voiceId: speechConfig.voice_id,
+          text,
+        },
+        promise
+      );
     },
-    [engine, voice, speechConfig.settings, speechConfig.voice_id, user, selectedOutputDeviceId]
+    [
+      engine,
+      voice,
+      speechConfig.settings,
+      speechConfig.provider,
+      speechConfig.voice_id,
+      user,
+      selectedOutputDeviceId,
+    ]
   );
 
   const listVoices = useCallback(

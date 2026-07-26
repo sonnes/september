@@ -36,7 +36,7 @@ export interface VoiceCloneFormProps {
 export function VoiceCloneForm({ onCreated }: VoiceCloneFormProps = {}) {
   const [activeTab, setActiveTab] = useState('upload');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { account } = useAccount();
+  const { account, user } = useAccount();
   const upload = useUpload();
   const recording = useRecording();
 
@@ -76,6 +76,7 @@ export function VoiceCloneForm({ onCreated }: VoiceCloneFormProps = {}) {
         files,
         name: data.name,
         description: data.description,
+        userId: user?.id,
       });
 
       toast.success('Voice Clone Created', {

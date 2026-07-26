@@ -22,12 +22,17 @@ import { VoiceCloneForm } from '@/packages/cloning';
 ```ts
 import { cloneVoice, findSimilarVoices } from '@/packages/cloning';
 
-const result = await cloneVoice(apiKey, { files, name, description });
+const result = await cloneVoice(apiKey, { files, name, description, userId });
 // result: { voice_id: string; name: string }
 
-const voices = await findSimilarVoices(apiKey, files);
+const voices = await findSimilarVoices(apiKey, files, userId);
 // voices: SimilarVoice[]
 ```
+
+Pass the signed-in `userId` to record the call through `@/packages/usage` (success and failure
+alike). Cloning consumes an ElevenLabs **voice slot** rather than metered units, so the event
+carries no cost — it is counted so the usage page can account for every outbound call, and shows
+a dash where a price would be.
 
 ### Sample storage
 

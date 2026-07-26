@@ -28,13 +28,21 @@ describe('openRouterModelArgs', () => {
       settings: {
         models: rest,
         provider: { sort: 'throughput' },
+        usage: { include: true },
       },
     });
   });
 
-  it('passes a concrete model id through with no settings', () => {
+  it('passes a concrete model id through, still asking for usage accounting', () => {
     expect(openRouterModelArgs('anthropic/claude-haiku-4.5')).toEqual({
       id: 'anthropic/claude-haiku-4.5',
+      settings: { usage: { include: true } },
     });
+  });
+
+  it('asks for usage accounting on every path, so cost comes back measured', () => {
+    for (const id of [OPENROUTER_FREE_STACK_ID, 'anthropic/claude-haiku-4.5']) {
+      expect(openRouterModelArgs(id).settings?.usage).toEqual({ include: true });
+    }
   });
 });

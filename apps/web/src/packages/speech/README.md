@@ -109,6 +109,18 @@ buffered `<audio>` playback. Talk's send flow uses it; note voice-over and reel
 export stay on REST. The `VITE_DISABLE_WS_TTS` kill switch only disables the
 ElevenLabs socket path — Kokoro streaming is unaffected.
 
+### Metering
+
+Both paths run through `meterSpeech` (`lib/meter.ts`), which records one event per call —
+provider, model, characters sent, latency, and success — and returns the original promise so
+rejections still reach the callers that fall back to REST. Speech providers bill on characters,
+which the caller always knows, so no provider response is needed.
+
+The recorded provider is the configured one (`elevenlabs`, `gemini`, `kokoro`, `browser`), not
+always ElevenLabs; `speechModelId` fills in each engine's default model when settings do not name
+one. ElevenLabs characters become prepaid credits at the model's rate, so its calls carry credits
+rather than dollars — see `@/packages/usage`.
+
 ### Kokoro (on-device TTS, internal)
 
 `KokoroSpeechProvider` runs the Kokoro-82M v1.0 model

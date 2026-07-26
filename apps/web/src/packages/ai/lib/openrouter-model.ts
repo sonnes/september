@@ -38,6 +38,13 @@ export const OPENROUTER_FREE_MODELS = [
 export const OPENROUTER_FREE_STACK: string[] = OPENROUTER_FREE_MODELS.map(m => m.id);
 
 /**
+ * Usage accounting makes OpenRouter return the exact cost of each call in
+ * `providerMetadata.openrouter.usage.cost`, so the usage dashboard can show a
+ * measured number instead of an estimate. It costs nothing and adds no request.
+ */
+const USAGE_ACCOUNTING = { usage: { include: true } } satisfies OpenRouterChatSettings;
+
+/**
  * Resolve an OpenRouter model id into the arguments for `openrouter(id, settings)`.
  * The free-stack sentinel expands into the first model plus the rest as a `models`
  * fallback chain (used on 429/error), biased toward the fastest host per model.
@@ -51,8 +58,8 @@ export function openRouterModelArgs(modelId: string): {
     const [primary, ...rest] = OPENROUTER_FREE_STACK;
     return {
       id: primary,
-      settings: { models: rest, provider: { sort: 'throughput' } },
+      settings: { models: rest, provider: { sort: 'throughput' }, ...USAGE_ACCOUNTING },
     };
   }
-  return { id: modelId };
+  return { id: modelId, settings: { ...USAGE_ACCOUNTING } };
 }

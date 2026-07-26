@@ -13,6 +13,7 @@ describe('settings nav', () => {
       'Setup',
       'Writing help',
       'Listening',
+      'Usage',
       'Account',
     ]);
   });
@@ -22,6 +23,7 @@ describe('settings nav', () => {
       '/settings',
       '/settings/writing',
       '/settings/listening',
+      '/settings/usage',
       '/settings/account',
     ]);
   });

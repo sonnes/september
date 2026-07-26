@@ -23,7 +23,7 @@ export interface UseFileUploadReturn {
 }
 
 export function useFileUpload({ onTextExtracted }: UseFileUploadOptions = {}): UseFileUploadReturn {
-  const { account } = useAccount();
+  const { account, user } = useAccount();
 
   const [extracting, setExtracting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -43,7 +43,7 @@ export function useFileUpload({ onTextExtracted }: UseFileUploadOptions = {}): U
 
     try {
       const apiKey = account?.ai_providers?.gemini?.api_key ?? '';
-      const extractedText = await extractText(apiKey, uploadedFiles);
+      const extractedText = await extractText(apiKey, uploadedFiles, user?.id);
       onTextExtracted?.(extractedText);
       setUploadedFiles([]);
     } catch (error) {
@@ -52,7 +52,7 @@ export function useFileUpload({ onTextExtracted }: UseFileUploadOptions = {}): U
     } finally {
       setExtracting(false);
     }
-  }, [uploadedFiles, account?.ai_providers?.gemini?.api_key, onTextExtracted]);
+  }, [uploadedFiles, account?.ai_providers?.gemini?.api_key, onTextExtracted, user?.id]);
 
   const resetFiles = useCallback(() => {
     setUploadedFiles([]);

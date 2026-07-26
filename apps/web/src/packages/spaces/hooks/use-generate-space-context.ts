@@ -65,6 +65,7 @@ export function useGenerateSpaceContext(): UseGenerateSpaceContextReturn {
           prompt: `First message: "${params.messageText}"`,
           system: SPACE_CONTEXT_GENERATION_PROMPT,
           schema: SpaceContextGenerationSchema,
+          feature: 'context',
         });
 
         if (!result?.title || !result?.context) {

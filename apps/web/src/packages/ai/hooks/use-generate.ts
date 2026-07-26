@@ -3,12 +3,13 @@
 import { useCallback, useState } from 'react';
 
 import { useAccount } from '@/packages/account';
-import { track } from '@/packages/usage';
 import { AIProvider } from '@/packages/shared';
+import { GenerationFeature } from '@/packages/usage';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { AudioInput, buildTextInput } from '../lib/audio-message';
+import { meteringMiddleware } from '../lib/metering';
 import { cacheMiddleware } from '../lib/middleware';
 import { openRouterModelArgs } from '../lib/openrouter-model';
 import { AI_PROVIDERS } from '../lib/registry';
@@ -31,8 +32,8 @@ interface BaseGenerateParams {
   system?: string;
   /** Temperature for generation (0-2, default: 1) */
   temperature?: number;
-  /** Feature being used for analytics tracking */
-  feature?: 'suggestions' | 'transcription' | 'summary';
+  /** What the generation is for — labels the call on the usage page */
+  feature?: GenerationFeature;
   /**
    * Optional audio input for multimodal text generation (e.g. transcription).
    * When set, `prompt` becomes the instruction sent alongside the audio.
@@ -165,15 +166,23 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
           baseModel = createGoogleGenerativeAI({ apiKey: apiKey || '' })(modelId);
         }
 
+        // The meter goes first so it wraps the cache and still sees cache hits;
+        // it records every call, including the ones that throw below.
         const model = wrapLanguageModel({
           model: baseModel,
-          middleware: cacheMiddleware,
+          middleware: [
+            meteringMiddleware({
+              userId: user?.id,
+              provider,
+              model: modelId,
+              feature: feature || 'suggestions',
+            }),
+            cacheMiddleware,
+          ],
         });
 
-        const startTime = performance.now();
-
         if ('schema' in params && params.schema) {
-          const { object, usage } = await generateObject({
+          const { object } = await generateObject({
             model,
             prompt,
             system,
@@ -182,51 +191,15 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
             output: params.output,
           });
 
-          const latencyMs = Math.round(performance.now() - startTime);
-
-          // Log AI generation event
-          if (user?.id && usage) {
-            track(user.id, {
-              type: 'ai_generation',
-              generation_type: feature || 'suggestions',
-              provider,
-              model: modelId,
-              input_length: prompt.length,
-              output_length: JSON.stringify(object).length,
-              input_tokens: usage.inputTokens ?? undefined,
-              output_tokens: usage.outputTokens ?? undefined,
-              latency_ms: latencyMs,
-              success: true,
-            });
-          }
-
           return object as z.infer<T>;
         } else {
-          const { text, usage } = await generateText({
+          const { text } = await generateText({
             model,
             system,
             temperature,
             // With audio, send a multimodal message (audio + instruction); otherwise plain prompt.
             ...buildTextInput(prompt, audio),
           });
-
-          const latencyMs = Math.round(performance.now() - startTime);
-
-          // Log AI generation event
-          if (user?.id && usage) {
-            track(user.id, {
-              type: 'ai_generation',
-              generation_type: feature || 'suggestions',
-              provider,
-              model: modelId,
-              input_length: prompt.length,
-              output_length: text.length,
-              input_tokens: usage.inputTokens ?? undefined,
-              output_tokens: usage.outputTokens ?? undefined,
-              latency_ms: latencyMs,
-              success: true,
-            });
-          }
 
           return text;
         }

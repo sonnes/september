@@ -84,9 +84,33 @@ form, and additionally offers a one-click OAuth "Connect" flow (see below).
 (with an OpenRouter model id like `google/gemini-2.5-flash-lite`) to route through OpenRouter.
 Both require a configured API key in account settings.
 
-Successful generations are logged through `@/packages/usage` with provider/model metadata,
-character lengths, and AI SDK token usage (`input_tokens`, `output_tokens`) when the provider
-reports it. The dashboard uses those token fields for AI usage.
+### Metering
+
+Every language-model call is recorded by `meteringMiddleware` (`lib/metering.ts`), an AI SDK
+`LanguageModelMiddleware` wrapped around the model — not by the call sites. That means a new
+generation path is metered the day it is written, and failures are recorded too, not just the
+successes the call site turns into a toast.
+
+```ts
+wrapLanguageModel({
+  model: baseModel,
+  middleware: [meteringMiddleware({ userId, provider, model, feature }), cacheMiddleware],
+});
+```
+
+The meter must stay **outermost** (first in the array). Inside the cache it would never see a
+cache hit, and a cache hit is exactly the case worth getting right: the cached result carries the
+original call's token usage, so re-reporting it would double-count both tokens and money. The meter
+asks `hasCached(params)` before calling through, and records a hit as `cached: true` at $0.
+
+Cost comes from the provider when it reports one and from the local price table otherwise — see
+`@/packages/usage`. `openRouterModelArgs` sets `usage: { include: true }` on every OpenRouter call
+so `providerMetadata.openrouter.usage.cost` comes back and the cost is *measured* rather than
+estimated; it adds no extra request. `extractText` takes an optional `userId` and wraps its own
+model with the same middleware.
+
+`wrapStream` is deliberately not implemented — no LLM path streams today. Add it alongside
+`wrapGenerate` if one ever does, or those calls will go unmetered.
 
 ### Free OpenRouter stack
 
@@ -183,6 +207,10 @@ Gemini or OpenRouter client-side with the user's own key (the same path as sugge
 and falls back to WASM, and downloads the model once (~80 MB, cached by Transformers.js in the
 browser Cache API). Privacy-mode onboarding presets `ai_transcription.provider = 'whisper'`.
 
+The cloud path is metered by the generation middleware. The whisper path has no model call to
+wrap, so `useTranscribe` records it itself — with the audio length and a `free` cost, because
+"it ran here and cost nothing" is worth showing rather than leaving blank.
+
 ```tsx
 import { useTranscribe } from '@/packages/ai';
 
@@ -223,10 +251,10 @@ await updateAccount({ ai_providers: { ...account.ai_providers, openrouter: { api
 
 ## Text Extraction
 
-`extractText` sends one or more files to Gemini 2.5 Flash and returns markdown-formatted text with `---` chunk separators. Throws `Error('Could not extract text from files')` on failure.
+`extractText` sends one or more files to Gemini 2.5 Flash and returns markdown-formatted text with `---` chunk separators. Throws `Error('Could not extract text from files')` on failure. Pass the signed-in `userId` to meter the call — it is the largest single generation the app makes.
 
 ```ts
 import { extractText } from '@/packages/ai';
 
-const markdown = await extractText(apiKey, files);
+const markdown = await extractText(apiKey, files, user?.id);
 ```

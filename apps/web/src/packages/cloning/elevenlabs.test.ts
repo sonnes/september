@@ -1,4 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { mockRecordApiCall } = vi.hoisted(() => ({ mockRecordApiCall: vi.fn() }));
+
+vi.mock('@/packages/usage', () => ({ recordApiCall: mockRecordApiCall }));
+
 import { cloneVoice, findSimilarVoices } from './elevenlabs';
 
 const makeFile = (name: string, type = 'audio/webm') =>
@@ -92,5 +97,80 @@ describe('findSimilarVoices', () => {
   it('parses error from non-ok response', async () => {
     vi.mocked(fetch).mockResolvedValueOnce({ ok: false, status: 401, statusText: 'Unauthorized', text: async () => JSON.stringify({ detail: { message: 'Invalid API key' } }) } as Response);
     await expect(findSimilarVoices('key-abc', [makeFile('a.webm')])).rejects.toThrow('Invalid API key');
+  });
+});
+
+describe('metering', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+    mockRecordApiCall.mockClear();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('records a successful clone against the user', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ voice_id: 'v-123', name: 'My Voice' }),
+    } as Response);
+
+    await cloneVoice('key-abc', {
+      files: [makeFile('a.webm'), makeFile('b.webm')],
+      name: 'My Voice',
+      userId: 'user-1',
+    });
+
+    expect(mockRecordApiCall).toHaveBeenCalledOnce();
+    const [userId, call] = mockRecordApiCall.mock.calls[0];
+    expect(userId).toBe('user-1');
+    expect(call).toMatchObject({
+      kind: 'clone',
+      provider: 'elevenlabs',
+      clone_kind: 'clone',
+      sample_count: 2,
+      success: true,
+    });
+  });
+
+  it('records a rejected clone, keeping the reason', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      statusText: 'Unauthorized',
+      text: async () => JSON.stringify({ detail: { message: 'Invalid API key' } }),
+    } as Response);
+
+    await expect(
+      cloneVoice('key-abc', { files: [makeFile('a.webm')], name: 'X', userId: 'user-1' })
+    ).rejects.toThrow('Invalid API key');
+
+    const [, call] = mockRecordApiCall.mock.calls[0];
+    expect(call.success).toBe(false);
+    expect(call.error_message).toBe('Invalid API key');
+  });
+
+  it('records a similar-voice search under its own kind', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ voices: [] }),
+    } as Response);
+
+    await findSimilarVoices('key-abc', [makeFile('a.webm')], 'user-1');
+
+    const [, call] = mockRecordApiCall.mock.calls[0];
+    expect(call.clone_kind).toBe('similar');
+    expect(call.sample_count).toBe(1);
+  });
+
+  it('records nothing when there is no signed-in user', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ voice_id: 'v-1' }),
+    } as Response);
+
+    await cloneVoice('key-abc', { files: [makeFile('a.webm')], name: 'X' });
+
+    expect(mockRecordApiCall).not.toHaveBeenCalled();
   });
 });

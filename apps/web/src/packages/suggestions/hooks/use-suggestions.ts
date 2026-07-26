@@ -87,7 +87,12 @@ export function useSuggestions({
       });
 
       try {
-        const result = await generate({ prompt, system, schema: SuggestionsSchema });
+        const result = await generate({
+          prompt,
+          system,
+          schema: SuggestionsSchema,
+          feature: 'suggestions',
+        });
 
         if (signal.aborted || requestId !== requestIdRef.current) return;
 

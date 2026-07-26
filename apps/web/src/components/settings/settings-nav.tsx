@@ -2,7 +2,7 @@
 
 import { Link, useLocation } from '@tanstack/react-router';
 
-import { Lightbulb, Mic, SlidersHorizontal, User, type LucideIcon } from 'lucide-react';
+import { Gauge, Lightbulb, Mic, SlidersHorizontal, User, type LucideIcon } from 'lucide-react';
 
 import { cn } from '@/packages/shared';
 
@@ -31,6 +31,12 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     description: 'Writes down what people say.',
     href: '/settings/listening',
     icon: Mic,
+  },
+  {
+    title: 'Usage',
+    description: 'What your services use, and cost.',
+    href: '/settings/usage',
+    icon: Gauge,
   },
   {
     title: 'Account',

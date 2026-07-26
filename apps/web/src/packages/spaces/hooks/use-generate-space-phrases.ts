@@ -65,6 +65,7 @@ export function useGenerateSpacePhrases(): UseGenerateSpacePhrasesReturn {
           prompt,
           system,
           schema: SpacePhrasesSchema,
+          feature: 'phrases',
         });
 
         if (!result?.phrases) {
