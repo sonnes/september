@@ -1,0 +1,27 @@
+{
+  "id": "navigate",
+  "title": "NAVIGATE",
+  "columns": 2,
+  "buttons": [
+    { "id": "find", "label": "Find", "symbol": "magnifyingglass",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "f" } },
+    { "id": "mission-control", "label": "Windows", "symbol": "square.grid.2x2",
+      "action": { "type": "shortcut", "modifiers": ["control"], "key": "up" } },
+    { "id": "scroll-up", "label": "Page Up", "symbol": "arrow.up.to.line",
+      "action": { "type": "shortcut", "modifiers": [], "key": "pageUp" } },
+    { "id": "scroll-down", "label": "Page Down", "symbol": "arrow.down.to.line",
+      "action": { "type": "shortcut", "modifiers": [], "key": "pageDown" } },
+    { "id": "zoom-out", "label": "Zoom Out", "symbol": "minus.magnifyingglass",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "-" } },
+    { "id": "zoom-in", "label": "Zoom In", "symbol": "plus.magnifyingglass",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "=" } },
+    { "id": "arrow-up", "label": "Up", "symbol": "chevron.up",
+      "action": { "type": "shortcut", "modifiers": [], "key": "up" } },
+    { "id": "arrow-left", "label": "Left", "symbol": "chevron.left",
+      "action": { "type": "shortcut", "modifiers": [], "key": "left" } },
+    { "id": "arrow-down", "label": "Down", "symbol": "chevron.down",
+      "action": { "type": "shortcut", "modifiers": [], "key": "down" } },
+    { "id": "arrow-right", "label": "Right", "symbol": "chevron.right",
+      "action": { "type": "shortcut", "modifiers": [], "key": "right" } }
+  ]
+}

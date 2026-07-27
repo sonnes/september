@@ -1,0 +1,31 @@
+{
+  "id": "app.com.microsoft.VSCode",
+  "title": "VS CODE",
+  "columns": 2,
+  "buttons": [
+    { "id": "terminal", "label": "Terminal", "symbol": "terminal",
+      "action": { "type": "shortcut", "modifiers": ["control"], "key": "`" } },
+    { "id": "palette", "label": "Palette", "symbol": "paintpalette",
+      "action": { "type": "shortcut", "modifiers": ["command", "shift"], "key": "p" } },
+    { "id": "quick-open", "label": "Quick Open", "symbol": "doc.text.magnifyingglass",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "p" } },
+    { "id": "sidebar", "label": "Sidebar", "symbol": "sidebar.left",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "b" } },
+    { "id": "split", "label": "Split", "symbol": "rectangle.split.2x1",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "\\" } },
+    { "id": "source-control", "label": "Source Control", "symbol": "arrow.triangle.branch",
+      "action": { "type": "shortcut", "modifiers": ["control", "shift"], "key": "g" } },
+    { "id": "debug", "label": "Debug", "symbol": "ladybug",
+      "action": { "type": "shortcut", "modifiers": ["command", "shift"], "key": "d" } },
+    { "id": "problems", "label": "Problems", "symbol": "exclamationmark.triangle",
+      "action": { "type": "shortcut", "modifiers": ["command", "shift"], "key": "m" } },
+    { "id": "comment", "label": "Comment", "symbol": "text.bubble",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "/" } },
+    { "id": "format", "label": "Format", "symbol": "wand.and.stars",
+      "action": { "type": "shortcut", "modifiers": ["option", "shift"], "key": "f" } },
+    { "id": "explorer", "label": "Explorer", "symbol": "list.bullet",
+      "action": { "type": "shortcut", "modifiers": ["command", "shift"], "key": "e" } },
+    { "id": "settings", "label": "Settings", "symbol": "gearshape",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "," } }
+  ]
+}

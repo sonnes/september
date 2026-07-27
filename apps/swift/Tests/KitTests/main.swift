@@ -1,0 +1,8 @@
+designTests()
+keyboardLayoutTests()
+modifierStateTests()
+keyCodeMapTests()
+keystrokeTests()
+panelTests()
+controllerTests()
+summarize()

@@ -1,6 +1,6 @@
 PORT ?= 3009
 
-.PHONY: dev server-dev deploy
+.PHONY: dev server-dev deploy mac-run mac-test mac-app
 
 dev:
 	pnpm -C apps/web dev --port $(PORT)
@@ -13,3 +13,13 @@ server-dev:
 #   make deploy VITE_SYNC_API_URL=https://... VITE_GOOGLE_CLIENT_ID=...
 deploy:
 	pnpm -C apps/server deploy
+
+# Native macOS keyboard (apps/swift). See apps/swift/README.md.
+mac-run:
+	$(MAKE) -C apps/swift run
+
+mac-test:
+	$(MAKE) -C apps/swift test
+
+mac-app:
+	$(MAKE) -C apps/swift app

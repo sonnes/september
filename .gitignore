@@ -53,3 +53,5 @@ cache/
 .claude/settings.local.json
 .claude/plans/
 .claude/research/
+# Swift / SwiftPM
+apps/swift/.build/

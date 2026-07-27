@@ -85,9 +85,9 @@ The application will be available at `http://localhost:3009`.
 
 ## Project Structure
 
-September is a single standalone web app in `apps/web/`. Shared modules live
-inside it at `src/packages/*` and are imported via the `@/packages/*` alias
-(`@/*` → `src/*` in `tsconfig.json`).
+September is a standalone web app in `apps/web/`, plus a native macOS keyboard
+in `apps/swift/`. Shared modules live inside the web app at `src/packages/*` and
+are imported via the `@/packages/*` alias (`@/*` → `src/*` in `tsconfig.json`).
 
 ```
 september/
@@ -109,8 +109,14 @@ september/
 │   │       └── suggestions/    # Contextual suggestions
 │   ├── vite.config.ts
 │   └── vercel.json
+├── apps/swift/                 # Native macOS floating keyboard (SwiftPM)
+│   ├── Sources/SeptemberKit/   # Models, design tokens, SwiftUI views
+│   └── Sources/September/      # App shell, floating panel, CGEvent injection
 └── docs/                       # Plans, notes, concepts
 ```
+
+Run the macOS app with `make mac-run`; see `apps/swift/README.md` for the
+Accessibility permission setup.
 
 ## Tech Stack
 

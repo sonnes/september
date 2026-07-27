@@ -1,0 +1,19 @@
+{
+  "id": "app.generic",
+  "title": "APP",
+  "columns": 2,
+  "buttons": [
+    { "id": "switch-app", "label": "Switch App", "symbol": "arrow.left.arrow.right",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "tab" } },
+    { "id": "new-window", "label": "New Window", "symbol": "macwindow.badge.plus",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "n" } },
+    { "id": "minimize", "label": "Minimize", "symbol": "arrow.down.right.and.arrow.up.left",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "m" } },
+    { "id": "hide", "label": "Hide", "symbol": "eye.slash",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "h" } },
+    { "id": "preferences", "label": "Settings", "symbol": "gearshape",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "," } },
+    { "id": "quit", "label": "Quit", "symbol": "power",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "q" } }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "system",
+  "title": "SYSTEM",
+  "columns": 2,
+  "buttons": [
+    { "id": "fullscreen", "label": "Full Screen", "symbol": "macwindow",
+      "action": { "type": "shortcut", "modifiers": ["control", "command"], "key": "f" } },
+    { "id": "screenshot", "label": "Screenshot", "symbol": "camera",
+      "action": { "type": "shortcut", "modifiers": ["command", "shift"], "key": "4" } }
+  ]
+}

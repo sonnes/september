@@ -2,26 +2,31 @@
 
 September is an assistive communication app for people with ALS, MND, or speech/motor difficulties. Fewer keystrokes to full expression.
 
-## App
+## Apps
 
-A single web app: TanStack Start (Vite), React 19, Tailwind. It lives in
-`apps/web/` and is a standalone pnpm project (its own `package.json`,
-`pnpm-lock.yaml`, and `node_modules` — no workspace). See `apps/web/CLAUDE.md`
-for build commands and code style rules; read it before working in the app.
+**Web** — TanStack Start (Vite), React 19, Tailwind, in `apps/web/`. A
+standalone pnpm project (its own `package.json`, `pnpm-lock.yaml`, and
+`node_modules` — no workspace). See `apps/web/CLAUDE.md` for build commands and
+code style rules; read it before working in the app.
 
 The formerly-shared modules live inside the app at `apps/web/src/packages/*`,
 imported via the `@/packages/*` alias (`@/*` → `src/*`), not as workspace
 packages.
 
+**macOS** — a native floating keyboard in `apps/swift/` (SwiftUI + AppKit,
+SwiftPM, no dependencies). See `apps/swift/CLAUDE.md` before working in it; its
+design system comes from GitHub issue #10, not `DESIGN.md`.
+
 ```
 september/
 ├── apps/web/              # Web app (standalone pnpm project)
 │   └── src/packages/      # shared modules (import via @/packages/*)
+├── apps/swift/            # Native macOS keyboard (SwiftPM)
 └── docs/                  # Plans, notes, concepts
 ```
 
 Run commands from `apps/web/` (e.g. `pnpm -C apps/web <script>`) or via the
-root `Makefile` (`make dev`).
+root `Makefile` (`make dev`, `make mac-run`, `make mac-test`).
 
 ## TDD (strict)
 

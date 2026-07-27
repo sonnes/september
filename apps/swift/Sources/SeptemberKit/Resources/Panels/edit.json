@@ -1,0 +1,31 @@
+{
+  "id": "edit",
+  "title": "EDIT",
+  "columns": 2,
+  "buttons": [
+    { "id": "cut", "label": "Cut", "symbol": "scissors",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "x" } },
+    { "id": "copy", "label": "Copy", "symbol": "doc.on.doc",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "c" } },
+    { "id": "paste", "label": "Paste", "symbol": "doc.on.clipboard",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "v" } },
+    { "id": "undo", "label": "Undo", "symbol": "arrow.uturn.backward",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "z" } },
+    { "id": "redo", "label": "Redo", "symbol": "arrow.uturn.forward",
+      "action": { "type": "shortcut", "modifiers": ["command", "shift"], "key": "z" } },
+    { "id": "select-all", "label": "Select All", "symbol": "selection.pin.in.out",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "a" } },
+    { "id": "save", "label": "Save", "symbol": "square.and.arrow.down",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "s" } },
+    { "id": "new", "label": "New", "symbol": "doc.badge.plus",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "n" } },
+    { "id": "open", "label": "Open", "symbol": "folder",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "o" } },
+    { "id": "print", "label": "Print", "symbol": "printer",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "p" } },
+    { "id": "close", "label": "Close", "symbol": "xmark",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "w" } },
+    { "id": "find", "label": "Find", "symbol": "magnifyingglass",
+      "action": { "type": "shortcut", "modifiers": ["command"], "key": "f" } }
+  ]
+}
