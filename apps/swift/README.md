@@ -12,26 +12,63 @@ Sources/
     Panels/         panel model + JSON loading
     Views/          keys, shortcut buttons, panels, the assembled screen
     Resources/      Panels/*.json and Panels/Apps/<bundle id>.json
-  September/        the app: floating panel, CGEvent sink, menu bar, permission
+  September/        the app: floating panel, CGEvent sink, focus watcher, menu bar, permission
 Tests/KitTests/     tests (see "Tests" below)
 ```
 
 ## Commands
 
 ```sh
-make run     # run unbundled — uses the terminal's Accessibility permission
-make test    # run the test suite
-make app     # build and sign September.app
-make open    # build, sign and launch
+make run        # run unbundled in the foreground
+make dev        # same, detached
+make stop       # quit a running September
+make test       # run the test suite
+make app        # build and sign September.app
+make open       # build, sign and launch
+make snapshots  # render the keyboard and component library to .build/snapshots
 ```
 
-Snapshots, for comparing against the design mocks without opening a window:
+`make run` and `make dev` launch September as a child of your shell, so it
+inherits the terminal's Accessibility permission — keys type into other apps
+with nothing to grant. The signed bundle from `make app` is a separate identity
+and needs its own grant (below).
+
+Individual snapshots, for comparing against the design mocks without opening a
+window:
 
 ```sh
 swift run September --snapshot out.png            # the whole keyboard (rainbow)
 swift run September --snapshot out.png --mono     # mono variant
 swift run September --snapshot out.png --gallery  # the component library
+swift run September --snapshot out.png --viewer   # the tree viewer, reading the app in front
 ```
+
+## The input bar
+
+The bar above the keys mirrors the text field the user is typing into, read
+back over the accessibility API with its caret and selection. Apps that expose
+no text (Zed, a canvas, a page with nothing focused) fall back to an echo of
+what September itself typed; password fields show nothing at all and leave no
+copy behind. See `docs/concepts/input-mirroring.md`.
+
+To see what September can read out of the app in front:
+
+```sh
+swift run September --ax            # the focused field, right now
+swift run September --ax --wait 5   # after 5s, so you can click into another app
+swift run September --ax --tree     # plus that app's accessibility tree
+```
+
+## The accessibility tree viewer
+
+A second window sits at the right edge of the screen, the same height as the
+keyboard, showing the accessibility tree of whatever app is in front with the
+focused element highlighted — the tree September itself reads to find the field
+it types into. It refreshes when focus moves, when the frontmost app changes,
+and from its own refresh button.
+
+Toggle it from the menu bar item (**Accessibility Tree**); the keyboard centres
+in whatever space is left, so the two never overlap.
 
 ## Accessibility permission
 
@@ -65,3 +102,9 @@ Tokens, sizes and the two keyboard variants come from
 [issue #10](https://github.com/sonnes/september/issues/10). Where the issue body
 and the spec sheet disagree the issue body wins; see
 `docs/notes/2026-07-27-mac-keyboard-panels.md`.
+
+The keyboard follows the system light/dark setting. Every token is a
+`ThemeColor` — the issue's palette in the dark column, a derived one in the
+light column — resolved against the appearance it is drawn in, with no setting
+of its own. `DesignTests` holds each pairing to a WCAG contrast floor, so a new
+token has to earn both columns.

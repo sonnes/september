@@ -87,7 +87,7 @@ public struct AppShortcutsView: View {
                     .foregroundStyle(Color(Tokens.keyText))
                     .lineLimit(1)
                 Circle()
-                    .fill(Color(RGBA(hex: 0x5CD6A0)))
+                    .fill(Color(Tokens.positive))
                     .frame(width: 5, height: 5)
             }
             .padding(.bottom, 2)

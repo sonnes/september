@@ -9,6 +9,10 @@ import SeptemberKit
 final class CGEventSink: KeystrokeSink, @unchecked Sendable {
     private let source = CGEventSource(stateID: .combinedSessionState)
 
+    /// Runs after keystrokes land, so the focus watcher can re-read the field
+    /// they went into.
+    var afterPost: (@MainActor () -> Void)?
+
     func post(_ events: [Keystroke]) {
         for event in events {
             guard
@@ -21,6 +25,8 @@ final class CGEventSink: KeystrokeSink, @unchecked Sendable {
             cgEvent.flags = event.flags.cgEventFlags
             cgEvent.post(tap: .cghidEventTap)
         }
+        // Every key press starts on the main actor, so this hop is free.
+        MainActor.assumeIsolated { afterPost?() }
     }
 
     /// Characters the current layout cannot produce (emoji, saved phrases) are
@@ -35,6 +41,8 @@ final class CGEventSink: KeystrokeSink, @unchecked Sendable {
             event.keyboardSetUnicodeString(stringLength: utf16.count, unicodeString: &utf16)
             event.post(tap: .cghidEventTap)
         }
+        // Every key press starts on the main actor, so this hop is free.
+        MainActor.assumeIsolated { afterPost?() }
     }
 }
 

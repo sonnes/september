@@ -75,20 +75,106 @@ Light mode is not implemented — dark only, both variants.
   Shift → H → I → Space → T → Delete leaves `Hi ` in the input bar, Return
   clears it. Latching, case and the echo all behave.
 
-## Not verified — needs the user
+## Injection, verified
 
-Actual keystroke injection into another app. `CGEvent.post` requires
-Accessibility permission, which cannot be granted programmatically. Grant
-September permission (banner ▸ Open Settings), then check in TextEdit:
+Run unbundled as a child of a terminal that already holds Accessibility
+permission (`make run`, or `.build/debug/September`) and the app inherits that
+trust — no banner, no System Settings trip. That is the fastest dev loop; the
+signed `.app` still needs its own grant.
 
-1. letters, shift, caps lock;
-2. ⌘C / ⌘V / ⌘Z / ⇧⌘Z from the edit keypad;
-3. holding delete repeats;
-4. switch the input source to a non-US layout — the key code map rebuilds on
-   `kTISNotifySelectedKeyboardInputSourceChanged`.
+Driving September's keys through the accessibility API with TextEdit in front:
 
-Also unverified: Switch Control scan order and VoiceOver phrasing on real
-hardware, and Dwell clicking (the AX path works, which is what Dwell uses).
+| Pressed | TextEdit shows |
+|---|---|
+| H, I | `hi` |
+| Shift, T, Delete | `hi` (uppercase T typed, then deleted) |
+| Select All ⌘A, Cut ⌘X | empty, clipboard `hi` |
+| Shift, A | `A` |
+| Caps Lock, B, C, Caps Lock | `ABC` |
+| Paste ⌘V | `ABChi` |
+| Undo ⌘Z | `ABC` |
+
+Latching shift, caps lock, and panel shortcuts all reach the frontmost app.
+
+## Input mirroring (added after the plan)
+
+The plan called the input bar an echo of our own keystrokes. It now mirrors the
+focused field of the app in front instead, read over the accessibility API, and
+only falls back to the echo when an app exposes no text. Password fields show
+nothing and leave nothing in the buffer. Concept:
+`docs/concepts/input-mirroring.md`; API findings:
+`docs/research/2026-07-27-reading-the-focused-field.md`.
+
+Verified live, with September driven through `AXPress`:
+
+| Frontmost | Input bar |
+|---|---|
+| TextEdit with a document | `hello mirror`, label "Text in TextEdit" |
+| Typing `XY` in TextEdit directly | updates to `XYhello mirror` (AXObserver) |
+| Pressing September's W key | updates to `whello mirror` (post-keystroke re-read) |
+| Pressing September's Undo ⌘Z button | back to `hello mirror` |
+| Switching to Zed (exposes no text) | falls back to the local echo, empty |
+| A 3 000-character document, caret at the end | 200-character window ending at the caret, reported at offset 200 |
+
+Two decisions the plan was silent on: the accent at 30% became a `selection`
+token (the design system has no selection colour), and the caret is drawn
+between three text runs rather than at a measured offset — the bar shows one
+line, so splitting the string is enough.
+
+## Tree viewer and detached controls (added after the plan)
+
+A second floating window at the right edge shows the frontmost app's
+accessibility tree, focused element highlighted, refreshed on focus and app
+changes (coalesced to one read per 500 ms — a tree costs hundreds of round
+trips). It is on by default and toggles from the menu bar item.
+
+Both windows share the screen's bottom edge and the same 24pt margin, so their
+heights match by construction: the viewer is built with the keyboard's measured
+height, and the keyboard centres in the width left over once the viewer's 320pt
+is reserved. Verified live at 1708×486 and 320×486, same `y`.
+
+The input bar and mode buttons no longer sit on the keyboard's surface — the
+background moved to the keys-and-panels block alone, leaving the controls
+floating on transparency.
+
+Two constraints found the hard way: `ImageRenderer` renders nothing inside a
+`ScrollView` (hence `AXTreeView(scrolls:)`, false for snapshots), and a lazy
+stack has the same problem, so the rows are a plain `VStack` over a capped tree.
+
+## Light appearance (added after the plan)
+
+The app now follows the system setting. Issue #10 defines only a dark palette,
+so every token became a `ThemeColor` pair: the issue's value in the dark column,
+a derived value in the light one. Nothing about the dark appearance changed.
+
+The light column was derived by role rather than by hex — surfaces invert
+(`key` #1A1A20 → white, `background` #1C1C1E → #EDEDF2), text inverts, strokes
+flip from white-on-dark to black-on-light, and the rainbow row hues are taken
+down far enough to hold their contrast on a white key (#FF6B7A → #C01829, and so
+on for the other five). Judgement was kept out of it where possible: `RGBA` now
+computes WCAG luminance and contrast, and `DesignTests` holds key text to 4.5:1
+and secondary labels, the accent and every rainbow tint to 3:1, in both columns.
+
+That check found one thing worth recording: the design system's own
+`sectionLabel` (#606070 on #1C1C1E) measures **2.8:1**, under the 3:1 floor. The
+dark column keeps it — it is the design system's call, not ours — and the test
+instead requires the light column to clear 3:1 and to be no worse than dark.
+Worth raising with the design owner.
+
+Resolution is `NSColor(name:dynamicProvider:)` behind `Color(_ token:)`, so the
+appearance is read at draw time and no window pins one. `--snapshot --light`
+renders the light column (`make snapshots` writes `keyboard-light.png`).
+
+## Still unverified
+
+- A password field end to end. The subrole check matches what the login window
+  exposes (`AXSecureTextField`, value withheld), but no app was driven into a
+  password field to watch the bar go blank.
+- Holding delete to repeat (needs a real pointer hold, not `AXPress`).
+- A non-US input source rebuilding the key code map on
+  `kTISNotifySelectedKeyboardInputSourceChanged`.
+- Switch Control scan order and VoiceOver phrasing on real hardware, and Dwell
+  clicking — the `AXPress` path they all use does work.
 
 ## Left out
 

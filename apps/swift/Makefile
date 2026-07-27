@@ -11,12 +11,21 @@ CONFIG ?= release
 BUILD_DIR := .build/$(CONFIG)
 APP := $(BUILD_DIR)/September.app
 IDENTITY ?= $(shell security find-identity -v -p codesigning 2>/dev/null | grep -o '"September Dev"' | head -1 | tr -d '"')
+SNAPSHOT_DIR ?= .build/snapshots
 
-.PHONY: run test app open clean
+.PHONY: run dev test app open stop snapshots clean
 
-# Runs unbundled: the terminal's own Accessibility permission is used.
+# Runs unbundled as a child of this shell, so it inherits the terminal's own
+# Accessibility permission — keys type into other apps with nothing to grant.
 run:
-	swift run September
+	swift build
+	exec .build/debug/September
+
+# Same, but detached: the keyboard stays up while you keep using the terminal.
+dev:
+	swift build
+	.build/debug/September &
+	@echo "September running detached — stop it with: make stop"
 
 test:
 	swift run KitTests
@@ -39,6 +48,19 @@ app:
 
 open: app
 	open "$(APP)"
+
+stop:
+	@pkill -f '\.build/(debug|release)/September' 2>/dev/null && echo "stopped" || echo "not running"
+
+# Renders the keyboard and the component library to PNGs for comparing against
+# the design mocks — no window, no permissions.
+snapshots:
+	@mkdir -p "$(SNAPSHOT_DIR)"
+	swift run September --snapshot "$(SNAPSHOT_DIR)/keyboard-rainbow.png"
+	swift run September --snapshot "$(SNAPSHOT_DIR)/keyboard-mono.png" --mono
+	swift run September --snapshot "$(SNAPSHOT_DIR)/keyboard-light.png" --light
+	swift run September --snapshot "$(SNAPSHOT_DIR)/component-library.png" --gallery
+	swift run September --snapshot "$(SNAPSHOT_DIR)/tree-viewer.png" --viewer
 
 clean:
 	rm -rf .build

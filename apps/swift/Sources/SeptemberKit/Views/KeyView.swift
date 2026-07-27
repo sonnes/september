@@ -4,7 +4,7 @@ import SwiftUI
 /// they differ only in fill, label treatment and size.
 public struct KeyView: View {
     private let key: KeyDefinition
-    private let tint: RGBA
+    private let tint: ThemeColor
     private let isActive: Bool
     private let width: CGFloat?
     private let press: () -> Void
@@ -14,7 +14,7 @@ public struct KeyView: View {
 
     public init(
         key: KeyDefinition,
-        tint: RGBA = Tokens.keyText,
+        tint: ThemeColor = Tokens.keyText,
         isActive: Bool = false,
         width: CGFloat? = nil,
         press: @escaping () -> Void
@@ -83,13 +83,13 @@ public struct KeyView: View {
         }
     }
 
-    private var fill: RGBA {
+    private var fill: ThemeColor {
         if isActive { return Tokens.accent.opacity(0.18) }
-        if isPressed { return Tokens.key.lightened(by: 0.08) }
+        if isPressed { return Tokens.key.pressed }
         return key.kind == .standard || key.kind == .dual ? Tokens.key : Tokens.keySpecial
     }
 
-    private var stroke: RGBA {
+    private var stroke: ThemeColor {
         if isActive { return Tokens.accent }
         return key.kind == .standard || key.kind == .dual
             ? Tokens.strokeStandard : Tokens.strokeSpecial
@@ -107,21 +107,6 @@ public struct KeyView: View {
     private func stopRepeating() {
         repeatTimer?.invalidate()
         repeatTimer = nil
-    }
-}
-
-extension RGBA {
-    func opacity(_ value: Double) -> RGBA {
-        RGBA(red: red, green: green, blue: blue, alpha: value)
-    }
-
-    func lightened(by amount: Double) -> RGBA {
-        RGBA(
-            red: min(red + amount, 1),
-            green: min(green + amount, 1),
-            blue: min(blue + amount, 1),
-            alpha: alpha
-        )
     }
 }
 

@@ -20,6 +20,9 @@ public enum Metrics {
     public static let keyboardWidth: CGFloat = 980
     public static let keypadWidth: CGFloat = 200
     public static let inputBarHeight: CGFloat = 48
+    /// The accessibility tree viewer, which sits at the right edge of the
+    /// screen and takes its height from the keyboard beside it.
+    public static let treeViewerWidth: CGFloat = 320
     public static let inputBarCornerRadius: CGFloat = 24
     public static let dualLabelGap: CGFloat = 2
     public static let dualSecondaryLabelSize: CGFloat = 11

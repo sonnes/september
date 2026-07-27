@@ -8,6 +8,8 @@ public struct KeyboardScreen: View {
     public init() {}
 
     public var body: some View {
+        // The input bar and the mode buttons float free above the keys; only
+        // the keys and their panels sit on a surface.
         VStack(alignment: .leading, spacing: Metrics.sectionSpacing) {
             if !controller.isAccessibilityTrusted {
                 PermissionBanner()
@@ -21,21 +23,26 @@ public struct KeyboardScreen: View {
             }
             .padding(.leading, Metrics.keypadWidth + Metrics.sectionSpacing)
 
-            HStack(alignment: .top, spacing: Metrics.sectionSpacing) {
-                PanelGridView(panel: controller.editPanel) { controller.perform($0) }
+            keys
+        }
+        .padding(16)
+    }
 
-                MainKeyboardView()
+    private var keys: some View {
+        HStack(alignment: .top, spacing: Metrics.sectionSpacing) {
+            PanelGridView(panel: controller.editPanel) { controller.perform($0) }
 
-                VStack(alignment: .leading, spacing: 12) {
-                    PanelGridView(panel: controller.navigatePanel) { controller.perform($0) }
-                    PanelGridView(panel: controller.systemPanel) { controller.perform($0) }
-                }
+            MainKeyboardView()
 
-                AppShortcutsView(
-                    panel: controller.appPanel,
-                    appName: controller.frontmostAppName
-                ) { controller.perform($0) }
+            VStack(alignment: .leading, spacing: 12) {
+                PanelGridView(panel: controller.navigatePanel) { controller.perform($0) }
+                PanelGridView(panel: controller.systemPanel) { controller.perform($0) }
             }
+
+            AppShortcutsView(
+                panel: controller.appPanel,
+                appName: controller.frontmostAppName
+            ) { controller.perform($0) }
         }
         .padding(16)
         .background(Color(Tokens.background))
@@ -51,7 +58,7 @@ struct PermissionBanner: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(Color(RGBA(hex: 0xFF9F4A)))
+                .foregroundStyle(Color(Tokens.warning))
             Text("September needs Accessibility access to type into other apps.")
                 .font(.system(size: 12))
                 .foregroundStyle(Color(Tokens.keyText))
@@ -66,7 +73,7 @@ struct PermissionBanner: View {
         .frame(height: 36)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color(RGBA(hex: 0xFF9F4A, alpha: 0.12)))
+                .fill(Color(Tokens.warningSurface))
         )
         .accessibilityElement(children: .combine)
     }

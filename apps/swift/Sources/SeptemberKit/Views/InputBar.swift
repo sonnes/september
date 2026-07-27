@@ -1,8 +1,12 @@
 import SwiftUI
 
-/// Shows what has been typed since the last Return. It is an echo, not a text
-/// field: keystrokes go straight to the app in front, and the panel never takes
-/// focus, so there is nothing here to edit.
+/// Shows the text the app in front has focused, read back over accessibility,
+/// with its caret and selection. Apps that expose no text (Terminal, canvases)
+/// fall back to an echo of what September itself typed.
+///
+/// Either way it is a mirror, not a text field: keystrokes go straight to the
+/// app in front, and the panel never takes focus, so there is nothing here to
+/// edit.
 public struct InputBar: View {
     @EnvironmentObject private var controller: KeyboardController
 
@@ -14,21 +18,43 @@ public struct InputBar: View {
 
     public var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: "magnifyingglass")
+            Image(systemName: leadingSymbol)
                 .font(.system(size: 15))
                 .foregroundStyle(Color(Tokens.labelSecondary))
 
-            HStack(spacing: 2) {
-                Text(controller.echo)
-                    .font(.system(size: 16))
-                    .foregroundStyle(Color(Tokens.keyText))
-                    .lineLimit(1)
-                    .truncationMode(.head)
-                Caret()
+            switch controller.input {
+            case .secure:
+                Text("Password field — hidden")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color(Tokens.dualSecondary))
                 Spacer(minLength: 0)
+            case .local(let text):
+                HStack(spacing: 2) {
+                    Line(text)
+                        .truncationMode(.head)
+                    Caret()
+                    Spacer(minLength: 0)
+                }
+            case .mirrored(let text, let caret, let selectionLength):
+                let parts = InputMirror.split(text, caret: caret, selectionLength: selectionLength)
+                HStack(spacing: 0) {
+                    Line(parts.before)
+                        .truncationMode(.head)
+                        .layoutPriority(1)
+                    if parts.selected.isEmpty {
+                        Caret()
+                    } else {
+                        Line(parts.selected)
+                            .background(Color(Tokens.selection))
+                            .layoutPriority(1)
+                    }
+                    Line(parts.after)
+                        .truncationMode(.tail)
+                    Spacer(minLength: 0)
+                }
             }
 
-            if !controller.echo.isEmpty {
+            if case .local(let text) = controller.input, !text.isEmpty {
                 Button {
                     controller.clearEcho()
                 } label: {
@@ -51,8 +77,41 @@ public struct InputBar: View {
                 .strokeBorder(Color(Tokens.strokeStandard), lineWidth: 1)
         )
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Typed text")
-        .accessibilityValue(controller.echo.isEmpty ? "empty" : controller.echo)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityValue(controller.input.isEmpty ? "empty" : controller.input.text)
+    }
+
+    /// A lock for a password field, the app's own text otherwise.
+    private var leadingSymbol: String {
+        switch controller.input {
+        case .secure: "lock.fill"
+        case .mirrored: "text.cursor"
+        case .local: "magnifyingglass"
+        }
+    }
+
+    private var accessibilityLabel: String {
+        switch controller.input {
+        case .secure: "Password field"
+        case .mirrored: "Text in \(controller.frontmostAppName)"
+        case .local: "Typed text"
+        }
+    }
+}
+
+/// One run of the mirrored line — same type on every side of the caret.
+private struct Line: View {
+    private let text: String
+
+    init(_ text: String) {
+        self.text = text
+    }
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 16))
+            .foregroundStyle(Color(Tokens.keyText))
+            .lineLimit(1)
     }
 }
 

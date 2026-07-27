@@ -4,7 +4,7 @@ import SwiftUI
 /// keypads either side of the keyboard.
 public struct ShortcutButtonView: View {
     private let button: PanelButton
-    private let tint: RGBA
+    private let tint: ThemeColor
     private let width: CGFloat
     private let press: () -> Void
 
@@ -12,7 +12,7 @@ public struct ShortcutButtonView: View {
 
     public init(
         button: PanelButton,
-        tint: RGBA = Tokens.shortcutLabel,
+        tint: ThemeColor = Tokens.shortcutLabel,
         width: CGFloat = Metrics.shortcutButton.width,
         press: @escaping () -> Void
     ) {
@@ -44,7 +44,7 @@ public struct ShortcutButtonView: View {
         .frame(width: width, height: Metrics.shortcutButton.height)
         .background(
             RoundedRectangle(cornerRadius: Metrics.keyCornerRadius, style: .continuous)
-                .fill(Color(isPressed ? Tokens.key.lightened(by: 0.08) : Tokens.key))
+                .fill(Color(isPressed ? Tokens.key.pressed : Tokens.key))
         )
         .overlay(
             RoundedRectangle(cornerRadius: Metrics.keyCornerRadius, style: .continuous)
@@ -103,7 +103,7 @@ public struct ShortcutFullView: View {
         .frame(width: width, height: Metrics.shortcutFull.height)
         .background(
             RoundedRectangle(cornerRadius: Metrics.keyCornerRadius, style: .continuous)
-                .fill(Color(isPressed ? Tokens.key.lightened(by: 0.08) : Tokens.key))
+                .fill(Color(isPressed ? Tokens.key.pressed : Tokens.key))
         )
         .overlay(
             RoundedRectangle(cornerRadius: Metrics.keyCornerRadius, style: .continuous)

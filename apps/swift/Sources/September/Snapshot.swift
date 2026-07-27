@@ -19,14 +19,31 @@ enum Snapshot {
         let view: AnyView
         if arguments.contains("--gallery") {
             view = AnyView(ComponentGallery().environmentObject(controller))
+        } else if arguments.contains("--viewer") {
+            // The real tree of whatever is in front, so the viewer can be
+            // checked against the mocks with something in it.
+            let model = AXTreeModel()
+            model.tree = AXTreeReader.read(app: NSWorkspace.shared.frontmostApplication)
+            view = AnyView(AXTreeView(model: model, height: 460, scrolls: false).padding(16))
         } else {
             view = AnyView(KeyboardScreen().environmentObject(controller))
         }
 
-        let renderer = ImageRenderer(content: view)
+        // The app follows the system appearance, so a snapshot has to say which
+        // one it wants: tokens resolve against the appearance being drawn in.
+        let isLight = arguments.contains("--light")
+        let appearance = NSAppearance(named: isLight ? .aqua : .darkAqua)
+        let renderer = ImageRenderer(
+            content: view.environment(\.colorScheme, isLight ? .light : .dark))
         renderer.scale = 2
 
-        guard let image = renderer.cgImage else {
+        var rendered: CGImage?
+        if let appearance {
+            appearance.performAsCurrentDrawingAppearance { rendered = renderer.cgImage }
+        } else {
+            rendered = renderer.cgImage
+        }
+        guard let image = rendered else {
             FileHandle.standardError.write(Data("snapshot: nothing rendered\n".utf8))
             exit(1)
         }

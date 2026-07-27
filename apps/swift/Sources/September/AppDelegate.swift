@@ -6,10 +6,25 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var panel: FloatingPanel?
+    private var treePanel: FloatingPanel?
     private var statusItem: NSStatusItem?
     private var permissionSubscription: AnyCancellable?
     private let permission = AccessibilityPermission()
-    private let controller = KeyboardController(sink: CGEventSink())
+    private let sink = CGEventSink()
+    private let focusWatcher = FocusWatcher()
+    private let treeModel = AXTreeModel()
+    private lazy var controller = KeyboardController(sink: sink)
+
+    /// The tree viewer is on by default — it is the window that shows why an
+    /// app does or does not mirror.
+    private var isTreeVisible = true
+    private var treeRefreshScheduled = false
+
+    /// Room kept at the right edge for the viewer, so the keyboard centres in
+    /// what is left instead of sliding under it.
+    private var reservedWidth: CGFloat {
+        isTreeVisible ? Metrics.treeViewerWidth + Metrics.sectionSpacing : 0
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Only check at launch. The prompt is shown when the user asks for it
@@ -28,13 +43,67 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
+        // Mirror the focused field of whatever app is in front, and re-read it
+        // after every key we send — some apps never announce their own changes.
+        focusWatcher.onChange = { [weak self] field in
+            self?.controller.focusChanged(to: field)
+            self?.scheduleTreeRefresh()
+        }
+        sink.afterPost = { [weak self] in self?.focusWatcher.refreshSoon() }
+        focusWatcher.start()
+
+        treeModel.onRefresh = { [weak self] in self?.refreshTree() }
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.scheduleTreeRefresh() }
+        }
+
         let (root, size) = makeRoot()
         let panel = FloatingPanel(root: root, contentSize: size)
-        panel.positionAtBottomCenter()
+        panel.placement = .bottomCenter(rightInset: reservedWidth)
         panel.orderFront(nil)
         self.panel = panel
 
+        showTreePanel(height: size.height)
         installStatusItem()
+    }
+
+    // MARK: - The tree viewer
+
+    private func showTreePanel(height: CGFloat) {
+        guard isTreeVisible else { return }
+        let size = CGSize(width: Metrics.treeViewerWidth, height: height)
+        let root = AnyView(AXTreeView(model: treeModel, height: height))
+
+        if let treePanel {
+            treePanel.update(root: root, contentSize: size)
+        } else {
+            let treePanel = FloatingPanel(root: root, contentSize: size)
+            treePanel.placement = .bottomRight
+            treePanel.orderFront(nil)
+            self.treePanel = treePanel
+        }
+        refreshTree()
+    }
+
+    private func refreshTree() {
+        guard isTreeVisible else { return }
+        treeModel.isTrusted = permission.isTrusted
+        treeModel.tree = AXTreeReader.read(app: NSWorkspace.shared.frontmostApplication)
+    }
+
+    /// Reading a whole tree costs hundreds of round trips to the other app, so
+    /// keystrokes and app switches coalesce into one read.
+    private func scheduleTreeRefresh() {
+        guard isTreeVisible, !treeRefreshScheduled else { return }
+        treeRefreshScheduled = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.treeRefreshScheduled = false
+            self?.refreshTree()
+        }
     }
 
     /// Builds the screen and measures it, scaling down if the display is too
@@ -45,7 +114,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         probe.layoutSubtreeIfNeeded()
         let intrinsic = probe.fittingSize
 
-        let available = (NSScreen.main?.visibleFrame.width ?? 1440) - 48
+        let available = (NSScreen.main?.visibleFrame.width ?? 1440) - 48 - reservedWidth
         let scale = intrinsic.width > 0 ? min(1, available / intrinsic.width) : 1
         let size = CGSize(width: intrinsic.width * scale, height: intrinsic.height * scale)
 
@@ -60,7 +129,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func refreshPanel() {
         guard let panel else { return }
         let (root, size) = makeRoot()
+        panel.placement = .bottomCenter(rightInset: reservedWidth)
         panel.update(root: root, contentSize: size)
+        // The viewer takes its height from the keyboard beside it.
+        showTreePanel(height: size.height)
     }
 
     private func installStatusItem() {
@@ -76,6 +148,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             action: #selector(toggleKeyboard),
             keyEquivalent: ""
         ).target = self
+        let treeItem = menu.addItem(
+            withTitle: "Accessibility Tree",
+            action: #selector(toggleTree),
+            keyEquivalent: ""
+        )
+        treeItem.target = self
+        treeItem.state = isTreeVisible ? .on : .off
         menu.addItem(.separator())
 
         let styleItem = NSMenuItem(title: "Style", action: nil, keyEquivalent: "")
@@ -116,10 +195,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             panel.orderOut(nil)
             sender.title = "Show Keyboard"
         } else {
-            panel.positionAtBottomCenter()
+            panel.position()
             panel.orderFront(nil)
             sender.title = "Hide Keyboard"
         }
+    }
+
+    @objc private func toggleTree(_ sender: NSMenuItem) {
+        isTreeVisible.toggle()
+        sender.state = isTreeVisible ? .on : .off
+        if isTreeVisible {
+            treePanel?.orderFront(nil)
+        } else {
+            treePanel?.orderOut(nil)
+        }
+        // The keyboard reclaims the space the viewer was holding.
+        refreshPanel()
     }
 
     @objc private func selectStyle(_ sender: NSMenuItem) {

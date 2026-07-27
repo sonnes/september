@@ -24,8 +24,17 @@ public final class KeyboardController: ObservableObject {
     @Published public var style: KeyboardStyle = .rainbow
     @Published public var mode: Mode = .type
     @Published public private(set) var modifiers = ModifierState()
-    /// What we have typed since the last Return — the input bar's contents.
-    @Published public private(set) var echo = ""
+    /// What we have typed since the last Return. Only shown when the app in
+    /// front exposes no text of its own — see `input`.
+    @Published public private(set) var echo = "" {
+        didSet { refreshInput() }
+    }
+    /// What the input bar shows: the focused field mirrored back, our own echo,
+    /// or nothing for a password field.
+    @Published public private(set) var input: InputMirror = .local(text: "")
+    /// The text field the app in front has focused, as far as accessibility
+    /// can tell us.
+    @Published public private(set) var focusedField: FocusedField?
     @Published public private(set) var frontmostAppName = "Finder"
     @Published public private(set) var appPanel: PanelDefinition
     /// Set by the app once it knows whether macOS trusts us to send keystrokes.
@@ -73,7 +82,7 @@ public final class KeyboardController: ObservableObject {
             perform(.shortcut(shortcut))
         case .text(let text):
             sink.type(text)
-            echo += text
+            append(text)
         }
     }
 
@@ -83,7 +92,7 @@ public final class KeyboardController: ObservableObject {
             post(shortcut)
         case .text(let text):
             sink.type(text)
-            echo += text
+            append(text)
         case .openPanel(let id):
             if let panel = store.panel(id: id) { appPanel = panel }
         }
@@ -92,6 +101,35 @@ public final class KeyboardController: ObservableObject {
 
     public func clearEcho() {
         echo = ""
+    }
+
+    // MARK: - Mirroring the focused field
+
+    /// Called by the app whenever accessibility reports a different focused
+    /// field, or new text in the one we are already watching.
+    public func focusChanged(to field: FocusedField?) {
+        focusedField = field
+        if let field {
+            frontmostAppName = field.appName
+        }
+        // Whatever we typed belongs to the field we were on; a password must
+        // never linger in our buffer.
+        if field?.display != nil { echo = "" } else { refreshInput() }
+    }
+
+    /// True while the field itself is showing us its text — our echo would only
+    /// be a second, staler copy of it.
+    private var isMirroring: Bool { focusedField?.display != nil }
+
+    /// Our own text only stands in for fields that show us nothing, and never
+    /// for a password.
+    private func append(_ text: String) {
+        guard !isMirroring else { return }
+        echo += text
+    }
+
+    private func refreshInput() {
+        input = focusedField?.display ?? .local(text: echo)
     }
 
     // MARK: - Turning presses into keystrokes
@@ -109,7 +147,7 @@ public final class KeyboardController: ObservableObject {
                 text = modifiers.apply(to: base)
             }
             send(text: text)
-            echo += text
+            append(text)
         } else {
             // A chord (⌘C): send the base key with every active modifier, the
             // way a hardware keyboard would.
@@ -145,11 +183,13 @@ public final class KeyboardController: ObservableObject {
                 modifiers: modifiers.active.subtracting(.capsLock)
             )
         )
-        switch virtual {
-        case .delete: echo = String(echo.dropLast())
-        case .return: echo = ""
-        case .space: echo += " "
-        default: break
+        if !isMirroring {
+            switch virtual {
+            case .delete: echo = String(echo.dropLast())
+            case .return: echo = ""
+            case .space: echo += " "
+            default: break
+            }
         }
         modifiers.consume()
     }

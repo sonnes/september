@@ -1,6 +1,6 @@
 PORT ?= 3009
 
-.PHONY: dev server-dev deploy mac-run mac-test mac-app
+.PHONY: dev server-dev deploy mac-run mac-dev mac-test mac-app mac-stop
 
 dev:
 	pnpm -C apps/web dev --port $(PORT)
@@ -15,11 +15,19 @@ deploy:
 	pnpm -C apps/server deploy
 
 # Native macOS keyboard (apps/swift). See apps/swift/README.md.
+# mac-run/mac-dev inherit this terminal's Accessibility permission; mac-app
+# builds the signed bundle, which needs its own grant.
 mac-run:
 	$(MAKE) -C apps/swift run
+
+mac-dev:
+	$(MAKE) -C apps/swift dev
 
 mac-test:
 	$(MAKE) -C apps/swift test
 
 mac-app:
 	$(MAKE) -C apps/swift app
+
+mac-stop:
+	$(MAKE) -C apps/swift stop
