@@ -141,6 +141,27 @@ Two constraints found the hard way: `ImageRenderer` renders nothing inside a
 `ScrollView` (hence `AXTreeView(scrolls:)`, false for snapshots), and a lazy
 stack has the same problem, so the rows are a plain `VStack` over a capped tree.
 
+## Keeping the mirror and the tree in sync
+
+The viewer now opens collapsed: `AXTree.rows()` unfolds only the branch that
+leads to the focused element, and every other row reports how many children it
+is hiding. `AXTreeReader` walks up from the focused element through `AXParent`
+first and pins that chain, so the branch survives the node budget no matter how
+big the app's tree is.
+
+Two refresh paths, deliberately different in cost: the field is re-read every
+500 ms (a handful of attribute reads, and identical results publish nothing),
+while the tree — hundreds of round trips — is rebuilt only when focus lands
+somewhere else, on app switches, on a 2 s timer, and from its refresh button.
+
+One race was found and fixed. `KeyboardController` and `FocusWatcher` each
+observed `didActivateApplication`; the delivery order between them is not
+defined, so the controller's "clear the old app's text" could land *after* the
+watcher had already published the new app's field. The bar then stayed empty
+until something else changed — reproducible by switching away from TextEdit and
+back. The watcher is now the only observer and calls `appChanged` itself, before
+its first read.
+
 ## Light appearance (added after the plan)
 
 The app now follows the system setting. Issue #10 defines only a dark palette,

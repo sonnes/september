@@ -62,10 +62,14 @@ swift run September --ax --tree     # plus that app's accessibility tree
 ## The accessibility tree viewer
 
 A second window sits at the right edge of the screen, the same height as the
-keyboard, showing the accessibility tree of whatever app is in front with the
-focused element highlighted — the tree September itself reads to find the field
-it types into. It refreshes when focus moves, when the frontmost app changes,
-and from its own refresh button.
+keyboard, showing the accessibility tree of whatever app is in front — the tree
+September itself reads to find the field it types into.
+
+It opens collapsed: only the branch leading to the focused element is unfolded,
+and everything else shows as a shut row with a count of what it is holding, so
+the element being typed into is always the deepest thing on screen. It follows
+along as focus moves, as the frontmost app changes, on a slow timer, and from
+its own refresh button.
 
 Toggle it from the menu bar item (**Accessibility Tree**); the keyboard centres
 in whatever space is left, so the two never overlap.

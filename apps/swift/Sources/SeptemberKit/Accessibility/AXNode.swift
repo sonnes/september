@@ -66,14 +66,28 @@ public struct AXTree: Equatable, Sendable {
 
     public static let empty = AXTree(appName: "", root: nil)
 
-    /// Depth first, the order the tree reads on screen. Trees run to thousands
-    /// of elements, so the viewer takes the first `limit` of them.
+    /// Depth first, the order the tree reads on screen — but collapsed. Only
+    /// the branch leading to the focused element opens, because that is the one
+    /// the user is working in; everything else shows as a shut row with a count
+    /// of what it is holding. Trees run to thousands of elements, so the viewer
+    /// still takes no more than `limit` rows.
     public func rows(limit: Int = 400) -> [AXTreeRow] {
         guard let root else { return [] }
         var rows: [AXTreeRow] = []
         var stack = [(node: root, depth: 0)]
         while let (node, depth) = stack.popLast(), rows.count < limit {
-            rows.append(AXTreeRow(node: node, depth: depth))
+            // The root opens so the app is never a dead end; below it, only
+            // ancestors of the focused element do.
+            let isExpanded = !node.children.isEmpty && (depth == 0 || node.leadsToFocus)
+            rows.append(
+                AXTreeRow(
+                    node: node,
+                    depth: depth,
+                    isExpanded: isExpanded,
+                    hiddenChildren: isExpanded ? 0 : node.children.count
+                )
+            )
+            guard isExpanded else { continue }
             for child in node.children.reversed() {
                 stack.append((child, depth + 1))
             }
@@ -82,14 +96,27 @@ public struct AXTree: Equatable, Sendable {
     }
 }
 
-/// A flattened node, carrying how deep it sits.
+extension AXNode {
+    /// True when the focused element is somewhere below this one — the test for
+    /// whether a branch should be open.
+    var leadsToFocus: Bool {
+        children.contains { $0.isFocused || $0.leadsToFocus }
+    }
+}
+
+/// A flattened node: how deep it sits, and whether it is holding anything back.
 public struct AXTreeRow: Equatable, Sendable, Identifiable {
     public let node: AXNode
     public let depth: Int
+    public let isExpanded: Bool
+    /// How many children the row is not showing.
+    public let hiddenChildren: Int
 
-    public init(node: AXNode, depth: Int) {
+    public init(node: AXNode, depth: Int, isExpanded: Bool = true, hiddenChildren: Int = 0) {
         self.node = node
         self.depth = depth
+        self.isExpanded = isExpanded
+        self.hiddenChildren = hiddenChildren
     }
 
     public var id: Int { node.id }

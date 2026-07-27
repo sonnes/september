@@ -13,6 +13,12 @@ import SeptemberKit
 final class FocusWatcher {
     /// Called with the focused field, or `nil` when nothing readable is focused.
     var onChange: ((FocusedField?) -> Void)?
+    /// Called when a different app comes to the front, before any field of its
+    /// own is read, so the last app's text can be cleared first.
+    var onAppChanged: ((NSRunningApplication?) -> Void)?
+    /// Called when focus lands somewhere else entirely — a different element or
+    /// a different app — as opposed to the same field simply changing.
+    var onFocusMoved: (() -> Void)?
 
     /// Reading a whole document on every keystroke is wasteful; past this many
     /// characters we ask only for the text around the caret.
@@ -25,6 +31,7 @@ final class FocusWatcher {
     private var observedElements: [AXUIElement] = []
     private var workspaceObserver: (any NSObjectProtocol)?
     private var refreshScheduled = false
+    private var pollTimer: Timer?
     private var last: FocusedField?
 
     func start() {
@@ -40,6 +47,13 @@ final class FocusWatcher {
             }
         }
         follow(NSWorkspace.shared.frontmostApplication)
+
+        // Not every app announces its own edits, and none of them announce a
+        // caret moved with the hardware keyboard. A slow poll keeps the bar
+        // honest; the reads are cheap and identical results change nothing.
+        pollTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refresh() }
+        }
     }
 
     func stop() {
@@ -47,6 +61,8 @@ final class FocusWatcher {
             NSWorkspace.shared.notificationCenter.removeObserver(workspaceObserver)
         }
         workspaceObserver = nil
+        pollTimer?.invalidate()
+        pollTimer = nil
         tearDownObserver()
     }
 
@@ -73,6 +89,11 @@ final class FocusWatcher {
 
     private func follow(_ app: NSRunningApplication?) {
         tearDownObserver()
+        // The field we were watching belonged to the app we just left, so the
+        // next read has to publish even if it looks the same.
+        last = nil
+        onAppChanged?(app)
+        onFocusMoved?()
         guard let app, app.processIdentifier != ProcessInfo.processInfo.processIdentifier else {
             refresh()
             return
@@ -106,6 +127,8 @@ final class FocusWatcher {
 
         refresh()
         followFocusedElement(context: context)
+        // Focus often lands a beat after the app comes forward.
+        refreshSoon()
     }
 
     /// Registers on the focused element too, for apps that only notify there.
@@ -151,6 +174,7 @@ final class FocusWatcher {
     /// notifications to register on the field itself.
     fileprivate func focusMoved() {
         followFocusedElement(context: Unmanaged.passUnretained(self).toOpaque())
+        onFocusMoved?()
         refresh()
     }
 

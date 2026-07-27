@@ -19,6 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// app does or does not mirror.
     private var isTreeVisible = true
     private var treeRefreshScheduled = false
+    private var treeTimer: Timer?
 
     /// Room kept at the right edge for the viewer, so the keyboard centres in
     /// what is left instead of sliding under it.
@@ -47,20 +48,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // after every key we send — some apps never announce their own changes.
         focusWatcher.onChange = { [weak self] field in
             self?.controller.focusChanged(to: field)
-            self?.scheduleTreeRefresh()
+        }
+        // The tree only needs rebuilding when focus lands somewhere else; the
+        // text of the field it is already showing is caught by the slow timer.
+        focusWatcher.onFocusMoved = { [weak self] in self?.scheduleTreeRefresh() }
+        focusWatcher.onAppChanged = { [weak self] app in
+            self?.controller.appChanged(
+                name: app?.localizedName ?? "Finder", bundleID: app?.bundleIdentifier)
         }
         sink.afterPost = { [weak self] in self?.focusWatcher.refreshSoon() }
         focusWatcher.start()
 
         treeModel.onRefresh = { [weak self] in self?.refreshTree() }
-        NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didActivateApplicationNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.scheduleTreeRefresh() }
+        // Values in the tree age between focus changes — keep them fresh
+        // enough to trust without rebuilding it on every keystroke.
+        treeTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refreshTree() }
         }
-
         let (root, size) = makeRoot()
         let panel = FloatingPanel(root: root, contentSize: size)
         panel.placement = .bottomCenter(rightInset: reservedWidth)
@@ -100,7 +104,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func scheduleTreeRefresh() {
         guard isTreeVisible, !treeRefreshScheduled else { return }
         treeRefreshScheduled = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
             self?.treeRefreshScheduled = false
             self?.refreshTree()
         }

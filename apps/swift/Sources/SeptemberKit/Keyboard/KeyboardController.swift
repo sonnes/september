@@ -105,6 +105,16 @@ public final class KeyboardController: ObservableObject {
 
     // MARK: - Mirroring the focused field
 
+    /// Called when a different app comes to the front. Everything on screen
+    /// belonged to the app we just left: the mirrored field is gone, and our
+    /// own echo was typed into that app, not this one.
+    public func appChanged(name: String, bundleID: String?) {
+        frontmostAppName = name
+        appPanel = store.appPanel(forBundleID: bundleID)
+        focusedField = nil
+        echo = ""
+    }
+
     /// Called by the app whenever accessibility reports a different focused
     /// field, or new text in the one we are already watching.
     public func focusChanged(to field: FocusedField?) {
@@ -214,18 +224,10 @@ public final class KeyboardController: ObservableObject {
     // MARK: - Following the frontmost app
 
     private func observe() {
-        let workspace = NSWorkspace.shared.notificationCenter
-        observers.append(
-            workspace.addObserver(
-                forName: NSWorkspace.didActivateApplicationNotification,
-                object: nil,
-                queue: .main
-            ) { [weak self] notification in
-                let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey]
-                    as? NSRunningApplication
-                Task { @MainActor in self?.frontmostChanged(to: app) }
-            }
-        )
+        // App switches arrive through `appChanged`, called by whoever is
+        // watching focus: it has to clear the old app's text *before* the new
+        // app's field is published, and two independent observers of the same
+        // notification cannot promise that order.
         observers.append(
             DistributedNotificationCenter.default().addObserver(
                 forName: SystemKeyboardLayout.inputSourceChanged,
@@ -235,11 +237,6 @@ public final class KeyboardController: ObservableObject {
                 Task { @MainActor in self?.keyCodeMap = SystemKeyboardLayout.currentMap() }
             }
         )
-    }
-
-    private func frontmostChanged(to app: NSRunningApplication?) {
-        frontmostAppName = app?.localizedName ?? "Finder"
-        appPanel = store.appPanel(forBundleID: app?.bundleIdentifier)
     }
 }
 

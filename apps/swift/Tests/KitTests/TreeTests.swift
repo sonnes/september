@@ -36,6 +36,49 @@ func treeTests() {
         expectEqual(rows.map(\.depth), [0, 1, 2, 3, 1])
     }
 
+    test("only the branch holding the focused element is open") {
+        // The menu bar is a sibling of the focused window: it stays shut.
+        let rows = tree.rows()
+        let menuBar = rows.first { $0.node.role == "AXMenuBar" }
+        expect(menuBar != nil)
+        expectEqual(menuBar?.isExpanded, false)
+
+        let window = rows.first { $0.node.role == "AXWindow" }
+        expectEqual(window?.isExpanded, true, "an ancestor of the focused element is open")
+    }
+
+    test("a collapsed element says how much it is hiding") {
+        let collapsed = AXTree(
+            appName: "Big",
+            root: node(
+                0, "AXApplication",
+                children: [node(1, "AXGroup", children: (2...5).map { node($0, "AXButton") })]))
+        let group = collapsed.rows().first { $0.node.role == "AXGroup" }
+        expectEqual(group?.hiddenChildren, 4)
+        expectEqual(collapsed.rows().count, 2, "the group's children stay hidden")
+    }
+
+    test("the focused element's own children stay shut — it is the leaf we care about") {
+        let deep = AXTree(
+            appName: "App",
+            root: node(
+                0, "AXApplication",
+                children: [
+                    node(1, "AXTextArea", focused: true, children: [node(2, "AXStaticText")])
+                ]))
+        expectEqual(deep.rows().map(\.node.id), [0, 1])
+        expectEqual(deep.rows().last?.hiddenChildren, 1)
+    }
+
+    test("with nothing focused only the top level shows") {
+        let unfocused = AXTree(
+            appName: "App",
+            root: node(
+                0, "AXApplication",
+                children: [node(1, "AXWindow", children: [node(2, "AXGroup")])]))
+        expectEqual(unfocused.rows().map(\.node.id), [0, 1])
+    }
+
     test("an empty tree has no rows") {
         expectEqual(AXTree.empty.rows().count, 0)
     }
@@ -51,6 +94,12 @@ func treeTests() {
             appName: "Big",
             root: node(0, "AXApplication", children: (1...50).map { node($0, "AXGroup") }))
         expectEqual(wide.rows(limit: 10).count, 10)
+    }
+
+    test("the rows of the sample tree stop at the focused branch") {
+        expectEqual(tree.rows().map(\.node.role), [
+            "AXApplication", "AXWindow", "AXScrollArea", "AXTextArea", "AXMenuBar",
+        ])
     }
 
     test("a node reads as its role, then its label") {

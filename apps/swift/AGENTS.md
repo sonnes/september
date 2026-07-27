@@ -63,6 +63,11 @@ only what needs a running app — the panel, the event sink, the menu bar.
 - **The panel must never take focus.** Do not add text fields, do not set
   `canBecomeKey`, do not activate the app. Everything the user types goes to the
   app in front.
+- **An app switch is one ordered step.** `FocusWatcher.onAppChanged` clears the
+  last app's text through `KeyboardController.appChanged` *before* the new app's
+  field is read. Do not observe `didActivateApplication` anywhere else: two
+  observers of one notification cannot promise that order, and the bar ends up
+  stuck empty.
 - **The input bar is a mirror, not a buffer.** It shows the focused field's own
   text (`InputMirror.mirrored`), our echo only when the app exposes none, and
   nothing for a password field. Never keep text typed into an

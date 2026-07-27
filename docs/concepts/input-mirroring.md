@@ -46,7 +46,15 @@ re-reads when:
 - the frontmost app changes (`NSWorkspace.didActivateApplicationNotification`),
 - the app announces a change (`AXObserver` on focus, value and selection),
 - September itself posts keystrokes — `CGEventSink.afterPost` triggers a read
-  50 ms later, which covers apps that announce nothing.
+  50 ms later, which covers apps that announce nothing,
+- every 500 ms regardless, which covers what nothing else does: a caret moved
+  with the hardware keyboard, or an app that announces neither.
+
+An app switch is the one case where order matters. The watcher calls
+`onAppChanged` first, which clears the last app's text, and only then reads the
+new app's field — otherwise the clear can land after the read and the bar sits
+empty until the next change. That is why nothing else in the app watches
+`didActivateApplication`.
 
 Which apps expose what, and why the frontmost app is asked rather than the
 system-wide element, is in

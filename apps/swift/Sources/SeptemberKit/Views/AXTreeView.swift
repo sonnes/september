@@ -114,6 +114,12 @@ private struct AXTreeRowView: View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Color.clear.frame(width: CGFloat(row.depth) * 10, height: 1)
 
+            // Shut branches say so, and say how much they are holding.
+            Text(disclosure)
+                .font(.system(size: 8))
+                .foregroundStyle(Color(Tokens.sectionLabel))
+                .frame(width: 6, alignment: .leading)
+
             Text(row.node.title)
                 .font(.system(size: 11, weight: row.node.isFocused ? .semibold : .regular, design: .monospaced))
                 .foregroundStyle(Color(row.node.isFocused ? Tokens.accent : Tokens.shortcutLabel))
@@ -132,6 +138,11 @@ private struct AXTreeRowView: View {
                     .foregroundStyle(Color(Tokens.dualSecondary))
                     .lineLimit(1)
             }
+            if row.hiddenChildren > 0 {
+                Text("\(row.hiddenChildren)")
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(Color(Tokens.sectionLabel))
+            }
             Spacer(minLength: 0)
         }
         .padding(.vertical, 2)
@@ -141,9 +152,21 @@ private struct AXTreeRowView: View {
                 .fill(row.node.isFocused ? Color(Tokens.selection) : Color.clear)
         )
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(
-            row.node.isFocused
-                ? "Focused. \(row.node.spokenDescription)" : row.node.spokenDescription
-        )
+        .accessibilityLabel(spokenLabel)
+    }
+
+    private var disclosure: String {
+        if row.hiddenChildren > 0 { return "▸" }
+        return row.isExpanded ? "▾" : ""
+    }
+
+    private var spokenLabel: String {
+        var parts: [String] = []
+        if row.node.isFocused { parts.append("Focused") }
+        parts.append(row.node.spokenDescription)
+        if row.hiddenChildren > 0 {
+            parts.append("\(row.hiddenChildren) hidden")
+        }
+        return parts.joined(separator: ", ")
     }
 }

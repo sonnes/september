@@ -138,4 +138,26 @@ func focusTests() {
         controller.focusChanged(to: editable)
         expectEqual(controller.frontmostAppName, "TextEdit")
     }
+
+    test("switching apps drops what we typed into the last one") {
+        let (controller, _) = makeController()
+        controller.press(KeyDefinition(id: "x", kind: .standard, label: "x", action: .text("draft")))
+        controller.appChanged(name: "Safari", bundleID: "com.apple.Safari")
+        expectEqual(controller.input, .local(text: ""))
+    }
+
+    test("switching apps drops the field we were mirroring") {
+        let (controller, _) = makeController()
+        controller.focusChanged(to: editable)
+        controller.appChanged(name: "Safari", bundleID: "com.apple.Safari")
+        expectEqual(controller.input, .local(text: ""), "the old app's text is not ours to show")
+        expect(controller.focusedField == nil)
+    }
+
+    test("switching apps swaps the name and the shortcuts panel") {
+        let (controller, _) = makeController()
+        controller.appChanged(name: "Visual Studio Code", bundleID: "com.microsoft.VSCode")
+        expectEqual(controller.frontmostAppName, "Visual Studio Code")
+        expectEqual(controller.appPanel.id, "app.com.microsoft.VSCode")
+    }
 }
