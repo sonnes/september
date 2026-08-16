@@ -31,7 +31,8 @@ export {
   `setup_mode` (`privacy | free | advanced`) — the mode picked on the Settings →
   Setup page; older accounts without it get their mode inferred from configs.
 - `defaults.ts`: Local guest user and default account factory.
-- `account-store.ts`: TanStack DB collection and local persistence hook.
+- `account-store.ts`: TanStack DB collection and local persistence hook. The
+  collection indexes `id` for account lookup queries.
 - `account-provider.tsx`: React context provider and `useAccount` hook.
 - `settings-transfer.ts`: JSON export/import helpers for account-backed settings.
 - `use-current-user.ts`: Local guest user hook.

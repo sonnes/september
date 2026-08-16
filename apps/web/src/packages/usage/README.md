@@ -147,6 +147,7 @@ change without a migration):
 - **Version:** 1
 - **Collection id:** `analytics-events`
 - **BroadcastChannel:** `analytics-collection`
+- **Query indexes:** `timestamp`, `user_id`
 
 Cost fields were added in July 2026 as optional fields with permissive defaults,
 so events written before then still parse — they report `cost_source: 'unknown'`

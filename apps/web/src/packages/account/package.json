@@ -9,8 +9,8 @@
   },
   "dependencies": {
     "@september/shared": "workspace:*",
-    "@tanstack/db": "^0.5.15",
-    "@tanstack/react-db": "^0.1.59",
+    "@tanstack/db": "0.6.8",
+    "@tanstack/react-db": "0.1.86",
     "zod": "^4.0.5"
   },
   "peerDependencies": {

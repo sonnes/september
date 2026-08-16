@@ -1,3 +1,4 @@
+import { BasicIndex } from '@tanstack/db';
 import { createCollection } from '@tanstack/react-db';
 import { indexedDBCollectionOptionsV2 } from '@/packages/shared/lib/indexeddb';
 import { captureLocal } from '@/packages/sync/runtime';
@@ -19,6 +20,9 @@ export const spaceCollection = createCollection(
   })
 );
 
+spaceCollection.createIndex(row => row.user_id, { indexType: BasicIndex });
+spaceCollection.createIndex(row => row.updated_at, { indexType: BasicIndex });
+
 export const messageCollection = createCollection(
   indexedDBCollectionOptionsV2({
     schema: MessageSchema,
@@ -34,6 +38,9 @@ export const messageCollection = createCollection(
   })
 );
 
+messageCollection.createIndex(row => row.space_id, { indexType: BasicIndex });
+messageCollection.createIndex(row => row.created_at, { indexType: BasicIndex });
+
 export const savedPhraseCollection = createCollection(
   indexedDBCollectionOptionsV2({
     schema: SavedPhraseSchema,
@@ -48,3 +55,6 @@ export const savedPhraseCollection = createCollection(
     onDelete: async ({ transaction }) => captureLocal('saved-phrases', 'delete', transaction.mutations),
   })
 );
+
+savedPhraseCollection.createIndex(row => row.space_id, { indexType: BasicIndex });
+savedPhraseCollection.createIndex(row => row.created_at, { indexType: BasicIndex });

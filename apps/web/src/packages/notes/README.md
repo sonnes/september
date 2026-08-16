@@ -58,11 +58,13 @@ See "Reel theme" below for their semantics.
 
 ## Data layout
 
-| Collection       | IndexedDB db    | Key         |
-| ---------------- | --------------- | ----------- |
-| `noteCollection` | `app-documents` | `id` (uuid) |
+| Collection       | IndexedDB db    | Key         | Query indexes                  |
+| ---------------- | --------------- | ----------- | ------------------------------ |
+| `noteCollection` | `app-documents` | `id` (uuid) | `id`, `space_id`, `updated_at` |
 
 The IndexedDB name stays `app-documents` so existing local notes survive the rename.
+Name search uses a leading-wildcard `ilike`, which TanStack DB 0.6 cannot serve
+from a `BasicIndex`. It scans the rows selected by the other query conditions.
 
 Notes store `id`, `space_id?`, `name?`, `content`, `created_at`, `updated_at`.
 Rows with `space_id` are notes that belong to one Talk space. `/notes` lists

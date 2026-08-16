@@ -1,3 +1,4 @@
+import { BasicIndex } from '@tanstack/db';
 import { createCollection } from '@tanstack/react-db';
 
 import { indexedDBCollectionOptionsV2 } from '@/packages/shared/lib/indexeddb';
@@ -20,3 +21,7 @@ export const noteCollection = createCollection(
     onDelete: async ({ transaction }) => captureLocal('documents', 'delete', transaction.mutations),
   })
 );
+
+noteCollection.createIndex(row => row.id, { indexType: BasicIndex });
+noteCollection.createIndex(row => row.space_id, { indexType: BasicIndex });
+noteCollection.createIndex(row => row.updated_at, { indexType: BasicIndex });

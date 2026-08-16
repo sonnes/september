@@ -1,3 +1,4 @@
+import { BasicIndex } from '@tanstack/db';
 import { createCollection } from '@tanstack/react-db';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
@@ -183,6 +184,9 @@ export const analyticsCollection = createCollection(
     channelName: 'analytics-collection',
   })
 );
+
+analyticsCollection.createIndex(event => event.timestamp, { indexType: BasicIndex });
+analyticsCollection.createIndex(event => event.user_id, { indexType: BasicIndex });
 
 // ---------------------------------------------------------------------------
 // track() — fire-and-forget public API

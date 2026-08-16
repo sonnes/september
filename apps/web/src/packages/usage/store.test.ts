@@ -12,6 +12,7 @@ function makeTx(promise: Promise<unknown>) {
 
 vi.mock('@tanstack/react-db', () => ({
   createCollection: vi.fn(() => ({
+    createIndex: vi.fn(),
     insert: (data: unknown) => makeTx(mockInsert(data)),
   })),
 }));

@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 
-import { eq } from '@tanstack/db';
+import { BasicIndex, eq } from '@tanstack/db';
 import { createCollection, useLiveQuery } from '@tanstack/react-db';
 
 import { indexedDBCollectionOptionsV2 } from '@/packages/shared/lib/indexeddb';
@@ -24,6 +24,8 @@ export const accountCollection = createCollection(
     onDelete: async ({ transaction }) => captureLocal('user-account', 'delete', transaction.mutations),
   })
 );
+
+accountCollection.createIndex(row => row.id, { indexType: BasicIndex });
 
 export function useAccountStore(accountId: string) {
   const { data, isLoading, isError, status } = useLiveQuery(

@@ -136,11 +136,14 @@ budget. See `docs/concepts/saved-phrases.md`.
 
 ## Data layout
 
-| Collection              | IndexedDB db        | Key         |
-| ----------------------- | ------------------- | ----------- |
-| `spaceCollection`       | `app-spaces`        | `id` (uuid) |
-| `messageCollection`     | `app-messages`      | `id` (uuid) |
-| `savedPhraseCollection` | `app-saved-phrases` | `id` (uuid) |
+| Collection              | IndexedDB db        | Key         | Query indexes             |
+| ----------------------- | ------------------- | ----------- | ------------------------- |
+| `spaceCollection`       | `app-spaces`        | `id` (uuid) | `user_id`, `updated_at`   |
+| `messageCollection`     | `app-messages`      | `id` (uuid) | `space_id`, `created_at`  |
+| `savedPhraseCollection` | `app-saved-phrases` | `id` (uuid) | `space_id`, `created_at`  |
+
+Message search uses a leading-wildcard `ilike`, which TanStack DB 0.6 cannot
+serve from a `BasicIndex`. It scans the rows selected by `space_id`.
 
 Space notes live in `@/packages/notes` as `noteCollection` rows with
 `space_id` set. `deleteSpace` also removes those scoped note rows.

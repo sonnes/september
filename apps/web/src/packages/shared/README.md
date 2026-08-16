@@ -100,6 +100,6 @@ belong in their owning feature package.
 
 - `clsx` + `tailwind-merge` - Class name utilities
 - `zod` - Schema validation
-- `@tanstack/db` - Local-first database
+- `@tanstack/db` 0.6 - Local-first database and explicit collection indexes
 - `lodash` - Utility functions
 - `nanoid` - ID generation
