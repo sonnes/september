@@ -2,7 +2,6 @@ import { BasicIndex } from '@tanstack/db';
 import { createCollection } from '@tanstack/react-db';
 
 import { indexedDBCollectionOptionsV2 } from '@/packages/shared/lib/indexeddb';
-import { captureLocal } from '@/packages/sync/runtime';
 
 import { NoteSchema } from './types';
 
@@ -16,9 +15,6 @@ export const noteCollection = createCollection(
     },
     channelName: 'app-documents',
     getKey: item => item.id,
-    onInsert: async ({ transaction }) => captureLocal('documents', 'upsert', transaction.mutations),
-    onUpdate: async ({ transaction }) => captureLocal('documents', 'upsert', transaction.mutations),
-    onDelete: async ({ transaction }) => captureLocal('documents', 'delete', transaction.mutations),
   })
 );
 

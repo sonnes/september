@@ -11,9 +11,7 @@ use crate::{
     external::open_external_url,
     files::{export_bytes, FileStore},
     identity::{current_os_user, OsUser},
-    repository::{
-        FileMetadata, OutboxMutation, Record, RecordDelete, RecordPut, RemoteMutation, Repository,
-    },
+    repository::{FileMetadata, Record, RecordBatchWrite, RecordDelete, RecordPut, Repository},
 };
 
 pub(crate) struct BackendState {
@@ -40,29 +38,8 @@ pub(crate) struct RecordGetRequest {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct OutboxListRequest {
-    #[serde(default = "default_outbox_limit")]
-    limit: usize,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct OutboxAckRequest {
-    outbox_ids: Vec<i64>,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct ApplyRemoteRequest {
-    mutations: Vec<RemoteMutation>,
-    cursor: i64,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct ApplyRemoteResponse {
-    applied: usize,
-    collections: Vec<String>,
+pub(crate) struct RecordBatchRequest {
+    writes: Vec<RecordBatchWrite>,
 }
 
 #[derive(Deserialize)]
@@ -185,50 +162,28 @@ pub(crate) fn record_delete(
 }
 
 #[tauri::command(async)]
-pub(crate) fn sync_outbox_list(
-    state: State<'_, BackendState>,
-    request: OutboxListRequest,
-) -> RpcResult<Vec<OutboxMutation>> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .list_outbox(request.limit)
-        .map_err(rpc_error)
-}
-
-#[tauri::command(async)]
-pub(crate) fn sync_outbox_ack(
-    state: State<'_, BackendState>,
-    request: OutboxAckRequest,
-) -> RpcResult<usize> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .ack_outbox(&request.outbox_ids)
-        .map_err(rpc_error)
-}
-
-#[tauri::command(async)]
-pub(crate) fn sync_apply_remote(
+pub(crate) fn record_batch(
     app: AppHandle,
     state: State<'_, BackendState>,
-    request: ApplyRemoteRequest,
-) -> RpcResult<ApplyRemoteResponse> {
-    let (applied, collections) = state
+    request: RecordBatchRequest,
+) -> RpcResult<Vec<Record>> {
+    let collections = request
+        .writes
+        .iter()
+        .map(|write| write.collection().to_owned())
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
+    let records = state
         .repository
         .lock()
         .map_err(lock_error)?
-        .apply_remote(&request.mutations, request.cursor)
+        .write_record_batch(&request.writes)
         .map_err(rpc_error)?;
     if !collections.is_empty() {
-        emit_records_changed(&app, collections.clone())?;
+        emit_records_changed(&app, collections)?;
     }
-    Ok(ApplyRemoteResponse {
-        applied,
-        collections,
-    })
+    Ok(records)
 }
 
 #[tauri::command(async)]
@@ -288,34 +243,6 @@ pub(crate) fn setting_delete(
         .map_err(rpc_error)?;
     }
     Ok(deleted)
-}
-
-#[tauri::command(async)]
-pub(crate) fn sync_metadata_get(
-    state: State<'_, BackendState>,
-    request: KeyRequest,
-) -> RpcResult<Option<Value>> {
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .get_sync_metadata(&request.key)
-        .map_err(rpc_error)
-}
-
-#[tauri::command(async)]
-pub(crate) fn sync_metadata_put(
-    state: State<'_, BackendState>,
-    request: ValuePutRequest,
-) -> RpcResult<Value> {
-    let value = request.value;
-    state
-        .repository
-        .lock()
-        .map_err(lock_error)?
-        .put_sync_metadata(&request.key, &value)
-        .map_err(rpc_error)?;
-    Ok(value)
 }
 
 #[tauri::command(async)]
@@ -436,10 +363,6 @@ fn emit_records_changed(app: &AppHandle, collections: Vec<String>) -> RpcResult<
 
 fn header<'a>(request: &'a Request<'_>, name: &str) -> Option<&'a str> {
     request.headers().get(name)?.to_str().ok()
-}
-
-fn default_outbox_limit() -> usize {
-    100
 }
 
 type RpcResult<T> = std::result::Result<T, String>;

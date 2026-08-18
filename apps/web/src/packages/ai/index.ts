@@ -1,6 +1,10 @@
 export { AISettingsProvider, useAISettings } from './settings';
 export { extractText } from './lib/extract-text';
-export { startOpenRouterAuth, completeOpenRouterAuth } from './lib/openrouter-oauth';
+export {
+  completeOpenRouterAuth,
+  isOpenRouterOAuthAvailable,
+  startOpenRouterAuth,
+} from './lib/openrouter-oauth';
 export {
   useGenerate,
   useTranscribe,

@@ -3,7 +3,6 @@
   "name": "september",
   "main": "src/index.ts",
   "compatibility_date": "2025-06-01",
-  "compatibility_flags": ["nodejs_compat"],
 
   // Single Worker also serves the built SPA (single origin → no CORS for /api/*).
   // `pnpm sync:assets` copies the web build into ./public before deploy; a
@@ -12,28 +11,18 @@
     "directory": "./public",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    // Worker code runs for the API surface; everything else serves static assets.
+    // Worker code rejects retired API routes; everything else serves static assets.
     "run_worker_first": ["/api/*"]
   },
 
-  "durable_objects": {
-    "bindings": [
-      { "name": "USER_MANAGER", "class_name": "UserManagerDO" },
-      { "name": "USER_DATA", "class_name": "UserDataDO" }
-    ]
-  },
-
-  // Both DO classes use the SQLite storage backend (required for per-object SQL).
   "migrations": [
     {
       "tag": "v1",
       "new_sqlite_classes": ["UserManagerDO", "UserDataDO"]
+    },
+    {
+      "tag": "v2",
+      "deleted_classes": ["UserManagerDO", "UserDataDO"]
     }
-  ],
-
-  "r2_buckets": [
-    { "binding": "USER_BLOBS", "bucket_name": "september-user-blobs" }
   ]
-
-  // Secrets (set via `wrangler secret put`): SESSION_SIGNING_KEY, GOOGLE_CLIENT_ID
 }

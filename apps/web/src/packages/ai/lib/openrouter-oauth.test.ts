@@ -10,8 +10,15 @@ import {
   completeOpenRouterAuth,
   exchangeCodeForKey,
   generatePkcePair,
+  isOpenRouterOAuthAvailable,
   startOpenRouterAuth,
 } from './openrouter-oauth';
+
+const { runtime } = vi.hoisted(() => ({ runtime: { desktop: false } }));
+
+vi.mock('@/packages/shared/lib/data/runtime', () => ({
+  isDesktopRuntime: () => runtime.desktop,
+}));
 
 // Local re-implementation of the S256 challenge so the test verifies the lib
 // independently rather than trusting its own output.
@@ -28,6 +35,18 @@ const BASE64URL = /^[A-Za-z0-9_-]+$/;
 afterEach(() => {
   vi.restoreAllMocks();
   sessionStorage.clear();
+  runtime.desktop = false;
+});
+
+describe('isOpenRouterOAuthAvailable', () => {
+  it('disables redirect OAuth in the packaged desktop app', () => {
+    runtime.desktop = true;
+    expect(isOpenRouterOAuthAvailable()).toBe(false);
+  });
+
+  it('keeps redirect OAuth available in the browser', () => {
+    expect(isOpenRouterOAuthAvailable()).toBe(true);
+  });
 });
 
 describe('generatePkcePair', () => {

@@ -5,15 +5,22 @@ import {
   getDesktopRecord,
   listDesktopRecords,
   putDesktopRecord,
-  subscribeDesktopRecordWrites,
+  writeDesktopRecordBatch,
 } from './record-client';
 
-const { invoke } = vi.hoisted(() => ({ invoke: vi.fn() }));
+const { invoke, notifyCollectionChanged } = vi.hoisted(() => ({
+  invoke: vi.fn(),
+  notifyCollectionChanged: vi.fn(),
+}));
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke }));
+vi.mock('./query', () => ({ notifyCollectionChanged }));
 
 describe('desktop record RPC client', () => {
-  beforeEach(() => invoke.mockReset());
+  beforeEach(() => {
+    invoke.mockReset();
+    notifyCollectionChanged.mockReset();
+  });
 
   it('unwraps live record data returned by record_list', async () => {
     invoke.mockResolvedValue([
@@ -35,8 +42,6 @@ describe('desktop record RPC client', () => {
   });
 
   it('gets, writes, and deletes records with camel-case request envelopes', async () => {
-    const onWrite = vi.fn();
-    const unsubscribe = subscribeDesktopRecordWrites(onWrite);
     invoke
       .mockResolvedValueOnce({
         collection: 'spaces',
@@ -71,7 +76,6 @@ describe('desktop record RPC client', () => {
       putDesktopRecord('spaces', 'space-1', { id: 'space-1', title: 'Home' }, 11)
     ).resolves.toEqual({ id: 'space-1', title: 'Home' });
     await expect(deleteDesktopRecord('spaces', 'space-1', 12)).resolves.toBeUndefined();
-    unsubscribe();
 
     expect(invoke.mock.calls).toEqual([
       ['record_get', { request: { collection: 'spaces', id: 'space-1', includeDeleted: false } }],
@@ -99,7 +103,61 @@ describe('desktop record RPC client', () => {
         },
       ],
     ]);
-    expect(onWrite).toHaveBeenNthCalledWith(1, 'spaces');
-    expect(onWrite).toHaveBeenNthCalledWith(2, 'spaces');
+    expect(notifyCollectionChanged).toHaveBeenNthCalledWith(1, 'spaces');
+    expect(notifyCollectionChanged).toHaveBeenNthCalledWith(2, 'spaces');
+  });
+
+  it('writes a record batch through one Rust transaction and invalidates each collection', async () => {
+    invoke.mockResolvedValue([]);
+
+    await writeDesktopRecordBatch([
+      {
+        op: 'delete',
+        collection: 'saved-phrases',
+        id: 'old-1',
+        updatedAt: 20,
+      },
+      {
+        op: 'put',
+        collection: 'saved-phrases',
+        id: 'new-1',
+        data: { id: 'new-1', text: 'Hello' },
+        updatedAt: 20,
+      },
+      {
+        op: 'put',
+        collection: 'spaces',
+        id: 'space-1',
+        data: { id: 'space-1', phrases_synced_count: 3 },
+        updatedAt: 20,
+      },
+    ]);
+    expect(invoke).toHaveBeenCalledWith('record_batch', {
+      request: {
+        writes: [
+          {
+            op: 'delete',
+            collection: 'saved-phrases',
+            id: 'old-1',
+            updatedAt: 20,
+          },
+          {
+            op: 'put',
+            collection: 'saved-phrases',
+            id: 'new-1',
+            data: { id: 'new-1', text: 'Hello' },
+            updatedAt: 20,
+          },
+          {
+            op: 'put',
+            collection: 'spaces',
+            id: 'space-1',
+            data: { id: 'space-1', phrases_synced_count: 3 },
+            updatedAt: 20,
+          },
+        ],
+      },
+    });
+    expect(notifyCollectionChanged.mock.calls).toEqual([['saved-phrases'], ['spaces']]);
   });
 });

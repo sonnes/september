@@ -36,7 +36,7 @@ export {
 - `account-provider.tsx`: React context provider and `useAccount` hook. Account
   updates use a TanStack Query optimistic mutation with rollback.
 - `settings-transfer.ts`: JSON export/import helpers for account-backed settings.
-- `use-current-user.ts`: Platform user hook. The browser uses the guest or sync user. Desktop uses the OS account from Rust.
+- `use-current-user.ts`: Platform user hook. The browser uses the local guest identity. Desktop uses the OS account from Rust.
 
 ## Usage
 
@@ -65,8 +65,8 @@ await updateAccount({ name: 'Guest' });
 `updated_at` internally.
 
 The provider keeps its public shape across platforms. The desktop path never
-opens SQLite directly; it uses the shared Rust record client. Authentication
-session state remains separate from the account record.
+opens SQLite directly; it uses the shared Rust record client. September does
+not maintain a login session or remote account.
 
 Export and import account-backed settings with the settings transfer helpers:
 

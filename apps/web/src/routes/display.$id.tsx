@@ -9,7 +9,11 @@ import { ClientProviders } from '@/components/context/client-providers';
 import { pageTitle } from '@/lib/seo';
 import { ReelTextViewer, useAudioPlayer } from '@/packages/audio';
 import { DisplayMessage } from '@/packages/shared';
-import { isDesktopRuntime, listenDesktopWindowEvent } from '@/packages/shared/lib/data';
+import {
+  emitDesktopWindowEvent,
+  isDesktopRuntime,
+  listenDesktopWindowEvent,
+} from '@/packages/shared/lib/data';
 
 export const Route = createFileRoute('/display/$id')({
   head: () => ({
@@ -43,6 +47,9 @@ function DisplayPageContent() {
           return;
         }
         unlisten = stopListening;
+        void emitDesktopWindowEvent('main', 'september://window-ready', {
+          label: `display-${chatId}`,
+        });
       });
 
       return () => {

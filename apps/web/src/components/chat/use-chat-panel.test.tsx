@@ -4,7 +4,7 @@ import { act } from 'react';
 import { type Root, createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { memoryStorage } from '@/packages/sync/lib/test-storage';
+import { memoryStorage } from '@/test/storage';
 
 import { ChatPanelProvider, loadPanelState, useChatPanel } from './use-chat-panel';
 

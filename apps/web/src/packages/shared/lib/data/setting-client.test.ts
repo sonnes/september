@@ -11,20 +11,20 @@ describe('desktop setting RPC client', () => {
 
   it('gets, writes, and deletes JSON values by key', async () => {
     invoke
-      .mockResolvedValueOnce({ token: 'session' })
-      .mockResolvedValueOnce({ token: 'next' })
+      .mockResolvedValueOnce({ rate: 1.2 })
+      .mockResolvedValueOnce({ rate: 1.4 })
       .mockResolvedValueOnce(true);
 
-    await expect(getDesktopSetting('sync-session')).resolves.toEqual({ token: 'session' });
-    await expect(putDesktopSetting('sync-session', { token: 'next' })).resolves.toEqual({
-      token: 'next',
+    await expect(getDesktopSetting('speech')).resolves.toEqual({ rate: 1.2 });
+    await expect(putDesktopSetting('speech', { rate: 1.4 })).resolves.toEqual({
+      rate: 1.4,
     });
-    await expect(deleteDesktopSetting('sync-session')).resolves.toBe(true);
+    await expect(deleteDesktopSetting('speech')).resolves.toBe(true);
 
     expect(invoke.mock.calls).toEqual([
-      ['setting_get', { request: { key: 'sync-session' } }],
-      ['setting_put', { request: { key: 'sync-session', value: { token: 'next' } } }],
-      ['setting_delete', { request: { key: 'sync-session' } }],
+      ['setting_get', { request: { key: 'speech' } }],
+      ['setting_put', { request: { key: 'speech', value: { rate: 1.4 } } }],
+      ['setting_delete', { request: { key: 'speech' } }],
     ]);
   });
 });

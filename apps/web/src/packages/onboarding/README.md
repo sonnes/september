@@ -25,7 +25,7 @@ export default function OnboardingPage() {
 
 ### `OnboardingProvider`
 
-Owns onboarding state: `currentStep`, the chosen `mode` (`'privacy' | 'free' | 'advanced' | null`) with `setMode`, step navigation (`goToNextStep`, `goToPreviousStep`, both clamped, plus `goToStep(n)` which only jumps back to an already-reached step), and `completeOnboarding` (saves `onboarding_completed: true` then redirects to `/spaces`). **Both `step` and `mode` are seeded from the URL** (`?step`, `?mode`) so the OpenRouter OAuth full-page redirect (`/onboarding?step=4&mode=free&code=…`) restores the right finish branch. The mode itself is **not** persisted to the account — it only drives which account fields the finish step writes.
+Owns onboarding state: `currentStep`, the chosen `mode` (`'privacy' | 'free' | 'advanced' | null`) with `setMode`, step navigation (`goToNextStep`, `goToPreviousStep`, both clamped, plus `goToStep(n)` which only jumps back to an already-reached step), and `completeOnboarding` (saves `onboarding_completed: true` then redirects to `/spaces`). **Both `step` and `mode` are seeded from the URL** (`?step`, `?mode`) so the web OpenRouter OAuth redirect (`/onboarding?step=4&mode=free&code=…`) restores the right finish branch. The mode itself is **not** persisted to the account — it only drives which account fields the finish step writes.
 
 ### `OnboardingFlow`
 
@@ -36,7 +36,7 @@ Full-screen single-column flow: an **indigo hero header** (shared keycap mark an
 3. **Choose setup** — the centerpiece: selectable mode cards. Selecting one sets `mode`. The web build shows all three modes; the desktop build shows Free AI and Advanced.
 4. **Finish** — branches on `mode`:
    - **Privacy** (`finish-privacy.tsx`) — summary; applies `buildPrivacyModeUpdate` (on-device Kokoro voice with `af_heart` default, suggestions preset to local WebLLM and transcription to local Whisper — both disabled, no provider keys) and kicks off `preloadKokoro()` so the one-time voice model download runs in the background.
-   - **Free AI** (`finish-free.tsx`) — one-click **Connect OpenRouter** (OAuth); applies browser speech + OpenRouter suggestions. Finish is gated until connected, with a "use built-in instead" fallback that switches to Privacy.
+   - **Free AI** (`finish-free.tsx`) — applies browser speech + OpenRouter suggestions. Web builds use OpenRouter OAuth. Desktop builds open the OpenRouter keys page and accept a pasted key because packaged Tauri origins are not valid callbacks. Finish is gated until a key is stored, with a "use built-in instead" fallback that switches to Privacy.
    - **Advanced** (`finish-advanced.tsx`) — one combined screen: pick a voice service (+ key + voice) and a writing helper (+ key); applies `buildAdvancedFinishUpdate`.
 
 Because it owns the full viewport, mount it on a route **outside** the sidebar shell — the `_onboarding` route group (supplies `ClientProviders` only).

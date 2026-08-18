@@ -6,7 +6,6 @@ import { AccountProvider } from '@/packages/account';
 import { AISettingsProvider } from '@/packages/ai';
 import { AudioPlayerProvider } from '@/packages/audio';
 import { DataQueryProvider, DesktopRouteTracker } from '@/packages/shared/lib/data';
-import { SyncProvider } from '@/packages/sync';
 
 const subscribe = () => () => {};
 const getSnapshot = () => true;
@@ -21,13 +20,11 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
   return (
     <DataQueryProvider>
       <DesktopRouteTracker />
-      <SyncProvider>
-        <AccountProvider>
-          <AISettingsProvider>
-            <AudioPlayerProvider>{children}</AudioPlayerProvider>
-          </AISettingsProvider>
-        </AccountProvider>
-      </SyncProvider>
+      <AccountProvider>
+        <AISettingsProvider>
+          <AudioPlayerProvider>{children}</AudioPlayerProvider>
+        </AISettingsProvider>
+      </AccountProvider>
     </DataQueryProvider>
   );
 }

@@ -126,12 +126,8 @@ or construct filesystem paths.
 Desktop builds also persist the selected audio-output device through Rust
 settings commands. Browser builds keep the existing `localStorage` key.
 
-#### Cloud sync (R2)
-
-When the user is signed in (see `@/packages/sync`), storage mirrors blobs to R2 via the
-sync blob-bridge: writes back up fire-and-forget, a local read-miss falls back to R2 and
-stores the bytes locally, and deletes remove the R2 object. Signed out, this is inert and
-storage is purely local.
+Audio storage is local-only on both platforms. A missing path does not trigger a
+network request.
 
 ### Types
 

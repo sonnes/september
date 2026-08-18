@@ -2,17 +2,8 @@ import { invoke } from '@tauri-apps/api/core';
 
 import { notifyCollectionChanged } from './query';
 
-type DesktopRecordWriteListener = (collection: string) => void;
-const writeListeners = new Set<DesktopRecordWriteListener>();
-
-export function subscribeDesktopRecordWrites(listener: DesktopRecordWriteListener): () => void {
-  writeListeners.add(listener);
-  return () => writeListeners.delete(listener);
-}
-
 function notifyWritten(collection: string): void {
   notifyCollectionChanged(collection);
-  writeListeners.forEach(listener => listener(collection));
 }
 
 export interface DesktopRecord<T = unknown> {
@@ -24,6 +15,23 @@ export interface DesktopRecord<T = unknown> {
   deleted: boolean;
   sequence: number;
 }
+
+export type DesktopRecordBatchWrite =
+  | {
+      op: 'put';
+      collection: string;
+      id: string;
+      data: unknown;
+      updatedAt: number;
+      version?: string | null;
+    }
+  | {
+      op: 'delete';
+      collection: string;
+      id: string;
+      updatedAt: number;
+      version?: string | null;
+    };
 
 function liveData<T>(record: DesktopRecord<T> | null): T | null {
   if (!record || record.deleted || record.data === null) return null;
@@ -74,4 +82,13 @@ export async function deleteDesktopRecord(
     request: { collection, id, version, updatedAt },
   });
   notifyWritten(collection);
+}
+
+export async function writeDesktopRecordBatch(
+  writes: DesktopRecordBatchWrite[]
+): Promise<void> {
+  await invoke<DesktopRecord[]>('record_batch', { request: { writes } });
+  for (const collection of new Set(writes.map(write => write.collection))) {
+    notifyWritten(collection);
+  }
 }

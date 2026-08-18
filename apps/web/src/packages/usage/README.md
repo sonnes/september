@@ -154,8 +154,7 @@ change without a migration):
 - **BroadcastChannel:** `analytics-collection`
 - **Query indexes:** `timestamp`, `user_id`
 
-Desktop builds store the same event object as a JSON record. Analytics is not
-in the Rust sync allowlist, so these rows never enter the cloud-sync outbox.
+Desktop builds store the same event object as a local JSON record in SQLite.
 
 Cost fields were added in July 2026 as optional fields with permissive defaults,
 so events written before then still parse — they report `cost_source: 'unknown'`

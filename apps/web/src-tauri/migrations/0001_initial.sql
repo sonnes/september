@@ -11,23 +11,7 @@ CREATE TABLE records (
 CREATE INDEX records_collection_live ON records(collection, deleted, id);
 CREATE INDEX records_sequence ON records(seq);
 
-CREATE TABLE outbox (
-  outbox_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  collection TEXT NOT NULL,
-  record_id TEXT NOT NULL,
-  op TEXT NOT NULL CHECK (op IN ('upsert', 'delete')),
-  data TEXT,
-  version TEXT,
-  updated_at INTEGER NOT NULL
-);
-CREATE INDEX outbox_order ON outbox(outbox_id);
-
 CREATE TABLE settings (
-  key TEXT PRIMARY KEY,
-  value TEXT NOT NULL
-);
-
-CREATE TABLE sync_metadata (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
@@ -41,4 +25,3 @@ CREATE TABLE file_metadata (
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );
-

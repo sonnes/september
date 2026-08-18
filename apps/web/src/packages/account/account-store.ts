@@ -7,7 +7,6 @@ import { createCollection } from '@tanstack/react-db';
 
 import { isDesktopRuntime, putDesktopRecord, useRecordQuery } from '@/packages/shared/lib/data';
 import { indexedDBCollectionOptionsV2 } from '@/packages/shared/lib/indexeddb';
-import { captureLocal } from '@/packages/sync/runtime';
 
 import { type Account, AccountSchema } from './schema';
 
@@ -20,12 +19,6 @@ export const accountCollection = createCollection(
     channelName: 'app-user-account',
     getKey: (item: Account) => item.id,
     schema: AccountSchema,
-    onInsert: async ({ transaction }) =>
-      captureLocal('user-account', 'upsert', transaction.mutations),
-    onUpdate: async ({ transaction }) =>
-      captureLocal('user-account', 'upsert', transaction.mutations),
-    onDelete: async ({ transaction }) =>
-      captureLocal('user-account', 'delete', transaction.mutations),
   })
 );
 

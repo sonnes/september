@@ -163,7 +163,7 @@ describe('metering', () => {
     expect(call.sample_count).toBe(1);
   });
 
-  it('records nothing when there is no signed-in user', async () => {
+  it('records nothing when there is no user ID', async () => {
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ voice_id: 'v-1' }),

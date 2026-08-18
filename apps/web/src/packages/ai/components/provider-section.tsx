@@ -7,7 +7,7 @@ import { FormField } from '@/packages/ui/components/form';
 import { CheckCircle2, ExternalLink, Key, LogIn } from 'lucide-react';
 import { Control } from 'react-hook-form';
 
-import { startOpenRouterAuth } from '../lib/openrouter-oauth';
+import { isOpenRouterOAuthAvailable, startOpenRouterAuth } from '../lib/openrouter-oauth';
 import type { AIProvidersFormData } from '../types/schemas';
 
 // Feature colors mapping
@@ -116,7 +116,7 @@ export function ProviderSection({ control, provider, hasApiKey = false }: Provid
 
         {/* Right Column - Form Fields */}
         <div className="space-y-4">
-          {provider.oauth && (
+          {provider.oauth && isOpenRouterOAuthAvailable() && (
             <div className="space-y-2">
               <Button
                 type="button"

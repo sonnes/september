@@ -40,7 +40,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
   },
   {
     title: 'Account',
-    description: 'Your details, sync, and backup.',
+    description: 'Your details and local settings.',
     href: '/settings/account',
     icon: User,
   },

@@ -5,7 +5,7 @@ import { GenerationFeature, recordApiCall } from '@/packages/usage';
 import { GenerateParams, hasCached } from './middleware';
 
 export interface MeteringContext {
-  /** Nothing is recorded without a signed-in user. */
+  /** Nothing is recorded without a local user ID. */
   userId?: string;
   provider: string;
   model: string;

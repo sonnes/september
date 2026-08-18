@@ -317,11 +317,17 @@ export function SpacePageInner({
       } satisfies DisplayMessage;
       if (isDesktopRuntime()) {
         if (desktopPopupRef.current) {
-          void emitDesktopWindowEvent(
-            `display-${spaceId}`,
-            'september://display-message',
-            displayMessage
-          );
+          try {
+            await emitDesktopWindowEvent(
+              `display-${spaceId}`,
+              'september://display-message',
+              displayMessage
+            );
+          } catch (error) {
+            console.error('Failed to send the message to the desktop display:', error);
+            desktopPopupRef.current = null;
+            if (audio && !playedLive) enqueue(audio);
+          }
         }
       } else {
         const channel = new BroadcastChannel(`chat-display-${spaceId}`);
@@ -470,6 +476,7 @@ export function SpacePageInner({
           title: 'September display',
           width,
           height,
+          waitUntilReady: true,
         });
         desktopPopupRef.current = popup;
         void popup.once('tauri://destroyed', () => {

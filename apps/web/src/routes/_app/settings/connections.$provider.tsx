@@ -6,7 +6,11 @@ import { ExternalLink, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useAccount } from '@/packages/account';
-import { AI_PROVIDERS, startOpenRouterAuth } from '@/packages/ai';
+import {
+  AI_PROVIDERS,
+  isOpenRouterOAuthAvailable,
+  startOpenRouterAuth,
+} from '@/packages/ai';
 import { Button } from '@/packages/ui/components/button';
 import { Input } from '@/packages/ui/components/input';
 import { Label } from '@/packages/ui/components/label';
@@ -81,6 +85,7 @@ function ConnectionDetailPage() {
   const navigate = useNavigate();
   const [key, setKey] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const oauthAvailable = isOpenRouterOAuthAvailable();
 
   if (!account) {
     return <LoadingState variant="inline" label="Loading account settings..." />;
@@ -134,7 +139,14 @@ function ConnectionDetailPage() {
         <span className="font-medium text-foreground">{info.name}</span>
       </nav>
 
-      <PageTitle title={info.name} description={content.lede} />
+      <PageTitle
+        title={info.name}
+        description={
+          providerId === 'openrouter' && !oauthAvailable
+            ? 'Create an OpenRouter key in your browser, then paste it here for writing help.'
+            : content.lede
+        }
+      />
 
       {existingKey && (
         <p className="text-sm text-muted-foreground">
@@ -143,7 +155,7 @@ function ConnectionDetailPage() {
         </p>
       )}
 
-      {providerId === 'openrouter' && (
+      {providerId === 'openrouter' && oauthAvailable && (
         <div className="flex flex-col items-start gap-3">
           <Button
             type="button"

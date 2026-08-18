@@ -15,6 +15,7 @@ import {
   AI_PROVIDERS,
   AIProvidersSchema,
   completeOpenRouterAuth,
+  isOpenRouterOAuthAvailable,
   startOpenRouterAuth,
   useAISettings,
   type AIProvidersFormData,
@@ -57,6 +58,7 @@ export function AdvancedFinishStep() {
   const navigate = useNavigate();
   const copy = ONBOARDING_PRIMARY_COPY.finish.advanced;
   const connectCopy = ONBOARDING_PRIMARY_COPY.finish.free;
+  const oauthAvailable = isOpenRouterOAuthAvailable();
 
   const [voiceProvider, setVoiceProvider] = useState<VoiceSetupProvider>('browser');
   const [voices, setVoices] = useState<Voice[]>([]);
@@ -70,7 +72,7 @@ export function AdvancedFinishStep() {
   );
   const [isSaving, setIsSaving] = useState(false);
 
-  // OpenRouter writing help connects via OAuth (full-page redirect back to
+  // Web OpenRouter writing help connects via OAuth (full-page redirect back to
   // /onboarding?step=4&mode=advanced&code=…); finish the exchange on return.
   const [oauthCode] = useState(() =>
     typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('code')
@@ -79,7 +81,7 @@ export function AdvancedFinishStep() {
   const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
-    if (!oauthCode || exchangedRef.current || !account) return;
+    if (!oauthAvailable || !oauthCode || exchangedRef.current || !account) return;
     exchangedRef.current = true;
     (async () => {
       try {
@@ -97,7 +99,7 @@ export function AdvancedFinishStep() {
         navigate({ to: '/onboarding', search: { step: 4, mode: 'advanced' }, replace: true });
       }
     })();
-  }, [account, oauthCode, navigate, updateAccount]);
+  }, [account, oauthAvailable, oauthCode, navigate, updateAccount]);
 
   const providerDefaults = useMemo(
     () => getProviderDefaultValues(account?.ai_providers),
@@ -311,33 +313,41 @@ export function AdvancedFinishStep() {
         </fieldset>
 
         {writingChoice === 'openrouter' && (
-          <div className="border-l border-border pl-5">
-            <Button
-              type="button"
-              size="lg"
-              variant={openRouterConnected ? 'outline' : 'default'}
-              onClick={() =>
-                startOpenRouterAuth(`${window.location.origin}/onboarding?step=4&mode=advanced`)
-              }
-              disabled={isConnecting}
-            >
-              {openRouterConnected ? (
-                <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-600" />
-              ) : (
-                <LogIn className="mr-2 h-4 w-4" />
-              )}
-              {isConnecting
-                ? connectCopy.connectingAction
-                : openRouterConnected
-                  ? 'Reconnect OpenRouter'
-                  : connectCopy.connectAction}
-            </Button>
-            <p
-              className={`mt-2 text-xs ${openRouterConnected ? 'font-semibold text-emerald-700' : 'text-muted-foreground'}`}
-            >
-              {openRouterConnected ? connectCopy.connectedNote : connectCopy.pendingNote}
-            </p>
-          </div>
+          oauthAvailable ? (
+            <div className="border-l border-border pl-5">
+              <Button
+                type="button"
+                size="lg"
+                variant={openRouterConnected ? 'outline' : 'default'}
+                onClick={() =>
+                  startOpenRouterAuth(`${window.location.origin}/onboarding?step=4&mode=advanced`)
+                }
+                disabled={isConnecting}
+              >
+                {openRouterConnected ? (
+                  <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-600" />
+                ) : (
+                  <LogIn className="mr-2 h-4 w-4" />
+                )}
+                {isConnecting
+                  ? connectCopy.connectingAction
+                  : openRouterConnected
+                    ? 'Reconnect OpenRouter'
+                    : connectCopy.connectAction}
+              </Button>
+              <p
+                className={`mt-2 text-xs ${openRouterConnected ? 'font-semibold text-emerald-700' : 'text-muted-foreground'}`}
+              >
+                {openRouterConnected ? connectCopy.connectedNote : connectCopy.pendingNote}
+              </p>
+            </div>
+          ) : (
+            <ProviderKeyField
+              control={providerForm.control}
+              provider={AI_PROVIDERS.openrouter}
+              hasApiKey={openRouterConnected}
+            />
+          )
         )}
 
         {writingChoice === 'gemini' && (

@@ -10,7 +10,6 @@ import {
   writeDesktopFile,
 } from '@/packages/shared/lib/data';
 import { KVStore } from '@/packages/shared/lib/indexeddb';
-import { fetchRemoteBlob, mirrorBlobDelete, mirrorBlobPut } from '@/packages/sync/blob-bridge';
 
 import type { Alignment } from './types';
 
@@ -111,7 +110,6 @@ export async function uploadAudioBinary({
   const buffer = await toArrayBuffer(blob);
   if (isDesktopRuntime()) {
     await saveDesktopAudio(path, buffer, contentType, metadata);
-    void mirrorBlobPut(path, buffer, contentType);
     return path;
   }
   if (!kvStore) return path;
@@ -125,24 +123,7 @@ export async function uploadAudioBinary({
   };
 
   await kvStore.set(path, item);
-  void mirrorBlobPut(path, buffer, contentType); // back up to R2 when signed in
   return path;
-}
-
-/** Write remote bytes into the local store so subsequent reads are local. */
-async function cacheRemote(path: string, data: ArrayBuffer, contentType: string): Promise<void> {
-  if (isDesktopRuntime()) {
-    await saveDesktopAudio(path, data, contentType, {});
-    return;
-  }
-  if (!kvStore) return;
-  await kvStore.set(path, {
-    blob: data,
-    contentType,
-    metadata: {},
-    created_at: new Date().toISOString(),
-    name: path.split('/').pop() || path,
-  });
 }
 
 /**
@@ -196,13 +177,6 @@ export async function downloadAudio(path: string): Promise<Blob> {
 
   const item = isDesktopRuntime() ? undefined : await kvStore?.get(path);
   if (item) return new Blob([item.blob], { type: item.contentType });
-
-  // Not local (e.g. another device) — pull from R2 and cache.
-  const remote = await fetchRemoteBlob(path);
-  if (remote) {
-    await cacheRemote(path, remote.data, remote.contentType);
-    return new Blob([remote.data], { type: remote.contentType });
-  }
   throw new Error(`Audio not found: ${path}`);
 }
 
@@ -233,11 +207,6 @@ export async function getAudio(
     };
   }
 
-  const remote = await fetchRemoteBlob(path);
-  if (remote) {
-    await cacheRemote(path, remote.data, remote.contentType);
-    return { blob: new Blob([remote.data], { type: remote.contentType }) };
-  }
   return null;
 }
 
@@ -250,7 +219,6 @@ export async function deleteAudio(path: string): Promise<void> {
     if (!kvStore) return;
     await kvStore.delete(path);
   }
-  void mirrorBlobDelete(path); // remove from R2 when signed in
 }
 
 export async function listAudio(

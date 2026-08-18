@@ -7,6 +7,7 @@ import {
   isDesktopRuntime,
   listDesktopRecords,
   putDesktopRecord,
+  writeDesktopRecordBatch,
 } from '@/packages/shared/lib/data';
 import { track } from '@/packages/usage';
 
@@ -150,15 +151,34 @@ export async function deleteSpace(id: string): Promise<void> {
       MessageSchema.parse(value)
     );
     const phrases = await savedPhrases();
-    await Promise.all([
+    const notes = await listDesktopRecords<{ id: string; space_id?: string }>('documents');
+    const updatedAt = Date.now();
+    await writeDesktopRecordBatch([
       ...messages
         .filter(message => message.space_id === id)
-        .map(message => deleteDesktopRecord('messages', message.id)),
+        .map(message => ({
+          op: 'delete' as const,
+          collection: 'messages',
+          id: message.id,
+          updatedAt,
+        })),
       ...phrases
         .filter(phrase => phrase.space_id === id)
-        .map(phrase => deleteDesktopRecord('saved-phrases', phrase.id)),
-      deleteNotesForSpace(id),
-      deleteDesktopRecord('spaces', id),
+        .map(phrase => ({
+          op: 'delete' as const,
+          collection: 'saved-phrases',
+          id: phrase.id,
+          updatedAt,
+        })),
+      ...notes
+        .filter(note => note.space_id === id)
+        .map(note => ({
+          op: 'delete' as const,
+          collection: 'documents',
+          id: note.id,
+          updatedAt,
+        })),
+      { op: 'delete', collection: 'spaces', id, updatedAt },
     ]);
     return;
   }
@@ -362,7 +382,6 @@ export async function replaceAiPhrases(
 
   const now = new Date();
   if (isDesktopRuntime()) {
-    await Promise.all([...oldAiIds].map(id => deleteDesktopRecord('saved-phrases', id)));
     const newRows: SavedPhrase[] = [
       ...freshPhrases.map(text => {
         const code = generateCode(text, { existingCodes });
@@ -387,10 +406,33 @@ export async function replaceAiPhrases(
         created_at: now,
       })),
     ];
-    await Promise.all(
-      newRows.map(row => putDesktopRecord('saved-phrases', row.id, row, row.created_at.getTime()))
-    );
-    await updateSpace(spaceId, { phrases_synced_count: syncedCount });
+    const nextSpace = SpaceSchema.parse({
+      ...(await desktopSpace(spaceId)),
+      phrases_synced_count: syncedCount,
+      updated_at: now,
+    });
+    await writeDesktopRecordBatch([
+      ...[...oldAiIds].map(id => ({
+        op: 'delete' as const,
+        collection: 'saved-phrases',
+        id,
+        updatedAt: now.getTime(),
+      })),
+      ...newRows.map(row => ({
+        op: 'put' as const,
+        collection: 'saved-phrases',
+        id: row.id,
+        data: row,
+        updatedAt: row.created_at.getTime(),
+      })),
+      {
+        op: 'put',
+        collection: 'spaces',
+        id: spaceId,
+        data: nextSpace,
+        updatedAt: now.getTime(),
+      },
+    ]);
     return;
   }
 

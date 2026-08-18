@@ -149,7 +149,7 @@ describe('meteringMiddleware', () => {
     expect(call.output_tokens).toBeUndefined();
   });
 
-  it('records nothing when there is no signed-in user', async () => {
+  it('records nothing when there is no user ID', async () => {
     await run(
       meteringMiddleware({ ...context, userId: undefined }),
       async () => generated(),

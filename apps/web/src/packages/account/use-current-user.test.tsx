@@ -6,19 +6,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useCurrentUser } from './use-current-user';
 
-const { getDesktopOsUser, runtime, syncAuth } = vi.hoisted(() => ({
+const { getDesktopOsUser, runtime } = vi.hoisted(() => ({
   getDesktopOsUser: vi.fn(),
   runtime: { desktop: true },
-  syncAuth: {
-    value: null as null | { user: { id: string; user_metadata: { full_name: string } } },
-  },
 }));
 
 vi.mock('@/packages/shared/lib/data', () => ({
   getDesktopOsUser,
   isDesktopRuntime: () => runtime.desktop,
 }));
-vi.mock('@/packages/sync', () => ({ useSyncAuth: () => syncAuth.value }));
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -35,9 +31,6 @@ beforeEach(() => {
   document.body.appendChild(container);
   root = createRoot(container);
   runtime.desktop = true;
-  syncAuth.value = {
-    user: { id: 'cloud-user', user_metadata: { full_name: 'Cloud User' } },
-  };
   getDesktopOsUser.mockReset();
 });
 
@@ -56,12 +49,12 @@ describe('useCurrentUser', () => {
     expect(getDesktopOsUser).toHaveBeenCalledOnce();
   });
 
-  it('keeps the authenticated identity in the browser', async () => {
+  it('uses the local identity in the browser', async () => {
     runtime.desktop = false;
 
     await act(async () => root.render(<Probe />));
 
-    expect(container.textContent).toBe('cloud-user:Cloud User');
+    expect(container.textContent).toBe('local-user:Guest');
     expect(getDesktopOsUser).not.toHaveBeenCalled();
   });
 });

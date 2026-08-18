@@ -97,6 +97,10 @@ TanStack DB collections backed by IndexedDB. Desktop builds invoke Rust record
 commands backed by SQLite. Neither feature package imports SQL or filesystem
 APIs directly.
 
+`writeDesktopRecordBatch(writes)` commits related puts and deletes through one
+Rust transaction. Space deletion and generated-phrase replacement use this
+path so a partial write cannot leave inconsistent records.
+
 `saveFile(blob, suggestedName)` keeps browser anchor downloads for the web app.
 Desktop builds send the bytes to Rust and show a native save dialog. The
 webview does not send or receive a filesystem path.
@@ -110,8 +114,10 @@ the last safe app route in the Rust settings table. The route tracker excludes
 secondary windows, marketing pages, and OAuth credentials.
 
 Desktop presentation and display routes use named Tauri windows and targeted
-events through `lib/data/window-client.ts`. External links use the validated
-Rust `open_external` command.
+events through `lib/data/window-client.ts`. New windows do not resolve until
+Tauri confirms creation. The chat display also announces when its listener is
+ready before the main window starts sending messages. External links use the
+validated Rust `open_external` command.
 
 `DataQueryProvider` owns one `QueryClient` per provider tree. Local reads and
 mutations use `networkMode: 'always'`. Browser collection changes and Tauri

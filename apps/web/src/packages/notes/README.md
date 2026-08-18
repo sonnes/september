@@ -83,8 +83,9 @@ New notes start without a stored title. The editor shows `Untitled note` as a
 placeholder and generates the first title from note content on the first save.
 
 Desktop builds store the same note object in the SQLite `documents`
-collection. Rust owns record versions, tombstones, and durable sync outbox
-entries. No note code opens SQLite directly.
+collection. Rust owns record versions and tombstones. No note code opens SQLite
+directly. Deleting a space removes its scoped notes in the same Rust transaction
+as the space, messages, and saved phrases.
 
 ## Space notes
 

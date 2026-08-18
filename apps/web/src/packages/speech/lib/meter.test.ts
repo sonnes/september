@@ -76,7 +76,7 @@ describe('meterSpeech', () => {
     expect(recorded.error_message).toBe('Socket closed');
   });
 
-  it('records nothing when there is no signed-in user', async () => {
+  it('records nothing when there is no user ID', async () => {
     await meterSpeech(undefined, call, Promise.resolve({}));
 
     expect(mockRecordApiCall).not.toHaveBeenCalled();

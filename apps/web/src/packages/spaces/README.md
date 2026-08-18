@@ -166,10 +166,12 @@ Space notes live in `@/packages/notes` as `noteCollection` rows with
 `space_id` set. `deleteSpace` also removes those scoped note rows.
 
 Desktop builds store the same domain objects as JSON records in the SQLite
-collections `spaces`, `messages`, and `saved-phrases`. Rust owns versioning,
-tombstones, and the durable cloud-sync outbox. Hooks read both backends through
-the shared record client and keep the same return shapes.
+collections `spaces`, `messages`, and `saved-phrases`. Rust owns versioning and
+tombstones. Hooks read both backends through the shared record client and keep
+the same return shapes. Desktop space cascades and generated-phrase replacement
+use one Rust transaction for all affected records.
 
 The separate chat display uses a named Tauri window on desktop. The main
-window sends new messages to it with a targeted Tauri event. The browser build
-continues to use a popup and `BroadcastChannel`.
+window waits for the display listener before it sends targeted Tauri events.
+If delivery fails, audio plays in the main window. The browser build continues
+to use a popup and `BroadcastChannel`.

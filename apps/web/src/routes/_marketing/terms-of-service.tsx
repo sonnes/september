@@ -66,7 +66,7 @@ function TermsOfService() {
             <li>Voice cloning and personalization features</li>
             <li>Speech-to-text transcription capabilities</li>
             <li>Note processing and text extraction</li>
-            <li>Local-first data storage with optional cloud sync</li>
+            <li>Local data storage in your browser or desktop app</li>
           </ul>
         </section>
 

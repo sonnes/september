@@ -6,7 +6,12 @@ import { Check, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useAccount } from '@/packages/account';
-import { AI_PROVIDERS, completeOpenRouterAuth, startOpenRouterAuth } from '@/packages/ai';
+import {
+  AI_PROVIDERS,
+  completeOpenRouterAuth,
+  isOpenRouterOAuthAvailable,
+  startOpenRouterAuth,
+} from '@/packages/ai';
 import {
   ModeBadge,
   SETUP_MODES,
@@ -43,12 +48,13 @@ export default function SetupForm() {
   const { code: oauthCode } = Route.useSearch();
   const exchangedRef = useRef(false);
   const [switching, setSwitching] = useState(false);
+  const oauthAvailable = isOpenRouterOAuthAvailable();
 
   // Finish "Connect with OpenRouter": on return from the OAuth redirect,
   // exchange the code for a user API key, save it locally, and strip the code
   // from the URL.
   useEffect(() => {
-    if (!oauthCode || exchangedRef.current || !account) return;
+    if (!oauthAvailable || !oauthCode || exchangedRef.current || !account) return;
     exchangedRef.current = true;
 
     (async () => {
@@ -64,7 +70,7 @@ export default function SetupForm() {
         navigate({ to: '/settings', search: {}, replace: true });
       }
     })();
-  }, [oauthCode, account, updateAccount, navigate]);
+  }, [oauthAvailable, oauthCode, account, updateAccount, navigate]);
 
   if (!account) {
     return <LoadingState variant="inline" label="Loading account settings..." />;
@@ -245,6 +251,7 @@ function PrivacyConnections() {
 function FreeConnections() {
   const { account, user } = useAccount();
   const openRouterKey = account?.ai_providers?.openrouter?.api_key;
+  const oauthAvailable = isOpenRouterOAuthAvailable();
 
   return (
     <ConnectionList>
@@ -265,12 +272,18 @@ function FreeConnections() {
                 Manage ›
               </Link>
             </Button>
-          ) : (
+          ) : oauthAvailable ? (
             <Button
               type="button"
               onClick={() => startOpenRouterAuth(`${window.location.origin}/settings`)}
             >
               Connect
+            </Button>
+          ) : (
+            <Button asChild type="button">
+              <Link to="/settings/connections/$provider" params={{ provider: 'openrouter' }}>
+                Add key ›
+              </Link>
             </Button>
           )
         }

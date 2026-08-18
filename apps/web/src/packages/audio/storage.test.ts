@@ -6,9 +6,7 @@
  * call stack for any file larger than ~65 KB (V8 argument limit).
  */
 
-import { Blob as NodeBlob } from 'node:buffer';
-
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import 'fake-indexeddb/auto';
 
 /** Read a Blob's bytes in any JS environment (handles stripped vitest Blob polyfill). */
@@ -25,8 +23,6 @@ async function blobToUint8(blob: Blob): Promise<Uint8Array> {
   }
   throw new Error('Cannot extract bytes from Blob: no arrayBuffer() and no impl._buffer');
 }
-
-import { setBlobClient } from '@/packages/sync/blob-bridge';
 
 import {
   uploadAudio,
@@ -160,48 +156,6 @@ describe('deleteAudio', () => {
 
     const result = await getAudio('test/to-delete.webm');
     expect(result).toBeNull();
-  });
-});
-
-describe('R2 sync fallback', () => {
-  afterEach(() => setBlobClient(null));
-
-  it('downloadAudio falls back to R2 when the blob is not local, then caches it', async () => {
-    const getBlobResponse = vi.fn(async (key: string) => {
-      expect(key).toBe('audio/remote/only.mp3');
-      return new Response(new Uint8Array([1, 2, 3]), { headers: { 'content-type': 'audio/mpeg' } });
-    });
-    setBlobClient({ putBlob: vi.fn(), getBlobResponse, deleteBlob: vi.fn() });
-
-    const blob = await downloadAudio('remote/only.mp3');
-    expect(await blobToUint8(blob)).toEqual(new Uint8Array([1, 2, 3]));
-
-    // Now cached locally — a second read does not hit R2 again.
-    setBlobClient(null);
-    const again = await downloadAudio('remote/only.mp3');
-    expect(await blobToUint8(again)).toEqual(new Uint8Array([1, 2, 3]));
-    expect(getBlobResponse).toHaveBeenCalledTimes(1);
-  });
-
-  it('getAudio returns null when neither local nor remote has it', async () => {
-    setBlobClient({
-      putBlob: vi.fn(),
-      getBlobResponse: vi.fn(async () => null),
-      deleteBlob: vi.fn(),
-    });
-    expect(await getAudio('nowhere.mp3')).toBeNull();
-  });
-
-  it('uploadAudioBinary mirrors the write to R2', async () => {
-    const putBlob = vi.fn(async () => {});
-    setBlobClient({ putBlob, getBlobResponse: vi.fn(), deleteBlob: vi.fn() });
-
-    await uploadAudioBinary({
-      path: 'mirror/me.webm',
-      blob: new Blob([new Uint8Array([9])], { type: 'audio/webm' }),
-      contentType: 'audio/webm',
-    });
-    expect(putBlob).toHaveBeenCalledWith('audio/mirror/me.webm', expect.anything(), 'audio/webm');
   });
 });
 

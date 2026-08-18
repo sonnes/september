@@ -1,14 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createMessage, createSpace, updateSpace } from './mutations';
+import {
+  createMessage,
+  createSpace,
+  deleteSpace,
+  replaceAiPhrases,
+  updateSpace,
+} from './mutations';
 
-const { deleteDesktopRecord, getDesktopRecord, listDesktopRecords, putDesktopRecord, track } =
-  vi.hoisted(() => ({
+const {
+  deleteDesktopRecord,
+  deleteNotesForSpace,
+  getDesktopRecord,
+  listDesktopRecords,
+  putDesktopRecord,
+  track,
+  writeDesktopRecordBatch,
+} = vi.hoisted(() => ({
     deleteDesktopRecord: vi.fn(),
+    deleteNotesForSpace: vi.fn(),
     getDesktopRecord: vi.fn(),
     listDesktopRecords: vi.fn(),
     putDesktopRecord: vi.fn(),
     track: vi.fn(),
+    writeDesktopRecordBatch: vi.fn(),
   }));
 
 vi.mock('@/packages/shared/lib/data', () => ({
@@ -17,8 +32,9 @@ vi.mock('@/packages/shared/lib/data', () => ({
   isDesktopRuntime: () => true,
   listDesktopRecords,
   putDesktopRecord,
+  writeDesktopRecordBatch,
 }));
-vi.mock('@/packages/notes', () => ({ deleteNotesForSpace: vi.fn() }));
+vi.mock('@/packages/notes', () => ({ deleteNotesForSpace }));
 vi.mock('@/packages/usage', () => ({ track }));
 vi.mock('./db', () => ({
   messageCollection: {},
@@ -86,5 +102,124 @@ describe('desktop space mutations', () => {
       expect.any(Number)
     );
     expect(track).toHaveBeenCalled();
+  });
+
+  it('deletes a space and its children through one Rust transaction', async () => {
+    listDesktopRecords.mockImplementation(async collection => {
+      if (collection === 'messages') {
+        return [
+          {
+            id: MESSAGE_ID,
+            user_id: 'user-1',
+            space_id: SPACE_ID,
+            text: 'Hello',
+            type: 'text',
+            created_at: new Date(1),
+          },
+        ];
+      }
+      if (collection === 'saved-phrases') {
+        return [
+          {
+            id: '00000000-0000-4000-8000-000000000031',
+            user_id: 'user-1',
+            space_id: SPACE_ID,
+            text: 'Hi',
+            pinned: false,
+            created_at: new Date(1),
+          },
+        ];
+      }
+      if (collection === 'documents') {
+        return [
+          {
+            id: '00000000-0000-4000-8000-000000000041',
+            space_id: SPACE_ID,
+            content: '',
+            created_at: new Date(1),
+            updated_at: new Date(1),
+          },
+        ];
+      }
+      return [];
+    });
+
+    await deleteSpace(SPACE_ID);
+
+    expect(writeDesktopRecordBatch).toHaveBeenCalledOnce();
+    expect(writeDesktopRecordBatch.mock.calls[0][0]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'delete', collection: 'messages', id: MESSAGE_ID }),
+        expect.objectContaining({
+          op: 'delete',
+          collection: 'saved-phrases',
+          id: '00000000-0000-4000-8000-000000000031',
+        }),
+        expect.objectContaining({
+          op: 'delete',
+          collection: 'documents',
+          id: '00000000-0000-4000-8000-000000000041',
+        }),
+        expect.objectContaining({ op: 'delete', collection: 'spaces', id: SPACE_ID }),
+      ])
+    );
+    expect(deleteDesktopRecord).not.toHaveBeenCalled();
+    expect(deleteNotesForSpace).not.toHaveBeenCalled();
+  });
+
+  it('replaces generated phrases and updates the space through one Rust transaction', async () => {
+    listDesktopRecords.mockResolvedValue([
+      {
+        id: '00000000-0000-4000-8000-000000000031',
+        user_id: 'user-1',
+        space_id: SPACE_ID,
+        text: 'Old phrase',
+        pinned: false,
+        created_at: new Date(1),
+      },
+    ]);
+    getDesktopRecord.mockResolvedValue({
+      id: SPACE_ID,
+      user_id: 'user-1',
+      title: 'Home',
+      created_at: new Date(1),
+      updated_at: new Date(1),
+    });
+
+    await replaceAiPhrases(
+      SPACE_ID,
+      'user-1',
+      { phrases: ['Fresh phrase'], starters: ['Could you please'] },
+      4
+    );
+
+    expect(writeDesktopRecordBatch).toHaveBeenCalledOnce();
+    const writes = writeDesktopRecordBatch.mock.calls[0][0];
+    expect(writes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          op: 'delete',
+          collection: 'saved-phrases',
+          id: '00000000-0000-4000-8000-000000000031',
+        }),
+        expect.objectContaining({
+          op: 'put',
+          collection: 'saved-phrases',
+          data: expect.objectContaining({ text: 'Fresh phrase', pinned: false }),
+        }),
+        expect.objectContaining({
+          op: 'put',
+          collection: 'saved-phrases',
+          data: expect.objectContaining({ text: 'Could you please', kind: 'starter' }),
+        }),
+        expect.objectContaining({
+          op: 'put',
+          collection: 'spaces',
+          id: SPACE_ID,
+          data: expect.objectContaining({ phrases_synced_count: 4 }),
+        }),
+      ])
+    );
+    expect(deleteDesktopRecord).not.toHaveBeenCalled();
   });
 });

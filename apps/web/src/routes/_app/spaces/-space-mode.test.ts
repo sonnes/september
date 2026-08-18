@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { memoryStorage } from '@/packages/sync/lib/test-storage';
+import { memoryStorage } from '@/test/storage';
 
 import {
   isNotesRouteCanonical,

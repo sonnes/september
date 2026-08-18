@@ -7,11 +7,18 @@
  * https://openrouter.ai/docs/guides/overview/auth/oauth
  */
 
+import { isDesktopRuntime } from '@/packages/shared/lib/data/runtime';
+
 export const OPENROUTER_AUTHORIZE_URL = 'https://openrouter.ai/auth';
 export const OPENROUTER_KEYS_URL = 'https://openrouter.ai/api/v1/auth/keys';
 
 /** sessionStorage key holding the PKCE code_verifier across the redirect. */
 export const VERIFIER_STORAGE_KEY = 'september.openrouter.pkce_verifier';
+
+/** Packaged Tauri origins cannot be registered as OpenRouter callback URLs. */
+export function isOpenRouterOAuthAvailable(): boolean {
+  return !isDesktopRuntime();
+}
 
 function base64UrlEncode(bytes: Uint8Array): string {
   let binary = '';
@@ -85,6 +92,9 @@ export async function exchangeCodeForKey({
  * localhost port). Returns after navigation is triggered.
  */
 export async function startOpenRouterAuth(callbackUrl: string): Promise<void> {
+  if (!isOpenRouterOAuthAvailable()) {
+    throw new Error('OpenRouter redirect authorization is unavailable in the desktop app.');
+  }
   const { verifier, challenge } = await generatePkcePair();
   sessionStorage.setItem(VERIFIER_STORAGE_KEY, verifier);
   window.location.assign(buildAuthorizeUrl({ callbackUrl, challenge }));

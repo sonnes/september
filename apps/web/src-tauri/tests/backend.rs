@@ -2,7 +2,7 @@ use september_desktop_lib::{
     external::validate_external_url,
     files::{export_suggestion, FileStore},
     identity::normalize_os_user,
-    repository::{RecordDelete, RecordPut, RemoteMutation, Repository, SyncOp},
+    repository::{RecordBatchWrite, RecordDelete, RecordPut, Repository},
 };
 use serde_json::json;
 
@@ -31,21 +31,41 @@ fn os_user_uses_the_account_id_and_display_name() {
 fn migrations_create_every_storage_table() {
     let repository = Repository::open_in_memory().unwrap();
 
-    assert_eq!(repository.schema_version().unwrap(), 1);
+    assert_eq!(repository.schema_version().unwrap(), 2);
     assert_eq!(
         repository.table_names().unwrap(),
-        vec![
-            "file_metadata",
-            "outbox",
-            "records",
-            "settings",
-            "sync_metadata",
-        ]
+        vec!["file_metadata", "records", "settings"]
     );
 }
 
 #[test]
-fn record_crud_lists_live_records_and_tracks_outbox() {
+fn version_two_migration_removes_existing_cloud_sync_tables() {
+    let temp = tempfile::tempdir().unwrap();
+    let database = temp.path().join("version-one.sqlite3");
+    let connection = rusqlite::Connection::open(&database).unwrap();
+    connection
+        .execute_batch(include_str!("../migrations/0001_initial.sql"))
+        .unwrap();
+    connection
+        .execute_batch(
+            "CREATE TABLE outbox (outbox_id INTEGER PRIMARY KEY); \
+             CREATE TABLE sync_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL); \
+             PRAGMA user_version = 1;",
+        )
+        .unwrap();
+    drop(connection);
+
+    let repository = Repository::open(database).unwrap();
+
+    assert_eq!(repository.schema_version().unwrap(), 2);
+    assert_eq!(
+        repository.table_names().unwrap(),
+        vec!["file_metadata", "records", "settings"]
+    );
+}
+
+#[test]
+fn record_crud_lists_live_records() {
     let mut repository = Repository::open_in_memory().unwrap();
 
     let created = repository
@@ -69,42 +89,10 @@ fn record_crud_lists_live_records_and_tracks_outbox() {
         Some(json!({ "title": "Home" }))
     );
     assert_eq!(repository.list_records("spaces", false).unwrap().len(), 2);
-
-    let outbox = repository.list_outbox(100).unwrap();
-    assert_eq!(outbox.len(), 2);
-    assert_eq!(outbox[0].op, SyncOp::Upsert);
-    assert_eq!(outbox[0].data, Some(json!({ "title": "Home" })));
-
-    repository.ack_outbox(&[outbox[0].outbox_id]).unwrap();
-    let remaining = repository.list_outbox(100).unwrap();
-    assert_eq!(remaining.len(), 1);
-    assert_eq!(remaining[0].id, "space-2");
 }
 
 #[test]
-fn local_only_collections_never_enter_the_sync_outbox() {
-    let mut repository = Repository::open_in_memory().unwrap();
-
-    repository
-        .put_record(put("audio-file-aliases", "recording/one", "Alias", 10))
-        .unwrap();
-    repository
-        .put_record(put("analytics-events", "event-1", "Usage", 20))
-        .unwrap();
-    repository
-        .delete_record(RecordDelete {
-            collection: "audio-file-aliases".into(),
-            id: "recording/one".into(),
-            version: None,
-            updated_at: 30,
-        })
-        .unwrap();
-
-    assert!(repository.list_outbox(100).unwrap().is_empty());
-}
-
-#[test]
-fn record_delete_keeps_a_tombstone_and_enqueues_it() {
+fn record_delete_keeps_a_tombstone() {
     let mut repository = Repository::open_in_memory().unwrap();
     repository
         .put_record(put("messages", "message-1", "Hello", 10))
@@ -137,84 +125,47 @@ fn record_delete_keeps_a_tombstone_and_enqueues_it() {
         .unwrap()
         .is_empty());
     assert_eq!(repository.list_records("messages", true).unwrap().len(), 1);
-
-    let outbox = repository.list_outbox(100).unwrap();
-    assert_eq!(outbox.last().unwrap().op, SyncOp::Delete);
-    assert_eq!(outbox.last().unwrap().data, None);
 }
 
 #[test]
-fn remote_batch_is_atomic_updates_cursor_and_does_not_echo() {
+fn record_batch_is_atomic() {
     let mut repository = Repository::open_in_memory().unwrap();
-    repository
-        .put_record(put("spaces", "local", "Local", 10))
-        .unwrap();
-    let local_outbox = repository.list_outbox(100).unwrap();
-    repository
-        .ack_outbox(
-            &local_outbox
-                .iter()
-                .map(|entry| entry.outbox_id)
-                .collect::<Vec<_>>(),
-        )
-        .unwrap();
-
-    let invalid_batch = vec![
-        RemoteMutation {
+    let invalid_batch = [
+        RecordBatchWrite::Put {
             collection: "spaces".into(),
-            id: "remote".into(),
-            op: SyncOp::Upsert,
-            data: Some(json!({ "title": "Remote" })),
-            version: Some("remote-1".into()),
-            updated_at: 20,
+            id: "space-1".into(),
+            data: json!({ "title": "Home" }),
+            version: Some("v-10".into()),
+            updated_at: 10,
         },
-        RemoteMutation {
+        RecordBatchWrite::Delete {
             collection: "".into(),
             id: "bad".into(),
-            op: SyncOp::Delete,
-            data: None,
             version: None,
-            updated_at: 21,
+            updated_at: 11,
         },
     ];
 
-    assert!(repository.apply_remote(&invalid_batch, 7).is_err());
+    assert!(repository.write_record_batch(&invalid_batch).is_err());
     assert!(repository
-        .get_record("spaces", "remote", true)
+        .get_record("spaces", "space-1", true)
         .unwrap()
         .is_none());
-    assert_eq!(repository.get_sync_metadata("cloud_cursor").unwrap(), None);
 
-    repository.apply_remote(&invalid_batch[..1], 7).unwrap();
-    assert_eq!(
-        repository.get_sync_metadata("cloud_cursor").unwrap(),
-        Some(json!(7))
-    );
-    assert!(repository
-        .get_record("spaces", "remote", false)
-        .unwrap()
-        .is_some());
-    assert!(repository.list_outbox(100).unwrap().is_empty());
+    repository.write_record_batch(&invalid_batch[..1]).unwrap();
+    assert_eq!(repository.list_records("spaces", false).unwrap().len(), 1);
 }
 
 #[test]
-fn settings_and_sync_metadata_are_json_values() {
+fn settings_are_json_values() {
     let mut repository = Repository::open_in_memory().unwrap();
 
     repository
         .put_setting("speech", &json!({ "rate": 1.2 }))
         .unwrap();
-    repository
-        .put_sync_metadata("profile", &json!({ "userId": "u1" }))
-        .unwrap();
-
     assert_eq!(
         repository.get_setting("speech").unwrap(),
         Some(json!({ "rate": 1.2 }))
-    );
-    assert_eq!(
-        repository.get_sync_metadata("profile").unwrap(),
-        Some(json!({ "userId": "u1" }))
     );
     assert!(repository.delete_setting("speech").unwrap());
     assert_eq!(repository.get_setting("speech").unwrap(), None);

@@ -109,7 +109,7 @@ export default function SettingsForm() {
     return () => subscription.unsubscribe();
   }, [form, save, scheduleSave]);
 
-  // Refresh from external account changes (sync, import) — but never while the
+  // Refresh after imported account changes — but never while the
   // user has unsaved edits in the form.
   useEffect(() => {
     if (account && !form.formState.isDirty) {

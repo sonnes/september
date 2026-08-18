@@ -36,11 +36,6 @@ vi.mock('@/packages/shared/lib/data', () => ({
 }));
 vi.mock('@/packages/shared/lib/indexeddb', () => ({ KVStore }));
 vi.stubGlobal('indexedDB', {});
-vi.mock('@/packages/sync/blob-bridge', () => ({
-  fetchRemoteBlob: vi.fn(async () => null),
-  mirrorBlobDelete: vi.fn(),
-  mirrorBlobPut: vi.fn(),
-}));
 
 async function blobBytes(blob: Blob): Promise<Uint8Array> {
   if (typeof blob.arrayBuffer === 'function') return new Uint8Array(await blob.arrayBuffer());

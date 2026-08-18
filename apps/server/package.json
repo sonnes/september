@@ -11,9 +11,6 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "zod": "^4.0.5"
-  },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.16.20",
     "@cloudflare/workers-types": "^4.20250101.0",

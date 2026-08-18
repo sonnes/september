@@ -1,7 +1,7 @@
 ---
 title: Desktop persistence
 description: The Tauri app keeps records in SQLite and file bytes in regular files behind Rust commands.
-package: shared, sync, audio
+package: shared, audio
 ---
 
 # Desktop persistence
@@ -12,7 +12,9 @@ The desktop app uses the same React routes and components as the web app. A Taur
 
 TanStack Query gives components one data contract. Browser queries read IndexedDB. Desktop queries call typed TypeScript clients that invoke Rust commands.
 
-Rust validates each request and stores records in SQLite. Record writes also create durable outbox entries for cloud-synced collections.
+Rust validates each request and stores records in SQLite. Related writes use a
+batch command when they must succeed or fail together. Space deletion and
+generated-phrase replacement are transactional on desktop.
 
 Rust change events name the affected collections. The shared query provider invalidates only the related query-key prefixes.
 
@@ -26,7 +28,8 @@ Audio features still use stable logical names. An `audio-file-aliases` record ma
 
 Generated exports use a separate Rust command. Rust sanitizes the suggested name and shows a native save dialog without returning the destination path.
 
-Desktop session, profile, and audio-output preferences use Rust settings commands. The browser keeps its existing local storage.
+Desktop route and audio-output preferences use Rust settings commands. The
+browser keeps its existing local storage.
 
 ## Start the desktop app
 
@@ -38,11 +41,15 @@ A new account enters onboarding automatically. A completed account opens the las
 
 The route tracker does not store secondary windows, marketing pages, or OAuth credentials. If no safe route exists, the app opens Spaces.
 
-## Keep the web build unchanged
+## Keep browser storage separate
 
 The browser adapter keeps IndexedDB for records and file blobs. The normal web build also keeps its browser-local AI providers.
 
 The Tauri build replaces WebLLM, Whisper, Transformers, and Kokoro modules with desktop stubs. Remote providers remain available.
+
+OpenRouter uses a pasted API key on desktop. The browser can use OpenRouter's
+redirect authorization flow, but a packaged `tauri://` origin is not a valid
+provider callback.
 
 ## Run the desktop app
 

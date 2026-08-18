@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS outbox;
+DROP TABLE IF EXISTS sync_metadata;

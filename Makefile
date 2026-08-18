@@ -16,8 +16,7 @@ desktop-build:
 server-dev:
 	pnpm -C apps/server dev
 
-# Build the web app and deploy the single Worker (assets + API). Pass the sync env:
-#   make deploy VITE_SYNC_API_URL=https://... VITE_GOOGLE_CLIENT_ID=...
+# Build the web app and deploy the static asset Worker.
 deploy:
 	pnpm -C apps/server deploy
 

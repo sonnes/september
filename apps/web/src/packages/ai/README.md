@@ -24,6 +24,7 @@ import {
   completeOpenRouterAuth,
   getModelsForProvider,
   getProvidersForFeature,
+  isOpenRouterOAuthAvailable,
   startOpenRouterAuth,
   supportsFeature,
   useAISettings,
@@ -76,7 +77,7 @@ const canTranscribe = supportsFeature('gemini', 'transcription');
 Cloud text generation supports **Gemini** and **OpenRouter** (one key → 300+ models:
 Claude, Gemini, GPT, Llama). `webllm` runs locally in the browser. OpenRouter is
 registry-driven like the others, so it appears automatically in the provider settings
-form, and additionally offers a one-click OAuth "Connect" flow (see below).
+form. Web builds also offer a one-click OAuth "Connect" flow (see below).
 
 ### Desktop builds
 
@@ -88,6 +89,10 @@ running.
 Desktop aliases replace the three browser-local runtime modules. This keeps WebLLM,
 Transformers.js, Kokoro, and their model workers out of the packaged bundle. The normal
 web build keeps the complete registry and its lazy-loaded local-model chunks.
+
+OpenRouter redirect OAuth is disabled in desktop builds because OpenRouter does
+not accept a packaged `tauri://` callback. Desktop settings and onboarding open
+the provider's keys page and accept a pasted key instead.
 
 ## Generation
 
@@ -236,7 +241,7 @@ function Recorder() {
 }
 ```
 
-## Connect with OpenRouter (OAuth PKCE)
+## Connect with OpenRouter
 
 `startOpenRouterAuth(callbackUrl)` begins a fully client-side PKCE (S256) flow: it generates
 a verifier, stores it in `sessionStorage`, and redirects to OpenRouter. On return,
@@ -244,7 +249,8 @@ a verifier, stores it in `sessionStorage`, and redirects to OpenRouter. On retur
 caller saves into the local account (`ai_providers.openrouter.api_key`). No September backend or
 server identity is involved. The `ProviderSection` for OpenRouter renders a "Connect" button
 automatically (driven by the registry `oauth` flag); the providers settings page handles the
-returning `?code`.
+returning `?code`. Call `isOpenRouterOAuthAvailable()` before showing this flow.
+It returns `false` in packaged desktop builds, where the user pastes a key.
 
 ```ts
 import { completeOpenRouterAuth, startOpenRouterAuth } from '@/packages/ai';
@@ -263,7 +269,7 @@ await updateAccount({ ai_providers: { ...account.ai_providers, openrouter: { api
 
 ## Text Extraction
 
-`extractText` sends one or more files to Gemini 2.5 Flash and returns markdown-formatted text with `---` chunk separators. Throws `Error('Could not extract text from files')` on failure. Pass the signed-in `userId` to meter the call — it is the largest single generation the app makes.
+`extractText` sends one or more files to Gemini 2.5 Flash and returns markdown-formatted text with `---` chunk separators. Throws `Error('Could not extract text from files')` on failure. Pass the local `userId` to meter the call — it is the largest single generation the app makes.
 
 ```ts
 import { extractText } from '@/packages/ai';
