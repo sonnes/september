@@ -1,14 +1,25 @@
 import type { ReactNode } from 'react';
 
-import { createRootRoute, HeadContent, Link, Outlet, Scripts } from '@tanstack/react-router';
-
-import { Toaster } from '@/packages/ui/components/sonner';
-
-import appCss from '@/styles/globals.css?url';
+import '@fontsource/lexend/latin-700.css';
 import '@fontsource/noto-sans/400.css';
 import '@fontsource/noto-sans/500.css';
 import '@fontsource/noto-sans/700.css';
 import '@fontsource/playfair-display/500.css';
+import { HeadContent, Link, Outlet, Scripts, createRootRoute } from '@tanstack/react-router';
+
+import { Toaster } from '@/packages/ui/components/sonner';
+import appCss from '@/styles/globals.css?url';
+
+const analyticsScript = {
+  src: 'https://cloud.umami.is/script.js',
+  defer: true,
+  'data-website-id': '2d4c0126-840c-4397-9ccb-4d618d7df1ce',
+  crossOrigin: 'anonymous',
+};
+
+export function rootScripts(includeAnalytics = import.meta.env.MODE !== 'tauri') {
+  return includeAnalytics ? [analyticsScript] : [];
+}
 
 function NotFound() {
   return (
@@ -85,19 +96,12 @@ export const Route = createRootRoute({
     links: [
       { rel: 'stylesheet', href: appCss },
       { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
-      { rel: 'icon', href: '/favicon.ico', sizes: 'any' },
+      { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' },
       { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32x32.png' },
       { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/favicon-16x16.png' },
       { rel: 'manifest', href: '/site.webmanifest' },
     ],
-    scripts: [
-      {
-        src: 'https://cloud.umami.is/script.js',
-        defer: true,
-        'data-website-id': '2d4c0126-840c-4397-9ccb-4d618d7df1ce',
-        crossOrigin: 'anonymous',
-      },
-    ],
+    scripts: rootScripts(),
   }),
   notFoundComponent: NotFound,
   component: () => (

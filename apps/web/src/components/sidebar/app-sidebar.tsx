@@ -5,6 +5,7 @@ import * as React from 'react';
 import { Link } from '@tanstack/react-router';
 import { CircleHelp, Home, LifeBuoy, MessageSquare, Mic, Send, Settings2 } from 'lucide-react';
 
+import { BrandMark, BrandWordmark } from '@/components/brand';
 import { NavMain } from '@/components/sidebar/nav-main';
 import { NavProjects } from '@/components/sidebar/nav-projects';
 import { NavSecondary } from '@/components/sidebar/nav-secondary';
@@ -78,19 +79,12 @@ export function AppSidebar(props: AppSidebarProps) {
               asChild
               className="group-data-[collapsible=icon]:justify-center"
             >
-              <Link to="/">
+              <Link to="/" aria-label="September home">
                 <div className="flex aspect-square size-8 items-center justify-center overflow-hidden rounded-lg group-data-[collapsible=icon]:size-6">
-                  <img
-                    src="/logo.png"
-                    alt="September"
-                    className="size-full object-contain"
-                    width={32}
-                    height={32}
-                    loading="lazy"
-                  />
+                  <BrandMark size={32} className="size-full" loading="lazy" />
                 </div>
                 <div className="grid flex-1 text-left text-xl font-bold leading-tight group-data-[collapsible=icon]:hidden">
-                  <span className="truncate">september</span>
+                  <BrandWordmark aria-hidden="true" tone="inverse" className="truncate text-xl" />
                 </div>
               </Link>
             </SidebarMenuButton>

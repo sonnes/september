@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 
 import { Download } from 'lucide-react';
 
+import { saveFile } from '@/packages/shared/lib/data';
 import { Button } from '@/packages/ui/components/button';
 import { Card } from '@/packages/ui/components/card';
 
@@ -49,7 +50,7 @@ export function UsageReport({ userId }: { userId?: string }) {
         variant="outline"
         size="lg"
         disabled={recentCalls.length === 0}
-        onClick={() => downloadCsv(toCsv(recentCalls), timeRange)}
+        onClick={() => void downloadCsv(toCsv(recentCalls), timeRange)}
       >
         <Download className="size-4" />
         Download CSV
@@ -124,10 +125,7 @@ export function UsageReport({ userId }: { userId?: string }) {
       </div>
 
       <Card className="gap-4 rounded-surface p-6">
-        <Section
-          title="By service"
-          description="One row per provider and model actually used."
-        />
+        <Section title="By service" description="One row per provider and model actually used." />
         <ServiceTable
           byModel={spend.by_model}
           totalUsd={spend.total_usd}
@@ -180,7 +178,8 @@ export function UsageReport({ userId }: { userId?: string }) {
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Connect ElevenLabs to see your credit balance here. Speaking on this device stays free.
+              Connect ElevenLabs to see your credit balance here. Speaking on this device stays
+              free.
             </p>
           )}
         </Card>
@@ -237,13 +236,6 @@ function Section({ title, description }: { title: string; description: string })
   );
 }
 
-function downloadCsv(csv: string, timeRange: TimeRange): void {
-  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-  const link = document.createElement('a');
-
-  link.href = url;
-  link.download = `september-usage-${timeRange}.csv`;
-  link.click();
-
-  URL.revokeObjectURL(url);
+async function downloadCsv(csv: string, timeRange: TimeRange): Promise<void> {
+  await saveFile(new Blob([csv], { type: 'text/csv' }), `september-usage-${timeRange}.csv`);
 }

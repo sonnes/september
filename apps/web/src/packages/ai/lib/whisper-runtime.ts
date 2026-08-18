@@ -1,0 +1,1 @@
+export { transcribeLocally } from './whisper';

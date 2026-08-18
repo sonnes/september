@@ -1,18 +1,17 @@
 import { Link } from '@tanstack/react-router';
 
+import { BrandMark, BrandWordmark } from '@/components/brand';
+
 export function MarketingNav() {
   return (
     <nav className="sticky top-0 z-40 w-full border-b border-zinc-200 bg-white/80 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/logo.png" alt="" width={32} height={32} loading="lazy" />
-          <span className="text-base font-semibold text-zinc-900">september</span>
+        <Link to="/" aria-label="September home" className="flex items-center gap-2">
+          <BrandMark size={32} loading="lazy" />
+          <BrandWordmark aria-hidden="true" className="text-base" />
         </Link>
         <div className="flex items-center gap-6 text-sm">
-          <Link
-            to="/"
-            className="text-zinc-600 transition-colors hover:text-zinc-900"
-          >
+          <Link to="/" className="text-zinc-600 transition-colors hover:text-zinc-900">
             Home
           </Link>
           <Link

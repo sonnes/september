@@ -1,8 +1,10 @@
 # @/packages/usage
 
 Client-side metering for the September app. Every outbound provider call is
-recorded to IndexedDB, priced on the way in, and read back by live queries for
-the dashboard and the usage page. Nothing leaves the device.
+priced on the way in and read back through TanStack Query for the dashboard and
+usage page. Browser builds store events in IndexedDB. Desktop builds store them
+in the local-only `analytics-events` SQLite collection through Rust RPC.
+Nothing leaves the device.
 
 ## Public API
 
@@ -62,12 +64,12 @@ recordApiCall(userId, {
 
 Most callers do **not** call this directly:
 
-| Call path | Metered by |
-| --- | --- |
-| Every language-model call | `meteringMiddleware` in `@/packages/ai` |
-| Every text-to-speech call | `meterSpeech` in `@/packages/speech` |
-| On-device transcription | `useTranscribe` (no model call to wrap) |
-| Voice cloning | `cloneVoice` / `findSimilarVoices` in `@/packages/cloning` |
+| Call path                 | Metered by                                                 |
+| ------------------------- | ---------------------------------------------------------- |
+| Every language-model call | `meteringMiddleware` in `@/packages/ai`                    |
+| Every text-to-speech call | `meterSpeech` in `@/packages/speech`                       |
+| On-device transcription   | `useTranscribe` (no model call to wrap)                    |
+| Voice cloning             | `cloneVoice` / `findSimilarVoices` in `@/packages/cloning` |
 
 ### `track(userId, event)`
 
@@ -78,12 +80,12 @@ provider-call events are better reached through `recordApiCall`.
 
 Discriminated union on `type`:
 
-| type | required fields | optional fields |
-|---|---|---|
-| `message_sent` | `text_length` | `space_id`, `keys_typed` (default 0) |
-| `ai_generation` | `input_length`, `output_length`, `latency_ms`, `success` | `generation_type` (default `suggestions`), `provider` (default `gemini`), `model` (default `gemini-2.5-flash-lite`), `input_tokens`, `output_tokens`, `cached_input_tokens`, `audio_seconds`, `cached`, `cost_usd`, `cost_source`, `error_message` |
-| `tts_generation` | `text_length`, `duration_seconds`, `latency_ms`, `success` | `provider` (default `elevenlabs`), `model`, `voice_id`, `credits`, `cost_usd`, `cost_source`, `error_message` |
-| `voice_clone` | `clone_kind`, `sample_count`, `latency_ms`, `success` | `provider` (default `elevenlabs`), `error_message` |
+| type             | required fields                                            | optional fields                                                                                                                                                                                                                                    |
+| ---------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `message_sent`   | `text_length`                                              | `space_id`, `keys_typed` (default 0)                                                                                                                                                                                                               |
+| `ai_generation`  | `input_length`, `output_length`, `latency_ms`, `success`   | `generation_type` (default `suggestions`), `provider` (default `gemini`), `model` (default `gemini-2.5-flash-lite`), `input_tokens`, `output_tokens`, `cached_input_tokens`, `audio_seconds`, `cached`, `cost_usd`, `cost_source`, `error_message` |
+| `tts_generation` | `text_length`, `duration_seconds`, `latency_ms`, `success` | `provider` (default `elevenlabs`), `model`, `voice_id`, `credits`, `cost_usd`, `cost_source`, `error_message`                                                                                                                                      |
+| `voice_clone`    | `clone_kind`, `sample_count`, `latency_ms`, `success`      | `provider` (default `elevenlabs`), `error_message`                                                                                                                                                                                                 |
 
 `generation_type` is one of `suggestions`, `transcription`, `summary`,
 `extraction`, `phrases`, `context`.
@@ -92,13 +94,13 @@ Discriminated union on `type`:
 
 Providers bill in different shapes, so a cost carries its `CostSource`:
 
-| Source | Means | Comes from |
-|---|---|---|
-| `measured` | The provider reported this exact charge | OpenRouter usage accounting |
-| `estimated` | Tokens × our price table | Gemini |
-| `quota` | Prepaid credits, no per-call price | ElevenLabs |
-| `free` | Ran on this device, or a `:free` model | Kokoro, Whisper, WebLLM, browser TTS |
-| `unknown` | No price on file — counted, never guessed | Any unlisted model |
+| Source      | Means                                     | Comes from                           |
+| ----------- | ----------------------------------------- | ------------------------------------ |
+| `measured`  | The provider reported this exact charge   | OpenRouter usage accounting          |
+| `estimated` | Tokens × our price table                  | Gemini                               |
+| `quota`     | Prepaid credits, no per-call price        | ElevenLabs                           |
+| `free`      | Ran on this device, or a `:free` model    | Kokoro, Whisper, WebLLM, browser TTS |
+| `unknown`   | No price on file — counted, never guessed | Any unlisted model                   |
 
 `formatCost` renders `unknown`/`quota` as `—`, and keeps sub-cent amounts
 visible (`$0.00006`) so a fraction of a cent never reads as free. Only `measured`
@@ -133,6 +135,9 @@ card leads with money, keeps tokens as its supporting line, and shows prepaid
 voice credits as their own meter. `UsageReport` adds the per-service table,
 per-feature bars, the ElevenLabs plan, the recent-call log and a CSV export.
 
+The browser downloads the CSV through an anchor. The desktop build sends the
+CSV bytes to Rust and shows a native save dialog.
+
 ## Stored-data model
 
 Events are stored in IndexedDB with this shape (backwards-compatible; do not
@@ -142,12 +147,15 @@ change without a migration):
 { id: uuid, user_id: string, event_type: string, timestamp: Date, data: {...} }
 ```
 
-- **Database:** `analytics`
+- **Browser database:** `analytics`
 - **Store:** `analytics_events`
 - **Version:** 1
 - **Collection id:** `analytics-events`
 - **BroadcastChannel:** `analytics-collection`
 - **Query indexes:** `timestamp`, `user_id`
+
+Desktop builds store the same event object as a JSON record. Analytics is not
+in the Rust sync allowlist, so these rows never enter the cloud-sync outbox.
 
 Cost fields were added in July 2026 as optional fields with permissive defaults,
 so events written before then still parse — they report `cost_source: 'unknown'`

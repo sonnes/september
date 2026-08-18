@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { Route } from './__root';
+import { Route, rootScripts } from './__root';
 import { Route as OgImageRoute } from './og[.]png';
 
 function metaByProperty(property: string) {
@@ -12,6 +12,21 @@ function metaByName(name: string) {
 }
 
 describe('root SEO metadata', () => {
+  it('publishes the vector keycap as the scalable browser icon', () => {
+    expect(Route.options.head().links).toContainEqual({
+      rel: 'icon',
+      type: 'image/svg+xml',
+      href: '/logo.svg',
+    });
+  });
+
+  it('keeps web analytics out of the desktop document', () => {
+    expect(rootScripts(false)).toEqual([]);
+    expect(rootScripts(true)).toEqual([
+      expect.objectContaining({ src: 'https://cloud.umami.is/script.js' }),
+    ]);
+  });
+
   it('publishes one large social image for Open Graph and Twitter', () => {
     expect(metaByProperty('og:image')?.content).toBe('https://september.to/og.png');
     expect(metaByProperty('og:image:width')?.content).toBe('1200');

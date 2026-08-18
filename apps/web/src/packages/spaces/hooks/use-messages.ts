@@ -1,10 +1,15 @@
 import { useMemo } from 'react';
 
-import { eq, ilike } from '@tanstack/db';
-import { useLiveQuery } from '@tanstack/react-db';
+import { useRecordListQuery } from '@/packages/shared/lib/data';
 
 import { messageCollection } from '../db';
-import { Message } from '../types';
+import { type Message, MessageSchema } from '../types';
+
+export interface UseMessagesReturn {
+  messages: Message[];
+  isLoading: boolean;
+  error?: { message: string };
+}
 
 export function useMessages({
   spaceId,
@@ -14,58 +19,42 @@ export function useMessages({
   spaceId?: string;
   searchQuery?: string;
   limit?: number;
-} = {}) {
-  const {
-    data: messages,
-    isLoading,
-    isError,
-    status,
-  } = useLiveQuery(
-    q => {
-      let query = q.from({ items: messageCollection });
-      if (spaceId) {
-        query = query.where(({ items }) => eq(items.space_id, spaceId));
-      }
-      if (searchQuery && searchQuery.length > 0) {
-        query = query.where(({ items }) => ilike(items.text, `%${searchQuery}%`));
-      }
-      return query.orderBy(({ items }) => items.created_at, 'asc').limit(limit);
-    },
-    [spaceId, searchQuery]
+} = {}): UseMessagesReturn {
+  const { data, isLoading, error } = useRecordListQuery(
+    'messages',
+    messageCollection,
+    MessageSchema
   );
-
-  const error = useMemo(
-    () => (isError ? { message: `Database error: ${status}` } : undefined),
-    [isError, status]
-  );
+  const messages = useMemo(() => {
+    const search = searchQuery?.toLowerCase();
+    return data
+      .filter(
+        message =>
+          (!spaceId || message.space_id === spaceId) &&
+          (!search || message.text.toLowerCase().includes(search))
+      )
+      .sort((a, b) => a.created_at.getTime() - b.created_at.getTime())
+      .slice(0, limit);
+  }, [data, limit, searchQuery, spaceId]);
 
   return {
-    messages: (messages || []) as Message[],
+    messages,
     isLoading,
     error,
   };
 }
 
-export function useFirstMessage(spaceId?: string) {
-  const {
-    data: message,
-    isLoading,
-    isError,
-    status,
-  } = useLiveQuery(
-    q => {
-      const query = q
-        .from({ items: messageCollection })
-        .where(({ items }) => eq(items.space_id, spaceId))
-        .orderBy(({ items }) => items.created_at, 'asc')
-        .limit(1);
-      return query;
-    },
-    [spaceId]
-  );
+export interface UseFirstMessageReturn {
+  message: Message | undefined;
+  isLoading: boolean;
+  error?: { message: string };
+}
+
+export function useFirstMessage(spaceId?: string): UseFirstMessageReturn {
+  const { messages, isLoading, error } = useMessages({ spaceId, limit: 1 });
   return {
-    message: message?.[0],
+    message: spaceId ? messages[0] : undefined,
     isLoading,
-    error: isError ? { message: `Database error: ${status}` } : undefined,
+    error,
   };
 }

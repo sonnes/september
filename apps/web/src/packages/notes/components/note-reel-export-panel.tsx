@@ -1,12 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { Download, Loader2, Play } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useAISettings } from '@/packages/ai';
 import { type Alignment, ReelTextViewer } from '@/packages/audio';
+import { saveFile } from '@/packages/shared/lib/data';
 import { useSpeech } from '@/packages/speech';
 import { Button } from '@/packages/ui/components/button';
 import { Callout } from '@/packages/ui/components/callout';
@@ -20,7 +21,7 @@ import {
   wordsToReelCaptions,
 } from '../lib/reel';
 import { renderNoteReelVideoWithWasm } from '../lib/reel-renderer.browser';
-import { DEFAULT_PAIR_KEY, REEL_PAIRS, reelPair, type ReelPairKey } from '../lib/reel-theme';
+import { DEFAULT_PAIR_KEY, REEL_PAIRS, type ReelPairKey, reelPair } from '../lib/reel-theme';
 import type { Note } from '../types';
 import { NoteReelStoryPlayer } from './note-reel-story-player';
 
@@ -68,7 +69,7 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
   const { generateSpeech } = useSpeech();
   const { speechConfig } = useAISettings();
   const [status, setStatus] = useState<ExportStatus>('idle');
-  const [downloadHref, setDownloadHref] = useState<string | null>(null);
+  const [exportedVideo, setExportedVideo] = useState<Blob | null>(null);
   const [preview, setPreview] = useState<{ alignment: Alignment; duration: number } | null>(null);
   const [showPlayer, setShowPlayer] = useState(false);
   const [pairKey, setPairKey] = useState<ReelPairKey>(DEFAULT_PAIR_KEY);
@@ -80,13 +81,10 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
     () => voiceText || markdownToVoiceText(note?.content ?? ''),
     [voiceText, note?.content]
   );
-  const wordCount = useMemo(() => (previewText ? previewText.split(/\s+/).length : 0), [previewText]);
-
-  useEffect(() => {
-    return () => {
-      if (downloadHref) URL.revokeObjectURL(downloadHref);
-    };
-  }, [downloadHref]);
+  const wordCount = useMemo(
+    () => (previewText ? previewText.split(/\s+/).length : 0),
+    [previewText]
+  );
 
   const handleExport = useCallback(async () => {
     if (!note || !voiceText.trim()) return;
@@ -102,8 +100,7 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
       return;
     }
 
-    if (downloadHref) URL.revokeObjectURL(downloadHref);
-    setDownloadHref(null);
+    setExportedVideo(null);
 
     try {
       setStatus('generating-audio');
@@ -132,14 +129,23 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
         pairKey,
       });
 
-      setDownloadHref(URL.createObjectURL(result.blob));
+      setExportedVideo(result.blob);
       setStatus('complete');
       toast.success('Reel ready');
     } catch (err) {
       setStatus('idle');
       toast.error(err instanceof Error ? err.message : 'Failed to export reel');
     }
-  }, [downloadHref, generateSpeech, note, pairKey, requiresTimedVoice, voiceText]);
+  }, [generateSpeech, note, pairKey, requiresTimedVoice, voiceText]);
+
+  const handleDownload = useCallback(async () => {
+    if (!exportedVideo) return;
+    try {
+      await saveFile(exportedVideo, fileName);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to save reel');
+    }
+  }, [exportedVideo, fileName]);
 
   return (
     <section id={id} aria-label="Reel export" className="mt-3 border-t pt-3">
@@ -224,12 +230,10 @@ export function NoteReelExportPanel({ id, note, voiceText }: NoteReelExportPanel
           Play
         </Button>
 
-        {downloadHref && status === 'complete' ? (
-          <Button asChild size="lg">
-            <a href={downloadHref} download={fileName}>
-              <Download className="size-4" aria-hidden />
-              Download MP4
-            </a>
+        {exportedVideo && status === 'complete' ? (
+          <Button type="button" size="lg" onClick={handleDownload}>
+            <Download className="size-4" aria-hidden />
+            Download MP4
           </Button>
         ) : (
           <Button

@@ -5,8 +5,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { noteContentUpdates } from '../lib/title';
-import { updateNote } from '../mutations';
+import type { UpdateNoteData } from '../types';
 import { useNote } from './use-note';
+import { useUpdateNoteMutation } from './use-note-mutations';
 
 export interface UseNoteEditorOptions {
   noteId: string;
@@ -43,6 +44,11 @@ export function useNoteEditor({
   autoSaveDelayMs = 600,
 }: UseNoteEditorOptions): UseNoteEditorReturn {
   const { note, isLoading } = useNote(noteId);
+  const { mutateAsync: mutateNote } = useUpdateNoteMutation();
+  const updateNote = useCallback(
+    (id: string, updates: UpdateNoteData) => mutateNote({ id, updates }),
+    [mutateNote]
+  );
 
   const [content, setContent] = useState('');
   const [isDirty, setIsDirty] = useState(false);
@@ -95,7 +101,7 @@ export function useNoteEditor({
     } finally {
       setIsSaving(false);
     }
-  }, [note, content]);
+  }, [note, content, updateNote]);
 
   useEffect(() => {
     if (!autoSave || !note?.id || !isDirty) return;
@@ -120,7 +126,7 @@ export function useNoteEditor({
     }, autoSaveDelayMs);
 
     return () => window.clearTimeout(timeout);
-  }, [autoSave, autoSaveDelayMs, content, note?.id, note?.name, isDirty]);
+  }, [autoSave, autoSaveDelayMs, content, note?.id, note?.name, isDirty, updateNote]);
 
   useEffect(() => {
     const currentNoteId = note?.id;
@@ -129,7 +135,7 @@ export function useNoteEditor({
       if (!autoSave || !currentNoteId || !isDirtyRef.current) return;
       void updateNote(currentNoteId, noteContentUpdates(currentNoteName, contentRef.current));
     };
-  }, [autoSave, note?.id, note?.name]);
+  }, [autoSave, note?.id, note?.name, updateNote]);
 
   const handleUploadFile = useCallback(() => {
     setIsUploadDialogOpen(true);
@@ -152,7 +158,7 @@ export function useNoteEditor({
         toast.error(err instanceof Error ? err.message : 'Failed to append extracted text');
       }
     },
-    [note]
+    [note, updateNote]
   );
 
   return {

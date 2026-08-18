@@ -1,10 +1,14 @@
 import { useMemo } from 'react';
 
-import { and, eq, gte, lte } from '@tanstack/db';
-import { useLiveQuery } from '@tanstack/react-db';
+import { useRecordListQuery } from '@/packages/shared/lib/data';
 
 import { CostSource } from './lib/pricing';
-import { AnalyticsEvent, GenerationFeature, analyticsCollection } from './store';
+import {
+  type AnalyticsEvent,
+  AnalyticsEventSchema,
+  type GenerationFeature,
+  analyticsCollection,
+} from './store';
 
 // ---------------------------------------------------------------------------
 // Time range utilities
@@ -205,8 +209,7 @@ function addTo(buckets: Record<string, SpendBucket>, key: string, units: CallUni
   // An unmetered call must not drag a provider's source down: one voice clone
   // should not make a whole ElevenLabs quota read as "no price".
   if (units.source) {
-    bucket.source =
-      bucket.priced_calls === 0 ? units.source : weakest(bucket.source, units.source);
+    bucket.source = bucket.priced_calls === 0 ? units.source : weakest(bucket.source, units.source);
     bucket.priced_calls++;
   }
   bucket.input_tokens += units.input_tokens ?? 0;
@@ -420,32 +423,23 @@ export function useEventsInRange({
     [timeRange]
   );
 
-  const {
-    data: events,
-    isLoading,
-    isError,
-    status,
-  } = useLiveQuery(
-    q => {
-      let query = q.from({ items: analyticsCollection });
-      query = query.where(({ items }) =>
-        and(
-          gte(items.timestamp, startDate),
-          lte(items.timestamp, endDate),
-          userId ? eq(items.user_id, userId) : undefined
-        )
-      ) as typeof query;
-      return query;
-    },
-    [userId, startDate, endDate]
+  const { data, isLoading, error } = useRecordListQuery(
+    'analytics-events',
+    analyticsCollection,
+    AnalyticsEventSchema
+  );
+  const events = useMemo(
+    () =>
+      data.filter(
+        event =>
+          event.timestamp >= startDate &&
+          event.timestamp <= endDate &&
+          (!userId || event.user_id === userId)
+      ),
+    [data, endDate, startDate, userId]
   );
 
-  const error = useMemo(
-    () => (isError ? { message: `Database error: ${status}` } : undefined),
-    [isError, status]
-  );
-
-  return { events: (events ?? []) as AnalyticsEvent[], startDate, endDate, isLoading, error };
+  return { events, startDate, endDate, isLoading, error };
 }
 
 export function useAnalyticsSummary({

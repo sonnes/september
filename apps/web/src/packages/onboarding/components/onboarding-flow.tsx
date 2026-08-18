@@ -2,6 +2,8 @@
 
 import { Check } from 'lucide-react';
 
+import { BrandMark, BrandWordmark } from '@/components/brand';
+
 import { ONBOARDING_PRIMARY_COPY, ONBOARDING_STEPS } from '../lib/onboarding-content';
 import { useOnboarding } from './onboarding-provider';
 import { AdvancedFinishStep } from './steps/finish-advanced';
@@ -38,9 +40,9 @@ export function OnboardingFlow() {
     <div className="min-h-dvh bg-zinc-100 px-4 py-6 sm:py-10">
       <div className="mx-auto w-full max-w-4xl">
         <header className="rounded-xl bg-primary p-6 text-primary-foreground sm:p-8">
-          <div className="flex items-center gap-2 font-bold">
-            <img src="/logo.png" alt="September Logo" width={40} height={40} className="h-10 w-10" />
-            <span className="text-xl">september</span>
+          <div className="flex items-center gap-2">
+            <BrandMark size={40} className="size-10" />
+            <BrandWordmark tone="inverse" className="text-xl" />
           </div>
           <h1 className="mt-6 text-3xl font-bold leading-tight tracking-normal sm:text-4xl">
             {ONBOARDING_PRIMARY_COPY.sidebar.title}
@@ -59,10 +61,7 @@ export function OnboardingFlow() {
                 const isClickable = isCompleted || isCurrent;
                 const isLast = i === ONBOARDING_STEPS.length - 1;
                 return (
-                  <li
-                    key={step.label}
-                    className={`flex items-center ${isLast ? '' : 'flex-1'}`}
-                  >
+                  <li key={step.label} className={`flex items-center ${isLast ? '' : 'flex-1'}`}>
                     <button
                       type="button"
                       disabled={!isClickable}

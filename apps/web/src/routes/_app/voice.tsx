@@ -6,9 +6,22 @@ import { createFileRoute } from '@tanstack/react-router';
 import { ChevronLeft, ChevronRight, Mic, Play, Plus, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { PageHeader, PageShell, PageTitle } from '@/components/layout';
+import { featureProviderOptions, poweredByNote } from '@/components/settings/feature-providers';
+import {
+  LabeledSlider,
+  MoreOptions,
+  OptionField,
+  PoweredByLine,
+  SavedIndicator,
+} from '@/components/settings/feature-section';
+import { useAutosave } from '@/components/settings/use-autosave';
+import SidebarLayout from '@/components/sidebar/layout';
+
+import { pageTitle } from '@/lib/seo';
 import { useAccount } from '@/packages/account';
 import { useAISettings } from '@/packages/ai';
-import { useAudioPlayer, type Audio } from '@/packages/audio';
+import { type Audio, useAudioPlayer } from '@/packages/audio';
 import { VoiceCloneForm } from '@/packages/cloning';
 import { inferSetupMode } from '@/packages/onboarding';
 import type { AIProvider, SpeechConfig, Voice } from '@/packages/shared';
@@ -42,20 +55,6 @@ import {
   SheetTrigger,
 } from '@/packages/ui/components/sheet';
 import { Spinner } from '@/packages/ui/components/spinner';
-
-import { PageHeader, PageShell, PageTitle } from '@/components/layout';
-import {
-  LabeledSlider,
-  MoreOptions,
-  OptionField,
-  PoweredByLine,
-  SavedIndicator,
-} from '@/components/settings/feature-section';
-import { featureProviderOptions, poweredByNote } from '@/components/settings/feature-providers';
-import { useAutosave } from '@/components/settings/use-autosave';
-import SidebarLayout from '@/components/sidebar/layout';
-
-import { pageTitle } from '@/lib/seo';
 
 type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs' | 'kokoro';
 
@@ -105,7 +104,7 @@ function VoicePage() {
 
 function VoicePicker() {
   const { account } = useAccount();
-  const { updateSpeechConfig } = useAISettings();
+  const { speechConfig: speech, updateSpeechConfig } = useAISettings();
   const { generateSpeech } = useSpeech();
   const { enqueue } = useAudioPlayer();
   const { status, save } = useAutosave<Partial<SpeechConfig>>(updateSpeechConfig);
@@ -115,7 +114,6 @@ function VoicePicker() {
   const [page, setPage] = useState(1);
   const [cloneOpen, setCloneOpen] = useState(false);
 
-  const speech = account?.ai_speech;
   const provider = (speech?.provider ?? 'browser') as SpeechEngineId;
   const apiKey = account?.ai_providers?.[provider as keyof typeof account.ai_providers]?.api_key;
   const { voices, isLoading: isLoadingVoices, refetch } = useVoiceFetching(provider, apiKey);
@@ -264,7 +262,8 @@ function VoicePicker() {
             <SheetHeader>
               <SheetTitle>Clone your voice</SheetTitle>
               <SheetDescription>
-                Record or upload samples to create a personal voice. It appears here once it's ready.
+                Record or upload samples to create a personal voice. It appears here once it's
+                ready.
               </SheetDescription>
             </SheetHeader>
             <div className="px-4">

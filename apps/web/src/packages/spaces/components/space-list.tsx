@@ -19,7 +19,7 @@ import {
 import { Button } from '@/packages/ui/components/button';
 import { Input } from '@/packages/ui/components/input';
 
-import { deleteSpace } from '../mutations';
+import { useDeleteSpaceMutation } from '../hooks/use-space-mutations';
 import { Space } from '../types';
 
 type SpaceListEmptyStateProps = ComponentProps<'div'> & {
@@ -77,12 +77,13 @@ export function SpaceList({
   const displayText = count !== undefined ? `${count} ${label}` : undefined;
   const [spaceToDelete, setSpaceToDelete] = React.useState<Space | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const deleteSpace = useDeleteSpaceMutation();
 
   const handleDelete = async () => {
     if (!spaceToDelete) return;
     setIsDeleting(true);
     try {
-      await deleteSpace(spaceToDelete.id);
+      await deleteSpace.mutateAsync(spaceToDelete.id);
       toast.success('Space deleted');
       setSpaceToDelete(null);
     } catch (error) {

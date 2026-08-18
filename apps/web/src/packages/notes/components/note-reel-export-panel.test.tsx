@@ -13,6 +13,7 @@ import { NoteReelExportPanel } from './note-reel-export-panel';
 const mocks = vi.hoisted(() => ({
   generateSpeech: vi.fn(),
   renderWasmReel: vi.fn(),
+  saveFile: vi.fn(),
   speechConfig: { provider: 'elevenlabs' },
 }));
 
@@ -31,6 +32,8 @@ vi.mock('../lib/reel-renderer.browser', () => ({
 vi.mock('@/packages/audio', () => ({
   ReelTextViewer: ({ text }: { text: string }) => <div data-testid="reel-preview">{text}</div>,
 }));
+
+vi.mock('@/packages/shared/lib/data', () => ({ saveFile: mocks.saveFile }));
 
 vi.mock('./note-reel-story-player', () => ({
   NoteReelStoryPlayer: ({ voiceText, pairKey }: { voiceText: string; pairKey?: string }) => (
@@ -76,6 +79,7 @@ let root: Root;
 beforeEach(() => {
   mocks.generateSpeech.mockReset();
   mocks.renderWasmReel.mockReset();
+  mocks.saveFile.mockReset().mockResolvedValue(true);
   mocks.speechConfig.provider = 'elevenlabs';
   container = document.createElement('div');
   document.body.appendChild(container);
@@ -130,7 +134,14 @@ describe('NoteReelExportPanel', () => {
         },
       ],
     });
-    expect(document.body.querySelector('a[download="daily-note-reel.mp4"]')).toBeTruthy();
+    await act(async () => {
+      const downloadButton = [...document.body.querySelectorAll('button')].find(
+        button => button.textContent === 'Download MP4'
+      ) as HTMLButtonElement;
+      downloadButton.click();
+      await Promise.resolve();
+    });
+    expect(mocks.saveFile).toHaveBeenCalledWith(expect.any(Blob), 'daily-note-reel.mp4');
   });
 
   it('renders six colour swatches and passes the chosen pair to export and player', async () => {
@@ -145,7 +156,9 @@ describe('NoteReelExportPanel', () => {
     const swatches = [...document.body.querySelectorAll('[role="radio"]')];
     expect(swatches).toHaveLength(6);
 
-    const emerald = swatches.find(el => el.getAttribute('aria-label') === 'Emerald') as HTMLButtonElement;
+    const emerald = swatches.find(
+      el => el.getAttribute('aria-label') === 'Emerald'
+    ) as HTMLButtonElement;
     act(() => emerald.click());
     expect(emerald.getAttribute('aria-checked')).toBe('true');
 

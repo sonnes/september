@@ -1,12 +1,27 @@
 import { v4 as uuidv4 } from 'uuid';
 
 import { deleteNotesForSpace } from '@/packages/notes';
+import {
+  deleteDesktopRecord,
+  getDesktopRecord,
+  isDesktopRuntime,
+  listDesktopRecords,
+  putDesktopRecord,
+} from '@/packages/shared/lib/data';
 import { track } from '@/packages/usage';
 
 import { messageCollection, savedPhraseCollection, spaceCollection } from './db';
 import { generateCode, normalizeCode } from './lib/codes';
 import { dedupeAgainstPinned, rowKind } from './lib/phrases';
-import type { CreateMessageData, Message, SavedPhrase, Space } from './types';
+import {
+  type CreateMessageData,
+  type Message,
+  MessageSchema,
+  type SavedPhrase,
+  SavedPhraseSchema,
+  type Space,
+  SpaceSchema,
+} from './types';
 
 export const DEFAULT_SPACE_TITLE = 'General';
 // The coded rows are the starter pack — discoverable day one, all pinned so
@@ -26,6 +41,23 @@ export const DEFAULT_SPACE_SEED = {
   ],
 } as const;
 
+async function desktopSpace(id: string): Promise<Space> {
+  const value = await getDesktopRecord('spaces', id);
+  if (!value) throw new Error(`Space not found: ${id}`);
+  return SpaceSchema.parse(value);
+}
+
+async function savedPhrases(): Promise<SavedPhrase[]> {
+  if (!isDesktopRuntime()) return savedPhraseCollection.toArray as SavedPhrase[];
+  return (await listDesktopRecords('saved-phrases')).map(value => SavedPhraseSchema.parse(value));
+}
+
+async function desktopPhrase(id: string): Promise<SavedPhrase> {
+  const value = await getDesktopRecord('saved-phrases', id);
+  if (!value) throw new Error(`Saved phrase not found: ${id}`);
+  return SavedPhraseSchema.parse(value);
+}
+
 /**
  * Insert a new space and await persistence.
  * Throws on failure — toast lives at the call site.
@@ -39,6 +71,10 @@ export async function createSpace(userId: string, title = DEFAULT_SPACE_TITLE): 
     created_at: now,
     updated_at: now,
   };
+  if (isDesktopRuntime()) {
+    await putDesktopRecord('spaces', space.id, space, space.updated_at.getTime());
+    return space;
+  }
   const tx = spaceCollection.insert(space);
   await tx.isPersisted.promise;
   return space;
@@ -51,6 +87,23 @@ export async function createSpace(userId: string, title = DEFAULT_SPACE_TITLE): 
 export async function createDefaultSpace(userId: string): Promise<Space> {
   const space = await createSpace(userId, DEFAULT_SPACE_SEED.title);
   const now = new Date();
+  if (isDesktopRuntime()) {
+    await Promise.all(
+      DEFAULT_SPACE_SEED.phrases.map((phrase, index) => {
+        const stored: SavedPhrase = {
+          id: uuidv4(),
+          space_id: space.id,
+          user_id: userId,
+          text: phrase.text,
+          pinned: phrase.pinned,
+          ...('code' in phrase ? { code: phrase.code } : {}),
+          created_at: new Date(now.getTime() + index),
+        };
+        return putDesktopRecord('saved-phrases', stored.id, stored, stored.created_at.getTime());
+      })
+    );
+    return space;
+  }
   const phraseTxs = DEFAULT_SPACE_SEED.phrases.map((phrase, index) =>
     savedPhraseCollection.insert({
       id: uuidv4(),
@@ -72,6 +125,15 @@ export async function createDefaultSpace(userId: string): Promise<Space> {
  * Throws on failure — toast lives at the call site.
  */
 export async function updateSpace(id: string, updates: Partial<Space>): Promise<void> {
+  if (isDesktopRuntime()) {
+    const next = SpaceSchema.parse({
+      ...(await desktopSpace(id)),
+      ...updates,
+      updated_at: new Date(),
+    });
+    await putDesktopRecord('spaces', id, next, next.updated_at.getTime());
+    return;
+  }
   const tx = spaceCollection.update(id, draft => {
     Object.assign(draft, { ...updates, updated_at: new Date() });
   });
@@ -83,6 +145,23 @@ export async function updateSpace(id: string, updates: Partial<Space>): Promise<
  * then await persistence. Throws on failure — toast lives at the call site.
  */
 export async function deleteSpace(id: string): Promise<void> {
+  if (isDesktopRuntime()) {
+    const messages = (await listDesktopRecords('messages')).map(value =>
+      MessageSchema.parse(value)
+    );
+    const phrases = await savedPhrases();
+    await Promise.all([
+      ...messages
+        .filter(message => message.space_id === id)
+        .map(message => deleteDesktopRecord('messages', message.id)),
+      ...phrases
+        .filter(phrase => phrase.space_id === id)
+        .map(phrase => deleteDesktopRecord('saved-phrases', phrase.id)),
+      deleteNotesForSpace(id),
+      deleteDesktopRecord('spaces', id),
+    ]);
+    return;
+  }
   // Collect message + phrase ids from loaded state before deletion
   const messageIds = messageCollection.toArray.filter(m => m.space_id === id).map(m => m.id);
   const phraseIds = savedPhraseCollection.toArray.filter(p => p.space_id === id).map(p => p.id);
@@ -113,14 +192,23 @@ export async function createMessage(data: CreateMessageData): Promise<Message> {
     created_at: data.created_at ?? now,
   };
 
-  const tx = messageCollection.insert(message);
-  await tx.isPersisted.promise;
+  if (isDesktopRuntime()) {
+    await putDesktopRecord('messages', message.id, message, message.created_at.getTime());
+  } else {
+    const tx = messageCollection.insert(message);
+    await tx.isPersisted.promise;
+  }
 
   if (data.space_id) {
-    const spaceTx = spaceCollection.update(data.space_id, draft => {
-      draft.updated_at = now;
-    });
-    await spaceTx.isPersisted.promise;
+    if (isDesktopRuntime()) {
+      const space = await desktopSpace(data.space_id);
+      await putDesktopRecord('spaces', space.id, { ...space, updated_at: now }, now.getTime());
+    } else {
+      const spaceTx = spaceCollection.update(data.space_id, draft => {
+        draft.updated_at = now;
+      });
+      await spaceTx.isPersisted.promise;
+    }
   }
 
   track(data.user_id, {
@@ -155,12 +243,20 @@ export async function addManualPhrase(
   const key = trimmed.toLowerCase();
   const code = options.code ? normalizeCode(options.code) : undefined;
 
-  const existing = savedPhraseCollection.toArray.find(
+  const existing = (await savedPhrases()).find(
     p => p.space_id === spaceId && p.text.trim().toLowerCase() === key
   );
 
   if (existing) {
     if (!existing.pinned || (code && existing.code !== code)) {
+      if (isDesktopRuntime()) {
+        await putDesktopRecord('saved-phrases', existing.id, {
+          ...existing,
+          pinned: true,
+          ...(code ? { code } : {}),
+        });
+        return;
+      }
       const tx = savedPhraseCollection.update(existing.id, draft => {
         draft.pinned = true;
         if (code) draft.code = code;
@@ -170,7 +266,7 @@ export async function addManualPhrase(
     return;
   }
 
-  const tx = savedPhraseCollection.insert({
+  const phrase: SavedPhrase = {
     id: uuidv4(),
     space_id: spaceId,
     user_id: userId,
@@ -179,18 +275,32 @@ export async function addManualPhrase(
     ...(code ? { code } : {}),
     ...(options.kind ? { kind: options.kind } : {}),
     created_at: new Date(),
-  });
+  };
+  if (isDesktopRuntime()) {
+    await putDesktopRecord('saved-phrases', phrase.id, phrase, phrase.created_at.getTime());
+    return;
+  }
+  const tx = savedPhraseCollection.insert(phrase);
   await tx.isPersisted.promise;
 }
 
 /** Delete a saved phrase by id. */
 export async function removePhrase(phraseId: string): Promise<void> {
+  if (isDesktopRuntime()) {
+    await deleteDesktopRecord('saved-phrases', phraseId);
+    return;
+  }
   const tx = savedPhraseCollection.delete(phraseId);
   await tx.isPersisted.promise;
 }
 
 /** Toggle a phrase's pinned flag. Unpinning makes it regenerable again. */
 export async function setPhrasePinned(phraseId: string, pinned: boolean): Promise<void> {
+  if (isDesktopRuntime()) {
+    const phrase = await desktopPhrase(phraseId);
+    await putDesktopRecord('saved-phrases', phraseId, { ...phrase, pinned });
+    return;
+  }
   const tx = savedPhraseCollection.update(phraseId, draft => {
     draft.pinned = pinned;
   });
@@ -204,6 +314,15 @@ export async function setPhrasePinned(phraseId: string, pinned: boolean): Promis
  */
 export async function setPhraseCode(phraseId: string, code: string | undefined): Promise<void> {
   const normalized = code ? normalizeCode(code) : undefined;
+  if (isDesktopRuntime()) {
+    const phrase = await desktopPhrase(phraseId);
+    await putDesktopRecord('saved-phrases', phraseId, {
+      ...phrase,
+      code: normalized,
+      pinned: normalized ? true : phrase.pinned,
+    });
+    return;
+  }
   const tx = savedPhraseCollection.update(phraseId, draft => {
     draft.code = normalized;
     if (normalized) draft.pinned = true;
@@ -229,7 +348,7 @@ export async function replaceAiPhrases(
   ai: { phrases: string[]; starters: string[] },
   syncedCount: number
 ): Promise<void> {
-  const all = savedPhraseCollection.toArray as SavedPhrase[];
+  const all = await savedPhrases();
   const rows = all.filter(p => p.space_id === spaceId);
   const pinnedTextsOf = (kind: 'phrase' | 'starter') =>
     rows.filter(p => p.pinned && rowKind(p) === kind).map(p => p.text);
@@ -239,11 +358,42 @@ export async function replaceAiPhrases(
   const freshStarters = dedupeAgainstPinned(pinnedTextsOf('starter'), ai.starters);
 
   // Codes surviving this write: every coded row except the AI rows replaced here.
-  const existingCodes = all
-    .filter(p => p.code && !oldAiIds.has(p.id))
-    .map(p => p.code as string);
+  const existingCodes = all.filter(p => p.code && !oldAiIds.has(p.id)).map(p => p.code as string);
 
   const now = new Date();
+  if (isDesktopRuntime()) {
+    await Promise.all([...oldAiIds].map(id => deleteDesktopRecord('saved-phrases', id)));
+    const newRows: SavedPhrase[] = [
+      ...freshPhrases.map(text => {
+        const code = generateCode(text, { existingCodes });
+        if (code) existingCodes.push(code);
+        return {
+          id: uuidv4(),
+          space_id: spaceId,
+          user_id: userId,
+          text,
+          pinned: false,
+          ...(code ? { code } : {}),
+          created_at: now,
+        };
+      }),
+      ...freshStarters.map(text => ({
+        id: uuidv4(),
+        space_id: spaceId,
+        user_id: userId,
+        text,
+        pinned: false,
+        kind: 'starter' as const,
+        created_at: now,
+      })),
+    ];
+    await Promise.all(
+      newRows.map(row => putDesktopRecord('saved-phrases', row.id, row, row.created_at.getTime()))
+    );
+    await updateSpace(spaceId, { phrases_synced_count: syncedCount });
+    return;
+  }
+
   const deletes = [...oldAiIds].map(id => savedPhraseCollection.delete(id));
   const inserts = [
     ...freshPhrases.map(text => {

@@ -1,12 +1,9 @@
 'use client';
 
-import { useMemo } from 'react';
-
-import { eq } from '@tanstack/db';
-import { useLiveQuery } from '@tanstack/react-db';
+import { useRecordListQuery } from '@/packages/shared/lib/data';
 
 import { noteCollection } from '../db';
-import type { Note } from '../types';
+import { type Note, NoteSchema } from '../types';
 
 export interface UseNoteReturn {
   note: Note | undefined;
@@ -15,25 +12,11 @@ export interface UseNoteReturn {
 }
 
 export function useNote(id?: string): UseNoteReturn {
-  const { data, isLoading, isError, status } = useLiveQuery(
-    q => {
-      let query = q.from({ items: noteCollection });
-      if (id) {
-        query = query.where(({ items }) => eq(items.id, id));
-      }
-      return query;
-    },
-    [id]
-  );
-
-  const error = useMemo(
-    () => (isError ? { message: `Database error: ${status}` } : undefined),
-    [isError, status]
-  );
+  const { data, isLoading, error } = useRecordListQuery('documents', noteCollection, NoteSchema);
 
   return {
     // Without an id the query is unfiltered — never surface an arbitrary note
-    note: id ? data?.[0] : undefined,
+    note: id ? data.find(note => note.id === id) : undefined,
     isLoading,
     error,
   };

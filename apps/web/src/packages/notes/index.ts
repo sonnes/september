@@ -10,6 +10,11 @@ export { SlidesPresentation } from './components/slides-presentation';
 export { useNotes } from './hooks/use-notes';
 export { useNote } from './hooks/use-note';
 export {
+  useCreateNoteMutation,
+  useDeleteNoteMutation,
+  useUpdateNoteMutation,
+} from './hooks/use-note-mutations';
+export {
   useNoteIdFromSlug,
   noteIdFromSlug,
   type UseNoteIdFromSlugReturn,

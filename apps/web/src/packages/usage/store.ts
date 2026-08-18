@@ -3,6 +3,7 @@ import { createCollection } from '@tanstack/react-db';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
+import { isDesktopRuntime, putDesktopRecord } from '@/packages/shared/lib/data';
 import { indexedDBCollectionOptionsV2 } from '@/packages/shared/lib/indexeddb';
 
 import { CostSource, costOfSpeech, costOfTokens } from './lib/pricing';
@@ -89,9 +90,7 @@ const MessageSentStoredSchema = z.object({
  */
 const CostFields = {
   cost_usd: z.number().min(0).optional(),
-  cost_source: z
-    .enum(['measured', 'estimated', 'free', 'quota', 'unknown'])
-    .default('unknown'),
+  cost_source: z.enum(['measured', 'estimated', 'free', 'quota', 'unknown']).default('unknown'),
 };
 
 const AIGenerationStoredSchema = z.object({
@@ -271,8 +270,10 @@ export function track(userId: string, event: TrackedEvent): void {
     };
   }
 
-  const tx = analyticsCollection.insert(stored);
-  tx.isPersisted.promise.catch((err: unknown) => {
+  const persisted = isDesktopRuntime()
+    ? putDesktopRecord('analytics-events', stored.id, stored, stored.timestamp.getTime())
+    : analyticsCollection.insert(stored).isPersisted.promise;
+  persisted.catch((err: unknown) => {
     console.error(`Failed to track ${event.type} event:`, err);
   });
 }

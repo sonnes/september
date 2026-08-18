@@ -1,21 +1,21 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 /* Scan workspace packages for Tailwind classes */
-@source "../packages/ui";
-@source "../packages/shared";
-@source "../packages/account";
-@source "../packages/ai";
-@source "../packages/usage";
-@source "../packages/audio";
-@source "../packages/chats";
-@source "../packages/cloning";
-@source "../packages/documents";
-@source "../packages/editor";
-@source "../packages/keyboards";
-@source "../packages/onboarding";
-@source "../packages/speech";
-@source "../packages/suggestions";
+@source '../packages/ui';
+@source '../packages/shared';
+@source '../packages/account';
+@source '../packages/ai';
+@source '../packages/usage';
+@source '../packages/audio';
+@source '../packages/chats';
+@source '../packages/cloning';
+@source '../packages/documents';
+@source '../packages/editor';
+@source '../packages/keyboards';
+@source '../packages/onboarding';
+@source '../packages/speech';
+@source '../packages/suggestions';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -25,6 +25,7 @@ body {
 
 @theme inline {
   --font-sans: 'Noto Sans', Helvetica, sans-serif;
+  --font-brand: 'Lexend', 'Noto Sans', Helvetica, sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

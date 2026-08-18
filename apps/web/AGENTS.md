@@ -8,16 +8,19 @@ Standalone pnpm project (no workspace): its own `package.json`, `pnpm-lock.yaml`
 
 Use `pnpm` — never `npm` or `yarn`. Run from `apps/web/` (or `pnpm -C apps/web <script>` from the repo root; `make dev` is a root shortcut).
 
-| Command          | Purpose                        |
-| ---------------- | ------------------------------ |
-| `pnpm install`   | Install dependencies           |
-| `pnpm dev`       | Dev server (Vite)              |
-| `pnpm build`     | Production build (+ prerender) |
-| `pnpm start`     | Preview the production build   |
-| `pnpm lint`      | Lint                           |
-| `pnpm test`      | Run tests (Vitest)             |
+| Command              | Purpose                            |
+| -------------------- | ---------------------------------- |
+| `pnpm install`       | Install dependencies               |
+| `pnpm dev`           | Dev server (Vite)                  |
+| `pnpm build`         | Web production build (+ prerender) |
+| `pnpm desktop:dev`   | Tauri app with the shared React UI |
+| `pnpm desktop:build` | Packaged Tauri production app      |
+| `pnpm start`         | Preview the web production build   |
+| `pnpm lint`          | Lint                               |
+| `pnpm test`          | Run tests (Vitest)                 |
 
-Cross-origin isolation (COOP/COEP/CORP) is required for WebLLM's `SharedArrayBuffer`. Headers are set for dev/preview by a middleware plugin in `vite.config.ts` and for production in `vercel.json` — keep both in sync.
+Cross-origin isolation (COOP/COEP/CORP) is required for WebLLM's `SharedArrayBuffer`. Headers are set for web dev and preview in `vite.config.ts`.
+Production web headers are in `vercel.json`. Tauri headers are in `src-tauri/tauri.conf.json`.
 
 ## Code Style
 

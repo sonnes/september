@@ -34,8 +34,11 @@ vi.mock('@/packages/speech', () => ({
   useSpeech: () => ({ generateSpeech: mockGenerateSpeech }),
 }));
 
-vi.mock('../mutations', () => ({
-  createNote: (...args: unknown[]) => mockCreateNote(...args),
+vi.mock('../hooks/use-note-mutations', () => ({
+  useCreateNoteMutation: () => ({
+    mutateAsync: (...args: unknown[]) => mockCreateNote(...args),
+    isPending: false,
+  }),
 }));
 
 vi.mock('./note-editor', () => ({
@@ -104,7 +107,9 @@ describe('SpaceNotes', () => {
   it('speaks the selected note from the header action', () => {
     render(<SpaceNotes spaceId="space-1" />);
     act(() => {
-      buttonByLabel('Generate voice-over')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      buttonByLabel('Generate voice-over')!.dispatchEvent(
+        new MouseEvent('click', { bubbles: true })
+      );
     });
     expect(mockSpeak).toHaveBeenCalledWith('Thank you friend');
   });

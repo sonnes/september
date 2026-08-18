@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>September uses the microphone to record voice samples and transcribe speech.</string>
+  <key>NSCameraUsageDescription</key>
+  <string>September uses the camera in the optional conversation display window.</string>
+</dict>
+</plist>

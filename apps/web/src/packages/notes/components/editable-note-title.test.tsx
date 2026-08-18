@@ -11,8 +11,10 @@ import { EditableNoteTitle } from './editable-note-title';
 
 const mockUpdateNote = vi.fn();
 
-vi.mock('../mutations', () => ({
-  updateNote: (...args: unknown[]) => mockUpdateNote(...args),
+vi.mock('../hooks/use-note-mutations', () => ({
+  useUpdateNoteMutation: () => ({
+    mutateAsync: ({ id, updates }: { id: string; updates: unknown }) => mockUpdateNote(id, updates),
+  }),
 }));
 
 let container: HTMLDivElement;

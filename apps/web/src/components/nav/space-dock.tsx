@@ -7,7 +7,7 @@ import { ChevronDown, FileText, MessagesSquare, Plus } from 'lucide-react';
 
 import { useAccount } from '@/packages/account';
 import { cn, entitySlug } from '@/packages/shared';
-import { createSpace, useSpaces } from '@/packages/spaces';
+import { useCreateSpaceMutation, useSpaces } from '@/packages/spaces';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +17,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/packages/ui/components/dropdown-menu';
-
 import { type SpaceMode } from '@/routes/_app/spaces/-space-mode';
 
 import { ModeGroup, type ModeOption } from './mode-group';
@@ -44,6 +43,7 @@ export function SpaceDock({ currentSpaceId, mode, onModeChange }: SpaceDockProps
   const navigate = useNavigate();
   const { user } = useAccount();
   const { spaces } = useSpaces({ userId: user?.id });
+  const createSpace = useCreateSpaceMutation();
 
   const rowRef = useRef<HTMLDivElement>(null);
   const [compact, setCompact] = useState(false);
@@ -71,7 +71,7 @@ export function SpaceDock({ currentSpaceId, mode, onModeChange }: SpaceDockProps
 
   const handleNew = async () => {
     if (!user?.id) return;
-    const space = await createSpace(user.id);
+    const space = await createSpace.mutateAsync({ userId: user.id });
     navigate({
       to: '/spaces/$spaceSlug',
       params: { spaceSlug: entitySlug(space.title, 'space') },

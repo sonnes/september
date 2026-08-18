@@ -48,8 +48,11 @@ export function useTranscribe(): UseTranscribeReturn {
   // still worth showing.
   const transcribeOnDevice = useCallback(
     async (audio: Blob): Promise<string> => {
+      if (import.meta.env.MODE === 'tauri') {
+        throw new Error('Browser-local Whisper is unavailable in the desktop app.');
+      }
       // Lazy import keeps the transformers runtime out of initial bundles.
-      const { transcribeLocally } = await import('../lib/whisper');
+      const { transcribeLocally } = await import('@/packages/ai/lib/whisper-runtime');
       const startedAt = performance.now();
 
       try {

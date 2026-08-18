@@ -42,6 +42,11 @@ import {
 import { noteContentUpdates } from '@/packages/notes/lib/title';
 import { DisplayMessage, cn, entitySlug } from '@/packages/shared';
 import {
+  emitDesktopWindowEvent,
+  isDesktopRuntime,
+  openDesktopAppWindow,
+} from '@/packages/shared/lib/data';
+import {
   EditableSpaceTitle,
   type Message,
   addManualPhrase,
@@ -153,6 +158,7 @@ export function SpacePageInner({
   const { generateContext } = useGenerateSpaceContext();
   const { text, setText, trackKeystroke, getAndResetStats } = useEditorContext();
   const popupRef = useRef<Window | null>(null);
+  const desktopPopupRef = useRef<Awaited<ReturnType<typeof openDesktopAppWindow>> | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   // The space's "About" note (bound to space context) is a sibling of the real
@@ -283,7 +289,9 @@ export function SpacePageInner({
       const previousText = messages[messages.length - 1]?.text;
       // When the display popup plays the audio, the main window must not stream
       // it live — keep the buffered path so the popup gets the full blob.
-      const isDisplayOpen = popupRef.current && !popupRef.current.closed;
+      const isDisplayOpen = isDesktopRuntime()
+        ? Boolean(desktopPopupRef.current)
+        : Boolean(popupRef.current && !popupRef.current.closed);
       const { message, audio, playedLive } = await createAudioMessage(
         {
           space_id: spaceId,
@@ -300,15 +308,26 @@ export function SpacePageInner({
         enqueue(audio);
       }
 
-      const channel = new BroadcastChannel(`chat-display-${spaceId}`);
-      channel.postMessage({
+      const displayMessage = {
         type: 'new-message',
         message,
         audio: audio?.blob,
         alignment: audio?.alignment,
         timestamp: Date.now(),
-      } satisfies DisplayMessage);
-      channel.close();
+      } satisfies DisplayMessage;
+      if (isDesktopRuntime()) {
+        if (desktopPopupRef.current) {
+          void emitDesktopWindowEvent(
+            `display-${spaceId}`,
+            'september://display-message',
+            displayMessage
+          );
+        }
+      } else {
+        const channel = new BroadcastChannel(`chat-display-${spaceId}`);
+        channel.postMessage(displayMessage);
+        channel.close();
+      }
 
       setText('');
       inputRef.current?.focus();
@@ -437,11 +456,30 @@ export function SpacePageInner({
     inputRef.current?.focus();
   }, [setText]);
 
-  const handleOpenDisplay = useCallback(() => {
+  const handleOpenDisplay = useCallback(async () => {
     const width = 375;
     const height = 667;
     const left = 100;
     const top = 100;
+
+    if (isDesktopRuntime()) {
+      try {
+        const popup = await openDesktopAppWindow({
+          label: `display-${spaceId}`,
+          url: `/display/${spaceId}`,
+          title: 'September display',
+          width,
+          height,
+        });
+        desktopPopupRef.current = popup;
+        void popup.once('tauri://destroyed', () => {
+          desktopPopupRef.current = null;
+        });
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to open display');
+      }
+      return;
+    }
 
     const popup = window.open(
       `/display/${spaceId}`,
@@ -460,6 +498,10 @@ export function SpacePageInner({
     return () => {
       if (popupRef.current && !popupRef.current.closed) {
         popupRef.current.close();
+      }
+      if (desktopPopupRef.current) {
+        void desktopPopupRef.current.close();
+        desktopPopupRef.current = null;
       }
     };
   }, [spaceId]);

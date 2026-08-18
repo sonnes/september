@@ -5,6 +5,7 @@ import { useSyncExternalStore } from 'react';
 import { AccountProvider } from '@/packages/account';
 import { AISettingsProvider } from '@/packages/ai';
 import { AudioPlayerProvider } from '@/packages/audio';
+import { DataQueryProvider, DesktopRouteTracker } from '@/packages/shared/lib/data';
 import { SyncProvider } from '@/packages/sync';
 
 const subscribe = () => () => {};
@@ -18,12 +19,15 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
     return null;
   }
   return (
-    <SyncProvider>
-      <AccountProvider>
-        <AISettingsProvider>
-          <AudioPlayerProvider>{children}</AudioPlayerProvider>
-        </AISettingsProvider>
-      </AccountProvider>
-    </SyncProvider>
+    <DataQueryProvider>
+      <DesktopRouteTracker />
+      <SyncProvider>
+        <AccountProvider>
+          <AISettingsProvider>
+            <AudioPlayerProvider>{children}</AudioPlayerProvider>
+          </AISettingsProvider>
+        </AccountProvider>
+      </SyncProvider>
+    </DataQueryProvider>
   );
 }

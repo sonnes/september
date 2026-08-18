@@ -1,23 +1,19 @@
 import { useEffect, useState } from 'react';
 
 import { createFileRoute } from '@tanstack/react-router';
-
 import moment from 'moment';
 import Webcam from 'react-webcam';
-
-import { ReelTextViewer, useAudioPlayer } from '@/packages/audio';
-import { DisplayMessage } from '@/packages/shared';
 
 import { ClientProviders } from '@/components/context/client-providers';
 
 import { pageTitle } from '@/lib/seo';
+import { ReelTextViewer, useAudioPlayer } from '@/packages/audio';
+import { DisplayMessage } from '@/packages/shared';
+import { isDesktopRuntime, listenDesktopWindowEvent } from '@/packages/shared/lib/data';
 
 export const Route = createFileRoute('/display/$id')({
   head: () => ({
-    meta: [
-      { title: pageTitle('Display') },
-      { name: 'description', content: 'Chat display popup' },
-    ],
+    meta: [{ title: pageTitle('Display') }, { name: 'description', content: 'Chat display popup' }],
   }),
   component: DisplayPageWrapper,
 });
@@ -28,17 +24,38 @@ function DisplayPageContent() {
 
   const { enqueue, current } = useAudioPlayer();
 
-  // BroadcastChannel listener for chat-specific messages
   useEffect(() => {
+    const receive = (message: DisplayMessage) => {
+      if (message.type !== 'new-message') return;
+      setLatestMessage(message);
+      enqueue({ blob: message.audio, alignment: message.alignment });
+    };
+
+    if (isDesktopRuntime()) {
+      let disposed = false;
+      let unlisten: (() => void) | undefined;
+
+      void listenDesktopWindowEvent<DisplayMessage>('september://display-message', event =>
+        receive(event.payload)
+      ).then(stopListening => {
+        if (disposed) {
+          stopListening();
+          return;
+        }
+        unlisten = stopListening;
+      });
+
+      return () => {
+        disposed = true;
+        unlisten?.();
+      };
+    }
+
     const channelName = `chat-display-${chatId}`;
     const channel = new BroadcastChannel(channelName);
 
     channel.onmessage = (event: MessageEvent<DisplayMessage>) => {
-      const msg = event.data;
-      if (msg.type === 'new-message') {
-        setLatestMessage(msg);
-        enqueue({ blob: msg.audio, alignment: msg.alignment });
-      }
+      receive(event.data);
     };
 
     return () => {

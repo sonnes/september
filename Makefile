@@ -1,9 +1,16 @@
 PORT ?= 3009
 
-.PHONY: dev server-dev deploy mac-run mac-dev mac-test mac-app mac-stop
+.PHONY: dev desktop-dev desktop-build server-dev deploy mac-run mac-dev mac-test mac-app mac-stop
 
 dev:
 	pnpm -C apps/web dev --port $(PORT)
+
+# Tauri desktop app reusing the web UI with Rust-owned SQLite/files.
+desktop-dev:
+	pnpm -C apps/web desktop:dev
+
+desktop-build:
+	pnpm -C apps/web desktop:build
 
 # Cloudflare Worker backend (Durable Objects + R2); serves the SPA in production.
 server-dev:

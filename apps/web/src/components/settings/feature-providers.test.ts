@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  defaultModelFor,
-  featureProviderOptions,
-  poweredByNote,
-} from './feature-providers';
+import { createAIProviderRegistry } from '@/packages/ai/lib/registry';
+
+import { defaultModelFor, featureProviderOptions, poweredByNote } from './feature-providers';
 
 const accountWith = (providers: Record<string, { api_key?: string }>) =>
   ({ ai_providers: providers }) as never;
@@ -43,6 +41,20 @@ describe('featureProviderOptions', () => {
   it('lists listening providers with whisper first', () => {
     const options = featureProviderOptions('listening', accountWith({}));
     expect(options.map(o => o.id)).toEqual(['whisper', 'gemini', 'openrouter']);
+  });
+
+  it('omits providers that are unavailable in the desktop registry', () => {
+    const desktopProviders = createAIProviderRegistry(false);
+
+    expect(
+      featureProviderOptions('voice', accountWith({}), desktopProviders).map(o => o.id)
+    ).toEqual(['browser', 'elevenlabs', 'gemini']);
+    expect(
+      featureProviderOptions('writing', accountWith({}), desktopProviders).map(o => o.id)
+    ).toEqual(['gemini', 'openrouter']);
+    expect(
+      featureProviderOptions('listening', accountWith({}), desktopProviders).map(o => o.id)
+    ).toEqual(['gemini', 'openrouter']);
   });
 });
 

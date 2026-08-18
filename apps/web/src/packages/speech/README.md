@@ -6,18 +6,18 @@ Text-to-speech for September. Manages engine registry, voice listing, and the un
 
 ```ts
 import {
+  KokoroModelCard,
   SpeechProvider,
-  useSpeechContext,
   SpeechSettings,
   SpeechSettingsModal,
   VoicesList,
-  KokoroModelCard,
-  useSpeech,
-  useVoiceFetching,
   paginateVoices,
   sortClonedFirst,
+  useSpeech,
+  useSpeechContext,
+  useVoiceFetching,
 } from '@/packages/speech';
-import type { UseSpeechReturn, VoiceSettingsFormData, VoicePage } from '@/packages/speech';
+import type { UseSpeechReturn, VoicePage, VoiceSettingsFormData } from '@/packages/speech';
 ```
 
 `SpeechSettings` is a standalone form component — it does **not** require a Dialog wrapper and can be embedded directly in any layout (e.g., a side panel tab). The `SpeechSettingsModal` wraps it in a Dialog for the current chat page; both exports coexist. The unified **Voice** page (`/voice`) composes its own autosaving picker from `VoicesList`, `KokoroModelCard`, `useVoiceFetching`, and the `paginateVoices`/`sortClonedFirst` list helpers instead of using `SpeechSettings`.
@@ -144,6 +144,10 @@ rather than dollars — see `@/packages/usage`.
 - **Output**: 24 kHz mono; buffered responses are WAV data URIs built with the
   shared `pcmToWavDataUri`.
 
+Kokoro is available only in the web build. Tauri builds replace the Kokoro runtime
+module and omit the provider from the shared AI registry, which keeps its worker and
+model runtime out of the desktop bundle.
+
 ### ElevenLabs WebSocket streaming (internal)
 
 `stream-input` endpoint: `wss://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream-input`.
@@ -154,7 +158,7 @@ rather than dollars — see `@/packages/usage`.
 - **Format**: PCM (`pcm_22050` default) — each chunk is raw samples, trivially
   schedulable in Web Audio (MP3 chunks aren't independently decodable).
 - **Message sequence**: BOS `{ text: " ", voice_settings, "xi-api-key",
-  previous_text? }` → text `{ text: "<sentence> " }` → EOS `{ text: "" }`. The
+previous_text? }` → text `{ text: "<sentence> " }` → EOS `{ text: "" }`. The
   server streams `{ audio, alignment }` chunks then `{ isFinal: true }`.
 - **Warm socket** (`ElevenLabsWsConnection`): one socket is pre-opened so each
   speak skips the handshake. Sockets are single-use (server closes after EOS),
@@ -190,9 +194,9 @@ rather than dollars — see `@/packages/usage`.
 
 ## Providers (internal)
 
-| Provider     | API key required | Notes                                           |
-| ------------ | ---------------- | ----------------------------------------------- |
-| `browser`    | No               | Web Speech API                                  |
-| `kokoro`     | No               | On-device (WebGPU or WASM), one-time model download |
-| `elevenlabs` | Yes              | High-quality voices                             |
-| `gemini`     | Yes              | Google AI voices                                |
+| Provider     | API key required | Notes                                |
+| ------------ | ---------------- | ------------------------------------ |
+| `browser`    | No               | Web Speech API                       |
+| `kokoro`     | No               | Web only; on-device (WebGPU or WASM) |
+| `elevenlabs` | Yes              | High-quality voices                  |
+| `gemini`     | Yes              | Google AI voices                     |

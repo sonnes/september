@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 
 import { EditableText } from '@/packages/ui/components/editable-text';
 
-import { updateSpace } from '../mutations';
+import { useUpdateSpaceMutation } from '../hooks/use-space-mutations';
 
 interface EditableSpaceTitleProps {
   spaceId: string;
@@ -13,9 +13,10 @@ interface EditableSpaceTitleProps {
 }
 
 export function EditableSpaceTitle({ spaceId, title, className }: EditableSpaceTitleProps) {
+  const updateSpace = useUpdateSpaceMutation();
   const handleSave = async (next: string | undefined) => {
     try {
-      await updateSpace(spaceId, { title: next });
+      await updateSpace.mutateAsync({ id: spaceId, updates: { title: next } });
       toast.success('Space updated');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update space');
@@ -24,11 +25,6 @@ export function EditableSpaceTitle({ spaceId, title, className }: EditableSpaceT
   };
 
   return (
-    <EditableText
-      value={title}
-      placeholder="Untitled"
-      className={className}
-      onSave={handleSave}
-    />
+    <EditableText value={title} placeholder="Untitled" className={className} onSave={handleSave} />
   );
 }

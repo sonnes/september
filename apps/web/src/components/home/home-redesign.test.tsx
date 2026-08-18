@@ -12,10 +12,10 @@ import { EnhancedCTASection } from './enhanced-cta-section';
 import { Footer } from './footer';
 import { HeroSection } from './hero-section';
 import { LiveDemoSection } from './live-demo-section';
-import { NotesSection, NOTE_SENTENCES, NOTE_TITLE } from './notes-section';
+import { NOTE_SENTENCES, NOTE_TITLE, NotesSection } from './notes-section';
 import { PhraseCodesSection, matchDemoCode } from './phrase-codes-section';
 import { PrivacySection } from './privacy-section';
-import { ReelsSection, REEL_CAPTIONS } from './reels-section';
+import { REEL_CAPTIONS, ReelsSection } from './reels-section';
 import { SetupChoicesSection } from './setup-choices-section';
 import { SpacesSection } from './spaces-section';
 import { VoiceSection } from './voice-section';
@@ -106,6 +106,14 @@ function click(el: Element) {
 }
 
 describe('hero section', () => {
+  it('uses the keycap mark and autocomplete wordmark', () => {
+    render(<HeroSection />);
+
+    const nav = container.querySelector('nav')!;
+    expect(nav.querySelector('img')?.getAttribute('src')).toBe('/logo.svg');
+    expect(nav.querySelector('[data-brand-wordmark]')?.textContent).toBe('September');
+  });
+
   it('renders the hero copy and actions', () => {
     render(<HeroSection />);
 
@@ -341,8 +349,8 @@ describe('spaces section', () => {
   it('speaks a phrase when tapped', () => {
     render(<SpacesSection />);
 
-    const phrase = [...container.querySelectorAll('button')].find(
-      button => button.textContent?.includes('What’s for dinner?')
+    const phrase = [...container.querySelectorAll('button')].find(button =>
+      button.textContent?.includes('What’s for dinner?')
     )!;
     click(phrase);
 
@@ -370,8 +378,8 @@ describe('voice section', () => {
     expect(select.querySelectorAll('option')).toHaveLength(2);
     expect(container.textContent).toContain('Samantha');
 
-    const preview = [...container.querySelectorAll('button')].find(
-      button => button.textContent?.includes('Preview')
+    const preview = [...container.querySelectorAll('button')].find(button =>
+      button.textContent?.includes('Preview')
     )!;
     click(preview);
 
@@ -421,8 +429,8 @@ describe('notes section', () => {
       expect(container.textContent).toContain(sentence);
     }
 
-    const play = [...container.querySelectorAll('button')].find(
-      button => button.textContent?.includes('Play voice-over')
+    const play = [...container.querySelectorAll('button')].find(button =>
+      button.textContent?.includes('Play voice-over')
     )!;
     click(play);
 
@@ -433,8 +441,8 @@ describe('notes section', () => {
   it('highlights the sentence being spoken', () => {
     render(<NotesSection />);
 
-    const play = [...container.querySelectorAll('button')].find(
-      button => button.textContent?.includes('Play voice-over')
+    const play = [...container.querySelectorAll('button')].find(button =>
+      button.textContent?.includes('Play voice-over')
     )!;
     click(play);
 
@@ -477,8 +485,8 @@ describe('reels section', () => {
   it('plays the caption sequence with speech', () => {
     render(<ReelsSection />);
 
-    const play = [...container.querySelectorAll('button')].find(
-      button => button.textContent?.includes('Play reel')
+    const play = [...container.querySelectorAll('button')].find(button =>
+      button.textContent?.includes('Play reel')
     )!;
     click(play);
 
@@ -508,9 +516,7 @@ describe('about section', () => {
       anchor.textContent?.includes('Read the full story')
     )!;
     expect(article).toBeTruthy();
-    expect(article.getAttribute('href')).toBe(
-      'https://raviatluri.in/articles/building-september'
-    );
+    expect(article.getAttribute('href')).toBe('https://raviatluri.in/articles/building-september');
   });
 });
 

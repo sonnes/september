@@ -40,6 +40,7 @@ Reels turn note text into a captioned video you can download and share.
 
 - **Node.js**: v20 or later
 - **Package Manager**: [pnpm](https://pnpm.io/)
+- **Desktop builds**: Rust and the [Tauri system dependencies](https://v2.tauri.app/start/prerequisites/)
 
 ### Setup
 
@@ -75,6 +76,20 @@ make dev          # or: pnpm -C apps/web dev
 
 The application will be available at `http://localhost:3009`.
 
+### Running the Desktop App
+
+```bash
+make desktop-dev
+```
+
+This command starts the same React interface in Tauri. Desktop records use SQLite through Rust commands.
+
+The desktop app reads the OS account ID and name through Rust. A new OS account enters onboarding automatically. Later launches restore the last app page.
+
+File bytes use regular files in the application-local-data directory. The webview receives opaque file IDs instead of file paths.
+
+Build an installable desktop bundle with `make desktop-build`.
+
 ## Usage
 
 1. **Start**: Open the app — it runs locally with no sign-up required.
@@ -85,9 +100,9 @@ The application will be available at `http://localhost:3009`.
 
 ## Project Structure
 
-September is a standalone web app in `apps/web/`, plus a native macOS keyboard
-in `apps/swift/`. Shared modules live inside the web app at `src/packages/*` and
-are imported via the `@/packages/*` alias (`@/*` → `src/*` in `tsconfig.json`).
+September has a web app, a Tauri desktop shell, and a native macOS keyboard.
+Shared modules live inside the web app at `src/packages/*`.
+They use the `@/packages/*` alias (`@/*` → `src/*` in `tsconfig.json`).
 
 ```
 september/
@@ -107,6 +122,7 @@ september/
 │   │       ├── onboarding/     # User onboarding
 │   │       ├── speech/         # TTS & voice management
 │   │       └── suggestions/    # Contextual suggestions
+│   ├── src-tauri/               # Tauri shell, Rust RPC, SQLite, and file storage
 │   ├── vite.config.ts
 │   └── vercel.json
 ├── apps/swift/                 # Native macOS floating keyboard (SwiftPM)
@@ -122,7 +138,9 @@ Accessibility permission setup.
 
 - **Framework**: TanStack Start on Vite (React 19, SPA)
 - **Styling**: Tailwind CSS 4, shadcn/ui components
-- **Local Storage**: IndexedDB (via TanStack DB) for local-first data persistence.
+- **Data Cache**: TanStack Query for shared asynchronous state.
+- **Web Storage**: IndexedDB through TanStack DB.
+- **Desktop Storage**: SQLite and regular files behind Tauri Rust commands.
 - **AI**: Google Gemini API / OpenRouter, Vercel AI SDK
 - **Voice**: ElevenLabs for voice synthesis and cloning
 - **Forms**: React Hook Form + Zod validation

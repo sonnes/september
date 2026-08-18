@@ -11,8 +11,8 @@ import { uploadAudio } from '@/packages/audio';
 import { useSpeech } from '@/packages/speech';
 
 import { synthesizeWithFallback } from '../lib/synthesize-with-fallback';
-import { createMessage } from '../mutations';
 import type { CreateMessageData, Message } from '../types';
+import { useCreateMessageMutation } from './use-space-mutations';
 
 type CreateAudioStatus = 'idle' | 'generating-speech' | 'uploading-audio' | 'saving-message';
 
@@ -28,12 +28,10 @@ export function useCreateAudioMessage(): UseCreateAudioMessageReturn {
   const { user } = useAccount();
   const [status, setStatus] = useState<CreateAudioStatus>('idle');
   const { generateSpeech, generateSpeechStream } = useSpeech();
+  const { mutateAsync: createMessage } = useCreateMessageMutation();
 
   const createAudioMessage = useCallback(
-    async (
-      message: CreateMessageData,
-      opts?: { previousText?: string; playLive?: boolean }
-    ) => {
+    async (message: CreateMessageData, opts?: { previousText?: string; playLive?: boolean }) => {
       if (!message.text) {
         throw new Error('Message text is required');
       }
@@ -66,11 +64,12 @@ export function useCreateAudioMessage(): UseCreateAudioMessageReturn {
 
         if (speech?.blob) {
           setStatus('uploading-audio');
-          message.audio_path = await uploadAudio({
-            path: `${message.id}.mp3`,
-            blob: speech.blob,
-            alignment: speech.alignment,
-          }) ?? undefined;
+          message.audio_path =
+            (await uploadAudio({
+              path: `${message.id}.mp3`,
+              blob: speech.blob,
+              alignment: speech.alignment,
+            })) ?? undefined;
         }
 
         setStatus('saving-message');
@@ -84,7 +83,7 @@ export function useCreateAudioMessage(): UseCreateAudioMessageReturn {
         setStatus('idle');
       }
     },
-    [generateSpeech, generateSpeechStream, user]
+    [createMessage, generateSpeech, generateSpeechStream, user]
   );
 
   return { createAudioMessage, status };

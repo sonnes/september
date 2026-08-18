@@ -7,10 +7,14 @@ import { useAISettings } from '@/packages/ai';
 import { PcmStreamPlayer, useAudioPlayer } from '@/packages/audio';
 import type { AIProvider, ElevenLabsSettings } from '@/packages/shared';
 import type { Voice } from '@/packages/shared';
+import {
+  KOKORO_AVAILABLE,
+  KOKORO_SAMPLE_RATE,
+  KokoroSpeechProvider,
+} from '@/packages/speech/lib/providers/kokoro-runtime';
 
 import { meterSpeech, speechModelId } from '../lib/meter';
 import { BrowserSpeechProvider } from '../lib/providers/browser';
-import { KOKORO_SAMPLE_RATE, KokoroSpeechProvider } from '../lib/providers/kokoro';
 import {
   ElevenLabsSpeechProvider,
   elevenLabsStreamParams,
@@ -83,8 +87,9 @@ export function useSpeech(): UseSpeechReturn {
       registry.set('gemini', new GeminiSpeechProvider(geminiConfig.api_key));
     }
 
-    // Kokoro requires no API key (client-side only)
-    registry.set('kokoro', new KokoroSpeechProvider());
+    if (KOKORO_AVAILABLE) {
+      registry.set('kokoro', new KokoroSpeechProvider());
+    }
 
     return registry;
   }, [getProviderConfig]);

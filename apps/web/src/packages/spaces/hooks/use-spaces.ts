@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
 
-import { eq } from '@tanstack/db';
-import { useLiveQuery } from '@tanstack/react-db';
+import { useRecordListQuery } from '@/packages/shared/lib/data';
 
 import { spaceCollection } from '../db';
-import { Space } from '../types';
+import { type Space, SpaceSchema } from '../types';
 
 export interface UseSpacesReturn {
   spaces: Space[];
@@ -16,34 +15,20 @@ export function useSpaces({
   userId,
   searchQuery,
 }: { userId?: string; searchQuery?: string } = {}): UseSpacesReturn {
-  const {
-    data: spaces,
-    isLoading,
-    isError,
-    status,
-  } = useLiveQuery(
-    q => {
-      let query = q.from({ items: spaceCollection });
-      if (userId) {
-        query = query.where(({ items }) => eq(items.user_id, userId));
-      }
-      return query.orderBy(({ items }) => items.updated_at, 'desc');
-    },
-    [userId]
-  );
-
-  const filteredSpaces =
-    searchQuery && spaces
-      ? spaces.filter(space => space.title?.toLowerCase().includes(searchQuery.toLowerCase()))
-      : spaces;
-
-  const error = useMemo(
-    () => (isError ? { message: `Database error: ${status}` } : undefined),
-    [isError, status]
-  );
+  const { data, isLoading, error } = useRecordListQuery('spaces', spaceCollection, SpaceSchema);
+  const spaces = useMemo(() => {
+    const search = searchQuery?.toLowerCase();
+    return data
+      .filter(
+        space =>
+          (!userId || space.user_id === userId) &&
+          (!search || space.title?.toLowerCase().includes(search))
+      )
+      .sort((a, b) => b.updated_at.getTime() - a.updated_at.getTime());
+  }, [data, searchQuery, userId]);
 
   return {
-    spaces: (filteredSpaces || []) as Space[],
+    spaces,
     isLoading,
     error,
   };

@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
-
 import { Github } from 'lucide-react';
+
+import { BrandMark, BrandWordmark } from '@/components/brand';
 
 import { Badge } from '@/packages/ui/components/badge';
 import { Button } from '@/packages/ui/components/button';
@@ -11,15 +12,9 @@ export function HeroSection() {
       <div className="relative flex w-full flex-col overflow-hidden rounded-2xl bg-indigo-600">
         {/* Navbar inside card */}
         <nav className="flex w-full items-center justify-between px-4 py-4 sm:px-6 sm:py-5 lg:px-9 lg:py-6">
-          <Link to="/" className="flex items-center gap-2">
-            <img
-              src="/logo.png"
-              alt="September Logo"
-              width={40}
-              height={40}
-              className="h-8 w-8 sm:h-10 sm:w-10"
-            />
-            <span className="text-xl font-bold text-primary-foreground sm:text-2xl">september</span>
+          <Link to="/" aria-label="September home" className="flex items-center gap-2">
+            <BrandMark size={40} className="size-8 sm:size-10" />
+            <BrandWordmark aria-hidden="true" tone="inverse" className="text-xl sm:text-2xl" />
           </Link>
 
           <div className="flex items-center gap-3 sm:gap-6">

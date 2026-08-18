@@ -1,12 +1,13 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from 'react';
+import { type ReactNode, createContext, useCallback, useContext, useEffect, useMemo } from 'react';
 
 import type { User } from '@/packages/shared';
+import { useOptimisticRecordMutation } from '@/packages/shared/lib/data';
 
 import { useAccountStore } from './account-store';
 import { createDefaultAccount } from './defaults';
-import type { Account, AccountUpdate } from './schema';
+import { type Account, AccountSchema, type AccountUpdate } from './schema';
 import { useCurrentUser } from './use-current-user';
 
 interface AccountContextValue {
@@ -35,14 +36,20 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     });
   }, [account, accountLoading, createAccount, user, userLoading]);
 
-  const updateAccount = useCallback(
-    async (updates: AccountUpdate) => {
-      await updateStoredAccount(user.id, {
+  const { mutateAsync: mutateAccount } = useOptimisticRecordMutation<void, AccountUpdate, Account>({
+    queryKey: ['account', user.id],
+    mutationFn: updates =>
+      updateStoredAccount(user.id, {
         ...updates,
         updated_at: new Date(),
-      });
-    },
-    [updateStoredAccount, user.id]
+      }),
+    update: (current, updates) =>
+      AccountSchema.parse({ ...current, ...updates, updated_at: new Date() }),
+  });
+
+  const updateAccount = useCallback(
+    (updates: AccountUpdate) => mutateAccount(updates),
+    [mutateAccount]
   );
 
   const value = useMemo(

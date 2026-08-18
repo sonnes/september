@@ -16,6 +16,7 @@ import {
   DEFAULT_SUGGESTIONS_CONFIG,
   DEFAULT_TRANSCRIPTION_CONFIG,
 } from '../lib/defaults';
+import { resolveAvailableProvider } from '../lib/registry';
 
 export interface AISettingsContextType {
   // AI Feature Configurations
@@ -34,7 +35,7 @@ export interface AISettingsContextType {
 
 const getSpeechConfig = (account: Account) => {
   if (account?.ai_speech) {
-    return {
+    const config = {
       ...DEFAULT_SPEECH_CONFIG,
       ...account.ai_speech,
       settings: {
@@ -42,26 +43,35 @@ const getSpeechConfig = (account: Account) => {
         ...account.ai_speech.settings,
       },
     };
+    return resolveAvailableProvider(config.provider, 'speech', 'browser') === config.provider
+      ? config
+      : DEFAULT_SPEECH_CONFIG;
   }
   return DEFAULT_SPEECH_CONFIG;
 };
 
 const getSuggestionsConfig = (account: Account) => {
   if (account?.ai_suggestions) {
-    return {
+    const config = {
       ...DEFAULT_SUGGESTIONS_CONFIG,
       ...account.ai_suggestions,
     };
+    return resolveAvailableProvider(config.provider, 'ai', 'openrouter') === config.provider
+      ? config
+      : DEFAULT_SUGGESTIONS_CONFIG;
   }
   return DEFAULT_SUGGESTIONS_CONFIG;
 };
 
 const getTranscriptionConfig = (account: Account) => {
   if (account?.ai_transcription) {
-    return {
+    const config = {
       ...DEFAULT_TRANSCRIPTION_CONFIG,
       ...account.ai_transcription,
     };
+    return resolveAvailableProvider(config.provider, 'transcription', 'gemini') === config.provider
+      ? config
+      : DEFAULT_TRANSCRIPTION_CONFIG;
   }
   return DEFAULT_TRANSCRIPTION_CONFIG;
 };

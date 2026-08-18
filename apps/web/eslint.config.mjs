@@ -1,11 +1,13 @@
 import js from '@eslint/js';
-import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
+import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', '.output', '.nitro', 'routeTree.gen.ts', 'node_modules'] },
+  {
+    ignores: ['dist', '.output', '.nitro', 'routeTree.gen.ts', 'node_modules', 'src-tauri/target'],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -25,5 +27,5 @@ export default tseslint.config(
       ],
       'no-useless-escape': 'warn',
     },
-  },
+  }
 );

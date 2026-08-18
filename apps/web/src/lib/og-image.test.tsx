@@ -1,6 +1,6 @@
 import { isValidElement } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
 
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
 import { OG_IMAGE_SIZE, SeptemberOgImage, renderOgImagePng } from './og-image';
@@ -40,6 +40,17 @@ describe('Open Graph image renderer', () => {
     }
     expect(markup).not.toContain('Speak');
     expect(markup).not.toContain('Share');
+  });
+
+  it('uses the Lexend autocomplete wordmark', () => {
+    const markup = renderToStaticMarkup(
+      <SeptemberOgImage logoDataUri="data:image/png;base64,test" />
+    );
+
+    expect(markup).toContain('font-family:Lexend');
+    expect(markup).toContain('>Sep<');
+    expect(markup).toContain('>tember<');
+    expect(markup).toContain('#c7d2fe');
   });
 
   it('renders a 1200 by 630 PNG', async () => {

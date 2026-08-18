@@ -7,7 +7,8 @@ Small shared primitives, hooks, and types used across September packages.
 - **Utilities**: Common helper functions (`cn` for className merging, `MATCH_PUNCTUATION` for text boundaries, `timeAgo` for human-readable relative time strings, `entitySlug` / `idFromSlug` for readable local URLs)
 - **Hooks**: Reusable React hooks for common patterns
 - **Types**: Shared TypeScript types and Zod schemas
-- **IndexedDB**: Local storage utilities with TanStack DB, exported from `@/packages/shared/lib/indexeddb`
+- **Data boundary**: TanStack Query hooks and platform-selected record and file clients, exported from `@/packages/shared/lib/data`
+- **IndexedDB**: Browser storage utilities with TanStack DB, exported from `@/packages/shared/lib/indexeddb`
 - **Autocomplete**: Trie-based autocomplete engine, exported from `@/packages/shared/lib/autocomplete`
 
 ## Structure
@@ -17,7 +18,8 @@ packages/shared/
 ├── lib/
 │   ├── utils.ts              # cn() and other utilities
 │   ├── slug.ts               # readable slug + id helpers
-│   ├── indexeddb/            # IndexedDB collection helpers
+│   ├── data/                 # TanStack Query and Tauri RPC boundary
+│   ├── indexeddb/            # Browser collection helpers
 │   └── autocomplete/         # Autocomplete engine
 ├── hooks/
 │   ├── use-debounce.ts       # Debounced value hook
@@ -85,9 +87,35 @@ Use explicit subpaths for heavier purpose-built modules:
 
 ```typescript
 import { tokenize } from '@/packages/shared/lib/autocomplete';
+import { useRecordListQuery } from '@/packages/shared/lib/data';
 import { indexedDBCollectionOptionsV2 } from '@/packages/shared/lib/indexeddb';
 import { parseAndRenderSlides } from '@/packages/shared/lib/slides';
 ```
+
+The data hooks keep one UI contract across platforms. Browser builds read
+TanStack DB collections backed by IndexedDB. Desktop builds invoke Rust record
+commands backed by SQLite. Neither feature package imports SQL or filesystem
+APIs directly.
+
+`saveFile(blob, suggestedName)` keeps browser anchor downloads for the web app.
+Desktop builds send the bytes to Rust and show a native save dialog. The
+webview does not send or receive a filesystem path.
+
+The desktop setting client wraps `setting_get`, `setting_put`, and
+`setting_delete`. Use it for durable desktop preferences that are not domain
+records.
+
+The desktop startup client gets the OS account through `os_user_get`. It stores
+the last safe app route in the Rust settings table. The route tracker excludes
+secondary windows, marketing pages, and OAuth credentials.
+
+Desktop presentation and display routes use named Tauri windows and targeted
+events through `lib/data/window-client.ts`. External links use the validated
+Rust `open_external` command.
+
+`DataQueryProvider` owns one `QueryClient` per provider tree. Local reads and
+mutations use `networkMode: 'always'`. Browser collection changes and Tauri
+record events invalidate only the affected collection key.
 
 `parseAndRenderSlides(markdown, noteName)` can prepend the note title as the
 first slide.
@@ -101,5 +129,7 @@ belong in their owning feature package.
 - `clsx` + `tailwind-merge` - Class name utilities
 - `zod` - Schema validation
 - `@tanstack/db` 0.6 - Local-first database and explicit collection indexes
+- `@tanstack/react-query` - Shared query cache and optimistic mutations
+- `@tauri-apps/api` - Desktop command invocation and change events
 - `lodash` - Utility functions
 - `nanoid` - ID generation

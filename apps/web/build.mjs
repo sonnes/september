@@ -12,11 +12,24 @@
 //
 // All output is fully written to disk by the time `buildApp()` resolves, so
 // we exit explicitly once it does.
+import { copyFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { createBuilder } from 'vite';
 
+const modeFlag = process.argv.indexOf('--mode');
+const mode = modeFlag >= 0 ? process.argv[modeFlag + 1] : 'production';
+
+if (!mode) {
+  console.error('Missing value after --mode');
+  process.exit(1);
+}
+
 try {
-  const builder = await createBuilder({ mode: 'production' });
+  const builder = await createBuilder({ mode });
   await builder.buildApp();
+  if (mode === 'tauri') {
+    await copyFile(resolve('dist/client/_shell.html'), resolve('dist/client/index.html'));
+  }
   process.exit(0);
 } catch (err) {
   console.error(err);

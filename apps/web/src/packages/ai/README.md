@@ -78,6 +78,17 @@ Claude, Gemini, GPT, Llama). `webllm` runs locally in the browser. OpenRouter is
 registry-driven like the others, so it appears automatically in the provider settings
 form, and additionally offers a one-click OAuth "Connect" flow (see below).
 
+### Desktop builds
+
+Tauri builds use Vite's `tauri` mode. The provider registry omits WebLLM, Whisper, and
+Kokoro, so existing provider-driven settings hide those choices. Saved local-provider
+settings fall back to OpenRouter, Gemini, or browser speech while the desktop app is
+running.
+
+Desktop aliases replace the three browser-local runtime modules. This keeps WebLLM,
+Transformers.js, Kokoro, and their model workers out of the packaged bundle. The normal
+web build keeps the complete registry and its lazy-loaded local-model chunks.
+
 ## Generation
 
 `useGenerate()` defaults to Gemini with `gemini-2.5-flash-lite`. Pass `provider: 'openrouter'`
@@ -105,7 +116,7 @@ asks `hasCached(params)` before calling through, and records a hit as `cached: t
 
 Cost comes from the provider when it reports one and from the local price table otherwise — see
 `@/packages/usage`. `openRouterModelArgs` sets `usage: { include: true }` on every OpenRouter call
-so `providerMetadata.openrouter.usage.cost` comes back and the cost is *measured* rather than
+so `providerMetadata.openrouter.usage.cost` comes back and the cost is _measured_ rather than
 estimated; it adds no extra request. `extractText` takes an optional `userId` and wraps its own
 model with the same middleware.
 
@@ -152,8 +163,9 @@ function HaikuButton() {
 Pass a schema for structured output:
 
 ```tsx
-import { useGenerate } from '@/packages/ai';
 import { z } from 'zod';
+
+import { useGenerate } from '@/packages/ai';
 
 const RecipeSchema = z.object({
   name: z.string(),
@@ -235,7 +247,7 @@ automatically (driven by the registry `oauth` flag); the providers settings page
 returning `?code`.
 
 ```ts
-import { startOpenRouterAuth, completeOpenRouterAuth } from '@/packages/ai';
+import { completeOpenRouterAuth, startOpenRouterAuth } from '@/packages/ai';
 
 // Kick off (full-page redirect):
 await startOpenRouterAuth(`${window.location.origin}/settings/providers`);

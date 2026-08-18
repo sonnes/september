@@ -1,51 +1,63 @@
 // @vitest-environment jsdom
-import React from 'react';
-import { act } from 'react';
+import React, { act } from 'react';
 
 import { type Root, createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useNotes } from './use-notes';
+import { type UseNotesReturn, useNotes } from './use-notes';
+
+const { useRecordListQuery } = vi.hoisted(() => ({ useRecordListQuery: vi.fn() }));
+vi.mock('@/packages/shared/lib/data', () => ({ useRecordListQuery }));
+vi.mock('../db', () => ({ noteCollection: {} }));
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { mockEq, mockIsUndefined, mockNot, whereFns } = vi.hoisted(() => ({
-  mockEq: vi.fn((left: unknown, right: unknown) => ({ op: 'eq', left, right })),
-  mockIsUndefined: vi.fn((value: unknown) => ({ op: 'isUndefined', value })),
-  mockNot: vi.fn((value: unknown) => ({ op: 'not', value })),
-  whereFns: [] as Array<(refs: { items: { space_id: string; name: string } }) => unknown>,
-}));
-
-vi.mock('@tanstack/db', () => ({
-  eq: (...args: unknown[]) => mockEq(...args),
-  ilike: (left: unknown, right: unknown) => ({ op: 'ilike', left, right }),
-  isUndefined: (...args: unknown[]) => mockIsUndefined(...args),
-  not: (...args: unknown[]) => mockNot(...args),
-}));
-
-vi.mock('@tanstack/react-db', () => ({
-  useLiveQuery: (build: (q: { from: () => unknown }) => unknown) => {
-    const query = {
-      where: (fn: (refs: { items: { space_id: string; name: string } }) => unknown) => {
-        whereFns.push(fn);
-        return query;
-      },
-      orderBy: () => query,
-    };
-    build({ from: () => query });
-    return { data: [], isLoading: false, isError: false, status: 'success' };
-  },
-}));
-
-vi.mock('../db', () => ({ noteCollection: {} }));
-
-let container: HTMLDivElement;
 let root: Root;
+let container: HTMLDivElement;
+let latest: UseNotesReturn;
+
+function Probe(props: Parameters<typeof useNotes>[0]) {
+  latest = useNotes(props);
+  return null;
+}
 
 beforeEach(() => {
-  whereFns.length = 0;
-  mockEq.mockClear();
-  mockIsUndefined.mockClear();
+  useRecordListQuery.mockReturnValue({
+    data: [
+      {
+        id: 'global',
+        name: 'Global',
+        content: '',
+        created_at: new Date(1),
+        updated_at: new Date(1),
+      },
+      {
+        id: 'space-old',
+        space_id: 's1',
+        name: 'Alpha',
+        content: '',
+        created_at: new Date(2),
+        updated_at: new Date(2),
+      },
+      {
+        id: 'space-new',
+        space_id: 's1',
+        name: 'Beta',
+        content: '',
+        created_at: new Date(3),
+        updated_at: new Date(3),
+      },
+      {
+        id: 'other',
+        space_id: 's2',
+        name: 'Other',
+        content: '',
+        created_at: new Date(4),
+        updated_at: new Date(4),
+      },
+    ],
+    isLoading: false,
+  });
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
@@ -56,49 +68,28 @@ afterEach(() => {
   container.remove();
 });
 
-function Harness({ spaceId }: { spaceId?: string }) {
-  useNotes({ spaceId });
-  return null;
-}
-
-function NotesHarness() {
-  useNotes({ scope: 'space-notes' });
-  return null;
-}
-
-function render(spaceId?: string, scope?: 'space-notes') {
-  act(() => root.render(scope ? <NotesHarness /> : <Harness spaceId={spaceId} />));
+function render(props: Parameters<typeof useNotes>[0] = {}) {
+  act(() => root.render(<Probe {...props} />));
 }
 
 describe('useNotes', () => {
   it('defaults to global notes without a space', () => {
     render();
-
-    expect(whereFns[0]({ items: { space_id: 'space-ref', name: 'name-ref' } })).toEqual({
-      op: 'isUndefined',
-      value: 'space-ref',
-    });
+    expect(latest.notes.map(note => note.id)).toEqual(['global']);
   });
 
-  it('filters to a space when spaceId is provided', () => {
-    render('space-1');
-
-    expect(whereFns[0]({ items: { space_id: 'space-ref', name: 'name-ref' } })).toEqual({
-      op: 'eq',
-      left: 'space-ref',
-      right: 'space-1',
-    });
+  it('filters and orders notes for one space', () => {
+    render({ spaceId: 's1' });
+    expect(latest.notes.map(note => note.id)).toEqual(['space-new', 'space-old']);
   });
 
   it('filters to notes across all spaces', () => {
-    render(undefined, 'space-notes');
+    render({ scope: 'space-notes' });
+    expect(latest.notes.map(note => note.id)).toEqual(['other', 'space-new', 'space-old']);
+  });
 
-    expect(whereFns[0]({ items: { space_id: 'space-ref', name: 'name-ref' } })).toEqual({
-      op: 'not',
-      value: {
-        op: 'isUndefined',
-        value: 'space-ref',
-      },
-    });
+  it('applies case-insensitive name search in memory', () => {
+    render({ spaceId: 's1', searchQuery: 'alp' });
+    expect(latest.notes.map(note => note.id)).toEqual(['space-old']);
   });
 });

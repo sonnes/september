@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/packages/shared';
 import { Input } from '@/packages/ui/components/input';
 
+import { useUpdateNoteMutation } from '../hooks/use-note-mutations';
 import { UNTITLED_NOTE_NAME, noteNameIsUnset } from '../lib/title';
-import { updateNote } from '../mutations';
 
 interface EditableNoteTitleProps {
   noteId: string;
@@ -15,6 +15,7 @@ interface EditableNoteTitleProps {
 }
 
 export function EditableNoteTitle({ noteId, name, className }: EditableNoteTitleProps) {
+  const updateNote = useUpdateNoteMutation();
   const savedName = noteNameIsUnset(name) ? '' : (name ?? '');
   const [draft, setDraft] = useState(savedName);
   const [isSaving, setIsSaving] = useState(false);
@@ -32,7 +33,7 @@ export function EditableNoteTitle({ noteId, name, className }: EditableNoteTitle
 
     setIsSaving(true);
     try {
-      await updateNote(noteId, { name: nextName });
+      await updateNote.mutateAsync({ id: noteId, updates: { name: nextName } });
     } catch (err) {
       console.error('Failed to save note title:', err);
       setDraft(savedName);

@@ -7,8 +7,8 @@ export interface Mutation {
   collection: string;
   id: string;
   op: SyncOp;
-  data?: unknown; // present for upsert (JSON-serializable entity)
-  version?: string; // opaque versionKey echo
+  data?: unknown | null; // present for upsert; null for delete
+  version?: string | null; // opaque versionKey echo
   updatedAt: number; // LWW clock (ms)
 }
 

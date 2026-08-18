@@ -1,17 +1,21 @@
-import { useRef, useState, type ChangeEvent } from 'react';
+import { type ChangeEvent, useRef, useState } from 'react';
 
 import { createFileRoute } from '@tanstack/react-router';
 import { Download, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { PageTitle } from '@/components/layout';
+
+import { pageTitle } from '@/lib/seo';
 import {
   type AccountSettingsImportMode,
+  type AccountUpdate,
   parseAccountSettingsExport,
   resolveAccountSettingsImport,
   serializeAccountSettingsExport,
   useAccount,
-  type AccountUpdate,
 } from '@/packages/account';
+import { saveFile } from '@/packages/shared/lib/data';
 import { SpeechProvider } from '@/packages/speech';
 import { GoogleSyncControl, SYNC_ENABLED } from '@/packages/sync';
 import { Button } from '@/packages/ui/components/button';
@@ -24,10 +28,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/packages/ui/components/dialog';
-
-import { PageTitle } from '@/components/layout';
-
-import { pageTitle } from '@/lib/seo';
 
 import SettingsForm from './-settings-form';
 
@@ -75,22 +75,18 @@ export function SettingsTransferActions() {
   const [isImporting, setIsImporting] = useState(false);
   const [pendingImport, setPendingImport] = useState<AccountUpdate | null>(null);
 
-  const exportSettings = () => {
+  const exportSettings = async () => {
     if (!account) return;
 
-    const blob = new Blob([serializeAccountSettingsExport(account)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-
-    link.href = url;
-    link.download = `september-settings-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-    toast.success('Settings exported');
+    try {
+      const saved = await saveFile(
+        new Blob([serializeAccountSettingsExport(account)], { type: 'application/json' }),
+        `september-settings-${new Date().toISOString().slice(0, 10)}.json`
+      );
+      if (saved) toast.success('Settings exported');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to export settings.');
+    }
   };
 
   const importSettings = async (event: ChangeEvent<HTMLInputElement>) => {

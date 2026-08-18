@@ -22,7 +22,7 @@ export interface SetupModeContent {
 // Shared source of truth for the three setup modes — used by the onboarding
 // "Choose setup" step and the marketing setup-choices section. Styling per mode
 // is mapped from `accent` at the call site; the copy lives here once.
-export const SETUP_MODES: readonly SetupModeContent[] = [
+const ALL_SETUP_MODES: readonly SetupModeContent[] = [
   {
     id: 'privacy',
     accent: 'emerald',
@@ -61,8 +61,16 @@ export const SETUP_MODES: readonly SetupModeContent[] = [
   },
 ];
 
+export function getSetupModes(includeBrowserLocalProviders = true): readonly SetupModeContent[] {
+  return includeBrowserLocalProviders
+    ? ALL_SETUP_MODES
+    : ALL_SETUP_MODES.filter(mode => mode.id !== 'privacy');
+}
+
+export const SETUP_MODES = getSetupModes(import.meta.env.MODE !== 'tauri');
+
 export function isSetupMode(value: unknown): value is SetupMode {
-  return value === 'privacy' || value === 'free' || value === 'advanced';
+  return SETUP_MODES.some(mode => mode.id === value);
 }
 
 const DEFAULT_BROWSER_SPEECH: SpeechConfig = {
@@ -138,13 +146,18 @@ interface InferSetupModeParams {
 // wins; accounts from before the field are matched against what the mode
 // builders produce, falling back to advanced.
 export function inferSetupMode(account: InferSetupModeParams): SetupMode {
-  if (account.setup_mode) return account.setup_mode;
+  if (account.setup_mode && isSetupMode(account.setup_mode)) return account.setup_mode;
 
   const speech = account.ai_speech?.provider;
   const suggestions = account.ai_suggestions?.provider;
   const transcription = account.ai_transcription?.provider;
 
-  if (speech === 'kokoro' && suggestions === 'webllm' && transcription === 'whisper') {
+  if (
+    SETUP_MODES.some(mode => mode.id === 'privacy') &&
+    speech === 'kokoro' &&
+    suggestions === 'webllm' &&
+    transcription === 'whisper'
+  ) {
     return 'privacy';
   }
   if (speech === 'browser' && suggestions === 'openrouter') {

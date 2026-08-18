@@ -1,7 +1,7 @@
 import type { Account } from '@/packages/account';
 import { AI_PROVIDERS, getModelsForProvider } from '@/packages/ai';
 import type { SetupMode } from '@/packages/onboarding';
-import type { AIProvider } from '@/packages/shared';
+import type { AIProvider, AIServiceProvider } from '@/packages/shared';
 
 export type SettingsFeature = 'voice' | 'writing' | 'listening';
 
@@ -23,18 +23,23 @@ export interface FeatureProviderOption {
 
 export function featureProviderOptions(
   feature: SettingsFeature,
-  account: Pick<Account, 'ai_providers'> | undefined
+  account: Pick<Account, 'ai_providers'> | undefined,
+  providers: Partial<Record<AIProvider, AIServiceProvider>> = AI_PROVIDERS
 ): FeatureProviderOption[] {
-  return FEATURE_PROVIDERS[feature].map(id => {
-    const provider = AI_PROVIDERS[id];
-    return {
-      id,
-      name: provider.name,
-      onDevice: !provider.requires_api_key,
-      connected:
-        !provider.requires_api_key ||
-        Boolean(account?.ai_providers?.[id as keyof Account['ai_providers']]?.api_key),
-    };
+  return FEATURE_PROVIDERS[feature].flatMap(id => {
+    const provider = providers[id];
+    if (!provider) return [];
+
+    return [
+      {
+        id,
+        name: provider.name,
+        onDevice: !provider.requires_api_key,
+        connected:
+          !provider.requires_api_key ||
+          Boolean(account?.ai_providers?.[id as keyof Account['ai_providers']]?.api_key),
+      },
+    ];
   });
 }
 

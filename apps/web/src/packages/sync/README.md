@@ -1,9 +1,8 @@
 # @september/sync
 
-Client sync engine: mirrors the local IndexedDB collections to the Cloudflare
-backend (`apps/server`) and authenticates with Google. **Local-first** — IndexedDB
-stays the source of truth; the backend is a sync/backup target, so the app keeps
-working fully offline.
+Client sync engine: mirrors local records to the Cloudflare backend
+(`apps/server`) and authenticates with Google. The local browser or desktop
+database stays the source of truth, so the app keeps working offline.
 
 ## Feature flag
 
@@ -19,26 +18,32 @@ button. Until a user signs in, everything stays local (guest mode).
 
 ## How it works
 
-```
-local mutation ─▶ collection onInsert/onUpdate/onDelete ─▶ captureLocal ─▶ outbox
-                                                                              │ (debounced)
-                                                                  engine.flush ▼ POST /api/sync/push
-server change  ◀─ engine.pullOnce (interval/online) GET /api/sync/pull ─▶ collection.utils.acceptMutations
-```
+Browser mutations flow from TanStack DB collection callbacks into the
+in-memory outbox. Pulled changes use `collection.utils.acceptMutations`, which
+bypasses those callbacks and prevents an echo loop.
+
+Desktop record writes atomically add rows to the Rust-owned durable outbox.
+The engine calls `sync_outbox_list`, pushes the returned mutations, and then
+calls `sync_outbox_ack`. It flushes any pending durable entries on startup.
+Pulled changes go through `sync_apply_remote`, which updates SQLite and the
+`cloud_cursor` metadata atomically without creating new outbox entries.
 
 - **Outbox** ([lib/outbox.ts](lib/outbox.ts)) buffers local mutations (collapsing
-  repeated edits of one record) for batched push.
+  repeated edits of one record) for batched browser pushes. Rust owns the
+  durable desktop outbox.
 - **Capturing local changes** ([runtime.ts](runtime.ts)) — collections call
   `captureLocal` from their `on*` hooks. Server changes arrive via `acceptMutations`,
   a different path, so there is **no echo loop**.
 - **Engine** ([lib/engine.ts](lib/engine.ts)) pushes the outbox and pulls remote
   changes since a persisted cursor, reviving JSON through each collection's Zod
-  schema (ISO strings → `Date`) before `acceptMutations`. Conflicts are last-write-wins
-  by `updated_at`.
+  schema (ISO strings → `Date`). The browser persists its cursor in
+  `localStorage`; desktop reads `cloud_cursor` through `sync_metadata_get`.
+  Conflicts are last-write-wins by `updated_at`.
 - **Auth** ([lib/auth.ts](lib/auth.ts), [sync-context.tsx](sync-context.tsx)) — the
   Google ID token is exchanged at `/api/auth/google` for a stateless session token,
-  stored in `localStorage`; `useCurrentUser()` returns the authenticated user when
-  signed in, else the local guest.
+  stored in `localStorage` for the browser. Desktop stores the session and display
+  profile through the Rust settings RPC. `useCurrentUser()` returns the authenticated
+  user when signed in, or the local guest when signed out.
 
 ## Synced collections
 
@@ -65,7 +70,7 @@ Audio (and reel) blobs mirror to R2 under the user's `audio/` prefix. The
 
 - writes (`uploadAudioBinary`/`uploadAudio`) mirror to R2 fire-and-forget,
 - a local read-miss (`downloadAudio`/`getAudio`) falls back to R2 and caches the bytes
-  locally, so a second device fills its IndexedDB on demand,
+  locally, so a second device fills its browser or desktop file store on demand,
 - `deleteAudio` removes the R2 object too.
 
 When signed out the bridge is inert, so behaviour is unchanged.

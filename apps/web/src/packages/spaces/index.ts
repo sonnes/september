@@ -6,6 +6,13 @@ export { EditableSpaceTitle } from './components/editable-space-title';
 // Live-query hooks
 export { useSpaces } from './hooks/use-spaces';
 export {
+  useCreateDefaultSpaceMutation,
+  useCreateMessageMutation,
+  useCreateSpaceMutation,
+  useDeleteSpaceMutation,
+  useUpdateSpaceMutation,
+} from './hooks/use-space-mutations';
+export {
   useSpaceIdFromSlug,
   spaceIdFromSlug,
   type UseSpaceIdFromSlugReturn,

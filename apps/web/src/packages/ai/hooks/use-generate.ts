@@ -2,11 +2,12 @@
 
 import { useCallback, useState } from 'react';
 
+import { toast } from 'sonner';
+import { z } from 'zod';
+
 import { useAccount } from '@/packages/account';
 import { AIProvider } from '@/packages/shared';
 import { GenerationFeature } from '@/packages/usage';
-import { toast } from 'sonner';
-import { z } from 'zod';
 
 import { AudioInput, buildTextInput } from '../lib/audio-message';
 import { meteringMiddleware } from '../lib/metering';
@@ -115,7 +116,7 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
   const apiKey = providerConfig?.api_key;
 
   const providerInfo = AI_PROVIDERS[provider];
-  const isReady = !providerInfo.requires_api_key || !!apiKey;
+  const isReady = Boolean(providerInfo && (!providerInfo.requires_api_key || apiKey));
 
   const generate = useCallback(
     async <T extends z.ZodType>(
@@ -159,8 +160,11 @@ export function useGenerate(options: UseGenerateOptions = {}): UseGenerateReturn
           const { id, settings } = openRouterModelArgs(modelId);
           baseModel = client(id, settings);
         } else if (provider === 'webllm') {
-          const { webLLM } = await import('@built-in-ai/web-llm');
-          baseModel = webLLM(modelId);
+          if (import.meta.env.MODE === 'tauri') {
+            throw new Error('Browser-local WebLLM is unavailable in the desktop app.');
+          }
+          const { createWebLLMModel } = await import('@/packages/ai/lib/webllm-runtime');
+          baseModel = await createWebLLMModel(modelId);
         } else {
           const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
           baseModel = createGoogleGenerativeAI({ apiKey: apiKey || '' })(modelId);

@@ -10,7 +10,12 @@ import SidebarLayout from '@/components/sidebar/layout';
 import { pageTitle } from '@/lib/seo';
 import { useAccount } from '@/packages/account';
 import { entitySlug } from '@/packages/shared';
-import { SpaceList, createDefaultSpace, createSpace, useSpaces } from '@/packages/spaces';
+import {
+  SpaceList,
+  useCreateDefaultSpaceMutation,
+  useCreateSpaceMutation,
+  useSpaces,
+} from '@/packages/spaces';
 import { Button } from '@/packages/ui/components/button';
 import { ErrorState } from '@/packages/ui/components/error-state';
 
@@ -27,6 +32,8 @@ function SpacesPage() {
   const navigate = useNavigate();
   const { user } = useAccount();
   const [searchValue, setSearchValue] = useState('');
+  const createDefaultSpace = useCreateDefaultSpaceMutation();
+  const createSpace = useCreateSpaceMutation();
   const {
     spaces,
     isLoading: fetching,
@@ -44,7 +51,9 @@ function SpacesPage() {
     }
     try {
       const isFirstSpace = allSpaces.length === 0;
-      const space = isFirstSpace ? await createDefaultSpace(user.id) : await createSpace(user.id);
+      const space = isFirstSpace
+        ? await createDefaultSpace.mutateAsync(user.id)
+        : await createSpace.mutateAsync({ userId: user.id });
       toast.success('Space created');
       navigate({
         to: '/spaces/$spaceSlug/talk',

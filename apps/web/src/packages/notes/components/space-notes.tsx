@@ -10,8 +10,8 @@ import { Button } from '@/packages/ui/components/button';
 import { EmptyState } from '@/packages/ui/components/empty-state';
 import { LoadingState } from '@/packages/ui/components/loading-state';
 
+import { useCreateNoteMutation } from '../hooks/use-note-mutations';
 import { useNotes } from '../hooks/use-notes';
-import { createNote as createNoteMutation } from '../mutations';
 import type { Note } from '../types';
 import { EditableNoteTitle } from './editable-note-title';
 import { NoteActions } from './note-actions';
@@ -69,12 +69,11 @@ function useCreateSpaceNote(
   spaceId: string,
   setSelectedId: (id: string | null, note?: Note) => void
 ) {
-  const [isCreating, setIsCreating] = useState(false);
+  const { isPending, mutateAsync: createNote } = useCreateNoteMutation();
 
   const handleCreateNote = useCallback(async () => {
-    setIsCreating(true);
     try {
-      const note = await createNoteMutation({
+      const note = await createNote({
         space_id: spaceId,
         content: '',
       });
@@ -84,12 +83,10 @@ function useCreateSpaceNote(
       toast.error('Error', {
         description: err instanceof Error ? err.message : 'Failed to create note',
       });
-    } finally {
-      setIsCreating(false);
     }
-  }, [setSelectedId, spaceId]);
+  }, [createNote, setSelectedId, spaceId]);
 
-  return { createNote: handleCreateNote, isCreating };
+  return { createNote: handleCreateNote, isCreating: isPending };
 }
 
 export function SpaceNotes({

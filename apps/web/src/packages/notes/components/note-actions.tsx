@@ -6,6 +6,7 @@ import { Download, Film, Loader2, Square, Volume2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { cn } from '@/packages/shared';
+import { saveFile } from '@/packages/shared/lib/data';
 import { useSpeech } from '@/packages/speech';
 import { Button } from '@/packages/ui/components/button';
 
@@ -68,13 +69,10 @@ export function NoteActions({ note, className }: NoteActionsProps) {
         return;
       }
 
-      const link = document.createElement('a');
-      link.href = audioDataUri(response.blob);
-      link.download = voiceFileName(note.name);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      toast.success('Voice-over downloaded');
+      const audio = await fetch(audioDataUri(response.blob)).then(result => result.blob());
+      if (await saveFile(audio, voiceFileName(note.name))) {
+        toast.success('Voice-over downloaded');
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to download voice-over');
     } finally {

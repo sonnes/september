@@ -2,12 +2,12 @@
 
 import { CheckCircle2 } from 'lucide-react';
 
+import { preloadKokoro } from '@/packages/speech/lib/providers/kokoro-runtime';
 import { Button } from '@/packages/ui/components/button';
 import { Progress } from '@/packages/ui/components/progress';
 import { Spinner } from '@/packages/ui/components/spinner';
 
 import { useKokoroModelStatus } from '../hooks/use-kokoro-model-status';
-import { preloadKokoro } from '../lib/providers/kokoro';
 
 /**
  * Kokoro model card for the speech settings: shows download/load status and

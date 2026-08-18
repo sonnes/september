@@ -5,6 +5,7 @@ import {
   buildAdvancedFinishUpdate,
   buildFreeModeUpdate,
   buildPrivacyModeUpdate,
+  getSetupModes,
   inferSetupMode,
   isSetupMode,
 } from './setup-modes';
@@ -33,6 +34,10 @@ describe('setup modes', () => {
     expect(isSetupMode('advanced')).toBe(true);
     expect(isSetupMode('nope')).toBe(false);
     expect(isSetupMode(undefined)).toBe(false);
+  });
+
+  it('removes privacy mode when browser-local AI is unavailable', () => {
+    expect(getSetupModes(false).map(mode => mode.id)).toEqual(['free', 'advanced']);
   });
 });
 

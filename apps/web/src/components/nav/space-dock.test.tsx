@@ -20,7 +20,10 @@ vi.mock('@tanstack/react-router', () => ({ useNavigate: () => mockNavigate }));
 vi.mock('@/packages/account', () => ({ useAccount: () => ({ user: mockUser }) }));
 vi.mock('@/packages/spaces', () => ({
   useSpaces: () => ({ spaces: mockSpaces, isLoading: false }),
-  createSpace: (...args: unknown[]) => mockCreateSpace(...args),
+  useCreateSpaceMutation: () => ({
+    mutateAsync: ({ userId, title }: { userId: string; title?: string }) =>
+      mockCreateSpace(userId, title),
+  }),
 }));
 
 let container: HTMLDivElement;
@@ -82,7 +85,7 @@ describe('SpaceDock', () => {
     await act(async () => {
       newBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     });
-    expect(mockCreateSpace).toHaveBeenCalledWith('user-1');
+    expect(mockCreateSpace).toHaveBeenCalledWith('user-1', undefined);
     expect(mockNavigate).toHaveBeenCalledWith({
       to: '/spaces/$spaceSlug',
       params: { spaceSlug: 'general' },

@@ -2,9 +2,10 @@
 
 import { Link } from '@tanstack/react-router';
 
-import { SidebarTrigger } from '@/packages/ui/components/sidebar';
+import { BrandMark } from '@/components/brand';
 
 import { cn } from '@/packages/shared';
+import { SidebarTrigger } from '@/packages/ui/components/sidebar';
 
 type MobileNavProps = {
   title?: string | React.ReactNode;
@@ -21,8 +22,8 @@ export default function MobileNav({ title = 'September', children, className }: 
       )}
     >
       <div className="flex items-center gap-3">
-        <Link to="/">
-          <img src="/logo.png" alt="September" width={32} height={32} loading="lazy" />
+        <Link to="/" aria-label="September home">
+          <BrandMark size={32} loading="lazy" />
         </Link>
         <span className="font-semibold text-base truncate max-w-[180px]">{title}</span>
       </div>

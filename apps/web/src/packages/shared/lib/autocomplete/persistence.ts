@@ -25,9 +25,14 @@
  *    `ngram` field. Phase 2 writers emit `version: 2` with per-layer
  *    `base` / `user` / `chats`. Readers accept both.
  */
-
+import {
+  deleteDesktopRecord,
+  getDesktopRecord,
+  isDesktopRuntime,
+  listDesktopRecords,
+  putDesktopRecord,
+} from '../data';
 import { KVStore, createKVStore } from '../indexeddb/kv-store';
-
 import type { LayeredAutocomplete } from './layered-autocomplete';
 import { NgramModel, type SerializedNgram } from './ngram-model';
 
@@ -64,6 +69,12 @@ export type EngineSnapshot = EngineSnapshotV2;
 export type AnyEngineSnapshot = EngineSnapshotV1 | EngineSnapshotV2;
 
 const DEFAULT_DB_NAME = 'september-autocomplete';
+const DESKTOP_COLLECTION = 'autocomplete-snapshots';
+
+interface DesktopSnapshotRecord {
+  id: string;
+  value: unknown;
+}
 
 /** Low-level: snapshot a single NgramModel as v1. */
 export function toSnapshot(model: NgramModel): EngineSnapshotV1 {
@@ -97,12 +108,7 @@ export function isCompatibleSnapshot(value: unknown): value is AnyEngineSnapshot
     return typeof v.createdAt === 'number' && !!v.ngram && typeof v.ngram === 'object';
   }
   if (v.version === 2) {
-    return (
-      typeof v.createdAt === 'number' &&
-      !!v.base &&
-      !!v.user &&
-      typeof v.chats === 'object'
-    );
+    return typeof v.createdAt === 'number' && !!v.base && !!v.user && typeof v.chats === 'object';
   }
   return false;
 }
@@ -118,17 +124,21 @@ export interface AutocompletePersistenceOptions {
  * for the conventions).
  */
 export class AutocompletePersistence {
-  private readonly kv: KVStore<unknown>;
+  private readonly kv: KVStore<unknown> | null;
 
   constructor(opts: AutocompletePersistenceOptions = {}) {
-    this.kv = createKVStore<unknown>({
-      dbName: opts.dbName ?? DEFAULT_DB_NAME,
-    });
+    this.kv = isDesktopRuntime()
+      ? null
+      : createKVStore<unknown>({
+          dbName: opts.dbName ?? DEFAULT_DB_NAME,
+        });
   }
 
   async load(key: string): Promise<AnyEngineSnapshot | undefined> {
     try {
-      const raw = await this.kv.get(key);
+      const raw = isDesktopRuntime()
+        ? (await getDesktopRecord<DesktopSnapshotRecord>(DESKTOP_COLLECTION, key))?.value
+        : await this.kv?.get(key);
       if (!isCompatibleSnapshot(raw)) return undefined;
       return raw;
     } catch {
@@ -139,7 +149,16 @@ export class AutocompletePersistence {
 
   async save(key: string, snapshot: AnyEngineSnapshot): Promise<void> {
     try {
-      await this.kv.set(key, snapshot);
+      if (isDesktopRuntime()) {
+        await putDesktopRecord(
+          DESKTOP_COLLECTION,
+          key,
+          { id: key, value: snapshot } satisfies DesktopSnapshotRecord,
+          snapshot.createdAt
+        );
+      } else {
+        await this.kv?.set(key, snapshot);
+      }
     } catch {
       // Non-fatal: engine keeps working in-memory.
     }
@@ -148,7 +167,9 @@ export class AutocompletePersistence {
   /** Load a raw per-chat model snapshot. Single ngram, not an engine snapshot. */
   async loadChatModel(key: string): Promise<SerializedNgram | undefined> {
     try {
-      const raw = await this.kv.get(key);
+      const raw = isDesktopRuntime()
+        ? (await getDesktopRecord<DesktopSnapshotRecord>(DESKTOP_COLLECTION, key))?.value
+        : await this.kv?.get(key);
       if (!raw || typeof raw !== 'object') return undefined;
       const candidate = raw as { version?: unknown };
       if (candidate.version !== 1 && candidate.version !== 2) return undefined;
@@ -160,7 +181,14 @@ export class AutocompletePersistence {
 
   async saveChatModel(key: string, ngram: SerializedNgram): Promise<void> {
     try {
-      await this.kv.set(key, ngram);
+      if (isDesktopRuntime()) {
+        await putDesktopRecord(DESKTOP_COLLECTION, key, {
+          id: key,
+          value: ngram,
+        } satisfies DesktopSnapshotRecord);
+      } else {
+        await this.kv?.set(key, ngram);
+      }
     } catch {
       // Non-fatal.
     }
@@ -168,14 +196,20 @@ export class AutocompletePersistence {
 
   async clear(key: string): Promise<void> {
     try {
-      await this.kv.delete(key);
+      if (isDesktopRuntime()) await deleteDesktopRecord(DESKTOP_COLLECTION, key);
+      else await this.kv?.delete(key);
     } catch {
       // Ignore — not being able to clear is not a correctness issue.
     }
   }
 
   async destroy(): Promise<void> {
-    await this.kv.destroy();
+    if (isDesktopRuntime()) {
+      const records = await listDesktopRecords<DesktopSnapshotRecord>(DESKTOP_COLLECTION);
+      await Promise.all(records.map(record => deleteDesktopRecord(DESKTOP_COLLECTION, record.id)));
+      return;
+    }
+    await this.kv?.destroy();
   }
 
   // ─── Key helpers ────────────────────────────────────────────────────────

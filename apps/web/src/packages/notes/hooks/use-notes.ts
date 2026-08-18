@@ -2,11 +2,10 @@
 
 import { useMemo } from 'react';
 
-import { eq, ilike, isUndefined, not } from '@tanstack/db';
-import { useLiveQuery } from '@tanstack/react-db';
+import { useRecordListQuery } from '@/packages/shared/lib/data';
 
 import { noteCollection } from '../db';
-import type { Note } from '../types';
+import { type Note, NoteSchema } from '../types';
 
 export interface UseNotesReturn {
   notes: Note[];
@@ -23,36 +22,23 @@ export function useNotes({
   searchQuery?: string;
   spaceId?: string;
 } = {}): UseNotesReturn {
-  const {
-    data: notes,
-    isLoading,
-    isError,
-    status,
-  } = useLiveQuery(
-    q => {
-      let query = q.from({ items: noteCollection });
-      if (spaceId) {
-        query = query.where(({ items }) => eq(items.space_id, spaceId));
-      } else if (scope === 'space-notes') {
-        query = query.where(({ items }) => not(isUndefined(items.space_id)));
-      } else {
-        query = query.where(({ items }) => isUndefined(items.space_id));
-      }
-      if (searchQuery) {
-        query = query.where(({ items }) => ilike(items.name, `%${searchQuery}%`));
-      }
-      return query.orderBy(({ items }) => items.updated_at, 'desc');
-    },
-    [scope, searchQuery, spaceId]
-  );
-
-  const error = useMemo(
-    () => (isError ? { message: `Database error: ${status}` } : undefined),
-    [isError, status]
-  );
+  const { data, isLoading, error } = useRecordListQuery('documents', noteCollection, NoteSchema);
+  const notes = useMemo(() => {
+    const search = searchQuery?.toLowerCase();
+    return data
+      .filter(note => {
+        const matchesScope = spaceId
+          ? note.space_id === spaceId
+          : scope === 'space-notes'
+            ? note.space_id !== undefined
+            : note.space_id === undefined;
+        return matchesScope && (!search || note.name?.toLowerCase().includes(search));
+      })
+      .sort((a, b) => b.updated_at.getTime() - a.updated_at.getTime());
+  }, [data, scope, searchQuery, spaceId]);
 
   return {
-    notes: (notes || []) as Note[],
+    notes,
     isLoading,
     error,
   };

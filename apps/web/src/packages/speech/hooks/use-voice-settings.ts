@@ -5,13 +5,14 @@ import { useCallback, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
-import { getProvidersForFeature } from '@/packages/ai';
-import { useVoiceFetching } from './use-voice-fetching';
-import { useProviderModels } from './use-provider-models';
-import { VoiceSettingsFormData, VoiceSettingsSchema } from '../types/schemas';
 import type { Account } from '@/packages/account';
+import { getProvidersForFeature } from '@/packages/ai';
 import type { Voice } from '@/packages/shared';
 import type { AIServiceProvider } from '@/packages/shared';
+
+import { VoiceSettingsFormData, VoiceSettingsSchema } from '../types/schemas';
+import { useProviderModels } from './use-provider-models';
+import { useVoiceFetching } from './use-voice-fetching';
 
 type SpeechEngineId = 'browser' | 'gemini' | 'elevenlabs' | 'kokoro';
 
@@ -45,14 +46,18 @@ export function useVoiceSettings(
   // Get speech providers from registry
   const speechProviders = useMemo(() => {
     const providers = getProvidersForFeature('speech');
-    return providers.reduce((acc, provider) => {
-      acc[provider.id] = provider;
-      return acc;
-    }, {} as Record<string, AIServiceProvider>);
+    return providers.reduce(
+      (acc, provider) => {
+        acc[provider.id] = provider;
+        return acc;
+      },
+      {} as Record<string, AIServiceProvider>
+    );
   }, []);
 
   // Get current speech config from account
-  const currentProvider = (account?.ai_speech?.provider || 'browser') as SpeechEngineId;
+  const savedProvider = (account?.ai_speech?.provider || 'browser') as SpeechEngineId;
+  const currentProvider = speechProviders[savedProvider] ? savedProvider : 'browser';
   const currentVoiceId = account?.ai_speech?.voice_id;
   const currentVoiceName = account?.ai_speech?.voice_name;
   const currentModelId = account?.ai_speech?.model_id;

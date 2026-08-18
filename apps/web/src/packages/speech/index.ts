@@ -8,7 +8,7 @@ export { useSpeech } from './hooks/use-speech';
 export { useVoiceFetching } from './hooks/use-voice-fetching';
 export type { UseSpeechReturn } from './hooks/use-speech';
 export { useKokoroModelStatus } from './hooks/use-kokoro-model-status';
-export { preloadKokoro } from './lib/providers/kokoro';
+export { preloadKokoro } from '@/packages/speech/lib/providers/kokoro-runtime';
 export type { KokoroModelStatus } from './lib/providers/kokoro-status';
 export type { SpeechResponse, SpeechStreamHooks } from './types';
 export type { VoiceSettingsFormData } from './types/schemas';

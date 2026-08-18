@@ -12,22 +12,22 @@ import { AudioPlayerProvider, useAudioPlayer } from '@/packages/audio';
 
 Wrap your tree with `AudioPlayerProvider`. `useAudioPlayer()` returns:
 
-| Field                           | Type                     | Description                                                                       |
-| ------------------------------- | ------------------------ | --------------------------------------------------------------------------------- |
-| `isPlaying`                     | `boolean`                | True while a track is playing                                                     |
-| `enqueue(track)`                | `(track: Audio) => void` | Append to queue; starts immediately if empty; no-op while muted                   |
-| `togglePlayPause()`             | `() => void`             | Pause / resume current track                                                      |
-| `current`                       | `Audio \| null`          | Currently playing track                                                           |
-| `isMuted`                       | `boolean`                | Mute state                                                                        |
-| `toggleMute()`                  | `() => void`             | Toggle mute                                                                       |
-| `currentTime`                   | `number`                 | Playback position in seconds (RAF-based, ~16ms granularity)                       |
-| `duration`                      | `number`                 | Current track duration in seconds                                                 |
-| `seek(time)`                    | `(time: number) => void` | Seek to position                                                                  |
-| `outputDevices`                 | `MediaDeviceInfo[]`      | Enumerated audio output devices (excludes default/communications)                 |
-| `isDeviceSelectionSupported`    | `boolean`                | Whether `setSinkId` is available                                                  |
-| `selectedOutputDeviceId`        | `string \| null`         | Active device id, persisted to `localStorage` key `september:audio-output-device` |
-| `setSelectedOutputDeviceId(id)` | `(id: string) => void`   | Select output device + persist                                                    |
-| `refreshOutputDevices()`        | `() => Promise<void>`    | Re-enumerate devices                                                              |
+| Field                           | Type                     | Description                                                       |
+| ------------------------------- | ------------------------ | ----------------------------------------------------------------- |
+| `isPlaying`                     | `boolean`                | True while a track is playing                                     |
+| `enqueue(track)`                | `(track: Audio) => void` | Append to queue; starts immediately if empty; no-op while muted   |
+| `togglePlayPause()`             | `() => void`             | Pause / resume current track                                      |
+| `current`                       | `Audio \| null`          | Currently playing track                                           |
+| `isMuted`                       | `boolean`                | Mute state                                                        |
+| `toggleMute()`                  | `() => void`             | Toggle mute                                                       |
+| `currentTime`                   | `number`                 | Playback position in seconds (RAF-based, ~16ms granularity)       |
+| `duration`                      | `number`                 | Current track duration in seconds                                 |
+| `seek(time)`                    | `(time: number) => void` | Seek to position                                                  |
+| `outputDevices`                 | `MediaDeviceInfo[]`      | Enumerated audio output devices (excludes default/communications) |
+| `isDeviceSelectionSupported`    | `boolean`                | Whether `setSinkId` is available                                  |
+| `selectedOutputDeviceId`        | `string \| null`         | Active device ID, persisted in browser storage or desktop SQLite  |
+| `setSelectedOutputDeviceId(id)` | `(id: string) => void`   | Select output device + persist                                    |
+| `refreshOutputDevices()`        | `() => Promise<void>`    | Re-enumerate devices                                              |
 
 `Audio` tracks can be either blob-based (`blob: string` — base64 with optional `data:` prefix) or utterance-based (`utterance: SpeechSynthesisUtterance`).
 
@@ -111,15 +111,26 @@ import {
 
 #### Storage data layout
 
-IndexedDB database: `september-audio`, object store: `audio-files`.
+Browser builds use the IndexedDB database `september-audio` and object store
+`audio-files`.
 
 Each entry is keyed by path and stores `{ blob: ArrayBuffer, contentType, metadata, created_at, name }`.
+
+Desktop builds write bytes as regular files through Rust `file_write`. SQLite
+stores only a local `audio-file-aliases` record that maps the existing logical
+path to the opaque Rust file ID and metadata. Replacing a logical path deletes
+the old file after the alias update succeeds. A failed alias update deletes the
+new file, so it does not leave orphaned bytes. TypeScript code does not receive
+or construct filesystem paths.
+
+Desktop builds also persist the selected audio-output device through Rust
+settings commands. Browser builds keep the existing `localStorage` key.
 
 #### Cloud sync (R2)
 
 When the user is signed in (see `@/packages/sync`), storage mirrors blobs to R2 via the
 sync blob-bridge: writes back up fire-and-forget, a local read-miss falls back to R2 and
-caches the bytes locally, and deletes remove the R2 object. Signed out, this is inert and
+stores the bytes locally, and deletes remove the R2 object. Signed out, this is inert and
 storage is purely local.
 
 ### Types

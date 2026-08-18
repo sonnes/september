@@ -18,7 +18,7 @@ function fakeClient(pull: { changes: Change[]; cursor: number }) {
   };
 }
 
-function fakeCollection(id: string, parse: (d: unknown) => unknown = (d) => d) {
+function fakeCollection(id: string, parse: (d: unknown) => unknown = d => d) {
   const accepted: PendingLike[] = [];
   const col: SyncCollection & { accepted: PendingLike[] } = {
     id,
@@ -43,6 +43,80 @@ const change = (over: Partial<Change>): Change => ({
 });
 
 describe('sync engine flush', () => {
+  it('flushes a durable desktop outbox when the engine starts', async () => {
+    vi.stubGlobal('localStorage', memoryStorage());
+    const client = fakeClient({ changes: [], cursor: 0 });
+    const desktopStorage = {
+      listOutbox: vi.fn(async () => [
+        {
+          outboxId: 7,
+          collection: 'spaces',
+          id: 's1',
+          op: 'upsert' as const,
+          data: { id: 's1' },
+          version: null,
+          updatedAt: 10,
+        },
+      ]),
+      ackOutbox: vi.fn(async () => 1),
+      getCursor: vi.fn(async () => 0),
+      applyRemote: vi.fn(async () => ({ applied: 0, collections: [] })),
+    };
+    const engine = createSyncEngine({
+      client: client as never,
+      outbox: createOutbox(),
+      cursor: createCursorStore('u1'),
+      collections: {},
+      desktopStorage,
+    });
+
+    engine.start();
+    await vi.waitFor(() => expect(desktopStorage.ackOutbox).toHaveBeenCalledWith([7]));
+    engine.stop();
+  });
+
+  it('pushes then acknowledges the Rust-owned durable outbox', async () => {
+    vi.stubGlobal('localStorage', memoryStorage());
+    const client = fakeClient({ changes: [], cursor: 0 });
+    const desktopStorage = {
+      listOutbox: vi.fn(async () => [
+        {
+          outboxId: 7,
+          collection: 'spaces',
+          id: 's1',
+          op: 'upsert' as const,
+          data: { id: 's1' },
+          version: null,
+          updatedAt: 10,
+        },
+      ]),
+      ackOutbox: vi.fn(async () => 1),
+      getCursor: vi.fn(async () => 0),
+      applyRemote: vi.fn(),
+    };
+    const engine = createSyncEngine({
+      client: client as never,
+      outbox: createOutbox(),
+      cursor: createCursorStore('u1'),
+      collections: {},
+      desktopStorage,
+    });
+
+    await engine.flush();
+
+    expect(client.push).toHaveBeenCalledWith([
+      {
+        collection: 'spaces',
+        id: 's1',
+        op: 'upsert',
+        data: { id: 's1' },
+        version: null,
+        updatedAt: 10,
+      },
+    ]);
+    expect(desktopStorage.ackOutbox).toHaveBeenCalledWith([7]);
+  });
+
   it('pushes drained mutations', async () => {
     vi.stubGlobal('localStorage', memoryStorage());
     const client = fakeClient({ changes: [], cursor: 0 });
@@ -96,9 +170,46 @@ describe('sync engine flush', () => {
 });
 
 describe('sync engine pull', () => {
+  it('applies parsed remote changes atomically through Rust without collection echo', async () => {
+    vi.stubGlobal('localStorage', memoryStorage());
+    const client = fakeClient({
+      changes: [change({ data: { id: 's1', created_at: '2026-01-01T00:00:00Z' } })],
+      cursor: 8,
+    });
+    const spaces = fakeCollection('spaces', data => ({
+      ...(data as object),
+      created_at: new Date((data as { created_at: string }).created_at),
+    }));
+    const desktopStorage = {
+      listOutbox: vi.fn(async () => []),
+      ackOutbox: vi.fn(async () => 0),
+      getCursor: vi.fn(async () => 4),
+      applyRemote: vi.fn(async () => ({ applied: 1, collections: ['spaces'] })),
+    };
+    const engine = createSyncEngine({
+      client: client as never,
+      outbox: createOutbox(),
+      cursor: createCursorStore('u1'),
+      collections: { spaces },
+      desktopStorage,
+    });
+
+    await engine.pullOnce();
+
+    expect(client.pull).toHaveBeenCalledWith(4);
+    expect(desktopStorage.applyRemote).toHaveBeenCalledWith(
+      [expect.objectContaining({ collection: 'spaces', id: 's1', op: 'upsert' })],
+      8
+    );
+    expect(spaces.acceptMutations).not.toHaveBeenCalled();
+  });
+
   it('applies upserts to the matching collection and advances the cursor', async () => {
     vi.stubGlobal('localStorage', memoryStorage());
-    const client = fakeClient({ changes: [change({ data: { id: 's1', title: 'Hi' } })], cursor: 7 });
+    const client = fakeClient({
+      changes: [change({ data: { id: 's1', title: 'Hi' } })],
+      cursor: 7,
+    });
     const spaces = fakeCollection('spaces');
     const cursor = createCursorStore('u1');
     const engine = createSyncEngine({
@@ -110,7 +221,11 @@ describe('sync engine pull', () => {
 
     await engine.pullOnce();
     expect(spaces.accepted).toHaveLength(1);
-    expect(spaces.accepted[0]).toMatchObject({ type: 'update', key: 's1', collection: { id: 'spaces' } });
+    expect(spaces.accepted[0]).toMatchObject({
+      type: 'update',
+      key: 's1',
+      collection: { id: 'spaces' },
+    });
     expect(cursor.get()).toBe(7);
   });
 
@@ -134,7 +249,7 @@ describe('sync engine pull', () => {
       changes: [change({ data: { id: 's1', created_at: '2026-01-01T00:00:00Z' } })],
       cursor: 3,
     });
-    const spaces = fakeCollection('spaces', (d) => ({
+    const spaces = fakeCollection('spaces', d => ({
       ...(d as object),
       created_at: new Date((d as { created_at: string }).created_at),
     }));

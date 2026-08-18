@@ -12,6 +12,8 @@ import {
   UtilsRecord,
 } from '@tanstack/db';
 
+import { isDesktopRuntime } from '@/packages/shared/lib/data/runtime';
+
 import { KVStore, KVStoreOptions } from './kv-store';
 
 // ============================================================================
@@ -293,8 +295,12 @@ function createIndexedDBSync<T extends object, TKey extends string | number>(
         // Determine change type
         if (!oldStoredItem && newStoredItem) {
           // Insert
-          if (newStoredItem && typeof newStoredItem === 'object' &&
-              'versionKey' in newStoredItem && 'data' in newStoredItem) {
+          if (
+            newStoredItem &&
+            typeof newStoredItem === 'object' &&
+            'versionKey' in newStoredItem &&
+            'data' in newStoredItem
+          ) {
             begin();
             write({ type: 'insert', value: newStoredItem.data });
             commit();
@@ -302,8 +308,12 @@ function createIndexedDBSync<T extends object, TKey extends string | number>(
           }
         } else if (oldStoredItem && newStoredItem) {
           // Update (only if versionKey changed)
-          if (newStoredItem && typeof newStoredItem === 'object' &&
-              'versionKey' in newStoredItem && 'data' in newStoredItem) {
+          if (
+            newStoredItem &&
+            typeof newStoredItem === 'object' &&
+            'versionKey' in newStoredItem &&
+            'data' in newStoredItem
+          ) {
             const typedNewItem = newStoredItem as StoredItem<T>;
             if (oldStoredItem.versionKey !== typedNewItem.versionKey) {
               begin();
@@ -768,13 +778,14 @@ export function indexedDBCollectionOptionsV2<
   id: string;
   utils: IndexedDBCollectionUtilsV2;
 } {
+  const desktop = isDesktopRuntime();
   const kvStore =
-    typeof indexedDB !== 'undefined'
+    !desktop && typeof indexedDB !== 'undefined'
       ? new KVStore<StoredItem<T>>(config.kvStoreOptions)
       : null;
 
   const channel =
-    typeof BroadcastChannel !== 'undefined' && config.channelName
+    !desktop && typeof BroadcastChannel !== 'undefined' && config.channelName
       ? new BroadcastChannel(config.channelName)
       : null;
 

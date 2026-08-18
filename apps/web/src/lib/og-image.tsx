@@ -1,6 +1,6 @@
-import { readFile } from 'node:fs/promises';
-
 import type { CSSProperties } from 'react';
+
+import { readFile } from 'node:fs/promises';
 import satori from 'satori';
 import sharp from 'sharp';
 
@@ -8,6 +8,7 @@ export const OG_IMAGE_SIZE = { width: 1200, height: 630 } as const;
 export const OG_IMAGE_CONTENT_TYPE = 'image/png';
 
 const FONT_FAMILY = 'Noto Sans';
+const BRAND_FONT_FAMILY = 'Lexend';
 
 interface SeptemberOgImageProps {
   logoDataUri: string;
@@ -86,27 +87,9 @@ const styles = {
     borderRadius: 44,
     backgroundColor: '#f8fafc',
   },
-  logoHalo: {
-    width: 256,
-    height: 256,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 999,
-    backgroundColor: '#e0e7ff',
-  },
-  logoCore: {
-    width: 198,
-    height: 198,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 999,
-    backgroundColor: '#ffffff',
-  },
   logo: {
-    width: 190,
-    height: 190,
+    width: 264,
+    height: 264,
   },
   pills: {
     display: 'flex',
@@ -121,10 +104,16 @@ const styles = {
     fontWeight: 800,
   },
   brandName: {
+    display: 'flex',
     color: '#4f46e5',
+    fontFamily: BRAND_FONT_FAMILY,
     fontSize: 50,
-    fontWeight: 800,
+    fontWeight: 700,
     lineHeight: 1,
+    letterSpacing: -3,
+  },
+  brandCompletion: {
+    color: '#c7d2fe',
   },
 } satisfies Record<string, CSSProperties>;
 
@@ -151,16 +140,23 @@ async function readLogoDataUri(): Promise<string> {
 }
 
 async function readFonts(): Promise<
-  Array<{ name: string; data: ArrayBuffer; weight: 500 | 800; style: 'normal' }>
+  Array<{ name: string; data: ArrayBuffer; weight: 500 | 700 | 800; style: 'normal' }>
 > {
-  const [regular, bold] = await Promise.all([
+  const [regular, bold, brand] = await Promise.all([
     readAsset('node_modules/@fontsource/noto-sans/files/noto-sans-latin-500-normal.woff'),
     readAsset('node_modules/@fontsource/noto-sans/files/noto-sans-latin-800-normal.woff'),
+    readAsset('node_modules/@fontsource/lexend/files/lexend-latin-700-normal.woff'),
   ]);
 
   return [
     { name: FONT_FAMILY, data: fontBufferToArrayBuffer(regular), weight: 500, style: 'normal' },
     { name: FONT_FAMILY, data: fontBufferToArrayBuffer(bold), weight: 800, style: 'normal' },
+    {
+      name: BRAND_FONT_FAMILY,
+      data: fontBufferToArrayBuffer(brand),
+      weight: 700,
+      style: 'normal',
+    },
   ];
 }
 
@@ -184,11 +180,7 @@ export function SeptemberOgImage({ logoDataUri }: SeptemberOgImageProps) {
 
         <div style={styles.brandPanel}>
           <div style={styles.logoTile}>
-            <div style={styles.logoHalo}>
-              <div style={styles.logoCore}>
-                <img src={logoDataUri} alt="" style={styles.logo} />
-              </div>
-            </div>
+            <img src={logoDataUri} alt="" style={styles.logo} />
           </div>
 
           <div style={styles.pills}>
@@ -202,7 +194,10 @@ export function SeptemberOgImage({ logoDataUri }: SeptemberOgImageProps) {
             ))}
           </div>
 
-          <div style={styles.brandName}>september</div>
+          <div style={styles.brandName}>
+            <div>Sep</div>
+            <div style={styles.brandCompletion}>tember</div>
+          </div>
         </div>
       </div>
     </div>

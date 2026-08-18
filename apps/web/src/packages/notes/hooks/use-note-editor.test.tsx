@@ -10,13 +10,16 @@ import { type UseNoteEditorReturn, useNoteEditor } from './use-note-editor';
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mockUpdateNote = vi.fn();
+const mockMutateAsync = vi.fn();
 const mockToastSuccess = vi.fn();
 const mockToastError = vi.fn();
 let mockNoteContent = 'Original';
 let mockNoteName: string | undefined;
 
-vi.mock('../mutations', () => ({
-  updateNote: (...args: unknown[]) => mockUpdateNote(...args),
+vi.mock('./use-note-mutations', () => ({
+  useUpdateNoteMutation: () => ({
+    mutateAsync: mockMutateAsync,
+  }),
 }));
 
 vi.mock('sonner', () => ({
@@ -50,6 +53,10 @@ beforeEach(() => {
   mockNoteName = undefined;
   mockUpdateNote.mockReset();
   mockUpdateNote.mockResolvedValue(undefined);
+  mockMutateAsync.mockReset();
+  mockMutateAsync.mockImplementation(({ id, updates }: { id: string; updates: unknown }) =>
+    mockUpdateNote(id, updates)
+  );
   mockToastSuccess.mockReset();
   mockToastError.mockReset();
   container = document.createElement('div');

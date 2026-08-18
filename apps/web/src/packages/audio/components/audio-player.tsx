@@ -10,6 +10,13 @@ import {
   useState,
 } from 'react';
 
+import { isDesktopRuntime } from '@/packages/shared/lib/data';
+
+import {
+  AUDIO_OUTPUT_STORAGE_KEY,
+  readAudioOutputDevice,
+  writeAudioOutputDevice,
+} from '../lib/audio-output-setting';
 import type { Audio as AudioTrack } from '../types';
 
 export interface AudioOutputDevice {
@@ -36,8 +43,6 @@ export interface AudioPlayerContextType {
 
 const AudioPlayerContext = createContext<AudioPlayerContextType | undefined>(undefined);
 
-const AUDIO_OUTPUT_STORAGE_KEY = 'september:audio-output-device';
-
 // Feature-detected once at module load — stable across renders
 const isDeviceSelectionSupported =
   typeof navigator !== 'undefined' &&
@@ -53,7 +58,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const [duration, setDuration] = useState(0);
   const [outputDevices, setOutputDevices] = useState<AudioOutputDevice[]>([]);
   const [selectedOutputDeviceId, setSelectedOutputDeviceIdState] = useState<string | null>(() =>
-    typeof localStorage !== 'undefined'
+    !isDesktopRuntime() && typeof localStorage !== 'undefined'
       ? (localStorage.getItem(AUDIO_OUTPUT_STORAGE_KEY) ?? null)
       : null
   );
@@ -67,7 +72,10 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     if (rafRef.current) return;
     const tick = () => {
       const el = audioRef.current;
-      if (!el) { rafRef.current = null; return; }
+      if (!el) {
+        rafRef.current = null;
+        return;
+      }
       const t = el.currentTime;
       if (Math.abs(t - lastReportedTime.current) > 0.016) {
         lastReportedTime.current = t;
@@ -86,21 +94,43 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Pause and clean up audio element on unmount
-  useEffect(() => () => {
-    stopRaf();
-    audioRef.current?.pause();
-  }, [stopRaf]);
+  useEffect(
+    () => () => {
+      stopRaf();
+      audioRef.current?.pause();
+    },
+    [stopRaf]
+  );
 
   // Output device enumeration
   const refreshOutputDevices = useCallback(async () => {
     if (!isDeviceSelectionSupported) return;
     const devices = await navigator.mediaDevices.enumerateDevices();
     setOutputDevices(
-      devices.filter(
-        d => d.kind === 'audiooutput' && d.deviceId && d.deviceId !== 'default' && d.deviceId !== 'communications'
-      // MediaDeviceInfo properties are prototype getters — spreading would drop deviceId
-      ).map((d, i) => ({ deviceId: d.deviceId, label: d.label || `Speaker ${i + 1}` }))
+      devices
+        .filter(
+          d =>
+            d.kind === 'audiooutput' &&
+            d.deviceId &&
+            d.deviceId !== 'default' &&
+            d.deviceId !== 'communications'
+          // MediaDeviceInfo properties are prototype getters — spreading would drop deviceId
+        )
+        .map((d, i) => ({ deviceId: d.deviceId, label: d.label || `Speaker ${i + 1}` }))
     );
+  }, []);
+
+  useEffect(() => {
+    if (!isDesktopRuntime()) return;
+    let cancelled = false;
+    void readAudioOutputDevice()
+      .then(id => {
+        if (!cancelled) setSelectedOutputDeviceIdState(id);
+      })
+      .catch(error => console.error('Failed to read the audio output setting:', error));
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -111,7 +141,9 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   }, [refreshOutputDevices]);
 
   const setSelectedOutputDeviceId = useCallback((id: string) => {
-    localStorage.setItem(AUDIO_OUTPUT_STORAGE_KEY, id);
+    void writeAudioOutputDevice(id).catch(error =>
+      console.error('Failed to save the audio output setting:', error)
+    );
     setSelectedOutputDeviceIdState(id || null);
     // Apply to currently playing element too
     if (audioRef.current && id && isDeviceSelectionSupported) {
@@ -155,7 +187,9 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
     // blob path
     if (track.blob) {
-      const src = track.blob.startsWith('data:') ? track.blob : `data:audio/mp3;base64,${track.blob}`;
+      const src = track.blob.startsWith('data:')
+        ? track.blob
+        : `data:audio/mp3;base64,${track.blob}`;
 
       // Clean up previous element
       audioRef.current?.pause();
@@ -166,15 +200,25 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       setCurrentTime(0);
       lastReportedTime.current = 0;
 
-      el.addEventListener('play', () => { setIsPlaying(true); startRaf(); });
-      el.addEventListener('pause', () => { setIsPlaying(false); stopRaf(); });
+      el.addEventListener('play', () => {
+        setIsPlaying(true);
+        startRaf();
+      });
+      el.addEventListener('pause', () => {
+        setIsPlaying(false);
+        stopRaf();
+      });
       el.addEventListener('ended', () => {
         setIsPlaying(false);
         stopRaf();
         advance(queue, currentIndex);
       });
-      el.addEventListener('durationchange', () => setDuration(isFinite(el.duration) ? el.duration : 0));
-      el.addEventListener('loadedmetadata', () => setDuration(isFinite(el.duration) ? el.duration : 0));
+      el.addEventListener('durationchange', () =>
+        setDuration(isFinite(el.duration) ? el.duration : 0)
+      );
+      el.addEventListener('loadedmetadata', () =>
+        setDuration(isFinite(el.duration) ? el.duration : 0)
+      );
 
       if (selectedOutputDeviceId && isDeviceSelectionSupported) {
         (el as HTMLAudioElement & { setSinkId(id: string): Promise<void> })
@@ -188,19 +232,22 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         el.play().catch(() => {});
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queue, currentIndex]);
 
-  const enqueue = useCallback((track: AudioTrack) => {
-    if (isMuted) return;
-    setQueue(prev => {
-      if (prev.length === 0) {
-        setCurrentIndex(0);
-        return [track];
-      }
-      return [...prev, track];
-    });
-  }, [isMuted]);
+  const enqueue = useCallback(
+    (track: AudioTrack) => {
+      if (isMuted) return;
+      setQueue(prev => {
+        if (prev.length === 0) {
+          setCurrentIndex(0);
+          return [track];
+        }
+        return [...prev, track];
+      });
+    },
+    [isMuted]
+  );
 
   const togglePlayPause = useCallback(() => {
     const el = audioRef.current;

@@ -1,6 +1,7 @@
 /**
- * Message types for display popup BroadcastChannel communication.
- * Audio blob is passed directly to avoid redundant download in popup.
+ * Message types for the separate display window. The browser uses
+ * BroadcastChannel; Tauri uses a targeted window event. Base64 audio is
+ * passed directly to avoid a second storage read.
  */
 
 export interface DisplayMessagePayload {

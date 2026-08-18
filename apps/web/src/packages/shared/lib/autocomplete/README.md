@@ -23,8 +23,9 @@ A TypeScript library for AI-powered typing suggestions, providing intelligent wo
    Pluggable via `keyboard-layout.ts::editCost`.
 4. **Incremental `observe(text)` API.** No more full retrain on every
    message — new messages are folded in with a sliding window.
-5. **IndexedDB persistence** (`persistence.ts`). One-time cold start per
-   seed corpus; subsequent mounts restore from a snapshot in O(ms).
+5. **Local snapshot persistence** (`persistence.ts`). Browser builds use
+   IndexedDB. Desktop builds store snapshots in the local-only
+   `autocomplete-snapshots` SQLite collection through Rust RPC.
 6. **Unified `suggestWord({ prefix, context, fuzzy })`.** Blends prefix
    ranking with context n-gram probability and optional QWERTY fuzzy
    fallback. Recommended entry point for new UIs.
@@ -44,7 +45,8 @@ All pre-v2 APIs (`train`, `getCompletions`, `getNextWord`, `getNextPhrase`,
 - **Incremental Learning**: `observe(text)` folds new observations into
   the model without retraining.
 - **Client-side Persistence**: `AutocompletePersistence` + `getSnapshot` /
-  `restoreFromSnapshot` give free cold-start speedup.
+  `restoreFromSnapshot` give free cold-start speedup without exposing the
+  platform storage API to the prediction engine.
 - **Sample Data**: Pre-built corpora for testing and demonstration.
 - **Backward-compatible API**: Simple Autocomplete-style methods alongside
   the new feature-rich API.

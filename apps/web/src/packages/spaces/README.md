@@ -1,18 +1,19 @@
 # @/packages/spaces
 
-Local-first spaces and messaging for September. Backed by TanStack DB (IndexedDB).
+Local-first spaces and messaging for September. Browser builds use IndexedDB;
+desktop builds use SQLite through Rust record RPC.
 
 ## Public API
 
 ### Components
 
-| Export               | Description                                                                                                                       |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `SpaceList`          | Renders a searchable list of spaces with delete confirm dialog                                                                    |
-| `MessageList`        | Renders messages in a space; handles audio playback                                                                               |
-| `EditableSpaceTitle` | Inline editable title with save/revert behaviour                                                                                  |
+| Export               | Description                                                    |
+| -------------------- | -------------------------------------------------------------- |
+| `SpaceList`          | Renders a searchable list of spaces with delete confirm dialog |
+| `MessageList`        | Renders messages in a space; handles audio playback            |
+| `EditableSpaceTitle` | Inline editable title with save/revert behaviour               |
 
-### Live-query hooks
+### Query hooks
 
 ```ts
 const { spaces, isLoading, error } = useSpaces({ userId, searchQuery });
@@ -28,6 +29,12 @@ const { spaceId, isLoading } = useSpaceIdFromSlug(spaceSlug);
 ```
 
 ### Mutations
+
+The plain async functions below remain available for non-React callers. React
+components use the exported `useCreateSpaceMutation`,
+`useCreateDefaultSpaceMutation`, `useUpdateSpaceMutation`,
+`useDeleteSpaceMutation`, and `useCreateMessageMutation` hooks. These hooks use
+TanStack Query and update the collection cache optimistically where possible.
 
 ```ts
 import {
@@ -69,14 +76,21 @@ console.log(DEFAULT_SPACE_SEED.title); // "General"
 
 ```ts
 import {
-  generateCode, // deterministic code from a phrase's content-word initials
-  isCommonWord, // built-in short-word dictionary (default `isWord` check)
-  matchCode, // exact case-insensitive lookup; current space wins conflicts
-  mineShortcuts, // frequency-mine repeated phrases → { text, code, count }[]
+  generateCode,
+  // deterministic code from a phrase's content-word initials
+  isCommonWord,
+  // built-in short-word dictionary (default `isWord` check)
+  matchCode,
+  // exact case-insensitive lookup; current space wins conflicts
+  mineShortcuts,
+  // frequency-mine repeated phrases → { text, code, count }[]
   normalizeCode,
-  normalizeMinedText, // canonical key used by mining + the dismissed-set
-  sanitizeStarters, // clamp LLM starter output to 2–6-word prefixes
-  trailingWord, // the word at the composer caret ('' after whitespace)
+  normalizeMinedText,
+  // canonical key used by mining + the dismissed-set
+  sanitizeStarters,
+  // clamp LLM starter output to 2–6-word prefixes
+  trailingWord,
+  // the word at the composer caret ('' after whitespace)
   validateCode, // format/dictionary/duplicate check with a mutation suggestion
 } from '@/packages/spaces';
 ```
@@ -136,14 +150,26 @@ budget. See `docs/concepts/saved-phrases.md`.
 
 ## Data layout
 
-| Collection              | IndexedDB db        | Key         | Query indexes             |
-| ----------------------- | ------------------- | ----------- | ------------------------- |
-| `spaceCollection`       | `app-spaces`        | `id` (uuid) | `user_id`, `updated_at`   |
-| `messageCollection`     | `app-messages`      | `id` (uuid) | `space_id`, `created_at`  |
-| `savedPhraseCollection` | `app-saved-phrases` | `id` (uuid) | `space_id`, `created_at`  |
+Browser builds keep the existing stores, so current web data survives this
+change.
+
+| Collection              | IndexedDB db        | Key         | Query indexes            |
+| ----------------------- | ------------------- | ----------- | ------------------------ |
+| `spaceCollection`       | `app-spaces`        | `id` (uuid) | `user_id`, `updated_at`  |
+| `messageCollection`     | `app-messages`      | `id` (uuid) | `space_id`, `created_at` |
+| `savedPhraseCollection` | `app-saved-phrases` | `id` (uuid) | `space_id`, `created_at` |
 
 Message search uses a leading-wildcard `ilike`, which TanStack DB 0.6 cannot
 serve from a `BasicIndex`. It scans the rows selected by `space_id`.
 
 Space notes live in `@/packages/notes` as `noteCollection` rows with
 `space_id` set. `deleteSpace` also removes those scoped note rows.
+
+Desktop builds store the same domain objects as JSON records in the SQLite
+collections `spaces`, `messages`, and `saved-phrases`. Rust owns versioning,
+tombstones, and the durable cloud-sync outbox. Hooks read both backends through
+the shared record client and keep the same return shapes.
+
+The separate chat display uses a named Tauri window on desktop. The main
+window sends new messages to it with a targeted Tauri event. The browser build
+continues to use a popup and `BroadcastChannel`.

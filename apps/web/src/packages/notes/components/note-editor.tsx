@@ -11,6 +11,7 @@ import { Save } from 'lucide-react';
 
 import { TiptapEditor } from '@/packages/editor';
 import { cn } from '@/packages/shared';
+import { isDesktopRuntime, openDesktopAppWindow } from '@/packages/shared/lib/data';
 import { Button } from '@/packages/ui/components/button';
 import {
   Dialog,
@@ -56,9 +57,19 @@ export function NoteEditor({
 
   const popupRef = useRef<Window | null>(null);
 
-  const handlePresent = useCallback(() => {
+  const handlePresent = useCallback(async () => {
     if (!current?.id) return;
     const url = `/present/${current.id}`;
+    if (isDesktopRuntime()) {
+      await openDesktopAppWindow({
+        label: `present-${current.id}`,
+        url,
+        title: current.name || 'September presentation',
+        width: 1280,
+        height: 720,
+      });
+      return;
+    }
     if (popupRef.current && !popupRef.current.closed) {
       popupRef.current.focus();
       return;
@@ -68,7 +79,7 @@ export function NoteEditor({
       `present-${current.id}`,
       'width=1280,height=720,left=100,top=100,popup=1'
     );
-  }, [current?.id]);
+  }, [current?.id, current?.name]);
 
   const uploadDialog = useMemo(
     () => (
@@ -149,7 +160,7 @@ export function NoteEditor({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={handlePresent}
+                  onClick={() => void handlePresent()}
                   disabled={!current?.id}
                   className="min-w-[120px]"
                 >
