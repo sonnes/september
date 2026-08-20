@@ -5,7 +5,7 @@ PORT ?= 3009
 dev:
 	pnpm -C apps/web dev --port $(PORT)
 
-# Independent Tauri desktop app with Rust-owned SQLite/files.
+# Independent Tauri desktop app with Rust-owned SQLite settings.
 desktop-dev:
 	pnpm -C apps/desktop tauri:dev
 

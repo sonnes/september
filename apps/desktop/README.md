@@ -1,7 +1,13 @@
 # September Desktop
 
-September Desktop is an independent Tauri application. Its React UI starts as
-an empty surface so web screens can be ported into it one at a time.
+September Desktop is an independent Tauri application. Its first ported screen
+is a four-step onboarding flow, sized for the 13-inch iPad landscape window.
+
+The UI uses Tailwind CSS v4 and TanStack Router. Each step is a route:
+`/welcome`, `/profile`, `/mode`, and `/finish`. The router uses hash history,
+because Tauri serves the built files from the asset protocol. A step opens only
+after the answers it needs exist. The answers stay in memory until account
+persistence is ported.
 
 ## Run the app
 
@@ -31,5 +37,5 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo fmt --all -- --check
 ```
 
-The Rust backend owns SQLite, local files, OS identity, and external-link
-commands. See [`src-tauri/README.md`](src-tauri/README.md) for its RPC contract.
+The Rust backend stores settings in one SQLite table. See
+[`src-tauri/README.md`](src-tauri/README.md) for its RPC contract.

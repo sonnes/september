@@ -12,14 +12,19 @@
     "tauri:build": "tauri build"
   },
   "dependencies": {
+    "@fontsource/lexend": "^5.2.8",
+    "@fontsource/noto-sans": "^5.2.10",
+    "@tanstack/react-router": "^1.170.31",
     "react": "19.2.1",
     "react-dom": "19.2.1"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
     "@tauri-apps/cli": "^2.11.4",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
+    "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",
     "vite": "^8.0.16"
   }

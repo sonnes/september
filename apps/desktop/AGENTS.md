@@ -27,6 +27,10 @@ cargo fmt --all -- --check
 ## UI boundary
 
 - Keep all desktop UI code inside `apps/desktop/src/`.
+- Style screens with Tailwind utility classes. `src/styles.css` holds the
+  Tailwind import and the two font tokens only.
+- Add a screen as a route in `src/main.tsx`. Keep the step rules in
+  `src/onboarding.ts`, where a test can read them.
 - Follow the root `DESIGN.md` for every screen.
 - Keep the 1376×1032 baseline usable before adapting a screen to other sizes.
 - Write a failing test before each implementation change.

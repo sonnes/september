@@ -83,9 +83,9 @@ The application will be available at `http://localhost:3009`.
 make desktop-dev
 ```
 
-This command starts the independent React interface in Tauri. The initial UI is
-an empty shell for porting web screens one at a time. Desktop records use SQLite
-through Rust commands.
+This command starts the independent React interface in Tauri. Its first ported
+screen is the onboarding flow. Desktop settings use SQLite through Rust
+commands.
 
 Build an installable desktop bundle with `make desktop-build`.
 
@@ -125,7 +125,7 @@ september/
 │   └── vercel.json
 ├── apps/desktop/               # Independent Tauri application
 │   ├── src/                    # Desktop-only React UI
-│   └── src-tauri/              # Rust RPC, SQLite, and file storage
+│   └── src-tauri/              # Rust RPC and SQLite settings storage
 ├── apps/swift/                 # Native macOS floating keyboard (SwiftPM)
 │   ├── Sources/SeptemberKit/   # Models, design tokens, SwiftUI views
 │   └── Sources/September/      # App shell, floating panel, CGEvent injection
@@ -142,7 +142,7 @@ Accessibility permission setup.
 - **Data Cache**: TanStack Query for shared asynchronous state.
 - **Web Storage**: IndexedDB through TanStack DB.
 - **Desktop UI**: React 19 and Vite in an independent Tauri app.
-- **Desktop Storage**: SQLite and regular files behind Tauri Rust commands.
+- **Desktop Storage**: Settings in SQLite behind Tauri Rust commands.
 - **AI**: Google Gemini API / OpenRouter, Vercel AI SDK
 - **Voice**: ElevenLabs for voice synthesis and cloning
 - **Forms**: React Hook Form + Zod validation

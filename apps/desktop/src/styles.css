@@ -1,24 +1,12 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Noto Sans", system-ui, sans-serif;
+  --font-brand: "Lexend", sans-serif;
+}
+
+/* ponytail: light only until the desktop app ports a theme switch. */
 :root {
-  --background: #fafafa;
-
-  background: var(--background);
   color-scheme: light;
-  font-family: "Noto Sans", system-ui, sans-serif;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html,
-body,
-#root,
-.app-shell {
-  min-height: 100%;
-  margin: 0;
-}
-
-.app-shell {
-  min-height: 100vh;
-  background: var(--background);
+  font-synthesis: none;
 }
