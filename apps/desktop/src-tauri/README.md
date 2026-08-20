@@ -1,6 +1,8 @@
 # September desktop backend
 
-This Tauri v2 shell packages the shared React interface and keeps desktop storage behind Rust commands. The webview has no direct SQL or filesystem access.
+This Tauri v2 backend belongs to the independent app in `apps/desktop`. It keeps
+desktop storage behind Rust commands. The webview has no direct SQL or
+filesystem access.
 
 ## Run backend checks
 
@@ -12,7 +14,9 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo fmt --all -- --check
 ```
 
-Use the desktop scripts in `apps/web/package.json` to run or package the complete application. Tauri starts Vite in `tauri` mode so browser-only AI providers do not load in the desktop webview.
+Use `pnpm tauri:dev` or `pnpm tauri:build` from `apps/desktop` to run or package
+the complete application. The desktop UI has its own Vite entry point and does
+not load routes or packages from `apps/web`.
 
 ## Understand storage
 

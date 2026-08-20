@@ -1,0 +1,24 @@
+:root {
+  --background: #fafafa;
+
+  background: var(--background);
+  color-scheme: light;
+  font-family: "Noto Sans", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root,
+.app-shell {
+  min-height: 100%;
+  margin: 0;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: var(--background);
+}

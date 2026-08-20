@@ -5,12 +5,12 @@ PORT ?= 3009
 dev:
 	pnpm -C apps/web dev --port $(PORT)
 
-# Tauri desktop app reusing the web UI with Rust-owned SQLite/files.
+# Independent Tauri desktop app with Rust-owned SQLite/files.
 desktop-dev:
-	pnpm -C apps/web desktop:dev
+	pnpm -C apps/desktop tauri:dev
 
 desktop-build:
-	pnpm -C apps/web desktop:build
+	pnpm -C apps/desktop tauri:build
 
 # Cloudflare Worker backend (Durable Objects + R2); serves the SPA in production.
 server-dev:

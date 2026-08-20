@@ -13,6 +13,10 @@ The formerly-shared modules live inside the app at `apps/web/src/packages/*`,
 imported via the `@/packages/*` alias (`@/*` → `src/*`), not as workspace
 packages.
 
+**Desktop** — an independent Tauri v2 app with its own React and Vite UI in
+`apps/desktop/`. See `apps/desktop/CLAUDE.md` before working in it. Port screens
+from the web app deliberately; do not share UI source between the apps.
+
 **macOS** — a native floating keyboard in `apps/swift/` (SwiftUI + AppKit,
 SwiftPM, no dependencies). See `apps/swift/CLAUDE.md` before working in it; its
 design system comes from GitHub issue #10, not `DESIGN.md`.
@@ -21,12 +25,13 @@ design system comes from GitHub issue #10, not `DESIGN.md`.
 september/
 ├── apps/web/              # Web app (standalone pnpm project)
 │   └── src/packages/      # shared modules (import via @/packages/*)
+├── apps/desktop/          # Independent Tauri app and React UI
 ├── apps/swift/            # Native macOS keyboard (SwiftPM)
 └── docs/                  # Plans, notes, concepts
 ```
 
-Run commands from `apps/web/` (e.g. `pnpm -C apps/web <script>`) or via the
-root `Makefile` (`make dev`, `make mac-run`, `make mac-test`).
+Run commands from the app directory or via the root `Makefile` (`make dev`,
+`make desktop-dev`, `make mac-run`, `make mac-test`).
 
 ## TDD (strict)
 

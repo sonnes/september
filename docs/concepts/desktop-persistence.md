@@ -1,22 +1,26 @@
 ---
 title: Desktop persistence
-description: The Tauri app keeps records in SQLite and file bytes in regular files behind Rust commands.
-package: shared, audio
+description: The independent Tauri app keeps records in SQLite and file bytes in regular files behind Rust commands.
+package: desktop
 ---
 
 # Desktop persistence
 
-The desktop app uses the same React routes and components as the web app. A Tauri build changes the persistence adapter and local AI registry.
+The desktop app has its own React and Vite UI in `apps/desktop`. Screens move
+from the web app one at a time instead of sharing routes and components at
+runtime. The Rust backend remains the privileged boundary for local data.
 
 ## Read and write records
 
-TanStack Query gives components one data contract. Browser queries read IndexedDB. Desktop queries call typed TypeScript clients that invoke Rust commands.
+Ported desktop screens will call typed TypeScript clients that invoke Rust
+commands. The web app keeps its separate IndexedDB data path.
 
 Rust validates each request and stores records in SQLite. Related writes use a
 batch command when they must succeed or fail together. Space deletion and
 generated-phrase replacement are transactional on desktop.
 
-Rust change events name the affected collections. The shared query provider invalidates only the related query-key prefixes.
+Rust change events name the affected collections so the desktop UI can refresh
+only the related data.
 
 ## Store file bytes
 
@@ -28,28 +32,20 @@ Audio features still use stable logical names. An `audio-file-aliases` record ma
 
 Generated exports use a separate Rust command. Rust sanitizes the suggested name and shows a native save dialog without returning the destination path.
 
-Desktop route and audio-output preferences use Rust settings commands. The
+Desktop route and audio-output preferences can use Rust settings commands. The
 browser keeps its existing local storage.
 
 ## Start the desktop app
 
-The Tauri main window opens `/desktop`. This startup page reads the OS account through Rust.
-
-The OS account ID becomes the local account ID. The OS display name initializes the profile name.
-
-A new account enters onboarding automatically. A completed account opens the last safe app route from the Rust settings table.
-
-The route tracker does not store secondary windows, marketing pages, or OAuth credentials. If no safe route exists, the app opens Spaces.
+The Tauri main window opens the independent UI at `/`. Its default size is
+1376×1032, the 13-inch iPad landscape baseline. The initial surface is empty;
+startup and onboarding behavior will return as those screens are ported.
 
 ## Keep browser storage separate
 
-The browser adapter keeps IndexedDB for records and file blobs. The normal web build also keeps its browser-local AI providers.
-
-The Tauri build replaces WebLLM, Whisper, Transformers, and Kokoro modules with desktop stubs. Remote providers remain available.
-
-OpenRouter uses a pasted API key on desktop. The browser can use OpenRouter's
-redirect authorization flow, but a packaged `tauri://` origin is not a valid
-provider callback.
+The browser app keeps IndexedDB for records and file blobs. It also keeps its
+browser-local AI providers. The independent desktop UI does not import those
+providers during the bootstrap phase.
 
 ## Run the desktop app
 

@@ -55,6 +55,7 @@ Reels turn note text into a captioned video you can download and share.
 
    ```bash
    pnpm -C apps/web install
+   pnpm -C apps/desktop install
    ```
 
 3. **Environment Variables**:
@@ -82,11 +83,9 @@ The application will be available at `http://localhost:3009`.
 make desktop-dev
 ```
 
-This command starts the same React interface in Tauri. Desktop records use SQLite through Rust commands.
-
-The desktop app reads the OS account ID and name through Rust. A new OS account enters onboarding automatically. Later launches restore the last app page.
-
-File bytes use regular files in the application-local-data directory. The webview receives opaque file IDs instead of file paths.
+This command starts the independent React interface in Tauri. The initial UI is
+an empty shell for porting web screens one at a time. Desktop records use SQLite
+through Rust commands.
 
 Build an installable desktop bundle with `make desktop-build`.
 
@@ -100,7 +99,7 @@ Build an installable desktop bundle with `make desktop-build`.
 
 ## Project Structure
 
-September has a web app, a Tauri desktop shell, and a native macOS keyboard.
+September has separate web and Tauri desktop apps, plus a native macOS keyboard.
 Shared modules live inside the web app at `src/packages/*`.
 They use the `@/packages/*` alias (`@/*` → `src/*` in `tsconfig.json`).
 
@@ -122,9 +121,11 @@ september/
 │   │       ├── onboarding/     # User onboarding
 │   │       ├── speech/         # TTS & voice management
 │   │       └── suggestions/    # Contextual suggestions
-│   ├── src-tauri/               # Tauri shell, Rust RPC, SQLite, and file storage
 │   ├── vite.config.ts
 │   └── vercel.json
+├── apps/desktop/               # Independent Tauri application
+│   ├── src/                    # Desktop-only React UI
+│   └── src-tauri/              # Rust RPC, SQLite, and file storage
 ├── apps/swift/                 # Native macOS floating keyboard (SwiftPM)
 │   ├── Sources/SeptemberKit/   # Models, design tokens, SwiftUI views
 │   └── Sources/September/      # App shell, floating panel, CGEvent injection
@@ -140,6 +141,7 @@ Accessibility permission setup.
 - **Styling**: Tailwind CSS 4, shadcn/ui components
 - **Data Cache**: TanStack Query for shared asynchronous state.
 - **Web Storage**: IndexedDB through TanStack DB.
+- **Desktop UI**: React 19 and Vite in an independent Tauri app.
 - **Desktop Storage**: SQLite and regular files behind Tauri Rust commands.
 - **AI**: Google Gemini API / OpenRouter, Vercel AI SDK
 - **Voice**: ElevenLabs for voice synthesis and cloning
