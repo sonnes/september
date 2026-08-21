@@ -115,3 +115,13 @@ export function deleteLastWord(text: string): string {
   const start = trimmed.search(/\S+$/);
   return start > 0 ? trimmed.slice(0, start) : "";
 }
+
+/**
+ * Whether the title is one September wrote, and not one the user typed.
+ *
+ * A model renames a space after the first message. A title the user chose is
+ * the user's, so the model must leave it alone.
+ */
+export function isAutoTitle(title: string | null | undefined): boolean {
+  return /^(general|new-space(-\d+)?)$/.test(spaceSlug(title));
+}

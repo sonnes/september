@@ -54,7 +54,7 @@ export function useSyncPhrases({
           await replace.mutateAsync({ spaceId: space.id, phrases: rows });
         }
         await updateSpace.mutateAsync({
-          ...space,
+          id: space.id,
           phrases_synced_count: messages.length,
         });
       })

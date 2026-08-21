@@ -133,3 +133,72 @@ export function buildSuggestionPrompt(
 
   return { system, user };
 }
+
+/**
+ * The prompt that names a new space.
+ *
+ * Ported from `useGenerateSpaceContext` in the web app. Keep it the same in
+ * both apps.
+ */
+const SPACE_CONTEXT_PROMPT = `From the User's first message, produce a starter context note for this conversation space.
+
+<output_format>
+- title: Short descriptive name for this space (max 50 chars)
+- context: Markdown note with:
+  - One or two prose sentences (first person, from the User's perspective) capturing who they are talking to, the situation, and the intent
+  - A short list of practical bullet phrases the User is likely to want to say (using "- " prefix), in the same language and tone as the input
+</output_format>
+
+<rules>
+- All content must be from the User's point of view (what THEY would say or convey)
+- Bullet phrases should be practical, speakable sentence starters or full short phrases
+- Keep the context concise — prose: 1-2 sentences; bullets: 4-8 items
+- STRICTLY maintain the same language as the input message
+- Match the style and tone of the input message (e.g. casual, formal)
+- The context markdown is written in first person as the User
+</rules>
+
+Answer with JSON: {"title": "...", "context": "..."}`;
+
+/** What the model is asked, to name a space from its first message. */
+export function buildSpaceContextPrompt(messageText: string): {
+  system: string;
+  user: string;
+} {
+  return {
+    system: SPACE_CONTEXT_PROMPT,
+    user: `First message:\n${messageText}`,
+  };
+}
+
+/** The name and the note of a space. Either one can be empty. */
+export interface SpaceDescription {
+  title: string;
+  context: string;
+}
+
+/** A tab in the dock is small, so a long title is cut to fit. */
+const TITLE_LIMIT = 50;
+
+/**
+ * The name and the note that the model wrote, and nothing when it wrote
+ * neither. A service that answers with something else costs the user nothing.
+ */
+export function spaceDescriptionFrom(text: string): SpaceDescription | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== "object") return null;
+
+  const row = parsed as Record<string, unknown>;
+  const read = (key: string) =>
+    typeof row[key] === "string" ? (row[key] as string).trim() : "";
+
+  const title = read("title").slice(0, TITLE_LIMIT);
+  const context = read("context");
+
+  return title || context ? { title, context } : null;
+}

@@ -43,6 +43,21 @@ A get returns `null` for a missing row. A delete returns `false` for a missing
 row. SQLite rejects a scoped message or note when its parent space does not
 exist.
 
+## Change a space with a patch
+
+A put sends a complete row, so it needs one writer. A space has three: the user
+renames it, a model writes its name and its note after the first message, and
+the phrase sync counts the messages. Each writer holds a copy of the row from
+the moment it started, and each one knows only its own fields.
+
+`space_patch` changes only the fields it is given. One SQL statement writes
+them, and a field that is absent keeps its value. Two writers that touch
+different fields both keep their change. A put would let the last writer put
+back the fields it read before the others wrote, and the user would watch a new
+name turn back into `New space 2`.
+
+A field is set, never cleared. No writer needs to empty one.
+
 ## Start with the current schema
 
 Schema version 1 creates `settings`, `spaces`, `messages`, and `notes` directly.

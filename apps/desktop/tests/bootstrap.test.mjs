@@ -30,12 +30,14 @@ import {
 import {
   deleteLastWord,
   filterSpaces,
+  isAutoTitle,
   newSpaceTitle,
   spaceFromSlug,
   spaceSlug,
   timeAgo,
   transcriptPage,
 } from "../src/spaces.ts";
+import { buildSpaceContextPrompt, spaceDescriptionFrom } from "../src/prompts.ts";
 import {
   canReach,
   isSetupDone,
@@ -957,4 +959,91 @@ test("a hover shows the words a press would take", async () => {
 
   assert.match(suggestions, /index <= hover\.index/);
   assert.match(suggestions, /active \? lane\.active : lane\.idle/);
+});
+
+// ------------------------------------------------- the name of a new space
+
+test("a title September wrote is known apart from one the user typed", () => {
+  // The model may rename a space that still holds its made-up title.
+  assert.equal(isAutoTitle("General"), true);
+  assert.equal(isAutoTitle("New space"), true);
+  assert.equal(isAutoTitle("New space 2"), true);
+  assert.equal(isAutoTitle("new space 12"), true);
+
+  // A title the user typed is the user's. The model never takes it.
+  assert.equal(isAutoTitle("Mum"), false);
+  assert.equal(isAutoTitle("New space plans"), false);
+  assert.equal(isAutoTitle(undefined), false);
+});
+
+test("the first message asks the model for a name and a note", () => {
+  const { system, user } = buildSpaceContextPrompt("I need water please");
+
+  assert.match(system, /title/);
+  assert.match(system, /context/);
+  assert.match(user, /I need water please/);
+});
+
+test("the name and the note are read back from the answer", () => {
+  const answer = spaceDescriptionFrom(
+    '{"title":"Asking for water","context":"I am talking to my carer."}',
+  );
+  assert.deepEqual(answer, {
+    title: "Asking for water",
+    context: "I am talking to my carer.",
+  });
+
+  // A title is a tab in the dock, so a long one is cut to fit.
+  const long = spaceDescriptionFrom(
+    JSON.stringify({ title: "x".repeat(80), context: "note" }),
+  );
+  assert.equal(long.title.length, 50);
+
+  // A note without a title is still worth keeping.
+  assert.deepEqual(spaceDescriptionFrom('{"context":"a note"}'), {
+    title: "",
+    context: "a note",
+  });
+
+  // Nothing usable gives nothing.
+  assert.equal(spaceDescriptionFrom("not json"), null);
+  assert.equal(spaceDescriptionFrom('{"title":"  ","context":""}'), null);
+});
+
+test("the space is named after the first message, and the address follows", async () => {
+  const talk = await readText("src/talk.tsx");
+
+  // The note reaches the model that writes the stripe and the phrases, so it
+  // is written once, when the space stops being empty.
+  assert.match(talk, /describeSpace/);
+  assert.match(talk, /isAutoTitle/);
+  // A new title makes a new slug. Without this the open address goes nowhere.
+  assert.match(talk, /replace: true/);
+});
+
+// ------------------------------------------------------ where sound comes out
+
+test("the sound outputs are read through the system module", async () => {
+  const os = await readText("src/os.ts");
+
+  assert.match(os, /audio_outputs/);
+  assert.match(os, /audio_output_set/);
+  // The Mac remembers the output it plays through, so September keeps no
+  // copy of the answer. One saved setting cannot drift from the real one.
+  assert.doesNotMatch(os, /"audio-output"/);
+});
+
+test("the output picker sits beside Speak and names the Mac, not the app", async () => {
+  const talk = await readText("src/talk.tsx");
+  const picker = talk.match(/function SoundOutput[\s\S]*?\n\}\n/)[0];
+
+  // A press moves the sound of the whole Mac. The words must say so, because
+  // a user who reads "September" would not expect their music to move.
+  assert.match(picker, /Sound output/);
+  assert.match(picker, /this Mac/i);
+  // The picker is next to the button that makes the sound.
+  assert.ok(
+    talk.indexOf("<SoundOutput") < talk.indexOf("Speak\n"),
+    "the picker must come before the Speak button",
+  );
 });

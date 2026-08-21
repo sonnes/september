@@ -26,6 +26,20 @@ pub struct Space {
     pub updated_at: i64,
 }
 
+/// The fields of a space that one writer changes. A field left out keeps the
+/// value it holds.
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct SpacePatch {
+    pub id: String,
+    #[serde(default)]
+    pub title: Option<String>,
+    #[serde(default)]
+    pub context: Option<String>,
+    #[serde(default)]
+    pub phrases_synced_count: Option<i64>,
+    pub updated_at: i64,
+}
+
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Message {
     pub id: String,
@@ -166,6 +180,45 @@ impl Repository {
             ],
         )?;
         Ok(())
+    }
+
+    /// Changes some fields of a space, and leaves the rest as they are.
+    ///
+    /// A space has more than one writer: the user renames it, a model gives it
+    /// a name and a note, and the phrase sync counts the messages. Each writer
+    /// holds a copy of the row from the moment it started, so a whole-row
+    /// write puts back the fields it never meant to touch, and the last writer
+    /// undoes the others. One statement for each writer keeps every change.
+    ///
+    /// A field that is absent keeps its value. No writer needs to empty one.
+    pub fn patch_space(&self, patch: &SpacePatch) -> Result<Space> {
+        validate_identifier("space ID", &patch.id)?;
+        validate_timestamp("space updated_at", patch.updated_at)?;
+        if patch.phrases_synced_count.is_some_and(|count| count < 0) {
+            return Err(BackendError::InvalidInput(
+                "space phrases_synced_count must not be negative".into(),
+            ));
+        }
+
+        self.connection.execute(
+            "UPDATE spaces SET \
+               title = COALESCE(?2, title), \
+               context = COALESCE(?3, context), \
+               phrases_synced_count = COALESCE(?4, phrases_synced_count), \
+               updated_at = ?5 \
+             WHERE id = ?1",
+            params![
+                patch.id,
+                patch.title,
+                patch.context,
+                patch.phrases_synced_count,
+                patch.updated_at,
+            ],
+        )?;
+
+        self.get_space(&patch.id)?.ok_or_else(|| {
+            BackendError::InvalidInput(format!("no space holds the ID {}", patch.id))
+        })
     }
 
     pub fn delete_space(&self, id: &str) -> Result<bool> {
@@ -551,7 +604,7 @@ fn validate_key(key: &str) -> Result<()> {
 mod tests {
     use rusqlite::Connection;
 
-    use super::Repository;
+    use super::{Repository, Space, SpacePatch};
 
     #[test]
     fn a_database_from_an_earlier_backend_gains_the_domain_tables() {
@@ -657,6 +710,62 @@ mod tests {
 
         assert_eq!(row_count(&repository, "messages"), 0);
         assert_eq!(row_count(&repository, "notes"), 1);
+    }
+
+    #[test]
+    fn one_writer_of_a_space_never_undoes_another() {
+        // Three things write a space: the user renames it, a model writes its
+        // name and its note, and the phrase sync counts the messages. Each
+        // one knows only its own fields.
+        let repository = Repository::open_in_memory().unwrap();
+        repository
+            .put_space(&Space {
+                id: "space-1".to_owned(),
+                user_id: "user-1".to_owned(),
+                title: Some("New space 2".to_owned()),
+                context: None,
+                phrases_synced_count: None,
+                created_at: 1,
+                updated_at: 1,
+            })
+            .unwrap();
+
+        repository
+            .patch_space(&SpacePatch {
+                id: "space-1".to_owned(),
+                title: Some("Asking for water".to_owned()),
+                context: Some("I am talking to my carer.".to_owned()),
+                phrases_synced_count: None,
+                updated_at: 2,
+            })
+            .unwrap();
+        let saved = repository
+            .patch_space(&SpacePatch {
+                id: "space-1".to_owned(),
+                title: None,
+                context: None,
+                phrases_synced_count: Some(1),
+                updated_at: 3,
+            })
+            .unwrap();
+
+        // The count arrived last and must not have taken the name with it.
+        assert_eq!(saved.title.as_deref(), Some("Asking for water"));
+        assert_eq!(saved.context.as_deref(), Some("I am talking to my carer."));
+        assert_eq!(saved.phrases_synced_count, Some(1));
+    }
+
+    #[test]
+    fn a_space_that_is_gone_cannot_be_changed() {
+        let repository = Repository::open_in_memory().unwrap();
+        let missing = repository.patch_space(&SpacePatch {
+            id: "no-such-space".to_owned(),
+            title: Some("Anything".to_owned()),
+            context: None,
+            phrases_synced_count: None,
+            updated_at: 2,
+        });
+        assert!(missing.is_err());
     }
 
     fn column_names(repository: &Repository, table: &str) -> Vec<String> {

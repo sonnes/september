@@ -177,3 +177,28 @@ export const saveServices = (value: {
   invoke("setting_put", { request: { key: "services", value } }).catch(
     () => undefined,
   );
+
+// ------------------------------------------------------ where sound comes out
+
+/** One sound output of this Mac. */
+export interface AudioOutput {
+  /** The name that lasts across a restart and a replug. */
+  uid: string;
+  /** The name the user reads, for example `Mac mini Speakers`. */
+  name: string;
+}
+
+/** Every output this Mac can play through. */
+export const listOutputs = () => invoke<AudioOutput[]>("audio_outputs");
+
+/** The output the Mac plays through now. */
+export const currentOutput = () => invoke<string>("audio_output");
+
+/**
+ * Moves the sound of this Mac to one output.
+ *
+ * Both voices of September follow the Mac, so this one setting moves both.
+ * The Mac remembers it, and September keeps no copy that could disagree.
+ */
+export const chooseOutput = (uid: string) =>
+  invoke<void>("audio_output_set", { request: { uid } });

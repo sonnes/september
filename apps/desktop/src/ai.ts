@@ -1,6 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
 
 import { currentSetup } from "./os";
+import {
+  buildSpaceContextPrompt,
+  spaceDescriptionFrom,
+  type SpaceDescription,
+} from "./prompts";
 
 /**
  * The writing service.
@@ -66,4 +71,29 @@ export function itemsFrom(text: string, key: string): string[] {
   } catch {
     return [];
   }
+}
+
+/**
+ * The name and the note of a space, from its first message.
+ *
+ * The note reaches the model that writes the stripe and the phrases, so a
+ * space that has one gives better words than a space that has none. A user
+ * with no writing service keeps the made-up title, and nothing else changes.
+ */
+export async function describeSpace(
+  messageText: string,
+): Promise<SpaceDescription | null> {
+  if (!hasWritingService()) return null;
+
+  const { system, user } = buildSpaceContextPrompt(messageText);
+  const answer = await generate({
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+    temperature: 0.7,
+    response_format: { type: "json_object" },
+  });
+
+  return spaceDescriptionFrom(answer);
 }

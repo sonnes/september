@@ -1,4 +1,5 @@
 pub mod apfel;
+pub mod audio;
 pub mod error;
 pub mod providers;
 pub mod repository;
@@ -17,6 +18,7 @@ pub fn run() {
             rpc::space_list,
             rpc::space_get,
             rpc::space_put,
+            rpc::space_patch,
             rpc::space_delete,
             rpc::message_list,
             rpc::message_get,
@@ -40,6 +42,9 @@ pub fn run() {
             rpc::provider_forget,
             rpc::provider_voices,
             rpc::speech_synthesize,
+            rpc::audio_outputs,
+            rpc::audio_output,
+            rpc::audio_output_set,
         ])
         .run(tauri::generate_context!())
         .expect("error while running September desktop");

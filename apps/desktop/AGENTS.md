@@ -43,6 +43,12 @@ cargo fmt --all -- --check
 - Call the Rust backend from a service module: `src/os.ts` for settings and
   the system, `src/data.ts` for the rows, `src/ai.ts` for the writing service.
   Do not call `invoke` from a component or from `src/speech.ts`.
+- Change a space with `space_patch`, never with a whole row. Three writers
+  change a space and each one knows only its own fields, so a whole-row write
+  lets the last writer undo the others.
+- Read the sound outputs from `src-tauri/src/audio.rs`. The browser cannot do
+  this job: WKWebView lists no output device until the user grants the
+  microphone, and September must not ask for one to name a speaker.
 - Keep the rules of a space in `src/spaces.ts`, where a test can read them
   without a renderer: the slug, the search, the new title, the relative time,
   the transcript page, and the composer helpers.

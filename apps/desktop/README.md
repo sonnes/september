@@ -50,6 +50,13 @@ The first space is `General`. A later space is `New space`, then `New space 2`,
 and so on. The name must be free, because one slug must name one space. A new
 space opens at once, and the user can give it a better name in the header.
 
+The first message replaces that made-up name. A model reads the message and
+writes a name and a note for the space. The note says who the user is talking
+to and why, and the model that offers phrases and sentences reads it, so a
+named space gives better words than an empty one. A name the user typed is
+never replaced, and neither is a note the user wrote. A user with no writing
+service keeps the made-up name.
+
 Delete asks first. Deleting a space deletes its messages too, so a dialog with
 a red button holds the action.
 
@@ -61,8 +68,9 @@ The Talk screen has three parts, from the top:
 
 1. The transcript. It holds the spoken messages, 8 for each page, newest last.
    Press a message to speak it again.
-2. The composer. It has the text field, undo, delete last word, clear, and
-   Speak. The Enter key speaks. Shift and Enter make a new line.
+2. The composer. It has the text field, undo, delete last word, clear, the
+   sound output, and Speak. The Enter key speaks. Shift and Enter make a new
+   line.
 3. The dock. It has one tab for each space, and a button that makes a new one.
 
 `src/spaces.ts` owns the rules that a test can read: the slug, the page, the
@@ -74,6 +82,24 @@ of the operating system, which setup keeps in the `setup` setting.
 
 The composer keeps its text until SQLite accepts the message, so a failed write
 loses no words.
+
+Three writers change a space, and each one knows only its own fields: the user
+renames it, a model writes the name and the note, and the phrase sync counts
+the messages. Each writer holds a copy of the row from the moment it started,
+so a whole-row write puts back the fields it never meant to touch. `space_patch`
+changes only the fields it is given, in one statement.
+
+### Where the sound comes out
+
+A picker beside Speak lists every output of this Mac and moves the sound to the
+one the user chooses. Both voices follow the output of the Mac, so one choice
+moves both. The Mac remembers it, and September keeps no copy that could
+disagree. A Mac with one output shows no picker.
+
+`src-tauri/src/audio.rs` reads the outputs from CoreAudio. The browser cannot
+do this job: WKWebView holds `setSinkId`, but `navigator.mediaDevices` lists no
+output device until the user grants the microphone, and September must not ask
+for a microphone to name a speaker.
 
 ## Offer the next word
 

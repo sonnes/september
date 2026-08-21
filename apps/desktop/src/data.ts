@@ -100,12 +100,28 @@ export function useCreateSpace() {
 }
 
 /** `space_put` replaces one complete row, so it takes the whole space. */
+/** The fields of a space one writer changes. A field left out keeps its value. */
+export interface SpacePatch {
+  id: string;
+  title?: string;
+  context?: string;
+  phrases_synced_count?: number;
+}
+
+/**
+ * Changes some fields of a space.
+ *
+ * Three writers change a space, and each one knows only its own fields: the
+ * user renames it, a model gives it a name and a note, and the phrase sync
+ * counts the messages. A whole-row write would put back the fields it read
+ * before the others wrote, so only the new fields go over.
+ */
 export function useUpdateSpace() {
   const client = useQueryClient();
 
   return useMutation({
-    mutationFn: (space: Space) =>
-      call<Space>("space_put", { ...space, updated_at: Date.now() }),
+    mutationFn: (patch: SpacePatch) =>
+      call<Space>("space_patch", { ...patch, updated_at: Date.now() }),
     onSuccess: refresh(client),
   });
 }

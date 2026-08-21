@@ -6,8 +6,9 @@ use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::{
     apfel::{ApfelGenerateRequest, ApfelGeneration, ApfelState, ApfelStatus},
+    audio::{self, AudioDevice},
     providers::{self, Provider, ProviderStatus, Providers, Voice},
-    repository::{Message, Note, Repository, SavedPhrase, Space},
+    repository::{Message, Note, Repository, SavedPhrase, Space, SpacePatch},
     speech::{self, SpeechSettings},
 };
 
@@ -50,6 +51,11 @@ pub(crate) struct ProviderConnectRequest {
 pub(crate) struct PhraseReplaceRequest {
     space_id: String,
     phrases: Vec<SavedPhrase>,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct AudioOutputRequest {
+    uid: String,
 }
 
 #[derive(Deserialize)]
@@ -496,6 +502,34 @@ fn clean_name(raw: &str) -> String {
 fn login_name(raw: &str) -> Option<String> {
     let name = raw.trim();
     (!name.is_empty()).then(|| name.to_owned())
+}
+
+/// Changes some fields of a space, and leaves the rest.
+///
+/// The rename, the note, and the phrase count each arrive on their own. A
+/// whole-row write would let the last one undo the others.
+#[tauri::command(async)]
+pub(crate) fn space_patch(state: State<'_, BackendState>, request: SpacePatch) -> RpcResult<Space> {
+    let repository = state.repository.lock().map_err(rpc_error)?;
+    repository.patch_space(&request).map_err(rpc_error)
+}
+
+/// Every output this Mac can play through.
+#[tauri::command(async)]
+pub(crate) fn audio_outputs() -> RpcResult<Vec<AudioDevice>> {
+    audio::outputs()
+}
+
+/// The output the Mac plays through now.
+#[tauri::command(async)]
+pub(crate) fn audio_output() -> RpcResult<String> {
+    audio::default_output()
+}
+
+/// Moves the sound of this Mac, so both voices of September follow.
+#[tauri::command(async)]
+pub(crate) fn audio_output_set(request: AudioOutputRequest) -> RpcResult<()> {
+    audio::set_default_output(&request.uid)
 }
 
 type RpcResult<T> = std::result::Result<T, String>;

@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
   ChevronLeft,
   ChevronRight,
   Delete,
+  Headphones,
   MessagesSquare,
   Plus,
   MessageSquareQuote,
@@ -27,8 +29,18 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { describeSpace } from "./ai";
 import { navFor } from "./app-nav";
 import {
   useCreateSpace,
@@ -42,6 +54,7 @@ import {
   type Message,
   type Space,
 } from "./data";
+import { chooseOutput, currentOutput, listOutputs } from "./os";
 import { Screen, ScreenHeader } from "./shell";
 import { PhrasePanel } from "./phrase-panel";
 import { generateCode, type SavedPhrase } from "./phrases";
@@ -51,6 +64,7 @@ import { Suggestions } from "./suggestions";
 import {
   deleteLastWord,
   filterSpaces,
+  isAutoTitle,
   newSpaceTitle,
   spaceFromSlug,
   spaceSlug,
@@ -269,6 +283,8 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
   const { data: phrases } = usePhrases(space.id);
   const send = useSendMessage(space.id);
   const putPhrase = usePutPhrase();
+  const update = useUpdateSpace();
+  const navigate = useNavigate();
 
   // A model writes the phrases of this space, and writes them again as the
   // conversation grows. It never touches a row the user kept.
@@ -319,10 +335,40 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
     putPhrase.mutate(row);
   };
 
+  /**
+   * The first message says who the space is for, so a model reads it once and
+   * gives the space a name and a note. Every later message skips this.
+   */
+  const describe = (first: string) => {
+    if (spoken.length > 0) return;
+
+    void describeSpace(first)
+      .then((answer) => {
+        if (!answer) return;
+
+        // A title the user typed stays, and so does a note the user wrote.
+        const title =
+          answer.title && isAutoTitle(space.title) ? answer.title : undefined;
+        const context = space.context?.trim() ? undefined : answer.context;
+        if (!title && !context) return;
+
+        return update
+          .mutateAsync({ id: space.id, title, context })
+          .then(() => {
+            // A new title makes a new slug, and the open address holds the
+            // old one. Without this the screen goes blank.
+            if (title) navigate({ ...talkParams({ title }), replace: true });
+          });
+      })
+      // A service that fails leaves the made-up title. Nothing is lost.
+      .catch(() => undefined);
+  };
+
   const say = (sentence: string) => {
     void speak(sentence);
     send.mutate(sentence, {
       onSuccess: () => {
+        describe(sentence);
         setDraft("");
         setUndoStack([]);
         inputRef.current?.focus();
@@ -343,20 +389,11 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
     inputRef.current?.focus();
   };
 
+  // The voice starts at once. The composer holds the text until SQLite
+  // accepts the message, so a failed write loses no words.
   const onSpeak = () => {
     const text = draft.trim();
-    if (!text) return;
-
-    // The voice starts at once. The composer holds the text until SQLite
-    // accepts the message, so a failed write loses no words.
-    void speak(text);
-    send.mutate(text, {
-      onSuccess: () => {
-        setDraft("");
-        setUndoStack([]);
-        inputRef.current?.focus();
-      },
-    });
+    if (text) say(text);
   };
 
   return (
@@ -496,16 +533,19 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
                 <Trash2 aria-hidden />
               </Button>
               </div>
-              <Button
-              type="button"
-              size="lg"
-              className="rounded-full px-6 font-semibold"
-              onClick={onSpeak}
-              disabled={!draft.trim() || send.isPending}
-              >
-              <Volume2 aria-hidden />
-              Speak
-              </Button>
+              <div className="flex items-center gap-2">
+                <SoundOutput />
+                <Button
+                  type="button"
+                  size="lg"
+                  className="rounded-full px-6 font-semibold"
+                  onClick={onSpeak}
+                  disabled={!draft.trim() || send.isPending}
+                >
+                  <Volume2 aria-hidden />
+                  Speak
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -531,7 +571,7 @@ function SpaceTitle({ space }: { space: Space }) {
       return;
     }
     update.mutate(
-      { ...space, title: next },
+      { id: space.id, title: next },
       { onSuccess: () => navigate({ ...talkParams({ title: next }), replace: true }) },
     );
   };
@@ -547,6 +587,53 @@ function SpaceTitle({ space }: { space: Space }) {
       }}
       className="hover:bg-accent focus-visible:ring-ring min-w-0 flex-1 rounded-md bg-transparent px-2 py-1 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
     />
+  );
+}
+
+/**
+ * Which speaker the Mac plays through.
+ *
+ * Both voices follow the sound output of the Mac, so this moves the Mac and
+ * not September alone. A Mac with one output shows nothing to choose.
+ */
+function SoundOutput() {
+  const client = useQueryClient();
+  const outputs = useQuery({ queryKey: ["outputs"], queryFn: listOutputs });
+  const chosen = useQuery({ queryKey: ["output"], queryFn: currentOutput });
+
+  const move = useMutation({
+    mutationFn: chooseOutput,
+    onSuccess: () => client.invalidateQueries({ queryKey: ["output"] }),
+  });
+
+  const devices = outputs.data ?? [];
+  if (devices.length < 2) return null;
+
+  return (
+    <Select
+      value={chosen.data ?? ""}
+      // A speaker plugged in while the app runs is on the list when it opens.
+      onOpenChange={(open) => open && void outputs.refetch()}
+      onValueChange={(uid) => move.mutate(uid)}
+    >
+      <SelectTrigger
+        aria-label="Sound output"
+        className="text-muted-foreground h-auto w-auto gap-2 rounded-full px-3 py-1.5 text-xs shadow-none"
+      >
+        <Headphones className="size-4 shrink-0" aria-hidden />
+        <SelectValue placeholder="Sound output" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          <SelectLabel>Sound output for this Mac</SelectLabel>
+          {devices.map((device) => (
+            <SelectItem key={device.uid} value={device.uid}>
+              {device.name}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   );
 }
 
