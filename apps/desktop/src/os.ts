@@ -1,4 +1,5 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-shell";
 
 import type { OnboardingDraft } from "./onboarding";
 import type { SpeechSettings } from "./speech";
@@ -58,6 +59,26 @@ export async function saveSetup(draft: OnboardingDraft): Promise<void> {
 }
 
 /**
+ * Changes some of the setup answers, and holds the new ones.
+ *
+ * Settings writes through here, so `currentSetup()` gives the new answer at
+ * once. A screen never has to reload to see its own change.
+ */
+export async function updateSetup(
+  patch: Partial<OnboardingDraft>,
+): Promise<SavedSetup> {
+  const saved: SavedSetup = { ...setup!, ...patch };
+  await invoke("setting_put", {
+    request: { key: "setup", value: saved },
+  }).catch(() => undefined);
+  setup = saved;
+  return saved;
+}
+
+/** Opens an address in the browser of the Mac, not in the app window. */
+export const openInBrowser = (url: string) => open(url);
+
+/**
  * How the sound is made, from the last time the Voice screen saved it. Null
  * before the user opens that screen, and in a browser.
  */
@@ -81,6 +102,23 @@ export const synthesizeSpeech = (text: string, settings: SpeechSettings) =>
   invoke<{ path: string; from_cache: boolean }>("speech_synthesize", {
     request: { text, settings },
   });
+
+/** Speaks through the native process, where the process tap can hear it. */
+export const speakSystem = (text: string, settings: SpeechSettings) =>
+  invoke<void>("speech_system", {
+    request: {
+      text,
+      voice_id: settings.voiceId,
+      speed: settings.speed,
+    },
+  });
+
+/** Plays one cached cloud-voice file through the native process. */
+export const playSpeechFile = (path: string) =>
+  invoke<void>("speech_file_play", { request: { path } });
+
+/** Stops either native voice now. */
+export const stopNativeSpeech = () => invoke<void>("speech_native_stop");
 
 /** The address the WebView uses to read a file that Rust wrote. */
 export const audioUrl = (path: string) => convertFileSrc(path);
@@ -168,15 +206,6 @@ export const forgetProvider = (provider: Provider) =>
 
 export const listVoices = () => invoke<Voice[]>("provider_voices");
 
-/** The chosen services outlive the draft, which onboarding keeps in memory. */
-export const saveServices = (value: {
-  writing: string;
-  voice: string;
-  voiceId: string | null;
-}) =>
-  invoke("setting_put", { request: { key: "services", value } }).catch(
-    () => undefined,
-  );
 
 // ------------------------------------------------------ where sound comes out
 
@@ -202,3 +231,23 @@ export const currentOutput = () => invoke<string>("audio_output");
  */
 export const chooseOutput = (uid: string) =>
   invoke<void>("audio_output_set", { request: { uid } });
+
+// ---------------------------------------------------- use the voice in calls
+
+export interface VirtualMicrophoneStatus {
+  active: boolean;
+  name: string;
+  uid: string;
+}
+
+/** Whether calling apps can select the September input now. */
+export const virtualMicrophoneStatus = () =>
+  invoke<VirtualMicrophoneStatus>("virtual_microphone_status");
+
+/** Publishes September speech as one system input. */
+export const startVirtualMicrophone = () =>
+  invoke<VirtualMicrophoneStatus>("virtual_microphone_start");
+
+/** Removes the system input. */
+export const stopVirtualMicrophone = () =>
+  invoke<VirtualMicrophoneStatus>("virtual_microphone_stop");

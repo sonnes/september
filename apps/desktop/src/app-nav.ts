@@ -28,7 +28,7 @@ export const APP_NAV = [
   {
     path: "/settings",
     title: "Settings",
-    description: "Your name, your services, and your keys.",
+    description: "How September runs, and the services it uses.",
   },
 ] as const satisfies readonly {
   path: string;

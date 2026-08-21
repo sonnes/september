@@ -10,7 +10,7 @@ import {
 
 import { cn } from "@/lib/utils";
 
-import { generate, hasWritingService, itemsFrom } from "./ai";
+import { generate, hasWritingService, itemsFrom, userContext } from "./ai";
 import { useMessages, usePhrases } from "./data";
 import {
   matchCode,
@@ -491,7 +491,7 @@ function useCompletions({
     const dropped = new AbortController();
     const timer = setTimeout(() => {
       const { system, user } = buildSuggestionPrompt({
-        globalMd: "",
+        globalMd: userContext(),
         spaceMd: context,
         history: lines,
         typed: text,

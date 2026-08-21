@@ -1,4 +1,4 @@
-use std::{fs, sync::Mutex};
+use std::{fs, path::PathBuf, sync::Mutex};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -6,7 +6,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::{
     apfel::{ApfelGenerateRequest, ApfelGeneration, ApfelState, ApfelStatus},
-    audio::{self, AudioDevice},
+    audio::{self, AudioDevice, VirtualMicrophoneStatus},
     providers::{self, Provider, ProviderStatus, Providers, Voice},
     repository::{Message, Note, Repository, SavedPhrase, Space, SpacePatch},
     speech::{self, SpeechSettings},
@@ -64,6 +64,18 @@ pub(crate) struct SpeakRequest {
     settings: SpeechSettings,
 }
 
+#[derive(Deserialize)]
+pub(crate) struct SystemSpeechRequest {
+    text: String,
+    voice_id: Option<String>,
+    speed: f32,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct SpeechFileRequest {
+    path: PathBuf,
+}
+
 #[derive(Serialize)]
 pub(crate) struct SpokenAudio {
     /// The file on disk. The WebView reads it through the asset protocol.
@@ -83,6 +95,10 @@ struct SettingsChanged {
 }
 
 pub(crate) fn setup(app: &mut tauri::App) -> std::result::Result<(), Box<dyn std::error::Error>> {
+    // A public aggregate device can outlive a process that crashed. Each new
+    // start removes that stale device, so the microphone begins off.
+    let _ = audio::virtual_microphone_stop();
+
     let data_directory = app.path().app_local_data_dir()?;
     fs::create_dir_all(&data_directory)?;
     let repository = Repository::open(data_directory.join("september.sqlite3"))?;
@@ -461,6 +477,42 @@ pub(crate) async fn speech_synthesize(
     })
 }
 
+/// Speaks with the voice of the operating system from the native process.
+#[tauri::command]
+pub(crate) async fn speech_system(request: SystemSpeechRequest) -> RpcResult<()> {
+    tauri::async_runtime::spawn_blocking(move || {
+        audio::speak_system(&request.text, request.voice_id.as_deref(), request.speed)
+    })
+    .await
+    .map_err(rpc_error)?
+}
+
+/// Plays one cached cloud-voice file from the native process.
+#[tauri::command]
+pub(crate) async fn speech_file_play(app: AppHandle, request: SpeechFileRequest) -> RpcResult<()> {
+    let directory = app
+        .path()
+        .app_local_data_dir()
+        .map_err(rpc_error)?
+        .join("audio")
+        .canonicalize()
+        .map_err(rpc_error)?;
+    let path = request.path.canonicalize().map_err(rpc_error)?;
+    if !path.starts_with(&directory) {
+        return Err("the voice file is outside the September audio folder".into());
+    }
+
+    tauri::async_runtime::spawn_blocking(move || audio::play_speech_file(&path))
+        .await
+        .map_err(rpc_error)?
+}
+
+/// Stops either native voice now.
+#[tauri::command(async)]
+pub(crate) fn speech_native_stop() {
+    audio::stop_speech();
+}
+
 /// Text from OpenRouter, in the shape that `apfel_generate` answers in.
 ///
 /// The key stays in the Keychain, so the call happens here and not in the
@@ -530,6 +582,24 @@ pub(crate) fn audio_output() -> RpcResult<String> {
 #[tauri::command(async)]
 pub(crate) fn audio_output_set(request: AudioOutputRequest) -> RpcResult<()> {
     audio::set_default_output(&request.uid)
+}
+
+/// Whether calling apps can select September Microphone now.
+#[tauri::command(async)]
+pub(crate) fn virtual_microphone_status() -> VirtualMicrophoneStatus {
+    audio::virtual_microphone_status()
+}
+
+/// Publishes September speech as a system input.
+#[tauri::command(async)]
+pub(crate) fn virtual_microphone_start() -> RpcResult<VirtualMicrophoneStatus> {
+    audio::virtual_microphone_start()
+}
+
+/// Removes the September system input.
+#[tauri::command(async)]
+pub(crate) fn virtual_microphone_stop() -> RpcResult<VirtualMicrophoneStatus> {
+    audio::virtual_microphone_stop()
 }
 
 type RpcResult<T> = std::result::Result<T, String>;

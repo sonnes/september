@@ -39,6 +39,14 @@ import {
 } from "../src/spaces.ts";
 import { buildSpaceContextPrompt, spaceDescriptionFrom } from "../src/prompts.ts";
 import {
+  markdownToVoiceText,
+  noteContentUpdates,
+  noteFromSlug,
+  noteNameFromContent,
+  noteNameIsUnset,
+  noteSlug,
+} from "../src/notes.ts";
+import {
   canReach,
   isSetupDone,
   nextStep,
@@ -86,6 +94,7 @@ test("the macOS bundle declares its recording privacy reasons", async () => {
   const plist = await readText("src-tauri/Info.plist");
 
   assert.match(plist, /NSMicrophoneUsageDescription/);
+  assert.match(plist, /NSAudioCaptureUsageDescription/);
   assert.match(plist, /NSCameraUsageDescription/);
 });
 
@@ -273,7 +282,8 @@ test("a choice keeps its height when it is selected", async () => {
 });
 
 test("each service wears its own mark", async () => {
-  const steps = await readText("src/steps.tsx");
+  // Setup and settings share one mark, so a brand asset is named one time.
+  const steps = await readText("src/services.tsx");
 
   assert.match(steps, /function Mark\(/);
   assert.match(steps, /elevenlabs-mark\.svg/);
@@ -573,13 +583,6 @@ test("only data.ts and os.ts talk to Rust", async () => {
   }
 });
 
-test("the system voice speaks in the WebView, with no key and no Rust", async () => {
-  const speech = await readText("src/speech.ts");
-
-  assert.match(speech, /speechSynthesis/);
-  assert.match(speech, /SpeechSynthesisUtterance/);
-});
-
 test("spaces and messages read through TanStack Query", async () => {
   const packageJson = await readJson("package.json");
   const data = await readText("src/data.ts");
@@ -612,6 +615,18 @@ test("Talk is a route inside a space", async () => {
 });
 
 // --------------------------------------------------------- voice and audio
+
+test("one setting owns the voice, and setup seeds it", async () => {
+  const os = await readText("src/os.ts");
+  const steps = await readText("src/steps.tsx");
+
+  // The `services` setting had no reader, so the voice chosen at /connect was
+  // lost. `/voice` owns the voice, in the `speech` setting, and setup seeds it.
+  assert.doesNotMatch(os, /saveServices/);
+  assert.doesNotMatch(os, /"services"/);
+  assert.match(steps, /saveSpeech\(/);
+  assert.match(await readText("src/voice.tsx"), /saveSpeech\(/);
+});
 
 test("a voice file is named for the settings and the words", async () => {
   const rust = await readText("src-tauri/src/speech.rs");
@@ -656,6 +671,36 @@ test("the cloud voice falls back to the system voice", async () => {
   // A person who cannot speak must not meet silence.
   assert.match(cloud, /catch/);
   assert.match(cloud, /systemVoice\(settings\)\.speak\(text\)/);
+});
+
+test("spoken messages use the native audio process", async () => {
+  const os = await readText("src/os.ts");
+  const speech = await readText("src/speech.ts");
+
+  assert.match(os, /speech_system/);
+  assert.match(os, /speech_file_play/);
+  assert.match(os, /speech_native_stop/);
+  assert.match(speech, /speakSystem/);
+  assert.match(speech, /playSpeechFile/);
+  assert.doesNotMatch(speech, /globalThis\.speechSynthesis/);
+  assert.doesNotMatch(speech, /audioUrl\(path\)/);
+});
+
+test("the Talk audio selector controls the FaceTime microphone", async () => {
+  const os = await readText("src/os.ts");
+  const talk = await readText("src/talk.tsx");
+  const voice = await readText("src/voice.tsx");
+
+  assert.match(os, /virtual_microphone_status/);
+  assert.match(os, /virtual_microphone_start/);
+  assert.match(os, /virtual_microphone_stop/);
+  assert.match(talk, /function AudioSelector/);
+  assert.match(talk, /DropdownMenuCheckboxItem/);
+  assert.match(talk, /September Microphone/);
+  assert.match(talk, /FaceTime/);
+  assert.doesNotMatch(talk, /devices\.length < 2\) return null/);
+  assert.doesNotMatch(voice, /virtualMicrophone/);
+  assert.doesNotMatch(voice, /September Microphone/);
 });
 
 test("the speech settings hold everything that shapes the sound", async () => {
@@ -1033,9 +1078,9 @@ test("the sound outputs are read through the system module", async () => {
   assert.doesNotMatch(os, /"audio-output"/);
 });
 
-test("the output picker sits beside Speak and names the Mac, not the app", async () => {
+test("the audio selector sits beside Speak and names the Mac, not the app", async () => {
   const talk = await readText("src/talk.tsx");
-  const picker = talk.match(/function SoundOutput[\s\S]*?\n\}\n/)[0];
+  const picker = talk.match(/function AudioSelector[\s\S]*?\n\}\n/)[0];
 
   // A press moves the sound of the whole Mac. The words must say so, because
   // a user who reads "September" would not expect their music to move.
@@ -1043,7 +1088,80 @@ test("the output picker sits beside Speak and names the Mac, not the app", async
   assert.match(picker, /this Mac/i);
   // The picker is next to the button that makes the sound.
   assert.ok(
-    talk.indexOf("<SoundOutput") < talk.indexOf("Speak\n"),
+    talk.indexOf("<AudioSelector") < talk.indexOf("Speak\n"),
     "the picker must come before the Speak button",
   );
+});
+
+// ------------------------------------------------------------------- notes
+
+test("a note with no name of its own takes one from its first words", () => {
+  assert.equal(noteNameIsUnset(undefined), true);
+  assert.equal(noteNameIsUnset("  "), true);
+  assert.equal(noteNameIsUnset("Untitled note"), true);
+  assert.equal(noteNameIsUnset("Letter to Dr Shah"), false);
+
+  // The markup is not part of the name a user reads.
+  assert.equal(
+    noteNameFromContent("# Letter to **Dr Shah** about the new chair"),
+    "Letter to Dr Shah about the",
+  );
+  assert.equal(noteNameFromContent("   "), undefined);
+});
+
+test("the first save names a note, and a later save leaves the name alone", () => {
+  assert.deepEqual(noteContentUpdates(undefined, "Ask about the ramp"), {
+    content: "Ask about the ramp",
+    name: "Ask about the ramp",
+  });
+  // A name the user typed is the user's.
+  assert.deepEqual(noteContentUpdates("My letter", "Ask about the ramp"), {
+    content: "Ask about the ramp",
+  });
+});
+
+test("a note is found by its slug, and an unnamed note still has one", () => {
+  const notes = [
+    { id: "n1", name: "Letter to Dr Shah" },
+    { id: "n2", name: undefined },
+  ];
+
+  assert.equal(noteSlug("Letter to Dr Shah"), "letter-to-dr-shah");
+  assert.equal(noteSlug(undefined), "note");
+  assert.equal(noteFromSlug("letter-to-dr-shah", notes)?.id, "n1");
+  assert.equal(noteFromSlug("note", notes)?.id, "n2");
+  assert.equal(noteFromSlug("nothing", notes), undefined);
+});
+
+test("a voice reads the words of a note, not its markup", () => {
+  const spoken = markdownToVoiceText(
+    "# Monday\n\n- Ask about the *ramp*\n- Read [the letter](http://x.test)",
+  );
+
+  assert.equal(spoken, "Monday Ask about the ramp Read the letter");
+});
+
+test("a note is read and written through the data module", async () => {
+  const data = await readText("src/data.ts");
+
+  assert.match(data, /note_list/);
+  assert.match(data, /note_put/);
+  assert.match(data, /note_delete/);
+});
+
+test("the note screen autosaves and speaks with the chosen voice", async () => {
+  const notes = await readText("src/notes.tsx");
+
+  // A user who cannot speak must never lose written words to a missed save.
+  assert.match(notes, /markdownToVoiceText/);
+  assert.match(notes, /noteContentUpdates/);
+  // A new name makes a new slug, so the open address must follow it.
+  assert.match(notes, /replace: true/);
+});
+
+test("a space opens in Talk or in Notes, and both routes exist", async () => {
+  const main = await readText("src/main.tsx");
+
+  assert.match(main, /\/spaces\/\$slug\/notes/);
+  assert.match(main, /\/spaces\/\$slug\/notes\/\$noteSlug/);
 });

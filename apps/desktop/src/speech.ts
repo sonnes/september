@@ -1,12 +1,13 @@
 import { useSyncExternalStore } from "react";
 
 import {
-  audioUrl,
   currentSetup,
   currentSpeech,
+  playSpeechFile,
+  speakSystem,
+  stopNativeSpeech,
   synthesizeSpeech,
 } from "./os";
-import { play, stop as stopPlayer } from "./player";
 
 export type VoiceService = "system" | "elevenlabs";
 
@@ -54,27 +55,10 @@ export interface SpeechProvider {
 
 const systemVoice = (settings: SpeechSettings): SpeechProvider => ({
   id: "system",
-  speak: (text) =>
-    new Promise((resolve) => {
-      const voice = globalThis.speechSynthesis;
-      if (!voice) return resolve();
-
-      voice.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = settings.speed;
-
-      const chosen = settings.voiceId
-        ? voice.getVoices().find((one) => one.voiceURI === settings.voiceId)
-        : undefined;
-      if (chosen) utterance.voice = chosen;
-
-      // A voice that fails still resolves. The caller only needs to know
-      // that the sound stopped.
-      utterance.onend = () => resolve();
-      utterance.onerror = () => resolve();
-      voice.speak(utterance);
-    }),
-  stop: () => globalThis.speechSynthesis?.cancel(),
+  // A system voice that fails still resolves. The caller only needs to know
+  // that the sound stopped.
+  speak: (text) => speakSystem(text, settings).catch(() => undefined),
+  stop: () => void stopNativeSpeech().catch(() => undefined),
 });
 
 const cloudVoice = (settings: SpeechSettings): SpeechProvider => ({
@@ -82,7 +66,7 @@ const cloudVoice = (settings: SpeechSettings): SpeechProvider => ({
   async speak(text) {
     try {
       const { path } = await synthesizeSpeech(text, settings);
-      await play(audioUrl(path));
+      await playSpeechFile(path);
       setFallback(null);
     } catch (reason) {
       // A person who cannot speak must not meet silence, so the voice of the
@@ -92,8 +76,7 @@ const cloudVoice = (settings: SpeechSettings): SpeechProvider => ({
     }
   },
   stop() {
-    stopPlayer();
-    globalThis.speechSynthesis?.cancel();
+    void stopNativeSpeech().catch(() => undefined);
   },
 });
 

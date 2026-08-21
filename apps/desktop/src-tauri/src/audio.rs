@@ -8,7 +8,14 @@
 //! ponytail: raw CoreAudio calls, because this is six properties. A crate for
 //! the same job brings a build step and a bindgen dependency.
 
-use std::{ffi::c_void, mem::size_of, os::raw::c_char, ptr};
+use std::{
+    ffi::{c_void, CStr, CString},
+    mem::size_of,
+    os::raw::c_char,
+    path::Path,
+    ptr, thread,
+    time::Duration,
+};
 
 use serde::Serialize;
 
@@ -31,8 +38,14 @@ const DEFAULT_OUTPUT: u32 = code(b"dOut");
 const DEVICE_UID: u32 = code(b"uid ");
 const OBJECT_NAME: u32 = code(b"lnam");
 const STREAMS: u32 = code(b"stm#");
+const STREAM_DIRECTION: u32 = code(b"sdir");
 const SCOPE_GLOBAL: u32 = code(b"glob");
+const SCOPE_INPUT: u32 = code(b"inp ");
 const SCOPE_OUTPUT: u32 = code(b"outp");
+
+pub const VIRTUAL_MICROPHONE_UID: &str = "app.september.desktop.virtual-microphone";
+const VIRTUAL_MICROPHONE_NAME: &str = "September Microphone";
+const NATIVE_ERROR_CAPACITY: usize = 512;
 
 #[repr(C)]
 struct PropertyAddress {
@@ -54,6 +67,14 @@ impl PropertyAddress {
         Self {
             selector,
             scope: SCOPE_OUTPUT,
+            element: MAIN_ELEMENT,
+        }
+    }
+
+    const fn input(selector: u32) -> Self {
+        Self {
+            selector,
+            scope: SCOPE_INPUT,
             element: MAIN_ELEMENT,
         }
     }
@@ -86,6 +107,19 @@ extern "C" {
         size: u32,
         data: *const c_void,
     ) -> OsStatus;
+
+    fn september_virtual_microphone_status() -> bool;
+    fn september_virtual_microphone_start(error: *mut c_char, capacity: usize) -> i32;
+    fn september_virtual_microphone_stop(error: *mut c_char, capacity: usize) -> i32;
+    fn september_speech_system(
+        words: *const c_char,
+        voice_identifier: *const c_char,
+        speed: f32,
+        error: *mut c_char,
+        capacity: usize,
+    ) -> i32;
+    fn september_speech_file(path: *const c_char, error: *mut c_char, capacity: usize) -> i32;
+    fn september_speech_stop();
 }
 
 #[link(name = "CoreFoundation", kind = "framework")]
@@ -104,12 +138,39 @@ pub struct AudioDevice {
     pub name: String,
 }
 
+/// The input that calling apps can read.
+#[derive(Debug, Clone, Serialize)]
+pub struct VirtualMicrophoneStatus {
+    pub active: bool,
+    pub name: String,
+    pub uid: String,
+}
+
 fn checked(status: OsStatus, what: &str) -> Result<(), String> {
     if status == 0 {
         Ok(())
     } else {
         Err(format!("the sound system could not {what} ({status})"))
     }
+}
+
+fn native_result(status: i32, error: &[c_char; NATIVE_ERROR_CAPACITY]) -> Result<(), String> {
+    if status == 0 {
+        return Ok(());
+    }
+
+    let text = unsafe { CStr::from_ptr(error.as_ptr()) }
+        .to_string_lossy()
+        .into_owned();
+    if text.is_empty() {
+        Err(format!("the sound system did not answer ({status})"))
+    } else {
+        Err(text)
+    }
+}
+
+fn native_text(text: &str, what: &str) -> Result<CString, String> {
+    CString::new(text).map_err(|_| format!("{what} contains an unsupported zero byte"))
 }
 
 fn property_size(
@@ -221,6 +282,31 @@ fn plays_sound(device: AudioObjectId) -> bool {
     property_size(device, &address, "count the output streams").unwrap_or(0) > 0
 }
 
+/// Whether the device records sound. A speaker has no input stream.
+fn records_sound(device: AudioObjectId) -> bool {
+    let address = PropertyAddress::input(STREAMS);
+    if property_size(device, &address, "count the input streams").unwrap_or(0) > 0 {
+        return true;
+    }
+
+    // A tap-backed aggregate exposes its streams through the global scope.
+    // The direction property on each stream marks it as an input.
+    read_ids(
+        device,
+        &PropertyAddress::global(STREAMS),
+        "list the device streams",
+    )
+    .is_ok_and(|streams| {
+        streams.into_iter().any(|stream| {
+            read_id(
+                stream,
+                &PropertyAddress::global(STREAM_DIRECTION),
+                "read a stream direction",
+            ) == Ok(1)
+        })
+    })
+}
+
 fn uid_of(device: AudioObjectId) -> Result<String, String> {
     read_string(
         device,
@@ -240,6 +326,31 @@ pub fn outputs() -> Result<Vec<AudioDevice>, String> {
         }
         // A device that will not answer is left out. One quiet virtual device
         // must not hide the speakers the user can hear.
+        let (Ok(uid), Ok(name)) = (
+            uid_of(device),
+            read_string(
+                device,
+                &PropertyAddress::global(OBJECT_NAME),
+                "read a device name",
+            ),
+        ) else {
+            continue;
+        };
+        found.push(AudioDevice { uid, name });
+    }
+
+    Ok(found)
+}
+
+/// Every input this Mac can record from, in the order the system gives.
+pub fn inputs() -> Result<Vec<AudioDevice>, String> {
+    let address = PropertyAddress::global(DEVICES);
+    let mut found = Vec::new();
+
+    for device in read_ids(SYSTEM_OBJECT, &address, "list the sound devices")? {
+        if !records_sound(device) {
+            continue;
+        }
         let (Ok(uid), Ok(name)) = (
             uid_of(device),
             read_string(
@@ -283,6 +394,86 @@ pub fn set_default_output(uid: &str) -> Result<(), String> {
         )
     };
     checked(status, "move the sound to that output")
+}
+
+/// Whether calling apps can select the September input now.
+pub fn virtual_microphone_status() -> VirtualMicrophoneStatus {
+    let published = unsafe { september_virtual_microphone_status() };
+    let selectable = published
+        && inputs().is_ok_and(|devices| {
+            devices
+                .iter()
+                .any(|device| device.uid == VIRTUAL_MICROPHONE_UID)
+        });
+    VirtualMicrophoneStatus {
+        active: selectable,
+        name: VIRTUAL_MICROPHONE_NAME.into(),
+        uid: VIRTUAL_MICROPHONE_UID.into(),
+    }
+}
+
+/// Publishes the September process tap as one system input.
+pub fn virtual_microphone_start() -> Result<VirtualMicrophoneStatus, String> {
+    let mut error = [0 as c_char; NATIVE_ERROR_CAPACITY];
+    let status =
+        unsafe { september_virtual_microphone_start(error.as_mut_ptr(), NATIVE_ERROR_CAPACITY) };
+    native_result(status, &error)?;
+    wait_for_microphone(true)
+}
+
+/// Removes the system input and its process tap.
+pub fn virtual_microphone_stop() -> Result<VirtualMicrophoneStatus, String> {
+    let mut error = [0 as c_char; NATIVE_ERROR_CAPACITY];
+    let status =
+        unsafe { september_virtual_microphone_stop(error.as_mut_ptr(), NATIVE_ERROR_CAPACITY) };
+    native_result(status, &error)?;
+    wait_for_microphone(false)
+}
+
+fn wait_for_microphone(active: bool) -> Result<VirtualMicrophoneStatus, String> {
+    for _ in 0..100 {
+        let status = virtual_microphone_status();
+        if status.active == active {
+            return Ok(status);
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+
+    let action = if active { "appear" } else { "disappear" };
+    Err(format!(
+        "September Microphone did not {action} in the sound system"
+    ))
+}
+
+/// Speaks with the operating-system voice from the native process.
+pub fn speak_system(text: &str, voice_id: Option<&str>, speed: f32) -> Result<(), String> {
+    let words = native_text(text, "the words")?;
+    let voice = native_text(voice_id.unwrap_or_default(), "the voice identifier")?;
+    let mut error = [0 as c_char; NATIVE_ERROR_CAPACITY];
+    let status = unsafe {
+        september_speech_system(
+            words.as_ptr(),
+            voice.as_ptr(),
+            speed,
+            error.as_mut_ptr(),
+            NATIVE_ERROR_CAPACITY,
+        )
+    };
+    native_result(status, &error)
+}
+
+/// Plays one cached cloud-voice file from the native process.
+pub fn play_speech_file(path: &Path) -> Result<(), String> {
+    let path = native_text(&path.to_string_lossy(), "the voice file path")?;
+    let mut error = [0 as c_char; NATIVE_ERROR_CAPACITY];
+    let status =
+        unsafe { september_speech_file(path.as_ptr(), error.as_mut_ptr(), NATIVE_ERROR_CAPACITY) };
+    native_result(status, &error)
+}
+
+/// Stops either native voice now.
+pub fn stop_speech() {
+    unsafe { september_speech_stop() };
 }
 
 #[cfg(test)]

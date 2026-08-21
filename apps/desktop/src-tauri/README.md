@@ -227,6 +227,37 @@ The command rejects when no ElevenLabs key is stored, and when the service
 fails. The response carries a path, never a key. The WebView reads the file
 through the asset protocol, whose scope is `$APPLOCALDATA/audio/*`.
 
+Spoken messages use native playback so the Core Audio process tap can receive
+their sound. Voice-list previews stay in the WebView and do not enter the tap.
+
+| Command | Request | Response |
+| --- | --- | --- |
+| `speech_system` | `{ text, voice_id?, speed }` | none |
+| `speech_file_play` | `{ path }` | none |
+| `speech_native_stop` | none | none |
+
+`speech_system` uses `AVSpeechSynthesizer`. `speech_file_play` accepts only a
+cached file inside the application audio directory and uses `AVAudioPlayer`.
+
+## Publish the virtual microphone
+
+The native bridge publishes `September Microphone` as a public Core Audio
+aggregate input. It contains one mono process tap for September audio.
+
+| Command | Request | Response |
+| --- | --- | --- |
+| `virtual_microphone_status` | none | `{ active, name, uid }` |
+| `virtual_microphone_start` | none | `{ active, name, uid }` |
+| `virtual_microphone_stop` | none | `{ active, name, uid }` |
+
+The microphone starts only after the user enables it. The first start uses the
+`NSAudioCaptureUsageDescription` message from `Info.plist`. The app destroys
+the aggregate device and its process tap when the user stops it or quits.
+
+The bridge also removes a stale aggregate device during application startup.
+This cleanup handles an earlier process that ended before normal shutdown.
+The feature requires macOS 26 or later and does not install a system driver.
+
 ## Use the apfel API
 
 The backend exposes `apfel_status` and `apfel_generate`. Both commands start

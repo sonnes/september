@@ -49,6 +49,8 @@ cargo fmt --all -- --check
 - Read the sound outputs from `src-tauri/src/audio.rs`. The browser cannot do
   this job: WKWebView lists no output device until the user grants the
   microphone, and September must not ask for one to name a speaker.
+- Keep the virtual microphone control in the Talk audio selector beside Speak.
+  The selector must remain visible when the Mac has one sound output.
 - Keep the rules of a space in `src/spaces.ts`, where a test can read them
   without a renderer: the slug, the search, the new title, the relative time,
   the transcript page, and the composer helpers.
@@ -64,8 +66,9 @@ cargo fmt --all -- --check
   `src/autocomplete/` is a copy of the engine in the web app: change a file
   there only to keep the two apps the same.
 - Speak through `speak()` in `src/speech.ts`. Every voice meets the
-  `SpeechProvider` interface, so a screen never names a service. Play a file
-  through `src/player.ts`, which holds one sound at a time.
+  `SpeechProvider` interface, so a screen never names a service. Spoken
+  messages use the native playback commands, where the process tap receives
+  them. Use `src/player.ts` only for voice-list previews.
 - A cloud voice that fails must fall back to the voice of the operating
   system. Silence is the worst answer for a user who cannot speak.
 - Keep the rules of a phrase, a code, and a shortcut idea in `src/phrases.ts`,
@@ -94,6 +97,15 @@ cargo fmt --all -- --check
   trademark licence before a third party shows this mark.
 - Add a screen as a route in `src/main.tsx`. Keep the step rules in
   `src/onboarding.ts`, where a test can read them.
+- Keep the settings sections in `src/settings-nav.ts`, where a test can read
+  them, and the screens in `src/settings.tsx`. Give each path an icon in
+  `src/settings.tsx`. The icon record is typed by path.
+- Keep the parts that setup and settings share in `src/services.tsx`: the mode
+  card, the mark, the state pill, and the key panel. Do not write a second one.
+- Write a setting from a screen through `updateSetup()` in `src/os.ts`. It
+  holds the new answers, so `currentSetup()` gives them at once.
+- Open an address with `openInBrowser()` in `src/os.ts`. A Tauri window blocks
+  a plain link.
 - Read the saved setup through `currentSetup()` in `src/os.ts`, never through
   `invoke` in a route. The module holds the value it wrote, so a guard right
   after setup sees the new answers.

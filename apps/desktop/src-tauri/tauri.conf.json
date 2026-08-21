@@ -41,6 +41,9 @@
     "icon": [
       "icons/icon.png"
     ],
-    "targets": "all"
+    "targets": "all",
+    "macOS": {
+      "minimumSystemVersion": "26.0"
+    }
   }
 }

@@ -11,15 +11,27 @@ const LATER_SPACE_TITLE = "New space";
 /** How many spoken messages one transcript page shows. */
 export const TRANSCRIPT_PAGE_SIZE = 8;
 
-/** The URL name of a space. It carries no identifier. */
-export function spaceSlug(title: string | null | undefined): string {
+/**
+ * The URL name of a title. It carries no identifier.
+ *
+ * A row with no title still needs an address, so the fallback names the kind
+ * of row: `space` for a space, `note` for a note.
+ */
+export function slugify(
+  title: string | null | undefined,
+  fallback: string,
+): string {
   return (
     title
       ?.toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "") || "space"
+      .replace(/^-+|-+$/g, "") || fallback
   );
 }
+
+/** The URL name of a space. It carries no identifier. */
+export const spaceSlug = (title: string | null | undefined) =>
+  slugify(title, "space");
 
 /** The space that a slug names, or nothing when no title matches. */
 export function spaceFromSlug<T extends { title?: string | null }>(

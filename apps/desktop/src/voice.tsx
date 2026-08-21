@@ -10,7 +10,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 
 import { navFor } from "./app-nav";
-import { listVoices, readConnections, saveSpeech, type Voice } from "./os";
+import {
+  listVoices,
+  readConnections,
+  saveSpeech,
+  type Voice,
+} from "./os";
 import { play } from "./player";
 import { Screen } from "./shell";
 import {

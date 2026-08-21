@@ -21,6 +21,13 @@ import { OnboardingLayout } from "./app";
 import { type AppPath } from "./app-nav";
 import { isSetupDone } from "./onboarding";
 import { currentSetup } from "./os";
+import {
+  ConnectionScreen,
+  SettingsLayout,
+  SetupSettings,
+  WritingSettings,
+} from "./settings";
+import { isConnectionId } from "./settings-nav";
 import { AppScreen, AppShell } from "./shell";
 import { SpacesScreen, TalkScreen } from "./talk";
 import { VoiceScreen } from "./voice";
@@ -80,6 +87,26 @@ const talkRoute = createRoute({
   },
 });
 
+// Settings is a layout with a section list, so a section keeps the list
+// beside it. A connection page is a child of Setup, not a section of its own.
+const settingsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/settings",
+  component: SettingsLayout,
+});
+
+const connectionRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: "/connections/$provider",
+  beforeLoad: ({ params }) => {
+    if (!isConnectionId(params.provider)) throw redirect({ to: "/settings" });
+  },
+  component: function Connection() {
+    const { provider } = connectionRoute.useParams();
+    return <ConnectionScreen provider={provider as "openrouter" | "elevenlabs"} />;
+  },
+});
+
 const routeTree = rootRoute.addChildren([
   createRoute({
     getParentRoute: () => rootRoute,
@@ -108,7 +135,19 @@ const routeTree = rootRoute.addChildren([
       component: VoiceScreen,
     }),
     screen("/help"),
-    screen("/settings"),
+    settingsRoute.addChildren([
+      createRoute({
+        getParentRoute: () => settingsRoute,
+        path: "/",
+        component: SetupSettings,
+      }),
+      createRoute({
+        getParentRoute: () => settingsRoute,
+        path: "/writing",
+        component: WritingSettings,
+      }),
+      connectionRoute,
+    ]),
   ]),
 ]);
 

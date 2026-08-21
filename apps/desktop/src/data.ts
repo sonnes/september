@@ -182,6 +182,90 @@ export function useSendMessage(spaceId: string) {
   });
 }
 
+// -------------------------------------------------------------------- notes
+
+export interface Note {
+  id: string;
+  space_id?: string;
+  name?: string;
+  content: string;
+  created_at: number;
+  updated_at: number;
+}
+
+const notesKey = (spaceId: string) => ["notes", spaceId];
+
+/** The notes of one space, the one changed last at the front. */
+export function useNotes(spaceId: string) {
+  return useQuery({
+    queryKey: notesKey(spaceId),
+    queryFn: () => call<Note[]>("note_list", { space_id: spaceId }),
+  });
+}
+
+export function useCreateNote(spaceId: string) {
+  const client = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => {
+      const at = Date.now();
+      return call<Note>("note_put", {
+        id: crypto.randomUUID(),
+        space_id: spaceId,
+        content: "",
+        created_at: at,
+        updated_at: at,
+      });
+    },
+    onSuccess: () => client.invalidateQueries({ queryKey: notesKey(spaceId) }),
+  });
+}
+
+/** The fields of a note that one save writes. */
+export interface NotePatch {
+  id: string;
+  name?: string;
+  content?: string;
+}
+
+/**
+ * Changes the name or the words of a note.
+ *
+ * `note_put` writes one complete row, and two writers touch a note: the title
+ * field and the autosave. The row that Rust holds fills the fields this save
+ * does not carry, so one writer never puts back what the other just wrote.
+ *
+ * ponytail: the read and the write are two calls, not one statement. A note
+ * has one screen and one user, so the gap between them cannot hold a second
+ * writer. Give notes a `note_patch` command if that stops being true.
+ */
+export function useUpdateNote(spaceId: string) {
+  const client = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (patch: NotePatch) => {
+      const held = await call<Note | null>("note_get", { id: patch.id });
+      if (!held) throw new Error("that note is gone");
+
+      return call<Note>("note_put", {
+        ...held,
+        ...patch,
+        updated_at: Date.now(),
+      });
+    },
+    onSuccess: () => client.invalidateQueries({ queryKey: notesKey(spaceId) }),
+  });
+}
+
+export function useDeleteNote(spaceId: string) {
+  const client = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => call<boolean>("note_delete", { id }),
+    onSuccess: () => client.invalidateQueries({ queryKey: notesKey(spaceId) }),
+  });
+}
+
 // ------------------------------------------------------------ saved phrases
 
 /** The phrases of one space, or every phrase when no space is named. */

@@ -15,7 +15,7 @@ never wears the app sidebar, and an app screen never wears the setup sidebar.
 | Layout      | Component                     | Routes                                             |
 | ----------- | ----------------------------- | -------------------------------------------------- |
 | Setup       | `OnboardingLayout`, `app.tsx` | `/welcome` `/profile` `/mode` `/connect` `/finish`  |
-| Application | `AppShell`, `shell.tsx`       | `/dashboard` `/spaces` `/spaces/$slug/talk` `/voice` `/help` `/settings` |
+| Application | `AppShell`, `shell.tsx`       | `/dashboard` `/spaces` `/spaces/$slug/talk` `/voice` `/help` `/settings` `/settings/writing` `/settings/connections/$provider` |
 
 `AppShell` is the shadcn `Sidebar` and `SidebarInset` pair: a solid indigo
 sidebar beside a white inset card. `src/app-nav.ts` lists the destinations and
@@ -69,7 +69,7 @@ The Talk screen has three parts, from the top:
 1. The transcript. It holds the spoken messages, 8 for each page, newest last.
    Press a message to speak it again.
 2. The composer. It has the text field, undo, delete last word, clear, the
-   sound output, and Speak. The Enter key speaks. Shift and Enter make a new
+   audio selector, and Speak. The Enter key speaks. Shift and Enter make a new
    line.
 3. The dock. It has one tab for each space, and a button that makes a new one.
 
@@ -91,10 +91,12 @@ changes only the fields it is given, in one statement.
 
 ### Where the sound comes out
 
-A picker beside Speak lists every output of this Mac and moves the sound to the
-one the user chooses. Both voices follow the output of the Mac, so one choice
-moves both. The Mac remembers it, and September keeps no copy that could
-disagree. A Mac with one output shows no picker.
+The audio selector beside Speak lists every output of this Mac. It moves both
+voices to the output the user chooses. The Mac remembers the choice, and
+September keeps no copy that could disagree.
+
+The selector also controls `September Microphone` for calling apps. It remains
+visible on a Mac with one output so the microphone control stays available.
 
 `src-tauri/src/audio.rs` reads the outputs from CoreAudio. The browser cannot
 do this job: WKWebView holds `setSinkId`, but `navigator.mediaDevices` lists no
@@ -211,10 +213,14 @@ codes, the rows from past messages, and the word row.
 `src/speech.ts` gives every voice one interface. A screen calls `speak(text)`
 and does not know which service answers.
 
-| Voice        | How it speaks                                              |
-| ------------ | ---------------------------------------------------------- |
-| `system`     | The Web Speech API of the WebView. No file, no key.        |
-| `elevenlabs` | Rust makes a file. `src/player.ts` plays it.               |
+| Voice        | How it speaks                                                |
+| ------------ | ------------------------------------------------------------ |
+| `system`     | The native process uses the macOS system voice. No file, no key. |
+| `elevenlabs` | Rust makes a file. The native process plays the cached file.  |
+
+Spoken messages now leave the native process. This path lets the Core Audio
+process tap receive both voices. Voice-list previews still use `src/player.ts`
+and do not enter a call.
 
 A cloud voice that fails falls back to the voice of this Mac, and the composer
 says so. A person who cannot speak must not meet silence.
@@ -242,6 +248,22 @@ sliders for speed, steadiness, and likeness. Each change is kept at once, in
 the `speech` setting. **Try it** speaks one short sentence, so the user hears a
 change before a real message. A voice sample plays from a public address, so it
 needs no key.
+
+### Use the voice in FaceTime
+
+The Talk audio selector can publish `September Microphone` as a macOS audio
+input. The input exists only while September runs and the control is on.
+
+1. Open Talk and open the audio selector beside **Speak**.
+2. Turn on **September Microphone**.
+3. Allow system audio capture when macOS asks.
+4. Open FaceTime and select **September Microphone** from the Video menu.
+5. Speak a message in September.
+6. Turn off **September Microphone** when the call ends.
+
+September removes the input when it quits. The next start also removes a stale
+input that remained after an unexpected exit. This feature requires macOS 26
+or later and does not install an audio driver.
 
 ## Walk through setup
 
@@ -282,6 +304,43 @@ the browser storage. `src/os.ts` holds the only calls to Rust.
 
 The ElevenLabs voice list carries a public sample for each voice. The preview
 button plays that sample, so it needs no key and no speech call.
+
+## Change a setting
+
+`/settings` holds the answers that setup collected. It is a layout with a
+section list beside the open section, ported from the web app.
+
+| Section | Route | Holds |
+| --- | --- | --- |
+| Setup | `/settings` | The mode cards, and the state of each service |
+| Writing help | `/settings/writing` | Who writes, and what the model knows about you |
+
+The web app has three more sections. Listening needs a transcription backend,
+Usage needs a spend count, and Account needs an account. The desktop app has
+none of the three. Voice keeps its own screen, `/voice`, in both apps.
+
+`src/settings-nav.ts` holds the rules that a test can read: the sections, the
+open section, and the guide for each cloud service. `src/settings.tsx` holds
+the screens.
+
+A press on **Set up** opens `/settings/connections/openrouter` or
+`/settings/connections/elevenlabs`. The page gives the steps, takes the key,
+and opens the address of the service in the browser of the Mac. The key goes
+straight to the Keychain, through `src/os.ts`.
+
+`src/services.tsx` holds the parts that setup and settings share: the mode
+card, the mark of each service, the state pill, and the key panel. A brand
+asset is therefore named one time.
+
+Every change is kept at once, as `/voice` does. There is no Save button to
+forget. A text field waits half a second after the last keystroke, so one
+sentence is one write.
+
+A mode change re-points the services. Free mode takes the writer and the voice
+of this Mac. Advanced keeps every answer. Neither one erases a key.
+
+The speaking style and the personal words go to the writing service as its
+user context. `userContext()` in `src/ai.ts` assembles them.
 
 Buttons, inputs, and labels come from shadcn/ui. The primitives are in
 `src/components/ui/`. To add one more:

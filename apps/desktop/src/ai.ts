@@ -37,6 +37,20 @@ export function writingService(): "apple" | "openrouter" | null {
 export const hasWritingService = () => writingService() !== null;
 
 /**
+ * What the writing service knows about the user, from setup.
+ *
+ * Setup collects the speaking style and the personal words, and Writing help
+ * keeps them current. Empty when the user wrote neither.
+ */
+export function userContext(): string {
+  const setup = currentSetup();
+  return [setup?.speakingStyle, setup?.personalWords]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+/**
  * Text from the chosen service.
  *
  * A user with no writing service still sees the phrases, the starters, the

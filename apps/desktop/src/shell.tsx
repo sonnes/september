@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import {
   CircleHelp,
+  FileText,
   House,
   MessageSquare,
   Mic,
@@ -32,6 +33,7 @@ import {
   type AppPath,
 } from "./app-nav";
 import { BrandMark, BrandWordmark } from "./brand";
+import { spaceSlug } from "./spaces";
 
 const ICONS: Record<AppPath, LucideIcon> = {
   "/dashboard": House,
@@ -130,6 +132,47 @@ function AppSidebar() {
       </SidebarContent>
       <SidebarRail />
     </Sidebar>
+  );
+}
+
+/**
+ * The two modes of a space: Talk for one sentence now, Notes for long text.
+ *
+ * The tabs build their own addresses from the slug, so this stays clear of
+ * the screens that use it.
+ */
+export function SpaceModes({
+  title,
+  mode,
+}: {
+  title: string | null | undefined;
+  mode: "talk" | "notes";
+}) {
+  const slug = spaceSlug(title);
+  const modes = [
+    { id: "talk", label: "Talk", icon: MessageSquare, to: "/spaces/$slug/talk" },
+    { id: "notes", label: "Notes", icon: FileText, to: "/spaces/$slug/notes" },
+  ] as const;
+
+  return (
+    <nav aria-label="Space mode" className="flex shrink-0 items-center gap-1">
+      {modes.map(({ id, label, icon: Icon, to }) => (
+        <Link
+          key={id}
+          to={to}
+          params={{ slug }}
+          aria-current={id === mode ? "page" : undefined}
+          className={`focus-visible:ring-ring inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${
+            id === mode
+              ? "bg-primary text-primary-foreground border-transparent"
+              : "hover:bg-accent text-muted-foreground border-transparent"
+          }`}
+        >
+          <Icon className="size-4 shrink-0" aria-hidden />
+          {label}
+        </Link>
+      ))}
+    </nav>
   );
 }
 

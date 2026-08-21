@@ -42,10 +42,22 @@ pub fn run() {
             rpc::provider_forget,
             rpc::provider_voices,
             rpc::speech_synthesize,
+            rpc::speech_system,
+            rpc::speech_file_play,
+            rpc::speech_native_stop,
             rpc::audio_outputs,
             rpc::audio_output,
             rpc::audio_output_set,
+            rpc::virtual_microphone_status,
+            rpc::virtual_microphone_start,
+            rpc::virtual_microphone_stop,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running September desktop");
+        .build(tauri::generate_context!())
+        .expect("error while building September desktop")
+        .run(|_, event| {
+            if matches!(event, tauri::RunEvent::Exit) {
+                audio::stop_speech();
+                let _ = audio::virtual_microphone_stop();
+            }
+        });
 }

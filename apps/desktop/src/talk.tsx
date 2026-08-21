@@ -3,10 +3,12 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Delete,
   Headphones,
+  Mic,
   MessagesSquare,
   Plus,
   MessageSquareQuote,
@@ -28,16 +30,17 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { describeSpace } from "./ai";
@@ -54,7 +57,14 @@ import {
   type Message,
   type Space,
 } from "./data";
-import { chooseOutput, currentOutput, listOutputs } from "./os";
+import {
+  chooseOutput,
+  currentOutput,
+  listOutputs,
+  startVirtualMicrophone,
+  stopVirtualMicrophone,
+  virtualMicrophoneStatus,
+} from "./os";
 import { Screen, ScreenHeader } from "./shell";
 import { PhrasePanel } from "./phrase-panel";
 import { generateCode, type SavedPhrase } from "./phrases";
@@ -76,6 +86,17 @@ const talkParams = (space: Pick<Space, "title">) => ({
   to: "/spaces/$slug/talk" as const,
   params: { slug: spaceSlug(space.title) },
 });
+
+const notesParams = (space: Pick<Space, "title">) => ({
+  to: "/spaces/$slug/notes" as const,
+  params: { slug: spaceSlug(space.title) },
+});
+
+/** A space opens in one of two modes, and the address holds which one. */
+export type SpaceMode = "talk" | "notes";
+
+export const spaceParams = (space: Pick<Space, "title">, mode: SpaceMode) =>
+  mode === "notes" ? notesParams(space) : talkParams(space);
 
 function Problem({ error }: { error: Error }) {
   return (
@@ -534,7 +555,7 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
               </Button>
               </div>
               <div className="flex items-center gap-2">
-                <SoundOutput />
+                <AudioSelector />
                 <Button
                   type="button"
                   size="lg"
@@ -557,7 +578,13 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
 }
 
 /** The name of the space. A new name changes the address of the space too. */
-function SpaceTitle({ space }: { space: Space }) {
+export function SpaceTitle({
+  space,
+  mode = "talk",
+}: {
+  space: Space;
+  mode?: SpaceMode;
+}) {
   const navigate = useNavigate();
   const update = useUpdateSpace();
   const [title, setTitle] = useState(space.title ?? "");
@@ -572,7 +599,10 @@ function SpaceTitle({ space }: { space: Space }) {
     }
     update.mutate(
       { id: space.id, title: next },
-      { onSuccess: () => navigate({ ...talkParams({ title: next }), replace: true }) },
+      {
+        onSuccess: () =>
+          navigate({ ...spaceParams({ title: next }, mode), replace: true }),
+      },
     );
   };
 
@@ -591,49 +621,107 @@ function SpaceTitle({ space }: { space: Space }) {
 }
 
 /**
- * Which speaker the Mac plays through.
+ * Which speaker the Mac plays through, and whether calling apps hear it.
  *
  * Both voices follow the sound output of the Mac, so this moves the Mac and
- * not September alone. A Mac with one output shows nothing to choose.
+ * not September alone. The microphone stays here even with one output.
  */
-function SoundOutput() {
+function AudioSelector() {
   const client = useQueryClient();
   const outputs = useQuery({ queryKey: ["outputs"], queryFn: listOutputs });
   const chosen = useQuery({ queryKey: ["output"], queryFn: currentOutput });
+  const microphone = useQuery({
+    queryKey: ["virtual-microphone"],
+    queryFn: virtualMicrophoneStatus,
+  });
 
   const move = useMutation({
     mutationFn: chooseOutput,
     onSuccess: () => client.invalidateQueries({ queryKey: ["output"] }),
   });
+  const changeMicrophone = useMutation({
+    mutationFn: (enabled: boolean) =>
+      enabled ? startVirtualMicrophone() : stopVirtualMicrophone(),
+    onSuccess: (status) =>
+      client.setQueryData(["virtual-microphone"], status),
+  });
 
   const devices = outputs.data ?? [];
-  if (devices.length < 2) return null;
+  const selected = devices.find((device) => device.uid === chosen.data);
+  const microphoneOn = microphone.data?.active ?? false;
 
   return (
-    <Select
-      value={chosen.data ?? ""}
-      // A speaker plugged in while the app runs is on the list when it opens.
-      onOpenChange={(open) => open && void outputs.refetch()}
-      onValueChange={(uid) => move.mutate(uid)}
+    <DropdownMenu
+      onOpenChange={(open) => {
+        if (!open) return;
+        // A device plugged in while the app runs appears when the menu opens.
+        void outputs.refetch();
+        void chosen.refetch();
+        void microphone.refetch();
+      }}
     >
-      <SelectTrigger
-        aria-label="Sound output"
-        className="text-muted-foreground h-auto w-auto gap-2 rounded-full px-3 py-1.5 text-xs shadow-none"
-      >
-        <Headphones className="size-4 shrink-0" aria-hidden />
-        <SelectValue placeholder="Sound output" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          <SelectLabel>Sound output for this Mac</SelectLabel>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          size="lg"
+          variant="outline"
+          className="max-w-56 rounded-full px-4 font-medium"
+        >
+          <Headphones aria-hidden />
+          <span className="truncate">{selected?.name ?? "Audio"}</span>
+          {microphoneOn ? <Mic className="text-primary" aria-hidden /> : null}
+          <span className="sr-only">
+            September Microphone {microphoneOn ? "on" : "off"}
+          </span>
+          <ChevronDown className="opacity-50" aria-hidden />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-72">
+        <DropdownMenuLabel className="text-muted-foreground text-xs">
+          Sound output for this Mac
+        </DropdownMenuLabel>
+        <DropdownMenuRadioGroup
+          value={chosen.data ?? ""}
+          onValueChange={(uid) => move.mutate(uid)}
+        >
           {devices.map((device) => (
-            <SelectItem key={device.uid} value={device.uid}>
+            <DropdownMenuRadioItem
+              key={device.uid}
+              value={device.uid}
+              className="min-h-11"
+            >
               {device.name}
-            </SelectItem>
+            </DropdownMenuRadioItem>
           ))}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+        </DropdownMenuRadioGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-muted-foreground text-xs">
+          Use voice in calls
+        </DropdownMenuLabel>
+        <DropdownMenuCheckboxItem
+          checked={microphoneOn}
+          disabled={!microphone.data || changeMicrophone.isPending}
+          className="min-h-11"
+          onSelect={(event) => event.preventDefault()}
+          onCheckedChange={(checked) =>
+            changeMicrophone.mutate(checked === true)
+          }
+        >
+          <Mic aria-hidden />
+          <span className="flex flex-col">
+            <span>September Microphone</span>
+            <span className="text-muted-foreground text-xs font-normal">
+              Send spoken messages to FaceTime
+            </span>
+          </span>
+        </DropdownMenuCheckboxItem>
+        {changeMicrophone.error ? (
+          <p className="text-destructive px-2 py-1.5 text-sm" role="alert">
+            {String(changeMicrophone.error)}
+          </p>
+        ) : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -691,7 +779,15 @@ function PageButton({
  * ponytail: the row scrolls when the tabs no longer fit. The web app collapses
  * them into a menu — port that when a user keeps more spaces than fit.
  */
-function SpaceDock({ current, spaces }: { current: Space; spaces: Space[] }) {
+export function SpaceDock({
+  current,
+  spaces,
+  mode = "talk",
+}: {
+  current: Space;
+  spaces: Space[];
+  mode?: SpaceMode;
+}) {
   const navigate = useNavigate();
   const createSpace = useCreateSpace();
 
@@ -702,7 +798,8 @@ function SpaceDock({ current, spaces }: { current: Space; spaces: Space[] }) {
           key={space.id}
           type="button"
           aria-current={space.id === current.id ? "page" : undefined}
-          onClick={() => navigate(talkParams(space))}
+          // A space tab keeps the mode the user is in, so Notes stays Notes.
+          onClick={() => navigate(spaceParams(space, mode))}
           className={`focus-visible:ring-ring min-h-11 shrink-0 rounded-full border px-4 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${
             space.id === current.id
               ? "bg-primary text-primary-foreground border-transparent"
