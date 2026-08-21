@@ -1,12 +1,46 @@
 # September Desktop
 
-September Desktop is an independent Tauri application. Its first ported screen
-is an onboarding flow, sized for the 13-inch iPad landscape window.
-The Rust backend also provides local text generation through a bundled apfel
-sidecar on supported Macs.
+September Desktop is an independent Tauri application, sized for the 13-inch
+iPad landscape window. It has a setup flow and the app layout that the flow
+opens into. The Rust backend also provides local text generation through a
+bundled apfel sidecar on supported Macs.
 
-The UI uses Tailwind CSS v4, shadcn/ui primitives, and TanStack Router. Each
-step is a route: `/welcome`, `/profile`, `/mode`, `/connect`, and `/finish`.
+The UI uses Tailwind CSS v4, shadcn/ui primitives, and TanStack Router.
+
+## Move through the app
+
+The root route holds an outlet only. Below it are two layouts, so a setup step
+never wears the app sidebar, and an app screen never wears the setup sidebar.
+
+| Layout      | Component                     | Routes                                             |
+| ----------- | ----------------------------- | -------------------------------------------------- |
+| Setup       | `OnboardingLayout`, `app.tsx` | `/welcome` `/profile` `/mode` `/connect` `/finish`  |
+| Application | `AppShell`, `shell.tsx`       | `/dashboard` `/spaces` `/voice` `/help` `/settings` |
+
+`AppShell` is the shadcn `Sidebar` and `SidebarInset` pair: a solid indigo
+sidebar beside a white inset card. `src/app-nav.ts` lists the destinations and
+their descriptions. `src/shell.tsx` gives each path an icon. A destination
+without a ported screen shows a short placeholder, so the route and the
+sidebar item are real before the screen is.
+
+The window opens at the 1376px baseline, so the sidebar starts as a 48px icon
+rail. A wider screen opens the full sidebar. Command-B toggles it, and that
+choice holds until the width crosses the baseline again.
+
+Setup runs one time. The last step keeps its answers in the `setup` setting,
+then opens `/dashboard`. After that, `/` opens `/dashboard` directly, and the
+setup flow does not show again.
+
+`isSetupDone` in `src/onboarding.ts` owns that rule: setup is done when it
+holds a name and a mode. The app layout reads the same rule, so an app screen
+opened before setup turns back to `/welcome`.
+
+To run setup again, erase the `setup` setting.
+
+## Walk through setup
+
+Each step is a route: `/welcome`, `/profile`, `/mode`, `/connect`, and
+`/finish`.
 Free setup skips `/connect`, so it shows four steps and advanced setup shows
 five. `stepsFor` in `src/onboarding.ts` owns that rule, and the sidebar, the
 guards, and both navigation directions all read it. The router uses hash history,
@@ -17,6 +51,9 @@ persistence is ported.
 The brand, the setup title, and the step list are in a left indigo sidebar.
 Each step opens as an inset white card beside it. All sections on a step stay
 open. There are no collapsible groups.
+
+Both sidebars show the same brand mark. `src/brand.tsx` reads it from
+`public/logo.svg`, the file the brand publishes.
 
 The name field starts with the name from the operating system. The user can
 change it. In a browser the field starts empty, because the Tauri backend does

@@ -9,6 +9,7 @@ import {
 
 import { Link, Navigate, Outlet, useRouterState } from "@tanstack/react-router";
 
+import { BrandMark, BrandWordmark } from "./brand";
 import {
   canReach,
   DEFAULT_DRAFT,
@@ -55,15 +56,12 @@ export function OnboardingLayout() {
             --sidebar tokens are worth adding once a second screen needs them. */}
         <aside className="flex w-72 shrink-0 flex-col gap-8 overflow-y-auto rounded-xl bg-indigo-600 px-6 py-8 text-white shadow-sm">
           <div className="flex items-center gap-2" aria-label="September">
-            <span
+            <BrandMark size={40} className="size-10 rounded-[11px]" />
+            <BrandWordmark
+              tone="inverse"
               aria-hidden="true"
-              className="grid size-10 shrink-0 place-items-center rounded-[11px] border-[5px] border-indigo-800 bg-white font-brand text-xs font-bold text-indigo-600"
-            >
-              Sep
-            </span>
-            <span className="font-brand text-xl font-bold tracking-tight text-indigo-200">
-              <strong className="font-bold text-white">Sep</strong>tember
-            </span>
+              className="text-xl"
+            />
           </div>
 
           <div>

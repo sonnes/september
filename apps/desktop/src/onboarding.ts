@@ -225,6 +225,17 @@ export function previousStep(
   return index > 0 ? steps[index - 1].path : null;
 }
 
+/**
+ * Setup is done when it holds the two answers every screen needs: a name and
+ * a mode. The launch route and the app guard both read this, so a finished
+ * setup never shows again.
+ */
+export function isSetupDone(
+  setup: Pick<OnboardingDraft, "name" | "mode"> | null,
+): boolean {
+  return Boolean(setup && setup.name.trim() && setup.mode);
+}
+
 // A step is reachable when the answers it depends on exist. The progress nav
 // and the reload guard both read this, so no "furthest step" state is kept.
 export function canReach(

@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
+import type { OnboardingDraft } from "./onboarding";
+
 /**
  * The name the operating system holds for the signed-in user.
  *
@@ -8,6 +10,29 @@ import { invoke } from "@tauri-apps/api/core";
  * The value is empty in a browser, where the Tauri backend does not exist.
  */
 export const osName = await invoke<string>("user_name").catch(() => "");
+
+/**
+ * The setup answers, from the last time setup finished. Null on a fresh
+ * install, and in a browser, where the Tauri backend does not exist.
+ *
+ * ponytail: one setting, read once before React mounts, so the router can
+ * decide the first route without an async guard.
+ */
+let setup = await invoke<OnboardingDraft | null>("setting_get", {
+  request: { key: "setup" },
+}).catch(() => null);
+
+export function currentSetup(): OnboardingDraft | null {
+  return setup;
+}
+
+/** Keeps the finished setup, then holds it, so the app guard sees it too. */
+export async function saveSetup(draft: OnboardingDraft): Promise<void> {
+  await invoke("setting_put", {
+    request: { key: "setup", value: draft },
+  }).catch(() => undefined);
+  setup = draft;
+}
 
 export type Provider = "openrouter" | "elevenlabs";
 

@@ -36,6 +36,7 @@ import {
   listVoices,
   readConnections,
   saveServices,
+  saveSetup,
   type Connections,
   type Provider,
   type ProviderStatus,
@@ -351,7 +352,7 @@ export function ModeStep() {
 
 export function FinishStep() {
   const { draft } = useDraft();
-  const [finished, setFinished] = useState(false);
+  const navigate = useNavigate();
   const mode = SETUP_MODES.find((option) => option.id === draft.mode);
   const style = SPEAKING_STYLES.find(
     (option) => option.value === draft.speakingStyle,
@@ -365,10 +366,11 @@ export function FinishStep() {
           type="button"
           size="lg"
           className={ACTION}
-          disabled={finished}
-          onClick={() => setFinished(true)}
+          onClick={() => {
+            saveSetup(draft).then(() => navigate({ to: "/dashboard" }));
+          }}
         >
-          {finished ? "Ready" : stepFor("/finish").action}
+          {stepFor("/finish").action}
         </Button>
       }
     >
@@ -387,14 +389,6 @@ export function FinishStep() {
             <SummaryRow label="Speaking style" value={style?.label ?? "Custom"} />
             <SummaryRow label="Services" value="Connect later in Settings" />
           </dl>
-          {finished && (
-            <p
-              role="status"
-              className="mt-5 text-sm font-semibold text-emerald-700"
-            >
-              Setup complete. September is ready for the next screen.
-            </p>
-          )}
         </div>
       </div>
     </Step>

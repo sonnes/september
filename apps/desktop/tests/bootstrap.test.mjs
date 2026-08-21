@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
+import { APP_NAV, BASE_VIEWPORT_WIDTH, isCompactWidth } from "../src/app-nav.ts";
 import {
   canReach,
+  isSetupDone,
   nextStep,
   previousStep,
   STEPS,
@@ -291,4 +293,121 @@ test("the welcome markers stay inside the scrolling step body", async () => {
     space("ml") >= escapes,
     `marker escapes ${escapes}px, list insets ${space("ml")}px`,
   );
+});
+
+test("the app layout keeps the sidebar beside an inset surface", async () => {
+  const shell = await readText("src/shell.tsx");
+
+  assert.match(shell, /SidebarProvider/);
+  assert.match(shell, /<AppSidebar\b/);
+  assert.match(shell, /SidebarInset/);
+  assert.match(shell, /variant="inset"/);
+  assert.match(shell, /collapsible="icon"/);
+  // A definite viewport height, so the body scrolls and the shell does not.
+  assert.match(shell, /h-svh/);
+});
+
+test("the app sidebar starts as a rail at the 13-inch iPad baseline", async () => {
+  assert.equal(BASE_VIEWPORT_WIDTH, 1376);
+  assert.ok(isCompactWidth(1376), "the baseline itself is compact");
+  assert.ok(!isCompactWidth(1377), "a wider screen opens the full sidebar");
+
+  const shell = await readText("src/shell.tsx");
+  assert.match(shell, /defaultOpen=\{!isCompact\}/);
+});
+
+test("every app destination has a route and an icon", async () => {
+  const main = await readText("src/main.tsx");
+  const shell = await readText("src/shell.tsx");
+
+  assert.ok(APP_NAV.length > 0);
+  for (const item of APP_NAV) {
+    assert.match(main, new RegExp(`"${item.path}"`), `${item.path} needs a route`);
+    assert.match(shell, new RegExp(`"${item.path}":`), `${item.path} needs an icon`);
+  }
+});
+
+test("setup and the app are separate layouts", async () => {
+  const main = await readText("src/main.tsx");
+
+  // The root route holds an outlet only, so a step never wears the app
+  // sidebar and an app screen never wears the setup sidebar.
+  assert.doesNotMatch(main, /createRootRoute\(\{\s*component: OnboardingLayout/);
+  assert.match(main, /OnboardingLayout/);
+  assert.match(main, /AppShell/);
+  assert.match(main, /id: "setup"/);
+  assert.match(main, /id: "app"/);
+});
+
+test("both sidebars show the published brand mark", async () => {
+  const brand = await readText("src/brand.tsx");
+
+  assert.match(brand, /"\/logo\.svg"/, "the mark comes from the published file");
+  for (const file of ["src/app.tsx", "src/shell.tsx"]) {
+    assert.match(await readText(file), /BrandMark/, `${file} needs the mark`);
+  }
+});
+
+test("the app sidebar stays indigo, in the shadcn tokens", async () => {
+  const styles = await readText("src/styles.css");
+
+  assert.match(styles, /--sidebar:\s*var\(--color-indigo-500\)/);
+  assert.match(styles, /--sidebar-foreground:\s*var\(--color-white\)/);
+  assert.match(styles, /--sidebar-border:\s*var\(--color-indigo-400\)/);
+  // The app is light only, so no theme block and no raw hsl values.
+  assert.doesNotMatch(styles, /^\.dark\b/m);
+  assert.doesNotMatch(styles, /hsl\(/);
+});
+
+test("setup ends inside the app layout", async () => {
+  const steps = await readText("src/steps.tsx");
+
+  assert.match(steps, new RegExp(`to: "${APP_NAV[0].path}"`));
+});
+
+test("setup is done once it has a name and a mode", () => {
+  assert.ok(!isSetupDone(null), "a fresh install has no setup");
+  assert.ok(!isSetupDone({ name: "  ", mode: "free" }), "a name is required");
+  assert.ok(!isSetupDone({ name: "Ravi", mode: null }), "a mode is required");
+  assert.ok(isSetupDone({ name: "Ravi", mode: "free" }));
+  assert.ok(isSetupDone({ name: "Ravi", mode: "advanced" }));
+});
+
+test("the launch route sends a finished setup to the app", async () => {
+  const main = await readText("src/main.tsx");
+
+  assert.match(main, /isSetupDone\(currentSetup\(\)\)/);
+  assert.match(main, /"\/dashboard"/);
+  assert.match(main, /"\/welcome"/);
+});
+
+test("an app screen turns an unfinished setup back to the start", async () => {
+  const main = await readText("src/main.tsx");
+  const appLayout = main.match(/id: "app",[\s\S]*?\n\}\);/)[0];
+
+  assert.match(appLayout, /beforeLoad/);
+  assert.match(appLayout, /isSetupDone/);
+  assert.match(appLayout, /to: "\/welcome"/);
+});
+
+test("setup keeps its answers before it opens the app", async () => {
+  const os = await readText("src/os.ts");
+  const steps = await readText("src/steps.tsx");
+
+  // One setting holds the finished setup, and the module keeps the value it
+  // wrote, so the guard right after setup reads the new answers.
+  assert.match(os, /key: "setup"/);
+  assert.match(os, /export function currentSetup/);
+  assert.match(os, /export async function saveSetup/);
+  assert.match(steps, /saveSetup\(draft\)/);
+});
+
+test("the brand and the nav icons share one left edge", async () => {
+  const shell = await readText("src/shell.tsx");
+  const brand = shell.match(/aria-label="September"\s+className="([^"]*)"/)[1];
+
+  // `SidebarHeader` and `SidebarGroup` both inset by 8px, so the brand and
+  // the nav buttons line up. Extra padding on either one breaks the edge.
+  assert.match(shell, /<SidebarGroup>/);
+  assert.doesNotMatch(brand, /\bp[xl]?-\d/, `brand row adds padding: ${brand}`);
 });
