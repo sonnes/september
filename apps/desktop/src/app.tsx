@@ -17,6 +17,7 @@ import {
   type OnboardingDraft,
   type StepPath,
 } from "./onboarding";
+import { osName } from "./os";
 
 interface DraftValue {
   draft: OnboardingDraft;
@@ -33,7 +34,10 @@ export function useDraft(): DraftValue {
 
 // ponytail: the draft stays in memory until account persistence is ported.
 export function OnboardingLayout() {
-  const [draft, setDraft] = useState<OnboardingDraft>(DEFAULT_DRAFT);
+  const [draft, setDraft] = useState<OnboardingDraft>({
+    ...DEFAULT_DRAFT,
+    name: osName,
+  });
   const value = useMemo(() => ({ draft, setDraft }), [draft]);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const current = stepIndex(pathname);
@@ -46,34 +50,38 @@ export function OnboardingLayout() {
 
   return (
     <DraftContext.Provider value={value}>
-      <div className="flex h-dvh flex-col bg-zinc-100 px-4 py-6">
-        <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col">
-          <header className="shrink-0 rounded-xl bg-indigo-600 px-8 py-6 text-white">
-            <div className="flex items-center gap-2" aria-label="September">
-              <span
-                aria-hidden="true"
-                className="grid size-10 shrink-0 place-items-center rounded-[11px] border-[5px] border-indigo-800 bg-white font-brand text-xs font-bold text-indigo-600"
-              >
-                Sep
-              </span>
-              <span className="font-brand text-xl font-bold tracking-tight text-indigo-200">
-                <strong className="font-bold text-white">Sep</strong>tember
-              </span>
-            </div>
-            <h1 className="mt-5 text-3xl leading-tight font-bold">
+      <div className="flex h-dvh gap-2 bg-zinc-100 p-2">
+        {/* ponytail: the sidebar uses indigo utilities directly. DESIGN.md's
+            --sidebar tokens are worth adding once a second screen needs them. */}
+        <aside className="flex w-72 shrink-0 flex-col gap-8 overflow-y-auto rounded-xl bg-indigo-600 px-6 py-8 text-white shadow-sm">
+          <div className="flex items-center gap-2" aria-label="September">
+            <span
+              aria-hidden="true"
+              className="grid size-10 shrink-0 place-items-center rounded-[11px] border-[5px] border-indigo-800 bg-white font-brand text-xs font-bold text-indigo-600"
+            >
+              Sep
+            </span>
+            <span className="font-brand text-xl font-bold tracking-tight text-indigo-200">
+              <strong className="font-bold text-white">Sep</strong>tember
+            </span>
+          </div>
+
+          <div>
+            <h1 className="text-2xl leading-tight font-bold">
               Set up without the hard parts.
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-indigo-100">
+            <p className="mt-2 text-sm leading-relaxed text-indigo-100">
               Recommended choices are ready. You can connect extra services
               later.
             </p>
-          </header>
+          </div>
 
-          <main className="mt-4 flex min-h-0 flex-1 flex-col rounded-xl bg-white p-6 shadow-sm sm:px-10 sm:py-8">
-            <ProgressNav current={current} draft={draft} />
-            <Outlet />
-          </main>
-        </div>
+          <ProgressNav current={current} draft={draft} />
+        </aside>
+
+        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-xl bg-white px-10 py-8 shadow-sm">
+          <Outlet />
+        </main>
       </div>
     </DraftContext.Provider>
   );
@@ -87,28 +95,25 @@ function ProgressNav({
   draft: OnboardingDraft;
 }) {
   return (
-    <nav aria-label="Onboarding progress" className="mb-6 shrink-0">
-      <ol className="flex items-center">
+    <nav aria-label="Onboarding progress">
+      <ol>
         {STEPS.map((step, index) => {
           const completed = current > index;
           const isCurrent = current === index;
           const isLast = index === STEPS.length - 1;
           const state = isCurrent
-            ? "border-indigo-600 bg-indigo-600 text-white"
+            ? "border-white bg-white text-indigo-600"
             : completed
-              ? "border-indigo-600 bg-indigo-100 text-indigo-600"
-              : "border-zinc-200 text-zinc-500";
+              ? "border-indigo-200 bg-indigo-200 text-indigo-700"
+              : "border-indigo-400 text-indigo-200";
 
           return (
-            <li
-              key={step.path}
-              className={`flex items-center ${isLast ? "" : "flex-1"}`}
-            >
+            <li key={step.path}>
               <Link
                 to={step.path}
                 disabled={!canReach(step.path, draft)}
                 aria-label={`Step ${index + 1}: ${step.label}${isCurrent ? ", current" : completed ? ", completed" : ""}`}
-                className="flex items-center gap-2.5 rounded-md focus-visible:ring-[3px] focus-visible:ring-indigo-500/50 focus-visible:outline-none aria-disabled:cursor-default"
+                className="flex items-center gap-3 rounded-md focus-visible:ring-[3px] focus-visible:ring-indigo-300 focus-visible:outline-none aria-disabled:cursor-default"
               >
                 <span
                   className={`flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-bold ${state}`}
@@ -116,7 +121,7 @@ function ProgressNav({
                   {completed ? "✓" : index + 1}
                 </span>
                 <span
-                  className={`hidden text-sm font-semibold sm:block ${current >= index ? "text-zinc-900" : "text-zinc-500"}`}
+                  className={`text-sm font-semibold ${current >= index ? "text-white" : "text-indigo-200"}`}
                 >
                   {step.label}
                 </span>
@@ -124,7 +129,7 @@ function ProgressNav({
               {!isLast && (
                 <span
                   aria-hidden="true"
-                  className={`mx-3 h-px flex-1 ${completed ? "bg-indigo-600" : "bg-zinc-200"}`}
+                  className={`ml-4 block h-6 w-px ${completed ? "bg-indigo-200" : "bg-indigo-400"}`}
                 />
               )}
             </li>

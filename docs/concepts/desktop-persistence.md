@@ -1,14 +1,13 @@
 ---
-title: Desktop settings persistence
-description: The independent Tauri app stores settings as JSON values in one SQLite table.
+title: Desktop persistence
+description: The independent Tauri app stores settings and normalized domain data in SQLite.
 package: desktop
 ---
 
-# Desktop settings persistence
+# Desktop persistence
 
-The desktop app starts with one SQLite database and one persisted entity.
-Each future entity gets its own table instead of sharing a generic records
-table.
+The desktop app stores settings and domain data in one SQLite database. Each
+domain entity has its own table instead of sharing a generic records table.
 
 ## Store settings
 
@@ -20,11 +19,20 @@ The webview can get, put, and delete settings through Tauri commands. Successful
 writes emit `september://settings-changed` so ported screens can refresh the
 affected keys.
 
-## Remove the generic backend
+## Store domain data in columns
 
-Schema version 3 preserves valid settings from the former backend. The migration
-then removes the `records`, `file_metadata`, `outbox`, and `sync_metadata`
-tables. Legacy file bytes remain on disk but are no longer managed by the app.
+The `spaces` table stores space metadata. The `messages` and `notes` tables
+store their domain fields in typed columns and reference `spaces` through an
+optional foreign key. Deleting a space cascades to its messages and scoped
+notes. Global messages and notes have no space and remain intact.
+
+SQLite stores domain timestamps as Unix milliseconds. Composite indexes cover
+the existing space-scoped message and note queries.
+
+## Start with the current schema
+
+Schema version 1 creates `settings`, `spaces`, `messages`, and `notes` directly.
+The desktop app does not migrate databases created by earlier backend versions.
 
 ## Keep browser storage separate
 

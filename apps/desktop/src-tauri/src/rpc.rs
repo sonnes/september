@@ -95,6 +95,25 @@ pub(crate) fn setting_delete(
     Ok(deleted)
 }
 
+/// The name the operating system holds for the signed-in user.
+///
+/// The result is empty when the system has no usable name. The onboarding
+/// screen then starts with an empty field.
+#[tauri::command(async)]
+pub(crate) fn user_name() -> String {
+    clean_name(&whoami::realname())
+}
+
+/// Keeps the first GECOS field and rejects the placeholder `whoami` supplies
+/// when the system knows no name.
+fn clean_name(raw: &str) -> String {
+    let name = raw.split(',').next().unwrap_or_default().trim();
+    if name == "Unknown" {
+        return String::new();
+    }
+    name.to_owned()
+}
+
 type RpcResult<T> = std::result::Result<T, String>;
 
 fn rpc_error(error: impl std::fmt::Display) -> String {
@@ -103,4 +122,28 @@ fn rpc_error(error: impl std::fmt::Display) -> String {
 
 fn lock_error<T>(_: std::sync::PoisonError<T>) -> String {
     "desktop storage lock is poisoned".into()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::clean_name;
+
+    #[test]
+    fn a_display_name_survives() {
+        assert_eq!(clean_name("Ravi Atluri"), "Ravi Atluri");
+    }
+
+    #[test]
+    fn gecos_fields_after_the_name_are_dropped() {
+        assert_eq!(clean_name("Ravi Atluri,,,"), "Ravi Atluri");
+        assert_eq!(clean_name("Ravi Atluri,Room 1,555,555"), "Ravi Atluri");
+    }
+
+    #[test]
+    fn an_unusable_name_becomes_empty() {
+        assert_eq!(clean_name(""), "");
+        assert_eq!(clean_name("   "), "");
+        assert_eq!(clean_name("Unknown"), "");
+        assert_eq!(clean_name(",,,"), "");
+    }
 }

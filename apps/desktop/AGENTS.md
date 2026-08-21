@@ -27,8 +27,17 @@ cargo fmt --all -- --check
 ## UI boundary
 
 - Keep all desktop UI code inside `apps/desktop/src/`.
-- Style screens with Tailwind utility classes. `src/styles.css` holds the
-  Tailwind import and the two font tokens only.
+- Build forms and controls from the shadcn primitives in
+  `src/components/ui/`. Add more with `pnpm dlx shadcn@latest add <name>`.
+  Import them through the `@/` alias, which points at `src/`.
+- Style the rest with Tailwind utility classes. `src/styles.css` holds the
+  Tailwind import, the font tokens, and the shadcn colour tokens. The tokens
+  are light-mode only and use the same values as `apps/web`.
+- Keep the shell in `src/app.tsx`: a left indigo sidebar holds the brand, the
+  setup title, and the step list. Show all sections. Do not add collapsible
+  groups.
+- Call the Rust backend from `src/os.ts` or a module like it. Do not call
+  `invoke` from a component.
 - Add a screen as a route in `src/main.tsx`. Keep the step rules in
   `src/onboarding.ts`, where a test can read them.
 - Follow the root `DESIGN.md` for every screen.

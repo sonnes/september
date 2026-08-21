@@ -1,8 +1,9 @@
 # September desktop backend
 
 This Tauri v2 backend gives the independent desktop UI one SQLite database.
-Settings are the only persisted entity for now, so the database contains one
-table and the command surface contains three settings operations.
+It stores settings, spaces, messages, and notes in separate tables. The command
+surface currently contains three settings operations and one command that
+reads the user name from the operating system.
 
 ## Run backend checks
 
@@ -23,9 +24,13 @@ Rust opens `september.sqlite3` in Tauri's application-local-data directory.
 The `settings` table stores a unique text key and a JSON value. Keys must
 contain 1 to 256 bytes.
 
-Schema version 3 converts the previous generic backend to settings-only
-storage. It preserves valid settings, then removes the `records` and
-`file_metadata` tables. It does not delete legacy files from disk.
+The `spaces`, `messages`, and `notes` tables store domain fields in typed
+columns. Messages and notes can belong to a space. Deleting a space deletes its
+messages and scoped notes, while global messages and notes remain. Timestamps
+are Unix milliseconds.
+
+Schema version 1 creates all four tables. The app does not migrate databases
+created by earlier backend versions.
 
 ## Call the settings API
 
@@ -39,3 +44,11 @@ Each command accepts a `request` object.
 
 Successful writes emit `september://settings-changed` with the changed keys.
 Deleting a missing setting returns `false` and does not emit an event.
+
+## Read the user name
+
+The `user_name` command takes no request. It returns the name that the
+operating system holds for the signed-in user. The result is empty when the
+system has no usable name. The onboarding screen then starts with an empty
+field. The command keeps the first GECOS field and rejects the `Unknown`
+placeholder.

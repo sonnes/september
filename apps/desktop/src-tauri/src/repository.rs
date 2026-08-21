@@ -5,7 +5,7 @@ use serde_json::Value;
 
 use crate::error::{BackendError, Result};
 
-const SCHEMA_VERSION: i64 = 3;
+const SCHEMA_VERSION: i64 = 1;
 
 pub struct Repository {
     connection: Connection,
@@ -21,7 +21,7 @@ impl Repository {
     }
 
     fn from_connection(connection: Connection) -> Result<Self> {
-        connection.execute_batch("PRAGMA journal_mode = WAL;")?;
+        connection.execute_batch("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;")?;
         let mut repository = Self { connection };
         repository.migrate()?;
         Ok(repository)
@@ -33,7 +33,7 @@ impl Repository {
             .query_row("PRAGMA user_version", [], |row| row.get(0))?;
         if version < SCHEMA_VERSION {
             let transaction = self.connection.transaction()?;
-            transaction.execute_batch(include_str!("../migrations/0003_settings.sql"))?;
+            transaction.execute_batch(include_str!("../migrations/0001_initial.sql"))?;
             transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
             transaction.commit()?;
         }
@@ -94,4 +94,110 @@ fn validate_key(key: &str) -> Result<()> {
         ));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Repository;
+
+    #[test]
+    fn domain_tables_store_fields_in_columns() {
+        let repository = Repository::open_in_memory().unwrap();
+
+        assert_eq!(
+            column_names(&repository, "spaces"),
+            vec![
+                "id",
+                "user_id",
+                "title",
+                "context",
+                "phrases_synced_count",
+                "created_at",
+                "updated_at",
+            ]
+        );
+        assert_eq!(
+            column_names(&repository, "messages"),
+            vec![
+                "id",
+                "space_id",
+                "user_id",
+                "text",
+                "type",
+                "audio_path",
+                "created_at",
+            ]
+        );
+        assert_eq!(
+            column_names(&repository, "notes"),
+            vec![
+                "id",
+                "space_id",
+                "name",
+                "content",
+                "created_at",
+                "updated_at",
+            ]
+        );
+    }
+
+    #[test]
+    fn deleting_a_space_cascades_to_messages_and_scoped_notes() {
+        let repository = Repository::open_in_memory().unwrap();
+        repository
+            .connection
+            .execute(
+                "INSERT INTO spaces (id, user_id, created_at, updated_at) \
+                 VALUES ('space-1', 'user-1', 1, 1)",
+                [],
+            )
+            .unwrap();
+        repository
+            .connection
+            .execute(
+                "INSERT INTO messages \
+                 (id, space_id, user_id, text, type, created_at) \
+                 VALUES ('message-1', 'space-1', 'user-1', 'Hello', 'user', 1)",
+                [],
+            )
+            .unwrap();
+        repository
+            .connection
+            .execute(
+                "INSERT INTO notes (id, space_id, content, created_at, updated_at) \
+                 VALUES ('note-1', 'space-1', '', 1, 1), \
+                        ('note-2', NULL, '', 1, 1)",
+                [],
+            )
+            .unwrap();
+
+        repository
+            .connection
+            .execute("DELETE FROM spaces WHERE id = 'space-1'", [])
+            .unwrap();
+
+        assert_eq!(row_count(&repository, "messages"), 0);
+        assert_eq!(row_count(&repository, "notes"), 1);
+    }
+
+    fn column_names(repository: &Repository, table: &str) -> Vec<String> {
+        let mut statement = repository
+            .connection
+            .prepare(&format!("PRAGMA table_info({table})"))
+            .unwrap();
+        statement
+            .query_map([], |row| row.get(1))
+            .unwrap()
+            .collect::<rusqlite::Result<Vec<_>>>()
+            .unwrap()
+    }
+
+    fn row_count(repository: &Repository, table: &str) -> i64 {
+        repository
+            .connection
+            .query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |row| {
+                row.get(0)
+            })
+            .unwrap()
+    }
 }

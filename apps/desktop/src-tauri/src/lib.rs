@@ -10,6 +10,7 @@ pub fn run() {
             rpc::setting_get,
             rpc::setting_put,
             rpc::setting_delete,
+            rpc::user_name,
         ])
         .run(tauri::generate_context!())
         .expect("error while running September desktop");

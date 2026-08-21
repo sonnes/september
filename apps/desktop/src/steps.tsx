@@ -2,6 +2,11 @@ import { useState, type FormEvent, type ReactNode } from "react";
 
 import { useNavigate } from "@tanstack/react-router";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+
 import { useDraft } from "./app";
 import {
   nextStep,
@@ -15,11 +20,8 @@ import {
   type StepPath,
 } from "./onboarding";
 
-const PRIMARY_BUTTON =
-  "inline-flex min-h-11 items-center justify-center rounded-lg bg-indigo-600 px-6 text-sm font-semibold text-white hover:bg-indigo-700 focus-visible:ring-[3px] focus-visible:ring-indigo-500/50 focus-visible:outline-none disabled:bg-zinc-400 disabled:hover:bg-zinc-400";
-
-const BACK_BUTTON =
-  "inline-flex min-h-11 items-center justify-center rounded-lg border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 focus-visible:ring-[3px] focus-visible:ring-indigo-500/50 focus-visible:outline-none";
+// DESIGN.md asks for a 44px target on primary actions; `lg` is 40px.
+const ACTION = "h-11 px-6 font-semibold";
 
 const MODE_ACCENT = {
   amber: { edge: "border-t-amber-600", badge: "bg-amber-100 text-amber-700" },
@@ -44,9 +46,6 @@ function Step({
     <div className="flex min-h-0 w-full flex-1 flex-col gap-6">
       <div className="flex shrink-0 items-start justify-between gap-4">
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-semibold text-zinc-500">
-            Step {index + 1} of {STEPS.length}
-          </span>
           <h2 className="text-3xl leading-tight font-bold lg:text-4xl">
             {step.title}
           </h2>
@@ -55,14 +54,16 @@ function Step({
           </p>
         </div>
         {back && (
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="lg"
             title="Go back"
             onClick={() => navigate({ to: back })}
-            className={`${BACK_BUTTON} shrink-0 px-4`}
+            className="h-11 shrink-0 px-4"
           >
             ← Back
-          </button>
+          </Button>
         )}
       </div>
 
@@ -85,16 +86,18 @@ export function WelcomeStep() {
     <Step
       path="/welcome"
       footer={
-        <button
+        <Button
           type="button"
-          className={PRIMARY_BUTTON}
+          size="lg"
+          className={ACTION}
           onClick={() => navigate({ to: nextStep("/welcome")! })}
         >
           {STEPS[0].action}
-        </button>
+        </Button>
       }
     >
-      <ol className="space-y-4 border-l border-zinc-200 pl-5">
+      {/* ml-3 keeps the hanging markers clear of the scroll body, which clips. */}
+      <ol className="ml-3 space-y-4 border-l border-zinc-200 pl-5">
         {WELCOME_POINTS.map((point, index) => (
           <li key={point.title} className="relative">
             <span className="absolute -left-[1.8125rem] top-0 flex size-6 items-center justify-center rounded-full bg-white text-xs font-semibold text-indigo-600 ring-1 ring-zinc-200">
@@ -119,9 +122,6 @@ export function ProfileStep() {
   const [name, setName] = useState(draft.name);
   const [speakingStyle, setSpeakingStyle] = useState(draft.speakingStyle);
   const [personalWords, setPersonalWords] = useState(draft.personalWords);
-  const [showPersonalWords, setShowPersonalWords] = useState(
-    Boolean(draft.personalWords),
-  );
   const selected = SPEAKING_STYLES.find(
     (option) => option.value === speakingStyle,
   );
@@ -143,108 +143,75 @@ export function ProfileStep() {
       <Step
         path="/profile"
         footer={
-          <button
-            type="submit"
-            className={PRIMARY_BUTTON}
-            disabled={!name.trim()}
-          >
+          <Button type="submit" size="lg" className={ACTION} disabled={!name.trim()}>
             {STEPS[1].action}
-          </button>
+          </Button>
         }
       >
         <div className="space-y-6">
           <Field
             title="Name"
             description="Used in September's profile on this device."
+            htmlFor="onboarding-name"
           >
-            <label
-              className="text-sm font-medium"
-              htmlFor="onboarding-name"
-            >
-              Name
-            </label>
-            <input
+            <Input
               id="onboarding-name"
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Your name"
               autoComplete="name"
               required
-              className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm focus-visible:border-indigo-500 focus-visible:ring-[3px] focus-visible:ring-indigo-500/50 focus-visible:outline-none"
+              className="h-11"
             />
           </Field>
 
           <Field
             title="Speaking style"
             description="A short note helps September learn how you talk."
+            htmlFor="onboarding-speaking-style"
           >
-            <p className="text-sm font-medium">Start with a style</p>
             <div className="flex flex-wrap gap-2">
               {SPEAKING_STYLES.map((option) => (
-                <button
+                <Button
                   key={option.label}
                   type="button"
+                  variant={speakingStyle === option.value ? "default" : "outline"}
                   aria-pressed={speakingStyle === option.value}
                   onClick={() => setSpeakingStyle(option.value)}
-                  className={`min-h-11 rounded-full border px-4 py-2 text-sm font-medium focus-visible:ring-[3px] focus-visible:ring-indigo-500/50 focus-visible:outline-none ${
-                    speakingStyle === option.value
-                      ? "border-indigo-600 bg-indigo-600 text-white"
-                      : "border-zinc-200 bg-white hover:border-indigo-300"
-                  }`}
+                  className="h-11 rounded-full px-4"
                 >
                   {option.label}
-                </button>
+                </Button>
               ))}
             </div>
             <p className="text-xs leading-relaxed text-zinc-500">
               {selected?.description ?? "Edit the note below any time."}
             </p>
-            <label
-              className="text-sm font-medium"
-              htmlFor="onboarding-speaking-style"
-            >
-              How should September sound?
-            </label>
-            <textarea
+            <Textarea
               id="onboarding-speaking-style"
               value={speakingStyle}
               onChange={(event) => setSpeakingStyle(event.target.value)}
               rows={4}
               maxLength={1000}
-              className="w-full rounded-lg border border-zinc-200 bg-white p-3 text-sm leading-relaxed focus-visible:border-indigo-500 focus-visible:ring-[3px] focus-visible:ring-indigo-500/50 focus-visible:outline-none"
+              className="leading-relaxed"
             />
           </Field>
 
-          <div className="border-l border-zinc-200 pl-5">
-            <button
-              type="button"
-              aria-expanded={showPersonalWords}
-              onClick={() => setShowPersonalWords((open) => !open)}
-              className="flex items-center gap-2 text-sm font-semibold focus-visible:ring-[3px] focus-visible:ring-indigo-500/50 focus-visible:outline-none"
-            >
-              <span aria-hidden="true" className="text-indigo-600">
-                {showPersonalWords ? "▾" : "▸"}
-              </span>
-              Add personal words
-              <span className="font-normal text-zinc-500">(optional)</span>
-            </button>
-            {showPersonalWords && (
-              <div className="mt-3 space-y-3">
-                <p className="text-sm leading-relaxed text-zinc-500">
-                  Paste names, care phrases, routines, or topics September
-                  should know.
-                </p>
-                <textarea
-                  value={personalWords}
-                  onChange={(event) => setPersonalWords(event.target.value)}
-                  rows={4}
-                  maxLength={5000}
-                  placeholder="Amma. Dr. Shah. I need a short rest. Please give me a moment."
-                  className="w-full rounded-lg border border-zinc-200 bg-white p-3 text-sm leading-relaxed focus-visible:border-indigo-500 focus-visible:ring-[3px] focus-visible:ring-indigo-500/50 focus-visible:outline-none"
-                />
-              </div>
-            )}
-          </div>
+          <Field
+            title="Personal words"
+            description="Optional. Names, care phrases, routines, or topics September should know."
+            htmlFor="onboarding-personal-words"
+          >
+            <Textarea
+              id="onboarding-personal-words"
+              value={personalWords}
+              onChange={(event) => setPersonalWords(event.target.value)}
+              rows={4}
+              maxLength={5000}
+              placeholder="Amma. Dr. Shah. I need a short rest. Please give me a moment."
+              className="leading-relaxed"
+            />
+          </Field>
         </div>
       </Step>
     </form>
@@ -254,16 +221,20 @@ export function ProfileStep() {
 function Field({
   title,
   description,
+  htmlFor,
   children,
 }: {
   title: string;
   description: string;
+  htmlFor: string;
   children: ReactNode;
 }) {
   return (
     <div className="grid gap-5 border-l border-zinc-200 pl-5 lg:grid-cols-[15rem_1fr] lg:gap-8">
       <div>
-        <h3 className="text-sm font-semibold">{title}</h3>
+        <Label htmlFor={htmlFor} className="text-sm font-semibold">
+          {title}
+        </Label>
         <p className="mt-2 text-xs leading-relaxed text-zinc-500">
           {description}
         </p>
@@ -285,14 +256,15 @@ export function ModeStep() {
     <Step
       path="/mode"
       footer={
-        <button
+        <Button
           type="button"
-          className={PRIMARY_BUTTON}
+          size="lg"
+          className={ACTION}
           disabled={!draft.mode}
           onClick={() => navigate({ to: nextStep("/mode")! })}
         >
           {STEPS[2].action}
-        </button>
+        </Button>
       }
     >
       <fieldset className="grid gap-4 lg:grid-cols-2">
@@ -366,14 +338,15 @@ export function FinishStep() {
     <Step
       path="/finish"
       footer={
-        <button
+        <Button
           type="button"
-          className={PRIMARY_BUTTON}
+          size="lg"
+          className={ACTION}
           disabled={finished}
           onClick={() => setFinished(true)}
         >
           {finished ? "Ready" : STEPS[3].action}
-        </button>
+        </Button>
       }
     >
       <div className="grid gap-5 rounded-xl border border-indigo-200 bg-indigo-50 p-6 sm:grid-cols-[auto_1fr] sm:p-8">

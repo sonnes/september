@@ -2,52 +2,13 @@ use september_desktop_lib::repository::Repository;
 use serde_json::json;
 
 #[test]
-fn migrations_create_only_the_settings_table() {
+fn migration_creates_normalized_domain_tables() {
     let repository = Repository::open_in_memory().unwrap();
 
-    assert_eq!(repository.schema_version().unwrap(), 3);
-    assert_eq!(repository.table_names().unwrap(), vec!["settings"]);
-}
-
-#[test]
-fn legacy_database_keeps_settings_and_removes_generic_storage() {
-    let temp = tempfile::tempdir().unwrap();
-    let database = temp.path().join("legacy.sqlite3");
-    let connection = rusqlite::Connection::open(&database).unwrap();
-    connection
-        .execute_batch(
-            "CREATE TABLE records (
-               collection TEXT NOT NULL,
-               id TEXT NOT NULL,
-               data TEXT,
-               PRIMARY KEY (collection, id)
-             );
-             CREATE TABLE settings (
-               key TEXT PRIMARY KEY,
-               value TEXT NOT NULL
-             );
-             CREATE TABLE file_metadata (
-               id TEXT PRIMARY KEY,
-               relative_name TEXT NOT NULL
-             );
-             INSERT INTO settings (key, value)
-             VALUES ('speech', '{\"rate\":1.2}');
-             INSERT INTO records (collection, id, data)
-             VALUES ('spaces', 'space-1', '{}');
-             INSERT INTO file_metadata (id, relative_name)
-             VALUES ('file-1', 'file-1.bin');
-             PRAGMA user_version = 2;",
-        )
-        .unwrap();
-    drop(connection);
-
-    let repository = Repository::open(database).unwrap();
-
-    assert_eq!(repository.schema_version().unwrap(), 3);
-    assert_eq!(repository.table_names().unwrap(), vec!["settings"]);
+    assert_eq!(repository.schema_version().unwrap(), 1);
     assert_eq!(
-        repository.get_setting("speech").unwrap(),
-        Some(json!({ "rate": 1.2 }))
+        repository.table_names().unwrap(),
+        vec!["messages", "notes", "settings", "spaces"]
     );
 }
 
