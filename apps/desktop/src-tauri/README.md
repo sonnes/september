@@ -2,8 +2,8 @@
 
 This Tauri v2 backend gives the independent desktop UI one SQLite database.
 It stores settings, spaces, messages, and notes in separate tables. The command
-surface currently contains three settings operations and one command that
-reads the user name from the operating system.
+surface also reads the operating-system user name, provides local text
+generation through apfel, and holds cloud API keys in the macOS Keychain.
 
 ## Run backend checks
 
@@ -55,6 +55,41 @@ operating system holds for the signed-in user. The result is empty when the
 system has no usable name. The onboarding screen then starts with an empty
 field. The command keeps the first GECOS field and rejects the `Unknown`
 placeholder.
+
+## Connect a cloud service
+
+September borrows two cloud services: OpenRouter for writing help, and
+ElevenLabs for a voice. Each key lives in the macOS Keychain, under the service
+name `com.september.desktop`. The account is `openrouter` or `elevenlabs`.
+
+A key never returns to the WebView. Every command answers with a status only.
+
+| Command            | Request                | Response            |
+| ------------------ | ---------------------- | ------------------- |
+| `provider_status`  | none                   | One status for each service |
+| `provider_connect` | `{ provider, key }`    | The status after the test |
+| `provider_forget`  | `{ provider }`         | `boolean`           |
+| `provider_voices`  | none                   | The ElevenLabs voices |
+
+```ts
+type ProviderStatus = {
+  provider: "openrouter" | "elevenlabs";
+  connected: boolean;
+  label: string | null;
+  detail: string | null;
+};
+```
+
+`provider_connect` tests the key before it writes to the Keychain. A key that
+fails is not stored, and the command rejects its promise.
+
+`provider_status` tests each stored key again. A key that worked in June can
+fail in August, so a stored key that now fails reports `connected: false` with
+the reason in `detail`.
+
+`provider_voices` returns an empty list when no ElevenLabs key is stored. Each
+voice carries `id`, `name`, and `preview_url`. The preview URL is public, so
+the UI can play a sample without a key.
 
 ## Use the apfel API
 

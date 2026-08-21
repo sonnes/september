@@ -1,10 +1,15 @@
 # September Desktop
 
 September Desktop is an independent Tauri application. Its first ported screen
-is a four-step onboarding flow, sized for the 13-inch iPad landscape window.
+is an onboarding flow, sized for the 13-inch iPad landscape window.
+The Rust backend also provides local text generation through a bundled apfel
+sidecar on supported Macs.
 
-The UI uses Tailwind CSS v4, shadcn/ui primitives, and TanStack Router. Each step is a route:
-`/welcome`, `/profile`, `/mode`, and `/finish`. The router uses hash history,
+The UI uses Tailwind CSS v4, shadcn/ui primitives, and TanStack Router. Each
+step is a route: `/welcome`, `/profile`, `/mode`, `/connect`, and `/finish`.
+Free setup skips `/connect`, so it shows four steps and advanced setup shows
+five. `stepsFor` in `src/onboarding.ts` owns that rule, and the sidebar, the
+guards, and both navigation directions all read it. The router uses hash history,
 because Tauri serves the built files from the asset protocol. A step opens only
 after the answers it needs exist. The answers stay in memory until account
 persistence is ported.
@@ -16,6 +21,24 @@ open. There are no collapsible groups.
 The name field starts with the name from the operating system. The user can
 change it. In a browser the field starts empty, because the Tauri backend does
 not exist there.
+
+## Connect a service
+
+The `/connect` step asks two questions: which service gives writing help, and
+which service speaks. Each question starts with an answer that already works,
+so a user on a supported Mac continues without an action.
+
+| Job | Choices |
+| --- | --- |
+| Writing help | Apple Intelligence, OpenRouter, none |
+| Voice | macOS system voice, ElevenLabs |
+
+An API key goes to the macOS Keychain, through Rust. The React code sends a key
+one time and reads back a status. No key enters the draft, SQLite, an event, or
+the browser storage. `src/os.ts` holds the only calls to Rust.
+
+The ElevenLabs voice list carries a public sample for each voice. The preview
+button plays that sample, so it needs no key and no speech call.
 
 Buttons, inputs, and labels come from shadcn/ui. The primitives are in
 `src/components/ui/`. To add one more:

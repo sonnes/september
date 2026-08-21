@@ -13,7 +13,7 @@ import {
   canReach,
   DEFAULT_DRAFT,
   stepIndex,
-  STEPS,
+  stepsFor,
   type OnboardingDraft,
   type StepPath,
 } from "./onboarding";
@@ -40,7 +40,7 @@ export function OnboardingLayout() {
   });
   const value = useMemo(() => ({ draft, setDraft }), [draft]);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const current = stepIndex(pathname);
+  const current = stepIndex(pathname, draft);
 
   // A reload keeps the route but drops the draft, so send an unreachable step
   // back to the start.
@@ -94,13 +94,16 @@ function ProgressNav({
   current: number;
   draft: OnboardingDraft;
 }) {
+  // Free setup owns no key, so its connect step never appears in the list.
+  const steps = stepsFor(draft);
+
   return (
     <nav aria-label="Onboarding progress">
       <ol>
-        {STEPS.map((step, index) => {
+        {steps.map((step, index) => {
           const completed = current > index;
           const isCurrent = current === index;
-          const isLast = index === STEPS.length - 1;
+          const isLast = index === steps.length - 1;
           const state = isCurrent
             ? "border-white bg-white text-indigo-600"
             : completed

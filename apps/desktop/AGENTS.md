@@ -38,6 +38,13 @@ cargo fmt --all -- --check
   groups.
 - Call the Rust backend from `src/os.ts` or a module like it. Do not call
   `invoke` from a component.
+- Keep every API key in the macOS Keychain, through `src-tauri/src/providers.rs`.
+  A key must not enter the onboarding draft, SQLite, a Tauri event, a log, or
+  the browser storage. A command returns a status, never a key.
+- Use a brand mark only from the file that the brand publishes, kept in
+  `public/`. Do not redraw one. The Apple logo is the U+F8FF glyph from the
+  macOS system font, which `system-ui` supplies. Apple asks for a written
+  trademark licence before a third party shows this mark.
 - Add a screen as a route in `src/main.tsx`. Keep the step rules in
   `src/onboarding.ts`, where a test can read them.
 - Follow the root `DESIGN.md` for every screen.

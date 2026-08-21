@@ -1,5 +1,6 @@
 pub mod apfel;
 pub mod error;
+pub mod providers;
 pub mod repository;
 
 mod rpc;
@@ -15,6 +16,10 @@ pub fn run() {
             rpc::user_name,
             rpc::apfel_status,
             rpc::apfel_generate,
+            rpc::provider_status,
+            rpc::provider_connect,
+            rpc::provider_forget,
+            rpc::provider_voices,
         ])
         .run(tauri::generate_context!())
         .expect("error while running September desktop");

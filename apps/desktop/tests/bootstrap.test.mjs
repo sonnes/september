@@ -2,7 +2,13 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { canReach, nextStep, previousStep, STEPS } from "../src/onboarding.ts";
+import {
+  canReach,
+  nextStep,
+  previousStep,
+  STEPS,
+  stepsFor,
+} from "../src/onboarding.ts";
 
 const desktopRoot = new URL("../", import.meta.url);
 
@@ -55,19 +61,36 @@ test("the UI builds with Tailwind and the router", async () => {
   assert.match(await readText("src/styles.css"), /@import "tailwindcss"/);
 });
 
+const free = { name: "Ravi", mode: "free" };
+const advanced = { name: "Ravi", mode: "advanced" };
+
 test("each onboarding step has its own route", () => {
   assert.deepEqual(
     STEPS.map((step) => step.path),
-    ["/welcome", "/profile", "/mode", "/finish"],
+    ["/welcome", "/profile", "/mode", "/connect", "/finish"],
   );
 });
 
+test("only advanced setup walks through the connect step", () => {
+  const paths = (draft) => stepsFor(draft).map((step) => step.path);
+
+  assert.deepEqual(paths(free), ["/welcome", "/profile", "/mode", "/finish"]);
+  assert.deepEqual(paths({ name: "", mode: null }), paths(free));
+  assert.deepEqual(paths(advanced), STEPS.map((step) => step.path));
+});
+
 test("steps move in order", () => {
-  assert.equal(nextStep("/welcome"), "/profile");
-  assert.equal(nextStep("/mode"), "/finish");
-  assert.equal(nextStep("/finish"), null);
-  assert.equal(previousStep("/welcome"), null);
-  assert.equal(previousStep("/finish"), "/mode");
+  assert.equal(nextStep("/welcome", free), "/profile");
+  assert.equal(nextStep("/finish", free), null);
+  assert.equal(previousStep("/welcome", free), null);
+
+  // Free setup jumps the connect step in both directions.
+  assert.equal(nextStep("/mode", free), "/finish");
+  assert.equal(previousStep("/finish", free), "/mode");
+
+  assert.equal(nextStep("/mode", advanced), "/connect");
+  assert.equal(nextStep("/connect", advanced), "/finish");
+  assert.equal(previousStep("/finish", advanced), "/connect");
 });
 
 test("a step opens only after its required answers exist", () => {
@@ -79,7 +102,20 @@ test("a step opens only after its required answers exist", () => {
   assert.equal(canReach("/mode", { name: "   ", mode: null }), false);
   assert.equal(canReach("/mode", { name: "Ravi", mode: null }), true);
   assert.equal(canReach("/finish", { name: "Ravi", mode: null }), false);
-  assert.equal(canReach("/finish", { name: "Ravi", mode: "free" }), true);
+  assert.equal(canReach("/finish", free), true);
+
+  // Only the advanced mode owns a key, so only it can open the connect step.
+  assert.equal(canReach("/connect", { name: "Ravi", mode: null }), false);
+  assert.equal(canReach("/connect", free), false);
+  assert.equal(canReach("/connect", advanced), true);
+});
+
+test("the draft carries a service choice, never a key", async () => {
+  const onboarding = await readText("src/onboarding.ts");
+
+  assert.match(onboarding, /writingService/);
+  assert.match(onboarding, /voiceService/);
+  assert.doesNotMatch(onboarding, /apiKey|secret|Key:/i);
 });
 
 test("the UI uses shadcn primitives", async () => {
@@ -162,6 +198,66 @@ test("the Rust backend owns the private apfel sidecar", async () => {
   assert.match(lib, /rpc::apfel_status/);
   assert.match(lib, /rpc::apfel_generate/);
   assert.match(rpc, /ApfelState/);
+});
+
+test("the connect step asks by job and keeps keys out of the UI", async () => {
+  const steps = await readText("src/steps.tsx");
+  const os = await readText("src/os.ts");
+  const lib = await readText("src-tauri/src/lib.rs");
+
+  assert.match(steps, /export function ConnectStep/);
+  assert.match(await readText("src/main.tsx"), /ConnectStep/);
+  assert.match(steps, /RadioGroup/, "a job is a choice between services");
+
+  // Only os.ts talks to Rust, so no component can hold a key.
+  assert.doesNotMatch(steps, /\binvoke\b/);
+  assert.doesNotMatch(steps, /localStorage|sessionStorage/);
+
+  for (const command of [
+    "provider_status",
+    "provider_connect",
+    "provider_forget",
+    "provider_voices",
+  ]) {
+    assert.match(lib, new RegExp(`rpc::${command}\\b`), `${command} is not registered`);
+    assert.match(os, new RegExp(`"${command}"`), `${command} has no bridge`);
+  }
+});
+
+test("a choice keeps its height when it is selected", async () => {
+  const steps = await readText("src/steps.tsx");
+  const choice = steps.slice(steps.indexOf("function Choice("));
+
+  // Selection changes the border only. A panel that appears on selection would
+  // grow the card and push every choice below it down the page.
+  assert.match(choice, /\{children\}/);
+  assert.doesNotMatch(choice, /\{children && /);
+  assert.doesNotMatch(steps, /selected && <KeyPanel/);
+});
+
+test("each service wears its own mark", async () => {
+  const steps = await readText("src/steps.tsx");
+
+  assert.match(steps, /function Mark\(/);
+  assert.match(steps, /elevenlabs-mark\.svg/);
+  assert.match(steps, /openrouter-mark\.svg/);
+
+  // Each mark is the brand's own asset, not a redrawing of it.
+  assert.match(
+    await readText("public/elevenlabs-mark.svg"),
+    /M468 292H528V584H468V292Z/,
+    "ElevenLabs symbol, from elevenlabs.io/brand",
+  );
+  assert.match(
+    await readText("public/openrouter-mark.svg"),
+    /#7624F4/,
+    "OpenRouter glyph, from openrouter.ai/brand/v2",
+  );
+
+  // The Apple logo is the U+F8FF glyph from the macOS system font, so the app
+  // bundles no Apple asset. `system-ui` in the font stack carries it.
+  assert.match(steps, /\\uF8FF|/, "Apple Intelligence wears the Apple logo");
+  assert.match(await readText("src/styles.css"), /system-ui/);
 });
 
 test("the sidebar is an inset card like the step surface", async () => {

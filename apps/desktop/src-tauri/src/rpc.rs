@@ -6,6 +6,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::{
     apfel::{ApfelGenerateRequest, ApfelGeneration, ApfelState, ApfelStatus},
+    providers::{self, Provider, ProviderStatus, Providers, Voice},
     repository::Repository,
 };
 
@@ -15,6 +16,17 @@ pub(crate) struct BackendState {
 
 #[derive(Deserialize)]
 pub(crate) struct KeyRequest {
+    key: String,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct ProviderRequest {
+    provider: Provider,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct ProviderConnectRequest {
+    provider: Provider,
     key: String,
 }
 
@@ -123,6 +135,52 @@ pub(crate) async fn apfel_generate(
     request: ApfelGenerateRequest,
 ) -> RpcResult<ApfelGeneration> {
     state.generate(&app, request).await.map_err(rpc_error)
+}
+
+/// One status for each cloud service. A stored key is tested again here,
+/// because a key that worked in June can fail in August.
+#[tauri::command]
+pub(crate) async fn provider_status() -> RpcResult<Vec<ProviderStatus>> {
+    let providers = Providers::default();
+    let mut statuses = Vec::with_capacity(Provider::ALL.len());
+
+    for provider in Provider::ALL {
+        let status = match providers::stored(provider).map_err(rpc_error)? {
+            Some(key) => providers
+                .check(provider, &key)
+                .await
+                .unwrap_or_else(|error| ProviderStatus::broken(provider, error.to_string())),
+            None => ProviderStatus::absent(provider),
+        };
+        statuses.push(status);
+    }
+
+    Ok(statuses)
+}
+
+/// Tests the key first. A key that fails never reaches the Keychain.
+#[tauri::command]
+pub(crate) async fn provider_connect(request: ProviderConnectRequest) -> RpcResult<ProviderStatus> {
+    let status = Providers::default()
+        .check(request.provider, &request.key)
+        .await
+        .map_err(rpc_error)?;
+    providers::store(request.provider, &request.key).map_err(rpc_error)?;
+    Ok(status)
+}
+
+#[tauri::command]
+pub(crate) async fn provider_forget(request: ProviderRequest) -> RpcResult<bool> {
+    providers::forget(request.provider).map_err(rpc_error)
+}
+
+/// The ElevenLabs voices for the stored key. The list is empty without a key.
+#[tauri::command]
+pub(crate) async fn provider_voices() -> RpcResult<Vec<Voice>> {
+    let Some(key) = providers::stored(Provider::ElevenLabs).map_err(rpc_error)? else {
+        return Ok(Vec::new());
+    };
+    Providers::default().voices(&key).await.map_err(rpc_error)
 }
 
 /// Keeps the first GECOS field and rejects the placeholder `whoami` supplies

@@ -17,7 +17,13 @@ import "@fontsource/noto-sans/600.css";
 import "@fontsource/noto-sans/700.css";
 
 import { OnboardingLayout } from "./app";
-import { FinishStep, ModeStep, ProfileStep, WelcomeStep } from "./steps";
+import {
+  ConnectStep,
+  FinishStep,
+  ModeStep,
+  ProfileStep,
+  WelcomeStep,
+} from "./steps";
 import "./styles.css";
 
 const rootRoute = createRootRoute({ component: OnboardingLayout });
@@ -36,6 +42,7 @@ const routeTree = rootRoute.addChildren([
   step("/welcome", WelcomeStep),
   step("/profile", ProfileStep),
   step("/mode", ModeStep),
+  step("/connect", ConnectStep),
   step("/finish", FinishStep),
 ]);
 
