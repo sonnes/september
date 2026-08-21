@@ -14,3 +14,4 @@ plan: ../plans/2026-08-21-desktop-virtual-camera.md
 - The extension remains installed when September quits. The Talk control owns explicit deactivation.
 - The build script uses Xcode directly because the system extension is a separate signed bundle inside the Tauri app.
 - Local builds omit signing when the Apple team or identity is absent. They verify compilation but cannot activate the extension.
+- The bottom-left watermark reuses the published `public/logo.svg`. The extension loads and scales it once instead of redrawing the mark or rasterizing it for every frame.

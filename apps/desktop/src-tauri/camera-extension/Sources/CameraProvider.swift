@@ -1,4 +1,5 @@
 import AVFoundation
+import AppKit
 import CoreGraphics
 import CoreImage
 import CoreMediaIO
@@ -21,6 +22,7 @@ final class OverlayRenderer {
   private let lock = NSLock()
   private let context: CIContext
   private let colorSpace = CGColorSpaceCreateDeviceRGB()
+  private let cachedWatermark: CIImage?
   private var state = CameraOverlayState()
   private(set) var cachedOverlay: CIImage?
 
@@ -33,6 +35,7 @@ final class OverlayRenderer {
         .workingColorSpace: colorSpace,
       ]
     )
+    cachedWatermark = Self.makeWatermark()
   }
 
   func update(_ next: CameraOverlayState) {
@@ -59,6 +62,13 @@ final class OverlayRenderer {
     var image = scaled.cropped(to: CGRect(x: x, y: y, width: bounds.width, height: bounds.height))
       .transformed(by: CGAffineTransform(translationX: -x, y: -y))
 
+    if let cachedWatermark {
+      let placed = cachedWatermark.transformed(
+        by: CGAffineTransform(translationX: 24, y: 24)
+      )
+      image = placed.composited(over: image)
+    }
+
     lock.lock()
     let overlay = cachedOverlay
     lock.unlock()
@@ -73,6 +83,36 @@ final class OverlayRenderer {
     }
 
     context.render(image, to: destination, bounds: bounds, colorSpace: colorSpace)
+  }
+
+  private static func makeWatermark() -> CIImage? {
+    guard
+      let url = Bundle.main.url(forResource: "logo", withExtension: "svg"),
+      let logo = NSImage(contentsOf: url),
+      let image = logo.cgImage(forProposedRect: nil, context: nil, hints: nil)
+    else {
+      log.error("The September Camera bundle has no readable logo.svg")
+      return nil
+    }
+
+    let size = 80
+    guard
+      let bitmap = CGContext(
+        data: nil,
+        width: size,
+        height: size,
+        bitsPerComponent: 8,
+        bytesPerRow: 0,
+        space: CGColorSpaceCreateDeviceRGB(),
+        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+      )
+    else { return nil }
+
+    bitmap.interpolationQuality = .high
+    bitmap.setAlpha(0.72)
+    bitmap.draw(image, in: CGRect(x: 0, y: 0, width: size, height: size))
+    guard let rendered = bitmap.makeImage() else { return nil }
+    return CIImage(cgImage: rendered)
   }
 
   private static func makeOverlay(_ state: CameraOverlayState) -> CIImage? {

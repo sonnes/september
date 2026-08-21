@@ -368,7 +368,8 @@ or later and does not install an audio driver.
 ### Show Talk text in FaceTime
 
 The same Talk audio selector can install `September Camera`. This camera shows
-the physical camera feed with the current composer text over it.
+the physical camera feed with the current composer text over it and the
+September mark in the bottom-left corner.
 
 1. Install a signed September build in `/Applications` and open it.
 2. Open Talk and open the audio selector beside **Speak**.
@@ -380,6 +381,7 @@ the physical camera feed with the current composer text over it.
 The extension captures and composites at 1280×720 and 30 frames per second.
 The WebView sends only text state, so video frames stay in the native camera
 process. Clearing the composer removes the text box from the feed.
+The watermark remains so people can identify the September camera output.
 
 `pnpm tauri:build` compiles the camera extension before it builds the app. Set
 `APPLE_TEAM_ID` and `APPLE_SIGNING_IDENTITY` to create an activatable build.

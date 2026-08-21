@@ -779,6 +779,9 @@ test("the camera extension keeps capture and composition native", async () => {
   const provider = await readText(
     "src-tauri/camera-extension/Sources/CameraProvider.swift",
   );
+  const project = await readText(
+    "src-tauri/camera-extension/SeptemberCamera.xcodeproj/project.pbxproj",
+  );
   const overlay = await readText(
     "src-tauri/camera-extension/Sources/OverlayState.swift",
   );
@@ -789,7 +792,12 @@ test("the camera extension keeps capture and composition native", async () => {
   assert.match(provider, /CVPixelBufferPoolCreate/);
   assert.match(provider, /CIContext\(\s*mtlDevice:/);
   assert.match(provider, /cachedOverlay/);
+  assert.match(provider, /cachedWatermark/);
+  assert.match(provider, /forResource:\s*"logo",\s*withExtension:\s*"svg"/);
+  assert.match(provider, /translationX:\s*24,\s*y:\s*24/);
   assert.match(provider, /stream\.send\(/);
+  assert.match(project, /\.\.\/\.\.\/public\/logo\.svg/);
+  assert.match(project, /logo\.svg in Resources/);
   assert.match(overlay, /maxTextLength\s*=\s*4096/);
   assert.match(info, /CMIOExtensionMachServiceName/);
   assert.match(info, /NSCameraUsageDescription/);

@@ -8,7 +8,8 @@ package: desktop
 
 September can publish `September Camera` as a macOS camera. FaceTime and other
 camera clients receive the physical camera feed with the current Talk text near
-the bottom of each frame.
+the bottom of each frame. The published September mark stays in the bottom-left
+corner, even when the Talk composer is empty.
 
 ## Keep video inside the extension
 
@@ -27,6 +28,9 @@ Image overlay. Each camera frame reuses that image until the Talk text changes.
 A Metal-backed `CIContext` composites the camera and overlay into buffers from
 one `CVPixelBufferPool`. The capture output discards late frames, so a slow
 frame does not become growing call latency.
+
+The extension loads `public/logo.svg` once and keeps the scaled, translucent
+mark as another Core Image layer. Frames do not parse or rasterize the logo.
 
 ## Run only for a camera client
 

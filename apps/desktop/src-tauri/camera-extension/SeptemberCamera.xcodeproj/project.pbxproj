@@ -10,6 +10,7 @@
 		A10000000000000000000001 /* CameraProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* CameraProvider.swift */; };
 		A10000000000000000000002 /* OverlayState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* OverlayState.swift */; };
 		A10000000000000000000003 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* main.swift */; };
+		A10000000000000000000004 /* logo.svg in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* logo.svg */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -19,6 +20,7 @@
 		A20000000000000000000004 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A20000000000000000000005 /* SeptemberCamera.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SeptemberCamera.entitlements; sourceTree = "<group>"; };
 		A20000000000000000000006 /* SeptemberCamera.systemextension */ = {isa = PBXFileReference; explicitFileType = "wrapper.system-extension"; includeInIndex = 0; path = SeptemberCamera.systemextension; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000000000000000000007 /* logo.svg */ = {isa = PBXFileReference; lastKnownFileType = image.svg; path = ../../public/logo.svg; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -36,6 +38,7 @@
 			isa = PBXGroup;
 			children = (
 				A40000000000000000000002 /* Sources */,
+				A20000000000000000000007 /* logo.svg */,
 				A20000000000000000000004 /* Info.plist */,
 				A20000000000000000000005 /* SeptemberCamera.entitlements */,
 				A40000000000000000000003 /* Products */,
@@ -69,6 +72,7 @@
 			buildPhases = (
 				A70000000000000000000001 /* Sources */,
 				A30000000000000000000001 /* Frameworks */,
+				A70000000000000000000002 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -111,6 +115,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A70000000000000000000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000004 /* logo.svg in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A70000000000000000000001 /* Sources */ = {

@@ -279,6 +279,10 @@ The overlay command sets one custom Core Media I/O property. The extension
 shapes a new Core Text image when the words change and reuses that image for
 later frames. Video buffers never cross the Tauri command boundary.
 
+The extension also bundles the published `public/logo.svg`. It loads, scales,
+and fades the mark once, then reuses the cached Core Image layer in the
+bottom-left corner of every frame.
+
 The extension starts its `AVCaptureSession` when the first camera client starts
 the source stream. It stops capture when the final client stops the stream.
 
