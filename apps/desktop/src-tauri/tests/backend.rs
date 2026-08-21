@@ -1,14 +1,14 @@
-use september_desktop_lib::repository::{Message, Note, Repository, Space};
+use september_desktop_lib::repository::{Message, Note, Repository, SavedPhrase, Space};
 use serde_json::json;
 
 #[test]
 fn migration_creates_normalized_domain_tables() {
     let repository = Repository::open_in_memory().unwrap();
 
-    assert_eq!(repository.schema_version().unwrap(), 4);
+    assert_eq!(repository.schema_version().unwrap(), 5);
     assert_eq!(
         repository.table_names().unwrap(),
-        vec!["messages", "notes", "settings", "spaces"]
+        vec!["messages", "notes", "saved_phrases", "settings", "spaces"]
     );
 }
 
@@ -254,4 +254,79 @@ fn note(id: &str, space_id: Option<&str>, updated_at: i64) -> Note {
         created_at: 1,
         updated_at,
     }
+}
+
+fn phrase(id: &str, text: &str, pinned: bool) -> SavedPhrase {
+    SavedPhrase {
+        id: id.into(),
+        space_id: "space-1".into(),
+        text: text.into(),
+        kind: "phrase".into(),
+        code: None,
+        pinned,
+        created_at: 1,
+        updated_at: 1,
+    }
+}
+
+fn space_for_phrases(repository: &Repository) {
+    repository
+        .put_space(&Space {
+            id: "space-1".into(),
+            user_id: "ravi".into(),
+            title: Some("General".into()),
+            context: None,
+            phrases_synced_count: None,
+            created_at: 1,
+            updated_at: 1,
+        })
+        .unwrap();
+}
+
+#[test]
+fn a_replacement_never_touches_a_pinned_phrase() {
+    let mut repository = Repository::open_in_memory().unwrap();
+    space_for_phrases(&repository);
+    repository
+        .put_phrase(&phrase("kept", "Please call the nurse", true))
+        .unwrap();
+    repository
+        .put_phrase(&phrase("old", "Written by a model", false))
+        .unwrap();
+
+    repository
+        .replace_ai_phrases("space-1", &[phrase("new", "Also by a model", false)])
+        .unwrap();
+
+    let texts: Vec<String> = repository
+        .list_phrases(Some("space-1"))
+        .unwrap()
+        .into_iter()
+        .map(|row| row.text)
+        .collect();
+
+    assert_eq!(texts, vec!["Please call the nurse", "Also by a model"]);
+}
+
+#[test]
+fn a_replacement_row_must_not_claim_to_be_pinned() {
+    let mut repository = Repository::open_in_memory().unwrap();
+    space_for_phrases(&repository);
+
+    assert!(repository
+        .replace_ai_phrases("space-1", &[phrase("sneaky", "Pretends to be kept", true)])
+        .is_err());
+}
+
+#[test]
+fn deleting_a_space_deletes_its_phrases() {
+    let repository = Repository::open_in_memory().unwrap();
+    space_for_phrases(&repository);
+    repository
+        .put_phrase(&phrase("one", "Thank you", true))
+        .unwrap();
+
+    repository.delete_space("space-1").unwrap();
+
+    assert!(repository.list_phrases(None).unwrap().is_empty());
 }

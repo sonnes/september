@@ -27,12 +27,12 @@ Rust opens `september.sqlite3` in Tauri's application-local-data directory.
 The `settings` table stores a unique text key and a JSON value. Keys must
 contain 1 to 256 bytes.
 
-The `spaces`, `messages`, and `notes` tables store domain fields in typed
-columns. Messages and notes can belong to a space. Deleting a space deletes its
+The `spaces`, `messages`, `notes`, and `saved_phrases` tables store domain
+fields in typed columns. Messages and notes can belong to a space. Deleting a space deletes its
 messages and scoped notes, while global messages and notes remain. Timestamps
 are Unix milliseconds.
 
-Schema version 4 creates all four tables. Released builds before the domain
+Schema version 5 creates all five tables. Released builds before the domain
 tables used versions 1 to 3 for a database that held only the settings, so the
 version of the domain tables must be higher than those. The migration uses
 `CREATE TABLE IF NOT EXISTS`, so an install from an earlier build gains the
@@ -59,6 +59,10 @@ when its row does not exist.
 | `note_get` | `{ id }` | `Note \| null` |
 | `note_put` | `Note` | `Note` |
 | `note_delete` | `{ id }` | `boolean` |
+| `phrase_list` | `{ space_id? }` | `SavedPhrase[]` |
+| `phrase_put` | `SavedPhrase` | `SavedPhrase` |
+| `phrase_delete` | `{ id }` | `boolean` |
+| `phrase_replace_ai` | `{ space_id, phrases }` | `SavedPhrase[]` |
 
 The objects use the same snake-case fields as the SQLite columns:
 
@@ -184,6 +188,25 @@ the reason in `detail`.
 `provider_voices` returns an empty list when no ElevenLabs key is stored. Each
 voice carries `id`, `name`, and `preview_url`. The preview URL is public, so
 the UI can play a sample without a key.
+
+## Keep the phrases of a user
+
+`phrase_replace_ai` takes `{ space_id, phrases }` and returns the phrases of
+that space. It erases the rows with `pinned = 0` and writes the new rows, in
+one transaction. A pinned row never changes, so a phrase that the user keeps
+cannot be lost by a model. A replacement row that says it is pinned is
+refused.
+
+A phrase kind is `phrase` for a complete thought, or `starter` for an opening.
+`phrase_list` without a space returns every row, because a code works in every
+space.
+
+## Generate text with a cloud model
+
+The `openrouter_generate` command takes the request shape of `apfel_generate`
+and answers in its response shape. It picks a model from a small list of free
+models, and OpenRouter uses the first one that answers. The key stays in the
+Keychain.
 
 ## Speak a sentence
 

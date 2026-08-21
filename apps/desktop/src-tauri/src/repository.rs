@@ -8,8 +8,9 @@ use crate::error::{BackendError, Result};
 
 /// Released builds before the domain tables used 1, 2, and 3 for a database
 /// that held only the settings. The domain tables arrive at 4, so those
-/// installs migrate instead of staying at a number above the target.
-const SCHEMA_VERSION: i64 = 4;
+/// installs migrate instead of staying at a number above the target. The
+/// saved phrases arrive at 5.
+const SCHEMA_VERSION: i64 = 5;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Space {
@@ -51,6 +52,20 @@ pub struct Note {
     pub updated_at: i64,
 }
 
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct SavedPhrase {
+    pub id: String,
+    pub space_id: String,
+    pub text: String,
+    /// `phrase` for a complete thought, `starter` for an opening.
+    pub kind: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub code: Option<String>,
+    pub pinned: bool,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
 pub struct Repository {
     connection: Connection,
 }
@@ -77,7 +92,12 @@ impl Repository {
             .query_row("PRAGMA user_version", [], |row| row.get(0))?;
         if version < SCHEMA_VERSION {
             let transaction = self.connection.transaction()?;
-            transaction.execute_batch(include_str!("../migrations/0001_initial.sql"))?;
+            // Every step makes its tables only when they are absent, so the
+            // whole set runs for a database at any earlier version.
+            transaction.execute_batch(concat!(
+                include_str!("../migrations/0001_initial.sql"),
+                include_str!("../migrations/0002_saved_phrases.sql"),
+            ))?;
             transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
             transaction.commit()?;
         }
@@ -271,6 +291,86 @@ impl Repository {
             > 0)
     }
 
+    pub fn list_phrases(&self, space_id: Option<&str>) -> Result<Vec<SavedPhrase>> {
+        if let Some(space_id) = space_id {
+            validate_identifier("phrase space ID", space_id)?;
+        }
+        // Pinned rows first, so a caller that takes the first few keeps the
+        // rows that the user chose.
+        let mut statement = self.connection.prepare(
+            "SELECT id, space_id, text, kind, code, pinned, created_at, updated_at \
+             FROM saved_phrases WHERE (?1 IS NULL OR space_id = ?1) \
+             ORDER BY pinned DESC, created_at, id",
+        )?;
+        let rows = statement.query_map([space_id], row_to_phrase)?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    pub fn put_phrase(&self, phrase: &SavedPhrase) -> Result<()> {
+        validate_phrase(phrase)?;
+        self.connection.execute(
+            PHRASE_UPSERT,
+            params![
+                phrase.id,
+                phrase.space_id,
+                phrase.text,
+                phrase.kind,
+                phrase.code,
+                phrase.pinned,
+                phrase.created_at,
+                phrase.updated_at,
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_phrase(&self, id: &str) -> Result<bool> {
+        validate_identifier("phrase ID", id)?;
+        Ok(self
+            .connection
+            .execute("DELETE FROM saved_phrases WHERE id = ?1", [id])?
+            > 0)
+    }
+
+    /// Puts the rows that a model wrote in place of the rows before them.
+    ///
+    /// A pinned row is never touched. The user keeps what the user chose, so
+    /// the erase and the insert happen together, in one transaction.
+    pub fn replace_ai_phrases(&mut self, space_id: &str, rows: &[SavedPhrase]) -> Result<()> {
+        validate_identifier("phrase space ID", space_id)?;
+        for row in rows {
+            validate_phrase(row)?;
+            if row.pinned {
+                return Err(BackendError::InvalidInput(
+                    "a replacement phrase must not be pinned".into(),
+                ));
+            }
+        }
+
+        let transaction = self.connection.transaction()?;
+        transaction.execute(
+            "DELETE FROM saved_phrases WHERE space_id = ?1 AND pinned = 0",
+            [space_id],
+        )?;
+        for phrase in rows {
+            transaction.execute(
+                PHRASE_UPSERT,
+                params![
+                    phrase.id,
+                    phrase.space_id,
+                    phrase.text,
+                    phrase.kind,
+                    phrase.code,
+                    phrase.pinned,
+                    phrase.created_at,
+                    phrase.updated_at,
+                ],
+            )?;
+        }
+        transaction.commit()?;
+        Ok(())
+    }
+
     pub fn get_setting(&self, key: &str) -> Result<Option<Value>> {
         validate_key(key)?;
         let encoded: Option<String> = self
@@ -378,6 +478,45 @@ fn validate_note(note: &Note) -> Result<()> {
             "note updated_at must not precede created_at".into(),
         ));
     }
+    Ok(())
+}
+
+const PHRASE_UPSERT: &str = "INSERT INTO saved_phrases \
+     (id, space_id, text, kind, code, pinned, created_at, updated_at) \
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8) \
+     ON CONFLICT(id) DO UPDATE SET \
+       space_id = excluded.space_id, \
+       text = excluded.text, \
+       kind = excluded.kind, \
+       code = excluded.code, \
+       pinned = excluded.pinned, \
+       created_at = excluded.created_at, \
+       updated_at = excluded.updated_at";
+
+fn row_to_phrase(row: &Row<'_>) -> rusqlite::Result<SavedPhrase> {
+    Ok(SavedPhrase {
+        id: row.get(0)?,
+        space_id: row.get(1)?,
+        text: row.get(2)?,
+        kind: row.get(3)?,
+        code: row.get(4)?,
+        pinned: row.get(5)?,
+        created_at: row.get(6)?,
+        updated_at: row.get(7)?,
+    })
+}
+
+fn validate_phrase(phrase: &SavedPhrase) -> Result<()> {
+    validate_identifier("phrase ID", &phrase.id)?;
+    validate_identifier("phrase space ID", &phrase.space_id)?;
+    validate_identifier("phrase text", &phrase.text)?;
+    if !matches!(phrase.kind.as_str(), "phrase" | "starter") {
+        return Err(BackendError::InvalidInput(
+            "phrase kind must be phrase or starter".into(),
+        ));
+    }
+    validate_timestamp("phrase created timestamp", phrase.created_at)?;
+    validate_timestamp("phrase updated timestamp", phrase.updated_at)?;
     Ok(())
 }
 

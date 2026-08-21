@@ -6,6 +6,16 @@ use reqwest::StatusCode;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 const OPEN_ROUTER: &str = "https://openrouter.ai";
+
+/// Free models, best first. OpenRouter takes the whole list and uses the
+/// first one that answers, so one bad day for one model is not one bad day
+/// for the user. Refresh the ids when they rotate.
+const OPEN_ROUTER_MODELS: [&str; 4] = [
+    "qwen/qwen3-next-80b-a3b-instruct:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "nvidia/nemotron-3-nano-30b-a3b:free",
+    "openai/gpt-oss-20b:free",
+];
 const ELEVEN_LABS: &str = "https://api.elevenlabs.io";
 
 /// One Keychain service holds both accounts, so the Mac shows them together.
@@ -41,6 +51,8 @@ pub enum ProviderError {
     Unexpected(String),
     #[error("the keychain refused: {0}")]
     Keychain(String),
+    #[error("could not read the reply: {0}")]
+    Encoding(#[from] serde_json::Error),
 }
 
 pub type Result<T> = std::result::Result<T, ProviderError>;
@@ -181,6 +193,47 @@ impl Providers {
         })
     }
 
+    /// Text from OpenRouter, in the shape that the local model answers in.
+    pub async fn generate(
+        &self,
+        key: &str,
+        request: &crate::apfel::ApfelGenerateRequest,
+    ) -> Result<crate::apfel::ApfelGeneration> {
+        let mut body = serde_json::json!({
+            "models": OPEN_ROUTER_MODELS,
+            "messages": request.messages,
+            "temperature": request.temperature,
+            "max_tokens": request.max_tokens,
+        });
+        if let Some(format) = &request.response_format {
+            body["response_format"] = serde_json::to_value(format)?;
+        }
+
+        let response = self
+            .client
+            .post(format!("{}/api/v1/chat/completions", self.open_router))
+            .bearer_auth(key)
+            .json(&body)
+            .send()
+            .await?;
+        let body: OpenRouterCompletion = decode(response).await?;
+        let choice = body
+            .choices
+            .into_iter()
+            .next()
+            .ok_or_else(|| ProviderError::Unexpected("no reply came back".into()))?;
+
+        Ok(crate::apfel::ApfelGeneration {
+            text: choice.message.content,
+            finish_reason: choice.finish_reason.unwrap_or_default(),
+            usage: crate::apfel::ApfelUsage {
+                prompt_tokens: body.usage.prompt_tokens,
+                completion_tokens: body.usage.completion_tokens,
+                total_tokens: body.usage.total_tokens,
+            },
+        })
+    }
+
     /// The sound of one sentence, as MP3 bytes.
     pub async fn speak(
         &self,
@@ -274,6 +327,35 @@ fn thousands(value: u64) -> String {
         grouped.push(digit);
     }
     grouped
+}
+
+#[derive(Deserialize)]
+struct OpenRouterCompletion {
+    choices: Vec<OpenRouterChoice>,
+    #[serde(default)]
+    usage: OpenRouterUsage,
+}
+
+#[derive(Deserialize)]
+struct OpenRouterChoice {
+    message: OpenRouterMessage,
+    finish_reason: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct OpenRouterMessage {
+    #[serde(default)]
+    content: String,
+}
+
+#[derive(Default, Deserialize)]
+struct OpenRouterUsage {
+    #[serde(default)]
+    prompt_tokens: u32,
+    #[serde(default)]
+    completion_tokens: u32,
+    #[serde(default)]
+    total_tokens: u32,
 }
 
 #[derive(Deserialize)]

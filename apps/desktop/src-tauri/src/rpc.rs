@@ -7,7 +7,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 use crate::{
     apfel::{ApfelGenerateRequest, ApfelGeneration, ApfelState, ApfelStatus},
     providers::{self, Provider, ProviderStatus, Providers, Voice},
-    repository::{Message, Note, Repository, Space},
+    repository::{Message, Note, Repository, SavedPhrase, Space},
     speech::{self, SpeechSettings},
 };
 
@@ -44,6 +44,12 @@ pub(crate) struct ProviderRequest {
 pub(crate) struct ProviderConnectRequest {
     provider: Provider,
     key: String,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct PhraseReplaceRequest {
+    space_id: String,
+    phrases: Vec<SavedPhrase>,
 }
 
 #[derive(Deserialize)]
@@ -290,6 +296,64 @@ pub(crate) fn note_delete(
         .map_err(rpc_error)
 }
 
+#[tauri::command(async)]
+pub(crate) fn phrase_list(
+    state: State<'_, BackendState>,
+    request: SpaceFilterRequest,
+) -> RpcResult<Vec<SavedPhrase>> {
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .list_phrases(request.space_id.as_deref())
+        .map_err(rpc_error)
+}
+
+#[tauri::command(async)]
+pub(crate) fn phrase_put(
+    state: State<'_, BackendState>,
+    request: SavedPhrase,
+) -> RpcResult<SavedPhrase> {
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .put_phrase(&request)
+        .map_err(rpc_error)?;
+    Ok(request)
+}
+
+#[tauri::command(async)]
+pub(crate) fn phrase_delete(
+    state: State<'_, BackendState>,
+    request: EntityIdRequest,
+) -> RpcResult<bool> {
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .delete_phrase(&request.id)
+        .map_err(rpc_error)
+}
+
+/// Puts the rows of a model in place of the rows before them.
+///
+/// A pinned row never changes. The erase and the insert happen together, so a
+/// failure cannot leave a space with no phrases.
+#[tauri::command(async)]
+pub(crate) fn phrase_replace_ai(
+    state: State<'_, BackendState>,
+    request: PhraseReplaceRequest,
+) -> RpcResult<Vec<SavedPhrase>> {
+    let mut repository = state.repository.lock().map_err(lock_error)?;
+    repository
+        .replace_ai_phrases(&request.space_id, &request.phrases)
+        .map_err(rpc_error)?;
+    repository
+        .list_phrases(Some(&request.space_id))
+        .map_err(rpc_error)
+}
+
 /// The name the operating system holds for the signed-in user.
 ///
 /// The result is empty when the system has no usable name. The onboarding
@@ -389,6 +453,23 @@ pub(crate) async fn speech_synthesize(
         path: path.to_string_lossy().into_owned(),
         from_cache,
     })
+}
+
+/// Text from OpenRouter, in the shape that `apfel_generate` answers in.
+///
+/// The key stays in the Keychain, so the call happens here and not in the
+/// WebView.
+#[tauri::command]
+pub(crate) async fn openrouter_generate(
+    request: ApfelGenerateRequest,
+) -> RpcResult<ApfelGeneration> {
+    let key = providers::stored(Provider::OpenRouter)
+        .map_err(rpc_error)?
+        .ok_or("no OpenRouter key is stored")?;
+    Providers::default()
+        .generate(&key, &request)
+        .await
+        .map_err(rpc_error)
 }
 
 /// The ElevenLabs voices for the stored key. The list is empty without a key.

@@ -40,9 +40,9 @@ cargo fmt --all -- --check
 - Keep the sidebar destinations in `src/app-nav.ts`, where a test can read
   them. Give each path an icon in `src/shell.tsx`. The icon record is typed by
   path, so a missing icon fails the build.
-- Call the Rust backend from `src/os.ts` or `src/data.ts`. Do not call
-  `invoke` from a component. `src/data.ts` holds every read and every write of
-  a space or a message, through TanStack Query.
+- Call the Rust backend from a service module: `src/os.ts` for settings and
+  the system, `src/data.ts` for the rows, `src/ai.ts` for the writing service.
+  Do not call `invoke` from a component or from `src/speech.ts`.
 - Keep the rules of a space in `src/spaces.ts`, where a test can read them
   without a renderer: the slug, the search, the new title, the relative time,
   the transcript page, and the composer helpers.
@@ -53,11 +53,28 @@ cargo fmt --all -- --check
   the confirming button the `destructive` variant.
 - Give each row the owner from `currentUserId()` in `src/os.ts`. Do not read
   the operating system again after setup.
+- Offer words through `useSuggestions()` in `src/suggest.ts`. Keep the rules in
+  `src/autocomplete/index.ts`, where a test can read them without a renderer.
+  `src/autocomplete/` is a copy of the engine in the web app: change a file
+  there only to keep the two apps the same.
 - Speak through `speak()` in `src/speech.ts`. Every voice meets the
   `SpeechProvider` interface, so a screen never names a service. Play a file
   through `src/player.ts`, which holds one sound at a time.
 - A cloud voice that fails must fall back to the voice of the operating
   system. Silence is the worst answer for a user who cannot speak.
+- Keep the rules of a phrase, a code, and a shortcut idea in `src/phrases.ts`,
+  and the rules of a stripe in `src/stripes.ts`. Both are ports of the web app.
+  Change them in both apps, or in neither.
+- A model never writes over a phrase that the user kept. Write new rows with
+  `phrase_replace_ai`, which erases only the rows with `pinned = 0`.
+- Add a word from the engine with `applySuggestion` in `src/suggest.ts`. The
+  screen must not cut the text at the caret itself, because only the engine
+  knows a part-written word from a finished one.
+- Give each row of the composer its own colour. A word is amber, a past
+  message is teal, and a phrase is indigo. A user must see what a press does
+  before pressing.
+- Make the code of a phrase with `generateCode`. A model must never choose one,
+  because only the generator knows the words a user would type.
 - Name a voice file in `src-tauri/src/speech.rs`, from the hash of the speech
   settings and the normalized words. Do not name one anywhere else, and do not
   keep a path to it on a message.

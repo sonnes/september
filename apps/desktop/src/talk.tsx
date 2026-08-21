@@ -7,6 +7,7 @@ import {
   Delete,
   MessagesSquare,
   Plus,
+  MessageSquareQuote,
   Search,
   Square,
   Trash2,
@@ -33,6 +34,8 @@ import {
   useCreateSpace,
   useDeleteSpace,
   useMessages,
+  usePhrases,
+  usePutPhrase,
   useSendMessage,
   useSpaces,
   useUpdateSpace,
@@ -40,7 +43,11 @@ import {
   type Space,
 } from "./data";
 import { Screen, ScreenHeader } from "./shell";
+import { PhrasePanel } from "./phrase-panel";
+import { generateCode, type SavedPhrase } from "./phrases";
+import { useSyncPhrases } from "./phrase-sync";
 import { speak, stopSpeaking, useSpeaking, useVoiceFallback } from "./speech";
+import { Suggestions } from "./suggestions";
 import {
   deleteLastWord,
   filterSpaces,
@@ -259,8 +266,15 @@ export function TalkScreen({ slug }: { slug: string }) {
 
 function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
   const { data: messages, error } = useMessages(space.id);
+  const { data: phrases } = usePhrases(space.id);
   const send = useSendMessage(space.id);
+  const putPhrase = usePutPhrase();
 
+  // A model writes the phrases of this space, and writes them again as the
+  // conversation grows. It never touches a row the user kept.
+  useSyncPhrases({ space, phrases, messages });
+
+  const [phrasesOpen, setPhrasesOpen] = useState(false);
   const speaking = useSpeaking();
   const fallback = useVoiceFallback();
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -283,6 +297,38 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
   // behind an old page.
   const newest = spoken[spoken.length - 1]?.id;
   useEffect(() => setPageInput(0), [newest]);
+
+  /** Keeps a row of the stripe, so a regeneration cannot take it away. */
+  const keep = (text: string) => {
+    if (phrases?.some((row) => row.text.toLowerCase() === text.toLowerCase())) return;
+    const at = Date.now();
+    const codes = (phrases ?? [])
+      .map((row) => row.code)
+      .filter((code): code is string => Boolean(code));
+
+    const row: SavedPhrase = {
+      id: crypto.randomUUID(),
+      space_id: space.id,
+      text,
+      kind: "phrase",
+      code: generateCode(text, { existingCodes: codes }),
+      pinned: true,
+      created_at: at,
+      updated_at: at,
+    };
+    putPhrase.mutate(row);
+  };
+
+  const say = (sentence: string) => {
+    void speak(sentence);
+    send.mutate(sentence, {
+      onSuccess: () => {
+        setDraft("");
+        setUndoStack([]);
+        inputRef.current?.focus();
+      },
+    });
+  };
 
   const write = (text: string) => {
     setUndoStack((stack) => [...stack.slice(-49), draft]);
@@ -317,7 +363,22 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
     <>
       <ScreenHeader>
         <SpaceTitle space={space} />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Phrases"
+          onClick={() => setPhrasesOpen(true)}
+        >
+          <MessageSquareQuote aria-hidden />
+        </Button>
       </ScreenHeader>
+
+      <PhrasePanel
+        spaceId={space.id}
+        open={phrasesOpen}
+        onClose={() => setPhrasesOpen(false)}
+      />
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 p-2 md:p-4">
         <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">
@@ -366,6 +427,17 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
                 <Bubble key={message.id} message={message} />
               ))
             )}
+          </div>
+
+          <div className="mb-2 shrink-0">
+            <Suggestions
+              spaceId={space.id}
+              context={space.context ?? ""}
+              text={draft}
+              onTake={write}
+              onSpeak={say}
+              onPin={keep}
+            />
           </div>
 
           <div className="bg-background focus-within:border-ring focus-within:ring-ring/20 shrink-0 rounded-2xl border p-3 shadow-sm transition-[box-shadow,border-color] focus-within:ring-[3px]">

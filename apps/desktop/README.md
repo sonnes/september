@@ -75,6 +75,111 @@ of the operating system, which setup keeps in the `setup` setting.
 The composer keeps its text until SQLite accepts the message, so a failed write
 loses no words.
 
+## Offer the next word
+
+A person with ALS types slowly. Each word that the app offers is a word that
+the user does not type. This is the first measure of the app.
+
+`src/autocomplete/` holds the engine. It is a copy of the engine in the web
+app, so a correction in one app can move to the other one. It reads no file
+and calls no service.
+
+The engine blends three models of the words that come next:
+
+| Layer | Weight | What it learns                                     |
+| ----- | ------ | -------------------------------------------------- |
+| base  | 1.0    | The seed words in `src/autocomplete/corpus.ts`.    |
+| user  | 2.0    | Every message that the user sends, in every space. |
+| space | 3.0    | The messages of the space that is open.            |
+
+The weight of a space starts at zero and grows over its first 500 words. A new
+space with three messages must not speak over the other two layers.
+
+`src/autocomplete/index.ts` holds the two rules that a test can read:
+
+- `suggestionsFor(engine, text, spaceId)` gives the words to show. A space or a
+  mark of punctuation at the end of the text asks for the next word. If the
+  text stops in the middle of a word, it asks for the spellings of that word.
+- `applySuggestion(text, word)` gives the text after the user takes a word. A
+  word always ends with a space, which saves one more keystroke.
+
+`src/suggest.ts` holds the engine and gives it the messages. A screen calls
+`useSuggestions(spaceId, draft)`.
+
+The engine learns again at each start. This costs about 10 ms for the seed
+words. Keep a snapshot in SQLite only if a measurement shows that the start
+became slow.
+
+## Say more with fewer keys
+
+Above the composer is a row of ready words for each suggestion. A press on a
+word takes the sentence up to that word. This is the reason the app exists.
+
+The rows come from four places, in this order:
+
+1. The saved phrases of the space, and its sentence starters.
+2. The past messages of the space that begin with the words already typed.
+3. The writing service, when the user chose one.
+4. A short code at the caret, which goes above them all.
+
+`src/stripes.ts` and `src/phrases.ts` hold the rules. Both are ports of
+`apps/web/src/packages/{suggestions,spaces}/lib`. Change them in both apps, or
+in neither.
+
+A code is a short name for a phrase: `ty` gives "Thank you". Type it and the
+phrase comes to the top of the rows. A code is 2 to 5 letters, it is never a
+word the user might type, and it is never the same as another code. The app
+makes a code with `generateCode`. A model never chooses one.
+
+A phrase is pinned or not:
+
+| Pinned | Where it comes from            | What happens to it              |
+| ------ | ------------------------------ | ------------------------------- |
+| Yes    | The user kept it               | It stays. Nothing replaces it.  |
+| No     | A model wrote it               | The next writing replaces it.   |
+
+A model writes the phrases when a space holds its first message, and again
+after six more. `phrase_replace_ai` erases only the rows that are not pinned,
+in one transaction, so a phrase the user relies on cannot be lost. The first
+space starts with three pinned phrases, so the rows are never empty.
+
+The header of the Talk screen opens the Phrases panel. It lists the phrases of
+the space, and it takes a code for each one. Below them are shortcut ideas:
+words the user typed five or more times, with a code ready. `mineShortcuts`
+counts them locally, with no model, so they work in privacy mode. An idea the
+user turns down is kept in a setting and never comes back.
+
+Nearest the composer is the word row. It offers the next word, or the endings
+of the word that the user started. The engine in `src/autocomplete/` learns
+from the messages of the user, so it needs no service and no wait.
+`applySuggestion` knows a part-written word from a finished one, so the screen
+never splits the text itself.
+
+Each row reads differently. The colour and the mark in the gutter say the same
+thing, so a user who does not read colour still knows what a row is:
+
+| Row              | Colour and line | Mark          | The key at the end |
+| ---------------- | --------------- | ------------- | ------------------ |
+| A code           | Strong indigo   | The code      | Speak, solid       |
+| A phrase         | Indigo          | A pin         | Speak              |
+| An opening       | Indigo, broken  | Two arrows    | Take the opening   |
+| A past message   | Teal            | A clock       | Speak              |
+| From a model     | Grey            | none          | Speak              |
+| A word           | Warm            | none          | none               |
+
+The sizes come from `TILE` in `src/stripes.ts`, the same numbers the web app
+uses. `tileScale` makes every tile smaller together, so the widest row stays on
+one line. It counts the letters, the padding of each tile, and the line around
+it, against the width that a `ResizeObserver` reports. The web app measures
+each word with a layout engine instead. A row that is still too wide scrolls,
+so no tile is ever out of reach.
+
+A hover marks the tiles that a press would take, from the start of the row to
+the tile under the pointer.
+
+A user with no writing service still gets the phrases, the starters, the
+codes, the rows from past messages, and the word row.
+
 ## Hear a voice
 
 `src/speech.ts` gives every voice one interface. A screen calls `speak(text)`

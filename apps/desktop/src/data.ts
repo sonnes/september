@@ -7,12 +7,15 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 
 import { currentUserId } from "./os";
+import { STARTER_PACK, type SavedPhrase } from "./phrases";
 
 export interface Space {
   id: string;
   user_id: string;
   title?: string;
   context?: string;
+  /** How many messages the space held when a model last wrote its phrases. */
+  phrases_synced_count?: number;
   created_at: number;
   updated_at: number;
 }
@@ -27,6 +30,7 @@ export interface Message {
 }
 
 const messagesKey = (spaceId: string) => ["messages", spaceId];
+const phrasesKey = (spaceId?: string) => ["phrases", spaceId ?? "all"];
 
 /**
  * One call to Rust.
@@ -58,17 +62,40 @@ export function useCreateSpace() {
   const client = useQueryClient();
 
   return useMutation({
-    mutationFn: (title: string) => {
+    mutationFn: async (title: string) => {
       const at = Date.now();
-      return call<Space>("space_put", {
+      const space = await call<Space>("space_put", {
         id: crypto.randomUUID(),
         user_id: currentUserId(),
         title,
         created_at: at,
         updated_at: at,
       });
+
+      // The first space starts with a few phrases, so the stripe above the
+      // composer is never empty on the first day.
+      const existing = await call<SavedPhrase[]>("phrase_list", { space_id: null });
+      if (existing.length === 0) {
+        for (const seed of STARTER_PACK) {
+          await call<SavedPhrase>("phrase_put", {
+            id: crypto.randomUUID(),
+            space_id: space.id,
+            text: seed.text,
+            kind: "phrase",
+            code: seed.code,
+            pinned: true,
+            created_at: at,
+            updated_at: at,
+          });
+        }
+      }
+
+      return space;
     },
-    onSuccess: refresh(client),
+    onSuccess: () => {
+      void refresh(client)();
+      void client.invalidateQueries({ queryKey: ["phrases"] });
+    },
   });
 }
 
@@ -101,6 +128,20 @@ export function useMessages(spaceId: string) {
   });
 }
 
+/**
+ * Every message of the user, from every space.
+ *
+ * The words that the user writes with one person help the words that the user
+ * writes with another. `useMessages` gives one space only, so the engine that
+ * offers words reads this instead.
+ */
+export function useAllMessages() {
+  return useQuery({
+    queryKey: messagesKey("all"),
+    queryFn: () => call<Message[]>("message_list", { space_id: null }),
+  });
+}
+
 export function useSendMessage(spaceId: string) {
   const client = useQueryClient();
 
@@ -122,5 +163,51 @@ export function useSendMessage(spaceId: string) {
         ...rows,
         message,
       ]),
+  });
+}
+
+// ------------------------------------------------------------ saved phrases
+
+/** The phrases of one space, or every phrase when no space is named. */
+export function usePhrases(spaceId?: string) {
+  return useQuery({
+    queryKey: phrasesKey(spaceId),
+    queryFn: () =>
+      call<SavedPhrase[]>("phrase_list", { space_id: spaceId ?? null }),
+  });
+}
+
+export function usePutPhrase() {
+  const client = useQueryClient();
+
+  return useMutation({
+    mutationFn: (phrase: SavedPhrase) =>
+      call<SavedPhrase>("phrase_put", { ...phrase, updated_at: Date.now() }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["phrases"] }),
+  });
+}
+
+export function useDeletePhrase() {
+  const client = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => call<boolean>("phrase_delete", { id }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["phrases"] }),
+  });
+}
+
+/**
+ * Puts the rows of a model in place of the rows before them.
+ *
+ * Rust erases only the rows that are not pinned, in one transaction, so a
+ * phrase that the user keeps cannot be lost here.
+ */
+export function useReplaceAiPhrases() {
+  const client = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ spaceId, phrases }: { spaceId: string; phrases: SavedPhrase[] }) =>
+      call<SavedPhrase[]>("phrase_replace_ai", { space_id: spaceId, phrases }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["phrases"] }),
   });
 }

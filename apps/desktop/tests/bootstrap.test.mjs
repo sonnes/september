@@ -4,6 +4,30 @@ import test from "node:test";
 
 import { APP_NAV, BASE_VIEWPORT_WIDTH, isCompactWidth } from "../src/app-nav.ts";
 import {
+  decidePhraseSync,
+  dedupeAgainstPinned,
+  generateCode,
+  isCommonWord,
+  matchCode,
+  mineShortcuts,
+  normalizeMinedText,
+  sanitizeStarters,
+  topPhrases,
+  topRows,
+  trailingWord,
+  validateCode,
+} from "../src/phrases.ts";
+import {
+  appendTokens,
+  codeExpansionText,
+  composeSuggestions,
+  joinTokens,
+  stripeForText,
+  tileScale,
+  TILE_SCALE_MIN,
+  tokenize,
+} from "../src/stripes.ts";
+import {
   deleteLastWord,
   filterSpaces,
   newSpaceTitle,
@@ -532,7 +556,16 @@ test("setup freezes the user id, so a later read cannot move the spaces", async 
 });
 
 test("only data.ts and os.ts talk to Rust", async () => {
-  const files = ["src/talk.tsx", "src/speech.ts", "src/player.ts", "src/voice.tsx"];
+  // The service modules (`os.ts`, `data.ts`, `ai.ts`) are the only callers.
+  const files = [
+    "src/talk.tsx",
+    "src/speech.ts",
+    "src/player.ts",
+    "src/voice.tsx",
+    "src/suggestions.tsx",
+    "src/phrase-panel.tsx",
+    "src/phrase-sync.ts",
+  ];
   for (const file of files) {
     assert.doesNotMatch(await readText(file), /@tauri-apps\/api/, file);
   }
@@ -645,4 +678,283 @@ test("a message keeps no audio path", async () => {
   const data = await readText("src/data.ts");
 
   assert.doesNotMatch(data, /audio_path/);
+});
+
+// ------------------------------------------------- phrases and suggestions
+
+test("a code comes from the initials of the content words", () => {
+  const options = { existingCodes: [] };
+
+  assert.equal(generateCode("Thank you", options), "ty");
+  // Stopwords drop out, and four initials are the most a code takes.
+  assert.equal(generateCode("I want to go to the bathroom", options), "iwgb");
+  // One content word is not enough to name.
+  assert.equal(generateCode("Hello", options), undefined);
+});
+
+test("a code never takes a word the user would type", () => {
+  // "so" and "no" are words, so the generator moves away from them.
+  assert.notEqual(generateCode("Sit outside", { existingCodes: [] }), "so");
+  assert.equal(isCommonWord("so"), true);
+  assert.equal(isCommonWord("iwgb"), false);
+
+  const taken = generateCode("Thank you", { existingCodes: ["ty"] });
+  assert.notEqual(taken, "ty");
+  assert.match(String(taken), /^[a-z0-9]{2,5}$/);
+});
+
+test("a code the user types is checked before it is kept", () => {
+  const existingCodes = ["ty"];
+
+  assert.deepEqual(validateCode("TY ", { existingCodes: [] }), { ok: true, code: "ty" });
+  assert.equal(validateCode("a", { existingCodes }).reason, "format");
+  assert.equal(validateCode("water", { existingCodes }).reason, "dictionary");
+  assert.equal(validateCode("ty", { existingCodes }).reason, "duplicate");
+});
+
+test("the word at the caret triggers a code, and a finished word does not", () => {
+  assert.equal(trailingWord("I want ty"), "ty");
+  assert.equal(trailingWord("I want ty "), "");
+
+  const rows = [
+    { id: "a", space_id: "other", text: "Thank you", kind: "phrase", code: "ty", pinned: false },
+    { id: "b", space_id: "here", text: "Thanks a lot", kind: "phrase", code: "ty", pinned: false },
+  ];
+
+  // The space the user is in wins a conflict.
+  assert.equal(matchCode("TY", rows, "here")?.id, "b");
+  assert.equal(matchCode("nothing", rows, "here"), undefined);
+});
+
+test("a regeneration keeps the phrases the user pinned", () => {
+  assert.deepEqual(
+    dedupeAgainstPinned(["Thank you"], ["thank you", "I am cold", "I am cold"]),
+    ["I am cold"],
+  );
+
+  const rows = [
+    { id: "1", text: "AI one", kind: "phrase", pinned: false },
+    { id: "2", text: "Kept", kind: "phrase", pinned: true },
+    { id: "3", text: "Can you please", kind: "starter", pinned: false },
+  ];
+  assert.deepEqual(topPhrases(rows, 5), ["Kept", "AI one"]);
+  assert.deepEqual(topRows(rows, 5, "starter").map((r) => r.id), ["3"]);
+});
+
+test("a starter is an opening, not a sentence", () => {
+  assert.deepEqual(
+    sanitizeStarters(["  Can you please check ", "", "No", "one two three four five six seven"]),
+    ["Can you please check"],
+  );
+});
+
+test("the phrases are written again after six new messages", () => {
+  assert.equal(decidePhraseSync({ syncedCount: undefined, messageCount: 0 }), "none");
+  assert.equal(decidePhraseSync({ syncedCount: undefined, messageCount: 1 }), "seed");
+  assert.equal(decidePhraseSync({ syncedCount: 4, messageCount: 9 }), "none");
+  assert.equal(decidePhraseSync({ syncedCount: 4, messageCount: 10 }), "regen");
+});
+
+test("a stripe hides the words the user already typed", () => {
+  assert.deepEqual(tokenize("I am cold."), ["I", "am", "cold", "."]);
+  assert.equal(joinTokens(["I", "am", "cold", "."]), "I am cold. ");
+
+  const stripe = stripeForText("I am cold today", "i am ");
+  assert.equal(stripe.hidden, 2);
+  assert.equal(stripe.tokens.length, 4);
+});
+
+test("taking a code swaps the typed trigger for the phrase", () => {
+  assert.equal(codeExpansionText("I said ty", "thank you"), "I said thank you");
+  assert.equal(appendTokens("I am", "very cold"), "I am very cold ");
+});
+
+test("the rows come in one order: phrases, then history, then the model", () => {
+  const composed = composeSuggestions({
+    typed: "",
+    mdPhrases: ["I am cold"],
+    starters: ["Can you please"],
+    history: ["I am hungry"],
+    llm: ["I am tired"],
+  });
+
+  assert.deepEqual(composed.map((s) => s.source), ["md", "starter", "llm"]);
+
+  // History only answers once a sentence is started.
+  const started = composeSuggestions({
+    typed: "I am h",
+    mdPhrases: [],
+    history: ["I am hungry", "I am hungry"],
+    llm: [],
+  });
+  assert.deepEqual(started.map((s) => s.text), ["I am hungry"]);
+});
+
+test("a shortcut idea needs five messages and an unused code", () => {
+  const at = Date.UTC(2026, 7, 21);
+  const said = (text, n) =>
+    Array.from({ length: n }, (_, i) => ({
+      id: `m${text}${i}`,
+      type: "user",
+      text,
+      created_at: at - i * 1000,
+    }));
+
+  const ideas = mineShortcuts([...said("Please call the nurse", 6), ...said("Hello", 9)], {
+    existingPhrases: [],
+    dismissed: new Set(),
+    now: at,
+  });
+
+  assert.equal(ideas.length, 1);
+  assert.equal(ideas[0].text, "Please call the nurse");
+  assert.equal(ideas[0].count, 6);
+  assert.match(ideas[0].code, /^[a-z0-9]{2,5}$/);
+
+  // A dismissed idea never comes back.
+  const dismissed = mineShortcuts(said("Please call the nurse", 6), {
+    existingPhrases: [],
+    dismissed: new Set([normalizeMinedText("Please call the nurse")]),
+    now: at,
+  });
+  assert.deepEqual(dismissed, []);
+});
+
+test("a code answers without waiting for the model", async () => {
+  const suggestions = await readText("src/suggestions.tsx");
+
+  // The code row is built from local rows, in the same pass as the rest.
+  assert.match(suggestions, /matchCode\(word, allPhrases, spaceId\)/);
+  assert.match(suggestions, /codeExpansionText/);
+  // Only the model rows wait.
+  assert.match(suggestions, /THINK_AFTER_MS = 200/);
+});
+
+test("a model never writes over a phrase the user keeps", async () => {
+  const sync = await readText("src/phrase-sync.ts");
+  const data = await readText("src/data.ts");
+  const rust = await readText("src-tauri/src/repository.rs");
+
+  assert.match(sync, /dedupeAgainstPinned/);
+  assert.match(sync, /replace\.mutateAsync/);
+  assert.match(data, /"phrase_replace_ai"/);
+  // Rust erases only the rows that are not pinned, in one transaction.
+  assert.match(rust, /DELETE FROM saved_phrases WHERE space_id = \?1 AND pinned = 0/);
+  assert.match(rust, /a replacement phrase must not be pinned/);
+});
+
+test("the codes of new rows come from the app, never from the model", async () => {
+  const sync = await readText("src/phrase-sync.ts");
+
+  assert.match(sync, /generateCode\(text, \{ existingCodes \}\)/);
+});
+
+test("a shortcut idea the user turned down is kept out for good", async () => {
+  const os = await readText("src/os.ts");
+  const panel = await readText("src/phrase-panel.tsx");
+
+  // A setting, not the browser storage, so it lives with the rest of the app.
+  assert.match(os, /key: "dismissed-ideas"/);
+  assert.match(panel, /rememberDismissed/);
+  assert.match(panel, /normalizeMinedText/);
+});
+
+test("a tile shrinks so a long row stays on one line", () => {
+  const short = [{ chars: 9, tokens: 2 }];
+  // "Could you please pass me the glass of water, thank you." in the composer
+  // of the 1376 px window: 13 tiles, and about 745 px to hold them.
+  const long = [{ chars: 46, tokens: 13 }];
+
+  // A short row is never shrunk.
+  assert.equal(tileScale(short, 745), 1);
+  // A long row shrinks to fit the width it was given.
+  assert.ok(tileScale(long, 745) < 1);
+  assert.ok(tileScale(long, 745) > tileScale(long, 500));
+  // The widest row decides for every row.
+  assert.equal(tileScale([...short, ...long], 745), tileScale(long, 745));
+
+  // The padding of each tile counts, not the letters alone. Eleven one-letter
+  // words are wider than one word of eleven letters.
+  assert.ok(tileScale([{ chars: 11, tokens: 11 }], 400) < tileScale([{ chars: 11, tokens: 1 }], 400));
+
+  // It never shrinks past the floor, where a tile stops being pressable.
+  assert.equal(tileScale(long, 10), TILE_SCALE_MIN);
+  // No width to fit yet: leave the tiles alone.
+  assert.equal(tileScale(long, 0), 1);
+});
+
+test("the first space starts with phrases, so the stripe is never empty", async () => {
+  const data = await readText("src/data.ts");
+
+  assert.match(data, /STARTER_PACK/);
+  assert.match(data, /pinned: true/);
+});
+
+test("no tile is ever out of reach", async () => {
+  const suggestions = await readText("src/suggestions.tsx");
+
+  // Past the shrink floor a row scrolls. It must not clip its own tiles.
+  assert.match(suggestions, /overflow-x-auto/);
+  assert.doesNotMatch(suggestions, /flex-1 gap-1 overflow-hidden/);
+});
+
+test("the composer offers the next word while the user writes", async () => {
+  const suggestions = await readText("src/suggestions.tsx");
+
+  assert.match(suggestions, /useSuggestions\(spaceId, text\)/);
+  // The engine owns the rule for a part-written word against a finished one.
+  assert.match(suggestions, /applySuggestion\(text, word\)/);
+  assert.doesNotMatch(suggestions, /replace\(\/\\S\+\$\//, "the UI must not split the text itself");
+});
+
+test("the word row is its own lane, nearest the composer", async () => {
+  const suggestions = await readText("src/suggestions.tsx");
+
+  // A word from the engine is not a saved phrase and not a sentence, so it
+  // rides the warm lane. It sits closest to the text the user is writing.
+  assert.ok(
+    suggestions.indexOf("border-chart-1/50") >
+      suggestions.indexOf("LANE[stripe.source]"),
+    "the word row must come after the sentence rows",
+  );
+});
+
+test("colour is never the only sign of where a row came from", async () => {
+  const suggestions = await readText("src/suggestions.tsx");
+  const mark = suggestions.match(/function SourceMark[\s\S]*?\n\}\n/)[0];
+
+  // Every source has a mark in the gutter, so a user who does not read colour
+  // still knows what a row is.
+  for (const source of ["code", "starter", "history", "md"]) {
+    assert.match(mark, new RegExp(`source === "${source}"`), source);
+  }
+  // The row from a model is the one without a mark.
+  assert.match(mark, /quiet baseline/);
+});
+
+test("the tiles use the sizes and the tokens of the web app", async () => {
+  const suggestions = await readText("src/suggestions.tsx");
+  const stripes = await readText("src/stripes.ts");
+  const styles = await readText("src/styles.css");
+
+  // The pixel sizes mirror `STRIPE_BASE` in the web app, and they live beside
+  // the scale that uses them.
+  assert.match(stripes, /fontPx: 16/);
+  assert.match(stripes, /minHeightPx: 46/);
+  assert.match(stripes, /punctPadXPx: 10/);
+  assert.match(suggestions, /rounded-chip/);
+  assert.match(suggestions, /rounded-control/);
+
+  // Those class names need their tokens, with the values of apps/web.
+  assert.match(styles, /--radius-chip: 0\.875rem/);
+  assert.match(styles, /--radius-control: 0\.75rem/);
+  assert.match(styles, /--chart-1: oklch\(0\.646 0\.222 41\.116\)/);
+  assert.match(styles, /--chart-2: oklch\(0\.6 0\.118 184\.704\)/);
+});
+
+test("a hover shows the words a press would take", async () => {
+  const suggestions = await readText("src/suggestions.tsx");
+
+  assert.match(suggestions, /index <= hover\.index/);
+  assert.match(suggestions, /active \? lane\.active : lane\.idle/);
 });

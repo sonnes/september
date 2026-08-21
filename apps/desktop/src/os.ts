@@ -85,6 +85,22 @@ export const synthesizeSpeech = (text: string, settings: SpeechSettings) =>
 /** The address the WebView uses to read a file that Rust wrote. */
 export const audioUrl = (path: string) => convertFileSrc(path);
 
+/**
+ * The shortcut ideas the user turned down. They never come back.
+ *
+ * The web app keeps these in the browser storage. The desktop app keeps them
+ * in a setting, beside the rest of its state.
+ */
+export const dismissedIdeas =
+  (await invoke<string[] | null>("setting_get", {
+    request: { key: "dismissed-ideas" },
+  }).catch(() => null)) ?? [];
+
+export const rememberDismissed = (texts: string[]) =>
+  invoke("setting_put", {
+    request: { key: "dismissed-ideas", value: texts },
+  }).catch(() => undefined);
+
 export type Provider = "openrouter" | "elevenlabs";
 
 /** What one cloud service reports. It never carries the key. */
