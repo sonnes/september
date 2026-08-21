@@ -18,9 +18,10 @@ import "@fontsource/noto-sans/600.css";
 import "@fontsource/noto-sans/700.css";
 
 import { OnboardingLayout } from "./app";
-import { type AppPath } from "./app-nav";
+import { openingPath, type AppPath } from "./app-nav";
+import { NotesScreen } from "./notes-screen";
 import { isSetupDone } from "./onboarding";
-import { currentSetup } from "./os";
+import { currentPath, currentSetup, savePath } from "./os";
 import {
   ConnectionScreen,
   SettingsLayout,
@@ -87,6 +88,25 @@ const talkRoute = createRoute({
   },
 });
 
+// A note is named by its slug too. Without one in the address, the note the
+// user changed last opens.
+const notesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/spaces/$slug/notes",
+  component: function Notes() {
+    return <NotesScreen slug={notesRoute.useParams().slug} />;
+  },
+});
+
+const noteRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/spaces/$slug/notes/$noteSlug",
+  component: function Note() {
+    const { slug, noteSlug } = noteRoute.useParams();
+    return <NotesScreen slug={slug} noteSlug={noteSlug} />;
+  },
+});
+
 // Settings is a layout with a section list, so a section keeps the list
 // beside it. A connection page is a child of Setup, not a section of its own.
 const settingsRoute = createRoute({
@@ -111,10 +131,10 @@ const routeTree = rootRoute.addChildren([
   createRoute({
     getParentRoute: () => rootRoute,
     path: "/",
-    // Setup runs once. After that the app opens straight into the shell.
+    // Setup runs once. After that the app opens where the user left it.
     beforeLoad: () => {
       throw redirect({
-        to: isSetupDone(currentSetup()) ? "/dashboard" : "/welcome",
+        to: isSetupDone(currentSetup()) ? openingPath(currentPath()) : "/welcome",
       });
     },
   }),
@@ -129,6 +149,8 @@ const routeTree = rootRoute.addChildren([
     screen("/dashboard"),
     spacesRoute,
     talkRoute,
+    notesRoute,
+    noteRoute,
     createRoute({
       getParentRoute: () => appRoute,
       path: "/voice",
@@ -154,6 +176,12 @@ const routeTree = rootRoute.addChildren([
 // ponytail: hash history keeps deep routes working from the Tauri asset
 // protocol without a dev-server rewrite rule.
 const router = createRouter({ routeTree, history: createHashHistory() });
+
+// The app opens where the user left it, so every arrival is kept. `onResolved`
+// runs after the route settles, so a redirect keeps only where it landed.
+router.subscribe("onResolved", ({ toLocation }) => {
+  void savePath(toLocation.pathname);
+});
 
 // One client for the app. SQLite is next to the app, so a read is cheap and
 // a stale row is not worth a background refetch.

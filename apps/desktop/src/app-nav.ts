@@ -43,6 +43,22 @@ export function navFor(path: AppPath): (typeof APP_NAV)[number] {
 }
 
 /**
+ * Where the app opens after a restart.
+ *
+ * It is the screen the user left, when that screen is one of the app. A
+ * nested screen counts, so a space and a settings section both come back.
+ * Everything else opens the dashboard: a setup step must never come back, and
+ * an address that names no screen is not a place to start.
+ */
+export function openingPath(saved: string | null): string {
+  const known = APP_NAV.some(
+    (item) => saved === item.path || saved?.startsWith(`${item.path}/`),
+  );
+
+  return known ? saved! : APP_NAV[0].path;
+}
+
+/**
  * The base design viewport: a 13-inch iPad Pro in landscape, 1376px wide. The
  * Tauri window opens at this width, so the sidebar starts as an icon rail.
  * A wider screen opens the full sidebar.

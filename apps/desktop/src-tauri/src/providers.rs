@@ -88,11 +88,33 @@ impl ProviderStatus {
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Voice {
-    #[serde(rename = "voice_id")]
+    // ElevenLabs sends `voice_id`. The screens read `id`, so the rename works
+    // on the way in only. A two-way rename gives the screen no `id` at all.
+    #[serde(rename(deserialize = "voice_id"))]
     pub id: String,
     pub name: String,
     #[serde(default)]
     pub preview_url: Option<String>,
+    /// `cloned`, `professional`, `premade`, or `similar`. It sets the order.
+    #[serde(default, skip_serializing)]
+    pub category: Option<String>,
+}
+
+/// One ElevenLabs model. It decides the quality, the speed, and the languages.
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct Model {
+    #[serde(rename(deserialize = "model_id"))]
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub description: Option<String>,
+    /// Some models only listen. The screen shows the models that speak.
+    #[serde(
+        default,
+        rename(deserialize = "can_do_text_to_speech"),
+        skip_serializing
+    )]
+    pub speaks: bool,
 }
 
 // ---------------------------------------------------------------- keychain
@@ -275,14 +297,48 @@ impl Providers {
     }
 
     pub async fn voices(&self, key: &str) -> Result<Vec<Voice>> {
+        // The web app asks the same way. `non-default` leaves out the stock
+        // voices, so the list holds the voices of this account only. The v2
+        // list counts a page with `page_size`, and gives 10 without it.
         let response = self
             .client
-            .get(format!("{}/v1/voices", self.eleven_labs))
+            .get(format!(
+                "{}/v2/voices?page_size=100&voice_type=non-default",
+                self.eleven_labs
+            ))
             .header("xi-api-key", key)
             .send()
             .await?;
         let body: VoiceList = decode(response).await?;
-        Ok(body.voices)
+
+        let mut voices = body.voices;
+        voices.sort_by_key(|voice| rank(voice.category.as_deref()));
+        Ok(voices)
+    }
+
+    /// The ElevenLabs models that can speak. A model that only listens is not
+    /// a choice the Voice screen can offer.
+    pub async fn models(&self, key: &str) -> Result<Vec<Model>> {
+        let response = self
+            .client
+            .get(format!("{}/v1/models", self.eleven_labs))
+            .header("xi-api-key", key)
+            .send()
+            .await?;
+        let models: Vec<Model> = decode(response).await?;
+        Ok(models.into_iter().filter(|model| model.speaks).collect())
+    }
+}
+
+/// The order of the web app. A voice that the user made comes first, and a
+/// stock voice comes last.
+fn rank(category: Option<&str>) -> u8 {
+    match category {
+        Some("cloned") => 1,
+        Some("professional") => 2,
+        Some("premade") => 3,
+        Some("similar") => 4,
+        _ => 5,
     }
 }
 
@@ -392,7 +448,33 @@ struct VoiceList {
 
 #[cfg(test)]
 mod tests {
-    use super::{thousands, Provider};
+    use super::{thousands, Model, Provider, Voice};
+
+    #[test]
+    fn the_screen_reads_a_voice_and_a_model_by_id() {
+        // ElevenLabs names them `voice_id` and `model_id`. The screens read
+        // `id`, so the rename must work one way only.
+        let voice: Voice = serde_json::from_value(serde_json::json!({
+            "voice_id": "v1",
+            "name": "Ravi",
+            "preview_url": null,
+        }))
+        .unwrap();
+        assert_eq!(voice.id, "v1");
+        assert_eq!(serde_json::to_value(&voice).unwrap()["id"], "v1");
+
+        let model: Model = serde_json::from_value(serde_json::json!({
+            "model_id": "eleven_turbo_v2_5",
+            "name": "Turbo v2.5",
+            "can_do_text_to_speech": true,
+        }))
+        .unwrap();
+        assert_eq!(model.id, "eleven_turbo_v2_5");
+        assert_eq!(
+            serde_json::to_value(&model).unwrap()["id"],
+            "eleven_turbo_v2_5"
+        );
+    }
 
     #[test]
     fn each_provider_owns_one_keychain_account() {

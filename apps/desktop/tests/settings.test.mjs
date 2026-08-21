@@ -4,7 +4,6 @@ import test from "node:test";
 
 import {
   CONNECTION_GUIDES,
-  modeUpdate,
   sectionFor,
   SETTINGS_NAV,
 } from "../src/settings-nav.ts";
@@ -34,27 +33,13 @@ test("Setup stays the open section while a key is added", () => {
   assert.equal(sectionFor("/settings/writing").title, "Writing help");
 });
 
-test("a mode change re-points the services and keeps the keys", () => {
-  const advanced = { writingService: "openrouter", voiceService: "elevenlabs" };
+test("the setup screen lists the services and nothing else", async () => {
+  const settings = await readText("src/settings.tsx");
 
-  // Free mode runs on this Mac, so it takes the local writer and the local
-  // voice. A Mac that cannot run the model gets no writer.
-  assert.deepEqual(modeUpdate("free", { apple: { available: true } }, advanced), {
-    mode: "free",
-    writingService: "apple",
-    voiceService: "system",
-  });
-  assert.deepEqual(modeUpdate("free", { apple: { available: false } }, advanced), {
-    mode: "free",
-    writingService: "none",
-    voiceService: "system",
-  });
-
-  // Advanced keeps the answers, so a switch back loses nothing.
-  assert.deepEqual(modeUpdate("advanced", { apple: { available: true } }, advanced), {
-    mode: "advanced",
-    ...advanced,
-  });
+  // The mode is an answer of the setup steps. This screen shows only the
+  // services, so a user changes a key here and nothing more.
+  assert.doesNotMatch(settings, /ModeCard|SETUP_MODES|SetupMode/);
+  assert.match(settings, /title="Connections"/);
 });
 
 test("each cloud service has a guide and an address", () => {

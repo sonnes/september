@@ -15,7 +15,7 @@ OpenRouter.
 | Writing help | Apple Intelligence | none | On the Mac |
 | Writing help | OpenRouter | an API key | Cloud |
 | Voice | macOS system voice | none | On the Mac |
-| Voice | ElevenLabs | an API key, then a voice | Cloud |
+| Voice | ElevenLabs | an API key, then a voice and a model | Cloud |
 
 Each job has a default that already works, so the Connect step needs no action
 on a supported Mac. Voice always has a working answer, because the system voice
@@ -57,6 +57,36 @@ for each one. See [on-device AI](on-device-ai.md).
 
 An unsupported Mac gets no disabled control. A control the user can never use
 is noise.
+
+## The voice list holds the voices of the account
+
+`GET /v2/voices?page_size=100&voice_type=non-default` gives the list. The web
+app asks the same way, so the two apps show one list.
+
+| Part | Value | Why |
+| --- | --- | --- |
+| Version | `v2` | The v1 list has no `voice_type` filter. |
+| `voice_type` | `non-default` | The stock voices are not the voices of this user. |
+| `page_size` | `100` | A page gives 10 without it. |
+
+Rust sorts the list by category, in the order of the web app: `cloned`,
+`professional`, `premade`, `similar`. The category does not reach the screen.
+
+The web app also searches the public voice library, through
+`/v1/shared-voices`. The desktop app does not. That is a different job: it adds
+a voice to an account, and the desktop app only chooses between the voices that
+an account holds.
+
+## The names cross the boundary
+
+ElevenLabs names a voice `voice_id` and a model `model_id`. The screens read
+`id`. Rust therefore renames each field on the way in only, with
+`#[serde(rename(deserialize = "..."))]`.
+
+A two-way rename sends `voice_id` to the WebView. `voice.id` is then
+`undefined` for every row, and `undefined === undefined` makes every row look
+selected. The `SpeechSettings` type has the opposite direction: the WebView
+sends it, so it uses `#[serde(rename_all = "camelCase")]`.
 
 ## The voice preview needs no key
 

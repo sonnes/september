@@ -1,9 +1,15 @@
-import { useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
 
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import {
   CircleHelp,
-  FileText,
   House,
   MessageSquare,
   Mic,
@@ -33,7 +39,6 @@ import {
   type AppPath,
 } from "./app-nav";
 import { BrandMark, BrandWordmark } from "./brand";
-import { spaceSlug } from "./spaces";
 
 const ICONS: Record<AppPath, LucideIcon> = {
   "/dashboard": House,
@@ -66,6 +71,7 @@ function useIsCompact(): boolean {
  */
 export function AppShell() {
   const isCompact = useIsCompact();
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
 
   return (
     <SidebarProvider
@@ -75,13 +81,31 @@ export function AppShell() {
       // instead of the whole shell growing past the window.
       className="h-svh"
     >
-      <AppSidebar />
-      {/* min-w-0 lets the surface shrink, so long content wraps. */}
-      <SidebarInset className="flex min-h-0 min-w-0 flex-col">
-        <Outlet />
-      </SidebarInset>
+      <RightPanelSlot.Provider value={slot}>
+        <AppSidebar />
+        {/* min-w-0 lets the surface shrink, so long content wraps. */}
+        <SidebarInset className="flex min-h-0 min-w-0 flex-col">
+          <Outlet />
+        </SidebarInset>
+        {/* `display: contents` makes the panel itself the flex child, so it
+            sits beside the inset as its own card. */}
+        <div ref={setSlot} style={{ display: "contents" }} />
+      </RightPanelSlot.Provider>
     </SidebarProvider>
   );
+}
+
+const RightPanelSlot = createContext<HTMLElement | null>(null);
+
+/**
+ * A panel that belongs beside the screen, not inside it.
+ *
+ * The inset is one white card. A panel drawn inside it would share that card,
+ * and the design gives the rail a card of its own.
+ */
+export function RightPanel({ children }: { children: ReactNode }) {
+  const slot = useContext(RightPanelSlot);
+  return slot ? createPortal(children, slot) : null;
 }
 
 function AppSidebar() {
@@ -132,47 +156,6 @@ function AppSidebar() {
       </SidebarContent>
       <SidebarRail />
     </Sidebar>
-  );
-}
-
-/**
- * The two modes of a space: Talk for one sentence now, Notes for long text.
- *
- * The tabs build their own addresses from the slug, so this stays clear of
- * the screens that use it.
- */
-export function SpaceModes({
-  title,
-  mode,
-}: {
-  title: string | null | undefined;
-  mode: "talk" | "notes";
-}) {
-  const slug = spaceSlug(title);
-  const modes = [
-    { id: "talk", label: "Talk", icon: MessageSquare, to: "/spaces/$slug/talk" },
-    { id: "notes", label: "Notes", icon: FileText, to: "/spaces/$slug/notes" },
-  ] as const;
-
-  return (
-    <nav aria-label="Space mode" className="flex shrink-0 items-center gap-1">
-      {modes.map(({ id, label, icon: Icon, to }) => (
-        <Link
-          key={id}
-          to={to}
-          params={{ slug }}
-          aria-current={id === mode ? "page" : undefined}
-          className={`focus-visible:ring-ring inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${
-            id === mode
-              ? "bg-primary text-primary-foreground border-transparent"
-              : "hover:bg-accent text-muted-foreground border-transparent"
-          }`}
-        >
-          <Icon className="size-4 shrink-0" aria-hidden />
-          {label}
-        </Link>
-      ))}
-    </nav>
   );
 }
 

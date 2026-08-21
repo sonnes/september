@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { APP_NAV, BASE_VIEWPORT_WIDTH, isCompactWidth } from "../src/app-nav.ts";
+import {
+  APP_NAV,
+  BASE_VIEWPORT_WIDTH,
+  isCompactWidth,
+  openingPath,
+} from "../src/app-nav.ts";
 import {
   decidePhraseSync,
   dedupeAgainstPinned,
@@ -33,12 +38,15 @@ import {
   isAutoTitle,
   newSpaceTitle,
   spaceFromSlug,
+  spaceModeFrom,
   spaceSlug,
+  rememberSpaceMode,
   timeAgo,
   transcriptPage,
 } from "../src/spaces.ts";
 import { buildSpaceContextPrompt, spaceDescriptionFrom } from "../src/prompts.ts";
 import {
+  appendToNote,
   markdownToVoiceText,
   noteContentUpdates,
   noteFromSlug,
@@ -264,6 +272,7 @@ test("the connect step asks by job and keeps keys out of the UI", async () => {
     "provider_connect",
     "provider_forget",
     "provider_voices",
+    "provider_models",
   ]) {
     assert.match(lib, new RegExp(`rpc::${command}\\b`), `${command} is not registered`);
     assert.match(os, new RegExp(`"${command}"`), `${command} has no bridge`);
@@ -370,6 +379,30 @@ test("every app destination has a route and an icon", async () => {
     assert.match(main, new RegExp(`"${item.path}"`), `${item.path} needs a route`);
     assert.match(shell, new RegExp(`"${item.path}":`), `${item.path} needs an icon`);
   }
+});
+
+test("the app opens where the user left it", () => {
+  assert.equal(openingPath("/voice"), "/voice");
+  assert.equal(openingPath("/spaces/amma/talk"), "/spaces/amma/talk");
+  assert.equal(openingPath("/settings/connections/openrouter"), "/settings/connections/openrouter");
+
+  // A setup step must never come back. An address of nothing is not a screen.
+  assert.equal(openingPath("/welcome"), "/dashboard");
+  assert.equal(openingPath("/"), "/dashboard");
+  assert.equal(openingPath("/spacesomething"), "/dashboard");
+  assert.equal(openingPath(null), "/dashboard");
+});
+
+test("the last screen is kept in one setting", async () => {
+  const os = await readText("src/os.ts");
+  const main = await readText("src/main.tsx");
+
+  assert.match(os, /key: "lastPath"/);
+  assert.match(os, /export function currentPath/);
+  assert.match(os, /export async function savePath/);
+  // The router keeps every arrival, and the first route reads the last one.
+  assert.match(main, /router\.subscribe\("onResolved"/);
+  assert.match(main, /openingPath\(currentPath\(\)\)/);
 });
 
 test("setup and the app are separate layouts", async () => {
@@ -703,6 +736,65 @@ test("the Talk audio selector controls the FaceTime microphone", async () => {
   assert.doesNotMatch(voice, /September Microphone/);
 });
 
+test("the Talk audio selector controls the FaceTime camera", async () => {
+  const os = await readText("src/os.ts");
+  const talk = await readText("src/talk.tsx");
+  const lib = await readText("src-tauri/src/lib.rs");
+
+  for (const command of [
+    "virtual_camera_status",
+    "virtual_camera_start",
+    "virtual_camera_stop",
+    "virtual_camera_overlay",
+  ]) {
+    assert.match(os, new RegExp(`"${command}"`), `${command} has no UI bridge`);
+    assert.match(lib, new RegExp(`rpc::${command}\\b`), `${command} is not registered`);
+  }
+
+  assert.match(talk, /<AudioSelector overlayText=\{draft\}/);
+  assert.match(talk, /September Camera/);
+  assert.match(talk, /Show this text over FaceTime video/);
+  assert.match(talk, /updateVirtualCameraOverlay\(overlayText/);
+});
+
+test("the macOS bundle embeds the camera system extension", async () => {
+  const config = await readJson("src-tauri/tauri.conf.json");
+  const script = await readText("scripts/tauri.mjs");
+  const plist = await readText("src-tauri/Info.plist");
+  const entitlements = await readText("src-tauri/September.entitlements");
+
+  assert.equal(
+    config.bundle.macOS.files[
+      "Library/SystemExtensions/SeptemberCamera.systemextension"
+    ],
+    "./camera-extension/build/Build/Products/Release/SeptemberCamera.systemextension",
+  );
+  assert.equal(config.bundle.macOS.entitlements, "September.entitlements");
+  assert.match(script, /build-camera-extension\.mjs/);
+  assert.match(plist, /NSSystemExtensionUsageDescription/);
+  assert.match(entitlements, /com\.apple\.developer\.system-extension\.install/);
+});
+
+test("the camera extension keeps capture and composition native", async () => {
+  const provider = await readText(
+    "src-tauri/camera-extension/Sources/CameraProvider.swift",
+  );
+  const overlay = await readText(
+    "src-tauri/camera-extension/Sources/OverlayState.swift",
+  );
+  const info = await readText("src-tauri/camera-extension/Info.plist");
+
+  assert.match(provider, /AVCaptureVideoDataOutput/);
+  assert.match(provider, /alwaysDiscardsLateVideoFrames\s*=\s*true/);
+  assert.match(provider, /CVPixelBufferPoolCreate/);
+  assert.match(provider, /CIContext\(\s*mtlDevice:/);
+  assert.match(provider, /cachedOverlay/);
+  assert.match(provider, /stream\.send\(/);
+  assert.match(overlay, /maxTextLength\s*=\s*4096/);
+  assert.match(info, /CMIOExtensionMachServiceName/);
+  assert.match(info, /NSCameraUsageDescription/);
+});
+
 test("the speech settings hold everything that shapes the sound", async () => {
   const speech = await readText("src/speech.ts");
   const defaults = speech.match(/DEFAULT_SPEECH[\s\S]*?\};/)[0];
@@ -710,6 +802,16 @@ test("the speech settings hold everything that shapes the sound", async () => {
   for (const key of ["provider", "voiceId", "modelId", "stability", "similarity", "speed"]) {
     assert.match(defaults, new RegExp(`\\b${key}:`), key);
   }
+});
+
+test("the Voice screen chooses the model as well as the voice", async () => {
+  const voice = await readText("src/voice.tsx");
+  const os = await readText("src/os.ts");
+
+  // A voice and a model both come from ElevenLabs, and both shape the sound.
+  assert.match(os, /export const listModels/);
+  assert.match(voice, /listModels/);
+  assert.match(voice, /modelId/);
 });
 
 test("the Voice screen keeps its choices in one setting", async () => {
@@ -894,6 +996,30 @@ test("the codes of new rows come from the app, never from the model", async () =
   const sync = await readText("src/phrase-sync.ts");
 
   assert.match(sync, /generateCode\(text, \{ existingCodes \}\)/);
+});
+
+test("the phrases panel wears the layout of the web app", async () => {
+  const panel = await readText("src/phrase-panel.tsx");
+
+  // A form adds a phrase and its code, which the panel had no way to do.
+  assert.match(panel, /aria-label="Add a phrase"/);
+  assert.match(panel, /aria-label="Code \(optional\)"/);
+  // Kept rows come first, under their own label, then the written ones.
+  assert.match(panel, /function PhraseGroup/);
+  assert.match(panel, /Suggested/);
+  // One line for one phrase, not a card: a press puts it in the composer.
+  assert.match(panel, /onInsert/);
+  // A code is a badge that opens a small field, not a field on every row.
+  assert.match(panel, /function CodeBadge/);
+  // DESIGN.md asks for a 44px target. The web app uses 36px here.
+  assert.doesNotMatch(panel, /size-9\b/);
+  assert.match(panel, /size-11/);
+});
+
+test("a phrase from the panel reaches the composer of both screens", async () => {
+  for (const file of ["src/talk.tsx", "src/notes-screen.tsx"]) {
+    assert.match(await readText(file), /onInsert=\{/, file);
+  }
 });
 
 test("a shortcut idea the user turned down is kept out for good", async () => {
@@ -1088,7 +1214,7 @@ test("the audio selector sits beside Speak and names the Mac, not the app", asyn
   assert.match(picker, /this Mac/i);
   // The picker is next to the button that makes the sound.
   assert.ok(
-    talk.indexOf("<AudioSelector") < talk.indexOf("Speak\n"),
+    talk.indexOf("<AudioSelector") < talk.indexOf('? "Speak"'),
     "the picker must come before the Speak button",
   );
 });
@@ -1150,7 +1276,7 @@ test("a note is read and written through the data module", async () => {
 });
 
 test("the note screen autosaves and speaks with the chosen voice", async () => {
-  const notes = await readText("src/notes.tsx");
+  const notes = await readText("src/notes-screen.tsx");
 
   // A user who cannot speak must never lose written words to a missed save.
   assert.match(notes, /markdownToVoiceText/);
@@ -1164,4 +1290,109 @@ test("a space opens in Talk or in Notes, and both routes exist", async () => {
 
   assert.match(main, /\/spaces\/\$slug\/notes/);
   assert.match(main, /\/spaces\/\$slug\/notes\/\$noteSlug/);
+});
+
+// ------------------------------------------------- the dock and the right rail
+
+test("a space opens in the mode it was left in", () => {
+  assert.equal(spaceModeFrom({}, "general"), "talk");
+  assert.equal(spaceModeFrom({ general: "notes" }, "general"), "notes");
+  assert.equal(spaceModeFrom({ general: "talk" }, "general"), "talk");
+  // A value that names no mode cannot open a screen that is not there.
+  assert.equal(spaceModeFrom({ general: "reel" }, "general"), "talk");
+  assert.equal(spaceModeFrom({ other: "notes" }, "general"), "talk");
+
+  assert.deepEqual(rememberSpaceMode({}, "general", "notes"), {
+    general: "notes",
+  });
+  // The mode of one space never moves the mode of another.
+  assert.deepEqual(
+    rememberSpaceMode({ work: "notes" }, "general", "talk"),
+    { work: "notes", general: "talk" },
+  );
+});
+
+test("the mode switch is in the dock, beside the spaces", async () => {
+  const talk = await readText("src/talk.tsx");
+  const shell = await readText("src/shell.tsx");
+
+  // The web app puts Talk and Notes in the dock. The desktop app does too, so
+  // a user who knows one app knows the other.
+  const dock = talk.match(/export function SpaceDock[\s\S]*?\n\}\n/)[0];
+  assert.match(dock, /ModeGroup/);
+  assert.match(dock, /ml-auto/);
+  // The header held the tabs before. It must not hold a second switch.
+  assert.doesNotMatch(shell, /SpaceModes/);
+});
+
+test("the space tabs fall back to a list when the row is full", async () => {
+  const talk = await readText("src/talk.tsx");
+  const dock = talk.match(/export function SpaceDock[\s\S]*?\n\}\n/)[0];
+
+  // A row that overflows its box no longer fits, which is the only measure
+  // that holds at every width.
+  assert.match(dock, /ResizeObserver/);
+  assert.match(dock, /scrollWidth/);
+  assert.match(dock, /DropdownMenu/);
+});
+
+test("the right rail holds the phrases, and stays where the user left it", async () => {
+  const panel = await readText("src/phrase-panel.tsx");
+  const shell = await readText("src/shell.tsx");
+
+  assert.match(panel, /PanelRail/);
+  assert.match(panel, /Panel rail/);
+  // The rail is always there. Only the card beside it opens and closes.
+  assert.match(panel, /Collapse panel/);
+  // The desktop app keeps its state in SQLite, not in the browser storage.
+  assert.doesNotMatch(panel, /localStorage/);
+  // The rail is a card of its own, beside the screen, not inside it.
+  assert.match(shell, /RightPanel/);
+});
+
+// -------------------------------------------------- the composer in Notes
+
+test("words go under the note, with a blank line between them", () => {
+  assert.equal(appendToNote("", "Ask about the ramp"), "Ask about the ramp");
+  assert.equal(appendToNote("   ", "Ask about the ramp"), "Ask about the ramp");
+  assert.equal(
+    appendToNote("# Monday", "Ask about the ramp"),
+    "# Monday\n\nAsk about the ramp",
+  );
+  // Trailing space in the note must not make three blank lines.
+  assert.equal(
+    appendToNote("# Monday\n\n", "Ask about the ramp"),
+    "# Monday\n\nAsk about the ramp",
+  );
+  // Nothing to add leaves the note as it is.
+  assert.equal(appendToNote("# Monday", "   "), "# Monday");
+});
+
+test("Notes and Talk share one composer", async () => {
+  const talk = await readText("src/talk.tsx");
+  const notes = await readText("src/notes-screen.tsx");
+
+  // A user who cannot type must reach the same word tiles, the same codes,
+  // undo, and delete last word in both modes. One component, not two.
+  assert.match(talk, /export function Composer/);
+  assert.match(talk, /<Composer/);
+  assert.match(notes, /<Composer/);
+  assert.doesNotMatch(notes, /function Composer/);
+});
+
+test("the composer adds words to the note, and does not speak them", async () => {
+  const notes = await readText("src/notes-screen.tsx");
+  const talk = await readText("src/talk.tsx");
+  const composer = talk.match(/export function Composer[\s\S]*?\n\}\n/)[0];
+
+  assert.match(notes, /mode="notes"/);
+  assert.match(notes, /appendToNote/);
+  // One console, two endings: Talk speaks the sentence, Notes files it.
+  assert.match(composer, /"Add to note"/);
+  // The sound output belongs beside the button that makes a sound. Notes
+  // makes none, so it shows no picker.
+  assert.match(
+    composer,
+    /speaks \? <AudioSelector overlayText=\{draft\} \/> : null/,
+  );
 });

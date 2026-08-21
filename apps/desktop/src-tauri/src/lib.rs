@@ -1,5 +1,6 @@
 pub mod apfel;
 pub mod audio;
+pub mod camera;
 pub mod error;
 pub mod providers;
 pub mod repository;
@@ -41,6 +42,7 @@ pub fn run() {
             rpc::provider_connect,
             rpc::provider_forget,
             rpc::provider_voices,
+            rpc::provider_models,
             rpc::speech_synthesize,
             rpc::speech_system,
             rpc::speech_file_play,
@@ -51,6 +53,10 @@ pub fn run() {
             rpc::virtual_microphone_status,
             rpc::virtual_microphone_start,
             rpc::virtual_microphone_stop,
+            rpc::virtual_camera_status,
+            rpc::virtual_camera_start,
+            rpc::virtual_camera_stop,
+            rpc::virtual_camera_overlay,
         ])
         .build(tauri::generate_context!())
         .expect("error while building September desktop")

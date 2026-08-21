@@ -7,7 +7,8 @@ use tauri::{AppHandle, Emitter, Manager, State};
 use crate::{
     apfel::{ApfelGenerateRequest, ApfelGeneration, ApfelState, ApfelStatus},
     audio::{self, AudioDevice, VirtualMicrophoneStatus},
-    providers::{self, Provider, ProviderStatus, Providers, Voice},
+    camera::{self, VirtualCameraStatus},
+    providers::{self, Model, Provider, ProviderStatus, Providers, Voice},
     repository::{Message, Note, Repository, SavedPhrase, Space, SpacePatch},
     speech::{self, SpeechSettings},
 };
@@ -56,6 +57,12 @@ pub(crate) struct PhraseReplaceRequest {
 #[derive(Deserialize)]
 pub(crate) struct AudioOutputRequest {
     uid: String,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct VirtualCameraOverlayRequest {
+    text: String,
+    visible: bool,
 }
 
 #[derive(Deserialize)]
@@ -539,6 +546,15 @@ pub(crate) async fn provider_voices() -> RpcResult<Vec<Voice>> {
     Providers::default().voices(&key).await.map_err(rpc_error)
 }
 
+/// The ElevenLabs models for the stored key. The list is empty without a key.
+#[tauri::command]
+pub(crate) async fn provider_models() -> RpcResult<Vec<Model>> {
+    let Some(key) = providers::stored(Provider::ElevenLabs).map_err(rpc_error)? else {
+        return Ok(Vec::new());
+    };
+    Providers::default().models(&key).await.map_err(rpc_error)
+}
+
 /// Keeps the first GECOS field and rejects the placeholder `whoami` supplies
 /// when the system knows no name.
 fn clean_name(raw: &str) -> String {
@@ -600,6 +616,30 @@ pub(crate) fn virtual_microphone_start() -> RpcResult<VirtualMicrophoneStatus> {
 #[tauri::command(async)]
 pub(crate) fn virtual_microphone_stop() -> RpcResult<VirtualMicrophoneStatus> {
     audio::virtual_microphone_stop()
+}
+
+/// Whether calling apps can select September Camera now.
+#[tauri::command(async)]
+pub(crate) fn virtual_camera_status() -> VirtualCameraStatus {
+    camera::status()
+}
+
+/// Asks macOS to activate the bundled camera extension.
+#[tauri::command(async)]
+pub(crate) fn virtual_camera_start() -> RpcResult<VirtualCameraStatus> {
+    camera::start()
+}
+
+/// Asks macOS to deactivate the bundled camera extension.
+#[tauri::command(async)]
+pub(crate) fn virtual_camera_stop() -> RpcResult<VirtualCameraStatus> {
+    camera::stop()
+}
+
+/// Sends text state to the camera without moving a video frame through Tauri.
+#[tauri::command(async)]
+pub(crate) fn virtual_camera_overlay(request: VirtualCameraOverlayRequest) -> RpcResult<()> {
+    camera::set_overlay(&request.text, request.visible)
 }
 
 type RpcResult<T> = std::result::Result<T, String>;

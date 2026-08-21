@@ -6,14 +6,23 @@ import { Play, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 
 import { navFor } from "./app-nav";
 import {
+  listModels,
   listVoices,
   readConnections,
   saveSpeech,
+  type Model,
   type Voice,
 } from "./os";
 import { play } from "./player";
@@ -65,6 +74,7 @@ const SLIDERS = [
 export function VoiceScreen() {
   const [settings, setSettings] = useState<SpeechSettings>(speechSettings);
   const [voices, setVoices] = useState<Voice[] | null>(null);
+  const [models, setModels] = useState<Model[] | null>(null);
   const [connected, setConnected] = useState<boolean | null>(null);
 
   // Every change is kept. There is no Save button to forget.
@@ -85,9 +95,13 @@ export function VoiceScreen() {
     void listVoices()
       .then(setVoices)
       .catch(() => setVoices([]));
+    void listModels()
+      .then(setModels)
+      .catch(() => setModels([]));
   }, [settings.provider]);
 
   const cloud = settings.provider === "elevenlabs";
+  const model = models?.find((option) => option.id === settings.modelId);
 
   return (
     <Screen
@@ -174,6 +188,44 @@ export function VoiceScreen() {
                 </li>
               ))}
             </ul>
+          )}
+        </section>
+      ) : null}
+
+      {cloud ? (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold">Which model</h2>
+          {models === null ? (
+            <Skeleton className="h-11 w-full max-w-md" />
+          ) : models.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              No models came back from ElevenLabs.
+            </p>
+          ) : (
+            <>
+              <Select
+                value={settings.modelId}
+                onValueChange={(modelId) => change({ modelId })}
+              >
+                <SelectTrigger aria-label="Model" className="h-11 w-full max-w-md">
+                  <SelectValue placeholder="Pick a model" />
+                </SelectTrigger>
+                <SelectContent>
+                  {models.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {/* A model name says little. The service supplies the sentence
+                  that tells a user what the choice costs and gives. */}
+              {model?.description ? (
+                <p className="text-muted-foreground max-w-md text-sm">
+                  {model.description}
+                </p>
+              ) : null}
+            </>
           )}
         </section>
       ) : null}

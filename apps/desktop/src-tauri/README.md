@@ -258,6 +258,36 @@ The bridge also removes a stale aggregate device during application startup.
 This cleanup handles an earlier process that ended before normal shutdown.
 The feature requires macOS 26 or later and does not install a system driver.
 
+## Publish the virtual camera
+
+The macOS bundle embeds a Core Media I/O system extension at
+`Contents/Library/SystemExtensions/SeptemberCamera.systemextension`. The host
+activates it through the System Extensions framework.
+
+| Command | Request | Response |
+| --- | --- | --- |
+| `virtual_camera_status` | none | `{ active, pending, name, uid, detail }` |
+| `virtual_camera_start` | none | `{ active, pending, name, uid, detail }` |
+| `virtual_camera_stop` | none | `{ active, pending, name, uid, detail }` |
+| `virtual_camera_overlay` | `{ text, visible }` | none |
+
+The extension captures a physical camera at 1280×720 and 30 frames per second.
+It discards late capture frames and composites with a Metal-backed Core Image
+context into buffers from one `CVPixelBufferPool`.
+
+The overlay command sets one custom Core Media I/O property. The extension
+shapes a new Core Text image when the words change and reuses that image for
+later frames. Video buffers never cross the Tauri command boundary.
+
+The extension starts its `AVCaptureSession` when the first camera client starts
+the source stream. It stops capture when the final client stops the stream.
+
+`scripts/build-camera-extension.mjs` runs the Xcode target before a Tauri bundle
+build. Set `APPLE_TEAM_ID` and `APPLE_SIGNING_IDENTITY` to sign the extension.
+An unsigned build can compile and package the extension, but macOS will not
+activate it. The installed host must reside in `/Applications` and carry the
+system-extension install entitlement.
+
 ## Use the apfel API
 
 The backend exposes `apfel_status` and `apfel_generate`. Both commands start

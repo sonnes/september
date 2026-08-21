@@ -75,6 +75,32 @@ export async function updateSetup(
   return saved;
 }
 
+/**
+ * The screen the user left last.
+ *
+ * ponytail: one more read before React mounts, beside `setup`, so the router
+ * picks the first route with no async guard. Without it the app paints the
+ * dashboard first, and then moves.
+ */
+let lastPath = await invoke<string | null>("setting_get", {
+  request: { key: "lastPath" },
+}).catch(() => null);
+
+export function currentPath(): string | null {
+  return lastPath;
+}
+
+/** Keeps the screen the user is on. The router calls this on each arrival. */
+export async function savePath(path: string): Promise<void> {
+  // One screen can resolve twice. A write that changes nothing is not worth a
+  // trip to SQLite.
+  if (path === lastPath) return;
+  lastPath = path;
+  await invoke("setting_put", {
+    request: { key: "lastPath", value: path },
+  }).catch(() => undefined);
+}
+
 /** Opens an address in the browser of the Mac, not in the app window. */
 export const openInBrowser = (url: string) => open(url);
 
@@ -139,6 +165,33 @@ export const rememberDismissed = (texts: string[]) =>
     request: { key: "dismissed-ideas", value: texts },
   }).catch(() => undefined);
 
+/**
+ * The mode each space was left in, by slug, and whether the right card is
+ * open.
+ *
+ * Both are answers the user gave once. September keeps them beside the rest
+ * of its state, so a new install of the WebView cannot lose them.
+ */
+export const spaceModes =
+  (await invoke<Record<string, string> | null>("setting_get", {
+    request: { key: "space-modes" },
+  }).catch(() => null)) ?? {};
+
+export const rememberModes = (modes: Record<string, string>) =>
+  invoke("setting_put", {
+    request: { key: "space-modes", value: modes },
+  }).catch(() => undefined);
+
+export const panelOpen =
+  (await invoke<boolean | null>("setting_get", {
+    request: { key: "panel-open" },
+  }).catch(() => null)) ?? false;
+
+export const rememberPanel = (open: boolean) =>
+  invoke("setting_put", {
+    request: { key: "panel-open", value: open },
+  }).catch(() => undefined);
+
 export type Provider = "openrouter" | "elevenlabs";
 
 /** What one cloud service reports. It never carries the key. */
@@ -159,6 +212,13 @@ export interface Voice {
   id: string;
   name: string;
   preview_url: string | null;
+}
+
+/** One ElevenLabs model. It decides the quality, the speed, and the languages. */
+export interface Model {
+  id: string;
+  name: string;
+  description: string | null;
 }
 
 export interface Connections {
@@ -206,6 +266,8 @@ export const forgetProvider = (provider: Provider) =>
 
 export const listVoices = () => invoke<Voice[]>("provider_voices");
 
+export const listModels = () => invoke<Model[]>("provider_models");
+
 
 // ------------------------------------------------------ where sound comes out
 
@@ -251,3 +313,29 @@ export const startVirtualMicrophone = () =>
 /** Removes the system input. */
 export const stopVirtualMicrophone = () =>
   invoke<VirtualMicrophoneStatus>("virtual_microphone_stop");
+
+// ------------------------------------------------------ show text in calls
+
+export interface VirtualCameraStatus {
+  active: boolean;
+  pending: boolean;
+  name: string;
+  uid: string;
+  detail: string | null;
+}
+
+/** Whether calling apps can select September Camera now. */
+export const virtualCameraStatus = () =>
+  invoke<VirtualCameraStatus>("virtual_camera_status");
+
+/** Asks macOS to activate the camera extension bundled with September. */
+export const startVirtualCamera = () =>
+  invoke<VirtualCameraStatus>("virtual_camera_start");
+
+/** Asks macOS to deactivate the camera extension. */
+export const stopVirtualCamera = () =>
+  invoke<VirtualCameraStatus>("virtual_camera_stop");
+
+/** Sends only text state to the extension. Camera frames stay native. */
+export const updateVirtualCameraOverlay = (text: string, visible = true) =>
+  invoke<void>("virtual_camera_overlay", { request: { text, visible } });

@@ -142,26 +142,32 @@ async fn an_empty_eleven_labs_quota_is_an_error() {
 }
 
 #[tokio::test]
-async fn the_voice_list_keeps_the_preview_url() {
+async fn the_voice_list_asks_the_way_the_web_app_asks() {
     let (base, requests) = serve_once(
         "200 OK",
         json!({ "voices": [
-            { "voice_id": "21m", "name": "Rachel", "preview_url": "https://storage.googleapis.com/rachel.mp3" },
-            { "voice_id": "AZn", "name": "River" }
+            { "voice_id": "21m", "name": "Rachel", "category": "premade", "preview_url": "https://storage.googleapis.com/rachel.mp3" },
+            { "voice_id": "AZn", "name": "River", "category": "cloned" }
         ] }),
     );
 
     let voices = eleven_labs(&base).voices("xi-test").await.unwrap();
 
+    // The web app asks the v2 list, and leaves out the stock voices.
     let head = requests.recv().unwrap();
-    assert!(head.contains("GET /v1/voices"), "{head}");
+    assert!(head.contains("GET /v2/voices"), "{head}");
+    assert!(head.contains("voice_type=non-default"), "{head}");
+    assert!(head.contains("page_size=100"), "{head}");
+
+    // A voice that the user made comes before a stock voice.
     assert_eq!(voices.len(), 2);
-    assert_eq!(voices[0].name, "Rachel");
+    assert_eq!(voices[0].name, "River");
+    assert_eq!(voices[1].name, "Rachel");
+    assert_eq!(voices[0].preview_url, None);
     assert_eq!(
-        voices[0].preview_url.as_deref(),
+        voices[1].preview_url.as_deref(),
         Some("https://storage.googleapis.com/rachel.mp3")
     );
-    assert_eq!(voices[1].preview_url, None);
 }
 
 #[tokio::test]

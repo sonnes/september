@@ -5,6 +5,8 @@
 @theme inline {
   --font-sans: "Noto Sans", system-ui, sans-serif;
   --font-brand: "Lexend", sans-serif;
+  /* The note and section title of DESIGN.md. 17px has no native step. */
+  --text-title: 1.0625rem;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

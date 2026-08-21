@@ -7,14 +7,11 @@
  * Account needs an account. Voice already has its own screen, `/voice`.
  */
 
-import type { Connections } from "./os";
-import type { OnboardingDraft, SetupMode } from "./onboarding";
-
 export const SETTINGS_NAV = [
   {
     path: "/settings",
     title: "Setup",
-    description: "How September runs, and its connections.",
+    description: "The services September uses, and their keys.",
   },
   {
     path: "/settings/writing",
@@ -36,28 +33,6 @@ export function sectionFor(pathname: string): (typeof SETTINGS_NAV)[number] {
       (item) => item.path !== "/settings" && pathname.startsWith(item.path),
     ) ?? SETTINGS_NAV[0]
   );
-}
-
-/**
- * The setup answers a mode change implies.
- *
- * Free mode runs on this Mac, so it takes the local writer and the local
- * voice. Advanced keeps every answer, so a switch back loses nothing. Neither
- * one erases a key: a key lives in the Keychain, and a mode is not a reason
- * to forget it.
- */
-export function modeUpdate(
-  mode: SetupMode,
-  connections: { apple: Pick<Connections["apple"], "available"> },
-  current: Pick<OnboardingDraft, "writingService" | "voiceService">,
-): Pick<OnboardingDraft, "mode" | "writingService" | "voiceService"> {
-  if (mode === "advanced") return { mode, ...current };
-
-  return {
-    mode,
-    writingService: connections.apple.available ? "apple" : "none",
-    voiceService: "system",
-  };
 }
 
 /** How to get a key, in the words of the user. The addresses match the web app. */

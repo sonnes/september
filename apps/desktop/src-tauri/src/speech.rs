@@ -15,7 +15,10 @@ use crate::providers::{self, Provider, Providers};
 type Result<T> = std::result::Result<T, String>;
 
 /// Everything that shapes the sound of one sentence.
+///
+/// The WebView sends these fields, so the names are the names of the screen.
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SpeechSettings {
     pub provider: String,
     pub voice_id: Option<String>,
@@ -96,6 +99,24 @@ mod tests {
             similarity: 0.75,
             speed: 1.0,
         }
+    }
+
+    #[test]
+    fn the_settings_of_the_screen_arrive_whole() {
+        // The Voice screen sends the fields of `SpeechSettings` in TypeScript.
+        // A name that does not match makes every cloud sentence fail.
+        let sent = serde_json::json!({
+            "provider": "elevenlabs",
+            "voiceId": "voice-1",
+            "modelId": "eleven_turbo_v2_5",
+            "stability": 0.5,
+            "similarity": 0.75,
+            "speed": 1.0,
+        });
+        let settings: SpeechSettings = serde_json::from_value(sent).unwrap();
+
+        assert_eq!(settings.voice_id.as_deref(), Some("voice-1"));
+        assert_eq!(settings.model_id, "eleven_turbo_v2_5");
     }
 
     #[test]

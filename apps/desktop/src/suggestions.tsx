@@ -96,6 +96,7 @@ export function Suggestions({
   spaceId,
   context,
   text,
+  history: given,
   onTake,
   onSpeak,
   onPin,
@@ -103,6 +104,8 @@ export function Suggestions({
   spaceId: string;
   context: string;
   text: string;
+  /** The words the engine reads. Notes gives it the note, not the messages. */
+  history?: string[];
   onTake: (next: string) => void;
   onSpeak: (sentence: string) => void;
   onPin: (phrase: string) => void;
@@ -115,10 +118,11 @@ export function Suggestions({
 
   const history = useMemo(
     () =>
+      given ??
       (messages ?? [])
         .filter((message) => message.type === "user")
         .map((message) => message.text),
-    [messages],
+    [given, messages],
   );
 
   // The word engine answers from the words of the user, with no service and

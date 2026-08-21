@@ -41,4 +41,33 @@ so both renderers compute the same sequence. The colour is chosen per export
 from six Tailwind pairs (default `stone`) in the reel export panel and applies to
 both the story player and the MP4; it is not persisted.
 
+## The desktop app
+
+The desktop app ports the core of this concept, and not the whole of it.
+
+Notes live in the SQLite `notes` table, which cascades from `spaces`. The four
+Rust commands `note_list`, `note_get`, `note_put`, and `note_delete` are the
+only way in. `src/data.ts` holds the hooks; no screen calls `invoke`.
+
+The desktop writing surface is a plain text field, not the rich editor. Both
+apps keep markdown in the same `content` column, so a row written by one app
+reads correctly in the other. The desktop screen has no toolbar.
+
+Notes keeps the console of Talk, as the web app does: the note tabs, the word
+tiles, the field, undo, delete last word, clear, and **Add to note**. The
+composed words go under the note after a blank line. The note editor above it
+is the second way in, for a user who can type.
+
+A note saves 600 ms after the last keystroke, and again when the screen closes
+with words unsaved. The first save names the note from its first six words.
+Voice-over uses the same voice as Talk and writes no message.
+
+The desktop routes are `/spaces/$slug/notes` and
+`/spaces/$slug/notes/$noteSlug`. Two tabs in the header move between Talk and
+Notes, in place of the bottom-dock mode row of the web app. The desktop app
+does not remember the last mode of each space.
+
+Reel export, the story player, the slide presentation, the file upload, and
+the audio download are not in the desktop app.
+
 Deleting a space cascades its messages, saved phrases, and scoped notes.

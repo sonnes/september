@@ -14,13 +14,16 @@ section under Writing help, and that is where the speaking style and the
 personal words live. There is no Account section and no "Run setup again"
 action.
 
-## The mode rule moved into the screen
+## The Setup screen shows only the services
 
-The plan gave `modeUpdate(mode, connections, current)` in
-`src/settings-nav.ts`. The function is there, and a test reads it. The Setup
-screen does not call it: the same three lines are inline in `choose()`, because
-the screen already holds the connections and the setup. Call the function from
-the screen if a third caller appears.
+The plan gave the Setup screen the mode cards and the connections. The mode
+cards are removed: the setup steps ask how September runs, and one answer in
+two places lets the two disagree. The screen now shows only the connections.
+
+This also removed `modeUpdate(mode, connections, current)` from
+`src/settings-nav.ts`. Nothing called it — the Setup screen had the same three
+lines inline — and with no mode control in settings there is no caller left.
+`src/steps.tsx` writes the mode straight into the draft.
 
 ## The connections list has no spend
 

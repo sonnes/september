@@ -12,6 +12,10 @@ if (usesApfel) {
   run("node", ["scripts/prepare-apfel.mjs"]);
 }
 
+if (mode === "build" && process.platform === "darwin") {
+  run("node", ["scripts/build-camera-extension.mjs"]);
+}
+
 const args = [mode];
 if (usesApfel) {
   args.push("--config", "src-tauri/tauri.apfel.conf.json");

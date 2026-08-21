@@ -15,7 +15,7 @@ never wears the app sidebar, and an app screen never wears the setup sidebar.
 | Layout      | Component                     | Routes                                             |
 | ----------- | ----------------------------- | -------------------------------------------------- |
 | Setup       | `OnboardingLayout`, `app.tsx` | `/welcome` `/profile` `/mode` `/connect` `/finish`  |
-| Application | `AppShell`, `shell.tsx`       | `/dashboard` `/spaces` `/spaces/$slug/talk` `/voice` `/help` `/settings` `/settings/writing` `/settings/connections/$provider` |
+| Application | `AppShell`, `shell.tsx`       | `/dashboard` `/spaces` `/spaces/$slug/talk` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/voice` `/help` `/settings` `/settings/writing` `/settings/connections/$provider` |
 
 `AppShell` is the shadcn `Sidebar` and `SidebarInset` pair: a solid indigo
 sidebar beside a white inset card. `src/app-nav.ts` lists the destinations and
@@ -28,8 +28,15 @@ rail. A wider screen opens the full sidebar. Command-B toggles it, and that
 choice holds until the width crosses the baseline again.
 
 Setup runs one time. The last step keeps its answers in the `setup` setting,
-then opens `/dashboard`. After that, `/` opens `/dashboard` directly, and the
-setup flow does not show again.
+then opens `/dashboard`. After that, `/` opens the screen the user left, and
+the setup flow does not show again.
+
+The app comes back where it was. The router keeps each arrival in the
+`lastPath` setting, and `/` reads it. `openingPath` in `src/app-nav.ts` owns
+the rule, and answers with a path from `APP_NAV` or a child of one. Everything
+else opens `/dashboard`: a setup step must never come back, and an address that
+names no screen is not a place to start. A space that the user erased opens the
+space list, because the Talk screen sends a stale slug there.
 
 `isSetupDone` in `src/onboarding.ts` owns that rule: setup is done when it
 holds a name and a mode. The app layout reads the same rule, so an app screen
@@ -71,7 +78,10 @@ The Talk screen has three parts, from the top:
 2. The composer. It has the text field, undo, delete last word, clear, the
    audio selector, and Speak. The Enter key speaks. Shift and Enter make a new
    line.
-3. The dock. It has one tab for each space, and a button that makes a new one.
+3. The dock. It holds the spaces on the left and the mode switch on the right,
+   with a wide gap between them, so a press meant for a mode cannot land on a
+   space. When the space tabs no longer fit the row, they become one button
+   that opens a list.
 
 `src/spaces.ts` owns the rules that a test can read: the slug, the page, the
 unique title, and the word that delete removes.
@@ -102,6 +112,83 @@ visible on a Mac with one output so the microphone control stays available.
 do this job: WKWebView holds `setSinkId`, but `navigator.mediaDevices` lists no
 output device until the user grants the microphone, and September must not ask
 for a microphone to name a speaker.
+
+## Write a note
+
+A space has two modes. Talk is for one sentence, said now. Notes is for long
+text that the user writes over minutes or days, and hears back later.
+
+`/spaces/$slug/notes` opens the note the user changed last.
+`/spaces/$slug/notes/$noteSlug` opens one note by name. The mode switch in the
+dock moves between the two, and a space tab keeps the mode the user is in.
+
+September keeps the mode of each space, by slug, in the `space-modes` setting.
+The space list opens each space the way the user left it. A new space starts
+in Talk.
+
+The screen has the same parts as Talk, from the top:
+
+1. The title. A note with no title of its own shows `Untitled note`.
+2. The note. A plain text field that holds markdown.
+3. The console. The note tabs, the word tiles, the field, undo, delete last
+   word, clear, and **Add to note**.
+4. The dock. The same one that Talk has.
+
+`Composer` in `src/talk.tsx` is that console, and both modes use it. A user who
+cannot type reaches a sentence through the word tiles, the phrase codes, undo,
+and delete last word. Notes needs every one of them as much as Talk does, so
+there is one console, not two. Only the end differs: Talk speaks the sentence,
+Notes puts it under the note after a blank line. Notes shows no sound output,
+because it makes no sound.
+
+The word engine reads the note in Notes mode, not the spoken messages, so the
+words it offers follow what the user is writing.
+
+The note itself saves 600 ms after the last keystroke, and again when the user
+leaves with words unsaved. There is no Save button, because a user who types
+slowly must never lose words to a button they did not press.
+
+The note has two writers: the field and the console. The field takes the new
+text whenever it holds nothing unsaved, so words added from the console show
+at once and are never written over.
+
+The first save gives the note a name, from its first six words. A name the
+user typed is never replaced. A new name makes a new slug, so the address
+moves with it.
+
+Voice-over reads the note aloud in the chosen voice. It removes the markup
+first, so a voice says `Monday`, not `# Monday`. It writes no message, and the
+transcript of the space does not change.
+
+Delete asks first, in a dialog with a red button.
+
+`src/notes.ts` owns the rules that a test can read: the name from the words,
+the slug, and the text a voice says. `src/notes-screen.tsx` holds the screen.
+The two files cannot share one name, because `./notes` would then name both.
+
+`src/data.ts` reads and writes a note through `note_list`, `note_get`,
+`note_put`, and `note_delete`. `note_put` writes one complete row, so
+`useUpdateNote` reads the row first and changes only the fields it carries.
+Deleting a space deletes its notes, in the same transaction as its messages.
+
+The desktop note is a plain text field, not the rich editor of the web app.
+Both apps keep markdown in the same `content` column, so the rows stay the
+same. Reel export and the slide presentation are not ported.
+
+### The right rail
+
+A rail of icons stands at the right of both modes, in a card of its own beside
+the screen. It holds one button: Phrases. A press opens a 320px card with the
+phrases of the space and the shortcut ideas from repeated messages.
+
+Escape closes the card and leaves the rail. September keeps the answer in the
+`panel-open` setting, so the card opens the same way next time.
+
+`src/phrase-panel.tsx` holds the rail and the card. `RightPanel` in
+`src/shell.tsx` puts them beside the screen: the shell renders a slot as a
+sibling of the inset, and the rail goes through it. A rail drawn inside the
+screen would share the one white card of the inset, and the design gives the
+rail a card of its own.
 
 ## Offer the next word
 
@@ -171,11 +258,20 @@ after six more. `phrase_replace_ai` erases only the rows that are not pinned,
 in one transaction, so a phrase the user relies on cannot be lost. The first
 space starts with three pinned phrases, so the rows are never empty.
 
-The header of the Talk screen opens the Phrases panel. It lists the phrases of
-the space, and it takes a code for each one. Below them are shortcut ideas:
-words the user typed five or more times, with a code ready. `mineShortcuts`
-counts them locally, with no model, so they work in privacy mode. An idea the
-user turns down is kept in a setting and never comes back.
+The right rail of a space opens the Phrases panel. It wears the layout of the
+web app: one line for one phrase, the kept rows above the written ones, and a
+form above them both that adds a phrase and its code. A press on a phrase puts
+it in the composer. A code shows as a badge, and the badge opens a small field
+that Enter keeps and Escape leaves.
+
+Below the rows are shortcut ideas: words the user typed five or more times,
+with a code ready. `mineShortcuts` counts them locally, with no model, so they
+work in privacy mode. An idea the user turns down is kept in a setting and
+never comes back.
+
+One thing does not match the web app. Each control of a row is 44px, where the
+web app uses 36px. `DESIGN.md` asks for 44px, and a user of September points
+with less accuracy than a user of a browser.
 
 Nearest the composer is the word row. It offers the next word, or the endings
 of the word that the user started. The engine in `src/autocomplete/` learns
@@ -243,11 +339,15 @@ erases the old files yet.
 A message keeps no path to a file. The name is the index, so a message spoken
 with an old voice plays with the voice of today.
 
-The `/voice` screen holds the choices: the service, the voice, and three
-sliders for speed, steadiness, and likeness. Each change is kept at once, in
-the `speech` setting. **Try it** speaks one short sentence, so the user hears a
-change before a real message. A voice sample plays from a public address, so it
-needs no key.
+The `/voice` screen holds the choices: the service, the voice, the model, and
+three sliders for speed, steadiness, and likeness. Each change is kept at once,
+in the `speech` setting. **Try it** speaks one short sentence, so the user hears
+a change before a real message. A voice sample plays from a public address, so
+it needs no key.
+
+The model decides the quality, the speed, and the languages. `provider_models`
+reads the list from ElevenLabs and keeps the models that speak. The screen shows
+the name of each one, and the sentence that the service gives about it.
 
 ### Use the voice in FaceTime
 
@@ -264,6 +364,28 @@ input. The input exists only while September runs and the control is on.
 September removes the input when it quits. The next start also removes a stale
 input that remained after an unexpected exit. This feature requires macOS 26
 or later and does not install an audio driver.
+
+### Show Talk text in FaceTime
+
+The same Talk audio selector can install `September Camera`. This camera shows
+the physical camera feed with the current composer text over it.
+
+1. Install a signed September build in `/Applications` and open it.
+2. Open Talk and open the audio selector beside **Speak**.
+3. Turn on **September Camera** and approve the system extension when macOS asks.
+4. Allow camera access.
+5. Open FaceTime and select **September Camera** from the Video menu.
+6. Write in the Talk composer. The camera overlay changes with the words.
+
+The extension captures and composites at 1280×720 and 30 frames per second.
+The WebView sends only text state, so video frames stay in the native camera
+process. Clearing the composer removes the text box from the feed.
+
+`pnpm tauri:build` compiles the camera extension before it builds the app. Set
+`APPLE_TEAM_ID` and `APPLE_SIGNING_IDENTITY` to create an activatable build.
+Without both values, the extension still compiles for local checks but remains
+unsigned. `pnpm tauri:dev` cannot activate it because the development process
+does not run from an installed application bundle.
 
 ## Walk through setup
 
@@ -302,8 +424,21 @@ An API key goes to the macOS Keychain, through Rust. The React code sends a key
 one time and reads back a status. No key enters the draft, SQLite, an event, or
 the browser storage. `src/os.ts` holds the only calls to Rust.
 
+The voice list comes from `GET /v2/voices`, with `voice_type=non-default` and
+`page_size=100`. The web app asks the same way. The filter leaves out the stock
+ElevenLabs voices, so the list holds the voices of this account only. A page
+gives 10 voices without `page_size`.
+
+The order is the order of the web app: a cloned voice first, then a
+professional voice, then a stock voice, then a similar voice. Rust sorts the
+list, and the category never reaches the screen.
+
 The ElevenLabs voice list carries a public sample for each voice. The preview
 button plays that sample, so it needs no key and no speech call.
+
+The screens read a voice and a model by `id`. ElevenLabs names them `voice_id`
+and `model_id`, so Rust renames each one on the way in only. A two-way rename
+gives the screen no `id`, and every row then looks selected.
 
 ## Change a setting
 
@@ -312,7 +447,7 @@ section list beside the open section, ported from the web app.
 
 | Section | Route | Holds |
 | --- | --- | --- |
-| Setup | `/settings` | The mode cards, and the state of each service |
+| Setup | `/settings` | The state of each service, and its key |
 | Writing help | `/settings/writing` | Who writes, and what the model knows about you |
 
 The web app has three more sections. Listening needs a transcription backend,
@@ -336,8 +471,8 @@ Every change is kept at once, as `/voice` does. There is no Save button to
 forget. A text field waits half a second after the last keystroke, so one
 sentence is one write.
 
-A mode change re-points the services. Free mode takes the writer and the voice
-of this Mac. Advanced keeps every answer. Neither one erases a key.
+The setup steps ask how September runs. Settings does not ask again, because
+one answer in two places lets the two disagree.
 
 The speaking style and the personal words go to the writing service as its
 user context. `userContext()` in `src/ai.ts` assembles them.

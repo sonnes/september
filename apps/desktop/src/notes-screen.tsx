@@ -19,22 +19,33 @@ import {
   useCreateNote,
   useDeleteNote,
   useNotes,
+  usePhrases,
+  usePutPhrase,
   useSpaces,
   useUpdateNote,
   type Note,
   type Space,
 } from "./data";
 import {
+  appendToNote,
   markdownToVoiceText,
   noteContentUpdates,
   noteFromSlug,
   noteSlug,
   UNTITLED_NOTE,
 } from "./notes";
-import { ScreenHeader, SpaceModes } from "./shell";
-import { spaceFromSlug } from "./spaces";
+import { PanelRail } from "./phrase-panel";
+import { RightPanel, ScreenHeader } from "./shell";
+import { generateCode } from "./phrases";
+import { spaceFromSlug, spaceSlug } from "./spaces";
 import { speak, stopSpeaking, useSpeaking } from "./speech";
-import { SpaceDock, SpaceTitle } from "./talk";
+import {
+  Composer,
+  spaceParams,
+  SpaceDock,
+  SpaceTitle,
+  useRememberMode,
+} from "./talk";
 
 /** How long the screen waits after the last keystroke before it saves. */
 const SAVE_DELAY_MS = 600;
@@ -78,6 +89,11 @@ function Notes({
   const navigate = useNavigate();
   const { data: notes, error } = useNotes(space.id);
   const create = useCreateNote(space.id);
+  const update = useUpdateNote(space.id);
+  const { data: phrases } = usePhrases(space.id);
+  const putPhrase = usePutPhrase();
+  const [draft, setDraft] = useState("");
+  useRememberMode(space, "notes");
   const remove = useDeleteNote(space.id);
 
   const rows = notes ?? [];
@@ -89,16 +105,74 @@ function Notes({
   const open = (row: Note) =>
     navigate({
       to: "/spaces/$slug/notes/$noteSlug",
-      params: { slug: noteSlugParams(space), noteSlug: noteSlug(row.name) },
+      params: { slug: spaceSlug(space.title), noteSlug: noteSlug(row.name) },
     });
 
   const add = () => create.mutateAsync().then(open);
+
+  /**
+   * Puts the composed words under the note.
+   *
+   * A space with no note yet gets one, so the words are never turned away for
+   * want of a note the user has not made.
+   */
+  const put = (words: string) => {
+    const written = note
+      ? update.mutateAsync({
+          id: note.id,
+          ...noteContentUpdates(note.name, appendToNote(note.content, words)),
+        })
+      : create.mutateAsync().then((made) =>
+          update.mutateAsync({
+            id: made.id,
+            ...noteContentUpdates(undefined, words),
+          }),
+        );
+
+    void written.then((saved) => {
+      setDraft("");
+      if (saved.name && noteSlug(saved.name) !== wanted) {
+        navigate({
+          to: "/spaces/$slug/notes/$noteSlug",
+          params: {
+            slug: spaceSlug(space.title),
+            noteSlug: noteSlug(saved.name),
+          },
+          replace: true,
+        });
+      }
+    });
+  };
+
+  /** Keeps a row of the stripe, so a regeneration cannot take it away. */
+  const keep = (text: string) => {
+    if (phrases?.some((row) => row.text.toLowerCase() === text.toLowerCase())) {
+      return;
+    }
+    const at = Date.now();
+    putPhrase.mutate({
+      id: crypto.randomUUID(),
+      space_id: space.id,
+      text,
+      kind: "phrase",
+      code: generateCode(
+        text,
+        {
+          existingCodes: (phrases ?? [])
+            .map((row) => row.code)
+            .filter((code): code is string => Boolean(code)),
+        },
+      ),
+      pinned: true,
+      created_at: at,
+      updated_at: at,
+    });
+  };
 
   return (
     <>
       <ScreenHeader>
         <SpaceTitle space={space} mode="notes" />
-        <SpaceModes title={space.title} mode="notes" />
         {note ? <VoiceOver note={note} /> : null}
         {note ? (
           <Button
@@ -122,7 +196,7 @@ function Notes({
             .then(() =>
               navigate({
                 to: "/spaces/$slug/notes",
-                params: { slug: noteSlugParams(space) },
+                params: { slug: spaceSlug(space.title) },
                 replace: true,
               }),
             )
@@ -147,7 +221,7 @@ function Notes({
                 navigate({
                   to: "/spaces/$slug/notes/$noteSlug",
                   params: {
-                    slug: noteSlugParams(space),
+                    slug: spaceSlug(space.title),
                     noteSlug: noteSlug(name),
                   },
                   replace: true,
@@ -159,31 +233,52 @@ function Notes({
           )}
 
           {rows.length > 0 ? (
-            <NoteTabs
-              notes={rows}
-              current={note}
-              onOpen={open}
-              onCreate={add}
-              isCreating={create.isPending}
+            <Composer
+              mode="notes"
+              spaceId={space.id}
+              context={space.context ?? ""}
+              draft={draft}
+              onDraft={setDraft}
+              onAction={put}
+              onPin={keep}
+              pending={update.isPending}
+              // The engine reads the note, not the spoken messages, so the
+              // words it offers follow what the user is writing here.
+              history={note ? [note.content] : []}
+              before={
+                <NoteTabs
+                  notes={rows}
+                  current={note}
+                  onOpen={open}
+                  onCreate={add}
+                  isCreating={create.isPending}
+                />
+              }
             />
           ) : null}
         </div>
 
-        <SpaceDock current={space} spaces={spaces} mode="notes" />
+        <SpaceDock
+          current={space}
+          spaces={spaces}
+          mode="notes"
+          onMode={(next) => navigate(spaceParams(space, next))}
+        />
       </div>
+
+      <RightPanel>
+        <PanelRail
+          spaceId={space.id}
+          onInsert={(text) =>
+            setDraft((current) =>
+              !current || /\s$/.test(current) ? current + text : `${current} ${text}`,
+            )
+          }
+        />
+      </RightPanel>
     </>
   );
 }
-
-/** The slug of the space, for the note routes. */
-const noteSlugParams = (space: Space) =>
-  noteSlug(space.title) === "note" ? "space" : slugOf(space);
-
-const slugOf = (space: Space) =>
-  (space.title ?? "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "space";
 
 function Empty({
   onCreate,
@@ -228,20 +323,43 @@ function NoteEditor({
   const update = useUpdateNote(spaceId);
   const [name, setName] = useState(note.name ?? "");
   const [content, setContent] = useState(note.content);
+  const [dirty, setDirty] = useState(false);
+  const [shown, setShown] = useState(note.id);
 
-  // The last words typed, for the save that runs as the screen closes.
+  // The last words typed, for the save that runs as the screen closes. The
+  // cleanup runs after the state is gone, so it reads these instead.
   const held = useRef(content);
+  const unsaved = useRef(dirty);
   held.current = content;
-  const dirty = useRef(false);
+  unsaved.current = dirty;
+
+  // The first save gives the note a name, so the field must show it.
+  useEffect(() => setName(note.name ?? ""), [note.name]);
+
+  // The composer is a second writer: it puts the composed words under the
+  // note. When nothing here is unsaved, the screen takes the new text. Without
+  // this the field holds the words it had, and the next save writes them back
+  // over the words the composer added.
+  if (note.id !== shown || (!dirty && note.content !== content)) {
+    setShown(note.id);
+    setContent(note.content);
+    held.current = note.content;
+  }
+
+  const write = (text: string) => {
+    setContent(text);
+    setDirty(true);
+  };
 
   useEffect(() => {
-    if (content === note.content) return;
-    dirty.current = true;
+    if (!dirty) return;
 
     const timer = window.setTimeout(() => {
       const updates = noteContentUpdates(note.name, content);
-      dirty.current = false;
       void update.mutateAsync({ id: note.id, ...updates }).then(() => {
+        // A save that lands while the user types again leaves the note dirty,
+        // so the next save still carries the newer words.
+        if (held.current === content) setDirty(false);
         // The first save gives the note a name, and the name makes the slug.
         if (updates.name) onRenamed(updates.name);
       });
@@ -250,12 +368,14 @@ function NoteEditor({
     return () => window.clearTimeout(timer);
     // `update` and `onRenamed` are new on each render, so they stay out.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [content, note.id, note.name, note.content]);
+  }, [dirty, content, note.id, note.name]);
 
   useEffect(() => {
     const id = note.id;
     return () => {
-      if (!dirty.current) return;
+      // Only words that never reached SQLite. A clean note needs no write,
+      // and a write here would race the other writers of the same row.
+      if (!unsaved.current) return;
       void update.mutateAsync({ id, content: held.current });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -291,7 +411,7 @@ function NoteEditor({
         value={content}
         aria-label="Note"
         placeholder="Write your note here..."
-        onChange={(event) => setContent(event.target.value)}
+        onChange={(event) => write(event.target.value)}
         className="placeholder:text-muted-foreground/60 focus-within:border-ring focus-within:ring-ring/20 min-h-0 flex-1 resize-none rounded-2xl border bg-transparent p-4 text-xl leading-relaxed shadow-sm transition-[box-shadow,border-color] focus:outline-none focus-within:ring-[3px]"
       />
     </div>
@@ -344,7 +464,7 @@ function NoteTabs({
     <div
       role="tablist"
       aria-label="Notes"
-      className="mt-3 flex shrink-0 items-center gap-2 overflow-x-auto"
+      className="flex shrink-0 items-center gap-2 overflow-x-auto"
     >
       {notes.map((note) => (
         <button

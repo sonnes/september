@@ -58,6 +58,18 @@ export function noteContentUpdates(
   return made ? { content, name: made } : { content };
 }
 
+/**
+ * The note with the composed words under it.
+ *
+ * The composer holds one sentence at a time, the same as in Talk. A blank
+ * line between the parts keeps each one its own paragraph in markdown.
+ */
+export function appendToNote(content: string, text: string): string {
+  const words = text.trim();
+  if (!words) return content;
+  return content.trim() ? `${content.trimEnd()}\n\n${words}` : words;
+}
+
 /** The URL name of a note. It carries no identifier. */
 export const noteSlug = (name: string | null | undefined) =>
   slugify(name, "note");

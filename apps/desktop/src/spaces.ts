@@ -62,6 +62,31 @@ export function newSpaceTitle(
   }
 }
 
+/** A space opens in one of two modes, and the address holds which one. */
+export type SpaceMode = "talk" | "notes";
+
+/** The mode of each space, by slug. A space that is absent opens in Talk. */
+export type SpaceModes = Record<string, string>;
+
+/**
+ * The mode a space was left in.
+ *
+ * The slug is the key, not the identifier, so the space list can choose the
+ * mode before it reads a row.
+ */
+export function spaceModeFrom(modes: SpaceModes, slug: string): SpaceMode {
+  return modes[slug] === "notes" ? "notes" : "talk";
+}
+
+/** The modes with one space changed. The others keep the mode they hold. */
+export function rememberSpaceMode(
+  modes: SpaceModes,
+  slug: string,
+  mode: SpaceMode,
+): SpaceModes {
+  return { ...modes, [slug]: mode };
+}
+
 /** The spaces whose title holds the words that the user typed. */
 export function filterSpaces<T extends { title?: string | null }>(
   spaces: readonly T[],

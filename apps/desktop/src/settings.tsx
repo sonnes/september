@@ -9,11 +9,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 
 import {
-  SETUP_MODES,
   SPEAKING_STYLES,
   WRITING_SERVICES,
   type OnboardingDraft,
-  type SetupMode,
 } from "./onboarding";
 import {
   BLANK_CONNECTIONS,
@@ -32,7 +30,7 @@ import {
   type ConnectionId,
   type SettingsPath,
 } from "./settings-nav";
-import { CloudStatus, KeyPanel, Mark, ModeCard, Status } from "./services";
+import { CloudStatus, KeyPanel, Mark, Status } from "./services";
 import { ScreenHeader } from "./shell";
 
 const ICONS: Record<SettingsPath, typeof SlidersHorizontal> = {
@@ -173,55 +171,27 @@ function Section({
   );
 }
 
-// --------------------------------------------------------------- the setup
+// ------------------------------------------------------------ the services
 
+/**
+ * The services, and nothing more.
+ *
+ * The setup steps ask how September runs. This screen only shows the services
+ * that answer gives, so a user comes here to add a key or to change one.
+ */
 export function SetupSettings() {
-  const [setup, change] = useSetup();
   const [connections] = useConnections();
-
-  function choose(mode: SetupMode) {
-    if (mode === setup.mode) return;
-    change(
-      mode === "advanced"
-        ? { mode }
-        : {
-            mode,
-            writingService: connections.apple.available ? "apple" : "none",
-            voiceService: "system",
-          },
-    );
-  }
 
   return (
     <div className="flex flex-col gap-8">
       <Title
         title="Setup"
-        description="How September runs, and the services it uses."
+        description="The services September uses, and the keys they need."
       />
 
       <Section
-        title="How September runs"
-        description="This decides where your words go, and which services you need."
-      >
-        <div className="grid gap-4">
-          {SETUP_MODES.map((option) => (
-            <ModeCard
-              key={option.id}
-              option={option}
-              selected={setup.mode === option.id}
-              onChoose={() => choose(option.id)}
-            />
-          ))}
-        </div>
-      </Section>
-
-      <Section
         title="Connections"
-        description={
-          setup.mode === "free"
-            ? "Free mode runs on this Mac. A key is necessary only for a cloud service."
-            : "Connect the services you want. Each row says what comes next."
-        }
+        description="Connect the services you want. Each row says what comes next."
       >
         <div className="divide-y border-y">
           <ConnectionRow

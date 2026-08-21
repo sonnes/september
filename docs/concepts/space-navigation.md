@@ -94,3 +94,20 @@ the legacy `{ open, widthPct }` shape and mapping retired tabs
 (`provider`/`speech` → `voice`, `history`/`context` → `phrases`). On mobile the
 rail is hidden and the expanded card is a full-screen overlay opened from
 `MobileNav`.
+
+## The desktop app
+
+The desktop dock follows this concept: the space tabs on the left, the Talk and
+Notes switch on the right, with a wide gap between the two groups. The tabs
+collapse to a list when the row is full, measured by overflow, not by a count.
+
+The mode of each space is kept by slug, in the `space-modes` setting, so the
+space list opens each space the way the user left it. The desktop app keeps
+this in SQLite, not in the browser storage.
+
+The right rail holds one tab, Phrases, and expands to a 320px card. `Voice` and
+`Display` are not on the desktop rail: the voice has a screen of its own, and
+the desktop app has no display window.
+
+The desktop app has no per-mode working-set slot in Talk. The note tabs sit
+above the dock in Notes mode only.

@@ -51,6 +51,24 @@ cargo fmt --all -- --check
   microphone, and September must not ask for one to name a speaker.
 - Keep the virtual microphone control in the Talk audio selector beside Speak.
   The selector must remain visible when the Mac has one sound output.
+- Keep the virtual camera control in the same Talk audio selector. Pass the
+  current Talk composer text to it, not the text from Notes.
+- Keep camera frames inside the Core Media I/O extension. Tauri sends the text
+  property; Rust and the WebView must never relay video buffers.
+- Write through `Composer` in `src/talk.tsx` in every mode. A second console
+  would leave one mode without the word tiles, the codes, or undo, which a
+  user who cannot type depends on.
+- Put the Talk and Notes switch in the dock, never in the header. The web app
+  puts it there, so a user who knows one app knows the other.
+- Put a panel that needs a card of its own through `RightPanel` in
+  `src/shell.tsx`. A panel drawn inside a screen shares the card of the inset.
+- Keep the rules of a note in `src/notes.ts`, and the screen in
+  `src/notes-screen.tsx`. The two cannot share one name: `./notes` would then
+  name both, and TypeScript picks the `.ts` file.
+- Save a note without a Save button. A user who types slowly must never lose
+  words to a button they did not press.
+- Read a note aloud through `markdownToVoiceText`. A voice says `Monday`, not
+  `# Monday`. A voice-over writes no message.
 - Keep the rules of a space in `src/spaces.ts`, where a test can read them
   without a renderer: the slug, the search, the new title, the relative time,
   the transcript page, and the composer helpers.
@@ -71,6 +89,9 @@ cargo fmt --all -- --check
   them. Use `src/player.ts` only for voice-list previews.
 - A cloud voice that fails must fall back to the voice of the operating
   system. Silence is the worst answer for a user who cannot speak.
+- Give each control of a phrase row a 44px target, through `RowButton` in
+  `src/phrase-panel.tsx`. The web app uses 36px there. `DESIGN.md` wins: a user
+  of September points with less accuracy than a user of a browser.
 - Keep the rules of a phrase, a code, and a shortcut idea in `src/phrases.ts`,
   and the rules of a stripe in `src/stripes.ts`. Both are ports of the web app.
   Change them in both apps, or in neither.
@@ -87,6 +108,11 @@ cargo fmt --all -- --check
 - Name a voice file in `src-tauri/src/speech.rs`, from the hash of the speech
   settings and the normalized words. Do not name one anywhere else, and do not
   keep a path to it on a message.
+- Give a Rust type that crosses to the WebView the names that the screen reads.
+  A field that comes from a service with another name uses
+  `#[serde(rename(deserialize = "..."))]`, which works on the way in only. A
+  type that the WebView sends uses `#[serde(rename_all = "camelCase")]`. A name
+  that does not match makes a field `undefined`, and TypeScript cannot see it.
 - Keep every API key in the macOS Keychain, through `src-tauri/src/providers.rs`.
   A key must not enter the onboarding draft, SQLite, a Tauri event, a log, or
   the browser storage. A command returns a status, never a key.
@@ -95,6 +121,9 @@ cargo fmt --all -- --check
   through `BrandMark` in `src/brand.tsx`. The Apple logo is the U+F8FF glyph from the
   macOS system font, which `system-ui` supplies. Apple asks for a written
   trademark licence before a third party shows this mark.
+- Keep the rule for the first route in `openingPath`, in `src/app-nav.ts`. It
+  is an allowlist of app paths. A saved address that names no screen must not
+  decide where the app opens.
 - Add a screen as a route in `src/main.tsx`. Keep the step rules in
   `src/onboarding.ts`, where a test can read them.
 - Keep the settings sections in `src/settings-nav.ts`, where a test can read
