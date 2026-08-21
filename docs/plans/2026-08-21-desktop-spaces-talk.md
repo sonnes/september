@@ -211,7 +211,7 @@ come first.
 | Phase | Content                                                              | Size     |
 | ----- | -------------------------------------------------------------------- | -------- |
 | 1     | `user_id`, space list, space CRUD, transcript, composer, Speak with the system voice | 1 day |
-| 2     | ElevenLabs voice through Rust, and replay of a message               | half day |
+| 2     | ElevenLabs voice through Rust, and replay of a message. See [the speech plan](2026-08-21-desktop-speech-providers.md). | 2 days |
 | 3     | Saved phrases, suggestion stripes, phrase codes                      | 2 days   |
 | 4     | Title and context of a space from a model, after the first message   | half day |
 

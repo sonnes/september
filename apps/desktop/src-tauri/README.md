@@ -185,6 +185,25 @@ the reason in `detail`.
 voice carries `id`, `name`, and `preview_url`. The preview URL is public, so
 the UI can play a sample without a key.
 
+## Speak a sentence
+
+The `speech_synthesize` command takes `{ text, settings }` and returns
+`{ path, from_cache }`. The settings hold the provider, the voice, the model,
+the stability, the similarity, and the speed.
+
+Rust names the file from the SHA-256 of those settings and the normalized
+words, then keeps it in `audio/` under the application-local-data directory.
+The same request therefore reaches ElevenLabs one time. Rust writes to a
+`.part` name first and renames, so a stopped application leaves no half-written
+file.
+
+Normalization removes the spaces at the ends of the text and makes each run of
+spaces one space. It changes nothing else.
+
+The command rejects when no ElevenLabs key is stored, and when the service
+fails. The response carries a path, never a key. The WebView reads the file
+through the asset protocol, whose scope is `$APPLOCALDATA/audio/*`.
+
 ## Use the apfel API
 
 The backend exposes `apfel_status` and `apfel_generate`. Both commands start

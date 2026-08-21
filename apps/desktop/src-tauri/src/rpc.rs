@@ -8,6 +8,7 @@ use crate::{
     apfel::{ApfelGenerateRequest, ApfelGeneration, ApfelState, ApfelStatus},
     providers::{self, Provider, ProviderStatus, Providers, Voice},
     repository::{Message, Note, Repository, Space},
+    speech::{self, SpeechSettings},
 };
 
 pub(crate) struct BackendState {
@@ -43,6 +44,19 @@ pub(crate) struct ProviderRequest {
 pub(crate) struct ProviderConnectRequest {
     provider: Provider,
     key: String,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct SpeakRequest {
+    text: String,
+    settings: SpeechSettings,
+}
+
+#[derive(Serialize)]
+pub(crate) struct SpokenAudio {
+    /// The file on disk. The WebView reads it through the asset protocol.
+    path: String,
+    from_cache: bool,
 }
 
 #[derive(Deserialize)]
@@ -351,6 +365,30 @@ pub(crate) async fn provider_connect(request: ProviderConnectRequest) -> RpcResu
 #[tauri::command]
 pub(crate) async fn provider_forget(request: ProviderRequest) -> RpcResult<bool> {
     providers::forget(request.provider).map_err(rpc_error)
+}
+
+/// The file that holds one sentence in the chosen voice.
+///
+/// The name of the file is the hash of the settings and the normalized words,
+/// so the same request never goes to the service twice. The response carries
+/// a path, never a key.
+#[tauri::command]
+pub(crate) async fn speech_synthesize(
+    app: AppHandle,
+    request: SpeakRequest,
+) -> RpcResult<SpokenAudio> {
+    let directory = app
+        .path()
+        .app_local_data_dir()
+        .map_err(rpc_error)?
+        .join("audio");
+    let (path, from_cache) =
+        speech::synthesize(&directory, &request.settings, &request.text).await?;
+
+    Ok(SpokenAudio {
+        path: path.to_string_lossy().into_owned(),
+        from_cache,
+    })
 }
 
 /// The ElevenLabs voices for the stored key. The list is empty without a key.

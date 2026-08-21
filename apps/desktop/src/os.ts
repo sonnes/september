@@ -1,6 +1,7 @@
-import { invoke } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 
 import type { OnboardingDraft } from "./onboarding";
+import type { SpeechSettings } from "./speech";
 
 /**
  * The name the operating system holds for the signed-in user.
@@ -55,6 +56,34 @@ export async function saveSetup(draft: OnboardingDraft): Promise<void> {
   }).catch(() => undefined);
   setup = saved;
 }
+
+/**
+ * How the sound is made, from the last time the Voice screen saved it. Null
+ * before the user opens that screen, and in a browser.
+ */
+let speech = await invoke<SpeechSettings | null>("setting_get", {
+  request: { key: "speech" },
+}).catch(() => null);
+
+export function currentSpeech(): SpeechSettings | null {
+  return speech;
+}
+
+export async function saveSpeech(settings: SpeechSettings): Promise<void> {
+  await invoke("setting_put", {
+    request: { key: "speech", value: settings },
+  }).catch(() => undefined);
+  speech = settings;
+}
+
+/** The file that holds one sentence. Rust names it, and never sends a key. */
+export const synthesizeSpeech = (text: string, settings: SpeechSettings) =>
+  invoke<{ path: string; from_cache: boolean }>("speech_synthesize", {
+    request: { text, settings },
+  });
+
+/** The address the WebView uses to read a file that Rust wrote. */
+export const audioUrl = (path: string) => convertFileSrc(path);
 
 export type Provider = "openrouter" | "elevenlabs";
 

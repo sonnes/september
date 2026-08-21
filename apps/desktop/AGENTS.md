@@ -53,8 +53,14 @@ cargo fmt --all -- --check
   the confirming button the `destructive` variant.
 - Give each row the owner from `currentUserId()` in `src/os.ts`. Do not read
   the operating system again after setup.
-- Speak through `src/speech.ts`. The system voice uses the Web Speech API of
-  the WebView. A cloud voice must go through Rust.
+- Speak through `speak()` in `src/speech.ts`. Every voice meets the
+  `SpeechProvider` interface, so a screen never names a service. Play a file
+  through `src/player.ts`, which holds one sound at a time.
+- A cloud voice that fails must fall back to the voice of the operating
+  system. Silence is the worst answer for a user who cannot speak.
+- Name a voice file in `src-tauri/src/speech.rs`, from the hash of the speech
+  settings and the normalized words. Do not name one anywhere else, and do not
+  keep a path to it on a message.
 - Keep every API key in the macOS Keychain, through `src-tauri/src/providers.rs`.
   A key must not enter the onboarding draft, SQLite, a Tauri event, a log, or
   the browser storage. A command returns a status, never a key.

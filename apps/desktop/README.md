@@ -72,13 +72,45 @@ unique title, and the word that delete removes.
 TanStack Query over the Rust commands. The owner of each row is the login name
 of the operating system, which setup keeps in the `setup` setting.
 
-`src/speech.ts` speaks. The system voice uses the Web Speech API of the
-WebView, so it needs no Rust and no key. An ElevenLabs voice will go through
-Rust, because the key stays in the Keychain.
-
 The composer keeps its text until SQLite accepts the message, so a failed write
-loses no words. September does not store the audio yet. A message that plays
-again is spoken again.
+loses no words.
+
+## Hear a voice
+
+`src/speech.ts` gives every voice one interface. A screen calls `speak(text)`
+and does not know which service answers.
+
+| Voice        | How it speaks                                              |
+| ------------ | ---------------------------------------------------------- |
+| `system`     | The Web Speech API of the WebView. No file, no key.        |
+| `elevenlabs` | Rust makes a file. `src/player.ts` plays it.               |
+
+A cloud voice that fails falls back to the voice of this Mac, and the composer
+says so. A person who cannot speak must not meet silence.
+
+A voice file is named for what makes its sound:
+
+```
+audio/<sha256 of the settings and the words>.mp3
+```
+
+The words lose the spaces at their ends, and each run of spaces becomes one
+space. Case and punctuation stay, because both change how a voice reads a
+sentence. The three numbers are written with three decimal places, so `0.5`
+and `0.50` give one name.
+
+The same words in the same voice therefore go to the service one time. A
+changed voice, a changed number, or a changed word makes a new file. No rule
+erases the old files yet.
+
+A message keeps no path to a file. The name is the index, so a message spoken
+with an old voice plays with the voice of today.
+
+The `/voice` screen holds the choices: the service, the voice, and three
+sliders for speed, steadiness, and likeness. Each change is kept at once, in
+the `speech` setting. **Try it** speaks one short sentence, so the user hears a
+change before a real message. A voice sample plays from a public address, so it
+needs no key.
 
 ## Walk through setup
 

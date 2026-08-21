@@ -8,6 +8,7 @@ import {
   MessagesSquare,
   Plus,
   Search,
+  Square,
   Trash2,
   Undo2,
   Volume2,
@@ -39,7 +40,7 @@ import {
   type Space,
 } from "./data";
 import { Screen, ScreenHeader } from "./shell";
-import { speak } from "./speech";
+import { speak, stopSpeaking, useSpeaking, useVoiceFallback } from "./speech";
 import {
   deleteLastWord,
   filterSpaces,
@@ -260,6 +261,8 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
   const { data: messages, error } = useMessages(space.id);
   const send = useSendMessage(space.id);
 
+  const speaking = useSpeaking();
+  const fallback = useVoiceFallback();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [draft, setDraft] = useState("");
   const [undoStack, setUndoStack] = useState<string[]>([]);
@@ -300,7 +303,7 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
 
     // The voice starts at once. The composer holds the text until SQLite
     // accepts the message, so a failed write loses no words.
-    speak(text);
+    void speak(text);
     send.mutate(text, {
       onSuccess: () => {
         setDraft("");
@@ -382,6 +385,12 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
               }}
               className="placeholder:text-muted-foreground/60 max-h-60 w-full resize-none overflow-y-auto bg-transparent text-xl leading-snug focus:outline-none"
             />
+            {fallback ? (
+              <p className="text-muted-foreground mt-2 text-xs">
+                The chosen voice did not answer, so this Mac spoke instead (
+                {fallback}).
+              </p>
+            ) : null}
             <div className="mt-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-1.5">
               <Button
@@ -470,15 +479,23 @@ function SpaceTitle({ space }: { space: Space }) {
 }
 
 function Bubble({ message }: { message: Message }) {
+  const speaking = useSpeaking() === message.id;
+
   return (
     <div className="flex justify-end">
       <button
         type="button"
-        aria-label="Speak this message again"
-        onClick={() => speak(message.text)}
+        aria-label={speaking ? "Stop" : "Speak this message again"}
+        onClick={() =>
+          speaking ? stopSpeaking() : void speak(message.text, message.id)
+        }
         className="bg-accent text-accent-foreground focus-visible:ring-ring flex max-w-[85%] items-start gap-2 rounded-2xl rounded-br-sm px-4 py-2.5 text-left transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none"
       >
-        <Volume2 className="mt-1 size-4 shrink-0 opacity-60" aria-hidden />
+        {speaking ? (
+          <Square className="mt-1 size-4 shrink-0 opacity-60" aria-hidden />
+        ) : (
+          <Volume2 className="mt-1 size-4 shrink-0 opacity-60" aria-hidden />
+        )}
         <p className="text-base leading-snug">{message.text}</p>
       </button>
     </div>

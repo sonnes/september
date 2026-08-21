@@ -181,6 +181,46 @@ impl Providers {
         })
     }
 
+    /// The sound of one sentence, as MP3 bytes.
+    pub async fn speak(
+        &self,
+        key: &str,
+        settings: &crate::speech::SpeechSettings,
+        text: &str,
+    ) -> Result<Vec<u8>> {
+        let voice = settings.voice_id.as_deref().unwrap_or_default();
+        let response = self
+            .client
+            .post(format!(
+                "{}/v1/text-to-speech/{voice}?output_format=mp3_44100_128",
+                self.eleven_labs
+            ))
+            .header("xi-api-key", key)
+            .json(&serde_json::json!({
+                "text": text,
+                "model_id": settings.model_id,
+                "voice_settings": {
+                    "stability": settings.stability,
+                    "similarity_boost": settings.similarity,
+                    "speed": settings.speed,
+                },
+            }))
+            .send()
+            .await?;
+
+        let status = response.status();
+        if matches!(status, StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN) {
+            return Err(ProviderError::Rejected);
+        }
+        if !status.is_success() {
+            return Err(ProviderError::Unexpected(format!(
+                "ElevenLabs answered {status}"
+            )));
+        }
+
+        Ok(response.bytes().await?.to_vec())
+    }
+
     pub async fn voices(&self, key: &str) -> Result<Vec<Voice>> {
         let response = self
             .client

@@ -532,7 +532,8 @@ test("setup freezes the user id, so a later read cannot move the spaces", async 
 });
 
 test("only data.ts and os.ts talk to Rust", async () => {
-  for (const file of ["src/talk.tsx", "src/speech.ts"]) {
+  const files = ["src/talk.tsx", "src/speech.ts", "src/player.ts", "src/voice.tsx"];
+  for (const file of files) {
     assert.doesNotMatch(await readText(file), /@tauri-apps\/api/, file);
   }
 });
@@ -573,4 +574,75 @@ test("Talk is a route inside a space", async () => {
   assert.match(main, /"\/spaces\/\$slug\/talk"/);
   assert.match(main, /SpacesScreen/);
   assert.match(main, /TalkScreen/);
+});
+
+// --------------------------------------------------------- voice and audio
+
+test("a voice file is named for the settings and the words", async () => {
+  const rust = await readText("src-tauri/src/speech.rs");
+
+  assert.match(rust, /Sha256::digest/);
+  assert.match(rust, /split_whitespace/);
+  // Three decimal places, so 0.5 and 0.50 give one name.
+  assert.match(rust, /\{:\.3\}\|\{:\.3\}\|\{:\.3\}/);
+});
+
+test("the audio file reaches the WebView through the asset protocol", async () => {
+  const os = await readText("src/os.ts");
+  const config = await readJson("src-tauri/tauri.conf.json");
+
+  assert.match(os, /convertFileSrc/);
+  assert.equal(config.app.security.assetProtocol.enable, true);
+  assert.deepEqual(config.app.security.assetProtocol.scope, ["$APPLOCALDATA/audio/*"]);
+});
+
+test("the player holds one sound at a time", async () => {
+  const player = await readText("src/player.ts");
+
+  assert.match(player, /export function play/);
+  assert.match(player, /export function stop/);
+  // A new sound stops the sound before it.
+  assert.match(player, /stop\(\);/);
+});
+
+test("every voice meets one interface", async () => {
+  const speech = await readText("src/speech.ts");
+
+  assert.match(speech, /interface SpeechProvider/);
+  assert.match(speech, /id: "system"/);
+  assert.match(speech, /id: "elevenlabs"/);
+  assert.match(speech, /export function providerFor/);
+});
+
+test("the cloud voice falls back to the system voice", async () => {
+  const speech = await readText("src/speech.ts");
+  const cloud = speech.match(/const cloudVoice[\s\S]*?\n\}\);/)[0];
+
+  // A person who cannot speak must not meet silence.
+  assert.match(cloud, /catch/);
+  assert.match(cloud, /systemVoice\(settings\)\.speak\(text\)/);
+});
+
+test("the speech settings hold everything that shapes the sound", async () => {
+  const speech = await readText("src/speech.ts");
+  const defaults = speech.match(/DEFAULT_SPEECH[\s\S]*?\};/)[0];
+
+  for (const key of ["provider", "voiceId", "modelId", "stability", "similarity", "speed"]) {
+    assert.match(defaults, new RegExp(`\\b${key}:`), key);
+  }
+});
+
+test("the Voice screen keeps its choices in one setting", async () => {
+  const os = await readText("src/os.ts");
+  const main = await readText("src/main.tsx");
+
+  assert.match(os, /key: "speech"/);
+  assert.match(os, /export function currentSpeech/);
+  assert.match(main, /VoiceScreen/);
+});
+
+test("a message keeps no audio path", async () => {
+  const data = await readText("src/data.ts");
+
+  assert.doesNotMatch(data, /audio_path/);
 });

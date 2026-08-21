@@ -23,6 +23,7 @@ import { isSetupDone } from "./onboarding";
 import { currentSetup } from "./os";
 import { AppScreen, AppShell } from "./shell";
 import { SpacesScreen, TalkScreen } from "./talk";
+import { VoiceScreen } from "./voice";
 import {
   ConnectStep,
   FinishStep,
@@ -101,7 +102,11 @@ const routeTree = rootRoute.addChildren([
     screen("/dashboard"),
     spacesRoute,
     talkRoute,
-    screen("/voice"),
+    createRoute({
+      getParentRoute: () => appRoute,
+      path: "/voice",
+      component: VoiceScreen,
+    }),
     screen("/help"),
     screen("/settings"),
   ]),

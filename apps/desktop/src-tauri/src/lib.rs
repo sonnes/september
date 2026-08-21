@@ -2,6 +2,7 @@ pub mod apfel;
 pub mod error;
 pub mod providers;
 pub mod repository;
+pub mod speech;
 
 mod rpc;
 
@@ -33,6 +34,7 @@ pub fn run() {
             rpc::provider_connect,
             rpc::provider_forget,
             rpc::provider_voices,
+            rpc::speech_synthesize,
         ])
         .run(tauri::generate_context!())
         .expect("error while running September desktop");
