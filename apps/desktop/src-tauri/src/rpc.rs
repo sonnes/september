@@ -7,7 +7,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 use crate::{
     apfel::{ApfelGenerateRequest, ApfelGeneration, ApfelState, ApfelStatus},
     providers::{self, Provider, ProviderStatus, Providers, Voice},
-    repository::Repository,
+    repository::{Message, Note, Repository, Space},
 };
 
 pub(crate) struct BackendState {
@@ -17,6 +17,21 @@ pub(crate) struct BackendState {
 #[derive(Deserialize)]
 pub(crate) struct KeyRequest {
     key: String,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct EntityIdRequest {
+    id: String,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct SpaceListRequest {
+    user_id: String,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct SpaceFilterRequest {
+    space_id: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -111,6 +126,156 @@ pub(crate) fn setting_delete(
     Ok(deleted)
 }
 
+#[tauri::command(async)]
+pub(crate) fn space_list(
+    state: State<'_, BackendState>,
+    request: SpaceListRequest,
+) -> RpcResult<Vec<Space>> {
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .list_spaces(&request.user_id)
+        .map_err(rpc_error)
+}
+
+#[tauri::command(async)]
+pub(crate) fn space_get(
+    state: State<'_, BackendState>,
+    request: EntityIdRequest,
+) -> RpcResult<Option<Space>> {
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .get_space(&request.id)
+        .map_err(rpc_error)
+}
+
+#[tauri::command(async)]
+pub(crate) fn space_put(state: State<'_, BackendState>, request: Space) -> RpcResult<Space> {
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .put_space(&request)
+        .map_err(rpc_error)?;
+    Ok(request)
+}
+
+#[tauri::command(async)]
+pub(crate) fn space_delete(
+    state: State<'_, BackendState>,
+    request: EntityIdRequest,
+) -> RpcResult<bool> {
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .delete_space(&request.id)
+        .map_err(rpc_error)
+}
+
+#[tauri::command(async)]
+pub(crate) fn message_list(
+    state: State<'_, BackendState>,
+    request: SpaceFilterRequest,
+) -> RpcResult<Vec<Message>> {
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .list_messages(request.space_id.as_deref())
+        .map_err(rpc_error)
+}
+
+#[tauri::command(async)]
+pub(crate) fn message_get(
+    state: State<'_, BackendState>,
+    request: EntityIdRequest,
+) -> RpcResult<Option<Message>> {
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .get_message(&request.id)
+        .map_err(rpc_error)
+}
+
+#[tauri::command(async)]
+pub(crate) fn message_put(state: State<'_, BackendState>, request: Message) -> RpcResult<Message> {
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .put_message(&request)
+        .map_err(rpc_error)?;
+    Ok(request)
+}
+
+#[tauri::command(async)]
+pub(crate) fn message_delete(
+    state: State<'_, BackendState>,
+    request: EntityIdRequest,
+) -> RpcResult<bool> {
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .delete_message(&request.id)
+        .map_err(rpc_error)
+}
+
+#[tauri::command(async)]
+pub(crate) fn note_list(
+    state: State<'_, BackendState>,
+    request: SpaceFilterRequest,
+) -> RpcResult<Vec<Note>> {
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .list_notes(request.space_id.as_deref())
+        .map_err(rpc_error)
+}
+
+#[tauri::command(async)]
+pub(crate) fn note_get(
+    state: State<'_, BackendState>,
+    request: EntityIdRequest,
+) -> RpcResult<Option<Note>> {
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .get_note(&request.id)
+        .map_err(rpc_error)
+}
+
+#[tauri::command(async)]
+pub(crate) fn note_put(state: State<'_, BackendState>, request: Note) -> RpcResult<Note> {
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .put_note(&request)
+        .map_err(rpc_error)?;
+    Ok(request)
+}
+
+#[tauri::command(async)]
+pub(crate) fn note_delete(
+    state: State<'_, BackendState>,
+    request: EntityIdRequest,
+) -> RpcResult<bool> {
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .delete_note(&request.id)
+        .map_err(rpc_error)
+}
+
 /// The name the operating system holds for the signed-in user.
 ///
 /// The result is empty when the system has no usable name. The onboarding
@@ -118,6 +283,20 @@ pub(crate) fn setting_delete(
 #[tauri::command(async)]
 pub(crate) fn user_name() -> String {
     clean_name(&whoami::realname())
+}
+
+/// The login name of the operating system, for example `ravi`.
+///
+/// A space and a message need an identifier for the owner. The display name
+/// from `user_name` can be empty, and the user can change it, so it cannot be
+/// one. The command rejects when the system knows no login name.
+#[tauri::command(async)]
+pub(crate) fn user_id() -> RpcResult<String> {
+    whoami::fallible::username()
+        .ok()
+        .as_deref()
+        .and_then(login_name)
+        .ok_or_else(|| "the system knows no login name".to_owned())
 }
 
 #[tauri::command]
@@ -193,6 +372,13 @@ fn clean_name(raw: &str) -> String {
     name.to_owned()
 }
 
+/// Keeps a login name that the repository accepts. A name of only spaces is
+/// not one.
+fn login_name(raw: &str) -> Option<String> {
+    let name = raw.trim();
+    (!name.is_empty()).then(|| name.to_owned())
+}
+
 type RpcResult<T> = std::result::Result<T, String>;
 
 fn rpc_error(error: impl std::fmt::Display) -> String {
@@ -205,7 +391,7 @@ fn lock_error<T>(_: std::sync::PoisonError<T>) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::clean_name;
+    use super::{clean_name, login_name, EntityIdRequest, SpaceFilterRequest, SpaceListRequest};
 
     #[test]
     fn a_display_name_survives() {
@@ -224,5 +410,33 @@ mod tests {
         assert_eq!(clean_name("   "), "");
         assert_eq!(clean_name("Unknown"), "");
         assert_eq!(clean_name(",,,"), "");
+    }
+
+    #[test]
+    fn a_login_name_survives() {
+        assert_eq!(login_name("ravi").as_deref(), Some("ravi"));
+        assert_eq!(login_name("  ravi  ").as_deref(), Some("ravi"));
+    }
+
+    #[test]
+    fn an_unusable_login_name_becomes_none() {
+        assert_eq!(login_name(""), None);
+        assert_eq!(login_name("   "), None);
+    }
+
+    #[test]
+    fn domain_requests_use_snake_case_fields_inside_the_request_envelope() {
+        let spaces: SpaceListRequest =
+            serde_json::from_value(serde_json::json!({ "user_id": "user-1" })).unwrap();
+        let messages: SpaceFilterRequest =
+            serde_json::from_value(serde_json::json!({ "space_id": "space-1" })).unwrap();
+        let all_notes: SpaceFilterRequest = serde_json::from_value(serde_json::json!({})).unwrap();
+        let entity: EntityIdRequest =
+            serde_json::from_value(serde_json::json!({ "id": "note-1" })).unwrap();
+
+        assert_eq!(spaces.user_id, "user-1");
+        assert_eq!(messages.space_id.as_deref(), Some("space-1"));
+        assert_eq!(all_notes.space_id, None);
+        assert_eq!(entity.id, "note-1");
     }
 }

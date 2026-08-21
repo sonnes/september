@@ -29,6 +29,20 @@ notes. Global messages and notes have no space and remain intact.
 SQLite stores domain timestamps as Unix milliseconds. Composite indexes cover
 the existing space-scoped message and note queries.
 
+## Use typed domain commands
+
+The webview lists, gets, puts, and deletes spaces, messages, and notes through
+typed Tauri commands. A put sends a complete domain row. Rust validates its
+identity and timestamps before SQLite inserts or replaces it.
+
+Space lists belong to one user. Message and note lists can include every row or
+filter by one space. Messages use conversation order, while spaces and notes
+put the most recently updated row first.
+
+A get returns `null` for a missing row. A delete returns `false` for a missing
+row. SQLite rejects a scoped message or note when its parent space does not
+exist.
+
 ## Start with the current schema
 
 Schema version 1 creates `settings`, `spaces`, `messages`, and `notes` directly.

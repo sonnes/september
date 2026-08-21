@@ -11,6 +11,13 @@ import type { OnboardingDraft } from "./onboarding";
  */
 export const osName = await invoke<string>("user_name").catch(() => "");
 
+/** The identifier the app uses when the system knows no login name. */
+export const LOCAL_USER = "local";
+
+/** The login name of the operating system, for example `ravi`. */
+const osUser =
+  (await invoke<string>("user_id").catch(() => "")) || LOCAL_USER;
+
 /**
  * The setup answers, from the last time setup finished. Null on a fresh
  * install, and in a browser, where the Tauri backend does not exist.
@@ -18,20 +25,35 @@ export const osName = await invoke<string>("user_name").catch(() => "");
  * ponytail: one setting, read once before React mounts, so the router can
  * decide the first route without an async guard.
  */
-let setup = await invoke<OnboardingDraft | null>("setting_get", {
+/** The finished setup, with the identifier of the owner beside its answers. */
+export type SavedSetup = OnboardingDraft & { id: string };
+
+let setup = await invoke<SavedSetup | null>("setting_get", {
   request: { key: "setup" },
 }).catch(() => null);
 
-export function currentSetup(): OnboardingDraft | null {
+export function currentSetup(): SavedSetup | null {
   return setup;
+}
+
+/**
+ * The owner of every space and every message.
+ *
+ * Setup freezes the identifier, so a later read of the operating system
+ * cannot move the spaces of the user to a new owner. A user who renames the
+ * account of the Mac keeps them.
+ */
+export function currentUserId(): string {
+  return currentSetup()?.id ?? osUser;
 }
 
 /** Keeps the finished setup, then holds it, so the app guard sees it too. */
 export async function saveSetup(draft: OnboardingDraft): Promise<void> {
+  const saved: SavedSetup = { ...draft, id: osUser };
   await invoke("setting_put", {
-    request: { key: "setup", value: draft },
+    request: { key: "setup", value: saved },
   }).catch(() => undefined);
-  setup = draft;
+  setup = saved;
 }
 
 export type Provider = "openrouter" | "elevenlabs";

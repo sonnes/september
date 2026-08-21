@@ -4,6 +4,15 @@ import test from "node:test";
 
 import { APP_NAV, BASE_VIEWPORT_WIDTH, isCompactWidth } from "../src/app-nav.ts";
 import {
+  deleteLastWord,
+  filterSpaces,
+  newSpaceTitle,
+  spaceFromSlug,
+  spaceSlug,
+  timeAgo,
+  transcriptPage,
+} from "../src/spaces.ts";
+import {
   canReach,
   isSetupDone,
   nextStep,
@@ -410,4 +419,158 @@ test("the brand and the nav icons share one left edge", async () => {
   // the nav buttons line up. Extra padding on either one breaks the edge.
   assert.match(shell, /<SidebarGroup>/);
   assert.doesNotMatch(brand, /\bp[xl]?-\d/, `brand row adds padding: ${brand}`);
+});
+
+// ------------------------------------------------------- spaces and Talk
+
+test("a space slug carries no identifier", () => {
+  assert.equal(spaceSlug("School — Homework Help"), "school-homework-help");
+  assert.equal(spaceSlug("General"), "general");
+  assert.equal(spaceSlug(""), "space");
+  assert.equal(spaceSlug(undefined), "space");
+});
+
+test("a slug finds its space, or nothing", () => {
+  const spaces = [
+    { id: "a", title: "General" },
+    { id: "b", title: "Homework Help" },
+  ];
+
+  assert.equal(spaceFromSlug("homework-help", spaces)?.id, "b");
+  assert.equal(spaceFromSlug("general", spaces)?.id, "a");
+  assert.equal(spaceFromSlug("gone", spaces), undefined);
+});
+
+test("the first space is General, and no two spaces share a slug", () => {
+  assert.equal(newSpaceTitle([]), "General");
+  assert.equal(newSpaceTitle(["General"]), "New space");
+  assert.equal(newSpaceTitle(["General", "New space"]), "New space 2");
+  assert.equal(newSpaceTitle(["General", "New space", "New space 2"]), "New space 3");
+});
+
+test("search keeps the spaces whose title holds the words", () => {
+  const spaces = [
+    { id: "a", title: "Doctor Ramesh" },
+    { id: "b", title: "Homework Help" },
+    { id: "c" },
+  ];
+
+  assert.deepEqual(filterSpaces(spaces, "").length, 3);
+  assert.deepEqual(filterSpaces(spaces, "  ").length, 3);
+  assert.deepEqual(filterSpaces(spaces, "doctor").map((s) => s.id), ["a"]);
+  assert.deepEqual(filterSpaces(spaces, "HELP").map((s) => s.id), ["b"]);
+  assert.deepEqual(filterSpaces(spaces, "nothing"), []);
+});
+
+test("the list says when a space last changed", () => {
+  const now = Date.UTC(2026, 7, 21, 12, 0, 0);
+  const ago = (seconds) => timeAgo(now - seconds * 1000, now);
+
+  assert.equal(ago(20), "20 seconds ago");
+  assert.equal(ago(90), "1 minute ago");
+  assert.equal(ago(130), "2 minutes ago");
+  assert.equal(ago(7200), "2 hours ago");
+  assert.equal(ago(86400 * 3), "3 days ago");
+  assert.equal(ago(86400 * 400), "last year");
+});
+
+test("deleting a space asks first, because the messages go with it", async () => {
+  const talk = await readText("src/talk.tsx");
+
+  assert.match(talk, /AlertDialog/);
+  assert.match(talk, /cannot undo/);
+  assert.match(talk, /variant="destructive"/);
+  // The delete button opens the dialog. It must not delete on its own.
+  assert.doesNotMatch(talk, /onClick=\{\(\) => deleteSpace\.mutate/);
+});
+
+test("the list has a search field", async () => {
+  const talk = await readText("src/talk.tsx");
+
+  assert.match(talk, /filterSpaces/);
+  assert.match(talk, /aria-label="Search spaces"/);
+});
+
+test("the transcript pages newest first", () => {
+  const rows = Array.from({ length: 20 }, (_, i) => i);
+
+  const newest = transcriptPage(rows, 0, 8);
+  assert.equal(newest.pageCount, 3);
+  assert.deepEqual(newest.slice, [12, 13, 14, 15, 16, 17, 18, 19]);
+
+  // The oldest page holds the remainder, and a page past the end clamps.
+  assert.deepEqual(transcriptPage(rows, 2, 8).slice, [0, 1, 2, 3]);
+  assert.equal(transcriptPage(rows, 9, 8).page, 2);
+  assert.equal(transcriptPage([], 0, 8).pageCount, 1);
+});
+
+test("the composer drops one word at a time", () => {
+  assert.equal(deleteLastWord("I want some water"), "I want some ");
+  assert.equal(deleteLastWord("I want some water   "), "I want some ");
+  assert.equal(deleteLastWord("water"), "");
+  assert.equal(deleteLastWord(""), "");
+});
+
+test("the user id is the login name of the operating system", async () => {
+  const os = await readText("src/os.ts");
+  const rpc = await readText("src-tauri/src/rpc.rs");
+
+  assert.match(rpc, /pub\(crate\) fn user_id/);
+  assert.match(rpc, /whoami::fallible::username/);
+  assert.match(os, /invoke<string>\("user_id"\)/);
+  assert.match(os, /export function currentUserId/);
+});
+
+test("setup freezes the user id, so a later read cannot move the spaces", async () => {
+  const os = await readText("src/os.ts");
+  const saveSetup = os.match(/export async function saveSetup[\s\S]*?\n\}/)[0];
+
+  // The identifier goes into the setup setting one time. `currentUserId`
+  // prefers that value over a new read of the operating system.
+  assert.match(saveSetup, /id: osUser/);
+  assert.match(os, /currentSetup\(\)\?\.id \?\? osUser/);
+});
+
+test("only data.ts and os.ts talk to Rust", async () => {
+  for (const file of ["src/talk.tsx", "src/speech.ts"]) {
+    assert.doesNotMatch(await readText(file), /@tauri-apps\/api/, file);
+  }
+});
+
+test("the system voice speaks in the WebView, with no key and no Rust", async () => {
+  const speech = await readText("src/speech.ts");
+
+  assert.match(speech, /speechSynthesis/);
+  assert.match(speech, /SpeechSynthesisUtterance/);
+});
+
+test("spaces and messages read through TanStack Query", async () => {
+  const packageJson = await readJson("package.json");
+  const data = await readText("src/data.ts");
+  const main = await readText("src/main.tsx");
+
+  assert.ok(packageJson.dependencies["@tanstack/react-query"]);
+  assert.match(main, /QueryClientProvider/);
+  assert.match(data, /queryKey: \["spaces"\]/);
+  assert.match(data, /"space_list"/);
+  assert.match(data, /"message_list"/);
+  assert.match(data, /"message_put"/);
+});
+
+test("a failed command carries a message the screen can show", async () => {
+  const data = await readText("src/data.ts");
+
+  // Tauri rejects with a string, so `error.message` would be empty. One
+  // wrapper turns every rejection into an Error.
+  assert.match(data, /function call</);
+  assert.match(data, /new Error\(String\(reason\)\)/);
+  assert.equal(data.match(/invoke</g)?.length, 1, "every command goes through call()");
+});
+
+test("Talk is a route inside a space", async () => {
+  const main = await readText("src/main.tsx");
+
+  assert.match(main, /"\/spaces\/\$slug\/talk"/);
+  assert.match(main, /SpacesScreen/);
+  assert.match(main, /TalkScreen/);
 });

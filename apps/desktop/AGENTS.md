@@ -40,8 +40,21 @@ cargo fmt --all -- --check
 - Keep the sidebar destinations in `src/app-nav.ts`, where a test can read
   them. Give each path an icon in `src/shell.tsx`. The icon record is typed by
   path, so a missing icon fails the build.
-- Call the Rust backend from `src/os.ts` or a module like it. Do not call
-  `invoke` from a component.
+- Call the Rust backend from `src/os.ts` or `src/data.ts`. Do not call
+  `invoke` from a component. `src/data.ts` holds every read and every write of
+  a space or a message, through TanStack Query.
+- Keep the rules of a space in `src/spaces.ts`, where a test can read them
+  without a renderer: the slug, the search, the new title, the relative time,
+  the transcript page, and the composer helpers.
+- Send every command through `call()` in `src/data.ts`. A Tauri command
+  rejects with a string, so a screen that reads `error.message` shows nothing
+  without it.
+- Ask before an action that erases rows. Use the shadcn `AlertDialog`, and give
+  the confirming button the `destructive` variant.
+- Give each row the owner from `currentUserId()` in `src/os.ts`. Do not read
+  the operating system again after setup.
+- Speak through `src/speech.ts`. The system voice uses the Web Speech API of
+  the WebView. A cloud voice must go through Rust.
 - Keep every API key in the macOS Keychain, through `src-tauri/src/providers.rs`.
   A key must not enter the onboarding draft, SQLite, a Tauri event, a log, or
   the browser storage. A command returns a status, never a key.

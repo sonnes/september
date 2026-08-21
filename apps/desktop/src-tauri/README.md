@@ -32,8 +32,93 @@ columns. Messages and notes can belong to a space. Deleting a space deletes its
 messages and scoped notes, while global messages and notes remain. Timestamps
 are Unix milliseconds.
 
-Schema version 1 creates all four tables. The app does not migrate databases
-created by earlier backend versions.
+Schema version 4 creates all four tables. Released builds before the domain
+tables used versions 1 to 3 for a database that held only the settings, so the
+version of the domain tables must be higher than those. The migration uses
+`CREATE TABLE IF NOT EXISTS`, so an install from an earlier build gains the
+domain tables and keeps its settings.
+
+## Call the domain APIs
+
+Each domain command accepts a `request` object. A `put` command inserts or
+replaces one complete row and returns the stored object. A `get` command
+returns `null` when its row does not exist. A `delete` command returns `false`
+when its row does not exist.
+
+| Command | Request | Response |
+| --- | --- | --- |
+| `space_list` | `{ user_id }` | `Space[]` |
+| `space_get` | `{ id }` | `Space \| null` |
+| `space_put` | `Space` | `Space` |
+| `space_delete` | `{ id }` | `boolean` |
+| `message_list` | `{ space_id? }` | `Message[]` |
+| `message_get` | `{ id }` | `Message \| null` |
+| `message_put` | `Message` | `Message` |
+| `message_delete` | `{ id }` | `boolean` |
+| `note_list` | `{ space_id? }` | `Note[]` |
+| `note_get` | `{ id }` | `Note \| null` |
+| `note_put` | `Note` | `Note` |
+| `note_delete` | `{ id }` | `boolean` |
+
+The objects use the same snake-case fields as the SQLite columns:
+
+```ts
+type Space = {
+  id: string;
+  user_id: string;
+  title?: string;
+  context?: string;
+  phrases_synced_count?: number;
+  created_at: number;
+  updated_at: number;
+};
+
+type Message = {
+  id: string;
+  space_id?: string;
+  user_id: string;
+  text: string;
+  type: string;
+  audio_path?: string;
+  created_at: number;
+};
+
+type Note = {
+  id: string;
+  space_id?: string;
+  name?: string;
+  content: string;
+  created_at: number;
+  updated_at: number;
+};
+```
+
+`space_list` returns one user's spaces from most recently updated to least
+recently updated. Message lists use conversation order. Note lists use most
+recently updated order. Pass `space_id` to filter messages or notes to one
+space, or omit it to return every row.
+
+IDs, user IDs, and message types must contain 1 to 256 bytes. Timestamps and
+`phrases_synced_count` cannot be negative. An updated timestamp cannot precede
+its created timestamp. A scoped message or note must reference an existing
+space.
+
+Deleting a space also deletes its scoped messages and notes. Global messages
+and notes remain. For example, this call creates or replaces a space:
+
+```ts
+import { invoke } from "@tauri-apps/api/core";
+
+const space = await invoke<Space>("space_put", {
+  request: {
+    id: crypto.randomUUID(),
+    user_id: "local-user",
+    title: "General",
+    created_at: Date.now(),
+    updated_at: Date.now(),
+  },
+});
+```
 
 ## Call the settings API
 
@@ -55,6 +140,15 @@ operating system holds for the signed-in user. The result is empty when the
 system has no usable name. The onboarding screen then starts with an empty
 field. The command keeps the first GECOS field and rejects the `Unknown`
 placeholder.
+
+## Read the login name
+
+The `user_id` command takes no request. It returns the login name of the
+signed-in user, for example `ravi`. The command rejects its promise when the
+system knows no login name.
+
+A space and a message need an identifier for the owner. The display name from
+`user_name` can be empty, and the user can change it, so it cannot be one.
 
 ## Connect a cloud service
 

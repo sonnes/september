@@ -133,40 +133,54 @@ function AppSidebar() {
   );
 }
 
+/** The 64px header of a screen. It carries the sidebar toggle. */
+export function ScreenHeader({ children }: { children?: ReactNode }) {
+  return (
+    <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+      <SidebarTrigger className="-ml-1" />
+      <Separator
+        orientation="vertical"
+        className="mr-2 data-[orientation=vertical]:h-4"
+      />
+      {children}
+    </header>
+  );
+}
+
 /**
- * One screen inside the shell: a 64px header that carries the sidebar toggle,
- * then a scrolling body.
+ * One screen inside the shell: the header, then a scrolling body.
  *
  * The body is a div, not a `main`: `SidebarInset` is already the `main`.
  */
 export function Screen({
   title,
   description,
+  action,
   children,
 }: {
   title: string;
   description?: ReactNode;
+  /** A control for the whole screen, beside the title. */
+  action?: ReactNode;
   children?: ReactNode;
 }) {
   return (
     <>
-      <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-        <SidebarTrigger className="-ml-1" />
-        <Separator
-          orientation="vertical"
-          className="mr-2 data-[orientation=vertical]:h-4"
-        />
+      <ScreenHeader>
         <span className="text-sm font-medium">{title}</span>
-      </header>
+      </ScreenHeader>
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-2 md:p-4">
         <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6 md:py-8">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
-            {description ? (
-              <p className="text-muted-foreground text-sm sm:text-base">
-                {description}
-              </p>
-            ) : null}
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+              {description ? (
+                <p className="text-muted-foreground text-sm sm:text-base">
+                  {description}
+                </p>
+              ) : null}
+            </div>
+            {action}
           </div>
           {children}
         </div>

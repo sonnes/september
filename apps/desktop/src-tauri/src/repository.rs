@@ -1,11 +1,55 @@
 use std::path::Path;
 
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{params, Connection, OptionalExtension, Row};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::error::{BackendError, Result};
 
-const SCHEMA_VERSION: i64 = 1;
+/// Released builds before the domain tables used 1, 2, and 3 for a database
+/// that held only the settings. The domain tables arrive at 4, so those
+/// installs migrate instead of staying at a number above the target.
+const SCHEMA_VERSION: i64 = 4;
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct Space {
+    pub id: String,
+    pub user_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub context: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub phrases_synced_count: Option<i64>,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct Message {
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub space_id: Option<String>,
+    pub user_id: String,
+    pub text: String,
+    #[serde(rename = "type")]
+    pub message_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub audio_path: Option<String>,
+    pub created_at: i64,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct Note {
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub space_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    pub content: String,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
 
 pub struct Repository {
     connection: Connection,
@@ -55,6 +99,178 @@ impl Repository {
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 
+    pub fn list_spaces(&self, user_id: &str) -> Result<Vec<Space>> {
+        validate_identifier("space user ID", user_id)?;
+        let mut statement = self.connection.prepare(
+            "SELECT id, user_id, title, context, phrases_synced_count, created_at, updated_at \
+             FROM spaces WHERE user_id = ?1 ORDER BY updated_at DESC, id",
+        )?;
+        let rows = statement.query_map([user_id], row_to_space)?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    pub fn get_space(&self, id: &str) -> Result<Option<Space>> {
+        validate_identifier("space ID", id)?;
+        self.connection
+            .query_row(
+                "SELECT id, user_id, title, context, phrases_synced_count, created_at, updated_at \
+                 FROM spaces WHERE id = ?1",
+                [id],
+                row_to_space,
+            )
+            .optional()
+            .map_err(Into::into)
+    }
+
+    pub fn put_space(&self, space: &Space) -> Result<()> {
+        validate_space(space)?;
+        self.connection.execute(
+            "INSERT INTO spaces \
+             (id, user_id, title, context, phrases_synced_count, created_at, updated_at) \
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) \
+             ON CONFLICT(id) DO UPDATE SET \
+               user_id = excluded.user_id, \
+               title = excluded.title, \
+               context = excluded.context, \
+               phrases_synced_count = excluded.phrases_synced_count, \
+               created_at = excluded.created_at, \
+               updated_at = excluded.updated_at",
+            params![
+                space.id,
+                space.user_id,
+                space.title,
+                space.context,
+                space.phrases_synced_count,
+                space.created_at,
+                space.updated_at,
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_space(&self, id: &str) -> Result<bool> {
+        validate_identifier("space ID", id)?;
+        Ok(self
+            .connection
+            .execute("DELETE FROM spaces WHERE id = ?1", [id])?
+            > 0)
+    }
+
+    pub fn list_messages(&self, space_id: Option<&str>) -> Result<Vec<Message>> {
+        if let Some(space_id) = space_id {
+            validate_identifier("message space ID", space_id)?;
+        }
+        let mut statement = self.connection.prepare(
+            "SELECT id, space_id, user_id, text, type, audio_path, created_at \
+             FROM messages WHERE (?1 IS NULL OR space_id = ?1) ORDER BY created_at, id",
+        )?;
+        let rows = statement.query_map([space_id], row_to_message)?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    pub fn get_message(&self, id: &str) -> Result<Option<Message>> {
+        validate_identifier("message ID", id)?;
+        self.connection
+            .query_row(
+                "SELECT id, space_id, user_id, text, type, audio_path, created_at \
+                 FROM messages WHERE id = ?1",
+                [id],
+                row_to_message,
+            )
+            .optional()
+            .map_err(Into::into)
+    }
+
+    pub fn put_message(&self, message: &Message) -> Result<()> {
+        validate_message(message)?;
+        self.connection.execute(
+            "INSERT INTO messages \
+             (id, space_id, user_id, text, type, audio_path, created_at) \
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) \
+             ON CONFLICT(id) DO UPDATE SET \
+               space_id = excluded.space_id, \
+               user_id = excluded.user_id, \
+               text = excluded.text, \
+               type = excluded.type, \
+               audio_path = excluded.audio_path, \
+               created_at = excluded.created_at",
+            params![
+                message.id,
+                message.space_id,
+                message.user_id,
+                message.text,
+                message.message_type,
+                message.audio_path,
+                message.created_at,
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_message(&self, id: &str) -> Result<bool> {
+        validate_identifier("message ID", id)?;
+        Ok(self
+            .connection
+            .execute("DELETE FROM messages WHERE id = ?1", [id])?
+            > 0)
+    }
+
+    pub fn list_notes(&self, space_id: Option<&str>) -> Result<Vec<Note>> {
+        if let Some(space_id) = space_id {
+            validate_identifier("note space ID", space_id)?;
+        }
+        let mut statement = self.connection.prepare(
+            "SELECT id, space_id, name, content, created_at, updated_at \
+             FROM notes WHERE (?1 IS NULL OR space_id = ?1) ORDER BY updated_at DESC, id",
+        )?;
+        let rows = statement.query_map([space_id], row_to_note)?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    pub fn get_note(&self, id: &str) -> Result<Option<Note>> {
+        validate_identifier("note ID", id)?;
+        self.connection
+            .query_row(
+                "SELECT id, space_id, name, content, created_at, updated_at \
+                 FROM notes WHERE id = ?1",
+                [id],
+                row_to_note,
+            )
+            .optional()
+            .map_err(Into::into)
+    }
+
+    pub fn put_note(&self, note: &Note) -> Result<()> {
+        validate_note(note)?;
+        self.connection.execute(
+            "INSERT INTO notes (id, space_id, name, content, created_at, updated_at) \
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6) \
+             ON CONFLICT(id) DO UPDATE SET \
+               space_id = excluded.space_id, \
+               name = excluded.name, \
+               content = excluded.content, \
+               created_at = excluded.created_at, \
+               updated_at = excluded.updated_at",
+            params![
+                note.id,
+                note.space_id,
+                note.name,
+                note.content,
+                note.created_at,
+                note.updated_at,
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_note(&self, id: &str) -> Result<bool> {
+        validate_identifier("note ID", id)?;
+        Ok(self
+            .connection
+            .execute("DELETE FROM notes WHERE id = ?1", [id])?
+            > 0)
+    }
+
     pub fn get_setting(&self, key: &str) -> Result<Option<Value>> {
         validate_key(key)?;
         let encoded: Option<String> = self
@@ -87,6 +303,102 @@ impl Repository {
     }
 }
 
+fn row_to_space(row: &Row<'_>) -> rusqlite::Result<Space> {
+    Ok(Space {
+        id: row.get(0)?,
+        user_id: row.get(1)?,
+        title: row.get(2)?,
+        context: row.get(3)?,
+        phrases_synced_count: row.get(4)?,
+        created_at: row.get(5)?,
+        updated_at: row.get(6)?,
+    })
+}
+
+fn row_to_message(row: &Row<'_>) -> rusqlite::Result<Message> {
+    Ok(Message {
+        id: row.get(0)?,
+        space_id: row.get(1)?,
+        user_id: row.get(2)?,
+        text: row.get(3)?,
+        message_type: row.get(4)?,
+        audio_path: row.get(5)?,
+        created_at: row.get(6)?,
+    })
+}
+
+fn row_to_note(row: &Row<'_>) -> rusqlite::Result<Note> {
+    Ok(Note {
+        id: row.get(0)?,
+        space_id: row.get(1)?,
+        name: row.get(2)?,
+        content: row.get(3)?,
+        created_at: row.get(4)?,
+        updated_at: row.get(5)?,
+    })
+}
+
+fn validate_space(space: &Space) -> Result<()> {
+    validate_identifier("space ID", &space.id)?;
+    validate_identifier("space user ID", &space.user_id)?;
+    validate_timestamp("space created_at", space.created_at)?;
+    validate_timestamp("space updated_at", space.updated_at)?;
+    if space.updated_at < space.created_at {
+        return Err(BackendError::InvalidInput(
+            "space updated_at must not precede created_at".into(),
+        ));
+    }
+    if space.phrases_synced_count.is_some_and(|count| count < 0) {
+        return Err(BackendError::InvalidInput(
+            "space phrases_synced_count must not be negative".into(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_message(message: &Message) -> Result<()> {
+    validate_identifier("message ID", &message.id)?;
+    validate_identifier("message user ID", &message.user_id)?;
+    validate_identifier("message type", &message.message_type)?;
+    if let Some(space_id) = &message.space_id {
+        validate_identifier("message space ID", space_id)?;
+    }
+    validate_timestamp("message created_at", message.created_at)
+}
+
+fn validate_note(note: &Note) -> Result<()> {
+    validate_identifier("note ID", &note.id)?;
+    if let Some(space_id) = &note.space_id {
+        validate_identifier("note space ID", space_id)?;
+    }
+    validate_timestamp("note created_at", note.created_at)?;
+    validate_timestamp("note updated_at", note.updated_at)?;
+    if note.updated_at < note.created_at {
+        return Err(BackendError::InvalidInput(
+            "note updated_at must not precede created_at".into(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_identifier(name: &str, value: &str) -> Result<()> {
+    if value.is_empty() || value.len() > 256 {
+        return Err(BackendError::InvalidInput(format!(
+            "{name} must contain 1 to 256 bytes"
+        )));
+    }
+    Ok(())
+}
+
+fn validate_timestamp(name: &str, value: i64) -> Result<()> {
+    if value < 0 {
+        return Err(BackendError::InvalidInput(format!(
+            "{name} must not be negative"
+        )));
+    }
+    Ok(())
+}
+
 fn validate_key(key: &str) -> Result<()> {
     if key.is_empty() || key.len() > 256 {
         return Err(BackendError::InvalidInput(
@@ -98,7 +410,35 @@ fn validate_key(key: &str) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use rusqlite::Connection;
+
     use super::Repository;
+
+    #[test]
+    fn a_database_from_an_earlier_backend_gains_the_domain_tables() {
+        // An install from before the domain tables holds a higher version
+        // number and only the settings table. It must not stay there.
+        let connection = Connection::open_in_memory().unwrap();
+        connection
+            .execute_batch(
+                "CREATE TABLE settings (
+                   key TEXT PRIMARY KEY NOT NULL,
+                   value TEXT NOT NULL CHECK (json_valid(value))
+                 ) STRICT;
+                 INSERT INTO settings VALUES ('setup', '{\"name\":\"Ravi\"}');
+                 PRAGMA user_version = 3;",
+            )
+            .unwrap();
+
+        let repository = Repository::from_connection(connection).unwrap();
+        let tables = repository.table_names().unwrap();
+
+        assert!(tables.contains(&"spaces".to_owned()), "{tables:?}");
+        assert!(tables.contains(&"messages".to_owned()), "{tables:?}");
+        assert!(tables.contains(&"notes".to_owned()), "{tables:?}");
+        // The settings of the user survive the migration.
+        assert!(repository.get_setting("setup").unwrap().is_some());
+    }
 
     #[test]
     fn domain_tables_store_fields_in_columns() {

@@ -15,7 +15,7 @@ never wears the app sidebar, and an app screen never wears the setup sidebar.
 | Layout      | Component                     | Routes                                             |
 | ----------- | ----------------------------- | -------------------------------------------------- |
 | Setup       | `OnboardingLayout`, `app.tsx` | `/welcome` `/profile` `/mode` `/connect` `/finish`  |
-| Application | `AppShell`, `shell.tsx`       | `/dashboard` `/spaces` `/voice` `/help` `/settings` |
+| Application | `AppShell`, `shell.tsx`       | `/dashboard` `/spaces` `/spaces/$slug/talk` `/voice` `/help` `/settings` |
 
 `AppShell` is the shadcn `Sidebar` and `SidebarInset` pair: a solid indigo
 sidebar beside a white inset card. `src/app-nav.ts` lists the destinations and
@@ -36,6 +36,49 @@ holds a name and a mode. The app layout reads the same rule, so an app screen
 opened before setup turns back to `/welcome`.
 
 To run setup again, erase the `setup` setting.
+
+## Talk in a space
+
+A space keeps the words that the user says to one person or in one place.
+`/spaces` lists them. `/spaces/$slug/talk` opens one.
+
+The list shows the spaces, most recently used first. Each row gives the title
+and the time of the last message. A search field keeps the rows whose title
+holds the words that the user types.
+
+The first space is `General`. A later space is `New space`, then `New space 2`,
+and so on. The name must be free, because one slug must name one space. A new
+space opens at once, and the user can give it a better name in the header.
+
+Delete asks first. Deleting a space deletes its messages too, so a dialog with
+a red button holds the action.
+
+The slug is the title of the space, and it holds no identifier. A stale slug
+goes back to the list. A new title moves the address with it. Two spaces cannot
+share a title, because one slug must name one space.
+
+The Talk screen has three parts, from the top:
+
+1. The transcript. It holds the spoken messages, 8 for each page, newest last.
+   Press a message to speak it again.
+2. The composer. It has the text field, undo, delete last word, clear, and
+   Speak. The Enter key speaks. Shift and Enter make a new line.
+3. The dock. It has one tab for each space, and a button that makes a new one.
+
+`src/spaces.ts` owns the rules that a test can read: the slug, the page, the
+unique title, and the word that delete removes.
+
+`src/data.ts` holds every read and every write of a space or a message. It uses
+TanStack Query over the Rust commands. The owner of each row is the login name
+of the operating system, which setup keeps in the `setup` setting.
+
+`src/speech.ts` speaks. The system voice uses the Web Speech API of the
+WebView, so it needs no Rust and no key. An ElevenLabs voice will go through
+Rust, because the key stays in the Keychain.
+
+The composer keeps its text until SQLite accepts the message, so a failed write
+loses no words. September does not store the audio yet. A message that plays
+again is spoken again.
 
 ## Walk through setup
 
@@ -131,5 +174,7 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo fmt --all -- --check
 ```
 
-The Rust backend stores settings, spaces, messages, and notes in SQLite. See
-[`src-tauri/README.md`](src-tauri/README.md) for its storage and RPC contracts.
+The Rust backend stores settings, spaces, messages, and notes in SQLite. It
+provides list, get, put, and delete commands for each domain row. See
+[`src-tauri/README.md`](src-tauri/README.md) for the complete storage and RPC
+contracts.
