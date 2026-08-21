@@ -1,11 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
 
-import { currentSetup } from "./os";
+import { currentSetup } from "@/services/os";
 import {
   buildSpaceContextPrompt,
   spaceDescriptionFrom,
   type SpaceDescription,
-} from "./prompts";
+} from "@/rules/prompts";
 
 /**
  * The writing service.

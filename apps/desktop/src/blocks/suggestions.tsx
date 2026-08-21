@@ -10,17 +10,17 @@ import {
 
 import { cn } from "@/lib/utils";
 
-import { generate, hasWritingService, itemsFrom, userContext } from "./ai";
-import { useMessages, usePhrases } from "./data";
+import { generate, hasWritingService, itemsFrom, userContext } from "@/services/ai";
+import { useMessages, usePhrases } from "@/services/data";
 import {
   matchCode,
   topPhrases,
   topRows,
   trailingWord,
   type SavedPhrase,
-} from "./phrases";
-import { buildSuggestionPrompt } from "./prompts";
-import { applySuggestion, useSuggestions } from "./suggest";
+} from "@/rules/phrases";
+import { buildSuggestionPrompt } from "@/rules/prompts";
+import { applySuggestion, useSuggestions } from "@/services/suggest";
 import {
   boardPhrases,
   boardWords,
@@ -32,7 +32,7 @@ import {
   TILE,
   tileScale,
   type SuggestionSource,
-} from "./stripes";
+} from "@/rules/stripes";
 
 /** Curated rows in the stripe, and how many of them may be starters. */
 const SAVED_LIMIT = 5;

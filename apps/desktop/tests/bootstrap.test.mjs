@@ -7,7 +7,7 @@ import {
   BASE_VIEWPORT_WIDTH,
   isCompactWidth,
   openingPath,
-} from "../src/app-nav.ts";
+} from "../src/rules/app-nav.ts";
 import {
   decidePhraseSync,
   dedupeAgainstPinned,
@@ -21,7 +21,7 @@ import {
   topRows,
   trailingWord,
   validateCode,
-} from "../src/phrases.ts";
+} from "../src/rules/phrases.ts";
 import {
   appendTokens,
   codeExpansionText,
@@ -31,7 +31,7 @@ import {
   tileScale,
   TILE_SCALE_MIN,
   tokenize,
-} from "../src/stripes.ts";
+} from "../src/rules/stripes.ts";
 import {
   deleteLastWord,
   filterSpaces,
@@ -43,8 +43,8 @@ import {
   rememberSpaceMode,
   timeAgo,
   transcriptPage,
-} from "../src/spaces.ts";
-import { buildSpaceContextPrompt, spaceDescriptionFrom } from "../src/prompts.ts";
+} from "../src/rules/spaces.ts";
+import { buildSpaceContextPrompt, spaceDescriptionFrom } from "../src/rules/prompts.ts";
 import {
   appendToNote,
   markdownToVoiceText,
@@ -53,7 +53,7 @@ import {
   noteNameFromContent,
   noteNameIsUnset,
   noteSlug,
-} from "../src/notes.ts";
+} from "../src/rules/notes.ts";
 import {
   canReach,
   isSetupDone,
@@ -61,7 +61,7 @@ import {
   previousStep,
   STEPS,
   stepsFor,
-} from "../src/onboarding.ts";
+} from "../src/rules/onboarding.ts";
 
 const desktopRoot = new URL("../", import.meta.url);
 
@@ -165,7 +165,7 @@ test("a step opens only after its required answers exist", () => {
 });
 
 test("the draft carries a service choice, never a key", async () => {
-  const onboarding = await readText("src/onboarding.ts");
+  const onboarding = await readText("src/rules/onboarding.ts");
 
   assert.match(onboarding, /writingService/);
   assert.match(onboarding, /voiceService/);
@@ -186,27 +186,27 @@ test("the UI uses shadcn primitives", async () => {
     );
   }
 
-  const steps = await readText("src/steps.tsx");
+  const steps = await readText("src/pages/steps.tsx");
   assert.match(steps, /from "@\/components\/ui\/button"/);
   assert.doesNotMatch(steps, /PRIMARY_BUTTON/);
 });
 
 test("the brand and the step numbers live in a sidebar", async () => {
-  const app = await readText("src/app.tsx");
+  const app = await readText("src/layouts/onboarding.tsx");
 
   assert.match(app, /<aside/);
   assert.doesNotMatch(app, /<header/);
 });
 
 test("every section stays open", async () => {
-  const steps = await readText("src/steps.tsx");
+  const steps = await readText("src/pages/steps.tsx");
 
   assert.doesNotMatch(steps, /aria-expanded/);
   assert.doesNotMatch(steps, /showPersonalWords/);
 });
 
 test("each control has one label, and no label repeats its section title", async () => {
-  const steps = await readText("src/steps.tsx");
+  const steps = await readText("src/pages/steps.tsx");
   const value = (match) => match.split('"')[1];
   const ids = (steps.match(/\bid="onboarding-[a-z-]+"/g) ?? []).map(value);
   const labelled = (steps.match(/\bhtmlFor="onboarding-[a-z-]+"/g) ?? []).map(value);
@@ -224,13 +224,13 @@ test("the profile name starts from the operating-system name", async () => {
     /rpc::user_name/,
     "the backend must expose the name",
   );
-  assert.match(await readText("src/os.ts"), /invoke<string>\("user_name"\)/);
+  assert.match(await readText("src/services/os.ts"), /invoke<string>\("user_name"\)/);
 
   const packageJson = await readJson("package.json");
   assert.ok(packageJson.dependencies["@tauri-apps/api"]);
 
   // The draft starts with the name, so no effect races the first render.
-  assert.match(await readText("src/app.tsx"), /name: osName/);
+  assert.match(await readText("src/layouts/onboarding.tsx"), /name: osName/);
 });
 
 test("the Rust backend owns the private apfel sidecar", async () => {
@@ -255,8 +255,8 @@ test("the Rust backend owns the private apfel sidecar", async () => {
 });
 
 test("the connect step asks by job and keeps keys out of the UI", async () => {
-  const steps = await readText("src/steps.tsx");
-  const os = await readText("src/os.ts");
+  const steps = await readText("src/pages/steps.tsx");
+  const os = await readText("src/services/os.ts");
   const lib = await readText("src-tauri/src/lib.rs");
 
   assert.match(steps, /export function ConnectStep/);
@@ -280,7 +280,7 @@ test("the connect step asks by job and keeps keys out of the UI", async () => {
 });
 
 test("a choice keeps its height when it is selected", async () => {
-  const steps = await readText("src/steps.tsx");
+  const steps = await readText("src/pages/steps.tsx");
   const choice = steps.slice(steps.indexOf("function Choice("));
 
   // Selection changes the border only. A panel that appears on selection would
@@ -292,7 +292,7 @@ test("a choice keeps its height when it is selected", async () => {
 
 test("each service wears its own mark", async () => {
   // Setup and settings share one mark, so a brand asset is named one time.
-  const steps = await readText("src/services.tsx");
+  const steps = await readText("src/blocks/services.tsx");
 
   assert.match(steps, /function Mark\(/);
   assert.match(steps, /elevenlabs-mark\.svg/);
@@ -317,7 +317,7 @@ test("each service wears its own mark", async () => {
 });
 
 test("the sidebar is an inset card like the step surface", async () => {
-  const app = await readText("src/app.tsx");
+  const app = await readText("src/layouts/onboarding.tsx");
   const shell = app.match(/<div className="([^"]*h-dvh[^"]*)"/)[1];
   const aside = app.match(/<aside className="([^"]*)"/)[1];
   const main = app.match(/<main className="([^"]*)"/)[1];
@@ -332,7 +332,7 @@ test("the sidebar is an inset card like the step surface", async () => {
 });
 
 test("the welcome markers stay inside the scrolling step body", async () => {
-  const steps = await readText("src/steps.tsx");
+  const steps = await readText("src/pages/steps.tsx");
   const list = steps.match(/<ol className="([^"]*)"/)[1];
   const hang = Number(steps.match(/-left-\[([\d.]+)rem\]/)[1]) * 16;
   const space = (prefix) => {
@@ -350,7 +350,7 @@ test("the welcome markers stay inside the scrolling step body", async () => {
 });
 
 test("the app layout keeps the sidebar beside an inset surface", async () => {
-  const shell = await readText("src/shell.tsx");
+  const shell = await readText("src/layouts/app.tsx");
 
   assert.match(shell, /SidebarProvider/);
   assert.match(shell, /<AppSidebar\b/);
@@ -366,13 +366,13 @@ test("the app sidebar starts as a rail at the 13-inch iPad baseline", async () =
   assert.ok(isCompactWidth(1376), "the baseline itself is compact");
   assert.ok(!isCompactWidth(1377), "a wider screen opens the full sidebar");
 
-  const shell = await readText("src/shell.tsx");
+  const shell = await readText("src/layouts/app.tsx");
   assert.match(shell, /defaultOpen=\{!isCompact\}/);
 });
 
 test("every app destination has a route and an icon", async () => {
   const main = await readText("src/main.tsx");
-  const shell = await readText("src/shell.tsx");
+  const shell = await readText("src/layouts/app.tsx");
 
   assert.ok(APP_NAV.length > 0);
   for (const item of APP_NAV) {
@@ -394,7 +394,7 @@ test("the app opens where the user left it", () => {
 });
 
 test("the last screen is kept in one setting", async () => {
-  const os = await readText("src/os.ts");
+  const os = await readText("src/services/os.ts");
   const main = await readText("src/main.tsx");
 
   assert.match(os, /key: "lastPath"/);
@@ -418,10 +418,10 @@ test("setup and the app are separate layouts", async () => {
 });
 
 test("both sidebars show the published brand mark", async () => {
-  const brand = await readText("src/brand.tsx");
+  const brand = await readText("src/blocks/brand.tsx");
 
   assert.match(brand, /"\/logo\.svg"/, "the mark comes from the published file");
-  for (const file of ["src/app.tsx", "src/shell.tsx"]) {
+  for (const file of ["src/layouts/onboarding.tsx", "src/layouts/app.tsx"]) {
     assert.match(await readText(file), /BrandMark/, `${file} needs the mark`);
   }
 });
@@ -438,7 +438,7 @@ test("the app sidebar stays indigo, in the shadcn tokens", async () => {
 });
 
 test("setup ends inside the app layout", async () => {
-  const steps = await readText("src/steps.tsx");
+  const steps = await readText("src/pages/steps.tsx");
 
   assert.match(steps, new RegExp(`to: "${APP_NAV[0].path}"`));
 });
@@ -469,8 +469,8 @@ test("an app screen turns an unfinished setup back to the start", async () => {
 });
 
 test("setup keeps its answers before it opens the app", async () => {
-  const os = await readText("src/os.ts");
-  const steps = await readText("src/steps.tsx");
+  const os = await readText("src/services/os.ts");
+  const steps = await readText("src/pages/steps.tsx");
 
   // One setting holds the finished setup, and the module keeps the value it
   // wrote, so the guard right after setup reads the new answers.
@@ -481,7 +481,7 @@ test("setup keeps its answers before it opens the app", async () => {
 });
 
 test("the brand and the nav icons share one left edge", async () => {
-  const shell = await readText("src/shell.tsx");
+  const shell = await readText("src/layouts/app.tsx");
   const brand = shell.match(/aria-label="September"\s+className="([^"]*)"/)[1];
 
   // `SidebarHeader` and `SidebarGroup` both inset by 8px, so the brand and
@@ -544,7 +544,7 @@ test("the list says when a space last changed", () => {
 });
 
 test("deleting a space asks first, because the messages go with it", async () => {
-  const talk = await readText("src/talk.tsx");
+  const talk = await readText("src/pages/spaces.tsx");
 
   assert.match(talk, /AlertDialog/);
   assert.match(talk, /cannot undo/);
@@ -554,7 +554,7 @@ test("deleting a space asks first, because the messages go with it", async () =>
 });
 
 test("the list has a search field", async () => {
-  const talk = await readText("src/talk.tsx");
+  const talk = await readText("src/pages/spaces.tsx");
 
   assert.match(talk, /filterSpaces/);
   assert.match(talk, /aria-label="Search spaces"/);
@@ -581,7 +581,7 @@ test("the composer drops one word at a time", () => {
 });
 
 test("the user id is the login name of the operating system", async () => {
-  const os = await readText("src/os.ts");
+  const os = await readText("src/services/os.ts");
   const rpc = await readText("src-tauri/src/rpc.rs");
 
   assert.match(rpc, /pub\(crate\) fn user_id/);
@@ -591,7 +591,7 @@ test("the user id is the login name of the operating system", async () => {
 });
 
 test("setup freezes the user id, so a later read cannot move the spaces", async () => {
-  const os = await readText("src/os.ts");
+  const os = await readText("src/services/os.ts");
   const saveSetup = os.match(/export async function saveSetup[\s\S]*?\n\}/)[0];
 
   // The identifier goes into the setup setting one time. `currentUserId`
@@ -603,13 +603,15 @@ test("setup freezes the user id, so a later read cannot move the spaces", async 
 test("only data.ts and os.ts talk to Rust", async () => {
   // The service modules (`os.ts`, `data.ts`, `ai.ts`) are the only callers.
   const files = [
-    "src/talk.tsx",
-    "src/speech.ts",
-    "src/player.ts",
-    "src/voice.tsx",
-    "src/suggestions.tsx",
-    "src/phrase-panel.tsx",
-    "src/phrase-sync.ts",
+    "src/pages/talk.tsx",
+    "src/pages/spaces.tsx",
+    "src/blocks/space.tsx",
+    "src/services/speech.ts",
+    "src/services/player.ts",
+    "src/pages/voice.tsx",
+    "src/blocks/suggestions.tsx",
+    "src/blocks/phrase-panel.tsx",
+    "src/services/phrase-sync.ts",
   ];
   for (const file of files) {
     assert.doesNotMatch(await readText(file), /@tauri-apps\/api/, file);
@@ -618,7 +620,7 @@ test("only data.ts and os.ts talk to Rust", async () => {
 
 test("spaces and messages read through TanStack Query", async () => {
   const packageJson = await readJson("package.json");
-  const data = await readText("src/data.ts");
+  const data = await readText("src/services/data.ts");
   const main = await readText("src/main.tsx");
 
   assert.ok(packageJson.dependencies["@tanstack/react-query"]);
@@ -630,7 +632,7 @@ test("spaces and messages read through TanStack Query", async () => {
 });
 
 test("a failed command carries a message the screen can show", async () => {
-  const data = await readText("src/data.ts");
+  const data = await readText("src/services/data.ts");
 
   // Tauri rejects with a string, so `error.message` would be empty. One
   // wrapper turns every rejection into an Error.
@@ -650,15 +652,15 @@ test("Talk is a route inside a space", async () => {
 // --------------------------------------------------------- voice and audio
 
 test("one setting owns the voice, and setup seeds it", async () => {
-  const os = await readText("src/os.ts");
-  const steps = await readText("src/steps.tsx");
+  const os = await readText("src/services/os.ts");
+  const steps = await readText("src/pages/steps.tsx");
 
   // The `services` setting had no reader, so the voice chosen at /connect was
   // lost. `/voice` owns the voice, in the `speech` setting, and setup seeds it.
   assert.doesNotMatch(os, /saveServices/);
   assert.doesNotMatch(os, /"services"/);
   assert.match(steps, /saveSpeech\(/);
-  assert.match(await readText("src/voice.tsx"), /saveSpeech\(/);
+  assert.match(await readText("src/pages/voice.tsx"), /saveSpeech\(/);
 });
 
 test("a voice file is named for the settings and the words", async () => {
@@ -671,7 +673,7 @@ test("a voice file is named for the settings and the words", async () => {
 });
 
 test("the audio file reaches the WebView through the asset protocol", async () => {
-  const os = await readText("src/os.ts");
+  const os = await readText("src/services/os.ts");
   const config = await readJson("src-tauri/tauri.conf.json");
 
   assert.match(os, /convertFileSrc/);
@@ -680,7 +682,7 @@ test("the audio file reaches the WebView through the asset protocol", async () =
 });
 
 test("the player holds one sound at a time", async () => {
-  const player = await readText("src/player.ts");
+  const player = await readText("src/services/player.ts");
 
   assert.match(player, /export function play/);
   assert.match(player, /export function stop/);
@@ -689,7 +691,7 @@ test("the player holds one sound at a time", async () => {
 });
 
 test("every voice meets one interface", async () => {
-  const speech = await readText("src/speech.ts");
+  const speech = await readText("src/services/speech.ts");
 
   assert.match(speech, /interface SpeechProvider/);
   assert.match(speech, /id: "system"/);
@@ -698,7 +700,7 @@ test("every voice meets one interface", async () => {
 });
 
 test("the cloud voice falls back to the system voice", async () => {
-  const speech = await readText("src/speech.ts");
+  const speech = await readText("src/services/speech.ts");
   const cloud = speech.match(/const cloudVoice[\s\S]*?\n\}\);/)[0];
 
   // A person who cannot speak must not meet silence.
@@ -707,8 +709,8 @@ test("the cloud voice falls back to the system voice", async () => {
 });
 
 test("spoken messages use the native audio process", async () => {
-  const os = await readText("src/os.ts");
-  const speech = await readText("src/speech.ts");
+  const os = await readText("src/services/os.ts");
+  const speech = await readText("src/services/speech.ts");
 
   assert.match(os, /speech_system/);
   assert.match(os, /speech_file_play/);
@@ -720,9 +722,9 @@ test("spoken messages use the native audio process", async () => {
 });
 
 test("the Talk audio selector controls the FaceTime microphone", async () => {
-  const os = await readText("src/os.ts");
-  const talk = await readText("src/talk.tsx");
-  const voice = await readText("src/voice.tsx");
+  const os = await readText("src/services/os.ts");
+  const talk = await readText("src/blocks/space.tsx");
+  const voice = await readText("src/pages/voice.tsx");
 
   assert.match(os, /virtual_microphone_status/);
   assert.match(os, /virtual_microphone_start/);
@@ -737,8 +739,8 @@ test("the Talk audio selector controls the FaceTime microphone", async () => {
 });
 
 test("the Talk audio selector controls the FaceTime camera", async () => {
-  const os = await readText("src/os.ts");
-  const talk = await readText("src/talk.tsx");
+  const os = await readText("src/services/os.ts");
+  const talk = await readText("src/blocks/space.tsx");
   const lib = await readText("src-tauri/src/lib.rs");
 
   for (const command of [
@@ -804,7 +806,7 @@ test("the camera extension keeps capture and composition native", async () => {
 });
 
 test("the speech settings hold everything that shapes the sound", async () => {
-  const speech = await readText("src/speech.ts");
+  const speech = await readText("src/services/speech.ts");
   const defaults = speech.match(/DEFAULT_SPEECH[\s\S]*?\};/)[0];
 
   for (const key of ["provider", "voiceId", "modelId", "stability", "similarity", "speed"]) {
@@ -813,8 +815,8 @@ test("the speech settings hold everything that shapes the sound", async () => {
 });
 
 test("the Voice screen chooses the model as well as the voice", async () => {
-  const voice = await readText("src/voice.tsx");
-  const os = await readText("src/os.ts");
+  const voice = await readText("src/pages/voice.tsx");
+  const os = await readText("src/services/os.ts");
 
   // A voice and a model both come from ElevenLabs, and both shape the sound.
   assert.match(os, /export const listModels/);
@@ -823,7 +825,7 @@ test("the Voice screen chooses the model as well as the voice", async () => {
 });
 
 test("the Voice screen keeps its choices in one setting", async () => {
-  const os = await readText("src/os.ts");
+  const os = await readText("src/services/os.ts");
   const main = await readText("src/main.tsx");
 
   assert.match(os, /key: "speech"/);
@@ -832,7 +834,7 @@ test("the Voice screen keeps its choices in one setting", async () => {
 });
 
 test("a message keeps no audio path", async () => {
-  const data = await readText("src/data.ts");
+  const data = await readText("src/services/data.ts");
 
   assert.doesNotMatch(data, /audio_path/);
 });
@@ -978,7 +980,7 @@ test("a shortcut idea needs five messages and an unused code", () => {
 });
 
 test("a code answers without waiting for the model", async () => {
-  const suggestions = await readText("src/suggestions.tsx");
+  const suggestions = await readText("src/blocks/suggestions.tsx");
 
   // The code row is built from local rows, in the same pass as the rest.
   assert.match(suggestions, /matchCode\(word, allPhrases, spaceId\)/);
@@ -988,8 +990,8 @@ test("a code answers without waiting for the model", async () => {
 });
 
 test("a model never writes over a phrase the user keeps", async () => {
-  const sync = await readText("src/phrase-sync.ts");
-  const data = await readText("src/data.ts");
+  const sync = await readText("src/services/phrase-sync.ts");
+  const data = await readText("src/services/data.ts");
   const rust = await readText("src-tauri/src/repository.rs");
 
   assert.match(sync, /dedupeAgainstPinned/);
@@ -1001,13 +1003,13 @@ test("a model never writes over a phrase the user keeps", async () => {
 });
 
 test("the codes of new rows come from the app, never from the model", async () => {
-  const sync = await readText("src/phrase-sync.ts");
+  const sync = await readText("src/services/phrase-sync.ts");
 
   assert.match(sync, /generateCode\(text, \{ existingCodes \}\)/);
 });
 
 test("the phrases panel wears the layout of the web app", async () => {
-  const panel = await readText("src/phrase-panel.tsx");
+  const panel = await readText("src/blocks/phrase-panel.tsx");
 
   // A form adds a phrase and its code, which the panel had no way to do.
   assert.match(panel, /aria-label="Add a phrase"/);
@@ -1025,14 +1027,14 @@ test("the phrases panel wears the layout of the web app", async () => {
 });
 
 test("a phrase from the panel reaches the composer of both screens", async () => {
-  for (const file of ["src/talk.tsx", "src/notes-screen.tsx"]) {
+  for (const file of ["src/pages/talk.tsx", "src/pages/notes.tsx"]) {
     assert.match(await readText(file), /onInsert=\{/, file);
   }
 });
 
 test("a shortcut idea the user turned down is kept out for good", async () => {
-  const os = await readText("src/os.ts");
-  const panel = await readText("src/phrase-panel.tsx");
+  const os = await readText("src/services/os.ts");
+  const panel = await readText("src/blocks/phrase-panel.tsx");
 
   // A setting, not the browser storage, so it lives with the rest of the app.
   assert.match(os, /key: "dismissed-ideas"/);
@@ -1065,14 +1067,14 @@ test("a tile shrinks so a long row stays on one line", () => {
 });
 
 test("the first space starts with phrases, so the stripe is never empty", async () => {
-  const data = await readText("src/data.ts");
+  const data = await readText("src/services/data.ts");
 
   assert.match(data, /STARTER_PACK/);
   assert.match(data, /pinned: true/);
 });
 
 test("no tile is ever out of reach", async () => {
-  const suggestions = await readText("src/suggestions.tsx");
+  const suggestions = await readText("src/blocks/suggestions.tsx");
 
   // Past the shrink floor a row scrolls. It must not clip its own tiles.
   assert.match(suggestions, /overflow-x-auto/);
@@ -1080,7 +1082,7 @@ test("no tile is ever out of reach", async () => {
 });
 
 test("the composer offers the next word while the user writes", async () => {
-  const suggestions = await readText("src/suggestions.tsx");
+  const suggestions = await readText("src/blocks/suggestions.tsx");
 
   assert.match(suggestions, /useSuggestions\(spaceId, text\)/);
   // The engine owns the rule for a part-written word against a finished one.
@@ -1089,7 +1091,7 @@ test("the composer offers the next word while the user writes", async () => {
 });
 
 test("the word row is its own lane, nearest the composer", async () => {
-  const suggestions = await readText("src/suggestions.tsx");
+  const suggestions = await readText("src/blocks/suggestions.tsx");
 
   // A word from the engine is not a saved phrase and not a sentence, so it
   // rides the warm lane. It sits closest to the text the user is writing.
@@ -1101,7 +1103,7 @@ test("the word row is its own lane, nearest the composer", async () => {
 });
 
 test("colour is never the only sign of where a row came from", async () => {
-  const suggestions = await readText("src/suggestions.tsx");
+  const suggestions = await readText("src/blocks/suggestions.tsx");
   const mark = suggestions.match(/function SourceMark[\s\S]*?\n\}\n/)[0];
 
   // Every source has a mark in the gutter, so a user who does not read colour
@@ -1114,8 +1116,8 @@ test("colour is never the only sign of where a row came from", async () => {
 });
 
 test("the tiles use the sizes and the tokens of the web app", async () => {
-  const suggestions = await readText("src/suggestions.tsx");
-  const stripes = await readText("src/stripes.ts");
+  const suggestions = await readText("src/blocks/suggestions.tsx");
+  const stripes = await readText("src/rules/stripes.ts");
   const styles = await readText("src/styles.css");
 
   // The pixel sizes mirror `STRIPE_BASE` in the web app, and they live beside
@@ -1134,7 +1136,7 @@ test("the tiles use the sizes and the tokens of the web app", async () => {
 });
 
 test("a hover shows the words a press would take", async () => {
-  const suggestions = await readText("src/suggestions.tsx");
+  const suggestions = await readText("src/blocks/suggestions.tsx");
 
   assert.match(suggestions, /index <= hover\.index/);
   assert.match(suggestions, /active \? lane\.active : lane\.idle/);
@@ -1190,7 +1192,7 @@ test("the name and the note are read back from the answer", () => {
 });
 
 test("the space is named after the first message, and the address follows", async () => {
-  const talk = await readText("src/talk.tsx");
+  const talk = await readText("src/pages/talk.tsx");
 
   // The note reaches the model that writes the stripe and the phrases, so it
   // is written once, when the space stops being empty.
@@ -1203,7 +1205,7 @@ test("the space is named after the first message, and the address follows", asyn
 // ------------------------------------------------------ where sound comes out
 
 test("the sound outputs are read through the system module", async () => {
-  const os = await readText("src/os.ts");
+  const os = await readText("src/services/os.ts");
 
   assert.match(os, /audio_outputs/);
   assert.match(os, /audio_output_set/);
@@ -1213,7 +1215,7 @@ test("the sound outputs are read through the system module", async () => {
 });
 
 test("the audio selector sits beside Speak and names the Mac, not the app", async () => {
-  const talk = await readText("src/talk.tsx");
+  const talk = await readText("src/blocks/space.tsx");
   const picker = talk.match(/function AudioSelector[\s\S]*?\n\}\n/)[0];
 
   // A press moves the sound of the whole Mac. The words must say so, because
@@ -1276,7 +1278,7 @@ test("a voice reads the words of a note, not its markup", () => {
 });
 
 test("a note is read and written through the data module", async () => {
-  const data = await readText("src/data.ts");
+  const data = await readText("src/services/data.ts");
 
   assert.match(data, /note_list/);
   assert.match(data, /note_put/);
@@ -1284,7 +1286,7 @@ test("a note is read and written through the data module", async () => {
 });
 
 test("the note screen autosaves and speaks with the chosen voice", async () => {
-  const notes = await readText("src/notes-screen.tsx");
+  const notes = await readText("src/pages/notes.tsx");
 
   // A user who cannot speak must never lose written words to a missed save.
   assert.match(notes, /markdownToVoiceText/);
@@ -1321,8 +1323,8 @@ test("a space opens in the mode it was left in", () => {
 });
 
 test("the mode switch is in the dock, beside the spaces", async () => {
-  const talk = await readText("src/talk.tsx");
-  const shell = await readText("src/shell.tsx");
+  const talk = await readText("src/blocks/space.tsx");
+  const shell = await readText("src/layouts/app.tsx");
 
   // The web app puts Talk and Notes in the dock. The desktop app does too, so
   // a user who knows one app knows the other.
@@ -1334,7 +1336,7 @@ test("the mode switch is in the dock, beside the spaces", async () => {
 });
 
 test("the space tabs fall back to a list when the row is full", async () => {
-  const talk = await readText("src/talk.tsx");
+  const talk = await readText("src/blocks/space.tsx");
   const dock = talk.match(/export function SpaceDock[\s\S]*?\n\}\n/)[0];
 
   // A row that overflows its box no longer fits, which is the only measure
@@ -1345,8 +1347,8 @@ test("the space tabs fall back to a list when the row is full", async () => {
 });
 
 test("the right rail holds the phrases, and stays where the user left it", async () => {
-  const panel = await readText("src/phrase-panel.tsx");
-  const shell = await readText("src/shell.tsx");
+  const panel = await readText("src/blocks/phrase-panel.tsx");
+  const shell = await readText("src/layouts/app.tsx");
 
   assert.match(panel, /PanelRail/);
   assert.match(panel, /Panel rail/);
@@ -1377,21 +1379,23 @@ test("words go under the note, with a blank line between them", () => {
 });
 
 test("Notes and Talk share one composer", async () => {
-  const talk = await readText("src/talk.tsx");
-  const notes = await readText("src/notes-screen.tsx");
+  const block = await readText("src/blocks/space.tsx");
+  const talk = await readText("src/pages/talk.tsx");
+  const notes = await readText("src/pages/notes.tsx");
 
   // A user who cannot type must reach the same word tiles, the same codes,
   // undo, and delete last word in both modes. One component, not two.
-  assert.match(talk, /export function Composer/);
+  assert.match(block, /export function Composer/);
   assert.match(talk, /<Composer/);
+  assert.doesNotMatch(talk, /function Composer/);
   assert.match(notes, /<Composer/);
   assert.doesNotMatch(notes, /function Composer/);
 });
 
 test("the composer adds words to the note, and does not speak them", async () => {
-  const notes = await readText("src/notes-screen.tsx");
-  const talk = await readText("src/talk.tsx");
-  const composer = talk.match(/export function Composer[\s\S]*?\n\}\n/)[0];
+  const notes = await readText("src/pages/notes.tsx");
+  const block = await readText("src/blocks/space.tsx");
+  const composer = block.match(/export function Composer[\s\S]*?\n\}\n/)[0];
 
   assert.match(notes, /mode="notes"/);
   assert.match(notes, /appendToNote/);

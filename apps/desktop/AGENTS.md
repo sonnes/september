@@ -26,23 +26,37 @@ cargo fmt --all -- --check
 
 ## UI boundary
 
-- Keep all desktop UI code inside `apps/desktop/src/`.
+- Keep all desktop UI code inside `apps/desktop/src/`. UI code goes in one of
+  three directories, and a rules module stays at the root of `src/`:
+  - `src/layouts/` holds a component that renders an `<Outlet/>`. There are
+    three: `onboarding.tsx`, `app.tsx`, and `settings.tsx`.
+  - `src/pages/` holds a component that a `createRoute` call in `src/main.tsx`
+    names. One file for each group of addresses.
+  - `src/blocks/` holds a part that two or more pages or layouts use. With one
+    consumer, the part stays in the page that draws it.
+  - `src/services/` holds a module that speaks to Rust, to the platform, or to
+    a cloud service, and the React hooks over it.
+  - `src/rules/` holds a module with no renderer and no backend: a node test
+    imports it directly. In `src/rules/`, import a sibling with a relative
+    path. Node does not resolve `@/`.
+  - `src/autocomplete/` does not move. It is a copy of the web engine, and the
+    two apps must stay the same.
 - Build forms and controls from the shadcn primitives in
   `src/components/ui/`. Add more with `pnpm dlx shadcn@latest add <name>`.
   Import them through the `@/` alias, which points at `src/`.
 - Style the rest with Tailwind utility classes. `src/styles.css` holds the
   Tailwind import, the font tokens, and the shadcn colour tokens. The tokens
   are light-mode only and use the same values as `apps/web`.
-- The app has two shells. `src/app.tsx` holds the setup shell: a left indigo
-  sidebar with the brand, the setup title, and the step list. `src/shell.tsx`
-  holds the app shell: the shadcn `Sidebar` and `SidebarInset` pair. Show all
-  sections. Do not add collapsible groups.
-- Keep the sidebar destinations in `src/app-nav.ts`, where a test can read
-  them. Give each path an icon in `src/shell.tsx`. The icon record is typed by
-  path, so a missing icon fails the build.
-- Call the Rust backend from a service module: `src/os.ts` for settings and
-  the system, `src/data.ts` for the rows, `src/ai.ts` for the writing service.
-  Do not call `invoke` from a component or from `src/speech.ts`.
+- The app has two shells. `src/layouts/onboarding.tsx` holds the setup shell:
+  a left indigo sidebar with the brand, the setup title, and the step list.
+  `src/layouts/app.tsx` holds the app shell: the shadcn `Sidebar` and
+  `SidebarInset` pair. Show all sections. Do not add collapsible groups.
+- Keep the sidebar destinations in `src/rules/app-nav.ts`, where a test can read
+  them. Give each path an icon in `src/layouts/app.tsx`. The icon record is
+  typed by path, so a missing icon fails the build.
+- Call the Rust backend from a service module: `src/services/os.ts` for settings and
+  the system, `src/services/data.ts` for the rows, `src/services/ai.ts` for the writing service.
+  Do not call `invoke` from a component or from `src/services/speech.ts`.
 - Change a space with `space_patch`, never with a whole row. Three writers
   change a space and each one knows only its own fields, so a whole-row write
   lets the last writer undo the others.
@@ -55,49 +69,49 @@ cargo fmt --all -- --check
   current Talk composer text to it, not the text from Notes.
 - Keep camera frames inside the Core Media I/O extension. Tauri sends the text
   property; Rust and the WebView must never relay video buffers.
-- Write through `Composer` in `src/talk.tsx` in every mode. A second console
+- Write through `Composer` in `src/blocks/space.tsx` in every mode. A second console
   would leave one mode without the word tiles, the codes, or undo, which a
   user who cannot type depends on.
 - Put the Talk and Notes switch in the dock, never in the header. The web app
   puts it there, so a user who knows one app knows the other.
 - Put a panel that needs a card of its own through `RightPanel` in
-  `src/shell.tsx`. A panel drawn inside a screen shares the card of the inset.
-- Keep the rules of a note in `src/notes.ts`, and the screen in
-  `src/notes-screen.tsx`. The two cannot share one name: `./notes` would then
-  name both, and TypeScript picks the `.ts` file.
+  `src/blocks/screen.tsx`. A panel drawn inside a screen shares the card of
+  the inset. `src/layouts/app.tsx` gives it the slot it draws into.
+- Keep the rules of a note in `src/rules/notes.ts`, and the screen in
+  `src/pages/notes.tsx`.
 - Save a note without a Save button. A user who types slowly must never lose
   words to a button they did not press.
 - Read a note aloud through `markdownToVoiceText`. A voice says `Monday`, not
   `# Monday`. A voice-over writes no message.
-- Keep the rules of a space in `src/spaces.ts`, where a test can read them
+- Keep the rules of a space in `src/rules/spaces.ts`, where a test can read them
   without a renderer: the slug, the search, the new title, the relative time,
   the transcript page, and the composer helpers.
-- Send every command through `call()` in `src/data.ts`. A Tauri command
+- Send every command through `call()` in `src/services/data.ts`. A Tauri command
   rejects with a string, so a screen that reads `error.message` shows nothing
   without it.
 - Ask before an action that erases rows. Use the shadcn `AlertDialog`, and give
   the confirming button the `destructive` variant.
-- Give each row the owner from `currentUserId()` in `src/os.ts`. Do not read
+- Give each row the owner from `currentUserId()` in `src/services/os.ts`. Do not read
   the operating system again after setup.
-- Offer words through `useSuggestions()` in `src/suggest.ts`. Keep the rules in
+- Offer words through `useSuggestions()` in `src/services/suggest.ts`. Keep the rules in
   `src/autocomplete/index.ts`, where a test can read them without a renderer.
   `src/autocomplete/` is a copy of the engine in the web app: change a file
   there only to keep the two apps the same.
-- Speak through `speak()` in `src/speech.ts`. Every voice meets the
+- Speak through `speak()` in `src/services/speech.ts`. Every voice meets the
   `SpeechProvider` interface, so a screen never names a service. Spoken
   messages use the native playback commands, where the process tap receives
-  them. Use `src/player.ts` only for voice-list previews.
+  them. Use `src/services/player.ts` only for voice-list previews.
 - A cloud voice that fails must fall back to the voice of the operating
   system. Silence is the worst answer for a user who cannot speak.
 - Give each control of a phrase row a 44px target, through `RowButton` in
-  `src/phrase-panel.tsx`. The web app uses 36px there. `DESIGN.md` wins: a user
+  `src/blocks/phrase-panel.tsx`. The web app uses 36px there. `DESIGN.md` wins: a user
   of September points with less accuracy than a user of a browser.
-- Keep the rules of a phrase, a code, and a shortcut idea in `src/phrases.ts`,
-  and the rules of a stripe in `src/stripes.ts`. Both are ports of the web app.
+- Keep the rules of a phrase, a code, and a shortcut idea in `src/rules/phrases.ts`,
+  and the rules of a stripe in `src/rules/stripes.ts`. Both are ports of the web app.
   Change them in both apps, or in neither.
 - A model never writes over a phrase that the user kept. Write new rows with
   `phrase_replace_ai`, which erases only the rows with `pinned = 0`.
-- Add a word from the engine with `applySuggestion` in `src/suggest.ts`. The
+- Add a word from the engine with `applySuggestion` in `src/services/suggest.ts`. The
   screen must not cut the text at the caret itself, because only the engine
   knows a part-written word from a finished one.
 - Give each row of the composer its own colour. A word is amber, a past
@@ -118,24 +132,25 @@ cargo fmt --all -- --check
   the browser storage. A command returns a status, never a key.
 - Use a brand mark only from the file that the brand publishes, kept in
   `public/`. Do not redraw one. The September mark is `public/logo.svg`, shown
-  through `BrandMark` in `src/brand.tsx`. The Apple logo is the U+F8FF glyph from the
+  through `BrandMark` in `src/blocks/brand.tsx`. The Apple logo is the U+F8FF glyph from the
   macOS system font, which `system-ui` supplies. Apple asks for a written
   trademark licence before a third party shows this mark.
-- Keep the rule for the first route in `openingPath`, in `src/app-nav.ts`. It
+- Keep the rule for the first route in `openingPath`, in `src/rules/app-nav.ts`. It
   is an allowlist of app paths. A saved address that names no screen must not
   decide where the app opens.
 - Add a screen as a route in `src/main.tsx`. Keep the step rules in
-  `src/onboarding.ts`, where a test can read them.
-- Keep the settings sections in `src/settings-nav.ts`, where a test can read
-  them, and the screens in `src/settings.tsx`. Give each path an icon in
-  `src/settings.tsx`. The icon record is typed by path.
-- Keep the parts that setup and settings share in `src/services.tsx`: the mode
+  `src/rules/onboarding.ts`, where a test can read them.
+- Keep the settings sections in `src/rules/settings-nav.ts`, where a test can read
+  them, the section list in `src/layouts/settings.tsx`, and the screens in
+  `src/pages/settings.tsx`. Give each path an icon in `src/layouts/settings.tsx`.
+  The icon record is typed by path.
+- Keep the parts that setup and settings share in `src/blocks/services.tsx`: the mode
   card, the mark, the state pill, and the key panel. Do not write a second one.
-- Write a setting from a screen through `updateSetup()` in `src/os.ts`. It
+- Write a setting from a screen through `updateSetup()` in `src/services/os.ts`. It
   holds the new answers, so `currentSetup()` gives them at once.
-- Open an address with `openInBrowser()` in `src/os.ts`. A Tauri window blocks
+- Open an address with `openInBrowser()` in `src/services/os.ts`. A Tauri window blocks
   a plain link.
-- Read the saved setup through `currentSetup()` in `src/os.ts`, never through
+- Read the saved setup through `currentSetup()` in `src/services/os.ts`, never through
   `invoke` in a route. The module holds the value it wrote, so a guard right
   after setup sees the new answers.
 - Follow the root `DESIGN.md` for every screen.

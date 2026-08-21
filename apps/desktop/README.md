@@ -7,6 +7,26 @@ bundled apfel sidecar on supported Macs.
 
 The UI uses Tailwind CSS v4, shadcn/ui primitives, and TanStack Router.
 
+## Where the UI code is
+
+`src/` divides the code into five directories.
+
+| Directory       | Holds                                          | Rule                                            |
+| --------------- | ---------------------------------------------- | ----------------------------------------------- |
+| `src/layouts/`  | `onboarding.tsx`, `app.tsx`, `settings.tsx`    | The component renders an `<Outlet/>`.           |
+| `src/pages/`    | `steps` `spaces` `talk` `notes` `voice` `settings` | A `createRoute` call in `src/main.tsx` names it. |
+| `src/blocks/`   | `screen` `space` `services` `phrase-panel` `suggestions` `brand` | Two or more pages or layouts use it. |
+| `src/services/` | `os` `data` `ai` `speech` `player` `phrase-sync` `suggest` | It speaks to Rust, the platform, or a cloud service. |
+| `src/rules/`    | `app-nav` `settings-nav` `onboarding` `spaces` `notes` `phrases` `stripes` `prompts` | No renderer and no backend. A node test imports it. |
+
+A part with one consumer stays in the page that draws it. There is no barrel
+file: import through the `@/` alias, which points at `src/`. In `src/rules/`,
+import a sibling with a relative path, because node does not resolve `@/` when
+a test loads the file.
+
+`src/autocomplete/` stays where it is. It is a copy of the engine in the web
+app, and a move would make the two apps differ.
+
 ## Move through the app
 
 The root route holds an outlet only. Below it are two layouts, so a setup step
@@ -14,12 +34,12 @@ never wears the app sidebar, and an app screen never wears the setup sidebar.
 
 | Layout      | Component                     | Routes                                             |
 | ----------- | ----------------------------- | -------------------------------------------------- |
-| Setup       | `OnboardingLayout`, `app.tsx` | `/welcome` `/profile` `/mode` `/connect` `/finish`  |
-| Application | `AppShell`, `shell.tsx`       | `/dashboard` `/spaces` `/spaces/$slug/talk` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/voice` `/help` `/settings` `/settings/writing` `/settings/connections/$provider` |
+| Setup       | `OnboardingLayout`, `layouts/onboarding.tsx` | `/welcome` `/profile` `/mode` `/connect` `/finish`  |
+| Application | `AppShell`, `layouts/app.tsx` | `/dashboard` `/spaces` `/spaces/$slug/talk` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/voice` `/help` `/settings` `/settings/writing` `/settings/connections/$provider` |
 
 `AppShell` is the shadcn `Sidebar` and `SidebarInset` pair: a solid indigo
-sidebar beside a white inset card. `src/app-nav.ts` lists the destinations and
-their descriptions. `src/shell.tsx` gives each path an icon. A destination
+sidebar beside a white inset card. `src/rules/app-nav.ts` lists the destinations and
+their descriptions. `src/layouts/app.tsx` gives each path an icon. A destination
 without a ported screen shows a short placeholder, so the route and the
 sidebar item are real before the screen is.
 
@@ -32,13 +52,13 @@ then opens `/dashboard`. After that, `/` opens the screen the user left, and
 the setup flow does not show again.
 
 The app comes back where it was. The router keeps each arrival in the
-`lastPath` setting, and `/` reads it. `openingPath` in `src/app-nav.ts` owns
+`lastPath` setting, and `/` reads it. `openingPath` in `src/rules/app-nav.ts` owns
 the rule, and answers with a path from `APP_NAV` or a child of one. Everything
 else opens `/dashboard`: a setup step must never come back, and an address that
 names no screen is not a place to start. A space that the user erased opens the
 space list, because the Talk screen sends a stale slug there.
 
-`isSetupDone` in `src/onboarding.ts` owns that rule: setup is done when it
+`isSetupDone` in `src/rules/onboarding.ts` owns that rule: setup is done when it
 holds a name and a mode. The app layout reads the same rule, so an app screen
 opened before setup turns back to `/welcome`.
 
@@ -83,10 +103,10 @@ The Talk screen has three parts, from the top:
    space. When the space tabs no longer fit the row, they become one button
    that opens a list.
 
-`src/spaces.ts` owns the rules that a test can read: the slug, the page, the
+`src/rules/spaces.ts` owns the rules that a test can read: the slug, the page, the
 unique title, and the word that delete removes.
 
-`src/data.ts` holds every read and every write of a space or a message. It uses
+`src/services/data.ts` holds every read and every write of a space or a message. It uses
 TanStack Query over the Rust commands. The owner of each row is the login name
 of the operating system, which setup keeps in the `setup` setting.
 
@@ -134,7 +154,7 @@ The screen has the same parts as Talk, from the top:
    word, clear, and **Add to note**.
 4. The dock. The same one that Talk has.
 
-`Composer` in `src/talk.tsx` is that console, and both modes use it. A user who
+`Composer` in `src/blocks/space.tsx` is that console, and both modes use it. A user who
 cannot type reaches a sentence through the word tiles, the phrase codes, undo,
 and delete last word. Notes needs every one of them as much as Talk does, so
 there is one console, not two. Only the end differs: Talk speaks the sentence,
@@ -162,11 +182,10 @@ transcript of the space does not change.
 
 Delete asks first, in a dialog with a red button.
 
-`src/notes.ts` owns the rules that a test can read: the name from the words,
-the slug, and the text a voice says. `src/notes-screen.tsx` holds the screen.
-The two files cannot share one name, because `./notes` would then name both.
+`src/rules/notes.ts` owns the rules that a test can read: the name from the words,
+the slug, and the text a voice says. `src/pages/notes.tsx` holds the screen.
 
-`src/data.ts` reads and writes a note through `note_list`, `note_get`,
+`src/services/data.ts` reads and writes a note through `note_list`, `note_get`,
 `note_put`, and `note_delete`. `note_put` writes one complete row, so
 `useUpdateNote` reads the row first and changes only the fields it carries.
 Deleting a space deletes its notes, in the same transaction as its messages.
@@ -184,8 +203,8 @@ phrases of the space and the shortcut ideas from repeated messages.
 Escape closes the card and leaves the rail. September keeps the answer in the
 `panel-open` setting, so the card opens the same way next time.
 
-`src/phrase-panel.tsx` holds the rail and the card. `RightPanel` in
-`src/shell.tsx` puts them beside the screen: the shell renders a slot as a
+`src/blocks/phrase-panel.tsx` holds the rail and the card. `RightPanel` in
+`src/blocks/screen.tsx` puts them beside the screen: the shell renders a slot as a
 sibling of the inset, and the rail goes through it. A rail drawn inside the
 screen would share the one white card of the inset, and the design gives the
 rail a card of its own.
@@ -218,7 +237,7 @@ space with three messages must not speak over the other two layers.
 - `applySuggestion(text, word)` gives the text after the user takes a word. A
   word always ends with a space, which saves one more keystroke.
 
-`src/suggest.ts` holds the engine and gives it the messages. A screen calls
+`src/services/suggest.ts` holds the engine and gives it the messages. A screen calls
 `useSuggestions(spaceId, draft)`.
 
 The engine learns again at each start. This costs about 10 ms for the seed
@@ -237,7 +256,7 @@ The rows come from four places, in this order:
 3. The writing service, when the user chose one.
 4. A short code at the caret, which goes above them all.
 
-`src/stripes.ts` and `src/phrases.ts` hold the rules. Both are ports of
+`src/rules/stripes.ts` and `src/rules/phrases.ts` hold the rules. Both are ports of
 `apps/web/src/packages/{suggestions,spaces}/lib`. Change them in both apps, or
 in neither.
 
@@ -291,7 +310,7 @@ thing, so a user who does not read colour still knows what a row is:
 | From a model     | Grey            | none          | Speak              |
 | A word           | Warm            | none          | none               |
 
-The sizes come from `TILE` in `src/stripes.ts`, the same numbers the web app
+The sizes come from `TILE` in `src/rules/stripes.ts`, the same numbers the web app
 uses. `tileScale` makes every tile smaller together, so the widest row stays on
 one line. It counts the letters, the padding of each tile, and the line around
 it, against the width that a `ResizeObserver` reports. The web app measures
@@ -306,7 +325,7 @@ codes, the rows from past messages, and the word row.
 
 ## Hear a voice
 
-`src/speech.ts` gives every voice one interface. A screen calls `speak(text)`
+`src/services/speech.ts` gives every voice one interface. A screen calls `speak(text)`
 and does not know which service answers.
 
 | Voice        | How it speaks                                                |
@@ -315,7 +334,7 @@ and does not know which service answers.
 | `elevenlabs` | Rust makes a file. The native process plays the cached file.  |
 
 Spoken messages now leave the native process. This path lets the Core Audio
-process tap receive both voices. Voice-list previews still use `src/player.ts`
+process tap receive both voices. Voice-list previews still use `src/services/player.ts`
 and do not enter a call.
 
 A cloud voice that fails falls back to the voice of this Mac, and the composer
@@ -394,7 +413,7 @@ does not run from an installed application bundle.
 Each step is a route: `/welcome`, `/profile`, `/mode`, `/connect`, and
 `/finish`.
 Free setup skips `/connect`, so it shows four steps and advanced setup shows
-five. `stepsFor` in `src/onboarding.ts` owns that rule, and the sidebar, the
+five. `stepsFor` in `src/rules/onboarding.ts` owns that rule, and the sidebar, the
 guards, and both navigation directions all read it. The router uses hash history,
 because Tauri serves the built files from the asset protocol. A step opens only
 after the answers it needs exist. The answers stay in memory until account
@@ -404,7 +423,7 @@ The brand, the setup title, and the step list are in a left indigo sidebar.
 Each step opens as an inset white card beside it. All sections on a step stay
 open. There are no collapsible groups.
 
-Both sidebars show the same brand mark. `src/brand.tsx` reads it from
+Both sidebars show the same brand mark. `src/blocks/brand.tsx` reads it from
 `public/logo.svg`, the file the brand publishes.
 
 The name field starts with the name from the operating system. The user can
@@ -424,7 +443,7 @@ so a user on a supported Mac continues without an action.
 
 An API key goes to the macOS Keychain, through Rust. The React code sends a key
 one time and reads back a status. No key enters the draft, SQLite, an event, or
-the browser storage. `src/os.ts` holds the only calls to Rust.
+the browser storage. `src/services/os.ts` holds the only calls to Rust.
 
 The voice list comes from `GET /v2/voices`, with `voice_type=non-default` and
 `page_size=100`. The web app asks the same way. The filter leaves out the stock
@@ -456,17 +475,17 @@ The web app has three more sections. Listening needs a transcription backend,
 Usage needs a spend count, and Account needs an account. The desktop app has
 none of the three. Voice keeps its own screen, `/voice`, in both apps.
 
-`src/settings-nav.ts` holds the rules that a test can read: the sections, the
-open section, and the guide for each cloud service. `src/settings.tsx` holds
-the screens.
+`src/rules/settings-nav.ts` holds the rules that a test can read: the sections, the
+open section, and the guide for each cloud service. `src/layouts/settings.tsx`
+holds the section list, and `src/pages/settings.tsx` holds the screens.
 
 A press on **Set up** opens `/settings/connections/openrouter` or
 `/settings/connections/elevenlabs`. The page gives the steps, takes the key,
 and opens the address of the service in the browser of the Mac. The key goes
-straight to the Keychain, through `src/os.ts`.
+straight to the Keychain, through `src/services/os.ts`.
 
-`src/services.tsx` holds the parts that setup and settings share: the mode
-card, the mark of each service, the state pill, and the key panel. A brand
+`src/blocks/services.tsx` holds the parts that setup and settings share: the
+mode card, the mark of each service, the state pill, and the key panel. A brand
 asset is therefore named one time.
 
 Every change is kept at once, as `/voice` does. There is no Save button to
@@ -477,7 +496,7 @@ The setup steps ask how September runs. Settings does not ask again, because
 one answer in two places lets the two disagree.
 
 The speaking style and the personal words go to the writing service as its
-user context. `userContext()` in `src/ai.ts` assembles them.
+user context. `userContext()` in `src/services/ai.ts` assembles them.
 
 Buttons, inputs, and labels come from shadcn/ui. The primitives are in
 `src/components/ui/`. To add one more:

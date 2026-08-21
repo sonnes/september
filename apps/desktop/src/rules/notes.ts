@@ -9,6 +9,7 @@
  * neither.
  */
 
+// A node test loads this file directly, and node does not resolve `@/`.
 import { slugify } from "./spaces.ts";
 
 /** What the title field shows while a note has no name of its own. */

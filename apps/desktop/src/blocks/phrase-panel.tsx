@@ -22,13 +22,13 @@ import {
   useMessages,
   usePhrases,
   usePutPhrase,
-} from "./data";
+} from "@/services/data";
 import {
   dismissedIdeas,
   panelOpen,
   rememberDismissed,
   rememberPanel,
-} from "./os";
+} from "@/services/os";
 import {
   CODE_MAX_LENGTH,
   mineShortcuts,
@@ -36,7 +36,7 @@ import {
   rowKind,
   validateCode,
   type SavedPhrase,
-} from "./phrases";
+} from "@/rules/phrases";
 
 /**
  * The right rail of a space, and the card it opens.

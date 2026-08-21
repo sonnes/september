@@ -1,8 +1,8 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-shell";
 
-import type { OnboardingDraft } from "./onboarding";
-import type { SpeechSettings } from "./speech";
+import type { OnboardingDraft } from "@/rules/onboarding";
+import type { SpeechSettings } from "@/services/speech";
 
 /**
  * The name the operating system holds for the signed-in user.

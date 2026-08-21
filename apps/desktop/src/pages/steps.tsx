@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-import { useDraft } from "./app";
+import { useDraft } from "@/layouts/onboarding";
 import {
   nextStep,
   previousStep,
@@ -26,7 +26,7 @@ import {
   WRITING_SERVICES,
   type SetupMode,
   type StepPath,
-} from "./onboarding";
+} from "@/rules/onboarding";
 import {
   BLANK_CONNECTIONS,
   connectProvider,
@@ -39,9 +39,9 @@ import {
   type Provider,
   type ProviderStatus,
   type Voice,
-} from "./os";
-import { CloudStatus, KeyPanel, Mark, ModeCard, Status } from "./services";
-import { speechSettings } from "./speech";
+} from "@/services/os";
+import { CloudStatus, KeyPanel, Mark, ModeCard, Status } from "@/blocks/services";
+import { speechSettings } from "@/services/speech";
 
 // DESIGN.md asks for a 44px target on primary actions; `lg` is 40px.
 const ACTION = "h-11 px-6 font-semibold";

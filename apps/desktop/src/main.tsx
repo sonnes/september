@@ -17,28 +17,30 @@ import "@fontsource/noto-sans/500.css";
 import "@fontsource/noto-sans/600.css";
 import "@fontsource/noto-sans/700.css";
 
-import { OnboardingLayout } from "./app";
-import { openingPath, type AppPath } from "./app-nav";
-import { NotesScreen } from "./notes-screen";
-import { isSetupDone } from "./onboarding";
-import { currentPath, currentSetup, savePath } from "./os";
+import { OnboardingLayout } from "@/layouts/onboarding";
+import { openingPath, type AppPath } from "@/rules/app-nav";
+import { NotesScreen } from "@/pages/notes";
+import { isSetupDone } from "@/rules/onboarding";
+import { currentPath, currentSetup, savePath } from "@/services/os";
+import { AppShell } from "@/layouts/app";
+import { SettingsLayout } from "@/layouts/settings";
+import { AppScreen } from "@/blocks/screen";
 import {
   ConnectionScreen,
-  SettingsLayout,
   SetupSettings,
   WritingSettings,
-} from "./settings";
-import { isConnectionId } from "./settings-nav";
-import { AppScreen, AppShell } from "./shell";
-import { SpacesScreen, TalkScreen } from "./talk";
-import { VoiceScreen } from "./voice";
+} from "@/pages/settings";
+import { isConnectionId } from "@/rules/settings-nav";
+import { SpacesScreen } from "@/pages/spaces";
+import { TalkScreen } from "@/pages/talk";
+import { VoiceScreen } from "@/pages/voice";
 import {
   ConnectStep,
   FinishStep,
   ModeStep,
   ProfileStep,
   WelcomeStep,
-} from "./steps";
+} from "@/pages/steps";
 import "./styles.css";
 
 // The root route holds an outlet only. Setup and the app are separate

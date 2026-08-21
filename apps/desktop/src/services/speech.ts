@@ -7,7 +7,7 @@ import {
   speakSystem,
   stopNativeSpeech,
   synthesizeSpeech,
-} from "./os";
+} from "@/services/os";
 
 export type VoiceService = "system" | "elevenlabs";
 

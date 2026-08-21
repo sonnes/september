@@ -6,8 +6,8 @@ import {
 } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
-import { currentUserId } from "./os";
-import { STARTER_PACK, type SavedPhrase } from "./phrases";
+import { currentUserId } from "@/services/os";
+import { STARTER_PACK, type SavedPhrase } from "@/rules/phrases";
 
 export interface Space {
   id: string;

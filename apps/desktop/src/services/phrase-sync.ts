@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
-import { generate, hasWritingService, itemsFrom } from "./ai";
-import { useReplaceAiPhrases, useUpdateSpace, type Message, type Space } from "./data";
+import { generate, hasWritingService, itemsFrom } from "@/services/ai";
+import { useReplaceAiPhrases, useUpdateSpace, type Message, type Space } from "@/services/data";
 import {
   buildPhrasesPrompt,
   decidePhraseSync,
@@ -12,7 +12,7 @@ import {
   sanitizeStarters,
   type PhraseKind,
   type SavedPhrase,
-} from "./phrases";
+} from "@/rules/phrases";
 
 /**
  * Keeps the phrases of a space near the conversation.

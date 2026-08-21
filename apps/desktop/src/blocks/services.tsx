@@ -12,13 +12,13 @@ import { Ban, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-import type { SETUP_MODES } from "./onboarding";
+import type { SETUP_MODES } from "@/rules/onboarding";
 import {
   connectProvider,
   forgetProvider,
   type Provider,
   type ProviderStatus,
-} from "./os";
+} from "@/services/os";
 
 const MODE_ACCENT = {
   amber: { edge: "border-t-amber-600", badge: "bg-amber-100 text-amber-700" },

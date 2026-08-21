@@ -10,7 +10,7 @@
  * phrase that the user keeps is never moved, and never lost.
  */
 
-import type { Message } from "./data";
+import type { Message } from "@/services/data";
 
 export interface SavedPhrase {
   id: string;

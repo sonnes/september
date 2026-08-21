@@ -16,7 +16,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 
-import { navFor } from "./app-nav";
+import { navFor } from "@/rules/app-nav";
 import {
   listModels,
   listVoices,
@@ -24,16 +24,16 @@ import {
   saveSpeech,
   type Model,
   type Voice,
-} from "./os";
-import { play } from "./player";
-import { Screen } from "./shell";
+} from "@/services/os";
+import { play } from "@/services/player";
+import { Screen } from "@/blocks/screen";
 import {
   DEFAULT_SPEECH,
   speak,
   speechSettings,
   type SpeechSettings,
   type VoiceService,
-} from "./speech";
+} from "@/services/speech";
 
 const TRY_IT = "This is how I sound today.";
 

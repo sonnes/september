@@ -25,7 +25,7 @@ import {
   useUpdateNote,
   type Note,
   type Space,
-} from "./data";
+} from "@/services/data";
 import {
   appendToNote,
   markdownToVoiceText,
@@ -33,19 +33,19 @@ import {
   noteFromSlug,
   noteSlug,
   UNTITLED_NOTE,
-} from "./notes";
-import { PanelRail } from "./phrase-panel";
-import { RightPanel, ScreenHeader } from "./shell";
-import { generateCode } from "./phrases";
-import { spaceFromSlug, spaceSlug } from "./spaces";
-import { speak, stopSpeaking, useSpeaking } from "./speech";
+} from "@/rules/notes";
+import { PanelRail } from "@/blocks/phrase-panel";
+import { RightPanel, ScreenHeader } from "@/blocks/screen";
+import { generateCode } from "@/rules/phrases";
+import { spaceFromSlug, spaceSlug } from "@/rules/spaces";
+import { speak, stopSpeaking, useSpeaking } from "@/services/speech";
 import {
   Composer,
   spaceParams,
   SpaceDock,
   SpaceTitle,
   useRememberMode,
-} from "./talk";
+} from "@/blocks/space";
 
 /** How long the screen waits after the last keystroke before it saves. */
 const SAVE_DELAY_MS = 600;

@@ -9,7 +9,7 @@ import {
 
 import { Link, Navigate, Outlet, useRouterState } from "@tanstack/react-router";
 
-import { BrandMark, BrandWordmark } from "./brand";
+import { BrandMark, BrandWordmark } from "@/blocks/brand";
 import {
   canReach,
   DEFAULT_DRAFT,
@@ -17,8 +17,8 @@ import {
   stepsFor,
   type OnboardingDraft,
   type StepPath,
-} from "./onboarding";
-import { osName } from "./os";
+} from "@/rules/onboarding";
+import { osName } from "@/services/os";
 
 interface DraftValue {
   draft: OnboardingDraft;

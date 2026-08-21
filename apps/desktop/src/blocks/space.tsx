@@ -1,36 +1,28 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
   Camera,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Delete,
   FileText,
   Headphones,
   Mic,
   MessagesSquare,
   Plus,
-  MessageSquareQuote,
-  Search,
-  Square,
   Trash2,
   Undo2,
   Volume2,
 } from "lucide-react";
-
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -43,23 +35,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-
-import { describeSpace } from "./ai";
-import { navFor } from "./app-nav";
 import {
   useCreateSpace,
-  useDeleteSpace,
-  useMessages,
-  usePhrases,
-  usePutPhrase,
-  useSendMessage,
-  useSpaces,
   useUpdateSpace,
-  type Message,
   type Space,
-} from "./data";
+} from "@/services/data";
 import {
   chooseOutput,
   currentOutput,
@@ -73,28 +53,18 @@ import {
   updateVirtualCameraOverlay,
   virtualCameraStatus,
   virtualMicrophoneStatus,
-} from "./os";
-import { RightPanel, Screen, ScreenHeader } from "./shell";
-import { PanelRail } from "./phrase-panel";
-import { generateCode, type SavedPhrase } from "./phrases";
-import { useSyncPhrases } from "./phrase-sync";
-import { speak, stopSpeaking, useSpeaking, useVoiceFallback } from "./speech";
-import { Suggestions } from "./suggestions";
+} from "@/services/os";
+import { Suggestions } from "@/blocks/suggestions";
 import {
   deleteLastWord,
-  filterSpaces,
-  isAutoTitle,
   newSpaceTitle,
   rememberSpaceMode,
-  spaceFromSlug,
   spaceModeFrom,
   spaceSlug,
-  timeAgo,
-  transcriptPage,
   type SpaceMode,
-} from "./spaces";
+} from "@/rules/spaces";
 
-const talkParams = (space: Pick<Space, "title">) => ({
+export const talkParams = (space: Pick<Space, "title">) => ({
   to: "/spaces/$slug/talk" as const,
   params: { slug: spaceSlug(space.title) },
 });
@@ -131,403 +101,13 @@ export function useRememberMode(space: Space, mode: SpaceMode) {
   }, [space.title, mode]);
 }
 
-function Problem({ error }: { error: Error }) {
+export function Problem({ error }: { error: Error }) {
   return (
     <p className="text-destructive rounded-xl border border-dashed p-8 text-center text-sm">
       {error.message}
     </p>
   );
 }
-
-// ------------------------------------------------------------- space list
-
-export function SpacesScreen() {
-  const navigate = useNavigate();
-  const { data: spaces, isPending, error } = useSpaces();
-  const createSpace = useCreateSpace();
-
-  const [search, setSearch] = useState("");
-  const [toDelete, setToDelete] = useState<Space | null>(null);
-
-  const shown = useMemo(
-    () => filterSpaces(spaces ?? [], search),
-    [spaces, search],
-  );
-
-  const add = () =>
-    createSpace
-      .mutateAsync(newSpaceTitle((spaces ?? []).map((space) => space.title)))
-      .then((space) => navigate(talkParams(space)));  // a new space starts in Talk
-
-  const newSpaceButton = (
-    <Button type="button" onClick={add} disabled={createSpace.isPending}>
-      <Plus aria-hidden />
-      New space
-    </Button>
-  );
-
-  return (
-    <Screen
-      title="Spaces"
-      description={navFor("/spaces").description}
-      action={spaces?.length ? newSpaceButton : undefined}
-    >
-      {error ? <Problem error={error} /> : null}
-
-      {isPending ? (
-        <div className="flex flex-col gap-2">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-        </div>
-      ) : null}
-
-      {spaces?.length ? (
-        <div className="relative">
-          <Search
-            aria-hidden
-            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-          />
-          <Input
-            type="search"
-            value={search}
-            aria-label="Search spaces"
-            placeholder="Search your spaces..."
-            onChange={(event) => setSearch(event.target.value)}
-            className="pl-9"
-          />
-        </div>
-      ) : null}
-
-      {spaces && spaces.length === 0 ? (
-        <Empty
-          title="No spaces yet"
-          body="A space keeps the words you use with one person or in one place."
-          action={
-            <Button type="button" onClick={add} disabled={createSpace.isPending}>
-              <Plus aria-hidden />
-              Make your first space
-            </Button>
-          }
-        />
-      ) : null}
-
-      {spaces?.length && shown.length === 0 ? (
-        <Empty title="No spaces found" body="No title holds those words." />
-      ) : null}
-
-      {shown.length ? (
-        <ul className="flex flex-col divide-y rounded-xl border">
-          {shown.map((space) => (
-            <li key={space.id} className="flex items-center gap-2 px-2">
-              <button
-                type="button"
-                onClick={() => navigate(openParams(space))}
-                className="hover:text-primary focus-visible:ring-ring min-w-0 flex-1 rounded-md px-2 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
-              >
-                <span className="block truncate text-base font-medium">
-                  {space.title}
-                </span>
-                <span className="text-muted-foreground text-sm">
-                  Last message {timeAgo(space.updated_at)}
-                </span>
-              </button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label={`Delete ${space.title}`}
-                className="text-destructive hover:text-destructive"
-                onClick={() => setToDelete(space)}
-              >
-                <Trash2 aria-hidden />
-              </Button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
-      <DeleteSpaceDialog space={toDelete} onClose={() => setToDelete(null)} />
-    </Screen>
-  );
-}
-
-function Empty({
-  title,
-  body,
-  action,
-}: {
-  title: string;
-  body: string;
-  action?: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed p-10 text-center">
-      <MessagesSquare className="text-muted-foreground size-8" aria-hidden />
-      <div className="space-y-1">
-        <h3 className="text-sm font-medium">{title}</h3>
-        <p className="text-muted-foreground text-sm">{body}</p>
-      </div>
-      {action}
-    </div>
-  );
-}
-
-/** Deleting a space deletes its messages too, so the user says yes first. */
-function DeleteSpaceDialog({
-  space,
-  onClose,
-}: {
-  space: Space | null;
-  onClose: () => void;
-}) {
-  const deleteSpace = useDeleteSpace();
-
-  return (
-    <AlertDialog open={Boolean(space)} onOpenChange={(open) => !open && onClose()}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete {space?.title}?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This deletes the space and every message in it. You cannot undo
-            this action.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={deleteSpace.isPending}>
-            Keep it
-          </AlertDialogCancel>
-          <AlertDialogAction
-            // The button that erases the messages must not look like the
-            // button that keeps them.
-            variant="destructive"
-            disabled={deleteSpace.isPending}
-            onClick={(event) => {
-              event.preventDefault();
-              if (space) deleteSpace.mutate(space.id, { onSuccess: onClose });
-            }}
-          >
-            {deleteSpace.isPending ? "Deleting..." : "Delete space"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
-
-// ------------------------------------------------------------------- talk
-
-export function TalkScreen({ slug }: { slug: string }) {
-  const navigate = useNavigate();
-  const { data: spaces, isPending } = useSpaces();
-  const space = spaceFromSlug(slug, spaces ?? []);
-
-  // A slug that names no space is a stale link, so it goes back to the list.
-  useEffect(() => {
-    if (!isPending && !space) navigate({ to: "/spaces", replace: true });
-  }, [isPending, space, navigate]);
-
-  if (!space) return null;
-
-  // The key restarts the composer and the page when the space changes.
-  return <Talk key={space.id} space={space} spaces={spaces ?? []} />;
-}
-
-function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
-  const { data: messages, error } = useMessages(space.id);
-  const { data: phrases } = usePhrases(space.id);
-  const send = useSendMessage(space.id);
-  const putPhrase = usePutPhrase();
-  const update = useUpdateSpace();
-  const navigate = useNavigate();
-
-  // A model writes the phrases of this space, and writes them again as the
-  // conversation grows. It never touches a row the user kept.
-  useSyncPhrases({ space, phrases, messages });
-  useRememberMode(space, "talk");
-
-  const speaking = useSpeaking();
-  const fallback = useVoiceFallback();
-  const [draft, setDraft] = useState("");
-  const [pageInput, setPageInput] = useState(0);
-
-  const spoken = (messages ?? []).filter((message) => message.type === "user");
-  const { page, pageCount, slice } = transcriptPage(spoken, pageInput);
-
-  // A new message goes to the newest page, so the user never sends from
-  // behind an old page.
-  const newest = spoken[spoken.length - 1]?.id;
-  useEffect(() => setPageInput(0), [newest]);
-
-  /** Keeps a row of the stripe, so a regeneration cannot take it away. */
-  const keep = (text: string) => {
-    if (phrases?.some((row) => row.text.toLowerCase() === text.toLowerCase())) return;
-    const at = Date.now();
-    const codes = (phrases ?? [])
-      .map((row) => row.code)
-      .filter((code): code is string => Boolean(code));
-
-    const row: SavedPhrase = {
-      id: crypto.randomUUID(),
-      space_id: space.id,
-      text,
-      kind: "phrase",
-      code: generateCode(text, { existingCodes: codes }),
-      pinned: true,
-      created_at: at,
-      updated_at: at,
-    };
-    putPhrase.mutate(row);
-  };
-
-  /**
-   * The first message says who the space is for, so a model reads it once and
-   * gives the space a name and a note. Every later message skips this.
-   */
-  const describe = (first: string) => {
-    if (spoken.length > 0) return;
-
-    void describeSpace(first)
-      .then((answer) => {
-        if (!answer) return;
-
-        // A title the user typed stays, and so does a note the user wrote.
-        const title =
-          answer.title && isAutoTitle(space.title) ? answer.title : undefined;
-        const context = space.context?.trim() ? undefined : answer.context;
-        if (!title && !context) return;
-
-        return update
-          .mutateAsync({ id: space.id, title, context })
-          .then(() => {
-            // A new title makes a new slug, and the open address holds the
-            // old one. Without this the screen goes blank.
-            if (title) navigate({ ...talkParams({ title }), replace: true });
-          });
-      })
-      // A service that fails leaves the made-up title. Nothing is lost.
-      .catch(() => undefined);
-  };
-
-  const say = (sentence: string) => {
-    void speak(sentence);
-    send.mutate(sentence, {
-      onSuccess: () => {
-        describe(sentence);
-        setDraft("");
-      },
-    });
-  };
-
-  const write = (text: string) => setDraft(text);
-
-
-  // The voice starts at once. The composer holds the text until SQLite
-  // accepts the message, so a failed write loses no words.
-
-  return (
-    <>
-      <ScreenHeader>
-        <SpaceTitle space={space} />
-      </ScreenHeader>
-
-
-      <div className="flex min-h-0 flex-1 flex-col gap-3 p-2 md:p-4">
-        <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">
-          {error ? <Problem error={error} /> : null}
-
-          {pageCount > 1 ? (
-            <nav
-              aria-label="Transcript pages"
-              className="flex shrink-0 items-center justify-between gap-2 pb-2"
-            >
-              <PageButton
-                label="Older messages"
-                onClick={() => setPageInput(page + 1)}
-                disabled={page >= pageCount - 1}
-              >
-                <ChevronLeft className="size-4" aria-hidden />
-                Older
-              </PageButton>
-              <span className="text-muted-foreground text-xs" aria-live="polite">
-                Page {page + 1} of {pageCount}
-              </span>
-              <PageButton
-                label="Newer messages"
-                onClick={() => setPageInput(page - 1)}
-                disabled={page === 0}
-              >
-                Newer
-                <ChevronRight className="size-4" aria-hidden />
-              </PageButton>
-            </nav>
-          ) : null}
-
-          <div className="flex min-h-0 flex-1 flex-col justify-end gap-2.5 overflow-y-auto py-4">
-            {spoken.length === 0 ? (
-              <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-                <div className="bg-muted text-muted-foreground flex size-12 items-center justify-center rounded-full">
-                  <MessagesSquare className="size-6" aria-hidden />
-                </div>
-                <p className="text-muted-foreground max-w-xs text-sm">
-                  Write a sentence below, then press Speak. What you say shows
-                  here.
-                </p>
-              </div>
-            ) : (
-              slice.map((message) => (
-                <Bubble key={message.id} message={message} />
-              ))
-            )}
-          </div>
-
-          <Composer
-            mode="talk"
-            spaceId={space.id}
-            context={space.context ?? ""}
-            draft={draft}
-            onDraft={write}
-            onAction={say}
-            onPin={keep}
-            pending={send.isPending}
-            note={
-              fallback
-                ? `The chosen voice did not answer, so this Mac spoke instead (${fallback}).`
-                : undefined
-            }
-          />
-        </div>
-
-        <SpaceDock
-          current={space}
-          spaces={spaces}
-          mode="talk"
-          onMode={(next) => navigate(spaceParams(space, next))}
-        />
-      </div>
-
-      <RightPanel>
-        <PanelRail
-          spaceId={space.id}
-          onInsert={(text) =>
-            setDraft((current) =>
-              !current || /\s$/.test(current) ? current + text : `${current} ${text}`,
-            )
-          }
-        />
-      </RightPanel>
-    </>
-  );
-}
-
-
-/**
- * The console the user writes in, in both modes.
- *
- * A user who cannot type reaches a sentence through the word tiles, the
- * phrase codes, undo, and delete last word. Notes needs every one of them as
- * much as Talk does, so there is one console, not two. Only the button at the
- * end differs: Talk speaks the sentence, Notes puts it under the note.
- */
 export function Composer({
   mode,
   spaceId,
@@ -721,7 +301,6 @@ export function SpaceTitle({
     />
   );
 }
-
 /**
  * Which speaker the Mac plays through, and what calling apps can receive.
  *
@@ -873,55 +452,6 @@ function AudioSelector({ overlayText }: { overlayText: string }) {
     </DropdownMenu>
   );
 }
-
-function Bubble({ message }: { message: Message }) {
-  const speaking = useSpeaking() === message.id;
-
-  return (
-    <div className="flex justify-end">
-      <button
-        type="button"
-        aria-label={speaking ? "Stop" : "Speak this message again"}
-        onClick={() =>
-          speaking ? stopSpeaking() : void speak(message.text, message.id)
-        }
-        className="bg-accent text-accent-foreground focus-visible:ring-ring flex max-w-[85%] items-start gap-2 rounded-2xl rounded-br-sm px-4 py-2.5 text-left transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none"
-      >
-        {speaking ? (
-          <Square className="mt-1 size-4 shrink-0 opacity-60" aria-hidden />
-        ) : (
-          <Volume2 className="mt-1 size-4 shrink-0 opacity-60" aria-hidden />
-        )}
-        <p className="text-base leading-snug">{message.text}</p>
-      </button>
-    </div>
-  );
-}
-
-function PageButton({
-  label,
-  onClick,
-  disabled,
-  children,
-}: {
-  label: string;
-  onClick: () => void;
-  disabled: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
-      disabled={disabled}
-      className="bg-card text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex min-h-9 items-center gap-1 rounded-full border px-3 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-40 focus-visible:ring-2 focus-visible:outline-none"
-    >
-      {children}
-    </button>
-  );
-}
-
 /**
  * The bottom dock. It holds one tab for each space, and it makes a new one.
  *
