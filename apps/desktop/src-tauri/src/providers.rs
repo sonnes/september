@@ -195,13 +195,7 @@ impl Providers {
     }
 
     async fn check_eleven_labs(&self, key: &str) -> Result<ProviderStatus> {
-        let response = self
-            .client
-            .get(format!("{}/v1/user/subscription", self.eleven_labs))
-            .header("xi-api-key", key)
-            .send()
-            .await?;
-        let body: ElevenLabsSubscription = decode(response).await?;
+        let body = self.quota(key).await?;
         let left = body.character_limit.saturating_sub(body.character_count);
         if left == 0 {
             return Err(ProviderError::QuotaEmpty);
@@ -215,6 +209,18 @@ impl Providers {
         })
     }
 
+    /// The current ElevenLabs character allowance. It carries counts, never
+    /// the key that was used to read them.
+    pub async fn quota(&self, key: &str) -> Result<ElevenLabsQuota> {
+        let response = self
+            .client
+            .get(format!("{}/v1/user/subscription", self.eleven_labs))
+            .header("xi-api-key", key)
+            .send()
+            .await?;
+        decode(response).await
+    }
+
     /// Text from OpenRouter, in the shape that the local model answers in.
     pub async fn generate(
         &self,
@@ -226,6 +232,7 @@ impl Providers {
             "messages": request.messages,
             "temperature": request.temperature,
             "max_tokens": request.max_tokens,
+            "usage": { "include": true },
         });
         if let Some(format) = &request.response_format {
             body["response_format"] = serde_json::to_value(format)?;
@@ -253,6 +260,8 @@ impl Providers {
                 completion_tokens: body.usage.completion_tokens,
                 total_tokens: body.usage.total_tokens,
             },
+            model: body.model,
+            cost_usd: body.usage.cost,
         })
     }
 
@@ -387,6 +396,8 @@ fn thousands(value: u64) -> String {
 
 #[derive(Deserialize)]
 struct OpenRouterCompletion {
+    #[serde(default)]
+    model: Option<String>,
     choices: Vec<OpenRouterChoice>,
     #[serde(default)]
     usage: OpenRouterUsage,
@@ -412,6 +423,8 @@ struct OpenRouterUsage {
     completion_tokens: u32,
     #[serde(default)]
     total_tokens: u32,
+    #[serde(default)]
+    cost: Option<f64>,
 }
 
 #[derive(Deserialize)]
@@ -431,14 +444,16 @@ struct OpenRouterKey {
     limit: Option<f64>,
 }
 
-#[derive(Deserialize)]
-struct ElevenLabsSubscription {
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct ElevenLabsQuota {
     #[serde(default)]
-    tier: Option<String>,
+    pub tier: Option<String>,
     #[serde(default)]
-    character_count: u64,
+    pub character_count: u64,
     #[serde(default)]
-    character_limit: u64,
+    pub character_limit: u64,
+    #[serde(default, rename(deserialize = "next_character_count_reset_unix"))]
+    pub resets_at: Option<u64>,
 }
 
 #[derive(Deserialize)]

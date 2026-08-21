@@ -48,12 +48,15 @@ export function Screen({
   title,
   description,
   action,
+  wide = false,
   children,
 }: {
   title: string;
   description?: ReactNode;
   /** A control for the whole screen, beside the title. */
   action?: ReactNode;
+  /** Reports use the wider reading surface from the design baseline. */
+  wide?: boolean;
   children?: ReactNode;
 }) {
   return (
@@ -62,7 +65,11 @@ export function Screen({
         <span className="text-sm font-medium">{title}</span>
       </ScreenHeader>
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-2 md:p-4">
-        <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6 md:py-8">
+        <div
+          className={`mx-auto flex w-full flex-1 flex-col gap-6 px-4 py-6 sm:px-6 md:py-8 ${
+            wide ? "max-w-6xl" : "max-w-3xl"
+          }`}
+        >
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
               <h1 className="text-3xl font-bold tracking-tight">{title}</h1>

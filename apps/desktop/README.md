@@ -14,10 +14,10 @@ The UI uses Tailwind CSS v4, shadcn/ui primitives, and TanStack Router.
 | Directory       | Holds                                          | Rule                                            |
 | --------------- | ---------------------------------------------- | ----------------------------------------------- |
 | `src/layouts/`  | `onboarding.tsx`, `app.tsx`, `settings.tsx`    | The component renders an `<Outlet/>`.           |
-| `src/pages/`    | `steps` `spaces` `talk` `notes` `voice` `settings` | A `createRoute` call in `src/main.tsx` names it. |
-| `src/blocks/`   | `screen` `space` `services` `phrase-panel` `suggestions` `brand` | Two or more pages or layouts use it. |
-| `src/services/` | `os` `data` `ai` `speech` `player` `phrase-sync` `suggest` | It speaks to Rust, the platform, or a cloud service. |
-| `src/rules/`    | `app-nav` `settings-nav` `onboarding` `spaces` `notes` `phrases` `stripes` `prompts` | No renderer and no backend. A node test imports it. |
+| `src/pages/`    | Route screens: `steps` `dashboard` `spaces` `talk` `notes` `voice` `settings` `usage` | A `createRoute` call in `src/main.tsx` names it. |
+| `src/blocks/`   | `screen` `space` `services` `phrase-panel` `suggestions` `usage` `brand` | Two or more pages or layouts use it. |
+| `src/services/` | `os` `data` `ai` `speech` `player` `phrase-sync` `suggest` `usage` | It speaks to Rust, the platform, or a cloud service. |
+| `src/rules/`    | `app-nav` `settings-nav` `onboarding` `spaces` `notes` `phrases` `stripes` `prompts` `usage-summary` | No renderer and no backend. A node test imports it. |
 
 A part with one consumer stays in the page that draws it. There is no barrel
 file: import through the `@/` alias, which points at `src/`. In `src/rules/`,
@@ -35,13 +35,13 @@ never wears the app sidebar, and an app screen never wears the setup sidebar.
 | Layout      | Component                     | Routes                                             |
 | ----------- | ----------------------------- | -------------------------------------------------- |
 | Setup       | `OnboardingLayout`, `layouts/onboarding.tsx` | `/welcome` `/profile` `/mode` `/connect` `/finish`  |
-| Application | `AppShell`, `layouts/app.tsx` | `/dashboard` `/spaces` `/spaces/$slug/talk` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/voice` `/help` `/settings` `/settings/writing` `/settings/connections/$provider` |
+| Application | `AppShell`, `layouts/app.tsx` | `/dashboard` `/spaces` `/spaces/$slug/talk` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/voice` `/help` `/settings` `/settings/writing` `/settings/usage` `/settings/connections/$provider` |
 
 `AppShell` is the shadcn `Sidebar` and `SidebarInset` pair: a solid indigo
 sidebar beside a white inset card. `src/rules/app-nav.ts` lists the destinations and
 their descriptions. `src/layouts/app.tsx` gives each path an icon. A destination
-without a ported screen shows a short placeholder, so the route and the
-sidebar item are real before the screen is.
+The Help destination still shows a short placeholder. Dashboard, Spaces,
+Voice, and Settings have independent desktop screens.
 
 The window opens at the 1376px baseline, so the sidebar starts as a 48px icon
 rail. A wider screen opens the full sidebar. Command-B toggles it, and that
@@ -408,6 +408,36 @@ Without both values, the extension still compiles for local checks but remains
 unsigned. `pnpm tauri:dev` cannot activate it because the development process
 does not run from an installed application bundle.
 
+## Measure saved typing and service use
+
+The Dashboard shows two local signals. Efficiency compares the characters in
+spoken messages with the keys pressed in the Talk composer. Service use counts
+AI and speech calls in dollars, tokens, characters, and ElevenLabs credits.
+
+The period selector uses the local calendar day, Monday-to-Sunday week, or
+calendar month. The Dashboard starts on the current week. Settings > Usage
+starts on the current month and adds service and feature breakdowns, recent
+calls, the current ElevenLabs allowance, and CSV download.
+
+Talk counts printable keys, Backspace, and Enter. A phrase, suggestion, undo,
+or clear action does not add a key. September records the count only after
+SQLite accepts the message, so a failed message write creates no usage event.
+
+AI events record the feature, provider, model, token counts, latency, result,
+and provider-reported cost. Speech events record the voice service, model,
+characters, estimated quota credits, cache status, latency, and result. Local
+Apple and macOS calls are free. ElevenLabs uses prepaid quota credits, while
+OpenRouter supplies a measured dollar cost when its response includes one.
+
+Usage events stay in `analytics_events` inside `september.sqlite3`. The app
+deletes events older than 90 days at startup and whenever it reads or writes
+usage. An event exactly 90 days old remains until it crosses the boundary.
+Recording is best-effort and never stops speaking or writing.
+
+`src/usage-summary.ts` holds the key-count, range, aggregation, and CSV rules.
+`src/usage.ts` records and reads events through `call()` in `src/services/data.ts`.
+`src/pages/dashboard.tsx` and `src/pages/usage.tsx` draw the two reports.
+
 ## Walk through setup
 
 Each step is a route: `/welcome`, `/profile`, `/mode`, `/connect`, and
@@ -470,10 +500,10 @@ section list beside the open section, ported from the web app.
 | --- | --- | --- |
 | Setup | `/settings` | The state of each service, and its key |
 | Writing help | `/settings/writing` | Who writes, and what the model knows about you |
+| Usage | `/settings/usage` | Typing saved, service use, quota, recent calls, and CSV |
 
-The web app has three more sections. Listening needs a transcription backend,
-Usage needs a spend count, and Account needs an account. The desktop app has
-none of the three. Voice keeps its own screen, `/voice`, in both apps.
+Listening still needs a transcription backend, and Account needs an account.
+Voice keeps its own screen, `/voice`, in both apps.
 
 `src/rules/settings-nav.ts` holds the rules that a test can read: the sections, the
 open section, and the guide for each cloud service. `src/layouts/settings.tsx`

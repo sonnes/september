@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
 import { currentSetup } from "@/services/os";
+import { recordAiUsage, type GenerationFeature } from "@/services/usage";
 import {
   buildSpaceContextPrompt,
   spaceDescriptionFrom,
@@ -26,6 +27,17 @@ export interface GenerateRequest {
   response_format?:
     | { type: "json_object" }
     | { type: "json_schema"; name: string; schema: object };
+}
+
+interface GenerateAnswer {
+  text: string;
+  model?: string;
+  cost_usd?: number;
+  usage: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
 }
 
 /** The service the user chose in setup, or nothing. */
@@ -59,17 +71,63 @@ export function userContext(): string {
  */
 export async function generate(
   request: GenerateRequest,
-  signal?: AbortSignal,
+  options: { feature: GenerationFeature; signal?: AbortSignal },
 ): Promise<string> {
   const service = writingService();
   if (!service) throw new Error("no writing service is chosen");
 
   const command =
     service === "apple" ? "apfel_generate" : "openrouter_generate";
-  const answer = await invoke<{ text: string }>(command, { request });
+  const started = Date.now();
+  const inputLength = request.messages.reduce(
+    (total, message) => total + message.content.length,
+    0,
+  );
+  let answer: GenerateAnswer;
+  try {
+    answer = await invoke<GenerateAnswer>(command, { request });
+  } catch (reason) {
+    void recordAiUsage({
+      generation_type: options.feature,
+      provider: service,
+      model: service === "apple" ? "apple-foundationmodel" : "unknown",
+      input_length: inputLength,
+      output_length: 0,
+      input_tokens: 0,
+      output_tokens: 0,
+      latency_ms: Date.now() - started,
+      success: false,
+      cached: false,
+      cost_source: service === "apple" ? "free" : "unknown",
+      error_message: reason instanceof Error ? reason.message : String(reason),
+    });
+    throw reason;
+  }
+
+  const model =
+    answer.model ?? (service === "apple" ? "apple-foundationmodel" : "unknown");
+  const free = service === "apple" || model.endsWith(":free");
+  void recordAiUsage({
+    generation_type: options.feature,
+    provider: service,
+    model,
+    input_length: inputLength,
+    output_length: answer.text.length,
+    input_tokens: answer.usage.prompt_tokens,
+    output_tokens: answer.usage.completion_tokens,
+    latency_ms: Date.now() - started,
+    success: true,
+    cached: false,
+    cost_usd: free ? 0 : answer.cost_usd,
+    cost_source: free
+      ? "free"
+      : answer.cost_usd === undefined
+        ? "unknown"
+        : "measured",
+  });
   // The command cannot be stopped once it starts, so a caller that gave up
   // throws instead of using an answer it no longer wants.
-  if (signal?.aborted) throw new Error("the request was dropped");
+  if (options.signal?.aborted) throw new Error("the request was dropped");
 
   return answer.text;
 }
@@ -100,14 +158,17 @@ export async function describeSpace(
   if (!hasWritingService()) return null;
 
   const { system, user } = buildSpaceContextPrompt(messageText);
-  const answer = await generate({
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: user },
-    ],
-    temperature: 0.7,
-    response_format: { type: "json_object" },
-  });
+  const answer = await generate(
+    {
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+      temperature: 0.7,
+      response_format: { type: "json_object" },
+    },
+    { feature: "context" },
+  );
 
   return spaceDescriptionFrom(answer);
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   ChevronLeft,
@@ -8,6 +8,7 @@ import {
   Volume2,
 } from "lucide-react";
 import { describeSpace } from "@/services/ai";
+import { recordMessageUsage } from "@/services/usage";
 import {
   useMessages,
   usePhrases,
@@ -83,6 +84,7 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
   const speaking = useSpeaking();
   const fallback = useVoiceFallback();
   const [draft, setDraft] = useState("");
+  const keysTyped = useRef(0);
   const [pageInput, setPageInput] = useState(0);
 
   const spoken = (messages ?? []).filter((message) => message.type === "user");
@@ -144,11 +146,14 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
   };
 
   const say = (sentence: string) => {
+    const typed = keysTyped.current;
     void speak(sentence);
     send.mutate(sentence, {
       onSuccess: () => {
+        void recordMessageUsage(sentence, typed, space.id);
         describe(sentence);
         setDraft("");
+        keysTyped.current = 0;
       },
     });
   };
@@ -222,6 +227,9 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
             draft={draft}
             onDraft={write}
             onAction={say}
+            onTypedKey={() => {
+              keysTyped.current += 1;
+            }}
             onPin={keep}
             pending={send.isPending}
             note={

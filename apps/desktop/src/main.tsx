@@ -25,11 +25,13 @@ import { currentPath, currentSetup, savePath } from "@/services/os";
 import { AppShell } from "@/layouts/app";
 import { SettingsLayout } from "@/layouts/settings";
 import { AppScreen } from "@/blocks/screen";
+import { DashboardScreen } from "@/pages/dashboard";
 import {
   ConnectionScreen,
   SetupSettings,
   WritingSettings,
 } from "@/pages/settings";
+import { UsageSettings } from "@/pages/usage";
 import { isConnectionId } from "@/rules/settings-nav";
 import { SpacesScreen } from "@/pages/spaces";
 import { TalkScreen } from "@/pages/talk";
@@ -148,7 +150,11 @@ const routeTree = rootRoute.addChildren([
     step("/finish", FinishStep),
   ]),
   appRoute.addChildren([
-    screen("/dashboard"),
+    createRoute({
+      getParentRoute: () => appRoute,
+      path: "/dashboard",
+      component: DashboardScreen,
+    }),
     spacesRoute,
     talkRoute,
     notesRoute,
@@ -169,6 +175,11 @@ const routeTree = rootRoute.addChildren([
         getParentRoute: () => settingsRoute,
         path: "/writing",
         component: WritingSettings,
+      }),
+      createRoute({
+        getParentRoute: () => settingsRoute,
+        path: "/usage",
+        component: UsageSettings,
       }),
       connectionRoute,
     ]),

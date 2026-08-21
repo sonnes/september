@@ -147,6 +147,8 @@ fn generation_uses_the_authenticated_openai_contract() {
     assert_eq!(generated.usage.prompt_tokens, 23);
     assert_eq!(generated.usage.completion_tokens, 9);
     assert_eq!(generated.usage.total_tokens, 32);
+    assert_eq!(generated.model.as_deref(), Some("apple-foundationmodel"));
+    assert_eq!(generated.cost_usd, Some(0.0));
 
     let captured = captured.recv().unwrap();
     assert!(captured.head.starts_with("POST /v1/chat/completions "));

@@ -1,4 +1,9 @@
-use std::{fs, path::PathBuf, sync::Mutex};
+use std::{
+    fs,
+    path::PathBuf,
+    sync::Mutex,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -8,13 +13,26 @@ use crate::{
     apfel::{ApfelGenerateRequest, ApfelGeneration, ApfelState, ApfelStatus},
     audio::{self, AudioDevice, VirtualMicrophoneStatus},
     camera::{self, VirtualCameraStatus},
-    providers::{self, Model, Provider, ProviderStatus, Providers, Voice},
-    repository::{Message, Note, Repository, SavedPhrase, Space, SpacePatch},
+    providers::{self, ElevenLabsQuota, Model, Provider, ProviderStatus, Providers, Voice},
+    repository::{AnalyticsEvent, Message, Note, Repository, SavedPhrase, Space, SpacePatch},
     speech::{self, SpeechSettings},
 };
 
 pub(crate) struct BackendState {
     repository: Mutex<Repository>,
+}
+
+pub(crate) const ANALYTICS_RETENTION_MS: i64 = 90 * 24 * 60 * 60 * 1_000;
+
+fn now_ms() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as i64
+}
+
+pub(crate) fn retention_cutoff_ms(now: i64) -> i64 {
+    now.saturating_sub(ANALYTICS_RETENTION_MS).max(0)
 }
 
 #[derive(Deserialize)]
@@ -35,6 +53,13 @@ pub(crate) struct SpaceListRequest {
 #[derive(Deserialize)]
 pub(crate) struct SpaceFilterRequest {
     space_id: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct AnalyticsListRequest {
+    user_id: String,
+    start_at: i64,
+    end_at: i64,
 }
 
 #[derive(Deserialize)]
@@ -109,6 +134,7 @@ pub(crate) fn setup(app: &mut tauri::App) -> std::result::Result<(), Box<dyn std
     let data_directory = app.path().app_local_data_dir()?;
     fs::create_dir_all(&data_directory)?;
     let repository = Repository::open(data_directory.join("september.sqlite3"))?;
+    repository.delete_analytics_events_before(retention_cutoff_ms(now_ms()))?;
     app.manage(BackendState {
         repository: Mutex::new(repository),
     });
@@ -260,6 +286,38 @@ pub(crate) fn message_put(state: State<'_, BackendState>, request: Message) -> R
         .put_message(&request)
         .map_err(rpc_error)?;
     Ok(request)
+}
+
+/// Stores one local usage event, then applies the rolling retention boundary.
+#[tauri::command(async)]
+pub(crate) fn analytics_put(
+    state: State<'_, BackendState>,
+    request: AnalyticsEvent,
+) -> RpcResult<AnalyticsEvent> {
+    let repository = state.repository.lock().map_err(lock_error)?;
+    repository
+        .put_analytics_event(&request)
+        .map_err(rpc_error)?;
+    repository
+        .delete_analytics_events_before(retention_cutoff_ms(now_ms()))
+        .map_err(rpc_error)?;
+    Ok(request)
+}
+
+/// Reads one bounded report. Opening a report also cleans an app that has
+/// stayed open without recording a new event.
+#[tauri::command(async)]
+pub(crate) fn analytics_list(
+    state: State<'_, BackendState>,
+    request: AnalyticsListRequest,
+) -> RpcResult<Vec<AnalyticsEvent>> {
+    let repository = state.repository.lock().map_err(lock_error)?;
+    repository
+        .delete_analytics_events_before(retention_cutoff_ms(now_ms()))
+        .map_err(rpc_error)?;
+    repository
+        .list_analytics_events(&request.user_id, request.start_at, request.end_at)
+        .map_err(rpc_error)
 }
 
 #[tauri::command(async)]
@@ -555,6 +613,20 @@ pub(crate) async fn provider_models() -> RpcResult<Vec<Model>> {
     Providers::default().models(&key).await.map_err(rpc_error)
 }
 
+/// The ElevenLabs allowance for the stored key. The result is absent when the
+/// service is not connected.
+#[tauri::command]
+pub(crate) async fn provider_quota() -> RpcResult<Option<ElevenLabsQuota>> {
+    let Some(key) = providers::stored(Provider::ElevenLabs).map_err(rpc_error)? else {
+        return Ok(None);
+    };
+    Providers::default()
+        .quota(&key)
+        .await
+        .map(Some)
+        .map_err(rpc_error)
+}
+
 /// Keeps the first GECOS field and rejects the placeholder `whoami` supplies
 /// when the system knows no name.
 fn clean_name(raw: &str) -> String {
@@ -654,7 +726,17 @@ fn lock_error<T>(_: std::sync::PoisonError<T>) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{clean_name, login_name, EntityIdRequest, SpaceFilterRequest, SpaceListRequest};
+    use super::{
+        clean_name, login_name, retention_cutoff_ms, EntityIdRequest, SpaceFilterRequest,
+        SpaceListRequest, ANALYTICS_RETENTION_MS,
+    };
+
+    #[test]
+    fn analytics_retention_is_ninety_days() {
+        assert_eq!(ANALYTICS_RETENTION_MS, 90 * 24 * 60 * 60 * 1_000);
+        assert_eq!(retention_cutoff_ms(ANALYTICS_RETENTION_MS + 42), 42);
+        assert_eq!(retention_cutoff_ms(10), 0);
+    }
 
     #[test]
     fn a_display_name_survives() {

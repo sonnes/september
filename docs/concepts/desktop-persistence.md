@@ -29,6 +29,22 @@ notes. Global messages and notes have no space and remain intact.
 SQLite stores domain timestamps as Unix milliseconds. Composite indexes cover
 the existing space-scoped message and note queries.
 
+## Keep usage events for 90 days
+
+The `analytics_events` table stores an event ID, user ID, event type, Unix
+millisecond timestamp, and validated JSON payload. An index on user and
+timestamp supports the Dashboard and Settings reports without scanning other
+users or older periods.
+
+Usage rows do not reference spaces. Deleting a conversation removes its
+messages and notes, but it does not rewrite historical efficiency or service
+totals.
+
+The backend deletes events strictly older than 90 days when the app starts and
+whenever usage is read or written. An event at the exact boundary remains. No
+background worker is necessary, and a long-running app still cleans itself
+when the next event or report arrives.
+
 ## Use typed domain commands
 
 The webview lists, gets, puts, and deletes spaces, messages, and notes through
@@ -60,8 +76,9 @@ A field is set, never cleared. No writer needs to empty one.
 
 ## Start with the current schema
 
-Schema version 1 creates `settings`, `spaces`, `messages`, and `notes` directly.
-The desktop app does not migrate databases created by earlier backend versions.
+Schema version 6 creates settings, domain rows, saved phrases, and analytics
+events. The migrations use `CREATE TABLE IF NOT EXISTS`, so databases from
+earlier desktop builds gain missing tables and keep existing settings.
 
 ## Keep browser storage separate
 

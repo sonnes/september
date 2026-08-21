@@ -33,6 +33,10 @@ A key crosses the process boundary one time, from the key field to Rust. It
 never comes back. `src-tauri/src/providers.rs` owns the Keychain and the
 network. `src/os.ts` owns the only calls from React.
 
+The Usage screen can also read the current ElevenLabs allowance. Rust returns
+the tier, used characters, character limit, and reset time through
+`provider_quota`. It returns no key, and no quota value is stored in SQLite.
+
 ## What a status says
 
 `provider_status` tests each stored key again on every read. A key that worked

@@ -1,9 +1,9 @@
 # September desktop backend
 
 This Tauri v2 backend gives the independent desktop UI one SQLite database.
-It stores settings, spaces, messages, and notes in separate tables. The command
-surface also reads the operating-system user name, provides local text
-generation through apfel, and holds cloud API keys in the macOS Keychain.
+It stores settings, domain rows, and local usage events in separate tables.
+The command surface also reads the operating-system user name, provides local
+text generation through apfel, and holds cloud API keys in the macOS Keychain.
 
 ## Run backend checks
 
@@ -28,11 +28,15 @@ The `settings` table stores a unique text key and a JSON value. Keys must
 contain 1 to 256 bytes.
 
 The `spaces`, `messages`, `notes`, and `saved_phrases` tables store domain
-fields in typed columns. Messages and notes can belong to a space. Deleting a space deletes its
-messages and scoped notes, while global messages and notes remain. Timestamps
-are Unix milliseconds.
+fields in typed columns. Messages and notes can belong to a space. Deleting a
+space deletes its messages and scoped notes, while global messages and notes
+remain. Timestamps are Unix milliseconds.
 
-Schema version 5 creates all five tables. Released builds before the domain
+The `analytics_events` table stores one indexed event type and timestamp with
+a JSON payload. It has no foreign key to a space, because a retained usage
+total must survive when the user deletes a conversation.
+
+Schema version 6 creates all six tables. Released builds before the domain
 tables used versions 1 to 3 for a database that held only the settings, so the
 version of the domain tables must be higher than those. The migration uses
 `CREATE TABLE IF NOT EXISTS`, so an install from an earlier build gains the
@@ -124,6 +128,31 @@ const space = await invoke<Space>("space_put", {
 });
 ```
 
+## Call the usage API
+
+`analytics_put` stores a local event. `analytics_list` returns one user's
+events in an inclusive timestamp range, newest first.
+
+| Command | Request | Response |
+| --- | --- | --- |
+| `analytics_put` | `AnalyticsEvent` | `AnalyticsEvent` |
+| `analytics_list` | `{ user_id, start_at, end_at }` | `AnalyticsEvent[]` |
+
+```ts
+type AnalyticsEvent = {
+  id: string;
+  user_id: string;
+  event_type: "message_sent" | "ai_generation" | "tts_generation";
+  timestamp: number;
+  data: Record<string, unknown>;
+};
+```
+
+The app deletes events strictly older than 90 days during startup and before
+or after each usage read or write. This also cleans a process that stays open
+for more than 90 days. The timestamp index keeps cleanup and bounded reports
+out of the event payload.
+
 ## Call the settings API
 
 Each command accepts a `request` object.
@@ -168,6 +197,8 @@ A key never returns to the WebView. Every command answers with a status only.
 | `provider_connect` | `{ provider, key }`    | The status after the test |
 | `provider_forget`  | `{ provider }`         | `boolean`           |
 | `provider_voices`  | none                   | The ElevenLabs voices |
+| `provider_models`  | none                   | The ElevenLabs speech models |
+| `provider_quota`   | none                   | The current ElevenLabs allowance or `null` |
 
 ```ts
 type ProviderStatus = {
@@ -189,6 +220,10 @@ the reason in `detail`.
 voice carries `id`, `name`, and `preview_url`. The preview URL is public, so
 the UI can play a sample without a key.
 
+`provider_quota` returns the account tier, used characters, character limit,
+and reset time. It returns `null` when no ElevenLabs key is stored. The API key
+never crosses the command boundary.
+
 ## Keep the phrases of a user
 
 `phrase_replace_ai` takes `{ space_id, phrases }` and returns the phrases of
@@ -206,7 +241,8 @@ space.
 The `openrouter_generate` command takes the request shape of `apfel_generate`
 and answers in its response shape. It picks a model from a small list of free
 models, and OpenRouter uses the first one that answers. The key stays in the
-Keychain.
+Keychain. The response includes the model OpenRouter chose and its reported
+cost when the service supplies one.
 
 ## Speak a sentence
 
@@ -337,6 +373,8 @@ The command returns the generated text and the token counts:
 type ApfelGeneration = {
   text: string;
   finish_reason: string;
+  model?: string;
+  cost_usd?: number;
   usage: {
     prompt_tokens: number;
     completion_tokens: number;

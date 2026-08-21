@@ -9,8 +9,8 @@ use crate::error::{BackendError, Result};
 /// Released builds before the domain tables used 1, 2, and 3 for a database
 /// that held only the settings. The domain tables arrive at 4, so those
 /// installs migrate instead of staying at a number above the target. The
-/// saved phrases arrive at 5.
-const SCHEMA_VERSION: i64 = 5;
+/// saved phrases arrive at 5. Local usage events arrive at 6.
+const SCHEMA_VERSION: i64 = 6;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Space {
@@ -80,6 +80,15 @@ pub struct SavedPhrase {
     pub updated_at: i64,
 }
 
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct AnalyticsEvent {
+    pub id: String,
+    pub user_id: String,
+    pub event_type: String,
+    pub timestamp: i64,
+    pub data: Value,
+}
+
 pub struct Repository {
     connection: Connection,
 }
@@ -111,6 +120,7 @@ impl Repository {
             transaction.execute_batch(concat!(
                 include_str!("../migrations/0001_initial.sql"),
                 include_str!("../migrations/0002_saved_phrases.sql"),
+                include_str!("../migrations/0003_analytics.sql"),
             ))?;
             transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
             transaction.commit()?;
@@ -385,6 +395,78 @@ impl Repository {
             > 0)
     }
 
+    pub fn put_analytics_event(&self, event: &AnalyticsEvent) -> Result<()> {
+        validate_analytics_event(event)?;
+        self.connection.execute(
+            "INSERT INTO analytics_events (id, user_id, event_type, timestamp, data) \
+             VALUES (?1, ?2, ?3, ?4, ?5) \
+             ON CONFLICT(id) DO UPDATE SET \
+               user_id = excluded.user_id, \
+               event_type = excluded.event_type, \
+               timestamp = excluded.timestamp, \
+               data = excluded.data",
+            params![
+                event.id,
+                event.user_id,
+                event.event_type,
+                event.timestamp,
+                serde_json::to_string(&event.data)?,
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn list_analytics_events(
+        &self,
+        user_id: &str,
+        start_at: i64,
+        end_at: i64,
+    ) -> Result<Vec<AnalyticsEvent>> {
+        validate_identifier("analytics user ID", user_id)?;
+        validate_timestamp("analytics range start", start_at)?;
+        validate_timestamp("analytics range end", end_at)?;
+        if end_at < start_at {
+            return Err(BackendError::InvalidInput(
+                "analytics range end must not precede its start".into(),
+            ));
+        }
+
+        let mut statement = self.connection.prepare(
+            "SELECT id, user_id, event_type, timestamp, data \
+             FROM analytics_events \
+             WHERE user_id = ?1 AND timestamp BETWEEN ?2 AND ?3 \
+             ORDER BY timestamp DESC, id",
+        )?;
+        let rows = statement.query_map(params![user_id, start_at, end_at], |row| {
+            let encoded: String = row.get(4)?;
+            let data = serde_json::from_str(&encoded).map_err(|error| {
+                rusqlite::Error::FromSqlConversionFailure(
+                    4,
+                    rusqlite::types::Type::Text,
+                    Box::new(error),
+                )
+            })?;
+            Ok(AnalyticsEvent {
+                id: row.get(0)?,
+                user_id: row.get(1)?,
+                event_type: row.get(2)?,
+                timestamp: row.get(3)?,
+                data,
+            })
+        })?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    /// Deletes events strictly before the boundary. An event exactly 90 days
+    /// old remains until it crosses the boundary.
+    pub fn delete_analytics_events_before(&self, cutoff: i64) -> Result<usize> {
+        validate_timestamp("analytics retention cutoff", cutoff)?;
+        Ok(self.connection.execute(
+            "DELETE FROM analytics_events WHERE timestamp < ?1",
+            [cutoff],
+        )?)
+    }
+
     /// Puts the rows that a model wrote in place of the rows before them.
     ///
     /// A pinned row is never touched. The user keeps what the user chose, so
@@ -573,6 +655,20 @@ fn validate_phrase(phrase: &SavedPhrase) -> Result<()> {
     Ok(())
 }
 
+fn validate_analytics_event(event: &AnalyticsEvent) -> Result<()> {
+    validate_identifier("analytics event ID", &event.id)?;
+    validate_identifier("analytics user ID", &event.user_id)?;
+    if !matches!(
+        event.event_type.as_str(),
+        "message_sent" | "ai_generation" | "tts_generation"
+    ) {
+        return Err(BackendError::InvalidInput(
+            "analytics event type is not supported".into(),
+        ));
+    }
+    validate_timestamp("analytics event timestamp", event.timestamp)
+}
+
 fn validate_identifier(name: &str, value: &str) -> Result<()> {
     if value.is_empty() || value.len() > 256 {
         return Err(BackendError::InvalidInput(format!(
@@ -604,7 +700,58 @@ fn validate_key(key: &str) -> Result<()> {
 mod tests {
     use rusqlite::Connection;
 
-    use super::{Repository, Space, SpacePatch};
+    use super::{AnalyticsEvent, Repository, Space, SpacePatch};
+
+    fn analytics_event(id: &str, user_id: &str, timestamp: i64) -> AnalyticsEvent {
+        AnalyticsEvent {
+            id: id.to_owned(),
+            user_id: user_id.to_owned(),
+            event_type: "message_sent".to_owned(),
+            timestamp,
+            data: serde_json::json!({ "text_length": 12, "keys_typed": 3 }),
+        }
+    }
+
+    #[test]
+    fn analytics_events_are_isolated_by_user_and_time_and_newest_first() {
+        let repository = Repository::open_in_memory().unwrap();
+        repository
+            .put_analytics_event(&analytics_event("old", "user-1", 10))
+            .unwrap();
+        repository
+            .put_analytics_event(&analytics_event("new", "user-1", 30))
+            .unwrap();
+        repository
+            .put_analytics_event(&analytics_event("other", "user-2", 20))
+            .unwrap();
+
+        let rows = repository.list_analytics_events("user-1", 10, 30).unwrap();
+        assert_eq!(
+            rows.iter().map(|row| row.id.as_str()).collect::<Vec<_>>(),
+            vec!["new", "old"]
+        );
+    }
+
+    #[test]
+    fn analytics_cleanup_deletes_only_events_older_than_the_cutoff() {
+        let repository = Repository::open_in_memory().unwrap();
+        repository
+            .put_analytics_event(&analytics_event("older", "user-1", 9))
+            .unwrap();
+        repository
+            .put_analytics_event(&analytics_event("boundary", "user-1", 10))
+            .unwrap();
+        repository
+            .put_analytics_event(&analytics_event("newer", "user-1", 11))
+            .unwrap();
+
+        assert_eq!(repository.delete_analytics_events_before(10).unwrap(), 1);
+        let rows = repository.list_analytics_events("user-1", 0, 20).unwrap();
+        assert_eq!(
+            rows.iter().map(|row| row.id.as_str()).collect::<Vec<_>>(),
+            vec!["newer", "boundary"]
+        );
+    }
 
     #[test]
     fn a_database_from_an_earlier_backend_gains_the_domain_tables() {

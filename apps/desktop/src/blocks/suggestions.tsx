@@ -510,7 +510,7 @@ function useCompletions({
           temperature: 0.7,
           response_format: { type: "json_object" },
         },
-        dropped.signal,
+        { feature: "suggestions", signal: dropped.signal },
       )
         .then((answer) => setRows(itemsFrom(answer, "suggestions")))
         // A service that fails leaves the rows that do not need it.

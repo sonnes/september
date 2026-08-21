@@ -5,7 +5,10 @@ use std::{
     thread,
 };
 
-use september_desktop_lib::providers::{Provider, ProviderError, Providers};
+use september_desktop_lib::{
+    apfel::{ApfelGenerateRequest, ApfelMessage},
+    providers::{Provider, ProviderError, Providers},
+};
 use serde_json::{json, Value};
 
 /// Answers one GET and hands back the request head, so a test can read the
@@ -124,6 +127,67 @@ async fn an_eleven_labs_key_reports_the_characters_that_are_left() {
         status.detail.as_deref(),
         Some("9,412 characters left this month")
     );
+}
+
+#[tokio::test]
+async fn eleven_labs_quota_keeps_the_reset_and_raw_counts() {
+    let (base, _requests) = serve_once(
+        "200 OK",
+        json!({
+            "tier": "starter",
+            "character_count": 588,
+            "character_limit": 10_000,
+            "next_character_count_reset_unix": 1_782_864_000
+        }),
+    );
+
+    let quota = eleven_labs(&base).quota("xi-test").await.unwrap();
+
+    assert_eq!(quota.tier.as_deref(), Some("starter"));
+    assert_eq!(quota.character_count, 588);
+    assert_eq!(quota.character_limit, 10_000);
+    assert_eq!(quota.resets_at, Some(1_782_864_000));
+    assert_eq!(
+        serde_json::to_value(&quota).unwrap()["resets_at"],
+        1_782_864_000
+    );
+}
+
+#[tokio::test]
+async fn open_router_generation_reports_its_model_and_measured_cost() {
+    let (base, _requests) = serve_once(
+        "200 OK",
+        json!({
+            "model": "qwen/qwen3-next-80b-a3b-instruct:free",
+            "choices": [{
+                "message": {"content": "Hello"},
+                "finish_reason": "stop"
+            }],
+            "usage": {
+                "prompt_tokens": 12,
+                "completion_tokens": 2,
+                "total_tokens": 14,
+                "cost": 0.003
+            }
+        }),
+    );
+    let request = ApfelGenerateRequest {
+        messages: vec![ApfelMessage::user("Say hello")],
+        temperature: None,
+        max_tokens: None,
+        response_format: None,
+    };
+
+    let answer = open_router(&base)
+        .generate("sk-test", &request)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        answer.model.as_deref(),
+        Some("qwen/qwen3-next-80b-a3b-instruct:free")
+    );
+    assert_eq!(answer.cost_usd, Some(0.003));
 }
 
 #[tokio::test]

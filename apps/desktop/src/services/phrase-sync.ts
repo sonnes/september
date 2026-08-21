@@ -89,14 +89,17 @@ async function writePhrases({
     context: space.context,
   });
 
-  const answer = await generate({
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: prompt },
-    ],
-    temperature: 0.7,
-    response_format: { type: "json_object" },
-  });
+  const answer = await generate(
+    {
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.7,
+      response_format: { type: "json_object" },
+    },
+    { feature: "phrases" },
+  );
 
   const pinnedTexts = phrases.filter((row) => row.pinned).map((row) => row.text);
   const fresh = dedupeAgainstPinned(pinnedTexts, itemsFrom(answer, "phrases"));

@@ -1,5 +1,5 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Lightbulb, SlidersHorizontal } from "lucide-react";
+import { Gauge, Lightbulb, SlidersHorizontal } from "lucide-react";
 
 import { SETTINGS_NAV, sectionFor, type SettingsPath } from "@/rules/settings-nav";
 import { ScreenHeader } from "@/blocks/screen";
@@ -7,6 +7,7 @@ import { ScreenHeader } from "@/blocks/screen";
 const ICONS: Record<SettingsPath, typeof SlidersHorizontal> = {
   "/settings": SlidersHorizontal,
   "/settings/writing": Lightbulb,
+  "/settings/usage": Gauge,
 };
 
 export function SettingsLayout() {

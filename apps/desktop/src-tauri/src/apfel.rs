@@ -99,6 +99,8 @@ impl ApfelClient {
             text: choice.message.content,
             finish_reason: choice.finish_reason,
             usage: response.usage,
+            model: Some(MODEL.to_owned()),
+            cost_usd: Some(0.0),
         })
     }
 }
@@ -220,11 +222,15 @@ impl Serialize for ApfelResponseFormat {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct ApfelGeneration {
     pub text: String,
     pub finish_reason: String,
     pub usage: ApfelUsage,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cost_usd: Option<f64>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]

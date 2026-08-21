@@ -55,6 +55,7 @@ import {
   virtualMicrophoneStatus,
 } from "@/services/os";
 import { Suggestions } from "@/blocks/suggestions";
+import { countsAsTypedKey } from "@/rules/usage-summary";
 import {
   deleteLastWord,
   newSpaceTitle,
@@ -115,6 +116,7 @@ export function Composer({
   draft,
   onDraft,
   onAction,
+  onTypedKey,
   onPin,
   pending,
   note,
@@ -127,6 +129,8 @@ export function Composer({
   draft: string;
   onDraft: (text: string) => void;
   onAction: (text: string) => void;
+  /** Counts direct keyboard work. Inserted suggestions do not call it. */
+  onTypedKey?: () => void;
   onPin: (phrase: string) => void;
   pending?: boolean;
   /** A line under the field, for example why a voice did not answer. */
@@ -195,6 +199,7 @@ export function Composer({
           }
           onChange={(event) => onDraft(event.target.value)}
           onKeyDown={(event) => {
+            if (countsAsTypedKey(event.key)) onTypedKey?.();
             if (event.key === "Enter" && !event.shiftKey) {
               event.preventDefault();
               act(draft);

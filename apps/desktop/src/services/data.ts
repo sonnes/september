@@ -39,7 +39,7 @@ const phrasesKey = (spaceId?: string) => ["phrases", spaceId ?? "all"];
  * `error.message` would then show nothing, so every rejection becomes an
  * Error here.
  */
-async function call<T>(command: string, request?: unknown): Promise<T> {
+export async function call<T>(command: string, request?: unknown): Promise<T> {
   try {
     return await invoke<T>(command, request === undefined ? undefined : { request });
   } catch (reason) {
@@ -162,15 +162,17 @@ export function useSendMessage(spaceId: string) {
   const client = useQueryClient();
 
   return useMutation({
-    mutationFn: (text: string) =>
-      call<Message>("message_put", {
+    mutationFn: async (text: string) => {
+      const message = await call<Message>("message_put", {
         id: crypto.randomUUID(),
         space_id: spaceId,
         user_id: currentUserId(),
         text,
         type: "user",
         created_at: Date.now(),
-      }),
+      });
+      return message;
+    },
     // The transcript shows the sentence as soon as SQLite accepts it.
     // ponytail: no rollback path — the write is a local file, and a failure
     // keeps the text in the composer.

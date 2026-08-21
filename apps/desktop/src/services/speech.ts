@@ -8,6 +8,8 @@ import {
   stopNativeSpeech,
   synthesizeSpeech,
 } from "@/services/os";
+import { elevenLabsCredits } from "@/rules/usage-summary";
+import { recordTtsUsage } from "@/services/usage";
 
 export type VoiceService = "system" | "elevenlabs";
 
@@ -55,17 +57,91 @@ export interface SpeechProvider {
 
 const systemVoice = (settings: SpeechSettings): SpeechProvider => ({
   id: "system",
-  // A system voice that fails still resolves. The caller only needs to know
-  // that the sound stopped.
-  speak: (text) => speakSystem(text, settings).catch(() => undefined),
+  async speak(text) {
+    const started = Date.now();
+    try {
+      await speakSystem(text, settings);
+      void recordTtsUsage({
+        provider: "system",
+        model: "macOS system voice",
+        voice_id: settings.voiceId ?? undefined,
+        text_length: text.length,
+        credits: 0,
+        duration_seconds: 0,
+        latency_ms: Date.now() - started,
+        success: true,
+        cached: false,
+        cost_usd: 0,
+        cost_source: "free",
+      });
+    } catch (reason) {
+      void recordTtsUsage({
+        provider: "system",
+        model: "macOS system voice",
+        voice_id: settings.voiceId ?? undefined,
+        text_length: text.length,
+        credits: 0,
+        duration_seconds: 0,
+        latency_ms: Date.now() - started,
+        success: false,
+        cached: false,
+        cost_usd: 0,
+        cost_source: "free",
+        error_message: reason instanceof Error ? reason.message : String(reason),
+      });
+      // The caller only needs to know that the sound stopped.
+    }
+  },
   stop: () => void stopNativeSpeech().catch(() => undefined),
 });
 
 const cloudVoice = (settings: SpeechSettings): SpeechProvider => ({
   id: "elevenlabs",
   async speak(text) {
+    const started = Date.now();
+    let path: string;
     try {
-      const { path } = await synthesizeSpeech(text, settings);
+      const result = await synthesizeSpeech(text, settings);
+      path = result.path;
+      const credits = result.from_cache
+        ? 0
+        : elevenLabsCredits(text, settings.modelId);
+      void recordTtsUsage({
+        provider: "elevenlabs",
+        model: settings.modelId,
+        voice_id: settings.voiceId ?? undefined,
+        text_length: text.length,
+        credits,
+        duration_seconds: 0,
+        latency_ms: Date.now() - started,
+        success: true,
+        cached: result.from_cache,
+        cost_usd: result.from_cache ? 0 : undefined,
+        cost_source: result.from_cache
+          ? "free"
+          : credits === undefined
+            ? "unknown"
+            : "quota",
+      });
+    } catch (reason) {
+      void recordTtsUsage({
+        provider: "elevenlabs",
+        model: settings.modelId,
+        voice_id: settings.voiceId ?? undefined,
+        text_length: text.length,
+        duration_seconds: 0,
+        latency_ms: Date.now() - started,
+        success: false,
+        cached: false,
+        cost_source: "unknown",
+        error_message: reason instanceof Error ? reason.message : String(reason),
+      });
+      setFallback(reason instanceof Error ? reason.message : String(reason));
+      await systemVoice(settings).speak(text);
+      return;
+    }
+
+    try {
       await playSpeechFile(path);
       setFallback(null);
     } catch (reason) {
