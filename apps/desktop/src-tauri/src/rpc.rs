@@ -4,7 +4,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::{AppHandle, Emitter, Manager, State};
 
-use crate::repository::Repository;
+use crate::{
+    apfel::{ApfelGenerateRequest, ApfelGeneration, ApfelState, ApfelStatus},
+    repository::Repository,
+};
 
 pub(crate) struct BackendState {
     repository: Mutex<Repository>,
@@ -33,6 +36,7 @@ pub(crate) fn setup(app: &mut tauri::App) -> std::result::Result<(), Box<dyn std
     app.manage(BackendState {
         repository: Mutex::new(repository),
     });
+    app.manage(ApfelState::default());
     Ok(())
 }
 
@@ -102,6 +106,23 @@ pub(crate) fn setting_delete(
 #[tauri::command(async)]
 pub(crate) fn user_name() -> String {
     clean_name(&whoami::realname())
+}
+
+#[tauri::command]
+pub(crate) async fn apfel_status(
+    app: AppHandle,
+    state: State<'_, ApfelState>,
+) -> RpcResult<ApfelStatus> {
+    Ok(state.status(&app).await)
+}
+
+#[tauri::command]
+pub(crate) async fn apfel_generate(
+    app: AppHandle,
+    state: State<'_, ApfelState>,
+    request: ApfelGenerateRequest,
+) -> RpcResult<ApfelGeneration> {
+    state.generate(&app, request).await.map_err(rpc_error)
 }
 
 /// Keeps the first GECOS field and rejects the placeholder `whoami` supplies

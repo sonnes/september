@@ -37,6 +37,25 @@ pnpm tauri:dev
 The UI dev server uses `http://localhost:3010`. The main desktop window opens at
 1376×1032, the project's 13-inch iPad landscape baseline.
 
+Local text generation requires these items:
+
+- An Apple Silicon Mac
+- macOS 26 or later
+- Apple Intelligence enabled
+
+`pnpm tauri:dev` downloads the pinned apfel v1.9.1 binary on the first run.
+The command makes sure that both archive and binary checksums match.
+`pnpm tauri:build` does the same work before it builds the app bundle.
+
+Run this command to prepare the binary without starting Tauri:
+
+```sh
+pnpm apfel:prepare
+```
+
+On unsupported systems, September starts without the sidecar. The Rust status
+command reports that the local provider is unsupported.
+
 ## Check the UI
 
 ```sh
@@ -53,4 +72,4 @@ cargo fmt --all -- --check
 ```
 
 The Rust backend stores settings, spaces, messages, and notes in SQLite. See
-[`src-tauri/README.md`](src-tauri/README.md) for its RPC contract.
+[`src-tauri/README.md`](src-tauri/README.md) for its storage and RPC contracts.

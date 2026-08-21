@@ -1,0 +1,6 @@
+{
+  "bundle": {
+    "externalBin": ["binaries/apfel"],
+    "resources": ["third-party/apfel-LICENSE"]
+  }
+}

@@ -20,8 +20,8 @@ test("desktop is an independent pnpm app", async () => {
   assert.equal(packageJson.name, "@september/desktop");
   assert.equal(packageJson.scripts.dev, "vite");
   assert.equal(packageJson.scripts.build, "tsc --noEmit && vite build");
-  assert.equal(packageJson.scripts["tauri:dev"], "tauri dev");
-  assert.equal(packageJson.scripts["tauri:build"], "tauri build");
+  assert.equal(packageJson.scripts["tauri:dev"], "node scripts/tauri.mjs dev");
+  assert.equal(packageJson.scripts["tauri:build"], "node scripts/tauri.mjs build");
 });
 
 test("Tauri opens the independent UI at the 13-inch iPad baseline", async () => {
@@ -141,6 +141,27 @@ test("the profile name starts from the operating-system name", async () => {
 
   // The draft starts with the name, so no effect races the first render.
   assert.match(await readText("src/app.tsx"), /name: osName/);
+});
+
+test("the Rust backend owns the private apfel sidecar", async () => {
+  const cargo = await readText("src-tauri/Cargo.toml");
+  const lib = await readText("src-tauri/src/lib.rs");
+  const rpc = await readText("src-tauri/src/rpc.rs");
+  const apfelConfig = await readJson("src-tauri/tauri.apfel.conf.json");
+  const packageJson = await readJson("package.json");
+
+  assert.match(cargo, /tauri-plugin-shell/);
+  assert.match(cargo, /reqwest/);
+  assert.deepEqual(apfelConfig.bundle.externalBin, ["binaries/apfel"]);
+  assert.deepEqual(apfelConfig.bundle.resources, ["third-party/apfel-LICENSE"]);
+  assert.match(await readText("src-tauri/third-party/apfel-LICENSE"), /MIT License/);
+  assert.match(packageJson.scripts["apfel:prepare"], /prepare-apfel\.mjs/);
+  assert.match(packageJson.scripts["tauri:dev"], /scripts\/tauri\.mjs dev/);
+  assert.match(packageJson.scripts["tauri:build"], /scripts\/tauri\.mjs build/);
+  assert.match(lib, /tauri_plugin_shell::init\(\)/);
+  assert.match(lib, /rpc::apfel_status/);
+  assert.match(lib, /rpc::apfel_generate/);
+  assert.match(rpc, /ApfelState/);
 });
 
 test("the sidebar is an inset card like the step surface", async () => {

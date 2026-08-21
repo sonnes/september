@@ -18,6 +18,9 @@ cargo fmt --all -- --check
 Use `pnpm tauri:dev` or `pnpm tauri:build` from `apps/desktop` to run or package
 the complete application.
 
+The Tauri commands prepare apfel automatically on an Apple Silicon Mac.
+Run `pnpm apfel:prepare` from `apps/desktop` to prepare only the sidecar.
+
 ## Understand storage
 
 Rust opens `september.sqlite3` in Tauri's application-local-data directory.
@@ -52,3 +55,83 @@ operating system holds for the signed-in user. The result is empty when the
 system has no usable name. The onboarding screen then starts with an empty
 field. The command keeps the first GECOS field and rejects the `Unknown`
 placeholder.
+
+## Use the apfel API
+
+The backend exposes `apfel_status` and `apfel_generate`. Both commands start
+the sidecar on the first call and reuse it on later calls.
+
+`apfel_status` takes no request. It returns this object:
+
+```ts
+type ApfelStatus = {
+  supported: boolean;
+  available: boolean;
+  reason: string | null;
+  model: string | null;
+  version: string | null;
+  context_window: number | null;
+  prewarmed: boolean | null;
+  supported_languages: string[];
+};
+```
+
+`supported` is false when the current system cannot run the bundled provider.
+`available` is false when Apple Intelligence cannot load its model.
+
+Call `apfel_generate` with one `request` object:
+
+```ts
+type ApfelGenerateRequest = {
+  messages: Array<{
+    role: "system" | "user" | "assistant";
+    content: string;
+  }>;
+  temperature?: number;
+  max_tokens?: number;
+  response_format?:
+    | { type: "json_object" }
+    | { type: "json_schema"; name: string; schema: object };
+};
+```
+
+The command returns the generated text and the token counts:
+
+```ts
+type ApfelGeneration = {
+  text: string;
+  finish_reason: string;
+  usage: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+};
+```
+
+The command rejects its promise when startup or generation fails. The error
+keeps the message from the apfel OpenAI-compatible response.
+
+## Understand the sidecar lifecycle
+
+Rust starts one apfel server on a free loopback port. The server accepts one
+generation request at a time.
+
+Rust creates a new bearer token for each server process. It passes the token
+through `APFEL_TOKEN`, not through a command argument.
+
+The WebView cannot start shell commands or call the server directly. It uses
+only the two Tauri commands. Rust restarts the sidecar when its health request
+fails, and it stops the child process when the backend exits.
+
+The bundle contains apfel v1.9.1 and its MIT license. The preparation script
+makes sure that the downloaded archive and extracted binary match pinned
+SHA-256 checksums.
+
+Run the ignored live integration test on a supported Mac:
+
+```sh
+APFEL_BIN="$PWD/binaries/apfel-aarch64-apple-darwin" \
+  cargo test --test apfel live_apfel_serves_a_completion_through_the_rust_client \
+  -- --ignored --exact
+```

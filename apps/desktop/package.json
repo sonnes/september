@@ -8,8 +8,9 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "node --test",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "apfel:prepare": "node scripts/prepare-apfel.mjs",
+    "tauri:dev": "node scripts/tauri.mjs dev",
+    "tauri:build": "node scripts/tauri.mjs build"
   },
   "dependencies": {
     "@fontsource/lexend": "^5.2.8",
