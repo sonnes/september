@@ -15,7 +15,7 @@ OpenRouter.
 | Writing help | Apple Intelligence | none | On the Mac |
 | Writing help | OpenRouter | an API key | Cloud |
 | Voice | macOS system voice | none | On the Mac |
-| Voice | ElevenLabs | an API key, then a voice and a model | Cloud |
+| Voice | ElevenLabs | an API key and a model, then a voice | Cloud |
 
 Each job has a default that already works, so the Connect step needs no action
 on a supported Mac. Voice always has a working answer, because the system voice
@@ -25,13 +25,18 @@ needs no account and no network. A broken key can never stop speech.
 
 | Value | Home |
 | --- | --- |
-| An API key | The macOS Keychain, service `com.september.desktop` |
+| An API key | The macOS Keychain, then process memory after startup |
 | The chosen services and the voice id | SQLite settings, key `services` |
 | A key status, an account label, a quota | Memory, for the length of one screen |
+| Apple Intelligence availability | Memory, for the life of the process |
 
 A key crosses the process boundary one time, from the key field to Rust. It
 never comes back. `src-tauri/src/providers.rs` owns the Keychain and the
-network. `src/os.ts` owns the only calls from React.
+network. `src/services/os.ts` owns the only calls from React.
+
+Rust reads the OpenRouter and ElevenLabs entries once during startup. Later
+commands use the cached keys. Connecting or forgetting a service updates the
+Keychain and memory together, so a settings change does not need a restart.
 
 The Usage screen can also read the current ElevenLabs allowance. Rust returns
 the tier, used characters, character limit, and reset time through
@@ -39,10 +44,9 @@ the tier, used characters, character limit, and reset time through
 
 ## What a status says
 
-`provider_status` tests each stored key again on every read. A key that worked
-in June can fail in August, and a status that trusts the Keychain alone would
-lie. A key that now fails reports `connected: false`, with the reason in
-`detail`.
+`provider_status` tests each cached key again on every read. A key that worked
+in June can fail in August, and a status that trusts storage alone would lie.
+A key that now fails reports `connected: false`, with the reason in `detail`.
 
 `provider_connect` tests a key before it writes to the Keychain. A key that
 fails is never stored, so the Keychain holds only keys that worked at least
@@ -62,6 +66,10 @@ for each one. See [on-device AI](on-device-ai.md).
 An unsupported Mac gets no disabled control. A control the user can never use
 is noise.
 
+The backend starts apfel when a screen first asks for its status or generation.
+It reuses the process while its health request succeeds and replaces it when
+the request fails.
+
 ## The voice list holds the voices of the account
 
 `GET /v2/voices?page_size=100&voice_type=non-default` gives the list. The web
@@ -77,9 +85,29 @@ Rust sorts the list by category, in the order of the web app: `cloned`,
 `professional`, `premade`, `similar`. The category does not reach the screen.
 
 The web app also searches the public voice library, through
-`/v1/shared-voices`. The desktop app does not. That is a different job: it adds
-a voice to an account, and the desktop app only chooses between the voices that
-an account holds.
+`/v1/shared-voices`. The desktop app does not port that search. Voice cloning
+is separate: it creates a voice in the account, then the normal account list
+can return it.
+
+## A clone crosses as raw multipart audio
+
+React owns the uploaded files and microphone recordings while `/voice/clone`
+is open. It makes the ElevenLabs multipart form once, then sends the bytes and
+the generated `content-type` boundary through raw Tauri IPC. The native
+command adds the cached key and forwards the same body to the fixed
+`/v1/voices/add` endpoint.
+
+The UI rejects an encoded request over 100 MB before it crosses IPC. Rust
+enforces the same limit at the native boundary.
+
+This boundary avoids a base64 copy and keeps both the key and an arbitrary
+provider URL out of the WebView. The samples stay in memory. Leaving the
+cloning page or quitting the app removes them.
+
+After a successful clone, the screen selects ElevenLabs and the new voice. It
+does not replace the current model. It then returns to `/voice`. The account
+list keeps the new row visible while ElevenLabs catches up. A failed request
+keeps the user on the cloning page with the draft intact.
 
 ## The names cross the boundary
 

@@ -24,6 +24,7 @@ import {
   boardPhrases,
   boardWords,
   composeSuggestions,
+  stripePhrases,
   hiddenTokenCount,
   historyMatches,
   joinTokens,
@@ -38,6 +39,7 @@ Self-contained suggestions surface. Renders **sentence stripes** (word tiles —
 
 - Curated stripes/chips come from the space's **saved phrases** (pinned first) via `useSavedPhrases` — not from parsing context markdown. The 5-row curated budget mixes phrase rows with up to 2 **starter** rows (`kind: 'starter'` — 3–5-word opening prefixes).
 - Stripes merge saved phrases, starters, history matches, and LLM completions — plus a **code match** row pinned to the top when the word at the caret equals a phrase's code (`ty` → "Thank you"). The code lookup is local and exact (cross-space; current space wins), so it never waits on the LLM debounce.
+- **Order follows the composer.** Blank: saved phrases → starters → LLM, so an empty stripe shows what the user keeps. Typing: history → LLM → saved phrases → starters, because the grounded and generated rows continue the words already there. `stripePhrases` applies the curated cap *after* dropping single-word entries, so a chip-only phrase never consumes a stripe row.
 - The already-typed prefix (`stripe.hidden` tokens) is **not** rendered — tiles show only the continuation, so typed text is never repeated. A code stripe's text is the composer text with the trailing code replaced (`codeExpansionText`), so taking it consumes the typed trigger through the ordinary take path.
 - Tiles are colour-coded by source, reinforced by the leading `SourceMark` icon (colour is never the only channel): `md`/context → indigo (primary), `history` → teal (`chart-2`), `llm` → neutral baseline, `code` → strong indigo tint with the code chip in the gutter, `starter` → dashed indigo tint with a chevrons gutter. The editor's word autocomplete reuses the same tile shape on a warm `chart-1` lane.
 - End key by row kind: phrases/history/llm/code get the speak `↵` (when `onSubmit` is passed); starters get an `…` key that takes the whole prefix into the composer instead — a starter is an opening move, never spoken as-is.
@@ -93,6 +95,7 @@ Settings form for AI suggestions (provider, model, temperature, context window).
 | `historyMatches(typed, history[])`                     | Past messages matching prefix, most-recent-first               |
 | `boardWords(entries[])`                                | Single-token entries (chip source)                             |
 | `boardPhrases(entries[])`                              | Multi-token entries (stripe source)                            |
+| `stripePhrases(entries[], n)`                          | Multi-token entries, capped after the filter                   |
 | `composeSuggestions({typed, mdPhrases, starters?, history, llm})` | Merge + dedup → `Suggestion[]`                      |
 | `stripeForText(text, typed)`                           | `{ text, tokens, hidden }` for one suggestion                  |
 | `appendTokens(text, entry)`                            | Append entry tokens to text; returns new string                |

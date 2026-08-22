@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { useNavigate } from "@tanstack/react-router";
-import { FileText, Plus, Square, Trash2, Volume2 } from "lucide-react";
+import { FileText, Info, Plus, Square, Trash2, Volume2 } from "lucide-react";
 
 import {
   AlertDialog,
@@ -23,6 +23,7 @@ import {
   usePutPhrase,
   useSpaces,
   useUpdateNote,
+  useUpdateSpace,
   type Note,
   type Space,
 } from "@/services/data";
@@ -92,21 +93,27 @@ function Notes({
   const update = useUpdateNote(space.id);
   const { data: phrases } = usePhrases(space.id);
   const putPhrase = usePutPhrase();
+  const patch = useUpdateSpace();
   const [draft, setDraft] = useState("");
+  // The About tab is state, not an address. Give it an address when a user
+  // asks to open the app on it.
+  const [about, setAbout] = useState(false);
   useRememberMode(space, "notes");
   const remove = useDeleteNote(space.id);
 
   const rows = notes ?? [];
   // The address names the note. Without a name in it, the newest note opens,
   // because `note_list` gives the most recently changed row first.
-  const note = wanted ? noteFromSlug(wanted, rows) : rows[0];
+  const note = about ? undefined : wanted ? noteFromSlug(wanted, rows) : rows[0];
   const [toDelete, setToDelete] = useState<Note | null>(null);
 
-  const open = (row: Note) =>
-    navigate({
+  const open = (row: Note) => {
+    setAbout(false);
+    return navigate({
       to: "/spaces/$slug/notes/$noteSlug",
       params: { slug: spaceSlug(space.title), noteSlug: noteSlug(row.name) },
     });
+  };
 
   const add = () => create.mutateAsync().then(open);
 
@@ -117,6 +124,17 @@ function Notes({
    * want of a note the user has not made.
    */
   const put = (words: string) => {
+    // The About tab is not a note, so the words go to the space instead.
+    if (about) {
+      void patch
+        .mutateAsync({
+          id: space.id,
+          context: appendToNote(space.context ?? "", words),
+        })
+        .then(() => setDraft(""));
+      return;
+    }
+
     const written = note
       ? update.mutateAsync({
           id: note.id,
@@ -212,7 +230,9 @@ function Notes({
             </p>
           ) : null}
 
-          {note ? (
+          {about ? (
+            <SpaceAbout space={space} />
+          ) : note ? (
             <NoteEditor
               key={note.id}
               note={note}
@@ -232,30 +252,34 @@ function Notes({
             <Empty onCreate={add} isPending={create.isPending} />
           )}
 
-          {rows.length > 0 ? (
-            <Composer
-              mode="notes"
-              spaceId={space.id}
-              context={space.context ?? ""}
-              draft={draft}
-              onDraft={setDraft}
-              onAction={put}
-              onPin={keep}
-              pending={update.isPending}
-              // The engine reads the note, not the spoken messages, so the
-              // words it offers follow what the user is writing here.
-              history={note ? [note.content] : []}
-              before={
-                <NoteTabs
-                  notes={rows}
-                  current={note}
-                  onOpen={open}
-                  onCreate={add}
-                  isCreating={create.isPending}
-                />
-              }
-            />
-          ) : null}
+          {/* The composer always shows, because the About tab lives in its
+              slot. A space with no note of its own still has that one. */}
+          <Composer
+            mode="notes"
+            spaceId={space.id}
+            context={space.context ?? ""}
+            draft={draft}
+            onDraft={setDraft}
+            onAction={put}
+            onPin={keep}
+            pending={about ? patch.isPending : update.isPending}
+            // The engine reads the note, not the spoken messages, so the
+            // words it offers follow what the user is writing here.
+            history={
+              about ? [space.context ?? ""] : note ? [note.content] : []
+            }
+            before={
+              <NoteTabs
+                notes={rows}
+                current={note}
+                about={about}
+                onAbout={() => setAbout(true)}
+                onOpen={open}
+                onCreate={add}
+                isCreating={create.isPending}
+              />
+            }
+          />
         </div>
 
         <SpaceDock
@@ -441,6 +465,88 @@ function VoiceOver({ note }: { note: Note }) {
 }
 
 /**
+ * The note that says who a space is for.
+ *
+ * A model writes it from the first message of the space, and the user writes
+ * over it here. Every suggestion and every phrase of the space reads it, so a
+ * correction here changes the words that the app offers.
+ *
+ * ponytail: the save is a copy of the one in NoteEditor, and not a shared
+ * hook. The two differ — a note carries a name and a slug, and this one
+ * carries neither. Join them when a third writer needs the same save.
+ */
+function SpaceAbout({ space }: { space: Space }) {
+  const patch = useUpdateSpace();
+  const remote = space.context ?? "";
+  const [text, setText] = useState(remote);
+  const [dirty, setDirty] = useState(false);
+
+  // The last words typed, for the save that runs as the tab closes. The
+  // cleanup runs after the state is gone, so it reads these instead.
+  const held = useRef(text);
+  const unsaved = useRef(dirty);
+  held.current = text;
+  unsaved.current = dirty;
+
+  // The composer is a second writer. With nothing unsaved here, the screen
+  // takes the words it added, so the next save does not write over them.
+  if (!dirty && remote !== text) {
+    setText(remote);
+    held.current = remote;
+  }
+
+  useEffect(() => {
+    if (!dirty) return;
+
+    const timer = window.setTimeout(() => {
+      void patch.mutateAsync({ id: space.id, context: text }).then(() => {
+        // A save that lands while the user types again leaves the tab dirty,
+        // so the next save still carries the newer words.
+        if (held.current === text) setDirty(false);
+      });
+    }, SAVE_DELAY_MS);
+
+    return () => window.clearTimeout(timer);
+    // `patch` is new on each render, so it stays out.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dirty, text, space.id]);
+
+  useEffect(() => {
+    const id = space.id;
+    return () => {
+      // Only words that never reached SQLite. A clean note needs no write,
+      // and a write here would race the other writers of the same row.
+      if (!unsaved.current) return;
+      void patch.mutateAsync({ id, context: held.current });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [space.id]);
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <div className="shrink-0 px-2">
+        <h2 className="text-title font-semibold">About this space</h2>
+        <p className="text-muted-foreground text-xs">
+          Who you speak to here, and why. Talk reads it for every suggestion
+          and every phrase.
+        </p>
+      </div>
+      <textarea
+        autoFocus
+        value={text}
+        aria-label="About this space"
+        placeholder={"- I speak to my sister here\n- We talk about the garden"}
+        onChange={(event) => {
+          setText(event.target.value);
+          setDirty(true);
+        }}
+        className="placeholder:text-muted-foreground/60 focus-within:border-ring focus-within:ring-ring/20 min-h-0 flex-1 resize-none rounded-2xl border bg-transparent p-4 text-xl leading-relaxed shadow-sm transition-[box-shadow,border-color] focus:outline-none focus-within:ring-[3px]"
+      />
+    </div>
+  );
+}
+
+/**
  * One tab for each note, in the slot the suggestions fill in Talk.
  *
  * ponytail: the row scrolls sideways. The web app collapses it into a list,
@@ -450,22 +556,46 @@ function VoiceOver({ note }: { note: Note }) {
 function NoteTabs({
   notes,
   current,
+  about,
+  onAbout,
   onOpen,
   onCreate,
   isCreating,
 }: {
   notes: Note[];
   current?: Note;
+  about: boolean;
+  onAbout: () => void;
   onOpen: (note: Note) => void;
   onCreate: () => void;
   isCreating: boolean;
 }) {
+  const tab = (selected: boolean) =>
+    `focus-visible:ring-ring inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${
+      selected
+        ? "bg-primary text-primary-foreground border-transparent"
+        : "hover:bg-accent"
+    }`;
+
   return (
     <div
       role="tablist"
       aria-label="Notes"
       className="flex shrink-0 items-center gap-2 overflow-x-auto"
     >
+      {/* The note of the space comes first, because it decides the words that
+          every other screen offers. */}
+      <button
+        type="button"
+        role="tab"
+        aria-selected={about}
+        onClick={onAbout}
+        className={tab(about)}
+      >
+        <Info className="size-4 shrink-0" aria-hidden />
+        About
+      </button>
+
       {notes.map((note) => (
         <button
           key={note.id}
@@ -473,11 +603,7 @@ function NoteTabs({
           role="tab"
           aria-selected={note.id === current?.id}
           onClick={() => onOpen(note)}
-          className={`focus-visible:ring-ring inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${
-            note.id === current?.id
-              ? "bg-primary text-primary-foreground border-transparent"
-              : "hover:bg-accent"
-          }`}
+          className={tab(note.id === current?.id)}
         >
           <FileText className="size-4 shrink-0" aria-hidden />
           <span className="max-w-40 truncate">{note.name || UNTITLED_NOTE}</span>

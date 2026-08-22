@@ -198,7 +198,7 @@ describe('composeSuggestions with history', () => {
     'I would like to rest for a while.',
   ];
 
-  it('orders board, then history, then llm', () => {
+  it('orders history, then llm, then board once a sentence is started', () => {
     const out = composeSuggestions({
       typed: 'I would',
       mdPhrases: boardPhrases(boardEntries),
@@ -209,10 +209,8 @@ describe('composeSuggestions with history', () => {
     const boardIdx = sources.indexOf('md');
     const historyIdx = sources.indexOf('history');
     const llmIdx = sources.indexOf('llm');
-    expect(boardIdx).toBeLessThan(historyIdx);
-    if (llmIdx !== -1) {
-      expect(historyIdx).toBeLessThan(llmIdx);
-    }
+    expect(historyIdx).toBeLessThan(llmIdx);
+    expect(llmIdx).toBeLessThan(boardIdx);
   });
 
   it('tags history-sourced matches', () => {
@@ -225,7 +223,7 @@ describe('composeSuggestions with history', () => {
     expect(out.some(s => s.source === 'history' && s.text === 'Good evening everyone')).toBe(true);
   });
 
-  it('dedupes so a board phrase outranks the same phrase from history', () => {
+  it('dedupes so a phrase the user said outranks the same saved phrase', () => {
     const phrase = 'I would like some water, please.';
     const out = composeSuggestions({
       typed: 'I would like',
@@ -235,7 +233,8 @@ describe('composeSuggestions with history', () => {
     });
     const matches = out.filter(s => s.text.toLowerCase() === phrase.toLowerCase());
     expect(matches).toHaveLength(1);
-    expect(matches[0].source).toBe('md');
+    // History wins while typing, so the row wears the clock, not the pin.
+    expect(matches[0].source).toBe('history');
   });
 });
 

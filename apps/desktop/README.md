@@ -16,7 +16,7 @@ The UI uses Tailwind CSS v4, shadcn/ui primitives, and TanStack Router.
 | `src/layouts/`  | `onboarding.tsx`, `app.tsx`, `settings.tsx`    | The component renders an `<Outlet/>`.           |
 | `src/pages/`    | Route screens: `steps` `dashboard` `spaces` `talk` `notes` `voice` `settings` `usage` | A `createRoute` call in `src/main.tsx` names it. |
 | `src/blocks/`   | `screen` `space` `services` `phrase-panel` `suggestions` `usage` `brand` | Two or more pages or layouts use it. |
-| `src/services/` | `os` `data` `ai` `speech` `player` `phrase-sync` `suggest` `usage` | It speaks to Rust, the platform, or a cloud service. |
+| `src/services/` | `os` `data` `ai` `speech` `cloning` `player` `phrase-sync` `suggest` `usage` | It speaks to Rust, the platform, or a cloud service. |
 | `src/rules/`    | `app-nav` `settings-nav` `onboarding` `spaces` `notes` `phrases` `stripes` `prompts` `usage-summary` | No renderer and no backend. A node test imports it. |
 
 A part with one consumer stays in the page that draws it. There is no barrel
@@ -35,7 +35,7 @@ never wears the app sidebar, and an app screen never wears the setup sidebar.
 | Layout      | Component                     | Routes                                             |
 | ----------- | ----------------------------- | -------------------------------------------------- |
 | Setup       | `OnboardingLayout`, `layouts/onboarding.tsx` | `/welcome` `/profile` `/mode` `/connect` `/finish`  |
-| Application | `AppShell`, `layouts/app.tsx` | `/dashboard` `/spaces` `/spaces/$slug/talk` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/voice` `/help` `/settings` `/settings/writing` `/settings/usage` `/settings/connections/$provider` |
+| Application | `AppShell`, `layouts/app.tsx` | `/dashboard` `/spaces` `/spaces/$slug/talk` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/voice` `/voice/clone` `/help` `/settings` `/settings/writing` `/settings/usage` `/settings/connections/$provider` |
 
 `AppShell` is the shadcn `Sidebar` and `SidebarInset` pair: a solid indigo
 sidebar beside a white inset card. `src/rules/app-nav.ts` lists the destinations and
@@ -67,22 +67,38 @@ To run setup again, erase the `setup` setting.
 ## Talk in a space
 
 A space keeps the words that the user says to one person or in one place.
-`/spaces` lists them. `/spaces/$slug/talk` opens one.
+`/spaces` lists them. `/spaces/$slug/talk` opens one. `/spaces/new` asks what
+a new space is for.
 
 The list shows the spaces, most recently used first. Each row gives the title
 and the time of the last message. A search field keeps the rows whose title
 holds the words that the user types.
 
-The first space is `General`. A later space is `New space`, then `New space 2`,
-and so on. The name must be free, because one slug must name one space. A new
-space opens at once, and the user can give it a better name in the header.
+The plus opens `/spaces/new`, and no space exists yet. The screen asks one
+question: what is this space for? The words of the user become the note of the
+space.
 
-The first message replaces that made-up name. A model reads the message and
-writes a name and a note for the space. The note says who the user is talking
-to and why, and the model that offers phrases and sentences reads it, so a
-named space gives better words than an empty one. A name the user typed is
+A model then reads those words. It writes the title, and it puts its own note
+under the words of the user, after a blank line. The words of the user stay at
+the top of the note, and nothing writes over them. The phrase sync reads the
+note and writes the first phrases, so the stripe of a new space is not empty.
+
+A user with nothing to say yet presses Skip. The space opens with a name that
+September made up.
+
+The first space is `General`. A later space takes three words, such as
+`Amber Cedar Meadow`. Three words read better in a tab than `New space 4`, and
+they tell one space from another. The name must be free, because one slug must
+name one space. `isAutoTitle` reads the words back out of the slug, so a model
+knows that it may still rename such a space.
+
+A space made with Skip takes its name from its first message instead. A model
+reads that message and writes a name and a note. A name the user typed is
 never replaced, and neither is a note the user wrote. A user with no writing
 service keeps the made-up name.
+
+The app never opens on `/spaces/new`. The words of a form are gone after a
+restart, so `openingPath` sends the user to the dashboard instead.
 
 Delete asks first. Deleting a space deletes its messages too, so a dialog with
 a red button holds the action.
@@ -150,8 +166,8 @@ The screen has the same parts as Talk, from the top:
 
 1. The title. A note with no title of its own shows `Untitled note`.
 2. The note. A plain text field that holds markdown.
-3. The console. The note tabs, the word tiles, the field, undo, delete last
-   word, clear, and **Add to note**.
+3. The console. The About tab, the note tabs, the word tiles, the field, undo,
+   delete last word, clear, and **Add to note**.
 4. The dock. The same one that Talk has.
 
 `Composer` in `src/blocks/space.tsx` is that console, and both modes use it. A user who
@@ -193,6 +209,25 @@ Deleting a space deletes its notes, in the same transaction as its messages.
 The desktop note is a plain text field, not the rich editor of the web app.
 Both apps keep markdown in the same `content` column, so the rows stay the
 same. Reel export and the slide presentation are not ported.
+
+### The note of the space
+
+The first tab of the console is About. It opens the note of the space, which
+says who the user speaks to here and why. Every suggestion and every phrase of
+the space reads it, so a change here changes the words that the app offers.
+
+A model writes this note one time, from the first message of the space.
+`describe` in `src/pages/talk.tsx` asks for it, and `space_patch` keeps it in the
+`context` column. A note that the user wrote is never replaced. A title that
+the user typed stays.
+
+The About tab saves the same way a note does. It saves 600 ms after the last
+keystroke, and again when the tab closes with words unsaved. The console writes
+here too, so a user who cannot type fills this note with the word tiles.
+
+The tab is state, and not an address. The app cannot open on it, and a reload
+returns to the last note. Give the tab an address when a user asks to link to
+one.
 
 ### The right rail
 
@@ -249,12 +284,25 @@ became slow.
 Above the composer is a row of ready words for each suggestion. A press on a
 word takes the sentence up to that word. This is the reason the app exists.
 
-The rows come from four places, in this order:
+The rows come from four places. The order follows the composer.
 
-1. The saved phrases of the space, and its sentence starters.
-2. The past messages of the space that begin with the words already typed.
-3. The writing service, when the user chose one.
-4. A short code at the caret, which goes above them all.
+With nothing typed, the stripe shows what the user keeps:
+
+1. The saved phrases of the space.
+2. The sentence starters of the space.
+3. The writing service, which fills the rows that are left.
+
+Once a sentence starts, the rows that follow the typed words come first:
+
+1. The past messages of the space that start with those words.
+2. The writing service.
+3. The saved phrases and the starters that start with those words.
+
+A short code at the caret goes above them all, in every state.
+
+A one-word phrase draws as a chip, and not as a row. `stripePhrases` caps the
+rows after it drops those phrases, so a one-word phrase never takes the place
+of a row.
 
 `src/rules/stripes.ts` and `src/rules/phrases.ts` hold the rules. Both are ports of
 `apps/web/src/packages/{suggestions,spaces}/lib`. Change them in both apps, or
@@ -272,8 +320,8 @@ A phrase is pinned or not:
 | Yes    | The user kept it               | It stays. Nothing replaces it.  |
 | No     | A model wrote it               | The next writing replaces it.   |
 
-A model writes the phrases when a space holds its first message, and again
-after six more. `phrase_replace_ai` erases only the rows that are not pinned,
+A model writes the phrases when a space holds its first message or its note,
+and again after six more messages. `phrase_replace_ai` erases only the rows that are not pinned,
 in one transaction, so a phrase the user relies on cannot be lost. The first
 space starts with three pinned phrases, so the rows are never empty.
 
@@ -301,14 +349,19 @@ never splits the text itself.
 Each row reads differently. The colour and the mark in the gutter say the same
 thing, so a user who does not read colour still knows what a row is:
 
-| Row              | Colour and line | Mark          | The key at the end |
-| ---------------- | --------------- | ------------- | ------------------ |
-| A code           | Strong indigo   | The code      | Speak, solid       |
-| A phrase         | Indigo          | A pin         | Speak              |
-| An opening       | Indigo, broken  | Two arrows    | Take the opening   |
-| A past message   | Teal            | A clock       | Speak              |
-| From a model     | Grey            | none          | Speak              |
-| A word           | Warm            | none          | none               |
+| Row              | Colour and line | Mark                   | The key at the end |
+| ---------------- | --------------- | ---------------------- | ------------------ |
+| A code           | Strong indigo   | The code               | Speak, solid       |
+| A phrase         | Indigo          | A pin, solid when kept | Speak              |
+| An opening       | Indigo, broken  | Two arrows             | Take the opening   |
+| A past message   | Teal            | A clock                | Speak              |
+| From a model     | Grey            | none                   | Speak              |
+| A word           | Warm            | none                   | none               |
+
+A pin is solid when the user keeps the phrase, and it is an outline when a
+model wrote it. The panel uses the same two shapes, so one phrase reads the
+same in both places. `isKept` in `src/rules/phrases.ts` answers the question,
+because a stripe carries text only and not the row it came from.
 
 The sizes come from `TILE` in `src/rules/stripes.ts`, the same numbers the web app
 uses. `tileScale` makes every tile smaller together, so the widest row stays on
@@ -358,15 +411,33 @@ erases the old files yet.
 A message keeps no path to a file. The name is the index, so a message spoken
 with an old voice plays with the voice of today.
 
-The `/voice` screen holds the choices: the service, the voice, the model, and
-three sliders for speed, steadiness, and likeness. Each change is kept at once,
-in the `speech` setting. **Try it** speaks one short sentence, so the user hears
+The `/voice` screen holds the choices: the service, the voice, and three
+sliders for speed, steadiness, and likeness. Each change is kept at once, in
+the `speech` setting. **Try it** speaks one short sentence, so the user hears
 a change before a real message. A voice sample plays from a public address, so
 it needs no key.
 
-The model decides the quality, the speed, and the languages. `provider_models`
-reads the list from ElevenLabs and keeps the models that speak. The screen shows
-the name of each one, and the sentence that the service gives about it.
+The model is not on this screen. It sits with the ElevenLabs key, at
+`/settings/connections/elevenlabs`.
+
+### Clone a voice
+
+**Clone your voice** opens the dedicated `/voice/clone` page. A user can
+upload one or more audio files, record any of 10 guided samples with the
+microphone, or combine both sources. Each file can be at most 25 MB. A name
+and one sample are required. The encoded request can be at most 100 MB.
+
+`src/services/cloning.ts` builds the ElevenLabs multipart form and sends its
+bytes through raw Tauri IPC. Rust adds the cached ElevenLabs key and forwards
+the form to the fixed `/v1/voices/add` endpoint. Audio does not become JSON or
+base64, and the key never reaches the WebView.
+
+After creation, the screen selects ElevenLabs and the new voice. It keeps the
+current speech model and refreshes the account voice list. A stale provider
+list cannot hide the new row while ElevenLabs updates the account. The form
+keeps its fields and samples after an error, and clears them after success.
+Success returns to `/voice`. Leaving the cloning page before success removes
+the draft.
 
 ### Use the voice in FaceTime
 
@@ -475,6 +546,10 @@ An API key goes to the macOS Keychain, through Rust. The React code sends a key
 one time and reads back a status. No key enters the draft, SQLite, an event, or
 the browser storage. `src/services/os.ts` holds the only calls to Rust.
 
+Rust reads both Keychain entries when the app starts and keeps the values in
+memory. Provider commands use that cache. Connecting or forgetting a service
+updates both the Keychain and the cache, so the change takes effect at once.
+
 The voice list comes from `GET /v2/voices`, with `voice_type=non-default` and
 `page_size=100`. The web app asks the same way. The filter leaves out the stock
 ElevenLabs voices, so the list holds the voices of this account only. A page
@@ -498,7 +573,7 @@ section list beside the open section, ported from the web app.
 
 | Section | Route | Holds |
 | --- | --- | --- |
-| Setup | `/settings` | The state of each service, and its key |
+| Setup | `/settings` | The state of each service, its key, and the ElevenLabs model |
 | Writing help | `/settings/writing` | Who writes, and what the model knows about you |
 | Usage | `/settings/usage` | Typing saved, service use, quota, recent calls, and CSV |
 
@@ -513,6 +588,13 @@ A press on **Set up** opens `/settings/connections/openrouter` or
 `/settings/connections/elevenlabs`. The page gives the steps, takes the key,
 and opens the address of the service in the browser of the Mac. The key goes
 straight to the Keychain, through `src/services/os.ts`.
+
+The ElevenLabs page also holds **Which model**. The model decides the quality,
+the speed, and the languages. `provider_models` reads the list from ElevenLabs
+and keeps the models that speak. The page shows the name of each one, and the
+sentence that the service gives about it. Only the key lists the models, so the
+choice appears after the key is stored. The new model goes into the `speech`
+setting, beside the voice and the sliders.
 
 `src/blocks/services.tsx` holds the parts that setup and settings share: the
 mode card, the mark of each service, the state pill, and the key panel. A brand
@@ -553,6 +635,10 @@ Local text generation requires these items:
 - An Apple Silicon Mac
 - macOS 26 or later
 - Apple Intelligence enabled
+
+The backend starts apfel when a screen first asks for its status or generation.
+It reuses a healthy process and replaces one that stops responding, so apfel
+does not delay an app start that never needs local writing help.
 
 `pnpm tauri:dev` downloads the pinned apfel v1.9.1 binary on the first run.
 The command makes sure that both archive and binary checksums match.

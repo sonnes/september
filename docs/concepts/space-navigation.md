@@ -101,6 +101,19 @@ The desktop dock follows this concept: the space tabs on the left, the Talk and
 Notes switch on the right, with a wide gap between the two groups. The tabs
 collapse to a list when the row is full, measured by overflow, not by a count.
 
+The plus of the dock, and the plus of the space list, both open `/spaces/new`.
+No space exists at that address. The screen asks what the space is for, and the
+words of the user become the note of the new space. A model writes the title
+and puts its own note under those words, after a blank line. A space that the
+user skips takes a name of three words, such as `Amber Cedar Meadow`.
+
+The app never opens on this address, because the words of a form do not survive
+a restart.
+
+The desktop app has no per-mode working-set slot in Talk. The note tabs sit
+above the dock in Notes mode, and the first of them is About, which opens the
+note of the space.
+
 The mode of each space is kept by slug, in the `space-modes` setting, so the
 space list opens each space the way the user left it. The desktop app keeps
 this in SQLite, not in the browser storage.
@@ -108,6 +121,3 @@ this in SQLite, not in the browser storage.
 The right rail holds one tab, Phrases, and expands to a 320px card. `Voice` and
 `Display` are not on the desktop rail: the voice has a screen of its own, and
 the desktop app has no display window.
-
-The desktop app has no per-mode working-set slot in Talk. The note tabs sit
-above the dock in Notes mode only.

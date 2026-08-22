@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::providers::{self, Provider, Providers};
+use crate::providers::Providers;
 
 /// ponytail: the caller is one Tauri command, which answers with a string.
 /// A typed error would gain nothing on the way.
@@ -62,17 +62,16 @@ pub async fn synthesize(
     directory: &Path,
     settings: &SpeechSettings,
     text: &str,
+    key: Option<&str>,
 ) -> Result<(PathBuf, bool)> {
     let path = directory.join(file_name(settings, text));
     if path.exists() {
         return Ok((path, true));
     }
 
-    let key = providers::stored(Provider::ElevenLabs)
-        .map_err(|error| error.to_string())?
-        .ok_or("no ElevenLabs key is stored")?;
+    let key = key.ok_or("no ElevenLabs key is stored")?;
     let audio = Providers::default()
-        .speak(&key, settings, &normalize(text))
+        .speak(key, settings, &normalize(text))
         .await
         .map_err(|error| error.to_string())?;
 
@@ -177,9 +176,9 @@ mod tests {
         let path = directory.join(file_name(&settings(), "Hello"));
         std::fs::write(&path, b"pretend audio").unwrap();
 
-        // No key is stored in a test, so a call to the service would fail.
+        // No key is passed in a test, so a call to the service would fail.
         // The extra spaces prove that the lookup reads the normalized words.
-        let (found, from_cache) = synthesize(&directory, &settings(), "  Hello  ")
+        let (found, from_cache) = synthesize(&directory, &settings(), "  Hello  ", None)
             .await
             .unwrap();
 

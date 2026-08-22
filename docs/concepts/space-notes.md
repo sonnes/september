@@ -62,10 +62,20 @@ A note saves 600 ms after the last keystroke, and again when the screen closes
 with words unsaved. The first save names the note from its first six words.
 Voice-over uses the same voice as Talk and writes no message.
 
+The first tab of the console is About. It opens the `context` column of the
+space, which says who the user speaks to here and why. A model writes this
+column one time, from the first message of the space. The user writes over it
+in this tab. The suggestion prompt and the phrases prompt both read the
+column, so a change here changes the words that the app offers.
+
+The About tab saves the same way a note does, and the console writes into it.
+Therefore a user who cannot type fills this note with the word tiles. The tab
+is state in the screen, and not an address.
+
 The desktop routes are `/spaces/$slug/notes` and
 `/spaces/$slug/notes/$noteSlug`. Two tabs in the header move between Talk and
 Notes, in place of the bottom-dock mode row of the web app. The desktop app
-does not remember the last mode of each space.
+keeps the mode of each space, by slug, in the `space-modes` setting.
 
 Reel export, the story player, the slide presentation, the file upload, and
 the audio download are not in the desktop app.

@@ -6,6 +6,14 @@ import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 
 import {
@@ -16,13 +24,17 @@ import {
 import {
   BLANK_CONNECTIONS,
   currentSetup,
+  listModels,
   openInBrowser,
   readConnections,
+  saveSpeech,
   updateSetup,
   type Connections,
+  type Model,
   type Provider,
   type ProviderStatus,
 } from "@/services/os";
+import { speechSettings } from "@/services/speech";
 import {
   CONNECTION_GUIDES,
   type ConnectionId,
@@ -281,6 +293,8 @@ export function ConnectionScreen({ provider }: { provider: ConnectionId }) {
         {guide.name}.
       </p>
 
+      {provider === "elevenlabs" ? <ModelChoice connected={status.connected} /> : null}
+
       <div className="border-t pt-6">
         <Button
           type="button"
@@ -293,6 +307,79 @@ export function ConnectionScreen({ provider }: { provider: ConnectionId }) {
         </Button>
       </div>
     </div>
+  );
+}
+
+/**
+ * The ElevenLabs model, on the screen that holds the key.
+ *
+ * The account supplies the list, so the choice has no meaning before a key.
+ * `speechSettings()` gives the model in use, and `saveSpeech` keeps the new
+ * one at once. There is no Save button to forget.
+ */
+function ModelChoice({ connected }: { connected: boolean }) {
+  const [models, setModels] = useState<Model[] | null>(null);
+  const [modelId, setModelId] = useState(() => speechSettings().modelId);
+
+  useEffect(() => {
+    if (!connected) return;
+    let live = true;
+    void listModels()
+      .then((found) => {
+        if (live) setModels(found);
+      })
+      .catch(() => {
+        if (live) setModels([]);
+      });
+    return () => {
+      live = false;
+    };
+  }, [connected]);
+
+  if (!connected) return null;
+
+  const chosen = models?.find((option) => option.id === modelId);
+
+  const choose = (next: string) => {
+    setModelId(next);
+    void saveSpeech({ ...speechSettings(), modelId: next });
+  };
+
+  return (
+    <Section
+      title="Which model"
+      description="It decides the quality, the speed, and the price of each message."
+    >
+      {models === null ? (
+        <Skeleton className="h-11 w-full max-w-md" />
+      ) : models.length === 0 ? (
+        <p className="text-muted-foreground text-sm">
+          No models came back from ElevenLabs.
+        </p>
+      ) : (
+        <>
+          <Select value={modelId} onValueChange={choose}>
+            <SelectTrigger aria-label="Model" className="h-11 w-full max-w-md">
+              <SelectValue placeholder="Pick a model" />
+            </SelectTrigger>
+            <SelectContent>
+              {models.map((option) => (
+                <SelectItem key={option.id} value={option.id}>
+                  {option.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {/* A model name says little. The service supplies the sentence
+              that tells a user what the choice costs and gives. */}
+          {chosen?.description ? (
+            <p className="text-muted-foreground max-w-md text-sm">
+              {chosen.description}
+            </p>
+          ) : null}
+        </>
+      )}
+    </Section>
   );
 }
 

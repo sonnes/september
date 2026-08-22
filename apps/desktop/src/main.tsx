@@ -33,9 +33,9 @@ import {
 } from "@/pages/settings";
 import { UsageSettings } from "@/pages/usage";
 import { isConnectionId } from "@/rules/settings-nav";
-import { SpacesScreen } from "@/pages/spaces";
+import { NewSpaceScreen, SpacesScreen } from "@/pages/spaces";
 import { TalkScreen } from "@/pages/talk";
-import { VoiceScreen } from "@/pages/voice";
+import { VoiceCloneScreen, VoiceScreen } from "@/pages/voice";
 import {
   ConnectStep,
   FinishStep,
@@ -80,6 +80,14 @@ const spacesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/spaces",
   component: SpacesScreen,
+});
+
+// A new space asks what it is for before it exists. The segment is static, so
+// it wins over `$slug` below.
+const newSpaceRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/spaces/new",
+  component: NewSpaceScreen,
 });
 
 // The slug names the space, so no identifier is in the address. The `/talk`
@@ -156,6 +164,7 @@ const routeTree = rootRoute.addChildren([
       component: DashboardScreen,
     }),
     spacesRoute,
+    newSpaceRoute,
     talkRoute,
     notesRoute,
     noteRoute,
@@ -163,6 +172,11 @@ const routeTree = rootRoute.addChildren([
       getParentRoute: () => appRoute,
       path: "/voice",
       component: VoiceScreen,
+    }),
+    createRoute({
+      getParentRoute: () => appRoute,
+      path: "/voice/clone",
+      component: VoiceCloneScreen,
     }),
     screen("/help"),
     settingsRoute.addChildren([

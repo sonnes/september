@@ -36,7 +36,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  useCreateSpace,
   useUpdateSpace,
   type Space,
 } from "@/services/data";
@@ -58,7 +57,6 @@ import { Suggestions } from "@/blocks/suggestions";
 import { countsAsTypedKey } from "@/rules/usage-summary";
 import {
   deleteLastWord,
-  newSpaceTitle,
   rememberSpaceMode,
   spaceModeFrom,
   spaceSlug,
@@ -475,7 +473,6 @@ export function SpaceDock({
   onMode: (mode: SpaceMode) => void;
 }) {
   const navigate = useNavigate();
-  const createSpace = useCreateSpace();
   const row = useRef<HTMLDivElement>(null);
   const [full, setFull] = useState(false);
 
@@ -495,10 +492,8 @@ export function SpaceDock({
   // A space tab keeps the mode the user is in, so Notes stays Notes.
   const open = (space: Space) => navigate(spaceParams(space, mode));
 
-  const add = () =>
-    createSpace
-      .mutateAsync(newSpaceTitle(spaces.map((space) => space.title)))
-      .then(open);
+  // A space is not made until the user says what it is for.
+  const add = () => navigate({ to: "/spaces/new" });
 
   const tabClass = (space: Space) =>
     `focus-visible:ring-ring min-h-11 shrink-0 rounded-full border px-4 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:outline-none ${
@@ -537,7 +532,6 @@ export function SpaceDock({
             size="icon"
             aria-label="New space"
             tabIndex={full ? -1 : undefined}
-            disabled={createSpace.isPending}
             onClick={add}
           >
             <Plus aria-hidden />

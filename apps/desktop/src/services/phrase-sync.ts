@@ -44,6 +44,7 @@ export function useSyncPhrases({
     const action = decidePhraseSync({
       syncedCount: space.phrases_synced_count ?? undefined,
       messageCount: messages.length,
+      hasContext: Boolean(space.context?.trim()),
     });
     if (action === "none" || running.current === space.id) return;
 

@@ -50,7 +50,13 @@ export function navFor(path: AppPath): (typeof APP_NAV)[number] {
  * Everything else opens the dashboard: a setup step must never come back, and
  * an address that names no screen is not a place to start.
  */
+/** A form in progress. The words are gone after a restart, so it is not a
+ *  place to come back to. */
+const NEVER_OPENS: readonly string[] = ["/spaces/new"];
+
 export function openingPath(saved: string | null): string {
+  if (saved && NEVER_OPENS.includes(saved)) return APP_NAV[0].path;
+
   const known = APP_NAV.some(
     (item) => saved === item.path || saved?.startsWith(`${item.path}/`),
   );

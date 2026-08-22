@@ -29,9 +29,11 @@ The desktop backend bundles apfel v1.9.1 on Apple Silicon. Apfel uses the Apple
 Foundation Models framework on macOS 26 or later. Apple Intelligence must be
 enabled.
 
-Rust starts apfel only after the first status or generation command. The
-server binds to a free loopback port and requires a process-specific bearer
-token. The desktop WebView accesses it only through Tauri commands.
+Rust starts apfel when the desktop app first asks for its status or a
+generation. The server binds to a free loopback port and requires a
+process-specific bearer token. Rust reuses the server while it stays healthy
+and replaces it when its health request fails. The desktop WebView accesses it
+only through Tauri commands.
 
 Unsupported systems still start September. The status command reports that
 the provider is unsupported. The Rust backend does not use a cloud fallback.

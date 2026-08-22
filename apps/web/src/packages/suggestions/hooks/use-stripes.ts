@@ -15,12 +15,12 @@ import {
 } from '@/packages/spaces';
 
 import {
-  boardPhrases,
   boardWords,
   codeExpansionText,
   composeSuggestions,
   MAX_COMPOSED,
   stripeForText,
+  stripePhrases,
 } from '../lib/stripes';
 import { Suggestion } from '../types';
 import { useSuggestions } from './use-suggestions';
@@ -101,12 +101,22 @@ export function useStripes({ chatId, historyText }: UseStripesOptions): UseStrip
     [savedPhrases]
   );
   const savedTexts = useMemo(
-    () => topPhrases(savedPhrases, STRIPE_SAVED_LIMIT - starterTexts.length),
-    [savedPhrases, starterTexts]
+    () => topPhrases(savedPhrases, STRIPE_SAVED_LIMIT),
+    [savedPhrases]
   );
 
-  // Saved phrases split into multi-word phrases (stripes) and single-word chips
-  const activeMdPhrases = useMemo(() => boardPhrases(savedTexts), [savedTexts]);
+  // Saved phrases split into multi-word phrases (stripes) and single-word chips.
+  // Every phrase goes into `stripePhrases`, which caps the rows after it drops
+  // the single-word ones — a cap taken first would spend stripe budget on rows
+  // that only ever render as chips.
+  const activeMdPhrases = useMemo(
+    () =>
+      stripePhrases(
+        topPhrases(savedPhrases, savedPhrases.length),
+        STRIPE_SAVED_LIMIT - starterTexts.length
+      ),
+    [savedPhrases, starterTexts]
+  );
   const activeMdWords = useMemo(() => boardWords(savedTexts), [savedTexts]);
 
   // Code match on the word at the caret — deterministic and local, so it never

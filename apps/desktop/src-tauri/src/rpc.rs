@@ -7,13 +7,19 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{
+    ipc::{InvokeBody, Request as IpcRequest},
+    AppHandle, Emitter, Manager, State,
+};
 
 use crate::{
     apfel::{ApfelGenerateRequest, ApfelGeneration, ApfelState, ApfelStatus},
     audio::{self, AudioDevice, VirtualMicrophoneStatus},
     camera::{self, VirtualCameraStatus},
-    providers::{self, ElevenLabsQuota, Model, Provider, ProviderStatus, Providers, Voice},
+    providers::{
+        CreatedVoice, ElevenLabsQuota, Model, Provider, ProviderKeys, ProviderStatus, Providers,
+        Voice,
+    },
     repository::{AnalyticsEvent, Message, Note, Repository, SavedPhrase, Space, SpacePatch},
     speech::{self, SpeechSettings},
 };
@@ -23,6 +29,7 @@ pub(crate) struct BackendState {
 }
 
 pub(crate) const ANALYTICS_RETENTION_MS: i64 = 90 * 24 * 60 * 60 * 1_000;
+const MAX_VOICE_CLONE_BYTES: usize = 100 * 1024 * 1024;
 
 fn now_ms() -> i64 {
     SystemTime::now()
@@ -135,9 +142,11 @@ pub(crate) fn setup(app: &mut tauri::App) -> std::result::Result<(), Box<dyn std
     fs::create_dir_all(&data_directory)?;
     let repository = Repository::open(data_directory.join("september.sqlite3"))?;
     repository.delete_analytics_events_before(retention_cutoff_ms(now_ms()))?;
+    let provider_keys = ProviderKeys::load();
     app.manage(BackendState {
         repository: Mutex::new(repository),
     });
+    app.manage(provider_keys);
     app.manage(ApfelState::default());
     Ok(())
 }
@@ -481,15 +490,17 @@ pub(crate) async fn apfel_generate(
     state.generate(&app, request).await.map_err(rpc_error)
 }
 
-/// One status for each cloud service. A stored key is tested again here,
+/// One status for each cloud service. A cached key is tested again here,
 /// because a key that worked in June can fail in August.
 #[tauri::command]
-pub(crate) async fn provider_status() -> RpcResult<Vec<ProviderStatus>> {
+pub(crate) async fn provider_status(
+    keys: State<'_, ProviderKeys>,
+) -> RpcResult<Vec<ProviderStatus>> {
     let providers = Providers::default();
     let mut statuses = Vec::with_capacity(Provider::ALL.len());
 
     for provider in Provider::ALL {
-        let status = match providers::stored(provider).map_err(rpc_error)? {
+        let status = match keys.get(provider).map_err(rpc_error)? {
             Some(key) => providers
                 .check(provider, &key)
                 .await
@@ -504,18 +515,25 @@ pub(crate) async fn provider_status() -> RpcResult<Vec<ProviderStatus>> {
 
 /// Tests the key first. A key that fails never reaches the Keychain.
 #[tauri::command]
-pub(crate) async fn provider_connect(request: ProviderConnectRequest) -> RpcResult<ProviderStatus> {
+pub(crate) async fn provider_connect(
+    keys: State<'_, ProviderKeys>,
+    request: ProviderConnectRequest,
+) -> RpcResult<ProviderStatus> {
     let status = Providers::default()
         .check(request.provider, &request.key)
         .await
         .map_err(rpc_error)?;
-    providers::store(request.provider, &request.key).map_err(rpc_error)?;
+    keys.store(request.provider, &request.key)
+        .map_err(rpc_error)?;
     Ok(status)
 }
 
 #[tauri::command]
-pub(crate) async fn provider_forget(request: ProviderRequest) -> RpcResult<bool> {
-    providers::forget(request.provider).map_err(rpc_error)
+pub(crate) async fn provider_forget(
+    keys: State<'_, ProviderKeys>,
+    request: ProviderRequest,
+) -> RpcResult<bool> {
+    keys.forget(request.provider).map_err(rpc_error)
 }
 
 /// The file that holds one sentence in the chosen voice.
@@ -526,6 +544,7 @@ pub(crate) async fn provider_forget(request: ProviderRequest) -> RpcResult<bool>
 #[tauri::command]
 pub(crate) async fn speech_synthesize(
     app: AppHandle,
+    keys: State<'_, ProviderKeys>,
     request: SpeakRequest,
 ) -> RpcResult<SpokenAudio> {
     let directory = app
@@ -533,8 +552,9 @@ pub(crate) async fn speech_synthesize(
         .app_local_data_dir()
         .map_err(rpc_error)?
         .join("audio");
+    let key = keys.get(Provider::ElevenLabs).map_err(rpc_error)?;
     let (path, from_cache) =
-        speech::synthesize(&directory, &request.settings, &request.text).await?;
+        speech::synthesize(&directory, &request.settings, &request.text, key.as_deref()).await?;
 
     Ok(SpokenAudio {
         path: path.to_string_lossy().into_owned(),
@@ -584,9 +604,11 @@ pub(crate) fn speech_native_stop() {
 /// WebView.
 #[tauri::command]
 pub(crate) async fn openrouter_generate(
+    keys: State<'_, ProviderKeys>,
     request: ApfelGenerateRequest,
 ) -> RpcResult<ApfelGeneration> {
-    let key = providers::stored(Provider::OpenRouter)
+    let key = keys
+        .get(Provider::OpenRouter)
         .map_err(rpc_error)?
         .ok_or("no OpenRouter key is stored")?;
     Providers::default()
@@ -597,8 +619,8 @@ pub(crate) async fn openrouter_generate(
 
 /// The ElevenLabs voices for the stored key. The list is empty without a key.
 #[tauri::command]
-pub(crate) async fn provider_voices() -> RpcResult<Vec<Voice>> {
-    let Some(key) = providers::stored(Provider::ElevenLabs).map_err(rpc_error)? else {
+pub(crate) async fn provider_voices(keys: State<'_, ProviderKeys>) -> RpcResult<Vec<Voice>> {
+    let Some(key) = keys.get(Provider::ElevenLabs).map_err(rpc_error)? else {
         return Ok(Vec::new());
     };
     Providers::default().voices(&key).await.map_err(rpc_error)
@@ -606,18 +628,58 @@ pub(crate) async fn provider_voices() -> RpcResult<Vec<Voice>> {
 
 /// The ElevenLabs models for the stored key. The list is empty without a key.
 #[tauri::command]
-pub(crate) async fn provider_models() -> RpcResult<Vec<Model>> {
-    let Some(key) = providers::stored(Provider::ElevenLabs).map_err(rpc_error)? else {
+pub(crate) async fn provider_models(keys: State<'_, ProviderKeys>) -> RpcResult<Vec<Model>> {
+    let Some(key) = keys.get(Provider::ElevenLabs).map_err(rpc_error)? else {
         return Ok(Vec::new());
     };
     Providers::default().models(&key).await.map_err(rpc_error)
 }
 
+/// Creates an ElevenLabs voice from a multipart body made by the Voice screen.
+///
+/// Raw IPC keeps audio out of JSON. Rust adds the cached native key to one
+/// fixed endpoint, so neither the key nor an arbitrary provider URL reaches
+/// the WebView.
+#[tauri::command]
+pub(crate) async fn provider_clone_voice(
+    keys: State<'_, ProviderKeys>,
+    request: IpcRequest<'_>,
+) -> RpcResult<CreatedVoice> {
+    let content_type = request
+        .headers()
+        .get("content-type")
+        .and_then(|value| value.to_str().ok())
+        .filter(|value| value.starts_with("multipart/form-data; boundary="))
+        .ok_or("voice cloning needs a multipart form")?
+        .to_owned();
+    let body = match request.body() {
+        InvokeBody::Raw(bytes) => bytes.clone(),
+        InvokeBody::Json(_) => return Err("voice cloning needs raw audio bytes".into()),
+    };
+    if body.is_empty() {
+        return Err("voice cloning needs at least one audio sample".into());
+    }
+    if body.len() > MAX_VOICE_CLONE_BYTES {
+        return Err("voice cloning samples are too large".into());
+    }
+
+    let key = keys
+        .get(Provider::ElevenLabs)
+        .map_err(rpc_error)?
+        .ok_or("no ElevenLabs key is stored")?;
+    Providers::default()
+        .clone_voice(&key, &content_type, body)
+        .await
+        .map_err(rpc_error)
+}
+
 /// The ElevenLabs allowance for the stored key. The result is absent when the
 /// service is not connected.
 #[tauri::command]
-pub(crate) async fn provider_quota() -> RpcResult<Option<ElevenLabsQuota>> {
-    let Some(key) = providers::stored(Provider::ElevenLabs).map_err(rpc_error)? else {
+pub(crate) async fn provider_quota(
+    keys: State<'_, ProviderKeys>,
+) -> RpcResult<Option<ElevenLabsQuota>> {
+    let Some(key) = keys.get(Provider::ElevenLabs).map_err(rpc_error)? else {
         return Ok(None);
     };
     Providers::default()

@@ -89,22 +89,31 @@ export type PhraseSyncAction = 'seed' | 'regen' | 'none';
 export function decidePhraseSync({
   syncedCount,
   messageCount,
+  hasContext = false,
   threshold = PHRASES_STALE_AFTER,
 }: {
   syncedCount: number | undefined;
   messageCount: number;
+  /**
+   * The space holds a note. A space made from a note holds no message yet,
+   * and its stripe would stay empty without this — the note alone is enough
+   * for a model to write the first phrases.
+   */
+  hasContext?: boolean;
   threshold?: number;
 }): PhraseSyncAction {
-  if (syncedCount == null) return messageCount >= 1 ? 'seed' : 'none';
+  if (syncedCount == null) {
+    return messageCount >= 1 || hasContext ? 'seed' : 'none';
+  }
   return messageCount - syncedCount >= threshold ? 'regen' : 'none';
 }
 
-const PHRASES_SYSTEM_PROMPT = `You maintain a short list of ready-to-speak phrases for a User with speech or motor difficulties, so they can communicate with fewer keystrokes.
+const PHRASES_SYSTEM_PROMPT = `You maintain a short list of ready-to-speak phrases for a User of a communication app, so they can speak with fewer keystrokes.
 
 <task>
 Given the User's current saved phrases and starters, their space context (who they are talking to and why), and recent conversation history, return:
 - "phrases": an updated set of 6-8 short COMPLETE phrases the User is likely to want to say next.
-- "starters": 4-6 sentence starters — 3-5 word opening prefixes the User would begin a sentence with (e.g. "Can you please check", "I'm feeling a bit").
+- "starters": 4-6 sentence starters — 3-5 word opening prefixes the User would begin a sentence with.
 </task>
 
 <rules>
@@ -113,6 +122,7 @@ Given the User's current saved phrases and starters, their space context (who th
 - Entries marked [pinned] are kept by the app automatically — do NOT return them or near-duplicates of them.
 - Your output replaces the unmarked entries: carry forward the ones still worth keeping, drop stale ones, and add what the recent history suggests.
 - Phrases are complete, natural, speakable thoughts. Starters are incomplete openings that invite completion.
+- The space context and the User's own words decide the subject of every row. Do NOT add phrases about needs, care, health, or thanks unless the context or the history raises them.
 - STRICTLY keep the same language as the context and history.
 - Return 6-8 phrases and 4-6 starters.
 </rules>`;

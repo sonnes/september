@@ -45,6 +45,7 @@ pub fn run() {
             rpc::provider_forget,
             rpc::provider_voices,
             rpc::provider_models,
+            rpc::provider_clone_voice,
             rpc::provider_quota,
             rpc::speech_synthesize,
             rpc::speech_system,

@@ -13,6 +13,7 @@ import {
   dedupeAgainstPinned,
   generateCode,
   isCommonWord,
+  isKept,
   matchCode,
   mineShortcuts,
   normalizeMinedText,
@@ -24,10 +25,12 @@ import {
 } from "../src/rules/phrases.ts";
 import {
   appendTokens,
+  boardPhrases,
   codeExpansionText,
   composeSuggestions,
   joinTokens,
   stripeForText,
+  stripePhrases,
   tileScale,
   TILE_SCALE_MIN,
   tokenize,
@@ -44,7 +47,11 @@ import {
   timeAgo,
   transcriptPage,
 } from "../src/rules/spaces.ts";
-import { buildSpaceContextPrompt, spaceDescriptionFrom } from "../src/rules/prompts.ts";
+import {
+  buildSpaceContextPrompt,
+  buildSuggestionPrompt,
+  spaceDescriptionFrom,
+} from "../src/rules/prompts.ts";
 import {
   appendToNote,
   markdownToVoiceText,
@@ -252,6 +259,18 @@ test("the Rust backend owns the private apfel sidecar", async () => {
   assert.match(lib, /rpc::apfel_status/);
   assert.match(lib, /rpc::apfel_generate/);
   assert.match(rpc, /ApfelState/);
+});
+
+test("apfel starts only when asked and restarts after a failed health check", async () => {
+  const rpc = await readText("src-tauri/src/rpc.rs");
+  const apfel = await readText("src-tauri/src/apfel.rs");
+
+  assert.doesNotMatch(rpc, /block_on\(apfel\.initialize/);
+  assert.match(rpc, /state\.status\(&app\)\.await/);
+  assert.match(rpc, /state\.generate\(&app, request\)\.await/);
+  assert.match(apfel, /async fn ready/);
+  assert.match(apfel, /current\.client\.status\(\)\.await/);
+  assert.match(apfel, /managed\.take\(\)/);
 });
 
 test("the connect step asks by job and keeps keys out of the UI", async () => {
@@ -510,11 +529,22 @@ test("a slug finds its space, or nothing", () => {
   assert.equal(spaceFromSlug("gone", spaces), undefined);
 });
 
-test("the first space is General, and no two spaces share a slug", () => {
+test("the first space is General, and a later one takes three words", () => {
+  // The pick is given, so the name is the same in every run of this test.
+  const first = () => 0;
+
   assert.equal(newSpaceTitle([]), "General");
-  assert.equal(newSpaceTitle(["General"]), "New space");
-  assert.equal(newSpaceTitle(["General", "New space"]), "New space 2");
-  assert.equal(newSpaceTitle(["General", "New space", "New space 2"]), "New space 3");
+
+  const name = newSpaceTitle(["General"], first);
+  assert.equal(name.split(" ").length, 3);
+  // No word comes twice inside one name.
+  assert.equal(new Set(name.toLowerCase().split(" ")).size, 3);
+  // A model may still rename it, because the user did not choose it.
+  assert.equal(isAutoTitle(name), true);
+
+  // Two spaces with one title share one slug, and an address then opens the
+  // wrong space. A name that a space holds is never given a second time.
+  assert.notEqual(newSpaceTitle(["General", name], first), name);
 });
 
 test("search keeps the spaces whose title holds the words", () => {
@@ -814,14 +844,28 @@ test("the speech settings hold everything that shapes the sound", async () => {
   }
 });
 
-test("the Voice screen chooses the model as well as the voice", async () => {
+test("the key screen chooses the model, and the Voice screen the voice", async () => {
+  const settings = await readText("src/pages/settings.tsx");
   const voice = await readText("src/pages/voice.tsx");
   const os = await readText("src/services/os.ts");
 
-  // A voice and a model both come from ElevenLabs, and both shape the sound.
+  // The account key lists the models, so the model sits with the key.
   assert.match(os, /export const listModels/);
-  assert.match(voice, /listModels/);
-  assert.match(voice, /modelId/);
+  assert.match(settings, /listModels/);
+  assert.match(settings, /modelId/);
+  // The Voice screen keeps the voice and the sound.
+  assert.doesNotMatch(voice, /listModels/);
+});
+
+test("voice cloning crosses the native provider boundary as raw audio", async () => {
+  const lib = await readText("src-tauri/src/lib.rs");
+  const rpc = await readText("src-tauri/src/rpc.rs");
+
+  assert.match(lib, /rpc::provider_clone_voice\b/);
+  assert.match(rpc, /InvokeBody::Raw/);
+  assert.match(rpc, /multipart\/form-data/);
+  assert.match(rpc, /State<'_, ProviderKeys>/);
+  assert.match(rpc, /keys\s*\.get\(Provider::ElevenLabs\)/);
 });
 
 test("the Voice screen keeps its choices in one setting", async () => {
@@ -928,26 +972,131 @@ test("taking a code swaps the typed trigger for the phrase", () => {
   assert.equal(appendTokens("I am", "very cold"), "I am very cold ");
 });
 
-test("the rows come in one order: phrases, then history, then the model", () => {
-  const composed = composeSuggestions({
+test("an empty composer shows the saved phrases, and typing shows the answers", () => {
+  // Nothing typed: the rows are what the user keeps.
+  const blank = composeSuggestions({
     typed: "",
     mdPhrases: ["I am cold"],
     starters: ["Can you please"],
     history: ["I am hungry"],
     llm: ["I am tired"],
   });
+  assert.deepEqual(blank.map((s) => s.source), ["md", "starter", "llm"]);
 
-  assert.deepEqual(composed.map((s) => s.source), ["md", "starter", "llm"]);
-
-  // History only answers once a sentence is started.
+  // A sentence started: the past messages and the model come first, because
+  // they follow the words that are there. The saved phrases come after.
   const started = composeSuggestions({
+    typed: "I am",
+    mdPhrases: ["I am cold"],
+    starters: ["I am not"],
+    history: ["I am hungry"],
+    llm: ["I am tired"],
+  });
+  assert.deepEqual(started.map((s) => s.source), [
+    "history",
+    "llm",
+    "md",
+    "starter",
+  ]);
+
+  // History still answers one time for one message.
+  const once = composeSuggestions({
     typed: "I am h",
     mdPhrases: [],
     history: ["I am hungry", "I am hungry"],
     llm: [],
   });
-  assert.deepEqual(started.map((s) => s.text), ["I am hungry"]);
+  assert.deepEqual(once.map((s) => s.text), ["I am hungry"]);
 });
+
+test("a prompt carries no example message, and the context decides", async () => {
+  const prompts = await readText("src/rules/prompts.ts");
+  const phrases = await readText("src/rules/phrases.ts");
+
+  // A written example teaches the model one stereotype of a disabled user,
+  // and the model then writes that user instead of this one.
+  assert.doesNotMatch(prompts, /<example/);
+  assert.doesNotMatch(prompts, /I need help/);
+  assert.doesNotMatch(phrases, /e\.g\. "Can you please check/);
+
+  // The app says one thing about the user. The context says the rest.
+  assert.doesNotMatch(prompts, /speech or motor difficulties/);
+  assert.doesNotMatch(phrases, /speech or motor difficulties/);
+  assert.match(prompts, /The User is using a communication app/);
+  assert.match(prompts, /the wording from the user context/);
+  assert.match(phrases, /space context/);
+
+  // With no example, the shape of the answer must be written out.
+  const blank = { globalMd: "", spaceMd: "", history: [] };
+  for (const typed of ["", "I am"]) {
+    const { system } = buildSuggestionPrompt({ ...blank, typed });
+    assert.match(system, /Answer with JSON: \{"suggestions"/, typed);
+  }
+});
+
+
+test("a one-word phrase does not spend a row of the stripe", () => {
+  const texts = ["Yes", "Please", "What are you", "How was your day", "I am cold"];
+
+  // A one-word phrase goes to the chips, so the cap must count the rows that
+  // a stripe can draw, and not the rows that come before the filter.
+  assert.deepEqual(stripePhrases(texts, 3), [
+    "What are you",
+    "How was your day",
+    "I am cold",
+  ]);
+  assert.deepEqual(stripePhrases(texts, 1), ["What are you"]);
+  assert.deepEqual(stripePhrases(boardPhrases(texts), 3), stripePhrases(texts, 3));
+});
+
+
+test("a new space asks what it is for before it exists", async () => {
+  const spaces = await readText("src/pages/spaces.tsx");
+  const dock = await readText("src/blocks/space.tsx");
+  const main = await readText("src/main.tsx");
+
+  // The plus opens a screen. It no longer makes an empty space and leaves.
+  assert.match(main, /path: "\/spaces\/new"/);
+  assert.match(spaces, /function NewSpaceScreen/);
+  assert.match(spaces, /What is this space for\?/);
+  for (const [name, file] of [["list", spaces], ["dock", dock]]) {
+    assert.match(file, /to: "\/spaces\/new"/, name);
+  }
+
+  // The words of the user become the note of the space, and a model reads
+  // them for the title. A model never writes over the words of the user.
+  assert.match(spaces, /context: words/);
+  assert.match(spaces, /describeSpace\(words\)/);
+  // The note of the model goes under the words of the user, and not over
+  // them. The words of the user stay at the top of the note.
+  assert.match(spaces, /appendToNote\(words, answer\.context\)/);
+  assert.doesNotMatch(spaces, /context: answer\.context/);
+});
+
+test("a half-written new space is not a screen to open on", () => {
+  assert.equal(openingPath("/spaces/new"), "/dashboard");
+  assert.equal(openingPath("/spaces/general/talk"), "/spaces/general/talk");
+});
+
+test("a space with a note gets its phrases before the first message", () => {
+  // A space made from a note holds no message, and its stripe would be empty
+  // without this. The note is enough for a model to write the phrases.
+  assert.equal(
+    decidePhraseSync({ syncedCount: undefined, messageCount: 0, hasContext: true }),
+    "seed",
+  );
+  assert.equal(
+    decidePhraseSync({ syncedCount: undefined, messageCount: 0, hasContext: false }),
+    "none",
+  );
+  // A space that already wrote its phrases waits for six new messages, note
+  // or no note.
+  assert.equal(
+    decidePhraseSync({ syncedCount: 0, messageCount: 1, hasContext: true }),
+    "none",
+  );
+});
+
 
 test("a shortcut idea needs five messages and an unused code", () => {
   const at = Date.UTC(2026, 7, 21);
@@ -1025,6 +1174,34 @@ test("the phrases panel wears the layout of the web app", async () => {
   assert.doesNotMatch(panel, /size-9\b/);
   assert.match(panel, /size-11/);
 });
+
+test("the pin of a kept phrase is solid, in the stripe and in the panel", async () => {
+  const row = (text, pinned) => ({
+    id: text,
+    space_id: "s",
+    text,
+    kind: "phrase",
+    pinned,
+    created_at: 0,
+    updated_at: 0,
+  });
+  const rows = [row("Thank you", true), row("I am cold", false)];
+
+  // The case and the spaces around a phrase do not count.
+  assert.equal(isKept(" thank YOU ", rows), true);
+  // A model wrote this one, so a regeneration can take it away.
+  assert.equal(isKept("I am cold", rows), false);
+  assert.equal(isKept("Hello", rows), false);
+
+  // The gutter of the stripe fills the pin, as the row of the panel does.
+  const panel = await readText("src/blocks/phrase-panel.tsx");
+  const suggestions = await readText("src/blocks/suggestions.tsx");
+  assert.match(panel, /row\.pinned && "fill-current"/);
+  assert.match(suggestions, /kept && "fill-current"/);
+  // The label says the same thing, for a user who does not see the fill.
+  assert.match(suggestions, /You keep this phrase/);
+});
+
 
 test("a phrase from the panel reaches the composer of both screens", async () => {
   for (const file of ["src/pages/talk.tsx", "src/pages/notes.tsx"]) {
@@ -1151,18 +1328,39 @@ test("a title September wrote is known apart from one the user typed", () => {
   assert.equal(isAutoTitle("New space 2"), true);
   assert.equal(isAutoTitle("new space 12"), true);
 
+  // A name of three words is made up too.
+  const made = newSpaceTitle(["General"], () => 0);
+  assert.equal(isAutoTitle(made), true);
+
   // A title the user typed is the user's. The model never takes it.
   assert.equal(isAutoTitle("Mum"), false);
   assert.equal(isAutoTitle("New space plans"), false);
   assert.equal(isAutoTitle(undefined), false);
+  // Three words, but not the words of the app.
+  assert.equal(isAutoTitle("Sunday with my sister"), false);
+  assert.equal(isAutoTitle("Talk to Mum"), false);
 });
 
-test("the first message asks the model for a name and a note", () => {
+test("the note of a space is added under the words of the user", () => {
   const { system, user } = buildSpaceContextPrompt("I need water please");
 
   assert.match(system, /title/);
   assert.match(system, /context/);
   assert.match(user, /I need water please/);
+
+  // The words come from a first message, or from the new-space screen. The
+  // prompt no longer names one of the two.
+  assert.doesNotMatch(system, /From the User's first message/);
+  assert.match(system, /what is this space for/);
+
+  // The note goes under the words of the user, so it must not repeat them.
+  assert.match(system, /Do NOT repeat/);
+
+  // The same rules as the other prompts: one line about the user, no example
+  // message, and the shape of the answer written out.
+  assert.match(system, /The User is using a communication app/);
+  assert.doesNotMatch(system, /<example/);
+  assert.match(system, /Answer with JSON: \{"title"/);
 });
 
 test("the name and the note are read back from the answer", () => {
@@ -1391,6 +1589,29 @@ test("Notes and Talk share one composer", async () => {
   assert.match(notes, /<Composer/);
   assert.doesNotMatch(notes, /function Composer/);
 });
+
+test("a space carries a note that says who it is for", async () => {
+  const talk = await readText("src/pages/talk.tsx");
+  const notes = await readText("src/pages/notes.tsx");
+
+  // A model writes the note from the first message of the space, one time.
+  assert.match(talk, /if \(spoken\.length > 0\) return;/);
+  // A note that the user wrote is never written over.
+  assert.match(talk, /space\.context\?\.trim\(\) \? undefined : answer\.context/);
+
+  // The note is a tab of the Notes screen, the same as in the web app.
+  assert.match(notes, /function SpaceAbout/);
+  assert.match(notes, /About this space/);
+  // It writes one field of the space, and not a note.
+  assert.match(notes, /useUpdateSpace/);
+  assert.match(notes, /context: text/);
+  // The composer writes here too. A user who cannot type has no other way in.
+  assert.match(notes, /appendToNote\(space\.context/);
+  // The tab lives in the slot of the composer, so the composer always shows.
+  // A model writes this note before the user makes any note of their own.
+  assert.doesNotMatch(notes, /rows\.length > 0/);
+});
+
 
 test("the composer adds words to the note, and does not speak them", async () => {
   const notes = await readText("src/pages/notes.tsx");

@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { generate, hasWritingService, itemsFrom, userContext } from "@/services/ai";
 import { useMessages, usePhrases } from "@/services/data";
 import {
+  isKept,
   matchCode,
   topPhrases,
   topRows,
@@ -22,13 +23,13 @@ import {
 import { buildSuggestionPrompt } from "@/rules/prompts";
 import { applySuggestion, useSuggestions } from "@/services/suggest";
 import {
-  boardPhrases,
   boardWords,
   codeExpansionText,
   composeSuggestions,
   joinTokens,
   MAX_COMPOSED,
   stripeForText,
+  stripePhrases,
   TILE,
   tileScale,
   type SuggestionSource,
@@ -48,6 +49,8 @@ interface Stripe {
   hidden: number;
   source: SuggestionSource;
   code?: string;
+  /** The user keeps this phrase, so the pin is solid, as in the panel. */
+  kept?: boolean;
 }
 
 /**
@@ -182,7 +185,15 @@ export function Suggestions({
               }
               className="border-primary/30 bg-card text-foreground hover:border-primary/60 hover:bg-primary/5 focus-visible:ring-ring flex h-11 items-center gap-1.5 rounded-full border px-5 text-base font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
             >
-              <Pin className="text-primary/60 size-3.5" aria-hidden />
+              <Pin
+                className={cn(
+                  "size-3.5",
+                  isKept(word, spacePhrases ?? [])
+                    ? "text-primary fill-current"
+                    : "text-primary/60",
+                )}
+                aria-hidden
+              />
               {word}
             </button>
           ))}
@@ -205,6 +216,7 @@ export function Suggestions({
               <SourceMark
                 source={stripe.source}
                 code={stripe.code}
+                kept={Boolean(stripe.kept)}
                 onPin={() => onPin(stripe.text)}
               />
 
@@ -363,10 +375,13 @@ function EndKey({
 function SourceMark({
   source,
   code,
+  kept,
   onPin,
 }: {
   source: SuggestionSource;
   code?: string;
+  /** A kept phrase wears a solid pin, the same as its row in the panel. */
+  kept: boolean;
   onPin: () => void;
 }) {
   if (source === "code") {
@@ -400,15 +415,19 @@ function SourceMark({
   }
 
   if (source === "md") {
+    const label = kept ? "You keep this phrase" : "Keep this phrase";
     return (
       <button
         type="button"
         onClick={onPin}
-        aria-label="Keep this phrase"
-        title="Keep this phrase"
-        className="text-primary/60 hover:text-primary focus-visible:ring-ring size-4 shrink-0 cursor-pointer rounded focus-visible:ring-2 focus-visible:outline-none"
+        aria-label={label}
+        title={label}
+        className={cn(
+          "focus-visible:ring-ring size-4 shrink-0 cursor-pointer rounded focus-visible:ring-2 focus-visible:outline-none",
+          kept ? "text-primary" : "text-primary/60 hover:text-primary",
+        )}
       >
-        <Pin className="size-4" aria-hidden />
+        <Pin className={cn("size-4", kept && "fill-current")} aria-hidden />
       </button>
     );
   }
@@ -436,18 +455,27 @@ function useStripes({
     const starters = topRows(spacePhrases, STARTER_LIMIT, "starter").map(
       (row) => row.text,
     );
-    const saved = topPhrases(spacePhrases, SAVED_LIMIT - starters.length);
+    // Every phrase of the space goes in, and `stripePhrases` caps the rows
+    // after it drops the one-word phrases that the chips draw.
+    const saved = stripePhrases(
+      topPhrases(spacePhrases, spacePhrases.length),
+      SAVED_LIMIT - starters.length,
+    );
 
     const composed = composeSuggestions({
       typed: text,
-      mdPhrases: boardPhrases(saved),
+      mdPhrases: saved,
       starters,
       history,
       llm: fromModel,
     });
 
     const rows = composed
-      .map((one) => ({ ...stripeForText(one.text, text), source: one.source }))
+      .map((one) => ({
+        ...stripeForText(one.text, text),
+        source: one.source,
+        kept: isKept(one.text, spacePhrases),
+      }))
       .filter((one) => one.hidden < one.tokens.length);
 
     // A code at the caret is local and exact, so it never waits on the model.

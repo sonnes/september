@@ -75,6 +75,9 @@ phrase with its code in one tap, Dismiss persists to `localStorage`
    AI set (phrases + starters) from that message and the space context,
    replacing starter AI rows while preserving pinned rows. (Spaces created
    before this feature backfill the same way the next time they're opened.)
+   In the desktop app a space context alone is enough: `decidePhraseSync` seeds
+   when `hasContext` is true, so a space created from the "what is this space
+   for?" screen has phrases before its first message.
 3. **Regenerate on open** — when a space is reopened and its history has grown
    stale (`isStale` / `PHRASES_STALE_AFTER` new messages since the last sync),
    the AI set is regenerated from recent history + context. Pinned rows stay.

@@ -8,6 +8,38 @@ export const FIRST_SPACE_TITLE = "General";
 
 const LATER_SPACE_TITLE = "New space";
 
+/**
+ * The words that make up a name for a space that the user did not name.
+ *
+ * Three of them name a space: `Amber Cedar Meadow`. They are plain, easy to
+ * say, and easy to tell one from another, because the user reads the name in
+ * a tab that is one line high. They say nothing about the health of the user.
+ *
+ * Every word is lowercase and holds letters only, so `isAutoTitle` can read
+ * the words back out of a slug.
+ */
+const NAME_WORDS: readonly string[] = [
+  "amber", "anchor", "autumn", "basil", "breeze", "cedar",
+  "cotton", "daisy", "ember", "fable", "garden", "harbor",
+  "ivory", "jasmine", "kite", "lantern", "meadow", "olive",
+  "pebble", "quartz", "ribbon", "sable", "tulip", "violet",
+  "willow", "yarrow",
+];
+
+/** How many names to try before the numbered title takes over. */
+const NAME_TRIES = 50;
+
+/** Three words of `NAME_WORDS`, each one different, in title case. */
+function threeWords(pick: (limit: number) => number): string {
+  const pool = [...NAME_WORDS];
+  const words: string[] = [];
+  for (let i = 0; i < 3; i += 1) {
+    const [word] = pool.splice(pick(pool.length), 1);
+    words.push(word[0].toUpperCase() + word.slice(1));
+  }
+  return words.join(" ");
+}
+
 /** How many spoken messages one transcript page shows. */
 export const TRANSCRIPT_PAGE_SIZE = 8;
 
@@ -45,17 +77,31 @@ export function spaceFromSlug<T extends { title?: string | null }>(
  * A title that no other space holds.
  *
  * Two spaces with one title share one slug, and the address then opens the
- * wrong one. The number keeps the slugs apart.
+ * wrong one, so the title must be free.
+ *
+ * The first space is `General`. A later space takes three words, which read
+ * better in a tab than `New space 4` and tell one space from another. A model
+ * replaces the name when the space says what it is for.
+ *
+ * `pick` gives the index of the next word. A test gives its own, so the name
+ * is the same in every run.
  */
 export function newSpaceTitle(
   existing: readonly (string | null | undefined)[],
+  pick: (limit: number) => number = (limit) => Math.floor(Math.random() * limit),
 ): string {
   const taken = new Set(existing.map((title) => spaceSlug(title)));
   const free = (title: string) => !taken.has(spaceSlug(title));
 
   if (free(FIRST_SPACE_TITLE)) return FIRST_SPACE_TITLE;
-  if (free(LATER_SPACE_TITLE)) return LATER_SPACE_TITLE;
 
+  for (let tries = 0; tries < NAME_TRIES; tries += 1) {
+    const title = threeWords(pick);
+    if (free(title)) return title;
+  }
+
+  // Every name was taken. The number keeps the slugs apart.
+  if (free(LATER_SPACE_TITLE)) return LATER_SPACE_TITLE;
   for (let count = 2; ; count += 1) {
     const title = `${LATER_SPACE_TITLE} ${count}`;
     if (free(title)) return title;
@@ -160,5 +206,10 @@ export function deleteLastWord(text: string): string {
  * the user's, so the model must leave it alone.
  */
 export function isAutoTitle(title: string | null | undefined): boolean {
-  return /^(general|new-space(-\d+)?)$/.test(spaceSlug(title));
+  const slug = spaceSlug(title);
+  if (/^(general|new-space(-\d+)?)$/.test(slug)) return true;
+
+  // A name of three words is one that September made up too.
+  const words = slug.split("-");
+  return words.length === 3 && words.every((word) => NAME_WORDS.includes(word));
 }

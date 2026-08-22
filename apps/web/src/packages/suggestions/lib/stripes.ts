@@ -74,8 +74,24 @@ export function boardPhrases(entries: string[]): string[] {
 }
 
 /**
+ * The saved phrases that a stripe can draw, capped at n.
+ *
+ * The cap comes after the filter, and not before it. A one-word phrase goes
+ * to the chips, so a cap taken first spends the budget of the stripe on rows
+ * that never appear in it.
+ */
+export function stripePhrases(entries: string[], n: number): string[] {
+  return boardPhrases(entries).slice(0, n);
+}
+
+/**
  * Merges already-fetched suggestion lists into one stripe list.
- * Order: md (curated) → history (grounded) → llm (baseline).
+ *
+ * The order follows the composer. With nothing typed the rows are the saved
+ * phrases and the starters, because a blank stripe must show what the user
+ * keeps. Once a sentence starts, the past messages and the model answer
+ * first, because they follow the words that are there.
+ *
  * Case-insensitive dedup; excludes exact-typed text; caps at MAX_COMPOSED.
  */
 export function composeSuggestions({
@@ -102,22 +118,27 @@ export function composeSuggestions({
     seen.add(key);
     out.push({ text, source });
   };
+  const pushAll = (texts: string[], source: Required<Suggestion>['source']) => {
+    for (const text of texts) push(text, source);
+  };
+  const starting = (text: string) => text.toLowerCase().startsWith(lower);
 
-  // Md phrases — prefix-filtered when text is non-empty
-  for (const phrase of phrases) {
-    if (!lower || phrase.toLowerCase().startsWith(lower)) push(phrase, 'md');
+  // Nothing typed: the rows are the phrases that the user keeps, and then the
+  // starters. History answers nothing here, and the model fills what is left.
+  if (!lower) {
+    pushAll(phrases, 'md');
+    pushAll(starters, 'starter');
+    pushAll(llm, 'llm');
+    return out.slice(0, MAX_COMPOSED);
   }
 
-  // Starters — same prefix filtering; deduped against phrases by `seen`
-  for (const starter of starters) {
-    if (!lower || starter.toLowerCase().startsWith(lower)) push(starter, 'starter');
-  }
-
-  // History — already prefix-filtered by historyMatches
-  for (const phrase of historyMatches(typed, history)) push(phrase, 'history');
-
-  // LLM completions
-  for (const sentence of llm) push(sentence, 'llm');
+  // A sentence started: the past messages and the model answer first, because
+  // they follow the words that are already there. The saved phrases come
+  // after them, prefix-filtered, and deduped by `seen`.
+  pushAll(historyMatches(typed, history), 'history');
+  pushAll(llm, 'llm');
+  pushAll(phrases.filter(starting), 'md');
+  pushAll(starters.filter(starting), 'starter');
 
   return out.slice(0, MAX_COMPOSED);
 }

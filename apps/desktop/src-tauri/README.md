@@ -189,6 +189,10 @@ September borrows two cloud services: OpenRouter for writing help, and
 ElevenLabs for a voice. Each key lives in the macOS Keychain, under the service
 name `com.september.desktop`. The account is `openrouter` or `elevenlabs`.
 
+The backend reads both accounts once during startup and keeps their keys in
+process memory. Provider commands read this cache, not the Keychain. A connect
+or forget command updates the Keychain and the cache together.
+
 A key never returns to the WebView. Every command answers with a status only.
 
 | Command            | Request                | Response            |
@@ -197,6 +201,7 @@ A key never returns to the WebView. Every command answers with a status only.
 | `provider_connect` | `{ provider, key }`    | The status after the test |
 | `provider_forget`  | `{ provider }`         | `boolean`           |
 | `provider_voices`  | none                   | The ElevenLabs voices |
+| `provider_clone_voice` | raw multipart audio | `{ id }`            |
 | `provider_models`  | none                   | The ElevenLabs speech models |
 | `provider_quota`   | none                   | The current ElevenLabs allowance or `null` |
 
@@ -212,13 +217,19 @@ type ProviderStatus = {
 `provider_connect` tests the key before it writes to the Keychain. A key that
 fails is not stored, and the command rejects its promise.
 
-`provider_status` tests each stored key again. A key that worked in June can
+`provider_status` tests each cached key again. A key that worked in June can
 fail in August, so a stored key that now fails reports `connected: false` with
 the reason in `detail`.
 
 `provider_voices` returns an empty list when no ElevenLabs key is stored. Each
 voice carries `id`, `name`, and `preview_url`. The preview URL is public, so
 the UI can play a sample without a key.
+
+`provider_clone_voice` accepts only a raw `multipart/form-data` body with its
+boundary in the `content-type` IPC header. The command rejects an empty body,
+a JSON body, and a body over 100 MB. It adds the cached ElevenLabs key and
+forwards the bytes to the fixed `/v1/voices/add` endpoint. Rust does not parse
+or copy the audio into JSON.
 
 `provider_quota` returns the account tier, used characters, character limit,
 and reset time. It returns `null` when no ElevenLabs key is stored. The API key
@@ -330,8 +341,8 @@ system-extension install entitlement.
 
 ## Use the apfel API
 
-The backend exposes `apfel_status` and `apfel_generate`. Both commands start
-the sidecar on the first call and reuse it on later calls.
+`apfel_status` and `apfel_generate` start the sidecar when the first command
+needs it. Later calls reuse the healthy process.
 
 `apfel_status` takes no request. It returns this object:
 
@@ -383,20 +394,22 @@ type ApfelGeneration = {
 };
 ```
 
-The command rejects its promise when startup or generation fails. The error
-keeps the message from the apfel OpenAI-compatible response.
+The command rejects its promise when Apple Intelligence is unavailable or
+generation fails. The error keeps the message from the apfel OpenAI-compatible
+response.
 
 ## Understand the sidecar lifecycle
 
-Rust starts one apfel server on a free loopback port. The server accepts one
-generation request at a time.
+Rust starts one apfel server on a free loopback port when a command first needs
+it. The server accepts one generation request at a time.
 
 Rust creates a new bearer token for each server process. It passes the token
 through `APFEL_TOKEN`, not through a command argument.
 
 The WebView cannot start shell commands or call the server directly. It uses
-only the two Tauri commands. Rust restarts the sidecar when its health request
-fails, and it stops the child process when the backend exits.
+only the two Tauri commands. Rust checks the current process before each use
+and replaces it when the health request fails. It stops the child process when
+the backend exits.
 
 The bundle contains apfel v1.9.1 and its MIT license. The preparation script
 makes sure that the downloaded archive and extracted binary match pinned

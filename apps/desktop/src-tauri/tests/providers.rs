@@ -11,8 +11,7 @@ use september_desktop_lib::{
 };
 use serde_json::{json, Value};
 
-/// Answers one GET and hands back the request head, so a test can read the
-/// authentication header. The provider calls are all GET, so no body is read.
+/// Answers one request and hands it back, including a body when it has one.
 fn serve_once(status: &str, body: Value) -> (String, mpsc::Receiver<String>) {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let address = listener.local_addr().unwrap();
@@ -27,6 +26,27 @@ fn serve_once(status: &str, body: Value) -> (String, mpsc::Receiver<String>) {
         while !bytes.windows(4).any(|window| window == b"\r\n\r\n") {
             let read = stream.read(&mut buffer).unwrap();
             assert!(read > 0, "request ended before its headers");
+            bytes.extend_from_slice(&buffer[..read]);
+        }
+
+        let header_end = bytes
+            .windows(4)
+            .position(|window| window == b"\r\n\r\n")
+            .unwrap()
+            + 4;
+        let head = String::from_utf8_lossy(&bytes[..header_end]);
+        let content_length = head
+            .lines()
+            .find_map(|line| {
+                let (name, value) = line.split_once(':')?;
+                name.eq_ignore_ascii_case("content-length")
+                    .then(|| value.trim().parse::<usize>().ok())
+                    .flatten()
+            })
+            .unwrap_or(0);
+        while bytes.len() < header_end + content_length {
+            let read = stream.read(&mut buffer).unwrap();
+            assert!(read > 0, "request ended before its body");
             bytes.extend_from_slice(&buffer[..read]);
         }
 
@@ -231,6 +251,55 @@ async fn the_voice_list_asks_the_way_the_web_app_asks() {
     assert_eq!(
         voices[1].preview_url.as_deref(),
         Some("https://storage.googleapis.com/rachel.mp3")
+    );
+}
+
+#[tokio::test]
+async fn a_voice_clone_forwards_the_multipart_body_without_exposing_the_key() {
+    let (base, requests) = serve_once("200 OK", json!({ "voice_id": "clone-1" }));
+    let content_type = "multipart/form-data; boundary=september-test";
+    let body = b"--september-test\r\ncontent-disposition: form-data; name=\"name\"\r\n\r\nMy voice\r\n--september-test--\r\n";
+
+    let created = eleven_labs(&base)
+        .clone_voice("xi-test", content_type, body.to_vec())
+        .await
+        .unwrap();
+
+    assert_eq!(created.id, "clone-1");
+    let request = requests.recv().unwrap();
+    assert!(request.contains("POST /v1/voices/add"), "{request}");
+    assert!(
+        request.to_lowercase().contains("xi-api-key: xi-test"),
+        "{request}"
+    );
+    assert!(
+        request
+            .to_lowercase()
+            .contains(&format!("content-type: {content_type}")),
+        "{request}"
+    );
+    assert!(request.contains("My voice"), "{request}");
+}
+
+#[tokio::test]
+async fn a_voice_clone_keeps_the_provider_failure_reason() {
+    let (base, _requests) = serve_once(
+        "422 Unprocessable Entity",
+        json!({ "detail": { "message": "File format not supported" } }),
+    );
+
+    let error = eleven_labs(&base)
+        .clone_voice(
+            "xi-test",
+            "multipart/form-data; boundary=x",
+            b"--x--\r\n".to_vec(),
+        )
+        .await
+        .unwrap_err();
+
+    assert!(
+        error.to_string().contains("File format not supported"),
+        "{error}"
     );
 }
 

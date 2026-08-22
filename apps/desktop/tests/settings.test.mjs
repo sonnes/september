@@ -88,3 +88,15 @@ test("the writing service knows what setup collected", async () => {
   assert.match(await readText("src/services/ai.ts"), /export function userContext/);
   assert.match(await readText("src/blocks/suggestions.tsx"), /globalMd: userContext\(\)/);
 });
+
+test("the model choice sits beside the key that lists it", async () => {
+  const settings = await readText("src/pages/settings.tsx");
+  const voice = await readText("src/pages/voice.tsx");
+
+  // A model list arrives only with a key, so the choice belongs on the
+  // screen that holds the key.
+  assert.match(settings, /listModels/);
+  assert.match(settings, /aria-label="Model"/);
+  // The Voice screen keeps the voice and the sound, and nothing else.
+  assert.doesNotMatch(voice, /listModels|aria-label="Model"/);
+});

@@ -15,6 +15,7 @@ export {
   historyMatches,
   boardWords,
   boardPhrases,
+  stripePhrases,
   composeSuggestions,
   stripeForText,
   appendTokens,

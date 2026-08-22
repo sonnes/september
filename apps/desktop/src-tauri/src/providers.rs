@@ -1,6 +1,8 @@
 //! The two cloud services September can borrow: OpenRouter for writing help,
-//! and ElevenLabs for a voice. A key lives in the macOS Keychain and never
-//! reaches the WebView.
+//! and ElevenLabs for a voice. A key persists in the macOS Keychain, is cached
+//! in Rust for one run, and never reaches the WebView.
+
+use std::sync::RwLock;
 
 use reqwest::StatusCode;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -37,6 +39,13 @@ impl Provider {
             Self::ElevenLabs => "elevenlabs",
         }
     }
+
+    fn index(self) -> usize {
+        match self {
+            Self::OpenRouter => 0,
+            Self::ElevenLabs => 1,
+        }
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -51,6 +60,8 @@ pub enum ProviderError {
     Unexpected(String),
     #[error("the keychain refused: {0}")]
     Keychain(String),
+    #[error("the API key cache refused: {0}")]
+    Cache(String),
     #[error("could not read the reply: {0}")]
     Encoding(#[from] serde_json::Error),
 }
@@ -100,6 +111,13 @@ pub struct Voice {
     pub category: Option<String>,
 }
 
+/// The account voice that an ElevenLabs cloning request created.
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct CreatedVoice {
+    #[serde(rename(deserialize = "voice_id"))]
+    pub id: String,
+}
+
 /// One ElevenLabs model. It decides the quality, the speed, and the languages.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Model {
@@ -124,13 +142,13 @@ fn entry(provider: Provider) -> Result<keyring::Entry> {
         .map_err(|error| ProviderError::Keychain(error.to_string()))
 }
 
-pub fn store(provider: Provider, key: &str) -> Result<()> {
+fn store_key(provider: Provider, key: &str) -> Result<()> {
     entry(provider)?
         .set_password(key)
         .map_err(|error| ProviderError::Keychain(error.to_string()))
 }
 
-pub fn stored(provider: Provider) -> Result<Option<String>> {
+fn stored_key(provider: Provider) -> Result<Option<String>> {
     match entry(provider)?.get_password() {
         Ok(key) => Ok(Some(key)),
         Err(keyring::Error::NoEntry) => Ok(None),
@@ -138,11 +156,67 @@ pub fn stored(provider: Provider) -> Result<Option<String>> {
     }
 }
 
-pub fn forget(provider: Provider) -> Result<bool> {
+fn forget_key(provider: Provider) -> Result<bool> {
     match entry(provider)?.delete_credential() {
         Ok(()) => Ok(true),
         Err(keyring::Error::NoEntry) => Ok(false),
         Err(error) => Err(ProviderError::Keychain(error.to_string())),
+    }
+}
+
+/// The API keys read from the Keychain when the backend starts.
+///
+/// Commands clone a key from this process-local cache. Connecting or
+/// forgetting a provider changes the Keychain and this cache together.
+pub(crate) struct ProviderKeys {
+    values: RwLock<[std::result::Result<Option<String>, String>; Provider::ALL.len()]>,
+}
+
+impl ProviderKeys {
+    pub(crate) fn load() -> Self {
+        Self::load_with(stored_key)
+    }
+
+    fn load_with(mut read: impl FnMut(Provider) -> Result<Option<String>>) -> Self {
+        let mut values = [Ok(None), Ok(None)];
+        for provider in Provider::ALL {
+            values[provider.index()] = read(provider).map_err(|error| match error {
+                ProviderError::Keychain(detail) => detail,
+                error => error.to_string(),
+            });
+        }
+        Self {
+            values: RwLock::new(values),
+        }
+    }
+
+    pub(crate) fn get(&self, provider: Provider) -> Result<Option<String>> {
+        let cached = self
+            .values
+            .read()
+            .map(|values| values[provider.index()].clone())
+            .map_err(|error| ProviderError::Cache(error.to_string()))?;
+        cached.map_err(ProviderError::Keychain)
+    }
+
+    pub(crate) fn store(&self, provider: Provider, key: &str) -> Result<()> {
+        let mut values = self
+            .values
+            .write()
+            .map_err(|error| ProviderError::Cache(error.to_string()))?;
+        store_key(provider, key)?;
+        values[provider.index()] = Ok(Some(key.to_owned()));
+        Ok(())
+    }
+
+    pub(crate) fn forget(&self, provider: Provider) -> Result<bool> {
+        let mut values = self
+            .values
+            .write()
+            .map_err(|error| ProviderError::Cache(error.to_string()))?;
+        let deleted = forget_key(provider)?;
+        values[provider.index()] = Ok(None);
+        Ok(deleted)
     }
 }
 
@@ -305,6 +379,28 @@ impl Providers {
         Ok(response.bytes().await?.to_vec())
     }
 
+    /// Creates one account voice from an already encoded multipart request.
+    ///
+    /// The WebView owns the files and their names, so it encodes the body. Rust
+    /// adds the native key here; the key never crosses back to React.
+    pub async fn clone_voice(
+        &self,
+        key: &str,
+        content_type: &str,
+        body: Vec<u8>,
+    ) -> Result<CreatedVoice> {
+        let response = self
+            .client
+            .post(format!("{}/v1/voices/add", self.eleven_labs))
+            .header("xi-api-key", key)
+            .header("content-type", content_type)
+            .body(body)
+            .send()
+            .await?;
+
+        decode_eleven_labs(response).await
+    }
+
     pub async fn voices(&self, key: &str) -> Result<Vec<Voice>> {
         // The web app asks the same way. `non-default` leaves out the stock
         // voices, so the list holds the voices of this account only. The v2
@@ -369,6 +465,37 @@ async fn decode<T: DeserializeOwned>(response: reqwest::Response) -> Result<T> {
         .json()
         .await
         .map_err(|error| ProviderError::Unexpected(error.to_string()))
+}
+
+/// Reads the provider's useful failure sentence before the response is lost.
+async fn decode_eleven_labs<T: DeserializeOwned>(response: reqwest::Response) -> Result<T> {
+    let status = response.status();
+    if matches!(status, StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN) {
+        return Err(ProviderError::Rejected);
+    }
+    if status == StatusCode::TOO_MANY_REQUESTS {
+        return Err(ProviderError::QuotaEmpty);
+    }
+
+    let bytes = response.bytes().await?;
+    if !status.is_success() {
+        let message = serde_json::from_slice::<serde_json::Value>(&bytes)
+            .ok()
+            .and_then(|body| {
+                body.pointer("/detail/message")
+                    .or_else(|| body.get("detail"))
+                    .and_then(|value| value.as_str())
+                    .map(str::to_owned)
+            })
+            .or_else(|| {
+                let text = String::from_utf8_lossy(&bytes).trim().to_owned();
+                (!text.is_empty()).then_some(text)
+            })
+            .unwrap_or_else(|| format!("ElevenLabs answered {status}"));
+        return Err(ProviderError::Unexpected(message));
+    }
+
+    serde_json::from_slice(&bytes).map_err(ProviderError::Encoding)
 }
 
 fn open_router_detail(data: &OpenRouterKey) -> String {
@@ -463,7 +590,55 @@ struct VoiceList {
 
 #[cfg(test)]
 mod tests {
-    use super::{thousands, Model, Provider, Voice};
+    use std::cell::Cell;
+
+    use super::{thousands, Model, Provider, ProviderKeys, Voice};
+
+    #[test]
+    fn provider_keys_are_loaded_once_and_then_read_from_memory() {
+        let reads = Cell::new(0);
+        let keys = ProviderKeys::load_with(|provider| {
+            reads.set(reads.get() + 1);
+            Ok(Some(match provider {
+                Provider::OpenRouter => "openrouter-key".into(),
+                Provider::ElevenLabs => "elevenlabs-key".into(),
+            }))
+        });
+
+        assert_eq!(reads.get(), Provider::ALL.len());
+        assert_eq!(
+            keys.get(Provider::OpenRouter).unwrap().as_deref(),
+            Some("openrouter-key")
+        );
+        assert_eq!(
+            keys.get(Provider::OpenRouter).unwrap().as_deref(),
+            Some("openrouter-key")
+        );
+        assert_eq!(
+            keys.get(Provider::ElevenLabs).unwrap().as_deref(),
+            Some("elevenlabs-key")
+        );
+        assert_eq!(reads.get(), Provider::ALL.len());
+    }
+
+    #[test]
+    fn a_keychain_read_error_is_cached_without_stopping_startup() {
+        let reads = Cell::new(0);
+        let keys = ProviderKeys::load_with(|provider| {
+            reads.set(reads.get() + 1);
+            match provider {
+                Provider::OpenRouter => Err(super::ProviderError::Keychain("locked".into())),
+                Provider::ElevenLabs => Ok(None),
+            }
+        });
+
+        assert_eq!(reads.get(), Provider::ALL.len());
+        assert!(matches!(
+            keys.get(Provider::OpenRouter),
+            Err(super::ProviderError::Keychain(detail)) if detail == "locked"
+        ));
+        assert_eq!(reads.get(), Provider::ALL.len());
+    }
 
     #[test]
     fn the_screen_reads_a_voice_and_a_model_by_id() {
