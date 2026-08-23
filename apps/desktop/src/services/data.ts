@@ -141,6 +141,10 @@ export function useMessages(spaceId: string) {
     queryKey: messagesKey(spaceId),
     queryFn: () =>
       call<Message[]>("message_list", { space_id: spaceId }),
+    // The create screen draws the console before a space exists. An empty id
+    // holds no messages, and it must not reach SQLite, which rejects an
+    // identifier of no bytes.
+    enabled: Boolean(spaceId),
   });
 }
 
@@ -271,11 +275,19 @@ export function useDeleteNote(spaceId: string) {
 // ------------------------------------------------------------ saved phrases
 
 /** The phrases of one space, or every phrase when no space is named. */
+/**
+ * The saved phrases of one space, or of every space.
+ *
+ * The three cases stay apart: no argument asks for every phrase, a real id
+ * asks for that space, and the empty id asks for none — a space that does not
+ * exist yet, whose id SQLite would reject.
+ */
 export function usePhrases(spaceId?: string) {
   return useQuery({
     queryKey: phrasesKey(spaceId),
     queryFn: () =>
       call<SavedPhrase[]>("phrase_list", { space_id: spaceId ?? null }),
+    enabled: spaceId !== "",
   });
 }
 

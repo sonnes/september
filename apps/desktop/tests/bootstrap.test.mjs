@@ -17,6 +17,7 @@ import {
   matchCode,
   mineShortcuts,
   normalizeMinedText,
+  pinnedPhrase,
   sanitizeStarters,
   topPhrases,
   topRows,
@@ -36,10 +37,16 @@ import {
   tokenize,
 } from "../src/rules/stripes.ts";
 import {
+  composerAction,
+  createSteps,
   deleteLastWord,
   filterSpaces,
+  freeTitle,
   isAutoTitle,
+  MODEL_WAIT_MS,
   newSpaceTitle,
+  NEW_SPACE_CONTEXT,
+  NEW_SPACE_OPENERS,
   spaceFromSlug,
   spaceModeFrom,
   spaceSlug,
@@ -641,6 +648,8 @@ test("only data.ts and os.ts talk to Rust", async () => {
     "src/pages/voice.tsx",
     "src/blocks/suggestions.tsx",
     "src/blocks/phrase-panel.tsx",
+    "src/blocks/space-panel.tsx",
+    "src/blocks/speech-settings.tsx",
     "src/services/phrase-sync.ts",
   ];
   for (const file of files) {
@@ -690,7 +699,7 @@ test("one setting owns the voice, and setup seeds it", async () => {
   assert.doesNotMatch(os, /saveServices/);
   assert.doesNotMatch(os, /"services"/);
   assert.match(steps, /saveSpeech\(/);
-  assert.match(await readText("src/pages/voice.tsx"), /saveSpeech\(/);
+  assert.match(await readText("src/blocks/speech-settings.tsx"), /saveSpeech\(/);
 });
 
 test("a voice file is named for the settings and the words", async () => {
@@ -844,17 +853,18 @@ test("the speech settings hold everything that shapes the sound", async () => {
   }
 });
 
-test("the key screen chooses the model, and the Voice screen the voice", async () => {
+test("the key screen chooses the model, and the rail repeats the choice", async () => {
   const settings = await readText("src/pages/settings.tsx");
-  const voice = await readText("src/pages/voice.tsx");
+  const card = await readText("src/blocks/speech-settings.tsx");
   const os = await readText("src/services/os.ts");
 
   // The account key lists the models, so the model sits with the key.
   assert.match(os, /export const listModels/);
   assert.match(settings, /listModels/);
   assert.match(settings, /modelId/);
-  // The Voice screen keeps the voice and the sound.
-  assert.doesNotMatch(voice, /listModels/);
+  // The card of the rail asks the same question, beside the voice it shapes.
+  assert.match(card, /listModels/);
+  assert.match(card, /modelId/);
 });
 
 test("voice cloning crosses the native provider boundary as raw audio", async () => {
@@ -1065,12 +1075,170 @@ test("a new space asks what it is for before it exists", async () => {
 
   // The words of the user become the note of the space, and a model reads
   // them for the title. A model never writes over the words of the user.
-  assert.match(spaces, /context: words/);
-  assert.match(spaces, /describeSpace\(words\)/);
+  assert.match(spaces, /context: said/);
+  assert.match(spaces, /describeSpace\(said/);
   // The note of the model goes under the words of the user, and not over
   // them. The words of the user stay at the top of the note.
-  assert.match(spaces, /appendToNote\(words, answer\.context\)/);
+  assert.match(spaces, /appendToNote\(said, answer\.context\)/);
   assert.doesNotMatch(spaces, /context: answer\.context/);
+});
+
+test("a new space offers openers to press, so the first words cost nothing", async () => {
+  // A space is for one person, one place, or one subject, and each opener
+  // names one of the three.
+  assert.equal(NEW_SPACE_OPENERS.length, 3);
+
+  for (const opener of NEW_SPACE_OPENERS) {
+    // Each one stops mid-sentence on purpose: the stripe and the word tiles
+    // carry on from there. A finished sentence would put words in the mouth
+    // of the user, which is the one thing this screen must not do.
+    assert.match(opener, / $/);
+    assert.ok(opener.length <= 24, opener);
+  }
+
+  const spaces = await readText("src/pages/spaces.tsx");
+
+  assert.match(spaces, /NEW_SPACE_OPENERS\.map/);
+
+  // They sit with the question, above Skip: a way in for a user who does not
+  // know what to write, next to the way out for a user with nothing to say.
+  assert.ok(
+    spaces.indexOf("NEW_SPACE_OPENERS.map") < spaces.indexOf("Skip for now"),
+    "the openers must come before Skip",
+  );
+
+  // The row stays while the question does, so a press never unmounts the
+  // control that was pressed and drops the focus to the body.
+  const openers = spaces.match(/NEW_SPACE_OPENERS\.map[\s\S]*?\n\s+\)\)\}/)[0];
+  assert.doesNotMatch(openers, /!words/);
+});
+
+test("the new space screen writes through the one console", async () => {
+  const spaces = await readText("src/pages/spaces.tsx");
+
+  // This screen asks for the most free typing in the app, and it used to be
+  // the one surface with no help for it: a bare textarea, in an app whose
+  // reason to exist is fewer keystrokes. It takes the console that every
+  // other writing surface takes, so the word tiles, the codes, the stripe,
+  // undo, and delete-last-word are all here.
+  assert.match(spaces, /<Composer/);
+  assert.match(spaces, /mode="new"/);
+  assert.doesNotMatch(spaces, /<textarea/);
+
+  // No space exists, so there is no context to write from. The engine gets
+  // the frame instead, and the words the user has said everywhere else.
+  assert.match(spaces, /NEW_SPACE_CONTEXT/);
+  assert.match(spaces, /useAllMessages/);
+});
+
+test("a space that does not exist yet asks SQLite for nothing", async () => {
+  const data = await readText("src/services/data.ts");
+
+  // The console draws before a space exists. An empty id must not reach
+  // `validate_identifier`, which rejects an identifier of no bytes, because
+  // the stripe would then carry that error instead of words.
+  assert.match(data, /enabled: Boolean\(spaceId\)/);
+  assert.match(data, /enabled: spaceId !== ""/);
+});
+
+test("the model work is on the screen in words while it runs", async () => {
+  const spaces = await readText("src/pages/spaces.tsx");
+
+  // The label of a button is not visible progress: it names one thing at a
+  // time, it is gone the moment the work ends, and a reader never hears it
+  // change. The steps are drawn where the transcript would be, and announced.
+  assert.match(spaces, /role="status"/);
+  assert.match(spaces, /aria-live="polite"/);
+  assert.match(spaces, /createSteps/);
+  assert.doesNotMatch(spaces, /setBusy/);
+
+  // A screen with no writing service says so before the press, instead of
+  // naming two model calls that are never going to run.
+  assert.match(spaces, /hasWritingService/);
+});
+
+test("a failed new space is shown, and a retry makes no second space", async () => {
+  const spaces = await readText("src/pages/spaces.tsx");
+  const make = spaces.match(/const make = async[\s\S]*?\n  \};\n/)[0];
+
+  // Every failure used to be silent: the button went back to Create space
+  // with the words still in the field and nothing said. The list on this
+  // same screen has always drawn its errors.
+  assert.match(make, /catch/);
+  assert.match(spaces, /<Problem error=/);
+
+  // The run is not atomic. A space made before a later write failed is
+  // already on disk, and a second press must patch that space, not make
+  // another one beside it.
+  assert.match(spaces, /if \(made\) return made/);
+  assert.match(spaces, /Open the space anyway/);
+});
+
+test("the user can leave while the models run, and is never held for ever", async () => {
+  const spaces = await readText("src/pages/spaces.tsx");
+
+  // Cancel used to be disabled for the whole run, across two model calls
+  // with no timeout. A user driving by switch or gaze could not reach
+  // anything, could not leave, and could not tell a slow model from a dead
+  // one.
+  assert.match(spaces, /AbortController/);
+  assert.match(spaces, /MODEL_WAIT_MS/);
+  assert.match(spaces, /const cancel = /);
+
+  // The words are in SQLite before any model runs, so leaving loses nothing.
+  const cancel = spaces.match(/const cancel = [\s\S]*?\n  \};\n/)[0];
+  assert.match(cancel, /abort\(\)/);
+});
+
+test("the two model calls run together, and both read the words of the user", async () => {
+  const spaces = await readText("src/pages/spaces.tsx");
+
+  // The phrase writer does not need the note that the title model writes:
+  // the words of the user are what `decidePhraseSync` already treats as
+  // enough. Chained, the user waited for the sum of two round trips.
+  assert.match(spaces, /Promise\.allSettled/);
+  assert.match(spaces, /seedPhrases\(\{ \.\.\.space, context: said \}/);
+});
+
+test("a title from the model must take a free slug too", async () => {
+  const spaces = await readText("src/pages/spaces.tsx");
+
+  // `newSpaceTitle` gives out a name no other space holds, and the model's
+  // title used to be written straight over it with no such check. Two spaces
+  // then shared one address, and the dock tab of the new one opened the old.
+  assert.match(spaces, /freeTitle\(\s*answer\.title/);
+});
+
+test("the words of a new space are not lost to a press or a restart", async () => {
+  const os = await readText("src/services/os.ts");
+  const spaces = await readText("src/pages/spaces.tsx");
+
+  // Every other writing surface in September saves with no Save button,
+  // because a user who types slowly must never lose words to a button they
+  // did not press. A paragraph typed by switch is worth more than a note,
+  // not less.
+  assert.match(os, /new-space-draft/);
+  assert.match(spaces, /rememberDraft/);
+
+  // Cancel with words in the field asks before it throws them away.
+  assert.match(spaces, /setDiscarding/);
+  assert.match(spaces, /variant="destructive"/);
+});
+
+test("a space that was skipped is asked again what it is for", async () => {
+  const talk = await readText("src/pages/talk.tsx");
+  const notes = await readText("src/pages/notes.tsx");
+
+  // Skip leaves a space with a made-up name and no note, and nothing invited
+  // the user to fill that in. Talk has no working-set slot on the desktop, so
+  // About exists only as a tab inside Notes mode, which is a long way to walk
+  // for something the user was never told mattered.
+  assert.match(talk, /Tell September what this space is for/);
+  assert.match(talk, /space\.context/);
+
+  // The invitation lands on About, not on a note beside it. An address that
+  // names a note still wins, so a deep link is not taken over.
+  assert.match(notes, /useState\(!wanted && !space\.context/);
 });
 
 test("a half-written new space is not a screen to open on", () => {
@@ -1095,6 +1263,77 @@ test("a space with a note gets its phrases before the first message", () => {
     decidePhraseSync({ syncedCount: 0, messageCount: 1, hasContext: true }),
     "none",
   );
+});
+
+test("a new space opens with its title, its note, and its phrases", async () => {
+  const spaces = await readText("src/pages/spaces.tsx");
+  const sync = await readText("src/services/phrase-sync.ts");
+
+  // One seed, used by the new-space screen and by the hook.
+  assert.match(sync, /export async function seedPhrases/);
+  assert.match(spaces, /seedPhrases\(/);
+
+  // Every write finishes before the address changes, so a space never opens
+  // with an empty stripe that fills a moment later. The seed runs beside the
+  // title call now, so the screen waits on the pair of them.
+  const make = spaces.match(/const make = async[\s\S]*?\n  \};\n/)[0];
+  assert.match(make, /await Promise\.allSettled/);
+  assert.ok(
+    make.indexOf("seedPhrases(") < make.lastIndexOf("return open("),
+    "the phrases are written before the space opens",
+  );
+
+  // The seed writes through `call`, so the screen must drop what it holds.
+  // Talk reads the count from the space, and a stale count seeds it twice.
+  assert.match(spaces, /invalidateQueries\(\{ queryKey: \["phrases"\] \}\)/);
+  assert.match(spaces, /invalidateQueries\(\{ queryKey: \["spaces"\] \}\)/);
+});
+
+test("Skip opens the space at once, and asks no model", async () => {
+  const spaces = await readText("src/pages/spaces.tsx");
+
+  // Skip means skip. With one handler behind both buttons, a user who wrote a
+  // line and then pressed Skip waited for the model anyway.
+  assert.match(spaces, /onClick={skip}/);
+  assert.doesNotMatch(spaces, /onClick={make}[\s\S]*onClick={make}/);
+});
+
+test("a model that writes nothing leaves the space unsynced", async () => {
+  const sync = await readText("src/services/phrase-sync.ts");
+
+  // With the count written anyway, a space whose seed gave nothing waits for
+  // six messages before it tries again.
+  assert.match(sync, /if \(rows\.length === 0\) return/);
+});
+
+test("a kept phrase is built in one place, and never made twice", () => {
+  const rows = [
+    {
+      id: "1",
+      space_id: "s",
+      text: "Thank you",
+      kind: "phrase",
+      code: "ty",
+      pinned: true,
+      created_at: 0,
+      updated_at: 0,
+    },
+  ];
+
+  // The space already holds it, whatever the case and the spaces around it.
+  assert.equal(pinnedPhrase("  thank YOU ", "s", rows), null);
+
+  const row = pinnedPhrase("Please call the nurse", "s", rows, 5);
+  assert.equal(row.space_id, "s");
+  assert.equal(row.kind, "phrase");
+  assert.equal(row.pinned, true);
+  assert.equal(row.created_at, 5);
+  // The code comes from the generator, never from a model.
+  assert.equal(row.code, "pcn");
+
+  // A code that another row holds is not given out twice.
+  const taken = [...rows, { ...row, id: "2" }];
+  assert.notEqual(pinnedPhrase("Please call nurse", "s", taken).code, "pcn");
 });
 
 
@@ -1261,7 +1500,7 @@ test("no tile is ever out of reach", async () => {
 test("the composer offers the next word while the user writes", async () => {
   const suggestions = await readText("src/blocks/suggestions.tsx");
 
-  assert.match(suggestions, /useSuggestions\(spaceId, text\)/);
+  assert.match(suggestions, /useSuggestions\(spaceId \|\| undefined, text\)/);
   // The engine owns the rule for a part-written word against a finished one.
   assert.match(suggestions, /applySuggestion\(text, word\)/);
   assert.doesNotMatch(suggestions, /replace\(\/\\S\+\$\//, "the UI must not split the text itself");
@@ -1341,6 +1580,150 @@ test("a title September wrote is known apart from one the user typed", () => {
   assert.equal(isAutoTitle("Talk to Mum"), false);
 });
 
+test("a title that another space already holds is not free", () => {
+  assert.equal(freeTitle("Mum", ["Dad", "General"]), "Mum");
+  assert.equal(freeTitle("Mum", []), "Mum");
+
+  // The slug decides, not the letters, because the slug is the address.
+  assert.equal(freeTitle("Mum", ["mum"]), null);
+  assert.equal(freeTitle("Doctor Ramesh", ["doctor — ramesh"]), null);
+
+  // A title of no letters names no space.
+  assert.equal(freeTitle("  ", ["Mum"]), null);
+  assert.equal(freeTitle("", []), null);
+});
+
+test("the words of a new space frame the suggestions as a description", () => {
+  // With no space yet, there is no context to write from. Without a frame the
+  // model answers as if the user were talking to somebody, because the
+  // suggestion prompts are written for a conversation.
+  const { system } = buildSuggestionPrompt({
+    globalMd: "",
+    spaceMd: NEW_SPACE_CONTEXT,
+    history: [],
+    typed: "I speak to my",
+  });
+
+  assert.match(system, /<user_context>/);
+  assert.ok(system.includes(NEW_SPACE_CONTEXT));
+  // The frame is written as the user, the same as every other context.
+  assert.match(NEW_SPACE_CONTEXT, /^I /);
+});
+
+test("the steps of a new space say which one is running", () => {
+  const started = createSteps({ at: "space", hasWriting: true });
+
+  assert.deepEqual(
+    started.map((step) => step.id),
+    ["space", "name", "phrases"],
+  );
+  assert.equal(started[0].state, "running");
+  assert.equal(started[1].state, "waiting");
+  assert.equal(started[2].state, "waiting");
+  // Every step carries words, because the region that draws them is read out.
+  assert.ok(started.every((step) => step.label.length > 0));
+
+  // The two model calls run together, so both read running at once.
+  const models = createSteps({ at: "models", hasWriting: true });
+  assert.deepEqual(
+    models.map((step) => step.state),
+    ["done", "running", "running"],
+  );
+
+  const done = createSteps({ at: "done", hasWriting: true });
+  assert.deepEqual(
+    done.map((step) => step.state),
+    ["done", "done", "done"],
+  );
+});
+
+test("a rename that another space already holds is refused, and says why", async () => {
+  const block = await readText("src/blocks/space.tsx");
+  const title = block.match(/export function SpaceTitle\([\s\S]*?\n\}\n/)[0];
+
+  // `newSpaceTitle` works hard to give out a free name, and a rename could
+  // undo that in one keystroke: two spaces with one title share one address,
+  // and the address then opens the wrong space.
+  assert.match(title, /freeTitle/);
+  // The user typed this name on purpose, so September must not quietly change
+  // it to another. It keeps their words and says what is wrong.
+  assert.match(title, /already called/);
+  assert.ok(
+    title.indexOf("freeTitle") < title.indexOf("update.mutate"),
+    "the check must come before the write",
+  );
+});
+
+test("the composer names its action by mode, and one of them makes a space", () => {
+  assert.equal(composerAction("talk").label, "Speak");
+  assert.equal(composerAction("notes").label, "Add to note");
+  assert.equal(composerAction("new").label, "Create space");
+
+  // Every mode gives the field words of its own, so a user knows what the
+  // console is for before they type into it.
+  for (const mode of ["talk", "notes", "new"]) {
+    assert.ok(composerAction(mode).placeholder.length > 0, mode);
+    assert.ok(composerAction(mode).field.length > 0, mode);
+  }
+
+  // Only Talk makes a sound, so only Talk says where the sound comes out.
+  assert.equal(composerAction("talk").speaks, true);
+  assert.equal(composerAction("new").speaks, false);
+  assert.equal(composerAction("notes").speaks, false);
+});
+
+test("the composer never takes focus off the control that was pressed", async () => {
+  const space = await readText("src/blocks/space.tsx");
+  const composer = space.match(/export function Composer\([\s\S]*?\n\}\n/)[0];
+
+  // A disabled element cannot hold focus, so the browser moves focus to the
+  // body. A switch user loses their place in the scan, and a reader loses
+  // its place in the page, at the moment the app asks them to wait. Every
+  // control of the console says it is unavailable instead, and its handler
+  // does nothing.
+  assert.match(composer, /aria-disabled=\{/);
+  assert.doesNotMatch(composer, /\sdisabled=\{/);
+});
+
+test("a model call for a new space can be given up on", async () => {
+  const ai = await readText("src/services/ai.ts");
+  const sync = await readText("src/services/phrase-sync.ts");
+
+  // A user who cannot press a second time must not be held by a service that
+  // hangs. `generate` already takes a signal, so both calls pass one down.
+  assert.match(ai, /feature: "context", signal/);
+  assert.match(sync, /feature: "phrases", signal/);
+
+  // The screen gives the signal, so both take it as an argument.
+  assert.match(ai, /export async function describeSpace\([\s\S]{0,200}?signal\?: AbortSignal/);
+  assert.match(sync, /export async function seedPhrases\([\s\S]{0,200}?signal\?: AbortSignal/);
+});
+
+test("a step that cannot run says why, and never reads as work", () => {
+  // No writing service means no model, so the screen must not name work that
+  // is not happening. The old screen said "Writing the first phrases..." here.
+  const alone = createSteps({ at: "models", hasWriting: false });
+
+  assert.equal(alone[0].state, "done");
+  assert.equal(alone[1].state, "skipped");
+  assert.equal(alone[2].state, "skipped");
+  assert.match(alone[1].note, /writing service/i);
+
+  // A step that failed says so, and leaves the others as they landed.
+  const failed = createSteps({
+    at: "done",
+    hasWriting: true,
+    failed: { name: "took too long" },
+  });
+
+  assert.equal(failed[1].state, "failed");
+  assert.equal(failed[1].note, "took too long");
+  assert.equal(failed[2].state, "done");
+
+  // A model that hangs must not hold the screen for ever.
+  assert.ok(MODEL_WAIT_MS > 0 && MODEL_WAIT_MS <= 60_000);
+});
+
 test("the note of a space is added under the words of the user", () => {
   const { system, user } = buildSpaceContextPrompt("I need water please");
 
@@ -1389,15 +1772,13 @@ test("the name and the note are read back from the answer", () => {
   assert.equal(spaceDescriptionFrom('{"title":"  ","context":""}'), null);
 });
 
-test("the space is named after the first message, and the address follows", async () => {
+test("Talk speaks, and the new-space screen does the naming", async () => {
   const talk = await readText("src/pages/talk.tsx");
 
-  // The note reaches the model that writes the stripe and the phrases, so it
-  // is written once, when the space stops being empty.
-  assert.match(talk, /describeSpace/);
-  assert.match(talk, /isAutoTitle/);
-  // A new title makes a new slug. Without this the open address goes nowhere.
-  assert.match(talk, /replace: true/);
+  // `/spaces/new` asks what the space is for before the space exists. A first
+  // message that asked again paid for an answer the guards then threw away.
+  assert.doesNotMatch(talk, /describeSpace/);
+  assert.doesNotMatch(talk, /useUpdateSpace/);
 });
 
 // ------------------------------------------------------ where sound comes out
@@ -1422,8 +1803,8 @@ test("the audio selector sits beside Speak and names the Mac, not the app", asyn
   assert.match(picker, /this Mac/i);
   // The picker is next to the button that makes the sound.
   assert.ok(
-    talk.indexOf("<AudioSelector") < talk.indexOf('? "Speak"'),
-    "the picker must come before the Speak button",
+    talk.indexOf("<AudioSelector") < talk.indexOf("<ActionIcon"),
+    "the picker must come before the button that speaks",
   );
 });
 
@@ -1545,7 +1926,7 @@ test("the space tabs fall back to a list when the row is full", async () => {
 });
 
 test("the right rail holds the phrases, and stays where the user left it", async () => {
-  const panel = await readText("src/blocks/phrase-panel.tsx");
+  const panel = await readText("src/blocks/space-panel.tsx");
   const shell = await readText("src/layouts/app.tsx");
 
   assert.match(panel, /PanelRail/);
@@ -1591,25 +1972,29 @@ test("Notes and Talk share one composer", async () => {
 });
 
 test("a space carries a note that says who it is for", async () => {
-  const talk = await readText("src/pages/talk.tsx");
+  const spaces = await readText("src/pages/spaces.tsx");
   const notes = await readText("src/pages/notes.tsx");
 
-  // A model writes the note from the first message of the space, one time.
-  assert.match(talk, /if \(spoken\.length > 0\) return;/);
-  // A note that the user wrote is never written over.
-  assert.match(talk, /space\.context\?\.trim\(\) \? undefined : answer\.context/);
+  // A model writes the note one time, on the screen that asks for it. A note
+  // that the user wrote is never written over.
+  assert.match(spaces, /appendToNote\(said, answer\.context\)/);
 
   // The note is a tab of the Notes screen, the same as in the web app.
   assert.match(notes, /function SpaceAbout/);
   assert.match(notes, /About this space/);
   // It writes one field of the space, and not a note.
   assert.match(notes, /useUpdateSpace/);
-  assert.match(notes, /context: text/);
+  assert.match(notes, /context: written/);
   // The composer writes here too. A user who cannot type has no other way in.
   assert.match(notes, /appendToNote\(space\.context/);
+  // An example names no one. September does not know who the user speaks to,
+  // and a screen that guesses at a sister reads as though it did.
+  assert.doesNotMatch(notes, /sister/);
   // The tab lives in the slot of the composer, so the composer always shows.
   // A model writes this note before the user makes any note of their own.
   assert.doesNotMatch(notes, /rows\.length > 0/);
+  // The note saves with no Save button, and with no timer of its own.
+  assert.match(notes, /onBlur={save}/);
 });
 
 
@@ -1620,8 +2005,10 @@ test("the composer adds words to the note, and does not speak them", async () =>
 
   assert.match(notes, /mode="notes"/);
   assert.match(notes, /appendToNote/);
-  // One console, two endings: Talk speaks the sentence, Notes files it.
-  assert.match(composer, /"Add to note"/);
+  // One console, three endings: Talk speaks the sentence, Notes files it, and
+  // the new-space screen makes the space. The words of each are in the rule,
+  // where a test reads them without a renderer.
+  assert.equal(composerAction("notes").label, "Add to note");
   // The sound output belongs beside the button that makes a sound. Notes
   // makes none, so it shows no picker.
   assert.match(

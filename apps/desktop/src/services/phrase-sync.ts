@@ -1,7 +1,13 @@
 import { useEffect, useRef } from "react";
 
 import { generate, hasWritingService, itemsFrom } from "@/services/ai";
-import { useReplaceAiPhrases, useUpdateSpace, type Message, type Space } from "@/services/data";
+import {
+  call,
+  useReplaceAiPhrases,
+  useUpdateSpace,
+  type Message,
+  type Space,
+} from "@/services/data";
 import {
   buildPhrasesPrompt,
   decidePhraseSync,
@@ -51,9 +57,11 @@ export function useSyncPhrases({
     running.current = space.id;
     void writePhrases({ space, phrases, messages })
       .then(async (rows) => {
-        if (rows.length > 0) {
-          await replace.mutateAsync({ spaceId: space.id, phrases: rows });
-        }
+        // A model that wrote nothing leaves the count alone, so the next
+        // message tries again instead of waiting for six.
+        if (rows.length === 0) return;
+
+        await replace.mutateAsync({ spaceId: space.id, phrases: rows });
         await updateSpace.mutateAsync({
           id: space.id,
           phrases_synced_count: messages.length,
@@ -69,14 +77,49 @@ export function useSyncPhrases({
   }, [space?.id, space?.phrases_synced_count, phrases?.length, messages?.length]);
 }
 
+/**
+ * Writes the first phrases of a space, and waits for them.
+ *
+ * The new-space screen calls this before it opens the space, so the stripe
+ * holds words the moment the user arrives. The hook above does the same job
+ * for a space that reaches Talk without one.
+ *
+ * It writes through `call` and not through a mutation, because a screen that
+ * awaits it is not always the screen that draws the rows.
+ */
+export async function seedPhrases(
+  space: Space,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<void> {
+  if (!hasWritingService()) return;
+
+  // The starter pack lands with the space, and the model must see it. A
+  // pinned row it repeated would give the stripe the same words twice.
+  const phrases = await call<SavedPhrase[]>("phrase_list", {
+    space_id: space.id,
+  });
+  const rows = await writePhrases({ space, phrases, messages: [], signal });
+  if (rows.length === 0) return;
+
+  await call("phrase_replace_ai", { space_id: space.id, phrases: rows });
+  await call("space_patch", {
+    id: space.id,
+    phrases_synced_count: 0,
+    updated_at: Date.now(),
+  });
+}
+
 async function writePhrases({
   space,
   phrases,
   messages,
+  signal,
 }: {
   space: Space;
   phrases: SavedPhrase[];
   messages: Message[];
+  /** The screen that waits for the first phrases can give this up. */
+  signal?: AbortSignal;
 }): Promise<SavedPhrase[]> {
   const rowsOf = (kind: PhraseKind) =>
     phrases
@@ -99,7 +142,7 @@ async function writePhrases({
       temperature: 0.7,
       response_format: { type: "json_object" },
     },
-    { feature: "phrases" },
+    { feature: "phrases", signal },
   );
 
   const pinnedTexts = phrases.filter((row) => row.pinned).map((row) => row.text);

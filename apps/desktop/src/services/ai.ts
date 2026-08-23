@@ -22,6 +22,8 @@ export interface GenerateMessage {
 
 export interface GenerateRequest {
   messages: GenerateMessage[];
+  /** The OpenRouter model. Absent asks the free list of the app. */
+  model?: string;
   temperature?: number;
   max_tokens?: number;
   response_format?:
@@ -83,9 +85,15 @@ export async function generate(
     (total, message) => total + message.content.length,
     0,
   );
+  // The model the user chose in Settings. Apple Intelligence has one model
+  // on this Mac, so only OpenRouter reads the answer.
+  const chosen =
+    service === "openrouter" ? currentSetup()?.writingModel?.trim() : "";
   let answer: GenerateAnswer;
   try {
-    answer = await invoke<GenerateAnswer>(command, { request });
+    answer = await invoke<GenerateAnswer>(command, {
+      request: chosen ? { ...request, model: chosen } : request,
+    });
   } catch (reason) {
     void recordAiUsage({
       generation_type: options.feature,
@@ -154,6 +162,7 @@ export function itemsFrom(text: string, key: string): string[] {
  */
 export async function describeSpace(
   messageText: string,
+  { signal }: { signal?: AbortSignal } = {},
 ): Promise<SpaceDescription | null> {
   if (!hasWritingService()) return null;
 
@@ -167,7 +176,7 @@ export async function describeSpace(
       temperature: 0.7,
       response_format: { type: "json_object" },
     },
-    { feature: "context" },
+    { feature: "context", signal },
   );
 
   return spaceDescriptionFrom(answer);

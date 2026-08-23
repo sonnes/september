@@ -22,11 +22,12 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+
+import { PickList } from "@/blocks/pick-list";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 
 import { navFor } from "@/rules/app-nav";
@@ -51,19 +52,12 @@ import {
 } from "@/services/cloning";
 import { Screen } from "@/blocks/screen";
 import {
-  DEFAULT_SPEECH,
   speak,
   speechSettings,
-  type SpeechSettings,
   type VoiceService,
 } from "@/services/speech";
 
 const TRY_IT = "This is how I sound today.";
-
-function optimisticCreatedVoice(): Voice | null {
-  const created = recentCreatedVoice();
-  return created ? { ...created, preview_url: null } : null;
-}
 
 const SAMPLE_TEXTS = [
   { id: "birch-canoe", text: "The birch canoe slid on the smooth planks." },
@@ -78,66 +72,54 @@ const SAMPLE_TEXTS = [
   { id: "oak-shade", text: "Oak is strong and also gives shade." },
 ] as const;
 
-const SLIDERS = [
-  {
-    key: "speed",
-    label: "Speed",
-    low: "Slower",
-    high: "Faster",
-    min: 0.7,
-    max: 1.2,
-  },
-  {
-    key: "stability",
-    label: "Steadiness",
-    low: "More variable",
-    high: "More steady",
-    min: 0,
-    max: 1,
-  },
-  {
-    key: "similarity",
-    label: "Likeness",
-    low: "Lower",
-    high: "Higher",
-    min: 0,
-    max: 1,
-  },
-] as const satisfies readonly {
-  key: keyof SpeechSettings;
-  label: string;
-  low: string;
-  high: string;
-  min: number;
-  max: number;
-}[];
+/** A voice made a moment ago, before ElevenLabs lists it. */
+function optimisticCreatedVoice(): Voice | null {
+  const created = recentCreatedVoice();
+  return created ? { ...created, preview_url: null } : null;
+}
 
+/**
+ * The voice screen: which voice speaks, and making one of your own.
+ *
+ * The service, the model, and the sliders moved into the Voice tab of the
+ * rail beside a space, where a change is heard next to the sentence being
+ * written. The voices stayed here: an account holds a hundred of them, each
+ * one worth hearing before it is chosen, and that list wants a whole screen.
+ */
 export function VoiceScreen() {
-  const [settings, setSettings] = useState<SpeechSettings>(speechSettings);
+  const [provider, setProvider] = useState(() => speechSettings().provider);
+  const [voiceId, setVoiceId] = useState(() => speechSettings().voiceId ?? "");
   const [voices, setVoices] = useState<Voice[] | null>(null);
   const [connected, setConnected] = useState<boolean | null>(null);
-
-  // Every change is kept. There is no Save button to forget.
-  const change = (next: Partial<SpeechSettings>) => {
-    const merged = { ...settings, ...next };
-    setSettings(merged);
-    void saveSpeech(merged);
-  };
+  const cloud = provider === "elevenlabs";
 
   useEffect(() => {
-    void readConnections().then((connections) =>
-      setConnected(connections.elevenlabs.connected),
-    );
+    void readConnections()
+      .then((connections) => setConnected(connections.elevenlabs.connected))
+      .catch(() => setConnected(false));
   }, []);
 
   useEffect(() => {
-    if (settings.provider !== "elevenlabs") return;
-    void listVoices()
-      .then((fresh) => setVoices(keepCreatedVoice(fresh, optimisticCreatedVoice())))
-      .catch(() => setVoices(keepCreatedVoice([], optimisticCreatedVoice())));
-  }, [settings.provider]);
+    if (!cloud || !connected) return;
 
-  const cloud = settings.provider === "elevenlabs";
+    void listVoices()
+      .then((fresh) =>
+        setVoices(keepCreatedVoice(fresh, optimisticCreatedVoice())),
+      )
+      .catch(() => setVoices(keepCreatedVoice([], optimisticCreatedVoice())));
+  }, [cloud, connected]);
+
+  // One field of the setting changes at a time. The rest comes from the
+  // store, so a slider moved in the rail card is not written back over.
+  const chooseService = (next: VoiceService) => {
+    setProvider(next);
+    void saveSpeech({ ...speechSettings(), provider: next });
+  };
+
+  const chooseVoice = (next: string) => {
+    setVoiceId(next);
+    void saveSpeech({ ...speechSettings(), voiceId: next });
+  };
 
   return (
     <Screen
@@ -153,10 +135,8 @@ export function VoiceScreen() {
       <section className="space-y-3">
         <h2 className="text-sm font-semibold">Who speaks</h2>
         <RadioGroup
-          value={settings.provider}
-          onValueChange={(value) =>
-            change({ provider: value as VoiceService })
-          }
+          value={provider}
+          onValueChange={(value) => chooseService(value as VoiceService)}
           className="grid gap-2"
         >
           <ServiceChoice
@@ -182,6 +162,46 @@ export function VoiceScreen() {
         ) : null}
       </section>
 
+      {cloud && connected ? (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold">Which voice</h2>
+          {voices === null ? (
+            <Skeleton className="h-24 w-full" />
+          ) : voices.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              No voices came back from ElevenLabs.
+            </p>
+          ) : (
+            <PickList
+              rows={voices}
+              value={voiceId}
+              onPick={chooseVoice}
+              label="Search voices"
+              // The button stays in every row, so it always reads as part of
+              // the voice on its left.
+              after={(voice) => (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Hear ${voice.name}`}
+                  disabled={!voice.preview_url}
+                  // The sample is public, so it needs no key and no speech
+                  // call.
+                  onClick={() => void play(voice.preview_url!)}
+                >
+                  <Play aria-hidden />
+                </Button>
+              )}
+            />
+          )}
+        </section>
+      ) : cloud ? null : (
+        <p className="text-muted-foreground text-sm">
+          This Mac has one voice, so there is nothing to choose here.
+        </p>
+      )}
+
       <Link
         to="/voice/clone"
         className="focus-visible:ring-ring hover:bg-accent flex min-h-16 w-full items-center gap-3 rounded-surface border border-dashed border-primary/50 bg-primary/5 px-4 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
@@ -201,91 +221,14 @@ export function VoiceScreen() {
         </span>
       </Link>
 
-      {cloud ? (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold">Which voice</h2>
-          {voices === null ? (
-            <Skeleton className="h-24 w-full" />
-          ) : voices.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              No voices came back from ElevenLabs.
-            </p>
-          ) : (
-            <ul className="grid gap-2 sm:grid-cols-2">
-              {voices.map((voice) => (
-                <li key={voice.id} className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    aria-current={voice.id === settings.voiceId || undefined}
-                    onClick={() => change({ voiceId: voice.id })}
-                    className={`focus-visible:ring-ring min-h-11 flex-1 rounded-xl border px-4 text-left text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${
-                      voice.id === settings.voiceId
-                        ? "border-primary bg-primary/5"
-                        : "hover:bg-accent"
-                    }`}
-                  >
-                    {voice.name}
-                  </button>
-                  {/* The button stays in every row, so it always reads as
-                      part of the voice on its left. */}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`Hear ${voice.name}`}
-                    disabled={!voice.preview_url}
-                    // The sample is public, so it needs no key and no speech
-                    // call.
-                    onClick={() => void play(voice.preview_url!)}
-                  >
-                    <Play aria-hidden />
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      ) : null}
-
-      <section className="space-y-5">
-        <h2 className="text-sm font-semibold">How it sounds</h2>
-        {SLIDERS.map((slider) => (
-          <div key={slider.key} className="space-y-2">
-            <div className="flex items-baseline justify-between">
-              <Label htmlFor={slider.key}>{slider.label}</Label>
-              <span className="text-muted-foreground text-xs tabular-nums">
-                {Number(settings[slider.key]).toFixed(2)}
-              </span>
-            </div>
-            <Slider
-              id={slider.key}
-              min={slider.min}
-              max={slider.max}
-              step={0.05}
-              value={[Number(settings[slider.key])]}
-              aria-label={slider.label}
-              onValueChange={([value]) => change({ [slider.key]: value })}
-            />
-            <div className="text-muted-foreground flex justify-between text-xs">
-              <span>{slider.low}</span>
-              <span>{slider.high}</span>
-            </div>
-          </div>
-        ))}
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() =>
-            change({
-              speed: DEFAULT_SPEECH.speed,
-              stability: DEFAULT_SPEECH.stability,
-              similarity: DEFAULT_SPEECH.similarity,
-            })
-          }
-        >
-          Back to the usual sound
-        </Button>
-      </section>
+      <p className="text-muted-foreground text-sm">
+        The model and the sound are in the Voice tab of the rail beside a
+        space, so a change is heard next to the sentence you are writing.{" "}
+        <Link to="/spaces" className="text-primary underline">
+          Open a space
+        </Link>
+        .
+      </p>
     </Screen>
   );
 }

@@ -13,7 +13,7 @@ OpenRouter.
 | Job | Service | Setup cost | Where it runs |
 | --- | --- | --- | --- |
 | Writing help | Apple Intelligence | none | On the Mac |
-| Writing help | OpenRouter | an API key | Cloud |
+| Writing help | OpenRouter | an API key, and a model or Automatic | Cloud |
 | Voice | macOS system voice | none | On the Mac |
 | Voice | ElevenLabs | an API key and a model, then a voice | Cloud |
 
@@ -70,6 +70,40 @@ The backend starts apfel when a screen first asks for its status or generation.
 It reuses the process while its health request succeeds and replaces it when
 the request fails.
 
+## The model list shows the free models, and the search finds the others
+
+`GET /api/v1/models` gives every model of the service, with a price for a
+prompt token and a completion token. Rust marks a model `free` when both
+prices read zero. A model with no price is not known to be free, so it is
+paid. Every model crosses to the screen, with the free ones first.
+
+The list shows the free rows until the user types. September promises that the
+user needs no card, and a paid row in the resting list would break that
+promise: the user picks a name, and the next suggestion fails with a bill they
+cannot pay.
+
+The **Search models** field reaches every model. A user with credit can find
+the model they pay for, and a user without credit never meets one by accident.
+Each word of the query must be in the name or in the id. A paid row reads
+**Paid**. The row in use stays in the list while the words are there, so the
+user always sees what speaks for them now.
+
+The model lists and the voice list are the same control, `PickList`. It is a
+list of 44px rows in two columns, not a dropdown, because a dropdown closes
+when a dwell moves away from it. The 320px card of the space rail asks for one
+column, with `columns={1}`.
+
+The ElevenLabs model list appears twice. The key screen keeps the model beside
+the key that lists it, and the Voice tab of the space rail asks again, where a
+user hears the answer without leaving the conversation. Both write the one
+`speech` setting. The voice list appears once, on `/voice`, beside the service:
+a hundred rows, each with a sample to hear, do not fit a 320px card.
+
+**Automatic** is the first row of the picker, and the default. It names no
+model. The request then carries the free list of the app, and OpenRouter uses
+the first model that answers. One busy model is therefore not one lost
+sentence. A named model replaces that list, and the request asks for it alone.
+
 ## The voice list holds the voices of the account
 
 `GET /v2/voices?page_size=100&voice_type=non-default` gives the list. The web
@@ -105,8 +139,8 @@ provider URL out of the WebView. The samples stay in memory. Leaving the
 cloning page or quitting the app removes them.
 
 After a successful clone, the screen selects ElevenLabs and the new voice. It
-does not replace the current model. It then returns to `/voice`. The account
-list keeps the new row visible while ElevenLabs catches up. A failed request
+does not replace the current model. It then returns to `/voice`. The voice list
+there keeps the new row visible while ElevenLabs catches up. A failed request
 keeps the user on the cloning page with the draft intact.
 
 ## The names cross the boundary

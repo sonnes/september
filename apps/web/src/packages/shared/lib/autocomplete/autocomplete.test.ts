@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Autocomplete } from './autocomplete';
+import { DICTIONARY } from './dictionary';
 
 const CORPUS =
   'the cat sat on the mat. the dog ran in the park. the cat sat on the couch. ' +
@@ -164,5 +165,52 @@ describe('Autocomplete — Phase 2 layered personalization', () => {
     for (let i = 0; i < 20; i++) a.observe('see you at the pool', { chatId: 'A' });
     const hit = a.suggestWord({ prefix: 'p', context: 'see you at the', chatId: 'A' });
     expect(hit[0]?.word).toBe('pool');
+  });
+});
+
+describe('Autocomplete — seedDictionary', () => {
+  it('adds words to the prefix index without touching the n-gram model', () => {
+    const engine = new Autocomplete();
+    engine.train('one two three.');
+    const before = engine.getNextWord('one');
+
+    engine.seedDictionary(['alpha', 'beta', 'gamma']);
+
+    expect(engine.getNextWord('one')).toEqual(before);
+    expect(engine.getCompletions('al')).toContain('alpha');
+  });
+
+  it('ranks by the order of the list', () => {
+    const engine = new Autocomplete();
+    engine.train('nothing here.');
+    engine.seedDictionary(['banana', 'band', 'bandage']);
+
+    expect(engine.getCompletions('ban').slice(0, 3)).toEqual([
+      'banana',
+      'band',
+      'bandage',
+    ]);
+  });
+
+  it('gives the shipped list the words a September user needs', () => {
+    const engine = new Autocomplete();
+    engine.train('nothing here.');
+    engine.seedDictionary(DICTIONARY);
+
+    for (const [typed, wanted] of [
+      ['nur', 'nurse'],
+      ['sorr', 'sorry'],
+      ['thirst', 'thirsty'],
+      ['blank', 'blanket'],
+      ['pillo', 'pillow'],
+    ]) {
+      expect(engine.getCompletions(typed)).toContain(wanted);
+    }
+  });
+
+  it('never offers a slur', () => {
+    for (const word of ['cunt', 'nigga', 'retard', 'faggot', 'spastic']) {
+      expect(DICTIONARY).not.toContain(word);
+    }
   });
 });

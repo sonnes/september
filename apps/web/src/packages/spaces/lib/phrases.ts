@@ -70,16 +70,6 @@ export function sanitizeStarters(starters: string[]): string[] {
     });
 }
 
-/** Whether AI phrases are stale relative to the conversation length. */
-export function isStale(
-  syncedCount: number | undefined,
-  messageCount: number,
-  threshold: number
-): boolean {
-  if (syncedCount == null) return messageCount >= 1;
-  return messageCount - syncedCount >= threshold;
-}
-
 export type PhraseSyncAction = 'seed' | 'regen' | 'none';
 
 /**

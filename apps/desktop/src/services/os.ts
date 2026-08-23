@@ -2,6 +2,7 @@ import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-shell";
 
 import type { OnboardingDraft } from "@/rules/onboarding";
+import { panelStateFrom, type PanelState } from "@/rules/panel";
 import type { SpeechSettings } from "@/services/speech";
 
 /**
@@ -105,8 +106,8 @@ export async function savePath(path: string): Promise<void> {
 export const openInBrowser = (url: string) => open(url);
 
 /**
- * How the sound is made, from the last time the Voice screen saved it. Null
- * before the user opens that screen, and in a browser.
+ * How the sound is made, from the last time the rail card saved it. Null
+ * before the user changes it, and in a browser.
  */
 let speech = await invoke<SpeechSettings | null>("setting_get", {
   request: { key: "speech" },
@@ -166,8 +167,8 @@ export const rememberDismissed = (texts: string[]) =>
   }).catch(() => undefined);
 
 /**
- * The mode each space was left in, by slug, and whether the right card is
- * open.
+ * The mode each space was left in, by slug, and the tab the right card was
+ * left on.
  *
  * Both are answers the user gave once. September keeps them beside the rest
  * of its state, so a new install of the WebView cannot lose them.
@@ -182,15 +183,45 @@ export const rememberModes = (modes: Record<string, string>) =>
     request: { key: "space-modes", value: modes },
   }).catch(() => undefined);
 
-export const panelOpen =
-  (await invoke<boolean | null>("setting_get", {
-    request: { key: "panel-open" },
-  }).catch(() => null)) ?? false;
+/**
+ * The words of a new space, as the user left them.
+ *
+ * A user who types by switch spends minutes on this paragraph, and the rule
+ * that every other writing surface follows holds here too: words are never
+ * lost to a button that was not pressed. `openingPath` still refuses to open
+ * the app on the form — the words are offered back, not reopened onto.
+ */
+export const newSpaceDraft =
+  (await invoke<string | null>("setting_get", {
+    request: { key: "new-space-draft" },
+  }).catch(() => null)) ?? "";
 
-export const rememberPanel = (open: boolean) =>
+export const rememberDraft = (words: string) =>
   invoke("setting_put", {
-    request: { key: "panel-open", value: open },
+    request: { key: "new-space-draft", value: words },
   }).catch(() => undefined);
+
+let panel = panelStateFrom(
+  await invoke<unknown>("setting_get", {
+    request: { key: "panel-open" },
+  }).catch(() => null),
+);
+
+/**
+ * The rail as the user left it. Talk and Notes each draw their own rail, so
+ * the module holds the answer between them: a mode switch must not take the
+ * card back to the tab the app started on.
+ */
+export function currentPanel(): PanelState {
+  return panel;
+}
+
+export const rememberPanel = (state: PanelState) => {
+  panel = state;
+  return invoke("setting_put", {
+    request: { key: "panel-open", value: state },
+  }).catch(() => undefined);
+};
 
 export type Provider = "openrouter" | "elevenlabs";
 
@@ -212,6 +243,17 @@ export interface Voice {
   id: string;
   name: string;
   preview_url: string | null;
+}
+
+/**
+ * One OpenRouter model. The picker shows the free models, and its search
+ * reaches every model, because September promises that the user needs no card.
+ */
+export interface WritingModel {
+  id: string;
+  name: string;
+  /** False when the model needs the credit of the account. */
+  free: boolean;
 }
 
 /** One ElevenLabs model. It decides the quality, the speed, and the languages. */
@@ -267,6 +309,9 @@ export const forgetProvider = (provider: Provider) =>
 export const listVoices = () => invoke<Voice[]>("provider_voices");
 
 export const listModels = () => invoke<Model[]>("provider_models");
+
+export const listWritingModels = () =>
+  invoke<WritingModel[]>("provider_writing_models");
 
 
 // ------------------------------------------------------ where sound comes out

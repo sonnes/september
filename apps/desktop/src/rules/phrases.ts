@@ -268,6 +268,38 @@ export function isKept(text: string, rows: SavedPhrase[]): boolean {
 }
 
 /**
+ * The row for a phrase the user keeps, or nothing when the space holds it.
+ *
+ * Talk and Notes both keep a row from the gutter of the stripe, and the two
+ * must write the same row. The code comes from the generator here, so a model
+ * never chooses one.
+ */
+export function pinnedPhrase(
+  text: string,
+  spaceId: string,
+  rows: SavedPhrase[],
+  at: number = Date.now(),
+): SavedPhrase | null {
+  const key = text.trim().toLowerCase();
+  if (rows.some(r => r.text.trim().toLowerCase() === key)) return null;
+
+  return {
+    id: crypto.randomUUID(),
+    space_id: spaceId,
+    text,
+    kind: 'phrase',
+    code: generateCode(text, {
+      existingCodes: rows
+        .map(r => r.code)
+        .filter((code): code is string => Boolean(code)),
+    }),
+    pinned: true,
+    created_at: at,
+    updated_at: at,
+  };
+}
+
+/**
  * Starter word-count bounds — a starter is an opening prefix, not a sentence.
  * The prompt asks for 3-5 words; these are deliberately one word looser on
  * each side so near-miss model output isn't thrown away.
@@ -287,16 +319,6 @@ export function sanitizeStarters(starters: string[]): string[] {
       const words = s.split(/\s+/).length;
       return words >= STARTER_MIN_WORDS && words <= STARTER_MAX_WORDS;
     });
-}
-
-/** Whether AI phrases are stale relative to the conversation length. */
-export function isStale(
-  syncedCount: number | undefined,
-  messageCount: number,
-  threshold: number
-): boolean {
-  if (syncedCount == null) return messageCount >= 1;
-  return messageCount - syncedCount >= threshold;
 }
 
 export type PhraseSyncAction = 'seed' | 'regen' | 'none';

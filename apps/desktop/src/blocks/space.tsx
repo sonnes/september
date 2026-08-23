@@ -36,6 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  useSpaces,
   useUpdateSpace,
   type Space,
 } from "@/services/data";
@@ -56,10 +57,13 @@ import {
 import { Suggestions } from "@/blocks/suggestions";
 import { countsAsTypedKey } from "@/rules/usage-summary";
 import {
+  composerAction,
   deleteLastWord,
+  freeTitle,
   rememberSpaceMode,
   spaceModeFrom,
   spaceSlug,
+  type ComposerMode,
   type SpaceMode,
 } from "@/rules/spaces";
 
@@ -121,7 +125,8 @@ export function Composer({
   history,
   before,
 }: {
-  mode: SpaceMode;
+  mode: ComposerMode;
+  /** The space the stripe reads. The empty id means no space exists yet. */
   spaceId: string;
   context: string;
   draft: string;
@@ -140,7 +145,8 @@ export function Composer({
 }) {
   const field = useRef<HTMLTextAreaElement>(null);
   const [undoStack, setUndoStack] = useState<string[]>([]);
-  const speaks = mode === "talk";
+  const action = composerAction(mode);
+  const speaks = action.speaks;
 
   // The field grows with its text, up to the height the class holds.
   useEffect(() => {
@@ -165,7 +171,7 @@ export function Composer({
 
   const act = (sentence: string) => {
     const words = sentence.trim();
-    if (!words) return;
+    if (!words || pending) return;
     onAction(words);
     setUndoStack([]);
     field.current?.focus();
@@ -191,10 +197,8 @@ export function Composer({
           autoFocus
           rows={1}
           value={draft}
-          aria-label={speaks ? "Message" : "Words for the note"}
-          placeholder={
-            speaks ? "Write a message..." : "Write words to add to this note..."
-          }
+          aria-label={action.field}
+          placeholder={action.placeholder}
           onChange={(event) => onDraft(event.target.value)}
           onKeyDown={(event) => {
             if (countsAsTypedKey(event.key)) onTypedKey?.();
@@ -216,7 +220,8 @@ export function Composer({
               size="icon"
               aria-label="Undo"
               onClick={undo}
-              disabled={undoStack.length === 0}
+              aria-disabled={undoStack.length === 0}
+              className="aria-disabled:opacity-50"
             >
               <Undo2 aria-hidden />
             </Button>
@@ -225,8 +230,9 @@ export function Composer({
               variant="outline"
               size="icon"
               aria-label="Delete last word"
-              onClick={() => write(deleteLastWord(draft))}
-              disabled={!draft}
+              onClick={() => draft && write(deleteLastWord(draft))}
+              aria-disabled={!draft}
+              className="aria-disabled:opacity-50"
             >
               <Delete aria-hidden />
             </Button>
@@ -235,8 +241,9 @@ export function Composer({
               variant="outline"
               size="icon"
               aria-label="Clear"
-              onClick={() => write("")}
-              disabled={!draft}
+              onClick={() => draft && write("")}
+              aria-disabled={!draft}
+              className="aria-disabled:opacity-50"
             >
               <Trash2 aria-hidden />
             </Button>
@@ -248,18 +255,25 @@ export function Composer({
             <Button
               type="button"
               size="lg"
-              className="rounded-full px-6 font-semibold"
+              className="rounded-full px-6 font-semibold aria-disabled:opacity-50"
               onClick={() => act(draft)}
-              disabled={!draft.trim() || pending}
+              aria-disabled={!draft.trim() || pending}
             >
-              {speaks ? <Volume2 aria-hidden /> : <FileText aria-hidden />}
-              {speaks ? "Speak" : "Add to note"}
+              <ActionIcon mode={mode} />
+              {action.label}
             </Button>
           </div>
         </div>
       </div>
     </div>
   );
+}
+
+/** The mark on the action button. `composerAction` holds everything else. */
+function ActionIcon({ mode }: { mode: ComposerMode }) {
+  if (mode === "talk") return <Volume2 aria-hidden />;
+  if (mode === "notes") return <FileText aria-hidden />;
+  return <Plus aria-hidden />;
 }
 
 /** The name of the space. A new name changes the address of the space too. */
@@ -272,16 +286,37 @@ export function SpaceTitle({
 }) {
   const navigate = useNavigate();
   const update = useUpdateSpace();
+  const { data: spaces } = useSpaces();
   const [title, setTitle] = useState(space.title ?? "");
+  // Why the last name was refused, or nothing. It clears as the user types.
+  const [taken, setTaken] = useState("");
 
-  useEffect(() => setTitle(space.title ?? ""), [space.id, space.title]);
+  useEffect(() => {
+    setTitle(space.title ?? "");
+    setTaken("");
+  }, [space.id, space.title]);
 
   const save = () => {
     const next = title.trim();
     if (!next || next === space.title) {
       setTitle(space.title ?? "");
+      setTaken("");
       return;
     }
+
+    // One slug names one space. A name that another space holds would send
+    // this address to that space, so nothing is written and the words of the
+    // user stay in the field for them to change.
+    const others = (spaces ?? [])
+      .filter((one) => one.id !== space.id)
+      .map((one) => one.title);
+
+    if (!freeTitle(next, others)) {
+      setTaken(`Another space is already called ${next}.`);
+      return;
+    }
+
+    setTaken("");
     update.mutate(
       { id: space.id, title: next },
       {
@@ -292,16 +327,27 @@ export function SpaceTitle({
   };
 
   return (
-    <input
-      value={title}
-      aria-label="Space name"
-      onChange={(event) => setTitle(event.target.value)}
-      onBlur={save}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") event.currentTarget.blur();
-      }}
-      className="hover:bg-accent focus-visible:ring-ring min-w-0 flex-1 rounded-md bg-transparent px-2 py-1 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
-    />
+    <span className="flex min-w-0 flex-1 flex-col justify-center">
+      <input
+        value={title}
+        aria-label="Space name"
+        aria-invalid={Boolean(taken)}
+        onChange={(event) => {
+          setTitle(event.target.value);
+          setTaken("");
+        }}
+        onBlur={save}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") event.currentTarget.blur();
+        }}
+        className="hover:bg-accent focus-visible:ring-ring min-w-0 rounded-md bg-transparent px-2 py-1 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
+      />
+      {taken ? (
+        <span role="alert" className="text-destructive px-2 text-xs">
+          {taken}
+        </span>
+      ) : null}
+    </span>
   );
 }
 /**

@@ -74,10 +74,28 @@ export function spaceFromSlug<T extends { title?: string | null }>(
 }
 
 /**
- * A title that no other space holds.
+ * The title, when no other space holds its slug, and nothing otherwise.
  *
- * Two spaces with one title share one slug, and the address then opens the
- * wrong one, so the title must be free.
+ * Two spaces with one title share one address, and that address then opens the
+ * wrong space. Three writers choose a title — the made-up name, the model, and
+ * the user at the header — and each one asks here first.
+ */
+export function freeTitle(
+  candidate: string | null | undefined,
+  existing: readonly (string | null | undefined)[],
+): string | null {
+  // A title with no letter and no digit has no address of its own: `spaceSlug`
+  // falls back to `space`, which names the kind of row and not this row.
+  if (!/[a-z0-9]/i.test(candidate ?? "")) return null;
+
+  const slug = spaceSlug(candidate);
+  const taken = new Set(existing.map((title) => spaceSlug(title)));
+
+  return taken.has(slug) ? null : candidate!;
+}
+
+/**
+ * A title that no other space holds.
  *
  * The first space is `General`. A later space takes three words, which read
  * better in a tab than `New space 4` and tell one space from another. A model
@@ -90,8 +108,7 @@ export function newSpaceTitle(
   existing: readonly (string | null | undefined)[],
   pick: (limit: number) => number = (limit) => Math.floor(Math.random() * limit),
 ): string {
-  const taken = new Set(existing.map((title) => spaceSlug(title)));
-  const free = (title: string) => !taken.has(spaceSlug(title));
+  const free = (title: string) => freeTitle(title, existing) !== null;
 
   if (free(FIRST_SPACE_TITLE)) return FIRST_SPACE_TITLE;
 
@@ -110,6 +127,54 @@ export function newSpaceTitle(
 
 /** A space opens in one of two modes, and the address holds which one. */
 export type SpaceMode = "talk" | "notes";
+
+/**
+ * Where a console writes. Two of them are the modes of a space; the third is
+ * the screen that makes one, which has no space to write into yet.
+ *
+ * This is not `SpaceMode`. That type is the mode a space is *kept* in, which
+ * `spaceModeFrom` and `spaceParams` both read, and a screen that no space
+ * exists for must never be written into that setting.
+ */
+export type ComposerMode = SpaceMode | "new";
+
+export interface ComposerAction {
+  /** The button under the field. */
+  label: string;
+  /** The name that a reader gives the field. */
+  field: string;
+  placeholder: string;
+  /** The words leave as sound, so the sound output belongs beside them. */
+  speaks: boolean;
+}
+
+const COMPOSER_ACTIONS: Record<ComposerMode, ComposerAction> = {
+  talk: {
+    label: "Speak",
+    field: "Message",
+    placeholder: "Write a message...",
+    speaks: true,
+  },
+  notes: {
+    label: "Add to note",
+    field: "Words for the note",
+    placeholder: "Write words to add to this note...",
+    speaks: false,
+  },
+  new: {
+    label: "Create space",
+    field: "What is this space for?",
+    // The placeholder says what to write. An example sentence read as words
+    // the screen had already written, which is the wrong thing to show a
+    // user who is deciding whether they still have to type at all.
+    placeholder: "Say who you speak to here, and what you talk about.",
+    speaks: false,
+  },
+};
+
+/** What the console says and does in one mode. */
+export const composerAction = (mode: ComposerMode): ComposerAction =>
+  COMPOSER_ACTIONS[mode];
 
 /** The mode of each space, by slug. A space that is absent opens in Talk. */
 export type SpaceModes = Record<string, string>;
@@ -212,4 +277,97 @@ export function isAutoTitle(title: string | null | undefined): boolean {
   // A name of three words is one that September made up too.
   const words = slug.split("-");
   return words.length === 3 && words.every((word) => NAME_WORDS.includes(word));
+}
+
+/**
+ * The frame that the create screen gives the suggestion engine.
+ *
+ * A new space holds no context yet — writing it is the point of the screen.
+ * With none, the completion lane answers as if the user were talking to
+ * somebody, because `OPENING_PROMPT` and `COMPLETION_PROMPT` are written for a
+ * conversation. This line stands in for the context of the space, so the model
+ * offers ways to finish a description instead.
+ */
+export const NEW_SPACE_CONTEXT =
+  "I am describing a new space in my communication app: who I speak to here, and what we talk about.";
+
+/**
+ * The openers on the new-space screen.
+ *
+ * A space is for one person, one place, or one subject, and each opener names
+ * one of the three. They stop mid-sentence on purpose: the stripe and the word
+ * tiles carry on from there, so a press costs the user nothing and the words
+ * that follow are still their own. A finished sentence would put words in
+ * their mouth, which is the one thing this screen must not do.
+ */
+export const NEW_SPACE_OPENERS: readonly string[] = [
+  "I speak to my ",
+  "I use this at ",
+  "We talk about ",
+];
+
+/** How long a model may take before the screen stops waiting for it. */
+export const MODEL_WAIT_MS = 20_000;
+
+/** The three writes that a new space needs. */
+export type CreateStepId = "space" | "name" | "phrases";
+
+export type StepState = "waiting" | "running" | "done" | "skipped" | "failed";
+
+export interface CreateStep {
+  id: CreateStepId;
+  label: string;
+  state: StepState;
+  /** Why a step did not run, or did not land. */
+  note?: string;
+}
+
+export interface CreateProgress {
+  /** How far the run has reached. */
+  at: "space" | "models" | "done";
+  /** A writing service is connected. Without one, no model step runs. */
+  hasWriting: boolean;
+  /** Why a step did not land, by step. */
+  failed?: Partial<Record<CreateStepId, string>>;
+}
+
+const NO_SERVICE = "Skipped — no writing service is connected";
+
+const STEP_LABELS: Record<CreateStepId, string> = {
+  space: "Making the space",
+  name: "Naming it",
+  phrases: "Writing the first phrases",
+};
+
+const STEP_ORDER: readonly CreateStepId[] = ["space", "name", "phrases"];
+
+/**
+ * What the screen shows while a new space is made.
+ *
+ * The user waits on two model calls, so the work must be on the screen in
+ * words while it runs, and not in the label of a button that a reader never
+ * hears. A step that cannot run says why: a screen that named work it was not
+ * doing would be lying to a user with no writing service.
+ */
+export function createSteps(progress: CreateProgress): CreateStep[] {
+  const { at, hasWriting, failed = {} } = progress;
+
+  const stateOf = (id: CreateStepId): Pick<CreateStep, "state" | "note"> => {
+    if (failed[id]) return { state: "failed", note: failed[id] };
+
+    if (id === "space") return { state: at === "space" ? "running" : "done" };
+
+    // The two model steps run together, and neither runs at all without a
+    // service to run it.
+    if (!hasWriting) return { state: "skipped", note: NO_SERVICE };
+    if (at === "space") return { state: "waiting" };
+
+    return { state: at === "models" ? "running" : "done" };
+  };
+
+  return STEP_ORDER.map((id) => ({
+    id,
+    label: STEP_LABELS[id],
+    ...stateOf(id),
+  }));
 }

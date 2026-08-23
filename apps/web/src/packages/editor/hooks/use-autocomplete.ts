@@ -8,13 +8,14 @@ import { useMessages } from '@/packages/spaces';
 import {
   Autocomplete,
   AutocompletePersistence,
+  DICTIONARY,
   type AnyEngineSnapshot,
 } from '@/packages/shared/lib/autocomplete';
 import { tokenize } from '@/packages/shared/lib/autocomplete';
 
-// Module-level caches. The base corpus is ~2 MB and shared across all users;
-// fetching once per tab is enough.
-let cachedDictionary: Record<string, number> | null = null;
+// Module-level caches. The base corpus is shared across all users; fetching
+// once per tab is enough. The word list is bundled, not fetched — see
+// `DICTIONARY`.
 let cachedCorpus: string | null = null;
 let loadStaticDataPromise: Promise<void> | null = null;
 
@@ -94,20 +95,14 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
     let cancelled = false;
 
     const loadStaticOnce = async () => {
-      if (cachedDictionary && cachedCorpus) return;
+      if (cachedCorpus) return;
       if (!loadStaticDataPromise) {
         loadStaticDataPromise = (async () => {
           try {
-            const [dictRes, corpusRes] = await Promise.all([
-              fetch('/dictionary.json'),
-              fetch('/corpus.txt'),
-            ]);
-            cachedDictionary = await dictRes.json();
-            cachedCorpus = await corpusRes.text();
+            cachedCorpus = await (await fetch('/corpus.txt')).text();
           } catch (error) {
-            console.warn('Failed to load default dictionary/corpus:', error);
+            console.warn('Failed to load the seed corpus:', error);
             cachedCorpus = cachedCorpus ?? '';
-            cachedDictionary = cachedDictionary ?? {};
           }
         })();
       }
@@ -139,6 +134,11 @@ export function useAutocomplete(options: UseAutocompleteOptions = {}): UseAutoco
         const seed = [baseCorpus, userCorpus].filter(Boolean).join('\n');
         if (seed.length > 0) engine.train(seed);
       }
+
+      // The seed sentences cover less than half of the most common words in
+      // English. The word list gives the prefix index its breadth, and it goes
+      // in after both paths above, because each of them clears the engine.
+      engine.seedDictionary(DICTIONARY);
 
       observedMessageIds.current = new Set();
       if (includeMessages) {

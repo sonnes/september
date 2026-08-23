@@ -47,9 +47,37 @@ All pre-v2 APIs (`train`, `getCompletions`, `getNextWord`, `getNextPhrase`,
 - **Client-side Persistence**: `AutocompletePersistence` + `getSnapshot` /
   `restoreFromSnapshot` give free cold-start speedup without exposing the
   platform storage API to the prediction engine.
+- **Seed Dictionary**: `seedDictionary(DICTIONARY)` loads the 5,000 most
+  frequent words of spoken English into the prefix index. The seed corpus
+  alone covers under half of the 300 commonest English words, so prefixes
+  like `nur` and `sorr` returned nothing without it. Measured on held-out
+  care requests, the list raises keystroke savings from 37.6% to 47.8%.
 - **Sample Data**: Pre-built corpora for testing and demonstration.
 - **Backward-compatible API**: Simple Autocomplete-style methods alongside
   the new feature-rich API.
+
+## The seed dictionary
+
+`dictionary.ts` holds 5,000 words in order of frequency. It is generated —
+rebuild it with `node scripts/build-dictionary.mjs` from `apps/desktop`, which
+writes the same file to both apps.
+
+The source is the OpenSubtitles 2018 word counts of hermitdave, under the MIT
+license. Subtitles record speech, and speech is what a September user writes.
+A list of web text ranks `sorry` at 2263 and `tired` at 5678; this list ranks
+them at 120 and 727.
+
+The words go to the trie and the word-frequency map only. A flat word list
+holds no real pairs of words, so it must never reach the n-gram model. Weight
+falls as the square root of the rank.
+
+`seedDictionary` must run after `train()` or `restoreFromSnapshot()`, because
+both of those clear the engine.
+
+Slurs and strong obscenity are removed from the list. A user of September
+points with less accuracy than a user of a mouse, and a wrong tap speaks the
+word aloud. This blocks the list, not the user: the user layer still learns
+every word that the user writes.
 
 ## Installation
 

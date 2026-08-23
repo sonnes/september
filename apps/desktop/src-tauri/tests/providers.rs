@@ -175,7 +175,7 @@ async fn eleven_labs_quota_keeps_the_reset_and_raw_counts() {
 
 #[tokio::test]
 async fn open_router_generation_reports_its_model_and_measured_cost() {
-    let (base, _requests) = serve_once(
+    let (base, requests) = serve_once(
         "200 OK",
         json!({
             "model": "qwen/qwen3-next-80b-a3b-instruct:free",
@@ -196,6 +196,7 @@ async fn open_router_generation_reports_its_model_and_measured_cost() {
         temperature: None,
         max_tokens: None,
         response_format: None,
+        model: None,
     };
 
     let answer = open_router(&base)
@@ -203,11 +204,90 @@ async fn open_router_generation_reports_its_model_and_measured_cost() {
         .await
         .unwrap();
 
+    // No choice sends the free list, so one bad model is not one bad day.
+    let head = requests.recv().unwrap();
+    assert!(head.contains("\"models\""), "{head}");
     assert_eq!(
         answer.model.as_deref(),
         Some("qwen/qwen3-next-80b-a3b-instruct:free")
     );
     assert_eq!(answer.cost_usd, Some(0.003));
+}
+
+#[tokio::test]
+async fn the_writing_models_hold_the_free_ones_first() {
+    let (base, requests) = serve_once(
+        "200 OK",
+        json!({ "data": [
+            {
+                "id": "openai/gpt-5",
+                "name": "OpenAI: GPT-5",
+                "pricing": { "prompt": "0.00001", "completion": "0.00003" }
+            },
+            {
+                "id": "qwen/qwen3-next-80b-a3b-instruct:free",
+                "name": "Qwen: Qwen3 Next 80B (free)",
+                "pricing": { "prompt": "0", "completion": "0" }
+            },
+            {
+                "id": "acme/no-price",
+                "name": "Acme: no price",
+                "pricing": { "prompt": "", "completion": "" }
+            }
+        ] }),
+    );
+
+    let models = open_router(&base).writing_models("sk-test").await.unwrap();
+
+    let head = requests.recv().unwrap();
+    assert!(head.contains("GET /api/v1/models"), "{head}");
+    // The search reaches every model, so every model crosses. The free rows
+    // come first, because the picker shows them before the user types.
+    // A model with no price is not known to be free.
+    assert_eq!(
+        models
+            .iter()
+            .map(|model| (model.id.as_str(), model.free))
+            .collect::<Vec<_>>(),
+        vec![
+            ("qwen/qwen3-next-80b-a3b-instruct:free", true),
+            ("acme/no-price", false),
+            ("openai/gpt-5", false),
+        ]
+    );
+    assert_eq!(models[0].name, "Qwen: Qwen3 Next 80B (free)");
+}
+
+#[tokio::test]
+async fn a_chosen_model_replaces_the_free_list() {
+    let (base, requests) = serve_once(
+        "200 OK",
+        json!({
+            "model": "qwen/qwen3-next-80b-a3b-instruct:free",
+            "choices": [{ "message": {"content": "Hello"}, "finish_reason": "stop" }],
+            "usage": { "prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2 }
+        }),
+    );
+    let request = ApfelGenerateRequest {
+        messages: vec![ApfelMessage::user("Say hello")],
+        temperature: None,
+        max_tokens: None,
+        response_format: None,
+        model: Some("qwen/qwen3-next-80b-a3b-instruct:free".into()),
+    };
+
+    open_router(&base)
+        .generate("sk-test", &request)
+        .await
+        .unwrap();
+
+    // The user named one model, so the request asks for that one only.
+    let head = requests.recv().unwrap();
+    assert!(
+        head.contains("\"model\":\"qwen/qwen3-next-80b-a3b-instruct:free\""),
+        "{head}"
+    );
+    assert!(!head.contains("\"models\""), "{head}");
 }
 
 #[tokio::test]

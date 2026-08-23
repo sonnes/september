@@ -76,18 +76,25 @@ phrase with its code in one tap, Dismiss persists to `localStorage`
    replacing starter AI rows while preserving pinned rows. (Spaces created
    before this feature backfill the same way the next time they're opened.)
    In the desktop app a space context alone is enough: `decidePhraseSync` seeds
-   when `hasContext` is true, so a space created from the "what is this space
-   for?" screen has phrases before its first message.
+   when `hasContext` is true. The "what is this space for?" screen calls
+   `seedPhrases` itself and waits for it, so a new space opens with a full
+   stripe instead of one that fills a moment later. It seeds from the words the
+   user typed, not from the note the title model writes, so the two model calls
+   run beside each other rather than one after the other — the words alone are
+   what `hasContext` already treats as enough. `useSyncPhrases` covers a space
+   that reaches Talk without phrases.
 3. **Regenerate on open** — when a space is reopened and its history has grown
-   stale (`isStale` / `PHRASES_STALE_AFTER` new messages since the last sync),
-   the AI set is regenerated from recent history + context. Pinned rows stay.
+   stale (`decidePhraseSync` / `PHRASES_STALE_AFTER` new messages since the last
+   sync), the AI set is regenerated from recent history + context. Pinned rows
+   stay.
 4. **Keep / promote** — pinning an AI phrase (the tab's "keep" action, or the
    suggestion stripe's pin button) flips it to `pinned: true` via
    `addManualPhrase`, locking it — and its code — in against future
    regeneration.
 
 `Space.phrases_synced_count` records the message count at the last generation,
-driving the staleness check.
+driving the staleness check. A generation that returns no usable rows leaves
+the count alone, so the next message tries again instead of waiting for six.
 
 ## Generation
 

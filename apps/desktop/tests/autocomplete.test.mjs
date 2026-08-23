@@ -3,7 +3,9 @@ import test from "node:test";
 
 import {
   applySuggestion,
+  Autocomplete,
   createEngine,
+  DICTIONARY,
   suggestionsFor,
 } from "../src/autocomplete/index.ts";
 
@@ -52,4 +54,63 @@ test("the words of a space come back in that space", () => {
   const inClinic = suggestionsFor(engine, "please pass the ", "clinic");
 
   assert.ok(inClinic.includes("stethoscope"));
+});
+
+test("a dictionary word is offered even when the seed corpus never uses it", () => {
+  const engine = createEngine();
+
+  assert.ok(suggestionsFor(engine, "she was hon").includes("honest"));
+});
+
+test("the dictionary ranks a common word over a rare one", () => {
+  const words = createEngine()
+    .getCompletionsAdvanced("su", { maxResults: 200 })
+    .map((one) => one.word);
+
+  assert.ok(words.includes("sure"));
+  assert.ok(words.includes("suspect"));
+  assert.ok(words.indexOf("sure") < words.indexOf("suspect"));
+});
+
+test("the words a September user needs are known from the start", () => {
+  const engine = createEngine();
+
+  for (const [typed, wanted] of [
+    ["nur", "nurse"],
+    ["bed", "bed"],
+    ["sorr", "sorry"],
+    ["thirst", "thirsty"],
+    ["blank", "blanket"],
+  ]) {
+    assert.ok(suggestionsFor(engine, typed).includes(wanted), wanted);
+  }
+});
+
+test("the dictionary does not predict a next word by itself", () => {
+  const plain = new Autocomplete();
+  plain.train("one two three.");
+  const before = plain.getNextWord("one");
+
+  plain.seedDictionary(["alpha", "beta", "gamma"]);
+
+  assert.deepEqual(plain.getNextWord("one"), before);
+  assert.ok(plain.getCompletions("al").includes("alpha"));
+});
+
+test("the dictionary keeps the order it was given", () => {
+  const plain = new Autocomplete();
+  plain.train("nothing here.");
+  plain.seedDictionary(["banana", "band", "bandage"]);
+
+  assert.deepEqual(plain.getCompletions("ban").slice(0, 3), [
+    "banana",
+    "band",
+    "bandage",
+  ]);
+});
+
+test("the dictionary holds no slur", () => {
+  for (const word of ["cunt", "nigga", "retard", "faggot", "spastic"]) {
+    assert.equal(DICTIONARY.includes(word), false, word);
+  }
 });

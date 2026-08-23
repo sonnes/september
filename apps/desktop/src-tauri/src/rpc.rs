@@ -18,7 +18,7 @@ use crate::{
     camera::{self, VirtualCameraStatus},
     providers::{
         CreatedVoice, ElevenLabsQuota, Model, Provider, ProviderKeys, ProviderStatus, Providers,
-        Voice,
+        Voice, WritingModel,
     },
     repository::{AnalyticsEvent, Message, Note, Repository, SavedPhrase, Space, SpacePatch},
     speech::{self, SpeechSettings},
@@ -624,6 +624,20 @@ pub(crate) async fn provider_voices(keys: State<'_, ProviderKeys>) -> RpcResult<
         return Ok(Vec::new());
     };
     Providers::default().voices(&key).await.map_err(rpc_error)
+}
+
+/// The free OpenRouter models for the stored key. Empty without a key.
+#[tauri::command]
+pub(crate) async fn provider_writing_models(
+    keys: State<'_, ProviderKeys>,
+) -> RpcResult<Vec<WritingModel>> {
+    let Some(key) = keys.get(Provider::OpenRouter).map_err(rpc_error)? else {
+        return Ok(Vec::new());
+    };
+    Providers::default()
+        .writing_models(&key)
+        .await
+        .map_err(rpc_error)
 }
 
 /// The ElevenLabs models for the stored key. The list is empty without a key.

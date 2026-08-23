@@ -6,17 +6,11 @@ import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 
 import {
+  DEFAULT_DRAFT,
   SPEAKING_STYLES,
   WRITING_SERVICES,
   type OnboardingDraft,
@@ -25,6 +19,7 @@ import {
   BLANK_CONNECTIONS,
   currentSetup,
   listModels,
+  listWritingModels,
   openInBrowser,
   readConnections,
   saveSpeech,
@@ -33,25 +28,30 @@ import {
   type Model,
   type Provider,
   type ProviderStatus,
+  type WritingModel,
 } from "@/services/os";
 import { speechSettings } from "@/services/speech";
+import { searchModels } from "@/rules/pick";
 import {
   CONNECTION_GUIDES,
   type ConnectionId,
 } from "@/rules/settings-nav";
+import { PickList } from "@/blocks/pick-list";
 import { CloudStatus, KeyPanel, Mark, Status } from "@/blocks/services";
 
 function useSetup(): [
   OnboardingDraft,
   (patch: Partial<OnboardingDraft>) => void,
 ] {
-  const [setup, setSetup] = useState(currentSetup());
+  // A browser without the Tauri backend has no saved setup, so the defaults
+  // draw the screen. `pnpm dev` shows the controls instead of throwing.
+  const [setup, setSetup] = useState(() => currentSetup() ?? DEFAULT_DRAFT);
 
   return [
-    setup!,
+    setup,
     (patch) => {
       // The screen shows the new answer at once. Rust keeps it behind that.
-      setSetup((current) => ({ ...current!, ...patch }));
+      setSetup((current) => ({ ...current, ...patch }));
       void updateSetup(patch);
     },
   ];
@@ -293,7 +293,11 @@ export function ConnectionScreen({ provider }: { provider: ConnectionId }) {
         {guide.name}.
       </p>
 
-      {provider === "elevenlabs" ? <ModelChoice connected={status.connected} /> : null}
+      {provider === "elevenlabs" ? (
+        <VoiceModelChoice connected={status.connected} />
+      ) : (
+        <WritingModelChoice connected={status.connected} />
+      )}
 
       <div className="border-t pt-6">
         <Button
@@ -310,6 +314,78 @@ export function ConnectionScreen({ provider }: { provider: ConnectionId }) {
   );
 }
 
+/** The row that asks for no model, and keeps the free list of the app. */
+const AUTOMATIC = "automatic";
+
+/**
+ * The OpenRouter model, on the screen that holds the key.
+ *
+ * The list shows the free models, because September promises that the user
+ * needs no card. The search reaches every model of the service, so a user with
+ * credit can find the model they pay for. A paid row says so.
+ *
+ * **Automatic** asks for no model: the app then sends its own free list, and
+ * the first model that answers writes the suggestion.
+ */
+function WritingModelChoice({ connected }: { connected: boolean }) {
+  const [models, setModels] = useState<WritingModel[] | null>(null);
+  const [setup, change] = useSetup();
+
+  useEffect(() => {
+    if (!connected) return;
+    let live = true;
+    void listWritingModels()
+      .then((found) => {
+        if (live) setModels(found);
+      })
+      .catch(() => {
+        if (live) setModels([]);
+      });
+    return () => {
+      live = false;
+    };
+  }, [connected]);
+
+  if (!connected) return null;
+
+  const chosen = setup.writingModel || AUTOMATIC;
+  // Automatic is free, so it sits at the head of the resting list and leaves
+  // when the words do not find it.
+  const rows = [
+    { id: AUTOMATIC, name: "Automatic (free models)", free: true },
+    ...(models ?? []).map((model) => ({
+      ...model,
+      note: model.free ? undefined : "Paid",
+    })),
+  ];
+
+  return (
+    <Section
+      title="Which model"
+      description="Automatic uses the free models of September, and moves to the next one when a model is busy."
+    >
+      {models === null ? (
+        <Skeleton className="h-24 w-full" />
+      ) : (
+        <PickList
+          rows={rows}
+          value={chosen}
+          onPick={(id) =>
+            change({ writingModel: id === AUTOMATIC ? "" : id })
+          }
+          label="Search models"
+          filter={(all, query) => searchModels(all, query, chosen)}
+        />
+      )}
+      <p className="text-muted-foreground max-w-md text-sm">
+        {models?.length === 0
+          ? "No models came back from OpenRouter. Automatic still writes."
+          : "The list shows the free models. Search to reach every model of OpenRouter. A model marked Paid uses the credit of your account."}
+      </p>
+    </Section>
+  );
+}
+
 /**
  * The ElevenLabs model, on the screen that holds the key.
  *
@@ -317,7 +393,7 @@ export function ConnectionScreen({ provider }: { provider: ConnectionId }) {
  * `speechSettings()` gives the model in use, and `saveSpeech` keeps the new
  * one at once. There is no Save button to forget.
  */
-function ModelChoice({ connected }: { connected: boolean }) {
+function VoiceModelChoice({ connected }: { connected: boolean }) {
   const [models, setModels] = useState<Model[] | null>(null);
   const [modelId, setModelId] = useState(() => speechSettings().modelId);
 
@@ -351,25 +427,19 @@ function ModelChoice({ connected }: { connected: boolean }) {
       description="It decides the quality, the speed, and the price of each message."
     >
       {models === null ? (
-        <Skeleton className="h-11 w-full max-w-md" />
+        <Skeleton className="h-24 w-full" />
       ) : models.length === 0 ? (
         <p className="text-muted-foreground text-sm">
           No models came back from ElevenLabs.
         </p>
       ) : (
         <>
-          <Select value={modelId} onValueChange={choose}>
-            <SelectTrigger aria-label="Model" className="h-11 w-full max-w-md">
-              <SelectValue placeholder="Pick a model" />
-            </SelectTrigger>
-            <SelectContent>
-              {models.map((option) => (
-                <SelectItem key={option.id} value={option.id}>
-                  {option.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <PickList
+            rows={models}
+            value={modelId}
+            onPick={choose}
+            label="Search models"
+          />
           {/* A model name says little. The service supplies the sentence
               that tells a user what the choice costs and gives. */}
           {chosen?.description ? (

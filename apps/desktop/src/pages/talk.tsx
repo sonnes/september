@@ -7,7 +7,7 @@ import {
   Square,
   Volume2,
 } from "lucide-react";
-import { describeSpace } from "@/services/ai";
+import { Button } from "@/components/ui/button";
 import { recordMessageUsage } from "@/services/usage";
 import {
   useMessages,
@@ -15,7 +15,6 @@ import {
   usePutPhrase,
   useSendMessage,
   useSpaces,
-  useUpdateSpace,
   type Message,
   type Space,
 } from "@/services/data";
@@ -23,11 +22,8 @@ import {
   RightPanel,
   ScreenHeader,
 } from "@/blocks/screen";
-import { PanelRail } from "@/blocks/phrase-panel";
-import {
-  generateCode,
-  type SavedPhrase,
-} from "@/rules/phrases";
+import { PanelRail } from "@/blocks/space-panel";
+import { pinnedPhrase } from "@/rules/phrases";
 import { useSyncPhrases } from "@/services/phrase-sync";
 import {
   speak,
@@ -35,11 +31,7 @@ import {
   useSpeaking,
   useVoiceFallback,
 } from "@/services/speech";
-import {
-  isAutoTitle,
-  spaceFromSlug,
-  transcriptPage,
-} from "@/rules/spaces";
+import { spaceFromSlug, spaceSlug, transcriptPage } from "@/rules/spaces";
 
 import {
   Composer,
@@ -47,7 +39,6 @@ import {
   SpaceDock,
   SpaceTitle,
   spaceParams,
-  talkParams,
   useRememberMode,
 } from "@/blocks/space";
 // ------------------------------------------------------------------- talk
@@ -73,7 +64,6 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
   const { data: phrases } = usePhrases(space.id);
   const send = useSendMessage(space.id);
   const putPhrase = usePutPhrase();
-  const update = useUpdateSpace();
   const navigate = useNavigate();
 
   // A model writes the phrases of this space, and writes them again as the
@@ -97,52 +87,8 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
 
   /** Keeps a row of the stripe, so a regeneration cannot take it away. */
   const keep = (text: string) => {
-    if (phrases?.some((row) => row.text.toLowerCase() === text.toLowerCase())) return;
-    const at = Date.now();
-    const codes = (phrases ?? [])
-      .map((row) => row.code)
-      .filter((code): code is string => Boolean(code));
-
-    const row: SavedPhrase = {
-      id: crypto.randomUUID(),
-      space_id: space.id,
-      text,
-      kind: "phrase",
-      code: generateCode(text, { existingCodes: codes }),
-      pinned: true,
-      created_at: at,
-      updated_at: at,
-    };
-    putPhrase.mutate(row);
-  };
-
-  /**
-   * The first message says who the space is for, so a model reads it once and
-   * gives the space a name and a note. Every later message skips this.
-   */
-  const describe = (first: string) => {
-    if (spoken.length > 0) return;
-
-    void describeSpace(first)
-      .then((answer) => {
-        if (!answer) return;
-
-        // A title the user typed stays, and so does a note the user wrote.
-        const title =
-          answer.title && isAutoTitle(space.title) ? answer.title : undefined;
-        const context = space.context?.trim() ? undefined : answer.context;
-        if (!title && !context) return;
-
-        return update
-          .mutateAsync({ id: space.id, title, context })
-          .then(() => {
-            // A new title makes a new slug, and the open address holds the
-            // old one. Without this the screen goes blank.
-            if (title) navigate({ ...talkParams({ title }), replace: true });
-          });
-      })
-      // A service that fails leaves the made-up title. Nothing is lost.
-      .catch(() => undefined);
+    const row = pinnedPhrase(text, space.id, phrases ?? []);
+    if (row) putPhrase.mutate(row);
   };
 
   const say = (sentence: string) => {
@@ -151,7 +97,6 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
     send.mutate(sentence, {
       onSuccess: () => {
         void recordMessageUsage(sentence, typed, space.id);
-        describe(sentence);
         setDraft("");
         keysTyped.current = 0;
       },
@@ -212,6 +157,23 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
                   Write a sentence below, then press Speak. What you say shows
                   here.
                 </p>
+                {/* A space that was skipped has a made-up name and no note.
+                    Talk reads that note for every suggestion and every
+                    phrase, so a space without one is worth the asking. */}
+                {space.context?.trim() ? null : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() =>
+                      navigate({
+                        to: "/spaces/$slug/notes",
+                        params: { slug: spaceSlug(space.title) },
+                      })
+                    }
+                  >
+                    Tell September what this space is for
+                  </Button>
+                )}
               </div>
             ) : (
               slice.map((message) => (

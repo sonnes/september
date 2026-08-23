@@ -103,12 +103,22 @@ collapse to a list when the row is full, measured by overflow, not by a count.
 
 The plus of the dock, and the plus of the space list, both open `/spaces/new`.
 No space exists at that address. The screen asks what the space is for, and the
-words of the user become the note of the new space. A model writes the title
-and puts its own note under those words, after a blank line. A space that the
-user skips takes a name of three words, such as `Amber Cedar Meadow`.
+words of the user become the note of the new space. It is a Talk screen with no
+transcript, and it writes through the same `Composer` as every mode, so the
+screen that asks for the most typing is not the one screen without the word
+tiles. A model writes the title and puts its own note under those words, after
+a blank line. A second model writes the first phrases from the same words, and
+the two run together. The screen waits for all three writes, so the space opens
+with a full stripe. A space that the user skips opens at once, waits for no
+model, and takes a name of three words, such as `Amber Cedar Meadow`.
 
-The app never opens on this address, because the words of a form do not survive
-a restart.
+While the models run, the three steps are drawn where the transcript would be,
+in a `role="status"` region, and Cancel stays live throughout. A step that
+cannot run says why.
+
+The app never opens on this address. The words are kept in the
+`new-space-draft` setting and offered back on the next visit: the app refuses
+to open on a form, which is not the same as losing what was typed into it.
 
 The desktop app has no per-mode working-set slot in Talk. The note tabs sit
 above the dock in Notes mode, and the first of them is About, which opens the
@@ -118,6 +128,16 @@ The mode of each space is kept by slug, in the `space-modes` setting, so the
 space list opens each space the way the user left it. The desktop app keeps
 this in SQLite, not in the browser storage.
 
-The right rail holds one tab, Phrases, and expands to a 320px card. `Voice` and
-`Display` are not on the desktop rail: the voice has a screen of its own, and
-the desktop app has no display window.
+The right rail holds two tabs, Phrases and Voice, and expands to a 320px card.
+The Voice card holds two questions only: which ElevenLabs model, and the three
+sliders. Both are heard in the next sentence. It repeats the model question
+that the ElevenLabs key screen asks, because a message sounds like the model as
+much as the voice. Who speaks and which voice are not in the card: a service is
+chosen once, and an account holds a hundred voices, each one to be heard before
+it is taken, so both stay on `/voice` with the cloning. `Display` is not on the
+desktop rail: the desktop app has no display window.
+
+The tabs and the saved state are rules, in `src/rules/panel.ts`: `PANEL_TABS`,
+and `panelStateFrom`, which reads the plain boolean the `panel-open` setting
+held while Phrases was the only tab. The rail is
+`apps/desktop/src/blocks/space-panel.tsx`.

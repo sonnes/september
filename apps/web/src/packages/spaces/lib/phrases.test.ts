@@ -7,7 +7,6 @@ import {
   decidePhraseSync,
   dedupeAgainstPinned,
   formatPhraseHistory,
-  isStale,
   rowKind,
   sanitizeStarters,
   topPhrases,
@@ -94,18 +93,6 @@ describe('sanitizeStarters', () => {
       'I would like',
       'Could we maybe schedule something for',
     ]);
-  });
-});
-
-describe('isStale', () => {
-  it('is stale when never seeded and there is at least one message', () => {
-    expect(isStale(undefined, 1, PHRASES_STALE_AFTER)).toBe(true);
-    expect(isStale(undefined, 0, PHRASES_STALE_AFTER)).toBe(false);
-  });
-
-  it('is stale only once enough new messages accumulate', () => {
-    expect(isStale(4, 4 + PHRASES_STALE_AFTER - 1, PHRASES_STALE_AFTER)).toBe(false);
-    expect(isStale(4, 4 + PHRASES_STALE_AFTER, PHRASES_STALE_AFTER)).toBe(true);
   });
 });
 

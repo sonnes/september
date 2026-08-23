@@ -130,7 +130,8 @@ export function Suggestions({
 
   // The word engine answers from the words of the user, with no service and
   // no wait.
-  const words = useSuggestions(spaceId, text);
+  // A space that does not exist yet names no lane of the engine.
+  const words = useSuggestions(spaceId || undefined, text);
   const fromModel = useCompletions({ text, context, history });
   const stripes = useStripes({
     text,

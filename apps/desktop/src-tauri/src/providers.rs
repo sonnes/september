@@ -118,6 +118,51 @@ pub struct CreatedVoice {
     pub id: String,
 }
 
+/// One OpenRouter model the user can choose.
+///
+/// September promises that the user needs no card, so the picker shows the
+/// free rows until the user searches. `free` tells the screen which rows those
+/// are, and which rows to mark. It carries no price: a user who cannot pay
+/// needs the answer, not the number.
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct WritingModel {
+    pub id: String,
+    pub name: String,
+    /// True when a prompt token and a completion token both cost zero.
+    pub free: bool,
+}
+
+/// One row of the OpenRouter model list, before the price decides.
+#[derive(Debug, Clone, Deserialize)]
+struct OpenRouterModelRow {
+    id: String,
+    name: String,
+    #[serde(default)]
+    pricing: OpenRouterPricing,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+struct OpenRouterPricing {
+    #[serde(default)]
+    prompt: String,
+    #[serde(default)]
+    completion: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct OpenRouterModelList {
+    data: Vec<OpenRouterModelRow>,
+}
+
+/// OpenRouter gives a price as a string of dollars for one token. A free
+/// model reads `0`. An absent price is not known to be free, so it is paid.
+fn costs_nothing(price: &str) -> bool {
+    price
+        .trim()
+        .parse::<f64>()
+        .is_ok_and(|dollars| dollars == 0.0)
+}
+
 /// One ElevenLabs model. It decides the quality, the speed, and the languages.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Model {
@@ -302,12 +347,22 @@ impl Providers {
         request: &crate::apfel::ApfelGenerateRequest,
     ) -> Result<crate::apfel::ApfelGeneration> {
         let mut body = serde_json::json!({
-            "models": OPEN_ROUTER_MODELS,
             "messages": request.messages,
             "temperature": request.temperature,
             "max_tokens": request.max_tokens,
             "usage": { "include": true },
         });
+        // A user who named a model gets that model. A user who named none
+        // gets the free list, where the first model that answers wins.
+        match request
+            .model
+            .as_deref()
+            .map(str::trim)
+            .filter(|id| !id.is_empty())
+        {
+            Some(model) => body["model"] = model.into(),
+            None => body["models"] = serde_json::to_value(OPEN_ROUTER_MODELS)?,
+        }
         if let Some(format) = &request.response_format {
             body["response_format"] = serde_json::to_value(format)?;
         }
@@ -419,6 +474,38 @@ impl Providers {
         let mut voices = body.voices;
         voices.sort_by_key(|voice| rank(voice.category.as_deref()));
         Ok(voices)
+    }
+
+    /// Every OpenRouter model, the free ones first and then by name.
+    ///
+    /// The search of the picker reaches every model, so the price sorts the
+    /// list here instead of cutting it. The screen shows the free rows until
+    /// the user types, and marks a paid row that a search finds.
+    pub async fn writing_models(&self, key: &str) -> Result<Vec<WritingModel>> {
+        let response = self
+            .client
+            .get(format!("{}/api/v1/models", self.open_router))
+            .bearer_auth(key)
+            .send()
+            .await?;
+        let body: OpenRouterModelList = decode(response).await?;
+
+        let mut models: Vec<WritingModel> = body
+            .data
+            .into_iter()
+            .map(|row| WritingModel {
+                free: costs_nothing(&row.pricing.prompt) && costs_nothing(&row.pricing.completion),
+                id: row.id,
+                name: row.name,
+            })
+            .collect();
+        models.sort_by(|left, right| {
+            right
+                .free
+                .cmp(&left.free)
+                .then_with(|| left.name.cmp(&right.name))
+        });
+        Ok(models)
     }
 
     /// The ElevenLabs models that can speak. A model that only listens is not

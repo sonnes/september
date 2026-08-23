@@ -12,6 +12,11 @@ export interface OnboardingDraft {
   personalWords: string;
   mode: SetupMode | null;
   writingService: WritingService;
+  /**
+   * The OpenRouter model the user chose. Empty means the free list of the
+   * app, where the first model that answers writes the suggestion.
+   */
+  writingModel: string;
   voiceService: VoiceService;
 }
 
@@ -42,6 +47,7 @@ export const DEFAULT_DRAFT: OnboardingDraft = {
   personalWords: "",
   mode: null,
   writingService: "none",
+  writingModel: "",
   voiceService: "system",
 };
 

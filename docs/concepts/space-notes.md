@@ -64,13 +64,15 @@ Voice-over uses the same voice as Talk and writes no message.
 
 The first tab of the console is About. It opens the `context` column of the
 space, which says who the user speaks to here and why. A model writes this
-column one time, from the first message of the space. The user writes over it
-in this tab. The suggestion prompt and the phrases prompt both read the
-column, so a change here changes the words that the app offers.
+column one time, on `/spaces/new`, from the words the user gave there. The user
+writes over it in this tab. The suggestion prompt and the phrases prompt both
+read the column, so a change here changes the words that the app offers.
 
-The About tab saves the same way a note does, and the console writes into it.
-Therefore a user who cannot type fills this note with the word tiles. The tab
-is state in the screen, and not an address.
+The About tab saves with no Save button, and the console writes into it.
+Therefore a user who cannot type fills this note with the word tiles. It saves
+when the field loses focus, and again when the tab closes with words unsaved.
+The console writes only after the field blurs, so the two writers cannot race.
+The tab is state in the screen, and not an address.
 
 The desktop routes are `/spaces/$slug/notes` and
 `/spaces/$slug/notes/$noteSlug`. Two tabs in the header move between Talk and

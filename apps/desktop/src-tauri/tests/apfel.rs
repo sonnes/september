@@ -138,6 +138,7 @@ fn generation_uses_the_authenticated_openai_contract() {
                 "additionalProperties": false
             }),
         }),
+        model: None,
     };
 
     let generated = tauri::async_runtime::block_on(client.generate(request)).unwrap();
@@ -183,6 +184,7 @@ fn an_apfel_error_keeps_its_message() {
         temperature: None,
         max_tokens: None,
         response_format: None,
+        model: None,
     };
 
     let error = tauri::async_runtime::block_on(client.generate(request)).unwrap_err();
@@ -271,6 +273,7 @@ fn live_apfel_serves_a_completion_through_the_rust_client() {
         temperature: Some(0.0),
         max_tokens: Some(16),
         response_format: None,
+        model: None,
     }))
     .unwrap();
 

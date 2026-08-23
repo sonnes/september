@@ -277,6 +277,36 @@ export class Autocomplete {
   }
 
   /**
+   * Load a word list, in order of frequency, into the prefix index.
+   *
+   * The seed corpus is a set of example sentences. It covers less than half of
+   * the most common words in English, so a prefix often has no candidate at
+   * all. This list gives the index its breadth.
+   *
+   * The words go to the trie and the word-frequency map only. A flat word list
+   * holds no real pairs of words, so it must never reach the n-gram model: a
+   * false pair there would push a wrong word to the top of a row.
+   *
+   * Weight falls as the square root of the rank. This is near the shape of
+   * word frequency in English, and it keeps the counts small enough that the
+   * words of the user can still catch up.
+   *
+   * Call this after `train()`, because `train()` clears the engine.
+   */
+  seedDictionary(words: readonly string[]): void {
+    const scale = 4 * words.length;
+    words.forEach((word, index) => {
+      const w = word.toLowerCase();
+      const weight = Math.max(1, Math.round(Math.sqrt(scale / (index + 1))));
+      this.wordFrequency.set(w, (this.wordFrequency.get(w) ?? 0) + weight);
+      this.wordTrie.insert(w, weight);
+      this.totalWords += weight;
+      this.totalWordLength += w.length * weight;
+    });
+    this.isTrained = true;
+  }
+
+  /**
    * Capture a serializable snapshot of the engine state. Pair with
    * `AutocompletePersistence.save()` to survive page reloads.
    */

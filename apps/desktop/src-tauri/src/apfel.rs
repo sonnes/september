@@ -145,6 +145,10 @@ pub struct ApfelGenerateRequest {
     pub temperature: Option<f64>,
     pub max_tokens: Option<u32>,
     pub response_format: Option<ApfelResponseFormat>,
+    /// The model the user chose, for OpenRouter. The sidecar holds one model
+    /// on this Mac, so it ignores this field.
+    #[serde(default)]
+    pub model: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]

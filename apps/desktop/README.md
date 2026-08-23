@@ -15,7 +15,7 @@ The UI uses Tailwind CSS v4, shadcn/ui primitives, and TanStack Router.
 | --------------- | ---------------------------------------------- | ----------------------------------------------- |
 | `src/layouts/`  | `onboarding.tsx`, `app.tsx`, `settings.tsx`    | The component renders an `<Outlet/>`.           |
 | `src/pages/`    | Route screens: `steps` `dashboard` `spaces` `talk` `notes` `voice` `settings` `usage` | A `createRoute` call in `src/main.tsx` names it. |
-| `src/blocks/`   | `screen` `space` `services` `phrase-panel` `suggestions` `usage` `brand` | Two or more pages or layouts use it. |
+| `src/blocks/`   | `screen` `space` `services` `space-panel` `phrase-panel` `speech-settings` `pick-list` `suggestions` `usage` `brand` | Two or more pages or layouts use it. |
 | `src/services/` | `os` `data` `ai` `speech` `cloning` `player` `phrase-sync` `suggest` `usage` | It speaks to Rust, the platform, or a cloud service. |
 | `src/rules/`    | `app-nav` `settings-nav` `onboarding` `spaces` `notes` `phrases` `stripes` `prompts` `usage-summary` | No renderer and no backend. A node test imports it. |
 
@@ -78,13 +78,62 @@ The plus opens `/spaces/new`, and no space exists yet. The screen asks one
 question: what is this space for? The words of the user become the note of the
 space.
 
+The screen is a Talk screen with no transcript. It writes through the same
+`Composer` as every other mode, so the word tiles, the codes, the stripe,
+undo, and delete-last-word are all here.
+
+`NEW_SPACE_OPENERS` sits with the question, above Skip: a way in for a user who
+does not know what to write, beside the way out for a user with nothing to say.
+Three openers name the three kinds of space — a person, a place, a subject —
+and each stops mid-sentence, so the stripe and the word tiles carry on from
+there. A press starts the first sentence, and after that it starts the next
+one. The row stays while the question does, so a press never unmounts the
+button that was pressed.
+
+No example on this screen names anyone. September does not know who the user
+speaks to, and an example that guesses at a sister reads as though it did. This screen asks for the most free
+typing in the app, and it must not be the one surface that charges full price
+for it. With no space yet there is no context to write from, so the engine
+reads `NEW_SPACE_CONTEXT` instead, and takes the words the user has said in
+every other space for its history.
+
 A model then reads those words. It writes the title, and it puts its own note
 under the words of the user, after a blank line. The words of the user stay at
-the top of the note, and nothing writes over them. The phrase sync reads the
-note and writes the first phrases, so the stripe of a new space is not empty.
+the top of the note, and nothing writes over them. `seedPhrases` reads the same
+words and writes the first phrases.
 
-A user with nothing to say yet presses Skip. The space opens with a name that
-September made up.
+The two model calls run together. The phrase writer does not need the note that
+the title model produces — `decidePhraseSync` already treats a note with no
+messages as enough to write from — so the user waits for the slower call and
+not for the sum of the two. Each one writes its own fields with `space_patch`,
+which merges per field, so neither undoes the other whichever lands first.
+
+The screen waits for all three writes before it opens the space. A stripe that
+filled a second after the screen appeared would move under the hand of a user
+who was already reaching for it.
+
+While they run, the three steps are drawn where the transcript would be, in a
+`role="status"` region that is read out as each one changes. A label inside the
+button that the press had just made unavailable named one thing at a time and
+was never announced at all. A step that cannot run says why: with no writing
+service the two model steps read as skipped, and the screen says so under the
+console before the press as well.
+
+Nothing on the screen is ever unavailable in a way that drops focus. A disabled
+element cannot hold focus, so the browser moves it to the body, and a switch
+user loses their place in the scan at the moment the app asks them to wait.
+Every control of the console says `aria-disabled` instead, and its handler does
+nothing.
+
+Cancel stays live for the whole run. It gives up both model calls, and each
+call is given up on its own after `MODEL_WAIT_MS`. The words reach SQLite
+before any model answers, so a space that exists has lost nothing and simply
+opens. A run that failed after the space was made patches that space on the
+next press, and never makes a second one beside it; the error is shown, and
+`Open the space anyway` is offered.
+
+A user with nothing to say yet presses Skip. That space opens at once, with a
+name that September made up, and it waits for no model.
 
 The first space is `General`. A later space takes three words, such as
 `Amber Cedar Meadow`. Three words read better in a tab than `New space 4`, and
@@ -92,13 +141,26 @@ they tell one space from another. The name must be free, because one slug must
 name one space. `isAutoTitle` reads the words back out of the slug, so a model
 knows that it may still rename such a space.
 
-A space made with Skip takes its name from its first message instead. A model
-reads that message and writes a name and a note. A name the user typed is
-never replaced, and neither is a note the user wrote. A user with no writing
-service keeps the made-up name.
+Every title goes through `freeTitle` first: the made-up name, the name the
+model writes, and the name the user types in the header. Two spaces with one
+title share one address, and that address then opens the wrong space. A model
+title that is taken is dropped for the made-up name, because the user never
+chose it. A rename that is taken is refused and said out loud, because the user
+did.
 
-The app never opens on `/spaces/new`. The words of a form are gone after a
-restart, so `openingPath` sends the user to the dashboard instead.
+A space made with Skip keeps that name. Talk asks no model, because
+`/spaces/new` already asked. A Talk screen with no messages and no note offers
+`Tell September what this space is for`, which opens the About tab — a skipped
+space is the one that most needs it, and About is otherwise a long way to walk
+for something the user was never told mattered. A space with a note but no
+phrases yet gets them from `useSyncPhrases`.
+
+The app never opens on `/spaces/new`: `openingPath` sends the user to the
+dashboard instead. The words are not lost, though. They are kept in the
+`new-space-draft` setting as they are written and offered back when the user
+returns, because a paragraph typed by switch takes minutes and the rule of
+every other writing surface holds here too. Cancel with words in the field asks
+before it throws them away.
 
 Delete asks first. Deleting a space deletes its messages too, so a dialog with
 a red button holds the action.
@@ -216,14 +278,14 @@ The first tab of the console is About. It opens the note of the space, which
 says who the user speaks to here and why. Every suggestion and every phrase of
 the space reads it, so a change here changes the words that the app offers.
 
-A model writes this note one time, from the first message of the space.
-`describe` in `src/pages/talk.tsx` asks for it, and `space_patch` keeps it in the
-`context` column. A note that the user wrote is never replaced. A title that
-the user typed stays.
+A model writes this note one time, on `/spaces/new`, from the words the user
+gave there. `space_patch` keeps it in the `context` column. A note that the
+user wrote is never replaced. A title that the user typed stays.
 
-The About tab saves the same way a note does. It saves 600 ms after the last
-keystroke, and again when the tab closes with words unsaved. The console writes
-here too, so a user who cannot type fills this note with the word tiles.
+The About tab saves with no Save button. It saves when the field loses focus,
+and again when the tab closes with words unsaved. The console writes here too,
+so a user who cannot type fills this note with the word tiles. The console
+writes only after the field blurs, so the two writers cannot race.
 
 The tab is state, and not an address. The app cannot open on it, and a reload
 returns to the last note. Give the tab an address when a user asks to link to
@@ -232,13 +294,31 @@ one.
 ### The right rail
 
 A rail of icons stands at the right of both modes, in a card of its own beside
-the screen. It holds one button: Phrases. A press opens a 320px card with the
-phrases of the space and the shortcut ideas from repeated messages.
+the screen. It holds two buttons: Phrases and Voice. A press opens a 320px
+card. Phrases holds the phrases of the space and the shortcut ideas from
+repeated messages. Voice holds the ElevenLabs model and the three sliders that
+shape the sound.
 
-Escape closes the card and leaves the rail. September keeps the answer in the
-`panel-open` setting, so the card opens the same way next time.
+The sound belongs beside the conversation. A voice that reads too fast is
+heard while talking, and a user who must leave the space to mend it loses the
+sentence they were writing.
 
-`src/blocks/phrase-panel.tsx` holds the rail and the card. `RightPanel` in
+The service and the list of voices are not in the card. A service is chosen
+once, and an account holds a hundred voices, each one to be heard before it is
+taken. Both stay on `/voice`, which has the room.
+
+A press on the open tab closes the card. A press on the other tab moves the
+card to it. Escape closes the card and leaves the rail. September keeps the
+answer — the tab and whether the card was open — in the `panel-open` setting,
+so the card comes back the way it was left. `src/services/os.ts` holds the same
+answer while the app runs, because Talk and Notes each draw their own rail and
+a mode switch must not undo a press. The setting held a plain `true` or `false`
+while Phrases was the only tab, and `panelStateFrom` still reads that answer.
+
+`src/rules/panel.ts` holds the tabs and the rules of the saved state, where a
+test reads them without a renderer. `src/blocks/space-panel.tsx` holds the
+rail, `src/blocks/phrase-panel.tsx` the phrases card, and
+`src/blocks/speech-settings.tsx` the voice card. `RightPanel` in
 `src/blocks/screen.tsx` puts them beside the screen: the shell renders a slot as a
 sibling of the inset, and the rail goes through it. A rail drawn inside the
 screen would share the one white card of the inset, and the design gives the
@@ -264,6 +344,26 @@ The engine blends three models of the words that come next:
 The weight of a space starts at zero and grows over its first 500 words. A new
 space with three messages must not speak over the other two layers.
 
+Beside those three layers is a word list. `src/autocomplete/dictionary.ts`
+holds the 5,000 most frequent words of spoken English, in order of frequency.
+The list goes to the prefix index only, never to the n-gram model, because a
+flat list holds no real pairs of words.
+
+The two kinds of material do different work. The sentences teach the model
+which word comes after which. The list makes sure that a part-written word
+always has candidates. The sentences alone cover less than half of the 300
+commonest words in English, so `nur`, `bed`, and `sorr` gave nothing before the
+list arrived.
+
+Measured on 30 care requests that the engine never saw, the sentences alone
+save 37.6% of keystrokes. With the list, they save 47.8%.
+`tests/autocomplete-savings.test.mjs` holds a floor under both numbers.
+
+Rebuild the list with `node scripts/build-dictionary.mjs`. The script writes
+the same file to both apps. It removes slurs and strong obscenity, because a
+wrong tap speaks the word aloud. This blocks the list, not the user: the user
+layer still learns every word that the user writes.
+
 `src/autocomplete/index.ts` holds the two rules that a test can read:
 
 - `suggestionsFor(engine, text, spaceId)` gives the words to show. A space or a
@@ -275,9 +375,9 @@ space with three messages must not speak over the other two layers.
 `src/services/suggest.ts` holds the engine and gives it the messages. A screen calls
 `useSuggestions(spaceId, draft)`.
 
-The engine learns again at each start. This costs about 10 ms for the seed
-words. Keep a snapshot in SQLite only if a measurement shows that the start
-became slow.
+The engine learns again at each start. This costs about 6 ms for the seed words
+and the word list. Keep a snapshot in SQLite only if a measurement shows that
+the start became slow.
 
 ## Say more with fewer keys
 
@@ -321,9 +421,12 @@ A phrase is pinned or not:
 | No     | A model wrote it               | The next writing replaces it.   |
 
 A model writes the phrases when a space holds its first message or its note,
-and again after six more messages. `phrase_replace_ai` erases only the rows that are not pinned,
-in one transaction, so a phrase the user relies on cannot be lost. The first
-space starts with three pinned phrases, so the rows are never empty.
+and again after six more messages. `seedPhrases` does it for a new space, before
+the space opens. `useSyncPhrases` does it for a space that reaches Talk without
+phrases. A model that writes nothing leaves the count alone, so the next message
+tries again. `phrase_replace_ai` erases only the rows that are not pinned, in one
+transaction, so a phrase the user relies on cannot be lost. The first space
+starts with three pinned phrases, so the rows are never empty.
 
 The right rail of a space opens the Phrases panel. It wears the layout of the
 web app: one line for one phrase, the kept rows above the written ones, and a
@@ -411,14 +514,25 @@ erases the old files yet.
 A message keeps no path to a file. The name is the index, so a message spoken
 with an old voice plays with the voice of today.
 
-The `/voice` screen holds the choices: the service, the voice, and three
-sliders for speed, steadiness, and likeness. Each change is kept at once, in
-the `speech` setting. **Try it** speaks one short sentence, so the user hears
-a change before a real message. A voice sample plays from a public address, so
-it needs no key.
+The Voice tab of the right rail holds the ElevenLabs model and three sliders
+for speed, steadiness, and likeness. The `/voice` screen holds who speaks and
+the voices of the account, with a **Try it** button beside the title. Each
+change is kept at once, in the `speech` setting. **Try it** speaks one short
+sentence, so the user hears a change before a real message. A voice sample
+plays from a public address, so it needs no key.
 
-The model is not on this screen. It sits with the ElevenLabs key, at
-`/settings/connections/elevenlabs`.
+Each writer changes its own fields, over the setting as it stands. The screen
+writes `provider` or `voiceId`, and the card writes the model or a slider, so
+a change made in one place is not written back over by the other.
+
+The model is asked for twice, on purpose. It sits with the ElevenLabs key, at
+`/settings/connections/elevenlabs`, because only a key lists the models. The
+card of the rail repeats the question, because a message sounds like the model
+as much as the voice, and the card is where the sound is judged. Both write the
+same `speech` setting.
+
+The `/voice` screen keeps the work that needs a whole screen: who speaks,
+choosing a voice from the account, and cloning one.
 
 ### Clone a voice
 
@@ -573,12 +687,13 @@ section list beside the open section, ported from the web app.
 
 | Section | Route | Holds |
 | --- | --- | --- |
-| Setup | `/settings` | The state of each service, its key, and the ElevenLabs model |
+| Setup | `/settings` | The state of each service, its key, and its model |
 | Writing help | `/settings/writing` | Who writes, and what the model knows about you |
 | Usage | `/settings/usage` | Typing saved, service use, quota, recent calls, and CSV |
 
 Listening still needs a transcription backend, and Account needs an account.
-Voice keeps its own screen, `/voice`, in both apps.
+The service and the voices keep their own screen, `/voice`, in both apps. The
+model and the sound moved to the rail of a space.
 
 `src/rules/settings-nav.ts` holds the rules that a test can read: the sections, the
 open section, and the guide for each cloud service. `src/layouts/settings.tsx`
@@ -589,19 +704,50 @@ A press on **Set up** opens `/settings/connections/openrouter` or
 and opens the address of the service in the browser of the Mac. The key goes
 straight to the Keychain, through `src/services/os.ts`.
 
-The ElevenLabs page also holds **Which model**. The model decides the quality,
+Each page also holds **Which model**. The model decides the quality,
 the speed, and the languages. `provider_models` reads the list from ElevenLabs
 and keeps the models that speak. The page shows the name of each one, and the
 sentence that the service gives about it. Only the key lists the models, so the
 choice appears after the key is stored. The new model goes into the `speech`
 setting, beside the voice and the sliders.
 
+Both lists are `PickList`, in `src/blocks/pick-list.tsx`. See
+[One list picks one row](#one-list-picks-one-row).
+
+The OpenRouter page shows the free models, because September promises that the
+user needs no card. With no words in the search field, the list holds the free
+models. With words, the search reaches every model of the service, and a row
+that needs credit reads **Paid**. The rule is `searchModels` in
+`src/rules/pick.ts`, where a test can read it without a renderer.
+
+**Automatic** is the first row, and the default. It asks for no model, so the
+app sends its own free list and OpenRouter uses the first model that answers.
+A named model goes into the `setup` setting, as `writingModel`, and
+`src/services/ai.ts` sends it with each request.
+
 `src/blocks/services.tsx` holds the parts that setup and settings share: the
 mode card, the mark of each service, the state pill, and the key panel. A brand
 asset is therefore named one time.
 
-Every change is kept at once, as `/voice` does. There is no Save button to
-forget. A text field waits half a second after the last keystroke, so one
+### One list picks one row
+
+`PickList` in `src/blocks/pick-list.tsx` picks one row of many. The model
+lists and the voice list use it.
+
+A dropdown is not a control for a dwell. It opens on a press, and it closes
+when the pointer rests somewhere else. `PickList` stays on the screen: two
+columns of 44px rows, as `DESIGN.md` asks, and the row in use has the primary
+border. A caller with no room for two columns sends `columns={1}`, as the
+320px card of the rail does.
+
+A search field appears above the rows when the list holds more than eight.
+Each word of the query must be in the name, through `matchesWords` in
+`src/rules/pick.ts`. A caller with another rule sends `filter`, and the model
+list sends `searchModels`. A caller with a control for each row sends `after`,
+and the voice list sends the play button.
+
+Every change is kept at once, as the Voice card of the rail does. There is no
+Save button to forget. A text field waits half a second after the last keystroke, so one
 sentence is one write.
 
 The setup steps ask how September runs. Settings does not ask again, because

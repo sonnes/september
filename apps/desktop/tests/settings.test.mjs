@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
+import { DEFAULT_DRAFT } from "../src/rules/onboarding.ts";
 import {
   CONNECTION_GUIDES,
   sectionFor,
@@ -91,12 +92,38 @@ test("the writing service knows what setup collected", async () => {
 
 test("the model choice sits beside the key that lists it", async () => {
   const settings = await readText("src/pages/settings.tsx");
-  const voice = await readText("src/pages/voice.tsx");
+  const card = await readText("src/blocks/speech-settings.tsx");
 
   // A model list arrives only with a key, so the choice belongs on the
-  // screen that holds the key.
+  // screen that holds the key. The card of the rail repeats it, where the
+  // sound of a message is judged.
   assert.match(settings, /listModels/);
-  assert.match(settings, /aria-label="Model"/);
-  // The Voice screen keeps the voice and the sound, and nothing else.
-  assert.doesNotMatch(voice, /listModels|aria-label="Model"/);
+  assert.match(settings, /label="Search models"/);
+  assert.match(card, /label="Search models"/);
+});
+
+test("the OpenRouter model sits beside its key too", async () => {
+  const settings = await readText("src/pages/settings.tsx");
+  const os = await readText("src/services/os.ts");
+  const ai = await readText("src/services/ai.ts");
+
+  assert.match(os, /export const listWritingModels/);
+  assert.match(settings, /listWritingModels/);
+  // The writing service reads the choice, so a request names one model.
+  assert.match(ai, /writingModel/);
+});
+
+test("no chosen writing model means the free list of the app", () => {
+  // An empty answer keeps the failover: the first free model that answers
+  // writes the suggestion.
+  assert.equal(DEFAULT_DRAFT.writingModel, "");
+});
+
+test("a settings screen draws with no saved setup", async () => {
+  const settings = await readText("src/pages/settings.tsx");
+
+  // `pnpm dev` runs the UI in a browser, where no Tauri backend answers and
+  // `currentSetup()` is null. The screen must draw the defaults there.
+  assert.match(settings, /currentSetup\(\) \?\? DEFAULT_DRAFT/);
+  assert.doesNotMatch(settings, /setup!/);
 });

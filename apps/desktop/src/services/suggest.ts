@@ -37,7 +37,10 @@ function theEngine(): Autocomplete {
  * that the user did not write does not go in: the app models the words of the
  * user, not the words of the other person.
  */
-export function useSuggestions(spaceId: string, draft: string): string[] {
+export function useSuggestions(
+  spaceId: string | undefined,
+  draft: string,
+): string[] {
   const { data: messages } = useAllMessages();
 
   // The count changes when the engine reads new messages, which makes the

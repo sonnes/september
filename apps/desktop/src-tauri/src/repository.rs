@@ -903,6 +903,52 @@ mod tests {
     }
 
     #[test]
+    fn the_phrase_count_can_land_before_the_name() {
+        // The new-space screen runs the title model and the phrase writer
+        // together, so either one may reach SQLite first. The old flow
+        // chained them, and only ever saw the count arrive last.
+        let repository = Repository::open_in_memory().unwrap();
+        repository
+            .put_space(&Space {
+                id: "space-1".to_owned(),
+                user_id: "user-1".to_owned(),
+                title: Some("Amber Cedar Meadow".to_owned()),
+                context: Some("I speak to my sister here.".to_owned()),
+                phrases_synced_count: None,
+                created_at: 1,
+                updated_at: 1,
+            })
+            .unwrap();
+
+        // The phrase writer finishes first and counts the messages.
+        repository
+            .patch_space(&SpacePatch {
+                id: "space-1".to_owned(),
+                title: None,
+                context: None,
+                phrases_synced_count: Some(0),
+                updated_at: 2,
+            })
+            .unwrap();
+
+        // The title model answers second, with the name and the whole note.
+        let saved = repository
+            .patch_space(&SpacePatch {
+                id: "space-1".to_owned(),
+                title: Some("My sister".to_owned()),
+                context: Some("I speak to my sister here.\n\nWe talk about her garden.".to_owned()),
+                phrases_synced_count: None,
+                updated_at: 3,
+            })
+            .unwrap();
+
+        // The name arrived last and must not have taken the count with it.
+        assert_eq!(saved.title.as_deref(), Some("My sister"));
+        assert_eq!(saved.phrases_synced_count, Some(0));
+        assert!(saved.context.unwrap().contains("her garden"));
+    }
+
+    #[test]
     fn a_space_that_is_gone_cannot_be_changed() {
         let repository = Repository::open_in_memory().unwrap();
         let missing = repository.patch_space(&SpacePatch {

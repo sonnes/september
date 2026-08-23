@@ -69,14 +69,35 @@ cargo fmt --all -- --check
   current Talk composer text to it, not the text from Notes.
 - Keep camera frames inside the Core Media I/O extension. Tauri sends the text
   property; Rust and the WebView must never relay video buffers.
-- Write through `Composer` in `src/blocks/space.tsx` in every mode. A second console
-  would leave one mode without the word tiles, the codes, or undo, which a
-  user who cannot type depends on.
+- Write through `Composer` in `src/blocks/space.tsx` in every mode, including
+  `/spaces/new`. A second console would leave one mode without the word tiles,
+  the codes, or undo, which a user who cannot type depends on. `composerAction`
+  in `src/rules/spaces.ts` holds what each mode says, so a test reads the words
+  without a renderer.
+- Say a control is unavailable with `aria-disabled`, never with `disabled`, in
+  the console and on anything a user waits on. A disabled element cannot hold
+  focus, so the browser moves focus to the body and a switch user loses their
+  place in the scan. Guard the handler instead.
+- Put every title through `freeTitle` in `src/rules/spaces.ts` before writing
+  it — the made-up name, the model's, and the user's. Two spaces with one title
+  share one address, and SQLite has no unique constraint to catch it.
 - Put the Talk and Notes switch in the dock, never in the header. The web app
   puts it there, so a user who knows one app knows the other.
+- Pick one row of many with `PickList` in `src/blocks/pick-list.tsx`. Do not
+  use a dropdown: it opens on a press and closes when a dwell moves away.
 - Put a panel that needs a card of its own through `RightPanel` in
   `src/blocks/screen.tsx`. A panel drawn inside a screen shares the card of
   the inset. `src/layouts/app.tsx` gives it the slot it draws into.
+- Keep the right rail of a space in `src/blocks/space-panel.tsx`, and its tabs
+  and saved state in `src/rules/panel.ts`, where a test can read them. Add a
+  tab as a row of `PANEL_TABS` and a card beside `Phrases`, never as a second
+  rail.
+- Keep the model and the sliders in the card of the rail, in
+  `src/blocks/speech-settings.tsx`. Both are heard in the next sentence, and a
+  user who must leave the space to mend them loses the words they were writing.
+- Keep the service and the list of voices on `/voice`, never in the card. A
+  service is chosen once, and an account holds a hundred voices, each one to be
+  heard before it is taken. `/voice` keeps the cloning too.
 - Keep the rules of a note in `src/rules/notes.ts`, and the screen in
   `src/pages/notes.tsx`.
 - Save a note without a Save button. A user who types slowly must never lose

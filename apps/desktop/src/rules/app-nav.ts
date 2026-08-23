@@ -18,7 +18,7 @@ export const APP_NAV = [
   {
     path: "/voice",
     title: "Voice",
-    description: "The voice that speaks your messages.",
+    description: "Who speaks, which voice, and one you make yourself.",
   },
   {
     path: "/help",

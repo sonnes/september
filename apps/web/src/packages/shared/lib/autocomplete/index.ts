@@ -1,4 +1,5 @@
 export { Autocomplete } from './autocomplete';
+export { DICTIONARY } from './dictionary';
 export { TrieNode } from './trie-node';
 export {
   AutocompletePersistence,

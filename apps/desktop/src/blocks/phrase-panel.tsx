@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   Check,
   Hash,
   Lightbulb,
-  MessageSquareQuote,
-  PanelRightClose,
   Pin,
   Plus,
   Sparkles,
@@ -23,12 +21,7 @@ import {
   usePhrases,
   usePutPhrase,
 } from "@/services/data";
-import {
-  dismissedIdeas,
-  panelOpen,
-  rememberDismissed,
-  rememberPanel,
-} from "@/services/os";
+import { dismissedIdeas, rememberDismissed } from "@/services/os";
 import {
   CODE_MAX_LENGTH,
   mineShortcuts,
@@ -39,90 +32,6 @@ import {
 } from "@/rules/phrases";
 
 /**
- * The right rail of a space, and the card it opens.
- *
- * The rail is always there, so the phrases are one press away in every mode.
- * The card beside it holds them. This is the shape the web app uses.
- */
-export function PanelRail({
-  spaceId,
-  onInsert,
-}: {
-  spaceId: string;
-  /** Puts a phrase in the composer of the screen that holds the rail. */
-  onInsert: (text: string) => void;
-}) {
-  const [open, setOpen] = useState(panelOpen);
-
-  const show = (next: boolean) => {
-    setOpen(next);
-    void rememberPanel(next);
-  };
-
-  // Escape closes the card and leaves the rail, the same as the web app.
-  useEffect(() => {
-    if (!open) return;
-
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") show(false);
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
-  return (
-    <>
-      {open ? (
-        <aside
-          aria-label="Phrases panel"
-          className="bg-background my-2 flex w-80 shrink-0 flex-col overflow-hidden rounded-xl border shadow-sm"
-        >
-          <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3">
-            <MessageSquareQuote
-              className="text-muted-foreground size-4"
-              aria-hidden
-            />
-            <span className="text-sm font-semibold">Phrases</span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label="Collapse panel"
-              className="text-muted-foreground hover:text-foreground ml-auto shrink-0"
-              onClick={() => show(false)}
-            >
-              <PanelRightClose aria-hidden />
-            </Button>
-          </header>
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            <Phrases spaceId={spaceId} onInsert={onInsert} />
-          </div>
-        </aside>
-      ) : null}
-
-      <nav
-        aria-label="Panel rail"
-        className="bg-background my-2 mr-2 flex w-14 shrink-0 flex-col items-center gap-1 rounded-xl border py-2 shadow-sm"
-      >
-        <button
-          type="button"
-          aria-label="Phrases"
-          title="Phrases"
-          aria-pressed={open}
-          onClick={() => show(!open)}
-          className={`text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-ring flex size-10 items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none ${
-            open ? "bg-muted text-foreground" : ""
-          }`}
-        >
-          <MessageSquareQuote className="size-5" aria-hidden />
-        </button>
-      </nav>
-    </>
-  );
-}
-
-/**
  * The phrases of one space, and the shortcut ideas that come from repeated
  * messages. The layout is the layout of the web app: one line for one phrase,
  * the kept rows first, and a form above them both.
@@ -130,7 +39,7 @@ export function PanelRail({
  * The targets are 44px, where the web app uses 36px. DESIGN.md asks for 44,
  * and a user of September points with less accuracy than a user of a browser.
  */
-function Phrases({
+export function Phrases({
   spaceId,
   onInsert,
 }: {

@@ -35,9 +35,9 @@ import {
   noteSlug,
   UNTITLED_NOTE,
 } from "@/rules/notes";
-import { PanelRail } from "@/blocks/phrase-panel";
+import { PanelRail } from "@/blocks/space-panel";
 import { RightPanel, ScreenHeader } from "@/blocks/screen";
-import { generateCode } from "@/rules/phrases";
+import { pinnedPhrase } from "@/rules/phrases";
 import { spaceFromSlug, spaceSlug } from "@/rules/spaces";
 import { speak, stopSpeaking, useSpeaking } from "@/services/speech";
 import {
@@ -97,7 +97,11 @@ function Notes({
   const [draft, setDraft] = useState("");
   // The About tab is state, not an address. Give it an address when a user
   // asks to open the app on it.
-  const [about, setAbout] = useState(false);
+  //
+  // A space with no note of its own opens here, because a space reaches that
+  // state by being skipped, and About is the one thing it still needs. An
+  // address that names a note wins, so a deep link is never taken over.
+  const [about, setAbout] = useState(!wanted && !space.context?.trim());
   useRememberMode(space, "notes");
   const remove = useDeleteNote(space.id);
 
@@ -164,27 +168,8 @@ function Notes({
 
   /** Keeps a row of the stripe, so a regeneration cannot take it away. */
   const keep = (text: string) => {
-    if (phrases?.some((row) => row.text.toLowerCase() === text.toLowerCase())) {
-      return;
-    }
-    const at = Date.now();
-    putPhrase.mutate({
-      id: crypto.randomUUID(),
-      space_id: space.id,
-      text,
-      kind: "phrase",
-      code: generateCode(
-        text,
-        {
-          existingCodes: (phrases ?? [])
-            .map((row) => row.code)
-            .filter((code): code is string => Boolean(code)),
-        },
-      ),
-      pinned: true,
-      created_at: at,
-      updated_at: at,
-    });
+    const row = pinnedPhrase(text, space.id, phrases ?? []);
+    if (row) putPhrase.mutate(row);
   };
 
   return (
@@ -479,48 +464,30 @@ function SpaceAbout({ space }: { space: Space }) {
   const patch = useUpdateSpace();
   const remote = space.context ?? "";
   const [text, setText] = useState(remote);
-  const [dirty, setDirty] = useState(false);
-
-  // The last words typed, for the save that runs as the tab closes. The
-  // cleanup runs after the state is gone, so it reads these instead.
-  const held = useRef(text);
-  const unsaved = useRef(dirty);
-  held.current = text;
-  unsaved.current = dirty;
+  // The words in the field, and the words that reached SQLite. The save as
+  // the tab closes runs after the state is gone, so it reads these instead.
+  const held = useRef({ text, saved: text });
+  held.current.text = text;
 
   // The composer is a second writer. With nothing unsaved here, the screen
   // takes the words it added, so the next save does not write over them.
-  if (!dirty && remote !== text) {
+  if (text === held.current.saved && remote !== text) {
     setText(remote);
-    held.current = remote;
+    held.current = { text: remote, saved: remote };
   }
 
-  useEffect(() => {
-    if (!dirty) return;
+  const save = () => {
+    const { text: written, saved } = held.current;
+    if (written === saved) return;
+    held.current.saved = written;
+    void patch.mutateAsync({ id: space.id, context: written });
+  };
 
-    const timer = window.setTimeout(() => {
-      void patch.mutateAsync({ id: space.id, context: text }).then(() => {
-        // A save that lands while the user types again leaves the tab dirty,
-        // so the next save still carries the newer words.
-        if (held.current === text) setDirty(false);
-      });
-    }, SAVE_DELAY_MS);
-
-    return () => window.clearTimeout(timer);
-    // `patch` is new on each render, so it stays out.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dirty, text, space.id]);
-
-  useEffect(() => {
-    const id = space.id;
-    return () => {
-      // Only words that never reached SQLite. A clean note needs no write,
-      // and a write here would race the other writers of the same row.
-      if (!unsaved.current) return;
-      void patch.mutateAsync({ id, context: held.current });
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [space.id]);
+  // ponytail: the note saves when the field loses focus, and again as the tab
+  // closes. No timer — the composer writes only after this field blurs. Bring
+  // a delay back when a user asks to keep the focus and still be saved.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => save, [space.id]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
@@ -535,11 +502,9 @@ function SpaceAbout({ space }: { space: Space }) {
         autoFocus
         value={text}
         aria-label="About this space"
-        placeholder={"- I speak to my sister here\n- We talk about the garden"}
-        onChange={(event) => {
-          setText(event.target.value);
-          setDirty(true);
-        }}
+        placeholder={"- Who I speak to here\n- What we talk about"}
+        onBlur={save}
+        onChange={(event) => setText(event.target.value)}
         className="placeholder:text-muted-foreground/60 focus-within:border-ring focus-within:ring-ring/20 min-h-0 flex-1 resize-none rounded-2xl border bg-transparent p-4 text-xl leading-relaxed shadow-sm transition-[box-shadow,border-color] focus:outline-none focus-within:ring-[3px]"
       />
     </div>

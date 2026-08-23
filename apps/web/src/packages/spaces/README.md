@@ -136,7 +136,7 @@ rows. Plain `createSpace` only creates the space row.
 `useSyncSpacePhrases({ space, phrases, messages, messagesLoading })` owns
 generation triggering: it **seeds** on the first message (and backfills spaces
 that predate the feature) and **regenerates on open** once the history has grown
-stale (see `isStale` / `PHRASES_STALE_AFTER`). `replaceAiPhrases` only ever
+stale (see `decidePhraseSync` / `PHRASES_STALE_AFTER`). `replaceAiPhrases` only ever
 rewrites `pinned: false` rows — **pinned phrases are never overwritten, reordered,
 or dropped** (`dedupeAgainstPinned` keeps fresh AI texts clear of pinned ones).
 The prompt (`buildPhrasesPrompt`) marks pinned rows `[pinned]` so the model

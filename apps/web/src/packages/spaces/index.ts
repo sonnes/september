@@ -54,7 +54,6 @@ export {
   rowKind,
   sanitizeStarters,
   dedupeAgainstPinned,
-  isStale,
   PHRASES_STALE_AFTER,
 } from './lib/phrases';
 export type { PhraseKind } from './lib/phrases';

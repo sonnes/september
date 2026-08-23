@@ -203,6 +203,7 @@ A key never returns to the WebView. Every command answers with a status only.
 | `provider_voices`  | none                   | The ElevenLabs voices |
 | `provider_clone_voice` | raw multipart audio | `{ id }`            |
 | `provider_models`  | none                   | The ElevenLabs speech models |
+| `provider_writing_models` | none            | Every OpenRouter model, free ones first |
 | `provider_quota`   | none                   | The current ElevenLabs allowance or `null` |
 
 ```ts
@@ -250,10 +251,20 @@ space.
 ## Generate text with a cloud model
 
 The `openrouter_generate` command takes the request shape of `apfel_generate`
-and answers in its response shape. It picks a model from a small list of free
-models, and OpenRouter uses the first one that answers. The key stays in the
-Keychain. The response includes the model OpenRouter chose and its reported
-cost when the service supplies one.
+and answers in its response shape. The key stays in the Keychain. The response
+includes the model OpenRouter used and its reported cost when the service
+supplies one.
+
+The request can name a `model`. Rust then asks for that model only. A request
+with no model sends a small list of free models, and OpenRouter uses the first
+one that answers. The Apple sidecar has one model on this Mac, so it ignores
+the field.
+
+`provider_writing_models` gives the models the user can choose. Each row has
+`free`, which is true when a prompt token and a completion token both cost
+zero. A model with no price is not known to be free, so `free` is false. Rust
+sorts the free rows first, then by name. The screen shows the free rows and
+its search reaches the others.
 
 ## Speak a sentence
 
