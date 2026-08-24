@@ -120,7 +120,7 @@ describe('hero section', () => {
     expect(container.textContent).toContain(
       'A communication assistant for people living with ALS, MND, and other speech & motor difficulties'
     );
-    expect(container.textContent).toContain('Get Started');
+    expect(container.textContent).toContain('Get started');
     expect(container.textContent).toContain('Open Source');
     expect(container.textContent).not.toContain('Try Now');
   });
@@ -154,7 +154,7 @@ describe('hero section', () => {
 
     // One Get Started — the hero CTA; the nav carries only section links.
     const onboardingLinks = [...container.querySelectorAll('a')].filter(
-      anchor => anchor.textContent?.trim() === 'Get Started'
+      anchor => anchor.textContent?.trim() === 'Get started'
     );
     expect(onboardingLinks).toHaveLength(1);
     const [cta] = onboardingLinks;
@@ -170,7 +170,7 @@ describe('hero section', () => {
 
     const nav = container.querySelector('nav')!;
     expect(nav.textContent).not.toContain('GitHub');
-    expect(nav.textContent).not.toContain('Get Started');
+    expect(nav.textContent).not.toContain('Get started');
     expect(nav.textContent).toContain('Features');
     expect(nav.textContent).toContain('About');
     // The Open Source badge in the hero body still links to the repo.
@@ -549,7 +549,7 @@ describe('final call to action', () => {
     expect(container.textContent).toContain(
       'Set up September in a few minutes — on your own, or with a caregiver beside you.'
     );
-    expect(container.textContent).toContain('Get Started');
+    expect(container.textContent).toContain('Get started');
     expect(container.textContent).not.toContain('it’s free.');
   });
 });

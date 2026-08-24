@@ -1787,14 +1787,14 @@ test("a model call for a new space can be given up on", async () => {
 });
 
 test("a step that cannot run says why, and never reads as work", () => {
-  // No writing service means no model, so the screen must not name work that
-  // is not happening. The old screen said "Writing the first phrases..." here.
+  // No writing help means no model, so the screen must not name work that is
+  // not happening. The old screen said "Writing the first phrases..." here.
   const alone = createSteps({ at: "models", hasWriting: false });
 
   assert.equal(alone[0].state, "done");
   assert.equal(alone[1].state, "skipped");
   assert.equal(alone[2].state, "skipped");
-  assert.match(alone[1].note, /writing service/i);
+  assert.match(alone[1].note, /writing help/i);
 
   // A step that failed says so, and leaves the others as they landed.
   const failed = createSteps({

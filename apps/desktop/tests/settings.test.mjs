@@ -47,7 +47,7 @@ test("the setup screen lists the services and nothing else", async () => {
   // The mode is an answer of the setup steps. This screen shows only the
   // services, so a user changes a key here and nothing more.
   assert.doesNotMatch(settings, /ModeCard|SETUP_MODES|SetupMode/);
-  assert.match(settings, /title="Connections"/);
+  assert.match(settings, /title="Services"/);
 });
 
 test("each cloud service has a guide and an address", () => {
