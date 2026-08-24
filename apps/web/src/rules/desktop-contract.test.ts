@@ -4,6 +4,7 @@ import { APP_NAV, openingPath } from './app-nav';
 import { appendToNote, markdownToVoiceText } from './notes';
 import { STEPS, stepsFor } from './onboarding';
 import { PANEL_TABS, pressTab } from './panel';
+import { exportReason, PRESENT_TONES, presentChunks } from './present';
 import { SETTINGS_NAV } from './settings-nav';
 import {
   composerAction,
@@ -52,6 +53,24 @@ describe('the web app uses the desktop rules', () => {
     expect(appendToNote('First', 'Second')).toBe('First\n\nSecond');
     expect(markdownToVoiceText('# Monday\n\nHello')).toBe('Monday Hello');
     expect(PANEL_TABS.map(tab => tab.key)).toEqual(['phrases', 'voice']);
+    expect(presentChunks('# Monday\n\nOne. Two.').map(chunk => chunk.role)).toEqual([
+      'display',
+      'display',
+      'support',
+    ]);
+    expect(PRESENT_TONES.map(tone => tone.key)).toEqual([
+      'indigo',
+      'ink',
+      'paper',
+      'cream',
+      'sage',
+      'blush',
+      'sky',
+    ]);
+    // The browser renders the film, so only the voice can hold this row back.
+    expect(exportReason('video', { provider: 'system', voiceId: null, video: true })).toMatch(
+      /ElevenLabs/
+    );
     expect(pressTab({ open: false, tab: 'phrases' }, 'voice')).toEqual({
       open: true,
       tab: 'voice',

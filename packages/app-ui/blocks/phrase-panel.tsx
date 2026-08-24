@@ -119,7 +119,7 @@ export function Phrases({
     <div className="space-y-4 p-4">
       <p className="text-muted-foreground text-xs">
         Press a phrase to put it in the composer. A phrase you keep stays. A
-        phrase a model wrote is replaced as the conversation grows. A code
+        phrase September wrote is replaced as the conversation grows. A code
         brings its phrase up while you type.
       </p>
 
@@ -190,7 +190,7 @@ export function Phrases({
 
       {ideas.length > 0 ? (
         <section className="space-y-2">
-          <GroupLabel icon={Lightbulb} label="Shortcut ideas" />
+          <GroupLabel icon={Lightbulb} label="Code ideas" />
           <ul className="space-y-1.5">
             {ideas.map((idea) => (
               <li
@@ -363,7 +363,7 @@ function PhraseRow({
           title={
             row.pinned
               ? "Change the code"
-              : "A model can replace this code. Keep the phrase to hold it."
+              : "September can replace this code. Keep the phrase to hold it."
           }
           onClick={() => setEditing(true)}
           className="focus-visible:ring-ring shrink-0 rounded-md focus-visible:ring-2 focus-visible:outline-none"
@@ -380,7 +380,7 @@ function PhraseRow({
       ) : null}
 
       <RowButton
-        label={row.pinned ? "Let a model replace this" : "Keep this"}
+        label={row.pinned ? "Let September replace this" : "Keep this"}
         className={row.pinned ? "text-primary" : undefined}
         onClick={() => onChange({ ...row, pinned: !row.pinned })}
       >

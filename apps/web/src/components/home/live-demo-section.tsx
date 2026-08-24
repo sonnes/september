@@ -318,7 +318,7 @@ export function LandingSuggestionStripes({
             {onPin && (
               <button
                 type="button"
-                aria-label={`Pin ${stripe.text}`}
+                aria-label={`Keep ${stripe.text}`}
                 onClick={() => onPin(stripe.text)}
                 className="grid size-11 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted"
               >

@@ -5,8 +5,8 @@ import { Play, Square } from 'lucide-react';
 import { SectionHeader } from './section-header';
 import { useDemoSpeech } from './use-demo-speech';
 
-// The story the reel section turns into a captioned video — one narrative
-// thread from note to reel.
+// The story the Present section puts on the stage — one narrative thread
+// from the note to the room.
 export const NOTE_TITLE = 'How we met — for the grandkids';
 
 export const NOTE_SENTENCES: readonly string[] = [

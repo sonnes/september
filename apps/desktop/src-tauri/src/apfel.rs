@@ -15,19 +15,19 @@ const MODEL: &str = "apple-foundationmodel";
 
 #[derive(Debug, thiserror::Error)]
 pub enum ApfelError {
-    #[error("invalid apfel endpoint: {0}")]
+    #[error("Apple Intelligence has an invalid address. ({0})")]
     InvalidEndpoint(String),
-    #[error("could not reach apfel: {0}")]
+    #[error("Could not reach Apple Intelligence. ({0})")]
     Unreachable(#[from] reqwest::Error),
-    #[error("apfel request failed: {0}")]
+    #[error("Apple Intelligence did not answer. ({0})")]
     Request(String),
-    #[error("apfel returned an invalid response: {0}")]
+    #[error("Apple Intelligence sent a reply September could not read. ({0})")]
     InvalidResponse(String),
-    #[error("could not start apfel: {0}")]
+    #[error("Could not start Apple Intelligence. ({0})")]
     Start(String),
-    #[error("Apple Intelligence is not available")]
+    #[error("Apple Intelligence is not available.")]
     ModelUnavailable,
-    #[error("apfel requires Apple Silicon and macOS 26 or newer")]
+    #[error("Apple Intelligence needs macOS 26 on Apple silicon.")]
     Unsupported,
 }
 
@@ -299,8 +299,10 @@ pub struct ApfelStatus {
 impl ApfelStatus {
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     fn from_health(health: ApfelHealth) -> Self {
-        let reason = (!health.available)
-            .then(|| "Apple Intelligence is disabled, unsupported, or still preparing".into());
+        let reason = (!health.available).then(|| {
+            "Apple Intelligence is off or still getting ready. Turn it on in System Settings."
+                .into()
+        });
         Self {
             supported: true,
             available: health.available,
@@ -439,7 +441,7 @@ impl ApfelState {
             client: client.clone(),
             child: Some(child),
         };
-        let mut last_error = "the health endpoint did not become ready".to_owned();
+        let mut last_error = "it did not answer in time".to_owned();
 
         for _ in 0..80 {
             match client.status().await {

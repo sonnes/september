@@ -5,11 +5,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@september/ui/components/select";
-import type { TimeRange } from "@september/core/rules/usage-summary";
+import type { CostSource, TimeRange } from "@september/core/rules/usage-summary";
 
 export const formatCount = (value: number) =>
   new Intl.NumberFormat(undefined, { notation: value >= 10_000 ? "compact" : "standard" })
     .format(Math.round(value));
+
+/** The plain word for a cost source. The stored value is an identifier, not copy. */
+export const sourceLabel = (source: CostSource): string =>
+  ({ measured: "exact", estimated: "estimate", free: "free", quota: "credits", unknown: "—" })[
+    source
+  ] ?? source;
+
+/** The name a screen shows for a stored service id. */
+export const providerLabel = (id: string): string =>
+  ({
+    openrouter: "OpenRouter",
+    elevenlabs: "ElevenLabs",
+    apple: "Apple Intelligence",
+    system: "System voice",
+    unknown: "Unknown",
+  })[id] ?? id;
 
 export const formatCost = (value: number) =>
   new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(value);

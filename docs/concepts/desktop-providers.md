@@ -38,7 +38,7 @@ Rust reads the OpenRouter and ElevenLabs entries once during startup. Later
 commands use the cached keys. Connecting or forgetting a service updates the
 Keychain and memory together, so a settings change does not need a restart.
 
-The Usage screen can also read the current ElevenLabs allowance. Rust returns
+The Usage screen can also read the current ElevenLabs credits. Rust returns
 the tier, used characters, character limit, and reset time through
 `provider_quota`. It returns no key, and no quota value is stored in SQLite.
 

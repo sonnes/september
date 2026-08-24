@@ -1,10 +1,17 @@
 ---
 title: Present and export a note
 description: A full-screen spoken story view and a three-artifact export dialog replace the retired reel feature, on both the desktop and web apps.
-status: proposed
+status: implemented
 mock: ../mocks/2026-08-24-present-export.html
 look: ../mocks/2026-08-24-present-look-options.html
+notes: ../notes/2026-08-24-present-export.md
 ---
+
+> Implemented 2026-08-24. The code placement below predates the workspace
+> refactor (`8f1a431`); the rules landed in `packages/core/rules/present.ts`
+> and the stage in `packages/app-ui/blocks/present.tsx`, with only the export
+> service and the timed synthesis per app. See the notes for the rest of the
+> deviations.
 
 # Present and export a note
 

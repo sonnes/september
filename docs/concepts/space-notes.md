@@ -37,8 +37,8 @@ The About tab edits the `context` field of the space. Phrase generation and writ
 
 The About tab saves when its field loses focus. It also saves pending text when the tab closes.
 
-## Voice-over
+## Read aloud
 
-Voice-over uses the same voice settings as Talk. It does not create a message or change the Talk transcript.
+Read aloud uses the same voice settings as Talk. It does not create a message or change the Talk transcript.
 
 Removing a space also removes its scoped notes, messages, and phrases in one repository operation.

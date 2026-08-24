@@ -56,8 +56,10 @@ cargo fmt --all -- --check
   microphone, and September must not ask for one to name a speaker.
 - Keep the virtual microphone control in the Talk audio selector beside Speak.
   The selector must remain visible when the Mac has one sound output.
-- Keep the virtual camera control in the same Talk audio selector. Pass the
-  current Talk composer text to it, not the text from Notes.
+- Keep the virtual camera control in the same Talk audio selector. The Talk
+  draft owns the camera overlay, except while a presentation runs; then the
+  presented chunk owns it, and closing the stage clears the words again. Notes
+  never pass the text of the editor to it.
 - Keep camera frames inside the Core Media I/O extension. Tauri sends the text
   property; Rust and the WebView must never relay video buffers.
 - Write through `Composer` in `packages/app-ui/blocks/space.tsx` in every mode, including
@@ -95,6 +97,21 @@ cargo fmt --all -- --check
   words to a button they did not press.
 - Read a note aloud through `markdownToVoiceText`. A voice says `Monday`, not
   `# Monday`. A voice-over writes no message.
+- Keep the rules of a presentation and an export in
+  `packages/core/rules/present.ts`, and the stage in
+  `packages/app-ui/blocks/present.tsx`. Present is an overlay, never a route: a
+  route would need a window title, an opening path, and a place in the frozen
+  route list, and the address must stay on the note the user is holding.
+- Let a presentation run with no voice at all. Silence is a mode, not a
+  failure: big words and a partner who reads them is the oldest assistive move
+  there is, and it is the reason Present needs no setup.
+- Move to the next chunk when `speak()` resolves, never on a timer. It resolves
+  when the sound stops, so the story keeps the pace of the voice.
+- Say `Present`, `Export`, `Text`, `Audio`, and `Video`, and never the retired
+  name for any of them. A test reads every source file for it.
+- Save a file through `src/services/export.ts`, with the WebView download
+  support. Say why a row cannot run in the place of its own description, and
+  keep its target. A row that disappears teaches the user nothing.
 - Keep the rules of a space in `packages/core/rules/spaces.ts`, where a test can read them
   without a renderer: the slug, the search, the new title, the relative time,
   the transcript page, and the composer helpers.

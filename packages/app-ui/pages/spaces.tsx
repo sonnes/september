@@ -386,8 +386,8 @@ export function NewSpaceScreen() {
                   What is this space for?
                 </h2>
                 <p className="text-muted-foreground max-w-md text-sm">
-                  Your words become the note of the space, and Talk reads that
-                  note for every suggestion and every phrase.
+                  Your words tell September what this space is for. Talk reads
+                  them for every suggestion and every phrase.
                 </p>
                 {/* A way in, above the way out. The row stays while the
                     question does, so a press never unmounts the button that
@@ -439,7 +439,7 @@ export function NewSpaceScreen() {
             note={
               hasWriting
                 ? undefined
-                : "September will keep your words. Connect a writing service in Settings to have it name the space and write the first phrases."
+                : "September will keep your words. Connect writing help in Settings to have it name the space and write the first phrases."
             }
           />
         </div>
@@ -448,7 +448,7 @@ export function NewSpaceScreen() {
       <AlertDialog open={discarding} onOpenChange={setDiscarding}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Throw these words away?</AlertDialogTitle>
+            <AlertDialogTitle>Delete these words?</AlertDialogTitle>
             <AlertDialogDescription>
               September has not made the space yet, so nothing here is saved.
             </AlertDialogDescription>
@@ -456,7 +456,7 @@ export function NewSpaceScreen() {
           <AlertDialogFooter>
             <AlertDialogCancel>Keep writing</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={discard}>
-              Throw them away
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -515,7 +515,7 @@ export function SpacesScreen() {
             type="search"
             value={search}
             aria-label="Search spaces"
-            placeholder="Search your spaces..."
+            placeholder="Search your spaces…"
             onChange={(event) => setSearch(event.target.value)}
             className="pl-9"
           />
@@ -529,7 +529,7 @@ export function SpacesScreen() {
           action={
             <Button type="button" onClick={add}>
               <Plus aria-hidden />
-              Make your first space
+              Create your first space
             </Button>
           }
         />
@@ -613,7 +613,7 @@ function DeleteSpaceDialog({
           <AlertDialogTitle>Delete {space?.title}?</AlertDialogTitle>
           <AlertDialogDescription>
             This deletes the space and every message in it. You cannot undo
-            this action.
+            this.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -630,7 +630,7 @@ function DeleteSpaceDialog({
               if (space) deleteSpace.mutate(space.id, { onSuccess: onClose });
             }}
           >
-            {deleteSpace.isPending ? "Deleting..." : "Delete space"}
+            {deleteSpace.isPending ? "Deleting…" : "Delete space"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

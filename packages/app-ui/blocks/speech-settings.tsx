@@ -104,7 +104,7 @@ export function SpeechSettings() {
   return (
     <div className="space-y-5 p-4">
       <p className="text-muted-foreground text-xs">
-        The sound of every space. A change is kept as you make it.
+        How your voice sounds in every space. A change is kept as you make it.
       </p>
 
       {cloud && connected ? (
@@ -172,7 +172,7 @@ export function SpeechSettings() {
             })
           }
         >
-          Back to the usual sound
+          Back to how it usually sounds
         </Button>
       </Group>
 
@@ -184,7 +184,7 @@ export function SpeechSettings() {
         onClick={() => void speak(TRY_IT)}
       >
         <Volume2 aria-hidden />
-        Try it
+        Hear it
       </Button>
     </div>
   );

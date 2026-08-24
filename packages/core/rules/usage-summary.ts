@@ -1,6 +1,17 @@
 export type TimeRange = "day" | "week" | "month";
 export type CostSource = "measured" | "estimated" | "free" | "quota" | "unknown";
-export type UsageEventType = "message_sent" | "ai_generation" | "tts_generation";
+export type UsageEventType =
+  | "message_sent"
+  | "ai_generation"
+  | "tts_generation"
+  | "note_present"
+  | "note_export";
+
+/** The events that cost a user something. The rest are counted, not billed. */
+const PROVIDER_CALLS: UsageEventType[] = ["ai_generation", "tts_generation"];
+
+const isProviderCall = (event: UsageEvent) =>
+  PROVIDER_CALLS.includes(event.event_type);
 
 export interface UsageEvent {
   id: string;
@@ -176,7 +187,7 @@ export function summarizeUsage(events: UsageEvent[]): UsageSummary {
   const unknownModels = new Set<string>();
 
   for (const event of events) {
-    if (event.event_type === "message_sent") continue;
+    if (!isProviderCall(event)) continue;
 
     const provider = stringOf(event.data.provider, "unknown");
     const model = stringOf(event.data.model, "unknown");
@@ -225,7 +236,7 @@ export function summarizeUsage(events: UsageEvent[]): UsageSummary {
 /** Provider calls only, newest first. */
 export function toRecentCalls(events: UsageEvent[]): RecentUsageCall[] {
   return events
-    .filter((event) => event.event_type !== "message_sent")
+    .filter(isProviderCall)
     .map((event) => ({
       id: event.id,
       timestamp: event.timestamp,

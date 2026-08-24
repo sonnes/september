@@ -146,7 +146,7 @@ export function useUpdateNote(spaceId: string) {
     mutationFn: async (patch: NotePatch) => {
       const repository = await getRepository();
       const held = await repository.getNote(patch.id);
-      if (!held) throw new Error('that note is gone');
+      if (!held) throw new Error('That note is gone.');
       return repository.putNote({ ...held, ...patch, updated_at: Date.now() });
     },
     onSuccess: () => client.invalidateQueries({ queryKey: notesKey(spaceId) }),

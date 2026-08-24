@@ -18,7 +18,7 @@ export function EnhancedCTASection() {
           size="lg"
           className="mt-8 min-h-12 bg-white px-6 font-bold text-zinc-950 hover:bg-zinc-100"
         >
-          <Link to="/welcome">Get Started</Link>
+          <Link to="/welcome">Get started</Link>
         </Button>
       </div>
     </section>

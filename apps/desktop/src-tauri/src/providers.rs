@@ -50,19 +50,19 @@ impl Provider {
 
 #[derive(Debug, thiserror::Error)]
 pub enum ProviderError {
-    #[error("that key did not work")]
+    #[error("That key did not work. Copy it and try again.")]
     Rejected,
-    #[error("this account has no characters left this month")]
+    #[error("This account has no characters left this month.")]
     QuotaEmpty,
-    #[error("could not reach the service: {0}")]
+    #[error("Could not reach the service. Check the internet and try again. ({0})")]
     Unreachable(#[from] reqwest::Error),
-    #[error("the service sent an unexpected reply: {0}")]
+    #[error("The service sent a reply September could not read. ({0})")]
     Unexpected(String),
-    #[error("the keychain refused: {0}")]
+    #[error("The key could not be saved on this Mac. ({0})")]
     Keychain(String),
-    #[error("the API key cache refused: {0}")]
+    #[error("The key could not be read on this Mac. ({0})")]
     Cache(String),
-    #[error("could not read the reply: {0}")]
+    #[error("Could not read the reply. ({0})")]
     Encoding(#[from] serde_json::Error),
 }
 

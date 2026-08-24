@@ -39,7 +39,7 @@ A user-set code pins its row. Generated codes remain unpinned until the user kee
 
 The right panel shows pinned rows before generated rows. The Talk stripe combines phrases, starters, message history, and autocomplete words.
 
-The app learns shortcut ideas from repeated messages. Dismissed ideas stay in the application settings.
+The app learns code ideas from repeated messages. Dismissed ideas stay in the application settings.
 
 ## Generation
 

@@ -5,7 +5,9 @@ import { Button } from "@september/ui/components/button";
 import {
   formatCost,
   formatCount,
+  providerLabel,
   QuietStat,
+  sourceLabel,
   TimeRangeSelect,
   UsageCard,
 } from "@september/app-ui/blocks/usage";
@@ -62,7 +64,7 @@ export function UsageSettings() {
               value={formatCount(quota?.character_count ?? summary.services.total_credits)}
             />
             <QuietStat label="Tokens" value={formatCount(summary.services.total_tokens)} />
-            <QuietStat label="Calls" value={formatCount(summary.services.total_calls)} />
+            <QuietStat label="Requests" value={formatCount(summary.services.total_calls)} />
           </div>
 
           {quota ? (
@@ -83,14 +85,14 @@ export function UsageSettings() {
 
           <UsageCard>
             <div className="mb-5">
-              <h2 className="text-base font-semibold">Recent calls</h2>
+              <h2 className="text-base font-semibold">Recent requests</h2>
               <p className="text-muted-foreground text-sm">
-                Newest first. Message events are not provider calls.
+                Newest first. Spoken messages are counted on their own, not here.
               </p>
             </div>
             {visibleCalls.length === 0 ? (
               <p className="text-muted-foreground rounded-control border border-dashed p-6 text-sm">
-                No service calls in this period.
+                No requests in this period.
               </p>
             ) : (
               <div className="overflow-x-auto">
@@ -101,7 +103,7 @@ export function UsageSettings() {
                       <th className="pb-3 font-medium">Feature</th>
                       <th className="pb-3 font-medium">Service</th>
                       <th className="pb-3 text-right font-medium">Units</th>
-                      <th className="pb-3 text-right font-medium">Latency</th>
+                      <th className="pb-3 text-right font-medium">Time</th>
                       <th className="pb-3 text-right font-medium">Result</th>
                     </tr>
                   </thead>
@@ -118,12 +120,12 @@ export function UsageSettings() {
                         </td>
                         <td className="py-3 pr-4 capitalize">{call.feature}</td>
                         <td className="py-3 pr-4">
-                          <div className="font-medium capitalize">{call.provider}</div>
+                          <div className="font-medium">{providerLabel(call.provider)}</div>
                           <div className="text-muted-foreground max-w-52 truncate text-xs">{call.model}</div>
                         </td>
                         <td className="py-3 text-right whitespace-nowrap">
                           {call.characters !== undefined
-                            ? `${formatCount(call.characters)} chars`
+                            ? `${formatCount(call.characters)} characters`
                             : `${formatCount((call.input_tokens ?? 0) + (call.output_tokens ?? 0))} tokens`}
                         </td>
                         <td className="py-3 text-right whitespace-nowrap">{formatCount(call.latency_ms)} ms</td>
@@ -131,7 +133,7 @@ export function UsageSettings() {
                           <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
                             call.success ? "text-foreground" : "text-destructive"
                           }`}>
-                            {call.cached ? "Cached" : call.success ? "Done" : "Failed"}
+                            {call.cached ? "Reused" : call.success ? "Done" : "Failed"}
                           </span>
                         </td>
                       </tr>
@@ -169,7 +171,7 @@ function Breakdown({ title, rows }: { title: string; rows: Record<string, SpendB
         <div className="space-y-4">
           {entries.map(([name, bucket]) => (
             <div key={name} className="grid gap-2 sm:grid-cols-[minmax(120px,0.45fr)_1fr_auto] sm:items-center">
-              <span className="truncate text-sm font-medium capitalize">{name}</span>
+              <span className="truncate text-sm font-medium capitalize">{providerLabel(name)}</span>
               <div className="bg-muted h-2 overflow-hidden rounded-full">
                 <div
                   className="bg-primary h-full rounded-full"
@@ -177,7 +179,7 @@ function Breakdown({ title, rows }: { title: string; rows: Record<string, SpendB
                 />
               </div>
               <span className="text-muted-foreground text-right text-xs">
-                {formatCount(bucket.calls)} calls · {bucket.source}
+                {formatCount(bucket.calls)} requests · {sourceLabel(bucket.source)}
               </span>
             </div>
           ))}

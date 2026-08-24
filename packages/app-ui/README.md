@@ -25,3 +25,8 @@ import { TalkScreen } from "@september/app-ui/pages/talk";
 
 Keep copy neutral when the interaction is the same. Show a capability state
 when only one platform can perform an action.
+
+`blocks/present.tsx` is the one full-screen surface here. It draws over the
+whole viewport instead of inside the shell, because a presentation is for the
+room and not for the person holding the keyboard. It stays a block and not a
+route, so no app has to change its route set to present a note.

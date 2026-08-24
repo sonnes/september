@@ -152,13 +152,13 @@ const COMPOSER_ACTIONS: Record<ComposerMode, ComposerAction> = {
   talk: {
     label: "Speak",
     field: "Message",
-    placeholder: "Write a message...",
+    placeholder: "Write a message…",
     speaks: true,
   },
   notes: {
     label: "Add to note",
     field: "Words for the note",
-    placeholder: "Write words to add to this note...",
+    placeholder: "Write words to add to this note…",
     speaks: false,
   },
   new: {
@@ -331,7 +331,7 @@ export interface CreateProgress {
   failed?: Partial<Record<CreateStepId, string>>;
 }
 
-const NO_SERVICE = "Skipped — no writing service is connected";
+const NO_SERVICE = "Skipped — writing help is not connected";
 
 const STEP_LABELS: Record<CreateStepId, string> = {
   space: "Making the space",

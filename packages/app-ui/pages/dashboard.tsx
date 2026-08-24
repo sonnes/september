@@ -5,7 +5,9 @@ import { Screen } from "@september/app-ui/blocks/screen";
 import {
   formatCost,
   formatCount,
+  providerLabel,
   QuietStat,
+  sourceLabel,
   TimeRangeSelect,
   UsageCard,
 } from "@september/app-ui/blocks/usage";
@@ -20,7 +22,7 @@ export function DashboardScreen() {
 
   return (
     <Screen
-      title="Dashboard"
+      title="Today"
       description="Typing saved and service use, kept on this device."
       action={<TimeRangeSelect value={range} onChange={setRange} />}
       wide
@@ -80,11 +82,11 @@ export function DashboardScreen() {
                   {formatCost(summary.services.total_usd)}
                 </div>
                 <p className="text-muted-foreground text-sm">
-                  Reported pay-as-you-go spend {label}. Free and prepaid calls stay in their own units.
+                  Reported pay-as-you-go spend {label}. Free and prepaid requests stay in their own units.
                 </p>
               </div>
               <div className="grid min-w-64 grid-cols-2 gap-3">
-                <QuietStat label="Calls" value={formatCount(summary.services.total_calls)} />
+                <QuietStat label="Requests" value={formatCount(summary.services.total_calls)} />
                 <QuietStat label="Tokens" value={formatCount(summary.services.total_tokens)} />
               </div>
             </div>
@@ -92,16 +94,16 @@ export function DashboardScreen() {
             <div className="mt-8 grid gap-3 md:grid-cols-2">
               {Object.entries(summary.services.by_provider).length === 0 ? (
                 <p className="text-muted-foreground rounded-control border border-dashed p-6 text-sm md:col-span-2">
-                  No service calls yet {label}. Your first suggestion or spoken message will appear here.
+                  No requests yet {label}. Your first suggestion or spoken message will appear here.
                 </p>
               ) : (
                 Object.entries(summary.services.by_provider).map(([provider, bucket]) => (
                   <div key={provider} className="flex min-h-16 items-center gap-3 rounded-control border px-4 py-3">
                     <Sparkles className="text-muted-foreground size-4" aria-hidden />
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold capitalize">{provider}</div>
+                      <div className="text-sm font-semibold">{providerLabel(provider)}</div>
                       <div className="text-muted-foreground text-xs">
-                        {formatCount(bucket.calls)} calls · {bucket.source}
+                        {formatCount(bucket.calls)} requests · {sourceLabel(bucket.source)}
                       </div>
                     </div>
                     <div className="text-sm font-semibold">{formatCost(bucket.cost_usd)}</div>
@@ -125,9 +127,9 @@ function Quota({ quota }: { quota: NonNullable<ReturnType<typeof useElevenLabsQu
   return (
     <div className="mt-8 space-y-2 border-t pt-6">
       <div className="flex justify-between gap-4 text-sm">
-        <span className="font-semibold">ElevenLabs allowance</span>
+        <span className="font-semibold">ElevenLabs credits</span>
         <span className="text-muted-foreground">
-          {formatCount(quota.character_count)} of {formatCount(quota.character_limit)} credits
+          {formatCount(quota.character_count)} of {formatCount(quota.character_limit)} used
         </span>
       </div>
       <div className="bg-muted h-2 overflow-hidden rounded-full" aria-label={`${Math.round(percent)}% used`}>

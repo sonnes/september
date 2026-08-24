@@ -13,7 +13,7 @@ import { LANDING_SPACE_SEED, LiveDemoSection } from './live-demo-section';
 import { NOTE_SENTENCES, NOTE_TITLE, NotesSection } from './notes-section';
 import { PhraseCodesSection, matchDemoCode } from './phrase-codes-section';
 import { PrivacySection } from './privacy-section';
-import { REEL_CAPTIONS, ReelsSection } from './reels-section';
+import { PRESENT_CHUNKS, PresentSection } from './present-section';
 import { SetupChoicesSection } from './setup-choices-section';
 import { SpacesSection } from './spaces-section';
 import { VoiceSection } from './voice-section';
@@ -377,7 +377,7 @@ describe('voice section', () => {
     expect(container.textContent).toContain('Samantha');
 
     const preview = [...container.querySelectorAll('button')].find(button =>
-      button.textContent?.includes('Preview')
+      button.textContent?.includes('Hear it')
     )!;
     click(preview);
 
@@ -412,7 +412,7 @@ describe('section accents', () => {
     render(<NotesSection />);
     expect(container.querySelector('.bg-violet-50')).toBeTruthy();
 
-    render(<ReelsSection />);
+    render(<PresentSection />);
     expect(container.querySelector('.bg-rose-50')).toBeTruthy();
   });
 });
@@ -452,48 +452,48 @@ describe('notes section', () => {
   });
 });
 
-describe('reels section', () => {
-  it('renders the reel frame with the shared theme chrome', () => {
-    render(<ReelsSection />);
+describe('present section', () => {
+  it('renders the stage in the default tone, with no grain or vignette', () => {
+    render(<PresentSection />);
 
-    expect(container.textContent).toContain('Turn a note into something you can share.');
-    expect(container.textContent).toContain('September');
-    // First caption chunk is visible before playback.
-    expect(container.textContent).toContain(REEL_CAPTIONS[0]);
+    expect(container.textContent).toContain('Fill the room with it, or send it as a file.');
+    // The first chunk is on the stage before anything is pressed.
+    expect(container.textContent).toContain(PRESENT_CHUNKS[0].text);
 
-    // Grain + vignette exactly as the story player composes them — one layer,
-    // no opacity multiplier (the SVG bakes in its own 0.06).
-    const chrome = container.querySelector('[data-reel-chrome]') as HTMLElement;
-    expect(chrome).toBeTruthy();
-    expect(chrome.style.backgroundImage).toContain('radial-gradient');
-    expect(chrome.style.backgroundImage).toContain('data:image/svg+xml');
-    expect(chrome.style.opacity).toBe('');
+    const stage = container.querySelector('[data-present-stage]') as HTMLElement;
+    expect(stage).toBeTruthy();
+    // The indigo tone from the shared rules — no grain, no vignette.
+    expect(stage.style.backgroundColor).toBe('rgb(79, 70, 229)');
+    expect(stage.style.backgroundImage).toBe('');
   });
 
-  it('narrates the same story as the note above it', () => {
+  it('presents the same story as the note above it', () => {
     render(<NotesSection />);
     expect(container.textContent).toContain('red bicycle');
 
-    // The reel shows one caption at a time, so check the sequence itself.
-    expect(REEL_CAPTIONS.join(' ')).toContain('red bicycle');
-    expect(REEL_CAPTIONS.join(' ')).toContain('That’s how we met.');
+    // The stage shows one chunk at a time, so check the sequence itself.
+    const story = PRESENT_CHUNKS.map(chunk => chunk.text).join(' ');
+    expect(story).toContain('red bicycle');
+    expect(story).toContain('That’s how we met.');
     expect(NOTE_SENTENCES.join(' ')).toContain('That’s how we met.');
   });
 
-  it('plays the caption sequence with speech', () => {
-    render(<ReelsSection />);
+  it('speaks the chunks in order', () => {
+    render(<PresentSection />);
 
     const play = [...container.querySelectorAll('button')].find(button =>
-      button.textContent?.includes('Play reel')
+      button.textContent?.includes('Present')
     )!;
     click(play);
 
     expect(demoSpeech.speakSequence).toHaveBeenCalledTimes(1);
-    expect(demoSpeech.speakSequence.mock.calls[0][0]).toEqual([...REEL_CAPTIONS]);
+    expect(demoSpeech.speakSequence.mock.calls[0][0]).toEqual(
+      PRESENT_CHUNKS.map(chunk => chunk.text)
+    );
 
     const hooks = demoSpeech.speakSequence.mock.calls[0][1];
     act(() => hooks.onPart(1));
-    expect(container.textContent).toContain(REEL_CAPTIONS[1]);
+    expect(container.textContent).toContain(PRESENT_CHUNKS[1].text);
   });
 });
 

@@ -38,7 +38,7 @@ export function play(url: string): Promise<void> {
     };
     audio.onerror = () => {
       clear(audio);
-      reject(new Error("the audio file did not play"));
+      reject(new Error("The audio file did not play."));
     };
     audio.play().catch((reason) => {
       clear(audio);

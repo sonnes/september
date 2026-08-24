@@ -52,7 +52,7 @@ export function HeroSection() {
                 asChild
                 className="h-11 rounded-full bg-primary-foreground px-6 text-sm font-semibold text-indigo-600 shadow-lg transition hover:bg-primary-foreground/90 hover:shadow-xl sm:h-12 sm:px-8 sm:text-base"
               >
-                <Link to="/welcome">Get Started</Link>
+                <Link to="/welcome">Get started</Link>
               </Button>
               <Badge
                 asChild

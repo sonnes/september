@@ -5,8 +5,8 @@ import { HeroSection } from '@/components/home/hero-section';
 import { LiveDemoSection } from '@/components/home/live-demo-section';
 import { NotesSection } from '@/components/home/notes-section';
 import { PhraseCodesSection } from '@/components/home/phrase-codes-section';
+import { PresentSection } from '@/components/home/present-section';
 import { PrivacySection } from '@/components/home/privacy-section';
-import { ReelsSection } from '@/components/home/reels-section';
 import { SetupChoicesSection } from '@/components/home/setup-choices-section';
 import { SpacesSection } from '@/components/home/spaces-section';
 import { VoiceSection } from '@/components/home/voice-section';
@@ -21,7 +21,7 @@ export function HomePage() {
         <SpacesSection />
         <VoiceSection />
         <NotesSection />
-        <ReelsSection />
+        <PresentSection />
         <AboutSection />
         <PrivacySection />
         <SetupChoicesSection />

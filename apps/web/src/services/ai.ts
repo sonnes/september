@@ -73,7 +73,7 @@ export async function generate(
   options: { feature: GenerationFeature; signal?: AbortSignal },
 ): Promise<string> {
   const service = writingService();
-  if (!service) throw new Error("no writing service is chosen");
+  if (!service) throw new Error("Writing help is not set up.");
 
   if (service === "apple") throw new Error("Apple Intelligence is available in the macOS app.");
   const started = Date.now();
@@ -94,7 +94,8 @@ export async function generate(
       },
       body: JSON.stringify(chosen ? { ...request, model: chosen } : request),
     });
-    if (!response.ok) throw new Error(`OpenRouter request failed (${response.status}).`);
+    if (!response.ok)
+      throw new Error(`OpenRouter did not answer. Try again in a minute. (${response.status})`);
     const raw = (await response.json()) as {
       model?: string;
       choices?: Array<{ message?: { content?: string } }>;
@@ -155,7 +156,7 @@ export async function generate(
   });
   // The command cannot be stopped once it starts, so a caller that gave up
   // throws instead of using an answer it no longer wants.
-  if (options.signal?.aborted) throw new Error("the request was dropped");
+  if (options.signal?.aborted) throw new Error("The request was stopped.");
 
   return answer.text;
 }

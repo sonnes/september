@@ -16,7 +16,7 @@ export function VoiceSection() {
         <SectionHeader
           eyebrow="Your voice"
           title="Keep your own voice."
-          lede="Clone your voice from a 30-second recording — even from an old home video — and September speaks as you. Every message, note voice-over, and reel comes out in your voice, not a machine’s."
+          lede="Clone your voice from a 30-second recording — even from an old home video — and September speaks as you. Every message, note voice-over, and presentation comes out in your voice, not a machine’s."
           hint="Cloning happens in the app — preview a starting voice below."
           accent="emerald"
         />
@@ -101,7 +101,7 @@ function VoiceDemo() {
             className="inline-flex min-h-11 items-center gap-2 rounded-full border border-input bg-background px-6 text-sm font-semibold text-foreground transition-colors hover:enabled:bg-accent disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Play className="size-4" aria-hidden="true" />
-            Preview
+            Hear it
           </button>
         </div>
       </div>

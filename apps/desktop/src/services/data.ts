@@ -251,7 +251,7 @@ export function useUpdateNote(spaceId: string) {
   return useMutation({
     mutationFn: async (patch: NotePatch) => {
       const held = await call<Note | null>("note_get", { id: patch.id });
-      if (!held) throw new Error("that note is gone");
+      if (!held) throw new Error("That note is gone.");
 
       return call<Note>("note_put", {
         ...held,

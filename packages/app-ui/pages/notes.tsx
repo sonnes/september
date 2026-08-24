@@ -1,7 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 
 import { useNavigate } from "@tanstack/react-router";
-import { FileText, Info, Plus, Square, Trash2, Volume2 } from "lucide-react";
+import {
+  Download,
+  FileText,
+  Film,
+  Info,
+  Loader2,
+  Play,
+  Plus,
+  Square,
+  Trash2,
+  Volume2,
+} from "lucide-react";
 
 import {
   AlertDialog,
@@ -14,6 +25,14 @@ import {
   AlertDialogTitle,
 } from "@september/ui/components/alert-dialog";
 import { Button } from "@september/ui/components/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@september/ui/components/dialog";
+import { Progress } from "@september/ui/components/progress";
 
 import {
   useCreateNote,
@@ -36,9 +55,24 @@ import {
   UNTITLED_NOTE,
 } from "@september/core/rules/notes";
 import { PanelRail } from "@september/app-ui/blocks/space-panel";
+import { PresentOverlay } from "@september/app-ui/blocks/present";
 import { RightPanel, ScreenHeader } from "@september/app-ui/blocks/screen";
 import { pinnedPhrase } from "@september/core/rules/phrases";
+import {
+  EXPORT_ARTIFACTS,
+  PRESENT_TONES,
+  type ExportKind,
+  type PresentToneKey,
+} from "@september/core/rules/present";
 import { spaceFromSlug, spaceSlug } from "@september/core/rules/spaces";
+import {
+  exportUnavailable,
+  saveNoteAudio,
+  saveNoteText,
+  saveNoteVideo,
+  type VideoStage,
+} from "@platform/services/export";
+import { currentPresent, rememberPresent } from "@platform/services/os";
 import { speak, stopSpeaking, useSpeaking } from "@platform/services/speech";
 import {
   Composer,
@@ -176,17 +210,8 @@ function Notes({
     <>
       <ScreenHeader>
         <SpaceTitle space={space} mode="notes" />
-        {note ? <VoiceOver note={note} /> : null}
         {note ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label="Delete note"
-            onClick={() => setToDelete(note)}
-          >
-            <Trash2 aria-hidden />
-          </Button>
+          <NoteActions note={note} onDelete={() => setToDelete(note)} />
         ) : null}
       </ScreenHeader>
 
@@ -419,11 +444,246 @@ function NoteEditor({
         autoFocus
         value={content}
         aria-label="Note"
-        placeholder="Write your note here..."
+        placeholder="Write your note here…"
         onChange={(event) => write(event.target.value)}
         className="placeholder:text-muted-foreground/60 focus-within:border-ring focus-within:ring-ring/20 min-h-0 flex-1 resize-none rounded-2xl border bg-transparent p-4 text-xl leading-relaxed shadow-sm transition-[box-shadow,border-color] focus:outline-none focus-within:ring-[3px]"
       />
     </div>
+  );
+}
+
+/**
+ * What a note can do, beside its own words.
+ *
+ * Voice-over reads it where it stands. Present gives it the whole screen for
+ * the person in the room. Export writes it to a file. The bin is last, and
+ * apart, because it is the one action that cannot be undone.
+ */
+function NoteActions({
+  note,
+  onDelete,
+}: {
+  note: Note;
+  onDelete: () => void;
+}) {
+  const [presenting, setPresenting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const words = note.content.trim().length > 0;
+
+  return (
+    <>
+      <VoiceOver note={note} />
+
+      <Button
+        type="button"
+        size="lg"
+        className="shrink-0 rounded-full"
+        aria-disabled={!words}
+        aria-label="Present this note"
+        onClick={() => words && setPresenting(true)}
+      >
+        <Play aria-hidden />
+        Present
+      </Button>
+
+      <Button
+        type="button"
+        size="lg"
+        variant="outline"
+        className="shrink-0 rounded-full"
+        aria-disabled={!words}
+        aria-label="Export this note"
+        onClick={() => words && setExporting(true)}
+      >
+        <Download aria-hidden />
+        Export
+      </Button>
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        aria-label="Delete note"
+        onClick={onDelete}
+      >
+        <Trash2 aria-hidden />
+      </Button>
+
+      {presenting ? (
+        <PresentOverlay
+          name={note.name}
+          content={note.content}
+          onClose={() => setPresenting(false)}
+        />
+      ) : null}
+
+      <ExportDialog
+        note={note}
+        open={exporting}
+        onClose={() => setExporting(false)}
+      />
+    </>
+  );
+}
+
+const ARTIFACT_ICON: Record<ExportKind, typeof FileText> = {
+  text: FileText,
+  audio: Volume2,
+  video: Film,
+};
+
+/** How far the film has come, and what it is doing. */
+const VIDEO_STAGE: Record<VideoStage, { label: string; value: number }> = {
+  voice: { label: "Making the voice", value: 25 },
+  frames: { label: "Drawing the film", value: 60 },
+  video: { label: "Joining the sound", value: 90 },
+};
+
+/**
+ * The note as a file: the words, the voice, or a story film.
+ *
+ * A row that cannot run says why in the place of its own description, and
+ * keeps its target. A row that is missing teaches the user nothing.
+ */
+function ExportDialog({
+  note,
+  open,
+  onClose,
+}: {
+  note: Note;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [tone, setTone] = useState<PresentToneKey>(() => currentPresent().tone);
+  const [busy, setBusy] = useState<ExportKind | null>(null);
+  const [stage, setStage] = useState<VideoStage | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
+
+  const chooseTone = (next: PresentToneKey) => {
+    setTone(next);
+    // One tone for the stage and the film, so a note looks the same either way.
+    void rememberPresent({ ...currentPresent(), tone: next });
+  };
+
+  const run = (kind: ExportKind) => {
+    if (busy || exportUnavailable(kind)) return;
+    setFailed(null);
+    setBusy(kind);
+
+    if (kind === "text") {
+      saveNoteText(note.name, note.content);
+      setBusy(null);
+      return;
+    }
+
+    const work =
+      kind === "audio"
+        ? saveNoteAudio(note.name, note.content)
+        : saveNoteVideo(note.name, note.content, tone, setStage);
+
+    void work
+      .catch((reason: unknown) =>
+        setFailed(reason instanceof Error ? reason.message : String(reason)),
+      )
+      .finally(() => {
+        setBusy(null);
+        setStage(null);
+      });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => !next && !busy && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Export</DialogTitle>
+          <DialogDescription>
+            Save &ldquo;{note.name || UNTITLED_NOTE}&rdquo; as a file. It is made
+            on this device.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col gap-3">
+          {EXPORT_ARTIFACTS.map((artifact) => {
+            const reason = exportUnavailable(artifact.kind);
+            const working = busy === artifact.kind;
+            const Icon = ARTIFACT_ICON[artifact.kind];
+
+            return (
+              <div key={artifact.kind} className="rounded-surface border p-4">
+                <div className="flex items-center gap-4">
+                  <span className="bg-muted text-muted-foreground grid size-11 shrink-0 place-items-center rounded-full">
+                    <Icon className="size-5" aria-hidden />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium">
+                      {artifact.name}
+                    </span>
+                    <span className="text-muted-foreground block text-xs">
+                      {reason ?? artifact.hint}
+                    </span>
+                  </span>
+                  <Button
+                    type="button"
+                    size="lg"
+                    variant={artifact.kind === "text" ? "default" : "outline"}
+                    className="shrink-0 rounded-full"
+                    aria-disabled={Boolean(reason) || busy !== null}
+                    aria-label={`Save the ${artifact.name.toLowerCase()} file`}
+                    onClick={() => run(artifact.kind)}
+                  >
+                    {working ? (
+                      <Loader2 className="animate-spin" aria-hidden />
+                    ) : (
+                      <Download aria-hidden />
+                    )}
+                    .{artifact.extension}
+                  </Button>
+                </div>
+
+                {artifact.kind === "video" && !reason ? (
+                  <div
+                    role="group"
+                    aria-label="Tone"
+                    className="mt-3 flex flex-wrap items-center gap-2"
+                  >
+                    {PRESENT_TONES.map((option) => (
+                      <button
+                        key={option.key}
+                        type="button"
+                        aria-label={option.name}
+                        aria-pressed={option.key === tone}
+                        onClick={() => chooseTone(option.key)}
+                        className={`focus-visible:ring-ring size-11 rounded-full border-2 focus-visible:ring-2 focus-visible:outline-none ${
+                          option.key === tone
+                            ? "border-primary"
+                            : "border-border"
+                        }`}
+                        style={{ backgroundColor: option.background }}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+
+                {working && stage ? (
+                  <div className="mt-3 flex flex-col gap-1">
+                    <Progress value={VIDEO_STAGE[stage].value} />
+                    <span className="text-muted-foreground text-xs">
+                      {VIDEO_STAGE[stage].label}…
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+
+        {failed ? (
+          <p role="alert" className="text-destructive text-sm">
+            {failed}
+          </p>
+        ) : null}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -440,11 +700,11 @@ function VoiceOver({ note }: { note: Note }) {
       variant={busy ? "outline" : "default"}
       className="shrink-0 rounded-full"
       disabled={!words}
-      aria-label={busy ? "Stop the voice" : "Read this note aloud"}
+      aria-label={busy ? "Stop" : "Read this note aloud"}
       onClick={() => (busy ? stopSpeaking() : void speak(words, id))}
     >
       {busy ? <Square aria-hidden /> : <Volume2 aria-hidden />}
-      Voice-over
+      Read aloud
     </Button>
   );
 }
@@ -605,11 +865,11 @@ function DeleteNoteDialog({
             Delete &ldquo;{note?.name || UNTITLED_NOTE}&rdquo;?
           </AlertDialogTitle>
           <AlertDialogDescription>
-            The words of this note go for good. This cannot be undone.
+            This deletes the note and its words. You cannot undo this.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onClose}>Keep</AlertDialogCancel>
+          <AlertDialogCancel onClick={onClose}>Keep it</AlertDialogCancel>
           <AlertDialogAction
             className="bg-destructive hover:bg-destructive/90 text-white"
             onClick={onConfirm}

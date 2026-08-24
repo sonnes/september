@@ -1,3 +1,5 @@
+import type { UsageEventType } from '@/rules/usage-summary';
+
 export const DATABASE_NAME = 'september';
 const DATABASE_VERSION = 2;
 
@@ -77,7 +79,8 @@ export interface SavedPhrase {
 export interface AnalyticsEvent {
   id: string;
   user_id: string;
-  event_type: 'message_sent' | 'ai_generation' | 'tts_generation';
+  /** One list, in `@september/core/rules/usage-summary`, read by both apps. */
+  event_type: UsageEventType;
   timestamp: number;
   data: Record<string, unknown>;
 }
@@ -195,7 +198,7 @@ async function openDatabase(): Promise<IDBDatabase> {
       resolve(database);
     };
     request.onerror = () => reject(request.error ?? new Error('Could not open IndexedDB'));
-    request.onblocked = () => reject(new Error('The September database is open in another tab'));
+    request.onblocked = () => reject(new Error('September is open in another browser tab. Close that tab and try again.'));
   });
 }
 

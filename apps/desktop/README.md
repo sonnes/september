@@ -39,7 +39,7 @@ never wears the app sidebar, and an app screen never wears the setup sidebar.
 `AppShell` is the shadcn `Sidebar` and `SidebarInset` pair: a solid indigo
 sidebar beside a white inset card. `src/rules/app-nav.ts` lists the destinations
 and their descriptions. `packages/app-ui/layouts/app.tsx` gives each path an
-icon. The Help destination still shows a short placeholder. Dashboard, Spaces,
+icon. The Help destination still shows a short placeholder. Today, Spaces,
 Voice, and Settings use the same screens as the browser app.
 
 The window opens at the 1376px baseline, so the sidebar starts as a 48px icon
@@ -258,7 +258,7 @@ The first save gives the note a name, from its first six words. A name the
 user typed is never replaced. A new name makes a new slug, so the address
 moves with it.
 
-Voice-over reads the note aloud in the chosen voice. It removes the markup
+Read aloud speaks the note in the chosen voice. It removes the markup
 first, so a voice says `Monday`, not `# Monday`. It writes no message, and the
 transcript of the space does not change.
 
@@ -274,7 +274,38 @@ Deleting a space deletes its notes, in the same transaction as its messages.
 
 The desktop note is a plain text field, not the rich editor of the web app.
 Both apps keep markdown in the same `content` column, so the rows stay the
-same. Reel export and the slide presentation are not ported.
+same.
+
+### Present and export
+
+The note header carries four actions: Read aloud, Present, Export, and Delete.
+
+Present opens `packages/app-ui/blocks/present.tsx` over the whole window. The
+note fills the screen one chunk at a time, in one of seven tones, spoken in the
+chosen voice. When the sound stops the next chunk rises, which is the whole of
+the timing: `speak()` resolves when playback ends. With no voice configured the
+stage still runs, and the presenter advances by hand.
+
+Thirds of the stage move back, hold, and on. The keys are `←` `→` `Space`
+`Home` `End` `Esc`. The tone and the spoken or silent mode are kept in the
+`present` setting.
+
+While a presentation runs, September Camera shows the current chunk through
+`updateVirtualCameraOverlay`, and September Microphone already carries the
+voice into the call. Closing the stage clears the words again. Frames never
+leave the Core Media I/O extension.
+
+Export saves the note as `.md` always, and as `.mp3` with an ElevenLabs voice.
+`src/services/export.ts` writes both through the WebView download support, so
+the file is made on the Mac and goes nowhere else. Audio reuses the speech file
+that a voice-over already made.
+
+Video is made in the browser app for now, and the row says so instead of
+hiding: `ffmpeg.wasm` reaches its core through a blob URL, and the script
+policy of this window allows `'self'` only.
+
+`packages/core/rules/present.ts` owns the chunking, the tones, the font fit,
+and the caption timing. See `docs/concepts/note-present-export.md`.
 
 ### The note of the space
 
@@ -599,14 +630,15 @@ does not run from an installed application bundle.
 
 ## Measure saved typing and service use
 
-The Dashboard shows two local signals. Efficiency compares the characters in
-spoken messages with the keys pressed in the Talk composer. Service use counts
-AI and speech calls in dollars, tokens, characters, and ElevenLabs credits.
+The Today screen shows two local signals. Efficiency compares the characters
+in spoken messages with the keys pressed in the Talk composer. Service use
+counts writing and speech requests in dollars, tokens, characters, and
+ElevenLabs credits.
 
 The period selector uses the local calendar day, Monday-to-Sunday week, or
-calendar month. The Dashboard starts on the current week. Settings > Usage
+calendar month. The Today screen starts on the current week. Settings > Usage
 starts on the current month and adds service and feature breakdowns, recent
-calls, the current ElevenLabs allowance, and CSV download.
+requests, the current ElevenLabs credits, and CSV download.
 
 Talk counts printable keys, Backspace, and Enter. A phrase, suggestion, undo,
 or clear action does not add a key. September records the count only after

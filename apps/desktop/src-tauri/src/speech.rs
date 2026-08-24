@@ -69,7 +69,7 @@ pub async fn synthesize(
         return Ok((path, true));
     }
 
-    let key = key.ok_or("no ElevenLabs key is stored")?;
+    let key = key.ok_or("Connect ElevenLabs in Settings first.")?;
     let audio = Providers::default()
         .speak(key, settings, &normalize(text))
         .await

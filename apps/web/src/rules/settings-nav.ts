@@ -10,7 +10,7 @@
 export const SETTINGS_NAV = [
   {
     path: "/settings",
-    title: "Setup",
+    title: "Services",
     description: "The services September uses, and their keys.",
   },
   {
@@ -31,7 +31,7 @@ export const SETTINGS_NAV = [
 
 export type SettingsPath = (typeof SETTINGS_NAV)[number]["path"];
 
-/** The open section. A key page is a child of Setup, so Setup stays open. */
+/** The open section. A key page is a child of Services, so Services stays open. */
 export function sectionFor(pathname: string): (typeof SETTINGS_NAV)[number] {
   return (
     SETTINGS_NAV.find(
@@ -44,7 +44,7 @@ export function sectionFor(pathname: string): (typeof SETTINGS_NAV)[number] {
 export const CONNECTION_GUIDES = {
   openrouter: {
     name: "OpenRouter",
-    lede: "One connection that gives writing help. Free models are available, and no card is necessary.",
+    lede: "One service that gives writing help. Free models are available, and no card is necessary.",
     steps: [
       "Open the OpenRouter keys page and sign in.",
       'Press "Create key" and copy it.',

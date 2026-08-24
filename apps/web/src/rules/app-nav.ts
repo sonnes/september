@@ -7,7 +7,7 @@
 export const APP_NAV = [
   {
     path: "/dashboard",
-    title: "Dashboard",
+    title: "Today",
     description: "What happened today, and what to do next.",
   },
   {

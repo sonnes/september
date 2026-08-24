@@ -191,7 +191,7 @@ fn an_apfel_error_keeps_its_message() {
 
     assert_eq!(
         error.to_string(),
-        "apfel request failed: [context overflow] prompt exceeds the model context window"
+        "Apple Intelligence did not answer. ([context overflow] prompt exceeds the model context window)"
     );
 }
 

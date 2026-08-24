@@ -82,7 +82,7 @@ export async function encodeVoiceClone(input: VoiceCloneInput): Promise<{
     body: form,
   });
   const contentType = request.headers.get("content-type");
-  if (!contentType) throw new Error("Could not encode the voice samples.");
+  if (!contentType) throw new Error("Could not prepare the voice samples.");
 
   return {
     bytes: new Uint8Array(await request.arrayBuffer()),

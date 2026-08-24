@@ -82,7 +82,7 @@ export async function encodeVoiceClone(input: VoiceCloneInput): Promise<{
     body: form,
   });
   const contentType = request.headers.get("content-type");
-  if (!contentType) throw new Error("Could not encode the voice samples.");
+  if (!contentType) throw new Error("Could not prepare the voice samples.");
 
   return {
     bytes: new Uint8Array(await request.arrayBuffer()),
@@ -111,7 +111,8 @@ export async function cloneVoice(input: VoiceCloneInput): Promise<CreatedVoice> 
     headers: { "xi-api-key": key },
     body: form,
   });
-  if (!response.ok) throw new Error(`ElevenLabs could not clone the voice (${response.status}).`);
+  if (!response.ok)
+    throw new Error(`ElevenLabs could not create the voice. Try again in a minute. (${response.status})`);
   const created = (await response.json()) as { voice_id: string };
   return { id: created.voice_id, name: input.name.trim() };
 }

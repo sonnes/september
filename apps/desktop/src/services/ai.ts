@@ -76,7 +76,7 @@ export async function generate(
   options: { feature: GenerationFeature; signal?: AbortSignal },
 ): Promise<string> {
   const service = writingService();
-  if (!service) throw new Error("no writing service is chosen");
+  if (!service) throw new Error("Writing help is not set up.");
 
   const command =
     service === "apple" ? "apfel_generate" : "openrouter_generate";
@@ -135,7 +135,7 @@ export async function generate(
   });
   // The command cannot be stopped once it starts, so a caller that gave up
   // throws instead of using an answer it no longer wants.
-  if (options.signal?.aborted) throw new Error("the request was dropped");
+  if (options.signal?.aborted) throw new Error("The request was stopped.");
 
   return answer.text;
 }

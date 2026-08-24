@@ -59,7 +59,7 @@ export const SETUP_MODES = [
     id: "free",
     accent: "amber",
     badge: "Free start",
-    title: "Free AI mode",
+    title: "Free start",
     body: "Free writing help that runs on this Mac.",
     bullets: [
       "Apple Intelligence writes the suggestions. Your words do not leave the device.",
@@ -72,10 +72,10 @@ export const SETUP_MODES = [
     accent: "sky",
     badge: "Advanced",
     title: "Use your own services",
-    body: "For people or caregivers who already have voice or AI accounts.",
+    body: "For people or caregivers who already have accounts with these services.",
     bullets: [
-      "Add your own OpenRouter or ElevenLabs access key.",
-      "Choose the voice or writing helper you prefer.",
+      "Add your own OpenRouter or ElevenLabs key.",
+      "Choose the voice or writing help you prefer.",
       "September contacts only the services you choose.",
     ],
   },
@@ -97,7 +97,7 @@ export const WRITING_SERVICES = [
   {
     value: "openrouter",
     label: "OpenRouter",
-    description: "Cloud service. Stronger models. Free models are available.",
+    description: "Cloud service. Stronger writing help. Free models are available.",
   },
   {
     value: "none",
@@ -166,7 +166,7 @@ export const STEPS = [
   {
     path: "/finish",
     label: "Finish",
-    title: "You're all set.",
+    title: "You’re all set.",
     subtitle: "Review your choices before you start communicating.",
     helper: "You can change this anytime in Settings.",
     action: "Start communicating",
@@ -178,14 +178,14 @@ export type StepPath = (typeof STEPS)[number]["path"];
 export const WELCOME_POINTS = [
   {
     title: "Simple defaults",
-    description: "Start without a long configuration process.",
+    description: "Start without a long setup.",
   },
   {
     title: "Short taps",
     description: "Suggestion buttons help reduce typing.",
   },
   {
-    title: "Natural speech",
+    title: "A natural voice",
     description: "Choose a voice that feels like you.",
   },
   {

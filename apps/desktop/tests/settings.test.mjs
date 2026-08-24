@@ -35,8 +35,8 @@ test("every settings section has a route", async () => {
 });
 
 test("Setup stays the open section while a key is added", () => {
-  assert.equal(sectionFor("/settings").title, "Setup");
-  assert.equal(sectionFor("/settings/connections/openrouter").title, "Setup");
+  assert.equal(sectionFor("/settings").title, "Services");
+  assert.equal(sectionFor("/settings/connections/openrouter").title, "Services");
   assert.equal(sectionFor("/settings/writing").title, "Writing help");
   assert.equal(sectionFor("/settings/usage").title, "Usage");
 });

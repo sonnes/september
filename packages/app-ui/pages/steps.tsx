@@ -576,7 +576,7 @@ export function ConnectStep() {
                                 void new Audio(chosenVoice.preview_url!).play()
                               }
                             >
-                              ▶ Preview
+                              ▶ Hear it
                             </Button>
                           )}
                         </div>

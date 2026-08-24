@@ -4,6 +4,7 @@ import { open } from "@tauri-apps/plugin-shell";
 
 import type { OnboardingDraft } from "@/rules/onboarding";
 import { panelStateFrom, type PanelState } from "@/rules/panel";
+import { presentSettings, type PresentSettings } from "@/rules/present";
 import type { SpeechSettings } from "@/services/speech";
 
 /**
@@ -227,6 +228,29 @@ export const rememberPanel = (state: PanelState) => {
   panel = state;
   return invoke("setting_put", {
     request: { key: "panel-open", value: state },
+  }).catch(() => undefined);
+};
+
+let present = presentSettings(
+  await invoke<unknown>("setting_get", {
+    request: { key: "present" },
+  }).catch(() => null),
+);
+
+/**
+ * The tone of the last presentation, and whether it spoke.
+ *
+ * A user picks a colour once. Asking again at the start of every story would
+ * put a choice between the user and the words they came to say.
+ */
+export function currentPresent(): PresentSettings {
+  return present;
+}
+
+export const rememberPresent = (settings: PresentSettings) => {
+  present = settings;
+  return invoke("setting_put", {
+    request: { key: "present", value: settings },
   }).catch(() => undefined);
 };
 

@@ -10,6 +10,7 @@
     "./pages/*": "./pages/*.tsx"
   },
   "dependencies": {
+    "@fontsource-variable/fraunces": "^5.2.5",
     "@september/core": "workspace:*",
     "@september/ui": "workspace:*",
     "lucide-react": "^0.556.0"

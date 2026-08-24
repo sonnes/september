@@ -159,6 +159,29 @@ test("recent calls are newest first and CSV quotes unsafe cells", () => {
   assert.equal(csv.split("\n").length, 3);
 });
 
+test("a presentation is counted, but it is not a provider call", () => {
+  const events = [
+    event("note_present", { chunks: 4, spoken: true }, 1),
+    event("note_export", { kind: "text" }, 2),
+    event("tts_generation", {
+      provider: "elevenlabs",
+      model: "eleven_turbo_v2_5",
+      text_length: 10,
+      credits: 10,
+      latency_ms: 30,
+      success: true,
+      cached: false,
+      cost_source: "quota",
+    }, 3),
+  ];
+
+  // A story told in the room costs nothing, so it must not appear beside the
+  // calls the user pays for.
+  assert.equal(toRecentCalls(events).length, 1);
+  assert.equal(summarizeUsage(events).services.total_calls, 1);
+  assert.equal(summarizeUsage(events).services.total_credits, 10);
+});
+
 test("Dashboard and Settings Usage are real routes", async () => {
   const main = await readText("src/main.tsx");
   assert.match(main, /component: DashboardScreen/);

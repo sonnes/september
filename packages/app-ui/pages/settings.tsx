@@ -126,13 +126,13 @@ export function SetupSettings() {
   return (
     <div className="flex flex-col gap-8">
       <Title
-        title="Setup"
+        title="Services"
         description="The services September uses, and the keys they need."
       />
 
       <Section
-        title="Connections"
-        description="Connect the services you want. Each row says what comes next."
+        title="Connect a service"
+        description="Each row says what comes next."
       >
         <div className="divide-y border-y">
           <ConnectionRow
@@ -253,7 +253,7 @@ export function ConnectionScreen({ provider }: { provider: ConnectionId }) {
     <div className="flex flex-col gap-6">
       <nav className="text-muted-foreground text-sm">
         <Link to="/settings" className="hover:text-foreground">
-          ‹ Setup
+          ← Back
         </Link>
         <span aria-hidden="true"> / </span>
         <span className="text-foreground font-medium">{guide.name}</span>
@@ -472,7 +472,7 @@ export function WritingSettings() {
 
       <Section
         title="Who writes"
-        description="Only a connected service can write. Add a key in Setup."
+        description="Only a connected service can write. Add a key in Services."
       >
         <RadioGroup
           aria-label="Writing help"
@@ -503,7 +503,7 @@ export function WritingSettings() {
                 <span className="text-muted-foreground mt-1 block text-xs leading-relaxed">
                   {ready[option.value]
                     ? option.description
-                    : "Not connected yet. Finish it in Setup."}
+                    : "Not connected yet. Finish it in Services."}
                 </span>
               </span>
             </Label>

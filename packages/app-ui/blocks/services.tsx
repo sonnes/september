@@ -196,7 +196,7 @@ export function KeyPanel({
       onConnected(await connectProvider(provider, key.trim()));
       setKey("");
     } catch (reason) {
-      setProblem(String(reason));
+      setProblem(reason instanceof Error ? reason.message : String(reason));
     } finally {
       setBusy(false);
     }
@@ -225,8 +225,8 @@ export function KeyPanel({
       <div className="flex flex-wrap gap-2">
         <Input
           type="password"
-          aria-label={`${name} API key`}
-          placeholder={`Paste your ${name} API key`}
+          aria-label={`${name} key`}
+          placeholder={`Paste your ${name} key`}
           autoComplete="off"
           spellCheck={false}
           value={key}
@@ -245,7 +245,7 @@ export function KeyPanel({
       </div>
       {problem && (
         <p role="alert" className="text-xs font-semibold text-red-700">
-          {problem}. Copy the key again.
+          {problem}
         </p>
       )}
     </>

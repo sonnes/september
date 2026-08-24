@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
@@ -81,6 +81,7 @@ const desktopRoot = new URL("../", import.meta.url);
 const sharedRuleFiles = new Set([
   "notes.ts",
   "panel.ts",
+  "present.ts",
   "phrases.ts",
   "pick.ts",
   "prompts.ts",
@@ -174,7 +175,7 @@ test("every desktop page gives the September window a title", async () => {
       "September — Choose setup",
       "September — Connect",
       "September — Finish",
-      "September — Dashboard",
+      "September — Today",
       "September — Spaces",
       "September — New space",
       "September — Talk",
@@ -183,7 +184,7 @@ test("every desktop page gives the September window a title", async () => {
       "September — Voice",
       "September — Clone your voice",
       "September — Help",
-      "September — Setup",
+      "September — Services",
       "September — Writing help",
       "September — Usage",
       "September — OpenRouter",
@@ -1965,6 +1966,163 @@ test("a space opens in Talk or in Notes, and both routes exist", async () => {
 
   assert.match(main, /\/spaces\/\$slug\/notes/);
   assert.match(main, /\/spaces\/\$slug\/notes\/\$noteSlug/);
+});
+
+// -------------------------------------------------------- present and export
+
+test("the note header offers the voice, the stage, the file, and the bin", async () => {
+  const notes = await readText("src/pages/notes.tsx");
+
+  assert.match(notes, /Read aloud/);
+  assert.match(notes, /<PresentOverlay/);
+  assert.match(notes, /Export/);
+  assert.match(notes, /Delete note/);
+  // Present carries the note, so it is the filled pill of the four.
+  assert.match(notes, /Present/);
+});
+
+test("presenting is an overlay, so the addresses of the app do not change", async () => {
+  const main = await readText("src/main.tsx");
+  const present = await readText("src/blocks/present.tsx");
+
+  // A route would need a window title, an opening path, and a place in the
+  // frozen route list. A presentation is a state of the note screen instead.
+  assert.doesNotMatch(main, /present/i);
+  assert.match(present, /fixed inset-0/);
+  assert.match(present, /z-50/);
+});
+
+test("a presentation speaks one chunk and moves on when the sound stops", async () => {
+  const present = await readText("src/blocks/present.tsx");
+  const speech = await readText("src/services/speech.ts");
+
+  // The whole spoken mode rests on this contract of the speech service.
+  assert.match(speech, /It resolves when the sound stops/);
+  assert.match(present, /await speak\(/);
+  assert.match(present, /stepChunk\(/);
+});
+
+test("a presentation with no voice at all still runs", async () => {
+  const present = await readText("src/blocks/present.tsx");
+
+  // Silent mode is the reason Present needs no setup: big words, and a
+  // partner who reads them. The speaker switch turns it on mid-story.
+  assert.match(present, /spoken/);
+  assert.match(present, /Turn the voice (on|off)/);
+  // Nothing on the stage waits on a service, so nothing here is disabled.
+  assert.doesNotMatch(present, /\sdisabled=/);
+  assert.match(present, /aria-disabled/);
+});
+
+test("every control of the stage keeps the 44px target", async () => {
+  const present = await readText("src/blocks/present.tsx");
+
+  assert.match(present, /size-11/);
+  // Thirds of the stage: back, hold, on. A press lands somewhere useful.
+  assert.match(present, /Previous chunk/);
+  assert.match(present, /Next chunk/);
+  assert.match(present, /aria-label="Close the presentation"/);
+});
+
+test("the keys of the stage are the keys of a remote", async () => {
+  const present = await readText("src/blocks/present.tsx");
+
+  for (const key of ["ArrowRight", "ArrowLeft", "Home", "End", "Escape", '" "']) {
+    assert.match(present, new RegExp(key.replace(/[[\]]/g, "\\$&")), key);
+  }
+  // A chunk rises in, unless the user asked for no motion.
+  assert.match(present, /motion-reduce:/);
+});
+
+test("the camera shows the presented chunk, and the Talk draft after it", async () => {
+  const present = await readText("src/blocks/present.tsx");
+  const agents = await readFile(new URL("AGENTS.md", desktopRoot), "utf8");
+
+  // September Microphone already carries the voice into the call. The overlay
+  // carries the words, one chunk at a time, through the same text property.
+  assert.match(present, /updateVirtualCameraOverlay\(/);
+  // Closing the stage clears the chunk, so a stale line cannot outlive it.
+  assert.match(present, /updateVirtualCameraOverlay\(""/);
+  assert.match(agents, /except while a presentation runs/);
+});
+
+test("the tone and the sound of a presentation are remembered", async () => {
+  const os = await readText("src/services/os.ts");
+  const present = await readText("src/blocks/present.tsx");
+
+  assert.match(os, /key: "present"/);
+  assert.match(os, /presentSettings/);
+  assert.match(present, /rememberPresent/);
+  // Seven tones, one row, behind a switch: presenting is not editing.
+  assert.match(present, /PRESENT_TONES/);
+  assert.match(present, /Colours/);
+});
+
+test("the words of a note save with no service connected", async () => {
+  const { exportReason, exportFileName } = await import("../src/rules/present.ts");
+  const exporter = await readText("src/services/export.ts");
+
+  assert.equal(
+    exportReason("text", { provider: "system", voiceId: null, video: false }),
+    null,
+  );
+  assert.equal(exportFileName("Letter to Dr Shah", "text"), "letter-to-dr-shah.md");
+  // The same download path as the usage report: a Blob the WebView saves.
+  assert.match(exporter, /createObjectURL/);
+  assert.match(exporter, /revokeObjectURL/);
+});
+
+test("the Mac says where a video comes from, instead of hiding the row", async () => {
+  const { exportReason } = await import("../src/rules/present.ts");
+  const exporter = await readText("src/services/export.ts");
+
+  // The desktop WebView cannot load the ffmpeg core under the app policy yet.
+  assert.match(exporter, /VIDEO_EXPORT = false/);
+  assert.match(
+    exportReason("video", { provider: "elevenlabs", voiceId: "v1", video: false }),
+    /browser/,
+  );
+});
+
+test("the retired name is gone from both apps", async () => {
+  const roots = [
+    "apps/web/src",
+    "apps/desktop/src",
+    "packages/app-ui",
+    "packages/core/rules",
+  ];
+  const repositoryRoot = new URL("../../../", import.meta.url);
+  const found = [];
+
+  const walk = async (path) => {
+    for (const entry of await readdir(new URL(path, repositoryRoot), {
+      withFileTypes: true,
+    })) {
+      const child = `${path}/${entry.name}`;
+      if (entry.isDirectory()) {
+        await walk(child);
+      } else if (/\.tsx?$/.test(entry.name)) {
+        // The words September says, without the notes it keeps to itself: a
+        // comment may still name the feature this one replaced.
+        const source = (await readFile(new URL(child, repositoryRoot), "utf8"))
+          .replace(/\/\*[\s\S]*?\*\//g, " ")
+          .replace(/^\s*\/\/.*$/gm, " ");
+        // One name for each thing September does. "Present" replaced the
+        // borrowed social-media noun, and the old one must not creep back.
+        if (/\breels?\b/i.test(source)) found.push(child);
+      }
+    }
+  };
+
+  for (const root of roots) await walk(root);
+  assert.deepEqual(found, []);
+});
+
+test("a presentation and an export are counted like the rest", async () => {
+  const usage = await readText("src/services/usage.ts");
+
+  assert.match(usage, /note_present/);
+  assert.match(usage, /note_export/);
 });
 
 // ------------------------------------------------- the dock and the right rail

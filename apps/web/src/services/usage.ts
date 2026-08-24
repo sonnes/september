@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { listUsageEvents, putUsageEvent } from "@/services/data";
 import { currentUserId, providerKey } from "@/services/os";
+import type { ExportKind } from "@/rules/present";
 import {
   getTimeRangeBounds,
   summarizeUsage,
@@ -90,6 +91,18 @@ export const recordAiUsage = (usage: AIUsage) =>
 
 export const recordTtsUsage = (usage: TtsUsage) =>
   record("tts_generation", { ...usage }).catch(() => undefined);
+
+/**
+ * A story told, and a file saved.
+ *
+ * Neither one is a provider call, so neither reaches the spend report. They
+ * are here because the dashboard counts what September was used for.
+ */
+export const recordPresentUsage = (chunks: number, spoken: boolean) =>
+  record("note_present", { chunks, spoken }).catch(() => undefined);
+
+export const recordExportUsage = (kind: ExportKind) =>
+  record("note_export", { kind }).catch(() => undefined);
 
 export function useUsage(timeRange: TimeRange) {
   const currentRevision = useSyncExternalStore(

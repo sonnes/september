@@ -128,7 +128,7 @@ export function VoiceScreen() {
       action={
         <Button type="button" onClick={() => void speak(TRY_IT)}>
           <Volume2 aria-hidden />
-          Try it
+          Hear it
         </Button>
       }
     >
@@ -141,8 +141,8 @@ export function VoiceScreen() {
         >
           <ServiceChoice
             value="system"
-            title="This device"
-            body="The system voice. It needs no provider account."
+            title="System voice"
+            body="Built into this device. It needs no account."
           />
           <ServiceChoice
             value="elevenlabs"
@@ -526,7 +526,7 @@ function VoiceCloneForm({
             params={{ provider: "elevenlabs" }}
             className="font-semibold underline"
           >
-            Open ElevenLabs settings
+            Open ElevenLabs in Settings
           </Link>
           .
         </div>

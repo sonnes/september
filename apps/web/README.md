@@ -66,9 +66,11 @@ The browser uses the Web Speech API for the system voice. A system voice does no
 
 ElevenLabs speech files use a cache key made from the text and every sound setting. The repository splits each file into 1 MiB chunks. The cache holds at most 100 MiB and evicts whole least-recently-used files before each write. Reading a file refreshes its access time. A cache failure does not prevent new speech from playing.
 
-OpenRouter and ElevenLabs calls go directly from the browser. Their access keys stay in IndexedDB.
+A note presents and exports from its own screen. `src/services/export.ts` saves the words as `.md` with nothing configured, the voice as `.mp3` from the speech cache, and a 9:16 `.mp4` with word-synced captions. `synthesizeTimed` in `src/services/os.ts` asks ElevenLabs for the sound and the character alignment together and caches both in the same bounded store. `src/services/video.ts` draws every frame on a canvas and joins them to the voice with `ffmpeg.wasm`, which needs the cross-origin isolation headers in `public/_headers`. Nothing leaves the browser. See `docs/concepts/note-present-export.md`.
 
-CAUTION: Browser scripts on this origin can read these access keys. The desktop app gives stronger protection because it stores keys in the macOS Keychain.
+OpenRouter and ElevenLabs calls go directly from the browser. Their keys stay in IndexedDB.
+
+CAUTION: Browser scripts on this origin can read these keys. The desktop app gives stronger protection because it stores keys in the macOS Keychain.
 
 Apple Intelligence and the desktop virtual devices are not available in the browser. The interface shows their unavailable state in the desktop UI positions.
 

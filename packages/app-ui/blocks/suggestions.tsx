@@ -353,8 +353,8 @@ function EndKey({
   return (
     <button
       type="button"
-      aria-label="Say this row"
-      title="Say this row"
+      aria-label="Speak this suggestion"
+      title="Speak this suggestion"
       onClick={() => onSpeak(joinTokens(stripe.tokens).trim())}
       style={box}
       className={cn(

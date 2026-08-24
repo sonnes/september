@@ -33,7 +33,7 @@ the existing space-scoped message and note queries.
 
 The `analytics_events` table stores an event ID, user ID, event type, Unix
 millisecond timestamp, and validated JSON payload. An index on user and
-timestamp supports the Dashboard and Settings reports without scanning other
+timestamp supports the Today and Settings reports without scanning other
 users or older periods.
 
 Usage rows do not reference spaces. Deleting a conversation removes its

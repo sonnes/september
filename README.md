@@ -22,6 +22,7 @@ The web app stores data and its bounded speech cache in one IndexedDB database. 
 - Talk spaces combine saved phrases, word suggestions, and a text composer.
 - System and ElevenLabs voices speak Talk messages and notes.
 - Notes store prepared long-form text inside a space.
+- A note presents full-screen in the user's voice, and exports as text, audio, or a captioned video.
 - Phrase codes expand short input into a full phrase.
 - Local usage reports show saved keystrokes and provider use.
 - ElevenLabs can create a cloned voice from browser or desktop recordings.

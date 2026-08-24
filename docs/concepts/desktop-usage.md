@@ -41,12 +41,12 @@ success. The system-voice fallback creates its own event.
 
 ## Read two levels of report
 
-The Dashboard answers two quick questions for today, this week, or this month:
-how much typing did September save, and what did its services use? It starts on
-the current week.
+The Today screen answers two quick questions for today, this week, or this
+month: how much typing did September save, and what did its services use? It
+starts on the current week.
 
 Settings > Usage starts on the current month. It adds service and feature
-breakdowns, recent provider calls, the live ElevenLabs allowance, and a CSV
+breakdowns, recent requests, the live ElevenLabs credits, and a CSV
 download. Calendar weeks begin on Monday in the Mac's local timezone.
 
 ## Remove old events automatically

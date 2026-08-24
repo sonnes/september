@@ -470,7 +470,7 @@ pub(crate) fn user_id() -> RpcResult<String> {
         .ok()
         .as_deref()
         .and_then(login_name)
-        .ok_or_else(|| "the system knows no login name".to_owned())
+        .ok_or_else(|| "This Mac has no login name.".to_owned())
 }
 
 #[tauri::command]
@@ -610,7 +610,7 @@ pub(crate) async fn openrouter_generate(
     let key = keys
         .get(Provider::OpenRouter)
         .map_err(rpc_error)?
-        .ok_or("no OpenRouter key is stored")?;
+        .ok_or("Connect OpenRouter in Settings first.")?;
     Providers::default()
         .generate(&key, &request)
         .await
@@ -680,7 +680,7 @@ pub(crate) async fn provider_clone_voice(
     let key = keys
         .get(Provider::ElevenLabs)
         .map_err(rpc_error)?
-        .ok_or("no ElevenLabs key is stored")?;
+        .ok_or("Connect ElevenLabs in Settings first.")?;
     Providers::default()
         .clone_voice(&key, &content_type, body)
         .await
@@ -797,7 +797,7 @@ fn rpc_error(error: impl std::fmt::Display) -> String {
 }
 
 fn lock_error<T>(_: std::sync::PoisonError<T>) -> String {
-    "desktop storage lock is poisoned".into()
+    "September could not reach its storage. Quit and open the app again.".into()
 }
 
 #[cfg(test)]

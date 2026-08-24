@@ -1,5 +1,10 @@
 import type { OnboardingDraft } from '@/rules/onboarding';
 import { panelStateFrom, type PanelState } from '@/rules/panel';
+import {
+  presentSettings,
+  type PresentSettings,
+  type SpeechAlignment,
+} from '@/rules/present';
 import { getRepository } from '@/services/repository';
 import type { SpeechSettings } from '@/services/speech';
 
@@ -12,6 +17,7 @@ let setup: SavedSetup | null = null;
 let lastPath: string | null = null;
 let speech: SpeechSettings | null = null;
 let panel: PanelState = panelStateFrom(null);
+let present: PresentSettings = presentSettings(null);
 let providerKeys: Partial<Record<Provider, string>> = {};
 let selectedOutput = '';
 let bootstrapped = false;
@@ -24,18 +30,29 @@ export let newSpaceDraft = '';
 export async function bootstrapBrowserServices(): Promise<void> {
   if (bootstrapped) return;
   const repository = await getRepository();
-  const [savedSetup, savedPath, savedSpeech, savedDismissed, savedModes, savedDraft, savedPanel, keys, output] =
-    await Promise.all([
-      repository.getSetting<SavedSetup>('setup'),
-      repository.getSetting<string>('lastPath'),
-      repository.getSetting<SpeechSettings>('speech'),
-      repository.getSetting<string[]>('dismissed-ideas'),
-      repository.getSetting<Record<string, string>>('space-modes'),
-      repository.getSetting<string>('new-space-draft'),
-      repository.getSetting<unknown>('panel-open'),
-      repository.getSetting<Partial<Record<Provider, string>>>('provider-keys'),
-      repository.getSetting<string>('audio-output'),
-    ]);
+  const [
+    savedSetup,
+    savedPath,
+    savedSpeech,
+    savedDismissed,
+    savedModes,
+    savedDraft,
+    savedPanel,
+    savedPresent,
+    keys,
+    output,
+  ] = await Promise.all([
+    repository.getSetting<SavedSetup>('setup'),
+    repository.getSetting<string>('lastPath'),
+    repository.getSetting<SpeechSettings>('speech'),
+    repository.getSetting<string[]>('dismissed-ideas'),
+    repository.getSetting<Record<string, string>>('space-modes'),
+    repository.getSetting<string>('new-space-draft'),
+    repository.getSetting<unknown>('panel-open'),
+    repository.getSetting<unknown>('present'),
+    repository.getSetting<Partial<Record<Provider, string>>>('provider-keys'),
+    repository.getSetting<string>('audio-output'),
+  ]);
   setup = savedSetup;
   lastPath = savedPath;
   speech = savedSpeech;
@@ -43,6 +60,7 @@ export async function bootstrapBrowserServices(): Promise<void> {
   Object.assign(spaceModes, savedModes ?? {});
   newSpaceDraft = savedDraft ?? '';
   panel = panelStateFrom(savedPanel);
+  present = presentSettings(savedPresent);
   providerKeys = keys ?? {};
   selectedOutput = output ?? '';
   bootstrapped = true;
@@ -166,7 +184,7 @@ export async function synthesizeSpeech(
       }),
     }
   );
-  if (!response.ok) throw new Error(`ElevenLabs could not speak (${response.status}).`);
+  if (!response.ok) throw new Error(`ElevenLabs could not speak. Try again in a minute. (${response.status})`);
   const speechFile = await response.blob();
   try {
     await repository?.putBlob(cacheId, speechFile);
@@ -174,6 +192,89 @@ export async function synthesizeSpeech(
     // The new file can still play even when the cache write fails.
   }
   return { path: URL.createObjectURL(speechFile), from_cache: false };
+}
+
+/**
+ * The same sentence, with the time of every character in it.
+ *
+ * A video caption highlights the word being said, so it needs the alignment
+ * that only the cloud voice returns. The sound and the timing are cached
+ * together, in the same bounded store as the rest of the speech, so a second
+ * export of one note costs nothing.
+ */
+export async function synthesizeTimed(
+  text: string,
+  settings: SpeechSettings
+): Promise<{ blob: Blob; alignment: SpeechAlignment }> {
+  if (!settings.voiceId) throw new Error('Choose an ElevenLabs voice first.');
+  const cacheId = `${await speechBlobId(text, settings)}:timed`;
+  const timingId = `${cacheId}:alignment`;
+  let repository: Awaited<ReturnType<typeof getRepository>> | null = null;
+
+  try {
+    repository = await getRepository();
+    const [sound, timing] = await Promise.all([
+      repository.getBlob(cacheId),
+      repository.getBlob(timingId),
+    ]);
+    if (sound && timing) {
+      return { blob: sound, alignment: JSON.parse(await timing.text()) as SpeechAlignment };
+    }
+  } catch {
+    // A denied or full private store never stops an export.
+  }
+
+  const response = await fetch(
+    `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(
+      settings.voiceId
+    )}/with-timestamps`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'xi-api-key': elevenLabsKey() },
+      body: JSON.stringify({
+        text,
+        model_id: settings.modelId,
+        voice_settings: {
+          stability: settings.stability,
+          similarity_boost: settings.similarity,
+          speed: settings.speed,
+        },
+      }),
+    }
+  );
+  if (!response.ok) throw new Error(`ElevenLabs could not speak. Try again in a minute. (${response.status})`);
+
+  const spoken = (await response.json()) as {
+    audio_base64: string;
+    alignment: {
+      characters: string[];
+      character_start_times_seconds: number[];
+      character_end_times_seconds: number[];
+    } | null;
+  };
+  if (!spoken.alignment) throw new Error('That voice returned no word timing.');
+
+  const bytes = Uint8Array.from(atob(spoken.audio_base64), character =>
+    character.charCodeAt(0)
+  );
+  const blob = new Blob([bytes], { type: 'audio/mpeg' });
+  const alignment: SpeechAlignment = {
+    characters: spoken.alignment.characters,
+    start_times: spoken.alignment.character_start_times_seconds,
+    end_times: spoken.alignment.character_end_times_seconds,
+  };
+
+  try {
+    await repository?.putBlob(cacheId, blob);
+    await repository?.putBlob(
+      timingId,
+      new Blob([JSON.stringify(alignment)], { type: 'application/json' })
+    );
+  } catch {
+    // The export still finishes when the cache write fails.
+  }
+
+  return { blob, alignment };
 }
 
 export async function speakSystem(text: string, settings: SpeechSettings): Promise<void> {
@@ -243,6 +344,21 @@ export function currentPanel(): PanelState {
 export async function rememberPanel(state: PanelState): Promise<void> {
   panel = state;
   await (await getRepository()).putSetting('panel-open', state);
+}
+
+/**
+ * The tone of the last presentation, and whether it spoke.
+ *
+ * A user picks a colour once. Asking again at the start of every story would
+ * put a choice between the user and the words they came to say.
+ */
+export function currentPresent(): PresentSettings {
+  return present;
+}
+
+export async function rememberPresent(settings: PresentSettings): Promise<void> {
+  present = settings;
+  await (await getRepository()).putSetting('present', settings);
 }
 
 export type Provider = 'openrouter' | 'elevenlabs';
@@ -320,6 +436,12 @@ export function providerKey(provider: Provider): string | null {
   return providerKeys[provider] ?? null;
 }
 
+/** The name a message shows. The stored id is an identifier, not copy. */
+const PROVIDER_NAMES: Record<Provider, string> = {
+  openrouter: 'OpenRouter',
+  elevenlabs: 'ElevenLabs',
+};
+
 async function verifyProvider(provider: Provider, key: string): Promise<void> {
   const response = await fetch(
     provider === 'openrouter'
@@ -332,7 +454,8 @@ async function verifyProvider(provider: Provider, key: string): Promise<void> {
           : { 'xi-api-key': key },
     }
   );
-  if (!response.ok) throw new Error(`${provider} rejected that key.`);
+  if (!response.ok)
+    throw new Error(`${PROVIDER_NAMES[provider]} did not accept that key. Copy it and try again.`);
 }
 
 export async function connectProvider(provider: Provider, key: string): Promise<ProviderStatus> {
@@ -353,14 +476,17 @@ export async function forgetProvider(provider: Provider): Promise<boolean> {
 
 async function providerJson<T>(provider: Provider, url: string): Promise<T> {
   const key = providerKeys[provider];
-  if (!key) throw new Error(`Connect ${provider} in Settings first.`);
+  if (!key) throw new Error(`Connect ${PROVIDER_NAMES[provider]} in Settings first.`);
   const response = await fetch(url, {
     headers:
       provider === 'openrouter'
         ? { authorization: `Bearer ${key}` }
         : { 'xi-api-key': key },
   });
-  if (!response.ok) throw new Error(`${provider} request failed (${response.status}).`);
+  if (!response.ok)
+    throw new Error(
+      `${PROVIDER_NAMES[provider]} did not answer. Try again in a minute. (${response.status})`
+    );
   return response.json() as Promise<T>;
 }
 

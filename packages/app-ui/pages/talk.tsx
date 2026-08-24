@@ -153,7 +153,7 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
                   <MessagesSquare className="size-6" aria-hidden />
                 </div>
                 <p className="text-muted-foreground max-w-xs text-sm">
-                  Write a sentence below, then press Speak. What you say shows
+                  Write a message below, then press Speak. What you say shows
                   here.
                 </p>
                 {/* A space that was skipped has a made-up name and no note.
