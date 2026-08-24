@@ -5,7 +5,7 @@ import { Button } from '@september/ui/components/button';
 export function EnhancedCTASection() {
   return (
     <section className="bg-white px-4 py-16 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl rounded-2xl bg-zinc-950 px-6 py-14 text-center text-white shadow-sm sm:px-8 sm:py-16">
+      <div className="mx-auto max-w-7xl rounded-2xl bg-zinc-950 px-6 py-14 text-center text-white shadow-lg sm:px-8 sm:py-16">
         <h2 className="mx-auto max-w-2xl text-3xl font-bold leading-tight tracking-normal sm:text-5xl">
           Being understood shouldn’t be hard work.
         </h2>

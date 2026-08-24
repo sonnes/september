@@ -98,7 +98,7 @@ function CodesDemo() {
   const pinnedChips = useMemo(() => DEMO_ROWS.map(row => row.text), []);
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-amber-50 p-4 shadow-sm ring-1 ring-amber-100">
+    <div className="overflow-hidden rounded-2xl bg-amber-50 p-4 shadow-lg ring-1 ring-amber-100">
       <div className="flex min-h-64 flex-col justify-end gap-3 rounded-lg bg-white/70 p-3">
         {spoken.length > 0 && (
           <div className="flex flex-col items-end gap-2">

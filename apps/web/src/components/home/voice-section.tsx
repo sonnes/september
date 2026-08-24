@@ -49,7 +49,7 @@ function VoiceDemo() {
   }, [listVoices]);
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-emerald-50 p-4 shadow-sm ring-1 ring-emerald-100">
+    <div className="overflow-hidden rounded-2xl bg-emerald-50 p-4 shadow-lg ring-1 ring-emerald-100">
       <div className="grid gap-4 rounded-lg bg-white/70 p-4">
         {/* Cloning is the feature — the card leads with it. */}
         <div className="flex flex-wrap items-center gap-4 rounded-xl border bg-white p-5 shadow-sm">

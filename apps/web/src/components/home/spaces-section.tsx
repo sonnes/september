@@ -12,6 +12,19 @@ const DEMO_SPACES: { title: string; phrases: string[] }[] = [
     phrases: ['Good morning', 'I love you', 'What’s for dinner?', 'Turn the TV up, please'],
   },
   {
+    title: 'Friends',
+    phrases: ['Good to see you', 'Tell me everything', 'That’s a good one', 'Same time next week?'],
+  },
+  {
+    title: 'Work',
+    phrases: [
+      'Give me a moment to type',
+      'I agree with that',
+      'Could you repeat the last part?',
+      'I’ll send my notes after this',
+    ],
+  },
+  {
     title: 'Clinic',
     phrases: [
       'My left arm feels weaker',
@@ -19,10 +32,6 @@ const DEMO_SPACES: { title: string; phrases: string[] }[] = [
       'I’d like my caregiver present',
       'When is the next appointment?',
     ],
-  },
-  {
-    title: 'Café',
-    phrases: ['A flat white, please', 'Table by the window?', 'Could I see the menu?', 'The bill, please'],
   },
 ];
 
@@ -37,7 +46,7 @@ export function SpacesSection() {
           <SectionHeader
             eyebrow="Spaces"
             title="The right words for the room you’re in."
-            lede="A space for family, one for the clinic, one for going out. Each keeps its own phrases, suggestions, and notes — so changing the conversation changes the words that are close at hand."
+            lede="A space for family, one for friends, one for work, one for the clinic. Each keeps its own phrases, suggestions, and notes — so changing the conversation changes the words that are close at hand."
             hint="Switch spaces and watch the phrases change. Tap one to say it."
             accent="sky"
           />
@@ -63,10 +72,10 @@ function SpacesDemo() {
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-sky-50 p-4 shadow-sm ring-1 ring-sky-100">
+    <div className="overflow-hidden rounded-2xl bg-sky-50 p-4 shadow-lg ring-1 ring-sky-100">
       <div className="rounded-xl border bg-white p-4">
         {/* Space tabs — mirrors SpaceSwitch styling */}
-        <div className="flex w-fit items-center gap-1 rounded-full border bg-card p-1">
+        <div className="flex w-fit max-w-full flex-wrap items-center gap-1 rounded-full border bg-card p-1">
           {DEMO_SPACES.map((space, index) => (
             <button
               key={space.title}

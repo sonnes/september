@@ -143,7 +143,7 @@ function WorkingDemo() {
   }, []);
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-indigo-50 p-2 shadow-sm ring-1 ring-indigo-100 sm:p-4">
+    <div className="overflow-hidden rounded-2xl bg-indigo-50 p-2 shadow-lg ring-1 ring-indigo-100 sm:p-4">
       <div
         data-live-demo-frame
         className="grid min-h-[520px] overflow-hidden rounded-xl border bg-white shadow-sm sm:min-h-0 sm:h-[540px] lg:h-[560px]"

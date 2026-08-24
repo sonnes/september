@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>September — Landing page redesign (visual mock, Option A amended)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Lexend:wght@700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --indigo-700:#4338ca; --indigo-600:#4f46e5; --indigo-500:#6366f1; --indigo-400:#818cf8;
+    --indigo-300:#a5b4fc; --indigo-200:#c7d2fe; --indigo-100:#e0e7ff; --indigo-50:#eef2ff;
+    --zinc-950:#09090b; --zinc-900:#18181b; --zinc-800:#27272a; --zinc-700:#3f3f46; --zinc-600:#52525b;
+    --zinc-500:#71717a; --zinc-400:#a1a1aa; --zinc-300:#d4d4d8; --zinc-200:#e4e4e7; --zinc-100:#f4f4f5; --zinc-50:#fafafa;
+    --amber-600:#d97706; --amber-800:#92400e; --amber-300:#fcd34d; --amber-100:#fef3c7; --amber-50:#fffbeb; --amber-200:#fde68a;
+    --em-700:#047857; --em-100:#d1fae5; --em-50:#ecfdf5; --em-200:#a7f3d0;
+    --sky-700:#0369a1; --sky-100:#e0f2fe; --sky-50:#f0f9ff; --sky-200:#bae6fd; --sky-600:#0284c7;
+    --violet-700:#6d28d9; --violet-100:#ede9fe; --violet-50:#f5f3ff; --violet-200:#ddd6fe;
+    --rose-700:#be123c; --rose-100:#ffe4e6; --rose-50:#fff1f2; --rose-200:#fecdd3;
+    --shadow:0 1px 2px rgba(24,24,27,.06), 0 1px 3px rgba(24,24,27,.04);
+    --shadow-lg:0 18px 45px rgba(24,24,27,.18);
+  }
+  * { box-sizing:border-box; margin:0; }
+  body { font-family:"Noto Sans", Helvetica, sans-serif; background:var(--zinc-100); color:var(--zinc-900);
+         -webkit-font-smoothing:antialiased; padding:48px 24px 120px; font-size:14px; line-height:1.5; }
+  .page { max-width:1360px; margin:0 auto; }
+  .eyebrow { font-size:14px; font-weight:500; color:var(--indigo-600); }
+  h1.doc { font-size:32px; font-weight:700; letter-spacing:-.02em; margin-top:6px; }
+  .lede { font-size:15px; color:var(--zinc-500); margin-top:10px; max-width:84ch; line-height:1.7; }
+  .intro { background:#fff; border:1px solid var(--zinc-200); border-radius:20px; box-shadow:var(--shadow); padding:24px 28px; margin-top:22px; }
+  .intro ul { margin:8px 0 0 18px; display:grid; gap:7px; font-size:13.5px; color:var(--zinc-700); }
+  .intro strong { color:var(--zinc-900); }
+
+  /* ============ the rendered landing page ============ */
+  .frame { background:#fff; border:1px solid var(--zinc-200); border-radius:24px; box-shadow:var(--shadow);
+           margin-top:34px; overflow:hidden; }
+  .lp { font-size:15px; }
+  .wrap { max-width:1200px; margin:0 auto; padding:0 32px; }
+
+  /* --- nav --- */
+  .lp-nav { display:flex; align-items:center; justify-content:space-between; padding:22px 0; }
+  .brand { display:flex; align-items:center; gap:9px; text-decoration:none; }
+  .keycap { width:36px; height:36px; border-radius:10px; border:4px solid var(--indigo-700); background:#fff;
+            color:var(--indigo-600); font-family:Lexend,sans-serif; font-weight:700; font-size:11px; display:grid; place-items:center; }
+  .wordmark { font-family:Lexend,sans-serif; font-weight:700; font-size:22px; letter-spacing:-.02em; color:var(--indigo-200); }
+  .wordmark b { color:var(--indigo-600); }
+  .lp-nav .links { display:flex; align-items:center; gap:26px; }
+  .lp-nav .links a { font-size:14px; font-weight:500; color:var(--zinc-600); text-decoration:none; min-height:44px; display:inline-flex; align-items:center; }
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius:999px; font-weight:600;
+         text-decoration:none; border:0; cursor:pointer; }
+  .btn.primary { background:var(--indigo-600); color:#fff; height:44px; padding:0 24px; font-size:14px; }
+  .btn.lg { height:48px; padding:0 30px; font-size:15px; }
+  .btn.inverse { background:#fff; color:var(--indigo-600); }
+  .btn.dark { background:var(--zinc-950); color:#fff; }
+
+  /* --- hero: split card, Cowork-style --- */
+  .lp-hero { display:grid; grid-template-columns:minmax(0,10fr) minmax(0,11fr); border:1px solid var(--zinc-200);
+             border-radius:24px; overflow:hidden; box-shadow:var(--shadow); background:#fff; }
+  .hero-left { padding:56px 52px 48px; display:flex; flex-direction:column; align-items:flex-start; gap:22px;
+               background:linear-gradient(160deg, var(--indigo-500), var(--indigo-600) 45%, var(--indigo-700) 130%); }
+  .badge-pill { background:rgba(255,255,255,.12); color:#fff; border:1px solid rgba(255,255,255,.28);
+                border-radius:999px; padding:5px 13px; font-size:13px; font-weight:600; }
+  /* Tagline: fluid size + one nowrap block per line = exactly two lines at every width. */
+  .hero-left h1 { font-size:clamp(26px, 3.4vw, 44px); line-height:1.12; font-weight:700; letter-spacing:-.02em; color:#fff; }
+  .hero-left h1 span { display:block; white-space:nowrap; }
+  .hero-left h1 em { font-style:normal; color:var(--amber-300); }
+  .hero-left .sub { font-size:17px; line-height:1.6; color:rgba(255,255,255,.85); max-width:44ch; }
+  .hero-ctas { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .gh { display:inline-flex; align-items:center; gap:7px; border:1px solid rgba(255,255,255,.25); background:rgba(255,255,255,.1);
+        color:#fff; border-radius:999px; padding:9px 16px; font-size:13px; font-weight:500; text-decoration:none; }
+  .hero-notes { display:grid; gap:6px; margin-top:2px; }
+  .hero-notes p { font-size:13.5px; color:rgba(255,255,255,.75); }
+  .hero-notes p.real { color:#fff; font-weight:600; }
+
+  .hero-right { position:relative; overflow:hidden; min-height:560px; background:var(--indigo-50); }
+  .peek { position:absolute; top:54px; left:54px; right:-64px; bottom:-56px; background:#fff;
+          border-radius:22px 0 0 0; box-shadow:var(--shadow-lg); border:1px solid var(--indigo-100);
+          padding:26px 26px 0 26px; display:flex; flex-direction:column; gap:16px; }
+  .peek .bubble-row { display:flex; justify-content:flex-end; padding-right:96px; }
+  .bubble { display:flex; align-items:flex-start; gap:9px; background:var(--indigo-100); color:var(--indigo-700);
+            border-radius:14px; border-bottom-right-radius:5px; padding:11px 16px; font-size:15.5px; max-width:78%; }
+  .peek .console { background:rgba(244,244,245,.72); border-radius:16px; padding:14px; display:flex; flex-direction:column; gap:12px; flex:1; }
+  .chips { display:flex; gap:9px; flex-wrap:wrap; }
+  .chip { display:inline-flex; align-items:center; gap:7px; height:44px; padding:0 19px; border-radius:999px;
+          border:1px solid var(--indigo-200); background:#fff; font-size:15.5px; font-weight:500; color:var(--zinc-900); }
+  .stripe { display:flex; align-items:center; gap:8px; }
+  .stripe .src { width:28px; height:28px; border-radius:999px; background:var(--zinc-200); color:var(--zinc-600);
+                 font-size:11px; font-weight:700; display:grid; place-items:center; flex:none; }
+  .token { display:inline-flex; align-items:center; height:44px; padding:0 17px; border-radius:10px;
+           border:1.5px solid var(--indigo-300); background:#fff; font-size:16px; font-weight:500; color:var(--zinc-900); }
+  .token.glow { border-color:var(--indigo-500); box-shadow:0 0 0 3px rgba(99,102,241,.16); }
+  .iconb { width:44px; height:44px; border-radius:10px; display:grid; place-items:center; color:var(--zinc-400); flex:none; }
+  .composer { background:#fff; border:2px solid var(--zinc-200); border-radius:18px; padding:16px 18px 14px; }
+  .composer .text { font-size:26px; font-weight:500; color:var(--zinc-950); line-height:1.3; }
+  .caret { display:inline-block; width:2px; height:1.15em; background:var(--indigo-600); vertical-align:-3px; margin-left:2px;
+           animation:blink 1.1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+  @media (prefers-reduced-motion: reduce) { .caret { animation:none; } }
+  .composer .row { display:flex; align-items:center; justify-content:space-between; margin-top:14px; gap:10px; }
+  .rail { display:flex; gap:7px; }
+  .railb { width:44px; height:44px; border-radius:10px; border:1px solid var(--zinc-200); background:#fff;
+           display:grid; place-items:center; color:var(--zinc-500); font-size:16px; }
+  .speak { display:inline-flex; align-items:center; gap:9px; background:var(--indigo-600); color:#fff; border-radius:10px;
+           height:46px; padding:0 24px; font-size:15px; font-weight:600; }
+
+  svg.ic { width:17px; height:17px; flex:none; }
+
+  /* --- shared section chrome --- */
+  .sec { padding:72px 0; }
+  .sec.gray { background:var(--zinc-100); }
+  .sec-grid { display:grid; grid-template-columns:minmax(0,4fr) minmax(0,5fr); gap:44px; align-items:center; }
+  .sec-grid.flip .copy { order:2; } .sec-grid.flip .art { order:1; }
+  .kicker { font-size:14px; font-weight:700; margin-bottom:12px; }
+  .sec h2 { font-size:38px; line-height:1.12; font-weight:700; letter-spacing:-.01em; color:var(--zinc-950); }
+  .sec .p { font-size:16.5px; line-height:1.65; color:var(--zinc-600); margin-top:16px; max-width:56ch; }
+  .hint { display:inline-flex; align-items:center; gap:8px; border-radius:999px; border:1px solid; padding:9px 17px;
+          font-size:13.5px; font-weight:500; margin-top:20px; }
+  .amber  .kicker{color:var(--amber-800)}  .amber .hint{border-color:var(--amber-200); background:var(--amber-50); color:var(--amber-800)}
+  .sky    .kicker{color:var(--sky-700)}    .sky .hint{border-color:var(--sky-200); background:var(--sky-50); color:var(--sky-700)}
+  .em     .kicker{color:var(--em-700)}     .em .hint{border-color:var(--em-200); background:var(--em-50); color:var(--em-700)}
+  .violet .kicker{color:var(--violet-700)} .violet .hint{border-color:var(--violet-200); background:var(--violet-50); color:var(--violet-700)}
+  .ind    .kicker{color:var(--indigo-600)} .ind .hint{border-color:var(--indigo-100); background:var(--indigo-50); color:var(--indigo-700)}
+
+  .art-shell { border-radius:22px; padding:18px; box-shadow:var(--shadow); }
+  .art-card { background:#fff; border:1px solid var(--zinc-200); border-radius:16px; padding:20px; }
+  .live-tag { display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700; letter-spacing:.06em;
+              text-transform:uppercase; color:var(--indigo-600); background:var(--indigo-50); border:1px solid var(--indigo-100);
+              border-radius:999px; padding:3px 10px; margin-bottom:12px; }
+  .live-dot { width:7px; height:7px; border-radius:999px; background:var(--indigo-500); }
+
+  /* codes demo */
+  .code-pill { display:inline-flex; align-items:center; gap:9px; border:1.5px solid var(--amber-200); background:var(--amber-50);
+               border-radius:999px; height:46px; padding:0 18px; font-size:15.5px; font-weight:500; }
+  .code-pill b { font-size:11px; font-weight:700; letter-spacing:.05em; background:var(--amber-100); color:var(--amber-800);
+                 border-radius:6px; padding:3px 7px; }
+
+  /* spaces demo */
+  .tabs { display:inline-flex; gap:4px; border:1px solid var(--zinc-200); border-radius:999px; padding:4px; background:#fff; }
+  .tab { height:42px; display:inline-flex; align-items:center; padding:0 18px; border-radius:999px; font-size:14px; font-weight:500; color:var(--zinc-500); }
+  .tab.on { background:var(--indigo-600); color:#fff; }
+  .phrases { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+  .phrase { display:inline-flex; align-items:center; gap:8px; height:46px; padding:0 19px; border-radius:999px;
+            border:1px solid var(--zinc-200); background:#fff; font-size:15px; font-weight:500; box-shadow:var(--shadow); }
+
+  /* voice */
+  .clone-card { display:flex; gap:16px; align-items:center; }
+  .mic-circle { width:52px; height:52px; border-radius:999px; background:var(--em-100); color:var(--em-700);
+                display:grid; place-items:center; flex:none; }
+  .voice-row { display:flex; align-items:center; gap:12px; margin-top:16px; }
+  .select { display:inline-flex; align-items:center; gap:10px; border:1px solid var(--zinc-200); border-radius:12px;
+            height:44px; padding:0 16px; font-size:14px; color:var(--zinc-700); background:#fff; }
+
+  /* notes+present */
+  .note-title { font-size:17px; font-weight:600; }
+  .note-body { font-size:15.5px; line-height:1.7; color:var(--zinc-700); margin-top:10px; }
+  .note-body mark { background:var(--indigo-100); color:var(--indigo-700); border-radius:5px; padding:0 3px; }
+  .play { display:inline-flex; align-items:center; gap:8px; border-radius:999px; border:1px solid var(--zinc-200);
+          height:44px; padding:0 20px; font-size:14px; font-weight:600; background:#fff; margin-top:14px; }
+  .stage { background:var(--indigo-600); border-radius:16px; margin-top:14px; padding:38px 30px; color:#fff; position:relative; overflow:hidden; }
+  .stage .cap { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--indigo-200); }
+  .stage .line { font-size:29px; font-weight:700; letter-spacing:-.01em; line-height:1.2; margin-top:10px; }
+  .stage .sig { position:absolute; right:18px; bottom:14px; font-family:Lexend,sans-serif; font-weight:700; font-size:12px; color:var(--indigo-300); }
+  .exports { display:flex; gap:9px; margin-top:14px; flex-wrap:wrap; }
+  .exp { display:inline-flex; align-items:center; gap:7px; border:1px solid var(--zinc-200); background:var(--zinc-50);
+         border-radius:999px; height:38px; padding:0 15px; font-size:13px; font-weight:500; color:var(--zinc-700); }
+
+  /* platform */
+  .plat { display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:40px; }
+  .plat-card { background:#fff; border:1px solid var(--zinc-200); border-radius:20px; padding:34px; box-shadow:var(--shadow);
+               display:flex; flex-direction:column; gap:14px; align-items:flex-start; }
+  .plat-card .tag { font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; border-radius:999px; padding:4px 12px; }
+  .plat-card h3 { font-size:22px; font-weight:700; letter-spacing:-.01em; }
+  .plat-card p { font-size:15px; line-height:1.65; color:var(--zinc-600); }
+  .plat-card ul { margin:0 0 0 18px; display:grid; gap:8px; font-size:14.5px; color:var(--zinc-600); }
+  .plat-card .spacer { flex:1; }
+  .ghost-link { font-size:14.5px; font-weight:600; color:var(--indigo-600); text-decoration:none; min-height:44px; display:inline-flex; align-items:center; }
+
+  /* privacy band */
+  .privacy { background:var(--indigo-600); border-radius:22px; padding:52px; color:#fff; }
+  .privacy .kicker { color:var(--indigo-200); }
+  .privacy h2 { color:#fff; }
+  .privacy .p { color:rgba(255,255,255,.88); }
+  .facts { display:flex; flex-wrap:wrap; gap:11px; margin-top:24px; }
+  .fact { border:1px solid rgba(255,255,255,.28); background:rgba(255,255,255,.1); border-radius:999px; padding:9px 17px; font-size:14px; font-weight:500; }
+
+  /* about */
+  .about { max-width:760px; }
+  .about .p { max-width:none; }
+  .quote { border-left:4px solid var(--indigo-200); padding-left:20px; font-size:22px; font-weight:500; line-height:1.5;
+           color:var(--zinc-900); margin-top:20px; }
+  .story-link { display:inline-flex; align-items:center; gap:7px; border:1px solid var(--indigo-100); background:var(--indigo-50);
+                color:var(--indigo-700); border-radius:999px; height:44px; padding:0 22px; font-size:14px; font-weight:600;
+                text-decoration:none; margin-top:26px; }
+
+  /* setup */
+  .modes { display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:40px; }
+  .mode { background:#fff; border:1px solid var(--zinc-200); border-top:4px solid; border-radius:16px; padding:28px;
+          box-shadow:var(--shadow); display:grid; gap:13px; align-content:start; }
+  .mode.amberline { border-top-color:var(--amber-600); }
+  .mode.skyline { border-top-color:var(--sky-600); }
+  .mode .b { width:fit-content; border-radius:999px; padding:4px 12px; font-size:12px; font-weight:700; }
+  .mode.amberline .b { background:var(--amber-100); color:var(--amber-800); }
+  .mode.skyline .b { background:var(--sky-100); color:var(--sky-700); }
+  .mode h3 { font-size:18px; font-weight:600; }
+  .mode p, .mode li { font-size:14px; line-height:1.6; color:var(--zinc-500); }
+  .mode ul { margin:0 0 0 17px; display:grid; gap:8px; }
+
+  /* cta */
+  .cta { background:var(--zinc-950); border-radius:22px; padding:64px 40px; text-align:center; color:#fff; }
+  .cta h2 { color:#fff; max-width:22ch; margin:0 auto; }
+  .cta .p { color:rgba(255,255,255,.75); margin:18px auto 0; max-width:52ch; }
+  .cta .btn { margin-top:30px; background:#fff; color:var(--zinc-950); }
+
+  /* footer */
+  .lp-footer { border-top:1px solid var(--zinc-200); padding:26px 0; display:flex; align-items:center; justify-content:space-between;
+               gap:14px; flex-wrap:wrap; font-size:14px; color:var(--zinc-500); }
+  .lp-footer .links { display:flex; gap:24px; }
+  .lp-footer a { color:var(--zinc-500); text-decoration:none; min-height:44px; display:inline-flex; align-items:center; }
+
+  .annot { text-align:center; font-size:12.5px; color:var(--zinc-400); padding:10px 0 0; font-style:italic; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow">September — mock · 2026-08-24</p>
+  <h1 class="doc">Landing page redesign — visual mock</h1>
+  <p class="lede">
+    Option A as approved, with your two amendments: the hero keeps the <strong>"Faster Communication / Fewer Keystrokes"</strong>
+    tagline, and it takes the split "sneak peek" shape (hero Option C) — copy on an indigo panel, a cropped Talk console
+    in a quiet indigo-50 gallery, with the <strong>suggestion stripes completing a typed sentence</strong> as the core of the image.
+  </p>
+  <div class="intro">
+    <ul>
+      <li><strong>Hero (Option C):</strong> split card. Left — indigo copy panel: badge, the kept tagline on <strong>exactly two lines at every width</strong> (fluid type, nowrap lines), lede, Get started, open-source chip. Right — a pale indigo-50 gallery with the Talk console cropped at the right and bottom edges: a spoken bubble, pinned chips, a stripe finishing "I'd like a co…", and the composer with a blinking caret. The peek is an illustration that scrolls you to the live demo below; it is not itself interactive.</li>
+      <li><strong>A2 Talk:</strong> the existing fully working demo returns as the first chapter, directly under the hero ("Try it for real").</li>
+      <li><strong>A5 Notes &amp; Present:</strong> merged into one chapter — note → stage → export row.</li>
+      <li><strong>A6 Where September works (new):</strong> browser and Mac side by side; the Mac card is marked <strong>Coming soon</strong>, and flips to "Download for Mac" when a bundle ships.</li>
+      <li><strong>A7 Privacy</strong> absorbs the free/no-account facts. The <strong>setup-choices section is removed</strong>; the closing CTA carries the caregiver line.</li>
+      <li><strong>Spaces rooms:</strong> Family · Friends · Work · Clinic (Café dropped).</li>
+    </ul>
+  </div>
+
+  <!-- =================== THE PAGE =================== -->
+  <div class="frame"><div class="lp">
+
+    <!-- nav + hero -->
+    <div class="wrap">
+      <nav class="lp-nav">
+        <a class="brand" href="#">
+          <span class="keycap">Sep</span>
+          <span class="wordmark"><b>Sep</b>tember</span>
+        </a>
+        <div class="links">
+          <a href="#">Features</a><a href="#">Calls</a><a href="#">Privacy</a><a href="#">About</a>
+          <a class="btn primary" href="#">Get started</a>
+        </div>
+      </nav>
+
+      <div class="lp-hero">
+        <div class="hero-left">
+          <span class="badge-pill">Free &amp; open source</span>
+          <h1><span><em>Faster</em> Communication</span><span><em>Fewer</em> Keystrokes</span></h1>
+          <p class="sub">A communication assistant for people living with ALS, MND, and other speech &amp; motor difficulties.</p>
+          <div class="hero-ctas">
+            <a class="btn inverse lg" href="#">Get started</a>
+            <a class="gh" href="#">
+              <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.56 9.56 0 0 1 5 0c1.91-1.3 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg>
+              Open source
+            </a>
+          </div>
+          <div class="hero-notes">
+            <p>Free to use. Your words can stay on this device.</p>
+            <p class="real">Everything on this page is the real thing — try it as you scroll. ↓</p>
+          </div>
+        </div>
+
+        <div class="hero-right" aria-hidden="true">
+          <div class="peek">
+            <div class="bubble-row">
+              <span class="bubble">
+                <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-top:3px"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
+                Good morning! Ready when you are.
+              </span>
+            </div>
+            <div class="console">
+              <div class="chips">
+                <span class="chip"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--indigo-400)"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1Z"/></svg>Hello</span>
+                <span class="chip"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--indigo-400)"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1Z"/></svg>Thank you</span>
+              </div>
+              <div class="stripe">
+                <span class="src">G</span>
+                <span class="token glow">coffee,</span>
+                <span class="token">please</span>
+                <span class="iconb"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg></span>
+              </div>
+              <div class="composer">
+                <p class="text">I’d like a co<span class="caret"></span></p>
+                <div class="row">
+                  <div class="rail">
+                    <span class="railb">↶</span><span class="railb">⌫</span>
+                  </div>
+                  <span class="speak">
+                    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19.1 4.9a10 10 0 0 1 0 14.2"/></svg>
+                    Speak
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="annot">A1 — hero, Option C: indigo copy panel, console in a quiet indigo-50 gallery, cropped right and bottom. The tagline is fluid-sized and each line never wraps — exactly two lines at every width. The caret blinks; everything else is still.</p>
+    </div>
+
+    <!-- A2 Talk: the real working demo -->
+    <div class="sec"><div class="wrap ind">
+      <p class="kicker">Talk</p>
+      <h2>Type a little. Tap the rest. Speak.</h2>
+      <p class="p">This is September’s main screen. Suggestions finish your sentence so a message takes a few taps, not a hundred keystrokes. Press Speak and it’s said out loud.</p>
+      <span class="hint">▸ Try it: type “go”, tap the suggestion, press Speak — your browser will say it.</span>
+      <div class="art-shell" style="background:var(--indigo-50); margin-top:34px;">
+        <div class="art-card" style="padding:0; overflow:hidden;">
+          <div style="display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--zinc-200); padding:14px 18px;">
+            <span style="color:var(--zinc-400)">▤</span><strong style="font-size:15px;">General</strong>
+            <span style="margin-left:auto; color:var(--zinc-400)">▥</span>
+          </div>
+          <div style="padding:20px 18px 18px; display:grid; gap:16px;">
+            <p class="live-tag"><span class="live-dot"></span> Fully interactive — the existing working demo, reused as-is</p>
+            <div class="bubble-row" style="display:flex; justify-content:flex-end;"><span class="bubble">Good morning! Ready when you are.</span></div>
+            <div class="console" style="background:rgba(244,244,245,.72); border-radius:16px; padding:14px; display:grid; gap:12px;">
+              <div class="chips">
+                <span class="chip">Hello</span><span class="chip">Please</span><span class="chip">Thank you</span><span class="chip">Help</span>
+              </div>
+              <div class="stripe"><span class="src">M</span><span class="token">Good</span><span class="token">morning</span></div>
+              <div class="stripe"><span class="src">H</span><span class="token">Yes,</span><span class="token">please.</span></div>
+              <div class="composer">
+                <p class="text" style="color:var(--zinc-300); font-size:22px;">Type a message…</p>
+                <div class="row">
+                  <div class="rail"><span class="railb">↶</span><span class="railb">⌫</span><span class="railb">✕</span></div>
+                  <span class="speak">Speak</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+
+    <!-- A3 codes -->
+    <div class="sec gray"><div class="wrap"><div class="sec-grid amber">
+      <div class="copy">
+        <p class="kicker">Saved phrases &amp; codes</p>
+        <h2>Your everyday sentences, two letters away.</h2>
+        <p class="p">Save the sentences you say all the time and give them short codes. Type <strong>ty</strong> and “Thank you” surfaces instantly — one tap swaps it in. Pinned phrases stay ready before you type anything.</p>
+        <span class="hint">▸ Type ty, hlp, or wtr — then tap the phrase.</span>
+      </div>
+      <div class="art">
+        <div class="art-shell" style="background:var(--amber-50);">
+          <div class="art-card">
+            <p class="live-tag"><span class="live-dot"></span> Live</p>
+            <div class="composer" style="margin-bottom:14px;"><p class="text">ty<span class="caret"></span></p></div>
+            <div class="chips">
+              <span class="code-pill"><b>TY</b> Thank you</span>
+              <span class="code-pill"><b>HLP</b> I need some help please</span>
+              <span class="code-pill"><b>WTR</b> Water, please</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div></div>
+
+    <!-- A4 spaces -->
+    <div class="sec"><div class="wrap"><div class="sec-grid flip sky">
+      <div class="copy">
+        <p class="kicker">Spaces</p>
+        <h2>The right words for the room you’re in.</h2>
+        <p class="p">A space for family, one for the clinic, one for going out. Each keeps its own phrases, suggestions, and notes — so changing the conversation changes the words that are close at hand.</p>
+        <span class="hint">▸ Switch spaces and watch the phrases change. Tap one to say it.</span>
+      </div>
+      <div class="art">
+        <div class="art-shell" style="background:var(--sky-50);">
+          <div class="art-card">
+            <p class="live-tag"><span class="live-dot"></span> Live</p>
+            <div class="tabs"><span class="tab">Family</span><span class="tab">Friends</span><span class="tab">Work</span><span class="tab on">Clinic</span></div>
+            <div class="phrases">
+              <span class="phrase">My left arm feels weaker</span>
+              <span class="phrase">Can you repeat that slowly?</span>
+              <span class="phrase">I’d like my caregiver present</span>
+              <span class="phrase">When is the next appointment?</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div></div>
+
+    <!-- A5 voice -->
+    <div class="sec gray"><div class="wrap"><div class="sec-grid em">
+      <div class="copy">
+        <p class="kicker">Your voice</p>
+        <h2>Keep your own voice.</h2>
+        <p class="p">Clone your voice from a 30-second recording — even from an old home video — and September speaks as you. Every message, every note read aloud, every presentation comes out in your voice, not a machine’s.</p>
+        <span class="hint">▸ Cloning happens in the app — hear a starting voice below.</span>
+      </div>
+      <div class="art">
+        <div class="art-shell" style="background:var(--em-50);">
+          <div class="art-card">
+            <div class="clone-card">
+              <span class="mic-circle">
+                <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:22px;height:22px;"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 19v3"/></svg>
+              </span>
+              <div style="flex:1; min-width:200px;">
+                <p style="font-weight:600;">Clone your voice</p>
+                <p style="font-size:14px; color:var(--zinc-600); margin-top:3px;">A 30-second recording is enough. Losing your speech? An old video of you talking works too.</p>
+              </div>
+              <a class="btn primary" href="#">Start cloning</a>
+            </div>
+            <div class="voice-row">
+              <span class="select">Samantha — English ▾</span>
+              <span class="play" style="margin-top:0;">▶ Hear it</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div></div>
+
+    <!-- A6 notes + present, merged -->
+    <div class="sec"><div class="wrap"><div class="sec-grid flip violet">
+      <div class="copy">
+        <p class="kicker">Notes &amp; Present</p>
+        <h2>Longer thoughts, ready ahead of time.</h2>
+        <p class="p">Write a toast, an update for the doctor, or a bedtime story for the kids — inside the space it belongs to. September reads it aloud in your voice, sentence by sentence. Then fill the room with it, or send it as a file.</p>
+        <span class="hint">▸ Press Play — then Present takes the whole screen.</span>
+      </div>
+      <div class="art">
+        <div class="art-shell" style="background:var(--violet-50);">
+          <div class="art-card">
+            <p class="live-tag"><span class="live-dot"></span> Live</p>
+            <p class="note-title">Bedtime story — the island adventure</p>
+            <p class="note-body">The four of them rowed out to the island, with Scout barking at the waves. Inside the cave, Jo’s torch lit up an old wooden chest. “Treasure,” whispered Ben. “Real treasure!” <mark>But behind them, something moved in the dark…</mark></p>
+            <span class="play">▶ Play</span>
+            <div class="stage">
+              <p class="cap">Presenting</p>
+              <p class="line">But behind them, something moved in the dark…</p>
+              <span class="sig">Sep</span>
+            </div>
+            <div class="exports">
+              <span class="exp">↓ Text (.md)</span><span class="exp">↓ Audio (.mp3)</span><span class="exp">↓ Captioned video (.mp4)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div></div>
+
+    <!-- A7 platform (new) -->
+    <div class="sec gray"><div class="wrap ind">
+      <p class="kicker">Where September works</p>
+      <h2>In your browser today. On your Mac for calls.</h2>
+      <p class="p">September runs where you talk. Start in the browser with nothing to install. The Mac app takes your words into video calls and keeps writing help on the device.</p>
+      <div class="plat">
+        <div class="plat-card">
+          <span class="tag" style="background:var(--indigo-50); color:var(--indigo-700);">In your browser</span>
+          <h3>Start now — nothing to install.</h3>
+          <p>Open September and begin. Your spaces, notes, phrases, and voice stay in this browser. No account is required.</p>
+          <ul>
+            <li>Works on a tablet, a laptop, or a desktop.</li>
+            <li>Suggestions and the system voice work without the internet services.</li>
+          </ul>
+          <span class="spacer"></span>
+          <a class="btn primary" href="#">Get started</a>
+        </div>
+        <div class="plat-card">
+          <div style="display:flex; gap:8px;">
+            <span class="tag" style="background:var(--zinc-100); color:var(--zinc-700);">On your Mac</span>
+            <span class="tag" style="background:var(--amber-100); color:var(--amber-800);">Coming soon</span>
+          </div>
+          <h3>Your seat at the video call.</h3>
+          <p>September Microphone and September Camera join FaceTime and Zoom. Your typed words are spoken into the call and shown on your camera as captions.</p>
+          <ul>
+            <li>Apple Intelligence gives writing help without the internet.</li>
+            <li>Your keys stay in the macOS Keychain.</li>
+          </ul>
+          <span class="spacer"></span>
+          <a class="ghost-link" href="#">Follow along on GitHub →</a>
+        </div>
+      </div>
+      <p class="annot">A7 — new section. "Coming soon" flips to a "Download for Mac" button when a bundle is published.</p>
+    </div></div>
+
+    <!-- A8 privacy -->
+    <div class="sec"><div class="wrap">
+      <div class="privacy">
+        <p class="kicker">Private by design</p>
+        <h2>Your words can stay on this device.</h2>
+        <p class="p">September can keep speech, suggestions, spaces, notes, and saved phrases on this device. Cloud writing and voice services are optional, and there’s no September account to create.</p>
+        <div class="facts">
+          <span class="fact">On-device voice &amp; suggestions</span>
+          <span class="fact">No account needed</span>
+          <span class="fact">Free to use</span>
+          <span class="fact">Open source</span>
+        </div>
+      </div>
+    </div></div>
+
+    <!-- A9 about -->
+    <div class="sec gray"><div class="wrap ind">
+      <div class="about">
+        <p class="kicker">About</p>
+        <h2>Built by someone who lives it.</h2>
+        <p class="p" style="margin-top:20px;">I’m Ravi. I was diagnosed with ALS in 2019. As speaking and typing slipped away, I kept reaching for a tool that didn’t exist — asking for water, joining a call, or telling a story took far more effort than it should.</p>
+        <p class="quote">I should not have to type out full phrases and sentences every time.</p>
+        <p class="p">Clicks are precious when you type with your eyes or a head mouse. So I built September: suggestions that learn how I actually talk, phrases two letters away, and a voice that is still mine. It’s free and open source — so it can be that for others too.</p>
+        <a class="story-link" href="#">Read the full story ↗</a>
+      </div>
+    </div></div>
+
+    <!-- A10 cta -->
+    <div class="sec"><div class="wrap">
+      <div class="cta">
+        <h2>Being understood shouldn’t be hard work.</h2>
+        <p class="p">Set up September in a few minutes — on your own, or with a caregiver beside you. It’s free, and it starts working before you create anything.</p>
+        <a class="btn lg" style="background:#fff; color:var(--zinc-950);" href="#">Get started</a>
+      </div>
+    </div></div>
+
+    <!-- footer -->
+    <div class="wrap">
+      <footer class="lp-footer">
+        <p>© 2026 September. Communication with fewer keystrokes.</p>
+        <div class="links">
+          <a href="#">Features</a><a href="#">Calls</a><a href="#">Privacy</a><a href="#">About</a><a href="#">Source</a>
+        </div>
+      </footer>
+    </div>
+
+  </div></div>
+
+  <p class="annot" style="margin-top:16px;">
+    Mobile: the hero stacks (copy, then the peek panel at a shorter height, still cropped); chapters fall to one column
+    with the demo below the copy; the platform cards stack. Motion is limited to the caret and honors reduced-motion.
+  </p>
+
+</div>
+</body>
+</html>

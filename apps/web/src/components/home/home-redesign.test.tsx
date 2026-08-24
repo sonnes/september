@@ -5,16 +5,19 @@ import { act } from 'react';
 import { type Root, createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+// Tests import by relative path — the `@/` alias is not wired into the test
+// resolver, and every other suite here does the same.
+import { HomePage } from '../../pages/home';
+
 import { AboutSection } from './about-section';
 import { EnhancedCTASection } from './enhanced-cta-section';
 import { Footer } from './footer';
 import { HeroSection } from './hero-section';
 import { LANDING_SPACE_SEED, LiveDemoSection } from './live-demo-section';
-import { NOTE_SENTENCES, NOTE_TITLE, NotesSection } from './notes-section';
+import { NOTE_SENTENCES, NOTE_TITLE, NotesSection, PRESENT_CHUNKS } from './notes-section';
 import { PhraseCodesSection, matchDemoCode } from './phrase-codes-section';
+import { PlatformSection } from './platform-section';
 import { PrivacySection } from './privacy-section';
-import { PRESENT_CHUNKS, PresentSection } from './present-section';
-import { SetupChoicesSection } from './setup-choices-section';
 import { SpacesSection } from './spaces-section';
 import { VoiceSection } from './voice-section';
 
@@ -120,22 +123,43 @@ describe('hero section', () => {
     expect(container.textContent).toContain(
       'A communication assistant for people living with ALS, MND, and other speech & motor difficulties'
     );
+    expect(container.textContent).toContain('Free & open source');
     expect(container.textContent).toContain('Get started');
-    expect(container.textContent).toContain('Open Source');
+    expect(container.textContent).toContain('Open source');
     expect(container.textContent).not.toContain('Try Now');
   });
 
-  it('links Features and About in the nav to their page sections', () => {
+  it('keeps the tagline on exactly two unbreakable lines', () => {
     render(<HeroSection />);
 
-    const features = [...container.querySelectorAll('a')].find(
-      anchor => anchor.textContent?.trim() === 'Features'
-    )!;
-    const about = [...container.querySelectorAll('a')].find(
-      anchor => anchor.textContent?.trim() === 'About'
-    )!;
-    expect(features.getAttribute('href')).toBe('#features');
-    expect(about.getAttribute('href')).toBe('#about');
+    const heading = container.querySelector('h1')!;
+    const lines = [...heading.querySelectorAll('[data-tagline-line]')];
+    expect(lines).toHaveLength(2);
+    expect(lines[0].textContent).toBe('Faster Communication');
+    expect(lines[1].textContent).toBe('Fewer Keystrokes');
+    // Each line is its own block that never wraps; the type size is fluid, so a
+    // narrow panel shrinks the words instead of breaking the line.
+    for (const line of lines) {
+      expect(line.className).toContain('block');
+      expect(line.className).toContain('whitespace-nowrap');
+    }
+    expect(heading.className).toContain('text-[clamp(');
+    expect(heading.innerHTML).not.toContain('<br');
+  });
+
+  it('links the whole nav to its page sections', () => {
+    render(<HeroSection />);
+
+    const nav = container.querySelector('nav')!;
+    const href = (label: string) =>
+      [...nav.querySelectorAll('a')]
+        .find(anchor => anchor.textContent?.trim() === label)
+        ?.getAttribute('href');
+    expect(href('Features')).toBe('#features');
+    expect(href('Calls')).toBe('#calls');
+    expect(href('Privacy')).toBe('#privacy');
+    expect(href('About')).toBe('#about');
+    expect(nav.textContent).not.toContain('GitHub');
   });
 
   it('answers cost and privacy and sets the working-demo contract', () => {
@@ -152,29 +176,36 @@ describe('hero section', () => {
   it('keeps hero actions accessible for motor-impaired users', () => {
     render(<HeroSection />);
 
-    // One Get Started — the hero CTA; the nav carries only section links.
+    // Two ways into the app: the nav pill and the hero CTA. Both reach onboarding.
     const onboardingLinks = [...container.querySelectorAll('a')].filter(
       anchor => anchor.textContent?.trim() === 'Get started'
     );
-    expect(onboardingLinks).toHaveLength(1);
-    const [cta] = onboardingLinks;
-    expect(cta.className).toContain('h-11');
-    // White pill with indigo text — no muddy amber button on the indigo card.
+    expect(onboardingLinks).toHaveLength(2);
+    for (const link of onboardingLinks) {
+      expect(link.getAttribute('href')).toBe('/welcome');
+      expect(link.className).toContain('h-11');
+    }
+    // White pill with indigo text — no muddy amber button on the indigo panel.
+    const cta = container.querySelector('[data-hero-cta]')!;
     expect(cta.className).toContain('bg-primary-foreground');
     expect(cta.className).toContain('text-indigo-600');
     expect(cta.className).not.toContain('bg-amber-500');
   });
 
-  it('keeps the nav to section links only — no GitHub, no duplicate CTA', () => {
+  it('shows a still console peek that never takes focus', () => {
     render(<HeroSection />);
 
-    const nav = container.querySelector('nav')!;
-    expect(nav.textContent).not.toContain('GitHub');
-    expect(nav.textContent).not.toContain('Get started');
-    expect(nav.textContent).toContain('Features');
-    expect(nav.textContent).toContain('About');
-    // The Open Source badge in the hero body still links to the repo.
-    expect(container.textContent).toContain('Open Source');
+    const peek = container.querySelector('[data-hero-peek]')!;
+    expect(peek.getAttribute('aria-hidden')).toBe('true');
+    // An illustration, not a second demo — the working one is the section below.
+    expect(peek.querySelectorAll('a, button, input, textarea, select')).toHaveLength(0);
+    expect(peek.textContent).toContain('Good morning! Ready when you are.');
+    expect(peek.textContent).toContain('I’d like a co');
+    expect(peek.textContent).toContain('coffee,');
+
+    // The caret is the only motion on the page, and it stops for reduced motion.
+    const caret = peek.querySelector('[data-caret]')!;
+    expect(caret.className).toContain('motion-reduce:animate-none');
   });
 });
 
@@ -309,13 +340,15 @@ describe('phrase codes section', () => {
 });
 
 describe('spaces section', () => {
-  it('renders the spaces copy and three demo spaces', () => {
+  it('renders the spaces copy and the four rooms of an ordinary day', () => {
     render(<SpacesSection />);
 
     expect(container.textContent).toContain('The right words for the room you’re in.');
-    for (const space of ['Family', 'Clinic', 'Café']) {
+    for (const space of ['Family', 'Friends', 'Work', 'Clinic']) {
       expect(container.textContent).toContain(space);
     }
+    // A café is a scene, not a room someone keeps phrases for.
+    expect(container.textContent).not.toContain('Café');
     // Family is the default space.
     expect(container.textContent).toContain('What’s for dinner?');
   });
@@ -323,7 +356,7 @@ describe('spaces section', () => {
   it('keeps space tabs at the 44px touch floor', () => {
     render(<SpacesSection />);
 
-    for (const tab of ['Family', 'Clinic', 'Café']) {
+    for (const tab of ['Family', 'Friends', 'Work', 'Clinic']) {
       const button = [...container.querySelectorAll('button')].find(
         candidate => candidate.textContent?.trim() === tab
       )!;
@@ -411,16 +444,14 @@ describe('section accents', () => {
 
     render(<NotesSection />);
     expect(container.querySelector('.bg-violet-50')).toBeTruthy();
-
-    render(<PresentSection />);
-    expect(container.querySelector('.bg-rose-50')).toBeTruthy();
   });
 });
 
-describe('notes section', () => {
+describe('notes & present section', () => {
   it('renders the note and plays it sentence by sentence', () => {
     render(<NotesSection />);
 
+    expect(container.textContent).toContain('Notes & Present');
     expect(container.textContent).toContain('Longer thoughts, ready ahead of time.');
     expect(container.textContent).toContain(NOTE_TITLE);
     for (const sentence of NOTE_SENTENCES) {
@@ -450,13 +481,19 @@ describe('notes section', () => {
     const highlighted = container.querySelector('[data-spoken="true"]')!;
     expect(highlighted.textContent).toBe(NOTE_SENTENCES[1]);
   });
-});
 
-describe('present section', () => {
-  it('renders the stage in the default tone, with no grain or vignette', () => {
-    render(<PresentSection />);
+  it('tells a story a child would ask for, not a care task', () => {
+    render(<NotesSection />);
 
-    expect(container.textContent).toContain('Fill the room with it, or send it as a file.');
+    expect(NOTE_TITLE).toContain('Bedtime story');
+    const story = NOTE_SENTENCES.join(' ');
+    expect(story).toContain('rowed out to the island');
+    expect(story).toContain('But behind them, something moved in the dark…');
+  });
+
+  it('puts the same story on the stage, in the default tone', () => {
+    render(<NotesSection />);
+
     // The first chunk is on the stage before anything is pressed.
     expect(container.textContent).toContain(PRESENT_CHUNKS[0].text);
 
@@ -465,24 +502,17 @@ describe('present section', () => {
     // The indigo tone from the shared rules — no grain, no vignette.
     expect(stage.style.backgroundColor).toBe('rgb(79, 70, 229)');
     expect(stage.style.backgroundImage).toBe('');
-  });
-
-  it('presents the same story as the note above it', () => {
-    render(<NotesSection />);
-    expect(container.textContent).toContain('red bicycle');
 
     // The stage shows one chunk at a time, so check the sequence itself.
     const story = PRESENT_CHUNKS.map(chunk => chunk.text).join(' ');
-    expect(story).toContain('red bicycle');
-    expect(story).toContain('That’s how we met.');
-    expect(NOTE_SENTENCES.join(' ')).toContain('That’s how we met.');
+    expect(story).toContain('something moved in the dark');
   });
 
-  it('speaks the chunks in order', () => {
-    render(<PresentSection />);
+  it('presents the chunks in order', () => {
+    render(<NotesSection />);
 
-    const play = [...container.querySelectorAll('button')].find(button =>
-      button.textContent?.includes('Present')
+    const play = [...container.querySelectorAll('button')].find(
+      button => button.textContent?.trim() === 'Present'
     )!;
     click(play);
 
@@ -494,6 +524,46 @@ describe('present section', () => {
     const hooks = demoSpeech.speakSequence.mock.calls[0][1];
     act(() => hooks.onPart(1));
     expect(container.textContent).toContain(PRESENT_CHUNKS[1].text);
+  });
+
+  it('names the three ways a note leaves the app', () => {
+    render(<NotesSection />);
+
+    expect(container.textContent).toContain('Text (.md)');
+    expect(container.textContent).toContain('Audio (.mp3)');
+    expect(container.textContent).toContain('Captioned video (.mp4)');
+  });
+});
+
+describe('platform section', () => {
+  it('offers the browser today and the Mac app as coming soon', () => {
+    render(<PlatformSection />);
+
+    // The nav's "Calls" link lands here.
+    expect(container.querySelector('#calls')).toBeTruthy();
+    expect(container.textContent).toContain('In your browser today. On your Mac for calls.');
+    expect(container.textContent).toContain('Start now — nothing to install.');
+    expect(container.textContent).toContain('Your seat at the video call.');
+    expect(container.textContent).toContain('September Microphone and September Camera');
+    expect(container.textContent).toContain('Apple Intelligence');
+    expect(container.textContent).toContain('macOS Keychain');
+    expect(container.textContent).toContain('Coming soon');
+    // Nothing to download yet — the Mac card points at the repo instead.
+    expect(container.textContent).not.toContain('Download for Mac');
+    const repo = [...container.querySelectorAll('a')].find(anchor =>
+      anchor.textContent?.includes('Follow along on GitHub')
+    )!;
+    expect(repo.getAttribute('href')).toBe('https://github.com/sonnes/september');
+  });
+
+  it('keeps the browser card CTA at the touch floor', () => {
+    render(<PlatformSection />);
+
+    const cta = [...container.querySelectorAll('a')].find(
+      anchor => anchor.textContent?.trim() === 'Get started'
+    )!;
+    expect(cta.getAttribute('href')).toBe('/welcome');
+    expect(cta.className).toContain('h-11');
   });
 });
 
@@ -529,18 +599,6 @@ describe('privacy section', () => {
   });
 });
 
-describe('setup choices section', () => {
-  it('shows the browser setup choices', () => {
-    render(<SetupChoicesSection />);
-
-    expect(container.textContent).toContain('Choose the setup that feels right.');
-    expect(container.textContent).toContain('Free start');
-    expect(container.textContent).toContain('Local word suggestions');
-    expect(container.textContent).toContain('Use your own services');
-    expect(container.textContent).toContain('OpenRouter');
-  });
-});
-
 describe('final call to action', () => {
   it('keeps the ask plain and warm', () => {
     render(<EnhancedCTASection />);
@@ -563,16 +621,58 @@ describe('footer', () => {
     expect(container.textContent).toContain('Source');
   });
 
-  it('offers Features and About in the footer so mobile can reach them', () => {
+  it('repeats the nav anchors so mobile can reach them', () => {
     render(<Footer />);
 
-    const features = [...container.querySelectorAll('a')].find(
-      anchor => anchor.textContent?.trim() === 'Features'
-    )!;
-    const about = [...container.querySelectorAll('a')].find(
-      anchor => anchor.textContent?.trim() === 'About'
-    )!;
-    expect(features.getAttribute('href')).toBe('#features');
-    expect(about.getAttribute('href')).toBe('#about');
+    const href = (label: string) =>
+      [...container.querySelectorAll('a')]
+        .find(anchor => anchor.textContent?.trim() === label)
+        ?.getAttribute('href');
+    expect(href('Features')).toBe('#features');
+    expect(href('Calls')).toBe('#calls');
+    expect(href('Privacy')).toBe('#privacy');
+    expect(href('About')).toBe('#about');
+  });
+});
+
+describe('page structure', () => {
+  it('reads proof first, then one chapter per idea', async () => {
+    await renderAsync(<HomePage />);
+    const page = container.textContent!;
+
+    // Each landmark comes after the one before it — the approved A-order.
+    const order = [
+      'Fewer Keystrokes',
+      'Type a little. Tap the rest. Speak.',
+      'Your everyday sentences, two letters away.',
+      'The right words for the room you’re in.',
+      'Keep your own voice.',
+      'Longer thoughts, ready ahead of time.',
+      'In your browser today. On your Mac for calls.',
+      // The hero already promises the device, so anchor on the band's eyebrow.
+      'Private by design',
+      'Built by someone who lives it.',
+      'Being understood shouldn’t be hard work.',
+    ];
+    const positions = order.map(landmark => page.indexOf(landmark));
+    for (const [index, position] of positions.entries()) {
+      expect(position, order[index]).toBeGreaterThan(-1);
+      if (index > 0) expect(position).toBeGreaterThan(positions[index - 1]);
+    }
+  });
+
+  it('drops the setup section and the separate Present chapter', async () => {
+    await renderAsync(<HomePage />);
+
+    expect(container.textContent).not.toContain('Choose the setup that feels right.');
+    expect(container.textContent).not.toContain('Fill the room with it, or send it as a file.');
+  });
+
+  it('gives every nav anchor a section to land on', async () => {
+    await renderAsync(<HomePage />);
+
+    for (const id of ['features', 'calls', 'privacy', 'about']) {
+      expect(container.querySelector(`#${id}`), id).toBeTruthy();
+    }
   });
 });

@@ -4,7 +4,9 @@ import { ArrowUpRight } from 'lucide-react';
 // first person, because September is built by someone who uses it.
 export function AboutSection() {
   return (
-    <section id="about" className="scroll-mt-4 bg-white px-4 py-16 sm:px-6 lg:px-8">
+    // Gray band: the alternating rhythm needs it here now that the setup
+    // section is gone.
+    <section id="about" className="scroll-mt-4 bg-zinc-100 px-4 py-16 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-3xl">
         <p className="mb-3 text-sm font-bold text-indigo-600">About</p>
         <h2 className="text-3xl font-bold leading-tight tracking-normal text-zinc-950 sm:text-5xl">

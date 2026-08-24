@@ -5,15 +5,16 @@ import { HeroSection } from '@/components/home/hero-section';
 import { LiveDemoSection } from '@/components/home/live-demo-section';
 import { NotesSection } from '@/components/home/notes-section';
 import { PhraseCodesSection } from '@/components/home/phrase-codes-section';
-import { PresentSection } from '@/components/home/present-section';
+import { PlatformSection } from '@/components/home/platform-section';
 import { PrivacySection } from '@/components/home/privacy-section';
-import { SetupChoicesSection } from '@/components/home/setup-choices-section';
 import { SpacesSection } from '@/components/home/spaces-section';
 import { VoiceSection } from '@/components/home/voice-section';
 
 export function HomePage() {
   return (
     <>
+      {/* Proof first, then one chapter per idea: Talk is the flagship, the rest
+          follow in the order someone meets them. */}
       <main className="min-h-screen bg-white">
         <HeroSection />
         <LiveDemoSection />
@@ -21,10 +22,9 @@ export function HomePage() {
         <SpacesSection />
         <VoiceSection />
         <NotesSection />
-        <PresentSection />
-        <AboutSection />
+        <PlatformSection />
         <PrivacySection />
-        <SetupChoicesSection />
+        <AboutSection />
         <EnhancedCTASection />
       </main>
       <Footer />

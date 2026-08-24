@@ -11,14 +11,17 @@ export function Footer() {
           <a href="#features" className="inline-flex min-h-11 items-center transition hover:text-zinc-950">
             Features
           </a>
-          <a href="#about" className="inline-flex min-h-11 items-center transition hover:text-zinc-950">
-            About
+          <a href="#calls" className="inline-flex min-h-11 items-center transition hover:text-zinc-950">
+            Calls
           </a>
           <a
             href="#privacy"
             className="inline-flex min-h-11 items-center transition hover:text-zinc-950"
           >
             Privacy
+          </a>
+          <a href="#about" className="inline-flex min-h-11 items-center transition hover:text-zinc-950">
+            About
           </a>
           <a
             href="https://github.com/sonnes/september"
