@@ -12,6 +12,7 @@
     "core:webview:allow-create-webview-window",
     "core:window:allow-close",
     "core:window:allow-set-focus",
+    "core:window:allow-set-title",
     "shell:allow-open"
   ]
 }

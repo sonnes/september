@@ -15,17 +15,15 @@
   "dependencies": {
     "@fontsource/lexend": "^5.2.8",
     "@fontsource/noto-sans": "^5.2.10",
+    "@september/app-ui": "workspace:*",
+    "@september/core": "workspace:*",
+    "@september/ui": "workspace:*",
     "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-router": "^1.170.31",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-shell": "^2.3.5",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "lucide-react": "^1.33.0",
-    "radix-ui": "^1.6.7",
     "react": "19.2.1",
-    "react-dom": "19.2.1",
-    "tailwind-merge": "^3.6.0"
+    "react-dom": "19.2.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

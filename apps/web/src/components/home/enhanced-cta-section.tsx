@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 
-import { Button } from '@/packages/ui/components/button';
+import { Button } from '@september/ui/components/button';
 
 export function EnhancedCTASection() {
   return (
@@ -18,7 +18,7 @@ export function EnhancedCTASection() {
           size="lg"
           className="mt-8 min-h-12 bg-white px-6 font-bold text-zinc-950 hover:bg-zinc-100"
         >
-          <Link to="/onboarding">Get Started</Link>
+          <Link to="/welcome">Get Started</Link>
         </Button>
       </div>
     </section>

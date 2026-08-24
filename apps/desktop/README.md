@@ -1,31 +1,30 @@
 # September Desktop
 
-September Desktop is an independent Tauri application, sized for the 13-inch
-iPad landscape window. It has a setup flow and the app layout that the flow
-opens into. The Rust backend also provides local text generation through a
-bundled apfel sidecar on supported Macs.
+September Desktop is the Tauri edition of September, sized for the 13-inch iPad
+landscape window. It renders the workspace's shared application UI and supplies
+macOS services through Tauri. The Rust backend also provides local text
+generation through a bundled apfel sidecar on supported Macs.
 
 The UI uses Tailwind CSS v4, shadcn/ui primitives, and TanStack Router.
 
 ## Where the UI code is
 
-`src/` divides the code into five directories.
+The root workspace owns the application UI. This app owns the route bootstrap
+and the services that connect that UI to macOS.
 
 | Directory       | Holds                                          | Rule                                            |
 | --------------- | ---------------------------------------------- | ----------------------------------------------- |
-| `src/layouts/`  | `onboarding.tsx`, `app.tsx`, `settings.tsx`    | The component renders an `<Outlet/>`.           |
-| `src/pages/`    | Route screens: `steps` `dashboard` `spaces` `talk` `notes` `voice` `settings` `usage` | A `createRoute` call in `src/main.tsx` names it. |
-| `src/blocks/`   | `screen` `space` `services` `space-panel` `phrase-panel` `speech-settings` `pick-list` `suggestions` `usage` `brand` | Two or more pages or layouts use it. |
+| `packages/app-ui/layouts/`  | `onboarding.tsx`, `app.tsx`, `settings.tsx`    | The component renders an `<Outlet/>`.           |
+| `packages/app-ui/pages/`    | Route screens: `steps` `dashboard` `spaces` `talk` `notes` `voice` `settings` `usage` | A `createRoute` call in `src/main.tsx` names it. |
+| `packages/app-ui/blocks/`   | `screen` `space` `services` `space-panel` `phrase-panel` `speech-settings` `pick-list` `suggestions` `usage` `brand` | Two or more pages or layouts use it. |
 | `src/services/` | `os` `data` `ai` `speech` `cloning` `player` `phrase-sync` `suggest` `usage` | It speaks to Rust, the platform, or a cloud service. |
-| `src/rules/`    | `app-nav` `settings-nav` `onboarding` `spaces` `notes` `phrases` `stripes` `prompts` `usage-summary` | No renderer and no backend. A node test imports it. |
+| `packages/core/` | autocomplete and platform-independent rules | Both web and desktop import the same implementation. |
+| `packages/ui/` | Tailwind theme and shadcn primitives | A token or primitive has one source. |
+| `src/rules/`    | `app-nav` `settings-nav` `onboarding` and core compatibility exports | Platform route rules stay local. |
 
-A part with one consumer stays in the page that draws it. There is no barrel
-file: import through the `@/` alias, which points at `src/`. In `src/rules/`,
-import a sibling with a relative path, because node does not resolve `@/` when
-a test loads the file.
-
-`src/autocomplete/` stays where it is. It is a copy of the engine in the web
-app, and a move would make the two apps differ.
+Shared UI imports `@platform/*`; the desktop build maps that alias to `src/`.
+This keeps SQLite, Keychain, speech, and native-media calls outside the shared
+screen package.
 
 ## Move through the app
 
@@ -34,14 +33,14 @@ never wears the app sidebar, and an app screen never wears the setup sidebar.
 
 | Layout      | Component                     | Routes                                             |
 | ----------- | ----------------------------- | -------------------------------------------------- |
-| Setup       | `OnboardingLayout`, `layouts/onboarding.tsx` | `/welcome` `/profile` `/mode` `/connect` `/finish`  |
-| Application | `AppShell`, `layouts/app.tsx` | `/dashboard` `/spaces` `/spaces/$slug/talk` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/voice` `/voice/clone` `/help` `/settings` `/settings/writing` `/settings/usage` `/settings/connections/$provider` |
+| Setup       | `OnboardingLayout`, `packages/app-ui/layouts/onboarding.tsx` | `/welcome` `/profile` `/mode` `/connect` `/finish`  |
+| Application | `AppShell`, `packages/app-ui/layouts/app.tsx` | `/dashboard` `/spaces` `/spaces/$slug/talk` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/voice` `/voice/clone` `/help` `/settings` `/settings/writing` `/settings/usage` `/settings/connections/$provider` |
 
 `AppShell` is the shadcn `Sidebar` and `SidebarInset` pair: a solid indigo
-sidebar beside a white inset card. `src/rules/app-nav.ts` lists the destinations and
-their descriptions. `src/layouts/app.tsx` gives each path an icon. A destination
-The Help destination still shows a short placeholder. Dashboard, Spaces,
-Voice, and Settings have independent desktop screens.
+sidebar beside a white inset card. `src/rules/app-nav.ts` lists the destinations
+and their descriptions. `packages/app-ui/layouts/app.tsx` gives each path an
+icon. The Help destination still shows a short placeholder. Dashboard, Spaces,
+Voice, and Settings use the same screens as the browser app.
 
 The window opens at the 1376px baseline, so the sidebar starts as a 48px icon
 rail. A wider screen opens the full sidebar. Command-B toggles it, and that
@@ -57,6 +56,11 @@ the rule, and answers with a path from `APP_NAV` or a child of one. Everything
 else opens `/dashboard`: a setup step must never come back, and an address that
 names no screen is not a place to start. A space that the user erased opens the
 space list, because the Talk screen sends a stale slug there.
+
+The macOS app and its initial window are named `September`. After each route
+settles, the window adds the page name, such as `September — Talk`. The
+`windowTitle` rule in `src/rules/app-nav.ts` names setup steps, nested space and
+note screens, voice cloning, settings sections, and connection pages.
 
 `isSetupDone` in `src/rules/onboarding.ts` owns that rule: setup is done when it
 holds a name and a mode. The app layout reads the same rule, so an app screen
@@ -181,7 +185,7 @@ The Talk screen has three parts, from the top:
    space. When the space tabs no longer fit the row, they become one button
    that opens a list.
 
-`src/rules/spaces.ts` owns the rules that a test can read: the slug, the page, the
+`packages/core/rules/spaces.ts` owns the rules that a test can read: the slug, the page, the
 unique title, and the word that delete removes.
 
 `src/services/data.ts` holds every read and every write of a space or a message. It uses
@@ -232,7 +236,7 @@ The screen has the same parts as Talk, from the top:
    delete last word, clear, and **Add to note**.
 4. The dock. The same one that Talk has.
 
-`Composer` in `src/blocks/space.tsx` is that console, and both modes use it. A user who
+`Composer` in `packages/app-ui/blocks/space.tsx` is that console, and both modes use it. A user who
 cannot type reaches a sentence through the word tiles, the phrase codes, undo,
 and delete last word. Notes needs every one of them as much as Talk does, so
 there is one console, not two. Only the end differs: Talk speaks the sentence,
@@ -260,8 +264,8 @@ transcript of the space does not change.
 
 Delete asks first, in a dialog with a red button.
 
-`src/rules/notes.ts` owns the rules that a test can read: the name from the words,
-the slug, and the text a voice says. `src/pages/notes.tsx` holds the screen.
+`packages/core/rules/notes.ts` owns the rules that a test can read: the name from the words,
+the slug, and the text a voice says. `packages/app-ui/pages/notes.tsx` holds the screen.
 
 `src/services/data.ts` reads and writes a note through `note_list`, `note_get`,
 `note_put`, and `note_delete`. `note_put` writes one complete row, so
@@ -315,11 +319,11 @@ answer while the app runs, because Talk and Notes each draw their own rail and
 a mode switch must not undo a press. The setting held a plain `true` or `false`
 while Phrases was the only tab, and `panelStateFrom` still reads that answer.
 
-`src/rules/panel.ts` holds the tabs and the rules of the saved state, where a
-test reads them without a renderer. `src/blocks/space-panel.tsx` holds the
-rail, `src/blocks/phrase-panel.tsx` the phrases card, and
-`src/blocks/speech-settings.tsx` the voice card. `RightPanel` in
-`src/blocks/screen.tsx` puts them beside the screen: the shell renders a slot as a
+`packages/core/rules/panel.ts` holds the tabs and the rules of the saved state, where a
+test reads them without a renderer. `packages/app-ui/blocks/space-panel.tsx` holds the
+rail, `packages/app-ui/blocks/phrase-panel.tsx` the phrases card, and
+`packages/app-ui/blocks/speech-settings.tsx` the voice card. `RightPanel` in
+`packages/app-ui/blocks/screen.tsx` puts them beside the screen: the shell renders a slot as a
 sibling of the inset, and the rail goes through it. A rail drawn inside the
 screen would share the one white card of the inset, and the design gives the
 rail a card of its own.
@@ -329,7 +333,7 @@ rail a card of its own.
 A person with ALS types slowly. Each word that the app offers is a word that
 the user does not type. This is the first measure of the app.
 
-`src/autocomplete/` holds the engine. It is a copy of the engine in the web
+`packages/core/autocomplete/` holds the engine. It is a copy of the engine in the web
 app, so a correction in one app can move to the other one. It reads no file
 and calls no service.
 
@@ -337,14 +341,14 @@ The engine blends three models of the words that come next:
 
 | Layer | Weight | What it learns                                     |
 | ----- | ------ | -------------------------------------------------- |
-| base  | 1.0    | The seed words in `src/autocomplete/corpus.ts`.    |
+| base  | 1.0    | The seed words in `packages/core/autocomplete/corpus.ts`.    |
 | user  | 2.0    | Every message that the user sends, in every space. |
 | space | 3.0    | The messages of the space that is open.            |
 
 The weight of a space starts at zero and grows over its first 500 words. A new
 space with three messages must not speak over the other two layers.
 
-Beside those three layers is a word list. `src/autocomplete/dictionary.ts`
+Beside those three layers is a word list. `packages/core/autocomplete/dictionary.ts`
 holds the 5,000 most frequent words of spoken English, in order of frequency.
 The list goes to the prefix index only, never to the n-gram model, because a
 flat list holds no real pairs of words.
@@ -364,7 +368,7 @@ the same file to both apps. It removes slurs and strong obscenity, because a
 wrong tap speaks the word aloud. This blocks the list, not the user: the user
 layer still learns every word that the user writes.
 
-`src/autocomplete/index.ts` holds the two rules that a test can read:
+`packages/core/autocomplete` holds the two rules that a test can read:
 
 - `suggestionsFor(engine, text, spaceId)` gives the words to show. A space or a
   mark of punctuation at the end of the text asks for the next word. If the
@@ -404,7 +408,7 @@ A one-word phrase draws as a chip, and not as a row. `stripePhrases` caps the
 rows after it drops those phrases, so a one-word phrase never takes the place
 of a row.
 
-`src/rules/stripes.ts` and `src/rules/phrases.ts` hold the rules. Both are ports of
+`packages/core/rules/stripes.ts` and `packages/core/rules/phrases.ts` hold the rules. Both are ports of
 `apps/web/src/packages/{suggestions,spaces}/lib`. Change them in both apps, or
 in neither.
 
@@ -444,7 +448,7 @@ web app uses 36px. `DESIGN.md` asks for 44px, and a user of September points
 with less accuracy than a user of a browser.
 
 Nearest the composer is the word row. It offers the next word, or the endings
-of the word that the user started. The engine in `src/autocomplete/` learns
+of the word that the user started. The engine in `packages/core/autocomplete/` learns
 from the messages of the user, so it needs no service and no wait.
 `applySuggestion` knows a part-written word from a finished one, so the screen
 never splits the text itself.
@@ -463,10 +467,10 @@ thing, so a user who does not read colour still knows what a row is:
 
 A pin is solid when the user keeps the phrase, and it is an outline when a
 model wrote it. The panel uses the same two shapes, so one phrase reads the
-same in both places. `isKept` in `src/rules/phrases.ts` answers the question,
+same in both places. `isKept` in `packages/core/rules/phrases.ts` answers the question,
 because a stripe carries text only and not the row it came from.
 
-The sizes come from `TILE` in `src/rules/stripes.ts`, the same numbers the web app
+The sizes come from `TILE` in `packages/core/rules/stripes.ts`, the same numbers the web app
 uses. `tileScale` makes every tile smaller together, so the widest row stays on
 one line. It counts the letters, the padding of each tile, and the line around
 it, against the width that a `ResizeObserver` reports. The web app measures
@@ -621,7 +625,7 @@ Recording is best-effort and never stops speaking or writing.
 
 `src/usage-summary.ts` holds the key-count, range, aggregation, and CSV rules.
 `src/usage.ts` records and reads events through `call()` in `src/services/data.ts`.
-`src/pages/dashboard.tsx` and `src/pages/usage.tsx` draw the two reports.
+`packages/app-ui/pages/dashboard.tsx` and `packages/app-ui/pages/usage.tsx` draw the two reports.
 
 ## Walk through setup
 
@@ -638,7 +642,7 @@ The brand, the setup title, and the step list are in a left indigo sidebar.
 Each step opens as an inset white card beside it. All sections on a step stay
 open. There are no collapsible groups.
 
-Both sidebars show the same brand mark. `src/blocks/brand.tsx` reads it from
+Both sidebars show the same brand mark. `packages/app-ui/blocks/brand.tsx` reads it from
 `public/logo.svg`, the file the brand publishes.
 
 The name field starts with the name from the operating system. The user can
@@ -696,8 +700,8 @@ The service and the voices keep their own screen, `/voice`, in both apps. The
 model and the sound moved to the rail of a space.
 
 `src/rules/settings-nav.ts` holds the rules that a test can read: the sections, the
-open section, and the guide for each cloud service. `src/layouts/settings.tsx`
-holds the section list, and `src/pages/settings.tsx` holds the screens.
+open section, and the guide for each cloud service. `packages/app-ui/layouts/settings.tsx`
+holds the section list, and `packages/app-ui/pages/settings.tsx` holds the screens.
 
 A press on **Set up** opens `/settings/connections/openrouter` or
 `/settings/connections/elevenlabs`. The page gives the steps, takes the key,
@@ -711,27 +715,27 @@ sentence that the service gives about it. Only the key lists the models, so the
 choice appears after the key is stored. The new model goes into the `speech`
 setting, beside the voice and the sliders.
 
-Both lists are `PickList`, in `src/blocks/pick-list.tsx`. See
+Both lists are `PickList`, in `packages/app-ui/blocks/pick-list.tsx`. See
 [One list picks one row](#one-list-picks-one-row).
 
 The OpenRouter page shows the free models, because September promises that the
 user needs no card. With no words in the search field, the list holds the free
 models. With words, the search reaches every model of the service, and a row
 that needs credit reads **Paid**. The rule is `searchModels` in
-`src/rules/pick.ts`, where a test can read it without a renderer.
+`packages/core/rules/pick.ts`, where a test can read it without a renderer.
 
 **Automatic** is the first row, and the default. It asks for no model, so the
 app sends its own free list and OpenRouter uses the first model that answers.
 A named model goes into the `setup` setting, as `writingModel`, and
 `src/services/ai.ts` sends it with each request.
 
-`src/blocks/services.tsx` holds the parts that setup and settings share: the
+`packages/app-ui/blocks/services.tsx` holds the parts that setup and settings share: the
 mode card, the mark of each service, the state pill, and the key panel. A brand
 asset is therefore named one time.
 
 ### One list picks one row
 
-`PickList` in `src/blocks/pick-list.tsx` picks one row of many. The model
+`PickList` in `packages/app-ui/blocks/pick-list.tsx` picks one row of many. The model
 lists and the voice list use it.
 
 A dropdown is not a control for a dwell. It opens on a press, and it closes
@@ -742,7 +746,7 @@ border. A caller with no room for two columns sends `columns={1}`, as the
 
 A search field appears above the rows when the list holds more than eight.
 Each word of the query must be in the name, through `matchesWords` in
-`src/rules/pick.ts`. A caller with another rule sends `filter`, and the model
+`packages/core/rules/pick.ts`. A caller with another rule sends `filter`, and the model
 list sends `searchModels`. A caller with a control for each row sends `after`,
 and the voice list sends the play button.
 
@@ -757,10 +761,10 @@ The speaking style and the personal words go to the writing service as its
 user context. `userContext()` in `src/services/ai.ts` assembles them.
 
 Buttons, inputs, and labels come from shadcn/ui. The primitives are in
-`src/components/ui/`. To add one more:
+`packages/ui/components/`. Run shadcn from that package to add one more:
 
 ```sh
-pnpm dlx shadcn@latest add <name>
+pnpm --dir ../../packages/ui dlx shadcn@latest add <name>
 ```
 
 ## Run the app

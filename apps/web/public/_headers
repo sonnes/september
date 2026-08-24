@@ -1,6 +1,5 @@
-# Cross-origin isolation — required for SharedArrayBuffer (WebLLM, ffmpeg.wasm).
-# Mirrors vercel.json and the vite dev/preview middleware. Served by Cloudflare
-# Workers static assets (the apps/server Worker) for every asset and the SPA shell.
+# Cross-origin isolation headers for the deployed browser application.
+# Vercel and the Cloudflare Worker apply the same policy to the SPA shell.
 /*
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Embedder-Policy: require-corp

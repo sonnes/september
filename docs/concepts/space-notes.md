@@ -1,85 +1,44 @@
 ---
 title: Space notes
-description: Long-form notes inside a Talk space, using the document editor and the configured speech voice for note voice-over and reel export.
-package: notes
+description: Notes store prepared long-form text inside a Talk space and use the same voice as Talk.
+package: desktop, web
 ---
 
 # Space notes
 
-Space notes let the user switch the existing Talk screen from quick speech to
-long-form writing without leaving the space. The Talk composer remains the fast
-path for one utterance; Notes mode is for longer prepared text that can be read
-back with the current speech voice.
+Notes add long-form text to a space. Talk remains the fast path for one spoken message.
 
-Notes are stored in `noteCollection` with `space_id` set to the parent
-space. `/notes` lists all notes across spaces. Notes mode uses
-`/spaces/:spaceSlug/notes/:noteSlug` for individual notes; Talk mode uses
-`/spaces/:spaceSlug/talk`.
+The desktop and web apps use the same plain-text note screen. Markdown stays in the `content` field.
 
-The same rich editor powers global notes and space notes. In note mode, the
-editor autosaves note content and drops the document action footer. The note
-selector is a working-set strip of note tabs (`NoteTabs`) directly above the
-composer — the same slot pinned phrase rows occupy in Talk. Voice-over, audio
-download, and reel export (`NoteActions`) live in the editor header for the
-selected note. Voice-over uses the same speech settings as Talk, but it does
-not create a chat message or append text to the transcript.
+The desktop app stores notes in SQLite. The web app stores notes in the `notes` IndexedDB store.
 
-The selected note can also export a vertical MP4 reel. Reel export uses the
-configured ElevenLabs voice because the MP4 captions need character-level
-timing. The browser generates the note audio and timing, renders 1080x1920
-caption frames with Canvas, and muxes those frames with the audio through
-`ffmpeg.wasm`. Note content and audio stay in the browser during export.
+## Routes
 
-The reel look is one editorial system, defined once in
-`packages/notes/lib/reel-theme.ts` and rendered identically by the in-app story
-player (DOM) and the exported MP4 (canvas): a solid Tailwind colour background
-with film grain and a soft vignette, a serif display headline (Playfair Display)
-over Noto Sans support text, and a "September" watermark. Each caption chunk
-gets a role from punctuation — the first chunk, or a chunk after a sentence end
-(`. ! ?`), is a **display** headline; a continuation chunk is **support** text —
-so both renderers compute the same sequence. The colour is chosen per export
-from six Tailwind pairs (default `stone`) in the reel export panel and applies to
-both the story player and the MP4; it is not persisted.
+Notes use these routes:
 
-## The desktop app
+```text
+/spaces/$slug/notes
+/spaces/$slug/notes/$noteSlug
+```
 
-The desktop app ports the core of this concept, and not the whole of it.
+The first route opens the About tab or the first note. The second route opens one named note.
 
-Notes live in the SQLite `notes` table, which cascades from `spaces`. The four
-Rust commands `note_list`, `note_get`, `note_put`, and `note_delete` are the
-only way in. `src/data.ts` holds the hooks; no screen calls `invoke`.
+## Editing
 
-The desktop writing surface is a plain text field, not the rich editor. Both
-apps keep markdown in the same `content` column, so a row written by one app
-reads correctly in the other. The desktop screen has no toolbar.
+The editor saves 600ms after the last keystroke. It also saves pending text when the screen closes.
 
-Notes keeps the console of Talk, as the web app does: the note tabs, the word
-tiles, the field, undo, delete last word, clear, and **Add to note**. The
-composed words go under the note after a blank line. The note editor above it
-is the second way in, for a user who can type.
+The first save creates a title from the first six words. The user can change the title later.
 
-A note saves 600 ms after the last keystroke, and again when the screen closes
-with words unsaved. The first save names the note from its first six words.
-Voice-over uses the same voice as Talk and writes no message.
+The composer can append text to the open note. It provides the same word suggestions, undo action, and clear action as Talk.
 
-The first tab of the console is About. It opens the `context` column of the
-space, which says who the user speaks to here and why. A model writes this
-column one time, on `/spaces/new`, from the words the user gave there. The user
-writes over it in this tab. The suggestion prompt and the phrases prompt both
-read the column, so a change here changes the words that the app offers.
+## About tab
 
-The About tab saves with no Save button, and the console writes into it.
-Therefore a user who cannot type fills this note with the word tiles. It saves
-when the field loses focus, and again when the tab closes with words unsaved.
-The console writes only after the field blurs, so the two writers cannot race.
-The tab is state in the screen, and not an address.
+The About tab edits the `context` field of the space. Phrase generation and writing prompts read this field.
 
-The desktop routes are `/spaces/$slug/notes` and
-`/spaces/$slug/notes/$noteSlug`. Two tabs in the header move between Talk and
-Notes, in place of the bottom-dock mode row of the web app. The desktop app
-keeps the mode of each space, by slug, in the `space-modes` setting.
+The About tab saves when its field loses focus. It also saves pending text when the tab closes.
 
-Reel export, the story player, the slide presentation, the file upload, and
-the audio download are not in the desktop app.
+## Voice-over
 
-Deleting a space cascades its messages, saved phrases, and scoped notes.
+Voice-over uses the same voice settings as Talk. It does not create a message or change the Talk transcript.
+
+Removing a space also removes its scoped notes, messages, and phrases in one repository operation.

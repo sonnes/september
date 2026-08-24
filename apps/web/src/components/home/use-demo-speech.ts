@@ -2,13 +2,11 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 
-import { useAudioPlayer } from '@/packages/audio';
-import { useSpeechContext } from '@/packages/speech';
-import type { Voice } from '@/packages/shared';
-
-// Fixed, calm defaults for the marketing prototypes — the in-app experience
-// reads these from the account's speech settings instead.
-const DEMO_TTS_OPTIONS = { speed: 1, pitch: 1, volume: 1, language: 'en-US' };
+export interface DemoVoice {
+  id: string;
+  name: string;
+  language: string;
+}
 
 export interface DemoSequenceHooks {
   onPart?: (index: number) => void;
@@ -17,41 +15,48 @@ export interface DemoSequenceHooks {
 
 export interface UseDemoSpeechReturn {
   /** Speak one message through the app's audio player (browser TTS). */
-  speak: (text: string, voice?: Voice) => void;
+  speak: (text: string, voice?: DemoVoice) => void;
   /** Speak parts back-to-back, reporting each part as it starts. */
-  speakSequence: (parts: string[], hooks?: DemoSequenceHooks, voice?: Voice) => void;
+  speakSequence: (parts: string[], hooks?: DemoSequenceHooks, voice?: DemoVoice) => void;
   /** Cancel an in-flight speakSequence. */
   stopSequence: () => void;
   /** Device voices from the browser speech engine. */
-  listVoices: () => Promise<Voice[]>;
+  listVoices: () => Promise<DemoVoice[]>;
 }
 
 /**
  * The one speech seam shared by every landing-page prototype. Uses the real
- * speech stack — the browser engine from the speech registry, played through
- * the app's AudioPlayer — so the demos are the product, not a recording.
+ * browser speech engine, so the demos work before setup and keep no page data.
  */
 export function useDemoSpeech(): UseDemoSpeechReturn {
-  const { getProvider } = useSpeechContext();
-  const { enqueue } = useAudioPlayer();
   const sequenceId = useRef(0);
 
-  const speak = useCallback(
-    (text: string, voice?: Voice) => {
-      getProvider('browser')
-        ?.generateSpeech({ text, voice, options: DEMO_TTS_OPTIONS })
-        .then(response => {
-          if (response.utterance) enqueue({ text, utterance: response.utterance });
-        })
-        .catch(() => {
-          /* no speech support — the demo stays visual */
-        });
-    },
-    [getProvider, enqueue]
-  );
+  const utterance = useCallback((text: string, voice?: DemoVoice) => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return null;
+    const spoken = new SpeechSynthesisUtterance(text);
+    spoken.rate = 1;
+    spoken.pitch = 1;
+    spoken.volume = 1;
+    spoken.lang = voice?.language ?? 'en-US';
+    if (voice) {
+      spoken.voice =
+        window.speechSynthesis
+          .getVoices()
+          .find(candidate => candidate.voiceURI === voice.id || candidate.name === voice.name) ??
+        null;
+    }
+    return spoken;
+  }, []);
+
+  const speak = useCallback((text: string, voice?: DemoVoice) => {
+    const spoken = utterance(text, voice);
+    if (!spoken) return;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(spoken);
+  }, [utterance]);
 
   const speakSequence = useCallback(
-    (parts: string[], hooks?: DemoSequenceHooks, voice?: Voice) => {
+    (parts: string[], hooks?: DemoSequenceHooks, voice?: DemoVoice) => {
       const synthesis = typeof window !== 'undefined' ? window.speechSynthesis : undefined;
       const id = ++sequenceId.current;
 
@@ -62,26 +67,21 @@ export function useDemoSpeech(): UseDemoSpeechReturn {
           return;
         }
         hooks?.onPart?.(index);
-        // Sentence-level onend callbacks need direct synthesis control; the
-        // provider still builds the utterance so voice/settings stay real.
-        const response = await getProvider('browser')
-          ?.generateSpeech({ text: parts[index], voice, options: DEMO_TTS_OPTIONS })
-          .catch(() => undefined);
-        const utterance = response?.utterance;
-        if (!synthesis || !utterance) {
+        const spoken = utterance(parts[index], voice);
+        if (!synthesis || !spoken) {
           // No speech support: advance on a reading-pace timer instead.
           setTimeout(() => speakPart(index + 1), 2200);
           return;
         }
-        utterance.onend = () => speakPart(index + 1);
-        utterance.onerror = () => speakPart(index + 1);
-        synthesis.speak(utterance);
+        spoken.onend = () => speakPart(index + 1);
+        spoken.onerror = () => speakPart(index + 1);
+        synthesis.speak(spoken);
       };
 
       synthesis?.cancel();
       void speakPart(0);
     },
-    [getProvider]
+    [utterance]
   );
 
   const stopSequence = useCallback(() => {
@@ -91,13 +91,14 @@ export function useDemoSpeech(): UseDemoSpeechReturn {
 
   useEffect(() => stopSequence, [stopSequence]);
 
-  const listVoices = useCallback(async () => {
-    try {
-      return (await getProvider('browser')?.listVoices({ page: 1, limit: 100 })) ?? [];
-    } catch {
-      return [];
-    }
-  }, [getProvider]);
+  const listVoices = useCallback(async (): Promise<DemoVoice[]> => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return [];
+    return window.speechSynthesis.getVoices().map(voice => ({
+      id: voice.voiceURI,
+      name: voice.name,
+      language: voice.lang,
+    }));
+  }, []);
 
   return { speak, speakSequence, stopSequence, listVoices };
 }

@@ -5,15 +5,18 @@ import {
   Headphones,
   PanelLeft,
   PanelRight,
+  Pin,
   Plus,
   Trash2,
   Undo2,
   Volume2,
 } from 'lucide-react';
 
-import { EditorProvider, useEditorContext } from '@/packages/editor';
-import { DEFAULT_SPACE_SEED } from '@/packages/spaces';
-import { type Stripe, SuggestionStripes, stripeForText } from '@/packages/suggestions';
+import {
+  joinTokens,
+  stripeForText,
+  type SuggestionSource,
+} from '@/rules/stripes';
 
 import { SectionHeader } from './section-header';
 import { useDemoSpeech } from './use-demo-speech';
@@ -25,10 +28,25 @@ const DEMO_TRANSCRIPT: string[] = ['Good morning! Ready when you are.'];
 // dignified for a public page (no care-need phrases here).
 const DEMO_PINNED = ['Hello', 'Please', 'Thank you', 'Help'];
 
-const DEMO_SUGGESTIONS: { text: string; source: Stripe['source'] }[] =
-  DEFAULT_SPACE_SEED.phrases
-    .filter(phrase => !phrase.pinned)
-    .map(phrase => ({ text: phrase.text, source: phrase.demoSource }));
+export const LANDING_SPACE_SEED = {
+  title: 'General',
+  phrases: [
+    { text: 'Good morning', source: 'md' },
+    { text: 'Yes, please.', source: 'history' },
+    { text: 'No, thank you.', source: 'llm' },
+  ],
+} as const;
+
+export interface LandingStripe {
+  text: string;
+  tokens: string[];
+  hidden: number;
+  source: SuggestionSource;
+  code?: string;
+}
+
+const DEMO_SUGGESTIONS: readonly { text: string; source: SuggestionSource }[] =
+  LANDING_SPACE_SEED.phrases;
 
 export function LiveDemoSection() {
   return (
@@ -41,16 +59,14 @@ export function LiveDemoSection() {
           hint="Try it: type “go”, tap the suggestion, press Speak — your browser will say it."
         />
 
-        <EditorProvider defaultText="">
-          <WorkingDemo />
-        </EditorProvider>
+        <WorkingDemo />
       </div>
     </section>
   );
 }
 
 function WorkingDemo() {
-  const { text, setText } = useEditorContext();
+  const [text, setText] = useState('');
   const { speak: speakAloud } = useDemoSpeech();
   const [spoken, setSpoken] = useState(DEMO_TRANSCRIPT);
   const [pinned, setPinned] = useState<string[]>(DEMO_PINNED);
@@ -84,7 +100,7 @@ function WorkingDemo() {
 
   // Recompute stripes against the current draft so the already-typed prefix is
   // hidden — same descriptor shape the real useStripes feeds SuggestionStripes.
-  const stripes = useMemo<Stripe[]>(
+  const stripes = useMemo<LandingStripe[]>(
     () => DEMO_SUGGESTIONS.map(s => ({ ...stripeForText(s.text, text), source: s.source })),
     [text]
   );
@@ -140,7 +156,7 @@ function WorkingDemo() {
             </span>
             <span className="mx-1 h-4 w-px bg-border" aria-hidden="true" />
             <strong className="min-w-0 truncate text-sm font-medium text-zinc-950 sm:text-base">
-              {DEFAULT_SPACE_SEED.title}
+              {LANDING_SPACE_SEED.title}
             </strong>
             <span className="ml-auto grid size-9 place-items-center rounded-md text-muted-foreground">
               <PanelRight className="size-4" aria-hidden="true" />
@@ -168,11 +184,12 @@ function WorkingDemo() {
             <div className="flex shrink-0 flex-col gap-3 rounded-lg bg-muted/40 p-3">
               {/* Right-edge fade signals the stripe rows scroll on narrow screens. */}
               <div className="[mask-image:linear-gradient(to_right,black_92%,transparent)] sm:[mask-image:none]">
-                <SuggestionStripes
+                <LandingSuggestionStripes
                   stripes={stripes}
                   pinnedChips={pinned}
                   onPin={handlePin}
                   onSubmit={speak}
+                  onTake={setText}
                 />
               </div>
 
@@ -229,7 +246,7 @@ function WorkingDemo() {
                   aria-pressed="true"
                   className="h-8 shrink-0 whitespace-nowrap rounded bg-primary px-3 text-sm font-medium text-primary-foreground"
                 >
-                  {DEFAULT_SPACE_SEED.title}
+                  {LANDING_SPACE_SEED.title}
                 </button>
                 <button
                   type="button"
@@ -243,6 +260,82 @@ function WorkingDemo() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+export function LandingSuggestionStripes({
+  stripes,
+  pinnedChips,
+  onPin,
+  onSubmit,
+  onTake,
+}: {
+  stripes: LandingStripe[];
+  pinnedChips: string[];
+  onPin?: (phrase: string) => void;
+  onSubmit: (text: string) => void;
+  onTake: (text: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2.5">
+      {pinnedChips.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {pinnedChips.map(chip => (
+            <button
+              key={chip}
+              type="button"
+              onClick={() => onTake(`${chip} `)}
+              className="flex h-11 items-center gap-1.5 rounded-full border border-primary/30 bg-card px-5 text-base font-medium text-foreground transition-colors hover:border-primary/60 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Pin className="size-3.5 text-primary/60" aria-hidden="true" />
+              {chip}
+            </button>
+          ))}
+        </div>
+      )}
+      {stripes.map(stripe => {
+        const shown = stripe.tokens.slice(stripe.hidden);
+        return (
+          <div
+            key={`${stripe.source}:${stripe.text}`}
+            data-source={stripe.source}
+            className="flex flex-nowrap items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-muted text-xs font-bold uppercase text-muted-foreground">
+              {stripe.code ?? stripe.source.slice(0, 1)}
+            </span>
+            {shown.map((token, index) => (
+              <button
+                key={`${token}:${index}`}
+                type="button"
+                onClick={() => onTake(joinTokens(stripe.tokens.slice(0, stripe.hidden + index + 1)))}
+                className="min-h-11 shrink-0 rounded-md border border-primary/40 bg-card px-4 text-base font-medium text-foreground transition-colors hover:border-primary/70 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {token}
+              </button>
+            ))}
+            {onPin && (
+              <button
+                type="button"
+                aria-label={`Pin ${stripe.text}`}
+                onClick={() => onPin(stripe.text)}
+                className="grid size-11 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted"
+              >
+                <Pin className="size-4" aria-hidden="true" />
+              </button>
+            )}
+            <button
+              type="button"
+              aria-label={`Speak ${stripe.text}`}
+              onClick={() => onSubmit(stripe.text)}
+              className="grid size-11 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted"
+            >
+              <Volume2 className="size-4" aria-hidden="true" />
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }

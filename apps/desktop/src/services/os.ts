@@ -1,4 +1,5 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-shell";
 
 import type { OnboardingDraft } from "@/rules/onboarding";
@@ -100,6 +101,12 @@ export async function savePath(path: string): Promise<void> {
   await invoke("setting_put", {
     request: { key: "lastPath", value: path },
   }).catch(() => undefined);
+}
+
+/** Keeps the browser document and native macOS window on the same title. */
+export async function setWindowTitle(title: string): Promise<void> {
+  document.title = title;
+  await getCurrentWindow().setTitle(title).catch(() => undefined);
 }
 
 /** Opens an address in the browser of the Mac, not in the app window. */

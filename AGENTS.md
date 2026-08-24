@@ -4,18 +4,16 @@ September is an assistive communication app for people with ALS, MND, or speech/
 
 ## Apps
 
-**Web** — TanStack Start (Vite), React 19, Tailwind, in `apps/web/`. A
-standalone pnpm project (its own `package.json`, `pnpm-lock.yaml`, and
-`node_modules` — no workspace). See `apps/web/CLAUDE.md` for build commands and
-code style rules; read it before working in the app.
+**Web** — a Vite SPA with React 19, TanStack Router, and Tailwind, in `apps/web/`.
+It belongs to the root pnpm workspace. See `apps/web/CLAUDE.md` for build
+commands and code style rules; read it before working in the app.
 
-The formerly-shared modules live inside the app at `apps/web/src/packages/*`,
-imported via the `@/packages/*` alias (`@/*` → `src/*`), not as workspace
-packages.
+Browser services use one native IndexedDB database. Shared rules, autocomplete,
+primitives, tokens, and application screens live in `packages/*`.
 
-**Desktop** — an independent Tauri v2 app with its own React and Vite UI in
-`apps/desktop/`. See `apps/desktop/CLAUDE.md` before working in it. Port screens
-from the web app deliberately; do not share UI source between the apps.
+**Desktop** — a Tauri v2 app with a React and Vite bootstrap in `apps/desktop/`.
+See `apps/desktop/CLAUDE.md` before working in it. It renders the same application
+UI packages as web and supplies Tauri platform services.
 
 **macOS** — a native floating keyboard in `apps/swift/` (SwiftUI + AppKit,
 SwiftPM, no dependencies). See `apps/swift/CLAUDE.md` before working in it; its
@@ -23,10 +21,12 @@ design system comes from GitHub issue #10, not `DESIGN.md`.
 
 ```
 september/
-├── apps/web/              # Web app (standalone pnpm project)
-│   └── src/packages/      # shared modules (import via @/packages/*)
-├── apps/desktop/          # Independent Tauri app and React UI
+├── apps/web/              # Browser bootstrap, routes, and IndexedDB services
+├── apps/desktop/          # Tauri bootstrap, services, and native backend
 ├── apps/swift/            # Native macOS keyboard (SwiftPM)
+├── packages/core/         # Pure rules and autocomplete
+├── packages/ui/           # Design tokens and generic primitives
+├── packages/app-ui/       # Shared layouts, blocks, and application screens
 └── docs/                  # Plans, notes, concepts
 ```
 

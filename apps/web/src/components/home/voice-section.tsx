@@ -4,10 +4,8 @@ import { Link } from '@tanstack/react-router';
 
 import { Mic, Play } from 'lucide-react';
 
-import type { Voice } from '@/packages/shared';
-
 import { SectionHeader } from './section-header';
-import { useDemoSpeech } from './use-demo-speech';
+import { type DemoVoice, useDemoSpeech } from './use-demo-speech';
 
 const PREVIEW_TEXT = 'Hello — this is how September can sound.';
 
@@ -30,7 +28,7 @@ export function VoiceSection() {
 
 function VoiceDemo() {
   const { speak, listVoices } = useDemoSpeech();
-  const [voices, setVoices] = useState<Voice[]>([]);
+  const [voices, setVoices] = useState<DemoVoice[]>([]);
   const [selected, setSelected] = useState(0);
 
   // Browser voices load lazily; re-list when the engine announces them.
@@ -66,7 +64,7 @@ function VoiceDemo() {
             </p>
           </div>
           <Link
-            to="/onboarding"
+            to="/welcome"
             className="inline-flex h-11 items-center rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             Start cloning

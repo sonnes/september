@@ -1,162 +1,111 @@
 # September
 
-September is a communication assistant for people with Amyotrophic Lateral Sclerosis (ALS), Motor Neuron Disease (MND), or other speech & motor difficulties.
+September is an assistive communication app for people with ALS, MND, or other speech and motor difficulties. It helps a user express a full thought with fewer keystrokes.
 
-September is primarily designed to communicate effectively with fewer keystrokes. It can autocomplete words and phrases, based on the context of the conversation. It transcribes the audio input of others talking to you in real-time. September also extracts the important information from the conversation and displays contextually relevant shortcuts to respond.
+## Applications
+
+September contains three applications:
+
+- `apps/web` is the browser application.
+- `apps/desktop` is the Tauri application for macOS.
+- `apps/swift` is the native floating keyboard for macOS.
+
+The web and desktop applications import the same rules, autocomplete engine,
+design system, and application screens from the root workspace packages. Each
+app keeps its own route bootstrap and platform services. The web app also has a
+public landing page at `/`.
+
+The web app stores data and its bounded speech cache in one IndexedDB database. The desktop app stores domain data in SQLite and provider keys in the macOS Keychain.
 
 ## Features
 
-### Text-to-Speech
+- Talk spaces combine saved phrases, word suggestions, and a text composer.
+- System and ElevenLabs voices speak Talk messages and notes.
+- Notes store prepared long-form text inside a space.
+- Phrase codes expand short input into a full phrase.
+- Local usage reports show saved keystrokes and provider use.
+- ElevenLabs can create a cloned voice from browser or desktop recordings.
 
-September provides a choice of voices to speak out your messages. You can choose a voice that suits your style and personality. Or simply clone your voice using the voice cloning feature.
+## Requirements
 
-### Voice Cloning
+- Node.js 20 or later
+- pnpm
+- Rust and the Tauri system requirements for desktop builds
+- Swift 6 and Xcode command-line tools for the native keyboard
 
-The voice cloning tool provides a random set of sentences to read out loud. It uses these recordings to clone your voice, using Eleven Labs' technology.
+## Install
 
-### Speech-to-Text
+Install the JavaScript workspace from the repository root:
 
-The biggest challenge for people with motor difficulties is the time & effort it takes to type out text that fully expresses their thoughts & emotions. September provides a speech-to-text feature that transcribes conversations around you in real-time.
-
-These transcriptions are then used to provide contextually relevant replies or auto-complete suggestions.
-
-### Auto-Complete
-
-In every conversation, September tries to predict the next words or phrases you might want to use. It uses the context of the conversation & your mood/cues to provide these suggestions.
-
-Additionally, in every conversation, you can provide additional context in the form of notes, documents, images, videos, or links. September indexes all this information to "speak your mind" in your conversations.
-
-### Notes
-
-Notes let you prepare longer text inside a conversation space. You can play the note aloud or download the generated audio.
-
-### Reels
-
-Reels turn note text into a captioned video you can download and share.
-
-## Getting Started
-
-### Prerequisites
-
-- **Node.js**: v20 or later
-- **Package Manager**: [pnpm](https://pnpm.io/)
-- **Desktop builds**: Rust and the [Tauri system dependencies](https://v2.tauri.app/start/prerequisites/)
-
-### Setup
-
-1. **Clone the repository**:
-
-   ```bash
-   git clone https://github.com/your-repo/september.git
-   cd september
-   ```
-
-2. **Install dependencies**:
-
-   ```bash
-   pnpm -C apps/web install
-   pnpm -C apps/desktop install
-   ```
-
-3. **Environment Variables**:
-   Copy the example environment file and fill in your credentials:
-
-   ```bash
-   cp apps/web/.env.example apps/web/.env.local
-   ```
-
-   You will need API keys for:
-   - **Google Gemini**: API Key (for AI suggestions and transcription)
-   - **ElevenLabs**: API Key (for high-quality TTS and cloning)
-
-### Running the App
-
-```bash
-make dev          # or: pnpm -C apps/web dev
+```sh
+pnpm install
 ```
 
-The application will be available at `http://localhost:3009`.
+The web app does not use environment variables for provider keys. Add OpenRouter or ElevenLabs keys in the application settings.
 
-### Running the Desktop App
+## Develop
 
-```bash
+Start the browser application:
+
+```sh
+make dev
+```
+
+The application opens at `http://localhost:3009`.
+
+Start the desktop application:
+
+```sh
 make desktop-dev
 ```
 
-This command starts the independent React interface in Tauri. The desktop app
-includes setup, Talk and Notes spaces, Voice, a local usage Dashboard, and
-Settings. Domain rows and 90 days of usage events stay in SQLite behind Rust
-commands.
+Start the native keyboard:
 
-Build an installable desktop bundle with `make desktop-build`.
-
-## Usage
-
-1. **Start**: Open the app — it runs locally with no sign-up required.
-2. **Talk**: Create a conversation space, build a message from phrases or text, then tap Speak.
-3. **Notes**: Write longer prepared text inside a space, then play voice-over or export a reel.
-4. **Help**: Open `/help` for a step-by-step Talk and Notes guide with screenshots.
-5. **Voice Settings**: Configure your voice, speed, and pitch in settings. You can also clone your own voice using the voice cloning tool.
-
-## Project Structure
-
-September has separate web and Tauri desktop apps, plus a native macOS keyboard.
-Shared modules live inside the web app at `src/packages/*`.
-They use the `@/packages/*` alias (`@/*` → `src/*` in `tsconfig.json`).
-
+```sh
+make mac-run
 ```
+
+## Project structure
+
+```text
 september/
-├── apps/web/                   # Web application (standalone pnpm project)
-│   ├── src/
-│   │   ├── routes/             # TanStack Router file routes
-│   │   └── packages/           # shared modules (import via @/packages/*)
-│   │       ├── shared/         # Utilities, hooks, types
-│   │       ├── ui/             # shadcn/ui components
-│   │       ├── ai/             # AI config & service registry
-│   │       ├── audio/          # Audio playback & storage
-│   │       ├── chats/          # Chat & message management
-│   │       ├── cloning/        # Voice cloning
-│   │       ├── documents/      # Document management
-│   │       ├── editor/         # Autocomplete text editor
-│   │       ├── keyboards/      # Accessible keyboards
-│   │       ├── onboarding/     # User onboarding
-│   │       ├── speech/         # TTS & voice management
-│   │       └── suggestions/    # Contextual suggestions
-│   ├── vite.config.ts
-│   └── vercel.json
-├── apps/desktop/               # Independent Tauri application
-│   ├── src/                    # Desktop-only React UI
-│   └── src-tauri/              # Rust RPC and SQLite settings storage
-├── apps/swift/                 # Native macOS floating keyboard (SwiftPM)
-│   ├── Sources/SeptemberKit/   # Models, design tokens, SwiftUI views
-│   └── Sources/September/      # App shell, floating panel, CGEvent injection
-└── docs/                       # Plans, notes, concepts
+├── apps/
+│   ├── web/            Vite browser SPA and native IndexedDB repository
+│   ├── desktop/        Vite UI, Tauri shell, Rust commands, and SQLite
+│   ├── server/         Cloudflare Worker for the browser SPA
+│   └── swift/          Native macOS floating keyboard
+├── packages/
+│   ├── core/           Pure rules and autocomplete
+│   ├── ui/             Shared tokens and generic UI primitives
+│   └── app-ui/         Shared layouts, blocks, and application screens
+└── docs/               concepts, plans, research, and implementation notes
 ```
 
-Run the macOS app with `make mac-run`; see `apps/swift/README.md` for the
-Accessibility permission setup.
+Read the instruction file in an application directory before you change that
+application. JavaScript dependencies use the root lockfile. Commands can still
+run from an app directory.
 
-## Tech Stack
+## Web data migration
 
-- **Framework**: TanStack Start on Vite (React 19, SPA)
-- **Styling**: Tailwind CSS 4, shadcn/ui components
-- **Data Cache**: TanStack Query for shared asynchronous state.
-- **Web Storage**: IndexedDB through TanStack DB.
-- **Desktop UI**: React 19 and Vite in an independent Tauri app.
-- **Desktop Storage**: Settings, domain rows, and 90-day usage events in SQLite behind Tauri Rust commands.
-- **AI**: Google Gemini API / OpenRouter, Vercel AI SDK
-- **Voice**: ElevenLabs for voice synthesis and cloning
-- **Forms**: React Hook Form + Zod validation
-- **Social cards**: JSX rendered to Open Graph PNGs with Satori and Sharp
+The browser app imports the old web databases one time. It validates the imported rows before it removes the old databases and local-storage keys.
 
-## Development Guidelines
+If another tab blocks database removal, close the old tab and start September again. The next start retries removal without another import.
 
-- **Modules**: Shared code lives in `src/packages/`. Import via the `@/packages/*` alias, not relative paths.
-- **App code**: Use `@/` imports for files under `src/`.
-- **Components**: Check the `README.md` in each module directory before making changes.
-- **Styles**: Follow shadcn/ui patterns and Tailwind CSS 4.
-- **Icons**: Use `lucide-react` for standard icons.
+## Tests
+
+Run the checks from the application directory:
+
+```sh
+pnpm -C apps/web test
+pnpm -C apps/web lint
+pnpm -C apps/web build
+
+pnpm -C apps/desktop test
+pnpm -C apps/desktop build
+
+make mac-test
+```
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+September uses the MIT License. See `LICENSE`.

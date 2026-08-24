@@ -5,7 +5,13 @@ import test from "node:test";
 import { matchesWords, searchModels } from "../src/rules/pick.ts";
 
 const desktopRoot = new URL("../", import.meta.url);
-const readText = (path) => readFile(new URL(path, desktopRoot), "utf8");
+const readText = (path) => {
+  const shared = path.match(/^src\/(blocks|layouts|pages)\/(.+)$/);
+  const target = shared
+    ? `../../packages/app-ui/${shared[1]}/${shared[2]}`
+    : path;
+  return readFile(new URL(target, desktopRoot), "utf8");
+};
 
 const MODELS = [
   { id: "qwen/qwen3-next-80b-a3b-instruct:free", name: "Qwen: Qwen3 Next 80B (free)", free: true },

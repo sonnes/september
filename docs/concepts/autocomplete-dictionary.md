@@ -1,7 +1,7 @@
 ---
 title: The autocomplete dictionary
 description: The engine ships 5,000 words of spoken English beside the seed sentences, so that a part-written word always has candidates.
-package: desktop, shared
+package: desktop, web
 ---
 
 # The autocomplete dictionary
@@ -70,6 +70,8 @@ the user writes, so nobody loses their own vocabulary.
 ## Rebuild the list
 
 Run `node scripts/build-dictionary.mjs` from `apps/desktop`. The script writes
-the same file to `apps/desktop/src/autocomplete/` and to
-`apps/web/src/packages/shared/lib/autocomplete/`. The two engines must stay the
-same.
+the same dictionary to the desktop and web autocomplete folders.
+
+The web engine also ports the desktop spoken corpus. It trains in memory and
+learns from messages in the browser repository. It does not create an
+autocomplete database.

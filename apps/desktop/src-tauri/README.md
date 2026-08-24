@@ -18,6 +18,10 @@ cargo fmt --all -- --check
 Use `pnpm tauri:dev` or `pnpm tauri:build` from `apps/desktop` to run or package
 the complete application.
 
+The Tauri product and initial window are named `September`. The default
+capability lets the UI replace the native window title after navigation, so
+each page adds its name to the app name.
+
 The Tauri commands prepare apfel automatically on an Apple Silicon Mac.
 Run `pnpm apfel:prepare` from `apps/desktop` to prepare only the sidecar.
 

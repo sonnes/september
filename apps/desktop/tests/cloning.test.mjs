@@ -333,7 +333,7 @@ test("a stopped sample cannot report itself playing after play resolves", async 
 
 test("voice cloning is a dedicated subpage that selects the result", async () => {
   const voice = await readFile(
-    new URL("../src/pages/voice.tsx", import.meta.url),
+    new URL("../../../packages/app-ui/pages/voice.tsx", import.meta.url),
     "utf8",
   );
   const main = await readFile(

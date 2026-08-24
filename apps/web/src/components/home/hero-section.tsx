@@ -3,8 +3,8 @@ import { Github } from 'lucide-react';
 
 import { BrandMark, BrandWordmark } from '@/components/brand';
 
-import { Badge } from '@/packages/ui/components/badge';
-import { Button } from '@/packages/ui/components/button';
+import { Badge } from '@september/ui/components/badge';
+import { Button } from '@september/ui/components/button';
 
 export function HeroSection() {
   return (
@@ -52,7 +52,7 @@ export function HeroSection() {
                 asChild
                 className="h-11 rounded-full bg-primary-foreground px-6 text-sm font-semibold text-indigo-600 shadow-lg transition hover:bg-primary-foreground/90 hover:shadow-xl sm:h-12 sm:px-8 sm:text-base"
               >
-                <Link to="/onboarding">Get Started</Link>
+                <Link to="/welcome">Get Started</Link>
               </Button>
               <Badge
                 asChild

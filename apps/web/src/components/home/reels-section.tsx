@@ -2,19 +2,33 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { Play, Square } from 'lucide-react';
 
-import {
-  REEL_GRAIN_SVG,
-  REEL_VIGNETTE_GRADIENT,
-  ROLE_SPECS,
-  WATERMARK_TEXT,
-  captionRoles,
-  ensureReelFonts,
-  reelPair,
-} from '@/packages/notes';
-import type { ReelCaption } from '@/packages/notes';
-
 import { SectionHeader } from './section-header';
 import { useDemoSpeech } from './use-demo-speech';
+
+const PAIR = { bg: '#1c1917', display: '#fde68a', support: '#fafaf9' };
+const WATERMARK_TEXT = 'September';
+const REEL_GRAIN_SVG =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E";
+const REEL_VIGNETTE_GRADIENT =
+  'radial-gradient(130% 100% at 50% 35%, transparent 58%, rgba(0,0,0,0.32) 100%)';
+const ROLE_SPECS = {
+  display: { fontFamily: '"Lexend", sans-serif', fontWeight: 700 },
+  support: { fontFamily: '"Noto Sans", sans-serif', fontWeight: 700 },
+} as const;
+
+function captionRoles(chunks: readonly string[]): Array<keyof typeof ROLE_SPECS> {
+  return chunks.map((_, index) =>
+    index === 0 || /[.!?]$/.test(chunks[index - 1]) ? 'display' : 'support'
+  );
+}
+
+async function ensureReelFonts(): Promise<void> {
+  if (!document.fonts) return;
+  await Promise.all([
+    document.fonts.load('700 32px "Lexend"'),
+    document.fonts.load('700 32px "Noto Sans"'),
+  ]);
+}
 
 // The notes-section story, chunked the way the reel exporter would cut it —
 // the page's note → reel thread stays one narrative.
@@ -26,17 +40,6 @@ export const REEL_CAPTIONS: readonly string[] = [
   'She won.',
   'That’s how we met.',
 ];
-
-const PAIR = reelPair('stone');
-
-/** Minimal ReelCaption shells so the real role derivation runs on demo text. */
-function toCaptions(chunks: readonly string[]): ReelCaption[] {
-  return chunks.map(chunk => ({
-    startTime: 0,
-    endTime: 0,
-    words: chunk.split(' ').map(text => ({ text, startTime: 0, endTime: 0 })),
-  }));
-}
 
 export function ReelsSection() {
   return (
@@ -66,7 +69,7 @@ function ReelDemo() {
     return stopSequence;
   }, [stopSequence]);
 
-  const roles = useMemo(() => captionRoles(toCaptions(REEL_CAPTIONS)), []);
+  const roles = useMemo(() => captionRoles(REEL_CAPTIONS), []);
 
   const play = () => {
     if (playing) {

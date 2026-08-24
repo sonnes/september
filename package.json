@@ -1,0 +1,18 @@
+{
+  "name": "september",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.19.0",
+  "scripts": {
+    "build": "pnpm --filter @september/core --filter @september/ui --filter @september/web --filter @september/desktop build",
+    "lint": "pnpm --filter @september/web lint",
+    "test": "pnpm --filter @september/core --filter @september/web --filter @september/desktop test"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "19.2.7",
+      "@types/react-dom": "19.2.3"
+    },
+    "onlyBuiltDependencies": ["esbuild", "sharp", "workerd"]
+  }
+}

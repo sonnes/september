@@ -1,1 +1,0 @@
-export { transcribeLocally } from './whisper';

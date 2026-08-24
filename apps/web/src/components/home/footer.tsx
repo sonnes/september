@@ -1,5 +1,3 @@
-import { Link } from '@tanstack/react-router';
-
 export function Footer() {
   return (
     <footer className="border-t bg-white">
@@ -16,18 +14,20 @@ export function Footer() {
           <a href="#about" className="inline-flex min-h-11 items-center transition hover:text-zinc-950">
             About
           </a>
-          <Link
-            to="/privacy-policy"
+          <a
+            href="#privacy"
             className="inline-flex min-h-11 items-center transition hover:text-zinc-950"
           >
             Privacy
-          </Link>
-          <Link
-            to="/terms-of-service"
+          </a>
+          <a
+            href="https://github.com/sonnes/september"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex min-h-11 items-center transition hover:text-zinc-950"
           >
-            Terms
-          </Link>
+            Source
+          </a>
         </div>
       </div>
     </footer>

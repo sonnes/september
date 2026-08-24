@@ -22,7 +22,7 @@ you build the full web app.
 
 ## Deploy
 
-Deploying rebuilds the web app, copies `apps/web/dist/client` into `public`, and
+Deploying rebuilds the web app, copies `apps/web/dist` into `public`, and
 publishes the Worker:
 
 ```sh

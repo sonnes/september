@@ -10,7 +10,13 @@ import {
 } from "../src/rules/settings-nav.ts";
 
 const desktopRoot = new URL("../", import.meta.url);
-const readText = (path) => readFile(new URL(path, desktopRoot), "utf8");
+const readText = (path) => {
+  const shared = path.match(/^src\/(blocks|layouts|pages)\/(.+)$/);
+  const target = shared
+    ? `../../packages/app-ui/${shared[1]}/${shared[2]}`
+    : path;
+  return readFile(new URL(target, desktopRoot), "utf8");
+};
 
 test("every settings section has a route", async () => {
   const main = await readText("src/main.tsx");
@@ -64,7 +70,11 @@ test("the settings screens hold no key and no command", async () => {
 
 test("setup and settings share one key panel", async () => {
   for (const file of ["src/pages/steps.tsx", "src/pages/settings.tsx"]) {
-    assert.match(await readText(file), /from "@\/blocks\/services"/, file);
+    assert.match(
+      await readText(file),
+      /from "@september\/app-ui\/blocks\/services"/,
+      file,
+    );
   }
   assert.match(await readText("src/blocks/services.tsx"), /export function KeyPanel/);
 });

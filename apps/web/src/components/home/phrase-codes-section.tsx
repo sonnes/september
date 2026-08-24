@@ -2,15 +2,10 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { Volume2 } from 'lucide-react';
 
-import { EditorProvider, useEditorContext } from '@/packages/editor';
-import { type SavedPhrase, matchCode, trailingWord } from '@/packages/spaces';
-import {
-  type Stripe,
-  SuggestionStripes,
-  codeExpansionText,
-  stripeForText,
-} from '@/packages/suggestions';
+import { matchCode, trailingWord, type SavedPhrase } from '@/rules/phrases';
+import { codeExpansionText, stripeForText } from '@/rules/stripes';
 
+import { LandingSuggestionStripes, type LandingStripe } from './live-demo-section';
 import { SectionHeader } from './section-header';
 import { useDemoSpeech } from './use-demo-speech';
 
@@ -29,11 +24,12 @@ const DEMO_PHRASES: { text: string; code?: string }[] = [
 const DEMO_ROWS: SavedPhrase[] = DEMO_PHRASES.map((phrase, index) => ({
   id: `landing-demo-${index}`,
   space_id: DEMO_SPACE_ID,
-  user_id: 'landing-demo',
   text: phrase.text,
+  kind: 'phrase',
   pinned: true,
   code: phrase.code,
-  created_at: new Date(0),
+  created_at: 0,
+  updated_at: 0,
 }));
 
 const CODED_ROWS = DEMO_ROWS.filter(row => row.code);
@@ -62,16 +58,14 @@ export function PhraseCodesSection() {
           hint="Type ty, hlp, or wtr — then tap the phrase."
           accent="amber"
         />
-        <EditorProvider defaultText="">
-          <CodesDemo />
-        </EditorProvider>
+        <CodesDemo />
       </div>
     </section>
   );
 }
 
 function CodesDemo() {
-  const { text, setText } = useEditorContext();
+  const [text, setText] = useState('');
   const { speak } = useDemoSpeech();
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const [spoken, setSpoken] = useState<string[]>([]);
@@ -91,7 +85,7 @@ function CodesDemo() {
   // Same construction as useStripes' code path: the stripe's text is the
   // composer text with the trailing code replaced, so the existing take
   // machinery consumes the typed trigger.
-  const stripes = useMemo<Stripe[]>(() => {
+  const stripes = useMemo<LandingStripe[]>(() => {
     const word = trailingWord(text);
     if (!word) return [];
     const row = matchCode(word, DEMO_ROWS, DEMO_SPACE_ID);
@@ -119,7 +113,12 @@ function CodesDemo() {
             ))}
           </div>
         )}
-        <SuggestionStripes stripes={stripes} pinnedChips={pinnedChips} onSubmit={speakMessage} />
+        <LandingSuggestionStripes
+          stripes={stripes}
+          pinnedChips={pinnedChips}
+          onSubmit={speakMessage}
+          onTake={setText}
+        />
         <div className="rounded-2xl border-2 border-input bg-background p-3 transition-colors focus-within:border-ring">
           <textarea
             ref={inputRef}

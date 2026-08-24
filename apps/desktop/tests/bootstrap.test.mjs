@@ -78,12 +78,36 @@ import {
 } from "../src/rules/onboarding.ts";
 
 const desktopRoot = new URL("../", import.meta.url);
+const sharedRuleFiles = new Set([
+  "notes.ts",
+  "panel.ts",
+  "phrases.ts",
+  "pick.ts",
+  "prompts.ts",
+  "spaces.ts",
+  "stripes.ts",
+  "usage-summary.ts",
+]);
 
 async function readJson(path) {
   return JSON.parse(await readFile(new URL(path, desktopRoot), "utf8"));
 }
 
 async function readText(path) {
+  const sharedRule = path.match(/^src\/rules\/([^/]+\.ts)$/)?.[1];
+  if (sharedRule && sharedRuleFiles.has(sharedRule)) {
+    return readFile(
+      new URL(`../../packages/core/rules/${sharedRule}`, desktopRoot),
+      "utf8",
+    );
+  }
+  const sharedUi = path.match(/^src\/(blocks|layouts|pages)\/([^/]+\.tsx)$/);
+  if (sharedUi) {
+    return readFile(
+      new URL(`../../packages/app-ui/${sharedUi[1]}/${sharedUi[2]}`, desktopRoot),
+      "utf8",
+    );
+  }
   return readFile(new URL(path, desktopRoot), "utf8");
 }
 
@@ -101,6 +125,8 @@ test("Tauri opens the independent UI at the 13-inch iPad baseline", async () => 
   const config = await readJson("src-tauri/tauri.conf.json");
   const [mainWindow] = config.app.windows;
 
+  assert.equal(config.productName, "September");
+  assert.equal(mainWindow.title, "September");
   assert.equal(config.build.beforeDevCommand, "pnpm dev");
   assert.equal(config.build.beforeBuildCommand, "pnpm build");
   assert.equal(config.build.devUrl, "http://localhost:3010");
@@ -110,6 +136,63 @@ test("Tauri opens the independent UI at the 13-inch iPad baseline", async () => 
   assert.equal(mainWindow.height, 1032);
   assert.match(config.app.security.csp, /localhost:3010/);
   assert.doesNotMatch(config.app.security.csp, /localhost:3009/);
+});
+
+test("every desktop page gives the September window a title", async () => {
+  const { windowTitle } = await import("../src/rules/app-nav.ts");
+  const capabilities = await readJson("src-tauri/capabilities/default.json");
+  const main = await readText("src/main.tsx");
+  const os = await readText("src/services/os.ts");
+
+  assert.deepEqual(
+    [
+      "/",
+      "/welcome",
+      "/profile",
+      "/mode",
+      "/connect",
+      "/finish",
+      "/dashboard",
+      "/spaces",
+      "/spaces/new",
+      "/spaces/general/talk",
+      "/spaces/general/notes",
+      "/spaces/general/notes/appointment",
+      "/voice",
+      "/voice/clone",
+      "/help",
+      "/settings",
+      "/settings/writing",
+      "/settings/usage",
+      "/settings/connections/openrouter",
+      "/settings/connections/elevenlabs",
+    ].map(windowTitle),
+    [
+      "September",
+      "September — Welcome",
+      "September — About you",
+      "September — Choose setup",
+      "September — Connect",
+      "September — Finish",
+      "September — Dashboard",
+      "September — Spaces",
+      "September — New space",
+      "September — Talk",
+      "September — Notes",
+      "September — Notes",
+      "September — Voice",
+      "September — Clone your voice",
+      "September — Help",
+      "September — Setup",
+      "September — Writing help",
+      "September — Usage",
+      "September — OpenRouter",
+      "September — ElevenLabs",
+    ],
+  );
+  assert.ok(capabilities.permissions.includes("core:window:allow-set-title"));
+  assert.match(main, /setWindowTitle\(windowTitle\(toLocation\.pathname\)\)/);
+  assert.match(os, /getCurrentWindow\(\)\.setTitle\(title\)/);
 });
 
 test("the macOS bundle declares its recording privacy reasons", async () => {
@@ -126,7 +209,10 @@ test("the UI builds with Tailwind and the router", async () => {
   assert.ok(packageJson.dependencies["@tanstack/react-router"]);
   assert.ok(packageJson.devDependencies["@tailwindcss/vite"]);
   assert.match(await readText("vite.config.ts"), /tailwindcss\(\)/);
-  assert.match(await readText("src/styles.css"), /@import "tailwindcss"/);
+  assert.match(
+    await readText("src/styles.css"),
+    /@import "@september\/ui\/theme\.css"/,
+  );
 });
 
 const free = { name: "Ravi", mode: "free" };
@@ -189,19 +275,19 @@ test("the draft carries a service choice, never a key", async () => {
 test("the UI uses shadcn primitives", async () => {
   const components = await readJson("components.json");
 
-  assert.equal(components.tailwind.css, "src/styles.css");
-  assert.equal(components.aliases.ui, "@/components/ui");
+  assert.equal(components.tailwind.css, "../../packages/ui/theme.css");
+  assert.equal(components.aliases.ui, "@september/ui/components");
 
   for (const name of ["button", "input", "textarea", "label"]) {
     assert.match(
-      await readText(`src/components/ui/${name}.tsx`),
+      await readText(`../../packages/ui/components/${name}.tsx`),
       /export/,
       `${name} primitive is missing`,
     );
   }
 
   const steps = await readText("src/pages/steps.tsx");
-  assert.match(steps, /from "@\/components\/ui\/button"/);
+  assert.match(steps, /from "@september\/ui\/components\/button"/);
   assert.doesNotMatch(steps, /PRIMARY_BUTTON/);
 });
 
@@ -339,7 +425,7 @@ test("each service wears its own mark", async () => {
   // The Apple logo is the U+F8FF glyph from the macOS system font, so the app
   // bundles no Apple asset. `system-ui` in the font stack carries it.
   assert.match(steps, /\\uF8FF|/, "Apple Intelligence wears the Apple logo");
-  assert.match(await readText("src/styles.css"), /system-ui/);
+  assert.match(await readText("../../packages/ui/theme.css"), /system-ui/);
 });
 
 test("the sidebar is an inset card like the step surface", async () => {
@@ -453,13 +539,13 @@ test("both sidebars show the published brand mark", async () => {
 });
 
 test("the app sidebar stays indigo, in the shadcn tokens", async () => {
-  const styles = await readText("src/styles.css");
+  const styles = await readText("../../packages/ui/theme.css");
 
   assert.match(styles, /--sidebar:\s*var\(--color-indigo-500\)/);
   assert.match(styles, /--sidebar-foreground:\s*var\(--color-white\)/);
   assert.match(styles, /--sidebar-border:\s*var\(--color-indigo-400\)/);
-  // The app is light only, so no theme block and no raw hsl values.
-  assert.doesNotMatch(styles, /^\.dark\b/m);
+  // The shared theme keeps both applications on the same dark-mode tokens.
+  assert.match(styles, /^\.dark\b/m);
   assert.doesNotMatch(styles, /hsl\(/);
 });
 
@@ -760,7 +846,7 @@ test("spoken messages use the native audio process", async () => {
   assert.doesNotMatch(speech, /audioUrl\(path\)/);
 });
 
-test("the Talk audio selector controls the FaceTime microphone", async () => {
+test("the Talk audio selector controls the calling-app microphone", async () => {
   const os = await readText("src/services/os.ts");
   const talk = await readText("src/blocks/space.tsx");
   const voice = await readText("src/pages/voice.tsx");
@@ -771,13 +857,13 @@ test("the Talk audio selector controls the FaceTime microphone", async () => {
   assert.match(talk, /function AudioSelector/);
   assert.match(talk, /DropdownMenuCheckboxItem/);
   assert.match(talk, /September Microphone/);
-  assert.match(talk, /FaceTime/);
+  assert.match(talk, /calling apps/);
   assert.doesNotMatch(talk, /devices\.length < 2\) return null/);
   assert.doesNotMatch(voice, /virtualMicrophone/);
   assert.doesNotMatch(voice, /September Microphone/);
 });
 
-test("the Talk audio selector controls the FaceTime camera", async () => {
+test("the Talk audio selector controls the calling-app camera", async () => {
   const os = await readText("src/services/os.ts");
   const talk = await readText("src/blocks/space.tsx");
   const lib = await readText("src-tauri/src/lib.rs");
@@ -794,7 +880,7 @@ test("the Talk audio selector controls the FaceTime camera", async () => {
 
   assert.match(talk, /<AudioSelector overlayText=\{draft\}/);
   assert.match(talk, /September Camera/);
-  assert.match(talk, /Show this text over FaceTime video/);
+  assert.match(talk, /Show this text over calling-app video/);
   assert.match(talk, /updateVirtualCameraOverlay\(overlayText/);
 });
 
@@ -1534,7 +1620,7 @@ test("colour is never the only sign of where a row came from", async () => {
 test("the tiles use the sizes and the tokens of the web app", async () => {
   const suggestions = await readText("src/blocks/suggestions.tsx");
   const stripes = await readText("src/rules/stripes.ts");
-  const styles = await readText("src/styles.css");
+  const styles = await readText("../../packages/ui/theme.css");
 
   // The pixel sizes mirror `STRIPE_BASE` in the web app, and they live beside
   // the scale that uses them.
@@ -1793,14 +1879,14 @@ test("the sound outputs are read through the system module", async () => {
   assert.doesNotMatch(os, /"audio-output"/);
 });
 
-test("the audio selector sits beside Speak and names the Mac, not the app", async () => {
+test("the audio selector sits beside Speak and names the device, not the app", async () => {
   const talk = await readText("src/blocks/space.tsx");
   const picker = talk.match(/function AudioSelector[\s\S]*?\n\}\n/)[0];
 
   // A press moves the sound of the whole Mac. The words must say so, because
   // a user who reads "September" would not expect their music to move.
   assert.match(picker, /Sound output/);
-  assert.match(picker, /this Mac/i);
+  assert.match(picker, /this device/i);
   // The picker is next to the button that makes the sound.
   assert.ok(
     talk.indexOf("<AudioSelector") < talk.indexOf("<ActionIcon"),

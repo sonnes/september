@@ -1,5 +1,5 @@
 /**
- * Builds `src/autocomplete/dictionary.ts` from a word list of spoken English.
+ * Builds the shared autocomplete dictionary from a word list of spoken English.
  *
  * The engine starts with the sentences in `corpus.ts`, which are too few to
  * cover the language. This word list gives the prefix index its breadth.
@@ -9,14 +9,14 @@
  * what a September user writes. A word list of web text ranks `sorry` at 2263
  * and `tired` at 5678; this list ranks them at 120 and 727.
  *
- * Run `node scripts/build-dictionary.mjs`. It writes the file to both apps.
- * The two engines must stay the same.
+ * Run `node scripts/build-dictionary.mjs`. It writes the one dictionary used
+ * by both apps.
  */
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-import { tokenize } from "../src/autocomplete/tokenizer.ts";
+import { tokenize } from "../../../packages/core/autocomplete/tokenizer.ts";
 
 const SOURCE =
   "https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/en/en_50k.txt";
@@ -73,11 +73,16 @@ for (const line of lines) {
 if (kept.length < SIZE) throw new Error(`only ${kept.length} words survived`);
 
 const here = dirname(fileURLToPath(import.meta.url));
-const targets = [
-  join(here, "..", "src", "autocomplete", "dictionary.ts"),
-  join(here, "..", "..", "web", "src", "packages", "shared", "lib",
-    "autocomplete", "dictionary.ts"),
-];
+const target = join(
+  here,
+  "..",
+  "..",
+  "..",
+  "packages",
+  "core",
+  "autocomplete",
+  "dictionary.ts",
+);
 
 const file = `/**
  * The ${SIZE} most frequent words of spoken English, in order of frequency.
@@ -100,7 +105,5 @@ ${kept.join("\n")}
   .split("\\n");
 `;
 
-for (const target of targets) {
-  writeFileSync(target, file, "utf8");
-  console.log(`${kept.length} words -> ${target}`);
-}
+writeFileSync(target, file, "utf8");
+console.log(`${kept.length} words -> ${target}`);

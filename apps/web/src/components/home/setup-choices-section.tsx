@@ -1,9 +1,8 @@
-import { SETUP_MODES, type SetupModeAccent } from '@/packages/onboarding';
+import { SETUP_MODES } from '@/rules/onboarding';
 
 // Marketing styling per mode, keyed off the shared `accent`. Copy itself lives
 // in SETUP_MODES so the home page and onboarding never drift.
-const ACCENT: Record<SetupModeAccent, { edge: string; badge: string }> = {
-  emerald: { edge: 'border-t-emerald-600', badge: 'bg-emerald-100 text-emerald-700' },
+const ACCENT: Record<(typeof SETUP_MODES)[number]['accent'], { edge: string; badge: string }> = {
   amber: { edge: 'border-t-amber-600', badge: 'bg-amber-100 text-amber-700' },
   sky: { edge: 'border-t-sky-600', badge: 'bg-sky-100 text-sky-700' },
 };

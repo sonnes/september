@@ -5,13 +5,11 @@ import { act } from 'react';
 import { type Root, createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { DEFAULT_SPACE_SEED } from '@/packages/spaces';
-
 import { AboutSection } from './about-section';
 import { EnhancedCTASection } from './enhanced-cta-section';
 import { Footer } from './footer';
 import { HeroSection } from './hero-section';
-import { LiveDemoSection } from './live-demo-section';
+import { LANDING_SPACE_SEED, LiveDemoSection } from './live-demo-section';
 import { NOTE_SENTENCES, NOTE_TITLE, NotesSection } from './notes-section';
 import { PhraseCodesSection, matchDemoCode } from './phrase-codes-section';
 import { PrivacySection } from './privacy-section';
@@ -190,8 +188,8 @@ describe('talk section (live demo)', () => {
     expect(container.textContent).toContain('Type a little. Tap the rest. Speak.');
     expect(container.textContent).toContain('This is September’s main screen.');
     expect(container.textContent).toContain('press Speak — your browser will say it');
-    expect(container.textContent).toContain(DEFAULT_SPACE_SEED.title);
-    expect(container.textContent).toContain(DEFAULT_SPACE_SEED.phrases[0].text);
+    expect(container.textContent).toContain(LANDING_SPACE_SEED.title);
+    expect(container.textContent).toContain(LANDING_SPACE_SEED.phrases[0].text);
     expect(container.querySelector('textarea')).toBeTruthy();
   });
 
@@ -368,7 +366,7 @@ describe('voice section', () => {
       anchor.textContent?.includes('Start cloning')
     )!;
     expect(cloneLink).toBeTruthy();
-    expect(cloneLink.getAttribute('href')).toBe('/onboarding');
+    expect(cloneLink.getAttribute('href')).toBe('/welcome');
   });
 
   it('lists the device voices and previews the selected one', async () => {
@@ -532,13 +530,13 @@ describe('privacy section', () => {
 });
 
 describe('setup choices section', () => {
-  it('shows privacy, free AI, and bring-your-own-key modes', () => {
+  it('shows the browser setup choices', () => {
     render(<SetupChoicesSection />);
 
     expect(container.textContent).toContain('Choose the setup that feels right.');
-    expect(container.textContent).toContain('Privacy mode');
-    expect(container.textContent).toContain('Everything stays on this device.');
-    expect(container.textContent).toContain('Free AI mode');
+    expect(container.textContent).toContain('Free start');
+    expect(container.textContent).toContain('Local word suggestions');
+    expect(container.textContent).toContain('Use your own services');
     expect(container.textContent).toContain('OpenRouter');
   });
 });
@@ -562,7 +560,7 @@ describe('footer', () => {
 
     expect(container.textContent).toContain('Communication with fewer keystrokes.');
     expect(container.textContent).toContain('Privacy');
-    expect(container.textContent).toContain('Terms');
+    expect(container.textContent).toContain('Source');
   });
 
   it('offers Features and About in the footer so mobile can reach them', () => {

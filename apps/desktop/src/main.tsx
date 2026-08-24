@@ -17,32 +17,37 @@ import "@fontsource/noto-sans/500.css";
 import "@fontsource/noto-sans/600.css";
 import "@fontsource/noto-sans/700.css";
 
-import { OnboardingLayout } from "@/layouts/onboarding";
-import { openingPath, type AppPath } from "@/rules/app-nav";
-import { NotesScreen } from "@/pages/notes";
+import { OnboardingLayout } from "@september/app-ui/layouts/onboarding";
+import { openingPath, windowTitle, type AppPath } from "@/rules/app-nav";
+import { NotesScreen } from "@september/app-ui/pages/notes";
 import { isSetupDone } from "@/rules/onboarding";
-import { currentPath, currentSetup, savePath } from "@/services/os";
-import { AppShell } from "@/layouts/app";
-import { SettingsLayout } from "@/layouts/settings";
-import { AppScreen } from "@/blocks/screen";
-import { DashboardScreen } from "@/pages/dashboard";
+import {
+  currentPath,
+  currentSetup,
+  savePath,
+  setWindowTitle,
+} from "@/services/os";
+import { AppShell } from "@september/app-ui/layouts/app";
+import { SettingsLayout } from "@september/app-ui/layouts/settings";
+import { AppScreen } from "@september/app-ui/blocks/screen";
+import { DashboardScreen } from "@september/app-ui/pages/dashboard";
 import {
   ConnectionScreen,
   SetupSettings,
   WritingSettings,
-} from "@/pages/settings";
-import { UsageSettings } from "@/pages/usage";
+} from "@september/app-ui/pages/settings";
+import { UsageSettings } from "@september/app-ui/pages/usage";
 import { isConnectionId } from "@/rules/settings-nav";
-import { NewSpaceScreen, SpacesScreen } from "@/pages/spaces";
-import { TalkScreen } from "@/pages/talk";
-import { VoiceCloneScreen, VoiceScreen } from "@/pages/voice";
+import { NewSpaceScreen, SpacesScreen } from "@september/app-ui/pages/spaces";
+import { TalkScreen } from "@september/app-ui/pages/talk";
+import { VoiceCloneScreen, VoiceScreen } from "@september/app-ui/pages/voice";
 import {
   ConnectStep,
   FinishStep,
   ModeStep,
   ProfileStep,
   WelcomeStep,
-} from "@/pages/steps";
+} from "@september/app-ui/pages/steps";
 import "./styles.css";
 
 // The root route holds an outlet only. Setup and the app are separate
@@ -208,6 +213,7 @@ const router = createRouter({ routeTree, history: createHashHistory() });
 // runs after the route settles, so a redirect keeps only where it landed.
 router.subscribe("onResolved", ({ toLocation }) => {
   void savePath(toLocation.pathname);
+  void setWindowTitle(windowTitle(toLocation.pathname));
 });
 
 // One client for the app. SQLite is next to the app, so a read is cheap and

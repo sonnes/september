@@ -1,141 +1,26 @@
-# Shared Package
+# Shared browser code
 
-Small shared primitives, hooks, and types used across September packages.
+This compatibility package contains the remaining browser text utility and
+re-exports shared workspace helpers. It does not own application data.
 
-## Features
+## Root exports
 
-- **Utilities**: Common helper functions (`cn` for className merging, `MATCH_PUNCTUATION` for text boundaries, `timeAgo` for human-readable relative time strings, `entitySlug` / `idFromSlug` for readable local URLs)
-- **Hooks**: Reusable React hooks for common patterns
-- **Types**: Shared TypeScript types and Zod schemas
-- **Data boundary**: TanStack Query hooks and platform-selected record and file clients, exported from `@/packages/shared/lib/data`
-- **IndexedDB**: Browser storage utilities with TanStack DB, exported from `@/packages/shared/lib/indexeddb`
-- **Autocomplete**: Trie-based autocomplete engine, exported from `@/packages/shared/lib/autocomplete`
+The package root exports:
 
-## Structure
+- `cn` from `@september/ui`
+- `MATCH_PUNCTUATION` for text-boundary rules
+- `useIsMobile` from `@september/ui`
 
-```
-packages/shared/
-├── lib/
-│   ├── utils.ts              # cn() and other utilities
-│   ├── slug.ts               # readable slug + id helpers
-│   ├── data/                 # TanStack Query and Tauri RPC boundary
-│   ├── indexeddb/            # Browser collection helpers
-│   └── autocomplete/         # Autocomplete engine
-├── hooks/
-│   ├── use-debounce.ts       # Debounced value hook
-│   ├── use-mobile.ts         # Mobile detection hook
-│   ├── use-compact.ts        # Base-viewport (iPad 13") detection hook
-│   └── use-text.ts           # Text manipulation hook
-├── types/
-│   ├── grid.ts               # Grid layout types
-│   ├── user.ts               # User-related types
-│   ├── voice.ts              # Voice/speech types
-│   ├── display.ts            # Display mode types
-│   └── ai-config.ts          # AI configuration types
-└── index.ts                  # Public exports
-```
+Import these values through `@/packages/shared`.
 
-## Usage
+## Autocomplete
 
-### Utilities
+The trie, n-gram model, spoken corpus, and dictionary live in
+`@september/core/autocomplete`. `lib/autocomplete` is a compatibility entry
+point for the former web import path.
 
-```typescript
-import { cn, entitySlug, idFromSlug, timeAgo } from '@/packages/shared';
+The browser does not store an autocomplete snapshot. The app trains the base engine at start and learns from messages in the `september` repository.
 
-// Merge class names with Tailwind conflict resolution
-<div className={cn('px-4 py-2', isActive && 'bg-blue-500')} />
+This design prevents autocomplete from creating a second IndexedDB database. `src/services/repository.ts` remains the only persistence owner.
 
-// Human-readable relative time
-timeAgo(message.created_at) // "2 minutes ago"
-
-// Readable local URL segment with an id suffix
-entitySlug('Morning notes', note.id) // "morning-notes-..."
-idFromSlug(slug) // note id
-```
-
-### Hooks
-
-```typescript
-import { useDebounce, useIsCompact, useIsMobile } from '@/packages/shared';
-
-// Debounce a value
-const debouncedSearch = useDebounce(searchQuery, 300);
-
-// Detect mobile viewport
-const isMobile = useIsMobile();
-
-// Detect the base design viewport (13" iPad and below) — drives the
-// compact app shell, e.g. collapsing the sidebar to an icon rail.
-const isCompact = useIsCompact();
-```
-
-### Types
-
-```typescript
-import { AIProvider, SpeechConfig, VoiceSettings } from '@/packages/shared';
-
-const provider: AIProvider = 'gemini';
-
-const speech: SpeechConfig = {
-  provider: 'gemini',
-};
-```
-
-### Explicit Subpath Imports
-
-Use explicit subpaths for heavier purpose-built modules:
-
-```typescript
-import { tokenize } from '@/packages/shared/lib/autocomplete';
-import { useRecordListQuery } from '@/packages/shared/lib/data';
-import { indexedDBCollectionOptionsV2 } from '@/packages/shared/lib/indexeddb';
-import { parseAndRenderSlides } from '@/packages/shared/lib/slides';
-```
-
-The data hooks keep one UI contract across platforms. Browser builds read
-TanStack DB collections backed by IndexedDB. Desktop builds invoke Rust record
-commands backed by SQLite. Neither feature package imports SQL or filesystem
-APIs directly.
-
-`writeDesktopRecordBatch(writes)` commits related puts and deletes through one
-Rust transaction. Space deletion and generated-phrase replacement use this
-path so a partial write cannot leave inconsistent records.
-
-`saveFile(blob, suggestedName)` keeps browser anchor downloads for the web app.
-Desktop builds send the bytes to Rust and show a native save dialog. The
-webview does not send or receive a filesystem path.
-
-The desktop setting client wraps `setting_get`, `setting_put`, and
-`setting_delete`. Use it for durable desktop preferences that are not domain
-records.
-
-The desktop startup client gets the OS account through `os_user_get`. It stores
-the last safe app route in the Rust settings table. The route tracker excludes
-secondary windows, marketing pages, and OAuth credentials.
-
-Desktop presentation and display routes use named Tauri windows and targeted
-events through `lib/data/window-client.ts`. New windows do not resolve until
-Tauri confirms creation. The chat display also announces when its listener is
-ready before the main window starts sending messages. External links use the
-validated Rust `open_external` command.
-
-`DataQueryProvider` owns one `QueryClient` per provider tree. Local reads and
-mutations use `networkMode: 'always'`. Browser collection changes and Tauri
-record events invalidate only the affected collection key.
-
-`parseAndRenderSlides(markdown, noteName)` can prepend the note title as the
-first slide.
-
-Keep the root import for broadly useful primitives only: `cn`, simple hooks,
-and shared pure types. Feature hooks that depend on account, chats, audio, or UI
-belong in their owning feature package.
-
-## Dependencies
-
-- `clsx` + `tailwind-merge` - Class name utilities
-- `zod` - Schema validation
-- `@tanstack/db` 0.6 - Local-first database and explicit collection indexes
-- `@tanstack/react-query` - Shared query cache and optimistic mutations
-- `@tauri-apps/api` - Desktop command invocation and change events
-- `lodash` - Utility functions
-- `nanoid` - ID generation
+The class merger and mobile hook have no second implementation here.

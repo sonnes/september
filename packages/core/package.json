@@ -1,0 +1,19 @@
+{
+  "name": "@september/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "vitest --run"
+  },
+  "exports": {
+    ".": "./index.ts",
+    "./autocomplete": "./autocomplete/index.ts",
+    "./rules/*": "./rules/*.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
+  }
+}
