@@ -2,6 +2,12 @@
 
 September is an assistive communication app for people with ALS, MND, or other speech and motor difficulties. It helps a user express a full thought with fewer keystrokes.
 
+![The Talk screen of a space named Family. Six spoken messages sit above a row of
+pinned phrases and suggested words, and a composer with a Speak
+button.](docs/screenshots/talk.png)
+
+The screenshots on this page show the browser app with sample data.
+
 ## Applications
 
 September contains three applications:
@@ -26,6 +32,29 @@ The web app stores data and its bounded speech cache in one IndexedDB database. 
 - Phrase codes expand short input into a full phrase.
 - Local usage reports show saved keystrokes and provider use.
 - ElevenLabs can create a cloned voice from browser or desktop recordings.
+
+## Screens
+
+A note holds prepared long-form text inside a space. The same words read aloud,
+present, or export.
+
+![A note named Thursday appointment, open in the note editor. Read aloud,
+Present, and Export buttons sit at the top, and the other notes of the space sit
+in a row under the text.](docs/screenshots/note.png)
+
+Present fills the screen with one chunk of the note at a time and speaks it in
+the user's voice.
+
+![A presented note on a full indigo screen. One sentence reads, in large white
+type, "Seventy years, and she still gets to the kitchen before anyone else is
+awake."](docs/screenshots/present.png)
+
+Today reports the typing the app saved and what the services cost. The numbers
+stay on the device.
+
+![The Today screen. Efficiency reads 66 percent less typing this week, beside
+508 keystrokes saved and 12 messages spoken. Service use reads 6 cents across 16
+requests.](docs/screenshots/today.png)
 
 ## Requirements
 
@@ -79,7 +108,7 @@ september/
 │   ├── core/           Pure rules and autocomplete
 │   ├── ui/             Shared tokens and generic UI primitives
 │   └── app-ui/         Shared layouts, blocks, and application screens
-└── docs/               concepts, plans, research, and implementation notes
+└── docs/               concepts, plans, research, notes, and screenshots
 ```
 
 Read the instruction file in an application directory before you change that
