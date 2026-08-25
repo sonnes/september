@@ -42,6 +42,31 @@ the screen to explain a platform difference.
 entry point that imports the theme and registers the shared source directories
 with Tailwind. Neither app keeps a copied primitive or token override.
 
+## Screen size
+
+Shared layouts carry their own responsive shape, because the same component
+renders in a browser tab, on a phone, and in a Tauri window. Both indigo
+panels move at the same width, the `md` breakpoint (768px) named in
+`DESIGN.md`:
+
+- The app shell keeps its sidebar down to `md` and becomes a sheet below it.
+- The setup shell keeps its sidebar down to `md` and becomes a bar across the
+  top below it. The bar drops the pitch and the step labels, keeps the brand
+  mark, the numbered steps, and Help, and hands the rest of the screen to the
+  step.
+
+The setup progress list is one `<ol>` in both shapes — it lies on its side in
+the bar and stands up in the sidebar. It is never rendered twice with one copy
+hidden, so a screen reader hears the run of steps once, and every step link
+keeps its full name (`Step 2: About you, current`) when the bar hides the
+visible label.
+
+The narrowest screen a step is laid out for is 320px. A measurement that would
+overflow it — a fixed sidebar width, a `min-w-64` field, a 70px panel indent, a
+two-column summary row — carries a breakpoint prefix instead of applying
+everywhere. `apps/web/src/onboarding-responsive.test.tsx` reads that contract
+off the rendered tree.
+
 ## Change workflow
 
 Change a pure rule in `packages/core`, a generic control or token in

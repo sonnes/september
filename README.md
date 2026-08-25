@@ -32,6 +32,12 @@ The web app stores data and its bounded speech cache in one IndexedDB database. 
 - Phrase codes expand short input into a full phrase.
 - Local usage reports show saved keystrokes and provider use.
 - ElevenLabs can create a cloned voice from browser or desktop recordings.
+- Help groups step-by-step guidance by task, searches the shared guide catalog,
+  and labels each guide for the browser, Mac app, or Mac keyboard.
+
+Help remains available before setup is complete. The setup screen opens its
+guide inline, while `/help` and each stable guide link open the full Help
+screen.
 
 ## Screens
 

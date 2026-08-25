@@ -41,9 +41,11 @@ import {
 } from "@platform/services/os";
 import { CloudStatus, KeyPanel, Mark, ModeCard, Status } from "@september/app-ui/blocks/services";
 import { speechSettings } from "@platform/services/speech";
+import { documentTitle } from "@september/core/rules/titles";
 
 // DESIGN.md asks for a 44px target on primary actions; `lg` is 40px.
-const ACTION = "h-11 px-6 font-semibold";
+// Below `sm` it takes the whole row, which is the widest target available.
+const ACTION = "h-11 w-full px-6 font-semibold sm:w-auto";
 
 
 function Step({
@@ -62,9 +64,12 @@ function Step({
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col gap-6">
+      {/* The step indicator's short label, not the heading, which is a
+          sentence and does not fit a tab. */}
+      <title>{documentTitle(step.label, "Setup")}</title>
       <div className="flex shrink-0 items-start justify-between gap-4">
         <div className="flex flex-col gap-2">
-          <h2 className="text-3xl leading-tight font-bold lg:text-4xl">
+          <h2 className="text-2xl leading-tight font-bold md:text-3xl lg:text-4xl">
             {step.title}
           </h2>
           <p className="max-w-2xl text-sm leading-relaxed text-zinc-500 md:text-base">
@@ -78,16 +83,18 @@ function Step({
             size="lg"
             title="Go back"
             onClick={() => navigate({ to: back })}
-            className="h-11 shrink-0 px-4"
+            aria-label="Go back"
+            className="h-11 shrink-0 px-3 sm:px-4"
           >
-            ← Back
+            <span aria-hidden="true">←</span>
+            <span className="hidden sm:inline">Back</span>
           </Button>
         )}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto pr-1">{children}</div>
 
-      <div className="flex shrink-0 flex-col gap-4 border-t border-zinc-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex shrink-0 flex-col gap-4 border-t border-zinc-200 pt-4 sm:flex-row sm:items-center sm:justify-between sm:pt-6">
         <p className="text-xs text-zinc-500">{step.helper}</p>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
           {footer}
@@ -249,7 +256,7 @@ function Field({
   children: ReactNode;
 }) {
   return (
-    <div className="grid gap-5 border-l border-zinc-200 pl-5 lg:grid-cols-[15rem_1fr] lg:gap-8">
+    <div className="grid gap-5 border-l border-zinc-200 pl-4 sm:pl-5 lg:grid-cols-[15rem_1fr] lg:gap-8">
       <div>
         <Label htmlFor={htmlFor} className="text-sm font-semibold">
           {title}
@@ -325,10 +332,10 @@ export function FinishStep() {
         </Button>
       }
     >
-      <div className="grid gap-5 rounded-xl border border-indigo-200 bg-indigo-50 p-6 sm:grid-cols-[auto_1fr] sm:p-8">
+      <div className="grid gap-5 rounded-xl border border-indigo-200 bg-indigo-50 p-4 sm:grid-cols-[auto_1fr] sm:p-8">
         <span
           aria-hidden="true"
-          className="grid size-13 place-items-center rounded-full bg-indigo-600 text-2xl text-white"
+          className="grid size-11 place-items-center rounded-full bg-indigo-600 text-xl text-white sm:size-13 sm:text-2xl"
         >
           ✓
         </span>
@@ -348,7 +355,7 @@ export function FinishStep() {
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-3">
+    <div className="grid gap-1 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-3">
       <dt className="text-sm text-zinc-500">{label}</dt>
       <dd className="text-sm font-semibold">{value}</dd>
     </div>
@@ -553,7 +560,7 @@ export function ConnectStep() {
                           <Select value={voiceId} onValueChange={setVoiceId}>
                             <SelectTrigger
                               aria-label="Voice"
-                              className="h-11 min-w-64 flex-1"
+                              className="h-11 w-full flex-1 sm:min-w-64"
                             >
                               <SelectValue placeholder="Pick a voice" />
                             </SelectTrigger>
@@ -603,7 +610,7 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <div className="grid gap-5 border-l border-zinc-200 pl-5 lg:grid-cols-[15rem_1fr] lg:gap-8">
+    <div className="grid gap-5 border-l border-zinc-200 pl-4 sm:pl-5 lg:grid-cols-[15rem_1fr] lg:gap-8">
       <div>
         <p className="text-sm font-semibold">{title}</p>
         <p className="mt-2 text-xs leading-relaxed text-zinc-500">{description}</p>
@@ -645,7 +652,7 @@ function Choice({
           : "border-zinc-200"
       } ${disabled ? "opacity-60" : ""}`}
     >
-      <label className="grid cursor-pointer grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-4">
+      <label className="grid cursor-pointer grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[auto_auto_minmax(0,1fr)_auto] sm:gap-4">
         <RadioGroupItem value={value} disabled={disabled} className="size-5" />
         <Mark service={value} />
         <span>
@@ -654,9 +661,19 @@ function Choice({
             {description}
           </span>
         </span>
-        {badge}
+        {/* The status has no column of its own on a phone, so it drops to the
+            next row under the name instead of squeezing the description. */}
+        {badge && (
+          <span className="col-start-3 sm:col-start-4 sm:justify-self-end">
+            {badge}
+          </span>
+        )}
       </label>
-      <div className="grid gap-3 pl-[4.75rem] empty:hidden">{children}</div>
+      {/* The indent lines the panel up with the service name. A phone has no
+          70px to spare, so the panel starts at the edge of the card. */}
+      <div className="grid gap-3 pl-0 empty:hidden sm:pl-[4.75rem]">
+        {children}
+      </div>
     </div>
   );
 }

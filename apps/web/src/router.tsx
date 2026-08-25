@@ -4,13 +4,14 @@ import {
   createRoute,
   createRouter,
   redirect,
+  type RouterHistory,
 } from '@tanstack/react-router';
 
-import { AppScreen } from '@september/app-ui/blocks/screen';
 import { AppShell } from '@september/app-ui/layouts/app';
 import { OnboardingLayout } from '@september/app-ui/layouts/onboarding';
 import { SettingsLayout } from '@september/app-ui/layouts/settings';
 import { DashboardScreen } from '@september/app-ui/pages/dashboard';
+import { HelpScreen } from '@september/app-ui/pages/help';
 import { NotesScreen } from '@september/app-ui/pages/notes';
 import { HomePage } from '@/pages/home';
 import { ConnectionScreen, SetupSettings, WritingSettings } from '@september/app-ui/pages/settings';
@@ -19,7 +20,7 @@ import { ConnectStep, FinishStep, ModeStep, ProfileStep, WelcomeStep } from '@se
 import { TalkScreen } from '@september/app-ui/pages/talk';
 import { UsageSettings } from '@september/app-ui/pages/usage';
 import { VoiceCloneScreen, VoiceScreen } from '@september/app-ui/pages/voice';
-import { type AppPath } from '@/rules/app-nav';
+import { helpGuide } from '@september/core/rules/help';
 import { isSetupDone } from '@/rules/onboarding';
 import { isConnectionId } from '@/rules/settings-nav';
 import {
@@ -44,6 +45,7 @@ export const APP_ROUTE_PATHS = [
   '/voice',
   '/voice/clone',
   '/help',
+  '/help/$guideSlug',
   '/settings',
   '/settings/writing',
   '/settings/usage',
@@ -57,29 +59,33 @@ const rootRoute = createRootRoute();
 const setupRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'setup',
-  beforeLoad: bootstrapBrowserServices,
+  // Setup runs once. A user who has finished it and asks for a step — from
+  // the landing page, a bookmark, or the back button — goes to the app
+  // instead. The mirror of the guard the app routes keep.
+  beforeLoad: async () => {
+    await bootstrapBrowserServices();
+    if (isSetupDone(currentSetup())) throw redirect({ to: '/dashboard' });
+  },
   component: OnboardingLayout,
 });
 
-const appRoute = createRoute({
+const shellRoute = createRoute({
   getParentRoute: () => rootRoute,
+  id: 'shell',
+  component: AppShell,
+});
+
+const appRoute = createRoute({
+  getParentRoute: () => shellRoute,
   id: 'app',
   beforeLoad: async () => {
     await bootstrapBrowserServices();
     if (!isSetupDone(currentSetup())) throw redirect({ to: '/welcome' });
   },
-  component: AppShell,
 });
 
 const step = (path: string, component: () => React.JSX.Element) =>
   createRoute({ getParentRoute: () => setupRoute, path, component });
-
-const screen = (path: AppPath) =>
-  createRoute({
-    getParentRoute: () => appRoute,
-    path,
-    component: () => <AppScreen path={path} />,
-  });
 
 const talkRoute = createRoute({
   getParentRoute: () => appRoute,
@@ -127,6 +133,72 @@ const connectionRoute = createRoute({
   },
 });
 
+const helpHomeRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/help',
+  component: HelpScreen,
+});
+
+const helpGuideRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/help/$guideSlug',
+  beforeLoad: ({ params }) => {
+    if (!helpGuide(params.guideSlug)) throw redirect({ to: '/help' });
+  },
+  component: function HelpGuide() {
+    return <HelpScreen guideSlug={helpGuideRoute.useParams().guideSlug} />;
+  },
+});
+
+const guardedAppRoute = appRoute.addChildren([
+  createRoute({
+    getParentRoute: () => appRoute,
+    path: '/dashboard',
+    component: DashboardScreen,
+  }),
+  createRoute({
+    getParentRoute: () => appRoute,
+    path: '/spaces',
+    component: SpacesScreen,
+  }),
+  createRoute({
+    getParentRoute: () => appRoute,
+    path: '/spaces/new',
+    component: NewSpaceScreen,
+  }),
+  talkRoute,
+  notesRoute,
+  noteRoute,
+  createRoute({
+    getParentRoute: () => appRoute,
+    path: '/voice',
+    component: VoiceScreen,
+  }),
+  createRoute({
+    getParentRoute: () => appRoute,
+    path: '/voice/clone',
+    component: VoiceCloneScreen,
+  }),
+  settingsRoute.addChildren([
+    createRoute({
+      getParentRoute: () => settingsRoute,
+      path: '/',
+      component: SetupSettings,
+    }),
+    createRoute({
+      getParentRoute: () => settingsRoute,
+      path: '/writing',
+      component: WritingSettings,
+    }),
+    createRoute({
+      getParentRoute: () => settingsRoute,
+      path: '/usage',
+      component: UsageSettings,
+    }),
+    connectionRoute,
+  ]),
+]);
+
 const routeTree = rootRoute.addChildren([
   createRoute({
     getParentRoute: () => rootRoute,
@@ -140,62 +212,23 @@ const routeTree = rootRoute.addChildren([
     step('/connect', ConnectStep),
     step('/finish', FinishStep),
   ]),
-  appRoute.addChildren([
-    createRoute({
-      getParentRoute: () => appRoute,
-      path: '/dashboard',
-      component: DashboardScreen,
-    }),
-    createRoute({
-      getParentRoute: () => appRoute,
-      path: '/spaces',
-      component: SpacesScreen,
-    }),
-    createRoute({
-      getParentRoute: () => appRoute,
-      path: '/spaces/new',
-      component: NewSpaceScreen,
-    }),
-    talkRoute,
-    notesRoute,
-    noteRoute,
-    createRoute({
-      getParentRoute: () => appRoute,
-      path: '/voice',
-      component: VoiceScreen,
-    }),
-    createRoute({
-      getParentRoute: () => appRoute,
-      path: '/voice/clone',
-      component: VoiceCloneScreen,
-    }),
-    screen('/help'),
-    settingsRoute.addChildren([
-      createRoute({
-        getParentRoute: () => settingsRoute,
-        path: '/',
-        component: SetupSettings,
-      }),
-      createRoute({
-        getParentRoute: () => settingsRoute,
-        path: '/writing',
-        component: WritingSettings,
-      }),
-      createRoute({
-        getParentRoute: () => settingsRoute,
-        path: '/usage',
-        component: UsageSettings,
-      }),
-      connectionRoute,
-    ]),
-  ]),
+  shellRoute.addChildren([helpHomeRoute, helpGuideRoute, guardedAppRoute]),
 ]);
 
-export function getRouter() {
-  const router = createRouter({ routeTree, history: createBrowserHistory() });
-  router.subscribe('onResolved', ({ toLocation }) => {
-    void savePath(toLocation.pathname);
-  });
+/**
+ * The router.
+ *
+ * The prerender passes a memory history, because a build machine has no
+ * browser. Only the browser router remembers where the user was, since the
+ * path is saved in IndexedDB and a prerender has none.
+ */
+export function getRouter(history?: RouterHistory) {
+  const router = createRouter({ routeTree, history: history ?? createBrowserHistory() });
+  if (!history) {
+    router.subscribe('onResolved', ({ toLocation }) => {
+      void savePath(toLocation.pathname);
+    });
+  }
   return router;
 }
 

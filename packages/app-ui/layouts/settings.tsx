@@ -3,6 +3,7 @@ import { Gauge, Lightbulb, SlidersHorizontal } from "lucide-react";
 
 import { SETTINGS_NAV, sectionFor, type SettingsPath } from "@platform/rules/settings-nav";
 import { ScreenHeader } from "@september/app-ui/blocks/screen";
+import { documentTitle } from "@september/core/rules/titles";
 
 const ICONS: Record<SettingsPath, typeof SlidersHorizontal> = {
   "/settings": SlidersHorizontal,
@@ -18,6 +19,7 @@ export function SettingsLayout() {
 
   return (
     <>
+      <title>{documentTitle(open.title, "Settings")}</title>
       <ScreenHeader>
         <span className="text-sm font-medium">Settings</span>
       </ScreenHeader>

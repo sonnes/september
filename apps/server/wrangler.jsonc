@@ -10,8 +10,17 @@
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
-    "not_found_handling": "single-page-application",
-    // Worker code rejects retired API routes; everything else serves static assets.
+    // Not "single-page-application": that answers every miss with index.html,
+    // which is now the prerendered landing page. A miss falls through to the
+    // Worker instead, which serves the empty shell.
+    "not_found_handling": "none",
+    // Not the "auto-trailing-slash" default: that answers `/help` with a 307
+    // to `/help/`, a wasted round trip on every prerendered page. The app's
+    // own links carry no trailing slash, so make that the canonical form and
+    // serve the folder index straight from it.
+    "html_handling": "drop-trailing-slash",
+    // Worker code rejects retired API routes and serves the shell; everything
+    // else serves static assets.
     "run_worker_first": ["/api/*"]
   },
 

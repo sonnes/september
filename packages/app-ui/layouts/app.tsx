@@ -90,14 +90,20 @@ function AppSidebar() {
   return (
     <Sidebar variant="inset" collapsible="icon">
       <SidebarHeader>
-        <div aria-label="September" className="flex h-12 items-center gap-2">
+        {/* Home, the way every site puts it behind its own name. On the
+            desktop app `/` sends the user back to where they were. */}
+        <Link
+          to="/"
+          aria-label="September home"
+          className="ring-sidebar-ring flex h-12 items-center gap-2 rounded-lg outline-hidden focus-visible:ring-2"
+        >
           <BrandMark size={32} className="size-8 rounded-lg" />
           <BrandWordmark
             tone="inverse"
             aria-hidden="true"
             className="truncate text-xl group-data-[collapsible=icon]:hidden"
           />
-        </div>
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         {/* The group insets the menu by 8px, the same as the header, so the

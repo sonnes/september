@@ -231,7 +231,7 @@ export function KeyPanel({
           spellCheck={false}
           value={key}
           onChange={(event) => setKey(event.target.value)}
-          className="h-11 min-w-64 flex-1 font-mono"
+          className="h-11 w-full flex-1 font-mono sm:min-w-64"
         />
         <Button
           type="button"

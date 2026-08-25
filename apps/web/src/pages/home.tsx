@@ -1,6 +1,7 @@
 import { AboutSection } from '@/components/home/about-section';
 import { EnhancedCTASection } from '@/components/home/enhanced-cta-section';
 import { Footer } from '@/components/home/footer';
+import { LANDING_TITLE } from '@september/core/rules/titles';
 import { HeroSection } from '@/components/home/hero-section';
 import { LiveDemoSection } from '@/components/home/live-demo-section';
 import { NotesSection } from '@/components/home/notes-section';
@@ -15,6 +16,7 @@ export function HomePage() {
     <>
       {/* Proof first, then one chapter per idea: Talk is the flagship, the rest
           follow in the order someone meets them. */}
+      <title>{LANDING_TITLE}</title>
       <main className="min-h-screen bg-white">
         <HeroSection />
         <LiveDemoSection />

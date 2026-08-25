@@ -45,6 +45,7 @@ import { seedPhrases } from "@platform/services/phrase-sync";
 import { appendToNote } from "@september/core/rules/notes";
 import { newSpaceDraft, rememberDraft } from "@platform/services/os";
 import { Screen, ScreenHeader } from "@september/app-ui/blocks/screen";
+import { documentTitle } from "@september/core/rules/titles";
 import {
   createSteps,
   filterSpaces,
@@ -350,6 +351,7 @@ export function NewSpaceScreen() {
 
   return (
     <>
+      <title>{documentTitle("New space")}</title>
       <ScreenHeader>
         <span className="text-sm font-medium">New space</span>
       </ScreenHeader>

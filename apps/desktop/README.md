@@ -34,13 +34,19 @@ never wears the app sidebar, and an app screen never wears the setup sidebar.
 | Layout      | Component                     | Routes                                             |
 | ----------- | ----------------------------- | -------------------------------------------------- |
 | Setup       | `OnboardingLayout`, `packages/app-ui/layouts/onboarding.tsx` | `/welcome` `/profile` `/mode` `/connect` `/finish`  |
-| Application | `AppShell`, `packages/app-ui/layouts/app.tsx` | `/dashboard` `/spaces` `/spaces/$slug/talk` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/voice` `/voice/clone` `/help` `/settings` `/settings/writing` `/settings/usage` `/settings/connections/$provider` |
+| Application | `AppShell`, `packages/app-ui/layouts/app.tsx` | `/dashboard` `/spaces` `/spaces/$slug/talk` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/voice` `/voice/clone` `/help` `/help/$guideSlug` `/settings` `/settings/writing` `/settings/usage` `/settings/connections/$provider` |
 
 `AppShell` is the shadcn `Sidebar` and `SidebarInset` pair: a solid indigo
 sidebar beside a white inset card. `src/rules/app-nav.ts` lists the destinations
 and their descriptions. `packages/app-ui/layouts/app.tsx` gives each path an
-icon. The Help destination still shows a short placeholder. Today, Spaces,
-Voice, and Settings use the same screens as the browser app.
+icon. Today, Spaces, Voice, Help, and Settings use the same screens as the
+browser app.
+
+Help uses the shared task catalog at `/help` and one stable guide slug at
+`/help/$guideSlug`. Both Help routes use `AppShell` but stay outside the
+finished-setup guard. The setup sidebar can open the setup guide inline without
+leaving the current step or changing its answers. An unknown guide slug returns
+to `/help`.
 
 The window opens at the 1376px baseline, so the sidebar starts as a 48px icon
 rail. A wider screen opens the full sidebar. Command-B toggles it, and that

@@ -6,8 +6,14 @@ export default {
       return new Response('Not found', { status: 404 });
     }
 
-    // Everything else is the SPA (served directly by the assets binding in
-    // production via run_worker_first; this fallback covers direct invocation).
-    return env.ASSETS.fetch(request);
+    // A file that exists answers for itself: the assets, and the prerendered
+    // landing page at `/`.
+    const asset = await env.ASSETS.fetch(request);
+    if (asset.status !== 404) return asset;
+
+    // Everything left is an application route. It gets the empty shell, never
+    // the landing page, so a deep link does not paint the marketing copy while
+    // its bundle boots.
+    return env.ASSETS.fetch(new URL('/app.html', request.url));
   },
 } satisfies ExportedHandler<Env>;

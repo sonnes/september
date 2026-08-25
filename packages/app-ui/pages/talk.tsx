@@ -24,6 +24,7 @@ import {
 } from "@september/app-ui/blocks/screen";
 import { PanelRail } from "@september/app-ui/blocks/space-panel";
 import { pinnedPhrase } from "@september/core/rules/phrases";
+import { documentTitle } from "@september/core/rules/titles";
 import { useSyncPhrases } from "@platform/services/phrase-sync";
 import {
   speak,
@@ -110,6 +111,7 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
 
   return (
     <>
+      <title>{documentTitle(space.title, "Talk")}</title>
       <ScreenHeader>
         <SpaceTitle space={space} />
       </ScreenHeader>

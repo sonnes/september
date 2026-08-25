@@ -18,7 +18,9 @@ import "@fontsource/noto-sans/600.css";
 import "@fontsource/noto-sans/700.css";
 
 import { OnboardingLayout } from "@september/app-ui/layouts/onboarding";
-import { openingPath, windowTitle, type AppPath } from "@/rules/app-nav";
+import { openingPath, windowTitle } from "@/rules/app-nav";
+import { HelpScreen } from "@september/app-ui/pages/help";
+import { helpGuide } from "@september/core/rules/help";
 import { NotesScreen } from "@september/app-ui/pages/notes";
 import { isSetupDone } from "@/rules/onboarding";
 import {
@@ -29,7 +31,6 @@ import {
 } from "@/services/os";
 import { AppShell } from "@september/app-ui/layouts/app";
 import { SettingsLayout } from "@september/app-ui/layouts/settings";
-import { AppScreen } from "@september/app-ui/blocks/screen";
 import { DashboardScreen } from "@september/app-ui/pages/dashboard";
 import {
   ConnectionScreen,
@@ -60,26 +61,24 @@ const setupRoute = createRoute({
   component: OnboardingLayout,
 });
 
-const appRoute = createRoute({
+const shellRoute = createRoute({
   getParentRoute: () => rootRoute,
+  id: "shell",
+  component: AppShell,
+});
+
+const appRoute = createRoute({
+  getParentRoute: () => shellRoute,
   id: "app",
   // Every app screen needs a name and a mode, so an unfinished setup turns
   // back to the start. A reload of a deep route passes through here too.
   beforeLoad: () => {
     if (!isSetupDone(currentSetup())) throw redirect({ to: "/welcome" });
   },
-  component: AppShell,
 });
 
 const step = (path: string, component: () => React.JSX.Element) =>
   createRoute({ getParentRoute: () => setupRoute, path, component });
-
-const screen = (path: AppPath) =>
-  createRoute({
-    getParentRoute: () => appRoute,
-    path,
-    component: () => <AppScreen path={path} />,
-  });
 
 const spacesRoute = createRoute({
   getParentRoute: () => appRoute,
@@ -144,6 +143,64 @@ const connectionRoute = createRoute({
   },
 });
 
+const helpHomeRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/help",
+  component: HelpScreen,
+});
+
+const helpGuideRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/help/$guideSlug",
+  beforeLoad: ({ params }) => {
+    if (!helpGuide(params.guideSlug)) throw redirect({ to: "/help" });
+  },
+  component: function HelpGuide() {
+    return <HelpScreen guideSlug={helpGuideRoute.useParams().guideSlug} />;
+  },
+});
+
+const guardedAppRoute = appRoute.addChildren([
+  createRoute({
+    getParentRoute: () => appRoute,
+    path: "/dashboard",
+    component: DashboardScreen,
+  }),
+  spacesRoute,
+  newSpaceRoute,
+  talkRoute,
+  notesRoute,
+  noteRoute,
+  createRoute({
+    getParentRoute: () => appRoute,
+    path: "/voice",
+    component: VoiceScreen,
+  }),
+  createRoute({
+    getParentRoute: () => appRoute,
+    path: "/voice/clone",
+    component: VoiceCloneScreen,
+  }),
+  settingsRoute.addChildren([
+    createRoute({
+      getParentRoute: () => settingsRoute,
+      path: "/",
+      component: SetupSettings,
+    }),
+    createRoute({
+      getParentRoute: () => settingsRoute,
+      path: "/writing",
+      component: WritingSettings,
+    }),
+    createRoute({
+      getParentRoute: () => settingsRoute,
+      path: "/usage",
+      component: UsageSettings,
+    }),
+    connectionRoute,
+  ]),
+]);
+
 const routeTree = rootRoute.addChildren([
   createRoute({
     getParentRoute: () => rootRoute,
@@ -162,47 +219,7 @@ const routeTree = rootRoute.addChildren([
     step("/connect", ConnectStep),
     step("/finish", FinishStep),
   ]),
-  appRoute.addChildren([
-    createRoute({
-      getParentRoute: () => appRoute,
-      path: "/dashboard",
-      component: DashboardScreen,
-    }),
-    spacesRoute,
-    newSpaceRoute,
-    talkRoute,
-    notesRoute,
-    noteRoute,
-    createRoute({
-      getParentRoute: () => appRoute,
-      path: "/voice",
-      component: VoiceScreen,
-    }),
-    createRoute({
-      getParentRoute: () => appRoute,
-      path: "/voice/clone",
-      component: VoiceCloneScreen,
-    }),
-    screen("/help"),
-    settingsRoute.addChildren([
-      createRoute({
-        getParentRoute: () => settingsRoute,
-        path: "/",
-        component: SetupSettings,
-      }),
-      createRoute({
-        getParentRoute: () => settingsRoute,
-        path: "/writing",
-        component: WritingSettings,
-      }),
-      createRoute({
-        getParentRoute: () => settingsRoute,
-        path: "/usage",
-        component: UsageSettings,
-      }),
-      connectionRoute,
-    ]),
-  ]),
+  shellRoute.addChildren([helpHomeRoute, helpGuideRoute, guardedAppRoute]),
 ]);
 
 // ponytail: hash history keeps deep routes working from the Tauri asset

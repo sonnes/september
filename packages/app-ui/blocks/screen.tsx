@@ -5,6 +5,7 @@ import { Separator } from "@september/ui/components/separator";
 import { SidebarTrigger } from "@september/ui/components/sidebar";
 
 import { navFor, type AppPath } from "@platform/rules/app-nav";
+import { documentTitle } from "@september/core/rules/titles";
 
 /**
  * The slot the app layout gives the right rail.
@@ -61,6 +62,9 @@ export function Screen({
 }) {
   return (
     <>
+      {/* React 19 lifts this into the head. Screens that build their own
+          header write their own, with the words that tell them apart. */}
+      <title>{documentTitle(title)}</title>
       <ScreenHeader>
         <span className="text-sm font-medium">{title}</span>
       </ScreenHeader>

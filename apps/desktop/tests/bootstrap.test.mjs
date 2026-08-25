@@ -162,6 +162,7 @@ test("every desktop page gives the September window a title", async () => {
       "/voice",
       "/voice/clone",
       "/help",
+      "/help/set-up-september",
       "/settings",
       "/settings/writing",
       "/settings/usage",
@@ -184,6 +185,7 @@ test("every desktop page gives the September window a title", async () => {
       "September — Voice",
       "September — Clone your voice",
       "September — Help",
+      "September — Set up September",
       "September — Services",
       "September — Writing help",
       "September — Usage",
@@ -494,6 +496,32 @@ test("every app destination has a route and an icon", async () => {
   }
 });
 
+test("Help has matching home and guide routes outside the setup guard", async () => {
+  const main = await readText("src/main.tsx");
+  const guardedRoutes = main.match(/appRoute\.addChildren\(\[[\s\S]*?\n  \]\)/)?.[0];
+
+  assert.match(main, /HelpScreen/);
+  assert.match(main, /path: "\/help\/\$guideSlug"/);
+  assert.match(main, /helpGuide\(params\.guideSlug\)/);
+  assert.match(main, /redirect\(\{ to: "\/help" \}\)/);
+  assert.ok(guardedRoutes);
+  assert.doesNotMatch(guardedRoutes, /path: "\/help"/);
+  assert.doesNotMatch(guardedRoutes, /path: "\/help\/\$guideSlug"/);
+});
+
+test("onboarding opens setup Help without unmounting or changing its draft", async () => {
+  const onboarding = await readText("src/layouts/onboarding.tsx");
+  const inlineHelp = onboarding.match(/<Sheet>[\s\S]*?<\/Sheet>/)?.[0];
+
+  assert.ok(inlineHelp, "onboarding needs an inline Help sheet");
+  assert.match(inlineHelp, /<SheetTrigger asChild>/);
+  assert.match(inlineHelp, /<Button/);
+  assert.match(inlineHelp, /min-h-11/);
+  assert.match(inlineHelp, /HelpGuideContent/);
+  assert.match(onboarding, /helpGuide\("set-up-september"\)/);
+  assert.doesNotMatch(inlineHelp, /setDraft|Navigate|to=/);
+});
+
 test("the app opens where the user left it", () => {
   assert.equal(openingPath("/voice"), "/voice");
   assert.equal(openingPath("/spaces/amma/talk"), "/spaces/amma/talk");
@@ -595,7 +623,12 @@ test("setup keeps its answers before it opens the app", async () => {
 
 test("the brand and the nav icons share one left edge", async () => {
   const shell = await readText("src/layouts/app.tsx");
-  const brand = shell.match(/aria-label="September"\s+className="([^"]*)"/)[1];
+  const brand = shell.match(
+    /aria-label="September home"\s+className="([^"]*)"/,
+  )[1];
+
+  // The brand is the way home, as a site's own name is.
+  assert.match(shell, /<Link\s+to="\/"\s+aria-label="September home"/);
 
   // `SidebarHeader` and `SidebarGroup` both inset by 8px, so the brand and
   // the nav buttons line up. Extra padding on either one breaks the edge.

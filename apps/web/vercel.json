@@ -2,7 +2,11 @@
   "framework": null,
   "buildCommand": "pnpm build",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/(.*)", "destination": "/app.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)",

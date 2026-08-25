@@ -3,6 +3,8 @@
  * renderer. `shell.tsx` supplies the icon for each path.
  */
 
+import { helpGuide } from "@september/core/rules/help";
+
 import { STEPS } from "./onboarding.ts";
 import { CONNECTION_GUIDES, SETTINGS_NAV } from "./settings-nav.ts";
 
@@ -54,13 +56,19 @@ export function windowTitle(pathname: string): string {
   const step = STEPS.find((item) => item.path === path);
   const setting = SETTINGS_NAV.find((item) => item.path === path);
   const destination = APP_NAV.find((item) => item.path === path);
+  const guideSlug = path.match(/^\/help\/([^/]+)$/)?.[1];
+  const guide = guideSlug ? helpGuide(guideSlug) : undefined;
   const provider = path.match(/^\/settings\/connections\/([^/]+)$/)?.[1];
   const connection = provider
     ? CONNECTION_GUIDES[provider as keyof typeof CONNECTION_GUIDES]
     : undefined;
 
   let page: string | undefined =
-    step?.label ?? setting?.title ?? connection?.name ?? destination?.title;
+    step?.label ??
+    setting?.title ??
+    connection?.name ??
+    guide?.title ??
+    destination?.title;
 
   if (path === "/spaces/new") page = "New space";
   else if (/^\/spaces\/[^/]+\/talk$/.test(path)) page = "Talk";

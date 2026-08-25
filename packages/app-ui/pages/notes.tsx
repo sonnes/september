@@ -57,6 +57,7 @@ import {
 import { PanelRail } from "@september/app-ui/blocks/space-panel";
 import { PresentOverlay } from "@september/app-ui/blocks/present";
 import { RightPanel, ScreenHeader } from "@september/app-ui/blocks/screen";
+import { documentTitle } from "@september/core/rules/titles";
 import { pinnedPhrase } from "@september/core/rules/phrases";
 import {
   EXPORT_ARTIFACTS,
@@ -208,6 +209,11 @@ function Notes({
 
   return (
     <>
+      <title>
+        {note
+          ? documentTitle(note.name, space.title)
+          : documentTitle(space.title, "Notes")}
+      </title>
       <ScreenHeader>
         <SpaceTitle space={space} mode="notes" />
         {note ? (

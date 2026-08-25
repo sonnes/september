@@ -16,6 +16,66 @@ pnpm build
 
 The development server uses `http://localhost:3009`. The production build writes a Vite SPA to `dist/`.
 
+## Every page names itself
+
+Screens render a `<title>`, which React 19 lifts into the head. `Screen` in
+`@september/app-ui/blocks/screen` does it for any screen built from it; a
+screen with its own header writes its own, with the words that tell it apart —
+`Family · Talk · September` for a space, `Thursday appointment · Family ·
+September` for a note. The wording rule is `documentTitle` in
+`@september/core/rules/titles`.
+
+`index.html` keeps a plain `<title>September</title>`. It is what a tab shows
+before the bundle mounts, and the prerender replaces it with the title each
+prerendered page renders.
+
+## The public pages are prerendered
+
+`pnpm build` runs `scripts/prerender.mjs` after Vite. It builds the same
+application for Node, renders every path in `PRERENDERED_PATHS`, and writes one
+file per page:
+
+| File | Served at | Holds |
+| --- | --- | --- |
+| `dist/index.html` | `/` | The landing page, already drawn |
+| `dist/help/index.html` | `/help` | Help, with every task listed |
+| `dist/help/<slug>/index.html` | `/help/<slug>` | One guide each |
+| `dist/app.html` | every application route | The empty shell |
+
+One file per page, because one cannot be all of them. A reader of `/` or of a
+guide gets the words and the first paint without waiting for the bundle, and a
+crawler gets them without running JavaScript at all. A deep link to an
+application route gets the empty shell, so it never paints the marketing page
+first.
+
+`PRERENDERED_PATHS` in `src/rules/prerender.ts` is the list, and it derives the
+guides from `HELP_GUIDES`. Writing a new guide prerenders it. Nothing else can
+go on the list: every other screen reads IndexedDB, which a build machine has
+none of.
+
+The markup is static: the browser mounts over it rather than hydrating it. The
+title each page renders is moved into its own head, since a crawler reads the
+head and not the body.
+
+Each page is a folder index, the one shape both hosts serve from the filesystem
+at the slashless path the app's links use. `vercel.json` sets `trailingSlash`
+to `false` and `apps/server` sets `html_handling` to `drop-trailing-slash`, so
+neither host puts a redirect in front of a prerendered page.
+`src/prerender.test.tsx` holds the rules to it, and `src/index.test.ts` in
+`apps/server` holds the routing to it. See
+`docs/concepts/prerendered-pages.md`.
+
+## Brand assets
+
+`pnpm brand:generate` draws the mark and the share card with `satori`, then
+writes them to `public/`: `logo.svg`, the favicons, the app icons, and
+`og.png`. Run it after a change to the mark, to the landing hero, or to the
+words on the card, and commit what it writes.
+
+The share card is 1200x630, the size every link preview expects. `index.html`
+names it with an absolute URL, because a crawler does not resolve a relative
+one. `src/share-card.test.ts` holds both to that.
+
 ## Routes
 
 `src/router.tsx` defines the complete route graph. The route contract test keeps the application paths equal to the desktop paths and protects the browser landing page at `/`.
@@ -23,7 +83,15 @@ The development server uses `http://localhost:3009`. The production build writes
 The application route components come from `@september/app-ui`. The router and
 the web-only landing page remain local.
 
-The setup routes are `/welcome`, `/profile`, `/mode`, `/connect`, and `/finish`. The application routes are:
+The setup routes are `/welcome`, `/profile`, `/mode`, `/connect`, and `/finish`.
+
+Setup runs once, and the two guards mirror each other: an application route
+asked for before setup is finished turns back to `/welcome`, and a setup step
+asked for after it is finished goes on to `/dashboard`. So the landing page's
+calls to action, a bookmark, and the back button all land a returning user in
+the app. `src/setup-guard.test.ts` holds both directions.
+
+The application routes are:
 
 - `/dashboard`
 - `/spaces`
@@ -34,12 +102,19 @@ The setup routes are `/welcome`, `/profile`, `/mode`, `/connect`, and `/finish`.
 - `/voice`
 - `/voice/clone`
 - `/help`
+- `/help/$guideSlug`
 - `/settings`
 - `/settings/writing`
 - `/settings/usage`
 - `/settings/connections/$provider`
 
-The `/` route opens the public landing page. Its calls to action open setup at `/welcome`. All hosting targets must return `index.html` for a direct application-route request.
+The `/` route opens the public landing page. Its calls to action open setup at `/welcome`, which sends a returning user on to `/dashboard`. All hosting targets must return the application shell for a direct application-route request.
+
+`/help` and `/help/$guideSlug` render the shared task-based Help screen. These
+routes stay outside the finished-setup guard, so a direct Help link works
+before setup is complete, and it is what lets the build prerender them. The setup sidebar also opens the setup guide inline
+without navigating or changing the current answers. An unknown guide slug
+returns to `/help`.
 
 ## Browser data
 
