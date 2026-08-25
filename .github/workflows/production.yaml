@@ -4,41 +4,53 @@ on:
   push:
     branches:
       - main
+    # The web app and the workspace packages it renders are the only sources
+    # that change the deployed site.
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/production.yaml'
   workflow_dispatch:
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
+# One production deploy at a time; a newer push wins.
+concurrency:
+  group: production
+  cancel-in-progress: true
+
 jobs:
   deploy-production:
     runs-on: ubuntu-latest
     environment: Production
-    defaults:
-      run:
-        working-directory: apps/web
     steps:
       - uses: actions/checkout@v4
+      # The pnpm version comes from packageManager in the root package.json.
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'pnpm'
-          cache-dependency-path: apps/web/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
+      # apps/web imports @september/core, @september/ui, and @september/app-ui,
+      # so install the whole workspace from the root lockfile.
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
       - name: Install Vercel CLI
         run: pnpm install -g vercel@latest
+      # The Vercel project Root Directory is apps/web. Run the CLI from the
+      # repository root so it resolves that path once and can read the
+      # workspace packages that live outside it.
       - name: Pull Vercel Environment Information
-        working-directory: .
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
       - name: Build Project Artifacts
-        working-directory: .
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
       - name: Deploy Project Artifacts to Vercel
-        working-directory: .
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
