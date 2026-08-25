@@ -10,6 +10,7 @@ export {
   hoistTitle,
   injectMarkup,
   prerenderedFile,
+  withAnalytics,
 } from '@/rules/prerender';
 
 /**

@@ -21,8 +21,10 @@ import { TalkScreen } from '@september/app-ui/pages/talk';
 import { UsageSettings } from '@september/app-ui/pages/usage';
 import { VoiceCloneScreen, VoiceScreen } from '@september/app-ui/pages/voice';
 import { helpGuide } from '@september/core/rules/help';
+import { analyticsPath } from '@/rules/analytics';
 import { isSetupDone } from '@/rules/onboarding';
 import { isConnectionId } from '@/rules/settings-nav';
+import { countPage } from '@/services/analytics';
 import {
   bootstrapBrowserServices,
   currentSetup,
@@ -227,6 +229,10 @@ export function getRouter(history?: RouterHistory) {
   if (!history) {
     router.subscribe('onResolved', ({ toLocation }) => {
       void savePath(toLocation.pathname);
+      // Web only, and by the shape of the route where its address holds a
+      // name. The desktop app loads no tracker at all.
+      const matched = router.state.matches[router.state.matches.length - 1];
+      countPage(analyticsPath(matched?.fullPath, toLocation.pathname));
     });
   }
   return router;

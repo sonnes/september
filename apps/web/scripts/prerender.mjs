@@ -33,10 +33,27 @@ await build({
   ssr: { noExternal: true },
 });
 
-const { PRERENDERED_PATHS, hoistTitle, injectMarkup, prerenderedFile, renderPage } =
-  await import(`${ssrDir}/entry-server.js`);
+const {
+  PRERENDERED_PATHS,
+  hoistTitle,
+  injectMarkup,
+  prerenderedFile,
+  renderPage,
+  withAnalytics,
+} = await import(`${ssrDir}/entry-server.js`);
 
-const built = await readFile(`${dist}/index.html`, 'utf8');
+// A build with nothing configured counts nothing, so a fork, a preview, and a
+// local build report to no one.
+const umami = {
+  src: process.env.UMAMI_SCRIPT_URL ?? '',
+  websiteId: process.env.UMAMI_WEBSITE_ID ?? '',
+};
+
+// Every page the browser app serves carries the counter, and the app reports
+// each one under a path that names no one. Automatic tracking stays off, so
+// the script never reads a space name out of the address bar.
+const built = withAnalytics(await readFile(`${dist}/index.html`, 'utf8'), umami);
+
 // The shell keeps its plain title; each page takes the one it rendered.
 await writeFile(`${dist}/app.html`, built);
 
@@ -50,5 +67,6 @@ for (const path of PRERENDERED_PATHS) {
 await rm(ssrDir, { recursive: true, force: true });
 
 console.log(
-  `prerendered ${PRERENDERED_PATHS.length} pages into dist, shell kept at dist/app.html`
+  `prerendered ${PRERENDERED_PATHS.length} pages into dist, shell kept at dist/app.html` +
+    (umami.websiteId ? ', counted by umami' : ', with no analytics configured')
 );

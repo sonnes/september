@@ -8,6 +8,7 @@ import {
   hoistTitle,
   injectMarkup,
   prerenderedFile,
+  withAnalytics,
 } from './rules/prerender';
 
 describe('landing markup', () => {
@@ -148,5 +149,57 @@ describe('prerenderedFile', () => {
     expect(prerenderedFile('/help/save-a-phrase')).toBe(
       'help/save-a-phrase/index.html'
     );
+  });
+});
+
+describe('withAnalytics', () => {
+  const shell = '<head><title>September</title></head><body></body>';
+  const umami = { src: 'https://cloud.umami.is/script.js', websiteId: 'abc-123' };
+
+  it('puts the script in the head of a public page', () => {
+    const out = withAnalytics(shell, umami);
+
+    expect(out).toContain('src="https://cloud.umami.is/script.js"');
+    expect(out).toContain('data-website-id="abc-123"');
+    expect(out.indexOf('<script')).toBeLessThan(out.indexOf('</head>'));
+  });
+
+  /**
+   * The point of the whole thing. Left to itself the script reads the address
+   * and the title of every page the user moves to, and in September both name
+   * the person the user is talking to. `services/analytics` reports each page
+   * instead, under a path that names no one.
+   */
+  it('turns automatic tracking off, and asks the page for nothing', () => {
+    const out = withAnalytics(shell, umami);
+
+    expect(out).toContain('data-auto-track="false"');
+    // No call in the markup: the app decides what a page view may say.
+    expect(out).not.toMatch(/track\(/);
+  });
+
+  /**
+   * The site is cross-origin isolated for ffmpeg.wasm, so `require-corp`
+   * blocks a cross-origin script that arrives without a resource policy.
+   * Asking for it over CORS is what gets the counter onto the page at all.
+   */
+  it('fetches the script over CORS, which cross-origin isolation requires', () => {
+    expect(withAnalytics(shell, umami)).toContain('crossorigin="anonymous"');
+  });
+
+  it('writes nothing at all when the build has no analytics configured', () => {
+    expect(withAnalytics(shell, null)).toBe(shell);
+    expect(withAnalytics(shell, { src: '', websiteId: 'abc-123' })).toBe(shell);
+    expect(withAnalytics(shell, { src: umami.src, websiteId: '' })).toBe(shell);
+  });
+
+  it('refuses a value that would break out of its attribute', () => {
+    const out = withAnalytics(shell, {
+      src: 'https://x/script.js"></script><script>alert(1)</script>',
+      websiteId: 'abc-123',
+    });
+
+    expect(out).not.toContain('alert(1)</script>');
+    expect(out).toContain('&quot;');
   });
 });

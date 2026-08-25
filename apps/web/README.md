@@ -29,6 +29,40 @@ September` for a note. The wording rule is `documentTitle` in
 before the bundle mounts, and the prerender replaces it with the title each
 prerendered page renders.
 
+## Counting the public pages
+
+Every page the browser app serves carries an Umami tag — the prerendered
+public pages and the application shell alike. The desktop app carries none.
+The build reads two variables and writes the tag into the pages it writes:
+
+| Variable | Holds |
+| --- | --- |
+| `UMAMI_SCRIPT_URL` | The address of `script.js` |
+| `UMAMI_WEBSITE_ID` | The site the counter reports to |
+
+A build with neither writes nothing, so a local build, a fork, and a preview
+report to no one.
+
+Two details are load-bearing:
+
+- **`data-auto-track="false"`.** Left to itself the script reads the address
+  and the title of every page the user moves to, and a September address names
+  the person the user talks to — `/spaces/amma/talk`, and a note slug is what
+  they mean to say. Instead the router reports each page itself through
+  `services/analytics`, under the path `rules/analytics` allows: the address
+  as written for a screen that names nobody, and the shape of the route —
+  `/spaces/$slug/talk` — for one that does. The title is replaced too, since
+  it carries the same name. A guide slug and a provider name are ours, not the
+  user's, so those are reported whole.
+- **`crossorigin="anonymous"`.** The site is cross-origin isolated for
+  ffmpeg.wasm, and `require-corp` drops a cross-origin script that arrives
+  without a resource policy. Umami's script sends CORS headers but no resource
+  policy, so without this attribute the browser blocks it and the counter is
+  simply absent.
+
+The tracker is loaded by the built HTML and driven from `src/`, both of which
+belong to this app alone, so the desktop app reports nothing anywhere.
+
 ## The public pages are prerendered
 
 `pnpm build` runs `scripts/prerender.mjs` after Vite. It builds the same

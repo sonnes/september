@@ -94,6 +94,23 @@ shell. Neither needs a rule per page:
 A Help slug that was never built is not special. It has no file, so it gets the
 shell, and the router sends the unknown slug back to `/help`.
 
+## What a page view may say
+
+Every page the browser app serves carries an Umami tag, the prerendered ones
+and the application shell alike. Automatic tracking is off: the script would
+read the address and the title of every page the user moves to, and a
+September address names the person the user talks to.
+
+The router reports each page instead. A screen that names nobody is reported
+by its address — `/dashboard`, `/help/clone-a-voice`. A screen that carries a
+name is reported by the shape of its route — `/spaces/$slug/talk`. So a count
+says a space was opened without saying whose, and the words stay on the
+device with everything else.
+
+The build reads `UMAMI_SCRIPT_URL` and `UMAMI_WEBSITE_ID`. With neither set it
+writes nothing at all, and the desktop app never loads a tracker.
+
+
 ## What holds it together
 
 - `apps/web/src/prerender.test.tsx` renders `/`, `/help`, and a guide without a

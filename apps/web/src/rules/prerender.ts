@@ -69,3 +69,48 @@ export function hoistTitle(
     markup: markup.replace(TITLE, ''),
   };
 }
+
+/** Where the analytics script lives, and which site it counts. */
+export interface Analytics {
+  src: string;
+  websiteId: string;
+}
+
+/** A value written into an attribute, with no way out of it. */
+function attribute(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/**
+ * The shell of a built page, with the counter in its head.
+ *
+ * Automatic tracking stays off. The script would otherwise read the address
+ * and the title of every page the user moves to, and in September both name
+ * the person the user is talking to. `services/analytics` reports each page
+ * instead, under a path that names no one.
+ *
+ * A build with nothing configured writes nothing, so a fork and a local build
+ * report to no one.
+ */
+export function withAnalytics(
+  shell: string,
+  analytics: Analytics | null
+): string {
+  if (!analytics?.src || !analytics.websiteId) return shell;
+
+  // `crossorigin` is not decoration: `public/_headers` and `vercel.json` make
+  // the site cross-origin isolated for ffmpeg.wasm, and `require-corp` drops a
+  // cross-origin script that arrives without a resource policy. Over CORS it
+  // arrives.
+  const script = [
+    `<script defer crossorigin="anonymous" src="${attribute(analytics.src)}"`,
+    ` data-website-id="${attribute(analytics.websiteId)}"`,
+    ' data-auto-track="false"></script>',
+  ].join('');
+
+  return shell.replace('</head>', `${script}</head>`);
+}
