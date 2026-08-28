@@ -46,7 +46,7 @@
       "minimumSystemVersion": "26.0",
       "entitlements": "September.entitlements",
       "files": {
-        "Library/SystemExtensions/SeptemberCamera.systemextension": "./camera-extension/build/Build/Products/Release/SeptemberCamera.systemextension"
+        "embedded.provisionprofile": "./embedded.provisionprofile"
       }
     }
   }

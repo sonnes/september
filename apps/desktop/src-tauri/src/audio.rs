@@ -144,6 +144,20 @@ pub struct VirtualMicrophoneStatus {
     pub active: bool,
     pub name: String,
     pub uid: String,
+    pub detail: Option<String>,
+}
+
+/// What a running microphone tells the user.
+///
+/// macOS publishes no way to read the answer to its audio-recording question.
+/// A refused microphone carries sound with no words in it and reports nothing,
+/// so the app names the one setting that mends it.
+fn microphone_detail(active: bool) -> Option<String> {
+    active.then(|| {
+        "If callers hear nothing, allow September under System Settings, \
+         Privacy & Security, Audio Recording."
+            .to_owned()
+    })
 }
 
 fn checked(status: OsStatus, what: &str) -> Result<(), String> {
@@ -409,6 +423,7 @@ pub fn virtual_microphone_status() -> VirtualMicrophoneStatus {
         active: selectable,
         name: VIRTUAL_MICROPHONE_NAME.into(),
         uid: VIRTUAL_MICROPHONE_UID.into(),
+        detail: microphone_detail(selectable),
     }
 }
 
@@ -506,6 +521,18 @@ mod tests {
         let before = default_output().unwrap();
         set_default_output(&before).expect("the output in use can be chosen");
         assert_eq!(default_output().unwrap(), before);
+    }
+
+    #[test]
+    fn a_running_microphone_says_where_a_silent_call_is_mended() {
+        let detail = microphone_detail(true).expect("a running microphone explains itself");
+
+        assert!(detail.contains("Audio Recording"), "{detail}");
+    }
+
+    #[test]
+    fn a_stopped_microphone_says_nothing() {
+        assert_eq!(microphone_detail(false), None);
     }
 
     #[test]

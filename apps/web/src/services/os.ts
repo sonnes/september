@@ -555,6 +555,7 @@ export interface VirtualMicrophoneStatus {
   active: boolean;
   name: string;
   uid: string;
+  detail: string | null;
 }
 
 export function isVirtualDeviceAvailable(status: { uid: string } | null | undefined): boolean {
@@ -565,29 +566,9 @@ const browserMicrophone: VirtualMicrophoneStatus = {
   active: false,
   name: 'September Microphone',
   uid: 'unavailable-in-browser',
+  detail: null,
 };
 
 export const virtualMicrophoneStatus = async () => browserMicrophone;
 export const startVirtualMicrophone = async () => browserMicrophone;
 export const stopVirtualMicrophone = async () => browserMicrophone;
-
-export interface VirtualCameraStatus {
-  active: boolean;
-  pending: boolean;
-  name: string;
-  uid: string;
-  detail: string | null;
-}
-
-const browserCamera: VirtualCameraStatus = {
-  active: false,
-  pending: false,
-  name: 'September Camera',
-  uid: 'unavailable-in-browser',
-  detail: 'The virtual camera is available in the macOS app.',
-};
-
-export const virtualCameraStatus = async () => browserCamera;
-export const startVirtualCamera = async () => browserCamera;
-export const stopVirtualCamera = async () => browserCamera;
-export const updateVirtualCameraOverlay = async (_text: string, _visible = true): Promise<void> => {};

@@ -57,7 +57,7 @@ test("the tab the user left comes back, open or closed", () => {
 
 test("a tab that no longer exists opens the phrases", () => {
   // A retired tab must not leave the card empty.
-  assert.deepEqual(panelStateFrom({ open: true, tab: "history" }), {
+  assert.deepEqual(panelStateFrom({ open: true, tab: "camera" }), {
     open: true,
     tab: "phrases",
   });
@@ -86,7 +86,7 @@ test("a press opens a tab, and the open tab closes the card", () => {
 
 // ------------------------------------------------------------ the screens
 
-test("the rail draws both tabs and keeps what the user left open", async () => {
+test("the rail draws every tab and keeps what the user left open", async () => {
   const panel = await readText("src/blocks/space-panel.tsx");
   const os = await readText("src/services/os.ts");
 
@@ -95,6 +95,7 @@ test("the rail draws both tabs and keeps what the user left open", async () => {
   assert.match(panel, /pressTab/);
   assert.match(panel, /<Phrases/);
   assert.match(panel, /<SpeechSettings/);
+  assert.doesNotMatch(panel, /CameraSettings|useVirtualCamera/);
 
   // The state crosses a restart in the same setting as before.
   assert.match(os, /panelStateFrom/);

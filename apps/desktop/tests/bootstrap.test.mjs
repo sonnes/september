@@ -203,7 +203,7 @@ test("the macOS bundle declares its recording privacy reasons", async () => {
 
   assert.match(plist, /NSMicrophoneUsageDescription/);
   assert.match(plist, /NSAudioCaptureUsageDescription/);
-  assert.match(plist, /NSCameraUsageDescription/);
+  assert.doesNotMatch(plist, /NSCameraUsageDescription/);
 });
 
 test("the UI builds with Tailwind and the router", async () => {
@@ -884,10 +884,16 @@ test("the Talk audio selector controls the calling-app microphone", async () => 
   const os = await readText("src/services/os.ts");
   const talk = await readText("src/blocks/space.tsx");
   const voice = await readText("src/pages/voice.tsx");
+  const audio = await readText("src-tauri/src/audio.rs");
 
   assert.match(os, /virtual_microphone_status/);
   assert.match(os, /virtual_microphone_start/);
   assert.match(os, /virtual_microphone_stop/);
+  // macOS publishes no way to read its audio-recording answer, so a refused
+  // microphone is silent and says nothing. The app names the setting.
+  assert.match(audio, /fn microphone_detail\(/);
+  assert.match(audio, /Audio Recording/);
+  assert.match(talk, /microphone\.data\?\.detail/);
   assert.match(talk, /function AudioSelector/);
   assert.match(talk, /DropdownMenuCheckboxItem/);
   assert.match(talk, /September Microphone/);
@@ -897,71 +903,94 @@ test("the Talk audio selector controls the calling-app microphone", async () => 
   assert.doesNotMatch(voice, /September Microphone/);
 });
 
-test("the Talk audio selector controls the calling-app camera", async () => {
-  const os = await readText("src/services/os.ts");
-  const talk = await readText("src/blocks/space.tsx");
-  const lib = await readText("src-tauri/src/lib.rs");
+test("the native voices wait on a callback, not on a clock", async () => {
+  const native = await readText("src-tauri/native/audio.m");
 
-  for (const command of [
-    "virtual_camera_status",
-    "virtual_camera_start",
-    "virtual_camera_stop",
-    "virtual_camera_overlay",
-  ]) {
-    assert.match(os, new RegExp(`"${command}"`), `${command} has no UI bridge`);
-    assert.match(lib, new RegExp(`rpc::${command}\\b`), `${command} is not registered`);
+  assert.match(native, /dispatch_semaphore_wait/);
+  assert.doesNotMatch(native, /sleepForTimeInterval/);
+  // A framework class is shared with code September does not own.
+  assert.doesNotMatch(native, /@synchronized\(\[AV/);
+  assert.match(native, /SeptemberSpeechLock\(\)/);
+  assert.match(native, /SeptemberDeviceLock\(\)/);
+  // The composition key takes a CFNumber, and @NO is a CFBoolean.
+  assert.match(native, /kAudioAggregateDeviceIsPrivateKey\) : @0/);
+});
+
+test("the desktop app has no virtual camera", async () => {
+  const sources = await Promise.all([
+    readText("src/services/os.ts"),
+    readText("../web/src/services/os.ts"),
+    readText("src/blocks/space-panel.tsx"),
+    readText("src/blocks/space.tsx"),
+    readText("src/blocks/present.tsx"),
+    readText("src-tauri/src/lib.rs"),
+    readText("src-tauri/src/rpc.rs"),
+    readText("src-tauri/build.rs"),
+    readText("scripts/tauri.mjs"),
+  ]);
+  const makefile = await readFile(
+    new URL("../../../Makefile", import.meta.url),
+    "utf8",
+  );
+
+  for (const source of [...sources, makefile]) {
+    assert.doesNotMatch(
+      source,
+      /virtual.camera|September Camera|CameraSettings|useCameraOverlay|build-camera-extension|desktop-logs/i,
+    );
   }
 
-  assert.match(talk, /<AudioSelector overlayText=\{draft\}/);
-  assert.match(talk, /September Camera/);
-  assert.match(talk, /Show this text over calling-app video/);
-  assert.match(talk, /updateVirtualCameraOverlay\(overlayText/);
-});
-
-test("the macOS bundle embeds the camera system extension", async () => {
   const config = await readJson("src-tauri/tauri.conf.json");
-  const script = await readText("scripts/tauri.mjs");
-  const plist = await readText("src-tauri/Info.plist");
-  const entitlements = await readText("src-tauri/September.entitlements");
-
   assert.equal(
     config.bundle.macOS.files[
-      "Library/SystemExtensions/SeptemberCamera.systemextension"
+      "Library/SystemExtensions/app.september.desktop.camera.systemextension"
     ],
-    "./camera-extension/build/Build/Products/Release/SeptemberCamera.systemextension",
+    undefined,
   );
-  assert.equal(config.bundle.macOS.entitlements, "September.entitlements");
-  assert.match(script, /build-camera-extension\.mjs/);
-  assert.match(plist, /NSSystemExtensionUsageDescription/);
-  assert.match(entitlements, /com\.apple\.developer\.system-extension\.install/);
+
+  const plist = await readText("src-tauri/Info.plist");
+  const entitlements = await readText("src-tauri/September.entitlements");
+  assert.doesNotMatch(plist, /NSCameraUsageDescription|NSSystemExtensionUsageDescription/);
+  assert.doesNotMatch(
+    entitlements,
+    /com\.apple\.security\.device\.camera|com\.apple\.developer\.system-extension\.install/,
+  );
+
+  for (const path of [
+    "scripts/build-camera-extension.mjs",
+    "src-tauri/native/camera.m",
+    "src-tauri/src/camera.rs",
+    "src-tauri/camera-extension/Info.plist",
+    "src/blocks/camera-settings.tsx",
+  ]) {
+    await assert.rejects(() => readText(path), { code: "ENOENT" });
+  }
+});
+test("a Developer ID build embeds the host provisioning profile", async () => {
+  const config = await readJson("src-tauri/tauri.conf.json");
+  const script = await readText("scripts/tauri.mjs");
+
+  assert.equal(
+    config.bundle.macOS.files["embedded.provisionprofile"],
+    "./embedded.provisionprofile",
+  );
+  assert.match(script, /APPLE_PROVISIONING_PROFILE/);
 });
 
-test("the camera extension keeps capture and composition native", async () => {
-  const provider = await readText(
-    "src-tauri/camera-extension/Sources/CameraProvider.swift",
+test("the root Makefile releases a notarized desktop DMG", async () => {
+  const makefile = await readFile(
+    new URL("../../../Makefile", import.meta.url),
+    "utf8",
   );
-  const project = await readText(
-    "src-tauri/camera-extension/SeptemberCamera.xcodeproj/project.pbxproj",
-  );
-  const overlay = await readText(
-    "src-tauri/camera-extension/Sources/OverlayState.swift",
-  );
-  const info = await readText("src-tauri/camera-extension/Info.plist");
 
-  assert.match(provider, /AVCaptureVideoDataOutput/);
-  assert.match(provider, /alwaysDiscardsLateVideoFrames\s*=\s*true/);
-  assert.match(provider, /CVPixelBufferPoolCreate/);
-  assert.match(provider, /CIContext\(\s*mtlDevice:/);
-  assert.match(provider, /cachedOverlay/);
-  assert.match(provider, /cachedWatermark/);
-  assert.match(provider, /forResource:\s*"logo",\s*withExtension:\s*"svg"/);
-  assert.match(provider, /translationX:\s*24,\s*y:\s*24/);
-  assert.match(provider, /stream\.send\(/);
-  assert.match(project, /\.\.\/\.\.\/public\/logo\.svg/);
-  assert.match(project, /logo\.svg in Resources/);
-  assert.match(overlay, /maxTextLength\s*=\s*4096/);
-  assert.match(info, /CMIOExtensionMachServiceName/);
-  assert.match(info, /NSCameraUsageDescription/);
+  assert.match(makefile, /^desktop-release:/m);
+  assert.match(makefile, /\. \.\/\.envrc/);
+  assert.match(makefile, /pnpm -C apps\/desktop tauri:build/);
+  assert.match(makefile, /xcrun notarytool submit/);
+  assert.match(makefile, /xcrun stapler staple/);
+  assert.match(makefile, /xcrun stapler validate/);
+  assert.match(makefile, /spctl --assess --type open/);
+  assert.match(makefile, /shasum -a 256/);
 });
 
 test("the speech settings hold everything that shapes the sound", async () => {
@@ -2067,18 +2096,6 @@ test("the keys of the stage are the keys of a remote", async () => {
   assert.match(present, /motion-reduce:/);
 });
 
-test("the camera shows the presented chunk, and the Talk draft after it", async () => {
-  const present = await readText("src/blocks/present.tsx");
-  const agents = await readFile(new URL("AGENTS.md", desktopRoot), "utf8");
-
-  // September Microphone already carries the voice into the call. The overlay
-  // carries the words, one chunk at a time, through the same text property.
-  assert.match(present, /updateVirtualCameraOverlay\(/);
-  // Closing the stage clears the chunk, so a stale line cannot outlive it.
-  assert.match(present, /updateVirtualCameraOverlay\(""/);
-  assert.match(agents, /except while a presentation runs/);
-});
-
 test("the tone and the sound of a presentation are remembered", async () => {
   const os = await readText("src/services/os.ts");
   const present = await readText("src/blocks/present.tsx");
@@ -2288,8 +2305,5 @@ test("the composer adds words to the note, and does not speak them", async () =>
   assert.equal(composerAction("notes").label, "Add to note");
   // The sound output belongs beside the button that makes a sound. Notes
   // makes none, so it shows no picker.
-  assert.match(
-    composer,
-    /speaks \? <AudioSelector overlayText=\{draft\} \/> : null/,
-  );
+  assert.match(composer, /speaks \? <AudioSelector \/> : null/);
 });

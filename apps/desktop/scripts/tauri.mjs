@@ -1,4 +1,6 @@
 import { spawnSync } from "node:child_process";
+import { copyFileSync, existsSync, rmSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const mode = process.argv[2];
 
@@ -12,8 +14,24 @@ if (usesApfel) {
   run("node", ["scripts/prepare-apfel.mjs"]);
 }
 
-if (mode === "build" && process.platform === "darwin") {
-  run("node", ["scripts/build-camera-extension.mjs"]);
+const signsForDistribution =
+  mode === "build" &&
+  process.platform === "darwin" &&
+  process.env.APPLE_TEAM_ID &&
+  process.env.APPLE_SIGNING_IDENTITY;
+const stagedProfile = fileURLToPath(
+  new URL("../src-tauri/embedded.provisionprofile", import.meta.url),
+);
+
+if (signsForDistribution) {
+  const profile = process.env.APPLE_PROVISIONING_PROFILE;
+  if (!profile || !existsSync(profile)) {
+    throw new Error(
+      "A signed macOS build needs APPLE_PROVISIONING_PROFILE to name an existing Developer ID profile.",
+    );
+  }
+  copyFileSync(profile, stagedProfile);
+  process.on("exit", () => rmSync(stagedProfile, { force: true }));
 }
 
 const args = [mode];

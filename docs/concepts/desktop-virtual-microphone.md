@@ -45,5 +45,9 @@ inside the application audio directory.
 The application bundle contains `NSAudioCaptureUsageDescription`. macOS uses
 this text when the user first starts the process tap.
 
+macOS publishes no way to read the answer. A refused tap carries sound with no
+words in it and reports no error, so the microphone control names the setting
+that mends it while it runs.
+
 This design uses the public Core Audio process-tap API on macOS 26 or later.
 It does not install an audio driver or a privileged helper.

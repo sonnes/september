@@ -15,7 +15,6 @@ use tauri::{
 use crate::{
     apfel::{ApfelGenerateRequest, ApfelGeneration, ApfelState, ApfelStatus},
     audio::{self, AudioDevice, VirtualMicrophoneStatus},
-    camera::{self, VirtualCameraStatus},
     providers::{
         CreatedVoice, ElevenLabsQuota, Model, Provider, ProviderKeys, ProviderStatus, Providers,
         Voice, WritingModel,
@@ -89,12 +88,6 @@ pub(crate) struct PhraseReplaceRequest {
 #[derive(Deserialize)]
 pub(crate) struct AudioOutputRequest {
     uid: String,
-}
-
-#[derive(Deserialize)]
-pub(crate) struct VirtualCameraOverlayRequest {
-    text: String,
-    visible: bool,
 }
 
 #[derive(Deserialize)]
@@ -764,30 +757,6 @@ pub(crate) fn virtual_microphone_start() -> RpcResult<VirtualMicrophoneStatus> {
 #[tauri::command(async)]
 pub(crate) fn virtual_microphone_stop() -> RpcResult<VirtualMicrophoneStatus> {
     audio::virtual_microphone_stop()
-}
-
-/// Whether calling apps can select September Camera now.
-#[tauri::command(async)]
-pub(crate) fn virtual_camera_status() -> VirtualCameraStatus {
-    camera::status()
-}
-
-/// Asks macOS to activate the bundled camera extension.
-#[tauri::command(async)]
-pub(crate) fn virtual_camera_start() -> RpcResult<VirtualCameraStatus> {
-    camera::start()
-}
-
-/// Asks macOS to deactivate the bundled camera extension.
-#[tauri::command(async)]
-pub(crate) fn virtual_camera_stop() -> RpcResult<VirtualCameraStatus> {
-    camera::stop()
-}
-
-/// Sends text state to the camera without moving a video frame through Tauri.
-#[tauri::command(async)]
-pub(crate) fn virtual_camera_overlay(request: VirtualCameraOverlayRequest) -> RpcResult<()> {
-    camera::set_overlay(&request.text, request.visible)
 }
 
 type RpcResult<T> = std::result::Result<T, String>;

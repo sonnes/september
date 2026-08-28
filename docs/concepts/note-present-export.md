@@ -67,17 +67,8 @@ skins the stage and the exported video. The choice is remembered in the
 
 ## Presenting into a call (desktop)
 
-Two native bridges carry a presentation into FaceTime or Zoom with no new
-native code:
-
-- **September Microphone** captures native speech playback, so the callee hears
-  the presented note.
-- **September Camera** shows the current chunk: the overlay pushes each chunk
-  through `updateVirtualCameraOverlay`, and clears the words when the stage
-  closes. Frames never cross into Rust or the WebView — the extension receives
-  the text property only, so a picture could not be sent this way.
-
-The Talk draft owns the camera overlay at every other moment.
+September Microphone captures native speech playback, so a callee hears a
+presented note when the user enables the microphone in Talk.
 
 ## Export
 

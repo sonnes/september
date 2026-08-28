@@ -11,7 +11,6 @@ import {
 } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
-  Camera,
   ChevronDown,
   Delete,
   FileText,
@@ -46,12 +45,8 @@ import {
   listOutputs,
   rememberModes,
   spaceModes,
-  startVirtualCamera,
   startVirtualMicrophone,
-  stopVirtualCamera,
   stopVirtualMicrophone,
-  updateVirtualCameraOverlay,
-  virtualCameraStatus,
   virtualMicrophoneStatus,
 } from "@platform/services/os";
 import { Suggestions } from "@september/app-ui/blocks/suggestions";
@@ -251,7 +246,7 @@ export function Composer({
           <div className="flex items-center gap-2">
             {/* The sound output belongs beside the button that makes a sound.
                 Notes makes none. */}
-            {speaks ? <AudioSelector overlayText={draft} /> : null}
+            {speaks ? <AudioSelector /> : null}
             <Button
               type="button"
               size="lg"
@@ -351,12 +346,12 @@ export function SpaceTitle({
   );
 }
 /**
- * Which speaker this device plays through, and what calling apps can receive.
+ * Which speaker this device plays through, and whether calls hear September.
  *
- * Both voices follow the device sound output. Calling-device controls stay in
- * the same place and explain when the current platform cannot provide them.
+ * Both voices follow the device sound output. The microphone belongs beside
+ * Speak because it carries what Speak makes.
  */
-function AudioSelector({ overlayText }: { overlayText: string }) {
+function AudioSelector() {
   const client = useQueryClient();
   const outputs = useQuery({ queryKey: ["outputs"], queryFn: listOutputs });
   const chosen = useQuery({ queryKey: ["output"], queryFn: currentOutput });
@@ -364,12 +359,6 @@ function AudioSelector({ overlayText }: { overlayText: string }) {
     queryKey: ["virtual-microphone"],
     queryFn: virtualMicrophoneStatus,
   });
-  const camera = useQuery({
-    queryKey: ["virtual-camera"],
-    queryFn: virtualCameraStatus,
-    refetchInterval: (query) => (query.state.data?.pending ? 750 : false),
-  });
-
   const move = useMutation({
     mutationFn: chooseOutput,
     onSuccess: () => client.invalidateQueries({ queryKey: ["output"] }),
@@ -380,33 +369,13 @@ function AudioSelector({ overlayText }: { overlayText: string }) {
     onSuccess: (status) =>
       client.setQueryData(["virtual-microphone"], status),
   });
-  const changeCamera = useMutation({
-    mutationFn: (enabled: boolean) =>
-      enabled ? startVirtualCamera() : stopVirtualCamera(),
-    onSuccess: (status) => client.setQueryData(["virtual-camera"], status),
-  });
 
   const devices = outputs.data ?? [];
   const selected = devices.find((device) => device.uid === chosen.data);
   const microphoneOn = microphone.data?.active ?? false;
-  const cameraOn = camera.data?.active ?? false;
-  const cameraEnabled = cameraOn || (camera.data?.pending ?? false);
   const microphoneAvailable = Boolean(
     microphone.data && microphone.data.uid !== "unavailable-in-browser",
   );
-  const cameraAvailable = Boolean(
-    camera.data && camera.data.uid !== "unavailable-in-browser",
-  );
-
-  // Text shaping happens in the extension only after the words change. The
-  // video path reuses the resulting image for every frame in between.
-  useEffect(() => {
-    if (!cameraOn) return;
-    const timer = window.setTimeout(() => {
-      void updateVirtualCameraOverlay(overlayText, true).catch(() => undefined);
-    }, 80);
-    return () => window.clearTimeout(timer);
-  }, [cameraOn, overlayText]);
 
   return (
     <DropdownMenu
@@ -416,7 +385,6 @@ function AudioSelector({ overlayText }: { overlayText: string }) {
         void outputs.refetch();
         void chosen.refetch();
         void microphone.refetch();
-        void camera.refetch();
       }}
     >
       <DropdownMenuTrigger asChild>
@@ -429,10 +397,8 @@ function AudioSelector({ overlayText }: { overlayText: string }) {
           <Headphones aria-hidden />
           <span className="truncate">{selected?.name ?? "Audio"}</span>
           {microphoneOn ? <Mic className="text-primary" aria-hidden /> : null}
-          {cameraOn ? <Camera className="text-primary" aria-hidden /> : null}
           <span className="sr-only">
-            September Microphone {microphoneOn ? "on" : "off"}; September
-            Camera {cameraOn ? "on" : "off"}
+            September Microphone {microphoneOn ? "on" : "off"}
           </span>
           <ChevronDown className="opacity-50" aria-hidden />
         </Button>
@@ -473,38 +439,15 @@ function AudioSelector({ overlayText }: { overlayText: string }) {
             <span>September Microphone</span>
             <span className="text-muted-foreground text-xs font-normal">
               {microphoneAvailable
-                ? "Send spoken messages to calling apps"
+                ? (microphone.data?.detail ??
+                  "Send spoken messages to calling apps")
                 : "Unavailable on this device"}
-            </span>
-          </span>
-        </DropdownMenuCheckboxItem>
-        <DropdownMenuCheckboxItem
-          checked={cameraEnabled}
-          disabled={!cameraAvailable || changeCamera.isPending}
-          className="min-h-11"
-          onSelect={(event) => event.preventDefault()}
-          onCheckedChange={(checked) => changeCamera.mutate(checked === true)}
-        >
-          <Camera aria-hidden />
-          <span className="flex flex-col">
-            <span>September Camera</span>
-            <span className="text-muted-foreground text-xs font-normal">
-              {!cameraAvailable
-                ? "Unavailable on this device"
-                : camera.data?.pending
-                  ? "Waiting for system approval"
-                  : "Show this text over calling-app video"}
             </span>
           </span>
         </DropdownMenuCheckboxItem>
         {changeMicrophone.error ? (
           <p className="text-destructive px-2 py-1.5 text-sm" role="alert">
             {String(changeMicrophone.error)}
-          </p>
-        ) : null}
-        {changeCamera.error || camera.data?.detail ? (
-          <p className="text-destructive px-2 py-1.5 text-sm" role="alert">
-            {String(changeCamera.error ?? camera.data?.detail)}
           </p>
         ) : null}
       </DropdownMenuContent>

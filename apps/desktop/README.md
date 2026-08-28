@@ -296,11 +296,6 @@ Thirds of the stage move back, hold, and on. The keys are `←` `→` `Space`
 `Home` `End` `Esc`. The tone and the spoken or silent mode are kept in the
 `present` setting.
 
-While a presentation runs, September Camera shows the current chunk through
-`updateVirtualCameraOverlay`, and September Microphone already carries the
-voice into the call. Closing the stage clears the words again. Frames never
-leave the Core Media I/O extension.
-
 Export saves the note as `.md` always, and as `.mp3` with an ElevenLabs voice.
 `src/services/export.ts` writes both through the WebView download support, so
 the file is made on the Mac and goes nowhere else. Audio reuses the speech file
@@ -606,33 +601,21 @@ input. The input exists only while September runs and the control is on.
 5. Speak a message in September.
 6. Turn off **September Microphone** when the call ends.
 
+If callers hear nothing, allow September under System Settings, Privacy &
+Security, Audio Recording. macOS publishes no way to read that answer, so a
+refused microphone carries sound with no words in it and reports no error.
+
 September removes the input when it quits. The next start also removes a stale
 input that remained after an unexpected exit. This feature requires macOS 26
 or later and does not install an audio driver.
 
-### Show Talk text in FaceTime
+## Release the desktop app
 
-The same Talk audio selector can install `September Camera`. This camera shows
-the physical camera feed with the current composer text over it and the
-September mark in the bottom-left corner.
-
-1. Install a signed September build in `/Applications` and open it.
-2. Open Talk and open the audio selector beside **Speak**.
-3. Turn on **September Camera** and approve the system extension when macOS asks.
-4. Allow camera access.
-5. Open FaceTime and select **September Camera** from the Video menu.
-6. Write in the Talk composer. The camera overlay changes with the words.
-
-The extension captures and composites at 1280×720 and 30 frames per second.
-The WebView sends only text state, so video frames stay in the native camera
-process. Clearing the composer removes the text box from the feed.
-The watermark remains so people can identify the September camera output.
-
-`pnpm tauri:build` compiles the camera extension before it builds the app. Set
-`APPLE_TEAM_ID` and `APPLE_SIGNING_IDENTITY` to create an activatable build.
-Without both values, the extension still compiles for local checks but remains
-unsigned. `pnpm tauri:dev` cannot activate it because the development process
-does not run from an installed application bundle.
+Set `APPLE_TEAM_ID`, `APPLE_SIGNING_IDENTITY`, and
+`APPLE_PROVISIONING_PROFILE` for a signed build. Run `make desktop-release`
+from the repository root to create the distribution DMG. The command loads the
+Apple credentials from the ignored root `.envrc`, notarizes and staples the
+DMG, checks it with Gatekeeper, and prints its SHA-256 checksum.
 
 ## Measure saved typing and service use
 

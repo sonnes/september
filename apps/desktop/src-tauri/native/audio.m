@@ -20,6 +20,71 @@ static AVAudioEngine *SeptemberKeepaliveEngine = nil;
 static AVAudioPlayer *SeptemberPlayer = nil;
 static AVSpeechSynthesizer *SeptemberSynthesizer = nil;
 
+/// Waits for one voice to finish, and lets a stop end the wait at once.
+@interface SeptemberSpeechRun : NSObject <AVSpeechSynthesizerDelegate,
+                                          AVAudioPlayerDelegate>
+@property(nonatomic, strong) dispatch_semaphore_t done;
+- (void)finish;
+@end
+
+@implementation SeptemberSpeechRun
+
+- (instancetype)init {
+  self = [super init];
+  if (self != nil) {
+    _done = dispatch_semaphore_create(0);
+  }
+  return self;
+}
+
+- (void)finish {
+  dispatch_semaphore_signal(self.done);
+}
+
+- (void)speechSynthesizer:(AVSpeechSynthesizer *)synthesizer
+    didFinishSpeechUtterance:(AVSpeechUtterance *)utterance {
+  [self finish];
+}
+
+- (void)speechSynthesizer:(AVSpeechSynthesizer *)synthesizer
+    didCancelSpeechUtterance:(AVSpeechUtterance *)utterance {
+  [self finish];
+}
+
+- (void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)player
+                       successfully:(BOOL)flag {
+  [self finish];
+}
+
+- (void)audioPlayerDecodeErrorDidOccur:(AVAudioPlayer *)player
+                                 error:(NSError *)error {
+  [self finish];
+}
+
+@end
+
+static SeptemberSpeechRun *SeptemberRun = nil;
+
+/// The lock for the process tap and its aggregate device.
+static NSObject *SeptemberDeviceLock(void) {
+  static NSObject *lock;
+  static dispatch_once_t once;
+  dispatch_once(&once, ^{
+    lock = [NSObject new];
+  });
+  return lock;
+}
+
+/// The lock for the two voices of September.
+static NSObject *SeptemberSpeechLock(void) {
+  static NSObject *lock;
+  static dispatch_once_t once;
+  dispatch_once(&once, ^{
+    lock = [NSObject new];
+  });
+  return lock;
+}
+
 static NSString *AudioKey(const char *key) {
   return [NSString stringWithUTF8String:key];
 }
@@ -156,7 +221,7 @@ bool september_virtual_microphone_status(void) {
 int32_t september_virtual_microphone_start(char *error,
                                            uintptr_t errorCapacity) {
   @autoreleasepool {
-    @synchronized([AVSpeechSynthesizer class]) {
+    @synchronized(SeptemberDeviceLock()) {
       NSString *deviceUID =
           [NSString stringWithUTF8String:SeptemberMicrophoneUID];
       AudioObjectID existing = DeviceWithUID(deviceUID);
@@ -213,7 +278,7 @@ int32_t september_virtual_microphone_start(char *error,
       NSDictionary *aggregate = @{
         AudioKey(kAudioAggregateDeviceNameKey) : @"September Microphone",
         AudioKey(kAudioAggregateDeviceUIDKey) : deviceUID,
-        AudioKey(kAudioAggregateDeviceIsPrivateKey) : @NO,
+        AudioKey(kAudioAggregateDeviceIsPrivateKey) : @0,
       };
 
       status = AudioHardwareCreateAggregateDevice(
@@ -251,7 +316,7 @@ int32_t september_virtual_microphone_start(char *error,
 int32_t september_virtual_microphone_stop(char *error,
                                           uintptr_t errorCapacity) {
   @autoreleasepool {
-    @synchronized([AVSpeechSynthesizer class]) {
+    @synchronized(SeptemberDeviceLock()) {
       OSStatus firstError = noErr;
       NSString *deviceUID =
           [NSString stringWithUTF8String:SeptemberMicrophoneUID];
@@ -283,14 +348,20 @@ void september_speech_stop(void) {
   @autoreleasepool {
     AVAudioPlayer *player = nil;
     AVSpeechSynthesizer *synthesizer = nil;
-    @synchronized([AVAudioPlayer class]) {
+    SeptemberSpeechRun *run = nil;
+    @synchronized(SeptemberSpeechLock()) {
       player = SeptemberPlayer;
       synthesizer = SeptemberSynthesizer;
+      run = SeptemberRun;
       SeptemberPlayer = nil;
       SeptemberSynthesizer = nil;
+      SeptemberRun = nil;
     }
     [player stop];
     [synthesizer stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
+    // `stop` on a player reports nothing, so the waiting thread is released
+    // here instead.
+    [run finish];
   }
 }
 
@@ -318,16 +389,18 @@ int32_t september_speech_system(const char *words, const char *voiceIdentifier,
       }
     }
 
-    @synchronized([AVAudioPlayer class]) {
+    SeptemberSpeechRun *run = [SeptemberSpeechRun new];
+    synthesizer.delegate = run;
+    @synchronized(SeptemberSpeechLock()) {
       SeptemberSynthesizer = synthesizer;
+      SeptemberRun = run;
     }
     [synthesizer speakUtterance:utterance];
-    while (synthesizer.isSpeaking) {
-      [NSThread sleepForTimeInterval:0.02];
-    }
-    @synchronized([AVAudioPlayer class]) {
+    dispatch_semaphore_wait(run.done, DISPATCH_TIME_FOREVER);
+    @synchronized(SeptemberSpeechLock()) {
       if (SeptemberSynthesizer == synthesizer) {
         SeptemberSynthesizer = nil;
+        SeptemberRun = nil;
       }
     }
     return 0;
@@ -353,20 +426,30 @@ int32_t september_speech_file(const char *path, char *error,
                      ?: @"the voice file did not open");
       return -1;
     }
+    SeptemberSpeechRun *run = [SeptemberSpeechRun new];
+    player.delegate = run;
+    // The player is reachable before it starts, so a stop that arrives while
+    // it opens still ends the sound.
+    @synchronized(SeptemberSpeechLock()) {
+      SeptemberPlayer = player;
+      SeptemberRun = run;
+    }
     if (![player prepareToPlay] || ![player play]) {
+      @synchronized(SeptemberSpeechLock()) {
+        if (SeptemberPlayer == player) {
+          SeptemberPlayer = nil;
+          SeptemberRun = nil;
+        }
+      }
       WriteError(error, errorCapacity, @"the voice file did not play");
       return -1;
     }
 
-    @synchronized([AVAudioPlayer class]) {
-      SeptemberPlayer = player;
-    }
-    while (player.isPlaying) {
-      [NSThread sleepForTimeInterval:0.02];
-    }
-    @synchronized([AVAudioPlayer class]) {
+    dispatch_semaphore_wait(run.done, DISPATCH_TIME_FOREVER);
+    @synchronized(SeptemberSpeechLock()) {
       if (SeptemberPlayer == player) {
         SeptemberPlayer = nil;
+        SeptemberRun = nil;
       }
     }
     return 0;

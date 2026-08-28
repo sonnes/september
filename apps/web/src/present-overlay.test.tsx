@@ -14,7 +14,6 @@ const platform = vi.hoisted(() => ({
   stopSpeaking: vi.fn(),
   currentPresent: vi.fn(() => ({ tone: 'indigo' as const, spoken: false })),
   rememberPresent: vi.fn(async () => undefined),
-  updateVirtualCameraOverlay: vi.fn(async () => undefined),
   recordPresentUsage: vi.fn(async () => undefined),
 }));
 
@@ -25,7 +24,6 @@ vi.mock('@platform/services/speech', () => ({
 vi.mock('@platform/services/os', () => ({
   currentPresent: platform.currentPresent,
   rememberPresent: platform.rememberPresent,
-  updateVirtualCameraOverlay: platform.updateVirtualCameraOverlay,
 }));
 vi.mock('@platform/services/usage', () => ({
   recordPresentUsage: platform.recordPresentUsage,
@@ -143,23 +141,6 @@ describe('the present overlay', () => {
       tone: 'cream',
       spoken: false,
     });
-  });
-
-  it('gives the camera the chunk, and clears it when the story ends', () => {
-    render(<PresentOverlay content={NOTE} onClose={() => {}} />);
-    expect(platform.updateVirtualCameraOverlay).toHaveBeenLastCalledWith('Maya', true);
-
-    press('ArrowRight');
-    expect(platform.updateVirtualCameraOverlay).toHaveBeenLastCalledWith(
-      'We met in June.',
-      true
-    );
-
-    act(() => root.unmount());
-    expect(platform.updateVirtualCameraOverlay).toHaveBeenLastCalledWith('', true);
-    // The unmount above is the one this test needs; give the teardown a root
-    // it can safely unmount again.
-    root = createRoot(container);
   });
 
   it('counts the story once, however long it runs', () => {

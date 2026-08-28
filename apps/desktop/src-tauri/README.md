@@ -308,9 +308,9 @@ aggregate input. It contains one mono process tap for September audio.
 
 | Command | Request | Response |
 | --- | --- | --- |
-| `virtual_microphone_status` | none | `{ active, name, uid }` |
-| `virtual_microphone_start` | none | `{ active, name, uid }` |
-| `virtual_microphone_stop` | none | `{ active, name, uid }` |
+| `virtual_microphone_status` | none | `{ active, name, uid, detail }` |
+| `virtual_microphone_start` | none | `{ active, name, uid, detail }` |
+| `virtual_microphone_stop` | none | `{ active, name, uid, detail }` |
 
 The microphone starts only after the user enables it. The first start uses the
 `NSAudioCaptureUsageDescription` message from `Info.plist`. The app destroys
@@ -320,39 +320,13 @@ The bridge also removes a stale aggregate device during application startup.
 This cleanup handles an earlier process that ended before normal shutdown.
 The feature requires macOS 26 or later and does not install a system driver.
 
-## Publish the virtual camera
+`virtual_microphone_status` returns a `detail` while the microphone runs. macOS
+publishes no way to read the answer to its audio-recording question, so a
+refused tap is silent and reports nothing. The message names the one setting
+that mends it.
 
-The macOS bundle embeds a Core Media I/O system extension at
-`Contents/Library/SystemExtensions/SeptemberCamera.systemextension`. The host
-activates it through the System Extensions framework.
-
-| Command | Request | Response |
-| --- | --- | --- |
-| `virtual_camera_status` | none | `{ active, pending, name, uid, detail }` |
-| `virtual_camera_start` | none | `{ active, pending, name, uid, detail }` |
-| `virtual_camera_stop` | none | `{ active, pending, name, uid, detail }` |
-| `virtual_camera_overlay` | `{ text, visible }` | none |
-
-The extension captures a physical camera at 1280×720 and 30 frames per second.
-It discards late capture frames and composites with a Metal-backed Core Image
-context into buffers from one `CVPixelBufferPool`.
-
-The overlay command sets one custom Core Media I/O property. The extension
-shapes a new Core Text image when the words change and reuses that image for
-later frames. Video buffers never cross the Tauri command boundary.
-
-The extension also bundles the published `public/logo.svg`. It loads, scales,
-and fades the mark once, then reuses the cached Core Image layer in the
-bottom-left corner of every frame.
-
-The extension starts its `AVCaptureSession` when the first camera client starts
-the source stream. It stops capture when the final client stops the stream.
-
-`scripts/build-camera-extension.mjs` runs the Xcode target before a Tauri bundle
-build. Set `APPLE_TEAM_ID` and `APPLE_SIGNING_IDENTITY` to sign the extension.
-An unsigned build can compile and package the extension, but macOS will not
-activate it. The installed host must reside in `/Applications` and carry the
-system-extension install entitlement.
+Both native voices wait on a delegate callback, not on a clock. `speech_stop`
+releases that wait, because `AVAudioPlayer` reports nothing when it is stopped.
 
 ## Use the apfel API
 

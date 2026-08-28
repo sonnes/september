@@ -29,7 +29,6 @@ const GUIDE_TITLES = [
   "Choose writing help",
   "Connect OpenRouter or ElevenLabs",
   "Speak into FaceTime or Zoom",
-  "Show words through September Camera",
   "Set up the floating keyboard",
   "Grant Accessibility permission",
   "Use the input bar and shortcut panels",
@@ -39,7 +38,7 @@ const GUIDE_TITLES = [
   "Fix missing sound",
   "Restore missing suggestions",
   "Reconnect a service",
-  "Restore the microphone or camera",
+  "Restore the microphone",
   "Make the floating keyboard type",
   "Get more help",
 ];

@@ -22,9 +22,9 @@ const ICONS: Record<PanelTab, LucideIcon> = {
 /**
  * The right rail of a space, and the card it opens.
  *
- * The rail is always there, so the phrases and the voice are one press away
- * in every mode. The card beside it holds the open tab. This is the shape the
- * web app uses.
+ * The rail is always there, so the phrases and the voice are one press away in
+ * every mode. The card beside it holds the open tab. This is the shape the web
+ * app uses.
  */
 export function PanelRail({
   spaceId,

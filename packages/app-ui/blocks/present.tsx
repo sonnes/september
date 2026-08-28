@@ -16,11 +16,7 @@ import {
   type PresentTone,
 } from "@september/core/rules/present";
 import { BrandMark, BrandWordmark } from "@september/app-ui/blocks/brand";
-import {
-  currentPresent,
-  rememberPresent,
-  updateVirtualCameraOverlay,
-} from "@platform/services/os";
+import { currentPresent, rememberPresent } from "@platform/services/os";
 import { speak, stopSpeaking } from "@platform/services/speech";
 import { recordPresentUsage } from "@platform/services/usage";
 
@@ -31,8 +27,8 @@ const PRESENT_SPEAKER = "present";
  * A note on the whole screen, one chunk at a time.
  *
  * This is live communication, not a file: a Mac or an iPad turned to face the
- * room, or a call with September Camera on. It is an overlay and not a route,
- * because the address of the app must stay on the note the user is holding.
+ * room. It is an overlay and not a route, because the address of the app must
+ * stay on the note the user is holding.
  *
  * It needs no setup at all. Without a voice the words simply wait for a press,
  * which is the oldest assistive move there is — big text, and a partner who
@@ -104,21 +100,6 @@ export function PresentOverlay({
       stopSpeaking();
     };
   }, [words, spoken, paused, index, total]);
-
-  // September Camera shows the chunk while the story runs. The extension takes
-  // the words only; a frame never crosses into the WebView.
-  useEffect(() => {
-    void updateVirtualCameraOverlay(words, true).catch(() => undefined);
-  }, [words]);
-
-  useEffect(
-    () => () => {
-      // The Talk draft owns the overlay again. A chunk must not outlive its
-      // story on the camera of a call that is still running.
-      void updateVirtualCameraOverlay("", true).catch(() => undefined);
-    },
-    [],
-  );
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

@@ -50,8 +50,8 @@ export function PlatformSection() {
               Your seat at the video call.
             </h3>
             <p className="text-base leading-relaxed text-zinc-600">
-              September Microphone and September Camera join FaceTime and Zoom. Your typed words are
-              spoken into the call and shown on your camera as captions.
+              September Microphone joins FaceTime and Zoom. Your typed words are spoken directly
+              into the call.
             </p>
             <Points
               points={[

@@ -101,6 +101,28 @@ Start the native keyboard:
 make mac-run
 ```
 
+## Release the desktop app
+
+Store the Apple signing values in the ignored root `.envrc` file:
+
+```sh
+export APPLE_TEAM_ID=...
+export APPLE_SIGNING_IDENTITY=...
+export APPLE_PROVISIONING_PROFILE=...
+export APPLE_API_ISSUER=...
+export APPLE_API_KEY=...
+export APPLE_API_KEY_PATH=...
+```
+
+Create the signed desktop installer from the repository root:
+
+```sh
+make desktop-release
+```
+
+The command builds the app and DMG, submits both to Apple, staples the tickets,
+checks the DMG with Gatekeeper, and prints its path and SHA-256 checksum.
+
 ## Project structure
 
 ```text

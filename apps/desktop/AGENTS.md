@@ -56,12 +56,9 @@ cargo fmt --all -- --check
   microphone, and September must not ask for one to name a speaker.
 - Keep the virtual microphone control in the Talk audio selector beside Speak.
   The selector must remain visible when the Mac has one sound output.
-- Keep the virtual camera control in the same Talk audio selector. The Talk
-  draft owns the camera overlay, except while a presentation runs; then the
-  presented chunk owns it, and closing the stage clears the words again. Notes
-  never pass the text of the editor to it.
-- Keep camera frames inside the Core Media I/O extension. Tauri sends the text
-  property; Rust and the WebView must never relay video buffers.
+- Never put the words of the user in a log. A line carries a count, a device
+  name, or a reason. The sentence in the composer is what they are about to say
+  out loud, and it belongs to them. The same goes for an API key.
 - Write through `Composer` in `packages/app-ui/blocks/space.tsx` in every mode, including
   `/spaces/new`. A second console would leave one mode without the word tiles,
   the codes, or undo, which a user who cannot type depends on. `composerAction`

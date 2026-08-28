@@ -181,7 +181,8 @@ OpenRouter and ElevenLabs calls go directly from the browser. Their keys stay in
 
 CAUTION: Browser scripts on this origin can read these keys. The desktop app gives stronger protection because it stores keys in the macOS Keychain.
 
-Apple Intelligence and the desktop virtual devices are not available in the browser. The interface shows their unavailable state in the desktop UI positions.
+Apple Intelligence and September Microphone are not available in the browser.
+The interface shows their unavailable state in the desktop UI positions.
 
 ## Source layout
 

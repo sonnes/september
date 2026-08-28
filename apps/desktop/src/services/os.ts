@@ -376,6 +376,8 @@ export interface VirtualMicrophoneStatus {
   active: boolean;
   name: string;
   uid: string;
+  /** What to check when a caller hears nothing. */
+  detail: string | null;
 }
 
 /** Whether calling apps can select the September input now. */
@@ -389,29 +391,3 @@ export const startVirtualMicrophone = () =>
 /** Removes the system input. */
 export const stopVirtualMicrophone = () =>
   invoke<VirtualMicrophoneStatus>("virtual_microphone_stop");
-
-// ------------------------------------------------------ show text in calls
-
-export interface VirtualCameraStatus {
-  active: boolean;
-  pending: boolean;
-  name: string;
-  uid: string;
-  detail: string | null;
-}
-
-/** Whether calling apps can select September Camera now. */
-export const virtualCameraStatus = () =>
-  invoke<VirtualCameraStatus>("virtual_camera_status");
-
-/** Asks macOS to activate the camera extension bundled with September. */
-export const startVirtualCamera = () =>
-  invoke<VirtualCameraStatus>("virtual_camera_start");
-
-/** Asks macOS to deactivate the camera extension. */
-export const stopVirtualCamera = () =>
-  invoke<VirtualCameraStatus>("virtual_camera_stop");
-
-/** Sends only text state to the extension. Camera frames stay native. */
-export const updateVirtualCameraOverlay = (text: string, visible = true) =>
-  invoke<void>("virtual_camera_overlay", { request: { text, visible } });

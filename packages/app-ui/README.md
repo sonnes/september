@@ -53,6 +53,10 @@ name rather than squeezing the description, the panel under a service starts at
 the edge of its card, and the primary action takes the whole row. Keep new
 setup work to the same rule.
 
+`blocks/space-panel.tsx` draws the right rail and the card beside it. The tabs
+come from `@september/core/rules/panel`. The rail keeps phrases and speech
+settings one press away in both Talk and Notes.
+
 `blocks/present.tsx` is the one full-screen surface here. It draws over the
 whole viewport instead of inside the shell, because a presentation is for the
 room and not for the person holding the keyboard. It stays a block and not a

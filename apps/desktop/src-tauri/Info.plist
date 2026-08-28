@@ -6,9 +6,5 @@
   <string>September uses the microphone to record voice samples and transcribe speech.</string>
   <key>NSAudioCaptureUsageDescription</key>
   <string>September sends spoken messages to calling apps such as FaceTime.</string>
-  <key>NSCameraUsageDescription</key>
-  <string>September adds the current Talk text to your camera feed.</string>
-  <key>NSSystemExtensionUsageDescription</key>
-  <string>September publishes a camera with the current Talk text for calling apps such as FaceTime.</string>
 </dict>
 </plist>

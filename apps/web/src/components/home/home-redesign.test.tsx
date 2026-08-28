@@ -544,7 +544,8 @@ describe('platform section', () => {
     expect(container.textContent).toContain('In your browser today. On your Mac for calls.');
     expect(container.textContent).toContain('Start now — nothing to install.');
     expect(container.textContent).toContain('Your seat at the video call.');
-    expect(container.textContent).toContain('September Microphone and September Camera');
+    expect(container.textContent).toContain('September Microphone');
+    expect(container.textContent).not.toContain('September Camera');
     expect(container.textContent).toContain('Apple Intelligence');
     expect(container.textContent).toContain('macOS Keychain');
     expect(container.textContent).toContain('Coming soon');
