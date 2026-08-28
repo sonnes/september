@@ -39,6 +39,7 @@ import {
 } from "@september/app-ui/pages/settings";
 import { UsageSettings } from "@september/app-ui/pages/usage";
 import { isConnectionId } from "@/rules/settings-nav";
+import { EyeTracker } from "@/eye-tracker";
 import { NewSpaceScreen, SpacesScreen } from "@september/app-ui/pages/spaces";
 import { TalkScreen } from "@september/app-ui/pages/talk";
 import { VoiceCloneScreen, VoiceScreen } from "@september/app-ui/pages/voice";
@@ -180,6 +181,11 @@ const guardedAppRoute = appRoute.addChildren([
     getParentRoute: () => appRoute,
     path: "/voice/clone",
     component: VoiceCloneScreen,
+  }),
+  createRoute({
+    getParentRoute: () => appRoute,
+    path: "/eyetracker",
+    component: EyeTracker,
   }),
   settingsRoute.addChildren([
     createRoute({

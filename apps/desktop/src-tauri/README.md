@@ -328,6 +328,32 @@ that mends it.
 Both native voices wait on a delegate callback, not on a clock. `speech_stop`
 releases that wait, because `AVAudioPlayer` reports nothing when it is stopped.
 
+## Stream the eye-tracker test bed
+
+The optional `/eyetracker` test bed captures 1280×720 frames through
+AVFoundation and asks Apple Vision for one face, both eye outlines, and both
+pupils. Rust converts each pupil into its eye-relative position, rejects closed
+or low-confidence eyes, and applies a small low-pass filter. Late frames are
+discarded, and analysis is limited to about 15 frames per second. Rust pads the
+detected face box into a 16:9 crop and smooths crop movement before it makes the
+preview.
+
+| Command | Request | Response |
+| --- | --- | --- |
+| `gaze_start` | `{ onEvent: Channel<GazeEvent> }` | none |
+| `gaze_stop` | none | none |
+
+The channel receives status events and a 320-pixel-wide RGBA face crop at no
+more than five frames per second. Each frame includes the current smoothed
+point when both eyes are valid. The WebView takes median samples at four box
+corners and fits one linear mapping for each axis. It clips the mapped point to
+the camera box. It does not convert it to a window or operating-system pointer.
+
+Neither side saves the preview, point, or calibration. `gaze_stop` joins the
+capture thread. Leaving the page and application exit use the same stop path.
+The app requests camera access only after `gaze_start`; `Info.plist` explains
+the use and the signed app has the camera entitlement.
+
 ## Use the apfel API
 
 `apfel_status` and `apfel_generate` start the sidecar when the first command

@@ -29,6 +29,11 @@ export const APP_NAV = [
     description: "Who speaks, which voice, and one you make yourself.",
   },
   {
+    path: "/eyetracker",
+    title: "Eye tracker",
+    description: "Test eye tracking inside the camera box.",
+  },
+  {
     path: "/help",
     title: "Help",
     description: "How September works, and who to ask.",
@@ -74,6 +79,7 @@ export function windowTitle(pathname: string): string {
   else if (/^\/spaces\/[^/]+\/talk$/.test(path)) page = "Talk";
   else if (/^\/spaces\/[^/]+\/notes(?:\/[^/]+)?$/.test(path)) page = "Notes";
   else if (path === "/voice/clone") page = "Clone your voice";
+  else if (path === "/eyetracker") page = "Eye tracker";
 
   return page ? `${APP_NAME} — ${page}` : APP_NAME;
 }

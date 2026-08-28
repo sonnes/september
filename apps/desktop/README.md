@@ -824,6 +824,20 @@ pnpm apfel:prepare
 On unsupported systems, September starts without the sidecar. The Rust status
 command reports that the local provider is unsupported.
 
+## Try the eye tracker
+
+Select **Eye tracker** in the sidebar. Press **Start camera** to see one camera
+box zoomed around your face. When September finds both eyes, press
+**Calibrate**. Look at each of the four dots until it moves to the next corner.
+The indigo pointer appears after calibration. It is clipped to the box, cannot
+press controls, and does not appear on any other page.
+
+AVFoundation and Apple Vision run through Rust. The WebView receives a
+320-pixel in-memory face crop, a smoothed eye-relative point, and tracker
+status only while the test bed runs. Four calibration samples map that point to
+the box. September saves none of them. Press **Stop camera**, or leave the
+page, to stop capture and clear calibration.
+
 ## Check the UI
 
 ```sh

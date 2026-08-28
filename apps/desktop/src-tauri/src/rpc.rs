@@ -15,6 +15,7 @@ use tauri::{
 use crate::{
     apfel::{ApfelGenerateRequest, ApfelGeneration, ApfelState, ApfelStatus},
     audio::{self, AudioDevice, VirtualMicrophoneStatus},
+    gaze::GazeState,
     providers::{
         CreatedVoice, ElevenLabsQuota, Model, Provider, ProviderKeys, ProviderStatus, Providers,
         Voice, WritingModel,
@@ -141,6 +142,7 @@ pub(crate) fn setup(app: &mut tauri::App) -> std::result::Result<(), Box<dyn std
     });
     app.manage(provider_keys);
     app.manage(ApfelState::default());
+    app.manage(GazeState::default());
     Ok(())
 }
 

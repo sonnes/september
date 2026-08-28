@@ -47,6 +47,9 @@ screen wide enough. The progress list is one `<ol>` in both shapes, so no step
 is announced twice, and each step link keeps its name when its label is
 hidden.
 
+`layouts/app.tsx` draws each platform's `APP_NAV` destinations. Every path has
+a matching Lucide icon in the layout, including desktop-only destinations.
+
 `pages/steps.tsx` lays a step out for 320px first. Anything that would overflow
 that width carries a breakpoint prefix, so a service status drops under the
 name rather than squeezing the description, the panel under a service starts at

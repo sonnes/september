@@ -1,6 +1,7 @@
 pub mod apfel;
 pub mod audio;
 pub mod error;
+pub mod gaze;
 pub mod providers;
 pub mod repository;
 pub mod speech;
@@ -57,13 +58,17 @@ pub fn run() {
             rpc::virtual_microphone_status,
             rpc::virtual_microphone_start,
             rpc::virtual_microphone_stop,
+            gaze::gaze_start,
+            gaze::gaze_stop,
         ])
         .build(tauri::generate_context!())
         .expect("error while building September desktop")
-        .run(|_, event| {
+        .run(|app, event| {
             if matches!(event, tauri::RunEvent::Exit) {
                 audio::stop_speech();
                 let _ = audio::virtual_microphone_stop();
+                use tauri::Manager;
+                let _ = app.state::<gaze::GazeState>().stop();
             }
         });
 }

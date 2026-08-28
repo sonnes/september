@@ -203,7 +203,8 @@ test("the macOS bundle declares its recording privacy reasons", async () => {
 
   assert.match(plist, /NSMicrophoneUsageDescription/);
   assert.match(plist, /NSAudioCaptureUsageDescription/);
-  assert.doesNotMatch(plist, /NSCameraUsageDescription/);
+  assert.match(plist, /NSCameraUsageDescription/);
+  assert.match(plist, /point at controls with your eyes/);
 });
 
 test("the UI builds with Tailwind and the router", async () => {
@@ -494,6 +495,17 @@ test("every app destination has a route and an icon", async () => {
     assert.match(main, new RegExp(`"${item.path}"`), `${item.path} needs a route`);
     assert.match(shell, new RegExp(`"${item.path}":`), `${item.path} needs an icon`);
   }
+});
+
+test("the Eye tracker test bed is in the app sidebar", () => {
+  assert.deepEqual(
+    APP_NAV.find((item) => item.path === "/eyetracker"),
+    {
+      path: "/eyetracker",
+      title: "Eye tracker",
+      description: "Test eye tracking inside the camera box.",
+    },
+  );
 });
 
 test("Help has matching home and guide routes outside the setup guard", async () => {
@@ -916,7 +928,7 @@ test("the native voices wait on a callback, not on a clock", async () => {
   assert.match(native, /kAudioAggregateDeviceIsPrivateKey\) : @0/);
 });
 
-test("the desktop app has no virtual camera", async () => {
+test("eye control uses the camera without reinstalling a virtual camera", async () => {
   const sources = await Promise.all([
     readText("src/services/os.ts"),
     readText("../web/src/services/os.ts"),
@@ -950,11 +962,10 @@ test("the desktop app has no virtual camera", async () => {
 
   const plist = await readText("src-tauri/Info.plist");
   const entitlements = await readText("src-tauri/September.entitlements");
-  assert.doesNotMatch(plist, /NSCameraUsageDescription|NSSystemExtensionUsageDescription/);
-  assert.doesNotMatch(
-    entitlements,
-    /com\.apple\.security\.device\.camera|com\.apple\.developer\.system-extension\.install/,
-  );
+  assert.match(plist, /NSCameraUsageDescription/);
+  assert.doesNotMatch(plist, /NSSystemExtensionUsageDescription/);
+  assert.match(entitlements, /com\.apple\.security\.device\.camera/);
+  assert.doesNotMatch(entitlements, /com\.apple\.developer\.system-extension\.install/);
 
   for (const path of [
     "scripts/build-camera-extension.mjs",
@@ -965,6 +976,37 @@ test("the desktop app has no virtual camera", async () => {
   ]) {
     await assert.rejects(() => readText(path), { code: "ENOENT" });
   }
+});
+
+test("eye tracking exists only in one camera-box test bed", async () => {
+  const main = await readText("src/main.tsx");
+  const page = await readText("src/eye-tracker.tsx");
+  const service = await readText("src/services/gaze.ts");
+  const gaze = await readText("src-tauri/src/gaze.rs");
+  const manifest = await readText("src-tauri/Cargo.toml");
+
+  assert.match(main, /"\/eyetracker"/);
+  assert.match(main, /EyeTracker/);
+  assert.doesNotMatch(main, /GazePointer|EyeControlLayer|debug\/eye-control/);
+  assert.match(page, /Camera feed/);
+  assert.match(page, /data-testid="eye-pointer"/);
+  assert.match(page, /overflow-hidden/);
+  assert.match(page, /stopGaze/);
+  assert.match(page, /Calibrate/);
+  assert.match(page, /calibrationPoints/);
+  assert.match(gaze, /face_crop/);
+  assert.doesNotMatch(page, /Tracking log|\.click\(|localStorage|sessionStorage/i);
+  assert.match(service, /new Channel<GazeEvent>/);
+  for (const command of ["gaze_start", "gaze_stop"]) {
+    assert.match(service, new RegExp(command));
+    assert.match(gaze, new RegExp(command));
+  }
+  assert.doesNotMatch(
+    `${service}\n${gaze}`,
+    /gaze_calibration|DebugFrame|event: "sample"|GazeEvent::Sample/,
+  );
+  assert.match(manifest, /cidre/);
+  assert.doesNotMatch(`${service}\n${gaze}\n${manifest}`, /enigo|mouse_move|MouseControllable/);
 });
 test("a Developer ID build embeds the host provisioning profile", async () => {
   const config = await readJson("src-tauri/tauri.conf.json");

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import {
   CircleHelp,
+  Eye,
   House,
   MessageSquare,
   Mic,
@@ -27,12 +28,23 @@ import { APP_NAV, isCompactWidth, type AppPath } from "@platform/rules/app-nav";
 import { BrandMark, BrandWordmark } from "@september/app-ui/blocks/brand";
 import { RightPanelSlot } from "@september/app-ui/blocks/screen";
 
-const ICONS: Record<AppPath, LucideIcon> = {
+const COMMON_ICONS: Record<Exclude<AppPath, "/eyetracker">, LucideIcon> = {
   "/dashboard": House,
   "/spaces": MessageSquare,
   "/voice": Mic,
   "/help": CircleHelp,
   "/settings": Settings2,
+};
+
+const DESKTOP_ICONS: Record<"/eyetracker", LucideIcon> = {
+  "/eyetracker": Eye,
+};
+
+// Desktop has one native-only destination. Spreading its icon keeps this
+// shared layout exhaustive for both platform route unions.
+const ICONS: Record<AppPath, LucideIcon> = {
+  ...COMMON_ICONS,
+  ...DESKTOP_ICONS,
 };
 
 /** True at or below the base design viewport, where the sidebar is a rail. */

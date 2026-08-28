@@ -364,6 +364,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "cidre"
+version = "0.22.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31470ed932ba5f701eff2d33b972d93ff359d1e4b68b05e76144f5db371beecd"
+dependencies = [
+ "cc",
+ "cidre-macros",
+]
+
+[[package]]
+name = "cidre-macros"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d044c179ef39cc22233fc3f2f7e51021ee410c754e5c322049420f92898bcbea"
+
+[[package]]
 name = "cmake"
 version = "0.1.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3148,7 +3164,9 @@ dependencies = [
 name = "september-desktop"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "cc",
+ "cidre",
  "keyring",
  "reqwest",
  "rusqlite",
