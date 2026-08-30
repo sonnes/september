@@ -28,6 +28,10 @@ has a stable slug, category, action title, outcome, search keywords, platform
 labels, prerequisites, numbered steps, expected result, recovery guidance,
 related guide slugs, and optional media metadata.
 
+The privacy category includes a backup and restore guide. It tells the reader
+that the file is not encrypted, keys are excluded, and restore replaces the
+current portable data.
+
 The platform labels are **Browser**, **Mac app**, and **Mac keyboard**. The Help
 home shows all applicable guides instead of hiding another platform's
 instructions. Related links and search operate on the same catalog.

@@ -34,6 +34,7 @@ const GUIDE_TITLES = [
   "Use the input bar and shortcut panels",
   "Understand what stays on the device",
   "Understand what connected services receive",
+  "Back up or restore your data",
   "Review typing saved and service use",
   "Fix missing sound",
   "Restore missing suggestions",
@@ -145,6 +146,16 @@ describe("the Help information architecture", () => {
     expect(helpGuide("set-up-the-floating-keyboard")?.steps).toContain(
       "If the permission banner appears, choose Open Settings.",
     );
+  });
+
+  it("warns before a backup replaces local data", () => {
+    const guide = helpGuide("back-up-or-restore-your-data");
+    const text = [guide?.summary, ...(guide?.steps ?? []), guide?.recovery].join(" ");
+
+    expect(guide?.platforms).toEqual(["browser", "mac-app"]);
+    expect(text).toMatch(/API keys are not included/);
+    expect(text).toMatch(/replaces your current settings and data/);
+    expect(guide?.steps).toContain("Open Settings, then open Data.");
   });
 });
 

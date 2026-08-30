@@ -17,7 +17,7 @@ and the services that connect that UI to macOS.
 | `packages/app-ui/layouts/`  | `onboarding.tsx`, `app.tsx`, `settings.tsx`    | The component renders an `<Outlet/>`.           |
 | `packages/app-ui/pages/`    | Route screens: `steps` `dashboard` `spaces` `talk` `notes` `voice` `settings` `usage` | A `createRoute` call in `src/main.tsx` names it. |
 | `packages/app-ui/blocks/`   | `screen` `space` `services` `space-panel` `phrase-panel` `speech-settings` `pick-list` `suggestions` `usage` `brand` | Two or more pages or layouts use it. |
-| `src/services/` | `os` `data` `ai` `speech` `cloning` `player` `phrase-sync` `suggest` `usage` | It speaks to Rust, the platform, or a cloud service. |
+| `src/services/` | `os` `data` `backup` `ai` `speech` `cloning` `player` `phrase-sync` `suggest` `usage` | It speaks to Rust, the platform, or a cloud service. |
 | `packages/core/` | autocomplete and platform-independent rules | Both web and desktop import the same implementation. |
 | `packages/ui/` | Tailwind theme and shadcn primitives | A token or primitive has one source. |
 | `src/rules/`    | `app-nav` `settings-nav` `onboarding` and core compatibility exports | Platform route rules stay local. |
@@ -34,7 +34,7 @@ never wears the app sidebar, and an app screen never wears the setup sidebar.
 | Layout      | Component                     | Routes                                             |
 | ----------- | ----------------------------- | -------------------------------------------------- |
 | Setup       | `OnboardingLayout`, `packages/app-ui/layouts/onboarding.tsx` | `/welcome` `/profile` `/mode` `/connect` `/finish`  |
-| Application | `AppShell`, `packages/app-ui/layouts/app.tsx` | `/dashboard` `/spaces` `/spaces/$slug/talk` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/voice` `/voice/clone` `/help` `/help/$guideSlug` `/settings` `/settings/writing` `/settings/usage` `/settings/connections/$provider` |
+| Application | `AppShell`, `packages/app-ui/layouts/app.tsx` | `/dashboard` `/spaces` `/spaces/$slug/talk` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/voice` `/voice/clone` `/help` `/help/$guideSlug` `/settings` `/settings/writing` `/settings/usage` `/settings/data` `/settings/connections/$provider` |
 
 `AppShell` is the shadcn `Sidebar` and `SidebarInset` pair: a solid indigo
 sidebar beside a white inset card. `src/rules/app-nav.ts` lists the destinations
@@ -210,8 +210,9 @@ changes only the fields it is given, in one statement.
 ### Where the sound comes out
 
 The audio selector beside Speak lists every output of this Mac. It moves both
-voices to the output the user chooses. The Mac remembers the choice, and
-September keeps no copy that could disagree.
+voices to the output the user chooses without changing the macOS sound output.
+September keeps the device UID in its SQLite settings. If that device is not
+connected, September follows the current macOS output until it returns.
 
 The selector also controls `September Microphone` for calling apps. It remains
 visible on a Mac with one output so the microphone control stays available.
@@ -219,7 +220,9 @@ visible on a Mac with one output so the microphone control stays available.
 `src-tauri/src/audio.rs` reads the outputs from CoreAudio. The browser cannot
 do this job: WKWebView holds `setSinkId`, but `navigator.mediaDevices` lists no
 output device until the user grants the microphone, and September must not ask
-for a microphone to name a speaker.
+for a microphone to name a speaker. Native system speech and cloud-voice files
+both pass through a September-owned `AVAudioEngine`. Its output audio unit uses
+the chosen device without writing the system default.
 
 ## Write a note
 
@@ -715,6 +718,7 @@ section list beside the open section, ported from the web app.
 | Setup | `/settings` | The state of each service, its key, and its model |
 | Writing help | `/settings/writing` | Who writes, and what the model knows about you |
 | Usage | `/settings/usage` | Typing saved, service use, quota, recent calls, and CSV |
+| Data | `/settings/data` | A portable backup download and restore |
 
 Listening still needs a transcription backend, and Account needs an account.
 The service and the voices keep their own screen, `/voice`, in both apps. The
@@ -723,6 +727,18 @@ model and the sound moved to the rail of a space.
 `src/rules/settings-nav.ts` holds the rules that a test can read: the sections, the
 open section, and the guide for each cloud service. `packages/app-ui/layouts/settings.tsx`
 holds the section list, and `packages/app-ui/pages/settings.tsx` holds the screens.
+
+The Data section downloads the portable settings and every domain row as one
+JSON file. It does not include Keychain keys, the selected audio output, cached
+audio paths, or internal state. Import validates the complete file, previews
+its counts, and replaces the portable SQLite rows in one transaction. A file
+from the browser app uses the same format.
+
+Older setup values can have no owner ID. Export uses the current Mac login
+name in the backup and keeps the stored setup value unchanged.
+
+Older panel settings can name the retired Camera tab. Export and import change
+this tab to Phrases. Other unsupported panel tabs remain invalid.
 
 A press on **Set up** opens `/settings/connections/openrouter` or
 `/settings/connections/elevenlabs`. The page gives the steps, takes the key,

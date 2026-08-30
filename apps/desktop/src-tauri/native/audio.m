@@ -1,4 +1,5 @@
 #import <AVFoundation/AVFoundation.h>
+#import <AudioToolbox/AudioToolbox.h>
 #import <CoreAudio/AudioHardwareTapping.h>
 #import <CoreAudio/CATapDescription.h>
 #import <CoreAudio/CoreAudio.h>
@@ -17,14 +18,24 @@ static const char *SeptemberMicrophoneUID =
 static AudioObjectID SeptemberTapID = kAudioObjectUnknown;
 static AudioObjectID SeptemberAggregateID = kAudioObjectUnknown;
 static AVAudioEngine *SeptemberKeepaliveEngine = nil;
-static AVAudioPlayer *SeptemberPlayer = nil;
+static AVAudioEngine *SeptemberSpeechEngine = nil;
+static AVAudioPlayerNode *SeptemberSpeechNode = nil;
 static AVSpeechSynthesizer *SeptemberSynthesizer = nil;
 
 /// Waits for one voice to finish, and lets a stop end the wait at once.
-@interface SeptemberSpeechRun : NSObject <AVSpeechSynthesizerDelegate,
-                                          AVAudioPlayerDelegate>
+@interface SeptemberSpeechRun : NSObject
 @property(nonatomic, strong) dispatch_semaphore_t done;
+@property(atomic) BOOL cancelled;
+@property(nonatomic, copy) NSString *error;
+@property(nonatomic) NSInteger pendingBuffers;
+@property(nonatomic) BOOL synthesisFinished;
+@property(nonatomic) BOOL finished;
 - (void)finish;
+- (void)cancel;
+- (void)fail:(NSString *)message;
+- (void)scheduledBuffer;
+- (void)playedBuffer;
+- (void)finishedSynthesis;
 @end
 
 @implementation SeptemberSpeechRun
@@ -38,27 +49,55 @@ static AVSpeechSynthesizer *SeptemberSynthesizer = nil;
 }
 
 - (void)finish {
-  dispatch_semaphore_signal(self.done);
+  @synchronized(self) {
+    if (self.finished) {
+      return;
+    }
+    self.finished = YES;
+    dispatch_semaphore_signal(self.done);
+  }
 }
 
-- (void)speechSynthesizer:(AVSpeechSynthesizer *)synthesizer
-    didFinishSpeechUtterance:(AVSpeechUtterance *)utterance {
+- (void)cancel {
+  self.cancelled = YES;
   [self finish];
 }
 
-- (void)speechSynthesizer:(AVSpeechSynthesizer *)synthesizer
-    didCancelSpeechUtterance:(AVSpeechUtterance *)utterance {
+- (void)fail:(NSString *)message {
+  @synchronized(self) {
+    if (self.error == nil) {
+      self.error = message;
+    }
+  }
   [self finish];
 }
 
-- (void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)player
-                       successfully:(BOOL)flag {
-  [self finish];
+- (void)scheduledBuffer {
+  @synchronized(self) {
+    self.pendingBuffers += 1;
+  }
 }
 
-- (void)audioPlayerDecodeErrorDidOccur:(AVAudioPlayer *)player
-                                 error:(NSError *)error {
-  [self finish];
+- (void)playedBuffer {
+  BOOL complete = NO;
+  @synchronized(self) {
+    self.pendingBuffers -= 1;
+    complete = self.synthesisFinished && self.pendingBuffers == 0;
+  }
+  if (complete) {
+    [self finish];
+  }
+}
+
+- (void)finishedSynthesis {
+  BOOL complete = NO;
+  @synchronized(self) {
+    self.synthesisFinished = YES;
+    complete = self.pendingBuffers == 0;
+  }
+  if (complete) {
+    [self finish];
+  }
 }
 
 @end
@@ -159,6 +198,92 @@ static AudioObjectID DeviceWithUID(NSString *wanted) {
 
   free(listed);
   return found;
+}
+
+/// Points one September-owned engine at a device without changing macOS.
+static BOOL RouteEngine(AVAudioEngine *engine, NSString *deviceUID, char *error,
+                        uintptr_t errorCapacity) {
+  AudioObjectID device = DeviceWithUID(deviceUID);
+  if (device == kAudioObjectUnknown) {
+    WriteError(error, errorCapacity,
+               [NSString stringWithFormat:@"this Mac has no output called %@",
+                                          deviceUID]);
+    return NO;
+  }
+
+  AudioUnit output = engine.outputNode.audioUnit;
+  if (output == NULL) {
+    WriteError(error, errorCapacity,
+               @"the sound system did not provide an output unit");
+    return NO;
+  }
+  OSStatus status = AudioUnitSetProperty(
+      output, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0,
+      &device, sizeof(device));
+  if (status != noErr) {
+    WriteStatus(error, errorCapacity, @"route September to that output",
+                status);
+    return NO;
+  }
+  return YES;
+}
+
+int32_t september_audio_output_prepare(const char *uid, char *error,
+                                       uintptr_t errorCapacity) {
+  @autoreleasepool {
+    if (uid == NULL || strlen(uid) == 0) {
+      WriteError(error, errorCapacity, @"the sound output has no identifier");
+      return -1;
+    }
+    AVAudioEngine *engine = [[AVAudioEngine alloc] init];
+    NSString *deviceUID = [NSString stringWithUTF8String:uid];
+    return RouteEngine(engine, deviceUID, error, errorCapacity) ? 0 : -1;
+  }
+}
+
+static BOOL CreateSpeechEngine(const char *uid, AVAudioEngine **engineResult,
+                               AVAudioPlayerNode **nodeResult, char *error,
+                               uintptr_t errorCapacity) {
+  if (uid == NULL || strlen(uid) == 0) {
+    WriteError(error, errorCapacity, @"the sound output has no identifier");
+    return NO;
+  }
+
+  AVAudioEngine *engine = [[AVAudioEngine alloc] init];
+  NSString *deviceUID = [NSString stringWithUTF8String:uid];
+  if (!RouteEngine(engine, deviceUID, error, errorCapacity)) {
+    return NO;
+  }
+
+  AVAudioPlayerNode *node = [[AVAudioPlayerNode alloc] init];
+  [engine attachNode:node];
+  *engineResult = engine;
+  *nodeResult = node;
+  return YES;
+}
+
+static BOOL StartSpeechEngine(AVAudioEngine *engine, AVAudioPlayerNode *node,
+                              SeptemberSpeechRun *run) {
+  [engine prepare];
+  NSError *engineError = nil;
+  if (![engine startAndReturnError:&engineError]) {
+    [run fail:engineError.localizedDescription
+                  ?: @"the September audio engine did not start"];
+    return NO;
+  }
+  [node play];
+  return YES;
+}
+
+static void ClearSpeech(SeptemberSpeechRun *run) {
+  @synchronized(SeptemberSpeechLock()) {
+    if (SeptemberRun == run) {
+      SeptemberSpeechEngine = nil;
+      SeptemberSpeechNode = nil;
+      SeptemberSynthesizer = nil;
+      SeptemberRun = nil;
+    }
+  }
 }
 
 static AudioObjectID CurrentProcessObject(void) {
@@ -346,27 +471,29 @@ int32_t september_virtual_microphone_stop(char *error,
 
 void september_speech_stop(void) {
   @autoreleasepool {
-    AVAudioPlayer *player = nil;
+    AVAudioEngine *engine = nil;
+    AVAudioPlayerNode *node = nil;
     AVSpeechSynthesizer *synthesizer = nil;
     SeptemberSpeechRun *run = nil;
     @synchronized(SeptemberSpeechLock()) {
-      player = SeptemberPlayer;
+      engine = SeptemberSpeechEngine;
+      node = SeptemberSpeechNode;
       synthesizer = SeptemberSynthesizer;
       run = SeptemberRun;
-      SeptemberPlayer = nil;
+      SeptemberSpeechEngine = nil;
+      SeptemberSpeechNode = nil;
       SeptemberSynthesizer = nil;
       SeptemberRun = nil;
     }
-    [player stop];
+    [node stop];
+    [engine stop];
     [synthesizer stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
-    // `stop` on a player reports nothing, so the waiting thread is released
-    // here instead.
-    [run finish];
+    [run cancel];
   }
 }
 
 int32_t september_speech_system(const char *words, const char *voiceIdentifier,
-                                float speed, char *error,
+                                float speed, const char *outputUID, char *error,
                                 uintptr_t errorCapacity) {
   @autoreleasepool {
     if (words == NULL || strlen(words) == 0) {
@@ -375,6 +502,11 @@ int32_t september_speech_system(const char *words, const char *voiceIdentifier,
     }
 
     september_speech_stop();
+    AVAudioEngine *engine = nil;
+    AVAudioPlayerNode *node = nil;
+    if (!CreateSpeechEngine(outputUID, &engine, &node, error, errorCapacity)) {
+      return -1;
+    }
     AVSpeechSynthesizer *synthesizer = [[AVSpeechSynthesizer alloc] init];
     AVSpeechUtterance *utterance = [[AVSpeechUtterance alloc]
         initWithString:[NSString stringWithUTF8String:words]];
@@ -390,24 +522,62 @@ int32_t september_speech_system(const char *words, const char *voiceIdentifier,
     }
 
     SeptemberSpeechRun *run = [SeptemberSpeechRun new];
-    synthesizer.delegate = run;
     @synchronized(SeptemberSpeechLock()) {
+      SeptemberSpeechEngine = engine;
+      SeptemberSpeechNode = node;
       SeptemberSynthesizer = synthesizer;
       SeptemberRun = run;
     }
-    [synthesizer speakUtterance:utterance];
+
+    __block BOOL started = NO;
+    [synthesizer
+        writeUtterance:utterance
+       toBufferCallback:^(AVAudioBuffer *buffer) {
+         if (run.cancelled) {
+           return;
+         }
+         AVAudioPCMBuffer *audio = (AVAudioPCMBuffer *)buffer;
+         if (audio.frameLength == 0) {
+           [run finishedSynthesis];
+           return;
+         }
+
+         @synchronized(run) {
+           if (run.cancelled || run.finished) {
+             return;
+           }
+           if (!started) {
+             [engine connect:node
+                           to:engine.mainMixerNode
+                       format:audio.format];
+           }
+           [run scheduledBuffer];
+           [node scheduleBuffer:audio
+               completionCallbackType:AVAudioPlayerNodeCompletionDataPlayedBack
+                    completionHandler:^(
+                        AVAudioPlayerNodeCompletionCallbackType callbackType) {
+                      (void)callbackType;
+                      [run playedBuffer];
+                    }];
+           if (!started) {
+             started = StartSpeechEngine(engine, node, run);
+           }
+         }
+       }];
     dispatch_semaphore_wait(run.done, DISPATCH_TIME_FOREVER);
-    @synchronized(SeptemberSpeechLock()) {
-      if (SeptemberSynthesizer == synthesizer) {
-        SeptemberSynthesizer = nil;
-        SeptemberRun = nil;
-      }
+    [node stop];
+    [engine stop];
+    ClearSpeech(run);
+    if (run.error != nil) {
+      WriteError(error, errorCapacity, run.error);
+      return -1;
     }
     return 0;
   }
 }
 
-int32_t september_speech_file(const char *path, char *error,
+int32_t september_speech_file(const char *path, const char *outputUID,
+                              char *error,
                               uintptr_t errorCapacity) {
   @autoreleasepool {
     if (path == NULL || strlen(path) == 0) {
@@ -417,40 +587,46 @@ int32_t september_speech_file(const char *path, char *error,
 
     september_speech_stop();
     NSURL *url = [NSURL fileURLWithPath:[NSString stringWithUTF8String:path]];
-    NSError *playerError = nil;
-    AVAudioPlayer *player =
-        [[AVAudioPlayer alloc] initWithContentsOfURL:url error:&playerError];
-    if (player == nil) {
+    NSError *fileError = nil;
+    AVAudioFile *file = [[AVAudioFile alloc] initForReading:url error:&fileError];
+    if (file == nil) {
       WriteError(error, errorCapacity,
-                 playerError.localizedDescription
+                 fileError.localizedDescription
                      ?: @"the voice file did not open");
       return -1;
     }
-    SeptemberSpeechRun *run = [SeptemberSpeechRun new];
-    player.delegate = run;
-    // The player is reachable before it starts, so a stop that arrives while
-    // it opens still ends the sound.
-    @synchronized(SeptemberSpeechLock()) {
-      SeptemberPlayer = player;
-      SeptemberRun = run;
-    }
-    if (![player prepareToPlay] || ![player play]) {
-      @synchronized(SeptemberSpeechLock()) {
-        if (SeptemberPlayer == player) {
-          SeptemberPlayer = nil;
-          SeptemberRun = nil;
-        }
-      }
-      WriteError(error, errorCapacity, @"the voice file did not play");
+
+    AVAudioEngine *engine = nil;
+    AVAudioPlayerNode *node = nil;
+    if (!CreateSpeechEngine(outputUID, &engine, &node, error, errorCapacity)) {
       return -1;
     }
+    [engine connect:node to:engine.mainMixerNode format:file.processingFormat];
+
+    SeptemberSpeechRun *run = [SeptemberSpeechRun new];
+    @synchronized(SeptemberSpeechLock()) {
+      SeptemberSpeechEngine = engine;
+      SeptemberSpeechNode = node;
+      SeptemberRun = run;
+    }
+
+    [node scheduleFile:file
+                        atTime:nil
+         completionCallbackType:AVAudioPlayerNodeCompletionDataPlayedBack
+              completionHandler:^(
+                  AVAudioPlayerNodeCompletionCallbackType callbackType) {
+                (void)callbackType;
+                [run finish];
+              }];
+    StartSpeechEngine(engine, node, run);
 
     dispatch_semaphore_wait(run.done, DISPATCH_TIME_FOREVER);
-    @synchronized(SeptemberSpeechLock()) {
-      if (SeptemberPlayer == player) {
-        SeptemberPlayer = nil;
-        SeptemberRun = nil;
-      }
+    [node stop];
+    [engine stop];
+    ClearSpeech(run);
+    if (run.error != nil) {
+      WriteError(error, errorCapacity, run.error);
+      return -1;
     }
     return 0;
   }

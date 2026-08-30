@@ -1,7 +1,10 @@
-use std::path::Path;
+use std::{
+    collections::{HashMap, HashSet},
+    path::Path,
+};
 
 use rusqlite::{params, Connection, OptionalExtension, Row};
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::error::{BackendError, Result};
@@ -89,6 +92,105 @@ pub struct AnalyticsEvent {
     pub data: Value,
 }
 
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BackupSetup {
+    #[serde(default)]
+    pub id: String,
+    pub name: String,
+    pub speaking_style: String,
+    pub personal_words: String,
+    pub mode: String,
+    pub writing_service: String,
+    pub writing_model: String,
+    pub voice_service: String,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BackupSpeech {
+    pub provider: String,
+    pub voice_id: Option<String>,
+    pub model_id: String,
+    pub stability: f64,
+    pub similarity: f64,
+    pub speed: f64,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct BackupPanel {
+    pub open: bool,
+    pub tab: String,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct BackupPresent {
+    pub tone: String,
+    pub spoken: bool,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BackupSettings {
+    pub setup: Option<BackupSetup>,
+    pub speech: Option<BackupSpeech>,
+    pub dismissed_ideas: Vec<String>,
+    pub space_modes: HashMap<String, String>,
+    pub new_space_draft: String,
+    pub panel: BackupPanel,
+    pub present: BackupPresent,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct BackupMessage {
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub space_id: Option<String>,
+    pub user_id: String,
+    pub text: String,
+    #[serde(rename = "type")]
+    pub message_type: String,
+    pub created_at: i64,
+}
+
+impl BackupMessage {
+    fn as_message(&self) -> Message {
+        Message {
+            id: self.id.clone(),
+            space_id: self.space_id.clone(),
+            user_id: self.user_id.clone(),
+            text: self.text.clone(),
+            message_type: self.message_type.clone(),
+            audio_path: None,
+            created_at: self.created_at,
+        }
+    }
+}
+
+impl From<Message> for BackupMessage {
+    fn from(message: Message) -> Self {
+        Self {
+            id: message.id,
+            space_id: message.space_id,
+            user_id: message.user_id,
+            text: message.text,
+            message_type: message.message_type,
+            created_at: message.created_at,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BackupContents {
+    pub settings: BackupSettings,
+    pub spaces: Vec<Space>,
+    pub messages: Vec<BackupMessage>,
+    pub notes: Vec<Note>,
+    pub saved_phrases: Vec<SavedPhrase>,
+    pub usage_events: Vec<AnalyticsEvent>,
+}
+
 pub struct Repository {
     connection: Connection,
 }
@@ -140,6 +242,15 @@ impl Repository {
              WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
         )?;
         let rows = statement.query_map([], |row| row.get(0))?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    fn list_all_spaces(&self) -> Result<Vec<Space>> {
+        let mut statement = self.connection.prepare(
+            "SELECT id, user_id, title, context, phrases_synced_count, created_at, updated_at \
+             FROM spaces ORDER BY id",
+        )?;
+        let rows = statement.query_map([], row_to_space)?;
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 
@@ -437,23 +548,16 @@ impl Repository {
              WHERE user_id = ?1 AND timestamp BETWEEN ?2 AND ?3 \
              ORDER BY timestamp DESC, id",
         )?;
-        let rows = statement.query_map(params![user_id, start_at, end_at], |row| {
-            let encoded: String = row.get(4)?;
-            let data = serde_json::from_str(&encoded).map_err(|error| {
-                rusqlite::Error::FromSqlConversionFailure(
-                    4,
-                    rusqlite::types::Type::Text,
-                    Box::new(error),
-                )
-            })?;
-            Ok(AnalyticsEvent {
-                id: row.get(0)?,
-                user_id: row.get(1)?,
-                event_type: row.get(2)?,
-                timestamp: row.get(3)?,
-                data,
-            })
-        })?;
+        let rows = statement.query_map(params![user_id, start_at, end_at], row_to_analytics)?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    pub fn list_all_analytics_events(&self) -> Result<Vec<AnalyticsEvent>> {
+        let mut statement = self.connection.prepare(
+            "SELECT id, user_id, event_type, timestamp, data \
+             FROM analytics_events ORDER BY id",
+        )?;
+        let rows = statement.query_map([], row_to_analytics)?;
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 
@@ -536,6 +640,204 @@ impl Repository {
             .execute("DELETE FROM settings WHERE key = ?1", [key])?
             > 0)
     }
+
+    fn typed_setting<T: DeserializeOwned>(&self, key: &str) -> Result<Option<T>> {
+        self.get_setting(key)?
+            .map(|value| serde_json::from_value(value).map_err(Into::into))
+            .transpose()
+    }
+
+    fn backup_panel(&self) -> Result<BackupPanel> {
+        match self.get_setting("panel-open")? {
+            Some(Value::Bool(open)) => Ok(BackupPanel {
+                open,
+                tab: "phrases".to_owned(),
+            }),
+            Some(value) => {
+                let mut panel: BackupPanel = serde_json::from_value(value)?;
+                if !matches!(panel.tab.as_str(), "phrases" | "voice") {
+                    panel.tab = "phrases".to_owned();
+                }
+                Ok(panel)
+            }
+            None => Ok(BackupPanel {
+                open: false,
+                tab: "phrases".to_owned(),
+            }),
+        }
+    }
+
+    pub fn backup_contents(&self, fallback_user_id: &str) -> Result<BackupContents> {
+        let mut setup: Option<BackupSetup> = self.typed_setting("setup")?;
+        if let Some(setup) = &mut setup {
+            if setup.id.is_empty() {
+                validate_identifier("backup fallback user ID", fallback_user_id)?;
+                setup.id = fallback_user_id.to_owned();
+            }
+        }
+
+        Ok(BackupContents {
+            settings: BackupSettings {
+                setup,
+                speech: self.typed_setting("speech")?,
+                dismissed_ideas: self.typed_setting("dismissed-ideas")?.unwrap_or_default(),
+                space_modes: self.typed_setting("space-modes")?.unwrap_or_default(),
+                new_space_draft: self.typed_setting("new-space-draft")?.unwrap_or_default(),
+                panel: self.backup_panel()?,
+                present: self.typed_setting("present")?.unwrap_or(BackupPresent {
+                    tone: "indigo".to_owned(),
+                    spoken: true,
+                }),
+            },
+            spaces: self.list_all_spaces()?,
+            messages: self
+                .list_messages(None)?
+                .into_iter()
+                .map(BackupMessage::from)
+                .collect(),
+            notes: self.list_notes(None)?,
+            saved_phrases: self.list_phrases(None)?,
+            usage_events: self.list_all_analytics_events()?,
+        })
+    }
+
+    pub fn replace_backup_contents<'a>(&mut self, contents: &'a BackupContents) -> Result<()> {
+        validate_backup_contents(contents)?;
+        // One backup belongs to one person. The app reads spaces, messages,
+        // and usage by owner, and it asks for the owner named in the
+        // settings, so a row that names anybody else would be stored here
+        // and then never shown. Every row takes the owner of the setup.
+        let owner = |row: &'a str| {
+            contents
+                .settings
+                .setup
+                .as_ref()
+                .map_or(row, |setup| setup.id.as_str())
+        };
+        let transaction = self.connection.transaction()?;
+        transaction.execute_batch(
+            "DELETE FROM messages;
+             DELETE FROM notes;
+             DELETE FROM saved_phrases;
+             DELETE FROM spaces;
+             DELETE FROM analytics_events;
+             DELETE FROM settings WHERE key IN (
+               'setup', 'speech', 'dismissed-ideas', 'space-modes',
+               'new-space-draft', 'panel-open', 'present'
+             );",
+        )?;
+
+        for space in &contents.spaces {
+            transaction.execute(
+                "INSERT INTO spaces \
+                 (id, user_id, title, context, phrases_synced_count, created_at, updated_at) \
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                params![
+                    space.id,
+                    owner(&space.user_id),
+                    space.title,
+                    space.context,
+                    space.phrases_synced_count,
+                    space.created_at,
+                    space.updated_at,
+                ],
+            )?;
+        }
+        for message in &contents.messages {
+            transaction.execute(
+                "INSERT INTO messages \
+                 (id, space_id, user_id, text, type, audio_path, created_at) \
+                 VALUES (?1, ?2, ?3, ?4, ?5, NULL, ?6)",
+                params![
+                    message.id,
+                    message.space_id,
+                    owner(&message.user_id),
+                    message.text,
+                    message.message_type,
+                    message.created_at,
+                ],
+            )?;
+        }
+        for note in &contents.notes {
+            transaction.execute(
+                "INSERT INTO notes (id, space_id, name, content, created_at, updated_at) \
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params![
+                    note.id,
+                    note.space_id,
+                    note.name,
+                    note.content,
+                    note.created_at,
+                    note.updated_at,
+                ],
+            )?;
+        }
+        for phrase in &contents.saved_phrases {
+            transaction.execute(
+                "INSERT INTO saved_phrases \
+                 (id, space_id, text, kind, code, pinned, created_at, updated_at) \
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                params![
+                    phrase.id,
+                    phrase.space_id,
+                    phrase.text,
+                    phrase.kind,
+                    phrase.code,
+                    phrase.pinned,
+                    phrase.created_at,
+                    phrase.updated_at,
+                ],
+            )?;
+        }
+        for event in &contents.usage_events {
+            transaction.execute(
+                "INSERT INTO analytics_events (id, user_id, event_type, timestamp, data) \
+                 VALUES (?1, ?2, ?3, ?4, ?5)",
+                params![
+                    event.id,
+                    owner(&event.user_id),
+                    event.event_type,
+                    event.timestamp,
+                    serde_json::to_string(&event.data)?,
+                ],
+            )?;
+        }
+
+        let mut settings = vec![
+            (
+                "dismissed-ideas",
+                serde_json::to_value(&contents.settings.dismissed_ideas)?,
+            ),
+            (
+                "space-modes",
+                serde_json::to_value(&contents.settings.space_modes)?,
+            ),
+            (
+                "new-space-draft",
+                serde_json::to_value(&contents.settings.new_space_draft)?,
+            ),
+            (
+                "panel-open",
+                serde_json::to_value(&contents.settings.panel)?,
+            ),
+            ("present", serde_json::to_value(&contents.settings.present)?),
+        ];
+        if let Some(setup) = &contents.settings.setup {
+            settings.push(("setup", serde_json::to_value(setup)?));
+        }
+        if let Some(speech) = &contents.settings.speech {
+            settings.push(("speech", serde_json::to_value(speech)?));
+        }
+        for (key, value) in settings {
+            transaction.execute(
+                "INSERT INTO settings (key, value) VALUES (?1, ?2)",
+                params![key, serde_json::to_string(&value)?],
+            )?;
+        }
+
+        transaction.commit()?;
+        Ok(())
+    }
 }
 
 fn row_to_space(row: &Row<'_>) -> rusqlite::Result<Space> {
@@ -570,6 +872,20 @@ fn row_to_note(row: &Row<'_>) -> rusqlite::Result<Note> {
         content: row.get(3)?,
         created_at: row.get(4)?,
         updated_at: row.get(5)?,
+    })
+}
+
+fn row_to_analytics(row: &Row<'_>) -> rusqlite::Result<AnalyticsEvent> {
+    let encoded: String = row.get(4)?;
+    let data = serde_json::from_str(&encoded).map_err(|error| {
+        rusqlite::Error::FromSqlConversionFailure(4, rusqlite::types::Type::Text, Box::new(error))
+    })?;
+    Ok(AnalyticsEvent {
+        id: row.get(0)?,
+        user_id: row.get(1)?,
+        event_type: row.get(2)?,
+        timestamp: row.get(3)?,
+        data,
     })
 }
 
@@ -652,6 +968,11 @@ fn validate_phrase(phrase: &SavedPhrase) -> Result<()> {
     }
     validate_timestamp("phrase created timestamp", phrase.created_at)?;
     validate_timestamp("phrase updated timestamp", phrase.updated_at)?;
+    if phrase.updated_at < phrase.created_at {
+        return Err(BackendError::InvalidInput(
+            "phrase updated timestamp must not precede its created timestamp".into(),
+        ));
+    }
     Ok(())
 }
 
@@ -660,13 +981,183 @@ fn validate_analytics_event(event: &AnalyticsEvent) -> Result<()> {
     validate_identifier("analytics user ID", &event.user_id)?;
     if !matches!(
         event.event_type.as_str(),
-        "message_sent" | "ai_generation" | "tts_generation"
+        "message_sent" | "ai_generation" | "tts_generation" | "note_present" | "note_export"
     ) {
         return Err(BackendError::InvalidInput(
             "analytics event type is not supported".into(),
         ));
     }
+    if !event.data.is_object() {
+        return Err(BackendError::InvalidInput(
+            "analytics event data must be an object".into(),
+        ));
+    }
     validate_timestamp("analytics event timestamp", event.timestamp)
+}
+
+fn validate_backup_contents(contents: &BackupContents) -> Result<()> {
+    if let Some(setup) = &contents.settings.setup {
+        validate_identifier("setup ID", &setup.id)?;
+        if setup.name.is_empty() {
+            return Err(BackendError::InvalidInput(
+                "backup setup name must not be empty".into(),
+            ));
+        }
+        if !matches!(setup.mode.as_str(), "free" | "advanced") {
+            return Err(BackendError::InvalidInput(
+                "backup setup mode is not supported".into(),
+            ));
+        }
+        if !matches!(
+            setup.writing_service.as_str(),
+            "apple" | "openrouter" | "none"
+        ) {
+            return Err(BackendError::InvalidInput(
+                "backup writing service is not supported".into(),
+            ));
+        }
+        if !matches!(setup.voice_service.as_str(), "system" | "elevenlabs") {
+            return Err(BackendError::InvalidInput(
+                "backup voice service is not supported".into(),
+            ));
+        }
+    }
+    if let Some(speech) = &contents.settings.speech {
+        if !matches!(speech.provider.as_str(), "system" | "elevenlabs") {
+            return Err(BackendError::InvalidInput(
+                "backup speech provider is not supported".into(),
+            ));
+        }
+        if let Some(voice_id) = &speech.voice_id {
+            validate_identifier("backup voice ID", voice_id)?;
+        }
+        validate_identifier("backup model ID", &speech.model_id)?;
+        validate_range("backup speech stability", speech.stability, 0.0, 1.0)?;
+        validate_range("backup speech similarity", speech.similarity, 0.0, 1.0)?;
+        validate_range("backup speech speed", speech.speed, 0.7, 1.2)?;
+    }
+    for (slug, mode) in &contents.settings.space_modes {
+        validate_identifier("backup space mode slug", slug)?;
+        if !matches!(mode.as_str(), "talk" | "notes") {
+            return Err(BackendError::InvalidInput(
+                "backup space mode is not supported".into(),
+            ));
+        }
+    }
+    if !matches!(contents.settings.panel.tab.as_str(), "phrases" | "voice") {
+        return Err(BackendError::InvalidInput(
+            "backup panel tab is not supported".into(),
+        ));
+    }
+    if !matches!(
+        contents.settings.present.tone.as_str(),
+        "indigo" | "ink" | "paper" | "cream" | "sage" | "blush" | "sky"
+    ) {
+        return Err(BackendError::InvalidInput(
+            "backup presentation tone is not supported".into(),
+        ));
+    }
+
+    validate_unique_ids("space", contents.spaces.iter().map(|row| row.id.as_str()))?;
+    validate_unique_ids(
+        "message",
+        contents.messages.iter().map(|row| row.id.as_str()),
+    )?;
+    validate_unique_ids("note", contents.notes.iter().map(|row| row.id.as_str()))?;
+    validate_unique_ids(
+        "saved phrase",
+        contents.saved_phrases.iter().map(|row| row.id.as_str()),
+    )?;
+    validate_unique_ids(
+        "usage event",
+        contents.usage_events.iter().map(|row| row.id.as_str()),
+    )?;
+
+    let mut space_ids = HashSet::new();
+    let mut space_slugs = HashSet::new();
+    for space in &contents.spaces {
+        validate_space(space)?;
+        space_ids.insert(space.id.as_str());
+        let slug = backup_space_slug(space.title.as_deref());
+        if !space_slugs.insert(slug.clone()) {
+            return Err(BackendError::InvalidInput(format!(
+                "more than one backup space title uses the route {slug}"
+            )));
+        }
+    }
+    for message in &contents.messages {
+        validate_message(&message.as_message())?;
+        validate_backup_space_reference("message", message.space_id.as_deref(), &space_ids)?;
+    }
+    for note in &contents.notes {
+        validate_note(note)?;
+        validate_backup_space_reference("note", note.space_id.as_deref(), &space_ids)?;
+    }
+    for phrase in &contents.saved_phrases {
+        validate_phrase(phrase)?;
+        validate_backup_space_reference("saved phrase", Some(&phrase.space_id), &space_ids)?;
+    }
+    for event in &contents.usage_events {
+        validate_analytics_event(event)?;
+    }
+    Ok(())
+}
+
+fn validate_unique_ids<'a>(label: &str, ids: impl Iterator<Item = &'a str>) -> Result<()> {
+    let mut found = HashSet::new();
+    for id in ids {
+        if !found.insert(id) {
+            return Err(BackendError::InvalidInput(format!(
+                "backup contains a duplicate {label} ID"
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn validate_backup_space_reference(
+    label: &str,
+    space_id: Option<&str>,
+    space_ids: &HashSet<&str>,
+) -> Result<()> {
+    if space_id.is_some_and(|id| !space_ids.contains(id)) {
+        return Err(BackendError::InvalidInput(format!(
+            "backup {label} refers to a missing space"
+        )));
+    }
+    Ok(())
+}
+
+fn backup_space_slug(title: Option<&str>) -> String {
+    let mut slug = String::new();
+    let mut separated = false;
+    // The whole title lowercases, not only its ASCII, so this agrees with
+    // `spaceSlug` in the core package on every title the apps accept.
+    for character in title.unwrap_or_default().to_lowercase().chars() {
+        if character.is_ascii_alphanumeric() {
+            if separated && !slug.is_empty() {
+                slug.push('-');
+            }
+            slug.push(character);
+            separated = false;
+        } else {
+            separated = true;
+        }
+    }
+    if slug.is_empty() {
+        "space".to_owned()
+    } else {
+        slug
+    }
+}
+
+fn validate_range(name: &str, value: f64, minimum: f64, maximum: f64) -> Result<()> {
+    if !value.is_finite() || value < minimum || value > maximum {
+        return Err(BackendError::InvalidInput(format!(
+            "{name} must be from {minimum} to {maximum}"
+        )));
+    }
+    Ok(())
 }
 
 fn validate_identifier(name: &str, value: &str) -> Result<()> {
@@ -700,7 +1191,10 @@ fn validate_key(key: &str) -> Result<()> {
 mod tests {
     use rusqlite::Connection;
 
-    use super::{AnalyticsEvent, Repository, Space, SpacePatch};
+    use super::{
+        AnalyticsEvent, BackupContents, BackupMessage, BackupPanel, BackupPresent, BackupSettings,
+        BackupSetup, BackupSpeech, Note, Repository, SavedPhrase, Space, SpacePatch,
+    };
 
     fn analytics_event(id: &str, user_id: &str, timestamp: i64) -> AnalyticsEvent {
         AnalyticsEvent {
@@ -710,6 +1204,299 @@ mod tests {
             timestamp,
             data: serde_json::json!({ "text_length": 12, "keys_typed": 3 }),
         }
+    }
+
+    fn backup_contents(space_id: &str) -> BackupContents {
+        BackupContents {
+            settings: BackupSettings {
+                setup: Some(BackupSetup {
+                    id: "user-1".to_owned(),
+                    name: "Ravi".to_owned(),
+                    speaking_style: "Plain and direct.".to_owned(),
+                    personal_words: String::new(),
+                    mode: "advanced".to_owned(),
+                    writing_service: "openrouter".to_owned(),
+                    writing_model: String::new(),
+                    voice_service: "elevenlabs".to_owned(),
+                }),
+                speech: Some(BackupSpeech {
+                    provider: "elevenlabs".to_owned(),
+                    voice_id: Some("voice-1".to_owned()),
+                    model_id: "eleven_turbo_v2_5".to_owned(),
+                    stability: 0.5,
+                    similarity: 0.75,
+                    speed: 1.0,
+                }),
+                dismissed_ideas: vec!["idea-1".to_owned()],
+                space_modes: [("general".to_owned(), "notes".to_owned())].into(),
+                new_space_draft: "New draft".to_owned(),
+                panel: BackupPanel {
+                    open: true,
+                    tab: "voice".to_owned(),
+                },
+                present: BackupPresent {
+                    tone: "cream".to_owned(),
+                    spoken: false,
+                },
+            },
+            spaces: vec![Space {
+                id: space_id.to_owned(),
+                user_id: "user-1".to_owned(),
+                title: Some("General".to_owned()),
+                context: Some("At home".to_owned()),
+                phrases_synced_count: Some(1),
+                created_at: 10,
+                updated_at: 20,
+            }],
+            messages: vec![BackupMessage {
+                id: "message-1".to_owned(),
+                space_id: Some(space_id.to_owned()),
+                user_id: "user-1".to_owned(),
+                text: "Hello".to_owned(),
+                message_type: "user".to_owned(),
+                created_at: 30,
+            }],
+            notes: vec![Note {
+                id: "note-1".to_owned(),
+                space_id: Some(space_id.to_owned()),
+                name: Some("Greeting".to_owned()),
+                content: "Hello there".to_owned(),
+                created_at: 40,
+                updated_at: 50,
+            }],
+            saved_phrases: vec![SavedPhrase {
+                id: "phrase-1".to_owned(),
+                space_id: space_id.to_owned(),
+                text: "Give me a minute.".to_owned(),
+                kind: "phrase".to_owned(),
+                code: Some("gmm".to_owned()),
+                pinned: true,
+                created_at: 60,
+                updated_at: 60,
+            }],
+            usage_events: vec![analytics_event("event-1", "user-1", 70)],
+        }
+    }
+
+    #[test]
+    fn a_backup_round_trip_keeps_every_portable_value() {
+        let mut repository = Repository::open_in_memory().unwrap();
+        let contents = backup_contents("space-1");
+
+        repository.replace_backup_contents(&contents).unwrap();
+
+        assert_eq!(repository.backup_contents("user-1").unwrap(), contents);
+    }
+
+    #[test]
+    fn the_shared_version_one_fixture_restores_on_desktop() {
+        let contents: BackupContents = serde_json::from_str(include_str!(
+            "../../../../packages/core/rules/fixtures/backup-v1.json"
+        ))
+        .unwrap();
+        let mut repository = Repository::open_in_memory().unwrap();
+
+        repository.replace_backup_contents(&contents).unwrap();
+
+        let restored = repository.backup_contents("person-1").unwrap();
+        assert_eq!(restored.spaces[0].id, "space-1");
+        assert_eq!(restored.saved_phrases[0].id, "phrase-1");
+    }
+
+    #[test]
+    fn a_backup_replacement_removes_every_row_that_was_here() {
+        let mut repository = Repository::open_in_memory().unwrap();
+        repository
+            .replace_backup_contents(&backup_contents("old-space"))
+            .unwrap();
+
+        let mut next = backup_contents("new-space");
+        next.notes.clear();
+        next.saved_phrases.clear();
+        next.usage_events.clear();
+        repository.replace_backup_contents(&next).unwrap();
+
+        let restored = repository.backup_contents("user-1").unwrap();
+        assert!(restored.notes.is_empty());
+        assert!(restored.saved_phrases.is_empty());
+        assert!(restored.usage_events.is_empty());
+        assert_eq!(restored.spaces.len(), 1);
+        assert_eq!(restored.spaces[0].id, "new-space");
+    }
+
+    #[test]
+    fn a_backup_gives_every_row_the_owner_that_setup_names() {
+        let mut repository = Repository::open_in_memory().unwrap();
+        let mut contents = backup_contents("space-1");
+        contents.spaces[0].user_id = "an-old-mac-login".to_owned();
+        contents.messages[0].user_id = "an-old-mac-login".to_owned();
+        contents.usage_events[0].user_id = "an-old-mac-login".to_owned();
+
+        repository.replace_backup_contents(&contents).unwrap();
+
+        let restored = repository.backup_contents("user-1").unwrap();
+        assert_eq!(restored.spaces[0].user_id, "user-1");
+        assert_eq!(restored.messages[0].user_id, "user-1");
+        assert_eq!(restored.usage_events[0].user_id, "user-1");
+    }
+
+    #[test]
+    fn a_backup_route_reads_a_title_the_way_the_shared_rule_reads_it() {
+        // `spaceSlug` in the core package lowercases the whole title, not
+        // only its ASCII, so the two must agree on where a route collides.
+        assert_eq!(super::backup_space_slug(Some("My Family")), "my-family");
+        assert_eq!(super::backup_space_slug(Some("\u{212a}elvin")), "kelvin");
+        assert_eq!(
+            super::backup_space_slug(Some("\u{130}stanbul")),
+            "i-stanbul"
+        );
+        assert_eq!(super::backup_space_slug(Some("Caf\u{e9} One")), "caf-one");
+        assert_eq!(super::backup_space_slug(Some("...")), "space");
+    }
+
+    #[test]
+    fn a_backup_replacement_keeps_device_settings() {
+        let mut repository = Repository::open_in_memory().unwrap();
+        repository
+            .put_setting("audio-output", &serde_json::json!("speaker-1"))
+            .unwrap();
+        repository
+            .put_setting("internal-state", &serde_json::json!({ "ready": true }))
+            .unwrap();
+
+        repository
+            .replace_backup_contents(&backup_contents("space-1"))
+            .unwrap();
+
+        assert_eq!(
+            repository.get_setting("audio-output").unwrap(),
+            Some(serde_json::json!("speaker-1"))
+        );
+        assert_eq!(
+            repository.get_setting("internal-state").unwrap(),
+            Some(serde_json::json!({ "ready": true }))
+        );
+    }
+
+    #[test]
+    fn a_backup_normalizes_the_old_boolean_panel_setting() {
+        let repository = Repository::open_in_memory().unwrap();
+        repository
+            .put_setting("panel-open", &serde_json::json!(true))
+            .unwrap();
+
+        assert_eq!(
+            repository.backup_contents("user-1").unwrap().settings.panel,
+            BackupPanel {
+                open: true,
+                tab: "phrases".to_owned(),
+            }
+        );
+    }
+
+    #[test]
+    fn a_backup_normalizes_an_old_panel_tab() {
+        let repository = Repository::open_in_memory().unwrap();
+        repository
+            .put_setting(
+                "panel-open",
+                &serde_json::json!({ "open": true, "tab": "camera" }),
+            )
+            .unwrap();
+
+        assert_eq!(
+            repository.backup_contents("user-1").unwrap().settings.panel,
+            BackupPanel {
+                open: true,
+                tab: "phrases".to_owned(),
+            }
+        );
+    }
+
+    #[test]
+    fn a_backup_adds_the_owner_to_an_old_setup_setting() {
+        let repository = Repository::open_in_memory().unwrap();
+        let mut setup =
+            serde_json::to_value(backup_contents("space-1").settings.setup.unwrap()).unwrap();
+        setup.as_object_mut().unwrap().remove("id");
+        repository.put_setting("setup", &setup).unwrap();
+
+        assert_eq!(
+            repository
+                .backup_contents("legacy-owner")
+                .unwrap()
+                .settings
+                .setup
+                .unwrap()
+                .id,
+            "legacy-owner"
+        );
+    }
+
+    #[test]
+    fn a_failed_backup_write_rolls_back_every_erasure() {
+        let mut repository = Repository::open_in_memory().unwrap();
+        repository
+            .put_space(&backup_contents("old-space").spaces[0])
+            .unwrap();
+        repository
+            .put_setting("new-space-draft", &serde_json::json!("Old draft"))
+            .unwrap();
+        repository
+            .connection
+            .execute_batch(
+                "CREATE TRIGGER stop_backup BEFORE INSERT ON spaces
+                 WHEN NEW.id = 'new-space'
+                 BEGIN SELECT RAISE(ABORT, 'stop backup'); END;",
+            )
+            .unwrap();
+
+        assert!(repository
+            .replace_backup_contents(&backup_contents("new-space"))
+            .is_err());
+        assert!(repository.get_space("old-space").unwrap().is_some());
+        assert_eq!(
+            repository.get_setting("new-space-draft").unwrap(),
+            Some(serde_json::json!("Old draft"))
+        );
+    }
+
+    #[test]
+    fn every_shared_usage_event_type_is_stored() {
+        let repository = Repository::open_in_memory().unwrap();
+
+        for (index, event_type) in [
+            "message_sent",
+            "ai_generation",
+            "tts_generation",
+            "note_present",
+            "note_export",
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            repository
+                .put_analytics_event(&AnalyticsEvent {
+                    id: format!("event-{index}"),
+                    user_id: "user-1".to_owned(),
+                    event_type: event_type.to_owned(),
+                    timestamp: index as i64,
+                    data: serde_json::json!({}),
+                })
+                .unwrap();
+        }
+
+        assert_eq!(repository.list_all_analytics_events().unwrap().len(), 5);
+    }
+
+    #[test]
+    fn a_backup_rejects_non_object_usage_data() {
+        let mut repository = Repository::open_in_memory().unwrap();
+        let mut contents = backup_contents("space-1");
+        contents.usage_events[0].data = serde_json::json!([]);
+
+        assert!(repository.replace_backup_contents(&contents).is_err());
+        assert!(repository.list_all_analytics_events().unwrap().is_empty());
     }
 
     #[test]

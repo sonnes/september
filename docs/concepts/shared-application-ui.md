@@ -32,6 +32,11 @@ web build and to the Tauri/SQLite hooks during a desktop build. Both modules
 must expose the surface that the shared screen imports. Building both apps is
 the contract check.
 
+The Data settings screen uses the same boundary. Its
+`@platform/services/backup` module reads and replaces data through IndexedDB in
+the browser and through typed Tauri commands on desktop. The screen owns file
+selection, preview, and confirmation. The platform service owns persistence.
+
 Use neutral copy when an interaction is the same. If a capability differs,
 keep the control in the same location and show its availability. Do not fork
 the screen to explain a platform difference.

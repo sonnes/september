@@ -28,7 +28,7 @@ export function exportUnavailable(kind: ExportKind): string | null {
 }
 
 /** The WebView download support. The file never leaves the machine first. */
-function save(blob: Blob, filename: string): void {
+export function save(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;

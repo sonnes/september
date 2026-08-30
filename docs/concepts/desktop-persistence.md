@@ -19,6 +19,17 @@ The webview can get, put, and delete settings through Tauri commands. Successful
 writes emit `september://settings-changed` so ported screens can refresh the
 affected keys.
 
+## Replace data from a backup
+
+The `backup_export` command returns portable settings and every domain row. It
+does not return Keychain keys, the selected audio output, internal settings, or
+a message's local audio path.
+
+The `backup_import` command validates the full payload first. It then replaces
+the portable settings and domain tables in one SQLite transaction. A failed
+row rolls back the complete replacement. See
+[Portable backups](portable-backups.md).
+
 ## Store domain data in columns
 
 The `spaces` table stores space metadata. The `messages` and `notes` tables
@@ -82,8 +93,8 @@ earlier desktop builds gain missing tables and keep existing settings.
 
 ## Keep browser storage separate
 
-The browser app keeps its existing IndexedDB storage. The independent desktop
-UI does not import the browser data layer.
+The browser app keeps its own IndexedDB storage. The desktop UI does not import
+the browser data layer. Both apps can read the same portable backup file.
 
 ## Run the desktop app
 

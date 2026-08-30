@@ -2,6 +2,8 @@ import 'fake-indexeddb/auto';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { BackupContents } from '@september/core/rules/backup';
+
 import {
   DATABASE_NAME,
   LEGACY_DATABASES,
@@ -220,6 +222,110 @@ describe('BrowserRepository', () => {
     repository.close();
   });
 
+  it('takes one portable snapshot without secrets, device state, or cached audio paths', async () => {
+    const repository = await openRepository({ migrate: false });
+    const setup = {
+      id: 'local-user',
+      name: 'Ravi',
+      speakingStyle: 'Plain and direct.',
+      personalWords: '',
+      mode: 'advanced',
+      writingService: 'openrouter',
+      writingModel: '',
+      voiceService: 'elevenlabs',
+    } as const;
+    const speech = {
+      provider: 'elevenlabs',
+      voiceId: 'voice-1',
+      modelId: 'eleven_turbo_v2_5',
+      stability: 0.5,
+      similarity: 0.75,
+      speed: 1,
+    } as const;
+    await repository.putSetting('setup', setup);
+    await repository.putSetting('speech', speech);
+    await repository.putSetting('dismissed-ideas', ['idea-1']);
+    await repository.putSetting('space-modes', { general: 'notes' });
+    await repository.putSetting('new-space-draft', 'Unfinished words');
+    await repository.putSetting('panel-open', { open: true, tab: 'voice' });
+    await repository.putSetting('present', { tone: 'cream', spoken: false });
+    await repository.putSetting('provider-keys', { openrouter: 'secret' });
+    await repository.putSetting('audio-output', 'speaker-1');
+    await repository.putSetting('legacy-migration', 'clean');
+    await repository.putSpace(space());
+    await repository.putMessage(message({ audio_path: '/private/audio.mp3' }));
+    await repository.putNote(note());
+    await repository.putPhrase(phrase());
+    await repository.putAnalyticsEvent(analytics());
+    await repository.putBlob('speech-1', new Blob(['audio']));
+
+    expect(await repository.backupContents()).toEqual({
+      settings: {
+        setup,
+        speech,
+        dismissedIdeas: ['idea-1'],
+        spaceModes: { general: 'notes' },
+        newSpaceDraft: 'Unfinished words',
+        panel: { open: true, tab: 'voice' },
+        present: { tone: 'cream', spoken: false },
+      },
+      spaces: [space({ updated_at: 30 })],
+      messages: [message()],
+      notes: [note()],
+      savedPhrases: [phrase()],
+      usageEvents: [analytics()],
+    });
+    repository.close();
+  });
+
+  it('atomically replaces portable rows and keeps local-only values', async () => {
+    const repository = await openRepository({ migrate: false });
+    await repository.putSetting('new-space-draft', 'Old draft');
+    await repository.putSetting('provider-keys', { openrouter: 'secret' });
+    await repository.putSetting('audio-output', 'speaker-1');
+    await repository.putSetting('legacy-migration', 'clean');
+    await repository.putSpace(space());
+    await repository.putMessage(message());
+    await repository.putNote(note());
+    await repository.putPhrase(phrase());
+    await repository.putAnalyticsEvent(analytics());
+    await repository.putBlob('speech-1', new Blob(['audio']));
+
+    const next = backupContents({
+      spaces: [space({ id: 'space-2', title: 'Friends' })],
+      messages: [message({ id: 'message-2', space_id: 'space-2' })],
+    });
+    await repository.replaceBackupContents(next);
+
+    expect(await repository.listSpaces('local-user')).toEqual(next.spaces);
+    expect(await repository.listMessages()).toEqual(next.messages);
+    // Every store the backup replaces is emptied first, so no row of the
+    // data that was here survives beside the restored rows.
+    expect(await rowsFromStore('notes')).toEqual([]);
+    expect(await rowsFromStore('saved_phrases')).toEqual([]);
+    expect(await rowsFromStore('analytics_events')).toEqual([]);
+    expect(await repository.getSetting('new-space-draft')).toBe('New draft');
+    expect(await repository.getSetting('provider-keys')).toEqual({ openrouter: 'secret' });
+    expect(await repository.getSetting('audio-output')).toBe('speaker-1');
+    expect(await repository.getSetting('legacy-migration')).toBe('clean');
+    expect(await repository.getBlob('speech-1')).not.toBeNull();
+    repository.close();
+  });
+
+  it('aborts every replacement write when one value cannot be stored', async () => {
+    const repository = await openRepository({ migrate: false });
+    await repository.putSetting('new-space-draft', 'Old draft');
+    await repository.putSpace(space());
+
+    const invalid = backupContents({ spaces: [space({ id: 'space-2', title: 'Friends' })] });
+    invalid.settings.newSpaceDraft = (() => 'not cloneable') as unknown as string;
+
+    await expect(repository.replaceBackupContents(invalid)).rejects.toBeDefined();
+    expect(await repository.getSetting('new-space-draft')).toBe('Old draft');
+    expect(await repository.listSpaces('local-user')).toEqual([space()]);
+    repository.close();
+  });
+
   it('stores a blob as ordered chunks and reconstructs the original file', async () => {
     const repository = await openRepository({ migrate: false });
     const file = new Blob(['abcdefgh'], { type: 'audio/mpeg' });
@@ -267,6 +373,26 @@ describe('BrowserRepository', () => {
     repository.close();
   });
 });
+
+function backupContents(overrides: Partial<BackupContents> = {}): BackupContents {
+  return {
+    settings: {
+      setup: null,
+      speech: null,
+      dismissedIdeas: [],
+      spaceModes: {},
+      newSpaceDraft: 'New draft',
+      panel: { open: false, tab: 'phrases' },
+      present: { tone: 'indigo', spoken: true },
+    },
+    spaces: [],
+    messages: [],
+    notes: [],
+    savedPhrases: [],
+    usageEvents: [],
+    ...overrides,
+  };
+}
 
 async function putLegacyRows(
   databaseName: string,

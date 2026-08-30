@@ -2,9 +2,7 @@
  * The settings sections, in plain TypeScript so a test can read them without
  * a renderer. `settings.tsx` supplies the icon and the screens.
  *
- * The web app has five sections. Three of them have a desktop equivalent.
- * Listening needs a transcription backend, and Account needs an account.
- * Voice already has its own screen, `/voice`.
+ * Voice has its own screen, `/voice`.
  */
 
 export const SETTINGS_NAV = [
@@ -22,6 +20,11 @@ export const SETTINGS_NAV = [
     path: "/settings/usage",
     title: "Usage",
     description: "Typing saved and service use on this Mac.",
+  },
+  {
+    path: "/settings/data",
+    title: "Data",
+    description: "Download a backup or restore one.",
   },
 ] as const satisfies readonly {
   path: string;

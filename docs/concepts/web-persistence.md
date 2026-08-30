@@ -25,6 +25,16 @@ React Query keeps the UI cache. It does not own persistence.
 
 The repository uses one transaction for related writes. Space removal also removes its messages, notes, and phrases in the same transaction.
 
+## Replace data from a backup
+
+The Data settings screen can read all portable settings and domain stores in
+one transaction. It omits provider keys, audio output, migration state, and the
+two speech-file stores.
+
+Import validates the complete backup before it opens a write transaction. The
+write clears and replaces only the portable settings and domain stores. An
+abort keeps every old value. See [Portable backups](portable-backups.md).
+
 ## Bounded speech files
 
 ElevenLabs speech uses a key derived from the text, voice, model, stability, similarity, and speed. An exact match reads the saved file and avoids another provider request. Browser system speech does not create a file.

@@ -1,5 +1,5 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Gauge, Lightbulb, SlidersHorizontal } from "lucide-react";
+import { DatabaseBackup, Gauge, Lightbulb, SlidersHorizontal } from "lucide-react";
 
 import { SETTINGS_NAV, sectionFor, type SettingsPath } from "@platform/rules/settings-nav";
 import { ScreenHeader } from "@september/app-ui/blocks/screen";
@@ -9,6 +9,7 @@ const ICONS: Record<SettingsPath, typeof SlidersHorizontal> = {
   "/settings": SlidersHorizontal,
   "/settings/writing": Lightbulb,
   "/settings/usage": Gauge,
+  "/settings/data": DatabaseBackup,
 };
 
 export function SettingsLayout() {

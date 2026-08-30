@@ -31,6 +31,7 @@ The web app stores data and its bounded speech cache in one IndexedDB database. 
 - A note presents full-screen in the user's voice, and exports as text, audio, or a captioned video.
 - Phrase codes expand short input into a full phrase.
 - Local usage reports show saved keystrokes and provider use.
+- A portable JSON backup moves settings and data between the browser and Mac apps.
 - ElevenLabs can create a cloned voice from browser or desktop recordings.
 - Help groups step-by-step guidance by task, searches the shared guide catalog,
   and labels each guide for the browser, Mac app, or Mac keyboard.

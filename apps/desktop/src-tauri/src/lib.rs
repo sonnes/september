@@ -16,6 +16,8 @@ pub fn run() {
             rpc::setting_get,
             rpc::setting_put,
             rpc::setting_delete,
+            rpc::backup_export,
+            rpc::backup_import,
             rpc::space_list,
             rpc::space_get,
             rpc::space_put,

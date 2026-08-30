@@ -358,14 +358,11 @@ export interface AudioOutput {
 /** Every output this Mac can play through. */
 export const listOutputs = () => invoke<AudioOutput[]>("audio_outputs");
 
-/** The output the Mac plays through now. */
+/** The output September plays through now. */
 export const currentOutput = () => invoke<string>("audio_output");
 
 /**
- * Moves the sound of this Mac to one output.
- *
- * Both voices of September follow the Mac, so this one setting moves both.
- * The Mac remembers it, and September keeps no copy that could disagree.
+ * Routes both voices of September without moving the macOS sound output.
  */
 export const chooseOutput = (uid: string) =>
   invoke<void>("audio_output_set", { request: { uid } });

@@ -140,6 +140,7 @@ The application routes are:
 - `/settings`
 - `/settings/writing`
 - `/settings/usage`
+- `/settings/data`
 - `/settings/connections/$provider`
 
 The `/` route opens the public landing page. Its calls to action open setup at `/welcome`, which sends a returning user on to `/dashboard`. All hosting targets must return the application shell for a direct application-route request.
@@ -168,6 +169,17 @@ The first start imports data from the old browser databases. The import uses ide
 The import also moves the old panel, dismissed-idea, audio-output, and space-mode settings from local storage. It removes the old keys after a successful import.
 
 If another tab blocks database removal, the import keeps the `imported` state. The next start retries removal without another import.
+
+Settings > Data downloads one versioned JSON backup. The file contains the
+portable settings and all spaces, messages, notes, saved phrases, and usage
+events. It does not contain service keys, local audio output, migration state,
+or the speech cache.
+
+The repository validates a selected file before it starts a write. It replaces
+the portable settings and domain stores in one IndexedDB transaction. A failed
+write aborts the transaction and keeps the existing data. The same file can be
+restored in the Mac app. Import changes the retired `camera` panel tab from an
+older desktop backup to `phrases`.
 
 ## Browser services
 

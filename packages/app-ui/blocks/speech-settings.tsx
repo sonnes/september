@@ -35,16 +35,16 @@ const SLIDERS = [
   {
     key: "stability",
     label: "Steadiness",
-    low: "More variable",
-    high: "More steady",
+    low: "Expressive",
+    high: "Consistent",
     min: 0,
     max: 1,
   },
   {
     key: "similarity",
     label: "Likeness",
-    low: "Lower",
-    high: "Higher",
+    low: "Natural",
+    high: "Exact",
     min: 0,
     max: 1,
   },
@@ -172,7 +172,7 @@ export function SpeechSettings() {
             })
           }
         >
-          Back to how it usually sounds
+          Reset to default sound
         </Button>
       </Group>
 

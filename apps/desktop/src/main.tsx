@@ -34,6 +34,7 @@ import { SettingsLayout } from "@september/app-ui/layouts/settings";
 import { DashboardScreen } from "@september/app-ui/pages/dashboard";
 import {
   ConnectionScreen,
+  DataSettings,
   SetupSettings,
   WritingSettings,
 } from "@september/app-ui/pages/settings";
@@ -202,6 +203,11 @@ const guardedAppRoute = appRoute.addChildren([
       getParentRoute: () => settingsRoute,
       path: "/usage",
       component: UsageSettings,
+    }),
+    createRoute({
+      getParentRoute: () => settingsRoute,
+      path: "/data",
+      component: DataSettings,
     }),
     connectionRoute,
   ]),

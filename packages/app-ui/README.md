@@ -50,6 +50,11 @@ hidden.
 `layouts/app.tsx` draws each platform's `APP_NAV` destinations. Every path has
 a matching Lucide icon in the layout, including desktop-only destinations.
 
+`pages/settings.tsx` owns the shared Data screen at `/settings/data`. It calls
+`@platform/services/backup` to download or restore a backup. The screen parses
+the file with `@september/core`, shows its date and row counts, and asks for a
+second confirmation before it replaces data.
+
 `pages/steps.tsx` lays a step out for 320px first. Anything that would overflow
 that width carries a breakpoint prefix, so a service status drops under the
 name rather than squeezing the description, the panel under a service starts at
@@ -59,6 +64,10 @@ setup work to the same rule.
 `blocks/space-panel.tsx` draws the right rail and the card beside it. The tabs
 come from `@september/core/rules/panel`. The rail keeps phrases and speech
 settings one press away in both Talk and Notes.
+
+`blocks/space.tsx` keeps the Talk audio selector beside Speak. The selector
+names September audio because each platform service routes September playback;
+it does not promise to change the device's system-wide sound output.
 
 `blocks/present.tsx` is the one full-screen surface here. It draws over the
 whole viewport instead of inside the shell, because a presentation is for the

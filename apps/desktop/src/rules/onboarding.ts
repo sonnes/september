@@ -51,20 +51,19 @@ export const DEFAULT_DRAFT: OnboardingDraft = {
   voiceService: "system",
 };
 
-// Free mode is the private mode on this platform: Apple Intelligence runs on
-// the Mac. ponytail: the copy names the macOS requirement instead of reading
-// `apfel_status` here, which would make the step wait on a sidecar start.
+// Standard mode is the private mode on this platform: Apple Intelligence runs on
+// the Mac.
 export const SETUP_MODES = [
   {
     id: "free",
     accent: "amber",
-    badge: "Free start",
-    title: "Free start",
+    badge: "Standard",
+    title: "Standard setup",
     body: "Free writing help that runs on this Mac.",
     bullets: [
-      "Apple Intelligence writes the suggestions. Your words do not leave the device.",
+      "Apple Intelligence writes suggestions on this Mac.",
       "Spaces and saved phrases stay on this device.",
-      "It needs macOS 26 on Apple silicon.",
+      "Works offline with no account required.",
     ],
   },
   {
@@ -133,7 +132,7 @@ export const STEPS = [
     label: "Welcome",
     title: "Faster communication, fewer keystrokes.",
     subtitle:
-      "September helps you type and speak naturally. Start with simple defaults, then add more when you are ready.",
+      "September helps you speak naturally with fewer keystrokes. Start simple now, and customize anytime.",
     helper: "Get started in minutes.",
     action: "Get started",
   },

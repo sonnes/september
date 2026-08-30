@@ -54,6 +54,8 @@ cargo fmt --all -- --check
 - Read the sound outputs from `src-tauri/src/audio.rs`. The browser cannot do
   this job: WKWebView lists no output device until the user grants the
   microphone, and September must not ask for one to name a speaker.
+- Route speech through September's native audio engine. Never change the macOS
+  default output when the user chooses a speaker in September.
 - Keep the virtual microphone control in the Talk audio selector beside Speak.
   The selector must remain visible when the Mac has one sound output.
 - Never put the words of the user in a log. A line carries a count, a device

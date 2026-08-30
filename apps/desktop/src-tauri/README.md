@@ -29,7 +29,8 @@ Run `pnpm apfel:prepare` from `apps/desktop` to prepare only the sidecar.
 
 Rust opens `september.sqlite3` in Tauri's application-local-data directory.
 The `settings` table stores a unique text key and a JSON value. Keys must
-contain 1 to 256 bytes.
+contain 1 to 256 bytes. The `audio-output` setting keeps the Core Audio UID for
+September's own playback device.
 
 The `spaces`, `messages`, `notes`, and `saved_phrases` tables store domain
 fields in typed columns. Messages and notes can belong to a space. Deleting a
@@ -170,6 +171,27 @@ Each command accepts a `request` object.
 Successful writes emit `september://settings-changed` with the changed keys.
 Deleting a missing setting returns `false` and does not emit an event.
 
+## Call the backup API
+
+| Command | Request | Response |
+| --- | --- | --- |
+| `backup_export` | none | Portable settings and all domain rows |
+| `backup_import` | `{ request: BackupContents }` | none |
+
+`backup_export` removes each message's local `audio_path`. It also leaves out
+Keychain keys, the selected audio output, and internal settings.
+
+An older setup value can have no owner ID. Export uses the current Mac login
+name for that backup and does not change the stored value.
+
+An older panel setting can name the retired `camera` tab. Export writes the
+`phrases` tab instead. Import also accepts an existing file with that value.
+
+`backup_import` validates every value and reference before it changes SQLite.
+It replaces portable settings and domain rows in one transaction. A validation
+or write failure keeps the current database. A successful import emits one
+settings-change event for the portable keys.
+
 ## Read the user name
 
 The `user_name` command takes no request. It returns the name that the
@@ -294,12 +316,21 @@ their sound. Voice-list previews stay in the WebView and do not enter the tap.
 
 | Command | Request | Response |
 | --- | --- | --- |
+| `audio_outputs` | none | `{ uid, name }[]` |
+| `audio_output` | none | The UID September uses |
+| `audio_output_set` | `{ uid }` | none |
 | `speech_system` | `{ text, voice_id?, speed }` | none |
 | `speech_file_play` | `{ path }` | none |
 | `speech_native_stop` | none | none |
 
-`speech_system` uses `AVSpeechSynthesizer`. `speech_file_play` accepts only a
-cached file inside the application audio directory and uses `AVAudioPlayer`.
+`audio_output_set` verifies the device and saves its UID without changing the
+macOS sound output. If the saved device is absent, `audio_output` returns the
+current macOS output until the saved device returns.
+
+`speech_system` receives buffers from `AVSpeechSynthesizer`.
+`speech_file_play` accepts only a cached file inside the application audio
+directory. Both commands feed an `AVAudioPlayerNode` in a September-owned
+`AVAudioEngine`. The engine's output audio unit uses the selected device.
 
 ## Publish the virtual microphone
 
@@ -325,8 +356,8 @@ publishes no way to read the answer to its audio-recording question, so a
 refused tap is silent and reports nothing. The message names the one setting
 that mends it.
 
-Both native voices wait on a delegate callback, not on a clock. `speech_stop`
-releases that wait, because `AVAudioPlayer` reports nothing when it is stopped.
+Both native voices wait for the audio engine to play their final buffer, not on
+a clock. `speech_stop` stops the engine and releases that wait.
 
 ## Stream the eye-tracker test bed
 

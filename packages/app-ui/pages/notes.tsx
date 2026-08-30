@@ -540,9 +540,9 @@ const ARTIFACT_ICON: Record<ExportKind, typeof FileText> = {
 
 /** How far the film has come, and what it is doing. */
 const VIDEO_STAGE: Record<VideoStage, { label: string; value: number }> = {
-  voice: { label: "Making the voice", value: 25 },
-  frames: { label: "Drawing the film", value: 60 },
-  video: { label: "Joining the sound", value: 90 },
+  voice: { label: "Generating voice", value: 25 },
+  frames: { label: "Rendering slides", value: 60 },
+  video: { label: "Creating video", value: 90 },
 };
 
 /**

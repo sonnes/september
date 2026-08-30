@@ -1,0 +1,97 @@
+{
+  "format": "september-backup",
+  "formatVersion": 1,
+  "exportedAt": "2026-08-30T12:00:00.000Z",
+  "source": "web",
+  "appVersion": "0.1.0",
+  "settings": {
+    "setup": {
+      "id": "person-1",
+      "name": "Ravi",
+      "speakingStyle": "Plain and direct.",
+      "personalWords": "My cat is called Miso.",
+      "mode": "advanced",
+      "writingService": "openrouter",
+      "writingModel": "",
+      "voiceService": "elevenlabs"
+    },
+    "speech": {
+      "provider": "elevenlabs",
+      "voiceId": "voice-1",
+      "modelId": "eleven_turbo_v2_5",
+      "stability": 0.5,
+      "similarity": 0.75,
+      "speed": 1
+    },
+    "dismissedIdeas": [
+      "idea-1"
+    ],
+    "spaceModes": {
+      "family": "notes"
+    },
+    "newSpaceDraft": "A careful unfinished thought.",
+    "panel": {
+      "open": true,
+      "tab": "voice"
+    },
+    "present": {
+      "tone": "cream",
+      "spoken": false
+    }
+  },
+  "spaces": [
+    {
+      "id": "space-1",
+      "user_id": "person-1",
+      "title": "Family",
+      "context": "People at home.",
+      "phrases_synced_count": 1,
+      "created_at": 10,
+      "updated_at": 15
+    }
+  ],
+  "messages": [
+    {
+      "id": "message-1",
+      "space_id": "space-1",
+      "user_id": "person-1",
+      "text": "Hello.",
+      "type": "user",
+      "created_at": 12
+    }
+  ],
+  "notes": [
+    {
+      "id": "note-1",
+      "space_id": "space-1",
+      "name": "Visit",
+      "content": "Please bring Miso.",
+      "created_at": 13,
+      "updated_at": 14
+    }
+  ],
+  "savedPhrases": [
+    {
+      "id": "phrase-1",
+      "space_id": "space-1",
+      "text": "Give me a minute.",
+      "kind": "phrase",
+      "code": "gmm",
+      "pinned": true,
+      "created_at": 14,
+      "updated_at": 14
+    }
+  ],
+  "usageEvents": [
+    {
+      "id": "event-1",
+      "user_id": "person-1",
+      "event_type": "message_sent",
+      "timestamp": 15,
+      "data": {
+        "text_length": 6,
+        "keys_typed": 2
+      }
+    }
+  ]
+}

@@ -14,7 +14,12 @@ import { DashboardScreen } from '@september/app-ui/pages/dashboard';
 import { HelpScreen } from '@september/app-ui/pages/help';
 import { NotesScreen } from '@september/app-ui/pages/notes';
 import { HomePage } from '@/pages/home';
-import { ConnectionScreen, SetupSettings, WritingSettings } from '@september/app-ui/pages/settings';
+import {
+  ConnectionScreen,
+  DataSettings,
+  SetupSettings,
+  WritingSettings,
+} from '@september/app-ui/pages/settings';
 import { NewSpaceScreen, SpacesScreen } from '@september/app-ui/pages/spaces';
 import { ConnectStep, FinishStep, ModeStep, ProfileStep, WelcomeStep } from '@september/app-ui/pages/steps';
 import { TalkScreen } from '@september/app-ui/pages/talk';
@@ -51,6 +56,7 @@ export const APP_ROUTE_PATHS = [
   '/settings',
   '/settings/writing',
   '/settings/usage',
+  '/settings/data',
   '/settings/connections/$provider',
 ] as const;
 
@@ -196,6 +202,11 @@ const guardedAppRoute = appRoute.addChildren([
       getParentRoute: () => settingsRoute,
       path: '/usage',
       component: UsageSettings,
+    }),
+    createRoute({
+      getParentRoute: () => settingsRoute,
+      path: '/data',
+      component: DataSettings,
     }),
     connectionRoute,
   ]),

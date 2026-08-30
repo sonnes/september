@@ -51,14 +51,14 @@ export const DEFAULT_DRAFT: OnboardingDraft = {
   voiceService: "system",
 };
 
-// Free mode needs no provider account. The browser still gives the user its
+// Standard mode needs no provider account. The browser still gives the user its
 // local autocomplete engine and system speech.
 export const SETUP_MODES = [
   {
     id: "free",
     accent: "amber",
-    badge: "Free start",
-    title: "Free start",
+    badge: "Standard",
+    title: "Standard setup",
     body: "Local word suggestions and speech from this browser.",
     bullets: [
       "Autocomplete learns from your messages on this device.",
@@ -132,7 +132,7 @@ export const STEPS = [
     label: "Welcome",
     title: "Faster communication, fewer keystrokes.",
     subtitle:
-      "September helps you type and speak naturally. Start with simple defaults, then add more when you are ready.",
+      "September helps you speak naturally with fewer keystrokes. Start simple now, and customize anytime.",
     helper: "Get started in minutes.",
     action: "Get started",
   },

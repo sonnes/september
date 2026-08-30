@@ -1,11 +1,15 @@
 export type TimeRange = "day" | "week" | "month";
 export type CostSource = "measured" | "estimated" | "free" | "quota" | "unknown";
-export type UsageEventType =
-  | "message_sent"
-  | "ai_generation"
-  | "tts_generation"
-  | "note_present"
-  | "note_export";
+/** Every kind of event the apps record. One list, read by both of them. */
+export const USAGE_EVENT_TYPES = [
+  "message_sent",
+  "ai_generation",
+  "tts_generation",
+  "note_present",
+  "note_export",
+] as const;
+
+export type UsageEventType = (typeof USAGE_EVENT_TYPES)[number];
 
 /** The events that cost a user something. The rest are counted, not billed. */
 const PROVIDER_CALLS: UsageEventType[] = ["ai_generation", "tts_generation"];

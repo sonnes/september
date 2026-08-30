@@ -346,9 +346,9 @@ export function SpaceTitle({
   );
 }
 /**
- * Which speaker this device plays through, and whether calls hear September.
+ * Which speaker September plays through, and whether calls hear September.
  *
- * Both voices follow the device sound output. The microphone belongs beside
+ * Both voices follow September's sound output. The microphone belongs beside
  * Speak because it carries what Speak makes.
  */
 function AudioSelector() {
@@ -405,7 +405,7 @@ function AudioSelector() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
         <DropdownMenuLabel className="text-muted-foreground text-xs">
-          Sound output for this device
+          September audio
         </DropdownMenuLabel>
         <DropdownMenuRadioGroup
           value={chosen.data ?? ""}

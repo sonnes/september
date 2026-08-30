@@ -10,6 +10,7 @@ import { spaceSlug } from "@september/core/rules/spaces";
 import { buildSuggestionPrompt } from "@september/core/rules/prompts";
 import { presentChunks } from "@september/core/rules/present";
 import { searchHelpGuides } from "@september/core/rules/help";
+import { encodeBackup, parseBackup } from "@september/core/rules/backup";
 ```
 
 `rules/present.ts` holds the presentation and export rules both apps read: the
@@ -20,6 +21,12 @@ needs, and why an artifact cannot be saved yet. See
 `rules/help.ts` holds the task-based Help catalog shared by the browser and
 desktop apps. It keeps guide slugs, category order, platform labels, written
 fallbacks, related links, and search independent of a renderer.
+
+`rules/backup.ts` owns version 1 of the portable backup contract. It validates
+the full file before import, removes unknown fields, writes rows in a stable
+order, and produces the file name and preview counts. The browser and desktop
+tests read the same fixture from `rules/fixtures/backup-v1.json`. The parser
+changes the retired `camera` panel tab to `phrases` in older desktop files.
 
 `rules/panel.ts` keeps the Phrases and Voice tabs of the shared space rail,
 including the tab and open state restored from settings.

@@ -30,7 +30,7 @@ export function PlatformSection() {
             <Points
               points={[
                 'Works on a tablet, a laptop, or a desktop.',
-                'Suggestions and the system voice work without the internet services.',
+                'Suggestions and system voices work offline without cloud services.',
               ]}
             />
             <Button

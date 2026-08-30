@@ -1974,24 +1974,32 @@ test("Talk speaks, and the new-space screen does the naming", async () => {
 
 // ------------------------------------------------------ where sound comes out
 
-test("the sound outputs are read through the system module", async () => {
+test("September owns its sound-output choice", async () => {
   const os = await readText("src/services/os.ts");
+  const rpc = await readText("src-tauri/src/rpc.rs");
+  const audio = await readText("src-tauri/src/audio.rs");
+  const native = await readText("src-tauri/native/audio.m");
 
   assert.match(os, /audio_outputs/);
   assert.match(os, /audio_output_set/);
-  // The Mac remembers the output it plays through, so September keeps no
-  // copy of the answer. One saved setting cannot drift from the real one.
+  assert.match(rpc, /AUDIO_OUTPUT_SETTING/);
+  // The selected device belongs to September's output audio unit. The system
+  // default is read only as a fallback and is never written.
+  assert.match(native, /kAudioOutputUnitProperty_CurrentDevice/);
+  assert.match(native, /writeUtterance/);
+  assert.match(native, /AVAudioPlayerNode/);
+  assert.doesNotMatch(native, /speakUtterance/);
+  assert.doesNotMatch(audio, /set_default_output/);
+  assert.doesNotMatch(audio, /AudioObjectSetPropertyData/);
   assert.doesNotMatch(os, /"audio-output"/);
 });
 
-test("the audio selector sits beside Speak and names the device, not the app", async () => {
+test("the audio selector sits beside Speak and names September", async () => {
   const talk = await readText("src/blocks/space.tsx");
   const picker = talk.match(/function AudioSelector[\s\S]*?\n\}\n/)[0];
 
-  // A press moves the sound of the whole Mac. The words must say so, because
-  // a user who reads "September" would not expect their music to move.
-  assert.match(picker, /Sound output/);
-  assert.match(picker, /this device/i);
+  assert.match(picker, /September audio/);
+  assert.doesNotMatch(picker, /Sound output for this device/i);
   // The picker is next to the button that makes the sound.
   assert.ok(
     talk.indexOf("<AudioSelector") < talk.indexOf("<ActionIcon"),

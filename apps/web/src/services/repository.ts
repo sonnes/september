@@ -1,4 +1,11 @@
 import type { UsageEventType } from '@/rules/usage-summary';
+import { panelStateFrom } from '@september/core/rules/panel';
+import { presentSettings } from '@september/core/rules/present';
+import {
+  PORTABLE_SETTING_KEYS,
+  type BackupContents,
+  type BackupSettings,
+} from '@september/core/rules/backup';
 
 export const DATABASE_NAME = 'september';
 const DATABASE_VERSION = 2;
@@ -123,7 +130,6 @@ function transactionDone(transaction: IDBTransaction): Promise<void> {
   return new Promise((resolve, reject) => {
     transaction.oncomplete = () => resolve();
     transaction.onabort = () => reject(transaction.error ?? new Error('IndexedDB transaction aborted'));
-    transaction.onerror = () => reject(transaction.error ?? new Error('IndexedDB transaction failed'));
   });
 }
 
@@ -229,6 +235,110 @@ export class BrowserRepository {
     const transaction = this.database.transaction(STORES.settings, 'readwrite');
     transaction.objectStore(STORES.settings).put({ key, value } satisfies SettingRow);
     await transactionDone(transaction);
+  }
+
+  /** Reads one consistent copy of every portable row and setting. */
+  async backupContents(): Promise<BackupContents> {
+    const storeNames = [
+      STORES.settings,
+      STORES.spaces,
+      STORES.messages,
+      STORES.notes,
+      STORES.phrases,
+      STORES.analytics,
+    ];
+    const transaction = this.database.transaction(storeNames, 'readonly');
+    const done = transactionDone(transaction);
+    const settingsRequest = requestResult<SettingRow[]>(
+      transaction.objectStore(STORES.settings).getAll()
+    );
+    const spacesRequest = requestResult<Space[]>(transaction.objectStore(STORES.spaces).getAll());
+    const messagesRequest = requestResult<Message[]>(
+      transaction.objectStore(STORES.messages).getAll()
+    );
+    const notesRequest = requestResult<Note[]>(transaction.objectStore(STORES.notes).getAll());
+    const phrasesRequest = requestResult<SavedPhrase[]>(
+      transaction.objectStore(STORES.phrases).getAll()
+    );
+    const analyticsRequest = requestResult<AnalyticsEvent[]>(
+      transaction.objectStore(STORES.analytics).getAll()
+    );
+    const [settingRows, spaces, messages, notes, savedPhrases, usageEvents] = await Promise.all([
+      settingsRequest,
+      spacesRequest,
+      messagesRequest,
+      notesRequest,
+      phrasesRequest,
+      analyticsRequest,
+    ]);
+    await done;
+    const settings = new Map(settingRows.map(row => [row.key, row.value]));
+
+    return {
+      settings: {
+        setup: (settings.get('setup') as BackupSettings['setup'] | undefined) ?? null,
+        speech: (settings.get('speech') as BackupSettings['speech'] | undefined) ?? null,
+        dismissedIdeas:
+          (settings.get('dismissed-ideas') as BackupSettings['dismissedIdeas'] | undefined) ?? [],
+        spaceModes:
+          (settings.get('space-modes') as BackupSettings['spaceModes'] | undefined) ?? {},
+        newSpaceDraft: (settings.get('new-space-draft') as string | undefined) ?? '',
+        panel: panelStateFrom(settings.get('panel-open')),
+        present: presentSettings(settings.get('present')),
+      },
+      spaces,
+      messages: messages.map(({ audio_path: _audioPath, ...message }) => message),
+      notes,
+      savedPhrases,
+      usageEvents,
+    };
+  }
+
+  /** Replaces every portable value in one transaction and keeps local-only state. */
+  async replaceBackupContents(contents: BackupContents): Promise<void> {
+    const storeNames = [
+      STORES.settings,
+      STORES.spaces,
+      STORES.messages,
+      STORES.notes,
+      STORES.phrases,
+      STORES.analytics,
+    ];
+    const transaction = this.database.transaction(storeNames, 'readwrite');
+    const done = transactionDone(transaction);
+
+    try {
+      const settings = transaction.objectStore(STORES.settings);
+      for (const key of PORTABLE_SETTING_KEYS) settings.delete(key);
+      const values: Array<[string, unknown]> = [
+        ['dismissed-ideas', contents.settings.dismissedIdeas],
+        ['space-modes', contents.settings.spaceModes],
+        ['new-space-draft', contents.settings.newSpaceDraft],
+        ['panel-open', contents.settings.panel],
+        ['present', contents.settings.present],
+      ];
+      if (contents.settings.setup !== null) values.push(['setup', contents.settings.setup]);
+      if (contents.settings.speech !== null) values.push(['speech', contents.settings.speech]);
+      for (const [key, value] of values) settings.put({ key, value } satisfies SettingRow);
+
+      const spaces = transaction.objectStore(STORES.spaces);
+      const messages = transaction.objectStore(STORES.messages);
+      const notes = transaction.objectStore(STORES.notes);
+      const phrases = transaction.objectStore(STORES.phrases);
+      const analytics = transaction.objectStore(STORES.analytics);
+      for (const store of [messages, notes, phrases, spaces, analytics]) store.clear();
+      for (const row of contents.spaces) spaces.put(row);
+      for (const row of contents.messages) messages.put(row);
+      for (const row of contents.notes) notes.put(row);
+      for (const row of contents.savedPhrases) phrases.put(row);
+      for (const row of contents.usageEvents) analytics.put(row);
+    } catch (error) {
+      transaction.abort();
+      await done.catch(() => undefined);
+      throw error;
+    }
+
+    await done;
   }
 
   async getBlob(id: string, accessedAt = Date.now()): Promise<Blob | null> {

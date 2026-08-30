@@ -26,6 +26,7 @@ describe('browser route tree', () => {
       '/settings',
       '/settings/writing',
       '/settings/usage',
+      '/settings/data',
       '/settings/connections/$provider',
     ]);
   });

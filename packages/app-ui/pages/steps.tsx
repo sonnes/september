@@ -193,7 +193,7 @@ export function ProfileStep() {
 
           <Field
             title="Speaking style"
-            description="A short note helps September learn how you talk."
+            description="Choose a style or write a brief note about how you speak."
             htmlFor="onboarding-speaking-style"
           >
             <div className="flex flex-wrap gap-2">

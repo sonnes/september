@@ -20,7 +20,9 @@ use crate::{
         CreatedVoice, ElevenLabsQuota, Model, Provider, ProviderKeys, ProviderStatus, Providers,
         Voice, WritingModel,
     },
-    repository::{AnalyticsEvent, Message, Note, Repository, SavedPhrase, Space, SpacePatch},
+    repository::{
+        AnalyticsEvent, BackupContents, Message, Note, Repository, SavedPhrase, Space, SpacePatch,
+    },
     speech::{self, SpeechSettings},
 };
 
@@ -30,6 +32,7 @@ pub(crate) struct BackendState {
 
 pub(crate) const ANALYTICS_RETENTION_MS: i64 = 90 * 24 * 60 * 60 * 1_000;
 const MAX_VOICE_CLONE_BYTES: usize = 100 * 1024 * 1024;
+const AUDIO_OUTPUT_SETTING: &str = "audio-output";
 
 fn now_ms() -> i64 {
     SystemTime::now()
@@ -203,6 +206,49 @@ pub(crate) fn setting_delete(
         .map_err(rpc_error)?;
     }
     Ok(deleted)
+}
+
+#[tauri::command(async)]
+pub(crate) fn backup_export(state: State<'_, BackendState>) -> RpcResult<BackupContents> {
+    let fallback_user_id = user_id()?;
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .backup_contents(&fallback_user_id)
+        .map_err(rpc_error)
+}
+
+#[tauri::command(async)]
+pub(crate) fn backup_import(
+    app: AppHandle,
+    state: State<'_, BackendState>,
+    request: BackupContents,
+) -> RpcResult<()> {
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .replace_backup_contents(&request)
+        .map_err(rpc_error)?;
+    app.emit(
+        "september://settings-changed",
+        SettingsChanged {
+            keys: [
+                "setup",
+                "speech",
+                "dismissed-ideas",
+                "space-modes",
+                "new-space-draft",
+                "panel-open",
+                "present",
+            ]
+            .into_iter()
+            .map(str::to_owned)
+            .collect(),
+        },
+    )
+    .map_err(rpc_error)
 }
 
 #[tauri::command(async)]
@@ -559,9 +605,18 @@ pub(crate) async fn speech_synthesize(
 
 /// Speaks with the voice of the operating system from the native process.
 #[tauri::command]
-pub(crate) async fn speech_system(request: SystemSpeechRequest) -> RpcResult<()> {
+pub(crate) async fn speech_system(
+    state: State<'_, BackendState>,
+    request: SystemSpeechRequest,
+) -> RpcResult<()> {
+    let output = september_output(&state)?;
     tauri::async_runtime::spawn_blocking(move || {
-        audio::speak_system(&request.text, request.voice_id.as_deref(), request.speed)
+        audio::speak_system(
+            &request.text,
+            request.voice_id.as_deref(),
+            request.speed,
+            &output,
+        )
     })
     .await
     .map_err(rpc_error)?
@@ -569,7 +624,11 @@ pub(crate) async fn speech_system(request: SystemSpeechRequest) -> RpcResult<()>
 
 /// Plays one cached cloud-voice file from the native process.
 #[tauri::command]
-pub(crate) async fn speech_file_play(app: AppHandle, request: SpeechFileRequest) -> RpcResult<()> {
+pub(crate) async fn speech_file_play(
+    app: AppHandle,
+    state: State<'_, BackendState>,
+    request: SpeechFileRequest,
+) -> RpcResult<()> {
     let directory = app
         .path()
         .app_local_data_dir()
@@ -582,7 +641,8 @@ pub(crate) async fn speech_file_play(app: AppHandle, request: SpeechFileRequest)
         return Err("the voice file is outside the September audio folder".into());
     }
 
-    tauri::async_runtime::spawn_blocking(move || audio::play_speech_file(&path))
+    let output = september_output(&state)?;
+    tauri::async_runtime::spawn_blocking(move || audio::play_speech_file(&path, &output))
         .await
         .map_err(rpc_error)?
 }
@@ -731,16 +791,43 @@ pub(crate) fn audio_outputs() -> RpcResult<Vec<AudioDevice>> {
     audio::outputs()
 }
 
-/// The output the Mac plays through now.
+/// The output September plays through now.
 #[tauri::command(async)]
-pub(crate) fn audio_output() -> RpcResult<String> {
-    audio::default_output()
+pub(crate) fn audio_output(state: State<'_, BackendState>) -> RpcResult<String> {
+    september_output(&state)
 }
 
-/// Moves the sound of this Mac, so both voices of September follow.
+/// Saves and verifies the output for both voices of September.
 #[tauri::command(async)]
-pub(crate) fn audio_output_set(request: AudioOutputRequest) -> RpcResult<()> {
-    audio::set_default_output(&request.uid)
+pub(crate) fn audio_output_set(
+    state: State<'_, BackendState>,
+    request: AudioOutputRequest,
+) -> RpcResult<()> {
+    audio::validate_output(&request.uid)?;
+    audio::prepare_output(&request.uid)?;
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .put_setting(AUDIO_OUTPUT_SETTING, &Value::String(request.uid))
+        .map_err(rpc_error)
+}
+
+/// The saved September output when it is present, otherwise the system output.
+fn september_output(state: &BackendState) -> RpcResult<String> {
+    let saved = state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .get_setting(AUDIO_OUTPUT_SETTING)
+        .map_err(rpc_error)?;
+    let devices = audio::outputs()?;
+    let system_default = audio::default_output()?;
+    Ok(audio::application_output(
+        saved.as_ref().and_then(Value::as_str),
+        &devices,
+        &system_default,
+    ))
 }
 
 /// Whether calling apps can select September Microphone now.

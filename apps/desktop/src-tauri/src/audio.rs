@@ -1,9 +1,8 @@
 //! The sound outputs of this Mac.
 //!
 //! September speaks with two voices: the voice of the operating system and a
-//! cloud voice that plays a file. Both follow the default output of the Mac.
-//! The app moves that one setting, so the user picks a speaker once and both
-//! voices go there.
+//! cloud voice that plays a file. Both pass through one app-owned audio engine,
+//! whose output can change without moving the default output of the Mac.
 //!
 //! ponytail: raw CoreAudio calls, because this is six properties. A crate for
 //! the same job brings a build step and a bindgen dependency.
@@ -99,26 +98,28 @@ extern "C" {
         data: *mut c_void,
     ) -> OsStatus;
 
-    fn AudioObjectSetPropertyData(
-        object: AudioObjectId,
-        address: *const PropertyAddress,
-        qualifier_size: u32,
-        qualifier: *const c_void,
-        size: u32,
-        data: *const c_void,
-    ) -> OsStatus;
-
     fn september_virtual_microphone_status() -> bool;
     fn september_virtual_microphone_start(error: *mut c_char, capacity: usize) -> i32;
     fn september_virtual_microphone_stop(error: *mut c_char, capacity: usize) -> i32;
+    fn september_audio_output_prepare(
+        uid: *const c_char,
+        error: *mut c_char,
+        capacity: usize,
+    ) -> i32;
     fn september_speech_system(
         words: *const c_char,
         voice_identifier: *const c_char,
         speed: f32,
+        output_uid: *const c_char,
         error: *mut c_char,
         capacity: usize,
     ) -> i32;
-    fn september_speech_file(path: *const c_char, error: *mut c_char, capacity: usize) -> i32;
+    fn september_speech_file(
+        path: *const c_char,
+        output_uid: *const c_char,
+        error: *mut c_char,
+        capacity: usize,
+    ) -> i32;
     fn september_speech_stop();
 }
 
@@ -388,26 +389,35 @@ pub fn default_output() -> Result<String, String> {
     uid_of(device)
 }
 
-/// Moves the sound of this Mac to the named output.
-pub fn set_default_output(uid: &str) -> Result<(), String> {
-    let listed = PropertyAddress::global(DEVICES);
-    let device = read_ids(SYSTEM_OBJECT, &listed, "list the sound devices")?
-        .into_iter()
-        .find(|device| uid_of(*device).is_ok_and(|found| found == uid))
-        .ok_or_else(|| format!("this Mac has no output called {uid}"))?;
+/// The output September uses, or the system output when its saved device left.
+pub fn application_output(
+    saved: Option<&str>,
+    devices: &[AudioDevice],
+    system_default: &str,
+) -> String {
+    saved
+        .filter(|saved| devices.iter().any(|device| device.uid == *saved))
+        .unwrap_or(system_default)
+        .to_owned()
+}
 
-    let address = PropertyAddress::global(DEFAULT_OUTPUT);
+/// Refuses a UID that is not one of this Mac's current sound outputs.
+pub fn validate_output(uid: &str) -> Result<(), String> {
+    if outputs()?.iter().any(|device| device.uid == uid) {
+        Ok(())
+    } else {
+        Err(format!("this Mac has no output called {uid}"))
+    }
+}
+
+/// Verifies that a September-owned audio engine can use this output.
+pub fn prepare_output(uid: &str) -> Result<(), String> {
+    let uid = native_text(uid, "the sound output identifier")?;
+    let mut error = [0 as c_char; NATIVE_ERROR_CAPACITY];
     let status = unsafe {
-        AudioObjectSetPropertyData(
-            SYSTEM_OBJECT,
-            &address,
-            0,
-            ptr::null(),
-            size_of::<AudioObjectId>() as u32,
-            &device as *const AudioObjectId as *const c_void,
-        )
+        september_audio_output_prepare(uid.as_ptr(), error.as_mut_ptr(), NATIVE_ERROR_CAPACITY)
     };
-    checked(status, "move the sound to that output")
+    native_result(status, &error)
 }
 
 /// Whether calling apps can select the September input now.
@@ -461,15 +471,22 @@ fn wait_for_microphone(active: bool) -> Result<VirtualMicrophoneStatus, String> 
 }
 
 /// Speaks with the operating-system voice from the native process.
-pub fn speak_system(text: &str, voice_id: Option<&str>, speed: f32) -> Result<(), String> {
+pub fn speak_system(
+    text: &str,
+    voice_id: Option<&str>,
+    speed: f32,
+    output_uid: &str,
+) -> Result<(), String> {
     let words = native_text(text, "the words")?;
     let voice = native_text(voice_id.unwrap_or_default(), "the voice identifier")?;
+    let output = native_text(output_uid, "the sound output identifier")?;
     let mut error = [0 as c_char; NATIVE_ERROR_CAPACITY];
     let status = unsafe {
         september_speech_system(
             words.as_ptr(),
             voice.as_ptr(),
             speed,
+            output.as_ptr(),
             error.as_mut_ptr(),
             NATIVE_ERROR_CAPACITY,
         )
@@ -478,11 +495,18 @@ pub fn speak_system(text: &str, voice_id: Option<&str>, speed: f32) -> Result<()
 }
 
 /// Plays one cached cloud-voice file from the native process.
-pub fn play_speech_file(path: &Path) -> Result<(), String> {
+pub fn play_speech_file(path: &Path, output_uid: &str) -> Result<(), String> {
     let path = native_text(&path.to_string_lossy(), "the voice file path")?;
+    let output = native_text(output_uid, "the sound output identifier")?;
     let mut error = [0 as c_char; NATIVE_ERROR_CAPACITY];
-    let status =
-        unsafe { september_speech_file(path.as_ptr(), error.as_mut_ptr(), NATIVE_ERROR_CAPACITY) };
+    let status = unsafe {
+        september_speech_file(
+            path.as_ptr(),
+            output.as_ptr(),
+            error.as_mut_ptr(),
+            NATIVE_ERROR_CAPACITY,
+        )
+    };
     native_result(status, &error)
 }
 
@@ -517,9 +541,49 @@ mod tests {
     }
 
     #[test]
-    fn choosing_the_output_already_in_use_changes_nothing() {
+    fn september_uses_its_saved_output_instead_of_the_system_default() {
+        let devices = vec![
+            AudioDevice {
+                uid: "mac-speakers".into(),
+                name: "Mac speakers".into(),
+            },
+            AudioDevice {
+                uid: "headphones".into(),
+                name: "Headphones".into(),
+            },
+        ];
+
+        assert_eq!(
+            application_output(Some("headphones"), &devices, "mac-speakers"),
+            "headphones"
+        );
+    }
+
+    #[test]
+    fn september_follows_the_system_when_its_saved_output_is_gone() {
+        let devices = vec![AudioDevice {
+            uid: "mac-speakers".into(),
+            name: "Mac speakers".into(),
+        }];
+
+        assert_eq!(
+            application_output(Some("unplugged"), &devices, "mac-speakers"),
+            "mac-speakers"
+        );
+    }
+
+    #[test]
+    fn preparing_septembers_output_does_not_move_the_system_output() {
         let before = default_output().unwrap();
-        set_default_output(&before).expect("the output in use can be chosen");
+        let chosen = outputs()
+            .unwrap()
+            .into_iter()
+            .find(|device| device.uid != before)
+            .map(|device| device.uid)
+            .unwrap_or_else(|| before.clone());
+
+        prepare_output(&chosen).expect("September can route to a listed output");
+
         assert_eq!(default_output().unwrap(), before);
     }
 
@@ -537,6 +601,6 @@ mod tests {
 
     #[test]
     fn an_output_that_is_gone_is_refused() {
-        assert!(set_default_output("no-such-device").is_err());
+        assert!(validate_output("no-such-device").is_err());
     }
 }

@@ -23,7 +23,7 @@ test("every settings section has a route", async () => {
 
   assert.deepEqual(
     SETTINGS_NAV.map((item) => item.path),
-    ["/settings", "/settings/writing", "/settings/usage"],
+    ["/settings", "/settings/writing", "/settings/usage", "/settings/data"],
   );
   // A child route holds the tail of its address, under the settings layout.
   assert.match(main, /path: "\/settings",\n  component: SettingsLayout/);
@@ -39,6 +39,7 @@ test("Setup stays the open section while a key is added", () => {
   assert.equal(sectionFor("/settings/connections/openrouter").title, "Services");
   assert.equal(sectionFor("/settings/writing").title, "Writing help");
   assert.equal(sectionFor("/settings/usage").title, "Usage");
+  assert.equal(sectionFor("/settings/data").title, "Data");
 });
 
 test("the setup screen lists the services and nothing else", async () => {
@@ -66,6 +67,42 @@ test("the settings screens hold no key and no command", async () => {
 
   assert.doesNotMatch(settings, /@tauri-apps\/api/);
   assert.doesNotMatch(settings, /localStorage|sessionStorage/);
+});
+
+test("portable backups cross one typed desktop boundary", async () => {
+  const service = await readText("src/services/backup.ts");
+  const rpc = await readText("src-tauri/src/rpc.rs");
+  const lib = await readText("src-tauri/src/lib.rs");
+
+  assert.match(service, /invoke<BackupContents>\("backup_export"\)/);
+  assert.match(service, /invoke<void>\("backup_import"/);
+  assert.match(rpc, /pub\(crate\) fn backup_export/);
+  assert.match(rpc, /pub\(crate\) fn backup_import/);
+  assert.match(lib, /rpc::backup_export/);
+  assert.match(lib, /rpc::backup_import/);
+  assert.doesNotMatch(service, /provider-keys|audio-output|legacy-migration/);
+});
+
+test("data settings previews a backup before replacing local data", async () => {
+  const settings = await readText("src/pages/settings.tsx");
+
+  assert.match(settings, /export function DataSettings/);
+  assert.match(settings, /downloadBackup/);
+  assert.match(settings, /parseBackup/);
+  assert.match(settings, /backupSummary/);
+  assert.match(settings, /accept="\.json,application\/json"/);
+  assert.match(settings, /API keys\s+are not included/);
+  assert.match(settings, /replaces your current settings and data/);
+  assert.match(settings, /AlertDialog/);
+});
+
+test("data settings shows a desktop error instead of hiding it", async () => {
+  const settings = await readText("src/pages/settings.tsx");
+  const backup = await readFile(new URL("../../packages/core/rules/backup.ts", desktopRoot), "utf8");
+
+  assert.match(settings, /backupProblem/);
+  assert.match(backup, /typeof error === "string"/);
+  assert.match(backup, /error\.trim\(\)/);
 });
 
 test("setup and settings share one key panel", async () => {

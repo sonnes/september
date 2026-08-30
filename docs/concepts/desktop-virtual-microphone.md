@@ -24,9 +24,12 @@ removes the device with the fixed UID
 
 ## Send only spoken messages
 
-System speech uses `AVSpeechSynthesizer` in the native process. Cached
-ElevenLabs speech uses `AVAudioPlayer` in the same process. The process tap can
-therefore receive either voice.
+System speech comes from `AVSpeechSynthesizer` buffers in the native process.
+Cached ElevenLabs speech opens as an `AVAudioFile`. Both feed the same
+September-owned `AVAudioEngine`, so the process tap can receive either voice.
+
+The engine routes its output audio unit to the speaker chosen in Talk. This
+changes only September audio and never changes the macOS sound output.
 
 Voice-list previews stay in the WebView player. They help the user choose a
 voice and do not enter the virtual microphone.

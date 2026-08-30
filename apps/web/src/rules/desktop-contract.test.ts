@@ -34,6 +34,7 @@ describe('the web app uses the desktop rules', () => {
       '/settings',
       '/settings/writing',
       '/settings/usage',
+      '/settings/data',
     ]);
     expect(stepsFor({ mode: 'free' }).map(item => item.path)).toEqual([
       '/welcome',
