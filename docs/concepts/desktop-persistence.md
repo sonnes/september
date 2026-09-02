@@ -34,8 +34,9 @@ row rolls back the complete replacement. See
 
 The `spaces` table stores space metadata. The `messages` and `notes` tables
 store their domain fields in typed columns and reference `spaces` through an
-optional foreign key. Deleting a space cascades to its messages and scoped
-notes. Global messages and notes have no space and remain intact.
+optional foreign key. The `agent_messages` table always references one space.
+Deleting a space cascades to its Talk transcript, Agent transcript, and scoped
+notes. Global Talk messages and notes have no space and remain intact.
 
 SQLite stores domain timestamps as Unix milliseconds. Composite indexes cover
 the existing space-scoped message and note queries.
@@ -47,9 +48,9 @@ millisecond timestamp, and validated JSON payload. An index on user and
 timestamp supports the Today and Settings reports without scanning other
 users or older periods.
 
-Usage rows do not reference spaces. Deleting a conversation removes its
-messages and notes, but it does not rewrite historical efficiency or service
-totals.
+Usage rows do not reference spaces. Deleting a conversation removes its Talk
+messages, Agent messages, and notes, but it does not rewrite historical
+efficiency or service totals.
 
 The backend deletes events strictly older than 90 days when the app starts and
 whenever usage is read or written. An event at the exact boundary remains. No
@@ -58,9 +59,10 @@ when the next event or report arrives.
 
 ## Use typed domain commands
 
-The webview lists, gets, puts, and deletes spaces, messages, and notes through
-typed Tauri commands. A put sends a complete domain row. Rust validates its
-identity and timestamps before SQLite inserts or replaces it.
+The webview lists, gets, puts, and deletes spaces, Talk messages, Agent
+messages, and notes through typed Tauri commands. A put sends a complete
+domain row. Rust validates its identity and timestamps before SQLite inserts
+or replaces it.
 
 Space lists belong to one user. Message and note lists can include every row or
 filter by one space. Messages use conversation order, while spaces and notes
@@ -87,8 +89,9 @@ A field is set, never cleared. No writer needs to empty one.
 
 ## Start with the current schema
 
-Schema version 6 creates settings, domain rows, saved phrases, and analytics
-events. The migrations use `CREATE TABLE IF NOT EXISTS`, so databases from
+Schema version 7 adds the separate Agent transcript to settings, domain rows,
+saved phrases, and analytics events. The migrations use
+`CREATE TABLE IF NOT EXISTS`, so databases from
 earlier desktop builds gain missing tables and keep existing settings.
 
 ## Keep browser storage separate

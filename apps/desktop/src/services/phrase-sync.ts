@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 
 import { generate, hasWritingService, itemsFrom } from "@/services/ai";
 import {
-  call,
   useReplaceAiPhrases,
   useUpdateSpace,
   type Message,
@@ -75,38 +74,6 @@ export function useSyncPhrases({
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [space?.id, space?.phrases_synced_count, phrases?.length, messages?.length]);
-}
-
-/**
- * Writes the first phrases of a space, and waits for them.
- *
- * The new-space screen calls this before it opens the space, so the stripe
- * holds words the moment the user arrives. The hook above does the same job
- * for a space that reaches Talk without one.
- *
- * It writes through `call` and not through a mutation, because a screen that
- * awaits it is not always the screen that draws the rows.
- */
-export async function seedPhrases(
-  space: Space,
-  { signal }: { signal?: AbortSignal } = {},
-): Promise<void> {
-  if (!hasWritingService()) return;
-
-  // The starter pack lands with the space, and the model must see it. A
-  // pinned row it repeated would give the stripe the same words twice.
-  const phrases = await call<SavedPhrase[]>("phrase_list", {
-    space_id: space.id,
-  });
-  const rows = await writePhrases({ space, phrases, messages: [], signal });
-  if (rows.length === 0) return;
-
-  await call("phrase_replace_ai", { space_id: space.id, phrases: rows });
-  await call("space_patch", {
-    id: space.id,
-    phrases_synced_count: 0,
-    updated_at: Date.now(),
-  });
 }
 
 async function writePhrases({

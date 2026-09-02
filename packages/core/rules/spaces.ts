@@ -125,8 +125,8 @@ export function newSpaceTitle(
   }
 }
 
-/** A space opens in one of two modes, and the address holds which one. */
-export type SpaceMode = "talk" | "notes";
+/** A space opens in one of three modes, and the address holds which one. */
+export type SpaceMode = "talk" | "notes" | "agent";
 
 /**
  * Where a console writes. Two of them are the modes of a space; the third is
@@ -161,6 +161,12 @@ const COMPOSER_ACTIONS: Record<ComposerMode, ComposerAction> = {
     placeholder: "Write words to add to this note…",
     speaks: false,
   },
+  agent: {
+    label: "Ask",
+    field: "Message to the agent",
+    placeholder: "Ask about this space or request a change…",
+    speaks: false,
+  },
   new: {
     label: "Create space",
     field: "What is this space for?",
@@ -186,7 +192,8 @@ export type SpaceModes = Record<string, string>;
  * mode before it reads a row.
  */
 export function spaceModeFrom(modes: SpaceModes, slug: string): SpaceMode {
-  return modes[slug] === "notes" ? "notes" : "talk";
+  const mode = modes[slug];
+  return mode === "notes" || mode === "agent" ? mode : "talk";
 }
 
 /** The modes with one space changed. The others keep the mode they hold. */
@@ -309,65 +316,3 @@ export const NEW_SPACE_OPENERS: readonly string[] = [
 /** How long a model may take before the screen stops waiting for it. */
 export const MODEL_WAIT_MS = 20_000;
 
-/** The three writes that a new space needs. */
-export type CreateStepId = "space" | "name" | "phrases";
-
-export type StepState = "waiting" | "running" | "done" | "skipped" | "failed";
-
-export interface CreateStep {
-  id: CreateStepId;
-  label: string;
-  state: StepState;
-  /** Why a step did not run, or did not land. */
-  note?: string;
-}
-
-export interface CreateProgress {
-  /** How far the run has reached. */
-  at: "space" | "models" | "done";
-  /** A writing service is connected. Without one, no model step runs. */
-  hasWriting: boolean;
-  /** Why a step did not land, by step. */
-  failed?: Partial<Record<CreateStepId, string>>;
-}
-
-const NO_SERVICE = "Skipped — writing help is not connected";
-
-const STEP_LABELS: Record<CreateStepId, string> = {
-  space: "Making the space",
-  name: "Naming it",
-  phrases: "Writing the first phrases",
-};
-
-const STEP_ORDER: readonly CreateStepId[] = ["space", "name", "phrases"];
-
-/**
- * What the screen shows while a new space is made.
- *
- * The user waits on two model calls, so the work must be on the screen in
- * words while it runs, and not in the label of a button that a reader never
- * hears. A step that cannot run says why: a screen that named work it was not
- * doing would be lying to a user with no writing service.
- */
-export function createSteps(progress: CreateProgress): CreateStep[] {
-  const { at, hasWriting, failed = {} } = progress;
-
-  const stateOf = (id: CreateStepId): Pick<CreateStep, "state" | "note"> => {
-    if (failed[id]) return { state: "failed", note: failed[id] };
-
-    if (id === "space") return { state: at === "space" ? "running" : "done" };
-
-    // The two model steps run together, and neither runs at all without a
-    // service to run it.
-    if (!hasWriting) return { state: "skipped", note: NO_SERVICE };
-    if (at === "space") return { state: "waiting" };
-
-    return { state: at === "models" ? "running" : "done" };
-  };
-
-  return STEP_ORDER.map((id) => ({
-    id,
-    label: STEP_LABELS[id],
-    ...stateOf(id),
-  }));
-}

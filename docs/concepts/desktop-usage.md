@@ -31,9 +31,10 @@ spoken characters that the user did not type.
 ## Keep billing units honest
 
 Each provider call carries a cost source. Apple Intelligence and the macOS
-system voice are `free`. ElevenLabs calls use `quota` credits. OpenRouter uses
-`measured` cost when its response reports a dollar value. An unpriced model is
-`unknown`; the report never substitutes the price of a similar model.
+system voice are `free`. ElevenLabs calls use `quota` credits. An OpenRouter
+model whose published rates September holds is `estimated`, from those rates
+and the tokens the call used. A model nobody prices is `unknown`; the report
+never substitutes the price of a similar model.
 
 Cached ElevenLabs audio records a free cached call with no new credits. If
 cloud synthesis succeeds but playback fails, the cloud call remains a

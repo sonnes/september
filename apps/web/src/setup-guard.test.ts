@@ -26,8 +26,8 @@ describe('the setup flow', () => {
       speakingStyle: 'Plain, warm, and direct.',
       personalWords: '',
       mode: 'free',
-      writingService: 'none',
-      writingModel: '',
+      defaultModel: { service: 'none', model: '' },
+      suggestionsModel: null,
       voiceService: 'system',
     });
 

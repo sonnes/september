@@ -1,10 +1,7 @@
-import type { OnboardingDraft } from '@/rules/onboarding';
+import { modelSettingsFrom } from '@september/core/rules/model-config';
+import { DEFAULT_DRAFT, type OnboardingDraft } from '@/rules/onboarding';
 import { panelStateFrom, type PanelState } from '@/rules/panel';
-import {
-  presentSettings,
-  type PresentSettings,
-  type SpeechAlignment,
-} from '@/rules/present';
+import { presentSettings, type PresentSettings, type SpeechAlignment } from '@/rules/present';
 import { getRepository } from '@/services/repository';
 import type { SpeechSettings } from '@/services/speech';
 
@@ -53,7 +50,10 @@ export async function bootstrapBrowserServices(): Promise<void> {
     repository.getSetting<Partial<Record<Provider, string>>>('provider-keys'),
     repository.getSetting<string>('audio-output'),
   ]);
-  setup = savedSetup;
+  // Every other setting here is normalised as it is read. This one was
+  // not, so a setup written before `defaultModel` existed threw on the
+  // first screen that read it.
+  setup = savedSetup && { ...savedSetup, ...modelSettingsFrom(savedSetup) };
   lastPath = savedPath;
   speech = savedSpeech;
   dismissedIdeas.splice(0, dismissedIdeas.length, ...(savedDismissed ?? []));
@@ -82,7 +82,7 @@ export async function saveSetup(draft: OnboardingDraft): Promise<void> {
 
 export async function updateSetup(patch: Partial<OnboardingDraft>): Promise<SavedSetup> {
   const saved: SavedSetup = {
-    ...(setup ?? { id: LOCAL_USER, name: '', speakingStyle: '', personalWords: '', mode: null, writingService: 'none', writingModel: '', voiceService: 'system' }),
+    ...(setup ?? { id: LOCAL_USER, ...DEFAULT_DRAFT }),
     ...patch,
   };
   await (await getRepository()).putSetting('setup', saved);
@@ -147,9 +147,7 @@ async function speechBlobId(text: string, settings: SpeechSettings): Promise<str
     })
   );
   const digest = await crypto.subtle.digest('SHA-256', input);
-  const hash = [...new Uint8Array(digest)]
-    .map(byte => byte.toString(16).padStart(2, '0'))
-    .join('');
+  const hash = [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
   return `speech:${hash}`;
 }
 
@@ -172,7 +170,10 @@ export async function synthesizeSpeech(
     `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(settings.voiceId)}`,
     {
       method: 'POST',
-      headers: { 'content-type': 'application/json', 'xi-api-key': elevenLabsKey() },
+      headers: {
+        'content-type': 'application/json',
+        'xi-api-key': elevenLabsKey(),
+      },
       body: JSON.stringify({
         text,
         model_id: settings.modelId,
@@ -184,7 +185,8 @@ export async function synthesizeSpeech(
       }),
     }
   );
-  if (!response.ok) throw new Error(`ElevenLabs could not speak. Try again in a minute. (${response.status})`);
+  if (!response.ok)
+    throw new Error(`ElevenLabs could not speak. Try again in a minute. (${response.status})`);
   const speechFile = await response.blob();
   try {
     await repository?.putBlob(cacheId, speechFile);
@@ -218,7 +220,10 @@ export async function synthesizeTimed(
       repository.getBlob(timingId),
     ]);
     if (sound && timing) {
-      return { blob: sound, alignment: JSON.parse(await timing.text()) as SpeechAlignment };
+      return {
+        blob: sound,
+        alignment: JSON.parse(await timing.text()) as SpeechAlignment,
+      };
     }
   } catch {
     // A denied or full private store never stops an export.
@@ -230,7 +235,10 @@ export async function synthesizeTimed(
     )}/with-timestamps`,
     {
       method: 'POST',
-      headers: { 'content-type': 'application/json', 'xi-api-key': elevenLabsKey() },
+      headers: {
+        'content-type': 'application/json',
+        'xi-api-key': elevenLabsKey(),
+      },
       body: JSON.stringify({
         text,
         model_id: settings.modelId,
@@ -242,7 +250,8 @@ export async function synthesizeTimed(
       }),
     }
   );
-  if (!response.ok) throw new Error(`ElevenLabs could not speak. Try again in a minute. (${response.status})`);
+  if (!response.ok)
+    throw new Error(`ElevenLabs could not speak. Try again in a minute. (${response.status})`);
 
   const spoken = (await response.json()) as {
     audio_base64: string;
@@ -254,9 +263,7 @@ export async function synthesizeTimed(
   };
   if (!spoken.alignment) throw new Error('That voice returned no word timing.');
 
-  const bytes = Uint8Array.from(atob(spoken.audio_base64), character =>
-    character.charCodeAt(0)
-  );
+  const bytes = Uint8Array.from(atob(spoken.audio_base64), character => character.charCodeAt(0));
   const blob = new Blob([bytes], { type: 'audio/mpeg' });
   const alignment: SpeechAlignment = {
     characters: spoken.alignment.characters,
@@ -283,9 +290,11 @@ export async function speakSystem(text: string, settings: SpeechSettings): Promi
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = settings.speed;
     if (settings.voiceId) {
-      utterance.voice = speechSynthesis
-        .getVoices()
-        .find(voice => voice.voiceURI === settings.voiceId || voice.name === settings.voiceId) ?? null;
+      utterance.voice =
+        speechSynthesis
+          .getVoices()
+          .find(voice => voice.voiceURI === settings.voiceId || voice.name === settings.voiceId) ??
+        null;
     }
     utterance.onend = () => resolve();
     utterance.onerror = event => reject(new Error(event.error || 'The browser voice stopped.'));
@@ -419,7 +428,12 @@ export const BLANK_CONNECTIONS: Connections = {
 
 function providerStatus(provider: Provider): ProviderStatus {
   return providerKeys[provider]
-    ? { provider, connected: true, label: 'Connected', detail: 'Stored in this browser' }
+    ? {
+        provider,
+        connected: true,
+        label: 'Connected',
+        detail: 'Stored in this browser',
+      }
     : absent(provider);
 }
 
@@ -449,9 +463,7 @@ async function verifyProvider(provider: Provider, key: string): Promise<void> {
       : 'https://api.elevenlabs.io/v1/user',
     {
       headers:
-        provider === 'openrouter'
-          ? { authorization: `Bearer ${key}` }
-          : { 'xi-api-key': key },
+        provider === 'openrouter' ? { authorization: `Bearer ${key}` } : { 'xi-api-key': key },
     }
   );
   if (!response.ok)
@@ -478,10 +490,7 @@ async function providerJson<T>(provider: Provider, url: string): Promise<T> {
   const key = providerKeys[provider];
   if (!key) throw new Error(`Connect ${PROVIDER_NAMES[provider]} in Settings first.`);
   const response = await fetch(url, {
-    headers:
-      provider === 'openrouter'
-        ? { authorization: `Bearer ${key}` }
-        : { 'xi-api-key': key },
+    headers: provider === 'openrouter' ? { authorization: `Bearer ${key}` } : { 'xi-api-key': key },
   });
   if (!response.ok)
     throw new Error(
@@ -491,10 +500,9 @@ async function providerJson<T>(provider: Provider, url: string): Promise<T> {
 }
 
 export async function listVoices(): Promise<Voice[]> {
-  const answer = await providerJson<{ voices: Array<{ voice_id: string; name: string; preview_url?: string }> }>(
-    'elevenlabs',
-    'https://api.elevenlabs.io/v1/voices'
-  );
+  const answer = await providerJson<{
+    voices: Array<{ voice_id: string; name: string; preview_url?: string }>;
+  }>('elevenlabs', 'https://api.elevenlabs.io/v1/voices');
   return answer.voices.map(voice => ({
     id: voice.voice_id,
     name: voice.name,
@@ -503,9 +511,10 @@ export async function listVoices(): Promise<Voice[]> {
 }
 
 export async function listModels(): Promise<Model[]> {
-  const rows = await providerJson<
-    Array<{ model_id: string; name: string; description?: string }>
-  >('elevenlabs', 'https://api.elevenlabs.io/v1/models');
+  const rows = await providerJson<Array<{ model_id: string; name: string; description?: string }>>(
+    'elevenlabs',
+    'https://api.elevenlabs.io/v1/models'
+  );
   return rows.map(model => ({
     id: model.model_id,
     name: model.name,
@@ -539,7 +548,10 @@ export async function listOutputs(): Promise<AudioOutput[]> {
   if (!navigator.mediaDevices?.enumerateDevices) return [];
   return (await navigator.mediaDevices.enumerateDevices())
     .filter(device => device.kind === 'audiooutput')
-    .map(device => ({ uid: device.deviceId, name: device.label || 'Audio output' }));
+    .map(device => ({
+      uid: device.deviceId,
+      name: device.label || 'Audio output',
+    }));
 }
 
 export async function currentOutput(): Promise<string> {

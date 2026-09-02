@@ -5,10 +5,7 @@ use std::{
     thread,
 };
 
-use september_desktop_lib::{
-    apfel::{ApfelGenerateRequest, ApfelMessage},
-    providers::{Provider, ProviderError, Providers},
-};
+use september_desktop_lib::providers::{Provider, ProviderError, Providers};
 use serde_json::{json, Value};
 
 /// Answers one request and hands it back, including a body when it has one.
@@ -174,47 +171,6 @@ async fn eleven_labs_quota_keeps_the_reset_and_raw_counts() {
 }
 
 #[tokio::test]
-async fn open_router_generation_reports_its_model_and_measured_cost() {
-    let (base, requests) = serve_once(
-        "200 OK",
-        json!({
-            "model": "qwen/qwen3-next-80b-a3b-instruct:free",
-            "choices": [{
-                "message": {"content": "Hello"},
-                "finish_reason": "stop"
-            }],
-            "usage": {
-                "prompt_tokens": 12,
-                "completion_tokens": 2,
-                "total_tokens": 14,
-                "cost": 0.003
-            }
-        }),
-    );
-    let request = ApfelGenerateRequest {
-        messages: vec![ApfelMessage::user("Say hello")],
-        temperature: None,
-        max_tokens: None,
-        response_format: None,
-        model: None,
-    };
-
-    let answer = open_router(&base)
-        .generate("sk-test", &request)
-        .await
-        .unwrap();
-
-    // No choice sends the free list, so one bad model is not one bad day.
-    let head = requests.recv().unwrap();
-    assert!(head.contains("\"models\""), "{head}");
-    assert_eq!(
-        answer.model.as_deref(),
-        Some("qwen/qwen3-next-80b-a3b-instruct:free")
-    );
-    assert_eq!(answer.cost_usd, Some(0.003));
-}
-
-#[tokio::test]
 async fn the_writing_models_hold_the_free_ones_first() {
     let (base, requests) = serve_once(
         "200 OK",
@@ -256,38 +212,6 @@ async fn the_writing_models_hold_the_free_ones_first() {
         ]
     );
     assert_eq!(models[0].name, "Qwen: Qwen3 Next 80B (free)");
-}
-
-#[tokio::test]
-async fn a_chosen_model_replaces_the_free_list() {
-    let (base, requests) = serve_once(
-        "200 OK",
-        json!({
-            "model": "qwen/qwen3-next-80b-a3b-instruct:free",
-            "choices": [{ "message": {"content": "Hello"}, "finish_reason": "stop" }],
-            "usage": { "prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2 }
-        }),
-    );
-    let request = ApfelGenerateRequest {
-        messages: vec![ApfelMessage::user("Say hello")],
-        temperature: None,
-        max_tokens: None,
-        response_format: None,
-        model: Some("qwen/qwen3-next-80b-a3b-instruct:free".into()),
-    };
-
-    open_router(&base)
-        .generate("sk-test", &request)
-        .await
-        .unwrap();
-
-    // The user named one model, so the request asks for that one only.
-    let head = requests.recv().unwrap();
-    assert!(
-        head.contains("\"model\":\"qwen/qwen3-next-80b-a3b-instruct:free\""),
-        "{head}"
-    );
-    assert!(!head.contains("\"models\""), "{head}");
 }
 
 #[tokio::test]

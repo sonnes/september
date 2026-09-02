@@ -1,4 +1,5 @@
 import { AboutSection } from '@/components/home/about-section';
+import { AgentSection } from '@/components/home/agent-section';
 import { EnhancedCTASection } from '@/components/home/enhanced-cta-section';
 import { Footer } from '@/components/home/footer';
 import { LANDING_TITLE } from '@september/core/rules/titles';
@@ -24,6 +25,7 @@ export function HomePage() {
         <SpacesSection />
         <VoiceSection />
         <NotesSection />
+        <AgentSection />
         <PlatformSection />
         <PrivacySection />
         <AboutSection />

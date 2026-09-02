@@ -91,21 +91,3 @@ export function Screen({
     </>
   );
 }
-
-/**
- * A destination that has a place in the shell but no ported screen yet.
- *
- * ponytail: one component for all five, so a ported screen replaces its route
- * component and this stays the same size.
- */
-export function AppScreen({ path }: { path: AppPath }) {
-  const item = navFor(path);
-
-  return (
-    <Screen title={item.title} description={item.description}>
-      <p className="text-muted-foreground rounded-xl border border-dashed p-8 text-center text-sm">
-        This screen is not available yet.
-      </p>
-    </Screen>
-  );
-}

@@ -27,6 +27,9 @@ describe('analyticsPath', () => {
     expect(analyticsPath('/spaces/$slug/talk', '/spaces/amma/talk')).toBe(
       '/spaces/$slug/talk',
     );
+    expect(analyticsPath('/spaces/$slug/agent', '/spaces/amma/agent')).toBe(
+      '/spaces/$slug/agent',
+    );
     expect(
       analyticsPath(
         '/spaces/$slug/notes/$noteSlug',

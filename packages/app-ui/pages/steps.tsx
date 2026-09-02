@@ -4,7 +4,10 @@ import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@september/ui/components/button";
 import { Input } from "@september/ui/components/input";
 import { Label } from "@september/ui/components/label";
-import { RadioGroup, RadioGroupItem } from "@september/ui/components/radio-group";
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from "@september/ui/components/radio-group";
 import {
   Select,
   SelectContent,
@@ -39,14 +42,19 @@ import {
   type ProviderStatus,
   type Voice,
 } from "@platform/services/os";
-import { CloudStatus, KeyPanel, Mark, ModeCard, Status } from "@september/app-ui/blocks/services";
+import {
+  CloudStatus,
+  KeyPanel,
+  Mark,
+  ModeCard,
+  Status,
+} from "@september/app-ui/blocks/services";
 import { speechSettings } from "@platform/services/speech";
 import { documentTitle } from "@september/core/rules/titles";
 
 // DESIGN.md asks for a 44px target on primary actions; `lg` is 40px.
 // Below `sm` it takes the whole row, which is the widest target available.
 const ACTION = "h-11 w-full px-6 font-semibold sm:w-auto";
-
 
 function Step({
   path,
@@ -169,7 +177,12 @@ export function ProfileStep() {
       <Step
         path="/profile"
         footer={
-          <Button type="submit" size="lg" className={ACTION} disabled={!name.trim()}>
+          <Button
+            type="submit"
+            size="lg"
+            className={ACTION}
+            disabled={!name.trim()}
+          >
             {stepFor("/profile").action}
           </Button>
         }
@@ -201,7 +214,9 @@ export function ProfileStep() {
                 <Button
                   key={option.label}
                   type="button"
-                  variant={speakingStyle === option.value ? "default" : "outline"}
+                  variant={
+                    speakingStyle === option.value ? "default" : "outline"
+                  }
                   aria-pressed={speakingStyle === option.value}
                   onClick={() => setSpeakingStyle(option.value)}
                   className="h-11 rounded-full px-4"
@@ -344,7 +359,10 @@ export function FinishStep() {
           <h3 className="mt-1 text-base font-semibold">{mode?.title}</h3>
           <dl className="mt-5 grid gap-3">
             <SummaryRow label="Name" value={draft.name} />
-            <SummaryRow label="Speaking style" value={style?.label ?? "Custom"} />
+            <SummaryRow
+              label="Speaking style"
+              value={style?.label ?? "Custom"}
+            />
             <SummaryRow label="Services" value="Connect later in Settings" />
           </dl>
         </div>
@@ -367,7 +385,8 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 export function ConnectStep() {
   const navigate = useNavigate();
   const { draft, setDraft } = useDraft();
-  const [connections, setConnections] = useState<Connections>(BLANK_CONNECTIONS);
+  const [connections, setConnections] =
+    useState<Connections>(BLANK_CONNECTIONS);
   const [checking, setChecking] = useState(true);
   const [voices, setVoices] = useState<Voice[]>([]);
   const [voiceId, setVoiceId] = useState("");
@@ -382,14 +401,17 @@ export function ConnectStep() {
       // The step answers itself, so a supported Mac needs no action.
       setDraft((current) => ({
         ...current,
-        writingService:
-          current.writingService !== "none"
-            ? current.writingService
-            : found.apple.available
-              ? "apple"
-              : found.openrouter.connected
-                ? "openrouter"
-                : "none",
+        defaultModel: {
+          ...current.defaultModel,
+          service:
+            current.defaultModel.service !== "none"
+              ? current.defaultModel.service
+              : found.apple.available
+                ? "apple"
+                : found.openrouter.connected
+                  ? "openrouter"
+                  : "none",
+        },
         voiceService: found.elevenlabs.connected
           ? "elevenlabs"
           : current.voiceService,
@@ -461,25 +483,31 @@ export function ConnectStep() {
           <RadioGroup
             aria-label="Writing help"
             className="gap-3"
-            value={draft.writingService}
+            value={draft.defaultModel.service}
             onValueChange={(value) =>
               setDraft((current) => ({
                 ...current,
-                writingService: value as typeof current.writingService,
+                defaultModel: {
+                  ...current.defaultModel,
+                  service: value as typeof current.defaultModel.service,
+                },
               }))
             }
           >
             {WRITING_SERVICES.filter(
               // A Mac that cannot run it never shows a control it must disable.
-              (option) => option.value !== "apple" || connections.apple.supported,
+              (option) =>
+                option.value !== "apple" || connections.apple.supported,
             ).map((option) => (
               <Choice
                 key={option.value}
                 value={option.value}
                 label={option.label}
                 description={option.description}
-                selected={draft.writingService === option.value}
-                disabled={option.value === "apple" && !connections.apple.available}
+                selected={draft.defaultModel.service === option.value}
+                disabled={
+                  option.value === "apple" && !connections.apple.available
+                }
                 badge={
                   option.value === "apple" ? (
                     <Status
@@ -491,7 +519,10 @@ export function ConnectStep() {
                       }
                     />
                   ) : option.value === "openrouter" ? (
-                    <CloudStatus checking={checking} status={connections.openrouter} />
+                    <CloudStatus
+                      checking={checking}
+                      status={connections.openrouter}
+                    />
                   ) : null
                 }
               >
@@ -542,7 +573,10 @@ export function ConnectStep() {
                   option.value === "system" ? (
                     <Status tone="ready" text="Ready" />
                   ) : (
-                    <CloudStatus checking={checking} status={connections.elevenlabs} />
+                    <CloudStatus
+                      checking={checking}
+                      status={connections.elevenlabs}
+                    />
                   )
                 }
               >
@@ -557,39 +591,39 @@ export function ConnectStep() {
                     />
                     {voices.length > 0 && (
                       <div className="flex flex-wrap items-center gap-2">
-                          <Select value={voiceId} onValueChange={setVoiceId}>
-                            <SelectTrigger
-                              aria-label="Voice"
-                              className="h-11 w-full flex-1 sm:min-w-64"
-                            >
-                              <SelectValue placeholder="Pick a voice" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {voices.map((voice) => (
-                                <SelectItem key={voice.id} value={voice.id}>
-                                  {voice.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {chosenVoice?.preview_url && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="h-11 px-4"
-                              // ponytail: the voice list carries a public sample,
-                              // so a preview needs no key and no speech call.
-                              onClick={() =>
-                                void new Audio(chosenVoice.preview_url!).play()
-                              }
-                            >
-                              ▶ Hear it
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  )}
+                        <Select value={voiceId} onValueChange={setVoiceId}>
+                          <SelectTrigger
+                            aria-label="Voice"
+                            className="h-11 w-full flex-1 sm:min-w-64"
+                          >
+                            <SelectValue placeholder="Pick a voice" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {voices.map((voice) => (
+                              <SelectItem key={voice.id} value={voice.id}>
+                                {voice.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {chosenVoice?.preview_url && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-11 px-4"
+                            // ponytail: the voice list carries a public sample,
+                            // so a preview needs no key and no speech call.
+                            onClick={() =>
+                              void new Audio(chosenVoice.preview_url!).play()
+                            }
+                          >
+                            ▶ Hear it
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
               </Choice>
             ))}
           </RadioGroup>
@@ -613,7 +647,9 @@ function Section({
     <div className="grid gap-5 border-l border-zinc-200 pl-4 sm:pl-5 lg:grid-cols-[15rem_1fr] lg:gap-8">
       <div>
         <p className="text-sm font-semibold">{title}</p>
-        <p className="mt-2 text-xs leading-relaxed text-zinc-500">{description}</p>
+        <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+          {description}
+        </p>
       </div>
       <div className="space-y-3">{children}</div>
     </div>

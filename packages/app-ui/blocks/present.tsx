@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
-import { Palette, Pause, Play, Volume2, VolumeX, X } from "lucide-react";
+import { Palette, Volume2, VolumeX, X } from "lucide-react";
 
 import {
   chunkFontRatio,

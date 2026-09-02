@@ -350,6 +350,24 @@ pub(crate) struct ApfelState {
 }
 
 impl ApfelState {
+    /// Where the sidecar of this run answers, starting it if it is not up.
+    ///
+    /// The WebView cannot call it: the sidecar allows a loopback origin only,
+    /// and the WebView is not one. The proxy calls it on the WebView's behalf.
+    pub(crate) async fn endpoint(&self, app: &AppHandle) -> Result<(String, String)> {
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        {
+            let (client, _health) = self.ready(app).await?;
+            Ok((client.base_url.clone(), client.token.clone()))
+        }
+
+        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+        {
+            let _ = app;
+            Err(ApfelError::Unsupported)
+        }
+    }
+
     pub(crate) async fn status(&self, app: &AppHandle) -> ApfelStatus {
         #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
         {

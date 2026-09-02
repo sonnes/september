@@ -10,12 +10,12 @@ September borrows four services to do two jobs. The user chooses a job, not a
 brand. This keeps the question answerable by a person who has never heard of
 OpenRouter.
 
-| Job | Service | Setup cost | Where it runs |
-| --- | --- | --- | --- |
-| Writing help | Apple Intelligence | none | On the Mac |
-| Writing help | OpenRouter | an API key, and a model or Automatic | Cloud |
-| Voice | macOS system voice | none | On the Mac |
-| Voice | ElevenLabs | an API key and a model, then a voice | Cloud |
+| Job          | Service            | Setup cost                           | Where it runs |
+| ------------ | ------------------ | ------------------------------------ | ------------- |
+| Writing help | Apple Intelligence | none                                 | On the Mac    |
+| Writing help | OpenRouter         | an API key, and a model or Automatic | Cloud         |
+| Voice        | macOS system voice | none                                 | On the Mac    |
+| Voice        | ElevenLabs         | an API key and a model, then a voice | Cloud         |
 
 Each job has a default that already works, so the Connect step needs no action
 on a supported Mac. Voice always has a working answer, because the system voice
@@ -23,16 +23,23 @@ needs no account and no network. A broken key can never stop speech.
 
 ## Where a value lives
 
-| Value | Home |
-| --- | --- |
-| An API key | The macOS Keychain, then process memory after startup |
-| The chosen services and the voice id | SQLite settings, key `services` |
-| A key status, an account label, a quota | Memory, for the length of one screen |
-| Apple Intelligence availability | Memory, for the life of the process |
+| Value                                   | Home                                                  |
+| --------------------------------------- | ----------------------------------------------------- |
+| An API key                              | The macOS Keychain, then process memory after startup |
+| The chosen services and the voice id    | SQLite settings, key `services`                       |
+| A key status, an account label, a quota | Memory, for the length of one screen                  |
+| Apple Intelligence availability         | Memory, for the life of the process                   |
 
 A key crosses the process boundary one time, from the key field to Rust. It
 never comes back. `src-tauri/src/providers.rs` owns the Keychain and the
 network. `src/services/os.ts` owns the only calls from React.
+
+The WebView writes with a typed model client, and a typed model client wants
+an address and a key. September gives it the address of a loopback proxy and a
+token that lasts one run. `src-tauri/src/proxy.rs` binds `127.0.0.1` on a free
+port, serves one path, and swaps the run token for the real key before it
+forwards. A page that guesses the port still needs a token it was never given,
+and a key still never reaches the WebView.
 
 Rust reads the OpenRouter and ElevenLabs entries once during startup. Later
 commands use the cached keys. Connecting or forgetting a service updates the
@@ -57,11 +64,11 @@ one time.
 The apfel sidecar reports three states, and the step shows a different control
 for each one. See [on-device AI](on-device-ai.md).
 
-| `supported` | `available` | The step shows |
-| --- | --- | --- |
-| `false` | `false` | Nothing. The choice disappears. |
-| `true` | `false` | "Turn it on in System Settings", with the reason |
-| `true` | `true` | "Ready", and the choice is selected |
+| `supported` | `available` | The step shows                                   |
+| ----------- | ----------- | ------------------------------------------------ |
+| `false`     | `false`     | Nothing. The choice disappears.                  |
+| `true`      | `false`     | "Turn it on in System Settings", with the reason |
+| `true`      | `true`      | "Ready", and the choice is selected              |
 
 An unsupported Mac gets no disabled control. A control the user can never use
 is noise.
@@ -104,16 +111,20 @@ model. The request then carries the free list of the app, and OpenRouter uses
 the first model that answers. One busy model is therefore not one lost
 sentence. A named model replaces that list, and the request asks for it alone.
 
+The first picker writes the default model settings. Every text-generation job
+uses these settings. A second picker can write separate Suggestions settings.
+If the separate value is not null, Suggestions use it.
+
 ## The voice list holds the voices of the account
 
 `GET /v2/voices?page_size=100&voice_type=non-default` gives the list. The web
 app asks the same way, so the two apps show one list.
 
-| Part | Value | Why |
-| --- | --- | --- |
-| Version | `v2` | The v1 list has no `voice_type` filter. |
+| Part         | Value         | Why                                               |
+| ------------ | ------------- | ------------------------------------------------- |
+| Version      | `v2`          | The v1 list has no `voice_type` filter.           |
 | `voice_type` | `non-default` | The stock voices are not the voices of this user. |
-| `page_size` | `100` | A page gives 10 without it. |
+| `page_size`  | `100`         | A page gives 10 without it.                       |
 
 Rust sorts the list by category, in the order of the web app: `cloned`,
 `professional`, `premade`, `similar`. The category does not reach the screen.

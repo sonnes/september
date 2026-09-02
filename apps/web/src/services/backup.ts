@@ -17,7 +17,7 @@ export async function downloadBackup(): Promise<void> {
       [
         encodeBackup({
           format: 'september-backup',
-          formatVersion: 1,
+          formatVersion: 2,
           exportedAt: at.toISOString(),
           source: 'web',
           appVersion: packageMetadata.version,

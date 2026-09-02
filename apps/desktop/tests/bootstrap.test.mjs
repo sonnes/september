@@ -38,7 +38,6 @@ import {
 } from "../src/rules/stripes.ts";
 import {
   composerAction,
-  createSteps,
   deleteLastWord,
   filterSpaces,
   freeTitle,
@@ -54,6 +53,7 @@ import {
   timeAgo,
   transcriptPage,
 } from "../src/rules/spaces.ts";
+import { AGENT_MAX_WRITES } from "@september/core/rules/agent";
 import {
   buildSpaceContextPrompt,
   buildSuggestionPrompt,
@@ -79,6 +79,7 @@ import {
 
 const desktopRoot = new URL("../", import.meta.url);
 const sharedRuleFiles = new Set([
+  "agent.ts",
   "notes.ts",
   "panel.ts",
   "present.ts",
@@ -105,7 +106,10 @@ async function readText(path) {
   const sharedUi = path.match(/^src\/(blocks|layouts|pages)\/([^/]+\.tsx)$/);
   if (sharedUi) {
     return readFile(
-      new URL(`../../packages/app-ui/${sharedUi[1]}/${sharedUi[2]}`, desktopRoot),
+      new URL(
+        `../../packages/app-ui/${sharedUi[1]}/${sharedUi[2]}`,
+        desktopRoot,
+      ),
       "utf8",
     );
   }
@@ -119,7 +123,10 @@ test("desktop is an independent pnpm app", async () => {
   assert.equal(packageJson.scripts.dev, "vite");
   assert.equal(packageJson.scripts.build, "tsc --noEmit && vite build");
   assert.equal(packageJson.scripts["tauri:dev"], "node scripts/tauri.mjs dev");
-  assert.equal(packageJson.scripts["tauri:build"], "node scripts/tauri.mjs build");
+  assert.equal(
+    packageJson.scripts["tauri:build"],
+    "node scripts/tauri.mjs build",
+  );
 });
 
 test("Tauri opens the independent UI at the 13-inch iPad baseline", async () => {
@@ -157,6 +164,7 @@ test("every desktop page gives the September window a title", async () => {
       "/spaces",
       "/spaces/new",
       "/spaces/general/talk",
+      "/spaces/general/agent",
       "/spaces/general/notes",
       "/spaces/general/notes/appointment",
       "/voice",
@@ -180,6 +188,7 @@ test("every desktop page gives the September window a title", async () => {
       "September — Spaces",
       "September — New space",
       "September — Talk",
+      "September — Agent",
       "September — Notes",
       "September — Notes",
       "September — Voice",
@@ -234,7 +243,10 @@ test("only advanced setup walks through the connect step", () => {
 
   assert.deepEqual(paths(free), ["/welcome", "/profile", "/mode", "/finish"]);
   assert.deepEqual(paths({ name: "", mode: null }), paths(free));
-  assert.deepEqual(paths(advanced), STEPS.map((step) => step.path));
+  assert.deepEqual(
+    paths(advanced),
+    STEPS.map((step) => step.path),
+  );
 });
 
 test("steps move in order", () => {
@@ -268,10 +280,13 @@ test("a step opens only after its required answers exist", () => {
   assert.equal(canReach("/connect", advanced), true);
 });
 
-test("the draft carries a service choice, never a key", async () => {
+test("the draft carries model configurations, never a key", async () => {
   const onboarding = await readText("src/rules/onboarding.ts");
 
-  assert.match(onboarding, /writingService/);
+  assert.match(onboarding, /ModelSettings/);
+  assert.match(onboarding, /defaultModel/);
+  assert.match(onboarding, /suggestionsModel/);
+  assert.doesNotMatch(onboarding, /writingService|writingModel/);
   assert.match(onboarding, /voiceService/);
   assert.doesNotMatch(onboarding, /apiKey|secret|Key:/i);
 });
@@ -313,7 +328,9 @@ test("each control has one label, and no label repeats its section title", async
   const steps = await readText("src/pages/steps.tsx");
   const value = (match) => match.split('"')[1];
   const ids = (steps.match(/\bid="onboarding-[a-z-]+"/g) ?? []).map(value);
-  const labelled = (steps.match(/\bhtmlFor="onboarding-[a-z-]+"/g) ?? []).map(value);
+  const labelled = (steps.match(/\bhtmlFor="onboarding-[a-z-]+"/g) ?? []).map(
+    value,
+  );
 
   // Field owns the only Label, so a section title cannot repeat above a control.
   assert.equal((steps.match(/<Label/g) ?? []).length, 1);
@@ -328,7 +345,10 @@ test("the profile name starts from the operating-system name", async () => {
     /rpc::user_name/,
     "the backend must expose the name",
   );
-  assert.match(await readText("src/services/os.ts"), /invoke<string>\("user_name"\)/);
+  assert.match(
+    await readText("src/services/os.ts"),
+    /invoke<string>\("user_name"\)/,
+  );
 
   const packageJson = await readJson("package.json");
   assert.ok(packageJson.dependencies["@tauri-apps/api"]);
@@ -348,7 +368,10 @@ test("the Rust backend owns the private apfel sidecar", async () => {
   assert.match(cargo, /reqwest/);
   assert.deepEqual(apfelConfig.bundle.externalBin, ["binaries/apfel"]);
   assert.deepEqual(apfelConfig.bundle.resources, ["third-party/apfel-LICENSE"]);
-  assert.match(await readText("src-tauri/third-party/apfel-LICENSE"), /MIT License/);
+  assert.match(
+    await readText("src-tauri/third-party/apfel-LICENSE"),
+    /MIT License/,
+  );
   assert.match(packageJson.scripts["apfel:prepare"], /prepare-apfel\.mjs/);
   assert.match(packageJson.scripts["tauri:dev"], /scripts\/tauri\.mjs dev/);
   assert.match(packageJson.scripts["tauri:build"], /scripts\/tauri\.mjs build/);
@@ -390,7 +413,11 @@ test("the connect step asks by job and keeps keys out of the UI", async () => {
     "provider_voices",
     "provider_models",
   ]) {
-    assert.match(lib, new RegExp(`rpc::${command}\\b`), `${command} is not registered`);
+    assert.match(
+      lib,
+      new RegExp(`rpc::${command}\\b`),
+      `${command} is not registered`,
+    );
     assert.match(os, new RegExp(`"${command}"`), `${command} has no bridge`);
   }
 });
@@ -492,8 +519,16 @@ test("every app destination has a route and an icon", async () => {
 
   assert.ok(APP_NAV.length > 0);
   for (const item of APP_NAV) {
-    assert.match(main, new RegExp(`"${item.path}"`), `${item.path} needs a route`);
-    assert.match(shell, new RegExp(`"${item.path}":`), `${item.path} needs an icon`);
+    assert.match(
+      main,
+      new RegExp(`"${item.path}"`),
+      `${item.path} needs a route`,
+    );
+    assert.match(
+      shell,
+      new RegExp(`"${item.path}":`),
+      `${item.path} needs an icon`,
+    );
   }
 });
 
@@ -510,7 +545,9 @@ test("the Eye tracker test bed is in the app sidebar", () => {
 
 test("Help has matching home and guide routes outside the setup guard", async () => {
   const main = await readText("src/main.tsx");
-  const guardedRoutes = main.match(/appRoute\.addChildren\(\[[\s\S]*?\n  \]\)/)?.[0];
+  const guardedRoutes = main.match(
+    /appRoute\.addChildren\(\[[\s\S]*?\n  \]\)/,
+  )?.[0];
 
   assert.match(main, /HelpScreen/);
   assert.match(main, /path: "\/help\/\$guideSlug"/);
@@ -537,7 +574,10 @@ test("onboarding opens setup Help without unmounting or changing its draft", asy
 test("the app opens where the user left it", () => {
   assert.equal(openingPath("/voice"), "/voice");
   assert.equal(openingPath("/spaces/amma/talk"), "/spaces/amma/talk");
-  assert.equal(openingPath("/settings/connections/openrouter"), "/settings/connections/openrouter");
+  assert.equal(
+    openingPath("/settings/connections/openrouter"),
+    "/settings/connections/openrouter",
+  );
 
   // A setup step must never come back. An address of nothing is not a screen.
   assert.equal(openingPath("/welcome"), "/dashboard");
@@ -563,7 +603,10 @@ test("setup and the app are separate layouts", async () => {
 
   // The root route holds an outlet only, so a step never wears the app
   // sidebar and an app screen never wears the setup sidebar.
-  assert.doesNotMatch(main, /createRootRoute\(\{\s*component: OnboardingLayout/);
+  assert.doesNotMatch(
+    main,
+    /createRootRoute\(\{\s*component: OnboardingLayout/,
+  );
   assert.match(main, /OnboardingLayout/);
   assert.match(main, /AppShell/);
   assert.match(main, /id: "setup"/);
@@ -573,7 +616,11 @@ test("setup and the app are separate layouts", async () => {
 test("both sidebars show the published brand mark", async () => {
   const brand = await readText("src/blocks/brand.tsx");
 
-  assert.match(brand, /"\/logo\.svg"/, "the mark comes from the published file");
+  assert.match(
+    brand,
+    /"\/logo\.svg"/,
+    "the mark comes from the published file",
+  );
   for (const file of ["src/layouts/onboarding.tsx", "src/layouts/app.tsx"]) {
     assert.match(await readText(file), /BrandMark/, `${file} needs the mark`);
   }
@@ -695,8 +742,14 @@ test("search keeps the spaces whose title holds the words", () => {
 
   assert.deepEqual(filterSpaces(spaces, "").length, 3);
   assert.deepEqual(filterSpaces(spaces, "  ").length, 3);
-  assert.deepEqual(filterSpaces(spaces, "doctor").map((s) => s.id), ["a"]);
-  assert.deepEqual(filterSpaces(spaces, "HELP").map((s) => s.id), ["b"]);
+  assert.deepEqual(
+    filterSpaces(spaces, "doctor").map((s) => s.id),
+    ["a"],
+  );
+  assert.deepEqual(
+    filterSpaces(spaces, "HELP").map((s) => s.id),
+    ["b"],
+  );
   assert.deepEqual(filterSpaces(spaces, "nothing"), []);
 });
 
@@ -809,7 +862,11 @@ test("a failed command carries a message the screen can show", async () => {
   // wrapper turns every rejection into an Error.
   assert.match(data, /function call</);
   assert.match(data, /new Error\(String\(reason\)\)/);
-  assert.equal(data.match(/invoke</g)?.length, 1, "every command goes through call()");
+  assert.equal(
+    data.match(/invoke</g)?.length,
+    1,
+    "every command goes through call()",
+  );
 });
 
 test("Talk is a route inside a space", async () => {
@@ -831,7 +888,10 @@ test("one setting owns the voice, and setup seeds it", async () => {
   assert.doesNotMatch(os, /saveServices/);
   assert.doesNotMatch(os, /"services"/);
   assert.match(steps, /saveSpeech\(/);
-  assert.match(await readText("src/blocks/speech-settings.tsx"), /saveSpeech\(/);
+  assert.match(
+    await readText("src/blocks/speech-settings.tsx"),
+    /saveSpeech\(/,
+  );
 });
 
 test("a voice file is named for the settings and the words", async () => {
@@ -849,7 +909,9 @@ test("the audio file reaches the WebView through the asset protocol", async () =
 
   assert.match(os, /convertFileSrc/);
   assert.equal(config.app.security.assetProtocol.enable, true);
-  assert.deepEqual(config.app.security.assetProtocol.scope, ["$APPLOCALDATA/audio/*"]);
+  assert.deepEqual(config.app.security.assetProtocol.scope, [
+    "$APPLOCALDATA/audio/*",
+  ]);
 });
 
 test("the player holds one sound at a time", async () => {
@@ -965,7 +1027,10 @@ test("eye control uses the camera without reinstalling a virtual camera", async 
   assert.match(plist, /NSCameraUsageDescription/);
   assert.doesNotMatch(plist, /NSSystemExtensionUsageDescription/);
   assert.match(entitlements, /com\.apple\.security\.device\.camera/);
-  assert.doesNotMatch(entitlements, /com\.apple\.developer\.system-extension\.install/);
+  assert.doesNotMatch(
+    entitlements,
+    /com\.apple\.developer\.system-extension\.install/,
+  );
 
   for (const path of [
     "scripts/build-camera-extension.mjs",
@@ -995,7 +1060,10 @@ test("eye tracking exists only in one camera-box test bed", async () => {
   assert.match(page, /Calibrate/);
   assert.match(page, /calibrationPoints/);
   assert.match(gaze, /face_crop/);
-  assert.doesNotMatch(page, /Tracking log|\.click\(|localStorage|sessionStorage/i);
+  assert.doesNotMatch(
+    page,
+    /Tracking log|\.click\(|localStorage|sessionStorage/i,
+  );
   assert.match(service, /new Channel<GazeEvent>/);
   for (const command of ["gaze_start", "gaze_stop"]) {
     assert.match(service, new RegExp(command));
@@ -1006,7 +1074,10 @@ test("eye tracking exists only in one camera-box test bed", async () => {
     /gaze_calibration|DebugFrame|event: "sample"|GazeEvent::Sample/,
   );
   assert.match(manifest, /cidre/);
-  assert.doesNotMatch(`${service}\n${gaze}\n${manifest}`, /enigo|mouse_move|MouseControllable/);
+  assert.doesNotMatch(
+    `${service}\n${gaze}\n${manifest}`,
+    /enigo|mouse_move|MouseControllable/,
+  );
 });
 test("a Developer ID build embeds the host provisioning profile", async () => {
   const config = await readJson("src-tauri/tauri.conf.json");
@@ -1039,7 +1110,14 @@ test("the speech settings hold everything that shapes the sound", async () => {
   const speech = await readText("src/services/speech.ts");
   const defaults = speech.match(/DEFAULT_SPEECH[\s\S]*?\};/)[0];
 
-  for (const key of ["provider", "voiceId", "modelId", "stability", "similarity", "speed"]) {
+  for (const key of [
+    "provider",
+    "voiceId",
+    "modelId",
+    "stability",
+    "similarity",
+    "speed",
+  ]) {
     assert.match(defaults, new RegExp(`\\b${key}:`), key);
   }
 });
@@ -1110,7 +1188,10 @@ test("a code never takes a word the user would type", () => {
 test("a code the user types is checked before it is kept", () => {
   const existingCodes = ["ty"];
 
-  assert.deepEqual(validateCode("TY ", { existingCodes: [] }), { ok: true, code: "ty" });
+  assert.deepEqual(validateCode("TY ", { existingCodes: [] }), {
+    ok: true,
+    code: "ty",
+  });
   assert.equal(validateCode("a", { existingCodes }).reason, "format");
   assert.equal(validateCode("water", { existingCodes }).reason, "dictionary");
   assert.equal(validateCode("ty", { existingCodes }).reason, "duplicate");
@@ -1121,8 +1202,22 @@ test("the word at the caret triggers a code, and a finished word does not", () =
   assert.equal(trailingWord("I want ty "), "");
 
   const rows = [
-    { id: "a", space_id: "other", text: "Thank you", kind: "phrase", code: "ty", pinned: false },
-    { id: "b", space_id: "here", text: "Thanks a lot", kind: "phrase", code: "ty", pinned: false },
+    {
+      id: "a",
+      space_id: "other",
+      text: "Thank you",
+      kind: "phrase",
+      code: "ty",
+      pinned: false,
+    },
+    {
+      id: "b",
+      space_id: "here",
+      text: "Thanks a lot",
+      kind: "phrase",
+      code: "ty",
+      pinned: false,
+    },
   ];
 
   // The space the user is in wins a conflict.
@@ -1142,19 +1237,33 @@ test("a regeneration keeps the phrases the user pinned", () => {
     { id: "3", text: "Can you please", kind: "starter", pinned: false },
   ];
   assert.deepEqual(topPhrases(rows, 5), ["Kept", "AI one"]);
-  assert.deepEqual(topRows(rows, 5, "starter").map((r) => r.id), ["3"]);
+  assert.deepEqual(
+    topRows(rows, 5, "starter").map((r) => r.id),
+    ["3"],
+  );
 });
 
 test("a starter is an opening, not a sentence", () => {
   assert.deepEqual(
-    sanitizeStarters(["  Can you please check ", "", "No", "one two three four five six seven"]),
+    sanitizeStarters([
+      "  Can you please check ",
+      "",
+      "No",
+      "one two three four five six seven",
+    ]),
     ["Can you please check"],
   );
 });
 
 test("the phrases are written again after six new messages", () => {
-  assert.equal(decidePhraseSync({ syncedCount: undefined, messageCount: 0 }), "none");
-  assert.equal(decidePhraseSync({ syncedCount: undefined, messageCount: 1 }), "seed");
+  assert.equal(
+    decidePhraseSync({ syncedCount: undefined, messageCount: 0 }),
+    "none",
+  );
+  assert.equal(
+    decidePhraseSync({ syncedCount: undefined, messageCount: 1 }),
+    "seed",
+  );
   assert.equal(decidePhraseSync({ syncedCount: 4, messageCount: 9 }), "none");
   assert.equal(decidePhraseSync({ syncedCount: 4, messageCount: 10 }), "regen");
 });
@@ -1182,7 +1291,10 @@ test("an empty composer shows the saved phrases, and typing shows the answers", 
     history: ["I am hungry"],
     llm: ["I am tired"],
   });
-  assert.deepEqual(blank.map((s) => s.source), ["md", "starter", "llm"]);
+  assert.deepEqual(
+    blank.map((s) => s.source),
+    ["md", "starter", "llm"],
+  );
 
   // A sentence started: the past messages and the model come first, because
   // they follow the words that are there. The saved phrases come after.
@@ -1193,12 +1305,10 @@ test("an empty composer shows the saved phrases, and typing shows the answers", 
     history: ["I am hungry"],
     llm: ["I am tired"],
   });
-  assert.deepEqual(started.map((s) => s.source), [
-    "history",
-    "llm",
-    "md",
-    "starter",
-  ]);
+  assert.deepEqual(
+    started.map((s) => s.source),
+    ["history", "llm", "md", "starter"],
+  );
 
   // History still answers one time for one message.
   const once = composeSuggestions({
@@ -1207,7 +1317,10 @@ test("an empty composer shows the saved phrases, and typing shows the answers", 
     history: ["I am hungry", "I am hungry"],
     llm: [],
   });
-  assert.deepEqual(once.map((s) => s.text), ["I am hungry"]);
+  assert.deepEqual(
+    once.map((s) => s.text),
+    ["I am hungry"],
+  );
 });
 
 test("a prompt carries no example message, and the context decides", async () => {
@@ -1235,9 +1348,14 @@ test("a prompt carries no example message, and the context decides", async () =>
   }
 });
 
-
 test("a one-word phrase does not spend a row of the stripe", () => {
-  const texts = ["Yes", "Please", "What are you", "How was your day", "I am cold"];
+  const texts = [
+    "Yes",
+    "Please",
+    "What are you",
+    "How was your day",
+    "I am cold",
+  ];
 
   // A one-word phrase goes to the chips, so the cap must count the rows that
   // a stripe can draw, and not the rows that come before the filter.
@@ -1247,31 +1365,34 @@ test("a one-word phrase does not spend a row of the stripe", () => {
     "I am cold",
   ]);
   assert.deepEqual(stripePhrases(texts, 1), ["What are you"]);
-  assert.deepEqual(stripePhrases(boardPhrases(texts), 3), stripePhrases(texts, 3));
+  assert.deepEqual(
+    stripePhrases(boardPhrases(texts), 3),
+    stripePhrases(texts, 3),
+  );
 });
 
-
 test("a new space asks what it is for before it exists", async () => {
-  const spaces = await readText("src/pages/spaces.tsx");
+  const spaces = await readText("src/pages/agent.tsx");
+  const list = await readText("src/pages/spaces.tsx");
   const dock = await readText("src/blocks/space.tsx");
   const main = await readText("src/main.tsx");
 
   // The plus opens a screen. It no longer makes an empty space and leaves.
   assert.match(main, /path: "\/spaces\/new"/);
+  // The screen is the first turn of the space's agent, so it lives beside it.
   assert.match(spaces, /function NewSpaceScreen/);
   assert.match(spaces, /What is this space for\?/);
-  for (const [name, file] of [["list", spaces], ["dock", dock]]) {
+  for (const [name, file] of [
+    ["list", list],
+    ["dock", dock],
+  ]) {
     assert.match(file, /to: "\/spaces\/new"/, name);
   }
 
-  // The words of the user become the note of the space, and a model reads
-  // them for the title. A model never writes over the words of the user.
+  // The words of the user become the note of the space before any model
+  // runs, and the space's own agent reads them as its first request.
   assert.match(spaces, /context: said/);
-  assert.match(spaces, /describeSpace\(said/);
-  // The note of the model goes under the words of the user, and not over
-  // them. The words of the user stay at the top of the note.
-  assert.match(spaces, /appendToNote\(said, answer\.context\)/);
-  assert.doesNotMatch(spaces, /context: answer\.context/);
+  assert.match(spaces, /agentSaidRow\(space\.id, "user", said\)/);
 });
 
 test("a new space offers openers to press, so the first words cost nothing", async () => {
@@ -1287,25 +1408,30 @@ test("a new space offers openers to press, so the first words cost nothing", asy
     assert.ok(opener.length <= 24, opener);
   }
 
-  const spaces = await readText("src/pages/spaces.tsx");
+  const spaces = await readText("src/pages/agent.tsx");
 
-  assert.match(spaces, /NEW_SPACE_OPENERS\.map/);
+  // One `Openers` block draws them, here and in the Agent empty state.
+  const block = await readText("src/blocks/agent-transcript.tsx");
+  assert.match(spaces, /openers=\{NEW_SPACE_OPENERS\}/);
+  assert.match(block, /export function Openers/);
+  assert.match(block, /openers\.map/);
 
   // They sit with the question, above Skip: a way in for a user who does not
   // know what to write, next to the way out for a user with nothing to say.
   assert.ok(
-    spaces.indexOf("NEW_SPACE_OPENERS.map") < spaces.indexOf("Skip for now"),
+    spaces.indexOf("openers={NEW_SPACE_OPENERS}") <
+      spaces.indexOf("Skip for now"),
     "the openers must come before Skip",
   );
 
   // The row stays while the question does, so a press never unmounts the
   // control that was pressed and drops the focus to the body.
-  const openers = spaces.match(/NEW_SPACE_OPENERS\.map[\s\S]*?\n\s+\)\)\}/)[0];
+  const openers = block.match(/openers\.map[\s\S]*?\n\s+\)\)\}/)[0];
   assert.doesNotMatch(openers, /!words/);
 });
 
 test("the new space screen writes through the one console", async () => {
-  const spaces = await readText("src/pages/spaces.tsx");
+  const spaces = await readText("src/pages/agent.tsx");
 
   // This screen asks for the most free typing in the app, and it used to be
   // the one surface with no help for it: a bare textarea, in an app whose
@@ -1332,77 +1458,99 @@ test("a space that does not exist yet asks SQLite for nothing", async () => {
   assert.match(data, /enabled: spaceId !== ""/);
 });
 
-test("the model work is on the screen in words while it runs", async () => {
-  const spaces = await readText("src/pages/spaces.tsx");
+test("the work of a new space happens inside the space it made", async () => {
+  const spaces = await readText("src/pages/agent.tsx");
+  const make = spaces.match(/const make = async[\s\S]*?\n  \};\n/)[0];
 
-  // The label of a button is not visible progress: it names one thing at a
-  // time, it is gone the moment the work ends, and a reader never hears it
-  // change. The steps are drawn where the transcript would be, and announced.
-  assert.match(spaces, /role="status"/);
-  assert.match(spaces, /aria-live="polite"/);
-  assert.match(spaces, /createSteps/);
-  assert.doesNotMatch(spaces, /setBusy/);
+  // The create screen is a doorway, not a destination. Only the local writes
+  // are awaited — the space, the words of the user, and the turn that opens
+  // its conversation — and every one of them is on disk before the address
+  // changes.
+  assert.match(make, /await create\(\)/);
+  assert.match(make, /context: said/);
+  assert.match(make, /writeAgentMessage\(agentSaidRow\(space\.id, "user", said\)\)/);
 
-  // A screen with no writing service says so before the press, instead of
-  // naming two model calls that are never going to run.
-  assert.match(spaces, /hasWritingService/);
+  // The naming and the phrases run on without this screen, so nothing here
+  // waits for a model and there is no progress to draw.
+  assert.match(make, /void introduce\(/);
+  assert.doesNotMatch(make, /await introduce/);
+  assert.doesNotMatch(spaces, /createSteps|CreateProgress|StepState/);
+
+  // The user lands in the space, in Agent, watching their own words.
+  assert.match(make, /spaceParams\(space, "agent"\)/);
+  assert.ok(
+    make.indexOf("void introduce(") < make.indexOf("spaceParams(space, \"agent\")"),
+    "the work must be started before the screen steps out of the way",
+  );
 });
 
-test("a failed new space is shown, and a retry makes no second space", async () => {
-  const spaces = await readText("src/pages/spaces.tsx");
+test("a new space that could not be made keeps the words that asked for it", async () => {
+  const spaces = await readText("src/pages/agent.tsx");
   const make = spaces.match(/const make = async[\s\S]*?\n  \};\n/)[0];
 
   // Every failure used to be silent: the button went back to Create space
-  // with the words still in the field and nothing said. The list on this
-  // same screen has always drawn its errors.
+  // with the words still in the field and nothing said.
   assert.match(make, /catch/);
   assert.match(spaces, /<Problem error=/);
 
-  // The run is not atomic. A space made before a later write failed is
-  // already on disk, and a second press must patch that space, not make
-  // another one beside it.
-  assert.match(spaces, /if \(made\) return made/);
-  assert.match(spaces, /Open the space anyway/);
+  // There is no half-made space to patch any more. The three local writes
+  // either all land and the screen leaves, or none of them does and the
+  // words are still in the field for a second press.
+  assert.doesNotMatch(spaces, /Open the space anyway/);
+  assert.doesNotMatch(spaces, /if \(made\) return made/);
+  assert.ok(
+    make.indexOf("rememberDraft(\"\")") < make.indexOf("void introduce("),
+    "the draft is only cleared once the space holds the words",
+  );
 });
 
-test("the user can leave while the models run, and is never held for ever", async () => {
-  const spaces = await readText("src/pages/spaces.tsx");
+test("nobody waits on a model, and no model runs for ever", async () => {
+  const spaces = await readText("src/pages/agent.tsx");
 
   // Cancel used to be disabled for the whole run, across two model calls
-  // with no timeout. A user driving by switch or gaze could not reach
-  // anything, could not leave, and could not tell a slow model from a dead
-  // one.
-  assert.match(spaces, /AbortController/);
-  assert.match(spaces, /MODEL_WAIT_MS/);
-  assert.match(spaces, /const cancel = /);
-
-  // The words are in SQLite before any model runs, so leaving loses nothing.
+  // with no timeout. There is nothing to cancel now: by the time a model is
+  // called, the user is already inside the space it is naming.
+  assert.match(spaces, /AbortSignal\.timeout\(INTRODUCTION_WAIT_MS\)/);
   const cancel = spaces.match(/const cancel = [\s\S]*?\n  \};\n/)[0];
-  assert.match(cancel, /abort\(\)/);
+  assert.doesNotMatch(cancel, /abort\(\)/);
+
+  // The reply lands whatever happened, so a screen reading the transcript
+  // can always tell work in flight from work that is done.
+  const introduce = spaces.match(/async function introduce\([\s\S]*?\n\}\n/)[0];
+  assert.match(introduce, /catch/);
+  assert.match(introduce, /writeAgentMessage\(/);
 });
 
-test("the two model calls run together, and both read the words of the user", async () => {
-  const spaces = await readText("src/pages/spaces.tsx");
+test("the words of the user are what the first turn reads", async () => {
+  const spaces = await readText("src/pages/agent.tsx");
+  const make = spaces.match(/const make = async[\s\S]*?\n  \};\n/)[0];
 
-  // The phrase writer does not need the note that the title model writes:
-  // the words of the user are what `decidePhraseSync` already treats as
-  // enough. Chained, the user waited for the sum of two round trips.
-  assert.match(spaces, /Promise\.allSettled/);
-  assert.match(spaces, /seedPhrases\(\{ \.\.\.space, context: said \}/);
+  // The words reach the space and the transcript before the turn runs, so
+  // the model reads them as the request it is answering.
+  assert.match(make, /context: said/);
+  assert.match(make, /agentSaidRow\(space\.id, "user", said\)/);
+  assert.ok(
+    make.indexOf('agentSaidRow(space.id, "user", said)') <
+      make.indexOf("void introduce("),
+    "the words must be in the transcript before the turn runs",
+  );
 });
 
 test("a title from the model must take a free slug too", async () => {
-  const spaces = await readText("src/pages/spaces.tsx");
+  const rules = await readText("src/rules/agent.ts");
 
   // `newSpaceTitle` gives out a name no other space holds, and the model's
   // title used to be written straight over it with no such check. Two spaces
   // then shared one address, and the dock tab of the new one opened the old.
-  assert.match(spaces, /freeTitle\(\s*answer\.title/);
+  // The executor holds the check now, so it covers a rename the agent
+  // proposes on any day, not only the day the space was made.
+  const configure = rules.match(/if \(!freeTitle\(input\.title, others\)\)[\s\S]{0,120}/)[0];
+  assert.match(configure, /freeTitle/);
 });
 
 test("the words of a new space are not lost to a press or a restart", async () => {
   const os = await readText("src/services/os.ts");
-  const spaces = await readText("src/pages/spaces.tsx");
+  const spaces = await readText("src/pages/agent.tsx");
 
   // Every other writing surface in September saves with no Save button,
   // because a user who types slowly must never lose words to a button they
@@ -1441,11 +1589,19 @@ test("a space with a note gets its phrases before the first message", () => {
   // A space made from a note holds no message, and its stripe would be empty
   // without this. The note is enough for a model to write the phrases.
   assert.equal(
-    decidePhraseSync({ syncedCount: undefined, messageCount: 0, hasContext: true }),
+    decidePhraseSync({
+      syncedCount: undefined,
+      messageCount: 0,
+      hasContext: true,
+    }),
     "seed",
   );
   assert.equal(
-    decidePhraseSync({ syncedCount: undefined, messageCount: 0, hasContext: false }),
+    decidePhraseSync({
+      syncedCount: undefined,
+      messageCount: 0,
+      hasContext: false,
+    }),
     "none",
   );
   // A space that already wrote its phrases waits for six new messages, note
@@ -1456,32 +1612,30 @@ test("a space with a note gets its phrases before the first message", () => {
   );
 });
 
-test("a new space opens with its title, its note, and its phrases", async () => {
-  const spaces = await readText("src/pages/spaces.tsx");
+test("a new space opens at once, and its phrases land behind it", async () => {
+  const spaces = await readText("src/pages/agent.tsx");
   const sync = await readText("src/services/phrase-sync.ts");
 
-  // One seed, used by the new-space screen and by the hook.
-  assert.match(sync, /export async function seedPhrases/);
-  assert.match(spaces, /seedPhrases\(/);
+  // The screen used to hold the user until every write landed, because
+  // opening Talk early would have filled the suggestion stripe under a hand
+  // already reaching for it. Agent has no stripe, so that reason is gone.
+  const agent = spaces.match(/function Agent\(\{ space, spaces \}[\s\S]*?\n\}\n/)[0];
+  assert.match(agent, /suggestions=\{false\}/);
 
-  // Every write finishes before the address changes, so a space never opens
-  // with an empty stripe that fills a moment later. The seed runs beside the
-  // title call now, so the screen waits on the pair of them.
-  const make = spaces.match(/const make = async[\s\S]*?\n  \};\n/)[0];
-  assert.match(make, /await Promise\.allSettled/);
-  assert.ok(
-    make.indexOf("seedPhrases(") < make.lastIndexOf("return open("),
-    "the phrases are written before the space opens",
-  );
+  // One seed, not two. `seedPhrases` existed only for the create screen, and
+  // the hook already writes the phrases of a space that reaches Talk without
+  // them — which is also what happens when the first turn does not.
+  assert.doesNotMatch(sync, /export async function seedPhrases/);
+  assert.match(sync, /decidePhraseSync/);
 
-  // The seed writes through `call`, so the screen must drop what it holds.
-  // Talk reads the count from the space, and a stale count seeds it twice.
+  // The turn writes behind the screen, so the caches it filled must be
+  // dropped when it lands.
+  assert.match(spaces, /invalidateQueries\(\{\s*queryKey: \["agent-messages", space\.id\],?\s*\}\)/);
   assert.match(spaces, /invalidateQueries\(\{ queryKey: \["phrases"\] \}\)/);
-  assert.match(spaces, /invalidateQueries\(\{ queryKey: \["spaces"\] \}\)/);
 });
 
 test("Skip opens the space at once, and asks no model", async () => {
-  const spaces = await readText("src/pages/spaces.tsx");
+  const spaces = await readText("src/pages/agent.tsx");
 
   // Skip means skip. With one handler behind both buttons, a user who wrote a
   // line and then pressed Skip waited for the model anyway.
@@ -1527,7 +1681,6 @@ test("a kept phrase is built in one place, and never made twice", () => {
   assert.notEqual(pinnedPhrase("Please call nurse", "s", taken).code, "pcn");
 });
 
-
 test("a shortcut idea needs five messages and an unused code", () => {
   const at = Date.UTC(2026, 7, 21);
   const said = (text, n) =>
@@ -1538,11 +1691,14 @@ test("a shortcut idea needs five messages and an unused code", () => {
       created_at: at - i * 1000,
     }));
 
-  const ideas = mineShortcuts([...said("Please call the nurse", 6), ...said("Hello", 9)], {
-    existingPhrases: [],
-    dismissed: new Set(),
-    now: at,
-  });
+  const ideas = mineShortcuts(
+    [...said("Please call the nurse", 6), ...said("Hello", 9)],
+    {
+      existingPhrases: [],
+      dismissed: new Set(),
+      now: at,
+    },
+  );
 
   assert.equal(ideas.length, 1);
   assert.equal(ideas[0].text, "Please call the nurse");
@@ -1577,7 +1733,10 @@ test("a model never writes over a phrase the user keeps", async () => {
   assert.match(sync, /replace\.mutateAsync/);
   assert.match(data, /"phrase_replace_ai"/);
   // Rust erases only the rows that are not pinned, in one transaction.
-  assert.match(rust, /DELETE FROM saved_phrases WHERE space_id = \?1 AND pinned = 0/);
+  assert.match(
+    rust,
+    /DELETE FROM saved_phrases WHERE space_id = \?1 AND pinned = 0/,
+  );
   assert.match(rust, /a replacement phrase must not be pinned/);
 });
 
@@ -1632,7 +1791,6 @@ test("the pin of a kept phrase is solid, in the stripe and in the panel", async 
   assert.match(suggestions, /You keep this phrase/);
 });
 
-
 test("a phrase from the panel reaches the composer of both screens", async () => {
   for (const file of ["src/pages/talk.tsx", "src/pages/notes.tsx"]) {
     assert.match(await readText(file), /onInsert=\{/, file);
@@ -1665,7 +1823,10 @@ test("a tile shrinks so a long row stays on one line", () => {
 
   // The padding of each tile counts, not the letters alone. Eleven one-letter
   // words are wider than one word of eleven letters.
-  assert.ok(tileScale([{ chars: 11, tokens: 11 }], 400) < tileScale([{ chars: 11, tokens: 1 }], 400));
+  assert.ok(
+    tileScale([{ chars: 11, tokens: 11 }], 400) <
+      tileScale([{ chars: 11, tokens: 1 }], 400),
+  );
 
   // It never shrinks past the floor, where a tile stops being pressable.
   assert.equal(tileScale(long, 10), TILE_SCALE_MIN);
@@ -1694,7 +1855,11 @@ test("the composer offers the next word while the user writes", async () => {
   assert.match(suggestions, /useSuggestions\(spaceId \|\| undefined, text\)/);
   // The engine owns the rule for a part-written word against a finished one.
   assert.match(suggestions, /applySuggestion\(text, word\)/);
-  assert.doesNotMatch(suggestions, /replace\(\/\\S\+\$\//, "the UI must not split the text itself");
+  assert.doesNotMatch(
+    suggestions,
+    /replace\(\/\\S\+\$\//,
+    "the UI must not split the text itself",
+  );
 });
 
 test("the word row is its own lane, nearest the composer", async () => {
@@ -1801,31 +1966,24 @@ test("the words of a new space frame the suggestions as a description", () => {
   assert.match(NEW_SPACE_CONTEXT, /^I /);
 });
 
-test("the steps of a new space say which one is running", () => {
-  const started = createSteps({ at: "space", hasWriting: true });
+test("the first turn of a new space sets it up without asking", async () => {
+  const rules = await readText("src/rules/agent.ts");
+  const agent = await readText("src/pages/agent.tsx");
 
-  assert.deepEqual(
-    started.map((step) => step.id),
-    ["space", "name", "phrases"],
-  );
-  assert.equal(started[0].state, "running");
-  assert.equal(started[1].state, "waiting");
-  assert.equal(started[2].state, "waiting");
-  // Every step carries words, because the region that draws them is read out.
-  assert.ok(started.every((step) => step.label.length > 0));
+  // The work used to be a list of ticking rows that the screen navigated away
+  // from the moment it finished, and then two bespoke services beside the
+  // agent. It is the space's own agent now, on its own first turn, making
+  // ordinary tool calls into the ordinary transcript.
+  const prompt = rules.match(/const INTRODUCTION_SYSTEM_PROMPT = `[\s\S]*?`;/)[0];
+  assert.match(prompt, /inspect_space/);
+  assert.match(prompt, /configure_space/);
+  assert.match(prompt, /change_phrase/);
+  assert.match(prompt, /first person/);
+  // The ordinary prompt promises the user approves every write. This one must
+  // not, or the model stops and asks on the screen that made the space.
+  assert.doesNotMatch(prompt, /must approve/);
 
-  // The two model calls run together, so both read running at once.
-  const models = createSteps({ at: "models", hasWriting: true });
-  assert.deepEqual(
-    models.map((step) => step.state),
-    ["done", "running", "running"],
-  );
-
-  const done = createSteps({ at: "done", hasWriting: true });
-  assert.deepEqual(
-    done.map((step) => step.state),
-    ["done", "done", "done"],
-  );
+  assert.match(agent, /intro: true/);
 });
 
 test("a rename that another space already holds is refused, and says why", async () => {
@@ -1877,42 +2035,33 @@ test("the composer never takes focus off the control that was pressed", async ()
 });
 
 test("a model call for a new space can be given up on", async () => {
-  const ai = await readText("src/services/ai.ts");
   const sync = await readText("src/services/phrase-sync.ts");
+  const spaces = await readText("src/pages/agent.tsx");
 
   // A user who cannot press a second time must not be held by a service that
-  // hangs. `generate` already takes a signal, so both calls pass one down.
-  assert.match(ai, /feature: "context", signal/);
+  // hangs. The first turn is a chain of calls, so one signal bounds them all.
   assert.match(sync, /feature: "phrases", signal/);
-
-  // The screen gives the signal, so both take it as an argument.
-  assert.match(ai, /export async function describeSpace\([\s\S]{0,200}?signal\?: AbortSignal/);
-  assert.match(sync, /export async function seedPhrases\([\s\S]{0,200}?signal\?: AbortSignal/);
+  assert.match(spaces, /signal: AbortSignal\.timeout\(INTRODUCTION_WAIT_MS\)/);
 });
 
-test("a step that cannot run says why, and never reads as work", () => {
-  // No writing help means no model, so the screen must not name work that is
-  // not happening. The old screen said "Writing the first phrases..." here.
-  const alone = createSteps({ at: "models", hasWriting: false });
+test("a turn writes without asking, but not for ever", async () => {
+  const rules = await readText("src/rules/agent.ts");
 
-  assert.equal(alone[0].state, "done");
-  assert.equal(alone[1].state, "skipped");
-  assert.equal(alone[2].state, "skipped");
-  assert.match(alone[1].note, /writing help/i);
+  // Only a delete waits for a press. A change the user can see and undo by
+  // asking is not worth the keystrokes that approving it costs them.
+  assert.match(
+    rules,
+    /if \(!agentCallNeedsApproval\(name, raw\) && applied < AGENT_MAX_WRITES\)/,
+  );
 
-  // A step that failed says so, and leaves the others as they landed.
-  const failed = createSteps({
-    at: "done",
-    hasWriting: true,
-    failed: { name: "took too long" },
-  });
+  // Nothing else stops a model that keeps writing, so the budget is counted
+  // from the transcript: approving a change starts a fresh turn, and a flag
+  // would reset with it.
+  assert.match(rules, /const writesThisTurn = /);
+  assert.ok(AGENT_MAX_WRITES > 1 && AGENT_MAX_WRITES <= 20);
 
-  assert.equal(failed[1].state, "failed");
-  assert.equal(failed[1].note, "took too long");
-  assert.equal(failed[2].state, "done");
-
-  // A model that hangs must not hold the screen for ever.
-  assert.ok(MODEL_WAIT_MS > 0 && MODEL_WAIT_MS <= 60_000);
+  // A model that hangs must not hold the work for ever.
+  assert.match(rules, /export const INTRODUCTION_WAIT_MS/);
 });
 
 test("the note of a space is added under the words of the user", () => {
@@ -2073,9 +2222,10 @@ test("the note screen autosaves and speaks with the chosen voice", async () => {
   assert.match(notes, /replace: true/);
 });
 
-test("a space opens in Talk or in Notes, and both routes exist", async () => {
+test("a space opens in Talk, Notes, or Agent, and every route exists", async () => {
   const main = await readText("src/main.tsx");
 
+  assert.match(main, /\/spaces\/\$slug\/agent/);
   assert.match(main, /\/spaces\/\$slug\/notes/);
   assert.match(main, /\/spaces\/\$slug\/notes\/\$noteSlug/);
 });
@@ -2139,7 +2289,14 @@ test("every control of the stage keeps the 44px target", async () => {
 test("the keys of the stage are the keys of a remote", async () => {
   const present = await readText("src/blocks/present.tsx");
 
-  for (const key of ["ArrowRight", "ArrowLeft", "Home", "End", "Escape", '" "']) {
+  for (const key of [
+    "ArrowRight",
+    "ArrowLeft",
+    "Home",
+    "End",
+    "Escape",
+    '" "',
+  ]) {
     assert.match(present, new RegExp(key.replace(/[[\]]/g, "\\$&")), key);
   }
   // A chunk rises in, unless the user asked for no motion.
@@ -2159,14 +2316,18 @@ test("the tone and the sound of a presentation are remembered", async () => {
 });
 
 test("the words of a note save with no service connected", async () => {
-  const { exportReason, exportFileName } = await import("../src/rules/present.ts");
+  const { exportReason, exportFileName } =
+    await import("../src/rules/present.ts");
   const exporter = await readText("src/services/export.ts");
 
   assert.equal(
     exportReason("text", { provider: "system", voiceId: null, video: false }),
     null,
   );
-  assert.equal(exportFileName("Letter to Dr Shah", "text"), "letter-to-dr-shah.md");
+  assert.equal(
+    exportFileName("Letter to Dr Shah", "text"),
+    "letter-to-dr-shah.md",
+  );
   // The same download path as the usage report: a Blob the WebView saves.
   assert.match(exporter, /createObjectURL/);
   assert.match(exporter, /revokeObjectURL/);
@@ -2179,7 +2340,11 @@ test("the Mac says where a video comes from, instead of hiding the row", async (
   // The desktop WebView cannot load the ffmpeg core under the app policy yet.
   assert.match(exporter, /VIDEO_EXPORT = false/);
   assert.match(
-    exportReason("video", { provider: "elevenlabs", voiceId: "v1", video: false }),
+    exportReason("video", {
+      provider: "elevenlabs",
+      voiceId: "v1",
+      video: false,
+    }),
     /browser/,
   );
 });
@@ -2239,23 +2404,145 @@ test("a space opens in the mode it was left in", () => {
     general: "notes",
   });
   // The mode of one space never moves the mode of another.
-  assert.deepEqual(
-    rememberSpaceMode({ work: "notes" }, "general", "talk"),
-    { work: "notes", general: "talk" },
-  );
+  assert.deepEqual(rememberSpaceMode({ work: "notes" }, "general", "talk"), {
+    work: "notes",
+    general: "talk",
+  });
 });
 
 test("the mode switch is in the dock, beside the spaces", async () => {
   const talk = await readText("src/blocks/space.tsx");
   const shell = await readText("src/layouts/app.tsx");
 
-  // The web app puts Talk and Notes in the dock. The desktop app does too, so
+  // The web app puts Talk, Notes, and Agent in the dock. The desktop app does too, so
   // a user who knows one app knows the other.
   const dock = talk.match(/export function SpaceDock[\s\S]*?\n\}\n/)[0];
   assert.match(dock, /ModeGroup/);
   assert.match(dock, /ml-auto/);
   // The header held the tabs before. It must not hold a second switch.
   assert.doesNotMatch(shell, /SpaceModes/);
+});
+
+test("the space agent keeps its transcript separate and asks before deleting", async () => {
+  const agent = await readText("src/pages/agent.tsx");
+  const ai = await readText("src/services/ai.ts");
+  const data = await readText("src/services/data.ts");
+  const migration = await readText(
+    "src-tauri/migrations/0004_agent_messages.sql",
+  );
+
+  assert.match(agent, /useAgentMessages/);
+  // The screen must not promise a press it no longer asks for. It changes
+  // the space when the user asks, and stops only at a delete.
+  assert.doesNotMatch(agent, /until you approve it/);
+  assert.match(agent, /Approve/);
+  assert.match(agent, /Reject/);
+  assert.match(agent, /DeleteProposalDialog/);
+  assert.match(
+    agent,
+    /useEffect\(\(\) => \{\s*end\.current\?\.scrollIntoView/,
+    "the scroll effect must not return the browser's scroll result as React cleanup",
+  );
+  assert.match(ai, /openrouter\/free/);
+  assert.doesNotMatch(ai, /FREE_AGENT_MODELS/);
+  assert.match(data, /agent_message_list/);
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS agent_messages/);
+  assert.match(migration, /ON DELETE CASCADE/);
+});
+
+test("the transcript folds its tools and cards only what needs a press", async () => {
+  const block = await readText("src/blocks/agent-transcript.tsx");
+
+  // One rule holds the screen together: anything the user must act on is a
+  // card, and everything else is a line. Every tool call used to be a
+  // bordered, shadowed card the size of a message, so a question answered
+  // after three reads filled the screen with paperwork before the answer.
+  const line = block.match(/export function ToolLine[\s\S]*?\n\}\n/)[0];
+  assert.match(line, /<details/);
+  assert.doesNotMatch(line, /<details open/);
+  assert.doesNotMatch(line, /shadow/);
+
+  // The whole row is the control, at 44px, and it is a real one: `summary`
+  // announces its own expanded state and takes the keyboard for free.
+  assert.match(line, /<summary/);
+  assert.match(line, /min-h-11/);
+
+  // The card is the only thing on the screen that carries a border and a
+  // shadow, because it is the only thing waiting for a press.
+  const card = block.match(/export function ProposalCard[\s\S]*?\n\}\n/)[0];
+  assert.match(card, /shadow-sm/);
+  assert.match(card, /Approve/);
+  assert.match(card, /Reject/);
+  assert.doesNotMatch(card, /<details/);
+});
+
+test("a settled tool says what became of it in a word, not only a colour", async () => {
+  const rules = await readText("src/rules/agent.ts");
+  const block = await readText("src/blocks/agent-transcript.tsx");
+
+  // A user who cannot tell emerald from red must still be able to tell a
+  // change that landed from one that did not.
+  for (const label of [
+    "Read",
+    "Applied",
+    "Not applied",
+    "Could not apply",
+    "Waiting for you",
+  ]) {
+    assert.ok(rules.includes(`label: "${label}"`), label);
+  }
+  assert.match(block, /agentToolOutcome/);
+  assert.match(block, /\{label\}/);
+});
+
+test("consecutive reads fold into one line, and a write never folds", async () => {
+  const rules = await readText("src/rules/agent.ts");
+  const block = await readText("src/blocks/agent-transcript.tsx");
+
+  // A user asked one question, not three. The reads behind one answer are a
+  // footnote to it; a write is either waiting for a press or it changed
+  // their space, and neither of those is a footnote.
+  assert.match(rules, /export function groupAgentTurns/);
+  assert.match(block, /and \$\{rest\.length\} more/);
+});
+
+test("the Agent console keeps every writing aid, and makes no sound", async () => {
+  const agent = await readText("src/pages/agent.tsx");
+  const composer = await readText("src/blocks/space.tsx");
+
+  // The redesign is above the console. The console itself does not move:
+  // undo, delete-last-word, and clear are what make this app worth using to
+  // somebody typing by switch.
+  const screen = agent.match(
+    /function Agent\(\{ space, spaces \}[\s\S]*?\n\}\n/,
+  )[0];
+  assert.match(screen, /<Composer/);
+  assert.match(screen, /mode="agent"/);
+  assert.match(screen, /suggestions=\{false\}/);
+  assert.doesNotMatch(screen, /<textarea/);
+
+  for (const label of ["Undo", "Delete last word", "Clear"]) {
+    assert.ok(composer.includes(`aria-label="${label}"`), label);
+  }
+
+  // Agent speaks nothing, so the sound output does not belong beside Ask.
+  const action = composer.match(/\{speaks \? <AudioSelector \/> : null\}/);
+  assert.ok(action, "the audio selector belongs to the modes that speak");
+});
+
+test("a screen shows work it did not start", async () => {
+  const rules = await readText("src/rules/agent.ts");
+  const spaces = await readText("src/pages/agent.tsx");
+
+  // The introduction of a new space runs on past the screen that asked for
+  // it, so the screen that shows the transcript did not start the turn it is
+  // waiting on. An owed reply is how it knows.
+  assert.match(rules, /export function agentOwesReply/);
+  assert.match(rules, /INTRODUCTION_WAIT_MS/);
+  assert.match(spaces, /agentOwesReply\(rows, Date\.now\(\)\)/);
+
+  // An app closed mid-run would otherwise promise an answer for ever.
+  assert.match(rules, /now - last\.created_at < INTRODUCTION_WAIT_MS/);
 });
 
 test("the space tabs fall back to a list when the row is full", async () => {
@@ -2281,6 +2568,14 @@ test("the right rail holds the phrases, and stays where the user left it", async
   assert.doesNotMatch(panel, /localStorage/);
   // The rail is a card of its own, beside the screen, not inside it.
   assert.match(shell, /RightPanel/);
+
+  // Every screen inside a space carries it, Agent included. The rail is how
+  // the phrases of a space are reached, and Agent is where they are written.
+  for (const file of ["talk", "notes", "agent"]) {
+    const screen = await readText(`src/pages/${file}.tsx`);
+    assert.match(screen, /<RightPanel>/, `${file} has no right panel`);
+    assert.match(screen, /<PanelRail/, `${file} has no panel rail`);
+  }
 });
 
 // -------------------------------------------------- the composer in Notes
@@ -2316,12 +2611,19 @@ test("Notes and Talk share one composer", async () => {
 });
 
 test("a space carries a note that says who it is for", async () => {
-  const spaces = await readText("src/pages/spaces.tsx");
+  const rules = await readText("src/rules/agent.ts");
+  const spaces = await readText("src/pages/agent.tsx");
   const notes = await readText("src/pages/notes.tsx");
 
-  // A model writes the note one time, on the screen that asks for it. A note
-  // that the user wrote is never written over.
-  assert.match(spaces, /appendToNote\(said, answer\.context\)/);
+  // The words of the user are the note before any model runs.
+  assert.match(spaces, /context: said/);
+
+  // The model adds its description under them and never writes over them.
+  // This is an instruction now, not a call the app makes, so it is the
+  // prompt that has to say it.
+  const prompt = rules.match(/const INTRODUCTION_SYSTEM_PROMPT = `[\s\S]*?`;/)[0];
+  assert.match(prompt, /keep the user's own words exactly as they wrote them/);
+  assert.match(prompt, /Never write over their words/);
 
   // The note is a tab of the Notes screen, the same as in the web app.
   assert.match(notes, /function SpaceAbout/);
@@ -2329,18 +2631,7 @@ test("a space carries a note that says who it is for", async () => {
   // It writes one field of the space, and not a note.
   assert.match(notes, /useUpdateSpace/);
   assert.match(notes, /context: written/);
-  // The composer writes here too. A user who cannot type has no other way in.
-  assert.match(notes, /appendToNote\(space\.context/);
-  // An example names no one. September does not know who the user speaks to,
-  // and a screen that guesses at a sister reads as though it did.
-  assert.doesNotMatch(notes, /sister/);
-  // The tab lives in the slot of the composer, so the composer always shows.
-  // A model writes this note before the user makes any note of their own.
-  assert.doesNotMatch(notes, /rows\.length > 0/);
-  // The note saves with no Save button, and with no timer of its own.
-  assert.match(notes, /onBlur={save}/);
 });
-
 
 test("the composer adds words to the note, and does not speak them", async () => {
   const notes = await readText("src/pages/notes.tsx");

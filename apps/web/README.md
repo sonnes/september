@@ -35,9 +35,9 @@ Every page the browser app serves carries an Umami tag — the prerendered
 public pages and the application shell alike. The desktop app carries none.
 The build reads two variables and writes the tag into the pages it writes:
 
-| Variable | Holds |
-| --- | --- |
-| `UMAMI_SCRIPT_URL` | The address of `script.js` |
+| Variable           | Holds                           |
+| ------------------ | ------------------------------- |
+| `UMAMI_SCRIPT_URL` | The address of `script.js`      |
 | `UMAMI_WEBSITE_ID` | The site the counter reports to |
 
 A build with neither writes nothing, so a local build, a fork, and a preview
@@ -69,12 +69,12 @@ belong to this app alone, so the desktop app reports nothing anywhere.
 application for Node, renders every path in `PRERENDERED_PATHS`, and writes one
 file per page:
 
-| File | Served at | Holds |
-| --- | --- | --- |
-| `dist/index.html` | `/` | The landing page, already drawn |
-| `dist/help/index.html` | `/help` | Help, with every task listed |
-| `dist/help/<slug>/index.html` | `/help/<slug>` | One guide each |
-| `dist/app.html` | every application route | The empty shell |
+| File                          | Served at               | Holds                           |
+| ----------------------------- | ----------------------- | ------------------------------- |
+| `dist/index.html`             | `/`                     | The landing page, already drawn |
+| `dist/help/index.html`        | `/help`                 | Help, with every task listed    |
+| `dist/help/<slug>/index.html` | `/help/<slug>`          | One guide each                  |
+| `dist/app.html`               | every application route | The empty shell                 |
 
 One file per page, because one cannot be all of them. A reader of `/` or of a
 guide gets the words and the first paint without waiting for the bundle, and a
@@ -131,6 +131,7 @@ The application routes are:
 - `/spaces`
 - `/spaces/new`
 - `/spaces/$slug/talk`
+- `/spaces/$slug/agent`
 - `/spaces/$slug/notes`
 - `/spaces/$slug/notes/$noteSlug`
 - `/voice`
@@ -145,6 +146,12 @@ The application routes are:
 
 The `/` route opens the public landing page. Its calls to action open setup at `/welcome`, which sends a returning user on to `/dashboard`. All hosting targets must return the application shell for a direct application-route request.
 
+The landing sections demonstrate the real feature machinery on marketing-only
+data: the phrase chapter runs `matchCode`, the Present chapter runs
+`presentChunks`, and the Agent chapter draws demo rows with the application's
+own `@september/app-ui/blocks/agent-transcript`. A change to one of those
+contracts changes the landing page too.
+
 `/help` and `/help/$guideSlug` render the shared task-based Help screen. These
 routes stay outside the finished-setup guard, so a direct Help link works
 before setup is complete, and it is what lets the build prerender them. The setup sidebar also opens the setup guide inline
@@ -153,7 +160,9 @@ returns to `/help`.
 
 ## Browser data
 
-`src/services/repository.ts` owns one native IndexedDB database named `september`. The database contains application rows and a bounded speech-file cache.
+`src/services/repository.ts` owns one native IndexedDB database named
+`september`. The database contains application rows, a separate
+`agent_messages` transcript store, and a bounded speech-file cache.
 
 The first start imports data from the old browser databases. The import uses idempotent writes and validates the imported row identifiers. It then removes these databases:
 
@@ -171,9 +180,10 @@ The import also moves the old panel, dismissed-idea, audio-output, and space-mod
 If another tab blocks database removal, the import keeps the `imported` state. The next start retries removal without another import.
 
 Settings > Data downloads one versioned JSON backup. The file contains the
-portable settings and all spaces, messages, notes, saved phrases, and usage
-events. It does not contain service keys, local audio output, migration state,
-or the speech cache.
+portable settings and all spaces, Talk messages, Agent messages, notes, saved
+phrases, and usage events. It does not contain service keys, local audio
+output, migration state, or the speech cache. Version 1 files remain valid and
+restore with an empty Agent transcript.
 
 The repository validates a selected file before it starts a write. It replaces
 the portable settings and domain stores in one IndexedDB transaction. A failed
@@ -189,7 +199,25 @@ ElevenLabs speech files use a cache key made from the text and every sound setti
 
 A note presents and exports from its own screen. `src/services/export.ts` saves the words as `.md` with nothing configured, the voice as `.mp3` from the speech cache, and a 9:16 `.mp4` with word-synced captions. `synthesizeTimed` in `src/services/os.ts` asks ElevenLabs for the sound and the character alignment together and caches both in the same bounded store. `src/services/video.ts` draws every frame on a canvas and joins them to the voice with `ffmpeg.wasm`, which needs the cross-origin isolation headers in `public/_headers`. Nothing leaves the browser. See `docs/concepts/note-present-export.md`.
 
-OpenRouter and ElevenLabs calls go directly from the browser. Their keys stay in IndexedDB.
+OpenRouter and ElevenLabs calls go directly from the browser. Their keys stay
+in IndexedDB. Setup stores one default writing-model setting. Every AI text
+request uses this setting. If the separate Suggestions setting is not null,
+Suggestions use it.
+
+`src/services/ai.ts` reaches OpenRouter through `@earendil-works/pi-ai`. It
+loads the client on the first call that needs a model, so a reader who only
+opens the landing page or a Help guide never downloads it. The client knows
+the published rates of the models it lists, which is where a recorded cost
+comes from; a model it does not list still runs, and records no cost rather
+than a wrong one.
+
+The space Agent uses OpenRouter's tool-calling request shape.
+When the model choice is Automatic, the Agent uses `openrouter/free` so
+OpenRouter selects a currently available free model that supports the tools.
+Its tool definitions are fixed by core, every write waits for approval, and its
+transcript never enters Talk history or speech. An Agent turn streams: its
+words reach the screen as they arrive, and the stored row replaces them when
+the turn ends.
 
 CAUTION: Browser scripts on this origin can read these keys. The desktop app gives stronger protection because it stores keys in the macOS Keychain.
 

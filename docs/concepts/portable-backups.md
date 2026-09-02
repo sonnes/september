@@ -10,11 +10,19 @@ Settings > Data creates one JSON file. A user can restore the file in the
 browser app or the Mac app.
 
 The top-level envelope names the format version, export time, source app, and
-app version. Version 1 contains these values:
+app version. Version 2 contains these values:
 
 - setup, speech, dismissed ideas, space modes, the new-space draft, panel
   state, and Present settings;
-- all spaces, messages, notes, saved phrases, and usage events.
+- all spaces, Talk messages, Agent messages, notes, saved phrases, and usage
+  events.
+
+The parser still accepts version 1. It upgrades that file in memory with an
+empty Agent transcript.
+
+The setup object contains `defaultModel` and `suggestionsModel`. The second
+value is null when Suggestions use the default. Each non-null value contains
+one service and one model ID.
 
 The file does not contain provider keys. It also excludes the selected audio
 output, last path, migration state, cached speech files, and local message
@@ -35,16 +43,16 @@ Older desktop profiles can also name the retired Camera panel tab. Export and
 import change this tab to Phrases. Other unsupported panel tabs remain invalid.
 
 The JSON is readable text and is not encrypted. It can contain private
-messages and notes. The Data screen tells the user to keep it in a private
-place.
+Talk messages, Agent messages, and notes. The Data screen tells the user to
+keep it in a private place.
 
 ## Import
 
 Core parses and validates the complete file before the screen offers the
 replace action. Validation checks the format version, settings, identifiers,
-timestamps, row types, unique IDs, space references, and route-safe space
-titles. It also repairs the retired Camera tab from older desktop backups.
-Unknown fields do not enter storage.
+timestamps, row types, unique IDs, space references, Agent tool state, and
+route-safe space titles. It also repairs the retired Camera tab from older
+desktop backups. Unknown fields do not enter storage.
 
 The screen shows the source, export time, and row counts. Import needs a second
 confirmation because it replaces portable settings and all domain data. It

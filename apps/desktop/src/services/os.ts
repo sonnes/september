@@ -1,3 +1,4 @@
+import { modelSettingsFrom } from "@september/core/rules/model-config";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-shell";
@@ -35,7 +36,13 @@ export type SavedSetup = OnboardingDraft & { id: string };
 
 let setup = await invoke<SavedSetup | null>("setting_get", {
   request: { key: "setup" },
-}).catch(() => null);
+})
+  // A setup written before `defaultModel` existed held one flat service and
+  // model, and every screen that reads one would throw on it.
+  .then((saved) =>
+    saved ? { ...saved, ...modelSettingsFrom(saved) } : null,
+  )
+  .catch(() => null);
 
 export function currentSetup(): SavedSetup | null {
   return setup;

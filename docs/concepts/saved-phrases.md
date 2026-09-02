@@ -35,6 +35,10 @@ Codes are lowercase and unique in the current phrase set. The code rules reject 
 
 A user-set code pins its row. Generated codes remain unpinned until the user keeps the phrase.
 
+The space Agent can propose creating or editing a phrase, but it cannot choose
+the code. The application generates a valid, non-conflicting code after the
+user approves the proposal.
+
 ## Suggestions
 
 The right panel shows pinned rows before generated rows. The Talk stripe combines phrases, starters, message history, and autocomplete words.
@@ -46,3 +50,6 @@ The app learns code ideas from repeated messages. Dismissed ideas stay in the ap
 OpenRouter can generate phrases from the space context and recent messages. A generation call runs only when the user connected that service.
 
 `Space.phrases_synced_count` records the message count of the last successful generation. A failed generation keeps the prior rows and count.
+
+An approved Agent edit or deletion of a Talk message clears that count. The
+next phrase sync then reads the changed transcript.

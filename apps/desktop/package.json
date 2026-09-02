@@ -13,6 +13,7 @@
     "tauri:build": "node scripts/tauri.mjs build"
   },
   "dependencies": {
+    "@earendil-works/pi-ai": "0.84.4",
     "@fontsource/lexend": "^5.2.8",
     "@fontsource/noto-sans": "^5.2.10",
     "@september/app-ui": "workspace:*",

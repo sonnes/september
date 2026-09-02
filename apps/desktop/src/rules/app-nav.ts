@@ -77,6 +77,7 @@ export function windowTitle(pathname: string): string {
 
   if (path === "/spaces/new") page = "New space";
   else if (/^\/spaces\/[^/]+\/talk$/.test(path)) page = "Talk";
+  else if (/^\/spaces\/[^/]+\/agent$/.test(path)) page = "Agent";
   else if (/^\/spaces\/[^/]+\/notes(?:\/[^/]+)?$/.test(path)) page = "Notes";
   else if (path === "/voice/clone") page = "Clone your voice";
   else if (path === "/eyetracker") page = "Eye tracker";

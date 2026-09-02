@@ -1,22 +1,21 @@
+import type {
+  ModelSettings,
+  WritingModelConfig,
+} from "@september/core/rules/model-config";
+
 export type SetupMode = "free" | "advanced";
 
 /** The service that suggests words while the user types. */
-export type WritingService = "apple" | "openrouter" | "none";
+export type WritingService = WritingModelConfig["service"];
 
 /** The service that speaks a message out loud. */
 export type VoiceService = "system" | "elevenlabs";
 
-export interface OnboardingDraft {
+export interface OnboardingDraft extends ModelSettings {
   name: string;
   speakingStyle: string;
   personalWords: string;
   mode: SetupMode | null;
-  writingService: WritingService;
-  /**
-   * The OpenRouter model the user chose. Empty means the free list of the
-   * app, where the first model that answers writes the suggestion.
-   */
-  writingModel: string;
   voiceService: VoiceService;
 }
 
@@ -46,8 +45,8 @@ export const DEFAULT_DRAFT: OnboardingDraft = {
   speakingStyle: SPEAKING_STYLES[0].value,
   personalWords: "",
   mode: null,
-  writingService: "none",
-  writingModel: "",
+  defaultModel: { service: "none", model: "" },
+  suggestionsModel: null,
   voiceService: "system",
 };
 
@@ -96,7 +95,8 @@ export const WRITING_SERVICES = [
   {
     value: "openrouter",
     label: "OpenRouter",
-    description: "Cloud service. Stronger writing help. Free models are available.",
+    description:
+      "Cloud service. Stronger writing help. Free models are available.",
   },
   {
     value: "none",
@@ -189,7 +189,8 @@ export const WELCOME_POINTS = [
   },
   {
     title: "Full expression",
-    description: "Common needs, feelings, and social phrases stay easy to reach.",
+    description:
+      "Common needs, feelings, and social phrases stay easy to reach.",
   },
 ] as const;
 

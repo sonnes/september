@@ -5,10 +5,11 @@ use serde_json::json;
 fn migration_creates_normalized_domain_tables() {
     let repository = Repository::open_in_memory().unwrap();
 
-    assert_eq!(repository.schema_version().unwrap(), 6);
+    assert_eq!(repository.schema_version().unwrap(), 7);
     assert_eq!(
         repository.table_names().unwrap(),
         vec![
+            "agent_messages",
             "analytics_events",
             "messages",
             "notes",

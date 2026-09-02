@@ -8,6 +8,9 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { currentUserId } from "@/services/os";
 import { STARTER_PACK, type SavedPhrase } from "@/rules/phrases";
+import type { AgentMessage } from "@september/core/rules/agent";
+
+export type { AgentMessage };
 
 export interface Space {
   id: string;
@@ -31,6 +34,7 @@ export interface Message {
 
 const messagesKey = (spaceId: string) => ["messages", spaceId];
 const phrasesKey = (spaceId?: string) => ["phrases", spaceId ?? "all"];
+const agentMessagesKey = (spaceId: string) => ["agent-messages", spaceId];
 
 /**
  * One call to Rust.
@@ -106,6 +110,7 @@ export interface SpacePatch {
   title?: string;
   context?: string;
   phrases_synced_count?: number;
+  reset_phrases_synced_count?: boolean;
 }
 
 /**
@@ -185,6 +190,44 @@ export function useSendMessage(spaceId: string) {
         ...rows,
         message,
       ]),
+  });
+}
+
+export function useAgentMessages(spaceId: string) {
+  return useQuery({
+    queryKey: agentMessagesKey(spaceId),
+    queryFn: () => call<AgentMessage[]>("agent_message_list", { space_id: spaceId }),
+    enabled: Boolean(spaceId),
+  });
+}
+
+export function usePutAgentMessage(spaceId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (message: AgentMessage) => call<AgentMessage>("agent_message_put", message),
+    onSuccess: () => client.invalidateQueries({ queryKey: agentMessagesKey(spaceId) }),
+  });
+}
+
+export function useResolveAgentTool(spaceId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      state,
+      content,
+    }: {
+      id: string;
+      state: "applied" | "rejected" | "failed";
+      content: string;
+    }) => call<AgentMessage>("agent_tool_state", {
+      id,
+      expected: "pending",
+      state,
+      content,
+      updated_at: Date.now(),
+    }),
+    onSuccess: () => client.invalidateQueries({ queryKey: agentMessagesKey(spaceId) }),
   });
 }
 

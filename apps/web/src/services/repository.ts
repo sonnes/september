@@ -1,4 +1,5 @@
 import type { UsageEventType } from '@/rules/usage-summary';
+import type { AgentMessage } from '@september/core/rules/agent';
 import { panelStateFrom } from '@september/core/rules/panel';
 import { presentSettings } from '@september/core/rules/present';
 import {
@@ -8,7 +9,7 @@ import {
 } from '@september/core/rules/backup';
 
 export const DATABASE_NAME = 'september';
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 3;
 
 export const DEFAULT_BLOB_CACHE_BYTES = 100 * 1024 * 1024;
 export const DEFAULT_BLOB_CHUNK_BYTES = 1024 * 1024;
@@ -28,6 +29,7 @@ const STORES = {
   settings: 'settings',
   spaces: 'spaces',
   messages: 'messages',
+  agentMessages: 'agent_messages',
   notes: 'notes',
   phrases: 'saved_phrases',
   analytics: 'analytics_events',
@@ -50,6 +52,7 @@ export interface SpacePatch {
   title?: string;
   context?: string;
   phrases_synced_count?: number;
+  reset_phrases_synced_count?: boolean;
   updated_at: number;
 }
 
@@ -92,6 +95,8 @@ export interface AnalyticsEvent {
   data: Record<string, unknown>;
 }
 
+export type { AgentMessage };
+
 interface SettingRow {
   key: string;
   value: unknown;
@@ -129,7 +134,8 @@ function requestResult<T>(request: IDBRequest<T>): Promise<T> {
 function transactionDone(transaction: IDBTransaction): Promise<void> {
   return new Promise((resolve, reject) => {
     transaction.oncomplete = () => resolve();
-    transaction.onabort = () => reject(transaction.error ?? new Error('IndexedDB transaction aborted'));
+    transaction.onabort = () =>
+      reject(transaction.error ?? new Error('IndexedDB transaction aborted'));
   });
 }
 
@@ -158,9 +164,20 @@ function createSchema(database: IDBDatabase): void {
   }
 
   if (!database.objectStoreNames.contains(STORES.messages)) {
-    const store = database.createObjectStore(STORES.messages, { keyPath: 'id' });
+    const store = database.createObjectStore(STORES.messages, {
+      keyPath: 'id',
+    });
     store.createIndex('space_id', 'space_id');
     store.createIndex('created_at', 'created_at');
+  }
+
+  if (!database.objectStoreNames.contains(STORES.agentMessages)) {
+    const store = database.createObjectStore(STORES.agentMessages, {
+      keyPath: 'id',
+    });
+    store.createIndex('space_id', 'space_id');
+    store.createIndex('space_created_at', ['space_id', 'created_at']);
+    store.createIndex('tool_call_id', 'tool_call_id', { unique: false });
   }
 
   if (!database.objectStoreNames.contains(STORES.notes)) {
@@ -176,7 +193,9 @@ function createSchema(database: IDBDatabase): void {
   }
 
   if (!database.objectStoreNames.contains(STORES.analytics)) {
-    const store = database.createObjectStore(STORES.analytics, { keyPath: 'id' });
+    const store = database.createObjectStore(STORES.analytics, {
+      keyPath: 'id',
+    });
     store.createIndex('timestamp', 'timestamp');
     store.createIndex('user_timestamp', ['user_id', 'timestamp']);
   }
@@ -204,7 +223,8 @@ async function openDatabase(): Promise<IDBDatabase> {
       resolve(database);
     };
     request.onerror = () => reject(request.error ?? new Error('Could not open IndexedDB'));
-    request.onblocked = () => reject(new Error('September is open in another browser tab. Close that tab and try again.'));
+    request.onblocked = () =>
+      reject(new Error('September is open in another browser tab. Close that tab and try again.'));
   });
 }
 
@@ -243,6 +263,7 @@ export class BrowserRepository {
       STORES.settings,
       STORES.spaces,
       STORES.messages,
+      STORES.agentMessages,
       STORES.notes,
       STORES.phrases,
       STORES.analytics,
@@ -257,20 +278,25 @@ export class BrowserRepository {
       transaction.objectStore(STORES.messages).getAll()
     );
     const notesRequest = requestResult<Note[]>(transaction.objectStore(STORES.notes).getAll());
+    const agentMessagesRequest = requestResult<AgentMessage[]>(
+      transaction.objectStore(STORES.agentMessages).getAll()
+    );
     const phrasesRequest = requestResult<SavedPhrase[]>(
       transaction.objectStore(STORES.phrases).getAll()
     );
     const analyticsRequest = requestResult<AnalyticsEvent[]>(
       transaction.objectStore(STORES.analytics).getAll()
     );
-    const [settingRows, spaces, messages, notes, savedPhrases, usageEvents] = await Promise.all([
-      settingsRequest,
-      spacesRequest,
-      messagesRequest,
-      notesRequest,
-      phrasesRequest,
-      analyticsRequest,
-    ]);
+    const [settingRows, spaces, messages, agentMessages, notes, savedPhrases, usageEvents] =
+      await Promise.all([
+        settingsRequest,
+        spacesRequest,
+        messagesRequest,
+        agentMessagesRequest,
+        notesRequest,
+        phrasesRequest,
+        analyticsRequest,
+      ]);
     await done;
     const settings = new Map(settingRows.map(row => [row.key, row.value]));
 
@@ -280,14 +306,14 @@ export class BrowserRepository {
         speech: (settings.get('speech') as BackupSettings['speech'] | undefined) ?? null,
         dismissedIdeas:
           (settings.get('dismissed-ideas') as BackupSettings['dismissedIdeas'] | undefined) ?? [],
-        spaceModes:
-          (settings.get('space-modes') as BackupSettings['spaceModes'] | undefined) ?? {},
+        spaceModes: (settings.get('space-modes') as BackupSettings['spaceModes'] | undefined) ?? {},
         newSpaceDraft: (settings.get('new-space-draft') as string | undefined) ?? '',
         panel: panelStateFrom(settings.get('panel-open')),
         present: presentSettings(settings.get('present')),
       },
       spaces,
       messages: messages.map(({ audio_path: _audioPath, ...message }) => message),
+      agentMessages,
       notes,
       savedPhrases,
       usageEvents,
@@ -300,6 +326,7 @@ export class BrowserRepository {
       STORES.settings,
       STORES.spaces,
       STORES.messages,
+      STORES.agentMessages,
       STORES.notes,
       STORES.phrases,
       STORES.analytics,
@@ -324,11 +351,15 @@ export class BrowserRepository {
       const spaces = transaction.objectStore(STORES.spaces);
       const messages = transaction.objectStore(STORES.messages);
       const notes = transaction.objectStore(STORES.notes);
+      const agentMessages = transaction.objectStore(STORES.agentMessages);
       const phrases = transaction.objectStore(STORES.phrases);
       const analytics = transaction.objectStore(STORES.analytics);
-      for (const store of [messages, notes, phrases, spaces, analytics]) store.clear();
+      for (const store of [messages, agentMessages, notes, phrases, spaces, analytics]) {
+        store.clear();
+      }
       for (const row of contents.spaces) spaces.put(row);
       for (const row of contents.messages) messages.put(row);
+      for (const row of contents.agentMessages) agentMessages.put(row);
       for (const row of contents.notes) notes.put(row);
       for (const row of contents.savedPhrases) phrases.put(row);
       for (const row of contents.usageEvents) analytics.put(row);
@@ -342,10 +373,7 @@ export class BrowserRepository {
   }
 
   async getBlob(id: string, accessedAt = Date.now()): Promise<Blob | null> {
-    const transaction = this.database.transaction(
-      [STORES.blobs, STORES.blobChunks],
-      'readwrite'
-    );
+    const transaction = this.database.transaction([STORES.blobs, STORES.blobChunks], 'readwrite');
     const done = transactionDone(transaction);
     const blobs = transaction.objectStore(STORES.blobs);
     const chunks = transaction.objectStore(STORES.blobChunks);
@@ -360,7 +388,12 @@ export class BrowserRepository {
     const complete =
       held.length === row.chunk_count &&
       held.every((chunk, index) => chunk.index === index && chunk.size === chunk.data.byteLength);
-    const restored = complete ? new Blob(held.map(chunk => chunk.data), { type: row.type }) : null;
+    const restored = complete
+      ? new Blob(
+          held.map(chunk => chunk.data),
+          { type: row.type }
+        )
+      : null;
 
     if (!restored || restored.size !== row.size) {
       blobs.delete(id);
@@ -396,10 +429,7 @@ export class BrowserRepository {
       parts.push(contents.slice(offset, offset + chunkBytes));
     }
 
-    const transaction = this.database.transaction(
-      [STORES.blobs, STORES.blobChunks],
-      'readwrite'
-    );
+    const transaction = this.database.transaction([STORES.blobs, STORES.blobChunks], 'readwrite');
     const done = transactionDone(transaction);
     const blobs = transaction.objectStore(STORES.blobs);
     const chunks = transaction.objectStore(STORES.blobChunks);
@@ -434,17 +464,19 @@ export class BrowserRepository {
       accessed_at: accessedAt,
     } satisfies BlobRow);
     parts.forEach((data, index) => {
-      chunks.put({ blob_id: id, index, size: data.byteLength, data } satisfies BlobChunkRow);
+      chunks.put({
+        blob_id: id,
+        index,
+        size: data.byteLength,
+        data,
+      } satisfies BlobChunkRow);
     });
     await done;
     return true;
   }
 
   async deleteBlob(id: string): Promise<boolean> {
-    const transaction = this.database.transaction(
-      [STORES.blobs, STORES.blobChunks],
-      'readwrite'
-    );
+    const transaction = this.database.transaction([STORES.blobs, STORES.blobChunks], 'readwrite');
     const done = transactionDone(transaction);
     const blobs = transaction.objectStore(STORES.blobs);
     const chunks = transaction.objectStore(STORES.blobChunks);
@@ -473,7 +505,8 @@ export class BrowserRepository {
   async getSpace(id: string): Promise<Space | null> {
     const transaction = this.database.transaction(STORES.spaces, 'readonly');
     return (
-      (await requestResult<Space | undefined>(transaction.objectStore(STORES.spaces).get(id))) ?? null
+      (await requestResult<Space | undefined>(transaction.objectStore(STORES.spaces).get(id))) ??
+      null
     );
   }
 
@@ -492,8 +525,9 @@ export class BrowserRepository {
       transaction.abort();
       throw new Error(`no space holds the ID ${patch.id}`);
     }
+    const { phrases_synced_count: _heldCount, ...withoutPhraseCount } = held;
     const updated: Space = {
-      ...held,
+      ...(patch.reset_phrases_synced_count ? withoutPhraseCount : held),
       ...(patch.title === undefined ? {} : { title: patch.title }),
       ...(patch.context === undefined ? {} : { context: patch.context }),
       ...(patch.phrases_synced_count === undefined
@@ -507,14 +541,25 @@ export class BrowserRepository {
   }
 
   async deleteSpace(id: string): Promise<boolean> {
-    const storeNames = [STORES.spaces, STORES.messages, STORES.notes, STORES.phrases];
+    const storeNames = [
+      STORES.spaces,
+      STORES.messages,
+      STORES.agentMessages,
+      STORES.notes,
+      STORES.phrases,
+    ];
     const transaction = this.database.transaction(storeNames, 'readwrite');
     const spaces = transaction.objectStore(STORES.spaces);
     const found = (await requestResult<Space | undefined>(spaces.get(id))) !== undefined;
     if (!found) return false;
 
     spaces.delete(id);
-    for (const storeName of [STORES.messages, STORES.notes, STORES.phrases] as const) {
+    for (const storeName of [
+      STORES.messages,
+      STORES.agentMessages,
+      STORES.notes,
+      STORES.phrases,
+    ] as const) {
       const store = transaction.objectStore(storeName);
       const childIds = await requestResult<IDBValidKey[]>(store.index('space_id').getAllKeys(id));
       for (const childId of childIds) store.delete(childId);
@@ -532,16 +577,82 @@ export class BrowserRepository {
     return rows.sort(oldestFirst);
   }
 
+  async getMessage(id: string): Promise<Message | null> {
+    const transaction = this.database.transaction(STORES.messages, 'readonly');
+    return (
+      (await requestResult<Message | undefined>(
+        transaction.objectStore(STORES.messages).get(id)
+      )) ?? null
+    );
+  }
+
   async putMessage(message: Message): Promise<Message> {
     const transaction = this.database.transaction([STORES.messages, STORES.spaces], 'readwrite');
     transaction.objectStore(STORES.messages).put(message);
     if (message.space_id) {
       const spaces = transaction.objectStore(STORES.spaces);
       const held = await requestResult<Space | undefined>(spaces.get(message.space_id));
-      if (held) spaces.put({ ...held, updated_at: Math.max(held.updated_at, message.created_at) });
+      if (held)
+        spaces.put({
+          ...held,
+          updated_at: Math.max(held.updated_at, message.created_at),
+        });
     }
     await transactionDone(transaction);
     return message;
+  }
+
+  async deleteMessage(id: string): Promise<boolean> {
+    const transaction = this.database.transaction(STORES.messages, 'readwrite');
+    const store = transaction.objectStore(STORES.messages);
+    const found = (await requestResult<Message | undefined>(store.get(id))) !== undefined;
+    if (found) store.delete(id);
+    await transactionDone(transaction);
+    return found;
+  }
+
+  async listAgentMessages(spaceId: string): Promise<AgentMessage[]> {
+    const transaction = this.database.transaction(STORES.agentMessages, 'readonly');
+    const rows = await requestResult<AgentMessage[]>(
+      transaction.objectStore(STORES.agentMessages).index('space_id').getAll(spaceId)
+    );
+    return rows.sort(oldestFirst);
+  }
+
+  async putAgentMessage(message: AgentMessage): Promise<AgentMessage> {
+    const transaction = this.database.transaction(STORES.agentMessages, 'readwrite');
+    transaction.objectStore(STORES.agentMessages).put(message);
+    await transactionDone(transaction);
+    return message;
+  }
+
+  async updateAgentToolState(
+    id: string,
+    expected: AgentMessage['tool_state'],
+    state: AgentMessage['tool_state'],
+    content: string,
+    updatedAt: number
+  ): Promise<AgentMessage> {
+    const transaction = this.database.transaction(STORES.agentMessages, 'readwrite');
+    const store = transaction.objectStore(STORES.agentMessages);
+    const held = await requestResult<AgentMessage | undefined>(store.get(id));
+    if (!held) {
+      transaction.abort();
+      throw new Error('That agent request is gone.');
+    }
+    if (held.tool_state !== expected) {
+      transaction.abort();
+      throw new Error('That agent request was already resolved.');
+    }
+    const updated = {
+      ...held,
+      tool_state: state,
+      content,
+      updated_at: updatedAt,
+    };
+    store.put(updated);
+    await transactionDone(transaction);
+    return updated;
   }
 
   async listNotes(spaceId?: string): Promise<Note[]> {
@@ -624,7 +735,11 @@ export class BrowserRepository {
     return event;
   }
 
-  async listAnalyticsEvents(userId: string, startAt: number, endAt: number): Promise<AnalyticsEvent[]> {
+  async listAnalyticsEvents(
+    userId: string,
+    startAt: number,
+    endAt: number
+  ): Promise<AnalyticsEvent[]> {
     const transaction = this.database.transaction(STORES.analytics, 'readonly');
     const range = IDBKeyRange.bound([userId, startAt], [userId, endAt]);
     const rows = await requestResult<AnalyticsEvent[]>(
@@ -649,7 +764,9 @@ interface OpenRepositoryOptions {
   migrate?: boolean;
 }
 
-export async function openRepository({ migrate = true }: OpenRepositoryOptions = {}): Promise<BrowserRepository> {
+export async function openRepository({
+  migrate = true,
+}: OpenRepositoryOptions = {}): Promise<BrowserRepository> {
   if (typeof indexedDB === 'undefined') throw new Error('IndexedDB is not available');
   const repository = new BrowserRepository(await openDatabase());
   if (migrate) await migrateLegacyData(repository);
@@ -706,7 +823,8 @@ async function readLegacyRows<T>(
       }
       const key = cursor.key;
       const value = cursor.value as LegacyStoredRow<T>;
-      if (Array.isArray(key) && key[0] === collection && value && 'data' in value) rows.push(value.data);
+      if (Array.isArray(key) && key[0] === collection && value && 'data' in value)
+        rows.push(value.data);
       cursor.continue();
     };
     request.onerror = () => reject(request.error);
@@ -788,15 +906,11 @@ function migratedAnalytics(row: Record<string, unknown>): AnalyticsEvent {
     user_id: String(row.user_id),
     event_type: eventType,
     timestamp: timestamp(row.timestamp),
-    data:
-      row.data && typeof row.data === 'object'
-        ? (row.data as Record<string, unknown>)
-        : {},
+    data: row.data && typeof row.data === 'object' ? (row.data as Record<string, unknown>) : {},
   };
 }
 
 function setupFromAccount(account: Record<string, unknown>): Record<string, unknown> {
-  const suggestions = (account.ai_suggestions ?? {}) as Record<string, unknown>;
   const speech = (account.ai_speech ?? {}) as Record<string, unknown>;
   return {
     id: String(account.id ?? 'local-user'),
@@ -804,9 +918,8 @@ function setupFromAccount(account: Record<string, unknown>): Record<string, unkn
     speakingStyle: '',
     personalWords: typeof account.context === 'string' ? account.context : '',
     mode: account.setup_mode === 'advanced' ? 'advanced' : 'free',
-    writingService:
-      suggestions.enabled === true && suggestions.provider === 'openrouter' ? 'openrouter' : 'none',
-    writingModel: typeof suggestions.model === 'string' ? suggestions.model : '',
+    defaultModel: { service: 'none', model: '' },
+    suggestionsModel: null,
     voiceService: speech.provider === 'elevenlabs' ? 'elevenlabs' : 'system',
   };
 }
@@ -828,8 +941,7 @@ function speechFromAccount(account: Record<string, unknown>): Record<string, unk
   return {
     provider: speech.enabled === true && speech.provider === 'elevenlabs' ? 'elevenlabs' : 'system',
     voiceId: typeof speech.voice_id === 'string' ? speech.voice_id : null,
-    modelId:
-      typeof speech.model_id === 'string' ? speech.model_id : 'eleven_turbo_v2_5',
+    modelId: typeof speech.model_id === 'string' ? speech.model_id : 'eleven_turbo_v2_5',
     stability: typeof settings.stability === 'number' ? settings.stability : 0.5,
     similarity: typeof similarity === 'number' ? similarity : 0.75,
     speed: typeof settings.speed === 'number' ? settings.speed : 1,
@@ -880,7 +992,11 @@ async function importLegacyBrowserSettings(repository: BrowserRepository): Promi
 
   const panel = storedJson('september:chat-panel');
   if (panel && typeof panel === 'object') {
-    const saved = panel as { state?: unknown; open?: unknown; activeTab?: unknown };
+    const saved = panel as {
+      state?: unknown;
+      open?: unknown;
+      activeTab?: unknown;
+    };
     await repository.putSetting('panel-open', {
       open: saved.state === 'expanded' || saved.open === true,
       tab: saved.activeTab === 'voice' ? 'voice' : 'phrases',
@@ -982,7 +1098,11 @@ export async function migrateLegacyData(repository: BrowserRepository): Promise<
   }
   await importLegacyBrowserSettings(repository);
 
-  await validateIds('space', migratedSpaces, await repository.listSpaces(account ? String(account.id) : 'local-user'));
+  await validateIds(
+    'space',
+    migratedSpaces,
+    await repository.listSpaces(account ? String(account.id) : 'local-user')
+  );
   await validateIds('message', migratedMessages, await repository.listMessages());
   await validateIds('note', migratedNotes, await repository.listNotes());
   await validateIds('phrase', migratedPhrases, await repository.listPhrases());

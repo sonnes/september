@@ -3,6 +3,7 @@ pub mod audio;
 pub mod error;
 pub mod gaze;
 pub mod providers;
+pub mod proxy;
 pub mod repository;
 pub mod speech;
 
@@ -27,6 +28,9 @@ pub fn run() {
             rpc::message_get,
             rpc::message_put,
             rpc::message_delete,
+            rpc::agent_message_list,
+            rpc::agent_message_put,
+            rpc::agent_tool_state,
             rpc::analytics_put,
             rpc::analytics_list,
             rpc::note_list,
@@ -41,7 +45,7 @@ pub fn run() {
             rpc::user_id,
             rpc::apfel_status,
             rpc::apfel_generate,
-            rpc::openrouter_generate,
+            rpc::writing_proxy,
             rpc::provider_status,
             rpc::provider_connect,
             rpc::provider_forget,

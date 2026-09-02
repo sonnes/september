@@ -19,6 +19,12 @@ export type GazeEvent =
       data: { state: string; detail: string | null };
     };
 
+/**
+ * The channel of the running session.
+ *
+ * Nothing reads it. It holds the channel alive for as long as Rust may send
+ * on it, so the callback is not collected under a session in progress.
+ */
 let activeChannel: Channel<GazeEvent> | null = null;
 
 async function command<T>(name: string, args?: Record<string, unknown>): Promise<T> {

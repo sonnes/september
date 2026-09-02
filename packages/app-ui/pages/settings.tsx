@@ -22,7 +22,10 @@ import {
 } from "@september/ui/components/alert-dialog";
 import { Button } from "@september/ui/components/button";
 import { Label } from "@september/ui/components/label";
-import { RadioGroup, RadioGroupItem } from "@september/ui/components/radio-group";
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from "@september/ui/components/radio-group";
 import { Skeleton } from "@september/ui/components/skeleton";
 import { Textarea } from "@september/ui/components/textarea";
 
@@ -62,7 +65,12 @@ import {
   type ConnectionId,
 } from "@platform/rules/settings-nav";
 import { PickList } from "@september/app-ui/blocks/pick-list";
-import { CloudStatus, KeyPanel, Mark, Status } from "@september/app-ui/blocks/services";
+import {
+  CloudStatus,
+  KeyPanel,
+  Mark,
+  Status,
+} from "@september/app-ui/blocks/services";
 
 function useSetup(): [
   OnboardingDraft,
@@ -191,7 +199,12 @@ export function SetupSettings() {
                 status={connections.openrouter}
               />
             }
-            action={<ManageLink provider="openrouter" status={connections.openrouter} />}
+            action={
+              <ManageLink
+                provider="openrouter"
+                status={connections.openrouter}
+              />
+            }
           />
           <ConnectionRow
             service="elevenlabs"
@@ -207,7 +220,12 @@ export function SetupSettings() {
                 status={connections.elevenlabs}
               />
             }
-            action={<ManageLink provider="elevenlabs" status={connections.elevenlabs} />}
+            action={
+              <ManageLink
+                provider="elevenlabs"
+                status={connections.elevenlabs}
+              />
+            }
           />
         </div>
       </Section>
@@ -233,7 +251,11 @@ function ManageLink({
   status: ProviderStatus;
 }) {
   return (
-    <Button asChild type="button" variant={status.connected ? "outline" : "default"}>
+    <Button
+      asChild
+      type="button"
+      variant={status.connected ? "outline" : "default"}
+    >
       <Link to="/settings/connections/$provider" params={{ provider }}>
         {status.connected ? "Manage" : "Set up"}
       </Link>
@@ -339,6 +361,9 @@ export function ConnectionScreen({ provider }: { provider: ConnectionId }) {
 
 /** The row that asks for no model, and keeps the free list of the app. */
 const AUTOMATIC = "automatic";
+const USE_DEFAULT = "use-default";
+const CURRENT_DEFAULT = "current-default";
+const CURRENT_SUGGESTIONS = "current-suggestions";
 
 /**
  * The OpenRouter model, on the screen that holds the key.
@@ -368,7 +393,15 @@ function WritingModelChoice({ connected }: { connected: boolean }) {
 
   if (!connected) return null;
 
-  const chosen = setup.writingModel || AUTOMATIC;
+  const chosen =
+    setup.defaultModel.service === "openrouter"
+      ? setup.defaultModel.model || AUTOMATIC
+      : CURRENT_DEFAULT;
+  const suggestionsChosen = !setup.suggestionsModel
+    ? USE_DEFAULT
+    : setup.suggestionsModel.service === "openrouter"
+      ? setup.suggestionsModel.model || AUTOMATIC
+      : CURRENT_SUGGESTIONS;
   // Automatic is free, so it sits at the head of the resting list and leaves
   // when the words do not find it.
   const rows = [
@@ -378,31 +411,100 @@ function WritingModelChoice({ connected }: { connected: boolean }) {
       note: model.free ? undefined : "Paid",
     })),
   ];
+  const defaultRows =
+    setup.defaultModel.service === "openrouter"
+      ? rows
+      : [
+          {
+            id: CURRENT_DEFAULT,
+            name: `Current: ${serviceName(setup.defaultModel.service)}`,
+            note: "Change in Writing help",
+            free: true,
+          },
+          ...rows,
+        ];
+  const suggestionsRows =
+    setup.suggestionsModel && setup.suggestionsModel.service !== "openrouter"
+      ? [
+          {
+            id: CURRENT_SUGGESTIONS,
+            name: `Current: ${serviceName(setup.suggestionsModel.service)}`,
+            note: "Change in Writing help",
+            free: true,
+          },
+          { id: USE_DEFAULT, name: "Use default", free: true },
+          ...rows,
+        ]
+      : [{ id: USE_DEFAULT, name: "Use default", free: true }, ...rows];
 
   return (
-    <Section
-      title="Which model"
-      description="Automatic uses the free models of September, and moves to the next one when a model is busy."
-    >
-      {models === null ? (
-        <Skeleton className="h-24 w-full" />
-      ) : (
-        <PickList
-          rows={rows}
-          value={chosen}
-          onPick={(id) =>
-            change({ writingModel: id === AUTOMATIC ? "" : id })
-          }
-          label="Search models"
-          filter={(all, query) => searchModels(all, query, chosen)}
-        />
-      )}
-      <p className="text-muted-foreground max-w-md text-sm">
-        {models?.length === 0
-          ? "No models came back from OpenRouter. Automatic still writes."
-          : "The list shows the free models. Search to reach every model of OpenRouter. A model marked Paid uses the credit of your account."}
-      </p>
-    </Section>
+    <>
+      <Section
+        title="Default model"
+        description="Every writing task uses this model unless it has an override."
+      >
+        {models === null ? (
+          <Skeleton className="h-24 w-full" />
+        ) : (
+          <PickList
+            rows={defaultRows}
+            value={chosen}
+            onPick={(id) => {
+              if (id === CURRENT_DEFAULT) return;
+              change({
+                defaultModel: {
+                  service: "openrouter",
+                  model: id === AUTOMATIC ? "" : id,
+                },
+              });
+            }}
+            label="Search models"
+            filter={(all, query) => searchModels(all, query, chosen)}
+          />
+        )}
+        <p className="text-muted-foreground max-w-md text-sm">
+          {models?.length === 0
+            ? "No models came back from OpenRouter. Automatic still writes."
+            : "The list shows the free models. Search to reach every model of OpenRouter. A model marked Paid uses the credit of your account."}
+        </p>
+      </Section>
+      <Section
+        title="Suggestions model"
+        description="Use default keeps every writing task on one model. Choose another model only for suggestions while typing."
+      >
+        {models === null ? (
+          <Skeleton className="h-24 w-full" />
+        ) : (
+          <PickList
+            rows={suggestionsRows}
+            value={suggestionsChosen}
+            onPick={(id) => {
+              if (id === CURRENT_SUGGESTIONS) return;
+              change({
+                suggestionsModel:
+                  id === USE_DEFAULT
+                    ? null
+                    : {
+                        service: "openrouter",
+                        model: id === AUTOMATIC ? "" : id,
+                      },
+              });
+            }}
+            label="Search suggestion models"
+            filter={(all, query) => searchModels(all, query, suggestionsChosen)}
+          />
+        )}
+      </Section>
+    </>
+  );
+}
+
+function serviceName(
+  service: OnboardingDraft["defaultModel"]["service"],
+): string {
+  return (
+    WRITING_SERVICES.find((option) => option.value === service)?.label ??
+    "No writing help"
   );
 }
 
@@ -484,6 +586,21 @@ export function WritingSettings() {
     openrouter: connections.openrouter.connected,
     none: true,
   };
+  const suggestionsService = setup.suggestionsModel?.service ?? USE_DEFAULT;
+  const suggestionOptions: Array<{
+    value: typeof USE_DEFAULT | OnboardingDraft["defaultModel"]["service"];
+    label: string;
+    description: string;
+  }> = [
+    {
+      value: USE_DEFAULT,
+      label: "Use default",
+      description: "Suggestions use the default model configuration.",
+    },
+    ...WRITING_SERVICES.filter(
+      (option) => option.value !== "apple" || connections.apple.supported,
+    ),
+  ];
 
   return (
     <div className="flex flex-col gap-8">
@@ -499,9 +616,14 @@ export function WritingSettings() {
         <RadioGroup
           aria-label="Writing help"
           className="gap-3"
-          value={setup.writingService}
+          value={setup.defaultModel.service}
           onValueChange={(value) =>
-            change({ writingService: value as OnboardingDraft["writingService"] })
+            change({
+              defaultModel: {
+                ...setup.defaultModel,
+                service: value as OnboardingDraft["defaultModel"]["service"],
+              },
+            })
           }
         >
           {WRITING_SERVICES.filter(
@@ -521,7 +643,9 @@ export function WritingSettings() {
               />
               <Mark service={option.value} />
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold">{option.label}</span>
+                <span className="block text-sm font-semibold">
+                  {option.label}
+                </span>
                 <span className="text-muted-foreground mt-1 block text-xs leading-relaxed">
                   {ready[option.value]
                     ? option.description
@@ -530,6 +654,68 @@ export function WritingSettings() {
               </span>
             </Label>
           ))}
+        </RadioGroup>
+      </Section>
+
+      <Section
+        title="Suggestions"
+        description="Use the default model, or override it only for suggestions while you type."
+      >
+        <RadioGroup
+          aria-label="Suggestions model service"
+          className="gap-3"
+          value={suggestionsService}
+          onValueChange={(value) =>
+            change({
+              suggestionsModel:
+                value === USE_DEFAULT
+                  ? null
+                  : {
+                      service:
+                        value as OnboardingDraft["defaultModel"]["service"],
+                      model:
+                        setup.suggestionsModel?.service === value
+                          ? setup.suggestionsModel.model
+                          : "",
+                    },
+            })
+          }
+        >
+          {suggestionOptions.map((option) => {
+            const available =
+              option.value === USE_DEFAULT ? true : ready[option.value];
+            return (
+              <Label
+                key={option.value}
+                className={`hover:bg-accent has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5 flex cursor-pointer items-center gap-4 rounded-xl border p-4 ${
+                  available ? "" : "opacity-60"
+                }`}
+              >
+                <RadioGroupItem
+                  value={option.value}
+                  disabled={!available}
+                  className="size-5"
+                />
+                <Mark
+                  service={
+                    option.value === USE_DEFAULT
+                      ? setup.defaultModel.service
+                      : option.value
+                  }
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold">
+                    {option.label}
+                  </span>
+                  <span className="text-muted-foreground mt-1 block text-xs leading-relaxed">
+                    {available
+                      ? option.description
+                      : "Not connected yet. Finish it in Services."}
+                  </span>
+                </span>
+              </Label>
+            );
+          })}
         </RadioGroup>
       </Section>
 
@@ -637,6 +823,7 @@ function BackupPreview({
   const counts = [
     ["Spaces", summary.spaces],
     ["Messages", summary.messages],
+    ["Agent messages", summary.agentMessages],
     ["Notes", summary.notes],
     ["Saved phrases", summary.savedPhrases],
     ["Usage events", summary.usageEvents],
@@ -726,14 +913,14 @@ export function DataSettings() {
       <div className="border-primary/20 bg-primary/5 rounded-surface border p-5">
         <p className="text-sm font-semibold">Keep the file private</p>
         <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
-          Backups contain your conversations and notes in plain text. Store them
-          securely. API keys are not included.
+          Backups contain your Talk and Agent conversations and notes in plain
+          text. Store them securely. API keys are not included.
         </p>
       </div>
 
       <Section
         title="Download a backup"
-        description="Creates one JSON file with your settings, spaces, messages, notes, saved phrases, and usage history."
+        description="Creates one JSON file with your settings, spaces, Talk and Agent messages, notes, saved phrases, and usage history."
       >
         <Button
           type="button"
@@ -773,8 +960,8 @@ export function DataSettings() {
           <>
             <BackupPreview fileName={fileName} summary={summary} />
             <p className="text-muted-foreground text-sm leading-relaxed">
-              Importing replaces your current settings and data. It does not change
-              your API keys or this device&apos;s audio settings.
+              Importing replaces your current settings and data. It does not
+              change your API keys or this device&apos;s audio settings.
             </p>
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -789,10 +976,13 @@ export function DataSettings() {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Replace your September data?</AlertDialogTitle>
+                  <AlertDialogTitle>
+                    Replace your September data?
+                  </AlertDialogTitle>
                   <AlertDialogDescription>
-                    This replaces your current settings and data with the selected
-                    backup. You cannot undo this action unless you have another backup.
+                    This replaces your current settings and data with the
+                    selected backup. You cannot undo this action unless you have
+                    another backup.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

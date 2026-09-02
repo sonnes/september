@@ -13,7 +13,8 @@ cc = "1"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
+axum = { version = "0.8", default-features = false, features = ["http1", "tokio"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "rustls", "stream"] }
 keyring = { version = "3", features = ["apple-native"] }
 rusqlite = { version = "0.38", features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
@@ -22,7 +23,7 @@ serde_json = "1"
 tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-shell = "2"
 thiserror = "2"
-tokio = { version = "1", features = ["sync", "time"] }
+tokio = { version = "1", features = ["sync", "time", "net", "rt-multi-thread"] }
 uuid = { version = "1", features = ["v4"] }
 whoami = "1"
 

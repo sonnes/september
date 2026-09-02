@@ -11,6 +11,7 @@ import { AppShell } from '@september/app-ui/layouts/app';
 import { OnboardingLayout } from '@september/app-ui/layouts/onboarding';
 import { SettingsLayout } from '@september/app-ui/layouts/settings';
 import { DashboardScreen } from '@september/app-ui/pages/dashboard';
+import { AgentScreen, NewSpaceScreen } from '@september/app-ui/pages/agent';
 import { HelpScreen } from '@september/app-ui/pages/help';
 import { NotesScreen } from '@september/app-ui/pages/notes';
 import { HomePage } from '@/pages/home';
@@ -20,7 +21,7 @@ import {
   SetupSettings,
   WritingSettings,
 } from '@september/app-ui/pages/settings';
-import { NewSpaceScreen, SpacesScreen } from '@september/app-ui/pages/spaces';
+import { SpacesScreen } from '@september/app-ui/pages/spaces';
 import { ConnectStep, FinishStep, ModeStep, ProfileStep, WelcomeStep } from '@september/app-ui/pages/steps';
 import { TalkScreen } from '@september/app-ui/pages/talk';
 import { UsageSettings } from '@september/app-ui/pages/usage';
@@ -47,6 +48,7 @@ export const APP_ROUTE_PATHS = [
   '/spaces',
   '/spaces/new',
   '/spaces/$slug/talk',
+  '/spaces/$slug/agent',
   '/spaces/$slug/notes',
   '/spaces/$slug/notes/$noteSlug',
   '/voice',
@@ -100,6 +102,14 @@ const talkRoute = createRoute({
   path: '/spaces/$slug/talk',
   component: function Talk() {
     return <TalkScreen slug={talkRoute.useParams().slug} />;
+  },
+});
+
+const agentRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/spaces/$slug/agent',
+  component: function Agent() {
+    return <AgentScreen slug={agentRoute.useParams().slug} />;
   },
 });
 
@@ -175,6 +185,7 @@ const guardedAppRoute = appRoute.addChildren([
     component: NewSpaceScreen,
   }),
   talkRoute,
+  agentRoute,
   notesRoute,
   noteRoute,
   createRoute({

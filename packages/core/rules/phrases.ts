@@ -37,7 +37,6 @@ export interface SavedPhrase {
  */
 
 
-export const CODE_MIN_LENGTH = 2;
 export const CODE_MAX_LENGTH = 5;
 
 /** Generated codes cap at 4 chars so one mutation char still fits the max. */

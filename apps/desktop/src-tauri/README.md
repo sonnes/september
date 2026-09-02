@@ -32,20 +32,21 @@ The `settings` table stores a unique text key and a JSON value. Keys must
 contain 1 to 256 bytes. The `audio-output` setting keeps the Core Audio UID for
 September's own playback device.
 
-The `spaces`, `messages`, `notes`, and `saved_phrases` tables store domain
-fields in typed columns. Messages and notes can belong to a space. Deleting a
-space deletes its messages and scoped notes, while global messages and notes
-remain. Timestamps are Unix milliseconds.
+The `spaces`, `messages`, `agent_messages`, `notes`, and `saved_phrases` tables
+store domain fields in typed columns. Talk messages and notes can belong to a
+space. Every Agent message belongs to one space. Deleting a space deletes its
+Talk transcript, Agent transcript, and scoped notes, while global Talk
+messages and notes remain. Timestamps are Unix milliseconds.
 
 The `analytics_events` table stores one indexed event type and timestamp with
 a JSON payload. It has no foreign key to a space, because a retained usage
 total must survive when the user deletes a conversation.
 
-Schema version 6 creates all six tables. Released builds before the domain
-tables used versions 1 to 3 for a database that held only the settings, so the
-version of the domain tables must be higher than those. The migration uses
-`CREATE TABLE IF NOT EXISTS`, so an install from an earlier build gains the
-domain tables and keeps its settings.
+Schema version 7 creates the Agent transcript table and its indexes. Released
+builds before the domain tables used versions 1 to 3 for a database that held
+only the settings, so the version of the domain tables must be higher than
+those. The migration uses `CREATE TABLE IF NOT EXISTS`, so an install from an
+earlier build gains the domain tables and keeps its settings.
 
 ## Call the domain APIs
 
@@ -54,24 +55,31 @@ replaces one complete row and returns the stored object. A `get` command
 returns `null` when its row does not exist. A `delete` command returns `false`
 when its row does not exist.
 
-| Command | Request | Response |
-| --- | --- | --- |
-| `space_list` | `{ user_id }` | `Space[]` |
-| `space_get` | `{ id }` | `Space \| null` |
-| `space_put` | `Space` | `Space` |
-| `space_delete` | `{ id }` | `boolean` |
-| `message_list` | `{ space_id? }` | `Message[]` |
-| `message_get` | `{ id }` | `Message \| null` |
-| `message_put` | `Message` | `Message` |
-| `message_delete` | `{ id }` | `boolean` |
-| `note_list` | `{ space_id? }` | `Note[]` |
-| `note_get` | `{ id }` | `Note \| null` |
-| `note_put` | `Note` | `Note` |
-| `note_delete` | `{ id }` | `boolean` |
-| `phrase_list` | `{ space_id? }` | `SavedPhrase[]` |
-| `phrase_put` | `SavedPhrase` | `SavedPhrase` |
-| `phrase_delete` | `{ id }` | `boolean` |
-| `phrase_replace_ai` | `{ space_id, phrases }` | `SavedPhrase[]` |
+| Command              | Request                                        | Response          |
+| -------------------- | ---------------------------------------------- | ----------------- |
+| `space_list`         | `{ user_id }`                                  | `Space[]`         |
+| `space_get`          | `{ id }`                                       | `Space \| null`   |
+| `space_put`          | `Space`                                        | `Space`           |
+| `space_delete`       | `{ id }`                                       | `boolean`         |
+| `message_list`       | `{ space_id? }`                                | `Message[]`       |
+| `message_get`        | `{ id }`                                       | `Message \| null` |
+| `message_put`        | `Message`                                      | `Message`         |
+| `message_delete`     | `{ id }`                                       | `boolean`         |
+| `note_list`          | `{ space_id? }`                                | `Note[]`          |
+| `note_get`           | `{ id }`                                       | `Note \| null`    |
+| `note_put`           | `Note`                                         | `Note`            |
+| `note_delete`        | `{ id }`                                       | `boolean`         |
+| `phrase_list`        | `{ space_id? }`                                | `SavedPhrase[]`   |
+| `phrase_put`         | `SavedPhrase`                                  | `SavedPhrase`     |
+| `phrase_delete`      | `{ id }`                                       | `boolean`         |
+| `phrase_replace_ai`  | `{ space_id, phrases }`                        | `SavedPhrase[]`   |
+| `agent_message_list` | `{ space_id }`                                 | `AgentMessage[]`  |
+| `agent_message_put`  | `AgentMessage`                                 | `AgentMessage`    |
+| `agent_tool_state`   | `{ id, expected, state, content, updated_at }` | `AgentMessage`    |
+
+Agent messages have their own table and API. `agent_tool_state` resolves a
+pending tool record only when its current state matches `expected`, so a second
+approval cannot apply the same proposal again.
 
 The objects use the same snake-case fields as the SQLite columns:
 
@@ -116,8 +124,9 @@ IDs, user IDs, and message types must contain 1 to 256 bytes. Timestamps and
 its created timestamp. A scoped message or note must reference an existing
 space.
 
-Deleting a space also deletes its scoped messages and notes. Global messages
-and notes remain. For example, this call creates or replaces a space:
+Deleting a space also deletes its scoped Talk messages, Agent messages, and
+notes. Global Talk messages and notes remain. For example, this call creates
+or replaces a space:
 
 ```ts
 import { invoke } from "@tauri-apps/api/core";
@@ -138,9 +147,9 @@ const space = await invoke<Space>("space_put", {
 `analytics_put` stores a local event. `analytics_list` returns one user's
 events in an inclusive timestamp range, newest first.
 
-| Command | Request | Response |
-| --- | --- | --- |
-| `analytics_put` | `AnalyticsEvent` | `AnalyticsEvent` |
+| Command          | Request                         | Response           |
+| ---------------- | ------------------------------- | ------------------ |
+| `analytics_put`  | `AnalyticsEvent`                | `AnalyticsEvent`   |
 | `analytics_list` | `{ user_id, start_at, end_at }` | `AnalyticsEvent[]` |
 
 ```ts
@@ -173,13 +182,15 @@ Deleting a missing setting returns `false` and does not emit an event.
 
 ## Call the backup API
 
-| Command | Request | Response |
-| --- | --- | --- |
-| `backup_export` | none | Portable settings and all domain rows |
-| `backup_import` | `{ request: BackupContents }` | none |
+| Command         | Request                       | Response                              |
+| --------------- | ----------------------------- | ------------------------------------- |
+| `backup_export` | none                          | Portable settings and all domain rows |
+| `backup_import` | `{ request: BackupContents }` | none                                  |
 
-`backup_export` removes each message's local `audio_path`. It also leaves out
-Keychain keys, the selected audio output, and internal settings.
+`backup_export` removes each Talk message's local `audio_path`. Version 2 also
+includes Agent messages. It leaves out Keychain keys, the selected audio
+output, and internal settings. Import accepts version 1 with an empty Agent
+transcript.
 
 An older setup value can have no owner ID. Export uses the current Mac login
 name for that backup and does not change the stored value.
@@ -221,16 +232,16 @@ or forget command updates the Keychain and the cache together.
 
 A key never returns to the WebView. Every command answers with a status only.
 
-| Command            | Request                | Response            |
-| ------------------ | ---------------------- | ------------------- |
-| `provider_status`  | none                   | One status for each service |
-| `provider_connect` | `{ provider, key }`    | The status after the test |
-| `provider_forget`  | `{ provider }`         | `boolean`           |
-| `provider_voices`  | none                   | The ElevenLabs voices |
-| `provider_clone_voice` | raw multipart audio | `{ id }`            |
-| `provider_models`  | none                   | The ElevenLabs speech models |
-| `provider_writing_models` | none            | Every OpenRouter model, free ones first |
-| `provider_quota`   | none                   | The current ElevenLabs allowance or `null` |
+| Command                   | Request             | Response                                   |
+| ------------------------- | ------------------- | ------------------------------------------ |
+| `provider_status`         | none                | One status for each service                |
+| `provider_connect`        | `{ provider, key }` | The status after the test                  |
+| `provider_forget`         | `{ provider }`      | `boolean`                                  |
+| `provider_voices`         | none                | The ElevenLabs voices                      |
+| `provider_clone_voice`    | raw multipart audio | `{ id }`                                   |
+| `provider_models`         | none                | The ElevenLabs speech models               |
+| `provider_writing_models` | none                | Every OpenRouter model, free ones first    |
+| `provider_quota`          | none                | The current ElevenLabs allowance or `null` |
 
 ```ts
 type ProviderStatus = {
@@ -276,15 +287,33 @@ space.
 
 ## Generate text with a cloud model
 
-The `openrouter_generate` command takes the request shape of `apfel_generate`
-and answers in its response shape. The key stays in the Keychain. The response
-includes the model OpenRouter used and its reported cost when the service
-supplies one.
+The WebView writes with a typed model client, so Rust serves it rather than
+calling for it. `writing_proxy` starts a loopback proxy on the first call and
+answers with `{ baseUrl, token }`. The proxy binds `127.0.0.1` on a free port
+and serves one path, `POST /v1/chat/completions`. It requires the run token in
+`Authorization`, swaps that token for the OpenRouter key from the Keychain,
+and forwards the body to OpenRouter unchanged apart from one field. The reply
+is passed back byte for byte, so a streamed answer streams.
 
-The request can name a `model`. Rust then asks for that model only. A request
-with no model sends a small list of free models, and OpenRouter uses the first
-one that answers. The Apple sidecar has one model on this Mac, so it ignores
-the field.
+The token lasts one run and means nothing to another process. A page that
+guesses the port still needs it, and a request without it gets `401`. Every
+other path gets `404`.
+
+The one field the proxy adds is the model. A request that names a `model` is
+forwarded as it is. A request with no model gets a small list of free models,
+and OpenRouter uses the first one that answers. The TypeScript service removes
+the field when the user chose no model, which is how that list is asked for.
+
+The proxy carries the model on this Mac too, at `POST
+/apple/v1/chat/completions`. The sidecar allows a loopback origin only, and the
+WebView is not one, so the WebView cannot reach it by itself; it also holds its
+own token, which is no more the WebView's business than a cloud key is. The
+proxy starts the sidecar on first use and swaps the run token for the
+sidecar's. `apfel_generate` still answers plain text directly.
+
+The TypeScript service selects the model before it calls. It uses the default
+model settings for all jobs except Suggestions. If the Suggestions override is
+not null, Suggestions use it.
 
 `provider_writing_models` gives the models the user can choose. Each row has
 `free`, which is true when a prompt token and a completion token both cost
@@ -314,14 +343,14 @@ through the asset protocol, whose scope is `$APPLOCALDATA/audio/*`.
 Spoken messages use native playback so the Core Audio process tap can receive
 their sound. Voice-list previews stay in the WebView and do not enter the tap.
 
-| Command | Request | Response |
-| --- | --- | --- |
-| `audio_outputs` | none | `{ uid, name }[]` |
-| `audio_output` | none | The UID September uses |
-| `audio_output_set` | `{ uid }` | none |
-| `speech_system` | `{ text, voice_id?, speed }` | none |
-| `speech_file_play` | `{ path }` | none |
-| `speech_native_stop` | none | none |
+| Command              | Request                      | Response               |
+| -------------------- | ---------------------------- | ---------------------- |
+| `audio_outputs`      | none                         | `{ uid, name }[]`      |
+| `audio_output`       | none                         | The UID September uses |
+| `audio_output_set`   | `{ uid }`                    | none                   |
+| `speech_system`      | `{ text, voice_id?, speed }` | none                   |
+| `speech_file_play`   | `{ path }`                   | none                   |
+| `speech_native_stop` | none                         | none                   |
 
 `audio_output_set` verifies the device and saves its UID without changing the
 macOS sound output. If the saved device is absent, `audio_output` returns the
@@ -337,11 +366,11 @@ directory. Both commands feed an `AVAudioPlayerNode` in a September-owned
 The native bridge publishes `September Microphone` as a public Core Audio
 aggregate input. It contains one mono process tap for September audio.
 
-| Command | Request | Response |
-| --- | --- | --- |
-| `virtual_microphone_status` | none | `{ active, name, uid, detail }` |
-| `virtual_microphone_start` | none | `{ active, name, uid, detail }` |
-| `virtual_microphone_stop` | none | `{ active, name, uid, detail }` |
+| Command                     | Request | Response                        |
+| --------------------------- | ------- | ------------------------------- |
+| `virtual_microphone_status` | none    | `{ active, name, uid, detail }` |
+| `virtual_microphone_start`  | none    | `{ active, name, uid, detail }` |
+| `virtual_microphone_stop`   | none    | `{ active, name, uid, detail }` |
 
 The microphone starts only after the user enables it. The first start uses the
 `NSAudioCaptureUsageDescription` message from `Info.plist`. The app destroys
@@ -369,10 +398,10 @@ discarded, and analysis is limited to about 15 frames per second. Rust pads the
 detected face box into a 16:9 crop and smooths crop movement before it makes the
 preview.
 
-| Command | Request | Response |
-| --- | --- | --- |
-| `gaze_start` | `{ onEvent: Channel<GazeEvent> }` | none |
-| `gaze_stop` | none | none |
+| Command      | Request                           | Response |
+| ------------ | --------------------------------- | -------- |
+| `gaze_start` | `{ onEvent: Channel<GazeEvent> }` | none     |
+| `gaze_stop`  | none                              | none     |
 
 The channel receives status events and a 320-pixel-wide RGBA face crop at no
 more than five frames per second. Each frame includes the current smoothed
@@ -387,8 +416,10 @@ the use and the signed app has the camera entitlement.
 
 ## Use the apfel API
 
-`apfel_status` and `apfel_generate` start the sidecar when the first command
-needs it. Later calls reuse the healthy process.
+`apfel_status` and `apfel_generate` start the sidecar
+when the first command needs it. Later calls reuse the healthy process. The
+Agent command forwards the fixed tool-calling request and forces the local
+model and non-streaming response.
 
 `apfel_status` takes no request. It returns this object:
 

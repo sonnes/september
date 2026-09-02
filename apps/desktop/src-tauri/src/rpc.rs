@@ -20,8 +20,10 @@ use crate::{
         CreatedVoice, ElevenLabsQuota, Model, Provider, ProviderKeys, ProviderStatus, Providers,
         Voice, WritingModel,
     },
+    proxy::{Endpoint, WritingProxy},
     repository::{
-        AnalyticsEvent, BackupContents, Message, Note, Repository, SavedPhrase, Space, SpacePatch,
+        AgentMessage, AnalyticsEvent, BackupContents, Message, Note, Repository, SavedPhrase,
+        Space, SpacePatch,
     },
     speech::{self, SpeechSettings},
 };
@@ -53,6 +55,15 @@ pub(crate) struct KeyRequest {
 #[derive(Deserialize)]
 pub(crate) struct EntityIdRequest {
     id: String,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct AgentToolStateRequest {
+    id: String,
+    expected: String,
+    state: String,
+    content: String,
+    updated_at: i64,
 }
 
 #[derive(Deserialize)]
@@ -145,6 +156,7 @@ pub(crate) fn setup(app: &mut tauri::App) -> std::result::Result<(), Box<dyn std
     });
     app.manage(provider_keys);
     app.manage(ApfelState::default());
+    app.manage(WritingProxy::default());
     app.manage(GazeState::default());
     Ok(())
 }
@@ -380,6 +392,56 @@ pub(crate) fn message_delete(
         .lock()
         .map_err(lock_error)?
         .delete_message(&request.id)
+        .map_err(rpc_error)
+}
+
+#[tauri::command(async)]
+pub(crate) fn agent_message_list(
+    state: State<'_, BackendState>,
+    request: SpaceFilterRequest,
+) -> RpcResult<Vec<AgentMessage>> {
+    let space_id = request
+        .space_id
+        .as_deref()
+        .ok_or("An agent transcript needs a space.")?;
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .list_agent_messages(space_id)
+        .map_err(rpc_error)
+}
+
+#[tauri::command(async)]
+pub(crate) fn agent_message_put(
+    state: State<'_, BackendState>,
+    request: AgentMessage,
+) -> RpcResult<AgentMessage> {
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .put_agent_message(&request)
+        .map_err(rpc_error)?;
+    Ok(request)
+}
+
+#[tauri::command(async)]
+pub(crate) fn agent_tool_state(
+    state: State<'_, BackendState>,
+    request: AgentToolStateRequest,
+) -> RpcResult<AgentMessage> {
+    state
+        .repository
+        .lock()
+        .map_err(lock_error)?
+        .update_agent_tool_state(
+            &request.id,
+            &request.expected,
+            &request.state,
+            &request.content,
+            request.updated_at,
+        )
         .map_err(rpc_error)
 }
 
@@ -653,23 +715,17 @@ pub(crate) fn speech_native_stop() {
     audio::stop_speech();
 }
 
-/// Text from OpenRouter, in the shape that `apfel_generate` answers in.
+/// The address the writing client calls, and the token for this run.
 ///
-/// The key stays in the Keychain, so the call happens here and not in the
-/// WebView.
+/// The proxy holds the key. The WebView is given an address on the loopback
+/// and a token that means nothing to another process and nothing after this
+/// run. A command still returns no key.
 #[tauri::command]
-pub(crate) async fn openrouter_generate(
-    keys: State<'_, ProviderKeys>,
-    request: ApfelGenerateRequest,
-) -> RpcResult<ApfelGeneration> {
-    let key = keys
-        .get(Provider::OpenRouter)
-        .map_err(rpc_error)?
-        .ok_or("Connect OpenRouter in Settings first.")?;
-    Providers::default()
-        .generate(&key, &request)
-        .await
-        .map_err(rpc_error)
+pub(crate) async fn writing_proxy(
+    app: AppHandle,
+    state: State<'_, WritingProxy>,
+) -> RpcResult<Endpoint> {
+    state.endpoint(&app).await.map_err(rpc_error)
 }
 
 /// The ElevenLabs voices for the stored key. The list is empty without a key.

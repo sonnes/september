@@ -36,7 +36,10 @@ test("every settings section has a route", async () => {
 
 test("Setup stays the open section while a key is added", () => {
   assert.equal(sectionFor("/settings").title, "Services");
-  assert.equal(sectionFor("/settings/connections/openrouter").title, "Services");
+  assert.equal(
+    sectionFor("/settings/connections/openrouter").title,
+    "Services",
+  );
   assert.equal(sectionFor("/settings/writing").title, "Writing help");
   assert.equal(sectionFor("/settings/usage").title, "Usage");
   assert.equal(sectionFor("/settings/data").title, "Data");
@@ -98,7 +101,10 @@ test("data settings previews a backup before replacing local data", async () => 
 
 test("data settings shows a desktop error instead of hiding it", async () => {
   const settings = await readText("src/pages/settings.tsx");
-  const backup = await readFile(new URL("../../packages/core/rules/backup.ts", desktopRoot), "utf8");
+  const backup = await readFile(
+    new URL("../../packages/core/rules/backup.ts", desktopRoot),
+    "utf8",
+  );
 
   assert.match(settings, /backupProblem/);
   assert.match(backup, /typeof error === "string"/);
@@ -113,7 +119,10 @@ test("setup and settings share one key panel", async () => {
       file,
     );
   }
-  assert.match(await readText("src/blocks/services.tsx"), /export function KeyPanel/);
+  assert.match(
+    await readText("src/blocks/services.tsx"),
+    /export function KeyPanel/,
+  );
 });
 
 test("every settings section stays open", async () => {
@@ -124,17 +133,28 @@ test("every settings section stays open", async () => {
 });
 
 test("an address opens in the browser, through os.ts", async () => {
-  const capability = JSON.parse(await readText("src-tauri/capabilities/default.json"));
+  const capability = JSON.parse(
+    await readText("src-tauri/capabilities/default.json"),
+  );
 
   assert.ok(capability.permissions.includes("shell:allow-open"));
-  assert.match(await readText("src/services/os.ts"), /@tauri-apps\/plugin-shell/);
+  assert.match(
+    await readText("src/services/os.ts"),
+    /@tauri-apps\/plugin-shell/,
+  );
   assert.doesNotMatch(await readText("src/pages/settings.tsx"), /plugin-shell/);
 });
 
 test("the writing service knows what setup collected", async () => {
   // The speaking style and the personal words were collected and never read.
-  assert.match(await readText("src/services/ai.ts"), /export function userContext/);
-  assert.match(await readText("src/blocks/suggestions.tsx"), /globalMd: userContext\(\)/);
+  assert.match(
+    await readText("src/services/ai.ts"),
+    /export function userContext/,
+  );
+  assert.match(
+    await readText("src/blocks/suggestions.tsx"),
+    /globalMd: userContext\(\)/,
+  );
 });
 
 test("the model choice sits beside the key that lists it", async () => {
@@ -157,13 +177,28 @@ test("the OpenRouter model sits beside its key too", async () => {
   assert.match(os, /export const listWritingModels/);
   assert.match(settings, /listWritingModels/);
   // The writing service reads the choice, so a request names one model.
-  assert.match(ai, /writingModel/);
+  assert.match(ai, /modelConfigFor/);
+  assert.doesNotMatch(ai, /writingModel/);
 });
 
 test("no chosen writing model means the free list of the app", () => {
   // An empty answer keeps the failover: the first free model that answers
   // writes the suggestion.
-  assert.equal(DEFAULT_DRAFT.writingModel, "");
+  assert.equal(DEFAULT_DRAFT.defaultModel.model, "");
+  assert.equal(DEFAULT_DRAFT.suggestionsModel, null);
+});
+
+test("Writing settings can override only the Suggestions model", async () => {
+  const settings = await readText("src/pages/settings.tsx");
+
+  assert.match(settings, /Use default/);
+  assert.match(settings, /suggestionsModel/);
+  assert.match(settings, /Default model/);
+  assert.match(settings, /Suggestions model/);
+  assert.match(
+    settings,
+    /defaultModel:\s*\{\s*service: "openrouter",\s*model:/,
+  );
 });
 
 test("a settings screen draws with no saved setup", async () => {

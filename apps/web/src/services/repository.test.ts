@@ -8,6 +8,7 @@ import {
   DATABASE_NAME,
   LEGACY_DATABASES,
   openRepository,
+  type AgentMessage,
   type AnalyticsEvent,
   type Message,
   type Note,
@@ -51,7 +52,9 @@ async function deleteDatabase(name: string): Promise<void> {
 
 async function clearDatabases(): Promise<void> {
   const databases = await indexedDB.databases();
-  await Promise.all(databases.flatMap(database => (database.name ? [deleteDatabase(database.name)] : [])));
+  await Promise.all(
+    databases.flatMap(database => (database.name ? [deleteDatabase(database.name)] : []))
+  );
 }
 
 function memoryStorage(): Storage {
@@ -129,6 +132,18 @@ function analytics(overrides: Partial<AnalyticsEvent> = {}): AnalyticsEvent {
   };
 }
 
+function agentMessage(overrides: Partial<AgentMessage> = {}): AgentMessage {
+  return {
+    id: 'agent-1',
+    space_id: 'space-1',
+    role: 'assistant',
+    content: 'I can update that note.',
+    created_at: 80,
+    updated_at: 80,
+    ...overrides,
+  };
+}
+
 beforeEach(async () => {
   vi.stubGlobal('localStorage', memoryStorage());
   await clearDatabases();
@@ -139,6 +154,43 @@ afterEach(async () => {
 });
 
 describe('BrowserRepository', () => {
+  it('stores the agent transcript outside Talk and updates proposal state once', async () => {
+    const repository = await openRepository({ migrate: false });
+    await repository.putSpace(space());
+    await repository.putMessage(message());
+    await repository.putAgentMessage(
+      agentMessage({
+        role: 'tool',
+        tool_call_id: 'call-1',
+        tool_name: 'change_note',
+        tool_arguments: '{"operation":"delete","note_id":"note-1"}',
+        tool_state: 'pending',
+      })
+    );
+
+    expect(await repository.listMessages('space-1')).toEqual([message()]);
+    expect(await repository.listAgentMessages('space-1')).toEqual([
+      agentMessage({
+        role: 'tool',
+        tool_call_id: 'call-1',
+        tool_name: 'change_note',
+        tool_arguments: '{"operation":"delete","note_id":"note-1"}',
+        tool_state: 'pending',
+      }),
+    ]);
+    expect(
+      await repository.updateAgentToolState('agent-1', 'pending', 'applied', 'Done.', 90)
+    ).toMatchObject({
+      tool_state: 'applied',
+      content: 'Done.',
+      updated_at: 90,
+    });
+    await expect(
+      repository.updateAgentToolState('agent-1', 'pending', 'rejected', '', 100)
+    ).rejects.toThrow('already resolved');
+    repository.close();
+  });
+
   it('adds blob stores to an existing version-one database without losing rows', async () => {
     const versionOne = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open(DATABASE_NAME, 1);
@@ -169,10 +221,15 @@ describe('BrowserRepository', () => {
 
     await repository.putSetting('lastPath', '/spaces');
     await repository.putSpace(space());
-    await repository.patchSpace({ id: 'space-1', title: 'Home', updated_at: 80 });
+    await repository.patchSpace({
+      id: 'space-1',
+      title: 'Home',
+      updated_at: 80,
+    });
     await repository.putMessage(message());
     await repository.putNote(note());
     await repository.putPhrase(phrase());
+    await repository.putAgentMessage(agentMessage());
     await repository.putAnalyticsEvent(analytics());
 
     expect(await repository.getSetting('/missing')).toBeNull();
@@ -188,12 +245,27 @@ describe('BrowserRepository', () => {
     repository.close();
   });
 
+  it('clears the phrase sync marker after an agent edits Talk history', async () => {
+    const repository = await openRepository({ migrate: false });
+    await repository.putSpace(space({ phrases_synced_count: 12 }));
+
+    const changed = await repository.patchSpace({
+      id: 'space-1',
+      reset_phrases_synced_count: true,
+      updated_at: 81,
+    });
+
+    expect(changed.phrases_synced_count).toBeUndefined();
+    repository.close();
+  });
+
   it('deletes a space and all of its child rows in one operation', async () => {
     const repository = await openRepository({ migrate: false });
     await repository.putSpace(space());
     await repository.putMessage(message());
     await repository.putNote(note());
     await repository.putPhrase(phrase());
+    await repository.putAgentMessage(agentMessage());
     await repository.putNote(note({ id: 'unscoped', space_id: undefined }));
 
     expect(await repository.deleteSpace('space-1')).toBe(true);
@@ -201,7 +273,10 @@ describe('BrowserRepository', () => {
     expect(await repository.listMessages('space-1')).toEqual([]);
     expect(await repository.listNotes('space-1')).toEqual([]);
     expect(await repository.listPhrases('space-1')).toEqual([]);
-    expect(await repository.getNote('unscoped')).toEqual(note({ id: 'unscoped', space_id: undefined }));
+    expect(await repository.listAgentMessages('space-1')).toEqual([]);
+    expect(await repository.getNote('unscoped')).toEqual(
+      note({ id: 'unscoped', space_id: undefined })
+    );
 
     repository.close();
   });
@@ -212,7 +287,13 @@ describe('BrowserRepository', () => {
     await repository.putPhrase(phrase({ id: 'old-ai', text: 'Old', pinned: false }));
 
     await repository.replaceAiPhrases('space-1', [
-      phrase({ id: 'new-ai', text: 'New', pinned: false, created_at: 90, updated_at: 90 }),
+      phrase({
+        id: 'new-ai',
+        text: 'New',
+        pinned: false,
+        created_at: 90,
+        updated_at: 90,
+      }),
     ]);
 
     expect((await repository.listPhrases('space-1')).map(row => row.id)).toEqual([
@@ -230,8 +311,8 @@ describe('BrowserRepository', () => {
       speakingStyle: 'Plain and direct.',
       personalWords: '',
       mode: 'advanced',
-      writingService: 'openrouter',
-      writingModel: '',
+      defaultModel: { service: 'openrouter', model: '' },
+      suggestionsModel: null,
       voiceService: 'elevenlabs',
     } as const;
     const speech = {
@@ -256,6 +337,7 @@ describe('BrowserRepository', () => {
     await repository.putMessage(message({ audio_path: '/private/audio.mp3' }));
     await repository.putNote(note());
     await repository.putPhrase(phrase());
+    await repository.putAgentMessage(agentMessage());
     await repository.putAnalyticsEvent(analytics());
     await repository.putBlob('speech-1', new Blob(['audio']));
 
@@ -271,6 +353,7 @@ describe('BrowserRepository', () => {
       },
       spaces: [space({ updated_at: 30 })],
       messages: [message()],
+      agentMessages: [agentMessage()],
       notes: [note()],
       savedPhrases: [phrase()],
       usageEvents: [analytics()],
@@ -288,6 +371,7 @@ describe('BrowserRepository', () => {
     await repository.putMessage(message());
     await repository.putNote(note());
     await repository.putPhrase(phrase());
+    await repository.putAgentMessage(agentMessage());
     await repository.putAnalyticsEvent(analytics());
     await repository.putBlob('speech-1', new Blob(['audio']));
 
@@ -299,13 +383,16 @@ describe('BrowserRepository', () => {
 
     expect(await repository.listSpaces('local-user')).toEqual(next.spaces);
     expect(await repository.listMessages()).toEqual(next.messages);
+    expect(await repository.listAgentMessages('space-2')).toEqual(next.agentMessages);
     // Every store the backup replaces is emptied first, so no row of the
     // data that was here survives beside the restored rows.
     expect(await rowsFromStore('notes')).toEqual([]);
     expect(await rowsFromStore('saved_phrases')).toEqual([]);
     expect(await rowsFromStore('analytics_events')).toEqual([]);
     expect(await repository.getSetting('new-space-draft')).toBe('New draft');
-    expect(await repository.getSetting('provider-keys')).toEqual({ openrouter: 'secret' });
+    expect(await repository.getSetting('provider-keys')).toEqual({
+      openrouter: 'secret',
+    });
     expect(await repository.getSetting('audio-output')).toBe('speaker-1');
     expect(await repository.getSetting('legacy-migration')).toBe('clean');
     expect(await repository.getBlob('speech-1')).not.toBeNull();
@@ -317,7 +404,9 @@ describe('BrowserRepository', () => {
     await repository.putSetting('new-space-draft', 'Old draft');
     await repository.putSpace(space());
 
-    const invalid = backupContents({ spaces: [space({ id: 'space-2', title: 'Friends' })] });
+    const invalid = backupContents({
+      spaces: [space({ id: 'space-2', title: 'Friends' })],
+    });
     invalid.settings.newSpaceDraft = (() => 'not cloneable') as unknown as string;
 
     await expect(repository.replaceBackupContents(invalid)).rejects.toBeDefined();
@@ -352,11 +441,20 @@ describe('BrowserRepository', () => {
     const repository = await openRepository({ migrate: false });
     const options = { maxBytes: 8, chunkBytes: 2 };
 
-    await repository.putBlob('oldest', new Blob(['aaaa']), { ...options, accessedAt: 1 });
-    await repository.putBlob('newer', new Blob(['bbbb']), { ...options, accessedAt: 2 });
+    await repository.putBlob('oldest', new Blob(['aaaa']), {
+      ...options,
+      accessedAt: 1,
+    });
+    await repository.putBlob('newer', new Blob(['bbbb']), {
+      ...options,
+      accessedAt: 2,
+    });
     expect(await repository.getBlob('oldest', 3)).not.toBeNull();
 
-    await repository.putBlob('incoming', new Blob(['cccc']), { ...options, accessedAt: 4 });
+    await repository.putBlob('incoming', new Blob(['cccc']), {
+      ...options,
+      accessedAt: 4,
+    });
 
     expect(await repository.getBlob('newer', 5)).toBeNull();
     expect(await repository.getBlob('oldest', 5)).not.toBeNull();
@@ -387,6 +485,7 @@ function backupContents(overrides: Partial<BackupContents> = {}): BackupContents
     },
     spaces: [],
     messages: [],
+    agentMessages: [],
     notes: [],
     savedPhrases: [],
     usageEvents: [],
@@ -443,7 +542,11 @@ describe('legacy migration', () => {
           context: 'Use short sentences.',
           setup_mode: 'advanced',
           onboarding_completed: true,
-          ai_suggestions: { enabled: true, provider: 'openrouter', model: 'model/free' },
+          ai_suggestions: {
+            enabled: true,
+            provider: 'openrouter',
+            model: 'model/free',
+          },
           ai_speech: {
             enabled: true,
             provider: 'elevenlabs',
@@ -461,13 +564,28 @@ describe('legacy migration', () => {
       },
     ]);
     await putLegacyRows('app-spaces', 'spaces', [
-      { id: 'space-1', value: space({ created_at: createdAt as unknown as number, updated_at: updatedAt as unknown as number }) },
+      {
+        id: 'space-1',
+        value: space({
+          created_at: createdAt as unknown as number,
+          updated_at: updatedAt as unknown as number,
+        }),
+      },
     ]);
     await putLegacyRows('app-messages', 'messages', [
-      { id: 'message-1', value: message({ created_at: updatedAt as unknown as number }) },
+      {
+        id: 'message-1',
+        value: message({ created_at: updatedAt as unknown as number }),
+      },
     ]);
     await putLegacyRows('app-documents', 'documents', [
-      { id: 'note-1', value: note({ created_at: createdAt as unknown as number, updated_at: updatedAt as unknown as number }) },
+      {
+        id: 'note-1',
+        value: note({
+          created_at: createdAt as unknown as number,
+          updated_at: updatedAt as unknown as number,
+        }),
+      },
     ]);
     await putLegacyRows('app-saved-phrases', 'saved-phrases', [
       {
@@ -485,7 +603,12 @@ describe('legacy migration', () => {
     await putLegacyRows(
       'analytics',
       'analytics-events',
-      [{ id: 'event-1', value: analytics({ timestamp: updatedAt as unknown as number }) }],
+      [
+        {
+          id: 'event-1',
+          value: analytics({ timestamp: updatedAt as unknown as number }),
+        },
+      ],
       'analytics_events'
     );
     await createDerivedDatabase('september-autocomplete', 'kv-store');
@@ -505,8 +628,8 @@ describe('legacy migration', () => {
       name: 'Ravi',
       mode: 'advanced',
       personalWords: 'Use short sentences.',
-      writingService: 'openrouter',
-      writingModel: 'model/free',
+      defaultModel: { service: 'none', model: '' },
+      suggestionsModel: null,
       voiceService: 'elevenlabs',
     });
     expect(await repository.getSetting('provider-keys')).toEqual({
@@ -527,13 +650,21 @@ describe('legacy migration', () => {
     });
     expect(await repository.getSetting('dismissed-ideas')).toEqual(['not now']);
     expect(await repository.getSetting('audio-output')).toBe('speaker-1');
-    expect(await repository.getSetting('space-modes')).toEqual({ general: 'notes' });
+    expect(await repository.getSetting('space-modes')).toEqual({
+      general: 'notes',
+    });
     expect(await repository.getSetting('legacy-migration')).toBe('clean');
     expect(await repository.listSpaces('local-user')).toEqual([
-      space({ created_at: createdAt.getTime(), updated_at: updatedAt.getTime() }),
+      space({
+        created_at: createdAt.getTime(),
+        updated_at: updatedAt.getTime(),
+      }),
     ]);
     expect(await repository.listPhrases('space-1')).toEqual([
-      phrase({ created_at: createdAt.getTime(), updated_at: createdAt.getTime() }),
+      phrase({
+        created_at: createdAt.getTime(),
+        updated_at: createdAt.getTime(),
+      }),
     ]);
     expect(await repository.listAnalyticsEvents('local-user', 0, Date.now())).toEqual([
       analytics({ timestamp: updatedAt.getTime() }),

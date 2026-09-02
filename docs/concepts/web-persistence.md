@@ -15,6 +15,7 @@ The browser app uses one IndexedDB database named `september`. `apps/web/src/ser
 | `settings` | `key` | none |
 | `spaces` | `id` | `user_id`, `updated_at` |
 | `messages` | `id` | `space_id`, `created_at` |
+| `agent_messages` | `id` | `space_id`, `[space_id, created_at]`, `tool_call_id` |
 | `notes` | `id` | `space_id`, `updated_at` |
 | `saved_phrases` | `id` | `space_id`, `created_at` |
 | `analytics_events` | `id` | `timestamp`, `[user_id, timestamp]` |
@@ -23,13 +24,15 @@ The browser app uses one IndexedDB database named `september`. `apps/web/src/ser
 
 React Query keeps the UI cache. It does not own persistence.
 
-The repository uses one transaction for related writes. Space removal also removes its messages, notes, and phrases in the same transaction.
+The repository uses one transaction for related writes. Space removal also
+removes its Talk messages, Agent messages, notes, and phrases in the same
+transaction. Agent messages never enter the Talk store.
 
 ## Replace data from a backup
 
 The Data settings screen can read all portable settings and domain stores in
-one transaction. It omits provider keys, audio output, migration state, and the
-two speech-file stores.
+one transaction. Version 2 includes the Agent transcript. It omits provider
+keys, audio output, migration state, and the two speech-file stores.
 
 Import validates the complete backup before it opens a write transaction. The
 write clears and replaces only the portable settings and domain stores. An

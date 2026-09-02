@@ -14,7 +14,7 @@ import {
 
 const validBackup = (): SeptemberBackup => ({
   format: "september-backup",
-  formatVersion: 1,
+  formatVersion: 2,
   exportedAt: "2026-08-30T12:00:00.000Z",
   source: "web",
   appVersion: "0.1.0",
@@ -25,8 +25,8 @@ const validBackup = (): SeptemberBackup => ({
       speakingStyle: "Plain and direct.",
       personalWords: "My cat is called Miso.",
       mode: "advanced",
-      writingService: "openrouter",
-      writingModel: "",
+      defaultModel: { service: "openrouter", model: "default/model" },
+      suggestionsModel: { service: "openrouter", model: "suggestions/model" },
       voiceService: "elevenlabs",
     },
     speech: {
@@ -71,6 +71,16 @@ const validBackup = (): SeptemberBackup => ({
       created_at: 12,
     },
   ],
+  agentMessages: [
+    {
+      id: "agent-1",
+      space_id: "space-a",
+      role: "assistant",
+      content: "I can help with this space.",
+      created_at: 16,
+      updated_at: 16,
+    },
+  ],
   notes: [
     {
       id: "note-1",
@@ -112,13 +122,14 @@ describe("the portable September backup", () => {
     );
 
     expect(parseBackup(fixture)).toMatchObject({
-      formatVersion: 1,
+      formatVersion: 2,
+      agentMessages: [],
       spaces: [{ id: "space-1" }],
       savedPhrases: [{ id: "phrase-1" }],
     });
   });
 
-  it("parses a complete version-one backup", () => {
+  it("parses a complete version-two backup", () => {
     expect(parseBackup(JSON.stringify(validBackup()))).toEqual(validBackup());
   });
 
@@ -147,6 +158,7 @@ describe("the portable September backup", () => {
       source: "web",
       spaces: 2,
       messages: 1,
+      agentMessages: 1,
       notes: 1,
       savedPhrases: 1,
       usageEvents: 1,
@@ -177,17 +189,30 @@ describe("the portable September backup", () => {
 
   it("drops a machine-local audio path from a message", () => {
     const raw = validBackup() as SeptemberBackup & {
-      messages: Array<SeptemberBackup["messages"][number] & { audio_path?: string }>;
+      messages: Array<
+        SeptemberBackup["messages"][number] & { audio_path?: string }
+      >;
     };
     raw.messages[0].audio_path = "/private/audio/message.mp3";
 
-    expect(parseBackup(JSON.stringify(raw)).messages[0]).not.toHaveProperty("audio_path");
+    expect(parseBackup(JSON.stringify(raw)).messages[0]).not.toHaveProperty(
+      "audio_path",
+    );
   });
 
   it.each([
-    ["wrong format", (backup: Record<string, unknown>) => (backup.format = "other")],
-    ["future version", (backup: Record<string, unknown>) => (backup.formatVersion = 2)],
-    ["invalid source", (backup: Record<string, unknown>) => (backup.source = "keyboard")],
+    [
+      "wrong format",
+      (backup: Record<string, unknown>) => (backup.format = "other"),
+    ],
+    [
+      "future version",
+      (backup: Record<string, unknown>) => (backup.formatVersion = 3),
+    ],
+    [
+      "invalid source",
+      (backup: Record<string, unknown>) => (backup.source = "keyboard"),
+    ],
   ])("rejects a %s", (_label, change) => {
     const backup = validBackup() as unknown as Record<string, unknown>;
     change(backup);
@@ -199,7 +224,9 @@ describe("the portable September backup", () => {
     const backup = validBackup();
     backup.messages.push({ ...backup.messages[0] });
 
-    expect(() => parseBackup(JSON.stringify(backup))).toThrow(/duplicate message ID/i);
+    expect(() => parseBackup(JSON.stringify(backup))).toThrow(
+      /duplicate message ID/i,
+    );
   });
 
   it("rejects a child whose space is absent", () => {
@@ -207,6 +234,30 @@ describe("the portable September backup", () => {
     backup.notes[0].space_id = "missing";
 
     expect(() => parseBackup(JSON.stringify(backup))).toThrow(/missing space/i);
+  });
+
+  it("rejects an Agent tool row that could crash or bypass its approval card", () => {
+    const missingFields = validBackup();
+    missingFields.agentMessages[0] = {
+      ...missingFields.agentMessages[0],
+      role: "tool",
+    };
+    expect(() => parseBackup(JSON.stringify(missingFields))).toThrow(
+      /tool call ID/i,
+    );
+
+    const malformedProposal = validBackup();
+    malformedProposal.agentMessages[0] = {
+      ...malformedProposal.agentMessages[0],
+      role: "tool",
+      tool_call_id: "call-1",
+      tool_name: "change_note",
+      tool_arguments: '{"operation":"delete"}',
+      tool_state: "pending",
+    };
+    expect(() => parseBackup(JSON.stringify(malformedProposal))).toThrow(
+      /note_id/i,
+    );
   });
 
   it("rejects two space titles that resolve to one route", () => {
@@ -238,7 +289,10 @@ describe("the portable September backup", () => {
 
     const parsed = parseBackup(JSON.stringify(backup));
 
-    expect(parsed.spaces.map((row) => row.user_id)).toEqual(["person-1", "person-1"]);
+    expect(parsed.spaces.map((row) => row.user_id)).toEqual([
+      "person-1",
+      "person-1",
+    ]);
     expect(parsed.messages[0].user_id).toBe("person-1");
     expect(parsed.usageEvents[0].user_id).toBe("person-1");
   });
@@ -247,7 +301,9 @@ describe("the portable September backup", () => {
     const backup = validBackup();
     backup.settings.setup = null;
 
-    expect(parseBackup(JSON.stringify(backup)).spaces[0].user_id).toBe("person-1");
+    expect(parseBackup(JSON.stringify(backup)).spaces[0].user_id).toBe(
+      "person-1",
+    );
   });
 
   it("orders identifiers by their text, not by the locale of the machine", () => {
@@ -257,11 +313,11 @@ describe("the portable September backup", () => {
     backup.messages[0].space_id = "a";
     backup.notes[0].space_id = "a";
     backup.savedPhrases[0].space_id = "a";
+    backup.agentMessages[0].space_id = "a";
 
-    expect(parseBackup(encodeBackup(backup)).spaces.map((row) => row.id)).toEqual([
-      "B",
-      "a",
-    ]);
+    expect(
+      parseBackup(encodeBackup(backup)).spaces.map((row) => row.id),
+    ).toEqual(["B", "a"]);
   });
 
   it("names the settings a restore replaces", () => {
@@ -281,6 +337,7 @@ describe("the portable September backup", () => {
       "settings",
       "spaces",
       "messages",
+      "agentMessages",
       "notes",
       "savedPhrases",
       "usageEvents",
@@ -294,16 +351,22 @@ describe("the portable September backup", () => {
     expect(backupProblem("backup panel tab is not supported")).toBe(
       "backup panel tab is not supported",
     );
-    expect(backupProblem(new Error("  "))).toBe("September could not use that file.");
+    expect(backupProblem(new Error("  "))).toBe(
+      "September could not use that file.",
+    );
     expect(backupProblem(null)).toBe("September could not use that file.");
   });
 
-  it("keeps the shared fixture in the form the encoder writes", () => {
+  it("upgrades the shared version-one fixture when encoding it", () => {
     const fixture = readFileSync(
       new URL("./fixtures/backup-v1.json", import.meta.url),
       "utf8",
     );
 
-    expect(encodeBackup(parseBackup(fixture))).toBe(fixture);
+    const encoded = encodeBackup(parseBackup(fixture));
+    expect(JSON.parse(encoded)).toMatchObject({
+      formatVersion: 2,
+      agentMessages: [],
+    });
   });
 });

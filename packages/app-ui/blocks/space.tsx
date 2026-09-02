@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
+  Bot,
   ChevronDown,
   Delete,
   FileText,
@@ -72,8 +73,17 @@ const notesParams = (space: Pick<Space, "title">) => ({
   params: { slug: spaceSlug(space.title) },
 });
 
+const agentParams = (space: Pick<Space, "title">) => ({
+  to: "/spaces/$slug/agent" as const,
+  params: { slug: spaceSlug(space.title) },
+});
+
 export const spaceParams = (space: Pick<Space, "title">, mode: SpaceMode) =>
-  mode === "notes" ? notesParams(space) : talkParams(space);
+  mode === "notes"
+    ? notesParams(space)
+    : mode === "agent"
+      ? agentParams(space)
+      : talkParams(space);
 
 // The modes as they stand. The setting holds the same answers, and the two
 // only differ while a write is in flight.
@@ -119,6 +129,7 @@ export function Composer({
   note,
   history,
   before,
+  suggestions = true,
 }: {
   mode: ComposerMode;
   /** The space the stripe reads. The empty id means no space exists yet. */
@@ -137,6 +148,8 @@ export function Composer({
   history?: string[];
   /** The working-set row above the suggestions. Notes puts its tabs here. */
   before?: ReactNode;
+  /** Agent keeps its prompt private from speech-oriented suggestions. */
+  suggestions?: boolean;
 }) {
   const field = useRef<HTMLTextAreaElement>(null);
   const [undoStack, setUndoStack] = useState<string[]>([]);
@@ -176,15 +189,17 @@ export function Composer({
     <div className="bg-muted/40 flex shrink-0 flex-col gap-3 rounded-2xl p-3">
       {before}
 
-      <Suggestions
-        spaceId={spaceId}
-        context={context}
-        text={draft}
-        history={history}
-        onTake={write}
-        onSpeak={act}
-        onPin={onPin}
-      />
+      {suggestions ? (
+        <Suggestions
+          spaceId={spaceId}
+          context={context}
+          text={draft}
+          history={history}
+          onTake={write}
+          onSpeak={act}
+          onPin={onPin}
+        />
+      ) : null}
 
       <div className="bg-background focus-within:border-ring focus-within:ring-ring/20 rounded-2xl border p-3 shadow-sm transition-[box-shadow,border-color] focus-within:ring-[3px]">
         <textarea
@@ -268,6 +283,7 @@ export function Composer({
 function ActionIcon({ mode }: { mode: ComposerMode }) {
   if (mode === "talk") return <Volume2 aria-hidden />;
   if (mode === "notes") return <FileText aria-hidden />;
+  if (mode === "agent") return <Bot aria-hidden />;
   return <Plus aria-hidden />;
 }
 
@@ -589,10 +605,11 @@ export function SpaceDock({
 const MODES = [
   { key: "talk", label: "Talk", icon: MessagesSquare },
   { key: "notes", label: "Notes", icon: FileText },
+  { key: "agent", label: "Agent", icon: Bot },
 ] as const;
 
 /**
- * Talk or Notes, as a segmented switch.
+ * Talk, Notes, or Agent, as a segmented switch.
  *
  * Only the open tab is in the tab order. The arrow keys move between the
  * tabs, which is what a screen reader user expects of a `tablist`.

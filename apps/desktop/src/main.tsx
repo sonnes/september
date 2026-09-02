@@ -32,6 +32,7 @@ import {
 import { AppShell } from "@september/app-ui/layouts/app";
 import { SettingsLayout } from "@september/app-ui/layouts/settings";
 import { DashboardScreen } from "@september/app-ui/pages/dashboard";
+import { AgentScreen, NewSpaceScreen } from "@september/app-ui/pages/agent";
 import {
   ConnectionScreen,
   DataSettings,
@@ -41,7 +42,7 @@ import {
 import { UsageSettings } from "@september/app-ui/pages/usage";
 import { isConnectionId } from "@/rules/settings-nav";
 import { EyeTracker } from "@/eye-tracker";
-import { NewSpaceScreen, SpacesScreen } from "@september/app-ui/pages/spaces";
+import { SpacesScreen } from "@september/app-ui/pages/spaces";
 import { TalkScreen } from "@september/app-ui/pages/talk";
 import { VoiceCloneScreen, VoiceScreen } from "@september/app-ui/pages/voice";
 import {
@@ -103,6 +104,14 @@ const talkRoute = createRoute({
   path: "/spaces/$slug/talk",
   component: function Talk() {
     return <TalkScreen slug={talkRoute.useParams().slug} />;
+  },
+});
+
+const agentRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/spaces/$slug/agent",
+  component: function Agent() {
+    return <AgentScreen slug={agentRoute.useParams().slug} />;
   },
 });
 
@@ -171,6 +180,7 @@ const guardedAppRoute = appRoute.addChildren([
   spacesRoute,
   newSpaceRoute,
   talkRoute,
+  agentRoute,
   notesRoute,
   noteRoute,
   createRoute({

@@ -17,6 +17,7 @@ describe('browser route tree', () => {
       '/spaces',
       '/spaces/new',
       '/spaces/$slug/talk',
+      '/spaces/$slug/agent',
       '/spaces/$slug/notes',
       '/spaces/$slug/notes/$noteSlug',
       '/voice',

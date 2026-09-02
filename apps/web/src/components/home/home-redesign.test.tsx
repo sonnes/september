@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HomePage } from '../../pages/home';
 
 import { AboutSection } from './about-section';
+import { AGENT_DEMO_ASKS, AgentSection } from './agent-section';
 import { EnhancedCTASection } from './enhanced-cta-section';
 import { Footer } from './footer';
 import { HeroSection } from './hero-section';
@@ -98,6 +99,14 @@ function typeInto(textarea: HTMLTextAreaElement, value: string) {
     setter.call(textarea, value);
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
   });
+}
+
+/** Press one of the Agent section's ask chips by its label. */
+function choose(label: string) {
+  const chip = [...container.querySelectorAll('button')].find(
+    button => button.textContent?.trim() === label
+  )!;
+  click(chip);
 }
 
 function click(el: Element) {
@@ -444,6 +453,9 @@ describe('section accents', () => {
 
     render(<NotesSection />);
     expect(container.querySelector('.bg-violet-50')).toBeTruthy();
+
+    render(<AgentSection />);
+    expect(container.querySelector('.bg-rose-50')).toBeTruthy();
   });
 });
 
@@ -532,6 +544,67 @@ describe('notes & present section', () => {
     expect(container.textContent).toContain('Text (.md)');
     expect(container.textContent).toContain('Audio (.mp3)');
     expect(container.textContent).toContain('Captioned video (.mp4)');
+  });
+});
+
+describe('agent section', () => {
+  it('introduces the agent as the third way to use a space', () => {
+    render(<AgentSection />);
+
+    expect(container.textContent).toContain('Agent');
+    expect(container.textContent).toContain('Say what you need. The space changes.');
+    for (const demo of AGENT_DEMO_ASKS) {
+      expect(container.textContent).toContain(demo.label);
+    }
+  });
+
+  it('opens on a space setting itself up from what the user pasted', () => {
+    render(<AgentSection />);
+
+    // Prerendered markup carries a whole turn, not an empty console.
+    expect(container.textContent).toContain(AGENT_DEMO_ASKS[0].ask);
+    expect(container.textContent).toContain(AGENT_DEMO_ASKS[0].reply);
+    // What it read, then what it changed — the two rows of an introduction.
+    expect(container.textContent).toContain('Read this space');
+    expect(container.textContent).toContain('Change this space');
+    expect(container.textContent).toContain('Clinic');
+    // The name and the first phrases are one act, so they share a row.
+    expect(container.textContent).toContain('and 2 more');
+  });
+
+  it('adds one phrase and edits another in the same turn', () => {
+    render(<AgentSection />);
+    choose(AGENT_DEMO_ASKS[1].label);
+
+    expect(container.textContent).toContain(AGENT_DEMO_ASKS[1].ask);
+    expect(container.textContent).toContain('Create phrase');
+    expect(container.textContent).toContain('Edit phrase');
+    expect(container.textContent).toContain('It’s time for my medication.');
+    expect(container.textContent).toContain(AGENT_DEMO_ASKS[1].reply);
+    // One turn at a time — the reply before it is gone.
+    expect(container.textContent).not.toContain(AGENT_DEMO_ASKS[0].reply);
+  });
+
+  it('reads a note before it replaces it', () => {
+    render(<AgentSection />);
+    choose(AGENT_DEMO_ASKS[2].label);
+
+    expect(container.textContent).toContain(AGENT_DEMO_ASKS[2].ask);
+    expect(container.textContent).toContain('Read note');
+    expect(container.textContent).toContain('Thursday’s appointment');
+    expect(container.textContent).toContain('Replace note');
+    expect(container.textContent).toContain(AGENT_DEMO_ASKS[2].reply);
+  });
+
+  it('keeps every ask at the 44px touch floor', () => {
+    render(<AgentSection />);
+
+    for (const demo of AGENT_DEMO_ASKS) {
+      const button = [...container.querySelectorAll('button')].find(candidate =>
+        candidate.textContent?.trim() === demo.label
+      )!;
+      expect(button.className, demo.label).toContain('min-h-11');
+    }
   });
 });
 
@@ -649,6 +722,7 @@ describe('page structure', () => {
       'The right words for the room you’re in.',
       'Keep your own voice.',
       'Longer thoughts, ready ahead of time.',
+      'Say what you need. The space changes.',
       'In your browser today. On your Mac for calls.',
       // The hero already promises the device, so anchor on the band's eyebrow.
       'Private by design',

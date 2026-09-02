@@ -14,7 +14,7 @@ import {
   type UsageEvent,
 } from "@/rules/usage-summary";
 
-export type GenerationFeature = "suggestions" | "phrases" | "context";
+export type GenerationFeature = "suggestions" | "phrases" | "context" | "agent";
 
 export interface AIUsage {
   generation_type: GenerationFeature;

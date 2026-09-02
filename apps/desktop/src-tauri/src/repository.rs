@@ -12,8 +12,9 @@ use crate::error::{BackendError, Result};
 /// Released builds before the domain tables used 1, 2, and 3 for a database
 /// that held only the settings. The domain tables arrive at 4, so those
 /// installs migrate instead of staying at a number above the target. The
-/// saved phrases arrive at 5. Local usage events arrive at 6.
-const SCHEMA_VERSION: i64 = 6;
+/// saved phrases arrive at 5. Local usage events arrive at 6. The separate
+/// Agent transcript arrives at 7.
+const SCHEMA_VERSION: i64 = 7;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Space {
@@ -40,6 +41,8 @@ pub struct SpacePatch {
     pub context: Option<String>,
     #[serde(default)]
     pub phrases_synced_count: Option<i64>,
+    #[serde(default)]
+    pub reset_phrases_synced_count: bool,
     pub updated_at: i64,
 }
 
@@ -55,6 +58,24 @@ pub struct Message {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub audio_path: Option<String>,
     pub created_at: i64,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct AgentMessage {
+    pub id: String,
+    pub space_id: String,
+    pub role: String,
+    pub content: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool_call_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool_arguments: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool_state: Option<String>,
+    pub created_at: i64,
+    pub updated_at: i64,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -94,6 +115,13 @@ pub struct AnalyticsEvent {
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct BackupModelConfig {
+    pub service: String,
+    pub model: String,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BackupSetup {
     #[serde(default)]
     pub id: String,
@@ -101,8 +129,8 @@ pub struct BackupSetup {
     pub speaking_style: String,
     pub personal_words: String,
     pub mode: String,
-    pub writing_service: String,
-    pub writing_model: String,
+    pub default_model: BackupModelConfig,
+    pub suggestions_model: Option<BackupModelConfig>,
     pub voice_service: String,
 }
 
@@ -186,6 +214,8 @@ pub struct BackupContents {
     pub settings: BackupSettings,
     pub spaces: Vec<Space>,
     pub messages: Vec<BackupMessage>,
+    #[serde(default)]
+    pub agent_messages: Vec<AgentMessage>,
     pub notes: Vec<Note>,
     pub saved_phrases: Vec<SavedPhrase>,
     pub usage_events: Vec<AnalyticsEvent>,
@@ -223,6 +253,7 @@ impl Repository {
                 include_str!("../migrations/0001_initial.sql"),
                 include_str!("../migrations/0002_saved_phrases.sql"),
                 include_str!("../migrations/0003_analytics.sql"),
+                include_str!("../migrations/0004_agent_messages.sql"),
             ))?;
             transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
             transaction.commit()?;
@@ -325,14 +356,15 @@ impl Repository {
             "UPDATE spaces SET \
                title = COALESCE(?2, title), \
                context = COALESCE(?3, context), \
-               phrases_synced_count = COALESCE(?4, phrases_synced_count), \
-               updated_at = ?5 \
+               phrases_synced_count = CASE WHEN ?5 THEN NULL ELSE COALESCE(?4, phrases_synced_count) END, \
+               updated_at = ?6 \
              WHERE id = ?1",
             params![
                 patch.id,
                 patch.title,
                 patch.context,
                 patch.phrases_synced_count,
+                patch.reset_phrases_synced_count,
                 patch.updated_at,
             ],
         )?;
@@ -407,6 +439,88 @@ impl Repository {
             .connection
             .execute("DELETE FROM messages WHERE id = ?1", [id])?
             > 0)
+    }
+
+    pub fn list_agent_messages(&self, space_id: &str) -> Result<Vec<AgentMessage>> {
+        validate_identifier("agent message space ID", space_id)?;
+        let mut statement = self.connection.prepare(
+            "SELECT id, space_id, role, content, tool_call_id, tool_name, tool_arguments, \
+                    tool_state, created_at, updated_at \
+             FROM agent_messages WHERE space_id = ?1 ORDER BY created_at, id",
+        )?;
+        let rows = statement.query_map([space_id], row_to_agent_message)?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    fn list_all_agent_messages(&self) -> Result<Vec<AgentMessage>> {
+        let mut statement = self.connection.prepare(
+            "SELECT id, space_id, role, content, tool_call_id, tool_name, tool_arguments, \
+                    tool_state, created_at, updated_at \
+             FROM agent_messages ORDER BY id",
+        )?;
+        let rows = statement.query_map([], row_to_agent_message)?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    pub fn put_agent_message(&self, message: &AgentMessage) -> Result<()> {
+        validate_agent_message(message)?;
+        self.connection.execute(
+            "INSERT INTO agent_messages \
+             (id, space_id, role, content, tool_call_id, tool_name, tool_arguments, tool_state, \
+              created_at, updated_at) \
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10) \
+             ON CONFLICT(id) DO UPDATE SET \
+               space_id = excluded.space_id, role = excluded.role, content = excluded.content, \
+               tool_call_id = excluded.tool_call_id, tool_name = excluded.tool_name, \
+               tool_arguments = excluded.tool_arguments, tool_state = excluded.tool_state, \
+               created_at = excluded.created_at, updated_at = excluded.updated_at",
+            params![
+                message.id,
+                message.space_id,
+                message.role,
+                message.content,
+                message.tool_call_id,
+                message.tool_name,
+                message.tool_arguments,
+                message.tool_state,
+                message.created_at,
+                message.updated_at,
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn update_agent_tool_state(
+        &self,
+        id: &str,
+        expected: &str,
+        state: &str,
+        content: &str,
+        updated_at: i64,
+    ) -> Result<AgentMessage> {
+        validate_identifier("agent message ID", id)?;
+        validate_agent_tool_state(expected)?;
+        validate_agent_tool_state(state)?;
+        validate_timestamp("agent message updated_at", updated_at)?;
+        let changed = self.connection.execute(
+            "UPDATE agent_messages SET tool_state = ?3, content = ?4, updated_at = ?5 \
+             WHERE id = ?1 AND tool_state = ?2",
+            params![id, expected, state, content, updated_at],
+        )?;
+        if changed == 0 {
+            return Err(BackendError::InvalidInput(
+                "that agent request is gone or already resolved".into(),
+            ));
+        }
+        self.connection
+            .query_row(
+                "SELECT id, space_id, role, content, tool_call_id, tool_name, tool_arguments, \
+                        tool_state, created_at, updated_at \
+                 FROM agent_messages WHERE id = ?1",
+                [id],
+                row_to_agent_message,
+            )
+            .map_err(Into::into)
     }
 
     pub fn list_notes(&self, space_id: Option<&str>) -> Result<Vec<Note>> {
@@ -695,6 +809,7 @@ impl Repository {
                 .into_iter()
                 .map(BackupMessage::from)
                 .collect(),
+            agent_messages: self.list_all_agent_messages()?,
             notes: self.list_notes(None)?,
             saved_phrases: self.list_phrases(None)?,
             usage_events: self.list_all_analytics_events()?,
@@ -716,7 +831,8 @@ impl Repository {
         };
         let transaction = self.connection.transaction()?;
         transaction.execute_batch(
-            "DELETE FROM messages;
+            "DELETE FROM agent_messages;
+             DELETE FROM messages;
              DELETE FROM notes;
              DELETE FROM saved_phrases;
              DELETE FROM spaces;
@@ -755,6 +871,26 @@ impl Repository {
                     message.text,
                     message.message_type,
                     message.created_at,
+                ],
+            )?;
+        }
+        for message in &contents.agent_messages {
+            transaction.execute(
+                "INSERT INTO agent_messages \
+                 (id, space_id, role, content, tool_call_id, tool_name, tool_arguments, tool_state, \
+                  created_at, updated_at) \
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+                params![
+                    message.id,
+                    message.space_id,
+                    message.role,
+                    message.content,
+                    message.tool_call_id,
+                    message.tool_name,
+                    message.tool_arguments,
+                    message.tool_state,
+                    message.created_at,
+                    message.updated_at,
                 ],
             )?;
         }
@@ -862,6 +998,86 @@ fn row_to_message(row: &Row<'_>) -> rusqlite::Result<Message> {
         audio_path: row.get(5)?,
         created_at: row.get(6)?,
     })
+}
+
+fn row_to_agent_message(row: &Row<'_>) -> rusqlite::Result<AgentMessage> {
+    Ok(AgentMessage {
+        id: row.get(0)?,
+        space_id: row.get(1)?,
+        role: row.get(2)?,
+        content: row.get(3)?,
+        tool_call_id: row.get(4)?,
+        tool_name: row.get(5)?,
+        tool_arguments: row.get(6)?,
+        tool_state: row.get(7)?,
+        created_at: row.get(8)?,
+        updated_at: row.get(9)?,
+    })
+}
+
+fn validate_agent_tool_state(state: &str) -> Result<()> {
+    if !matches!(state, "pending" | "applied" | "rejected" | "failed") {
+        return Err(BackendError::InvalidInput(
+            "agent tool state is not supported".into(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_agent_message(message: &AgentMessage) -> Result<()> {
+    validate_identifier("agent message ID", &message.id)?;
+    validate_identifier("agent message space ID", &message.space_id)?;
+    if !matches!(message.role.as_str(), "user" | "assistant" | "tool") {
+        return Err(BackendError::InvalidInput(
+            "agent message role is not supported".into(),
+        ));
+    }
+    if let Some(tool_call_id) = &message.tool_call_id {
+        validate_identifier("agent tool call ID", tool_call_id)?;
+    }
+    if let Some(tool_name) = &message.tool_name {
+        if !matches!(
+            tool_name.as_str(),
+            "inspect_space"
+                | "read_note"
+                | "read_talk_messages"
+                | "configure_space"
+                | "change_note"
+                | "change_phrase"
+                | "change_talk_message"
+        ) {
+            return Err(BackendError::InvalidInput(
+                "agent tool name is not supported".into(),
+            ));
+        }
+    }
+    if let Some(state) = &message.tool_state {
+        validate_agent_tool_state(state)?;
+    }
+    let tool_fields = [
+        message.tool_call_id.is_some(),
+        message.tool_name.is_some(),
+        message.tool_arguments.is_some(),
+        message.tool_state.is_some(),
+    ];
+    if message.role == "tool" && tool_fields.iter().any(|present| !present) {
+        return Err(BackendError::InvalidInput(
+            "an agent tool message must include its call ID, name, arguments, and state".into(),
+        ));
+    }
+    if message.role != "tool" && tool_fields.iter().any(|present| *present) {
+        return Err(BackendError::InvalidInput(
+            "a plain agent message cannot include tool fields".into(),
+        ));
+    }
+    validate_timestamp("agent message created_at", message.created_at)?;
+    validate_timestamp("agent message updated_at", message.updated_at)?;
+    if message.updated_at < message.created_at {
+        return Err(BackendError::InvalidInput(
+            "agent message updated_at must not precede created_at".into(),
+        ));
+    }
+    Ok(())
 }
 
 fn row_to_note(row: &Row<'_>) -> rusqlite::Result<Note> {
@@ -1008,13 +1224,9 @@ fn validate_backup_contents(contents: &BackupContents) -> Result<()> {
                 "backup setup mode is not supported".into(),
             ));
         }
-        if !matches!(
-            setup.writing_service.as_str(),
-            "apple" | "openrouter" | "none"
-        ) {
-            return Err(BackendError::InvalidInput(
-                "backup writing service is not supported".into(),
-            ));
+        validate_backup_model_config("default", &setup.default_model)?;
+        if let Some(config) = &setup.suggestions_model {
+            validate_backup_model_config("Suggestions", config)?;
         }
         if !matches!(setup.voice_service.as_str(), "system" | "elevenlabs") {
             return Err(BackendError::InvalidInput(
@@ -1038,7 +1250,7 @@ fn validate_backup_contents(contents: &BackupContents) -> Result<()> {
     }
     for (slug, mode) in &contents.settings.space_modes {
         validate_identifier("backup space mode slug", slug)?;
-        if !matches!(mode.as_str(), "talk" | "notes") {
+        if !matches!(mode.as_str(), "talk" | "notes" | "agent") {
             return Err(BackendError::InvalidInput(
                 "backup space mode is not supported".into(),
             ));
@@ -1062,6 +1274,10 @@ fn validate_backup_contents(contents: &BackupContents) -> Result<()> {
     validate_unique_ids(
         "message",
         contents.messages.iter().map(|row| row.id.as_str()),
+    )?;
+    validate_unique_ids(
+        "agent message",
+        contents.agent_messages.iter().map(|row| row.id.as_str()),
     )?;
     validate_unique_ids("note", contents.notes.iter().map(|row| row.id.as_str()))?;
     validate_unique_ids(
@@ -1089,6 +1305,10 @@ fn validate_backup_contents(contents: &BackupContents) -> Result<()> {
         validate_message(&message.as_message())?;
         validate_backup_space_reference("message", message.space_id.as_deref(), &space_ids)?;
     }
+    for message in &contents.agent_messages {
+        validate_agent_message(message)?;
+        validate_backup_space_reference("agent message", Some(&message.space_id), &space_ids)?;
+    }
     for note in &contents.notes {
         validate_note(note)?;
         validate_backup_space_reference("note", note.space_id.as_deref(), &space_ids)?;
@@ -1099,6 +1319,15 @@ fn validate_backup_contents(contents: &BackupContents) -> Result<()> {
     }
     for event in &contents.usage_events {
         validate_analytics_event(event)?;
+    }
+    Ok(())
+}
+
+fn validate_backup_model_config(label: &str, config: &BackupModelConfig) -> Result<()> {
+    if !matches!(config.service.as_str(), "apple" | "openrouter" | "none") {
+        return Err(BackendError::InvalidInput(format!(
+            "backup {label} model service is not supported"
+        )));
     }
     Ok(())
 }
@@ -1192,8 +1421,9 @@ mod tests {
     use rusqlite::Connection;
 
     use super::{
-        AnalyticsEvent, BackupContents, BackupMessage, BackupPanel, BackupPresent, BackupSettings,
-        BackupSetup, BackupSpeech, Note, Repository, SavedPhrase, Space, SpacePatch,
+        AgentMessage, AnalyticsEvent, BackupContents, BackupMessage, BackupModelConfig,
+        BackupPanel, BackupPresent, BackupSettings, BackupSetup, BackupSpeech, Note, Repository,
+        SavedPhrase, Space, SpacePatch,
     };
 
     fn analytics_event(id: &str, user_id: &str, timestamp: i64) -> AnalyticsEvent {
@@ -1215,8 +1445,14 @@ mod tests {
                     speaking_style: "Plain and direct.".to_owned(),
                     personal_words: String::new(),
                     mode: "advanced".to_owned(),
-                    writing_service: "openrouter".to_owned(),
-                    writing_model: String::new(),
+                    default_model: BackupModelConfig {
+                        service: "openrouter".to_owned(),
+                        model: "default/model".to_owned(),
+                    },
+                    suggestions_model: Some(BackupModelConfig {
+                        service: "openrouter".to_owned(),
+                        model: "suggestions/model".to_owned(),
+                    }),
                     voice_service: "elevenlabs".to_owned(),
                 }),
                 speech: Some(BackupSpeech {
@@ -1256,6 +1492,7 @@ mod tests {
                 message_type: "user".to_owned(),
                 created_at: 30,
             }],
+            agent_messages: Vec::new(),
             notes: vec![Note {
                 id: "note-1".to_owned(),
                 space_id: Some(space_id.to_owned()),
@@ -1286,6 +1523,29 @@ mod tests {
         repository.replace_backup_contents(&contents).unwrap();
 
         assert_eq!(repository.backup_contents("user-1").unwrap(), contents);
+    }
+
+    #[test]
+    fn a_backup_keeps_the_agent_mode_of_a_space() {
+        let mut repository = Repository::open_in_memory().unwrap();
+        let mut contents = backup_contents("space-1");
+        contents
+            .settings
+            .space_modes
+            .insert("general".to_owned(), "agent".to_owned());
+
+        repository.replace_backup_contents(&contents).unwrap();
+
+        assert_eq!(
+            repository
+                .backup_contents("user-1")
+                .unwrap()
+                .settings
+                .space_modes
+                .get("general")
+                .map(String::as_str),
+            Some("agent")
+        );
     }
 
     #[test]
@@ -1500,6 +1760,23 @@ mod tests {
     }
 
     #[test]
+    fn a_backup_rejects_an_unknown_suggestions_service() {
+        let mut repository = Repository::open_in_memory().unwrap();
+        let mut contents = backup_contents("space-1");
+        contents
+            .settings
+            .setup
+            .as_mut()
+            .unwrap()
+            .suggestions_model
+            .as_mut()
+            .unwrap()
+            .service = "unknown".to_owned();
+
+        assert!(repository.replace_backup_contents(&contents).is_err());
+    }
+
+    #[test]
     fn analytics_events_are_isolated_by_user_and_time_and_newest_first() {
         let repository = Repository::open_in_memory().unwrap();
         repository
@@ -1647,6 +1924,85 @@ mod tests {
     }
 
     #[test]
+    fn agent_messages_are_separate_cascade_and_a_proposal_resolves_once() {
+        let repository = Repository::open_in_memory().unwrap();
+        repository
+            .put_space(&Space {
+                id: "space-1".to_owned(),
+                user_id: "user-1".to_owned(),
+                title: Some("General".to_owned()),
+                context: None,
+                phrases_synced_count: None,
+                created_at: 1,
+                updated_at: 1,
+            })
+            .unwrap();
+        repository
+            .put_agent_message(&AgentMessage {
+                id: "agent-1".to_owned(),
+                space_id: "space-1".to_owned(),
+                role: "tool".to_owned(),
+                content: "Delete note".to_owned(),
+                tool_call_id: Some("call-1".to_owned()),
+                tool_name: Some("change_note".to_owned()),
+                tool_arguments: Some("{\"operation\":\"delete\"}".to_owned()),
+                tool_state: Some("pending".to_owned()),
+                created_at: 2,
+                updated_at: 2,
+            })
+            .unwrap();
+
+        assert!(repository
+            .list_messages(Some("space-1"))
+            .unwrap()
+            .is_empty());
+        assert_eq!(repository.list_agent_messages("space-1").unwrap().len(), 1);
+        let applied = repository
+            .update_agent_tool_state("agent-1", "pending", "applied", "Done.", 3)
+            .unwrap();
+        assert_eq!(applied.tool_state.as_deref(), Some("applied"));
+        assert!(repository
+            .update_agent_tool_state("agent-1", "pending", "rejected", "", 4)
+            .is_err());
+
+        repository.delete_space("space-1").unwrap();
+        assert!(repository
+            .list_agent_messages("space-1")
+            .unwrap()
+            .is_empty());
+    }
+
+    #[test]
+    fn an_agent_tool_row_must_keep_all_tool_fields_off_plain_messages() {
+        let repository = Repository::open_in_memory().unwrap();
+        repository
+            .put_space(&Space {
+                id: "space-1".to_owned(),
+                user_id: "user-1".to_owned(),
+                title: None,
+                context: None,
+                phrases_synced_count: None,
+                created_at: 1,
+                updated_at: 1,
+            })
+            .unwrap();
+        let malformed = AgentMessage {
+            id: "agent-1".to_owned(),
+            space_id: "space-1".to_owned(),
+            role: "assistant".to_owned(),
+            content: "Hello".to_owned(),
+            tool_call_id: None,
+            tool_name: None,
+            tool_arguments: None,
+            tool_state: Some("pending".to_owned()),
+            created_at: 2,
+            updated_at: 2,
+        };
+
+        assert!(repository.put_agent_message(&malformed).is_err());
+    }
+
+    #[test]
     fn one_writer_of_a_space_never_undoes_another() {
         // Three things write a space: the user renames it, a model writes its
         // name and its note, and the phrase sync counts the messages. Each
@@ -1670,6 +2026,7 @@ mod tests {
                 title: Some("Asking for water".to_owned()),
                 context: Some("I am talking to my carer.".to_owned()),
                 phrases_synced_count: None,
+                reset_phrases_synced_count: false,
                 updated_at: 2,
             })
             .unwrap();
@@ -1679,6 +2036,7 @@ mod tests {
                 title: None,
                 context: None,
                 phrases_synced_count: Some(1),
+                reset_phrases_synced_count: false,
                 updated_at: 3,
             })
             .unwrap();
@@ -1687,6 +2045,18 @@ mod tests {
         assert_eq!(saved.title.as_deref(), Some("Asking for water"));
         assert_eq!(saved.context.as_deref(), Some("I am talking to my carer."));
         assert_eq!(saved.phrases_synced_count, Some(1));
+
+        let reset = repository
+            .patch_space(&SpacePatch {
+                id: "space-1".to_owned(),
+                title: None,
+                context: None,
+                phrases_synced_count: None,
+                reset_phrases_synced_count: true,
+                updated_at: 4,
+            })
+            .unwrap();
+        assert_eq!(reset.phrases_synced_count, None);
     }
 
     #[test]
@@ -1714,6 +2084,7 @@ mod tests {
                 title: None,
                 context: None,
                 phrases_synced_count: Some(0),
+                reset_phrases_synced_count: false,
                 updated_at: 2,
             })
             .unwrap();
@@ -1725,6 +2096,7 @@ mod tests {
                 title: Some("My sister".to_owned()),
                 context: Some("I speak to my sister here.\n\nWe talk about her garden.".to_owned()),
                 phrases_synced_count: None,
+                reset_phrases_synced_count: false,
                 updated_at: 3,
             })
             .unwrap();
@@ -1743,6 +2115,7 @@ mod tests {
             title: Some("Anything".to_owned()),
             context: None,
             phrases_synced_count: None,
+            reset_phrases_synced_count: false,
             updated_at: 2,
         });
         assert!(missing.is_err());

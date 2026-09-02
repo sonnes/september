@@ -77,40 +77,6 @@ export function tokenize(
 }
 
 /**
- * Create a suggestions engine from a text file
- * @param filePath - Path to the text file
- * @returns Promise that resolves to a TypingSuggestions instance
- */
-export async function createFromFile(filePath: string): Promise<Autocomplete> {
-  try {
-    const response = await fetch(filePath);
-    const text = await response.text();
-
-    const engine = new Autocomplete();
-    engine.processCorpus(text);
-
-    return engine;
-  } catch (error) {
-    throw new Error(`Failed to load corpus from file: ${error}`);
-  }
-}
-
-/**
- * Create a suggestions engine from multiple text sources
- * @param sources - Array of text sources
- * @returns TypingSuggestions instance
- */
-export function createFromMultipleSources(sources: string[]): Autocomplete {
-  const engine = new Autocomplete();
-
-  for (const source of sources) {
-    engine.processCorpus(source);
-  }
-
-  return engine;
-}
-
-/**
  * Merge multiple suggestion results
  * @param results - Array of suggestion result arrays
  * @param options - Merge options
@@ -148,45 +114,6 @@ export function mergeSuggestions(
   return Array.from(merged.values())
     .sort((a, b) => b.frequency - a.frequency)
     .slice(0, maxResults);
-}
-
-/**
- * Filter suggestions based on custom criteria
- * @param suggestions - Array of suggestions to filter
- * @param filterFn - Filter function
- * @returns Filtered suggestions
- */
-export function filterSuggestions(
-  suggestions: SuggestionResult[],
-  filterFn: (suggestion: SuggestionResult) => boolean
-): SuggestionResult[] {
-  return suggestions.filter(filterFn);
-}
-
-/**
- * Sort suggestions by different criteria
- * @param suggestions - Array of suggestions to sort
- * @param sortBy - Sort criteria
- * @returns Sorted suggestions
- */
-export function sortSuggestions(
-  suggestions: SuggestionResult[],
-  sortBy: 'frequency' | 'alphabetical' | 'length' | 'confidence' = 'frequency'
-): SuggestionResult[] {
-  const sorted = [...suggestions];
-
-  switch (sortBy) {
-    case 'frequency':
-      return sorted.sort((a, b) => b.frequency - a.frequency);
-    case 'alphabetical':
-      return sorted.sort((a, b) => a.word.localeCompare(b.word));
-    case 'length':
-      return sorted.sort((a, b) => a.word.length - b.word.length);
-    case 'confidence':
-      return sorted.sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
-    default:
-      return sorted;
-  }
 }
 
 /**

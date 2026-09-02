@@ -9,10 +9,12 @@ import {
 } from '@/services/repository';
 
 export type { AnalyticsEvent, Message, Note, SavedPhrase, Space, SpacePatch } from './repository';
+export type { AgentMessage } from './repository';
 
 const messagesKey = (spaceId: string) => ['messages', spaceId];
 const phrasesKey = (spaceId?: string) => ['phrases', spaceId ?? 'all'];
 const notesKey = (spaceId: string) => ['notes', spaceId];
+const agentMessagesKey = (spaceId: string) => ['agent-messages', spaceId];
 
 const refreshSpaces = (client: QueryClient) => () =>
   client.invalidateQueries({ queryKey: ['spaces'] });
@@ -107,6 +109,45 @@ export function useSendMessage(spaceId: string) {
       }),
     onSuccess: message =>
       client.setQueryData<Message[]>(messagesKey(spaceId), (rows = []) => [...rows, message]),
+  });
+}
+
+export function useAgentMessages(spaceId: string) {
+  return useQuery({
+    queryKey: agentMessagesKey(spaceId),
+    queryFn: async () => (await getRepository()).listAgentMessages(spaceId),
+    enabled: Boolean(spaceId),
+  });
+}
+
+export function usePutAgentMessage(spaceId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (message: import('./repository').AgentMessage) =>
+      (await getRepository()).putAgentMessage(message),
+    onSuccess: () => client.invalidateQueries({ queryKey: agentMessagesKey(spaceId) }),
+  });
+}
+
+export function useResolveAgentTool(spaceId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      state,
+      content,
+    }: {
+      id: string;
+      state: 'applied' | 'rejected' | 'failed';
+      content: string;
+    }) => (await getRepository()).updateAgentToolState(
+      id,
+      'pending',
+      state,
+      content,
+      Date.now(),
+    ),
+    onSuccess: () => client.invalidateQueries({ queryKey: agentMessagesKey(spaceId) }),
   });
 }
 

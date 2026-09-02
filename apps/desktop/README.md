@@ -12,15 +12,15 @@ The UI uses Tailwind CSS v4, shadcn/ui primitives, and TanStack Router.
 The root workspace owns the application UI. This app owns the route bootstrap
 and the services that connect that UI to macOS.
 
-| Directory       | Holds                                          | Rule                                            |
-| --------------- | ---------------------------------------------- | ----------------------------------------------- |
-| `packages/app-ui/layouts/`  | `onboarding.tsx`, `app.tsx`, `settings.tsx`    | The component renders an `<Outlet/>`.           |
-| `packages/app-ui/pages/`    | Route screens: `steps` `dashboard` `spaces` `talk` `notes` `voice` `settings` `usage` | A `createRoute` call in `src/main.tsx` names it. |
-| `packages/app-ui/blocks/`   | `screen` `space` `services` `space-panel` `phrase-panel` `speech-settings` `pick-list` `suggestions` `usage` `brand` | Two or more pages or layouts use it. |
-| `src/services/` | `os` `data` `backup` `ai` `speech` `cloning` `player` `phrase-sync` `suggest` `usage` | It speaks to Rust, the platform, or a cloud service. |
-| `packages/core/` | autocomplete and platform-independent rules | Both web and desktop import the same implementation. |
-| `packages/ui/` | Tailwind theme and shadcn primitives | A token or primitive has one source. |
-| `src/rules/`    | `app-nav` `settings-nav` `onboarding` and core compatibility exports | Platform route rules stay local. |
+| Directory                  | Holds                                                                                                                | Rule                                                 |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `packages/app-ui/layouts/` | `onboarding.tsx`, `app.tsx`, `settings.tsx`                                                                          | The component renders an `<Outlet/>`.                |
+| `packages/app-ui/pages/`   | Route screens: `steps` `dashboard` `spaces` `talk` `agent` `notes` `voice` `settings` `usage`                        | A `createRoute` call in `src/main.tsx` names it.     |
+| `packages/app-ui/blocks/`  | `screen` `space` `services` `space-panel` `phrase-panel` `speech-settings` `pick-list` `suggestions` `usage` `brand` | Two or more pages or layouts use it.                 |
+| `src/services/`            | `os` `data` `backup` `ai` `agent` `speech` `cloning` `player` `phrase-sync` `suggest` `usage`                        | It speaks to Rust, the platform, or a cloud service. |
+| `packages/core/`           | autocomplete and platform-independent rules                                                                          | Both web and desktop import the same implementation. |
+| `packages/ui/`             | Tailwind theme and shadcn primitives                                                                                 | A token or primitive has one source.                 |
+| `src/rules/`               | `app-nav` `settings-nav` `onboarding` and core compatibility exports                                                 | Platform route rules stay local.                     |
 
 Shared UI imports `@platform/*`; the desktop build maps that alias to `src/`.
 This keeps SQLite, Keychain, speech, and native-media calls outside the shared
@@ -31,10 +31,10 @@ screen package.
 The root route holds an outlet only. Below it are two layouts, so a setup step
 never wears the app sidebar, and an app screen never wears the setup sidebar.
 
-| Layout      | Component                     | Routes                                             |
-| ----------- | ----------------------------- | -------------------------------------------------- |
-| Setup       | `OnboardingLayout`, `packages/app-ui/layouts/onboarding.tsx` | `/welcome` `/profile` `/mode` `/connect` `/finish`  |
-| Application | `AppShell`, `packages/app-ui/layouts/app.tsx` | `/dashboard` `/spaces` `/spaces/$slug/talk` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/voice` `/voice/clone` `/help` `/help/$guideSlug` `/settings` `/settings/writing` `/settings/usage` `/settings/data` `/settings/connections/$provider` |
+| Layout      | Component                                                    | Routes                                                                                                                                                                                                                                                                          |
+| ----------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Setup       | `OnboardingLayout`, `packages/app-ui/layouts/onboarding.tsx` | `/welcome` `/profile` `/mode` `/connect` `/finish`                                                                                                                                                                                                                              |
+| Application | `AppShell`, `packages/app-ui/layouts/app.tsx`                | `/dashboard` `/spaces` `/spaces/$slug/talk` `/spaces/$slug/agent` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/voice` `/voice/clone` `/help` `/help/$guideSlug` `/settings` `/settings/writing` `/settings/usage` `/settings/data` `/settings/connections/$provider` |
 
 `AppShell` is the shadcn `Sidebar` and `SidebarInset` pair: a solid indigo
 sidebar beside a white inset card. `src/rules/app-nav.ts` lists the destinations
@@ -226,12 +226,13 @@ the chosen device without writing the system default.
 
 ## Write a note
 
-A space has two modes. Talk is for one sentence, said now. Notes is for long
-text that the user writes over minutes or days, and hears back later.
+A space has three modes. Talk is for one sentence, said now. Notes is for long
+text that the user writes over minutes or days, and hears back later. Agent is
+a separate conversation that can read the space and propose changes.
 
 `/spaces/$slug/notes` opens the note the user changed last.
 `/spaces/$slug/notes/$noteSlug` opens one note by name. The mode switch in the
-dock moves between the two, and a space tab keeps the mode the user is in.
+dock moves between all three, and a space tab keeps the mode the user is in.
 
 September keeps the mode of each space, by slug, in the `space-modes` setting.
 The space list opens each space the way the user left it. A new space starts
@@ -374,11 +375,11 @@ and calls no service.
 
 The engine blends three models of the words that come next:
 
-| Layer | Weight | What it learns                                     |
-| ----- | ------ | -------------------------------------------------- |
-| base  | 1.0    | The seed words in `packages/core/autocomplete/corpus.ts`.    |
-| user  | 2.0    | Every message that the user sends, in every space. |
-| space | 3.0    | The messages of the space that is open.            |
+| Layer | Weight | What it learns                                            |
+| ----- | ------ | --------------------------------------------------------- |
+| base  | 1.0    | The seed words in `packages/core/autocomplete/corpus.ts`. |
+| user  | 2.0    | Every message that the user sends, in every space.        |
+| space | 3.0    | The messages of the space that is open.                   |
 
 The weight of a space starts at zero and grows over its first 500 words. A new
 space with three messages must not speak over the other two layers.
@@ -454,10 +455,10 @@ makes a code with `generateCode`. A model never chooses one.
 
 A phrase is pinned or not:
 
-| Pinned | Where it comes from            | What happens to it              |
-| ------ | ------------------------------ | ------------------------------- |
-| Yes    | The user kept it               | It stays. Nothing replaces it.  |
-| No     | A model wrote it               | The next writing replaces it.   |
+| Pinned | Where it comes from | What happens to it             |
+| ------ | ------------------- | ------------------------------ |
+| Yes    | The user kept it    | It stays. Nothing replaces it. |
+| No     | A model wrote it    | The next writing replaces it.  |
 
 A model writes the phrases when a space holds its first message or its note,
 and again after six more messages. `seedPhrases` does it for a new space, before
@@ -491,14 +492,14 @@ never splits the text itself.
 Each row reads differently. The colour and the mark in the gutter say the same
 thing, so a user who does not read colour still knows what a row is:
 
-| Row              | Colour and line | Mark                   | The key at the end |
-| ---------------- | --------------- | ---------------------- | ------------------ |
-| A code           | Strong indigo   | The code               | Speak, solid       |
-| A phrase         | Indigo          | A pin, solid when kept | Speak              |
-| An opening       | Indigo, broken  | Two arrows             | Take the opening   |
-| A past message   | Teal            | A clock                | Speak              |
-| From a model     | Grey            | none                   | Speak              |
-| A word           | Warm            | none                   | none               |
+| Row            | Colour and line | Mark                   | The key at the end |
+| -------------- | --------------- | ---------------------- | ------------------ |
+| A code         | Strong indigo   | The code               | Speak, solid       |
+| A phrase       | Indigo          | A pin, solid when kept | Speak              |
+| An opening     | Indigo, broken  | Two arrows             | Take the opening   |
+| A past message | Teal            | A clock                | Speak              |
+| From a model   | Grey            | none                   | Speak              |
+| A word         | Warm            | none                   | none               |
 
 A pin is solid when the user keeps the phrase, and it is an outline when a
 model wrote it. The panel uses the same two shapes, so one phrase reads the
@@ -523,10 +524,10 @@ codes, the rows from past messages, and the word row.
 `src/services/speech.ts` gives every voice one interface. A screen calls `speak(text)`
 and does not know which service answers.
 
-| Voice        | How it speaks                                                |
-| ------------ | ------------------------------------------------------------ |
+| Voice        | How it speaks                                                    |
+| ------------ | ---------------------------------------------------------------- |
 | `system`     | The native process uses the macOS system voice. No file, no key. |
-| `elevenlabs` | Rust makes a file. The native process plays the cached file.  |
+| `elevenlabs` | Rust makes a file. The native process plays the cached file.     |
 
 Spoken messages now leave the native process. This path lets the Core Audio
 process tap receive both voices. Voice-list previews still use `src/services/player.ts`
@@ -637,10 +638,12 @@ or clear action does not add a key. September records the count only after
 SQLite accepts the message, so a failed message write creates no usage event.
 
 AI events record the feature, provider, model, token counts, latency, result,
-and provider-reported cost. Speech events record the voice service, model,
+and what the call cost. Speech events record the voice service, model,
 characters, estimated quota credits, cache status, latency, and result. Local
-Apple and macOS calls are free. ElevenLabs uses prepaid quota credits, while
-OpenRouter supplies a measured dollar cost when its response includes one.
+Apple and macOS calls are free. ElevenLabs uses prepaid quota credits. An
+OpenRouter model whose published rates September holds records an estimated
+cost from those rates and the tokens the call used; a model nobody prices
+records none.
 
 Usage events stay in `analytics_events` inside `september.sqlite3`. The app
 deletes events older than 90 days at startup and whenever it reads or writes
@@ -679,10 +682,10 @@ The `/connect` step asks two questions: which service gives writing help, and
 which service speaks. Each question starts with an answer that already works,
 so a user on a supported Mac continues without an action.
 
-| Job | Choices |
-| --- | --- |
+| Job          | Choices                              |
+| ------------ | ------------------------------------ |
 | Writing help | Apple Intelligence, OpenRouter, none |
-| Voice | macOS system voice, ElevenLabs |
+| Voice        | macOS system voice, ElevenLabs       |
 
 An API key goes to the macOS Keychain, through Rust. The React code sends a key
 one time and reads back a status. No key enters the draft, SQLite, an event, or
@@ -691,6 +694,12 @@ the browser storage. `src/services/os.ts` holds the only calls to Rust.
 Rust reads both Keychain entries when the app starts and keeps the values in
 memory. Provider commands use that cache. Connecting or forgetting a service
 updates both the Keychain and the cache, so the change takes effect at once.
+
+Writing help is the one job the WebView performs itself, with a typed model
+client. It is never given a key. `writing_proxy` answers with the address of a
+loopback proxy and a token that lasts one run; the proxy exchanges that token
+for the real key and forwards the request. See
+[desktop providers](../../docs/concepts/desktop-providers.md).
 
 The voice list comes from `GET /v2/voices`, with `voice_type=non-default` and
 `page_size=100`. The web app asks the same way. The filter leaves out the stock
@@ -713,12 +722,12 @@ gives the screen no `id`, and every row then looks selected.
 `/settings` holds the answers that setup collected. It is a layout with a
 section list beside the open section, ported from the web app.
 
-| Section | Route | Holds |
-| --- | --- | --- |
-| Setup | `/settings` | The state of each service, its key, and its model |
-| Writing help | `/settings/writing` | Who writes, and what the model knows about you |
-| Usage | `/settings/usage` | Typing saved, service use, quota, recent calls, and CSV |
-| Data | `/settings/data` | A portable backup download and restore |
+| Section      | Route               | Holds                                                   |
+| ------------ | ------------------- | ------------------------------------------------------- |
+| Setup        | `/settings`         | The state of each service, its key, and its model       |
+| Writing help | `/settings/writing` | Who writes, and what the model knows about you          |
+| Usage        | `/settings/usage`   | Typing saved, service use, quota, recent calls, and CSV |
+| Data         | `/settings/data`    | A portable backup download and restore                  |
 
 Listening still needs a transcription backend, and Account needs an account.
 The service and the voices keep their own screen, `/voice`, in both apps. The
@@ -730,9 +739,10 @@ holds the section list, and `packages/app-ui/pages/settings.tsx` holds the scree
 
 The Data section downloads the portable settings and every domain row as one
 JSON file. It does not include Keychain keys, the selected audio output, cached
-audio paths, or internal state. Import validates the complete file, previews
-its counts, and replaces the portable SQLite rows in one transaction. A file
-from the browser app uses the same format.
+audio paths, or internal state. Version 2 includes the separate Agent
+transcripts. Import also accepts version 1 with no Agent messages, validates
+the complete file, previews its counts, and replaces the portable SQLite rows
+in one transaction. A file from the browser app uses the same format.
 
 Older setup values can have no owner ID. Export uses the current Mac login
 name in the backup and keeps the stored setup value unchanged.
@@ -763,8 +773,20 @@ that needs credit reads **Paid**. The rule is `searchModels` in
 
 **Automatic** is the first row, and the default. It asks for no model, so the
 app sends its own free list and OpenRouter uses the first model that answers.
-A named model goes into the `setup` setting, as `writingModel`, and
-`src/services/ai.ts` sends it with each request.
+A named model goes into `setup.defaultModel`. `src/services/ai.ts` sends this
+model with each text-generation request.
+
+The setup value can also contain `suggestionsModel`. This value is null by
+default. If it contains model settings, Suggestions use them instead of
+`defaultModel`. All other text-generation requests continue to use
+`defaultModel`.
+
+The default writing selection powers the Agent. The desktop backend forwards a
+fixed tool-calling request to OpenRouter or the bundled apfel endpoint. The
+Automatic choice uses OpenRouter's `openrouter/free` router, which selects a
+current free model that supports the request's tools. The core runtime applies read
+tools and changes automatically, and stops only on a delete, until the user
+approves or rejects it. Agent changes to Talk rows never speak those rows.
 
 `packages/app-ui/blocks/services.tsx` holds the parts that setup and settings share: the
 mode card, the mark of each service, the state pill, and the key panel. A brand
@@ -869,7 +891,7 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo fmt --all -- --check
 ```
 
-The Rust backend stores settings, spaces, messages, and notes in SQLite. It
-provides list, get, put, and delete commands for each domain row. See
+The Rust backend stores settings, spaces, Talk messages, Agent messages, notes,
+and phrases in SQLite. It provides typed commands for each domain row. See
 [`src-tauri/README.md`](src-tauri/README.md) for the complete storage and RPC
 contracts.

@@ -11,8 +11,11 @@
       "speakingStyle": "Plain and direct.",
       "personalWords": "My cat is called Miso.",
       "mode": "advanced",
-      "writingService": "openrouter",
-      "writingModel": "",
+      "defaultModel": {
+        "service": "openrouter",
+        "model": ""
+      },
+      "suggestionsModel": null,
       "voiceService": "elevenlabs"
     },
     "speech": {
@@ -23,9 +26,7 @@
       "similarity": 0.75,
       "speed": 1
     },
-    "dismissedIdeas": [
-      "idea-1"
-    ],
+    "dismissedIdeas": ["idea-1"],
     "spaceModes": {
       "family": "notes"
     },

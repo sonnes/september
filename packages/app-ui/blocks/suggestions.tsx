@@ -10,7 +10,12 @@ import {
 
 import { cn } from "@september/ui";
 
-import { generate, hasWritingService, itemsFrom, userContext } from "@platform/services/ai";
+import {
+  generate,
+  hasWritingService,
+  itemsFrom,
+  userContext,
+} from "@platform/services/ai";
 import { useMessages, usePhrases } from "@platform/services/data";
 import {
   isKept,
@@ -226,7 +231,9 @@ export function Suggestions({
               {stripe.tokens.map((token, index) => {
                 if (index < stripe.hidden) return null;
                 const active =
-                  hover !== null && hover.stripe === row && index <= hover.index;
+                  hover !== null &&
+                  hover.stripe === row &&
+                  index <= hover.index;
                 const punctuation = PUNCTUATION.test(token);
 
                 return (
@@ -485,7 +492,8 @@ function useStripes({
     if (!match) return rows;
 
     const expanded = codeExpansionText(text, match.text);
-    if (expanded.trim().toLowerCase() === text.trim().toLowerCase()) return rows;
+    if (expanded.trim().toLowerCase() === text.trim().toLowerCase())
+      return rows;
 
     const codeStripe: Stripe = {
       ...stripeForText(expanded, text),
@@ -516,7 +524,7 @@ function useCompletions({
   const key = `${text} ${lines.length}`;
 
   useEffect(() => {
-    if (!hasWritingService()) {
+    if (!hasWritingService("suggestions")) {
       setRows([]);
       return;
     }
