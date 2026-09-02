@@ -55,4 +55,4 @@ cache/
 .claude/plans/
 .claude/research/
 # Swift / SwiftPM
-apps/swift/.build/
+apps/keyboard/.build/

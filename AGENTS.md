@@ -15,15 +15,15 @@ primitives, tokens, and application screens live in `packages/*`.
 See `apps/desktop/CLAUDE.md` before working in it. It renders the same application
 UI packages as web and supplies Tauri platform services.
 
-**macOS** — a native floating keyboard in `apps/swift/` (SwiftUI + AppKit,
-SwiftPM, no dependencies). See `apps/swift/CLAUDE.md` before working in it; its
+**macOS** — a native floating keyboard in `apps/keyboard/` (SwiftUI + AppKit,
+SwiftPM, no dependencies). See `apps/keyboard/CLAUDE.md` before working in it; its
 design system comes from GitHub issue #10, not `DESIGN.md`.
 
 ```
 september/
 ├── apps/web/              # Browser bootstrap, routes, and IndexedDB services
 ├── apps/desktop/          # Tauri bootstrap, services, and native backend
-├── apps/swift/            # Native macOS keyboard (SwiftPM)
+├── apps/keyboard/         # Native macOS keyboard (SwiftPM)
 ├── packages/core/         # Pure rules and autocomplete
 ├── packages/ui/           # Design tokens and generic primitives
 ├── packages/app-ui/       # Shared layouts, blocks, and application screens

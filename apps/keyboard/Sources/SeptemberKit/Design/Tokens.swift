@@ -48,7 +48,7 @@ public struct RGBA: Equatable, Hashable, Sendable {
     }
 }
 
-/// One token in both appearances. September follows the system setting, so
+/// One token in both appearances. Keyboard follows the system setting, so
 /// every colour has to answer for itself in light and in dark.
 public struct ThemeColor: Equatable, Hashable, Sendable {
     public let light: RGBA
@@ -121,7 +121,7 @@ public enum Tokens {
     public static let warning = ThemeColor(light: RGBA(hex: 0xB25000), dark: RGBA(hex: 0xFF9F4A))
     public static let warningSurface = ThemeColor(
         light: RGBA(hex: 0xB25000, alpha: 0.12), dark: RGBA(hex: 0xFF9F4A, alpha: 0.12))
-    /// The dot beside the app September is typing into.
+    /// The dot beside the app Keyboard is typing into.
     public static let positive = ThemeColor(light: RGBA(hex: 0x1B8A55), dark: RGBA(hex: 0x5CD6A0))
 
     /// Strokes and shadows are the light against dark, dark against light.

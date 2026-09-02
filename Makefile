@@ -1,6 +1,6 @@
 PORT ?= 3009
 
-.PHONY: dev desktop-dev desktop-build desktop-release server-dev deploy mac-run mac-dev mac-test mac-app mac-stop
+.PHONY: dev desktop-dev desktop-build desktop-release server-dev deploy mac-run mac-dev mac-test mac-app keyboard-dmg mac-dmg mac-stop
 
 dev:
 	pnpm -C apps/web dev --port $(PORT)
@@ -53,20 +53,25 @@ server-dev:
 deploy:
 	pnpm -C apps/server deploy
 
-# Native macOS keyboard (apps/swift). See apps/swift/README.md.
+# Native macOS keyboard (apps/keyboard). See apps/keyboard/README.md.
 # mac-run/mac-dev inherit this terminal's Accessibility permission; mac-app
-# builds the signed bundle, which needs its own grant.
+# builds the signed bundle and keyboard-dmg packages it for installation.
 mac-run:
-	$(MAKE) -C apps/swift run
+	$(MAKE) -C apps/keyboard run
 
 mac-dev:
-	$(MAKE) -C apps/swift dev
+	$(MAKE) -C apps/keyboard dev
 
 mac-test:
-	$(MAKE) -C apps/swift test
+	$(MAKE) -C apps/keyboard test
 
 mac-app:
-	$(MAKE) -C apps/swift app
+	$(MAKE) -C apps/keyboard app
+
+keyboard-dmg:
+	$(MAKE) -C apps/keyboard dmg
+
+mac-dmg: keyboard-dmg
 
 mac-stop:
-	$(MAKE) -C apps/swift stop
+	$(MAKE) -C apps/keyboard stop

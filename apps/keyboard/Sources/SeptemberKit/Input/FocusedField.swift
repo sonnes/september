@@ -49,7 +49,7 @@ public struct FocusedField: Equatable, Sendable {
 /// What the input bar is showing: the focused field's own text, our echo of
 /// what we typed, or nothing at all for a password.
 public enum InputMirror: Equatable, Sendable {
-    /// No readable field — this is what September itself has typed.
+    /// No readable field — this is what Keyboard itself has typed.
     case local(text: String)
     /// The focused field's text, with its caret and selection.
     case mirrored(text: String, caret: Int, selectionLength: Int)

@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Shows the text the app in front has focused, read back over accessibility,
 /// with its caret and selection. Apps that expose no text (Terminal, canvases)
-/// fall back to an echo of what September itself typed.
+/// fall back to an echo of what Keyboard itself typed.
 ///
 /// Either way it is a mirror, not a text field: keystrokes go straight to the
 /// app in front, and the panel never takes focus, so there is nothing here to

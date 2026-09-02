@@ -1,7 +1,7 @@
 ---
 title: Shortcut panels (macOS)
 description: Panels are data, not views — grids of buttons that type text, press a key combination, or open another panel, with one panel per app and a generic fallback.
-package: swift
+package: keyboard
 ---
 
 # Shortcut panels (macOS)

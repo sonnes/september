@@ -12,7 +12,7 @@ public final class AXTreeModel: ObservableObject {
     public init() {}
 }
 
-/// The accessibility tree of the app in front, the same one September reads to
+/// The accessibility tree of the app in front, the same one Keyboard reads to
 /// find the field it types into. It sits at the right edge of the screen, the
 /// height of the keyboard.
 public struct AXTreeView: View {

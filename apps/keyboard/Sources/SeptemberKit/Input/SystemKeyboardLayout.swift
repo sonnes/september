@@ -2,7 +2,7 @@ import Carbon.HIToolbox
 import Foundation
 
 /// Builds a `KeyCodeMap` from the keyboard layout the user actually has
-/// selected, so September types the right characters on AZERTY, Dvorak, etc.
+/// selected, so Keyboard types the right characters on AZERTY, Dvorak, etc.
 public enum SystemKeyboardLayout {
     public static func currentMap() -> KeyCodeMap {
         guard let data = currentLayoutData() else {

@@ -29,7 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Only check at launch. The prompt is shown when the user asks for it
-        // from the banner or the menu, so starting September never throws a
+        // from the banner or the menu, so starting Keyboard never throws a
         // system dialog in front of what they were doing.
         permission.startMonitoring()
 
@@ -143,7 +143,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.button?.image = NSImage(
             systemSymbolName: "keyboard",
-            accessibilityDescription: "September"
+            accessibilityDescription: "Keyboard"
         )
 
         let menu = NSMenu()
@@ -184,7 +184,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             keyEquivalent: ""
         ).target = self
         menu.addItem(
-            withTitle: "Quit September",
+            withTitle: "Quit Keyboard",
             action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q"
         )

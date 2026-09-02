@@ -1,4 +1,4 @@
-# September for macOS
+# Keyboard for macOS
 
 A floating accessible keyboard that types into whatever app is in front, with
 shortcut panels around it. Built with SwiftUI + AppKit, no dependencies.
@@ -12,7 +12,7 @@ Sources/
     Panels/         panel model + JSON loading
     Views/          keys, shortcut buttons, panels, the assembled screen
     Resources/      Panels/*.json and Panels/Apps/<bundle id>.json
-  September/        the app: floating panel, CGEvent sink, focus watcher, menu bar, permission
+  Keyboard/         the app: floating panel, CGEvent sink, focus watcher, menu bar, permission
 Tests/KitTests/     tests (see "Tests" below)
 ```
 
@@ -21,26 +21,41 @@ Tests/KitTests/     tests (see "Tests" below)
 ```sh
 make run        # run unbundled in the foreground
 make dev        # same, detached
-make stop       # quit a running September
+make stop       # quit a running Keyboard
 make test       # run the test suite
-make app        # build and sign September.app
+make app        # build and sign Keyboard.app
+make dmg        # package Keyboard.app in an installable DMG
 make open       # build, sign and launch
 make snapshots  # render the keyboard and component library to .build/snapshots
 ```
 
-`make run` and `make dev` launch September as a child of your shell, so it
+`make run` and `make dev` launch Keyboard as a child of your shell, so it
 inherits the terminal's Accessibility permission — keys type into other apps
 with nothing to grant. The signed bundle from `make app` is a separate identity
 and needs its own grant (below).
+
+The app bundle uses `com.september.keyboard` as its identifier.
+
+## Build the DMG
+
+Run `make dmg` to build the signed app and create
+`.build/release/Keyboard.dmg`. The disk image contains `Keyboard.app` and an
+`Applications` shortcut.
+
+The build uses the `Keyboard Dev` signing identity when it is available. If
+the identity is missing, the app is signed ad hoc for local installation and
+macOS resets its Accessibility permission after the next build.
+
+## Render snapshots
 
 Individual snapshots, for comparing against the design mocks without opening a
 window:
 
 ```sh
-swift run September --snapshot out.png            # the whole keyboard (rainbow)
-swift run September --snapshot out.png --mono     # mono variant
-swift run September --snapshot out.png --gallery  # the component library
-swift run September --snapshot out.png --viewer   # the tree viewer, reading the app in front
+swift run Keyboard --snapshot out.png            # the whole keyboard (rainbow)
+swift run Keyboard --snapshot out.png --mono     # mono variant
+swift run Keyboard --snapshot out.png --gallery  # the component library
+swift run Keyboard --snapshot out.png --viewer   # the tree viewer, reading the app in front
 ```
 
 ## The input bar
@@ -48,22 +63,22 @@ swift run September --snapshot out.png --viewer   # the tree viewer, reading the
 The bar above the keys mirrors the text field the user is typing into, read
 back over the accessibility API with its caret and selection. Apps that expose
 no text (Zed, a canvas, a page with nothing focused) fall back to an echo of
-what September itself typed; password fields show nothing at all and leave no
+what Keyboard itself typed; password fields show nothing at all and leave no
 copy behind. See `docs/concepts/input-mirroring.md`.
 
-To see what September can read out of the app in front:
+To see what Keyboard can read out of the app in front:
 
 ```sh
-swift run September --ax            # the focused field, right now
-swift run September --ax --wait 5   # after 5s, so you can click into another app
-swift run September --ax --tree     # plus that app's accessibility tree
+swift run Keyboard --ax            # the focused field, right now
+swift run Keyboard --ax --wait 5   # after 5s, so you can click into another app
+swift run Keyboard --ax --tree     # plus that app's accessibility tree
 ```
 
 ## The accessibility tree viewer
 
 A second window sits at the right edge of the screen, the same height as the
 keyboard, showing the accessibility tree of whatever app is in front — the tree
-September itself reads to find the field it types into.
+Keyboard itself reads to find the field it types into.
 
 It opens collapsed: only the branch leading to the focused element is unfolded,
 and everything else shows as a shut row with a count of what it is holding, so
@@ -76,7 +91,7 @@ in whatever space is left, so the two never overlap.
 
 ## Accessibility permission
 
-September sends keystrokes with `CGEvent.post`, which macOS only allows to apps
+Keyboard sends keystrokes with `CGEvent.post`, which macOS only allows to apps
 the user has trusted in **System Settings ▸ Privacy & Security ▸ Accessibility**.
 The app cannot be sandboxed for the same reason.
 
@@ -85,7 +100,7 @@ mints a new signature on every build, so the permission is revoked each time you
 rebuild. To keep it:
 
 1. Keychain Access ▸ Certificate Assistant ▸ **Create a Certificate…**
-2. Name `September Dev`, identity type *Self Signed Root*, certificate type
+2. Name `Keyboard Dev`, identity type *Self Signed Root*, certificate type
    **Code Signing**.
 3. Rebuild. `make app` picks the identity up automatically.
 

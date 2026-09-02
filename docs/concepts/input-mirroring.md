@@ -1,7 +1,7 @@
 ---
 title: Input mirroring (macOS)
 description: The input bar shows the text of the field the user is typing into, read back over accessibility, with its caret and selection — falling back to an echo of our own keystrokes when an app exposes nothing, and showing nothing at all for a password.
-package: swift
+package: keyboard
 ---
 
 # Input mirroring (macOS)
@@ -63,6 +63,6 @@ system-wide element, is in
 ## Seeing it
 
 ```sh
-swift run September --ax          # the focused field as September reads it
-swift run September --ax --tree   # plus the app's accessibility tree
+swift run Keyboard --ax          # the focused field as Keyboard reads it
+swift run Keyboard --ax --tree   # plus the app's accessibility tree
 ```

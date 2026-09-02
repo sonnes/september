@@ -2,13 +2,13 @@ import AppKit
 import ApplicationServices
 import SeptemberKit
 
-/// Prints what September can read out of the app in front — the focused field
+/// Prints what Keyboard can read out of the app in front — the focused field
 /// it would mirror, and optionally the accessibility tree it came from. The
 /// tool for answering "why is this app not mirroring?":
 ///
-///     swift run September --ax                 # focused field, right now
-///     swift run September --ax --wait 5        # after 5s, so you can click away
-///     swift run September --ax --tree          # + the app's tree, 4 levels deep
+///     swift run Keyboard --ax                 # focused field, right now
+///     swift run Keyboard --ax --wait 5        # after 5s, so you can click away
+///     swift run Keyboard --ax --tree          # + the app's tree, 4 levels deep
 @MainActor
 enum AXDump {
     static func run(arguments: [String]) {

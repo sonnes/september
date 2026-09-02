@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Renders the keyboard (or the component gallery) to a PNG without opening a
 /// window, so the layout can be checked against the design mocks from the
-/// terminal: `swift run September --snapshot out.png [--mono] [--gallery]`.
+/// terminal: `swift run Keyboard --snapshot out.png [--mono] [--gallery]`.
 @MainActor
 enum Snapshot {
     static func run(arguments: [String]) -> Bool {

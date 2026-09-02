@@ -59,7 +59,7 @@ struct PermissionBanner: View {
         HStack(spacing: 10) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(Color(Tokens.warning))
-            Text("September needs Accessibility access to type into other apps.")
+            Text("Keyboard needs Accessibility access to type into other apps.")
                 .font(.system(size: 12))
                 .foregroundStyle(Color(Tokens.keyText))
             Button("Open Settings") {

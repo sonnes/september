@@ -3,7 +3,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "September",
+    name: "Keyboard",
     platforms: [
         .macOS(.v14)
     ],
@@ -13,7 +13,7 @@ let package = Package(
             resources: [.copy("Resources/Panels")]
         ),
         .executableTarget(
-            name: "September",
+            name: "Keyboard",
             dependencies: ["SeptemberKit"]
         ),
         // Xcode is not installed, so SwiftPM has no test framework available.

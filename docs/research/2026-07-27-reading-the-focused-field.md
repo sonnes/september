@@ -1,6 +1,6 @@
 ---
 title: Reading the frontmost app's accessibility tree
-description: How September finds the text field the user is typing into — the AX API path, what each app actually exposes, and the traps found by probing macOS 26.5.2.
+description: How Keyboard finds the text field the user is typing into — the AX API path, what each app actually exposes, and the traps found by probing macOS 26.5.2.
 date: 2026-07-27
 ---
 
@@ -46,7 +46,7 @@ shows, but it returns *nothing* whenever the window server's key window and
 `NSWorkspace.frontmostApplication` disagree — which is the normal state after an
 app is activated programmatically, and was the state for TextEdit in this probe
 until something clicked into its window. The app's own element answers in both
-cases. September asks the frontmost app first and keeps the system-wide element
+cases. Keyboard asks the frontmost app first and keeps the system-wide element
 as a fallback.
 
 ### Changes
@@ -65,7 +65,7 @@ and only on the focused element by others, so register on both. The observer's
 `AXObserverGetRunLoopSource` goes on the main run loop; callbacks are C function
 pointers, so the receiver travels in the refcon.
 
-Not every app announces anything. September also re-reads ~50 ms after each
+Not every app announces anything. Keyboard also re-reads ~50 ms after each
 keystroke it posts, which covers the quiet ones.
 
 ### Electron and Chromium
@@ -119,6 +119,6 @@ like.
 
 ## 4. Tooling
 
-`swift run September --ax` prints the focused field exactly as September sees
+`swift run Keyboard --ax` prints the focused field exactly as Keyboard sees
 it; `--tree` adds the app's tree, `--wait 5` delays the read so you can click
 into whatever you want to inspect.

@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleName</key>
-	<string>September</string>
+	<string>Keyboard</string>
 	<key>CFBundleDisplayName</key>
-	<string>September</string>
+	<string>Keyboard</string>
 	<key>CFBundleIdentifier</key>
-	<string>in.september.mac</string>
+	<string>com.september.keyboard</string>
 	<key>CFBundleExecutable</key>
-	<string>September</string>
+	<string>Keyboard</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -21,8 +21,8 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAccessibilityUsageDescription</key>
-	<string>September types into the app you are using, so it needs Accessibility access to send keystrokes.</string>
+	<string>Keyboard types into the app you are using, so it needs Accessibility access to send keystrokes.</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>September</string>
+	<string>Keyboard</string>
 </dict>
 </plist>

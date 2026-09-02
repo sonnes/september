@@ -14,7 +14,7 @@ September contains three applications:
 
 - `apps/web` is the browser application.
 - `apps/desktop` is the Tauri application for macOS.
-- `apps/swift` is the native floating keyboard for macOS.
+- `apps/keyboard` is the native floating keyboard for macOS.
 
 The web and desktop applications import the same rules, autocomplete engine,
 design system, and application screens from the root workspace packages. Each
@@ -102,6 +102,16 @@ Start the native keyboard:
 make mac-run
 ```
 
+Build its signed app bundle or installable DMG:
+
+```sh
+make mac-app
+make keyboard-dmg
+```
+
+The keyboard uses the bundle identifier `com.september.keyboard`. The DMG is
+written to `apps/keyboard/.build/release/Keyboard.dmg`.
+
 ## Release the desktop app
 
 Store the Apple signing values in the ignored root `.envrc` file:
@@ -132,7 +142,7 @@ september/
 │   ├── web/            Vite browser SPA and native IndexedDB repository
 │   ├── desktop/        Vite UI, Tauri shell, Rust commands, and SQLite
 │   ├── server/         Cloudflare Worker for the browser SPA
-│   └── swift/          Native macOS floating keyboard
+│   └── keyboard/       Native macOS floating keyboard
 ├── packages/
 │   ├── core/           Pure rules and autocomplete
 │   ├── ui/             Shared tokens and generic UI primitives
