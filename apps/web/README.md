@@ -319,3 +319,9 @@ Vercel adds no-store and no-referrer headers for `/oauth/*`.
 
 The application sidebar starts collapsed at every desktop width. The toggle
 or Ctrl/Command-B expands it; resizing preserves that choice.
+
+Help screenshots live in `public/help/` and ship in both apps. Browser captures
+use the 1376 × 1032 iPad landscape viewport at 2× pixel density. Captions
+identify the browser UI. The shared guides place close-ups beside steps and
+open screenshots in a keyboard-accessible dialog. The catalog records capture
+widths to keep small details readable without stretching them.

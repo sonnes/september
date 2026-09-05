@@ -22,7 +22,10 @@ needs, and why an artifact cannot be saved yet. See
 
 `rules/help.ts` holds the task-based Help catalog shared by the browser and
 desktop apps. It keeps guide slugs, category order, platform labels, written
-fallbacks, related links, and search independent of a renderer.
+fallbacks, related links, and search independent of a renderer. Alternative
+tasks contain their own steps and outcomes. Search includes their titles and
+steps. Screenshot metadata includes a caption, capture width, and optional
+one-based step number. Images without a step number serve as screen overviews.
 
 `rules/backup.ts` owns version 2 of the portable backup contract. It validates
 the full file before import, removes unknown fields, writes rows in a stable

@@ -33,12 +33,22 @@ guide rendering. `HelpGuideContent` renders the complete written guide on its
 own, so onboarding can show setup guidance without navigating away or losing
 the current setup answers.
 
-The Help home places three common tasks before search and the category list.
-Search results preserve catalog order, and every guide link shows its Browser,
-Mac app, or Mac keyboard labels. A screenshot renders only when it has a
-source and opens at full size. A video renders only when it has both a source
-and captions. Missing media leaves the written guide in place without an empty
-frame.
+The Help home places three common tasks before search and category links.
+Search results preserve catalog order. The current app window remembers the
+query and scroll position when a reader returns from a guide. Category links
+clear search and focus the selected heading. Clear search returns focus to the
+search field. The call shortcut identifies its Mac requirement.
+
+Guides put written steps first. Screenshot details follow their assigned step,
+and full-screen overviews sit in a disclosure. Each screenshot has a caption
+and an Enlarge screenshot button. The dialog supports Escape and Close, then
+returns focus without moving the guide. Capture widths prevent small images
+from stretching. Failed images leave the written instructions available.
+Videos require both a source and captions. Alternative tasks have separate
+steps and outcomes, including provider connections and backup operations.
+
+The shared app shell provides 44px navigation targets in its compact rail.
+The screen header uses a 44px sidebar toggle.
 
 `layouts/onboarding.tsx` owns the setup shell. Its indigo panel is the sidebar
 from `md` (768px) up and a bar across the top below it — the same width at

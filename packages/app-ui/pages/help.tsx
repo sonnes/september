@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 
 import { Link } from "@tanstack/react-router";
 import {
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 
 import {
+  HELP_CATEGORIES,
   HELP_HOME_SHORTCUTS,
   HELP_PLATFORMS,
   groupHelpGuides,
@@ -20,7 +22,16 @@ import {
   type HelpGuide,
   type HelpMedia,
   type HelpPlatform,
+  type HelpScreenshot,
 } from "@september/core/rules/help";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@september/ui/components/dialog";
 import { Badge } from "@september/ui/components/badge";
 import { Button } from "@september/ui/components/button";
 import {
@@ -40,7 +51,15 @@ const platformLabel = new Map(
   HELP_PLATFORMS.map((platform) => [platform.key, platform.label]),
 );
 
+// Navigation memory lasts only in this app window; Help queries are not persisted.
+const homePosition = { query: "", scrollTop: 0 };
+
 export function HelpScreen({ guideSlug }: { guideSlug?: string }) {
+  const scroll = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (scroll.current)
+      scroll.current.scrollTop = guideSlug ? 0 : homePosition.scrollTop;
+  }, [guideSlug]);
   let content;
   let name;
 
@@ -60,6 +79,11 @@ export function HelpScreen({ guideSlug }: { guideSlug?: string }) {
       </ScreenHeader>
       <div
         className="flex min-h-0 flex-1 flex-col overflow-y-auto p-2 md:p-4"
+        ref={scroll}
+        onScroll={(event) => {
+          if (!guideSlug)
+            homePosition.scrollTop = event.currentTarget.scrollTop;
+        }}
         data-help-scroll
       >
         {content}
@@ -69,7 +93,19 @@ export function HelpScreen({ guideSlug }: { guideSlug?: string }) {
 }
 
 function HelpHome() {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(() => homePosition.query);
+  const input = useRef<HTMLInputElement>(null);
+  function changeQuery(value: string) {
+    homePosition.query = value;
+    homePosition.scrollTop = 0;
+    setQuery(value);
+  }
+  function openCategory(id: string) {
+    flushSync(() => changeQuery(""));
+    const heading = document.getElementById(`help-category-${id}-title`);
+    heading?.focus({ preventScroll: true });
+    heading?.scrollIntoView({ block: "start" });
+  }
   const searching = query.trim().length > 0;
   const results = searchHelpGuides(query);
 
@@ -77,7 +113,9 @@ function HelpHome() {
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-6 sm:px-6 md:py-8">
       <header className="space-y-2">
         <p className="text-primary text-sm font-medium">Help</p>
-        <h1 className="text-3xl font-bold tracking-tight">What do you want to do?</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          What do you want to do?
+        </h1>
         <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
           Choose a common task, or find a step-by-step guide for September.
         </p>
@@ -96,8 +134,23 @@ function HelpHome() {
                   <Icon aria-hidden="true" className="size-5" />
                 </span>
                 <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                  <span className="text-left text-base font-semibold">{shortcut.title}</span>
-                  <ArrowRight aria-hidden="true" className="text-muted-foreground size-5 shrink-0" />
+                  <span className="space-y-2 text-left">
+                    <span className="block text-base font-semibold">
+                      {shortcut.title}
+                    </span>
+                    {shortcut.target.type === "guide" &&
+                    helpGuide(shortcut.target.slug)?.platforms.length === 1 ? (
+                      <span className="block">
+                        <PlatformBadges
+                          platforms={helpGuide(shortcut.target.slug)!.platforms}
+                        />
+                      </span>
+                    ) : null}
+                  </span>
+                  <ArrowRight
+                    aria-hidden="true"
+                    className="text-muted-foreground size-5 shrink-0"
+                  />
                 </span>
               </>
             );
@@ -118,6 +171,11 @@ function HelpHome() {
               <a
                 key={shortcut.title}
                 href={`#help-category-${shortcut.target.categoryId}`}
+                onClick={(event) => {
+                  event.preventDefault();
+                  if (shortcut.target.type === "category")
+                    openCategory(shortcut.target.categoryId);
+                }}
                 className={className}
               >
                 {content}
@@ -128,7 +186,11 @@ function HelpHome() {
       </section>
 
       <section className="space-y-3" aria-labelledby="help-search-label">
-        <Label id="help-search-label" htmlFor="help-search" className="text-base font-semibold">
+        <Label
+          id="help-search-label"
+          htmlFor="help-search"
+          className="text-base font-semibold"
+        >
           Search Help
         </Label>
         <div className="relative max-w-2xl">
@@ -137,10 +199,11 @@ function HelpHome() {
             className="text-muted-foreground pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2"
           />
           <Input
+            ref={input}
             id="help-search"
             type="search"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => changeQuery(event.target.value)}
             placeholder="Try ‘sound’, ‘phrases’, or ‘FaceTime’"
             className="h-12 pl-12"
             data-help-search
@@ -149,7 +212,46 @@ function HelpHome() {
       </section>
 
       {searching ? (
-        <section className="space-y-4" aria-live="polite" aria-labelledby="search-results-title">
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11 self-start"
+          onClick={() => {
+            changeQuery("");
+            input.current?.focus();
+          }}
+        >
+          Clear search
+        </Button>
+      ) : null}
+
+      <nav aria-label="Help categories" className="flex flex-wrap gap-3">
+        {HELP_CATEGORIES.map((category) => (
+          <Button
+            key={category.id}
+            asChild
+            variant="outline"
+            className="min-h-11 h-auto whitespace-normal py-3 text-left"
+          >
+            <a
+              href={`#help-category-${category.id}`}
+              onClick={(event) => {
+                event.preventDefault();
+                openCategory(category.id);
+              }}
+            >
+              {category.title}
+            </a>
+          </Button>
+        ))}
+      </nav>
+
+      {searching ? (
+        <section
+          className="space-y-4"
+          aria-live="polite"
+          aria-labelledby="search-results-title"
+        >
           <div className="space-y-1">
             <h2 id="search-results-title" className="text-xl font-semibold">
               Search results
@@ -176,7 +278,11 @@ function HelpHome() {
           )}
         </section>
       ) : (
-        <section className="space-y-6" aria-labelledby="browse-help-title" data-help-categories>
+        <section
+          className="space-y-6"
+          aria-labelledby="browse-help-title"
+          data-help-categories
+        >
           <h2 id="browse-help-title" className="text-xl font-semibold">
             Browse by task
           </h2>
@@ -189,10 +295,16 @@ function HelpHome() {
               data-help-category={category.id}
             >
               <div className="space-y-1">
-                <h3 id={`help-category-${category.id}-title`} className="text-base font-semibold">
+                <h3
+                  id={`help-category-${category.id}-title`}
+                  tabIndex={-1}
+                  className="scroll-mt-6 rounded-control text-base font-semibold focus-visible:outline-2 focus-visible:outline-ring"
+                >
                   {category.title}
                 </h3>
-                <p className="text-muted-foreground text-sm">{category.summary}</p>
+                <p className="text-muted-foreground text-sm">
+                  {category.summary}
+                </p>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 {guides.map((guide) => (
@@ -255,12 +367,20 @@ export function HelpGuideContent({ guide }: { guide: HelpGuide }) {
           <PlatformBadges platforms={guide.platforms} />
         </div>
         <h1 className="text-3xl font-bold tracking-tight">{guide.title}</h1>
-        <p className="text-muted-foreground text-sm leading-relaxed">{guide.summary}</p>
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          {guide.summary}
+        </p>
       </header>
 
       {guide.prerequisites.length > 0 ? (
-        <section className="space-y-3" aria-labelledby={`${guide.slug}-prerequisites`}>
-          <h2 id={`${guide.slug}-prerequisites`} className="text-base font-semibold">
+        <section
+          className="space-y-3"
+          aria-labelledby={`${guide.slug}-prerequisites`}
+        >
+          <h2
+            id={`${guide.slug}-prerequisites`}
+            className="text-base font-semibold"
+          >
             Before you start
           </h2>
           <ul className="space-y-2 text-sm leading-relaxed">
@@ -276,32 +396,40 @@ export function HelpGuideContent({ guide }: { guide: HelpGuide }) {
         </section>
       ) : null}
 
-      <GuideMedia media={guide.media ?? []} />
-
       <section className="space-y-4" aria-labelledby={`${guide.slug}-steps`}>
         <h2 id={`${guide.slug}-steps`} className="text-xl font-semibold">
           Steps
         </h2>
-        <ol className="space-y-4">
-          {guide.steps.map((step, index) => (
-            <li key={step} className="flex gap-4 text-sm leading-relaxed">
-              <span
-                aria-hidden="true"
-                className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-full font-semibold"
-              >
-                {index + 1}
-              </span>
-              <span className="pt-1" data-help-step>
-                {step}
-              </span>
-            </li>
-          ))}
-        </ol>
+        <GuideSteps steps={guide.steps} media={guide.media ?? []} />
       </section>
 
-      <Callout role="note" tone="success" title="You should now see">
-        {guide.expectedResult}
-      </Callout>
+      {guide.alternatives?.map((alternative, index) => (
+        <section
+          key={alternative.title}
+          className="space-y-4"
+          aria-labelledby={`${guide.slug}-alternative-${index}`}
+        >
+          <h2
+            id={`${guide.slug}-alternative-${index}`}
+            className="text-xl font-semibold"
+          >
+            {alternative.title}
+          </h2>
+          <GuideSteps
+            steps={alternative.steps}
+            media={alternative.media ?? []}
+          />
+          <Callout role="note" tone="success" title="You should now see">
+            {alternative.expectedResult}
+          </Callout>
+        </section>
+      ))}
+
+      {!guide.alternatives?.length ? (
+        <Callout role="note" tone="success" title="You should now see">
+          {guide.expectedResult}
+        </Callout>
+      ) : null}
 
       <Callout role="note" tone="warning" title="If this did not work">
         {guide.recovery}
@@ -319,6 +447,116 @@ export function HelpGuideContent({ guide }: { guide: HelpGuide }) {
         </div>
       </section>
     </article>
+  );
+}
+
+function GuideSteps({ steps, media }: { steps: string[]; media: HelpMedia[] }) {
+  return (
+    <>
+      <ol className="space-y-6">
+        {steps.map((step, index) => (
+          <li key={step} className="space-y-4">
+            <div className="flex gap-4 text-sm leading-relaxed">
+              <span
+                aria-hidden="true"
+                className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-full font-semibold"
+              >
+                {index + 1}
+              </span>
+              <span className="pt-1" data-help-step>
+                {step}
+              </span>
+            </div>
+            <GuideMedia
+              media={media.filter(
+                (item) =>
+                  item.type === "screenshot" && item.afterStep === index + 1,
+              )}
+            />
+          </li>
+        ))}
+      </ol>
+      <GuideMedia media={media.filter((item) => item.type === "video")} />
+      {media.some(
+        (item) => item.type === "screenshot" && item.src && !item.afterStep,
+      ) ? (
+        <details className="rounded-surface border p-4">
+          <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">
+            Screen overview
+          </summary>
+          <GuideMedia
+            media={media.filter(
+              (item) => item.type === "screenshot" && !item.afterStep,
+            )}
+          />
+        </details>
+      ) : null}
+    </>
+  );
+}
+
+function Screenshot({ medium }: { medium: HelpScreenshot }) {
+  const [failed, setFailed] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
+  if (failed) return null;
+  const caption = medium.caption ?? medium.alt;
+  return (
+    <figure className="space-y-3 overflow-hidden rounded-surface border p-3 shadow-sm">
+      <img
+        src={medium.src}
+        alt={medium.alt}
+        loading="lazy"
+        style={{ maxWidth: medium.width }}
+        onError={() => setFailed(true)}
+        className="h-auto w-full rounded-control"
+      />
+      <figcaption className="text-muted-foreground text-sm leading-relaxed">
+        {caption}
+      </figcaption>
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button
+            ref={trigger}
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            aria-label={`Enlarge screenshot: ${caption}`}
+          >
+            Enlarge screenshot
+          </Button>
+        </DialogTrigger>
+        <DialogContent
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            trigger.current?.focus({ preventScroll: true });
+          }}
+          showCloseButton={false}
+          className="max-h-[calc(100svh-2rem)] w-[calc(100%-2rem)] sm:max-w-6xl overflow-y-auto motion-reduce:animate-none"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <DialogTitle className="text-base leading-relaxed">
+              Screenshot
+            </DialogTitle>
+            <DialogClose asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11 min-w-11 shrink-0"
+              >
+                Close
+              </Button>
+            </DialogClose>
+          </div>
+          <DialogDescription>{caption}</DialogDescription>
+          <img
+            src={medium.src}
+            alt={medium.alt}
+            style={{ maxWidth: medium.width ? medium.width * 2 : undefined }}
+            className="h-auto w-full"
+          />
+        </DialogContent>
+      </Dialog>
+    </figure>
   );
 }
 
@@ -340,14 +578,14 @@ function GuideMedia({ media }: { media: HelpMedia[] }) {
   if (available.length === 0) return null;
 
   return (
-    <section className="space-y-4" aria-label="Guide media" data-help-media-frame>
+    <section
+      className="space-y-4"
+      aria-label="Guide media"
+      data-help-media-frame
+    >
       {available.map((medium, index) =>
         medium.type === "screenshot" ? (
-          <figure key={`${medium.src}-${index}`} className="overflow-hidden rounded-surface border shadow-sm">
-            <a href={medium.src} target="_blank" rel="noopener noreferrer">
-              <img src={medium.src} alt={medium.alt} className="h-auto w-full" />
-            </a>
-          </figure>
+          <Screenshot key={`${medium.src}-${index}`} medium={medium} />
         ) : (
           <figure key={`${medium.src}-${index}`} className="space-y-3">
             <video
@@ -361,8 +599,12 @@ function GuideMedia({ media }: { media: HelpMedia[] }) {
               <track kind="captions" src={medium.captionsSrc} default />
             </video>
             <details className="rounded-control border p-4 text-sm">
-              <summary className="min-h-11 cursor-pointer py-3 font-medium">Transcript</summary>
-              <p className="text-muted-foreground leading-relaxed">{medium.transcript}</p>
+              <summary className="min-h-11 cursor-pointer py-3 font-medium">
+                Transcript
+              </summary>
+              <p className="text-muted-foreground leading-relaxed">
+                {medium.transcript}
+              </p>
             </details>
           </figure>
         ),

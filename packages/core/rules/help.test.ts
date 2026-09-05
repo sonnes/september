@@ -80,6 +80,20 @@ describe("Help search", () => {
     ).toBe(true);
   });
 
+  it("finds an instruction in an alternative task", () => {
+    const guide = {
+      ...HELP_GUIDES[0],
+      alternatives: [
+        {
+          title: "Choose a path",
+          steps: ["Select the violet option"],
+          expectedResult: "Ready",
+        },
+      ],
+    };
+    expect(searchHelpGuides("violet", [guide])).toEqual([guide]);
+  });
+
   it("returns the full catalog for an empty query", () => {
     expect(searchHelpGuides("  ")).toEqual(HELP_GUIDES);
   });

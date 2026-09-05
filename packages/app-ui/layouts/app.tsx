@@ -79,13 +79,13 @@ function AppSidebar() {
 
   return (
     <Sidebar variant="inset" collapsible="icon">
-      <SidebarHeader>
+      <SidebarHeader className="group-data-[collapsible=icon]:px-0.5">
         {/* Home, the way every site puts it behind its own name. On the
             desktop app `/` sends the user back to where they were. */}
         <Link
           to="/"
           aria-label="September home"
-          className="ring-sidebar-ring flex h-12 items-center gap-2 rounded-lg outline-hidden focus-visible:ring-2"
+          className="ring-sidebar-ring group-data-[collapsible=icon]:justify-center flex h-12 items-center gap-2 rounded-lg outline-hidden focus-visible:ring-2"
         >
           <BrandMark size={32} className="size-8 rounded-lg" />
           <BrandWordmark
@@ -98,7 +98,7 @@ function AppSidebar() {
       <SidebarContent>
         {/* The group insets the menu by 8px, the same as the header, so the
             brand and the nav icons share one left edge. */}
-        <SidebarGroup>
+        <SidebarGroup className="group-data-[collapsible=icon]:px-0.5">
           <SidebarMenu>
             {APP_NAV.map((item) => {
               const Icon = ICONS[item.path];
@@ -109,9 +109,8 @@ function AppSidebar() {
                     size="lg"
                     tooltip={item.title}
                     data-active={pathname.startsWith(item.path)}
-                    // A 48px row is a calmer target than the 32px default.
-                    // `lg` drops the rail padding, so put it back for the rail.
-                    className="group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2!"
+                    // Keep a 44px target inside the compact rail.
+                    className="group-data-[collapsible=icon]:size-11! group-data-[collapsible=icon]:p-3!"
                   >
                     <Link to={item.path}>
                       <Icon />

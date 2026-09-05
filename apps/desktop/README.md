@@ -924,3 +924,9 @@ OpenRouter connects through browser authorization in setup and Settings. Rust
 uses PKCE and a temporary loopback callback on a free port. It exchanges and
 checks the key before saving it to Keychain; the WebView receives only status.
 Cancel closes the attempt, and an unanswered attempt expires after five minutes.
+
+Help screenshots live in `public/help/` and ship in both apps. Browser captures
+use the 1376 × 1032 iPad landscape viewport at 2× pixel density. Captions
+identify the browser UI. The shared guides place close-ups beside steps and
+open screenshots in a keyboard-accessible dialog. The catalog records capture
+widths to keep small details readable without stretching them.

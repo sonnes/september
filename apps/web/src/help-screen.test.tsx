@@ -41,6 +41,7 @@ let container: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
+  Element.prototype.scrollIntoView = vi.fn();
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
     value: () => ({
@@ -52,6 +53,8 @@ beforeEach(() => {
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
+  render(<HelpScreen />);
+  typeInto(container.querySelector<HTMLInputElement>('[data-help-search]')!, '');
 });
 
 afterEach(() => {
@@ -90,6 +93,45 @@ describe('the Help home', () => {
     );
   });
 
+  it('reveals and focuses a category selected during search', () => {
+    render(<HelpScreen />);
+    typeInto(container.querySelector<HTMLInputElement>('[data-help-search]')!, 'zzzzzz');
+    const shortcut = container.querySelector<HTMLAnchorElement>(
+      'a[href="#help-category-fix-a-problem"]'
+    )!;
+    act(() => shortcut.click());
+    const heading = container.querySelector('#help-category-fix-a-problem-title');
+    expect(heading).toBeTruthy();
+    expect(document.activeElement).toBe(heading);
+    expect(guideLinks().length).toBe(HELP_GUIDES.length);
+  });
+
+  it('clears search and returns focus to the search field', () => {
+    render(<HelpScreen />);
+    const input = container.querySelector<HTMLInputElement>('[data-help-search]')!;
+    typeInto(input, 'zzzzzz');
+    const clear = [...container.querySelectorAll('button')].find(
+      button => button.textContent === 'Clear search'
+    );
+    expect(clear).toBeTruthy();
+    act(() => clear!.click());
+    expect(input.value).toBe('');
+    expect(document.activeElement).toBe(input);
+    expect(guideLinks()).toHaveLength(HELP_GUIDES.length);
+  });
+
+  it('restores the query and scroll position after leaving Help home', () => {
+    render(<HelpScreen />);
+    typeInto(container.querySelector<HTMLInputElement>('[data-help-search]')!, 'sound');
+    const scroll = container.querySelector<HTMLElement>('[data-help-scroll]')!;
+    scroll.scrollTop = 240;
+    act(() => scroll.dispatchEvent(new Event('scroll')));
+    render(<HelpScreen guideSlug="fix-missing-sound" />);
+    render(<HelpScreen />);
+    expect(container.querySelector<HTMLInputElement>('[data-help-search]')!.value).toBe('sound');
+    expect(container.querySelector<HTMLElement>('[data-help-scroll]')!.scrollTop).toBe(240);
+  });
+
   it('exposes every category and guide without requiring search', () => {
     const grouped = groupHelpGuides();
     render(<HelpScreen />);
@@ -113,14 +155,79 @@ describe('a Help guide', () => {
     expect(guideLinks().map(link => link.dataset.helpGuideSlug)).toEqual(guide.related);
   });
 
-  it('links an available screenshot to its full-size asset', () => {
-    const guide = helpGuide('learn-the-talk-screen')!;
-    render(<HelpGuideContent guide={guide} />);
+  it('opens a screenshot and restores focus when closed with Escape', async () => {
+    render(
+      <HelpGuideContent
+        guide={{
+          ...helpGuide('learn-the-talk-screen')!,
+          media: [
+            {
+              type: 'screenshot',
+              src: '/help/talk-screen.png',
+              alt: 'Talk controls',
+              afterStep: 1,
+            },
+          ],
+        }}
+      />
+    );
+    const trigger = [...container.querySelectorAll('button')].find(button =>
+      button.textContent?.includes('Enlarge screenshot')
+    );
+    expect(trigger).toBeTruthy();
+    trigger!.focus();
+    await act(async () => trigger!.click());
+    const dialog = document.querySelector('[role="dialog"]');
+    expect(dialog).toBeTruthy();
+    expect(dialog!.querySelector('img')?.getAttribute('src')).toBeTruthy();
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
 
-    const image = container.querySelector('img');
-    expect(image?.getAttribute('src')).toBe('/help/talk-screen.png');
-    expect(image?.getAttribute('alt')).toBeTruthy();
-    expect(image?.closest('a')?.getAttribute('href')).toBe('/help/talk-screen.png');
+  it('keeps written steps usable when optional media cannot load', () => {
+    const guide = {
+      ...helpGuide('speak-your-first-message')!,
+      media: [
+        { type: 'screenshot' as const, src: '/missing.png', alt: 'Example action', afterStep: 1 },
+        {
+          type: 'video' as const,
+          src: '/missing.mp4',
+          title: 'Example',
+          transcript: 'Written instructions',
+        },
+      ],
+    };
+    render(<HelpGuideContent guide={guide} />);
+    const image = container.querySelector('img')!;
+    act(() => image.dispatchEvent(new Event('error')));
+    expect(container.querySelectorAll('[data-help-step]')).toHaveLength(guide.steps.length);
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('video')).toBeNull();
+  });
+
+  it('renders alternative tasks with their own steps and outcomes', () => {
+    const guide = {
+      ...helpGuide('speak-your-first-message')!,
+      alternatives: [
+        { title: 'First route', steps: ['Do the first action'], expectedResult: 'First result' },
+        { title: 'Second route', steps: ['Do the second action'], expectedResult: 'Second result' },
+      ],
+    };
+    render(<HelpGuideContent guide={guide} />);
+    for (const alternative of guide.alternatives) {
+      const section = [...container.querySelectorAll('section')].find(
+        section => section.querySelector('h2')?.textContent === alternative.title
+      );
+      expect(section).toBeTruthy();
+      expect(section!.textContent).toContain(alternative.steps[0]);
+      expect(section!.textContent).toContain(alternative.expectedResult);
+    }
   });
 
   it('returns safely to Help when a slug is unknown', () => {
