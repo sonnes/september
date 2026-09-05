@@ -25,7 +25,12 @@ The first route opens the About tab or the first note. The second route opens on
 
 ## Editing
 
-The editor saves 600ms after the last keystroke. It also saves pending text when the screen closes.
+The editor starts saving text and titles on each edit. Note-update writes run
+in order within a space. A stale query refresh cannot replace a pending edit.
+A failed save leaves the words visible and offers Retry saving.
+
+Pending or failed edits guard normal browser closing and Mac window closing.
+A forced quit or device failure before the write completes can still lose edits.
 
 The first save creates a title from the first six words. The user can change the title later.
 

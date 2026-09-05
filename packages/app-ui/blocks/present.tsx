@@ -47,6 +47,7 @@ export function PresentOverlay({
   const [index, setIndex] = useState(0);
   const [settings, setSettings] = useState<PresentSettings>(currentPresent);
   const [paused, setPaused] = useState(false);
+  const [speechFailed, setSpeechFailed] = useState(false);
   const [colours, setColours] = useState(false);
   const stage = useStageSize();
   const held = useRef<HTMLDivElement>(null);
@@ -91,8 +92,14 @@ export function PresentOverlay({
 
     let live = true;
     void (async () => {
-      await speak(words, PRESENT_SPEAKER).catch(() => undefined);
-      if (live) setIndex((at) => (at === index ? stepChunk(at, total, 1) : at));
+      setSpeechFailed(false);
+      const played = await speak(words, PRESENT_SPEAKER).catch(() => false);
+      if (!live) return;
+      if (played) setIndex((at) => (at === index ? stepChunk(at, total, 1) : at));
+      else {
+        setSpeechFailed(true);
+        setPaused(true);
+      }
     })();
 
     return () => {
@@ -144,6 +151,11 @@ export function PresentOverlay({
         </p>
       )}
 
+      {speechFailed ? (
+        <p role="alert" className="pointer-events-none absolute inset-x-0 bottom-16 z-20 px-4 text-center text-sm">
+          Speech could not play. Start the voice again to retry, or continue with the words on screen.
+        </p>
+      ) : null}
       <Zones
         index={index}
         total={total}

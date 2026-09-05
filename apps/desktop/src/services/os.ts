@@ -1,5 +1,5 @@
 import { modelSettingsFrom } from "@september/core/rules/model-config";
-import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke, isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-shell";
 
@@ -227,6 +227,33 @@ let panel = panelStateFrom(
  * the module holds the answer between them: a mode switch must not take the
  * card back to the tab the app started on.
  */
+/** Protect a normal close while local edits are pending or failed. */
+export function guardUnsavedChanges(): () => void {
+  const warn = (event: BeforeUnloadEvent) => {
+    event.preventDefault();
+    event.returnValue = "";
+  };
+  window.addEventListener("beforeunload", warn);
+  let active = true;
+  const native = isTauri()
+    ? getCurrentWindow().onCloseRequested((event) => { if (active) event.preventDefault(); })
+    : null;
+  return () => {
+    window.removeEventListener("beforeunload", warn);
+    active = false;
+    void native?.then((unlisten) => unlisten()).catch(() => undefined);
+  };
+}
+
+/** Unsent words are local settings, separate from the spoken transcript. */
+export async function readTalkDraft(spaceId: string): Promise<string> {
+  return (await invoke<string | null>("setting_get", { request: { key: `talk-draft:${spaceId}` } })) ?? "";
+}
+
+export async function saveTalkDraft(spaceId: string, words: string): Promise<void> {
+  await invoke("setting_put", { request: { key: `talk-draft:${spaceId}`, value: words } });
+}
+
 export function currentPanel(): PanelState {
   return panel;
 }

@@ -14,17 +14,16 @@ const TITLE = /<title>[\s\S]*?<\/title>/;
 /**
  * The pages the build draws.
  *
- * Two kinds of page qualify, and only these two. The landing page, which is
- * read by people who have not decided to use anything yet. And Help, which is
- * written from pure rules in `@september/core/rules/help`, sits outside the
- * finished-setup guard, and is looked for by name in a search engine by
- * someone stuck part-way through a task.
+ * The landing page, legal notices, and Help qualify. These public pages sit
+ * outside the finished-setup guard and do not need browser storage.
  *
  * Every other screen reads IndexedDB. A build machine has none, so there is
  * nothing there for it to draw.
  */
 export const PRERENDERED_PATHS: string[] = [
   '/',
+  '/privacy-policy',
+  '/terms-of-service',
   '/help',
   ...HELP_GUIDES.map((guide) => `/help/${guide.slug}`),
 ];
@@ -32,11 +31,9 @@ export const PRERENDERED_PATHS: string[] = [
 /**
  * Where the markup for a path is written, under `dist`.
  *
- * `/` is the shell both hosts already serve from the root. Every other page is
- * a folder index, because that is the one shape Vercel and the Worker both
- * answer with from the filesystem, at the slashless path the app's own links
- * use. Neither host needs a rule per page: a file that exists answers for
- * itself, and everything else falls through to `app.html`.
+ * `/` is served from the root. Every other page is a folder index that Vercel
+ * serves at the slashless path used by the app. Missing files fall through to
+ * `app.html`.
  */
 export function prerenderedFile(path: string): string {
   return path === '/' ? 'index.html' : `${path.replace(/^\//, '')}/index.html`;

@@ -113,3 +113,13 @@ the device's system-wide sound output.
 whole viewport instead of inside the shell, because a presentation is for the
 room and not for the person holding the keyboard. It stays a block and not a
 route, so no app has to change its route set to present a note.
+
+Talk restores its device-local draft before mounting the composer. It saves
+each edit through the platform settings service and never clears newer words
+when an earlier message finishes saving. Notes save text and titles on input,
+keep pending edits visible during query refreshes, and offer retry on failure.
+Both screens guard normal closing while writes are pending or failed.
+
+Speech returns whether playback completed successfully. Talk and Read aloud
+show speech notices. Present pauses on failure and keeps the unread chunk on
+screen for retry or silent use.

@@ -1,7 +1,0 @@
-# Placeholder copy for `wrangler dev` before `pnpm sync:assets` runs. The real
-# one ships from the web build (apps/web/public/_headers). Cross-origin isolation
-# is required for SharedArrayBuffer (WebLLM, ffmpeg.wasm).
-/*
-  Cross-Origin-Opener-Policy: same-origin
-  Cross-Origin-Embedder-Policy: require-corp
-  Cross-Origin-Resource-Policy: cross-origin

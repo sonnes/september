@@ -1,14 +1,13 @@
 ---
 title: The public pages are prerendered
-description: The build draws the landing page and every Help guide into their own files and keeps the empty shell beside them, so a reader and a crawler both get the words before the bundle arrives.
+description: The build draws the landing page, legal notices, and every Help guide into their own files and keeps the empty shell beside them, so a reader and a crawler both get the words before the bundle arrives.
 package: web
 ---
 
 # The public pages are prerendered
 
 September is a client application: nearly every screen reads IndexedDB, and
-none of that can be drawn by a build machine. Two parts are the exception, and
-they are the two parts strangers read.
+none of that can be drawn by a build machine. The public pages are the exception.
 
 `/` sells the app. It is shared as a link, and it is read by people who have
 not decided to use anything yet. It should not ask them to download a bundle
@@ -20,6 +19,9 @@ Someone reaches them from a search engine, part-way through a task, often on a
 slow line and sometimes with JavaScript off. A guide that needs a 900 kB bundle
 before it will say which button to press is a guide that arrives too late.
 
+`/privacy-policy` and `/terms-of-service` also render without browser storage.
+They use a public reading layout and remain available before setup.
+
 ## What the build writes
 
 `pnpm build` runs `apps/web/scripts/prerender.mjs` after Vite. The script
@@ -29,6 +31,8 @@ builds the same application a second time for Node, renders each path in
 | File | Served at | Holds |
 | --- | --- | --- |
 | `dist/index.html` | `/` | The landing page, already drawn |
+| `dist/privacy-policy/index.html` | `/privacy-policy` | The privacy notice |
+| `dist/terms-of-service/index.html` | `/terms-of-service` | The terms |
 | `dist/help/index.html` | `/help` | Help, with every task listed |
 | `dist/help/<slug>/index.html` | `/help/<slug>` | One guide each |
 | `dist/app.html` | every application route | The empty shell |
@@ -43,16 +47,9 @@ written; nothing else has to be told about it.
 
 ## Folder indexes, and one canonical path
 
-Each page is written as `<path>/index.html` rather than `<path>.html`. It is
-the one shape both hosts answer with from the filesystem, at the slashless path
-the app's own `Link`s already use.
-
-That shape has a trap. The Worker's asset server defaults to
-`auto-trailing-slash`, which answers `/help` with a 307 to `/help/` — a wasted
-round trip on every link a reader or a crawler follows. `wrangler.jsonc` sets
-`html_handling` to `drop-trailing-slash` instead, and `vercel.json` sets
-`trailingSlash` to `false`. Both hosts now treat the slashless path as
-canonical, matching the links.
+Each page is written as `<path>/index.html`. Vercel serves these folder indexes
+at the slashless paths used by the app. `vercel.json` sets `trailingSlash` to
+`false` so links and served paths agree.
 
 ## Static markup, not hydration
 
@@ -82,14 +79,8 @@ the bundle mounts.
 
 ## The routing has to agree
 
-Both hosts serve what exists from the filesystem and everything else from the
-shell. Neither needs a rule per page:
-
-- `apps/web/vercel.json` rewrites every path with no file to `app.html`.
-  Vercel checks the filesystem before applying rewrites, so a prerendered page
-  answers for itself.
-- `apps/server` sets `not_found_handling` to `none`, so a request matching no
-  asset reaches the Worker, which serves `app.html`.
+Vercel serves existing files and rewrites application routes to `app.html`
+through `apps/web/vercel.json`. Public pages do not need individual rewrites.
 
 A Help slug that was never built is not special. It has no file, so it gets the
 shell, and the router sends the unknown slug back to `/help`.
@@ -117,6 +108,5 @@ writes nothing at all, and the desktop app never loads a tracker.
   browser; checks the markup is static; checks the landing page carries no
   application screen; and holds `PRERENDERED_PATHS` to pages that read no
   browser storage.
-- `apps/server/src/index.test.ts` checks that `/`, `/help`, a guide, and an
-  application route are answered by four different files, and that Help answers
-  with no redirect in front of it.
+- The same suite checks that both legal notices render before setup and link
+  to each other. The removed server module no longer supplies routing tests.

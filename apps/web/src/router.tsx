@@ -15,6 +15,7 @@ import { AgentScreen, NewSpaceScreen } from '@september/app-ui/pages/agent';
 import { HelpScreen } from '@september/app-ui/pages/help';
 import { NotesScreen } from '@september/app-ui/pages/notes';
 import { HomePage } from '@/pages/home';
+import { PrivacyPolicy, TermsOfService } from '@/pages/legal';
 import {
   ConnectionScreen,
   DataSettings,
@@ -224,6 +225,16 @@ const guardedAppRoute = appRoute.addChildren([
 ]);
 
 const routeTree = rootRoute.addChildren([
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/privacy-policy',
+    component: PrivacyPolicy,
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/terms-of-service',
+    component: TermsOfService,
+  }),
   createRoute({
     getParentRoute: () => rootRoute,
     path: '/',

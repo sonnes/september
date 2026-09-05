@@ -22,7 +22,7 @@ Use `pnpm` — never `npm` or `yarn`. Run from `apps/web/` (or `pnpm -C apps/web
 | `pnpm lint`          | Lint                               |
 | `pnpm test`          | Run tests (Vitest)                 |
 
-The production output is `dist/`. Vercel and the Cloudflare Worker serve `index.html` for application routes.
+The production output is `dist/`. Vercel serves prerendered public pages and `app.html` for application routes.
 
 ## Code Style
 

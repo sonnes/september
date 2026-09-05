@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { bootstrapBrowserServices, playSpeechFile, synthesizeSpeech } from './os';
+import { bootstrapBrowserServices, chooseOutput, playSpeechFile, stopNativeSpeech, synthesizeSpeech } from './os';
 import { BrowserRepository, openRepository } from './repository';
 import type { SpeechSettings } from './speech';
 
@@ -74,6 +74,37 @@ describe('speech file cache', () => {
     await playSpeechFile('blob:speech');
 
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:speech');
+  });
+
+  it('does not start audio after Stop while the output device is being selected', async () => {
+    await chooseOutput('speaker');
+    let ready!: () => void;
+    const selected = new Promise<void>((resolve) => { ready = resolve; });
+    const play = vi.fn(async () => undefined);
+    vi.stubGlobal('Audio', class {
+      onended: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      setSinkId = () => selected;
+      pause = vi.fn();
+      play = async () => { await play(); this.onended?.(); };
+    });
+    const pending = playSpeechFile('audio-file');
+    await stopNativeSpeech();
+    ready();
+    await pending;
+    expect(play).not.toHaveBeenCalled();
+  });
+
+  it('settles an interrupted audio file without needing an ended event', async () => {
+    vi.stubGlobal('Audio', class {
+      onended: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      pause = vi.fn();
+      play = async () => undefined;
+    });
+    const pending = playSpeechFile('audio-file');
+    await stopNativeSpeech();
+    await expect(pending).resolves.toBeUndefined();
   });
 
   it('still returns new speech when the browser cannot cache the file', async () => {

@@ -50,14 +50,14 @@ export function speechSettings(): SpeechSettings {
 export interface SpeechProvider {
   readonly id: VoiceService;
   /** Speaks one sentence. It resolves when the sound stops. */
-  speak(text: string): Promise<void>;
+  speak(text: string, signal?: AbortSignal): Promise<void>;
   /** Stops the sound now. */
   stop(): void;
 }
 
 const systemVoice = (settings: SpeechSettings): SpeechProvider => ({
   id: "system",
-  async speak(text) {
+  async speak(text, signal) {
     const started = Date.now();
     try {
       await speakSystem(text, settings);
@@ -89,7 +89,7 @@ const systemVoice = (settings: SpeechSettings): SpeechProvider => ({
         cost_source: "free",
         error_message: reason instanceof Error ? reason.message : String(reason),
       });
-      // The caller only needs to know that the sound stopped.
+      if (!signal?.aborted) throw reason;
     }
   },
   stop: () => void stopNativeSpeech().catch(() => undefined),
@@ -97,12 +97,16 @@ const systemVoice = (settings: SpeechSettings): SpeechProvider => ({
 
 const cloudVoice = (settings: SpeechSettings): SpeechProvider => ({
   id: "elevenlabs",
-  async speak(text) {
+  async speak(text, signal) {
     const started = Date.now();
     let path: string;
     try {
       const result = await synthesizeSpeech(text, settings);
       path = result.path;
+      if (signal?.aborted) {
+        if (path.startsWith("blob:")) URL.revokeObjectURL(path);
+        return;
+      }
       const credits = result.from_cache
         ? 0
         : elevenLabsCredits(text, settings.modelId);
@@ -136,19 +140,21 @@ const cloudVoice = (settings: SpeechSettings): SpeechProvider => ({
         cost_source: "unknown",
         error_message: reason instanceof Error ? reason.message : String(reason),
       });
-      setFallback(reason instanceof Error ? reason.message : String(reason));
-      await systemVoice(settings).speak(text);
+      if (signal?.aborted) return;
+      await systemVoice(settings).speak(text, signal);
+      if (!signal?.aborted) setFallback("The chosen voice did not answer, so this device spoke instead.");
       return;
     }
 
     try {
       await playSpeechFile(path);
-      setFallback(null);
-    } catch (reason) {
+      if (!signal?.aborted) setFallback(null);
+    } catch {
       // A person who cannot speak must not meet silence, so the voice of the
       // operating system says the words instead.
-      setFallback(reason instanceof Error ? reason.message : String(reason));
-      await systemVoice(settings).speak(text);
+      if (signal?.aborted) return;
+      await systemVoice(settings).speak(text, signal);
+      if (!signal?.aborted) setFallback("The chosen voice did not answer, so this device spoke instead.");
     }
   },
   stop() {
@@ -188,19 +194,35 @@ function setFallback(reason: string | null): void {
  * `id` names the thing that is speaking, so a screen can mark it. A second
  * call stops the first sentence.
  */
-export async function speak(text: string, id = "composer"): Promise<void> {
+let active: AbortController | null = null;
+
+/** Returns true only when the current request finishes speaking successfully. */
+export async function speak(text: string, id = "composer"): Promise<boolean> {
   const words = text.trim();
-  if (!words) return;
+  if (!words) return false;
 
-  const provider = providerFor(speechSettings());
-  provider.stop();
-
+  stopSpeaking();
+  const request = new AbortController();
+  active = request;
   speakingId = id;
-  announce();
+  setFallback(null);
+  const cancelled = new Promise<boolean>((resolve) => {
+    request.signal.addEventListener("abort", () => resolve(false), { once: true });
+  });
+  const playback = providerFor(speechSettings()).speak(words, request.signal).then(
+    () => !request.signal.aborted,
+    () => {
+      if (!request.signal.aborted) {
+        setFallback("Speech could not play. Try again or show your words on screen.");
+      }
+      return false;
+    },
+  );
   try {
-    await provider.speak(words);
+    return await Promise.race([playback, cancelled]);
   } finally {
-    if (speakingId === id) {
+    if (active === request) {
+      active = null;
       speakingId = null;
       announce();
     }
@@ -208,6 +230,8 @@ export async function speak(text: string, id = "composer"): Promise<void> {
 }
 
 export function stopSpeaking(): void {
+  active?.abort();
+  active = null;
   providerFor(speechSettings()).stop();
   speakingId = null;
   announce();
@@ -222,7 +246,7 @@ export function useSpeaking(): string | null {
   );
 }
 
-/** Why the cloud voice did not speak, when it did not. */
+/** A user-facing speech failure or successful fallback notice. */
 export function useVoiceFallback(): string | null {
   return useSyncExternalStore(
     subscribe,

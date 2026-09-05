@@ -184,6 +184,7 @@ export interface NotePatch {
 export function useUpdateNote(spaceId: string) {
   const client = useQueryClient();
   return useMutation({
+    scope: { id: `notes:${spaceId}` },
     mutationFn: async (patch: NotePatch) => {
       const repository = await getRepository();
       const held = await repository.getNote(patch.id);

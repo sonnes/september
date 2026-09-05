@@ -103,3 +103,10 @@ its core through a blob URL, and the script policy of that window allows
 A presentation records `note_present` and an export records `note_export` in
 the existing analytics store. Neither is a provider call, so neither reaches
 the spend report.
+
+## Speech failure
+
+Present advances only after successful speech. Stop invalidates pending cloud
+audio so it cannot play later. On speech failure, Present pauses on the unread
+chunk and shows a retry message. The user can restart the voice or read the
+words on screen. Read aloud shows failures without adding transcript rows.

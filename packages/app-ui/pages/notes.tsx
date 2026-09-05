@@ -73,8 +73,8 @@ import {
   saveNoteVideo,
   type VideoStage,
 } from "@platform/services/export";
-import { currentPresent, rememberPresent } from "@platform/services/os";
-import { speak, stopSpeaking, useSpeaking } from "@platform/services/speech";
+import { currentPresent, rememberPresent, guardUnsavedChanges } from "@platform/services/os";
+import { speak, stopSpeaking, useSpeaking, useVoiceFallback } from "@platform/services/speech";
 import {
   Composer,
   spaceParams,
@@ -82,9 +82,6 @@ import {
   SpaceTitle,
   useRememberMode,
 } from "@september/app-ui/blocks/space";
-
-/** How long the screen waits after the last keystroke before it saves. */
-const SAVE_DELAY_MS = 600;
 
 export function NotesScreen({
   slug,
@@ -348,10 +345,10 @@ function Empty({
  * The title and the words of one note.
  *
  * The screen saves on its own, because a user who types slowly must never
- * lose words to a save they forgot to press. It saves again when it closes,
- * so the last keystrokes reach local storage even when the user leaves at once.
+ * lose words to a save they forgot to press. Each edit starts a local write;
+ * a pending or failed write keeps the close warning active.
  */
-function NoteEditor({
+export function NoteEditor({
   note,
   spaceId,
   onRenamed,
@@ -364,83 +361,82 @@ function NoteEditor({
   const [name, setName] = useState(note.name ?? "");
   const [content, setContent] = useState(note.content);
   const [dirty, setDirty] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [shown, setShown] = useState(note.id);
 
-  // The last words typed, for the save that runs as the screen closes. The
-  // cleanup runs after the state is gone, so it reads these instead.
   const held = useRef(content);
-  const unsaved = useRef(dirty);
-  held.current = content;
-  unsaved.current = dirty;
+  const heldName = useRef(name);
+  const revision = useRef(0);
+  const received = useRef({ content: note.content, name: note.name });
 
-  // The first save gives the note a name, so the field must show it.
-  useEffect(() => setName(note.name ?? ""), [note.name]);
-
-  // The composer is a second writer: it puts the composed words under the
-  // note. When nothing here is unsaved, the screen takes the new text. Without
-  // this the field holds the words it had, and the next save writes them back
-  // over the words the composer added.
-  if (note.id !== shown || (!dirty && note.content !== content)) {
+  // Only a new repository value can replace a clean editor. Completing a
+  // save must not restore an older prop while its query is still refreshing.
+  if (note.id !== shown || (!dirty && (
+    received.current.content !== note.content || received.current.name !== note.name
+  ))) {
     setShown(note.id);
     setContent(note.content);
+    setName(note.name ?? "");
     held.current = note.content;
+    heldName.current = note.name ?? "";
   }
+  received.current = { content: note.content, name: note.name };
+
+  const save = () => {
+    const version = ++revision.current;
+    const text = held.current;
+    const title = heldName.current.trim();
+    const updates = noteContentUpdates(title || undefined, text);
+    const savedName = title || updates.name;
+    setDirty(true);
+    setFailed(false);
+    void update.mutateAsync({ id: note.id, ...updates, name: savedName }).then(() => {
+      if (version !== revision.current) return;
+      setDirty(false);
+      setFailed(false);
+      if (savedName) {
+        heldName.current = savedName;
+        setName(savedName);
+        if (savedName !== note.name) onRenamed(savedName);
+      }
+    }).catch(() => {
+      if (version === revision.current) setFailed(true);
+    });
+  };
 
   const write = (text: string) => {
+    held.current = text;
     setContent(text);
-    setDirty(true);
+    save();
+  };
+  const writeName = (text: string) => {
+    heldName.current = text;
+    setName(text);
+    save();
   };
 
   useEffect(() => {
     if (!dirty) return;
-
-    const timer = window.setTimeout(() => {
-      const updates = noteContentUpdates(note.name, content);
-      void update.mutateAsync({ id: note.id, ...updates }).then(() => {
-        // A save that lands while the user types again leaves the note dirty,
-        // so the next save still carries the newer words.
-        if (held.current === content) setDirty(false);
-        // The first save gives the note a name, and the name makes the slug.
-        if (updates.name) onRenamed(updates.name);
-      });
-    }, SAVE_DELAY_MS);
-
-    return () => window.clearTimeout(timer);
-    // `update` and `onRenamed` are new on each render, so they stay out.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dirty, content, note.id, note.name]);
-
-  useEffect(() => {
-    const id = note.id;
-    return () => {
-      // Only words that never reached local storage. A clean note needs no write,
-      // and a write here would race the other writers of the same row.
-      if (!unsaved.current) return;
-      void update.mutateAsync({ id, content: held.current });
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [note.id]);
-
-  const saveName = () => {
-    const next = name.trim();
-    if (next === (note.name ?? "")) return;
-    void update
-      .mutateAsync({ id: note.id, name: next || undefined })
-      .then(() => onRenamed(next));
-  };
+    return guardUnsavedChanges();
+  }, [dirty]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
+      {failed ? (
+        <div role="alert">
+          <p>Your note could not be saved. Keep this page open and retry.</p>
+          <Button onClick={save}>Retry saving</Button>
+        </div>
+      ) : dirty ? <p role="status">Saving…</p> : null}
       <input
         value={name}
         aria-label="Note title"
         placeholder={UNTITLED_NOTE}
-        onChange={(event) => setName(event.target.value)}
-        onBlur={saveName}
+        onChange={(event) => writeName(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === "Enter") event.currentTarget.blur();
           if (event.key === "Escape") {
-            setName(note.name ?? "");
+            writeName(note.name ?? "");
             event.currentTarget.blur();
           }
         }}
@@ -696,11 +692,13 @@ function ExportDialog({
 /** Reads the note aloud in the chosen voice. It writes no message. */
 function VoiceOver({ note }: { note: Note }) {
   const speaking = useSpeaking();
+  const notice = useVoiceFallback();
   const id = `note-${note.id}`;
   const busy = speaking === id;
   const words = markdownToVoiceText(note.content);
 
   return (
+    <>
     <Button
       type="button"
       variant={busy ? "outline" : "default"}
@@ -712,6 +710,8 @@ function VoiceOver({ note }: { note: Note }) {
       {busy ? <Square aria-hidden /> : <Volume2 aria-hidden />}
       Read aloud
     </Button>
+    {notice ? <p role="status" className="text-sm">{notice}</p> : null}
+    </>
   );
 }
 

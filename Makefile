@@ -1,6 +1,6 @@
 PORT ?= 3009
 
-.PHONY: dev desktop-dev desktop-build desktop-release server-dev deploy mac-run mac-dev mac-test mac-app keyboard-dmg mac-dmg mac-stop
+.PHONY: dev desktop-dev desktop-build desktop-release mac-run mac-dev mac-test mac-app keyboard-dmg mac-dmg mac-stop
 
 dev:
 	pnpm -C apps/web dev --port $(PORT)
@@ -44,14 +44,6 @@ desktop-release:
 	spctl --assess --type open --context context:primary-signature --verbose=4 "$${dmg_path}"; \
 	echo "Release ready: $${dmg_path}"; \
 	shasum -a 256 "$${dmg_path}"
-
-# Cloudflare Worker backend (Durable Objects + R2); serves the SPA in production.
-server-dev:
-	pnpm -C apps/server dev
-
-# Build the web app and deploy the static asset Worker.
-deploy:
-	pnpm -C apps/server deploy
 
 # Native macOS keyboard (apps/keyboard). See apps/keyboard/README.md.
 # mac-run/mac-dev inherit this terminal's Accessibility permission; mac-app

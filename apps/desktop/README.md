@@ -256,8 +256,8 @@ because it makes no sound.
 The word engine reads the note in Notes mode, not the spoken messages, so the
 words it offers follow what the user is writing.
 
-The note itself saves 600 ms after the last keystroke, and again when the user
-leaves with words unsaved. There is no Save button, because a user who types
+The note starts saving text and title edits immediately. Pending or failed
+saves keep the normal close guard active. There is no Save button, because a user who types
 slowly must never lose words to a button they did not press.
 
 The note has two writers: the field and the console. The field takes the new
@@ -895,3 +895,20 @@ The Rust backend stores settings, spaces, Talk messages, Agent messages, notes,
 and phrases in SQLite. It provides typed commands for each domain row. See
 [`src-tauri/README.md`](src-tauri/README.md) for the complete storage and RPC
 contracts.
+
+## Speech and unfinished words
+
+Stop invalidates pending speech as well as stopping playback. A cancelled
+cloud result cannot play or trigger system fallback. An already submitted
+provider request can still complete and incur charges. Speech failures show a
+retry message. Present pauses on an unsuccessful chunk instead of advancing.
+
+Talk saves unfinished words per space in local settings (`talk-draft:<id>`).
+These drafts are device-local and are not included in portable backups.
+A successful message save clears only the draft that was sent; later edits
+remain. Pending or failed saves show their state and offer retry on failure.
+
+Note text and titles start saving on each edit. Writes through the note-update
+hook run in order within a space. Browser close/reload warns while a save is
+pending or failed; the Mac window close action waits until those edits save.
+A forced quit, crash, or power loss before a write finishes can still lose it.

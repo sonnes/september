@@ -144,7 +144,6 @@ september/
 ├── apps/
 │   ├── web/            Vite browser SPA and native IndexedDB repository
 │   ├── desktop/        Vite UI, Tauri shell, Rust commands, and SQLite
-│   ├── server/         Cloudflare Worker for the browser SPA
 │   └── keyboard/       Native macOS floating keyboard
 ├── packages/
 │   ├── core/           Pure rules and autocomplete
@@ -158,6 +157,16 @@ application. JavaScript dependencies use the root lockfile. Commands can still
 run from an app directory.
 
 ## Web data migration
+
+The web app deploys to Vercel through `.github/workflows/production.yaml`.
+The former server module and its Makefile deployment commands have been removed.
+Removing local code does not decommission previously deployed infrastructure.
+
+The public `/privacy-policy` and `/terms-of-service` pages cover the supplied
+applications. They describe September as a personal open-source project in
+India. The terms follow the MIT License, and the privacy notice explains the
+actual data flows. See `apps/web/src/pages/legal.tsx` and
+`docs/research/2026-09-05-india-legal-review.md`.
 
 The browser app imports the old web databases one time. It validates the imported rows before it removes the old databases and local-storage keys.
 

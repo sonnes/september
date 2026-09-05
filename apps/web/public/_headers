@@ -1,5 +1,5 @@
 # Cross-origin isolation headers for the deployed browser application.
-# Vercel and the Cloudflare Worker apply the same policy to the SPA shell.
+# Vercel applies the matching policy through vercel.json.
 /*
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Embedder-Policy: require-corp

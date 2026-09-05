@@ -113,6 +113,17 @@ describe('help markup', () => {
 });
 
 describe('PRERENDERED_PATHS', () => {
+  it('renders each legal route during prerendering', async () => {
+    for (const path of ['/privacy-policy', '/terms-of-service']) {
+      expect(PRERENDERED_PATHS).toContain(path);
+      const html = await renderPage(path);
+      expect(html).toContain('<main');
+      expect(html).toContain('<title>');
+      expect(html).toContain('href="/privacy-policy"');
+      expect(html).toContain('href="/terms-of-service"');
+    }
+  });
+
   it('starts with the landing page', () => {
     expect(PRERENDERED_PATHS[0]).toBe('/');
   });
@@ -128,7 +139,7 @@ describe('PRERENDERED_PATHS', () => {
   // Drawing one here would ship a page that is wrong before it is even read.
   it('holds no screen that reads browser storage', () => {
     for (const path of PRERENDERED_PATHS) {
-      expect(path === '/' || path.startsWith('/help')).toBe(true);
+      expect(path === '/' || path.startsWith('/help') || path === '/privacy-policy' || path === '/terms-of-service').toBe(true);
     }
   });
 

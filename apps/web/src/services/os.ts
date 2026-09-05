@@ -115,12 +115,16 @@ export async function saveSpeech(settings: SpeechSettings): Promise<void> {
 
 let activeAudio: HTMLAudioElement | null = null;
 let activeAudioUrl: string | null = null;
+let finishActiveAudio: (() => void) | null = null;
 
 function clearActiveAudio(): void {
   const audio = activeAudio;
   const url = activeAudioUrl;
   activeAudio = null;
   activeAudioUrl = null;
+  const finish = finishActiveAudio;
+  finishActiveAudio = null;
+  finish?.();
   if (audio) {
     audio.onended = null;
     audio.onerror = null;
@@ -314,7 +318,9 @@ export async function playSpeechFile(path: string): Promise<void> {
         selectedOutput
       );
     }
+    if (activeAudio !== audio) return;
     await new Promise<void>((resolve, reject) => {
+      finishActiveAudio = resolve;
       audio.onended = () => resolve();
       audio.onerror = () => reject(new Error('The voice file could not play.'));
       audio.play().catch(reject);
@@ -344,6 +350,27 @@ export async function rememberModes(modes: Record<string, string>): Promise<void
 export async function rememberDraft(words: string): Promise<void> {
   newSpaceDraft = words;
   await (await getRepository()).putSetting('new-space-draft', words);
+}
+
+/** Protect a normal close while local edits are pending or failed. */
+export function guardUnsavedChanges(): () => void {
+  const warn = (event: BeforeUnloadEvent) => {
+    event.preventDefault();
+    event.returnValue = "";
+  };
+  window.addEventListener("beforeunload", warn);
+  return () => {
+    window.removeEventListener("beforeunload", warn);
+  };
+}
+
+/** Unsent words are local settings, separate from the spoken transcript. */
+export async function readTalkDraft(spaceId: string): Promise<string> {
+  return (await (await getRepository()).getSetting<string>(`talk-draft:${spaceId}`)) ?? '';
+}
+
+export async function saveTalkDraft(spaceId: string, words: string): Promise<void> {
+  await (await getRepository()).putSetting(`talk-draft:${spaceId}`, words);
 }
 
 export function currentPanel(): PanelState {

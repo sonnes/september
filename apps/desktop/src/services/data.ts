@@ -292,6 +292,7 @@ export function useUpdateNote(spaceId: string) {
   const client = useQueryClient();
 
   return useMutation({
+    scope: { id: `notes:${spaceId}` },
     mutationFn: async (patch: NotePatch) => {
       const held = await call<Note | null>("note_get", { id: patch.id });
       if (!held) throw new Error("That note is gone.");

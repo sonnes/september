@@ -938,7 +938,7 @@ test("the cloud voice falls back to the system voice", async () => {
 
   // A person who cannot speak must not meet silence.
   assert.match(cloud, /catch/);
-  assert.match(cloud, /systemVoice\(settings\)\.speak\(text\)/);
+  assert.match(cloud, /systemVoice\(settings\)\.speak\(text, signal\)/);
 });
 
 test("spoken messages use the native audio process", async () => {

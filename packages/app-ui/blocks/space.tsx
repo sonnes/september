@@ -220,7 +220,7 @@ export function Composer({
           className="placeholder:text-muted-foreground/60 max-h-60 w-full resize-none overflow-y-auto bg-transparent text-xl leading-snug focus:outline-none"
         />
         {note ? (
-          <p className="text-muted-foreground mt-2 text-xs">{note}</p>
+          <p role="status" className="text-muted-foreground mt-2 text-sm">{note}</p>
         ) : null}
         <div className="mt-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-1.5">

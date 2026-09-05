@@ -84,20 +84,35 @@ first.
 
 `PRERENDERED_PATHS` in `src/rules/prerender.ts` is the list, and it derives the
 guides from `HELP_GUIDES`. Writing a new guide prerenders it. Nothing else can
-go on the list: every other screen reads IndexedDB, which a build machine has
-none of.
+go on the list unless it can render without browser storage. The legal notices
+also meet that requirement.
 
 The markup is static: the browser mounts over it rather than hydrating it. The
 title each page renders is moved into its own head, since a crawler reads the
 head and not the body.
 
-Each page is a folder index, the one shape both hosts serve from the filesystem
-at the slashless path the app's links use. `vercel.json` sets `trailingSlash`
-to `false` and `apps/server` sets `html_handling` to `drop-trailing-slash`, so
-neither host puts a redirect in front of a prerendered page.
-`src/prerender.test.tsx` holds the rules to it, and `src/index.test.ts` in
-`apps/server` holds the routing to it. See
-`docs/concepts/prerendered-pages.md`.
+Each page is a folder index served by Vercel at the slashless path used by the app.
+`vercel.json` sets `trailingSlash` to `false`. Missing assets fall through to
+`app.html`. `src/prerender.test.tsx` checks the public markup and output paths.
+See `docs/concepts/prerendered-pages.md`.
+
+## Legal notices
+
+`/privacy-policy` and `/terms-of-service` are public, prerendered pages.
+They remain available before setup and link from the landing footer.
+`src/pages/legal.tsx` contains their text and shared contact section.
+They are web-only routes and do not change the shared application route contract.
+
+The notices describe a personal open-source project in India. The terms follow
+the root MIT `LICENSE`: broad reuse rights, no warranty, and no guaranteed
+support. Applicable statutory rights remain intact. The privacy notice covers
+local storage, optional providers, and website metadata. GitHub issues are the
+public contact route; users must not post private information there.
+
+`docs/research/2026-09-05-india-legal-review.md` records the legal sources and
+limits of this review. A software licence does not supply privacy consent or
+exempt a personal project from applicable law.
+
 
 ## Brand assets
 
@@ -115,7 +130,7 @@ one. `src/share-card.test.ts` holds both to that.
 `src/router.tsx` defines the complete route graph. The route contract test keeps the application paths equal to the desktop paths and protects the browser landing page at `/`.
 
 The application route components come from `@september/app-ui`. The router and
-the web-only landing page remain local.
+the web-only landing and legal pages remain local.
 
 The setup routes are `/welcome`, `/profile`, `/mode`, `/connect`, and `/finish`.
 
@@ -210,7 +225,7 @@ The browser uses the Web Speech API for the system voice. A system voice does no
 
 ElevenLabs speech files use a cache key made from the text and every sound setting. The repository splits each file into 1 MiB chunks. The cache holds at most 100 MiB and evicts whole least-recently-used files before each write. Reading a file refreshes its access time. A cache failure does not prevent new speech from playing.
 
-A note presents and exports from its own screen. `src/services/export.ts` saves the words as `.md` with nothing configured, the voice as `.mp3` from the speech cache, and a 9:16 `.mp4` with word-synced captions. `synthesizeTimed` in `src/services/os.ts` asks ElevenLabs for the sound and the character alignment together and caches both in the same bounded store. `src/services/video.ts` draws every frame on a canvas and joins them to the voice with `ffmpeg.wasm`, which needs the cross-origin isolation headers in `public/_headers`. Nothing leaves the browser. See `docs/concepts/note-present-export.md`.
+A note presents and exports from its own screen. `src/services/export.ts` saves the words as `.md` with nothing configured, the voice as `.mp3` from the speech cache, and a 9:16 `.mp4` with word-synced captions. `synthesizeTimed` in `src/services/os.ts` asks ElevenLabs for the sound and the character alignment together and caches both in the same bounded store. `src/services/video.ts` draws every frame on a canvas and joins them to the voice with `ffmpeg.wasm`, which needs the cross-origin isolation headers in `public/_headers`. Video assembly stays in the browser; cloud speech requests still send text to ElevenLabs. See `docs/concepts/note-present-export.md`.
 
 OpenRouter and ElevenLabs calls go directly from the browser. Their keys stay
 in IndexedDB. Setup stores one default writing-model setting. Every AI text
@@ -242,7 +257,7 @@ The interface shows their unavailable state in the desktop UI positions.
 ```text
 src/
 ├── components/   web-only landing-page sections
-├── pages/        the web-only home page
+├── pages/        the web-only home and legal pages
 ├── rules/        platform-only rules and core compatibility exports
 ├── services/     IndexedDB, speech, AI, and browser adapters
 └── packages/     remaining browser-only helpers and compatibility exports
@@ -256,3 +271,20 @@ The root workspace supplies the common source:
 
 The shared UI imports browser services through `@platform/*`, which Vite and
 Vitest map to this app's `src/` directory.
+
+## Speech and unfinished words
+
+Stop invalidates pending speech as well as stopping playback. A cancelled
+cloud result cannot play or trigger system fallback. An already submitted
+provider request can still complete and incur charges. Speech failures show a
+retry message. Present pauses on an unsuccessful chunk instead of advancing.
+
+Talk saves unfinished words per space in local settings (`talk-draft:<id>`).
+These drafts are device-local and are not included in portable backups.
+A successful message save clears only the draft that was sent; later edits
+remain. Pending or failed saves show their state and offer retry on failure.
+
+Note text and titles start saving on each edit. Writes through the note-update
+hook run in order within a space. Browser close/reload warns while a save is
+pending or failed; the Mac window close action waits until those edits save.
+A forced quit, crash, or power loss before a write finishes can still lose it.

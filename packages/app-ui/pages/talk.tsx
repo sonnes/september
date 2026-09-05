@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { guardUnsavedChanges, readTalkDraft, saveTalkDraft } from "@platform/services/os";
 import { useNavigate } from "@tanstack/react-router";
 import {
   ChevronLeft,
@@ -48,6 +50,11 @@ export function TalkScreen({ slug }: { slug: string }) {
   const navigate = useNavigate();
   const { data: spaces, isPending } = useSpaces();
   const space = spaceFromSlug(slug, spaces ?? []);
+  const saved = useQuery({
+    queryKey: ["talk-draft", space?.id],
+    queryFn: () => readTalkDraft(space!.id),
+    enabled: !!space,
+  });
 
   // A slug that names no space is a stale link, so it goes back to the list.
   useEffect(() => {
@@ -55,12 +62,14 @@ export function TalkScreen({ slug }: { slug: string }) {
   }, [isPending, space, navigate]);
 
   if (!space) return null;
+  if (saved.error) return <Problem error={saved.error} />;
+  if (saved.isPending) return <p role="status">Loading your unfinished words…</p>;
 
   // The key restarts the composer and the page when the space changes.
-  return <Talk key={space.id} space={space} spaces={spaces ?? []} />;
+  return <Talk key={space.id} space={space} spaces={spaces ?? []} initialDraft={saved.data} />;
 }
 
-function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
+function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; initialDraft: string }) {
   const { data: messages, error } = useMessages(space.id);
   const { data: phrases } = usePhrases(space.id);
   const send = useSendMessage(space.id);
@@ -73,7 +82,19 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
   useRememberMode(space, "talk");
 
   const fallback = useVoiceFallback();
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState(initialDraft);
+  const heldDraft = useRef(initialDraft);
+  const draftRevision = useRef(0);
+  const client = useQueryClient();
+  const draftSave = useMutation({
+    scope: { id: `talk-draft:${space.id}` },
+    mutationFn: (words: string) => saveTalkDraft(space.id, words),
+    onSuccess: (_result, words) => client.setQueryData(["talk-draft", space.id], words),
+  });
+  useEffect(() => {
+    if (!draftSave.isPending && !draftSave.isError) return;
+    return guardUnsavedChanges();
+  }, [draftSave.isPending, draftSave.isError]);
   const keysTyped = useRef(0);
   const [pageInput, setPageInput] = useState(0);
 
@@ -93,17 +114,25 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
 
   const say = (sentence: string) => {
     const typed = keysTyped.current;
+    const sentRevision = draftRevision.current;
     void speak(sentence);
     send.mutate(sentence, {
       onSuccess: () => {
         void recordMessageUsage(sentence, typed, space.id);
-        setDraft("");
-        keysTyped.current = 0;
+        if (draftRevision.current === sentRevision) {
+          write("");
+          keysTyped.current = 0;
+        }
       },
     });
   };
 
-  const write = (text: string) => setDraft(text);
+  const write = (text: string) => {
+    draftRevision.current += 1;
+    heldDraft.current = text;
+    setDraft(text);
+    draftSave.mutate(text);
+  };
 
 
   // The voice starts at once. The composer holds the text until local storage
@@ -183,6 +212,12 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
             )}
           </div>
 
+          {draftSave.isError ? (
+            <div role="alert">
+              <p>Your unfinished words could not be saved. Keep this page open and retry.</p>
+              <Button onClick={() => draftSave.mutate(heldDraft.current)}>Retry saving</Button>
+            </div>
+          ) : draftSave.isPending ? <p role="status">Saving…</p> : null}
           <Composer
             mode="talk"
             spaceId={space.id}
@@ -195,11 +230,7 @@ function Talk({ space, spaces }: { space: Space; spaces: Space[] }) {
             }}
             onPin={keep}
             pending={send.isPending}
-            note={
-              fallback
-                ? `The chosen voice did not answer, so this device spoke instead (${fallback}).`
-                : undefined
-            }
+            note={fallback ?? undefined}
           />
         </div>
 

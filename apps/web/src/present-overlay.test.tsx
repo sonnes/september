@@ -10,7 +10,7 @@ import { PresentOverlay } from '@september/app-ui/blocks/present';
 
 /** The platform seam the shared block reaches through. */
 const platform = vi.hoisted(() => ({
-  speak: vi.fn<(text: string, id?: string) => Promise<void>>(),
+  speak: vi.fn<(text: string, id?: string) => Promise<boolean>>(),
   stopSpeaking: vi.fn(),
   currentPresent: vi.fn(() => ({ tone: 'indigo' as const, spoken: false })),
   rememberPresent: vi.fn(async () => undefined),
@@ -36,7 +36,7 @@ let root: Root;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  platform.speak.mockResolvedValue(undefined);
+  platform.speak.mockResolvedValue(true);
   platform.currentPresent.mockReturnValue({ tone: 'indigo', spoken: false });
   container = document.createElement('div');
   document.body.appendChild(container);
@@ -129,6 +129,17 @@ describe('the present overlay', () => {
     expect(platform.speak.mock.calls[0]![0]).toBe('Maya');
     await act(async () => undefined);
     expect(platform.speak.mock.calls[1]![0]).toBe('We met in June.');
+  });
+
+  it('pauses on failed speech without advancing the unread chunk', async () => {
+    platform.currentPresent.mockReturnValue({ tone: 'indigo', spoken: true });
+    platform.speak.mockResolvedValue(false);
+    await act(async () => {
+      root.render(<PresentOverlay content={NOTE} onClose={() => {}} />);
+    });
+    expect(platform.speak).toHaveBeenCalledTimes(1);
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('could not play');
+    expect(labelled('Start the voice again')).toBeTruthy();
   });
 
   it('remembers the tone the user picked', () => {
