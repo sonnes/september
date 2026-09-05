@@ -99,7 +99,7 @@ await Promise.all(
 // ------------------------------------------------------------ share card
 //
 // The card a link preview shows. It repeats the hero of the landing page —
-// the same gradient, the same two lines, the same amber accent — so a shared
+// the same solid indigo, two lines, and pale indigo accent — so a shared
 // link and the page behind it read as one thing.
 
 const WORDMARK = [
@@ -108,8 +108,8 @@ const WORDMARK = [
 ];
 
 const TAGLINE = [
-  [['Faster', '#fcd34d'], ['Communication', '#ffffff']],
-  [['Fewer', '#fcd34d'], ['Keystrokes', '#ffffff']],
+  [['Faster', '#c7d2fe'], ['Communication', '#ffffff']],
+  [['Fewer', '#c7d2fe'], ['Keystrokes', '#ffffff']],
 ];
 
 // Each word is its own box, and a box eats the space beside it, so the gap
@@ -173,7 +173,7 @@ const shareCardSvg = await satori(
       flexDirection: 'column',
       justifyContent: 'space-between',
       padding: 72,
-      backgroundImage: 'linear-gradient(160deg, #6366f1 0%, #4f46e5 55%, #4338ca 100%)',
+      backgroundColor: '#4f46e5',
     }
   ),
   {

@@ -12,11 +12,7 @@ import {
   Volume2,
 } from 'lucide-react';
 
-import {
-  joinTokens,
-  stripeForText,
-  type SuggestionSource,
-} from '@/rules/stripes';
+import { type SuggestionSource, joinTokens, stripeForText } from '@/rules/stripes';
 
 import { SectionHeader } from './section-header';
 import { useDemoSpeech } from './use-demo-speech';
@@ -50,8 +46,8 @@ const DEMO_SUGGESTIONS: readonly { text: string; source: SuggestionSource }[] =
 
 export function LiveDemoSection() {
   return (
-    <section id="features" className="scroll-mt-4 bg-white px-4 py-16 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-7xl gap-9">
+    <section id="features" className="scroll-mt-4 bg-white px-4 pb-16 sm:px-6 lg:px-8 lg:pb-24">
+      <div className="mx-auto grid max-w-7xl gap-9 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,1.35fr)] lg:items-center lg:gap-12">
         <SectionHeader
           eyebrow="Talk"
           title="Type a little. Tap the rest. Speak."
@@ -143,10 +139,10 @@ function WorkingDemo() {
   }, []);
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-indigo-50 p-2 shadow-lg ring-1 ring-indigo-100 sm:p-4">
+    <div className="min-w-0">
       <div
         data-live-demo-frame
-        className="grid min-h-[520px] overflow-hidden rounded-xl border bg-white shadow-sm sm:min-h-0 sm:h-[540px] lg:h-[560px]"
+        className="grid min-h-[520px] overflow-hidden rounded-surface border border-indigo-200 bg-white shadow-sm sm:min-h-0 sm:h-[540px] lg:h-[560px]"
       >
         <div className="grid min-w-0 grid-rows-[52px_minmax(0,1fr)] lg:grid-rows-[60px_minmax(0,1fr)]">
           {/* Header — sidebar trigger + space title + panel toggle */}
@@ -205,6 +201,7 @@ function WorkingDemo() {
                       speak();
                     }
                   }}
+                  aria-label="Try September Talk"
                   placeholder="Type a message…"
                   className="max-h-40 w-full resize-none overflow-y-auto bg-transparent text-2xl font-medium leading-snug text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
                 />
@@ -309,7 +306,9 @@ export function LandingSuggestionStripes({
               <button
                 key={`${token}:${index}`}
                 type="button"
-                onClick={() => onTake(joinTokens(stripe.tokens.slice(0, stripe.hidden + index + 1)))}
+                onClick={() =>
+                  onTake(joinTokens(stripe.tokens.slice(0, stripe.hidden + index + 1)))
+                }
                 className="min-h-11 shrink-0 rounded-md border border-primary/40 bg-card px-4 text-base font-medium text-foreground transition-colors hover:border-primary/70 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {token}

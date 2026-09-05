@@ -1,28 +1,37 @@
 import { useEffect, useState } from 'react';
 
 import { Link } from '@tanstack/react-router';
+import { Mic, Play, Plus } from 'lucide-react';
 
-import { Mic, Play } from 'lucide-react';
-
-import { SectionHeader } from './section-header';
 import { type DemoVoice, useDemoSpeech } from './use-demo-speech';
 
 const PREVIEW_TEXT = 'Hello — this is how September can sound.';
 
 export function VoiceSection() {
   return (
-    <section className="bg-zinc-100 px-4 py-16 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-7xl gap-9 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.1fr)] lg:items-center">
-        <SectionHeader
-          eyebrow="Your voice"
-          title="Keep your own voice."
-          lede="Clone your voice from a 30-second recording — even from an old home video — and September speaks as you. Every message, note voice-over, and presentation comes out in your voice, not a machine’s."
-          hint="Cloning happens in the app — preview a starting voice below."
-          accent="emerald"
-        />
+    <details className="group border-t border-zinc-200 last:border-b">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-6 py-7 focus-visible:outline-offset-4 focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+        <div className="grid flex-1 gap-3 lg:grid-cols-[12rem_1fr] lg:gap-8">
+          <p className="text-sm font-semibold text-indigo-600">Your voice</p>
+          <div>
+            <h2 className="text-xl font-semibold leading-snug tracking-tight text-zinc-950 sm:text-2xl">
+              Keep your own voice.
+            </h2>
+            <p className="mt-2 max-w-2xl text-base leading-relaxed text-zinc-600">
+              Clone your voice from a 30-second recording, even an old home video. Use it for
+              messages, notes, and presentations.
+            </p>
+          </div>
+        </div>
+        <Plus className="size-6 shrink-0 text-indigo-600 group-open:rotate-45" aria-hidden="true" />
+      </summary>
+      <div className="mx-auto max-w-3xl pb-10">
+        <p className="mb-5 text-sm font-medium text-indigo-700">
+          Cloning happens in the app — preview a starting voice below.
+        </p>
         <VoiceDemo />
       </div>
-    </section>
+    </details>
   );
 }
 
@@ -49,18 +58,18 @@ function VoiceDemo() {
   }, [listVoices]);
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-emerald-50 p-4 shadow-lg ring-1 ring-emerald-100">
+    <div className="overflow-hidden rounded-surface border border-zinc-200 bg-white p-3 shadow-sm">
       <div className="grid gap-4 rounded-lg bg-white/70 p-4">
         {/* Cloning is the feature — the card leads with it. */}
-        <div className="flex flex-wrap items-center gap-4 rounded-xl border bg-white p-5 shadow-sm">
-          <span className="grid size-12 shrink-0 place-items-center rounded-full bg-emerald-100">
-            <Mic className="size-5 text-emerald-700" aria-hidden="true" />
+        <div className="flex flex-wrap items-center gap-4">
+          <span className="grid size-12 shrink-0 place-items-center rounded-full bg-indigo-50">
+            <Mic className="size-5 text-indigo-600" aria-hidden="true" />
           </span>
           <div className="min-w-48 flex-1">
             <p className="font-semibold text-zinc-950">Clone your voice</p>
             <p className="mt-1 text-sm leading-relaxed text-zinc-600">
-              A 30-second recording is enough. Losing your speech? An old video of you talking
-              works too.
+              A 30-second recording is enough. Losing your speech? An old video of you talking works
+              too.
             </p>
           </div>
           <Link

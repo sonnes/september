@@ -146,6 +146,19 @@ The application routes are:
 
 The `/` route opens the public landing page. Its calls to action open setup at `/welcome`, which sends a returning user on to `/dashboard`. All hosting targets must return the application shell for a direct application-route request.
 
+The landing page introduces the founder in one text column before the main Talk demo. Its About
+narrative frames September’s ambition: word-level typing and a dynamic,
+customizable AAC app for conversations that go beyond saved phrases. Spaces and saved
+phrases share one demo beside Agent customization. Switching spaces changes
+the pinned phrases in the same composer. Notes and Voice use native
+expandable panels, so readers can explore each demo at their own pace. The
+panels support keyboard input and keep their demo state when closed. Privacy
+uses a quiet text section before the final call to action.
+
+The Mac section presents the full desktop app with Apple Intelligence and an
+alpha download. Its direct DMG link targets `v0.1.0-alpha.1` for Apple Silicon
+and macOS 26 or later. Update this link when a new desktop alpha ships.
+
 The landing sections demonstrate the real feature machinery on marketing-only
 data: the phrase chapter runs `matchCode`, the Present chapter runs
 `presentChunks`, and the Agent chapter draws demo rows with the application's

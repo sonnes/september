@@ -2,11 +2,12 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { Volume2 } from 'lucide-react';
 
-import { matchCode, trailingWord, type SavedPhrase } from '@/rules/phrases';
+import { type SavedPhrase, matchCode, trailingWord } from '@/rules/phrases';
 import { codeExpansionText, stripeForText } from '@/rules/stripes';
 
-import { LandingSuggestionStripes, type LandingStripe } from './live-demo-section';
+import { type LandingStripe, LandingSuggestionStripes } from './live-demo-section';
 import { SectionHeader } from './section-header';
+import { DEMO_SPACES, SpaceTabs } from './spaces-section';
 import { useDemoSpeech } from './use-demo-speech';
 
 const DEMO_SPACE_ID = 'landing-demo-space';
@@ -49,14 +50,13 @@ export function matchDemoCode(text: string): DemoCodeMatch | undefined {
 
 export function PhraseCodesSection() {
   return (
-    <section className="bg-zinc-100 px-4 py-16 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-7xl gap-9 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.1fr)] lg:items-center">
+    <section className="min-w-0">
+      <div className="grid h-full content-start gap-8">
         <SectionHeader
-          eyebrow="Saved phrases & codes"
-          title="Your everyday sentences, two letters away."
-          lede="Save the sentences you say all the time and give them short codes. Type ty and “Thank you” surfaces instantly — one tap swaps it in. Pinned phrases stay ready before you type anything."
-          hint="Type ty, hlp, or wtr — then tap the phrase."
-          accent="amber"
+          eyebrow="Spaces & saved phrases"
+          title="Your words, ready for every room."
+          lede="Keep a space for family, friends, work, or the clinic, each with its own phrases and notes. Pin the words you use most and give longer phrases short codes — two letters can be a whole sentence."
+          hint="Switch spaces to change the phrases. Try typing ty, then tap the suggestion."
         />
         <CodesDemo />
       </div>
@@ -66,6 +66,7 @@ export function PhraseCodesSection() {
 
 function CodesDemo() {
   const [text, setText] = useState('');
+  const [activeSpace, setActiveSpace] = useState(0);
   const { speak } = useDemoSpeech();
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const [spoken, setSpoken] = useState<string[]>([]);
@@ -95,11 +96,18 @@ function CodesDemo() {
     return [{ ...stripeForText(expanded, text), source: 'code', code: row.code }];
   }, [text]);
 
-  const pinnedChips = useMemo(() => DEMO_ROWS.map(row => row.text), []);
+  const pinnedChips = ['Thank you', ...DEMO_SPACES[activeSpace].phrases];
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-amber-50 p-4 shadow-lg ring-1 ring-amber-100">
+    <div className="overflow-hidden rounded-surface border border-zinc-200 bg-white p-3 shadow-sm">
       <div className="flex min-h-64 flex-col justify-end gap-3 rounded-lg bg-white/70 p-3">
+        <SpaceTabs
+          active={activeSpace}
+          onSelect={index => {
+            setActiveSpace(index);
+            setSpoken([]);
+          }}
+        />
         {spoken.length > 0 && (
           <div className="flex flex-col items-end gap-2">
             {spoken.map((message, index) => (

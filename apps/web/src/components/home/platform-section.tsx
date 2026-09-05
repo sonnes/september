@@ -1,22 +1,21 @@
+import { Button } from '@september/ui/components/button';
 import { Link } from '@tanstack/react-router';
 import { Check } from 'lucide-react';
-
-import { Button } from '@september/ui/components/button';
 
 import { SectionHeader } from './section-header';
 
 export function PlatformSection() {
   return (
-    <section id="calls" className="scroll-mt-4 bg-zinc-100 px-4 py-16 sm:px-6 lg:px-8">
+    <section id="calls" className="scroll-mt-4 bg-white px-4 py-16 sm:px-6 lg:px-8">
       <div className="mx-auto grid max-w-7xl gap-9">
         <SectionHeader
           eyebrow="Where September works"
-          title="In your browser today. On your Mac for calls."
-          lede="September runs where you talk. Start in the browser with nothing to install. The Mac app takes your words into video calls and keeps writing help on the device."
+          title="In your browser. At home on your Mac."
+          lede="Start in the browser with nothing to install, or use the Mac app with Apple Intelligence for writing help on your device."
         />
 
         <div className="grid gap-5 lg:grid-cols-2">
-          <article className="flex flex-col gap-4 rounded-2xl border bg-white p-6 shadow-lg sm:p-8">
+          <article className="flex flex-col gap-4 border-t border-zinc-200 bg-white pt-6 sm:pr-8">
             <div className="flex flex-wrap gap-2">
               <Tag className="bg-indigo-50 text-indigo-700">In your browser</Tag>
             </div>
@@ -33,40 +32,38 @@ export function PlatformSection() {
                 'Suggestions and system voices work offline without cloud services.',
               ]}
             />
-            <Button
-              asChild
-              className="mt-auto h-11 w-fit rounded-full px-6 text-sm font-semibold"
-            >
+            <Button asChild className="mt-auto h-11 w-fit rounded-full px-6 text-sm font-semibold">
               <Link to="/welcome">Get started</Link>
             </Button>
           </article>
 
-          <article className="flex flex-col gap-4 rounded-2xl border bg-white p-6 shadow-lg sm:p-8">
+          <article className="flex flex-col gap-4 border-t border-zinc-200 bg-white pt-6 sm:pr-8">
             <div className="flex flex-wrap gap-2">
               <Tag className="bg-zinc-100 text-zinc-700">On your Mac</Tag>
-              <Tag className="bg-amber-100 text-amber-800">Coming soon</Tag>
+              <Tag className="bg-amber-100 text-amber-800">Alpha</Tag>
             </div>
             <h3 className="text-2xl font-bold leading-tight text-zinc-950">
-              Your seat at the video call.
+              Built for Apple Intelligence.
             </h3>
             <p className="text-base leading-relaxed text-zinc-600">
-              September Microphone joins FaceTime and Zoom. Your typed words are spoken directly
-              into the call.
+              The full September app on your Mac, designed to work with Apple Intelligence for
+              on-device writing help on supported Macs. Still in alpha.
             </p>
             <Points
               points={[
-                'Apple Intelligence gives writing help without the internet.',
+                'Talk, spaces, notes, and saved phrases in one app.',
+                'September Microphone brings your voice into calls.',
                 'Your keys stay in the macOS Keychain.',
               ]}
             />
-            <a
-              href="https://github.com/sonnes/september"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-auto inline-flex min-h-11 w-fit items-center text-sm font-semibold text-indigo-600 transition hover:text-indigo-700"
-            >
-              Follow along on GitHub →
-            </a>
+            <div className="mt-auto">
+              <Button asChild className="h-11 w-fit rounded-full px-6 text-sm font-semibold">
+                <a href="https://github.com/sonnes/september/releases/download/v0.1.0-alpha.1/September_0.1.0-alpha.1_aarch64.dmg">
+                  Download for Mac
+                </a>
+              </Button>
+              <p className="mt-3 text-sm text-zinc-600">Apple Silicon · macOS 26 or later</p>
+            </div>
           </article>
         </div>
       </div>
@@ -76,7 +73,9 @@ export function PlatformSection() {
 
 function Tag({ children, className }: { children: string; className: string }) {
   return (
-    <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${className}`}>{children}</span>
+    <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${className}`}>
+      {children}
+    </span>
   );
 }
 

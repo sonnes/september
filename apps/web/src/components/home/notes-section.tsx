@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 
 import { Download, Play, Square } from 'lucide-react';
+import { Plus } from 'lucide-react';
+
+import { BrandMark } from '@/components/brand';
 
 import { presentChunks, presentTone, roleSpec } from '@/rules/present';
 
-import { BrandMark } from '@/components/brand';
-import { SectionHeader } from './section-header';
 import { useDemoSpeech } from './use-demo-speech';
 
 // One note carries the whole chapter: it is read aloud sentence by sentence,
@@ -30,22 +31,29 @@ const EXPORTS = ['Text (.md)', 'Audio (.mp3)', 'Captioned video (.mp4)'];
 
 export function NotesSection() {
   return (
-    <section className="bg-white px-4 py-16 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-7xl gap-9 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.8fr)] lg:items-center">
-        <div className="order-2 lg:order-1">
-          <NotesDemo />
+    <details className="group border-t border-zinc-200 last:border-b">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-6 py-7 focus-visible:outline-offset-4 focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+        <div className="grid flex-1 gap-3 lg:grid-cols-[12rem_1fr] lg:gap-8">
+          <p className="text-sm font-semibold text-indigo-600">Notes & Present</p>
+          <div>
+            <h2 className="text-xl font-semibold leading-snug tracking-tight text-zinc-950 sm:text-2xl">
+              Longer thoughts, ready ahead of time.
+            </h2>
+            <p className="mt-2 max-w-2xl text-base leading-relaxed text-zinc-600">
+              A toast, a doctor’s update, a bedtime story. Write it once, read it aloud in your
+              voice, or share it as a file.
+            </p>
+          </div>
         </div>
-        <div className="order-1 lg:order-2">
-          <SectionHeader
-            eyebrow="Notes & Present"
-            title="Longer thoughts, ready ahead of time."
-            lede="Write a toast, an update for the doctor, or a bedtime story for the kids — inside the space it belongs to. September reads it aloud in your voice, sentence by sentence. Then fill the room with it, or send it as a file."
-            hint="Press Play — then Present takes the whole screen."
-            accent="violet"
-          />
-        </div>
+        <Plus className="size-6 shrink-0 text-indigo-600 group-open:rotate-45" aria-hidden="true" />
+      </summary>
+      <div className="mx-auto max-w-3xl pb-10">
+        <p className="mb-5 text-sm font-medium text-indigo-700">
+          Play the story, or press Present to hear it one passage at a time.
+        </p>
+        <NotesDemo />
       </div>
-    </section>
+    </details>
   );
 }
 
@@ -94,8 +102,8 @@ function NotesDemo() {
   const spec = roleSpec(current.role, TONE.family);
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-violet-50 p-4 shadow-lg ring-1 ring-violet-100">
-      <div className="grid gap-5 rounded-xl border bg-white p-5">
+    <div className="min-w-0">
+      <div className="grid gap-5 rounded-surface border bg-white p-6 shadow-sm">
         <div>
           <p className="text-title font-semibold text-zinc-950">{NOTE_TITLE}</p>
           <p className="mt-3 text-base leading-relaxed text-zinc-700">

@@ -1,14 +1,13 @@
+import { Badge } from '@september/ui/components/badge';
+import { Button } from '@september/ui/components/button';
 import { Link } from '@tanstack/react-router';
-import { Delete, Github, Pin, Undo2, Volume2 } from 'lucide-react';
+import { ArrowDown, Github, Volume2 } from 'lucide-react';
 
 import { BrandMark, BrandWordmark } from '@/components/brand';
 
-import { Badge } from '@september/ui/components/badge';
-import { Button } from '@september/ui/components/button';
-
 const NAV_LINKS = [
   { label: 'Features', href: '#features' },
-  { label: 'Calls', href: '#calls' },
+  { label: 'Mac app', href: '#calls' },
   { label: 'Privacy', href: '#privacy' },
   { label: 'About', href: '#about' },
 ];
@@ -42,10 +41,10 @@ export function HeroSection() {
           </div>
         </nav>
 
-        <div className="grid overflow-hidden rounded-2xl shadow-lg lg:grid-cols-2">
+        <div className="grid overflow-hidden rounded-surface border border-indigo-100 shadow-sm lg:grid-cols-2">
           {/* Copy panel — the one bold indigo surface on the page. */}
-          <div className="flex flex-col items-start gap-5 bg-linear-160 from-indigo-500 via-indigo-600 to-indigo-700 p-6 sm:gap-6 sm:p-10 lg:p-12">
-            <span className="rounded-full border border-primary-foreground/25 bg-primary-foreground/10 px-3 py-1.5 text-xs font-semibold text-primary-foreground">
+          <div className="flex flex-col items-start gap-5 bg-indigo-600 p-6 sm:gap-6 sm:p-10 lg:p-12">
+            <span className="rounded-full border border-primary-foreground/25 bg-primary-foreground/10 px-3 py-1.5 text-sm font-semibold text-primary-foreground">
               Free &amp; open source
             </span>
 
@@ -53,10 +52,10 @@ export function HeroSection() {
                 tagline holds exactly two lines at every width. */}
             <h1 className="text-[clamp(1.25rem,6vw,2.25rem)] font-bold leading-[1.12] tracking-tight text-primary-foreground lg:text-[clamp(1.75rem,3.4vw,2.75rem)]">
               <span data-tagline-line className="block whitespace-nowrap">
-                <span className="text-amber-300">Faster</span> Communication
+                <span className="text-indigo-200">Faster</span> Communication
               </span>
               <span data-tagline-line className="block whitespace-nowrap">
-                <span className="text-amber-300">Fewer</span> Keystrokes
+                <span className="text-indigo-200">Fewer</span> Keystrokes
               </span>
             </h1>
 
@@ -69,7 +68,7 @@ export function HeroSection() {
               <Button
                 asChild
                 data-hero-cta
-                className="h-11 rounded-full bg-primary-foreground px-6 text-sm font-semibold text-indigo-600 shadow-lg transition hover:bg-primary-foreground/90 hover:shadow-xl sm:h-12 sm:px-8 sm:text-base"
+                className="h-11 rounded-full bg-primary-foreground px-6 text-sm font-semibold text-indigo-600 transition hover:bg-primary-foreground/90 sm:h-12 sm:px-8 sm:text-base"
               >
                 <Link to="/welcome">Get started</Link>
               </Button>
@@ -106,80 +105,46 @@ export function HeroSection() {
   );
 }
 
-/**
- * A still of the Talk console, cropped off the right and bottom edges of a
- * quiet gallery. It is an illustration, not a second demo — the working one is
- * the section directly below, so nothing here takes focus.
- */
+/** A still showing the typed prefix, suggested words, and spoken result. */
 function ConsolePeek() {
   return (
     <div
       data-hero-peek
       aria-hidden="true"
-      className="relative min-h-[300px] overflow-hidden bg-indigo-50 sm:min-h-[380px] lg:min-h-[560px]"
+      className="flex min-w-0 flex-col justify-center gap-6 bg-indigo-50 p-6 sm:p-10 lg:p-12"
     >
-      <div className="absolute -right-10 -bottom-10 top-8 left-8 flex flex-col gap-3 rounded-tl-[22px] border border-indigo-100 bg-white p-4 shadow-xl sm:-right-14 sm:-bottom-12 sm:top-12 sm:left-12 sm:p-5">
-        <div className="flex justify-end pr-16 sm:pr-24">
-          <span className="flex max-w-[85%] items-start gap-2 rounded-lg rounded-br-sm bg-accent px-4 py-2.5 text-accent-foreground">
-            <Volume2 className="mt-1 size-4 shrink-0 opacity-60" />
-            <span className="text-sm leading-snug sm:text-base">
-              Good morning! Ready when you are.
+      <div>
+        <p className="mb-3 text-sm font-medium text-zinc-600">You type</p>
+        <p className="text-3xl font-medium tracking-tight text-zinc-950 sm:text-4xl">
+          I’d like a co
+          <span
+            data-caret
+            className="ml-1 inline-block h-[1em] w-0.5 translate-y-[0.12em] animate-caret-blink bg-indigo-600 motion-reduce:animate-none"
+          />
+        </p>
+      </div>
+      <div>
+        <p className="mb-3 text-sm font-medium text-zinc-600">Tap to finish</p>
+        <div className="flex flex-wrap gap-3">
+          {['coffee,', 'please'].map(word => (
+            <span
+              key={word}
+              className="rounded-chip border border-indigo-200 bg-white px-5 py-3 text-xl font-medium text-indigo-700 shadow-sm"
+            >
+              {word}
             </span>
-          </span>
+          ))}
         </div>
-
-        <div className="flex flex-1 flex-col gap-3 rounded-lg bg-muted/40 p-3">
-          <div className="flex gap-2">
-            {['Hello', 'Thank you'].map(chip => (
-              <span
-                key={chip}
-                className="flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-primary/30 bg-card px-5 text-base font-medium text-foreground"
-              >
-                <Pin className="size-3.5 text-primary/60" />
-                {chip}
-              </span>
-            ))}
-          </div>
-
-          <div className="flex flex-nowrap items-center gap-1.5">
-            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-muted text-xs font-bold uppercase text-muted-foreground">
-              G
-            </span>
-            <span className="inline-flex min-h-11 shrink-0 items-center rounded-md border border-primary/70 bg-primary/10 px-4 text-base font-medium text-foreground">
-              coffee,
-            </span>
-            <span className="inline-flex min-h-11 shrink-0 items-center rounded-md border border-primary/40 bg-card px-4 text-base font-medium text-foreground">
-              please
-            </span>
-            <span className="grid size-11 shrink-0 place-items-center rounded-md text-muted-foreground">
-              <Volume2 className="size-4" />
-            </span>
-          </div>
-
-          <div className="rounded-2xl border-2 border-input bg-background p-3">
-            <p className="text-xl font-medium leading-snug text-foreground sm:text-2xl">
-              I’d like a co
-              <span
-                data-caret
-                className="ml-0.5 inline-block h-[1em] w-0.5 translate-y-[0.12em] animate-caret-blink bg-primary motion-reduce:animate-none"
-              />
-            </p>
-            <div className="mt-3 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-1.5">
-                <span className="flex size-11 items-center justify-center rounded-md border bg-card text-muted-foreground">
-                  <Undo2 className="size-5" />
-                </span>
-                <span className="flex size-11 items-center justify-center rounded-md border bg-card text-muted-foreground">
-                  <Delete className="size-5" />
-                </span>
-              </div>
-              <span className="inline-flex min-h-11 items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">
-                <Volume2 className="size-4" />
-                Speak
-              </span>
-            </div>
-          </div>
-        </div>
+      </div>
+      <ArrowDown className="size-6 text-indigo-400" />
+      <div className="rounded-surface border border-indigo-200 bg-white p-6 shadow-sm">
+        <p className="mb-3 flex items-center gap-2 text-sm font-medium text-indigo-600">
+          <Volume2 className="size-5" />
+          September speaks
+        </p>
+        <p className="text-3xl font-semibold leading-tight tracking-tight text-zinc-950 sm:text-4xl">
+          I’d like a coffee, please.
+        </p>
       </div>
     </div>
   );

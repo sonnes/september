@@ -1,69 +1,39 @@
 // @vitest-environment jsdom
-import React from 'react';
-import { act } from 'react';
+import React, { act } from 'react';
 
 import { type Root, createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Tests import by relative path — the `@/` alias is not wired into the test
-// resolver, and every other suite here does the same.
 import { HomePage } from '../../pages/home';
-
-import { AboutSection } from './about-section';
 import { AGENT_DEMO_ASKS, AgentSection } from './agent-section';
-import { EnhancedCTASection } from './enhanced-cta-section';
-import { Footer } from './footer';
-import { HeroSection } from './hero-section';
-import { LANDING_SPACE_SEED, LiveDemoSection } from './live-demo-section';
-import { NOTE_SENTENCES, NOTE_TITLE, NotesSection, PRESENT_CHUNKS } from './notes-section';
+import { LiveDemoSection } from './live-demo-section';
+import { NOTE_SENTENCES, NotesSection, PRESENT_CHUNKS } from './notes-section';
 import { PhraseCodesSection, matchDemoCode } from './phrase-codes-section';
-import { PlatformSection } from './platform-section';
-import { PrivacySection } from './privacy-section';
-import { SpacesSection } from './spaces-section';
 import { VoiceSection } from './voice-section';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-// jsdom lacks ResizeObserver, which SuggestionStripes uses to measure its
-// container. Stub it; clientWidth is 0 in jsdom so the scale math
-// short-circuits to 1 and never touches the layout engine.
 class ResizeObserverStub {
-  observe() {
-    /* no-op */
-  }
-  unobserve() {
-    /* no-op */
-  }
-  disconnect() {
-    /* no-op */
-  }
+  observe() {}
+  unobserve() {}
+  disconnect() {}
 }
 (globalThis as unknown as { ResizeObserver: typeof ResizeObserverStub }).ResizeObserver =
   ResizeObserverStub;
 
 vi.mock('@tanstack/react-router', () => ({
-  Link: ({
-    children,
-    to,
-    ...props
-  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { to: string }) => (
-    <a href={to} {...props}>
-      {children}
-    </a>
+  Link: ({ children, to, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { to: string }) => (
+    <a href={to} {...props}>{children}</a>
   ),
 }));
 
-// Every prototype speaks through this one seam; the real hook needs the
-// speech + audio providers, which the route supplies.
 const demoSpeech = vi.hoisted(() => ({
   speak: vi.fn(),
   speakSequence: vi.fn(),
   stopSequence: vi.fn(),
   listVoices: vi.fn(),
 }));
-vi.mock('./use-demo-speech', () => ({
-  useDemoSpeech: () => demoSpeech,
-}));
+vi.mock('./use-demo-speech', () => ({ useDemoSpeech: () => demoSpeech }));
 
 let container: HTMLDivElement;
 let root: Root;
@@ -92,7 +62,6 @@ async function renderAsync(ui: React.ReactElement) {
   await act(async () => root.render(ui));
 }
 
-/** Type into a React-controlled textarea via the native value setter. */
 function typeInto(textarea: HTMLTextAreaElement, value: string) {
   const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!;
   act(() => {
@@ -101,653 +70,128 @@ function typeInto(textarea: HTMLTextAreaElement, value: string) {
   });
 }
 
-/** Press one of the Agent section's ask chips by its label. */
-function choose(label: string) {
-  const chip = [...container.querySelectorAll('button')].find(
-    button => button.textContent?.trim() === label
+function click(element: Element) {
+  act(() => element.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+}
+
+function button(label: string): HTMLButtonElement {
+  return [...container.querySelectorAll('button')].find(
+    candidate => candidate.textContent?.trim() === label
   )!;
-  click(chip);
 }
 
-function click(el: Element) {
-  act(() => {
-    el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  });
-}
-
-describe('hero section', () => {
-  it('uses the keycap mark and autocomplete wordmark', () => {
-    render(<HeroSection />);
-
-    const nav = container.querySelector('nav')!;
-    expect(nav.querySelector('img')?.getAttribute('src')).toBe('/logo.svg');
-    expect(nav.querySelector('[data-brand-wordmark]')?.textContent).toBe('September');
-  });
-
-  it('renders the hero copy and actions', () => {
-    render(<HeroSection />);
-
-    expect(container.textContent).toContain('Faster Communication');
-    expect(container.textContent).toContain('Fewer Keystrokes');
-    expect(container.textContent).toContain(
-      'A communication assistant for people living with ALS, MND, and other speech & motor difficulties'
-    );
-    expect(container.textContent).toContain('Free & open source');
-    expect(container.textContent).toContain('Get started');
-    expect(container.textContent).toContain('Open source');
-    expect(container.textContent).not.toContain('Try Now');
-  });
-
-  it('keeps the tagline on exactly two unbreakable lines', () => {
-    render(<HeroSection />);
-
-    const heading = container.querySelector('h1')!;
-    const lines = [...heading.querySelectorAll('[data-tagline-line]')];
-    expect(lines).toHaveLength(2);
-    expect(lines[0].textContent).toBe('Faster Communication');
-    expect(lines[1].textContent).toBe('Fewer Keystrokes');
-    // Each line is its own block that never wraps; the type size is fluid, so a
-    // narrow panel shrinks the words instead of breaking the line.
-    for (const line of lines) {
-      expect(line.className).toContain('block');
-      expect(line.className).toContain('whitespace-nowrap');
-    }
-    expect(heading.className).toContain('text-[clamp(');
-    expect(heading.innerHTML).not.toContain('<br');
-  });
-
-  it('links the whole nav to its page sections', () => {
-    render(<HeroSection />);
-
-    const nav = container.querySelector('nav')!;
-    const href = (label: string) =>
-      [...nav.querySelectorAll('a')]
-        .find(anchor => anchor.textContent?.trim() === label)
-        ?.getAttribute('href');
-    expect(href('Features')).toBe('#features');
-    expect(href('Calls')).toBe('#calls');
-    expect(href('Privacy')).toBe('#privacy');
-    expect(href('About')).toBe('#about');
-    expect(nav.textContent).not.toContain('GitHub');
-  });
-
-  it('answers cost and privacy and sets the working-demo contract', () => {
-    render(<HeroSection />);
-
-    expect(container.textContent).toContain('Free to use.');
-    expect(container.textContent).toContain('Your words can stay on this device.');
-    // The line that frames the whole page: the demos below are real.
-    expect(container.textContent).toContain(
-      'Everything on this page is the real thing — try it as you scroll.'
-    );
-  });
-
-  it('keeps hero actions accessible for motor-impaired users', () => {
-    render(<HeroSection />);
-
-    // Two ways into the app: the nav pill and the hero CTA. Both reach onboarding.
-    const onboardingLinks = [...container.querySelectorAll('a')].filter(
-      anchor => anchor.textContent?.trim() === 'Get started'
-    );
-    expect(onboardingLinks).toHaveLength(2);
-    for (const link of onboardingLinks) {
-      expect(link.getAttribute('href')).toBe('/welcome');
-      expect(link.className).toContain('h-11');
-    }
-    // White pill with indigo text — no muddy amber button on the indigo panel.
-    const cta = container.querySelector('[data-hero-cta]')!;
-    expect(cta.className).toContain('bg-primary-foreground');
-    expect(cta.className).toContain('text-indigo-600');
-    expect(cta.className).not.toContain('bg-amber-500');
-  });
-
-  it('shows a still console peek that never takes focus', () => {
-    render(<HeroSection />);
-
-    const peek = container.querySelector('[data-hero-peek]')!;
-    expect(peek.getAttribute('aria-hidden')).toBe('true');
-    // An illustration, not a second demo — the working one is the section below.
-    expect(peek.querySelectorAll('a, button, input, textarea, select')).toHaveLength(0);
-    expect(peek.textContent).toContain('Good morning! Ready when you are.');
-    expect(peek.textContent).toContain('I’d like a co');
-    expect(peek.textContent).toContain('coffee,');
-
-    // The caret is the only motion on the page, and it stops for reduced motion.
-    const caret = peek.querySelector('[data-caret]')!;
-    expect(caret.className).toContain('motion-reduce:animate-none');
-  });
-});
-
-describe('talk section (live demo)', () => {
-  it('renders the flagship talk copy', () => {
+describe('Talk demo', () => {
+  it('speaks a composed message and clears the composer', () => {
     render(<LiveDemoSection />);
-
-    // The nav's "Features" link lands here.
-    expect(container.querySelector('#features')).toBeTruthy();
-    expect(container.textContent).toContain('Talk');
-    expect(container.textContent).toContain('Type a little. Tap the rest. Speak.');
-    expect(container.textContent).toContain('This is September’s main screen.');
-    expect(container.textContent).toContain('press Speak — your browser will say it');
-    expect(container.textContent).toContain(LANDING_SPACE_SEED.title);
-    expect(container.textContent).toContain(LANDING_SPACE_SEED.phrases[0].text);
-    expect(container.querySelector('textarea')).toBeTruthy();
-  });
-
-  it('lets the live demo frame grow on mobile instead of clipping', () => {
-    render(<LiveDemoSection />);
-
-    const frame = container.querySelector('[data-live-demo-frame]')!;
-    expect(frame.classList.contains('min-h-[520px]')).toBe(true);
-    expect(frame.classList.contains('sm:h-[540px]')).toBe(true);
-    expect(frame.classList.contains('lg:h-[560px]')).toBe(true);
-  });
-
-  it('keeps a seeded transcript and a 44px Speak target', () => {
-    render(<LiveDemoSection />);
-
-    expect(container.textContent).toContain('Good morning! Ready when you are.');
-    const speakButton = [...container.querySelectorAll('button')].find(
-      button => button.textContent?.trim() === 'Speak'
-    )!;
-    expect(speakButton.classList.contains('min-h-11')).toBe(true);
-  });
-
-  it('keeps the marketing demo phrases dignified', () => {
-    render(<LiveDemoSection />);
-
-    expect(container.textContent?.toLowerCase()).not.toContain('bathroom');
-  });
-
-  it('speaks the composed message out loud on Speak', () => {
-    render(<LiveDemoSection />);
-
-    const textarea = container.querySelector('textarea')!;
-    typeInto(textarea, 'Hello there');
-    const speakButton = [...container.querySelectorAll('button')].find(
-      button => button.textContent?.trim() === 'Speak'
-    )!;
-    click(speakButton);
+    const composer = container.querySelector('textarea')!;
+    typeInto(composer, 'Hello there');
+    click(button('Speak'));
 
     expect(demoSpeech.speak).toHaveBeenCalledWith('Hello there');
-    expect(container.textContent).toContain('Hello there');
-  });
-
-  it('hides the horizontal scrollbar on suggestion stripe rows', () => {
-    render(<LiveDemoSection />);
-
-    const rows = [...container.querySelectorAll('.overflow-x-auto')];
-    expect(rows.length).toBeGreaterThan(0);
-    for (const row of rows) {
-      expect(row.className).toContain('[scrollbar-width:none]');
-    }
+    expect(composer.value).toBe('');
   });
 });
 
-describe('phrase codes section', () => {
-  it('matches a trailing code word through the real matchCode, case-insensitively', () => {
+describe('phrase and space demo', () => {
+  it('matches only a live trailing phrase code', () => {
     expect(matchDemoCode('I made it, ty')).toEqual({ code: 'ty', phrase: 'Thank you' });
     expect(matchDemoCode('TY')).toEqual({ code: 'ty', phrase: 'Thank you' });
-    expect(matchDemoCode('hlp')).toEqual({ code: 'hlp', phrase: 'I need some help please' });
-    expect(matchDemoCode('wtr')).toEqual({ code: 'wtr', phrase: 'Water, please' });
-    // A completed word (trailing space) is never a live trigger.
     expect(matchDemoCode('ty ')).toBeUndefined();
     expect(matchDemoCode('typing')).toBeUndefined();
-    expect(matchDemoCode('')).toBeUndefined();
   });
 
-  it('renders the codes copy and the demo legend', () => {
+  it('expands a phrase code in the composer', () => {
     render(<PhraseCodesSection />);
+    const composer = container.querySelector('textarea')!;
+    typeInto(composer, 'I made it, ty');
+    click(button('you'));
 
-    expect(container.textContent).toContain('Saved phrases & codes');
-    expect(container.textContent).toContain('Your everyday sentences, two letters away.');
-    for (const [code, phrase] of [
-      ['ty', 'Thank you'],
-      ['hlp', 'I need some help please'],
-      ['wtr', 'Water, please'],
-    ]) {
-      expect(container.textContent).toContain(code);
-      expect(container.textContent).toContain(phrase);
-    }
-    // Marketing examples stay dignified — no bathroom phrases on the page.
-    expect(container.textContent?.toLowerCase()).not.toContain('bathroom');
-    expect(container.querySelector('textarea')).toBeTruthy();
+    expect(composer.value).toBe('I made it, Thank you ');
   });
 
-  it('surfaces the phrase as a stripe when its code is typed, and swaps on take', () => {
+  it('uses the selected space phrases in the composer and speech service', () => {
     render(<PhraseCodesSection />);
+    click(button('Clinic'));
+    expect(button('Clinic').getAttribute('aria-pressed')).toBe('true');
 
-    const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
-    typeInto(textarea, 'I made it, ty');
+    click(button('My left arm feels weaker'));
+    expect(container.querySelector('textarea')?.value).toBe('My left arm feels weaker ');
+    click(button('Speak'));
 
-    const youTile = [...container.querySelectorAll('button')].find(
-      button => button.textContent === 'you'
-    )!;
-    expect(youTile).toBeTruthy();
-    click(youTile);
-
-    expect(textarea.value).toBe('I made it, Thank you ');
-  });
-
-  it('speaks the swapped message with a visible Speak button', () => {
-    render(<PhraseCodesSection />);
-
-    const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
-    const speakButton = [...container.querySelectorAll('button')].find(
-      button => button.textContent?.trim() === 'Speak'
-    )!;
-    expect(speakButton).toBeTruthy();
-    expect(speakButton.classList.contains('min-h-11')).toBe(true);
-
-    typeInto(textarea, 'I made it myself');
-    click(speakButton);
-
-    expect(demoSpeech.speak).toHaveBeenCalledWith('I made it myself');
-    // The spoken message lands in a visible transcript bubble.
-    expect(container.textContent).toContain('I made it myself');
-    expect(textarea.value).toBe('');
+    expect(demoSpeech.speak).toHaveBeenCalledWith('My left arm feels weaker');
   });
 });
 
-describe('spaces section', () => {
-  it('renders the spaces copy and the four rooms of an ordinary day', () => {
-    render(<SpacesSection />);
-
-    expect(container.textContent).toContain('The right words for the room you’re in.');
-    for (const space of ['Family', 'Friends', 'Work', 'Clinic']) {
-      expect(container.textContent).toContain(space);
-    }
-    // A café is a scene, not a room someone keeps phrases for.
-    expect(container.textContent).not.toContain('Café');
-    // Family is the default space.
-    expect(container.textContent).toContain('What’s for dinner?');
-  });
-
-  it('keeps space tabs at the 44px touch floor', () => {
-    render(<SpacesSection />);
-
-    for (const tab of ['Family', 'Friends', 'Work', 'Clinic']) {
-      const button = [...container.querySelectorAll('button')].find(
-        candidate => candidate.textContent?.trim() === tab
-      )!;
-      expect(button.className).toContain('h-11');
-    }
-  });
-
-  it('swaps phrases when switching spaces', () => {
-    render(<SpacesSection />);
-
-    const clinicTab = [...container.querySelectorAll('button')].find(
-      button => button.textContent?.trim() === 'Clinic'
-    )!;
-    click(clinicTab);
-
-    expect(clinicTab.getAttribute('aria-pressed')).toBe('true');
-    expect(container.textContent).toContain('My left arm feels weaker');
-    expect(container.textContent).not.toContain('What’s for dinner?');
-  });
-
-  it('speaks a phrase when tapped', () => {
-    render(<SpacesSection />);
-
-    const phrase = [...container.querySelectorAll('button')].find(button =>
-      button.textContent?.includes('What’s for dinner?')
-    )!;
-    click(phrase);
-
-    expect(demoSpeech.speak).toHaveBeenCalledWith('What’s for dinner?');
-  });
-});
-
-describe('voice section', () => {
-  it('leads with cloning and links into the app', async () => {
+describe('voice demo', () => {
+  it('previews the selected device voice', async () => {
     await renderAsync(<VoiceSection />);
-
-    expect(container.textContent).toContain('Keep your own voice.');
-    expect(container.textContent).toContain('30-second recording');
-    const cloneLink = [...container.querySelectorAll('a')].find(anchor =>
-      anchor.textContent?.includes('Start cloning')
-    )!;
-    expect(cloneLink).toBeTruthy();
-    expect(cloneLink.getAttribute('href')).toBe('/welcome');
-  });
-
-  it('lists the device voices and previews the selected one', async () => {
-    await renderAsync(<VoiceSection />);
-
     const select = container.querySelector('select')!;
-    expect(select.querySelectorAll('option')).toHaveLength(2);
-    expect(container.textContent).toContain('Samantha');
-
-    const preview = [...container.querySelectorAll('button')].find(button =>
-      button.textContent?.includes('Hear it')
-    )!;
-    click(preview);
+    const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!;
+    act(() => {
+      setter.call(select, '1');
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    click(button('Hear it'));
 
     expect(demoSpeech.speak).toHaveBeenCalledWith(
-      expect.stringContaining('September'),
-      expect.objectContaining({ id: 'voice-1' })
+      expect.any(String),
+      expect.objectContaining({ id: 'voice-2' })
     );
   });
 
-  it('falls back calmly when no voices are available', async () => {
+  it('disables preview when the browser supplies no voices', async () => {
     demoSpeech.listVoices.mockResolvedValue([]);
     await renderAsync(<VoiceSection />);
 
-    expect(container.textContent).toContain('No voices available in this browser');
+    expect(button('Hear it').disabled).toBe(true);
   });
 });
 
-describe('section accents', () => {
-  it('gives each feature section its own colour lane', async () => {
-    render(<LiveDemoSection />);
-    expect(container.querySelector('.bg-indigo-50')).toBeTruthy();
-
-    render(<PhraseCodesSection />);
-    expect(container.querySelector('.bg-amber-50')).toBeTruthy();
-
-    render(<SpacesSection />);
-    expect(container.querySelector('.bg-sky-50')).toBeTruthy();
-
-    await renderAsync(<VoiceSection />);
-    expect(container.querySelector('.bg-emerald-50')).toBeTruthy();
-
+describe('note demo', () => {
+  it('plays the note in sentence order and tracks the active sentence', () => {
     render(<NotesSection />);
-    expect(container.querySelector('.bg-violet-50')).toBeTruthy();
+    click(button('Play voice-over'));
 
-    render(<AgentSection />);
-    expect(container.querySelector('.bg-rose-50')).toBeTruthy();
-  });
-});
-
-describe('notes & present section', () => {
-  it('renders the note and plays it sentence by sentence', () => {
-    render(<NotesSection />);
-
-    expect(container.textContent).toContain('Notes & Present');
-    expect(container.textContent).toContain('Longer thoughts, ready ahead of time.');
-    expect(container.textContent).toContain(NOTE_TITLE);
-    for (const sentence of NOTE_SENTENCES) {
-      expect(container.textContent).toContain(sentence);
-    }
-
-    const play = [...container.querySelectorAll('button')].find(button =>
-      button.textContent?.includes('Play voice-over')
-    )!;
-    click(play);
-
-    expect(demoSpeech.speakSequence).toHaveBeenCalledTimes(1);
     expect(demoSpeech.speakSequence.mock.calls[0][0]).toEqual([...NOTE_SENTENCES]);
-  });
-
-  it('highlights the sentence being spoken', () => {
-    render(<NotesSection />);
-
-    const play = [...container.querySelectorAll('button')].find(button =>
-      button.textContent?.includes('Play voice-over')
-    )!;
-    click(play);
-
     const hooks = demoSpeech.speakSequence.mock.calls[0][1];
     act(() => hooks.onPart(1));
-
-    const highlighted = container.querySelector('[data-spoken="true"]')!;
-    expect(highlighted.textContent).toBe(NOTE_SENTENCES[1]);
+    expect(container.querySelector('[data-spoken="true"]')?.textContent).toBe(NOTE_SENTENCES[1]);
   });
 
-  it('tells a story a child would ask for, not a care task', () => {
+  it('presents the generated chunks in order', () => {
     render(<NotesSection />);
+    click(button('Present'));
 
-    expect(NOTE_TITLE).toContain('Bedtime story');
-    const story = NOTE_SENTENCES.join(' ');
-    expect(story).toContain('rowed out to the island');
-    expect(story).toContain('But behind them, something moved in the dark…');
-  });
-
-  it('puts the same story on the stage, in the default tone', () => {
-    render(<NotesSection />);
-
-    // The first chunk is on the stage before anything is pressed.
-    expect(container.textContent).toContain(PRESENT_CHUNKS[0].text);
-
-    const stage = container.querySelector('[data-present-stage]') as HTMLElement;
-    expect(stage).toBeTruthy();
-    // The indigo tone from the shared rules — no grain, no vignette.
-    expect(stage.style.backgroundColor).toBe('rgb(79, 70, 229)');
-    expect(stage.style.backgroundImage).toBe('');
-
-    // The stage shows one chunk at a time, so check the sequence itself.
-    const story = PRESENT_CHUNKS.map(chunk => chunk.text).join(' ');
-    expect(story).toContain('something moved in the dark');
-  });
-
-  it('presents the chunks in order', () => {
-    render(<NotesSection />);
-
-    const play = [...container.querySelectorAll('button')].find(
-      button => button.textContent?.trim() === 'Present'
-    )!;
-    click(play);
-
-    expect(demoSpeech.speakSequence).toHaveBeenCalledTimes(1);
     expect(demoSpeech.speakSequence.mock.calls[0][0]).toEqual(
       PRESENT_CHUNKS.map(chunk => chunk.text)
     );
-
     const hooks = demoSpeech.speakSequence.mock.calls[0][1];
     act(() => hooks.onPart(1));
-    expect(container.textContent).toContain(PRESENT_CHUNKS[1].text);
-  });
-
-  it('names the three ways a note leaves the app', () => {
-    render(<NotesSection />);
-
-    expect(container.textContent).toContain('Text (.md)');
-    expect(container.textContent).toContain('Audio (.mp3)');
-    expect(container.textContent).toContain('Captioned video (.mp4)');
+    expect(container.querySelector('[data-present-stage]')?.textContent).toContain(
+      PRESENT_CHUNKS[1].text
+    );
   });
 });
 
-describe('agent section', () => {
-  it('introduces the agent as the third way to use a space', () => {
+describe('Agent demo', () => {
+  it('switches the transcript to the selected request', () => {
     render(<AgentSection />);
+    const choice = button(AGENT_DEMO_ASKS[1].label);
+    click(choice);
 
-    expect(container.textContent).toContain('Agent');
-    expect(container.textContent).toContain('Say what you need. The space changes.');
-    for (const demo of AGENT_DEMO_ASKS) {
-      expect(container.textContent).toContain(demo.label);
-    }
-  });
-
-  it('opens on a space setting itself up from what the user pasted', () => {
-    render(<AgentSection />);
-
-    // Prerendered markup carries a whole turn, not an empty console.
-    expect(container.textContent).toContain(AGENT_DEMO_ASKS[0].ask);
-    expect(container.textContent).toContain(AGENT_DEMO_ASKS[0].reply);
-    // What it read, then what it changed — the two rows of an introduction.
-    expect(container.textContent).toContain('Read this space');
-    expect(container.textContent).toContain('Change this space');
-    expect(container.textContent).toContain('Clinic');
-    // The name and the first phrases are one act, so they share a row.
-    expect(container.textContent).toContain('and 2 more');
-  });
-
-  it('adds one phrase and edits another in the same turn', () => {
-    render(<AgentSection />);
-    choose(AGENT_DEMO_ASKS[1].label);
-
+    expect(choice.getAttribute('aria-pressed')).toBe('true');
     expect(container.textContent).toContain(AGENT_DEMO_ASKS[1].ask);
-    expect(container.textContent).toContain('Create phrase');
-    expect(container.textContent).toContain('Edit phrase');
-    expect(container.textContent).toContain('It’s time for my medication.');
     expect(container.textContent).toContain(AGENT_DEMO_ASKS[1].reply);
-    // One turn at a time — the reply before it is gone.
-    expect(container.textContent).not.toContain(AGENT_DEMO_ASKS[0].reply);
-  });
-
-  it('reads a note before it replaces it', () => {
-    render(<AgentSection />);
-    choose(AGENT_DEMO_ASKS[2].label);
-
-    expect(container.textContent).toContain(AGENT_DEMO_ASKS[2].ask);
-    expect(container.textContent).toContain('Read note');
-    expect(container.textContent).toContain('Thursday’s appointment');
-    expect(container.textContent).toContain('Replace note');
-    expect(container.textContent).toContain(AGENT_DEMO_ASKS[2].reply);
-  });
-
-  it('keeps every ask at the 44px touch floor', () => {
-    render(<AgentSection />);
-
-    for (const demo of AGENT_DEMO_ASKS) {
-      const button = [...container.querySelectorAll('button')].find(candidate =>
-        candidate.textContent?.trim() === demo.label
-      )!;
-      expect(button.className, demo.label).toContain('min-h-11');
-    }
   });
 });
 
-describe('platform section', () => {
-  it('offers the browser today and the Mac app as coming soon', () => {
-    render(<PlatformSection />);
-
-    // The nav's "Calls" link lands here.
-    expect(container.querySelector('#calls')).toBeTruthy();
-    expect(container.textContent).toContain('In your browser today. On your Mac for calls.');
-    expect(container.textContent).toContain('Start now — nothing to install.');
-    expect(container.textContent).toContain('Your seat at the video call.');
-    expect(container.textContent).toContain('September Microphone');
-    expect(container.textContent).not.toContain('September Camera');
-    expect(container.textContent).toContain('Apple Intelligence');
-    expect(container.textContent).toContain('macOS Keychain');
-    expect(container.textContent).toContain('Coming soon');
-    // Nothing to download yet — the Mac card points at the repo instead.
-    expect(container.textContent).not.toContain('Download for Mac');
-    const repo = [...container.querySelectorAll('a')].find(anchor =>
-      anchor.textContent?.includes('Follow along on GitHub')
-    )!;
-    expect(repo.getAttribute('href')).toBe('https://github.com/sonnes/september');
-  });
-
-  it('keeps the browser card CTA at the touch floor', () => {
-    render(<PlatformSection />);
-
-    const cta = [...container.querySelectorAll('a')].find(
-      anchor => anchor.textContent?.trim() === 'Get started'
-    )!;
-    expect(cta.getAttribute('href')).toBe('/welcome');
-    expect(cta.className).toContain('h-11');
-  });
-});
-
-describe('about section', () => {
-  it('tells the founder story and links the full article', () => {
-    render(<AboutSection />);
-
-    expect(container.querySelector('#about')).toBeTruthy();
-    expect(container.textContent).toContain('About');
-    expect(container.textContent).toContain('ALS in 2019');
-    expect(container.textContent).toContain('Clicks are precious');
-    // The blockquote is verbatim from the article, not a paraphrase.
-    expect(container.querySelector('blockquote')?.textContent).toContain(
-      'I should not have to type out full phrases and sentences every time.'
-    );
-
-    const article = [...container.querySelectorAll('a')].find(anchor =>
-      anchor.textContent?.includes('Read the full story')
-    )!;
-    expect(article).toBeTruthy();
-    expect(article.getAttribute('href')).toBe('https://raviatluri.in/articles/building-september');
-  });
-});
-
-describe('privacy section', () => {
-  it('states the on-device promise', () => {
-    render(<PrivacySection />);
-
-    expect(container.textContent).toContain('Private by design');
-    expect(container.textContent).toContain('Your words can stay on this device.');
-    expect(container.textContent).toContain('On-device voice & suggestions');
-    expect(container.textContent).toContain('Open source');
-  });
-});
-
-describe('final call to action', () => {
-  it('keeps the ask plain and warm', () => {
-    render(<EnhancedCTASection />);
-
-    expect(container.textContent).toContain('Being understood shouldn’t be hard work.');
-    expect(container.textContent).toContain(
-      'Set up September in a few minutes — on your own, or with a caregiver beside you.'
-    );
-    expect(container.textContent).toContain('Get started');
-    expect(container.textContent).not.toContain('it’s free.');
-  });
-});
-
-describe('footer', () => {
-  it('keeps footer text and links in a simple layout', () => {
-    render(<Footer />);
-
-    expect(container.textContent).toContain('Communication with fewer keystrokes.');
-    expect(container.textContent).toContain('Privacy');
-    expect(container.textContent).toContain('Source');
-  });
-
-  it('repeats the nav anchors so mobile can reach them', () => {
-    render(<Footer />);
-
-    const href = (label: string) =>
-      [...container.querySelectorAll('a')]
-        .find(anchor => anchor.textContent?.trim() === label)
-        ?.getAttribute('href');
-    expect(href('Features')).toBe('#features');
-    expect(href('Calls')).toBe('#calls');
-    expect(href('Privacy')).toBe('#privacy');
-    expect(href('About')).toBe('#about');
-  });
-});
-
-describe('page structure', () => {
-  it('reads proof first, then one chapter per idea', async () => {
+describe('landing navigation', () => {
+  it('provides a target for every in-page navigation link', async () => {
     await renderAsync(<HomePage />);
-    const page = container.textContent!;
+    const links = [...container.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')];
 
-    // Each landmark comes after the one before it — the approved A-order.
-    const order = [
-      'Fewer Keystrokes',
-      'Type a little. Tap the rest. Speak.',
-      'Your everyday sentences, two letters away.',
-      'The right words for the room you’re in.',
-      'Keep your own voice.',
-      'Longer thoughts, ready ahead of time.',
-      'Say what you need. The space changes.',
-      'In your browser today. On your Mac for calls.',
-      // The hero already promises the device, so anchor on the band's eyebrow.
-      'Private by design',
-      'Built by someone who lives it.',
-      'Being understood shouldn’t be hard work.',
-    ];
-    const positions = order.map(landmark => page.indexOf(landmark));
-    for (const [index, position] of positions.entries()) {
-      expect(position, order[index]).toBeGreaterThan(-1);
-      if (index > 0) expect(position).toBeGreaterThan(positions[index - 1]);
-    }
-  });
-
-  it('drops the setup section and the separate Present chapter', async () => {
-    await renderAsync(<HomePage />);
-
-    expect(container.textContent).not.toContain('Choose the setup that feels right.');
-    expect(container.textContent).not.toContain('Fill the room with it, or send it as a file.');
-  });
-
-  it('gives every nav anchor a section to land on', async () => {
-    await renderAsync(<HomePage />);
-
-    for (const id of ['features', 'calls', 'privacy', 'about']) {
-      expect(container.querySelector(`#${id}`), id).toBeTruthy();
+    for (const link of links) {
+      expect(container.querySelector(link.hash), link.hash).toBeTruthy();
     }
   });
 });

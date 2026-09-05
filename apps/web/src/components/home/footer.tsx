@@ -12,7 +12,7 @@ export function Footer() {
             Features
           </a>
           <a href="#calls" className="inline-flex min-h-11 items-center transition hover:text-zinc-950">
-            Calls
+            Mac app
           </a>
           <a
             href="#privacy"

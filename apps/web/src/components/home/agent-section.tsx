@@ -1,11 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import { Transcript } from '@september/app-ui/blocks/agent-transcript';
-import type {
-  AgentMessage,
-  AgentToolName,
-  AgentToolState,
-} from '@september/core/rules/agent';
+import type { AgentMessage, AgentToolName, AgentToolState } from '@september/core/rules/agent';
 
 import { SectionHeader } from './section-header';
 
@@ -153,14 +149,13 @@ export const AGENT_DEMO_ASKS: readonly AgentDemoAsk[] = [
 
 export function AgentSection() {
   return (
-    <section className="bg-white px-4 py-16 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-7xl gap-9 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.1fr)] lg:items-center">
+    <section className="min-w-0">
+      <div className="grid h-full content-start gap-8">
         <SectionHeader
-          eyebrow="Agent"
+          eyebrow="Make September your own"
           title="Say what you need. The space changes."
-          lede="Beside Talk and Notes, every space has an Agent that can see only that space. Paste in a clinic letter and it sets the space up — a name, what it’s for, and the first phrases. After that, ask it for a phrase or to tidy a note before an appointment. Every change lands where you can see it, and deleting is the one thing it stops to check."
-          hint="Press an ask and watch the work."
-          accent="rose"
+          lede="Customize September through conversation. Tell your Agent about your day, or paste in a clinic letter. It sets up a space, prepares phrases, and organizes notes around you. Keep asking as your needs change."
+          hint="Try an example — see the Agent turn a request into changes to your space."
         />
         <AgentDemo />
       </div>
@@ -184,8 +179,8 @@ function AgentDemo() {
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-rose-50 p-4 shadow-lg ring-1 ring-rose-100">
-      <div className="grid gap-4 rounded-xl border bg-white p-4">
+    <div className="min-w-0">
+      <div className="grid gap-4 rounded-surface border bg-white p-6 shadow-sm">
         <div className="flex flex-wrap gap-2">
           {AGENT_DEMO_ASKS.map((one, index) => (
             <button
@@ -205,7 +200,7 @@ function AgentDemo() {
         </div>
 
         {/* The application's own transcript, on demo rows. */}
-        <div className="flex flex-col gap-3">
+        <div className="flex min-w-0 flex-col gap-3 [&_summary]:flex-wrap [&_summary]:gap-y-2">
           <Transcript
             rows={rows}
             busy={false}
@@ -222,9 +217,7 @@ function AgentDemo() {
 /** The demo turn as durable rows, exactly as the loop would have written them. */
 function demoRows(demo: AgentDemoAsk, resolution?: Resolution): AgentMessage[] {
   const base = { space_id: 'landing-demo-space', created_at: 0, updated_at: 0 };
-  const rows: AgentMessage[] = [
-    { ...base, id: 'ask', role: 'user', content: demo.ask },
-  ];
+  const rows: AgentMessage[] = [{ ...base, id: 'ask', role: 'user', content: demo.ask }];
 
   for (const [index, step] of demo.steps.entries()) {
     rows.push({
