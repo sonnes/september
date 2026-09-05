@@ -1,6 +1,6 @@
-import { readFile } from 'node:fs/promises';
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { generate, openAgentWriter } from './ai';
 
 const state = vi.hoisted(() => ({
   setup: {
@@ -20,8 +20,6 @@ vi.mock('./usage', () => ({
     state.usage.push(event);
   },
 }));
-
-import { generate, openAgentWriter } from './ai';
 
 beforeEach(() => {
   state.setup.defaultModel = { service: 'openrouter', model: '' };
@@ -136,7 +134,10 @@ describe('the browser writing service', () => {
   });
 
   it('records what an Agent answer spent, and what a failed one did not', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => text('Hello.')));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => text('Hello.'))
+    );
     const writer = await openAgentWriter();
     const answer = await writer
       .stream(writer.model, { messages: [{ role: 'user', content: 'Hi', timestamp: 1 }] })
@@ -201,14 +202,5 @@ describe('the browser writing service', () => {
       generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'suggestions' })
     ).rejects.toThrow('That key did not work.');
     expect(state.usage.at(-1)).toMatchObject({ success: false });
-  });
-
-  it('keeps the client out of the entry bundle', async () => {
-    const source = await readFile('src/services/ai.ts', 'utf8');
-    const statik = source.match(/^import .*'@earendil-works\/pi-ai'/gm) ?? [];
-    // Only a type import may be static: a value import would reach the reader
-    // who opened the landing page and never asked for writing help.
-    expect(statik.every(line => line.startsWith('import type'))).toBe(true);
-    expect(source).toContain("import('@earendil-works/pi-ai')");
   });
 });

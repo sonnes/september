@@ -2,26 +2,27 @@ import { useMemo, useState } from 'react';
 
 import { Transcript } from '@september/app-ui/blocks/agent-transcript';
 import type { AgentMessage, AgentToolName, AgentToolState } from '@september/core/rules/agent';
-
-import { SectionHeader } from './section-header';
+import { ArrowRight, Check, FileText, Pin } from 'lucide-react';
 
 // The space the demo agent is looking at. Every row below is scoped to it —
 // the real runtime binds a turn to the open space, so there is no other space
 // for these tools to reach.
 const DEMO_SPACE = {
-  title: 'Clinic',
-  context: 'Neurology appointments. My caregiver comes with me.',
+  title: 'Book club',
+  context:
+    'Book discussions with friends. Strong opinions, unexpected connections, and room to change my mind.',
 };
 
 const NOTE_TEXT =
-  'Thursday, 2pm. Ask about the new dose and whether it explains the mornings. ' +
-  'The swallowing has been worse this month, mostly with liquids. ' +
-  'I want the physio referral before the next review.';
+  'Thursday book club. I loved the opening but the ending felt rushed. ' +
+  'Was the narrator unreliable or just lonely? Bring up the train scene. ' +
+  'I changed my mind about the sister after chapter nine.';
 
 const TIDIED_NOTE =
-  'Questions\n\n1. Does the new dose explain the mornings?\n2. Can I have the ' +
-  'physio referral before the next review?\n\nSince the last visit\n\n' +
-  'Swallowing is worse this month, mostly with liquids.';
+  'My take\n\nThe opening drew me in, but the ending felt rushed. ' +
+  'Chapter nine changed my mind about the sister.\n\nFor discussion\n\n' +
+  'Was the narrator unreliable or just lonely?\n' +
+  'What did everyone make of the train scene?';
 
 /** One step of a demo turn, in the shape the real transcript reads. */
 interface DemoStep {
@@ -34,7 +35,7 @@ interface DemoStep {
 }
 
 export interface AgentDemoAsk {
-  /** The words on the chip. A pasted letter does not fit on one. */
+  /** The words on the chip. A full request does not fit on one. */
   label: string;
   /** What the user actually said. */
   ask: string;
@@ -52,32 +53,29 @@ const inspected = (notes: number, phrases: number, messages: number) => ({
 });
 
 const SPACE_CONTEXT =
-  'Neurology appointments at St Mary’s, with Dr Okafor and the nurse ' +
-  'specialist. A review every eight weeks, usually with the speech therapist.';
+  'Thursday book club with friends. Talk about endings, characters, and scenes ' +
+  'that stay with us. Keep my own reactions and questions ready for discussion.';
 
 // Marketing-only turns. The tool names, the arguments, and the transcript that
 // draws them are the app's own — only these three conversations are demo-local.
 export const AGENT_DEMO_ASKS: readonly AgentDemoAsk[] = [
   {
-    label: 'Start a space from my clinic letter',
-    ask:
-      'I want a space for my neurology appointments. From the clinic letter: Dr Okafor, ' +
-      'motor neurone clinic at St Mary’s, review every eight weeks with the nurse ' +
-      'specialist and the speech therapist.',
+    label: 'Make a space for my book club',
+    ask: 'Make a space for our book club. I like debating the ending and hearing what everyone else noticed.',
     steps: [
       // The user's own words are already the space's note by the time its
       // agent takes the first turn — so there is one note and nothing else.
       { name: 'inspect_space', args: {}, result: inspected(1, 0, 0) },
       {
         name: 'configure_space',
-        args: { title: 'Clinic', context: SPACE_CONTEXT },
+        args: { title: 'Book club', context: SPACE_CONTEXT },
         result: { ok: true },
       },
       {
         name: 'change_phrase',
         args: {
           operation: 'create',
-          text: 'Could you say that more slowly?',
+          text: 'I read that scene differently.',
           kind: 'phrase',
           pinned: true,
         },
@@ -87,7 +85,7 @@ export const AGENT_DEMO_ASKS: readonly AgentDemoAsk[] = [
         name: 'change_phrase',
         args: {
           operation: 'create',
-          text: 'I’d like my caregiver in the room.',
+          text: 'You’ve changed my mind.',
           kind: 'phrase',
           pinned: true,
         },
@@ -95,20 +93,18 @@ export const AGENT_DEMO_ASKS: readonly AgentDemoAsk[] = [
       },
     ],
     reply:
-      'I named it Clinic, wrote what it’s for from your letter, and started it off with the phrases you’ll want at a review. It’s all in the space now — ask me to change any of it.',
+      'Your Book club space is ready, with your discussion ideas and two phrases to start with. Tell me what sounds like you and what you’d change.',
   },
   {
     label: 'Add a phrase, and shorten another',
-    ask:
-      'Add a phrase for asking the nurse to slow down. And the long one about my ' +
-      'medication is a mouthful — shorten it.',
+    ask: 'Add “The villain has a point.” And shorten my phrase about disagreeing with the ending.',
     steps: [
       { name: 'inspect_space', args: {}, result: inspected(1, 6, 2) },
       {
         name: 'change_phrase',
         args: {
           operation: 'create',
-          text: 'Could you say that more slowly?',
+          text: 'The villain has a point.',
           kind: 'phrase',
           pinned: true,
         },
@@ -118,23 +114,23 @@ export const AGENT_DEMO_ASKS: readonly AgentDemoAsk[] = [
         name: 'change_phrase',
         args: {
           operation: 'edit',
-          phrase_id: 'phrase-medication',
-          text: 'It’s time for my medication.',
+          phrase_id: 'phrase-ending',
+          text: 'I’m not sold on the ending.',
         },
         result: { ok: true },
       },
     ],
     reply:
-      'The new one is pinned, so it stays in reach. The medication phrase now reads “It’s time for my medication.” — September gave it a code as it saved it.',
+      '“The villain has a point.” is pinned. Your other phrase now reads “I’m not sold on the ending.” Keep editing until they sound like you.',
   },
   {
-    label: 'Tidy my note before Thursday',
-    ask: 'Tidy my note for Thursday’s appointment — put my questions at the top.',
+    label: 'Organize my discussion notes',
+    ask: 'Organize my book-club notes into my take and questions for the group. Keep my opinions in my words.',
     steps: [
       {
         name: 'read_note',
         args: { note_id: 'note-thursday' },
-        result: { name: 'Thursday’s appointment', content: NOTE_TEXT, has_more: false },
+        result: { name: 'Thursday’s discussion', content: NOTE_TEXT, has_more: false },
       },
       {
         name: 'change_note',
@@ -143,20 +139,28 @@ export const AGENT_DEMO_ASKS: readonly AgentDemoAsk[] = [
       },
     ],
     reply:
-      'Your two questions are at the top now, and the rest is in short paragraphs — so Present reads them one at a time.',
+      'Your reactions come first, then two questions for the group. Your opinions are still in your words, ready to read aloud or present.',
   },
 ];
 
 export function AgentSection() {
   return (
-    <section className="min-w-0">
-      <div className="grid h-full content-start gap-8">
-        <SectionHeader
-          eyebrow="Make September your own"
-          title="Say what you need. The space changes."
-          lede="Customize September through conversation. Tell your Agent about your day, or paste in a clinic letter. It sets up a space, prepares phrases, and organizes notes around you. Keep asking as your needs change."
-          hint="Try an example — see the Agent turn a request into changes to your space."
-        />
+    <section id="agent" className="scroll-mt-4 bg-zinc-100 px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+      <div className="mx-auto grid max-w-7xl gap-10">
+        <div className="grid gap-6 lg:grid-cols-2 lg:items-end lg:gap-16">
+          <div>
+            <p className="mb-4 text-base font-medium text-indigo-700">Make September your own</p>
+            <h2 className="max-w-xl text-4xl font-semibold leading-[1.1] tracking-tight text-zinc-950 sm:text-5xl">
+              Say what you need.
+              <br />
+              The space changes.
+            </h2>
+          </div>
+          <p className="max-w-xl text-lg leading-relaxed text-zinc-700">
+            Your Agent turns a conversation into a space that fits your life. Prepare phrases,
+            organize notes, and keep changing things as your needs change.
+          </p>
+        </div>
         <AgentDemo />
       </div>
     </section>
@@ -178,29 +182,93 @@ function AgentDemo() {
     setResolution(undefined);
   };
 
+  const phrases = demo.steps
+    .filter(step => step.name === 'change_phrase')
+    .map(step => String(step.args.text));
+  const note = demo.steps.find(step => step.name === 'change_note');
+
   return (
     <div className="min-w-0">
-      <div className="grid gap-4 rounded-surface border bg-white p-6 shadow-sm">
-        <div className="flex flex-wrap gap-2">
-          {AGENT_DEMO_ASKS.map((one, index) => (
-            <button
-              key={one.label}
-              type="button"
-              aria-pressed={index === asked}
-              onClick={() => choose(index)}
-              className={
-                index === asked
-                  ? 'inline-flex min-h-11 items-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground'
-                  : 'inline-flex min-h-11 items-center rounded-full border border-primary/30 bg-card px-5 text-sm font-medium text-foreground transition-colors hover:border-primary/60 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-              }
-            >
-              {one.label}
-            </button>
-          ))}
+      <div className="mb-8 flex flex-wrap gap-3" aria-label="Agent examples">
+        {AGENT_DEMO_ASKS.map((one, index) => (
+          <button
+            key={one.label}
+            type="button"
+            aria-pressed={index === asked}
+            onClick={() => choose(index)}
+            className={`min-h-12 rounded-full border px-5 py-3 text-left text-base font-medium focus-visible:ring-2 focus-visible:ring-ring ${index === asked ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-zinc-300 bg-white text-zinc-700 hover:border-indigo-400'}`}
+          >
+            {one.label}
+          </button>
+        ))}
+      </div>
+      <div className="grid gap-6 lg:grid-cols-[1fr_auto_1.2fr] lg:items-center lg:gap-8">
+        <div>
+          <p className="mb-4 text-sm font-medium text-zinc-600">You ask</p>
+          <p className="max-w-lg text-2xl font-medium leading-snug tracking-tight text-zinc-950 sm:text-3xl">
+            “{demo.ask}”
+          </p>
         </div>
-
-        {/* The application's own transcript, on demo rows. */}
-        <div className="flex min-w-0 flex-col gap-3 [&_summary]:flex-wrap [&_summary]:gap-y-2">
+        <ArrowRight className="size-8 rotate-90 text-indigo-600 lg:rotate-0" aria-hidden="true" />
+        <div
+          role="region"
+          aria-label="Customized space"
+          aria-live="polite"
+          className="min-w-0 rounded-surface border border-zinc-200 bg-white p-5 shadow-sm sm:p-8"
+        >
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 pb-5">
+            <h3 className="text-2xl font-semibold text-zinc-950">{DEMO_SPACE.title}</h3>
+            <span className="flex items-center gap-2 text-sm font-medium text-indigo-700">
+              <Check className="size-4" aria-hidden="true" />
+              Ready for you
+            </span>
+          </div>
+          {phrases.length > 0 && (
+            <div>
+              <p className="mb-3 text-sm font-medium text-zinc-600">Your phrases</p>
+              <ul className="grid gap-3">
+                {phrases.map(phrase => (
+                  <li
+                    key={phrase}
+                    className="flex items-start gap-3 rounded-control border border-indigo-100 bg-indigo-50 px-4 py-3 text-xl font-medium leading-snug text-zinc-950"
+                  >
+                    <Pin className="mt-1 size-4 shrink-0 text-indigo-600" aria-hidden="true" />
+                    {phrase}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {note ? (
+            <div>
+              <p className="mb-4 flex items-center gap-2 text-sm font-medium text-zinc-600">
+                <FileText className="size-4" aria-hidden="true" />
+                Thursday’s discussion
+              </p>
+              <p className="whitespace-pre-line text-lg leading-relaxed text-zinc-900">
+                {String(note.args.text)}
+              </p>
+            </div>
+          ) : (
+            asked === 0 && (
+              <div className="mt-6 border-t border-zinc-200 pt-5">
+                <p className="flex items-center gap-2 text-base font-semibold text-zinc-950">
+                  <FileText className="size-4 text-indigo-600" aria-hidden="true" />
+                  Discussion ideas
+                </p>
+                <p className="mt-2 text-base leading-relaxed text-zinc-700">
+                  Your thoughts about the book, kept in this space.
+                </p>
+              </div>
+            )
+          )}
+        </div>
+      </div>
+      <details className="mt-8 border-t border-zinc-300 pt-3">
+        <summary className="w-fit cursor-pointer py-3 text-sm font-medium text-zinc-700 focus-visible:ring-2 focus-visible:ring-ring">
+          See the Agent conversation
+        </summary>
+        <div className="max-w-3xl py-5 [&_summary]:flex-wrap [&_summary]:gap-y-2">
           <Transcript
             rows={rows}
             busy={false}
@@ -209,7 +277,7 @@ function AgentDemo() {
             onReject={() => setResolution('rejected')}
           />
         </div>
-      </div>
+      </details>
     </div>
   );
 }

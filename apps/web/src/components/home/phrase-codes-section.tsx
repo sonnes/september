@@ -15,11 +15,9 @@ const DEMO_SPACE_ID = 'landing-demo-space';
 // Marketing-only example rows — everyday, dignified phrases. The matching and
 // take machinery is the real feature; only these rows are demo-local.
 const DEMO_PHRASES: { text: string; code?: string }[] = [
-  { text: 'Hello' },
-  { text: 'Thank you', code: 'ty' },
-  { text: 'I need some help please', code: 'hlp' },
-  { text: 'Water, please', code: 'wtr' },
-  { text: 'Good morning' },
+  { text: 'Here’s my take.', code: 'imo' },
+  { text: 'I’m joking!', code: 'jk' },
+  { text: 'I’ve changed my mind.', code: 'cm' },
 ];
 
 const DEMO_ROWS: SavedPhrase[] = DEMO_PHRASES.map((phrase, index) => ({
@@ -50,13 +48,13 @@ export function matchDemoCode(text: string): DemoCodeMatch | undefined {
 
 export function PhraseCodesSection() {
   return (
-    <section className="min-w-0">
-      <div className="grid h-full content-start gap-8">
+    <section className="min-w-0 px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+      <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-center lg:gap-16">
         <SectionHeader
           eyebrow="Spaces & saved phrases"
           title="Your words, ready for every room."
-          lede="Keep a space for family, friends, work, or the clinic, each with its own phrases and notes. Pin the words you use most and give longer phrases short codes — two letters can be a whole sentence."
-          hint="Switch spaces to change the phrases. Try typing ty, then tap the suggestion."
+          lede="Keep a space for family, friends, work, or your book club, each with its own phrases and notes. Pin the words you use most and give longer phrases short codes — two letters can be a whole sentence."
+          hint="Switch spaces to change the phrases. Try typing cm, then tap the suggestion."
         />
         <CodesDemo />
       </div>
@@ -96,7 +94,7 @@ function CodesDemo() {
     return [{ ...stripeForText(expanded, text), source: 'code', code: row.code }];
   }, [text]);
 
-  const pinnedChips = ['Thank you', ...DEMO_SPACES[activeSpace].phrases];
+  const pinnedChips = ['Plot twist!', ...DEMO_SPACES[activeSpace].phrases.slice(0, 3)];
 
   return (
     <div className="overflow-hidden rounded-surface border border-zinc-200 bg-white p-3 shadow-sm">
@@ -139,9 +137,9 @@ function CodesDemo() {
                 speakMessage(text);
               }
             }}
-            placeholder="Try: I made it, ty"
+            placeholder="Try: Actually, cm"
             aria-label="Message with phrase codes"
-            className="max-h-40 w-full resize-none overflow-y-auto bg-transparent text-2xl font-medium leading-snug text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
+            className="max-h-40 w-full resize-none overflow-y-auto bg-transparent text-2xl font-medium leading-snug text-foreground placeholder:text-zinc-500 focus:outline-none"
           />
           <div className="mt-3 flex justify-end">
             <button

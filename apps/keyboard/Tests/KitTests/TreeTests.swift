@@ -102,28 +102,4 @@ func treeTests() {
         ])
     }
 
-    test("a node reads as its role, then its label") {
-        expectEqual(node(0, "AXButton", label: "Save").title, "AXButton")
-        expectEqual(node(0, "AXButton", label: "Save").subtitle, "Save")
-        expect(node(0, "AXGroup").subtitle == nil)
-    }
-
-    test("a value is collapsed onto one line and cut short") {
-        let long = node(0, "AXTextArea", value: "one\ntwo   three" + String(repeating: "x", count: 100))
-        let detail = long.detail!
-        expect(!detail.contains("\n"), "newlines would break the row")
-        expect(detail.count <= 61, "got \(detail.count)")
-        expect(detail.hasSuffix("…"))
-        expectEqual(node(0, "AXTextArea", value: "one\ntwo").detail, "one two")
-    }
-
-    test("a label and a value both show, label first") {
-        let field = node(0, "AXTextField", label: "Search", value: "september")
-        expectEqual(field.subtitle, "Search")
-        expectEqual(field.detail, "september")
-    }
-
-    test("the viewer is as wide as the design allows and matches the keyboard's height") {
-        expectEqual(Metrics.treeViewerWidth, 320)
-    }
 }

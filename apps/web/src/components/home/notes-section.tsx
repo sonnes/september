@@ -40,8 +40,8 @@ export function NotesSection() {
               Longer thoughts, ready ahead of time.
             </h2>
             <p className="mt-2 max-w-2xl text-base leading-relaxed text-zinc-600">
-              A toast, a doctor’s update, a bedtime story. Write it once, read it aloud in your
-              voice, or share it as a file.
+              A wedding toast, a story for your kids, a pitch for your next project. Write it once,
+              read it aloud in your voice, or share it as a file.
             </p>
           </div>
         </div>

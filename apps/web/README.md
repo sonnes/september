@@ -16,6 +16,9 @@ pnpm build
 
 The development server uses `http://localhost:3009`. The production build writes a Vite SPA to `dist/`.
 
+The test suite covers interactions, routes, browser services, and persistence.
+It does not treat landing-page copy or CSS choices as application behavior.
+
 ## Every page names itself
 
 Screens render a `<title>`, which React 19 lifts into the head. `Screen` in
@@ -132,7 +135,7 @@ one. `src/share-card.test.ts` holds both to that.
 The application route components come from `@september/app-ui`. The router and
 the web-only landing and legal pages remain local.
 
-The setup routes are `/welcome`, `/profile`, `/mode`, `/connect`, and `/finish`.
+The setup routes are `/welcome`, `/privacy`, `/profile`, `/mode`, `/connect`, and `/finish`.
 
 Setup runs once, and the two guards mirror each other: an application route
 asked for before setup is finished turns back to `/welcome`, and a setup step
@@ -161,14 +164,20 @@ The application routes are:
 
 The `/` route opens the public landing page. Its calls to action open setup at `/welcome`, which sends a returning user on to `/dashboard`. All hosting targets must return the application shell for a direct application-route request.
 
-The landing page introduces the founder in one text column before the main Talk demo. Its About
-narrative frames September’s ambition: word-level typing and a dynamic,
-customizable AAC app for conversations that go beyond saved phrases. Spaces and saved
-phrases share one demo beside Agent customization. Switching spaces changes
-the pinned phrases in the same composer. Notes and Voice use native
-expandable panels, so readers can explore each demo at their own pace. The
-panels support keyboard input and keep their demo state when closed. Privacy
-uses a quiet text section before the final call to action.
+The landing page moves from the hero into the working Talk demo. Agent
+customization has its own request-and-result section. Its preview shows the
+phrases or note produced by the selected example. The complete Agent
+conversation remains expandable.
+
+The examples follow the About narrative: express opinions, change your mind,
+make jokes, and create something. The hero proposes an idea; Talk shares a
+reaction; Agent prepares a book-club space and discussion notes. Family,
+friends, work, and books supply the phrase examples. The note demo tells a
+bedtime story. These examples use marketing-only data.
+
+Spaces and saved phrases share one composer. Notes and Voice use native
+expandable panels with keyboard support. Privacy and the founder story follow
+the demos. Compact browser and Mac choices provide the final calls to action.
 
 The Mac section presents the full desktop app with Apple Intelligence and an
 alpha download. Its direct DMG link targets `v0.1.0-alpha.1` for Apple Silicon
@@ -176,8 +185,8 @@ and macOS 26 or later. Update this link when a new desktop alpha ships.
 
 The landing sections demonstrate the real feature machinery on marketing-only
 data: the phrase chapter runs `matchCode`, the Present chapter runs
-`presentChunks`, and the Agent chapter draws demo rows with the application's
-own `@september/app-ui/blocks/agent-transcript`. A change to one of those
+`presentChunks`, and the Agent preview reads the demo tool arguments. Its
+expandable conversation uses `@september/app-ui/blocks/agent-transcript`. A change to one of those
 contracts changes the landing page too.
 
 `/help` and `/help/$guideSlug` render the shared task-based Help screen. These
@@ -288,3 +297,8 @@ Note text and titles start saving on each edit. Writes through the note-update
 hook run in order within a space. Browser close/reload warns while a save is
 pending or failed; the Mac window close action waits until those edits save.
 A forced quit, crash, or power loss before a write finishes can still lose it.
+
+The Terms & privacy setup step appears after Welcome, before personal details
+or service connections. It summarizes local storage, optional providers, and
+the MIT terms. Full policies open in the browser while setup stays in place.
+Continue advances to About you; it does not record consent to optional processing.

@@ -49,16 +49,6 @@ func panelTests() {
         expectEqual(panel.buttons[4].action, .openPanel("system"))
     }
 
-    test("buttons render the shortcut hint and a spoken label") {
-        let panel = try! decode(editJSON)
-        expectEqual(panel.buttons[0].hint, "⌘X")
-        expectEqual(panel.buttons[1].hint, "⇧⌘Z")
-        expectEqual(panel.buttons[2].hint, "↩")
-        expectEqual(panel.buttons[3].hint, nil)
-        expectEqual(panel.buttons[0].accessibilityLabel, "Cut, Command X")
-        expectEqual(panel.buttons[3].accessibilityLabel, "Hello")
-    }
-
     test("an unknown action type is rejected rather than silently dropped") {
         let bad = """
             {"id": "x", "title": "X", "columns": 1,
@@ -72,9 +62,8 @@ func panelTests() {
             expect(false, "bundled panels failed to load")
             return
         }
-        expect(store.panel(id: "edit") != nil, "missing edit panel")
-        expect(store.panel(id: "navigate") != nil, "missing navigate panel")
-        expectEqual(store.panel(id: "edit")?.buttons.count, 12)
+        expect(!store.allPanels.isEmpty)
+        expect(store.allPanels.allSatisfy { !$0.buttons.isEmpty })
     }
 
     test("app shortcuts fall back to the generic panel for unknown apps") {

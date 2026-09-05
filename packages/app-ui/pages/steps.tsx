@@ -32,6 +32,7 @@ import {
 } from "@platform/rules/onboarding";
 import {
   BLANK_CONNECTIONS,
+  openInBrowser,
   forgetProvider,
   listVoices,
   readConnections,
@@ -146,6 +147,54 @@ export function WelcomeStep() {
           </li>
         ))}
       </ol>
+    </Step>
+  );
+}
+
+export function PrivacyStep() {
+  const navigate = useNavigate();
+  const { draft } = useDraft();
+
+  return (
+    <Step
+      path="/privacy"
+      footer={
+        <Button type="button" size="lg" className={ACTION}
+          onClick={() => navigate({ to: nextStep("/privacy", draft)! })}>
+          {stepFor("/privacy").action}
+        </Button>
+      }
+    >
+      <div className="max-w-2xl space-y-6 text-sm leading-relaxed md:text-base">
+        <section className="space-y-2">
+          <h3 className="text-lg font-semibold">Your words belong to you</h3>
+          <p>Your conversations, notes, and settings stay on your device. September has no account or automatic cloud sync. Keep backups: device loss or clearing app data can erase your words.</p>
+        </section>
+        <section className="space-y-2">
+          <h3 className="text-lg font-semibold">Cloud services are your choice</h3>
+          <p>Optional writing and voice services receive the words and context they need. Voice cloning uploads the recordings you submit. Providers have their own privacy rules and may charge you. Some system voices also use the internet.</p>
+          <p>The website host and configured analytics process visit information. September does not sell your personal information.</p>
+        </section>
+        <section className="space-y-2">
+          <h3 className="text-lg font-semibold">Free, open source, and offered as is</h3>
+          <p>September is a personal project maintained in India. The MIT License lets you use, change, and share the software. There is no warranty or guaranteed support. Your rights under applicable law still apply.</p>
+          <p>September can fail. Keep another way to communicate urgent needs, and only clone a voice you have permission to use.</p>
+        </section>
+        <div className="space-y-3">
+          <p>This is a summary. Continuing does not give consent to optional data processing. You choose services separately.</p>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button type="button" variant="outline" className="min-h-11"
+              onClick={() => void openInBrowser("https://september.to/terms-of-service")}>
+              Terms of Service
+            </Button>
+            <Button type="button" variant="outline" className="min-h-11"
+              onClick={() => void openInBrowser("https://september.to/privacy-policy")}>
+              Privacy Policy
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground">Full policies open in your browser without losing your place in setup.</p>
+        </div>
+      </div>
     </Step>
   );
 }

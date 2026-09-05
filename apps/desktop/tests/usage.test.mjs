@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
@@ -10,15 +9,6 @@ import {
   toRecentCalls,
   usageCallsToCsv,
 } from "../src/rules/usage-summary.ts";
-
-const desktopRoot = new URL("../", import.meta.url);
-const readText = (path) => {
-  const shared = path.match(/^src\/(blocks|layouts|pages)\/(.+)$/);
-  const target = shared
-    ? `../../packages/app-ui/${shared[1]}/${shared[2]}`
-    : path;
-  return readFile(new URL(target, desktopRoot), "utf8");
-};
 
 const event = (event_type, data, timestamp = Date.UTC(2026, 7, 20, 12)) => ({
   id: crypto.randomUUID(),
@@ -59,7 +49,11 @@ test("report ranges use the local day, Monday week, and calendar month", () => {
 
 test("usage summarizes saved typing and service units without inventing prices", () => {
   const events = [
-    event("message_sent", { text_length: 100, keys_typed: 25, space_id: "space-1" }),
+    event("message_sent", {
+      text_length: 100,
+      keys_typed: 25,
+      space_id: "space-1",
+    }),
     event("ai_generation", {
       generation_type: "suggestions",
       provider: "apple",
@@ -121,38 +115,51 @@ test("usage summarizes saved typing and service units without inventing prices",
   assert.equal(summary.services.total_usd, 0);
   assert.equal(summary.services.by_provider.openrouter.source, "unknown");
   assert.equal(summary.services.by_feature.suggestions.calls, 1);
-  assert.deepEqual(summary.services.unknown_price_models, ["openrouter:qwen/free"]);
+  assert.deepEqual(summary.services.unknown_price_models, [
+    "openrouter:qwen/free",
+  ]);
 });
 
 test("recent calls are newest first and CSV quotes unsafe cells", () => {
   const calls = toRecentCalls([
     event("message_sent", { text_length: 4, keys_typed: 4 }, 1),
-    event("ai_generation", {
-      generation_type: "suggestions",
-      provider: "openrouter",
-      model: "model,one",
-      input_length: 5,
-      output_length: 2,
-      latency_ms: 20,
-      success: true,
-      cached: false,
-      cost_source: "unknown",
-    }, 2),
-    event("tts_generation", {
-      provider: "system",
-      model: "macOS system voice",
-      text_length: 5,
-      credits: 0,
-      duration_seconds: 0,
-      latency_ms: 10,
-      success: true,
-      cached: false,
-      cost_usd: 0,
-      cost_source: "free",
-    }, 3),
+    event(
+      "ai_generation",
+      {
+        generation_type: "suggestions",
+        provider: "openrouter",
+        model: "model,one",
+        input_length: 5,
+        output_length: 2,
+        latency_ms: 20,
+        success: true,
+        cached: false,
+        cost_source: "unknown",
+      },
+      2,
+    ),
+    event(
+      "tts_generation",
+      {
+        provider: "system",
+        model: "macOS system voice",
+        text_length: 5,
+        credits: 0,
+        duration_seconds: 0,
+        latency_ms: 10,
+        success: true,
+        cached: false,
+        cost_usd: 0,
+        cost_source: "free",
+      },
+      3,
+    ),
   ]);
 
-  assert.deepEqual(calls.map((call) => call.feature), ["speech", "suggestions"]);
+  assert.deepEqual(
+    calls.map((call) => call.feature),
+    ["speech", "suggestions"],
+  );
   const csv = usageCallsToCsv(calls);
   assert.match(csv, /^timestamp,feature,provider,model,/);
   assert.match(csv, /"model,one"/);
@@ -163,16 +170,20 @@ test("a presentation is counted, but it is not a provider call", () => {
   const events = [
     event("note_present", { chunks: 4, spoken: true }, 1),
     event("note_export", { kind: "text" }, 2),
-    event("tts_generation", {
-      provider: "elevenlabs",
-      model: "eleven_turbo_v2_5",
-      text_length: 10,
-      credits: 10,
-      latency_ms: 30,
-      success: true,
-      cached: false,
-      cost_source: "quota",
-    }, 3),
+    event(
+      "tts_generation",
+      {
+        provider: "elevenlabs",
+        model: "eleven_turbo_v2_5",
+        text_length: 10,
+        credits: 10,
+        latency_ms: 30,
+        success: true,
+        cached: false,
+        cost_source: "quota",
+      },
+      3,
+    ),
   ];
 
   // A story told in the room costs nothing, so it must not appear beside the
@@ -180,25 +191,4 @@ test("a presentation is counted, but it is not a provider call", () => {
   assert.equal(toRecentCalls(events).length, 1);
   assert.equal(summarizeUsage(events).services.total_calls, 1);
   assert.equal(summarizeUsage(events).services.total_credits, 10);
-});
-
-test("Dashboard and Settings Usage are real routes", async () => {
-  const main = await readText("src/main.tsx");
-  assert.match(main, /component: DashboardScreen/);
-  assert.match(main, /path: "\/usage"[\s\S]*component: UsageSettings/);
-});
-
-test("Talk, writing help, and speech report through the usage service", async () => {
-  assert.match(await readText("src/pages/talk.tsx"), /recordMessageUsage/);
-  assert.match(await readText("src/services/ai.ts"), /recordAiUsage/);
-  assert.match(await readText("src/services/speech.ts"), /recordTtsUsage/);
-
-  for (const file of [
-    "src/pages/talk.tsx",
-    "src/blocks/space.tsx",
-    "src/pages/dashboard.tsx",
-    "src/pages/usage.tsx",
-  ]) {
-    assert.doesNotMatch(await readText(file), /@tauri-apps\/api/, file);
-  }
 });

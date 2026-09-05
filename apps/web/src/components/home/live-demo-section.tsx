@@ -14,22 +14,20 @@ import {
 
 import { type SuggestionSource, joinTokens, stripeForText } from '@/rules/stripes';
 
-import { SectionHeader } from './section-header';
 import { useDemoSpeech } from './use-demo-speech';
 
 // Seed one spoken message so the transcript reads as live, not a screenshot.
-const DEMO_TRANSCRIPT: string[] = ['Good morning! Ready when you are.'];
+const DEMO_TRANSCRIPT: string[] = ['I liked the villain more than the hero.'];
 
-// Marketing keeps a curated subset of the seed's pinned words — everyday and
-// dignified for a public page (no care-need phrases here).
-const DEMO_PINNED = ['Hello', 'Please', 'Thank you', 'Help'];
+// The demo shows a conversation with opinions and room to change direction.
+const DEMO_PINNED = ['Tell me more', 'Plot twist!'];
 
 export const LANDING_SPACE_SEED = {
-  title: 'General',
+  title: 'Friends',
   phrases: [
-    { text: 'Good morning', source: 'md' },
-    { text: 'Yes, please.', source: 'history' },
-    { text: 'No, thank you.', source: 'llm' },
+    { text: 'I have a better idea.', source: 'md' },
+    { text: 'That reminds me.', source: 'history' },
+    { text: 'I see it differently.', source: 'llm' },
   ],
 } as const;
 
@@ -46,14 +44,24 @@ const DEMO_SUGGESTIONS: readonly { text: string; source: SuggestionSource }[] =
 
 export function LiveDemoSection() {
   return (
-    <section id="features" className="scroll-mt-4 bg-white px-4 pb-16 sm:px-6 lg:px-8 lg:pb-24">
+    <section id="features" className="scroll-mt-4 bg-white px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
       <div className="mx-auto grid max-w-7xl gap-9 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,1.35fr)] lg:items-center lg:gap-12">
-        <SectionHeader
-          eyebrow="Talk"
-          title="Type a little. Tap the rest. Speak."
-          lede="This is September’s main screen. Suggestions finish your sentence so a message takes a few taps, not a hundred keystrokes. Press Speak and it’s said out loud."
-          hint="Try it: type “go”, tap the suggestion, press Speak — your browser will say it."
-        />
+        <div className="max-w-md">
+          <h2 className="text-3xl font-semibold leading-tight tracking-tight text-zinc-950 sm:text-4xl">
+            Type a little.
+            <br />
+            Tap the rest.
+            <br />
+            Speak.
+          </h2>
+          <p className="mt-6 text-lg leading-relaxed text-zinc-700">
+            Suggestions help finish your thought. Choose your words, then press Speak to say them
+            out loud.
+          </p>
+          <p className="mt-6 text-base font-medium leading-relaxed text-indigo-700">
+            Try typing “I ha”, then tap a suggestion.
+          </p>
+        </div>
 
         <WorkingDemo />
       </div>
@@ -142,7 +150,7 @@ function WorkingDemo() {
     <div className="min-w-0">
       <div
         data-live-demo-frame
-        className="grid min-h-[520px] overflow-hidden rounded-surface border border-indigo-200 bg-white shadow-sm sm:min-h-0 sm:h-[540px] lg:h-[560px]"
+        className="grid min-h-[560px] overflow-hidden rounded-surface border border-zinc-300 bg-white shadow-sm"
       >
         <div className="grid min-w-0 grid-rows-[52px_minmax(0,1fr)] lg:grid-rows-[60px_minmax(0,1fr)]">
           {/* Header — sidebar trigger + space title + panel toggle */}
@@ -168,9 +176,9 @@ function WorkingDemo() {
                   key={`${message}-${i}`}
                   className="flex animate-in fade-in slide-in-from-bottom-1 justify-end motion-reduce:animate-none"
                 >
-                  <div className="flex max-w-[85%] items-start gap-2 rounded-lg rounded-br-sm bg-accent px-4 py-2.5 text-left text-accent-foreground">
+                  <div className="flex max-w-[85%] items-start gap-2 rounded-lg rounded-br-sm bg-indigo-600 px-4 py-3 text-left text-white">
                     <Volume2 className="mt-1 size-4 shrink-0 opacity-60" aria-hidden="true" />
-                    <p className="text-base leading-snug">{message}</p>
+                    <p className="text-xl leading-snug">{message}</p>
                   </div>
                 </div>
               ))}
@@ -203,7 +211,7 @@ function WorkingDemo() {
                   }}
                   aria-label="Try September Talk"
                   placeholder="Type a message…"
-                  className="max-h-40 w-full resize-none overflow-y-auto bg-transparent text-2xl font-medium leading-snug text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
+                  className="max-h-40 w-full resize-none overflow-y-auto bg-transparent text-2xl font-medium leading-snug text-foreground placeholder:text-zinc-500 focus:outline-none"
                 />
                 <div className="mt-3 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-1.5">
@@ -283,7 +291,7 @@ export function LandingSuggestionStripes({
               key={chip}
               type="button"
               onClick={() => onTake(`${chip} `)}
-              className="flex h-11 items-center gap-1.5 rounded-full border border-primary/30 bg-card px-5 text-base font-medium text-foreground transition-colors hover:border-primary/60 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex min-h-12 items-center gap-2 rounded-chip border border-zinc-300 bg-card px-4 py-2 text-left text-lg font-medium text-foreground transition-colors hover:border-primary/60 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Pin className="size-3.5 text-primary/60" aria-hidden="true" />
               {chip}

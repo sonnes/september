@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
@@ -52,9 +51,18 @@ test("clone validation keeps bad input away from the provider", () => {
     size: MAX_VOICE_SAMPLE_BYTES + 1,
   };
 
-  assert.equal(validateVoiceClone({ files: [], name: "Voice" }), "Add at least one voice sample.");
-  assert.equal(validateVoiceClone({ files: [audio], name: "   " }), "Give this voice a name.");
-  assert.equal(validateVoiceClone({ files: [text], name: "Voice" }), "notes.txt is not an audio file.");
+  assert.equal(
+    validateVoiceClone({ files: [], name: "Voice" }),
+    "Add at least one voice sample.",
+  );
+  assert.equal(
+    validateVoiceClone({ files: [audio], name: "   " }),
+    "Give this voice a name.",
+  );
+  assert.equal(
+    validateVoiceClone({ files: [text], name: "Voice" }),
+    "notes.txt is not an audio file.",
+  );
   assert.equal(
     validateVoiceClone({ files: [tooLarge], name: "Voice" }),
     "large.wav is larger than 25 MB.",
@@ -71,9 +79,12 @@ test("the encoded clone cannot exceed the native request limit", () => {
 });
 
 test("a recording file keeps the recorder's real media type", () => {
-  const file = recordingFile("birch-canoe", new Blob([new Uint8Array([1])], {
-    type: "audio/mp4",
-  }));
+  const file = recordingFile(
+    "birch-canoe",
+    new Blob([new Uint8Array([1])], {
+      type: "audio/mp4",
+    }),
+  );
 
   assert.equal(file.name, "birch-canoe.m4a");
   assert.equal(file.type, "audio/mp4");
@@ -81,7 +92,11 @@ test("a recording file keeps the recorder's real media type", () => {
 
 test("a stale account refresh cannot hide the voice that was just created", () => {
   const created = { id: "new", name: "My voice", preview_url: null };
-  const old = { id: "old", name: "Old voice", preview_url: "https://example.com/old.mp3" };
+  const old = {
+    id: "old",
+    name: "Old voice",
+    preview_url: "https://example.com/old.mp3",
+  };
 
   assert.deepEqual(keepCreatedVoice([old], created), [created, old]);
   assert.deepEqual(keepCreatedVoice([created, old], created), [created, old]);
@@ -121,7 +136,9 @@ test("starting another recording stops the old microphone and stopAll stops the 
     stop() {
       if (this.state === "inactive") return;
       this.state = "inactive";
-      this.ondataavailable?.({ data: new Blob([new Uint8Array([1])], { type: this.mimeType }) });
+      this.ondataavailable?.({
+        data: new Blob([new Uint8Array([1])], { type: this.mimeType }),
+      });
       this.onstop?.();
     }
   }
@@ -131,7 +148,12 @@ test("starting another recording stops the old microphone and stopAll stops the 
     value: {
       mediaDevices: {
         getUserMedia: async () => {
-          const track = { stopped: false, stop() { this.stopped = true; } };
+          const track = {
+            stopped: false,
+            stop() {
+              this.stopped = true;
+            },
+          };
           const stream = { track, getTracks: () => [track] };
           streams.push(stream);
           return stream;
@@ -200,8 +222,22 @@ test("a newer recording cancels a microphone request that is still pending", asy
   globalThis.MediaRecorder = FakeMediaRecorder;
 
   try {
-    const first = { track: { stopped: false, stop() { this.stopped = true; } } };
-    const second = { track: { stopped: false, stop() { this.stopped = true; } } };
+    const first = {
+      track: {
+        stopped: false,
+        stop() {
+          this.stopped = true;
+        },
+      },
+    };
+    const second = {
+      track: {
+        stopped: false,
+        stop() {
+          this.stopped = true;
+        },
+      },
+    };
     const manager = new MediaRecorderManager();
     const firstStart = manager.start("first");
     const secondStart = manager.start("second");
@@ -226,7 +262,12 @@ test("a newer recording cancels a microphone request that is still pending", asy
 test("recorder setup failure releases the microphone and reports the error", async () => {
   const originalNavigator = globalThis.navigator;
   const originalRecorder = globalThis.MediaRecorder;
-  const track = { stopped: false, stop() { this.stopped = true; } };
+  const track = {
+    stopped: false,
+    stop() {
+      this.stopped = true;
+    },
+  };
   const statuses = [];
   const errors = [];
 
@@ -286,7 +327,10 @@ test("sample playback revokes its object URL when it stops", async () => {
 
   try {
     const player = new SamplePlayer();
-    await player.play("sample", new Blob([new Uint8Array([1])], { type: "audio/mp4" }));
+    await player.play(
+      "sample",
+      new Blob([new Uint8Array([1])], { type: "audio/mp4" }),
+    );
     player.stop();
     assert.deepEqual(revoked, ["blob:sample"]);
   } finally {
@@ -329,28 +373,4 @@ test("a stopped sample cannot report itself playing after play resolves", async 
     URL.createObjectURL = create;
     URL.revokeObjectURL = revoke;
   }
-});
-
-test("voice cloning is a dedicated subpage that selects the result", async () => {
-  const voice = await readFile(
-    new URL("../../../packages/app-ui/pages/voice.tsx", import.meta.url),
-    "utf8",
-  );
-  const main = await readFile(
-    new URL("../src/main.tsx", import.meta.url),
-    "utf8",
-  );
-
-  assert.doesNotMatch(voice, /<Sheet\b/);
-  assert.match(main, /path: "\/voice\/clone"[\s\S]*component: VoiceCloneScreen/);
-  assert.match(voice, /export function VoiceCloneScreen/);
-  assert.match(voice, /to="\/voice\/clone"/);
-  assert.match(voice, /Clone your voice/);
-  assert.match(voice, /<input[\s\S]*type="file"/);
-  assert.match(voice, /onClick=\{\(\) => inputRef\.current\?\.click\(\)\}/);
-  assert.doesNotMatch(voice, /<Button asChild type="button"[\s\S]*?<label/);
-  assert.match(voice, /new MediaRecorderManager/);
-  assert.match(voice, /cloneVoice\(/);
-  assert.match(voice, /provider:\s*"elevenlabs",[\s\S]*voiceId:\s*created\.id/);
-  assert.match(voice, /navigate\(\{ to: "\/voice"/);
 });

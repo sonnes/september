@@ -101,3 +101,6 @@ Run its checks from the repository root:
 pnpm --filter @september/core test
 pnpm --filter @september/core build
 ```
+
+Core tests cover rule inputs, outputs, state changes, validation, and data
+round trips. Catalog wording and visual presentation stay outside the suite.

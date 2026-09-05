@@ -187,6 +187,9 @@ pnpm -C apps/desktop build
 make mac-test
 ```
 
+Tests cover current behavior at module boundaries. They do not pin page copy,
+visual styling, or the absence of retired code.
+
 ## License
 
 September uses the MIT License. See `LICENSE`.

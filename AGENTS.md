@@ -37,6 +37,14 @@ Run commands from the app directory or via the root `Makefile` (`make dev`,
 
 Write tests BEFORE implementation. Run failing test, write minimum code to pass, confirm green. No exceptions.
 
+## Tests
+
+- Test current functional behavior through public boundaries.
+- Do not test that removed code, files, routes, controls, or wording stay absent.
+- Do not pin prose, visual design, CSS classes, dimensions, colors, or layout in tests.
+- Prefer inputs, outputs, state changes, persistence, accessibility behavior, and external integrations.
+- Use negative assertions when they enforce current security, privacy, validation, or state behavior.
+
 ## Rules
 
 - Do what has been asked; nothing more, nothing less

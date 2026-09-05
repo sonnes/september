@@ -5,7 +5,7 @@ import { Mic, Play, Plus } from 'lucide-react';
 
 import { type DemoVoice, useDemoSpeech } from './use-demo-speech';
 
-const PREVIEW_TEXT = 'Hello — this is how September can sound.';
+const PREVIEW_TEXT = 'I’ve changed my mind. Let’s take the scenic route.';
 
 export function VoiceSection() {
   return (
@@ -68,8 +68,7 @@ function VoiceDemo() {
           <div className="min-w-48 flex-1">
             <p className="font-semibold text-zinc-950">Clone your voice</p>
             <p className="mt-1 text-sm leading-relaxed text-zinc-600">
-              A 30-second recording is enough. Losing your speech? An old video of you talking works
-              too.
+              Use a 30-second recording of yourself, or audio from an old home video.
             </p>
           </div>
           <Link

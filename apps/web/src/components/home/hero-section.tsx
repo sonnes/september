@@ -52,10 +52,10 @@ export function HeroSection() {
                 tagline holds exactly two lines at every width. */}
             <h1 className="text-[clamp(1.25rem,6vw,2.25rem)] font-bold leading-[1.12] tracking-tight text-primary-foreground lg:text-[clamp(1.75rem,3.4vw,2.75rem)]">
               <span data-tagline-line className="block whitespace-nowrap">
-                <span className="text-indigo-200">Faster</span> Communication
+                <span className="text-white">Faster</span> Communication
               </span>
               <span data-tagline-line className="block whitespace-nowrap">
-                <span className="text-indigo-200">Fewer</span> Keystrokes
+                <span className="text-white">Fewer</span> Keystrokes
               </span>
             </h1>
 
@@ -93,7 +93,7 @@ export function HeroSection() {
                 Free to use. Your words can stay on this device.
               </p>
               <p className="text-sm font-medium text-primary-foreground">
-                Everything on this page is the real thing — try it as you scroll. ↓
+                Try the working demos below. ↓
               </p>
             </div>
           </div>
@@ -111,12 +111,12 @@ function ConsolePeek() {
     <div
       data-hero-peek
       aria-hidden="true"
-      className="flex min-w-0 flex-col justify-center gap-6 bg-indigo-50 p-6 sm:p-10 lg:p-12"
+      className="flex min-w-0 flex-col justify-center gap-6 bg-zinc-50 p-6 sm:p-10 lg:p-12"
     >
       <div>
         <p className="mb-3 text-sm font-medium text-zinc-600">You type</p>
-        <p className="text-3xl font-medium tracking-tight text-zinc-950 sm:text-4xl">
-          I’d like a co
+        <p className="text-2xl font-medium tracking-tight text-zinc-700 sm:text-3xl">
+          I have a be
           <span
             data-caret
             className="ml-1 inline-block h-[1em] w-0.5 translate-y-[0.12em] animate-caret-blink bg-indigo-600 motion-reduce:animate-none"
@@ -126,7 +126,7 @@ function ConsolePeek() {
       <div>
         <p className="mb-3 text-sm font-medium text-zinc-600">Tap to finish</p>
         <div className="flex flex-wrap gap-3">
-          {['coffee,', 'please'].map(word => (
+          {['better', 'idea.'].map(word => (
             <span
               key={word}
               className="rounded-chip border border-indigo-200 bg-white px-5 py-3 text-xl font-medium text-indigo-700 shadow-sm"
@@ -137,13 +137,13 @@ function ConsolePeek() {
         </div>
       </div>
       <ArrowDown className="size-6 text-indigo-400" />
-      <div className="rounded-surface border border-indigo-200 bg-white p-6 shadow-sm">
+      <div className="border-t border-zinc-200 pt-6">
         <p className="mb-3 flex items-center gap-2 text-sm font-medium text-indigo-600">
           <Volume2 className="size-5" />
           September speaks
         </p>
-        <p className="text-3xl font-semibold leading-tight tracking-tight text-zinc-950 sm:text-4xl">
-          I’d like a coffee, please.
+        <p className="text-4xl font-semibold leading-[1.05] tracking-tight text-zinc-950 sm:text-6xl">
+          I have a better idea.
         </p>
       </div>
     </div>

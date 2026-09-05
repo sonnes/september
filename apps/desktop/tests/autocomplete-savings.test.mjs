@@ -86,9 +86,9 @@ function savingRate(engine, sentences) {
         written === "" || /\s$/.test(written)
           ? ""
           : (written.match(/\S+$/)?.[0] ?? "");
-      const wanted = (
-        sentence.slice(at - started.length).match(/^\S+/) ?? [""]
-      )[0];
+      const wanted = (sentence.slice(at - started.length).match(/^\S+/) ?? [
+        "",
+      ])[0];
       const tile = suggestionsFor(engine, written)
         .slice(0, MAX_SUGGESTIONS)
         .find(
@@ -100,7 +100,8 @@ function savingRate(engine, sentences) {
       if (tile) {
         pressed += 1;
         at += wanted.length - started.length;
-        written = written.slice(0, written.length - started.length) + wanted + " ";
+        written =
+          written.slice(0, written.length - started.length) + wanted + " ";
         if (sentence[at] === " ") at += 1;
         continue;
       }

@@ -1,28 +1,22 @@
 export const DEMO_SPACES: { title: string; phrases: string[] }[] = [
   {
     title: 'Family',
-    phrases: ['Good morning', 'I love you', 'What’s for dinner?', 'Turn the TV up, please'],
+    phrases: ['I have news', 'That’s our next trip', 'I’m choosing the film'],
   },
   {
     title: 'Friends',
-    phrases: ['Good to see you', 'Tell me everything', 'That’s a good one', 'Same time next week?'],
+    phrases: ['Tell me the whole story', 'I owe you a rematch', 'That’s an inside joke'],
   },
   {
     title: 'Work',
-    phrases: [
-      'Give me a moment to type',
-      'I agree with that',
-      'Could you repeat the last part?',
-      'I’ll send my notes after this',
-    ],
+    phrases: ['Let’s try another angle', 'I see it differently', 'I’ll sketch an idea'],
   },
   {
-    title: 'Clinic',
+    title: 'Books',
     phrases: [
-      'My left arm feels weaker',
-      'Can you repeat that slowly?',
-      'I’d like my caregiver present',
-      'When is the next appointment?',
+      'I’m not sold on the ending',
+      'That character grew on me',
+      'What did you make of it?',
     ],
   },
 ];

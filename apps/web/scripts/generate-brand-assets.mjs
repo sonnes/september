@@ -99,7 +99,7 @@ await Promise.all(
 // ------------------------------------------------------------ share card
 //
 // The card a link preview shows. It repeats the hero of the landing page —
-// the same solid indigo, two lines, and pale indigo accent — so a shared
+// the same solid indigo and two white lines — so a shared
 // link and the page behind it read as one thing.
 
 const WORDMARK = [
@@ -108,8 +108,8 @@ const WORDMARK = [
 ];
 
 const TAGLINE = [
-  [['Faster', '#c7d2fe'], ['Communication', '#ffffff']],
-  [['Fewer', '#c7d2fe'], ['Keystrokes', '#ffffff']],
+  [['Faster', '#ffffff'], ['Communication', '#ffffff']],
+  [['Fewer', '#ffffff'], ['Keystrokes', '#ffffff']],
 ];
 
 // Each word is its own box, and a box eats the space beside it, so the gap

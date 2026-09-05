@@ -115,6 +115,10 @@ XCTest available. Tests are a plain executable with a ~40-line harness in
 move the target to `.testTarget` and swap `test`/`expect` for `@Test`/`#expect` —
 the test bodies barely change.
 
+The tests cover keystroke dispatch, controller state, input mirroring, panels,
+and accessibility-tree behavior. Visual tokens and exact layout measurements
+are reviewed outside the executable suite.
+
 ## Design system
 
 Tokens, sizes and the two keyboard variants come from
@@ -125,5 +129,4 @@ and the spec sheet disagree the issue body wins; see
 The keyboard follows the system light/dark setting. Every token is a
 `ThemeColor` — the issue's palette in the dark column, a derived one in the
 light column — resolved against the appearance it is drawn in, with no setting
-of its own. `DesignTests` holds each pairing to a WCAG contrast floor, so a new
-token has to earn both columns.
+of its own.

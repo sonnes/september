@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { LANDING_TITLE, documentTitle } from "./titles.ts";
+import { documentTitle } from "./titles.ts";
 
 describe("documentTitle", () => {
   it("names the app after the page", () => {
@@ -22,11 +22,5 @@ describe("documentTitle", () => {
 
   it("names the app alone when the page has no name", () => {
     expect(documentTitle()).toBe("September");
-  });
-});
-
-describe("LANDING_TITLE", () => {
-  it("says what the app is, for a reader who has never seen it", () => {
-    expect(LANDING_TITLE).toBe("September — faster communication, fewer keystrokes");
   });
 });

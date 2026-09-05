@@ -145,9 +145,9 @@ function ProgressNav({
     // it lies on its side in the bar and stands up in the sidebar.
     <nav
       aria-label="Onboarding progress"
-      className="min-w-0 flex-1 md:flex-none"
+      className="min-w-0 flex-1 overflow-x-auto md:flex-none md:overflow-visible"
     >
-      <ol className="flex flex-row items-center justify-between gap-0.5 sm:justify-start md:flex-col md:items-stretch md:gap-0">
+      <ol className="flex min-w-max flex-row items-center justify-between gap-0.5 sm:justify-start md:flex-col md:items-stretch md:gap-0">
         {steps.map((step, index) => {
           const completed = current > index;
           const isCurrent = current === index;
@@ -169,7 +169,7 @@ function ProgressNav({
                 to={step.path}
                 disabled={!canReach(step.path, draft)}
                 aria-label={`Step ${index + 1}: ${step.label}${isCurrent ? ", current" : completed ? ", completed" : ""}`}
-                className="flex items-center gap-3 rounded-full p-1 focus-visible:ring-[3px] focus-visible:ring-indigo-300 focus-visible:outline-none aria-disabled:cursor-default md:rounded-md md:p-0"
+                className="flex items-center gap-3 rounded-full p-1.5 focus-visible:ring-[3px] focus-visible:ring-indigo-300 focus-visible:outline-none aria-disabled:cursor-default md:rounded-md md:p-0"
               >
                 <span
                   className={`flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-bold ${state}`}

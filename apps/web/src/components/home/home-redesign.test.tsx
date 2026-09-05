@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { HomePage } from '../../pages/home';
 import { AGENT_DEMO_ASKS, AgentSection } from './agent-section';
+import { Footer } from './footer';
 import { LiveDemoSection } from './live-demo-section';
 import { NOTE_SENTENCES, NotesSection, PRESENT_CHUNKS } from './notes-section';
 import { PhraseCodesSection, matchDemoCode } from './phrase-codes-section';
@@ -22,8 +23,14 @@ class ResizeObserverStub {
   ResizeObserverStub;
 
 vi.mock('@tanstack/react-router', () => ({
-  Link: ({ children, to, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { to: string }) => (
-    <a href={to} {...props}>{children}</a>
+  Link: ({
+    children,
+    to,
+    ...props
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { to: string }) => (
+    <a href={to} {...props}>
+      {children}
+    </a>
   ),
 }));
 
@@ -94,31 +101,38 @@ describe('Talk demo', () => {
 
 describe('phrase and space demo', () => {
   it('matches only a live trailing phrase code', () => {
-    expect(matchDemoCode('I made it, ty')).toEqual({ code: 'ty', phrase: 'Thank you' });
-    expect(matchDemoCode('TY')).toEqual({ code: 'ty', phrase: 'Thank you' });
-    expect(matchDemoCode('ty ')).toBeUndefined();
+    expect(matchDemoCode('Actually, cm')).toEqual({ code: 'cm', phrase: 'I’ve changed my mind.' });
+    expect(matchDemoCode('CM')).toEqual({ code: 'cm', phrase: 'I’ve changed my mind.' });
+    expect(matchDemoCode('cm ')).toBeUndefined();
     expect(matchDemoCode('typing')).toBeUndefined();
+  });
+
+  it('matches codes from the selected space', () => {
+    expect(matchDemoCode('out', 3)).toEqual({ code: 'out', phrase: 'What do you think is outside?' });
+    expect(matchDemoCode('out', 0)).toBeUndefined();
+    expect(matchDemoCode('cm', 3)).toBeUndefined();
   });
 
   it('expands a phrase code in the composer', () => {
     render(<PhraseCodesSection />);
     const composer = container.querySelector('textarea')!;
-    typeInto(composer, 'I made it, ty');
-    click(button('you'));
+    typeInto(composer, 'Actually, cm');
+    const tokens = container.querySelectorAll('[data-source="code"] button:not([aria-label])');
+    click(tokens[tokens.length - 1]);
 
-    expect(composer.value).toBe('I made it, Thank you ');
+    expect(composer.value).toBe('Actually, I’ve changed my mind. ');
   });
 
   it('uses the selected space phrases in the composer and speech service', () => {
     render(<PhraseCodesSection />);
-    click(button('Clinic'));
-    expect(button('Clinic').getAttribute('aria-pressed')).toBe('true');
+    click(button('Silo'));
+    expect(button('Silo').getAttribute('aria-pressed')).toBe('true');
 
-    click(button('My left arm feels weaker'));
-    expect(container.querySelector('textarea')?.value).toBe('My left arm feels weaker ');
+    click(button('What do you think is outside?'));
+    expect(container.querySelector('textarea')?.value).toBe('What do you think is outside? ');
     click(button('Speak'));
 
-    expect(demoSpeech.speak).toHaveBeenCalledWith('My left arm feels weaker');
+    expect(demoSpeech.speak).toHaveBeenCalledWith('What do you think is outside?');
   });
 });
 
@@ -174,6 +188,25 @@ describe('note demo', () => {
 });
 
 describe('Agent demo', () => {
+  it('shows the phrases produced by the selected request in the customized space', () => {
+    render(<AgentSection />);
+    click(button(AGENT_DEMO_ASKS[1].label));
+    const result = container.querySelector('[role="region"][aria-label="Customized space"]')!;
+    expect(result).toBeTruthy();
+    for (const step of AGENT_DEMO_ASKS[1].steps.filter(step => step.name === 'change_phrase')) {
+      expect(result.textContent).toContain(step.args.text);
+    }
+  });
+
+  it('updates the note preview when the reader chooses the note request', () => {
+    render(<AgentSection />);
+    click(button(AGENT_DEMO_ASKS[2].label));
+    const result = container.querySelector('[role="region"][aria-label="Customized space"]')!;
+    const change = AGENT_DEMO_ASKS[2].steps.find(step => step.name === 'change_note')!;
+    expect(result).toBeTruthy();
+    expect(result.textContent).toContain(change.args.text);
+  });
+
   it('switches the transcript to the selected request', () => {
     render(<AgentSection />);
     const choice = button(AGENT_DEMO_ASKS[1].label);
@@ -186,6 +219,13 @@ describe('Agent demo', () => {
 });
 
 describe('landing navigation', () => {
+  it('links the footer to the legal routes', () => {
+    render(<Footer />);
+
+    expect(container.querySelector('a[href="/privacy-policy"]')).toBeTruthy();
+    expect(container.querySelector('a[href="/terms-of-service"]')).toBeTruthy();
+  });
+
   it('provides a target for every in-page navigation link', async () => {
     await renderAsync(<HomePage />);
     const links = [...container.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')];
