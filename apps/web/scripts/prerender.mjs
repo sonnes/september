@@ -13,11 +13,12 @@
 // an application route that received the landing markup would paint the
 // marketing page for as long as the bundle takes to boot, and then hydrate
 // against the wrong DOM.
-
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'vite';
+
+import { generateShareCard } from './generate-brand-assets.mjs';
 
 const app = fileURLToPath(new URL('../', import.meta.url));
 const ssrDir = `${app}dist-ssr`;
@@ -40,6 +41,8 @@ const {
   prerenderedFile,
   renderPage,
   withAnalytics,
+  publicPage,
+  withPageMetadata,
 } = await import(`${ssrDir}/entry-server.js`);
 
 // A build with nothing configured counts nothing, so a fork, a preview, and a
@@ -59,6 +62,11 @@ await writeFile(`${dist}/app.html`, built);
 
 for (const path of PRERENDERED_PATHS) {
   const page = hoistTitle(built, await renderPage(path));
+  const metadata = publicPage(path);
+  page.shell = withPageMetadata(page.shell, metadata);
+  const image = `${dist}/${metadata.image}`;
+  await mkdir(dirname(image), { recursive: true });
+  await generateShareCard(path === '/' ? null : metadata, image);
   const file = `${dist}/${prerenderedFile(path)}`;
   await mkdir(dirname(file), { recursive: true });
   await writeFile(file, injectMarkup(page.shell, page.markup));

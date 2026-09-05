@@ -32,6 +32,16 @@ September` for a note. The wording rule is `documentTitle` in
 before the bundle mounts, and the prerender replaces it with the title each
 prerendered page renders.
 
+Public pages also get their own description, canonical URL, Open Graph and
+Twitter metadata, and 1200 × 630 PNG card. `pnpm build` generates the cards in
+`dist/og/` from Help titles and summaries or the public legal-page descriptions.
+The homepage stays at `/og.png`. All cards use the homepage's indigo surface,
+Noto Sans headings, and Lexend wordmark. No image server is needed.
+
+Run `pnpm test:build` after a build to check every public page and decode its
+image. `pnpm brand:generate` still refreshes the committed homepage card and
+icons. The retired `/api/og` URL redirects to `/og.png` on Vercel.
+
 ## Counting the public pages
 
 Every page the browser app serves carries an Umami tag — the prerendered

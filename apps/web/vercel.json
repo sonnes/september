@@ -7,6 +7,9 @@
     { "source": "/", "destination": "/index.html" },
     { "source": "/(.*)", "destination": "/app.html" }
   ],
+  "redirects": [
+    { "source": "/api/og", "destination": "/og.png", "permanent": true }
+  ],
   "headers": [
     {
       "source": "/oauth/(.*)",

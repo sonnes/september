@@ -10,7 +10,8 @@
     "start": "vite preview",
     "lint": "eslint .",
     "test": "vitest --run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:build": "node --test scripts/check-share-cards.mjs"
   },
   "dependencies": {
     "@earendil-works/pi-ai": "0.84.4",

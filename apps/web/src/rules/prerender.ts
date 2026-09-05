@@ -5,7 +5,6 @@
  * root with the pages that a build machine can draw, so the first paint and
  * every crawler read the words without running the application.
  */
-
 import { HELP_GUIDES } from '@september/core/rules/help';
 
 const ROOT = /(<div id="root"[^>]*>)(<\/div>)/;
@@ -25,7 +24,7 @@ export const PRERENDERED_PATHS: string[] = [
   '/privacy-policy',
   '/terms-of-service',
   '/help',
-  ...HELP_GUIDES.map((guide) => `/help/${guide.slug}`),
+  ...HELP_GUIDES.map(guide => `/help/${guide.slug}`),
 ];
 
 /**
@@ -54,10 +53,7 @@ export function injectMarkup(shell: string, markup: string): string {
  * markup for the body and leaves the element where it stands. A crawler reads
  * the head, so the title has to travel.
  */
-export function hoistTitle(
-  shell: string,
-  markup: string
-): { shell: string; markup: string } {
+export function hoistTitle(shell: string, markup: string): { shell: string; markup: string } {
   const found = markup.match(TITLE);
   if (!found) return { shell, markup };
 
@@ -93,10 +89,7 @@ function attribute(value: string): string {
  * A build with nothing configured writes nothing, so a fork and a local build
  * report to no one.
  */
-export function withAnalytics(
-  shell: string,
-  analytics: Analytics | null
-): string {
+export function withAnalytics(shell: string, analytics: Analytics | null): string {
   if (!analytics?.src || !analytics.websiteId) return shell;
 
   // `crossorigin` is not decoration: `public/_headers` and `vercel.json` make
@@ -110,4 +103,85 @@ export function withAnalytics(
   ].join('');
 
   return shell.replace('</head>', `${script}</head>`);
+}
+
+export interface PublicPage {
+  title: string;
+  heading: string;
+  description: string;
+  url: string;
+  image: string;
+  alt: string;
+}
+
+/** Only public, storage-independent content may enter a shared card. */
+export function publicPage(path: string): PublicPage {
+  let heading: string;
+  let description: string;
+  let title: string;
+  const guide = HELP_GUIDES.find(guide => path === `/help/${guide.slug}`);
+  if (guide) {
+    heading = guide.title;
+    description = guide.summary;
+    title = `${heading} · Help · September`;
+  } else {
+    const pages: Record<string, [string, string]> = {
+      '/': [
+        'Faster Communication, Fewer Keystrokes',
+        'A communication assistant for people living with ALS, MND, and other speech and motor difficulties.',
+      ],
+      '/help': [
+        'Help',
+        'Learn to set up September, speak messages, save phrases, and choose a voice.',
+      ],
+      '/privacy-policy': [
+        'Privacy Policy',
+        'How September stores your data, uses optional providers, and protects your privacy.',
+      ],
+      '/terms-of-service': [
+        'Terms of Service',
+        'The terms for using September, its MIT license, and optional third-party services.',
+      ],
+    };
+    if (!pages[path]) throw new Error(`No public page: ${path}`);
+    [heading, description] = pages[path];
+    title =
+      path === '/'
+        ? 'September — faster communication, fewer keystrokes'
+        : `${heading} · September`;
+  }
+  return {
+    title,
+    heading,
+    description,
+    url: `https://september.to${path}`,
+    image: path === '/' ? 'og.png' : `og${path}.png`,
+    alt: `September — ${heading}. White lettering on an indigo card.`,
+  };
+}
+
+/** Replace the shell defaults before crawlers see a public page. */
+export function withPageMetadata(shell: string, page: PublicPage): string {
+  const values: Record<string, string> = {
+    description: page.description,
+    'og:url': page.url,
+    'og:title': page.title,
+    'og:description': page.description,
+    'og:image': `https://september.to/${page.image}`,
+    'og:image:alt': page.alt,
+    'twitter:title': page.title,
+    'twitter:description': page.description,
+    'twitter:image': `https://september.to/${page.image}`,
+    'twitter:image:alt': page.alt,
+  };
+  const updated = shell.replace(/<meta\s[^>]*>/g, tag => {
+    const key = tag.match(/(?:property|name)="([^"]+)"/)?.[1];
+    return key && key in values
+      ? tag.replace(/content="[^"]*"/, () => `content="${attribute(values[key])}"`)
+      : tag;
+  });
+  return updated.replace(
+    '</head>',
+    `<link rel="canonical" href="${attribute(page.url)}" /></head>`
+  );
 }

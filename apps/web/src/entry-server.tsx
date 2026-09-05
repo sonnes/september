@@ -11,6 +11,8 @@ export {
   injectMarkup,
   prerenderedFile,
   withAnalytics,
+  publicPage,
+  withPageMetadata,
 } from '@/rules/prerender';
 
 /**

@@ -63,12 +63,6 @@ the page, which is machinery this app does not have. The static markup already
 buys what these pages need — words without JavaScript, and a first paint that
 does not wait.
 
-One visible cost. `AppShell` decides its sidebar width from `window.innerWidth`
-in an effect, which does not run in a build, so a prerendered Help page is
-drawn with the sidebar open. On a narrow screen it collapses to the rail on the
-first commit. A reader on a phone sees the sidebar for that moment. The words
-of the guide are correct throughout, which is what the page is for.
-
 ## The title travels
 
 React puts a `<title>` in the head of a running page, but a build renders
@@ -76,6 +70,24 @@ markup for the body and leaves the element where it stands. `hoistTitle` moves
 it, so each guide's file carries its own title — `Clone a voice · Help ·
 September` — and `dist/app.html` keeps the plain `September` a tab shows before
 the bundle mounts.
+
+## Link previews follow the page
+
+`publicPage` uses the Help catalog's titles and summaries and the legal-page
+descriptions to supply each public URL's metadata. `withPageMetadata` replaces
+the shell's description and Open Graph/Twitter defaults and adds a canonical
+link. Private application routes keep the generic shell.
+
+The build generates one 1200 × 630 PNG per public page with the existing
+Satori renderer in `scripts/generate-brand-assets.mjs`. The cards repeat the
+homepage's indigo panel, white Noto Sans headings, and Lexend wordmark.
+`dist/og.png` is the homepage card; other cards live under `dist/og/`, with
+Help guide images under `dist/og/help/`. No runtime image endpoint is needed.
+Vercel redirects the retired `/api/og` URL to `/og.png`.
+
+`pnpm test:build` checks metadata in every built public page and decodes every
+referenced image to verify its PNG format and dimensions. `robots.txt` permits
+public pages and assets and excludes the OAuth callback directory.
 
 ## The routing has to agree
 

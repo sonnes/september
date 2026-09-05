@@ -1,2 +1,3 @@
-Allow: /api/og 
-Disallow: *
+User-agent: *
+Allow: /
+Disallow: /oauth/
