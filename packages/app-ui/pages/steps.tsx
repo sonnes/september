@@ -131,6 +131,7 @@ export function WelcomeStep() {
         </Button>
       }
     >
+      <div className="space-y-8">
       {/* ml-3 keeps the hanging markers clear of the scroll body, which clips. */}
       <ol className="ml-3 space-y-4 border-l border-zinc-200 pl-5">
         {WELCOME_POINTS.map((point, index) => (
@@ -147,25 +148,8 @@ export function WelcomeStep() {
           </li>
         ))}
       </ol>
-    </Step>
-  );
-}
-
-export function PrivacyStep() {
-  const navigate = useNavigate();
-  const { draft } = useDraft();
-
-  return (
-    <Step
-      path="/privacy"
-      footer={
-        <Button type="button" size="lg" className={ACTION}
-          onClick={() => navigate({ to: nextStep("/privacy", draft)! })}>
-          {stepFor("/privacy").action}
-        </Button>
-      }
-    >
-      <div className="max-w-2xl space-y-6 text-sm leading-relaxed md:text-base">
+      <div className="max-w-2xl space-y-6 border-t pt-6 text-sm leading-relaxed md:text-base">
+        <h3 className="text-xl font-semibold">Terms &amp; privacy</h3>
         <section className="space-y-2">
           <h3 className="text-lg font-semibold">Your words belong to you</h3>
           <p>Your conversations, notes, and settings stay on your device. September has no account or automatic cloud sync. Keep backups: device loss or clearing app data can erase your words.</p>
@@ -194,6 +178,7 @@ export function PrivacyStep() {
           </div>
           <p className="text-sm text-muted-foreground">Full policies open in your browser without losing your place in setup.</p>
         </div>
+      </div>
       </div>
     </Step>
   );

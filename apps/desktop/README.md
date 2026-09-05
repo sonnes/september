@@ -33,7 +33,7 @@ never wears the app sidebar, and an app screen never wears the setup sidebar.
 
 | Layout      | Component                                                    | Routes                                                                                                                                                                                                                                                                          |
 | ----------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Setup       | `OnboardingLayout`, `packages/app-ui/layouts/onboarding.tsx` | `/welcome` `/privacy` `/profile` `/mode` `/connect` `/finish`                                                                                                                                                                                                                              |
+| Setup       | `OnboardingLayout`, `packages/app-ui/layouts/onboarding.tsx` | `/welcome` `/profile` `/mode` `/connect` `/finish`                                                                                                                                                                                                                              |
 | Application | `AppShell`, `packages/app-ui/layouts/app.tsx`                | `/dashboard` `/spaces` `/spaces/$slug/talk` `/spaces/$slug/agent` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/voice` `/voice/clone` `/help` `/help/$guideSlug` `/settings` `/settings/writing` `/settings/usage` `/settings/data` `/settings/connections/$provider` |
 
 `AppShell` is the shadcn `Sidebar` and `SidebarInset` pair: a solid indigo
@@ -656,7 +656,7 @@ Recording is best-effort and never stops speaking or writing.
 
 ## Walk through setup
 
-Each step is a route: `/welcome`, `/privacy`, `/profile`, `/mode`, `/connect`, and
+Each step is a route: `/welcome`, `/profile`, `/mode`, `/connect`, and
 `/finish`.
 Free setup skips `/connect`, so it shows four steps and advanced setup shows
 five. `stepsFor` in `src/rules/onboarding.ts` owns that rule, and the sidebar, the
@@ -916,7 +916,7 @@ hook run in order within a space. Browser close/reload warns while a save is
 pending or failed; the Mac window close action waits until those edits save.
 A forced quit, crash, or power loss before a write finishes can still lose it.
 
-The Terms & privacy setup step appears after Welcome, before personal details
+The Welcome screen includes a Terms & privacy summary before personal details
 or service connections. It summarizes local storage, optional providers, and
 the MIT terms. Full policies open in the browser while setup stays in place.
-Continue advances to About you; it does not record consent to optional processing.
+Get started advances to About you; it does not record consent to optional processing.

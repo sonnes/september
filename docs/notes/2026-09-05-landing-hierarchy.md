@@ -12,3 +12,5 @@ plan: ../plans/2026-09-05-landing-hierarchy.md
 - The enlarged Talk controls need an automatically growing frame; the previous fixed height cropped its bottom tabs.
 
 - The example review replaces care-centered defaults with opinions, humor, family plans, creative work, and book discussion. The bedtime story remains. Hero, Talk, codes, space phrases, Agent requests/results, and voice preview now follow the About narrative.
+
+- Each space now owns its phrase codes and typing prompt. The book discussion examples now concern Silo, with speculative questions and no plot spoilers.

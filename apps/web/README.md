@@ -135,7 +135,7 @@ one. `src/share-card.test.ts` holds both to that.
 The application route components come from `@september/app-ui`. The router and
 the web-only landing and legal pages remain local.
 
-The setup routes are `/welcome`, `/privacy`, `/profile`, `/mode`, `/connect`, and `/finish`.
+The setup routes are `/welcome`, `/profile`, `/mode`, `/connect`, and `/finish`.
 
 Setup runs once, and the two guards mirror each other: an application route
 asked for before setup is finished turns back to `/welcome`, and a setup step
@@ -169,11 +169,13 @@ customization has its own request-and-result section. Its preview shows the
 phrases or note produced by the selected example. The complete Agent
 conversation remains expandable.
 
+Public copy calls writing-model features “AI assistance.”
+
 The examples follow the About narrative: express opinions, change your mind,
 make jokes, and create something. The hero proposes an idea; Talk shares a
-reaction; Agent prepares a book-club space and discussion notes. Family,
-friends, work, and books supply the phrase examples. The note demo tells a
-bedtime story. These examples use marketing-only data.
+reaction; Agent prepares a Silo discussion space and spoiler-free theory notes. Family,
+friends, work, and Silo each supply different phrases, codes, and typing prompts. The note demo tells a
+bedtime story, with family celebrations and project pitches as other examples. These examples use marketing-only data.
 
 Spaces and saved phrases share one composer. Notes and Voice use native
 expandable panels with keyboard support. Privacy and the founder story follow
@@ -298,7 +300,7 @@ hook run in order within a space. Browser close/reload warns while a save is
 pending or failed; the Mac window close action waits until those edits save.
 A forced quit, crash, or power loss before a write finishes can still lose it.
 
-The Terms & privacy setup step appears after Welcome, before personal details
+The Welcome screen includes a Terms & privacy summary before personal details
 or service connections. It summarizes local storage, optional providers, and
 the MIT terms. Full policies open in the browser while setup stays in place.
-Continue advances to About you; it does not record consent to optional processing.
+Get started advances to About you; it does not record consent to optional processing.

@@ -137,14 +137,6 @@ export const STEPS = [
     action: "Get started",
   },
   {
-    path: "/privacy",
-    label: "Terms & privacy",
-    title: "Your words, your choices.",
-    subtitle: "A short guide to the Terms of Service and Privacy Policy.",
-    helper: "Read the full policies whenever you need them.",
-    action: "Continue",
-  },
-  {
     path: "/profile",
     label: "About you",
     title: "Tell us about yourself.",
@@ -256,7 +248,7 @@ export function canReach(
   path: StepPath,
   draft: Pick<OnboardingDraft, "name" | "mode">,
 ): boolean {
-  if (path === "/welcome" || path === "/privacy" || path === "/profile") return true;
+  if (path === "/welcome" || path === "/profile") return true;
   if (!draft.name.trim()) return false;
   if (path === "/mode") return true;
   if (path === "/connect") return draft.mode === "advanced";

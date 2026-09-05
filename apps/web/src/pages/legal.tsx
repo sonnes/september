@@ -124,7 +124,7 @@ export function PrivacyPolicy() {
         <h2>3. Optional features and their recipients</h2>
         <ul>
           <li>
-            <strong>Cloud writing:</strong> OpenRouter and the selected model provider receive your
+            <strong>AI assistance:</strong> OpenRouter and the selected model provider receive your
             request and relevant context, such as personal instructions, conversation history,
             notes, and Agent tool results. With cloud suggestions enabled, requests can occur as you
             compose or change context, without a separate Send action.
@@ -147,7 +147,7 @@ export function PrivacyPolicy() {
           <li>
             <strong>Apple Intelligence:</strong> the supported Mac feature processes writing
             requests through the local model service. September does not silently switch this
-            selection to a cloud writing provider.
+            selection to a cloud provider of AI assistance.
           </li>
           <li>
             <strong>Exports and calls:</strong> export files stay where you save them until you
@@ -220,7 +220,7 @@ export function PrivacyPolicy() {
             a cloud provider.
           </li>
           <li>
-            To stop future cloud writing requests, select no writing service and remove any separate
+            To stop future requests for AI assistance through cloud providers, select no writing service and remove any separate
             cloud Suggestions override. To stop cloud speech, select a system voice. Disconnect
             provider keys in Settings and revoke them with the provider if needed.
           </li>

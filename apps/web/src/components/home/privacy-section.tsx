@@ -7,7 +7,7 @@ export function PrivacySection() {
         </h2>
         <p className="max-w-2xl text-base leading-relaxed text-zinc-700">
           No September account. No required cloud service. Your spaces, phrases, and notes stay with
-          you. Cloud writing and voice services are optional.
+          you. AI assistance and voice services are optional.
         </p>
       </div>
     </section>

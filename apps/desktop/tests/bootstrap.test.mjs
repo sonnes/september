@@ -47,7 +47,7 @@ test("setup mode determines whether the connection step is included", () => {
 });
 
 test("setup navigation moves through the steps for the selected mode", () => {
-  assert.equal(nextStep("/welcome", free), "/privacy");
+  assert.equal(nextStep("/welcome", free), "/profile");
   assert.equal(nextStep("/mode", free), "/finish");
   assert.equal(previousStep("/finish", free), "/mode");
   assert.equal(nextStep("/mode", advanced), "/connect");

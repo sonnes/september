@@ -7,7 +7,6 @@ describe('browser route tree', () => {
     for (const path of [
       '/',
       '/welcome',
-      '/privacy',
       '/profile',
       '/mode',
       '/connect',

@@ -124,6 +124,6 @@ Speech returns whether playback completed successfully. Talk and Read aloud
 show speech notices. Present pauses on failure and keeps the unread chunk on
 screen for retry or silent use.
 
-`PrivacyStep` in `pages/steps.tsx` shows the Terms and Privacy summary after
-Welcome in both apps. It opens the full policies through the platform browser
+`WelcomeStep` in `pages/steps.tsx` includes the Terms and Privacy summary
+in both apps. It opens the full policies through the platform browser
 service, preserving the in-memory setup answers. It adds no consent flag.

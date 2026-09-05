@@ -1,6 +1,6 @@
 import React, { act } from 'react';
 
-import { PrivacyStep } from '@september/app-ui/pages/steps';
+import { WelcomeStep } from '@september/app-ui/pages/steps';
 import { createRoot } from 'react-dom/client';
 import { afterEach, expect, it, vi } from 'vitest';
 
@@ -37,17 +37,17 @@ for (const [name, rules] of [
       expect(
         rules
           .stepsFor(draft)
-          .slice(0, 3)
+          .slice(0, 2)
           .map(step => step.path)
-      ).toEqual(['/welcome', '/privacy', '/profile']);
-      expect(rules.nextStep('/welcome', draft)).toBe('/privacy');
-      expect(rules.previousStep('/profile', draft)).toBe('/privacy');
-      expect(rules.canReach('/privacy', { name: '', mode: null })).toBe(true);
+      ).toEqual(['/welcome', '/profile']);
+      expect(rules.nextStep('/welcome', draft)).toBe('/profile');
+      expect(rules.previousStep('/profile', draft)).toBe('/welcome');
+      expect(rules.canReach('/welcome', { name: '', mode: null })).toBe(true);
     }
   });
 }
 it('opens the full policies without leaving setup and continues to personal details', async () => {
-  await act(async () => root.render(<PrivacyStep />));
+  await act(async () => root.render(<WelcomeStep />));
   const buttons = [...container.querySelectorAll('button')];
   for (const button of buttons.slice(0, -1)) {
     await act(async () => button.click());

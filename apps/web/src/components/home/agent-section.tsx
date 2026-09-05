@@ -8,21 +8,20 @@ import { ArrowRight, Check, FileText, Pin } from 'lucide-react';
 // the real runtime binds a turn to the open space, so there is no other space
 // for these tools to reach.
 const DEMO_SPACE = {
-  title: 'Book club',
+  title: 'Silo',
   context:
-    'Book discussions with friends. Strong opinions, unexpected connections, and room to change my mind.',
+    'Conversations about Silo with friends. Compare theories and reactions without spoilers.',
 };
 
 const NOTE_TEXT =
-  'Thursday book club. I loved the opening but the ending felt rushed. ' +
-  'Was the narrator unreliable or just lonely? Bring up the train scene. ' +
-  'I changed my mind about the sister after chapter nine.';
+  'Silo discussion on Thursday. The rules make me suspicious. ' +
+  'Who benefits from keeping everyone in the dark? What do we think is outside? ' +
+  'I keep changing my mind about who to trust. No spoilers.';
 
 const TIDIED_NOTE =
-  'My take\n\nThe opening drew me in, but the ending felt rushed. ' +
-  'Chapter nine changed my mind about the sister.\n\nFor discussion\n\n' +
-  'Was the narrator unreliable or just lonely?\n' +
-  'What did everyone make of the train scene?';
+  'My take\n\nThe rules make me suspicious. I keep changing my mind about who to trust.\n\n' +
+  'For discussion\n\nWho benefits from keeping everyone in the dark?\n' +
+  'What do we think is outside?\n\nNo spoilers.';
 
 /** One step of a demo turn, in the shape the real transcript reads. */
 interface DemoStep {
@@ -53,29 +52,29 @@ const inspected = (notes: number, phrases: number, messages: number) => ({
 });
 
 const SPACE_CONTEXT =
-  'Thursday book club with friends. Talk about endings, characters, and scenes ' +
-  'that stay with us. Keep my own reactions and questions ready for discussion.';
+  'Thursday conversations about Silo with friends. Compare theories about the ' +
+  'outside world and who to trust. Keep the discussion spoiler-free.';
 
 // Marketing-only turns. The tool names, the arguments, and the transcript that
 // draws them are the app's own — only these three conversations are demo-local.
 export const AGENT_DEMO_ASKS: readonly AgentDemoAsk[] = [
   {
-    label: 'Make a space for my book club',
-    ask: 'Make a space for our book club. I like debating the ending and hearing what everyone else noticed.',
+    label: 'Make a space to talk about Silo',
+    ask: 'Make a space for our conversations about Silo. I want to compare theories without spoiling anything.',
     steps: [
       // The user's own words are already the space's note by the time its
       // agent takes the first turn — so there is one note and nothing else.
       { name: 'inspect_space', args: {}, result: inspected(1, 0, 0) },
       {
         name: 'configure_space',
-        args: { title: 'Book club', context: SPACE_CONTEXT },
+        args: { title: 'Silo', context: SPACE_CONTEXT },
         result: { ok: true },
       },
       {
         name: 'change_phrase',
         args: {
           operation: 'create',
-          text: 'I read that scene differently.',
+          text: 'I have a different theory about Silo.',
           kind: 'phrase',
           pinned: true,
         },
@@ -85,7 +84,7 @@ export const AGENT_DEMO_ASKS: readonly AgentDemoAsk[] = [
         name: 'change_phrase',
         args: {
           operation: 'create',
-          text: 'You’ve changed my mind.',
+          text: 'Who do you trust in Silo?',
           kind: 'phrase',
           pinned: true,
         },
@@ -93,18 +92,18 @@ export const AGENT_DEMO_ASKS: readonly AgentDemoAsk[] = [
       },
     ],
     reply:
-      'Your Book club space is ready, with your discussion ideas and two phrases to start with. Tell me what sounds like you and what you’d change.',
+      'Your Silo space is ready, with your discussion ideas and two phrases for comparing theories. I’ve added the no-spoilers preference to its context.',
   },
   {
     label: 'Add a phrase, and shorten another',
-    ask: 'Add “The villain has a point.” And shorten my phrase about disagreeing with the ending.',
+    ask: 'Add “What do you think is outside?” And shorten my phrase about not trusting the official story.',
     steps: [
       { name: 'inspect_space', args: {}, result: inspected(1, 6, 2) },
       {
         name: 'change_phrase',
         args: {
           operation: 'create',
-          text: 'The villain has a point.',
+          text: 'What do you think is outside?',
           kind: 'phrase',
           pinned: true,
         },
@@ -114,23 +113,23 @@ export const AGENT_DEMO_ASKS: readonly AgentDemoAsk[] = [
         name: 'change_phrase',
         args: {
           operation: 'edit',
-          phrase_id: 'phrase-ending',
-          text: 'I’m not sold on the ending.',
+          phrase_id: 'phrase-official-story',
+          text: 'I don’t buy the official story.',
         },
         result: { ok: true },
       },
     ],
     reply:
-      '“The villain has a point.” is pinned. Your other phrase now reads “I’m not sold on the ending.” Keep editing until they sound like you.',
+      '“What do you think is outside?” is pinned. Your other phrase now reads “I don’t buy the official story.” Keep editing until they sound like you.',
   },
   {
-    label: 'Organize my discussion notes',
-    ask: 'Organize my book-club notes into my take and questions for the group. Keep my opinions in my words.',
+    label: 'Organize my Silo theories',
+    ask: 'Organize my Silo notes into my take and questions for the group. Keep my theories in my words.',
     steps: [
       {
         name: 'read_note',
         args: { note_id: 'note-thursday' },
-        result: { name: 'Thursday’s discussion', content: NOTE_TEXT, has_more: false },
+        result: { name: 'Silo discussion', content: NOTE_TEXT, has_more: false },
       },
       {
         name: 'change_note',
@@ -139,7 +138,7 @@ export const AGENT_DEMO_ASKS: readonly AgentDemoAsk[] = [
       },
     ],
     reply:
-      'Your reactions come first, then two questions for the group. Your opinions are still in your words, ready to read aloud or present.',
+      'Your take comes first, then two questions for the group. I’ve kept your theories in your words and the no-spoilers reminder.',
   },
 ];
 
@@ -243,7 +242,7 @@ function AgentDemo() {
             <div>
               <p className="mb-4 flex items-center gap-2 text-sm font-medium text-zinc-600">
                 <FileText className="size-4" aria-hidden="true" />
-                Thursday’s discussion
+                Silo discussion
               </p>
               <p className="whitespace-pre-line text-lg leading-relaxed text-zinc-900">
                 {String(note.args.text)}
@@ -254,10 +253,10 @@ function AgentDemo() {
               <div className="mt-6 border-t border-zinc-200 pt-5">
                 <p className="flex items-center gap-2 text-base font-semibold text-zinc-950">
                   <FileText className="size-4 text-indigo-600" aria-hidden="true" />
-                  Discussion ideas
+                  Silo theories
                 </p>
                 <p className="mt-2 text-base leading-relaxed text-zinc-700">
-                  Your thoughts about the book, kept in this space.
+                  Your questions and theories, kept in this space.
                 </p>
               </div>
             )

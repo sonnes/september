@@ -63,7 +63,7 @@ panels move at the same width, the `md` breakpoint (768px) named in
 The setup progress list is one `<ol>` in both shapes — it lies on its side in
 the bar and stands up in the sidebar. It is never rendered twice with one copy
 hidden, so a screen reader hears the run of steps once, and every step link
-keeps its full name (`Step 2: Terms & privacy, current`) when the bar hides the
+keeps its full name (`Step 2: About you, current`) when the bar hides the
 visible label.
 
 The narrowest screen a step is laid out for is 320px. A measurement that would
@@ -72,7 +72,7 @@ two-column summary row — carries a breakpoint prefix instead of applying
 everywhere. `apps/web/src/onboarding-responsive.test.tsx` reads that contract
 off the rendered tree.
 
-The Terms & privacy step (`/privacy`) follows Welcome in both apps, before
+Welcome includes the Terms & privacy summary in both apps, before
 personal details or service connections. Its full-policy controls open the
 website through `openInBrowser`, so the setup answers remain in memory.
 The progress bar scrolls horizontally on narrow screens to keep each step

@@ -23,7 +23,7 @@ import {
   WritingSettings,
 } from '@september/app-ui/pages/settings';
 import { SpacesScreen } from '@september/app-ui/pages/spaces';
-import { ConnectStep, PrivacyStep, FinishStep, ModeStep, ProfileStep, WelcomeStep } from '@september/app-ui/pages/steps';
+import { ConnectStep, FinishStep, ModeStep, ProfileStep, WelcomeStep } from '@september/app-ui/pages/steps';
 import { TalkScreen } from '@september/app-ui/pages/talk';
 import { UsageSettings } from '@september/app-ui/pages/usage';
 import { VoiceCloneScreen, VoiceScreen } from '@september/app-ui/pages/voice';
@@ -41,7 +41,6 @@ import {
 export const APP_ROUTE_PATHS = [
   '/',
   '/welcome',
-  '/privacy',
   '/profile',
   '/mode',
   '/connect',
@@ -243,7 +242,6 @@ const routeTree = rootRoute.addChildren([
   }),
   setupRoute.addChildren([
     step('/welcome', WelcomeStep),
-    step('/privacy', PrivacyStep),
     step('/profile', ProfileStep),
     step('/mode', ModeStep),
     step('/connect', ConnectStep),

@@ -1,22 +1,34 @@
-export const DEMO_SPACES: { title: string; phrases: string[] }[] = [
+export const DEMO_SPACES: { title: string; phrases: { text: string; code: string }[] }[] = [
   {
     title: 'Family',
-    phrases: ['I have news', 'That’s our next trip', 'I’m choosing the film'],
+    phrases: [
+      { text: 'Let’s make a weekend of it.', code: 'trip' },
+      { text: 'I’m choosing the film.', code: 'film' },
+      { text: 'I’ve changed my mind.', code: 'cm' },
+    ],
   },
   {
     title: 'Friends',
-    phrases: ['Tell me the whole story', 'I owe you a rematch', 'That’s an inside joke'],
+    phrases: [
+      { text: 'I owe you a rematch.', code: 'rem' },
+      { text: 'Tell me the whole story.', code: 'story' },
+      { text: 'I’m joking!', code: 'jk' },
+    ],
   },
   {
     title: 'Work',
-    phrases: ['Let’s try another angle', 'I see it differently', 'I’ll sketch an idea'],
+    phrases: [
+      { text: 'Let’s try another angle.', code: 'idea' },
+      { text: 'I see it differently.', code: 'imo' },
+      { text: 'I’ll sketch an idea.', code: 'sketch' },
+    ],
   },
   {
-    title: 'Books',
+    title: 'Silo',
     phrases: [
-      'I’m not sold on the ending',
-      'That character grew on me',
-      'What did you make of it?',
+      { text: 'What do you think is outside?', code: 'out' },
+      { text: 'Who do you trust in Silo?', code: 'trust' },
+      { text: 'I have a theory about Silo.', code: 'theory' },
     ],
   },
 ];

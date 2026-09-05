@@ -9,7 +9,7 @@ status: approved
 
 ## Outcome
 
-Both apps reach the cloud writing service through one typed client instead of
+Both apps reach the cloud AI assistance service through one typed client instead of
 two hand-written `fetch` bodies. The desktop keeps every key in the Keychain and
 answers the WebView through a loopback proxy, the same shape Apple Intelligence
 already uses. The agent turn streams, so the first words arrive while the rest

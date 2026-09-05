@@ -12,26 +12,19 @@ import { useDemoSpeech } from './use-demo-speech';
 
 const DEMO_SPACE_ID = 'landing-demo-space';
 
-// Marketing-only example rows — everyday, dignified phrases. The matching and
-// take machinery is the real feature; only these rows are demo-local.
-const DEMO_PHRASES: { text: string; code?: string }[] = [
-  { text: 'Here’s my take.', code: 'imo' },
-  { text: 'I’m joking!', code: 'jk' },
-  { text: 'I’ve changed my mind.', code: 'cm' },
-];
-
-const DEMO_ROWS: SavedPhrase[] = DEMO_PHRASES.map((phrase, index) => ({
-  id: `landing-demo-${index}`,
-  space_id: DEMO_SPACE_ID,
-  text: phrase.text,
-  kind: 'phrase',
-  pinned: true,
-  code: phrase.code,
-  created_at: 0,
-  updated_at: 0,
-}));
-
-const CODED_ROWS = DEMO_ROWS.filter(row => row.code);
+// Each space supplies its own examples to the real code matcher.
+const DEMO_ROWS: SavedPhrase[][] = DEMO_SPACES.map((space, spaceIndex) =>
+  space.phrases.map((phrase, index) => ({
+    id: `landing-demo-${spaceIndex}-${index}`,
+    space_id: DEMO_SPACE_ID,
+    text: phrase.text,
+    kind: 'phrase',
+    pinned: true,
+    code: phrase.code,
+    created_at: 0,
+    updated_at: 0,
+  }))
+);
 
 export interface DemoCodeMatch {
   code: string;
@@ -39,10 +32,10 @@ export interface DemoCodeMatch {
 }
 
 /** The seed phrase whose code matches the word at the caret — real matchCode. */
-export function matchDemoCode(text: string): DemoCodeMatch | undefined {
+export function matchDemoCode(text: string, spaceIndex = 0): DemoCodeMatch | undefined {
   const word = trailingWord(text);
   if (!word) return undefined;
-  const row = matchCode(word, DEMO_ROWS, DEMO_SPACE_ID);
+  const row = matchCode(word, DEMO_ROWS[spaceIndex], DEMO_SPACE_ID);
   return row?.code ? { code: row.code, phrase: row.text } : undefined;
 }
 
@@ -54,7 +47,7 @@ export function PhraseCodesSection() {
           eyebrow="Spaces & saved phrases"
           title="Your words, ready for every room."
           lede="Keep a space for family, friends, work, or your book club, each with its own phrases and notes. Pin the words you use most and give longer phrases short codes — two letters can be a whole sentence."
-          hint="Switch spaces to change the phrases. Try typing cm, then tap the suggestion."
+          hint="Switch spaces, then try one of the codes shown below the composer."
         />
         <CodesDemo />
       </div>
@@ -87,14 +80,14 @@ function CodesDemo() {
   const stripes = useMemo<LandingStripe[]>(() => {
     const word = trailingWord(text);
     if (!word) return [];
-    const row = matchCode(word, DEMO_ROWS, DEMO_SPACE_ID);
+    const row = matchCode(word, DEMO_ROWS[activeSpace], DEMO_SPACE_ID);
     if (!row) return [];
     const expanded = codeExpansionText(text, row.text);
     if (expanded.trim().toLowerCase() === text.trim().toLowerCase()) return [];
     return [{ ...stripeForText(expanded, text), source: 'code', code: row.code }];
-  }, [text]);
+  }, [text, activeSpace]);
 
-  const pinnedChips = ['Plot twist!', ...DEMO_SPACES[activeSpace].phrases.slice(0, 3)];
+  const pinnedChips = DEMO_SPACES[activeSpace].phrases.map(phrase => phrase.text);
 
   return (
     <div className="overflow-hidden rounded-surface border border-zinc-200 bg-white p-3 shadow-sm">
@@ -137,7 +130,7 @@ function CodesDemo() {
                 speakMessage(text);
               }
             }}
-            placeholder="Try: Actually, cm"
+            placeholder={`Try: ${DEMO_SPACES[activeSpace].phrases[0].code}`}
             aria-label="Message with phrase codes"
             className="max-h-40 w-full resize-none overflow-y-auto bg-transparent text-2xl font-medium leading-snug text-foreground placeholder:text-zinc-500 focus:outline-none"
           />
@@ -155,7 +148,7 @@ function CodesDemo() {
         </div>
         <p className="px-1 text-sm text-zinc-600">
           Codes here:{' '}
-          {CODED_ROWS.map((row, index) => (
+          {DEMO_ROWS[activeSpace].map((row, index) => (
             <span key={row.code}>
               {index > 0 && ' · '}
               <strong>{row.code}</strong> → {row.text}

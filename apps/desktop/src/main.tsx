@@ -47,7 +47,6 @@ import { TalkScreen } from "@september/app-ui/pages/talk";
 import { VoiceCloneScreen, VoiceScreen } from "@september/app-ui/pages/voice";
 import {
   ConnectStep,
-  PrivacyStep,
   FinishStep,
   ModeStep,
   ProfileStep,
@@ -237,7 +236,6 @@ const routeTree = rootRoute.addChildren([
   }),
   setupRoute.addChildren([
     step("/welcome", WelcomeStep),
-    step("/privacy", PrivacyStep),
     step("/profile", ProfileStep),
     step("/mode", ModeStep),
     step("/connect", ConnectStep),
