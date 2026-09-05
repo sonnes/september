@@ -135,9 +135,9 @@ The sidebar is a **solid indigo panel** in light _and_ dark mode — September's
 
 ## Layout
 
-- **Base viewport:** **13" iPad Pro (M4), landscape — 1376×1032.** Primary designs target this size; lay things out here first, then scale up for wider desktops and down for tablet portrait / mobile. The constant lives in `BASE_VIEWPORT_WIDTH` (`@/packages/shared`); `useIsCompact()` reports when the viewport is at or below it.
+- **Base viewport:** **13" iPad Pro (M4), landscape — 1376×1032.** Primary designs target this size; lay things out here first, then scale up for wider desktops and down for tablet portrait / mobile. The constant lives in `BASE_VIEWPORT_WIDTH` (`@/packages/shared`).
 - **Approach:** shadcn `Sidebar` + `SidebarInset`, grid-disciplined.
-- **Sidebar default state:** viewport-driven. At or below the base (≤1376px — both iPad orientations and smaller) the sidebar defaults to its **icon rail**; wider screens default to the full sidebar. A manual toggle (rail or ⌘/Ctrl-B) wins for the session. Below 768px it becomes the mobile sheet.
+- **Sidebar default state:** collapsed to the icon rail at every desktop width. A manual toggle (rail or ⌘/Ctrl-B) persists while the app shell is mounted, including across resizes. Below 768px it becomes the mobile sheet, closed by default.
 - **Sidebar widths:** `16rem` (256px) expanded · `18rem` mobile sheet · `3rem` icon rail.
 - **Inset shell:** content floats as an inset card — `md:m-2 md:ml-0 md:rounded-xl md:shadow-sm` — over the `zinc-100` page, beside the indigo sidebar.
 - **Header:** `SidebarLayout.Header` = `h-16 border-b`, icon + title at `px-4`.

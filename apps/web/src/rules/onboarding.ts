@@ -40,47 +40,11 @@ export const DEFAULT_DRAFT: OnboardingDraft = {
   name: '',
   speakingStyle: SPEAKING_STYLES[0].value,
   personalWords: '',
-  mode: null,
+  mode: 'free',
   defaultModel: { service: 'none', model: '' },
   suggestionsModel: null,
   voiceService: 'system',
 };
-
-// Standard mode needs no provider account. The browser still gives the user its
-// local autocomplete engine and system speech.
-export const SETUP_MODES = [
-  {
-    id: 'free',
-    accent: 'amber',
-    badge: 'Standard',
-    title: 'Standard setup',
-    body: 'Local word suggestions and speech from this browser.',
-    bullets: [
-      'Autocomplete learns from your messages on this device.',
-      'Spaces and saved phrases stay on this device.',
-      'No account is required.',
-    ],
-  },
-  {
-    id: 'advanced',
-    accent: 'sky',
-    badge: 'Advanced',
-    title: 'Use your own services',
-    body: 'For people or caregivers who already have accounts with these services.',
-    bullets: [
-      'Add your own OpenRouter or ElevenLabs key.',
-      'Choose the voice or writing help you prefer.',
-      'September contacts only the services you choose.',
-    ],
-  },
-] as const satisfies readonly {
-  id: SetupMode;
-  accent: 'amber' | 'sky';
-  badge: string;
-  title: string;
-  body: string;
-  bullets: readonly string[];
-}[];
 
 export const WRITING_SERVICES = [
   {
@@ -140,14 +104,6 @@ export const STEPS = [
     action: 'Save and continue',
   },
   {
-    path: '/mode',
-    label: 'Choose setup',
-    title: 'How should September run?',
-    subtitle: 'Pick what fits. You can change any of this later in Settings.',
-    helper: 'You can switch modes anytime in Settings.',
-    action: 'Continue',
-  },
-  {
     path: '/connect',
     label: 'Connect',
     title: 'Choose what helps you.',
@@ -186,11 +142,9 @@ export const WELCOME_POINTS = [
   },
 ] as const;
 
-/** The steps this draft walks through. Free setup owns no key, so it skips
- * the connect step in the sidebar and in both navigation directions. */
-export function stepsFor(draft: Pick<OnboardingDraft, 'mode'>): readonly (typeof STEPS)[number][] {
-  if (draft.mode === 'advanced') return STEPS;
-  return STEPS.filter(step => step.path !== '/connect');
+/** Every setup follows the same steps; saved mode values remain compatible. */
+export function stepsFor(_draft: Pick<OnboardingDraft, 'mode'>): readonly (typeof STEPS)[number][] {
+  return STEPS;
 }
 
 export function stepFor(path: StepPath): (typeof STEPS)[number] {
@@ -229,7 +183,5 @@ export function isSetupDone(setup: Pick<OnboardingDraft, 'name' | 'mode'> | null
 export function canReach(path: StepPath, draft: Pick<OnboardingDraft, 'name' | 'mode'>): boolean {
   if (path === '/welcome' || path === '/profile') return true;
   if (!draft.name.trim()) return false;
-  if (path === '/mode') return true;
-  if (path === '/connect') return draft.mode === 'advanced';
-  return draft.mode !== null;
+  return true;
 }

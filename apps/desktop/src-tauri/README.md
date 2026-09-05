@@ -499,3 +499,12 @@ APFEL_BIN="$PWD/binaries/apfel-aarch64-apple-darwin" \
   cargo test --test apfel live_apfel_serves_a_completion_through_the_rust_client \
   -- --ignored --exact
 ```
+
+## OpenRouter authorization
+
+`oauth.rs` implements `openrouter_connect` and `openrouter_cancel`. A request
+identifier scopes cancellation. The callback binds IPv4 loopback on an OS-assigned
+port and requires a random path. PKCE uses S256; authorization codes and verifiers
+stay in Rust. Only a checked key reaches `ProviderKeys::store`. The command
+returns a provider status, never the key. Cancellation and a five-minute timeout
+drop the callback listener and pending exchange.

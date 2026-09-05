@@ -94,8 +94,8 @@ export function PrivacyPolicy() {
             phrases, and learned word patterns support writing and speaking.
           </li>
           <li>
-            <strong>Service credentials:</strong> your OpenRouter and ElevenLabs API keys
-            authenticate requests to those services.
+            <strong>Service credentials:</strong> OpenRouter issues a key when you authorize September. You enter
+            your ElevenLabs key separately. These keys authenticate requests to those services.
           </li>
           <li>
             <strong>Audio:</strong> generated speech and timing information are cached to replay

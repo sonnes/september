@@ -13,7 +13,7 @@ OpenRouter.
 | Job          | Service            | Setup cost                           | Where it runs |
 | ------------ | ------------------ | ------------------------------------ | ------------- |
 | Writing help | Apple Intelligence | none                                 | On the Mac    |
-| Writing help | OpenRouter         | an API key, and a model or Automatic | Cloud         |
+| Writing help | OpenRouter         | browser authorization, then a model | Cloud         |
 | Voice        | macOS system voice | none                                 | On the Mac    |
 | Voice        | ElevenLabs         | an API key and a model, then a voice | Cloud         |
 
@@ -30,8 +30,9 @@ needs no account and no network. A broken key can never stop speech.
 | A key status, an account label, a quota | Memory, for the length of one screen                  |
 | Apple Intelligence availability         | Memory, for the life of the process                   |
 
-A key crosses the process boundary one time, from the key field to Rust. It
-never comes back. `src-tauri/src/providers.rs` owns the Keychain and the
+OpenRouter authorization and key exchange happen in Rust through PKCE and a
+temporary loopback callback. Its key never enters the WebView. An ElevenLabs
+key crosses from its input field to Rust once and never comes back. `src-tauri/src/providers.rs` owns the Keychain and the
 network. `src/services/os.ts` owns the only calls from React.
 
 The WebView writes with a typed model client, and a typed model client wants

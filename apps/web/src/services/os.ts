@@ -1,3 +1,4 @@
+import { authorizeOpenRouter } from './oauth';
 import { modelSettingsFrom } from '@september/core/rules/model-config';
 import { DEFAULT_DRAFT, type OnboardingDraft } from '@/rules/onboarding';
 import { panelStateFrom, type PanelState } from '@/rules/panel';
@@ -483,25 +484,34 @@ const PROVIDER_NAMES: Record<Provider, string> = {
   elevenlabs: 'ElevenLabs',
 };
 
-async function verifyProvider(provider: Provider, key: string): Promise<void> {
+async function verifyProvider(provider: Provider, key: string, signal?: AbortSignal): Promise<void> {
   const response = await fetch(
     provider === 'openrouter'
-      ? 'https://openrouter.ai/api/v1/auth/key'
+      ? 'https://openrouter.ai/api/v1/key'
       : 'https://api.elevenlabs.io/v1/user',
     {
       headers:
         provider === 'openrouter' ? { authorization: `Bearer ${key}` } : { 'xi-api-key': key },
+      signal,
     }
   );
   if (!response.ok)
     throw new Error(`${PROVIDER_NAMES[provider]} did not accept that key. Copy it and try again.`);
 }
 
-export async function connectProvider(provider: Provider, key: string): Promise<ProviderStatus> {
+export async function connectOpenRouter(signal: AbortSignal): Promise<ProviderStatus> {
+  const key = await authorizeOpenRouter(signal);
+  signal.throwIfAborted();
+  return connectProvider('openrouter', key, signal);
+}
+
+export async function connectProvider(provider: Provider, key: string, signal?: AbortSignal): Promise<ProviderStatus> {
   const trimmed = key.trim();
-  await verifyProvider(provider, trimmed);
-  providerKeys = { ...providerKeys, [provider]: trimmed };
-  await (await getRepository()).putSetting('provider-keys', providerKeys);
+  await verifyProvider(provider, trimmed, signal);
+  signal?.throwIfAborted();
+  const nextKeys = { ...providerKeys, [provider]: trimmed };
+  await (await getRepository()).putSetting('provider-keys', nextKeys);
+  providerKeys = nextKeys;
   return providerStatus(provider);
 }
 

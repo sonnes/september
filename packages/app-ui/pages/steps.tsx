@@ -21,13 +21,10 @@ import { useDraft } from "@september/app-ui/layouts/onboarding";
 import {
   nextStep,
   previousStep,
-  SETUP_MODES,
   SPEAKING_STYLES,
   stepFor,
   VOICE_SERVICES,
-  WELCOME_POINTS,
   WRITING_SERVICES,
-  type SetupMode,
   type StepPath,
 } from "@platform/rules/onboarding";
 import {
@@ -45,9 +42,9 @@ import {
 } from "@platform/services/os";
 import {
   CloudStatus,
+  ElevenLabsImpactLink,
   KeyPanel,
   Mark,
-  ModeCard,
   Status,
 } from "@september/app-ui/blocks/services";
 import { speechSettings } from "@platform/services/speech";
@@ -131,54 +128,25 @@ export function WelcomeStep() {
         </Button>
       }
     >
-      <div className="space-y-8">
-      {/* ml-3 keeps the hanging markers clear of the scroll body, which clips. */}
-      <ol className="ml-3 space-y-4 border-l border-zinc-200 pl-5">
-        {WELCOME_POINTS.map((point, index) => (
-          <li key={point.title} className="relative">
-            <span className="absolute -left-[1.8125rem] top-0 flex size-6 items-center justify-center rounded-full bg-white text-xs font-semibold text-indigo-600 ring-1 ring-zinc-200">
-              {index + 1}
-            </span>
-            <div className="max-w-xl">
-              <h3 className="text-base font-semibold">{point.title}</h3>
-              <p className="mt-1 text-sm leading-relaxed text-zinc-500">
-                {point.description}
-              </p>
-            </div>
-          </li>
-        ))}
-      </ol>
-      <div className="max-w-2xl space-y-6 border-t pt-6 text-sm leading-relaxed md:text-base">
+      <div className="max-w-2xl space-y-4 text-sm leading-relaxed md:text-base">
         <h3 className="text-xl font-semibold">Terms &amp; privacy</h3>
-        <section className="space-y-2">
-          <h3 className="text-lg font-semibold">Your words belong to you</h3>
-          <p>Your conversations, notes, and settings stay on your device. September has no account or automatic cloud sync. Keep backups: device loss or clearing app data can erase your words.</p>
-        </section>
-        <section className="space-y-2">
-          <h3 className="text-lg font-semibold">Cloud services are your choice</h3>
-          <p>Optional writing and voice services receive the words and context they need. Voice cloning uploads the recordings you submit. Providers have their own privacy rules and may charge you. Some system voices also use the internet.</p>
-          <p>The website host and configured analytics process visit information. September does not sell your personal information.</p>
-        </section>
-        <section className="space-y-2">
-          <h3 className="text-lg font-semibold">Free, open source, and offered as is</h3>
-          <p>September is a personal project maintained in India. The MIT License lets you use, change, and share the software. There is no warranty or guaranteed support. Your rights under applicable law still apply.</p>
-          <p>September can fail. Keep another way to communicate urgent needs, and only clone a voice you have permission to use.</p>
-        </section>
-        <div className="space-y-3">
-          <p>This is a summary. Continuing does not give consent to optional data processing. You choose services separately.</p>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button type="button" variant="outline" className="min-h-11"
-              onClick={() => void openInBrowser("https://september.to/terms-of-service")}>
-              Terms of Service
-            </Button>
-            <Button type="button" variant="outline" className="min-h-11"
-              onClick={() => void openInBrowser("https://september.to/privacy-policy")}>
-              Privacy Policy
-            </Button>
-          </div>
-          <p className="text-sm text-muted-foreground">Full policies open in your browser without losing your place in setup.</p>
+        <ul className="list-disc space-y-3 pl-5">
+          <li><strong>Your words stay yours.</strong> Data stays on your device unless you use cloud features. Keep backups.</li>
+          <li><strong>You choose cloud services.</strong> They receive relevant text or recordings and may charge you. Website hosting and analytics process visit information.</li>
+          <li><strong>Free and open source.</strong> A personal project in India, under the MIT License, with no warranty or guaranteed support. Your legal rights remain.</li>
+          <li><strong>Keep another way to communicate urgent needs.</strong> September can fail.</li>
+        </ul>
+        <p>Continuing does not give consent to optional data processing.</p>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Button type="button" variant="outline" className="min-h-11"
+            onClick={() => void openInBrowser("https://september.to/terms-of-service")}>
+            Terms of Service
+          </Button>
+          <Button type="button" variant="outline" className="min-h-11"
+            onClick={() => void openInBrowser("https://september.to/privacy-policy")}>
+            Privacy Policy
+          </Button>
         </div>
-      </div>
       </div>
     </Step>
   );
@@ -189,7 +157,6 @@ export function ProfileStep() {
   const { draft, setDraft } = useDraft();
   const [name, setName] = useState(draft.name);
   const [speakingStyle, setSpeakingStyle] = useState(draft.speakingStyle);
-  const [personalWords, setPersonalWords] = useState(draft.personalWords);
   const selected = SPEAKING_STYLES.find(
     (option) => option.value === speakingStyle,
   );
@@ -201,7 +168,6 @@ export function ProfileStep() {
       ...current,
       name: name.trim(),
       speakingStyle,
-      personalWords,
     }));
     navigate({ to: nextStep("/profile", draft)! });
   }
@@ -272,21 +238,6 @@ export function ProfileStep() {
             />
           </Field>
 
-          <Field
-            title="Personal words"
-            description="Optional. Names, care phrases, routines, or topics September should know."
-            htmlFor="onboarding-personal-words"
-          >
-            <Textarea
-              id="onboarding-personal-words"
-              value={personalWords}
-              onChange={(event) => setPersonalWords(event.target.value)}
-              rows={4}
-              maxLength={5000}
-              placeholder="Amma. Dr. Shah. I need a short rest. Please give me a moment."
-              className="leading-relaxed"
-            />
-          </Field>
         </div>
       </Step>
     </form>
@@ -319,48 +270,9 @@ function Field({
   );
 }
 
-export function ModeStep() {
-  const navigate = useNavigate();
-  const { draft, setDraft } = useDraft();
-
-  function choose(mode: SetupMode) {
-    setDraft((current) => ({ ...current, mode }));
-  }
-
-  return (
-    <Step
-      path="/mode"
-      footer={
-        <Button
-          type="button"
-          size="lg"
-          className={ACTION}
-          disabled={!draft.mode}
-          onClick={() => navigate({ to: nextStep("/mode", draft)! })}
-        >
-          {stepFor("/mode").action}
-        </Button>
-      }
-    >
-      <fieldset className="grid gap-4 lg:grid-cols-2">
-        <legend className="sr-only">Setup mode</legend>
-        {SETUP_MODES.map((option) => (
-          <ModeCard
-            key={option.id}
-            option={option}
-            selected={draft.mode === option.id}
-            onChoose={() => choose(option.id)}
-          />
-        ))}
-      </fieldset>
-    </Step>
-  );
-}
-
 export function FinishStep() {
   const { draft } = useDraft();
   const navigate = useNavigate();
-  const mode = SETUP_MODES.find((option) => option.id === draft.mode);
   const style = SPEAKING_STYLES.find(
     (option) => option.value === draft.speakingStyle,
   );
@@ -390,14 +302,13 @@ export function FinishStep() {
         </span>
         <div>
           <p className="text-xs font-bold text-indigo-600">Your setup</p>
-          <h3 className="mt-1 text-base font-semibold">{mode?.title}</h3>
           <dl className="mt-5 grid gap-3">
             <SummaryRow label="Name" value={draft.name} />
             <SummaryRow
               label="Speaking style"
               value={style?.label ?? "Custom"}
             />
-            <SummaryRow label="Services" value="Connect later in Settings" />
+            <SummaryRow label="Services" value="Change anytime in Settings" />
           </dl>
         </div>
       </div>
@@ -623,6 +534,7 @@ export function ConnectStep() {
                       onConnected={replace}
                       onForget={forget}
                     />
+                    <ElevenLabsImpactLink />
                     {voices.length > 0 && (
                       <div className="flex flex-wrap items-center gap-2">
                         <Select value={voiceId} onValueChange={setVoiceId}>

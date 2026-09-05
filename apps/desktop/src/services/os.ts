@@ -365,6 +365,18 @@ export async function readConnections(): Promise<Connections> {
 }
 
 /** Rust tests the key, then stores it in the Keychain. It returns a status. */
+export async function connectOpenRouter(signal: AbortSignal): Promise<ProviderStatus> {
+  signal.throwIfAborted();
+  const requestId = crypto.randomUUID();
+  const cancel = () => { void invoke("openrouter_cancel", { requestId }).catch(() => undefined); };
+  signal.addEventListener("abort", cancel, { once: true });
+  try {
+    return await invoke<ProviderStatus>("openrouter_connect", { requestId });
+  } finally {
+    signal.removeEventListener("abort", cancel);
+  }
+}
+
 export const connectProvider = (provider: Provider, key: string) =>
   invoke<ProviderStatus>("provider_connect", { request: { provider, key } });
 

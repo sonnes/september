@@ -33,7 +33,7 @@ never wears the app sidebar, and an app screen never wears the setup sidebar.
 
 | Layout      | Component                                                    | Routes                                                                                                                                                                                                                                                                          |
 | ----------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Setup       | `OnboardingLayout`, `packages/app-ui/layouts/onboarding.tsx` | `/welcome` `/profile` `/mode` `/connect` `/finish`                                                                                                                                                                                                                              |
+| Setup       | `OnboardingLayout`, `packages/app-ui/layouts/onboarding.tsx` | `/welcome` `/profile` `/connect` `/finish`                                                                                                                                                                                                                              |
 | Application | `AppShell`, `packages/app-ui/layouts/app.tsx`                | `/dashboard` `/spaces` `/spaces/$slug/talk` `/spaces/$slug/agent` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/voice` `/voice/clone` `/help` `/help/$guideSlug` `/settings` `/settings/writing` `/settings/usage` `/settings/data` `/settings/connections/$provider` |
 
 `AppShell` is the shadcn `Sidebar` and `SidebarInset` pair: a solid indigo
@@ -48,9 +48,8 @@ finished-setup guard. The setup sidebar can open the setup guide inline without
 leaving the current step or changing its answers. An unknown guide slug returns
 to `/help`.
 
-The window opens at the 1376px baseline, so the sidebar starts as a 48px icon
-rail. A wider screen opens the full sidebar. Command-B toggles it, and that
-choice holds until the width crosses the baseline again.
+The sidebar starts collapsed at every window width as a 48px icon
+rail. Command-B toggles it, and that choice holds across window resizes.
 
 Setup runs one time. The last step keeps its answers in the `setup` setting,
 then opens `/dashboard`. After that, `/` opens the screen the user left, and
@@ -656,10 +655,10 @@ Recording is best-effort and never stops speaking or writing.
 
 ## Walk through setup
 
-Each step is a route: `/welcome`, `/profile`, `/mode`, `/connect`, and
+Each step is a route: `/welcome`, `/profile`, `/connect`, and
 `/finish`.
-Free setup skips `/connect`, so it shows four steps and advanced setup shows
-five. `stepsFor` in `src/rules/onboarding.ts` owns that rule, and the sidebar, the
+Everyone follows the same four steps. Connecting cloud services is optional.
+`stepsFor` in `src/rules/onboarding.ts` owns the sequence, and the sidebar, the
 guards, and both navigation directions all read it. The router uses hash history,
 because Tauri serves the built files from the asset protocol. A step opens only
 after the answers it needs exist. The answers stay in memory until account
@@ -920,3 +919,8 @@ The Welcome screen includes a Terms & privacy summary before personal details
 or service connections. It summarizes local storage, optional providers, and
 the MIT terms. Full policies open in the browser while setup stays in place.
 Get started advances to About you; it does not record consent to optional processing.
+
+OpenRouter connects through browser authorization in setup and Settings. Rust
+uses PKCE and a temporary loopback callback on a free port. It exchanges and
+checks the key before saving it to Keychain; the WebView receives only status.
+Cancel closes the attempt, and an unanswered attempt expires after five minutes.

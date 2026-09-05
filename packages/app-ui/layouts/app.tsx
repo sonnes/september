@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import {
@@ -24,7 +24,7 @@ import {
   SidebarRail,
 } from "@september/ui/components/sidebar";
 
-import { APP_NAV, isCompactWidth, type AppPath } from "@platform/rules/app-nav";
+import { APP_NAV, type AppPath } from "@platform/rules/app-nav";
 import { BrandMark, BrandWordmark } from "@september/app-ui/blocks/brand";
 import { RightPanelSlot } from "@september/app-ui/blocks/screen";
 
@@ -47,35 +47,13 @@ const ICONS: Record<AppPath, LucideIcon> = {
   ...DESKTOP_ICONS,
 };
 
-/** True at or below the base design viewport, where the sidebar is a rail. */
-function useIsCompact(): boolean {
-  const [isCompact, setIsCompact] = useState(false);
-
-  useEffect(() => {
-    const read = () => setIsCompact(isCompactWidth(window.innerWidth));
-    read();
-    window.addEventListener("resize", read);
-    return () => window.removeEventListener("resize", read);
-  }, []);
-
-  return isCompact;
-}
-
-/**
- * The app shell: the indigo sidebar beside an inset white surface.
- *
- * The provider is keyed on the breakpoint, so a resize past the base viewport
- * applies the new default. A manual toggle (the rail or Command-B) wins until
- * then.
- */
+/** The app sidebar starts collapsed; manual toggles survive resizing. */
 export function AppShell() {
-  const isCompact = useIsCompact();
   const [slot, setSlot] = useState<HTMLElement | null>(null);
 
   return (
     <SidebarProvider
-      key={isCompact ? "compact" : "wide"}
-      defaultOpen={!isCompact}
+      defaultOpen={false}
       // A definite height, so the screen body scrolls inside the inset
       // instead of the whole shell growing past the window.
       className="h-svh"

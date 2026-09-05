@@ -38,19 +38,19 @@ test("the app uses its default route for transient or unknown saved routes", () 
   assert.equal(openingPath(null), fallback);
 });
 
-test("setup mode determines whether the connection step is included", () => {
+test("all saved modes follow the same setup steps", () => {
   assert.deepEqual(
     stepsFor(free).map((step) => step.path),
-    STEPS.filter((step) => step.path !== "/connect").map((step) => step.path),
+    STEPS.map((step) => step.path),
   );
   assert.deepEqual(stepsFor(advanced), STEPS);
 });
 
 test("setup navigation moves through the steps for the selected mode", () => {
   assert.equal(nextStep("/welcome", free), "/profile");
-  assert.equal(nextStep("/mode", free), "/finish");
-  assert.equal(previousStep("/finish", free), "/mode");
-  assert.equal(nextStep("/mode", advanced), "/connect");
+  assert.equal(nextStep("/profile", free), "/connect");
+  assert.equal(previousStep("/finish", free), "/connect");
+  assert.equal(nextStep("/profile", advanced), "/connect");
   assert.equal(previousStep("/finish", advanced), "/connect");
   assert.equal(nextStep("/finish", advanced), null);
 });
@@ -60,9 +60,9 @@ test("setup steps unlock only after their required answers exist", () => {
 
   assert.equal(canReach("/welcome", blank), true);
   assert.equal(canReach("/profile", blank), true);
-  assert.equal(canReach("/mode", blank), false);
-  assert.equal(canReach("/mode", { name: "Ravi", mode: null }), true);
-  assert.equal(canReach("/connect", free), false);
+  assert.equal(canReach("/connect", blank), false);
+  assert.equal(canReach("/connect", { name: "Ravi", mode: null }), true);
+  assert.equal(canReach("/connect", free), true);
   assert.equal(canReach("/connect", advanced), true);
   assert.equal(canReach("/finish", advanced), true);
 });

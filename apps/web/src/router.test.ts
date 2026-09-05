@@ -8,7 +8,6 @@ describe('browser route tree', () => {
       '/',
       '/welcome',
       '/profile',
-      '/mode',
       '/connect',
       '/finish',
       '/dashboard',

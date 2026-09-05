@@ -5,84 +5,20 @@
  * keeps a second copy of the key.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Ban, Volume2 } from "lucide-react";
 
 import { Button } from "@september/ui/components/button";
 import { Input } from "@september/ui/components/input";
 
-import type { SETUP_MODES } from "@platform/rules/onboarding";
 import {
   connectProvider,
+  connectOpenRouter,
+  openInBrowser,
   type Provider,
   type ProviderStatus,
 } from "@platform/services/os";
-
-const MODE_ACCENT = {
-  amber: { edge: "border-t-amber-600", badge: "bg-amber-100 text-amber-700" },
-  sky: { edge: "border-t-sky-600", badge: "bg-sky-100 text-sky-700" },
-} as const;
-
-/**
- * One mode, as a card. Setup and settings both ask the same question, so the
- * card is written one time.
- */
-export function ModeCard({
-  option,
-  selected,
-  onChoose,
-}: {
-  option: (typeof SETUP_MODES)[number];
-  selected: boolean;
-  onChoose: () => void;
-}) {
-  const accent = MODE_ACCENT[option.accent];
-
-  return (
-    <button
-      type="button"
-      aria-pressed={selected}
-      onClick={onChoose}
-      className={`relative grid content-start gap-4 rounded-xl border border-t-4 bg-white p-6 text-left shadow-sm focus-visible:ring-[3px] focus-visible:ring-indigo-500/50 focus-visible:outline-none ${accent.edge} ${
-        selected
-          ? "border-indigo-600 ring-[3px] ring-indigo-500/40"
-          : "border-zinc-200 hover:border-indigo-300"
-      }`}
-    >
-      <span
-        aria-hidden="true"
-        className={`absolute top-4 right-4 flex size-5 items-center justify-center rounded-full border text-xs ${
-          selected
-            ? "border-indigo-600 bg-indigo-600 text-white"
-            : "border-zinc-200"
-        }`}
-      >
-        {selected ? "\u2713" : ""}
-      </span>
-      <span
-        className={`w-fit rounded-full px-3 py-1 text-xs font-bold ${accent.badge}`}
-      >
-        {option.badge}
-      </span>
-      <span className="text-lg font-semibold">{option.title}</span>
-      <span className="text-sm leading-relaxed text-zinc-500">
-        {option.body}
-      </span>
-      <ul className="grid gap-3 text-sm leading-relaxed text-zinc-500">
-        {option.bullets.map((bullet) => (
-          <li key={bullet} className="grid grid-cols-[8px_minmax(0,1fr)] gap-3">
-            <span
-              aria-hidden="true"
-              className="mt-2 size-2 rounded-full bg-current"
-            />
-            <span>{bullet}</span>
-          </li>
-        ))}
-      </ul>
-    </button>
-  );
-}
 
 /**
  * The mark beside a service name.
@@ -168,8 +104,8 @@ export function CloudStatus({
 }) {
   if (checking) return <Status tone="idle" text="Checking…" />;
   if (status.connected) return <Status tone="ready" text="Connected" />;
-  if (status.detail) return <Status tone="bad" text="Key did not work" />;
-  return <Status tone="idle" text="Needs a key" />;
+  if (status.detail) return <Status tone="bad" text="Connection failed" />;
+  return <Status tone="idle" text="Not connected" />;
 }
 
 export function KeyPanel({
@@ -214,11 +150,13 @@ export function KeyPanel({
           className="h-9 px-3 text-xs"
           onClick={() => onForget(provider)}
         >
-          Remove key
+          Disconnect
         </Button>
       </div>
     );
   }
+
+  if (provider === "openrouter") return <OpenRouterConnect onConnected={onConnected} />;
 
   return (
     <>
@@ -249,5 +187,53 @@ export function KeyPanel({
         </p>
       )}
     </>
+  );
+}
+
+function OpenRouterConnect({ onConnected }: { onConnected: (status: ProviderStatus) => void }) {
+  const active = useRef<AbortController | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState("");
+  useEffect(() => () => active.current?.abort(), []);
+
+  async function connect() {
+    if (active.current) return;
+    const attempt = new AbortController();
+    active.current = attempt;
+    setBusy(true);
+    setProblem("");
+    try {
+      const status = await connectOpenRouter(attempt.signal);
+      if (!attempt.signal.aborted) onConnected(status);
+    } catch (reason) {
+      if (!attempt.signal.aborted) setProblem(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      if (active.current === attempt) {
+        active.current = null;
+        setBusy(false);
+      }
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm">Authorize September in OpenRouter. Your account controls access and spending.</p>
+      <div className="flex flex-wrap gap-3">
+        <Button type="button" className="min-h-11" aria-disabled={busy} onClick={connect}>
+          {busy ? "Waiting for OpenRouter…" : "Connect OpenRouter"}
+        </Button>
+        {busy ? <Button type="button" variant="outline" className="min-h-11" onClick={() => active.current?.abort()}>Cancel</Button> : null}
+      </div>
+      {problem ? <p role="alert" className="text-sm text-destructive">{problem}</p> : null}
+    </div>
+  );
+}
+
+export function ElevenLabsImpactLink() {
+  return (
+    <Button type="button" variant="link" className="h-auto min-h-11 justify-start whitespace-normal px-0 text-left"
+      onClick={() => void openInBrowser("https://elevenlabs.io/impact")}>
+      ElevenLabs Impact Program
+    </Button>
   );
 }

@@ -60,3 +60,18 @@ it('opens the full policies without leaving setup and continues to personal deta
   await act(async () => buttons.at(-1)!.click());
   expect(platform.navigate).toHaveBeenCalledWith({ to: '/profile' });
 });
+
+for (const [name, rules] of [['web', web], ['desktop', desktop]] as const) {
+  it(`${name}: follows one setup flow without choosing a mode`, () => {
+    for (const mode of [null, 'free', 'advanced'] as const) {
+      const draft = { name: 'Meera', mode };
+      expect(rules.stepsFor(draft).map(step => step.path)).toEqual(['/welcome', '/profile', '/connect', '/finish']);
+      expect(rules.nextStep('/profile', draft)).toBe('/connect');
+      expect(rules.previousStep('/connect', draft)).toBe('/profile');
+      expect(rules.canReach('/connect', draft)).toBe(true);
+      expect(rules.canReach('/finish', draft)).toBe(true);
+    }
+    expect(rules.canReach('/connect', { name: '', mode: null })).toBe(false);
+    expect(rules.isSetupDone({ ...rules.DEFAULT_DRAFT, name: 'Meera' })).toBe(true);
+  });
+}

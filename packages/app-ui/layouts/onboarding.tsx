@@ -137,7 +137,6 @@ function ProgressNav({
   current: number;
   draft: OnboardingDraft;
 }) {
-  // Free setup owns no key, so its connect step never appears in the list.
   const steps = stepsFor(draft);
 
   return (

@@ -124,6 +124,23 @@ Speech returns whether playback completed successfully. Talk and Read aloud
 show speech notices. Present pauses on failure and keeps the unread chunk on
 screen for retry or silent use.
 
-`WelcomeStep` in `pages/steps.tsx` includes the Terms and Privacy summary
+`WelcomeStep` in `pages/steps.tsx` includes a four-point Terms and Privacy summary
 in both apps. It opens the full policies through the platform browser
 service, preserving the in-memory setup answers. It adds no consent flag.
+
+About you asks for a name and speaking style during setup. Writing settings
+edit the speaking style; neither screen includes a Personal words field.
+
+Setup follows Welcome → About you → Connect → Finish in both apps. It no
+longer asks for a setup mode; Connect keeps working defaults and optional
+provider connections. Existing saved mode values remain compatible.
+
+The OpenRouter connection control in `blocks/services.tsx` starts platform
+OAuth, shows pending or failed authorization, and cancels when the screen
+closes. ElevenLabs retains its API-key field.
+
+The ElevenLabs connection area links to its Impact Program in setup and
+Settings, whether or not a key is already connected. The link opens in the browser.
+
+The application sidebar starts collapsed at every window width. Manual toggles
+remain in effect across window resizes while the app shell stays mounted.

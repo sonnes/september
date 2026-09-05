@@ -48,7 +48,6 @@ import { VoiceCloneScreen, VoiceScreen } from "@september/app-ui/pages/voice";
 import {
   ConnectStep,
   FinishStep,
-  ModeStep,
   ProfileStep,
   WelcomeStep,
 } from "@september/app-ui/pages/steps";
@@ -237,7 +236,6 @@ const routeTree = rootRoute.addChildren([
   setupRoute.addChildren([
     step("/welcome", WelcomeStep),
     step("/profile", ProfileStep),
-    step("/mode", ModeStep),
     step("/connect", ConnectStep),
     step("/finish", FinishStep),
   ]),

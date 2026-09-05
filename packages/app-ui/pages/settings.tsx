@@ -67,6 +67,7 @@ import {
 import { PickList } from "@september/app-ui/blocks/pick-list";
 import {
   CloudStatus,
+  ElevenLabsImpactLink,
   KeyPanel,
   Mark,
   Status,
@@ -333,6 +334,8 @@ export function ConnectionScreen({ provider }: { provider: ConnectionId }) {
           })
         }
       />
+
+      {provider === "elevenlabs" ? <ElevenLabsImpactLink /> : null}
 
       <p className="text-muted-foreground text-xs">
         The key stays on this device. September sends it only to {guide.name}.
@@ -721,7 +724,7 @@ export function WritingSettings() {
 
       <Section
         title="About you"
-        description="How you talk, and the words you use. Every suggestion is written this way."
+        description="Choose how September writes suggestions for you."
       >
         <div className="flex flex-wrap gap-2">
           {SPEAKING_STYLES.map((option) => (
@@ -745,14 +748,6 @@ export function WritingSettings() {
           rows={4}
           maxLength={1000}
           onSave={(speakingStyle) => change({ speakingStyle })}
-        />
-        <SavedText
-          label="Personal words"
-          value={setup.personalWords}
-          rows={4}
-          maxLength={5000}
-          placeholder="Amma. Dr. Shah. I need a short rest. Please give me a moment."
-          onSave={(personalWords) => change({ personalWords })}
         />
       </Section>
     </div>

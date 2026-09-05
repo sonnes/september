@@ -49,9 +49,9 @@ export const CONNECTION_GUIDES = {
     name: "OpenRouter",
     lede: "One service that gives writing help. Free models are available, and no card is necessary.",
     steps: [
-      "Open the OpenRouter keys page and sign in.",
-      'Press "Create key" and copy it.',
-      "Paste the key below.",
+      "Choose Connect OpenRouter below.",
+      "Sign in and authorize September in your browser.",
+      "Return here to choose a writing model.",
     ],
     url: "https://openrouter.ai/keys",
   },

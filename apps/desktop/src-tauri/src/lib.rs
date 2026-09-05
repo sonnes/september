@@ -7,6 +7,7 @@ pub mod proxy;
 pub mod repository;
 pub mod speech;
 
+mod oauth;
 mod rpc;
 
 pub fn run() {
@@ -48,6 +49,8 @@ pub fn run() {
             rpc::writing_proxy,
             rpc::provider_status,
             rpc::provider_connect,
+            oauth::openrouter_connect,
+            oauth::openrouter_cancel,
             rpc::provider_forget,
             rpc::provider_voices,
             rpc::provider_models,

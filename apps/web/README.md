@@ -135,7 +135,7 @@ one. `src/share-card.test.ts` holds both to that.
 The application route components come from `@september/app-ui`. The router and
 the web-only landing and legal pages remain local.
 
-The setup routes are `/welcome`, `/profile`, `/mode`, `/connect`, and `/finish`.
+The setup routes are `/welcome`, `/profile`, `/connect`, and `/finish`.
 
 Setup runs once, and the two guards mirror each other: an application route
 asked for before setup is finished turns back to `/welcome`, and a setup step
@@ -304,3 +304,18 @@ The Welcome screen includes a Terms & privacy summary before personal details
 or service connections. It summarizes local storage, optional providers, and
 the MIT terms. Full policies open in the browser while setup stays in place.
 Get started advances to About you; it does not record consent to optional processing.
+
+## Connect OpenRouter
+
+Choose Connect OpenRouter in setup or Settings, then authorize September in
+the new browser window. The PKCE verifier stays in memory. The callback at
+`public/oauth/openrouter.html` contains no analytics or application bootstrap;
+it clears the authorization code from the address and sends it to the waiting
+window through BroadcastChannel. The checked key is saved in IndexedDB.
+Cancel or retry if authorization does not finish within five minutes.
+
+The callback must be served as a static file on the same origin as the app.
+Vercel adds no-store and no-referrer headers for `/oauth/*`.
+
+The application sidebar starts collapsed at every desktop width. The toggle
+or Ctrl/Command-B expands it; resizing preserves that choice.

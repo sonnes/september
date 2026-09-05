@@ -104,3 +104,6 @@ pnpm --filter @september/core build
 
 Core tests cover rule inputs, outputs, state changes, validation, and data
 round trips. Catalog wording and visual presentation stay outside the suite.
+
+Help directs OpenRouter users through browser authorization and ElevenLabs
+users through API-key entry. Both flows start in the provider connection page.
