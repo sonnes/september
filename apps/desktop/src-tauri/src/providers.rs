@@ -1,4 +1,4 @@
-//! The two cloud services September can borrow: OpenRouter for writing help,
+//! The two cloud services September can borrow: OpenRouter for AI Assistance,
 //! and ElevenLabs for a voice. A key persists in the macOS Keychain, is cached
 //! in Rust for one run, and never reaches the WebView.
 

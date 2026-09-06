@@ -13,7 +13,7 @@ export const SETTINGS_NAV = [
   },
   {
     path: "/settings/writing",
-    title: "Writing help",
+    title: "AI Assistance",
     description: "The service that writes, and what it knows about you.",
   },
   {
@@ -47,7 +47,7 @@ export function sectionFor(pathname: string): (typeof SETTINGS_NAV)[number] {
 export const CONNECTION_GUIDES = {
   openrouter: {
     name: "OpenRouter",
-    lede: "One service that gives writing help. Free models are available, and no card is necessary.",
+    lede: "One service that gives AI Assistance. Free models are available, and no card is necessary.",
     steps: [
       "Choose Connect OpenRouter below.",
       "Sign in and authorize September in your browser.",

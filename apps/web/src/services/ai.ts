@@ -153,7 +153,7 @@ export const hasWritingService = (feature: GenerationFeature = 'agent') =>
 /**
  * What the writing service knows about the user, from setup.
  *
- * Setup collects the speaking style and the personal words, and Writing help
+ * Setup collects the speaking style and the personal words, and AI Assistance
  * keeps them current. Empty when the user wrote neither.
  */
 export function userContext(): string {
@@ -184,7 +184,7 @@ export async function generate(
 ): Promise<string> {
   const config = configuredModel(options.feature);
   const service = writingService(options.feature);
-  if (!service) throw new Error('Writing help is not set up.');
+  if (!service) throw new Error('AI Assistance is not set up.');
   if (service === 'apple') throw new Error('Apple Intelligence is available in the macOS app.');
 
   const started = Date.now();
@@ -269,7 +269,7 @@ export async function generate(
  */
 export async function openAgentWriter(): Promise<AgentWriter> {
   const service = writingService('agent');
-  if (!service) throw new Error('Connect writing help in Settings first.');
+  if (!service) throw new Error('Connect AI Assistance in Settings first.');
   if (service === 'apple') {
     throw new Error('Apple Intelligence agent tools are available in the macOS app.');
   }

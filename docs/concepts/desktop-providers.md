@@ -1,6 +1,6 @@
 ---
 title: Desktop providers
-description: The desktop app asks by job, not by brand — one service gives writing help, one speaks — and every API key stays in the macOS Keychain.
+description: The desktop app asks by job, not by brand — one service gives AI Assistance, one speaks — and every API key stays in the macOS Keychain.
 package: desktop
 ---
 
@@ -10,12 +10,12 @@ September borrows four services to do two jobs. The user chooses a job, not a
 brand. This keeps the question answerable by a person who has never heard of
 OpenRouter.
 
-| Job          | Service            | Setup cost                           | Where it runs |
-| ------------ | ------------------ | ------------------------------------ | ------------- |
-| Writing help | Apple Intelligence | none                                 | On the Mac    |
-| Writing help | OpenRouter         | browser authorization, then a model | Cloud         |
-| Voice        | macOS system voice | none                                 | On the Mac    |
-| Voice        | ElevenLabs         | an API key and a model, then a voice | Cloud         |
+| Job           | Service            | Setup cost                           | Where it runs |
+| ------------- | ------------------ | ------------------------------------ | ------------- |
+| AI Assistance | Apple Intelligence | none                                 | On the Mac    |
+| AI Assistance | OpenRouter         | browser authorization, then a model  | Cloud         |
+| Voice         | macOS system voice | none                                 | On the Mac    |
+| Voice         | ElevenLabs         | an API key and a model, then a voice | Cloud         |
 
 Each job has a default that already works, so the Connect step needs no action
 on a supported Mac. Voice always has a working answer, because the system voice

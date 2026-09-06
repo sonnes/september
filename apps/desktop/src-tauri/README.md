@@ -222,7 +222,7 @@ A space and a message need an identifier for the owner. The display name from
 
 ## Connect a cloud service
 
-September borrows two cloud services: OpenRouter for writing help, and
+September borrows two cloud services: OpenRouter for AI Assistance, and
 ElevenLabs for a voice. Each key lives in the macOS Keychain, under the service
 name `com.september.desktop`. The account is `openrouter` or `elevenlabs`.
 

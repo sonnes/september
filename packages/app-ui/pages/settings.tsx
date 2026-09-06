@@ -192,7 +192,7 @@ export function SetupSettings() {
             state={
               connections.openrouter.connected
                 ? `Connected. ${connections.openrouter.detail ?? ""}`
-                : "Gives writing help. Free models are available."
+                : "Gives AI Assistance. Free models are available."
             }
             badge={
               <CloudStatus
@@ -236,7 +236,7 @@ export function SetupSettings() {
 
 function appleState(connections: Connections): string {
   if (connections.apple.available) {
-    return "Writing help from Apple Intelligence. Your words stay on this device.";
+    return "AI Assistance from Apple Intelligence. Your words stay on this device.";
   }
   if (!connections.apple.supported) {
     return "Apple Intelligence is not available on this device.";
@@ -421,7 +421,7 @@ function WritingModelChoice({ connected }: { connected: boolean }) {
           {
             id: CURRENT_DEFAULT,
             name: `Current: ${serviceName(setup.defaultModel.service)}`,
-            note: "Change in Writing help",
+            note: "Change in AI Assistance",
             free: true,
           },
           ...rows,
@@ -432,7 +432,7 @@ function WritingModelChoice({ connected }: { connected: boolean }) {
           {
             id: CURRENT_SUGGESTIONS,
             name: `Current: ${serviceName(setup.suggestionsModel.service)}`,
-            note: "Change in Writing help",
+            note: "Change in AI Assistance",
             free: true,
           },
           { id: USE_DEFAULT, name: "Use default", free: true },
@@ -507,7 +507,7 @@ function serviceName(
 ): string {
   return (
     WRITING_SERVICES.find((option) => option.value === service)?.label ??
-    "No writing help"
+    "No AI Assistance"
   );
 }
 
@@ -578,7 +578,7 @@ function VoiceModelChoice({ connected }: { connected: boolean }) {
   );
 }
 
-// ------------------------------------------------------------ writing help
+// ------------------------------------------------------------ AI Assistance
 
 export function WritingSettings() {
   const [setup, change] = useSetup();
@@ -608,7 +608,7 @@ export function WritingSettings() {
   return (
     <div className="flex flex-col gap-8">
       <Title
-        title="Writing help"
+        title="AI Assistance"
         description="September finishes your sentences while you type."
       />
 
@@ -617,7 +617,7 @@ export function WritingSettings() {
         description="Only a connected service can write. Add a key in Services."
       >
         <RadioGroup
-          aria-label="Writing help"
+          aria-label="AI Assistance"
           className="gap-3"
           value={setup.defaultModel.service}
           onValueChange={(value) =>

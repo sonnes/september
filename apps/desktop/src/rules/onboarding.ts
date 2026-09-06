@@ -60,11 +60,11 @@ export const WRITING_SERVICES = [
     value: "openrouter",
     label: "OpenRouter",
     description:
-      "Cloud service. Stronger writing help. Free models are available.",
+      "Cloud service. Stronger AI Assistance. Free models are available.",
   },
   {
     value: "none",
-    label: "No writing help",
+    label: "No AI Assistance",
     description: "September stays a keyboard and a voice.",
   },
 ] as const satisfies readonly {

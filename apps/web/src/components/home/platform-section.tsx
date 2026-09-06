@@ -30,7 +30,7 @@ export function PlatformSection() {
             </span>
           </h3>
           <p className="text-base leading-relaxed text-zinc-700">
-            The full app, designed for Apple Intelligence on supported Macs. On-device writing help,
+            The full app, designed for Apple Intelligence on supported Macs. On-device AI Assistance,
             with September Microphone for calls.
           </p>
           <div className="mt-auto">

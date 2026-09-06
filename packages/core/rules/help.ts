@@ -127,7 +127,7 @@ export const HELP_GUIDES: HelpGuide[] = [
     steps: [
       "On Welcome, read the Terms & privacy summary and choose Get started.",
       "On About you, enter your name, choose a speaking style, then choose Save and continue.",
-      "On Connect, keep No writing help and System voice to start without a service account. You can connect an optional service later in Settings.",
+      "On Connect, keep No AI Assistance and System voice to start without a service account. You can connect an optional service later in Settings.",
       "Choose Continue to review your setup.",
       "On Finish, choose Start communicating. Open Spaces and choose a space to start a message.",
     ],
@@ -140,7 +140,7 @@ export const HELP_GUIDES: HelpGuide[] = [
         type: "screenshot",
         src: "/help/setup-local-services-detail.png",
         width: 705,
-        alt: "Connect offers No writing help and System voice without external accounts.",
+        alt: "Connect offers No AI Assistance and System voice without external accounts.",
         caption:
           "Browser: these choices let you start without connecting a service.",
         afterStep: 3,
@@ -158,7 +158,7 @@ export const HELP_GUIDES: HelpGuide[] = [
         type: "screenshot",
         src: "/help/setup-connect-full.png",
         width: 1376,
-        alt: "The Connect setup screen with writing help, speech, and Continue.",
+        alt: "The Connect setup screen with AI Assistance, speech, and Continue.",
         caption: "Browser: the Connect setup screen.",
       },
     ],
@@ -428,7 +428,7 @@ export const HELP_GUIDES: HelpGuide[] = [
     expectedResult:
       "Future suggestions and phrases can use the description of this space.",
     recovery:
-      "If writing help is off, keep the description. September can use it when writing help is available.",
+      "If AI Assistance is off, keep the description. September can use it when AI Assistance is available.",
     related: [
       "create-and-switch-spaces",
       "choose-writing-help",
@@ -596,22 +596,22 @@ export const HELP_GUIDES: HelpGuide[] = [
   {
     slug: "choose-writing-help",
     category: "choose-how-september-speaks-and-writes",
-    title: "Choose writing help",
+    title: "Choose AI Assistance",
     summary:
-      "Select optional writing help for generated suggestions and phrases.",
+      "Select optional AI Assistance for generated suggestions and phrases.",
     keywords: ["AI", "model", "Apple Intelligence", "OpenRouter", "none"],
     platforms: BOTH_APPS,
     prerequisites: [],
     steps: [
       "Open Settings.",
-      "Open Writing help.",
-      "Choose an available writing service or No writing help.",
+      "Open AI Assistance.",
+      "Choose an available writing service or No AI Assistance.",
       "Connect the service if September asks for a key.",
     ],
     expectedResult:
       "September uses the selected service for writing jobs that need a model.",
     recovery:
-      "If a service is unavailable, choose another one; basic autocomplete still works without writing help.",
+      "If a service is unavailable, choose another one; basic autocomplete still works without AI Assistance.",
     related: [
       "connect-openrouter-or-elevenlabs",
       "understand-what-connected-services-receive",
@@ -635,7 +635,7 @@ export const HELP_GUIDES: HelpGuide[] = [
       "If the check fails, retry authorization for OpenRouter or check the ElevenLabs key.",
     alternatives: [
       {
-        title: "Connect OpenRouter for writing help",
+        title: "Connect OpenRouter for AI Assistance",
         steps: [
           "Open OpenRouter under Services.",
           "Choose Connect OpenRouter. In the browser page that opens, authorize September.",
@@ -878,9 +878,9 @@ export const HELP_GUIDES: HelpGuide[] = [
     platforms: BOTH_APPS,
     prerequisites: ["Connect a cloud service only if you want to use it."],
     steps: [
-      "Check Writing help to see which service September uses for writing jobs.",
+      "Check AI Assistance to see which service September uses for writing jobs.",
       "Check Voice to see whether the device or ElevenLabs speaks.",
-      "Choose No writing help, Apple Intelligence, or System voice for jobs you want kept on the device.",
+      "Choose No AI Assistance, Apple Intelligence, or System voice for jobs you want kept on the device.",
     ],
     expectedResult:
       "You can identify and change the service for each optional job.",

@@ -422,11 +422,11 @@ export function ConnectStep() {
     >
       <div className="space-y-6">
         <Section
-          title="Writing help"
+          title="AI Assistance"
           description="September suggests words and finishes sentences while you type."
         >
           <RadioGroup
-            aria-label="Writing help"
+            aria-label="AI Assistance"
             className="gap-3"
             value={draft.defaultModel.service}
             onValueChange={(value) =>
