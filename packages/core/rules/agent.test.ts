@@ -994,6 +994,40 @@ describe("agent transcript", () => {
     ]);
   });
 
+  /**
+   * A refused call is stored with the arguments the model sent. Reading one
+   * back is describing history, and history that cannot be redescribed must
+   * not take the screen down with it.
+   */
+  describe("a call the executor refused", () => {
+    const raw =
+      '{"operation":"create","text":"Are the children well?","pinned":"true"}';
+
+    it("is still refused", () => {
+      expect(() => parseAgentToolArguments("change_phrase", raw)).toThrow(
+        /pinned/,
+      );
+    });
+
+    it("is named by what it tried to do", () => {
+      expect(agentToolSummary("change_phrase", raw)).toBe("Create phrase");
+    });
+
+    it("says what it tried to write", () => {
+      expect(agentProposalLines(used("x", "change_phrase", "failed", raw))).toEqual([
+        { label: "Phrase", value: "Are the children well?" },
+        { label: "Pinned", value: "No" },
+      ]);
+    });
+
+    it("says nothing at all about arguments that are not even JSON", () => {
+      expect(agentToolSummary("change_note", "not json")).toBe("Change note");
+      expect(
+        agentProposalLines(used("x", "change_note", "failed", "not json")),
+      ).toEqual([]);
+    });
+  });
+
   it("offers openers that cost no keystrokes", () => {
     expect(AGENT_OPENERS.length).toBeGreaterThan(0);
     for (const opener of AGENT_OPENERS) {

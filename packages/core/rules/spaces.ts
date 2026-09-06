@@ -3,42 +3,15 @@
  * without a renderer.
  */
 
-/** The title of the first space. The web app seeds the same one. */
-export const FIRST_SPACE_TITLE = "General";
-
-const LATER_SPACE_TITLE = "New space";
-
 /**
- * The words that make up a name for a space that the user did not name.
+ * The name of a space nobody has named.
  *
- * Three of them name a space: `Amber Cedar Meadow`. They are plain, easy to
- * say, and easy to tell one from another, because the user reads the name in
- * a tab that is one line high. They say nothing about the health of the user.
- *
- * Every word is lowercase and holds letters only, so `isAutoTitle` can read
- * the words back out of a slug.
+ * It says what it is: a space with no name yet. The space is made before its
+ * user has said a word about it, and the agent replaces this the moment they
+ * do, so the name it carries in the meantime should promise nothing and read
+ * as plainly in a one-line tab as it does in the list.
  */
-const NAME_WORDS: readonly string[] = [
-  "amber", "anchor", "autumn", "basil", "breeze", "cedar",
-  "cotton", "daisy", "ember", "fable", "garden", "harbor",
-  "ivory", "jasmine", "kite", "lantern", "meadow", "olive",
-  "pebble", "quartz", "ribbon", "sable", "tulip", "violet",
-  "willow", "yarrow",
-];
-
-/** How many names to try before the numbered title takes over. */
-const NAME_TRIES = 50;
-
-/** Three words of `NAME_WORDS`, each one different, in title case. */
-function threeWords(pick: (limit: number) => number): string {
-  const pool = [...NAME_WORDS];
-  const words: string[] = [];
-  for (let i = 0; i < 3; i += 1) {
-    const [word] = pool.splice(pick(pool.length), 1);
-    words.push(word[0].toUpperCase() + word.slice(1));
-  }
-  return words.join(" ");
-}
+export const UNTITLED_SPACE_TITLE = "Untitled";
 
 /** How many spoken messages one transcript page shows. */
 export const TRANSCRIPT_PAGE_SIZE = 8;
@@ -73,6 +46,39 @@ export function spaceFromSlug<T extends { title?: string | null }>(
   return spaces.find((space) => spaceSlug(space.title) === slug);
 }
 
+/** The space a screen has been showing, and the address it found it at. */
+export interface SeenSpace {
+  id: string;
+  slug: string;
+}
+
+/**
+ * The space a screen is looking at, and whether its address is out of date.
+ *
+ * A title is the address of a space, so a rename moves it. The first turn of a
+ * new space renames it, and the user is watching that turn happen. Reading the
+ * slug alone would find nothing and send them back to the list, out of the
+ * space that had just been named for them, so the screen says which space it
+ * was already showing and follows that one instead.
+ *
+ * It follows only while the address stands still. An address that changed is
+ * the user going somewhere, and somewhere that holds no space is a stale link,
+ * not a space being renamed — the difference between the two is which of the
+ * space and the address moved.
+ */
+export function spaceForSlug<T extends { id: string; title?: string | null }>(
+  slug: string,
+  spaces: readonly T[],
+  seen?: SeenSpace | null,
+): { space: T; renamed: boolean } | null {
+  const named = spaceFromSlug(slug, spaces);
+  if (named) return { space: named, renamed: false };
+  if (!seen || seen.slug !== slug) return null;
+
+  const held = spaces.find((space) => space.id === seen.id);
+  return held ? { space: held, renamed: true } : null;
+}
+
 /**
  * The title, when no other space holds its slug, and nothing otherwise.
  *
@@ -97,30 +103,21 @@ export function freeTitle(
 /**
  * A title that no other space holds.
  *
- * The first space is `General`. A later space takes three words, which read
- * better in a tab than `New space 4` and tell one space from another. A model
- * replaces the name when the space says what it is for.
+ * `Untitled`, and then a number for each one after it. The number is what
+ * keeps two addresses apart, and it counts from the names that are free rather
+ * than from how many spaces there are, so a deleted space gives its number
+ * back instead of leaving a gap that grows.
  *
- * `pick` gives the index of the next word. A test gives its own, so the name
- * is the same in every run.
+ * A model replaces the name as soon as the space says what it is for.
  */
 export function newSpaceTitle(
   existing: readonly (string | null | undefined)[],
-  pick: (limit: number) => number = (limit) => Math.floor(Math.random() * limit),
 ): string {
   const free = (title: string) => freeTitle(title, existing) !== null;
 
-  if (free(FIRST_SPACE_TITLE)) return FIRST_SPACE_TITLE;
-
-  for (let tries = 0; tries < NAME_TRIES; tries += 1) {
-    const title = threeWords(pick);
-    if (free(title)) return title;
-  }
-
-  // Every name was taken. The number keeps the slugs apart.
-  if (free(LATER_SPACE_TITLE)) return LATER_SPACE_TITLE;
-  for (let count = 2; ; count += 1) {
-    const title = `${LATER_SPACE_TITLE} ${count}`;
+  if (free(UNTITLED_SPACE_TITLE)) return UNTITLED_SPACE_TITLE;
+  for (let count = 1; ; count += 1) {
+    const title = `${UNTITLED_SPACE_TITLE} ${count}`;
     if (free(title)) return title;
   }
 }
@@ -129,14 +126,44 @@ export function newSpaceTitle(
 export type SpaceMode = "talk" | "notes" | "agent";
 
 /**
- * Where a console writes. Two of them are the modes of a space; the third is
- * the screen that makes one, which has no space to write into yet.
+ * Which mode a space that was just made opens in.
+ *
+ * A space is made empty, and the agent is what fills it: it asks what the
+ * space is for and writes the name, the description, and the first phrases
+ * from the answer. With no writing service there is nothing to ask, so the
+ * space opens where a user can use it straight away.
+ */
+export const newSpaceMode = (hasWriting: boolean): SpaceMode =>
+  hasWriting ? "agent" : "talk";
+
+/**
+ * Whether a space has still to be told what it is for.
+ *
+ * A space exists from the moment the user asks for one, before it has a
+ * description, a name of its own, or a word in its transcript. Its agent is
+ * where it gets those, so a space with neither a description nor a turn is one
+ * whose first turn is its setup.
+ *
+ * A space the user set up by hand has a description, and a space they have
+ * already asked something has a transcript, so neither is offered a beginning
+ * it is past.
+ */
+export function spaceNeedsSetup(
+  space: { context?: string | null },
+  agentRows: readonly unknown[],
+): boolean {
+  return !space.context?.trim() && agentRows.length === 0;
+}
+
+/**
+ * Where a console writes. Three of them are the modes of a space; the fourth
+ * is the first turn of a space that has still to be set up.
  *
  * This is not `SpaceMode`. That type is the mode a space is *kept* in, which
- * `spaceModeFrom` and `spaceParams` both read, and a screen that no space
- * exists for must never be written into that setting.
+ * `spaceModeFrom` and `spaceParams` both read, and setup is a state the agent
+ * passes through rather than a mode a space is left in.
  */
-export type ComposerMode = SpaceMode | "new";
+export type ComposerMode = SpaceMode | "setup";
 
 export interface ComposerAction {
   /** The button under the field. */
@@ -167,8 +194,8 @@ const COMPOSER_ACTIONS: Record<ComposerMode, ComposerAction> = {
     placeholder: "Ask about this space or request a change…",
     speaks: false,
   },
-  new: {
-    label: "Create space",
+  setup: {
+    label: "Set up space",
     field: "What is this space for?",
     // The placeholder says what to write. An example sentence read as words
     // the screen had already written, which is the wrong thing to show a
@@ -272,26 +299,11 @@ export function deleteLastWord(text: string): string {
 }
 
 /**
- * Whether the title is one September wrote, and not one the user typed.
+ * The frame that a space being set up gives the suggestion engine.
  *
- * A model renames a space after the first message. A title the user chose is
- * the user's, so the model must leave it alone.
- */
-export function isAutoTitle(title: string | null | undefined): boolean {
-  const slug = spaceSlug(title);
-  if (/^(general|new-space(-\d+)?)$/.test(slug)) return true;
-
-  // A name of three words is one that September made up too.
-  const words = slug.split("-");
-  return words.length === 3 && words.every((word) => NAME_WORDS.includes(word));
-}
-
-/**
- * The frame that the create screen gives the suggestion engine.
- *
- * A new space holds no context yet — writing it is the point of the screen.
- * With none, the completion lane answers as if the user were talking to
- * somebody, because `OPENING_PROMPT` and `COMPLETION_PROMPT` are written for a
+ * The space holds no context yet — writing it is the point of the turn. With
+ * none, the completion lane answers as if the user were talking to somebody,
+ * because `OPENING_PROMPT` and `COMPLETION_PROMPT` are written for a
  * conversation. This line stands in for the context of the space, so the model
  * offers ways to finish a description instead.
  */
@@ -299,7 +311,7 @@ export const NEW_SPACE_CONTEXT =
   "I am describing a new space in my communication app: who I speak to here, and what we talk about.";
 
 /**
- * The openers on the new-space screen.
+ * The openers a space offers while it is being set up.
  *
  * A space is for one person, one place, or one subject, and each opener names
  * one of the three. They stop mid-sentence on purpose: the stripe and the word
@@ -312,7 +324,4 @@ export const NEW_SPACE_OPENERS: readonly string[] = [
   "I use this at ",
   "We talk about ",
 ];
-
-/** How long a model may take before the screen stops waiting for it. */
-export const MODEL_WAIT_MS = 20_000;
 

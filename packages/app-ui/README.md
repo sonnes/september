@@ -80,13 +80,21 @@ replace the phrase later. Agent prompts use the shared
 composer with an Ask action and no speech-oriented suggestion stripe, and it
 carries the same right rail as Talk and Notes.
 
-`NewSpaceScreen` lives here because making a space is how its conversation
-starts. The screen is a doorway: it awaits three local writes — the space, the
-words as its note, and a user turn in the transcript — and then hands the user
-to that space's Agent, where the space sets itself up on the agent's first
-turn. That turn runs on past this screen, so no progress crosses the
-navigation and there is nothing to cancel. The model never decides whether to
-create.
+A space has no screen of its own before it exists. `useNewSpace` in
+`blocks/space.tsx` makes one on the press and opens it — Agent when a writing
+service is configured, Talk when none is — and the space list and the dock both
+call it, so the two presses behave the same.
+
+A space that nobody has described yet is set up inside its own Agent.
+`spaceNeedsSetup` turns that screen into the question: the empty transcript
+asks what the space is for, and the composer keeps its suggestion stripe,
+because writing a description is the most free typing the app asks for. The
+first thing said becomes the space's description and then runs as the
+introduction turn. The model never decides whether to create.
+
+`useSpaceBySlug` resolves the space each screen shows. That first turn renames
+the space, which moves its address, so the hook follows the rename by id and
+only leaves for the list when the space is really gone.
 
 `blocks/agent-transcript.tsx` draws the transcript on one rule: anything the
 user must act on is a card, and everything else is a line. `ToolLine` is a

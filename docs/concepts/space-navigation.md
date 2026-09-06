@@ -12,7 +12,6 @@ The desktop and web apps use these routes:
 
 ```text
 /spaces
-/spaces/new
 /spaces/$slug/talk
 /spaces/$slug/agent
 /spaces/$slug/notes
@@ -30,16 +29,22 @@ The setting name is `space-modes`. SQLite stores it on desktop. The `settings` I
 
 ## New space
 
-`/spaces/new` asks what the space is for. No space exists at this route.
+A new space has no route of its own. The press makes the space and opens it: in
+Agent when a writing service is configured, and in Talk when none is.
 
-The screen uses the same composer and suggestion stripe as Talk. The app keeps an unfinished draft in the `new-space-draft` setting.
+A space with no description and an empty Agent transcript has still to be set
+up. Its Agent asks what it is for, with the same composer and suggestion stripe
+as Talk, and its first turn writes the title, the context, and the first
+phrases. Those calls run only when the user connected a writing service.
 
-OpenRouter can write a title, context, and initial phrases. These calls run only when the user connected OpenRouter.
+A title is an address, so that first turn moves the space. The space screens
+resolve a slug through `spaceForSlug` and follow the rename, rather than
+treating the space as gone.
 
 ## Space screen
 
 The header switches between Talk, Notes, and Agent. A space dock gives access
-to other spaces and the new-space route.
+to other spaces and makes a new one.
 
 The right rail has Phrases and Voice tabs, and all three modes carry it. It expands to a 320px panel on large screens.
 

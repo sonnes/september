@@ -32,7 +32,7 @@ import {
 import { AppShell } from "@september/app-ui/layouts/app";
 import { SettingsLayout } from "@september/app-ui/layouts/settings";
 import { DashboardScreen } from "@september/app-ui/pages/dashboard";
-import { AgentScreen, NewSpaceScreen } from "@september/app-ui/pages/agent";
+import { AgentScreen } from "@september/app-ui/pages/agent";
 import {
   ConnectionScreen,
   DataSettings,
@@ -86,14 +86,6 @@ const spacesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/spaces",
   component: SpacesScreen,
-});
-
-// A new space asks what it is for before it exists. The segment is static, so
-// it wins over `$slug` below.
-const newSpaceRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "/spaces/new",
-  component: NewSpaceScreen,
 });
 
 // The slug names the space, so no identifier is in the address. The `/talk`
@@ -177,7 +169,6 @@ const guardedAppRoute = appRoute.addChildren([
     component: DashboardScreen,
   }),
   spacesRoute,
-  newSpaceRoute,
   talkRoute,
   agentRoute,
   notesRoute,

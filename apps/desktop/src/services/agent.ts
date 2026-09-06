@@ -1,6 +1,5 @@
 import {
   askSpaceAgent,
-  continueSpaceAgent,
   resolveSpaceAgentProposal,
   type AgentMessage,
   type AgentRuntimeAdapter,
@@ -46,23 +45,9 @@ const adapter: AgentRuntimeAdapter = {
 export const askAgent = (space: AgentSpace, text: string, options?: AgentRunOptions) =>
   askSpaceAgent(adapter, space, text, options);
 
-/** Run a turn whose request is already in the transcript. */
-export const continueAgent = (space: AgentSpace, options?: AgentRunOptions) =>
-  continueSpaceAgent(adapter, space, options);
-
 export const resolveAgentProposal = (
   space: AgentSpace,
   proposal: AgentMessage,
   approve: boolean,
   options?: AgentRunOptions,
 ) => resolveSpaceAgentProposal(adapter, space, currentUserId(), proposal, approve, options);
-
-/**
- * Writes one row straight into the transcript.
- *
- * The introduction of a new space is a user turn and a reply that no model
- * loop produced, so it does not go through `askSpaceAgent`. It is still the
- * same transcript, in the same table, read by the same screen.
- */
-export const writeAgentMessage = (message: AgentMessage) =>
-  adapter.putAgentMessage(message);

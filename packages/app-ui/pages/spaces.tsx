@@ -19,7 +19,7 @@ import { useDeleteSpace, useSpaces, type Space } from "@platform/services/data";
 import { Screen } from "@september/app-ui/blocks/screen";
 import { filterSpaces, timeAgo } from "@september/core/rules/spaces";
 
-import { Problem, openParams } from "@september/app-ui/blocks/space";
+import { Problem, openParams, useNewSpace } from "@september/app-ui/blocks/space";
 
 // ------------------------------------------------------------- space list
 
@@ -29,17 +29,23 @@ export function SpacesScreen() {
 
   const [search, setSearch] = useState("");
   const [toDelete, setToDelete] = useState<Space | null>(null);
+  // The space exists from the press, and the press opens it.
+  const newSpace = useNewSpace();
 
   const shown = useMemo(
     () => filterSpaces(spaces ?? [], search),
     [spaces, search],
   );
 
-  // A space is not made until the user says what it is for.
-  const add = () => navigate({ to: "/spaces/new" });
+  const add = newSpace.create;
 
   const newSpaceButton = (
-    <Button type="button" onClick={add}>
+    <Button
+      type="button"
+      onClick={add}
+      aria-disabled={newSpace.pending}
+      className="aria-disabled:opacity-50"
+    >
       <Plus aria-hidden />
       New space
     </Button>
@@ -52,6 +58,7 @@ export function SpacesScreen() {
       action={spaces?.length ? newSpaceButton : undefined}
     >
       {error ? <Problem error={error} /> : null}
+      {newSpace.error ? <Problem error={newSpace.error} /> : null}
 
       {isPending ? (
         <div className="flex flex-col gap-2">
@@ -82,7 +89,12 @@ export function SpacesScreen() {
           title="No spaces yet"
           body="A space keeps the words you use with one person or in one place."
           action={
-            <Button type="button" onClick={add}>
+            <Button
+              type="button"
+              onClick={add}
+              aria-disabled={newSpace.pending}
+              className="aria-disabled:opacity-50"
+            >
               <Plus aria-hidden />
               Create your first space
             </Button>

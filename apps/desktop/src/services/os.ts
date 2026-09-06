@@ -198,24 +198,6 @@ export const rememberModes = (modes: Record<string, string>) =>
     request: { key: "space-modes", value: modes },
   }).catch(() => undefined);
 
-/**
- * The words of a new space, as the user left them.
- *
- * A user who types by switch spends minutes on this paragraph, and the rule
- * that every other writing surface follows holds here too: words are never
- * lost to a button that was not pressed. `openingPath` still refuses to open
- * the app on the form — the words are offered back, not reopened onto.
- */
-export const newSpaceDraft =
-  (await invoke<string | null>("setting_get", {
-    request: { key: "new-space-draft" },
-  }).catch(() => null)) ?? "";
-
-export const rememberDraft = (words: string) =>
-  invoke("setting_put", {
-    request: { key: "new-space-draft", value: words },
-  }).catch(() => undefined);
-
 let panel = panelStateFrom(
   await invoke<unknown>("setting_get", {
     request: { key: "panel-open" },

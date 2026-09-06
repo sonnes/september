@@ -40,7 +40,6 @@ describe('analyticsPath', () => {
 
   it('reports a screen with no name of its own as it is', () => {
     expect(analyticsPath('/dashboard', '/dashboard')).toBe('/dashboard');
-    expect(analyticsPath('/spaces/new', '/spaces/new')).toBe('/spaces/new');
     expect(analyticsPath('/settings/usage', '/settings/usage')).toBe('/settings/usage');
   });
 

@@ -62,7 +62,7 @@ cargo fmt --all -- --check
   name, or a reason. The sentence in the composer is what they are about to say
   out loud, and it belongs to them. The same goes for an API key.
 - Write through `Composer` in `packages/app-ui/blocks/space.tsx` in every mode, including
-  `/spaces/new`. A second console would leave one mode without the word tiles,
+  the first turn that sets a space up. A second console would leave one mode without the word tiles,
   the codes, or undo, which a user who cannot type depends on. `composerAction`
   in `packages/core/rules/spaces.ts` holds what each mode says, so a test reads the words
   without a renderer.
@@ -71,7 +71,7 @@ cargo fmt --all -- --check
   focus, so the browser moves focus to the body and a switch user loses their
   place in the scan. Guard the handler instead.
 - Put every title through `freeTitle` in `packages/core/rules/spaces.ts` before writing
-  it — the made-up name, the model's, and the user's. Two spaces with one title
+  it — the default name, the model's, and the user's. Two spaces with one title
   share one address, and SQLite has no unique constraint to catch it.
 - Put the Talk and Notes switch in the dock, never in the header. The web app
   puts it there, so a user who knows one app knows the other.

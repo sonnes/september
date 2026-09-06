@@ -553,9 +553,37 @@ function optional<K extends string, T>(
   return value === undefined ? {} : ({ [key]: value } as { [P in K]: T });
 }
 
+/**
+ * The arguments of a call, for a reader that is only describing it.
+ *
+ * The executor validates, and a call it refuses keeps the arguments the model
+ * sent — that row is the record of what was tried. Describing that row is not
+ * running it: a screen drawing history has nothing to refuse and nobody to
+ * tell, so it reads what it can and says the rest is missing. Validating here
+ * would throw while React was rendering, and one refused call would take down
+ * every visit to the space that holds it.
+ *
+ * Everything a description reads is checked for its own type anyway, so a
+ * field this could not validate is a field a description leaves out.
+ */
+export function agentCallInput(
+  name: AgentToolName,
+  raw: string,
+): Record<string, unknown> {
+  try {
+    return parseAgentToolArguments(name, raw) as Record<string, unknown>;
+  } catch {
+    try {
+      return inputObject(raw);
+    } catch {
+      return {};
+    }
+  }
+}
+
 /** Short text for an approval card. */
 export function agentToolSummary(name: AgentToolName, raw: string): string {
-  const input = parseAgentToolArguments(name, raw) as Record<string, unknown>;
+  const input = agentCallInput(name, raw);
   if (name === "configure_space") return "Change this space";
   const action =
     typeof input.operation === "string" ? input.operation : "change";
@@ -734,10 +762,7 @@ export function agentProposalLines(
   space?: { title?: string | null; context?: string | null },
 ): AgentChangeLine[] {
   if (!row.tool_name || !row.tool_arguments) return [];
-  const input = parseAgentToolArguments(
-    row.tool_name,
-    row.tool_arguments,
-  ) as Record<string, unknown>;
+  const input = agentCallInput(row.tool_name, row.tool_arguments);
 
   const words = (key: string): string | undefined =>
     typeof input[key] === "string" ? (input[key] as string) : undefined;

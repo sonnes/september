@@ -26,6 +26,7 @@ vi.mock('@september/app-ui/blocks/space-panel', () => ({ PanelRail: () => null }
 vi.mock('@september/app-ui/blocks/space', () => ({
   Composer: ({ draft, onDraft, onAction }: { draft: string; onDraft: (text: string) => void; onAction: (text: string) => void }) => <><textarea aria-label="Draft" value={draft} onChange={event => onDraft(event.target.value)} /><button onClick={() => onAction(draft.trim())}>Speak</button></>,
   Problem: () => null, SpaceDock: () => null, SpaceTitle: () => null, spaceParams: () => ({}), useRememberMode: () => {},
+  useSpaceBySlug: () => ({ space: { id: 'space', title: 'Family', context: '' }, spaces: [], isPending: false }),
 }));
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const container = document.createElement('div');

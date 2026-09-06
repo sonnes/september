@@ -16,7 +16,6 @@ import {
   usePhrases,
   usePutPhrase,
   useSendMessage,
-  useSpaces,
   type Message,
   type Space,
 } from "@platform/services/data";
@@ -34,7 +33,7 @@ import {
   useSpeaking,
   useVoiceFallback,
 } from "@platform/services/speech";
-import { spaceFromSlug, spaceSlug, transcriptPage } from "@september/core/rules/spaces";
+import { spaceSlug, transcriptPage } from "@september/core/rules/spaces";
 
 import {
   Composer,
@@ -43,30 +42,24 @@ import {
   SpaceTitle,
   spaceParams,
   useRememberMode,
+  useSpaceBySlug,
 } from "@september/app-ui/blocks/space";
 // ------------------------------------------------------------------- talk
 
 export function TalkScreen({ slug }: { slug: string }) {
-  const navigate = useNavigate();
-  const { data: spaces, isPending } = useSpaces();
-  const space = spaceFromSlug(slug, spaces ?? []);
+  const { space, spaces } = useSpaceBySlug(slug, "talk");
   const saved = useQuery({
     queryKey: ["talk-draft", space?.id],
     queryFn: () => readTalkDraft(space!.id),
     enabled: !!space,
   });
 
-  // A slug that names no space is a stale link, so it goes back to the list.
-  useEffect(() => {
-    if (!isPending && !space) navigate({ to: "/spaces", replace: true });
-  }, [isPending, space, navigate]);
-
   if (!space) return null;
   if (saved.error) return <Problem error={saved.error} />;
   if (saved.isPending) return <p role="status">Loading your unfinished words…</p>;
 
   // The key restarts the composer and the page when the space changes.
-  return <Talk key={space.id} space={space} spaces={spaces ?? []} initialDraft={saved.data} />;
+  return <Talk key={space.id} space={space} spaces={spaces} initialDraft={saved.data} />;
 }
 
 function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; initialDraft: string }) {

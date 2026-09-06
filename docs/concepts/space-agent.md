@@ -72,6 +72,16 @@ changed — over a reply that says the same thing in words.
 Every row says what became of it in a word — Read, Applied, Not applied, or
 Could not apply — so the outcome is never carried by colour alone.
 
+Describing a row is not running it. A call the executor refused keeps the
+arguments the model sent, because that row is the record of what was tried, and
+those arguments are by definition ones the validator rejects. `agentCallInput`
+is what a description reads them with: it validates when it can and falls back
+to the raw object when it cannot, and it never throws. The executor keeps its
+strictness — every field a description reads is checked for its own type
+anyway, so a field it cannot validate is one the row leaves out. Validating
+while drawing would throw during render, and one refused call would take down
+every visit to the space that holds it.
+
 A pending write is the only card. It shows what the change would write beside
 what it would replace, so approving does not mean opening a second screen to
 compare. The agent's reply is text on the surface, not a second bubble: the
@@ -80,19 +90,24 @@ the conversation.
 
 ## Make a space by starting its conversation
 
-The screen at `/spaces/new` is a doorway, not a destination. It shows the
-question, the pressable openers, and the composer — no transcript, because
-there is nothing yet to show.
+A space exists from the press that asked for it. Nothing is asked first: a
+user who types slowly should not have to write a paragraph before September
+will give them somewhere to write it. The space is made empty, named `Untitled`
+— and `Untitled 1`, `Untitled 2` for the ones after it — and opens in Agent — or in Talk, when no writing service is connected and
+there is nothing that could ask.
 
-When the user says what the space is for, three local writes happen and are
-awaited: the space, the words as its note, and a user turn in its Agent
-transcript. Then the address changes to that space's Agent, and the user is
-inside a space that exists, looking at their own words.
+A space with no description and an empty transcript has still to be set up.
+`spaceNeedsSetup` is that state, and Agent wears it: the empty transcript shows
+the question and the pressable openers, and the composer runs with the
+suggestion stripe on, reading `NEW_SPACE_CONTEXT` and the words the user has
+written in every other space.
 
-The space then sets itself up. Its own agent takes the first turn, under its
-own system prompt: it reads the space, names it with `configure_space`, writes
-its description, and writes its first phrases with `change_phrase`. These are
-ordinary tool calls in the ordinary transcript.
+The first thing said in such a space is its setup. The words become the space's
+description before a model reads them, so a service that never answers still
+leaves a space that says what it is for. Then the turn runs under the
+introduction prompt: it reads the space, names it with `configure_space`,
+writes its description, and writes its first phrases with `change_phrase`.
+These are ordinary tool calls in the ordinary transcript.
 
 That turn writes without asking, like every other turn, and `AGENT_MAX_WRITES`
 bounds it — one call to name the space and the rest for phrases. Past the
@@ -104,18 +119,20 @@ read, and a title another space already holds is refused. The user's own words
 staying at the top of the context is an instruction in the prompt, not a rule
 the app enforces.
 
-The turn runs on past the screen that asked for it, bounded by
-`INTRODUCTION_WAIT_MS`. A screen showing a transcript knows work is in flight
-because the newest turn is a question with no answer.
+The setup turn is a chain of calls, not one, so it is bounded by
+`INTRODUCTION_WAIT_MS` rather than by an ordinary wait. A screen showing a
+transcript knows work is in flight because the newest turn is a question with
+no answer, which is also how a turn left running survives the screen that
+started it.
 
-Nothing waits for a model. The screen used to hold the user until every write
-landed, so that opening Talk would not fill the suggestion stripe under a hand
-already reaching for it. Agent has no stripe. If the first turn writes no
-phrases, Talk seeds them when the user arrives, the same as for any space that
-reaches it without phrases.
+Naming the space changes its slug, and the user is watching that happen from
+inside the space. `spaceForSlug` is why they stay: a screen says which space it
+was already showing, and the address follows the rename instead of reading as a
+stale link.
 
-A user who has nothing to say presses Skip. That space takes the made-up
-title, asks no model, and opens in Talk — there is no introduction to watch.
+A user who has nothing to say yet says nothing. The space keeps its default
+name until they do, and Talk seeds its phrases when they arrive, the same as
+for any space that reaches it without phrases.
 
 ## Apply changes safely
 

@@ -160,10 +160,11 @@ export function useMessages(spaceId: string) {
  * writes with another. `useMessages` gives one space only, so the engine that
  * offers words reads this instead.
  */
-export function useAllMessages() {
+export function useAllMessages(enabled = true) {
   return useQuery({
     queryKey: messagesKey("all"),
     queryFn: () => call<Message[]>("message_list", { space_id: null }),
+    enabled,
   });
 }
 

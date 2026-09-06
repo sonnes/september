@@ -14,6 +14,7 @@ import {
 
 import { Button } from "@september/ui/components/button";
 import {
+  agentCallInput,
   agentProposalIsDelete,
   agentProposalIsUnpin,
   agentProposalLines,
@@ -21,7 +22,6 @@ import {
   agentToolResult,
   agentToolSummary,
   groupAgentTurns,
-  parseAgentToolArguments,
   type AgentChangeLine,
   type AgentMessage,
   type AgentToolTone,
@@ -180,10 +180,7 @@ const writeNote = (row: AgentMessage): string | undefined =>
 function proposalIcon(row: AgentMessage): typeof Check {
   if (agentProposalIsDelete(row)) return Trash2;
   if (!row.tool_name || !row.tool_arguments) return Pencil;
-  const input = parseAgentToolArguments(row.tool_name, row.tool_arguments) as {
-    operation?: string;
-    pinned?: boolean;
-  };
+  const input = agentCallInput(row.tool_name, row.tool_arguments);
   if (input.operation === "pin" || input.operation === "unpin") return Pin;
   if (input.operation === "create") return input.pinned ? Pin : Plus;
   return Pencil;

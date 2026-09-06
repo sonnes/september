@@ -22,7 +22,6 @@ let bootstrapped = false;
 
 export const dismissedIdeas: string[] = [];
 export const spaceModes: Record<string, string> = {};
-export let newSpaceDraft = '';
 
 /** Loads the small settings cache before the router chooses its first screen. */
 export async function bootstrapBrowserServices(): Promise<void> {
@@ -34,7 +33,6 @@ export async function bootstrapBrowserServices(): Promise<void> {
     savedSpeech,
     savedDismissed,
     savedModes,
-    savedDraft,
     savedPanel,
     savedPresent,
     keys,
@@ -45,7 +43,6 @@ export async function bootstrapBrowserServices(): Promise<void> {
     repository.getSetting<SpeechSettings>('speech'),
     repository.getSetting<string[]>('dismissed-ideas'),
     repository.getSetting<Record<string, string>>('space-modes'),
-    repository.getSetting<string>('new-space-draft'),
     repository.getSetting<unknown>('panel-open'),
     repository.getSetting<unknown>('present'),
     repository.getSetting<Partial<Record<Provider, string>>>('provider-keys'),
@@ -59,7 +56,6 @@ export async function bootstrapBrowserServices(): Promise<void> {
   speech = savedSpeech;
   dismissedIdeas.splice(0, dismissedIdeas.length, ...(savedDismissed ?? []));
   Object.assign(spaceModes, savedModes ?? {});
-  newSpaceDraft = savedDraft ?? '';
   panel = panelStateFrom(savedPanel);
   present = presentSettings(savedPresent);
   providerKeys = keys ?? {};
@@ -346,11 +342,6 @@ export async function rememberDismissed(texts: string[]): Promise<void> {
 export async function rememberModes(modes: Record<string, string>): Promise<void> {
   Object.assign(spaceModes, modes);
   await (await getRepository()).putSetting('space-modes', modes);
-}
-
-export async function rememberDraft(words: string): Promise<void> {
-  newSpaceDraft = words;
-  await (await getRepository()).putSetting('new-space-draft', words);
 }
 
 /** Protect a normal close while local edits are pending or failed. */

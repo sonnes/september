@@ -40,7 +40,6 @@ import {
   useNotes,
   usePhrases,
   usePutPhrase,
-  useSpaces,
   useUpdateNote,
   useUpdateSpace,
   type Note,
@@ -65,7 +64,7 @@ import {
   type ExportKind,
   type PresentToneKey,
 } from "@september/core/rules/present";
-import { spaceFromSlug, spaceSlug } from "@september/core/rules/spaces";
+import { spaceSlug } from "@september/core/rules/spaces";
 import {
   exportUnavailable,
   saveNoteAudio,
@@ -81,6 +80,7 @@ import {
   SpaceDock,
   SpaceTitle,
   useRememberMode,
+  useSpaceBySlug,
 } from "@september/app-ui/blocks/space";
 
 export function NotesScreen({
@@ -90,24 +90,11 @@ export function NotesScreen({
   slug: string;
   noteSlug?: string;
 }) {
-  const navigate = useNavigate();
-  const { data: spaces, isPending } = useSpaces();
-  const space = spaceFromSlug(slug, spaces ?? []);
-
-  useEffect(() => {
-    if (!isPending && !space) navigate({ to: "/spaces", replace: true });
-  }, [isPending, space, navigate]);
+  const { space, spaces } = useSpaceBySlug(slug, "notes");
 
   if (!space) return null;
 
-  return (
-    <Notes
-      key={space.id}
-      space={space}
-      spaces={spaces ?? []}
-      wanted={wanted}
-    />
-  );
+  return <Notes key={space.id} space={space} spaces={spaces} wanted={wanted} />;
 }
 
 function Notes({

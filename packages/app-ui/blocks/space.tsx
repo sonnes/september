@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -36,10 +37,12 @@ import {
   DropdownMenuTrigger,
 } from "@september/ui/components/dropdown-menu";
 import {
+  useCreateSpace,
   useSpaces,
   useUpdateSpace,
   type Space,
 } from "@platform/services/data";
+import { hasWritingService } from "@platform/services/ai";
 import {
   chooseOutput,
   currentOutput,
@@ -56,14 +59,18 @@ import {
   composerAction,
   deleteLastWord,
   freeTitle,
+  newSpaceMode,
+  newSpaceTitle,
   rememberSpaceMode,
+  spaceForSlug,
   spaceModeFrom,
   spaceSlug,
   type ComposerMode,
+  type SeenSpace,
   type SpaceMode,
 } from "@september/core/rules/spaces";
 
-export const talkParams = (space: Pick<Space, "title">) => ({
+const talkParams = (space: Pick<Space, "title">) => ({
   to: "/spaces/$slug/talk" as const,
   params: { slug: spaceSlug(space.title) },
 });
@@ -109,6 +116,104 @@ export function useRememberMode(space: Space, mode: SpaceMode) {
   }, [space.title, mode]);
 }
 
+export interface NewSpace {
+  /** Makes a space and opens it. */
+  create: () => void;
+  pending: boolean;
+  error: Error | null;
+}
+
+/**
+ * Makes a space and opens it.
+ *
+ * The space exists from the press. Nothing is asked first: a user who cannot
+ * type quickly should not have to write a paragraph before September will give
+ * them somewhere to write it, and the space is where that question is asked
+ * now. With AI Assistance connected the agent asks it, and with none the space
+ * opens in Talk, where the user can speak straight away.
+ */
+export function useNewSpace(): NewSpace {
+  const navigate = useNavigate();
+  const client = useQueryClient();
+  const { data: spaces } = useSpaces();
+  const createSpace = useCreateSpace();
+  const [error, setError] = useState<Error | null>(null);
+
+  const create = useCallback(() => {
+    setError(null);
+    void createSpace
+      .mutateAsync(newSpaceTitle((spaces ?? []).map((one) => one.title)))
+      .then((space) => {
+        // The screen this opens finds its space by slug, in this list. The
+        // write that made the space asks for the list again but does not wait
+        // for it, so arriving first would land on a space the destination
+        // cannot see yet, and it would send the user straight back here. The
+        // space is put in front of them instead; the read that follows sorts
+        // the list out.
+        client.setQueryData<Space[]>(["spaces"], (held) =>
+          held?.some((one) => one.id === space.id)
+            ? held
+            : [space, ...(held ?? [])],
+        );
+        return navigate(spaceParams(space, newSpaceMode(hasWritingService())));
+      })
+      .catch((reason: unknown) =>
+        setError(reason instanceof Error ? reason : new Error(String(reason))),
+      );
+  }, [client, createSpace, navigate, spaces]);
+
+  return { create, pending: createSpace.isPending, error };
+}
+
+export interface SpaceBySlug {
+  /** The space the address names, or nothing while it is being found. */
+  space: Space | undefined;
+  spaces: Space[];
+  isPending: boolean;
+}
+
+/**
+ * The space a screen shows, by the name in its address.
+ *
+ * A title is an address, so a rename moves the space out from under the screen
+ * showing it. The agent renames a new space on its first turn, while the user
+ * is watching it happen, so the screen follows the space it was already
+ * showing and writes the new address instead of leaving for the list.
+ *
+ * A slug that names no space and no space that was ever here is a stale link,
+ * and that does go back to the list.
+ */
+export function useSpaceBySlug(slug: string, mode: SpaceMode): SpaceBySlug {
+  const navigate = useNavigate();
+  const { data: spaces, isPending, isFetching } = useSpaces();
+  // The space this screen has been showing, and where it was showing it. A
+  // rename is followed by the id, which is the one thing about a space that
+  // never moves, and only while the address itself stands still.
+  const seen = useRef<SeenSpace | null>(null);
+  const found = spaceForSlug(slug, spaces ?? [], seen.current);
+
+  useEffect(() => {
+    if (found && !found.renamed) seen.current = { id: found.space.id, slug };
+  });
+
+  const renamedTo = found?.renamed ? found.space.title : null;
+  // A list still being read says nothing about whether a space is there, and
+  // a space that has just been made is exactly the one the held list is
+  // oldest about.
+  const gone = !isPending && !isFetching && !found;
+
+  useEffect(() => {
+    if (gone) navigate({ to: "/spaces", replace: true });
+  }, [gone, navigate]);
+
+  useEffect(() => {
+    if (renamedTo === null) return;
+    navigate({ ...spaceParams({ title: renamedTo }, mode), replace: true });
+  }, [renamedTo, mode, navigate]);
+
+  return { space: found?.space, spaces: spaces ?? [], isPending };
+}
+
 export function Problem({ error }: { error: Error }) {
   return (
     <p className="text-destructive rounded-xl border border-dashed p-8 text-center text-sm">
@@ -132,7 +237,7 @@ export function Composer({
   suggestions = true,
 }: {
   mode: ComposerMode;
-  /** The space the stripe reads. The empty id means no space exists yet. */
+  /** The space the stripe reads. */
   spaceId: string;
   context: string;
   draft: string;
@@ -283,8 +388,9 @@ export function Composer({
 function ActionIcon({ mode }: { mode: ComposerMode }) {
   if (mode === "talk") return <Volume2 aria-hidden />;
   if (mode === "notes") return <FileText aria-hidden />;
-  if (mode === "agent") return <Bot aria-hidden />;
-  return <Plus aria-hidden />;
+  // Setting a space up is the agent reading the words, so it wears the mark
+  // of the thing that answers.
+  return <Bot aria-hidden />;
 }
 
 /** The name of the space. A new name changes the address of the space too. */
@@ -488,6 +594,7 @@ export function SpaceDock({
   onMode: (mode: SpaceMode) => void;
 }) {
   const navigate = useNavigate();
+  const newSpace = useNewSpace();
   const row = useRef<HTMLDivElement>(null);
   const [full, setFull] = useState(false);
 
@@ -507,8 +614,7 @@ export function SpaceDock({
   // A space tab keeps the mode the user is in, so Notes stays Notes.
   const open = (space: Space) => navigate(spaceParams(space, mode));
 
-  // A space is not made until the user says what it is for.
-  const add = () => navigate({ to: "/spaces/new" });
+  const add = newSpace.create;
 
   const tabClass = (space: Space) =>
     `focus-visible:ring-ring min-h-11 shrink-0 rounded-full border px-4 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:outline-none ${

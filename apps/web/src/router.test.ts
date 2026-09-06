@@ -12,7 +12,6 @@ describe('browser route tree', () => {
       '/finish',
       '/dashboard',
       '/spaces',
-      '/spaces/new',
       '/spaces/$slug/talk',
       '/spaces/$slug/agent',
       '/spaces/$slug/notes',

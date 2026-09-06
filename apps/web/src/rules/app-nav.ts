@@ -50,8 +50,8 @@ export function navFor(path: AppPath): (typeof APP_NAV)[number] {
  * Everything else opens the dashboard: a setup step must never come back, and
  * an address that names no screen is not a place to start.
  */
-/** A form in progress. The words are gone after a restart, so it is not a
- *  place to come back to. */
+/** A route an older version had. A space is made from the space list now, so
+ *  a saved address that names it opens nothing. */
 const NEVER_OPENS: readonly string[] = ["/spaces/new"];
 
 export function openingPath(saved: string | null): string {

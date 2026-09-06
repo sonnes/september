@@ -76,100 +76,70 @@ To run setup again, erase the `setup` setting.
 ## Talk in a space
 
 A space keeps the words that the user says to one person or in one place.
-`/spaces` lists them. `/spaces/$slug/talk` opens one. `/spaces/new` asks what
-a new space is for.
+`/spaces` lists them. `/spaces/$slug/talk` opens one. A new one is made from
+the list or the dock, and there is no route between the press and the space.
 
 The list shows the spaces, most recently used first. Each row gives the title
 and the time of the last message. A search field keeps the rows whose title
 holds the words that the user types.
 
-The plus opens `/spaces/new`, and no space exists yet. The screen asks one
-question: what is this space for? The words of the user become the note of the
-space.
+The plus makes the space and opens it. Nothing is asked first: a user who
+types by switch should not have to write a paragraph before September will give
+them somewhere to write it. The space takes the default name and opens in Agent,
+where it is set up — or in Talk, when no writing service is connected and there
+is nothing that could ask.
 
-The screen is a Talk screen with no transcript. It writes through the same
-`Composer` as every other mode, so the word tiles, the codes, the stripe,
-undo, and delete-last-word are all here.
+A space with no description and an empty Agent transcript has still to be told
+what it is for. `spaceNeedsSetup` is that state. Agent asks the one question —
+what is this space for? — and the words of the user become the note of the
+space. It writes through the same `Composer` as every other mode, so the word
+tiles, the codes, the stripe, undo, and delete-last-word are all here.
 
-`NEW_SPACE_OPENERS` sits with the question, above Skip: a way in for a user who
-does not know what to write, beside the way out for a user with nothing to say.
-Three openers name the three kinds of space — a person, a place, a subject —
-and each stops mid-sentence, so the stripe and the word tiles carry on from
-there. A press starts the first sentence, and after that it starts the next
-one. The row stays while the question does, so a press never unmounts the
-button that was pressed.
+`NEW_SPACE_OPENERS` sits with the question: a way in for a user who does not
+know what to write. Three openers name the three kinds of space — a person, a
+place, a subject — and each stops mid-sentence, so the stripe and the word
+tiles carry on from there. A press starts the first sentence, and after that it
+starts the next one. The row stays while the question does, so a press never
+unmounts the button that was pressed.
 
-No example on this screen names anyone. September does not know who the user
-speaks to, and an example that guesses at a sister reads as though it did. This screen asks for the most free
-typing in the app, and it must not be the one surface that charges full price
-for it. With no space yet there is no context to write from, so the engine
-reads `NEW_SPACE_CONTEXT` instead, and takes the words the user has said in
-every other space for its history.
+No example here names anyone. September does not know who the user speaks to,
+and an example that guesses at a sister reads as though it did. This is the
+surface that asks for the most free typing in the app, and it must not be the
+one that charges full price for it. The space has no words of its own yet, so
+the engine reads `NEW_SPACE_CONTEXT` instead, and takes the words the user has
+said in every other space for its history.
 
-A model then reads those words. It writes the title, and it puts its own note
-under the words of the user, after a blank line. The words of the user stay at
-the top of the note, and nothing writes over them. `seedPhrases` reads the same
-words and writes the first phrases.
+The turn that follows is the space setting itself up. It reads the space, names
+it with `configure_space`, puts its own description under the words of the user
+after a blank line, and writes the first phrases with `change_phrase`. The
+words of the user stay at the top of the note, and nothing writes over them.
+Nothing waits: the words reach SQLite before any model answers, so a service
+that never replies leaves a space that still says what it is for.
 
-The two model calls run together. The phrase writer does not need the note that
-the title model produces — `decidePhraseSync` already treats a note with no
-messages as enough to write from — so the user waits for the slower call and
-not for the sum of the two. Each one writes its own fields with `space_patch`,
-which merges per field, so neither undoes the other whichever lands first.
+A space nobody has named is `Untitled`, and the ones after it count up —
+`Untitled 1`, `Untitled 2`. The number comes from the names that are free, not
+from how many spaces there are, so a deleted space gives its number back rather
+than leaving a gap that grows. A name that promises nothing is the right one to
+carry for the few seconds before the agent writes a real one.
 
-The screen waits for all three writes before it opens the space. A stripe that
-filled a second after the screen appeared would move under the hand of a user
-who was already reaching for it.
-
-While they run, the three steps are drawn where the transcript would be, in a
-`role="status"` region that is read out as each one changes. A label inside the
-button that the press had just made unavailable named one thing at a time and
-was never announced at all. A step that cannot run says why: with no writing
-service the two model steps read as skipped, and the screen says so under the
-console before the press as well.
-
-Nothing on the screen is ever unavailable in a way that drops focus. A disabled
-element cannot hold focus, so the browser moves it to the body, and a switch
-user loses their place in the scan at the moment the app asks them to wait.
-Every control of the console says `aria-disabled` instead, and its handler does
-nothing.
-
-Cancel stays live for the whole run. It gives up both model calls, and each
-call is given up on its own after `MODEL_WAIT_MS`. The words reach SQLite
-before any model answers, so a space that exists has lost nothing and simply
-opens. A run that failed after the space was made patches that space on the
-next press, and never makes a second one beside it; the error is shown, and
-`Open the space anyway` is offered.
-
-A user with nothing to say yet presses Skip. That space opens at once, with a
-name that September made up, and it waits for no model.
-
-The first space is `General`. A later space takes three words, such as
-`Amber Cedar Meadow`. Three words read better in a tab than `New space 4`, and
-they tell one space from another. The name must be free, because one slug must
-name one space. `isAutoTitle` reads the words back out of the slug, so a model
-knows that it may still rename such a space.
-
-Every title goes through `freeTitle` first: the made-up name, the name the
+Every title goes through `freeTitle` first: the default name, the name the
 model writes, and the name the user types in the header. Two spaces with one
 title share one address, and that address then opens the wrong space. A model
-title that is taken is dropped for the made-up name, because the user never
+title that is taken is dropped for the default name, because the user never
 chose it. A rename that is taken is refused and said out loud, because the user
 did.
 
-A space made with Skip keeps that name. Talk asks no model, because
-`/spaces/new` already asked. A Talk screen with no messages and no note offers
-`Tell September what this space is for`, which opens the About tab — a skipped
-space is the one that most needs it, and About is otherwise a long way to walk
-for something the user was never told mattered. A space with a note but no
-phrases yet gets them from `useSyncPhrases`.
+A space nobody has described keeps its default name. A Talk screen with no
+messages and no note offers `Tell September what this space is for`, which
+opens the About tab — that space is the one that most needs it, and About is
+otherwise a long way to walk for something the user was never told mattered. A
+space with a note but no phrases yet gets them from `useSyncPhrases`.
 
-The app never opens on `/spaces/new`: `openingPath` sends the user to the
-dashboard instead. The words are not lost, though. They are kept in the
-`new-space-draft` setting as they are written and offered back when the user
-returns, because a paragraph typed by switch takes minutes and the rule of
-every other writing surface holds here too. Cancel with words in the field asks
-before it throws them away.
+Naming a space moves its address, and the first turn of a new one does exactly
+that while the user watches. `useSpaceBySlug` is why they stay in it: the
+screen says which space it was already showing, and `spaceForSlug` follows the
+rename instead of reading the address as a stale link. `openingPath` still
+refuses the address an older version used for the form.
 
 Delete asks first. Deleting a space deletes its messages too, so a dialog with
 a red button holds the action.
@@ -235,7 +205,7 @@ dock moves between all three, and a space tab keeps the mode the user is in.
 
 September keeps the mode of each space, by slug, in the `space-modes` setting.
 The space list opens each space the way the user left it. A new space starts
-in Talk.
+in Agent, where it is set up, unless no writing service is connected.
 
 The screen has the same parts as Talk, from the top:
 
@@ -317,8 +287,8 @@ The first tab of the console is About. It opens the note of the space, which
 says who the user speaks to here and why. Every suggestion and every phrase of
 the space reads it, so a change here changes the words that the app offers.
 
-A model writes this note one time, on `/spaces/new`, from the words the user
-gave there. `space_patch` keeps it in the `context` column. A note that the
+A model writes this note one time, on the first turn of the space, from the
+words the user gave it. `space_patch` keeps it in the `context` column. A note that the
 user wrote is never replaced. A title that the user typed stays.
 
 The About tab saves with no Save button. It saves when the field loses focus,
@@ -460,9 +430,9 @@ A phrase is pinned or not:
 | No     | A model wrote it    | The next writing replaces it.  |
 
 A model writes the phrases when a space holds its first message or its note,
-and again after six more messages. `seedPhrases` does it for a new space, before
-the space opens. `useSyncPhrases` does it for a space that reaches Talk without
-phrases. A model that writes nothing leaves the count alone, so the next message
+and again after six more messages. The first turn of a new space writes them
+with `change_phrase`. `useSyncPhrases` does it for a space that reaches Talk
+without phrases. A model that writes nothing leaves the count alone, so the next message
 tries again. `phrase_replace_ai` erases only the rows that are not pinned, in one
 transaction, so a phrase the user relies on cannot be lost. The first space
 starts with three pinned phrases, so the rows are never empty.
@@ -677,14 +647,14 @@ not exist there.
 
 ## Connect a service
 
-The `/connect` step asks two questions: which service gives writing help, and
+The `/connect` step asks two questions: which service gives AI Assistance, and
 which service speaks. Each question starts with an answer that already works,
 so a user on a supported Mac continues without an action.
 
-| Job          | Choices                              |
-| ------------ | ------------------------------------ |
-| Writing help | Apple Intelligence, OpenRouter, none |
-| Voice        | macOS system voice, ElevenLabs       |
+| Job           | Choices                              |
+| ------------- | ------------------------------------ |
+| AI Assistance | Apple Intelligence, OpenRouter, none |
+| Voice         | macOS system voice, ElevenLabs       |
 
 An API key goes to the macOS Keychain, through Rust. The React code sends a key
 one time and reads back a status. No key enters the draft, SQLite, an event, or
@@ -694,7 +664,7 @@ Rust reads both Keychain entries when the app starts and keeps the values in
 memory. Provider commands use that cache. Connecting or forgetting a service
 updates both the Keychain and the cache, so the change takes effect at once.
 
-Writing help is the one job the WebView performs itself, with a typed model
+AI Assistance is the one job the WebView performs itself, with a typed model
 client. It is never given a key. `writing_proxy` answers with the address of a
 loopback proxy and a token that lasts one run; the proxy exchanges that token
 for the real key and forwards the request. See
@@ -721,12 +691,12 @@ gives the screen no `id`, and every row then looks selected.
 `/settings` holds the answers that setup collected. It is a layout with a
 section list beside the open section, ported from the web app.
 
-| Section      | Route               | Holds                                                   |
-| ------------ | ------------------- | ------------------------------------------------------- |
-| Setup        | `/settings`         | The state of each service, its key, and its model       |
-| Writing help | `/settings/writing` | Who writes, and what the model knows about you          |
-| Usage        | `/settings/usage`   | Typing saved, service use, quota, recent calls, and CSV |
-| Data         | `/settings/data`    | A portable backup download and restore                  |
+| Section       | Route               | Holds                                                   |
+| ------------- | ------------------- | ------------------------------------------------------- |
+| Setup         | `/settings`         | The state of each service, its key, and its model       |
+| AI Assistance | `/settings/writing` | Who writes, and what the model knows about you          |
+| Usage         | `/settings/usage`   | Typing saved, service use, quota, recent calls, and CSV |
+| Data          | `/settings/data`    | A portable backup download and restore                  |
 
 Listening still needs a transcription backend, and Account needs an account.
 The service and the voices keep their own screen, `/voice`, in both apps. The
@@ -851,7 +821,7 @@ Local text generation requires these items:
 
 The backend starts apfel when a screen first asks for its status or generation.
 It reuses a healthy process and replaces one that stops responding, so apfel
-does not delay an app start that never needs local writing help.
+does not delay an app start that never needs local AI Assistance.
 
 `pnpm tauri:dev` downloads the pinned apfel v1.9.1 binary on the first run.
 The command makes sure that both archive and binary checksums match.

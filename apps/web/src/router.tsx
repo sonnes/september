@@ -11,7 +11,7 @@ import { AppShell } from '@september/app-ui/layouts/app';
 import { OnboardingLayout } from '@september/app-ui/layouts/onboarding';
 import { SettingsLayout } from '@september/app-ui/layouts/settings';
 import { DashboardScreen } from '@september/app-ui/pages/dashboard';
-import { AgentScreen, NewSpaceScreen } from '@september/app-ui/pages/agent';
+import { AgentScreen } from '@september/app-ui/pages/agent';
 import { HelpScreen } from '@september/app-ui/pages/help';
 import { NotesScreen } from '@september/app-ui/pages/notes';
 import { HomePage } from '@/pages/home';
@@ -46,7 +46,6 @@ export const APP_ROUTE_PATHS = [
   '/finish',
   '/dashboard',
   '/spaces',
-  '/spaces/new',
   '/spaces/$slug/talk',
   '/spaces/$slug/agent',
   '/spaces/$slug/notes',
@@ -178,11 +177,6 @@ const guardedAppRoute = appRoute.addChildren([
     getParentRoute: () => appRoute,
     path: '/spaces',
     component: SpacesScreen,
-  }),
-  createRoute({
-    getParentRoute: () => appRoute,
-    path: '/spaces/new',
-    component: NewSpaceScreen,
   }),
   talkRoute,
   agentRoute,

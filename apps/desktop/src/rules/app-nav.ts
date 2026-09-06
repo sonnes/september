@@ -75,8 +75,7 @@ export function windowTitle(pathname: string): string {
     guide?.title ??
     destination?.title;
 
-  if (path === "/spaces/new") page = "New space";
-  else if (/^\/spaces\/[^/]+\/talk$/.test(path)) page = "Talk";
+  if (/^\/spaces\/[^/]+\/talk$/.test(path)) page = "Talk";
   else if (/^\/spaces\/[^/]+\/agent$/.test(path)) page = "Agent";
   else if (/^\/spaces\/[^/]+\/notes(?:\/[^/]+)?$/.test(path)) page = "Notes";
   else if (path === "/voice/clone") page = "Clone your voice";
@@ -93,8 +92,8 @@ export function windowTitle(pathname: string): string {
  * Everything else opens the dashboard: a setup step must never come back, and
  * an address that names no screen is not a place to start.
  */
-/** A form in progress. The words are gone after a restart, so it is not a
- *  place to come back to. */
+/** A route an older version had. A space is made from the space list now, so
+ *  a saved address that names it opens nothing. */
 const NEVER_OPENS: readonly string[] = ["/spaces/new"];
 
 export function openingPath(saved: string | null): string {

@@ -88,10 +88,17 @@ export function useMessages(spaceId: string) {
   });
 }
 
-export function useAllMessages() {
+/**
+ * Every message the user has written, for the engine that offers words.
+ *
+ * A screen that wants it only sometimes says so: reading every row of every
+ * space is not work to do on the chance that it is wanted.
+ */
+export function useAllMessages(enabled = true) {
   return useQuery({
     queryKey: messagesKey('all'),
     queryFn: async () => (await getRepository()).listMessages(),
+    enabled,
   });
 }
 

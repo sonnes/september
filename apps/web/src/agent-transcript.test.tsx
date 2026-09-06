@@ -109,6 +109,24 @@ describe('the Agent transcript', () => {
     expect(reject).not.toHaveBeenCalled();
   });
 
+  // A refused call is stored with the arguments the model sent, exactly as it
+  // sent them. Reading a row back is describing history, and history that
+  // cannot be redescribed must not take the screen down with it.
+  it('draws a refused call whose arguments it cannot validate', () => {
+    draw([
+      used(
+        'a',
+        'change_phrase',
+        'failed',
+        '{"operation":"create","text":"Are the children well?","pinned":"true"}',
+        'pinned must be true or false.'
+      ),
+    ]);
+
+    expect(container.textContent).toContain('Create phrase');
+    expect(container.textContent).toContain('Could not apply');
+  });
+
   it('hides a streaming partial from assistive technology until it is stored', () => {
     draw([said('a', 'user', 'Say two things')], { busy: true, partial: 'One. Tw' });
 
