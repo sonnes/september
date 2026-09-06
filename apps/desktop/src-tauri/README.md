@@ -378,7 +378,10 @@ the aggregate device and its process tap when the user stops it or quits.
 
 The bridge also removes a stale aggregate device during application startup.
 This cleanup handles an earlier process that ended before normal shutdown.
-The feature requires macOS 26 or later and does not install a system driver.
+The feature requires macOS 14.2 or later and does not install a system driver.
+On macOS 26 the tap also names its own bundle and asks the system to restore it
+when September restarts. An older system cannot answer those two questions, so
+`native/audio.m` sets them behind an availability check and keeps the tap.
 
 `virtual_microphone_status` returns a `detail` while the microphone runs. macOS
 publishes no way to read the answer to its audio-recording question, so a

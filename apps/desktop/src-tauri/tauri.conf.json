@@ -43,7 +43,7 @@
     ],
     "targets": "all",
     "macOS": {
-      "minimumSystemVersion": "26.0",
+      "minimumSystemVersion": "14.2",
       "entitlements": "September.entitlements",
       "files": {
         "embedded.provisionprofile": "./embedded.provisionprofile"

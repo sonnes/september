@@ -29,7 +29,7 @@ whoami = "1"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 base64 = "0.22"
-cidre = { version = "0.22.1", default-features = false, features = ["av", "dispatch", "macos_15_0", "vn"] }
+cidre = { version = "0.22.1", default-features = false, features = ["av", "dispatch", "macos_14_2", "vn"] }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

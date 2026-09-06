@@ -609,7 +609,7 @@ Security, Audio Recording. macOS publishes no way to read that answer, so a
 refused microphone carries sound with no words in it and reports no error.
 
 September removes the input when it quits. The next start also removes a stale
-input that remained after an unexpected exit. This feature requires macOS 26
+input that remained after an unexpected exit. This feature requires macOS 14.2
 or later and does not install an audio driver.
 
 ## Release the desktop app
@@ -837,6 +837,11 @@ pnpm tauri:dev
 
 The UI dev server uses `http://localhost:3010`. The main desktop window opens at
 1376×1032, the project's 13-inch iPad landscape baseline.
+
+The app runs on macOS 14.2 or later. That floor comes from the Core Audio
+process tap behind September Microphone, the newest system call the app makes.
+Apple Intelligence is the one feature that asks for more, and it reports itself
+unavailable on a Mac that cannot run it.
 
 Local text generation requires these items:
 

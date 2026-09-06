@@ -378,11 +378,15 @@ int32_t september_virtual_microphone_start(char *error,
           [[CATapDescription alloc] initMonoMixdownOfProcesses:@[ @(process) ]];
       tap.name = @"September audio";
       tap.UUID = [NSUUID UUID];
-      tap.bundleIDs = @[ @"app.september.desktop" ];
       tap.exclusive = NO;
       tap.privateTap = NO;
-      tap.processRestoreEnabled = YES;
       tap.muteBehavior = CATapUnmuted;
+      // macOS 26 names the tapped bundle and restores the tap when September
+      // restarts. An older system keeps the tap without those two answers.
+      if (@available(macOS 26.0, *)) {
+        tap.bundleIDs = @[ @"app.september.desktop" ];
+        tap.processRestoreEnabled = YES;
+      }
 
       OSStatus status = AudioHardwareCreateProcessTap(tap, &SeptemberTapID);
       if (status != noErr) {
