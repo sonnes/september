@@ -19,6 +19,11 @@ The webview can get, put, and delete settings through Tauri commands. Successful
 writes emit `september://settings-changed` so ported screens can refresh the
 affected keys.
 
+The native window size and position use `.window-state.json` in Tauri's
+application configuration directory. The window-state plugin saves these values
+on exit and restores them on launch. Window geometry stays outside portable
+backups.
+
 ## Replace data from a backup
 
 The `backup_export` command returns portable settings and every domain row. It

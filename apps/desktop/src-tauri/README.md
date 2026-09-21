@@ -15,12 +15,33 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo fmt --all -- --check
 ```
 
+The native window test opens temporary windows with separate application
+identifiers. It checks size and position after both quit and window close:
+
+```sh
+SEPTEMBER_WINDOW_TEST=1 cargo test --test window_state
+```
+
 Use `pnpm tauri:dev` or `pnpm tauri:build` from `apps/desktop` to run or package
 the complete application.
+
+To test window persistence on macOS:
+
+1. Open the app, then move and resize its window.
+2. Record the window size and position.
+3. Quit the app with Command-Q.
+4. Open the app again.
+5. Check that the window size and position match the recorded values.
+6. Repeat the test with the window close button instead of Command-Q.
 
 The Tauri product and initial window are named `September`. The default
 capability lets the UI replace the native window title after navigation, so
 each page adds its name to the app name.
+
+The `tauri-plugin-window-state` plugin saves window size and position on exit.
+It restores these values on launch from `.window-state.json` in the application
+configuration directory. If the saved position is outside every connected
+monitor, the operating system chooses the position.
 
 The Tauri commands prepare apfel automatically on an Apple Silicon Mac.
 Run `pnpm apfel:prepare` from `apps/desktop` to prepare only the sidecar.

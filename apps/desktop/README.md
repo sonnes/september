@@ -805,8 +805,9 @@ pnpm install
 pnpm tauri:dev
 ```
 
-The UI dev server uses `http://localhost:3010`. The main desktop window opens at
-1376×1032, the project's 13-inch iPad landscape baseline.
+The UI dev server uses `http://localhost:3010`. The main desktop window first
+opens at 1376×1032, the project's 13-inch iPad landscape baseline. Later launches
+restore the window size and position from the last exit.
 
 The app runs on macOS 14.2 or later. That floor comes from the Core Audio
 process tap behind September Microphone, the newest system call the app makes.

@@ -10,9 +10,17 @@ pub mod speech;
 mod oauth;
 mod rpc;
 
-pub fn run() {
+pub fn builder() -> tauri::Builder<tauri::Wry> {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_state_flags(
+                    tauri_plugin_window_state::StateFlags::SIZE
+                        | tauri_plugin_window_state::StateFlags::POSITION,
+                )
+                .build(),
+        )
         .setup(rpc::setup)
         .invoke_handler(tauri::generate_handler![
             rpc::setting_get,
@@ -70,6 +78,10 @@ pub fn run() {
             gaze::gaze_start,
             gaze::gaze_stop,
         ])
+}
+
+pub fn run() {
+    builder()
         .build(tauri::generate_context!())
         .expect("error while building September desktop")
         .run(|app, event| {
