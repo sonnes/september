@@ -4,8 +4,9 @@ import {
   type AgentMessage,
   type AgentToolName,
 } from "./agent.ts";
-import { PANEL_TABS, type PanelState } from "./panel.ts";
+import { CLOSED_PANEL, PANEL_TABS, type PanelState } from "./panel.ts";
 import {
+  DEFAULT_TONE,
   PRESENT_TONES,
   type PresentSettings,
   type PresentToneKey,
@@ -145,6 +146,12 @@ export type BackupContents = Pick<
   | "usageEvents"
 >;
 
+export interface ParsedBackup {
+  backup: SeptemberBackup;
+  /** How many settings and rows had errors and were left out. */
+  skipped: number;
+}
+
 export interface BackupSummary {
   exportedAt: string;
   source: BackupSource;
@@ -259,14 +266,57 @@ function timestamps(
   return { created_at, updated_at };
 }
 
-function uniqueIds<T extends { id: string }>(rows: T[], label: string): T[] {
-  const found = new Set<string>();
-  for (const row of rows) {
-    if (found.has(row.id))
-      invalid(`The file contains a duplicate ${label} ID: ${row.id}.`);
-    found.add(row.id);
+/** How many settings and rows an import left out. */
+interface Skips {
+  count: number;
+}
+
+/**
+ * One value, or nothing when it has an error.
+ *
+ * A backup is the only copy of somebody's words. One bad row must not cost
+ * the user the other thousand, so each value is read on its own and a value
+ * that fails is counted and left out.
+ */
+function kept<T>(read: () => T, skips: Skips): T | undefined {
+  try {
+    return read();
+  } catch {
+    skips.count += 1;
+    return undefined;
   }
+}
+
+function listFrom<T>(
+  value: unknown,
+  label: string,
+  from: (entry: unknown, index: number) => T,
+  skips: Skips,
+): T[] {
+  const entries = kept(() => arrayOf(value, label), skips) ?? [];
+  const rows: T[] = [];
+  entries.forEach((entry, index) => {
+    const row = kept(() => from(entry, index), skips);
+    if (row !== undefined) rows.push(row);
+  });
   return rows;
+}
+
+function rowsFrom<T extends { id: string }>(
+  value: unknown,
+  label: string,
+  from: (entry: unknown) => T,
+  skips: Skips,
+): T[] {
+  const found = new Set<string>();
+  return listFrom(value, label, from, skips).filter((row) => {
+    if (found.has(row.id)) {
+      skips.count += 1;
+      return false;
+    }
+    found.add(row.id);
+    return true;
+  });
 }
 
 function setupFrom(value: unknown): BackupSetup | null {
@@ -317,36 +367,65 @@ function speechFrom(value: unknown): BackupSpeech | null {
   };
 }
 
-function settingsFrom(value: unknown): BackupSettings {
-  const row = objectOf(value, "settings");
-  const modes = objectOf(row.spaceModes, "settings.spaceModes");
-  const panel = objectOf(row.panel, "settings.panel");
-  const present = objectOf(row.present, "settings.present");
+function spaceModesFrom(
+  value: unknown,
+  skips: Skips,
+): BackupSettings["spaceModes"] {
+  const modes = kept(() => objectOf(value, "settings.spaceModes"), skips) ?? {};
+  const chosen: BackupSettings["spaceModes"] = {};
+  for (const [slug, mode] of Object.entries(modes)) {
+    const entry = kept(
+      () =>
+        [
+          identifier(slug, "space mode slug"),
+          oneOf(mode, ["talk", "notes", "agent"], `mode for ${slug}`),
+        ] as const,
+      skips,
+    );
+    if (entry) chosen[entry[0]] = entry[1];
+  }
+  return chosen;
+}
+
+function panelFrom(value: unknown): PanelState {
+  const panel = objectOf(value, "settings.panel");
+  return {
+    open: booleanOf(panel.open, "panel open state"),
+    tab: backupPanelTab(panel.tab),
+  };
+}
+
+function presentFrom(value: unknown): PresentSettings {
+  const present = objectOf(value, "settings.present");
+  return {
+    tone: oneOf(
+      present.tone,
+      [...PRESENT_TONES_SET],
+      "presentation tone",
+    ) as PresentToneKey,
+    spoken: booleanOf(present.spoken, "presentation speech state"),
+  };
+}
+
+function settingsFrom(value: unknown, skips: Skips): BackupSettings {
+  const row = kept(() => objectOf(value, "settings"), skips) ?? {};
 
   return {
-    setup: setupFrom(row.setup),
-    speech: speechFrom(row.speech),
-    dismissedIdeas: arrayOf(row.dismissedIdeas, "settings.dismissedIdeas").map(
+    setup: kept(() => setupFrom(row.setup), skips) ?? null,
+    speech: kept(() => speechFrom(row.speech), skips) ?? null,
+    dismissedIdeas: listFrom(
+      row.dismissedIdeas,
+      "settings.dismissedIdeas",
       (idea, index) => stringOf(idea, `dismissed idea ${index + 1}`),
+      skips,
     ),
-    spaceModes: Object.fromEntries(
-      Object.entries(modes).map(([slug, mode]) => [
-        identifier(slug, "space mode slug"),
-        oneOf(mode, ["talk", "notes", "agent"], `mode for ${slug}`),
-      ]),
-    ),
-    newSpaceDraft: stringOf(row.newSpaceDraft, "new-space draft"),
-    panel: {
-      open: booleanOf(panel.open, "panel open state"),
-      tab: backupPanelTab(panel.tab),
-    },
-    present: {
-      tone: oneOf(
-        present.tone,
-        [...PRESENT_TONES_SET],
-        "presentation tone",
-      ) as PresentToneKey,
-      spoken: booleanOf(present.spoken, "presentation speech state"),
+    spaceModes: spaceModesFrom(row.spaceModes, skips),
+    newSpaceDraft:
+      kept(() => stringOf(row.newSpaceDraft, "new-space draft"), skips) ?? "",
+    panel: kept(() => panelFrom(row.panel), skips) ?? CLOSED_PANEL,
+    present: kept(() => presentFrom(row.present), skips) ?? {
+      tone: DEFAULT_TONE,
+      spoken: false,
     },
   };
 }
@@ -547,32 +626,45 @@ function withOneOwner(backup: SeptemberBackup): SeptemberBackup {
   };
 }
 
-function validateReferences(backup: SeptemberBackup): void {
-  const spaceIds = new Set(backup.spaces.map((space) => space.id));
-  const requireSpace = (spaceId: string | undefined, label: string) => {
-    if (spaceId !== undefined && !spaceIds.has(spaceId)) {
-      invalid(`${label} refers to a missing space: ${spaceId}.`);
-    }
-  };
-  for (const message of backup.messages)
-    requireSpace(message.space_id, `Message ${message.id}`);
-  for (const message of backup.agentMessages)
-    requireSpace(message.space_id, `Agent message ${message.id}`);
-  for (const note of backup.notes)
-    requireSpace(note.space_id, `Note ${note.id}`);
-  for (const phrase of backup.savedPhrases)
-    requireSpace(phrase.space_id, `Saved phrase ${phrase.id}`);
-
+/**
+ * The spaces with their own route, and the rows that still have a space.
+ *
+ * Two spaces that share a route hide one another, and a row whose space is
+ * gone never appears on a screen. Both are left out instead of stored.
+ */
+function withLiveSpaces(
+  backup: SeptemberBackup,
+  skips: Skips,
+): SeptemberBackup {
   const slugs = new Set<string>();
-  for (const space of backup.spaces) {
+  const spaces = backup.spaces.filter((space) => {
     const slug = spaceSlug(space.title);
-    if (slugs.has(slug))
-      invalid(`More than one space title uses the route ${slug}.`);
+    if (slugs.has(slug)) {
+      skips.count += 1;
+      return false;
+    }
     slugs.add(slug);
-  }
+    return true;
+  });
+
+  const spaceIds = new Set(spaces.map((space) => space.id));
+  const hasSpace = (spaceId: string | undefined) => {
+    if (spaceId === undefined || spaceIds.has(spaceId)) return true;
+    skips.count += 1;
+    return false;
+  };
+
+  return {
+    ...backup,
+    spaces,
+    messages: backup.messages.filter((row) => hasSpace(row.space_id)),
+    agentMessages: backup.agentMessages.filter((row) => hasSpace(row.space_id)),
+    notes: backup.notes.filter((row) => hasSpace(row.space_id)),
+    savedPhrases: backup.savedPhrases.filter((row) => hasSpace(row.space_id)),
+  };
 }
 
-function backupFrom(value: unknown): SeptemberBackup {
+function backupFrom(value: unknown, skips: Skips): SeptemberBackup {
   const row = objectOf(value, "backup");
   if (row.format !== BACKUP_FORMAT)
     invalid(`The format name must be ${BACKUP_FORMAT}.`);
@@ -585,56 +677,66 @@ function backupFrom(value: unknown): SeptemberBackup {
   if (!Number.isFinite(Date.parse(exportedAt)))
     invalid("The export date is invalid.");
 
-  const backup: SeptemberBackup = withOneOwner({
-    format: BACKUP_FORMAT,
-    formatVersion: BACKUP_FORMAT_VERSION,
-    exportedAt,
-    source: oneOf(row.source, ["web", "desktop"], "source app"),
-    appVersion: stringOf(row.appVersion, "app version", {
-      empty: false,
-      maxBytes: 64,
+  return withLiveSpaces(
+    withOneOwner({
+      format: BACKUP_FORMAT,
+      formatVersion: BACKUP_FORMAT_VERSION,
+      exportedAt,
+      source: oneOf(row.source, ["web", "desktop"], "source app"),
+      appVersion: stringOf(row.appVersion, "app version", {
+        empty: false,
+        maxBytes: 64,
+      }),
+      settings: settingsFrom(row.settings, skips),
+      spaces: rowsFrom(row.spaces, "spaces", spaceFrom, skips),
+      messages: rowsFrom(row.messages, "messages", messageFrom, skips),
+      agentMessages:
+        row.formatVersion === 1
+          ? []
+          : rowsFrom(
+              row.agentMessages,
+              "agent messages",
+              agentMessageFrom,
+              skips,
+            ),
+      notes: rowsFrom(row.notes, "notes", noteFrom, skips),
+      savedPhrases: rowsFrom(
+        row.savedPhrases,
+        "saved phrases",
+        phraseFrom,
+        skips,
+      ),
+      usageEvents: rowsFrom(
+        row.usageEvents,
+        "usage events",
+        usageEventFrom,
+        skips,
+      ),
     }),
-    settings: settingsFrom(row.settings),
-    spaces: uniqueIds(arrayOf(row.spaces, "spaces").map(spaceFrom), "space"),
-    messages: uniqueIds(
-      arrayOf(row.messages, "messages").map(messageFrom),
-      "message",
-    ),
-    agentMessages: uniqueIds(
-      (row.formatVersion === 1
-        ? []
-        : arrayOf(row.agentMessages, "agent messages")
-      ).map(agentMessageFrom),
-      "agent message",
-    ),
-    notes: uniqueIds(arrayOf(row.notes, "notes").map(noteFrom), "note"),
-    savedPhrases: uniqueIds(
-      arrayOf(row.savedPhrases, "saved phrases").map(phraseFrom),
-      "saved phrase",
-    ),
-    usageEvents: uniqueIds(
-      arrayOf(row.usageEvents, "usage events").map(usageEventFrom),
-      "usage event",
-    ),
-  });
-  validateReferences(backup);
-  return backup;
+    skips,
+  );
 }
 
-/** Parses and validates one user-selected backup before any repository changes. */
-export function parseBackup(source: string): SeptemberBackup {
+/**
+ * Reads one user-selected backup before any repository changes.
+ *
+ * The envelope must name a September backup of a version the app knows. The
+ * settings and rows inside it are read one at a time, and `skipped` counts
+ * the ones with errors that the import leaves out.
+ */
+export function parseBackup(source: string): ParsedBackup {
   let value: unknown;
   try {
     value = JSON.parse(source);
   } catch {
     throw new Error("This backup is not valid JSON.");
   }
-  return backupFrom(value);
+  const skips: Skips = { count: 0 };
+  return { backup: backupFrom(value, skips), skipped: skips.count };
 }
 
-/** Produces stable, readable JSON after one final contract validation. */
+/** Writes what the app holds as stable, readable JSON. */
 export function encodeBackup(backup: SeptemberBackup): string {
-  const valid = backupFrom(backup);
   // The text of the identifier orders the rows, never the locale of the
   // machine: two Macs must write one backup the same way.
   const byId = <T extends { id: string }>(rows: T[]) =>
@@ -643,13 +745,13 @@ export function encodeBackup(backup: SeptemberBackup): string {
     );
   return `${JSON.stringify(
     {
-      ...valid,
-      spaces: byId(valid.spaces),
-      messages: byId(valid.messages),
-      agentMessages: byId(valid.agentMessages),
-      notes: byId(valid.notes),
-      savedPhrases: byId(valid.savedPhrases),
-      usageEvents: byId(valid.usageEvents),
+      ...backup,
+      spaces: byId(backup.spaces),
+      messages: byId(backup.messages),
+      agentMessages: byId(backup.agentMessages),
+      notes: byId(backup.notes),
+      savedPhrases: byId(backup.savedPhrases),
+      usageEvents: byId(backup.usageEvents),
     },
     null,
     2,

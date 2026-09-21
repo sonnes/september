@@ -27,12 +27,14 @@ tasks contain their own steps and outcomes. Search includes their titles and
 steps. Screenshot metadata includes a caption, capture width, and optional
 one-based step number. Images without a step number serve as screen overviews.
 
-`rules/backup.ts` owns version 2 of the portable backup contract. It validates
-the full file before import, removes unknown fields, writes rows in a stable
-order, and produces the file name and preview counts. The browser and desktop
-tests read the same fixture from `rules/fixtures/backup-v1.json`. The parser
-accepts version 1 with an empty Agent transcript and changes the retired
-`camera` panel tab to `phrases` in older desktop files.
+`rules/backup.ts` owns version 2 of the portable backup contract. An export
+writes rows in a stable order and checks nothing. An import reads each setting
+and row on its own, leaves out the ones with errors, counts them, and removes
+unknown fields. Core also produces the file name and preview counts. The
+browser and desktop tests read the same fixture from
+`rules/fixtures/backup-v1.json`. The parser accepts version 1 with an empty
+Agent transcript and changes the retired `camera` panel tab to `phrases` in
+older desktop files.
 
 `rules/agent.ts` owns the space-scoped Agent contract and loop. It validates
 provider tool calls before a platform adapter receives them, runs read tools

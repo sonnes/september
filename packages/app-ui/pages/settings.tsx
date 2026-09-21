@@ -810,9 +810,11 @@ function SavedText({
 function BackupPreview({
   fileName,
   summary,
+  skipped,
 }: {
   fileName: string;
   summary: BackupSummary;
+  skipped: number;
 }) {
   const source = summary.source === "desktop" ? "Desktop app" : "Web app";
   const counts = [
@@ -832,6 +834,13 @@ function BackupPreview({
           {source} · {new Date(summary.exportedAt).toLocaleString()}
         </p>
       </div>
+      {skipped > 0 ? (
+        <p className="text-muted-foreground mt-2 text-sm">
+          {skipped === 1
+            ? "One entry has an error. September will leave it out."
+            : `${skipped} entries have errors. September will leave them out.`}
+        </p>
+      ) : null}
       <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
         {counts.map(([label, count]) => (
           <div key={label} className="bg-muted rounded-control p-3">
@@ -849,6 +858,7 @@ export function DataSettings() {
   const fileInput = useRef<HTMLInputElement>(null);
   const [selected, setSelected] = useState<SeptemberBackup | null>(null);
   const [fileName, setFileName] = useState("");
+  const [skipped, setSkipped] = useState(0);
   const [problem, setProblem] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -860,10 +870,12 @@ export function DataSettings() {
 
     setProblem(null);
     setSelected(null);
+    setSkipped(0);
     try {
-      const backup = parseBackup(await file.text());
+      const { backup, skipped: withErrors } = parseBackup(await file.text());
       setFileName(file.name);
       setSelected(backup);
+      setSkipped(withErrors);
     } catch (error) {
       setProblem(backupProblem(error));
     } finally {
@@ -953,7 +965,11 @@ export function DataSettings() {
 
         {summary ? (
           <>
-            <BackupPreview fileName={fileName} summary={summary} />
+            <BackupPreview
+              fileName={fileName}
+              summary={summary}
+              skipped={skipped}
+            />
             <p className="text-muted-foreground text-sm leading-relaxed">
               Importing replaces your current settings and data. It does not
               change your API keys or this device&apos;s audio settings.

@@ -121,16 +121,22 @@ describe("the portable September backup", () => {
       "utf8",
     );
 
-    expect(parseBackup(fixture)).toMatchObject({
-      formatVersion: 2,
-      agentMessages: [],
-      spaces: [{ id: "space-1" }],
-      savedPhrases: [{ id: "phrase-1" }],
+    expect(parseBackup(fixture)).toEqual({
+      skipped: 0,
+      backup: expect.objectContaining({
+        formatVersion: 2,
+        agentMessages: [],
+        spaces: [expect.objectContaining({ id: "space-1" })],
+        savedPhrases: [expect.objectContaining({ id: "phrase-1" })],
+      }),
     });
   });
 
   it("parses a complete version-two backup", () => {
-    expect(parseBackup(JSON.stringify(validBackup()))).toEqual(validBackup());
+    expect(parseBackup(JSON.stringify(validBackup()))).toEqual({
+      backup: validBackup(),
+      skipped: 0,
+    });
   });
 
   it("repairs the retired camera panel tab", () => {
@@ -139,14 +145,14 @@ describe("the portable September backup", () => {
     };
     backup.settings.panel.tab = "camera";
 
-    expect(parseBackup(JSON.stringify(backup)).settings.panel).toEqual({
+    expect(parseBackup(JSON.stringify(backup)).backup.settings.panel).toEqual({
       open: true,
       tab: "phrases",
     });
   });
 
   it("encodes every collection in stable identifier order", () => {
-    const parsed = parseBackup(encodeBackup(validBackup()));
+    const { backup: parsed } = parseBackup(encodeBackup(validBackup()));
 
     expect(parsed.spaces.map((row) => row.id)).toEqual(["space-a", "space-b"]);
     expect(encodeBackup(parsed)).toBe(encodeBackup(parsed));
@@ -184,7 +190,9 @@ describe("the portable September backup", () => {
       data: {},
     }));
 
-    expect(parseBackup(JSON.stringify(backup)).usageEvents).toHaveLength(5);
+    expect(parseBackup(JSON.stringify(backup)).backup.usageEvents).toHaveLength(
+      5,
+    );
   });
 
   it("drops a machine-local audio path from a message", () => {
@@ -195,9 +203,9 @@ describe("the portable September backup", () => {
     };
     raw.messages[0].audio_path = "/private/audio/message.mp3";
 
-    expect(parseBackup(JSON.stringify(raw)).messages[0]).not.toHaveProperty(
-      "audio_path",
-    );
+    expect(
+      parseBackup(JSON.stringify(raw)).backup.messages[0],
+    ).not.toHaveProperty("audio_path");
   });
 
   it.each([
@@ -220,31 +228,37 @@ describe("the portable September backup", () => {
     expect(() => parseBackup(JSON.stringify(backup))).toThrow();
   });
 
-  it("rejects duplicate identifiers", () => {
+  it("keeps the first row and skips a repeated identifier", () => {
     const backup = validBackup();
-    backup.messages.push({ ...backup.messages[0] });
+    backup.messages.push({ ...backup.messages[0], text: "A second copy." });
 
-    expect(() => parseBackup(JSON.stringify(backup))).toThrow(
-      /duplicate message ID/i,
-    );
+    const parsed = parseBackup(JSON.stringify(backup));
+
+    expect(parsed.backup.messages).toEqual([validBackup().messages[0]]);
+    expect(parsed.skipped).toBe(1);
   });
 
-  it("rejects a child whose space is absent", () => {
+  it("skips a child whose space is absent", () => {
     const backup = validBackup();
     backup.notes[0].space_id = "missing";
 
-    expect(() => parseBackup(JSON.stringify(backup))).toThrow(/missing space/i);
+    const parsed = parseBackup(JSON.stringify(backup));
+
+    expect(parsed.backup.notes).toEqual([]);
+    expect(parsed.backup.messages).toHaveLength(1);
+    expect(parsed.skipped).toBe(1);
   });
 
-  it("rejects an Agent tool row that could crash or bypass its approval card", () => {
+  it("skips an Agent tool row that could crash or bypass its approval card", () => {
     const missingFields = validBackup();
     missingFields.agentMessages[0] = {
       ...missingFields.agentMessages[0],
       role: "tool",
     };
-    expect(() => parseBackup(JSON.stringify(missingFields))).toThrow(
-      /tool call ID/i,
-    );
+    expect(parseBackup(JSON.stringify(missingFields))).toMatchObject({
+      backup: { agentMessages: [] },
+      skipped: 1,
+    });
 
     const malformedProposal = validBackup();
     malformedProposal.agentMessages[0] = {
@@ -255,26 +269,53 @@ describe("the portable September backup", () => {
       tool_arguments: '{"operation":"delete"}',
       tool_state: "pending",
     };
-    expect(() => parseBackup(JSON.stringify(malformedProposal))).toThrow(
-      /note_id/i,
-    );
+    expect(parseBackup(JSON.stringify(malformedProposal))).toMatchObject({
+      backup: { agentMessages: [] },
+      skipped: 1,
+    });
   });
 
-  it("rejects two space titles that resolve to one route", () => {
+  it("skips the second of two space titles that resolve to one route", () => {
     const backup = validBackup();
     backup.spaces[1].title = "work!";
 
-    expect(() => parseBackup(JSON.stringify(backup))).toThrow(/space title/i);
+    const parsed = parseBackup(JSON.stringify(backup));
+
+    expect(parsed.backup.spaces.map((row) => row.title)).toEqual(["Work"]);
+    expect(parsed.skipped).toBeGreaterThan(0);
   });
 
-  it("rejects invalid timestamps and sound values", () => {
+  it("skips invalid timestamps and forgets invalid sound values", () => {
     const timestamp = validBackup();
     timestamp.spaces[0].updated_at = 19;
-    expect(() => parseBackup(JSON.stringify(timestamp))).toThrow(/updated_at/i);
+    const withoutSpace = parseBackup(JSON.stringify(timestamp));
+    expect(withoutSpace.backup.spaces.map((row) => row.id)).toEqual([
+      "space-a",
+    ]);
+    expect(withoutSpace.skipped).toBe(1);
 
     const sound = validBackup();
     sound.settings.speech!.speed = 3;
-    expect(() => parseBackup(JSON.stringify(sound))).toThrow(/speed/i);
+    const withoutSpeech = parseBackup(JSON.stringify(sound));
+    expect(withoutSpeech.backup.settings.speech).toBeNull();
+    expect(withoutSpeech.backup.settings.setup).toEqual(
+      validBackup().settings.setup,
+    );
+    expect(withoutSpeech.skipped).toBe(1);
+  });
+
+  it("writes what the app holds without validating it", () => {
+    const backup = validBackup();
+    backup.settings.speech!.speed = 3;
+    backup.spaces[0].updated_at = 19;
+
+    const written = JSON.parse(encodeBackup(backup));
+
+    expect(written.settings.speech.speed).toBe(3);
+    expect(written.spaces.map((row: { id: string }) => row.id)).toEqual([
+      "space-a",
+      "space-b",
+    ]);
   });
 
   it("gives invalid JSON a file-level error", () => {
@@ -287,7 +328,7 @@ describe("the portable September backup", () => {
     backup.messages[0].user_id = "an-old-mac-login";
     backup.usageEvents[0].user_id = "an-old-mac-login";
 
-    const parsed = parseBackup(JSON.stringify(backup));
+    const { backup: parsed } = parseBackup(JSON.stringify(backup));
 
     expect(parsed.spaces.map((row) => row.user_id)).toEqual([
       "person-1",
@@ -301,7 +342,7 @@ describe("the portable September backup", () => {
     const backup = validBackup();
     backup.settings.setup = null;
 
-    expect(parseBackup(JSON.stringify(backup)).spaces[0].user_id).toBe(
+    expect(parseBackup(JSON.stringify(backup)).backup.spaces[0].user_id).toBe(
       "person-1",
     );
   });
@@ -316,7 +357,7 @@ describe("the portable September backup", () => {
     backup.agentMessages[0].space_id = "a";
 
     expect(
-      parseBackup(encodeBackup(backup)).spaces.map((row) => row.id),
+      parseBackup(encodeBackup(backup)).backup.spaces.map((row) => row.id),
     ).toEqual(["B", "a"]);
   });
 
@@ -363,7 +404,7 @@ describe("the portable September backup", () => {
       "utf8",
     );
 
-    const encoded = encodeBackup(parseBackup(fixture));
+    const encoded = encodeBackup(parseBackup(fixture).backup);
     expect(JSON.parse(encoded)).toMatchObject({
       formatVersion: 2,
       agentMessages: [],

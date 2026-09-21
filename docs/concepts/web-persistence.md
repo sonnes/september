@@ -34,7 +34,7 @@ The Data settings screen can read all portable settings and domain stores in
 one transaction. Version 2 includes the Agent transcript. It omits provider
 keys, audio output, migration state, and the two speech-file stores.
 
-Import validates the complete backup before it opens a write transaction. The
+Import reads the complete backup before it opens a write transaction. The
 write clears and replaces only the portable settings and domain stores. An
 abort keeps every old value. See [Portable backups](portable-backups.md).
 
