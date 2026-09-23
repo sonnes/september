@@ -1,5 +1,7 @@
 # September Desktop
 
+The current prerelease is `v0.2.0`. The signed DMG targets Apple Silicon and macOS 14.2 or later.
+
 September Desktop is the Tauri edition of September, sized for the 13-inch iPad
 landscape window. It renders the workspace's shared application UI and supplies
 macOS services through Tauri. The Rust backend also provides local text
@@ -749,6 +751,12 @@ The setup value can also contain `suggestionsModel`. This value is null by
 default. If it contains model settings, Suggestions use them instead of
 `defaultModel`. All other text-generation requests continue to use
 `defaultModel`.
+
+AI Assistance settings have independent switches for automatic suggestions and
+phrase generation. Both default to on. AI suggestions wait for whitespace or
+`. , ! ? ; :` after an edit. Local word completion stays immediate.
+SQLite settings and portable backups preserve both switches. Failed settings
+writes report an error and keep the saved value.
 
 The default writing selection powers the Agent. The desktop backend forwards a
 fixed tool-calling request to OpenRouter or the bundled apfel endpoint. The

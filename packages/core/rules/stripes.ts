@@ -16,6 +16,10 @@ export interface Suggestion {
 /** Maximum number of composed suggestions returned by composeSuggestions. */
 export const MAX_COMPOSED = 6;
 
+const SENTENCES = new Intl.Segmenter('en', { granularity: 'sentence' });
+const MAX_SLICE_WORDS = 6;
+const PUNCTUATION = /^[\p{P}\p{S}]+$/u;
+
 /** Splits a sentence into word tokens, with trailing punctuation as its own token. */
 export function tokenize(sentence: string): string[] {
   const tokens: string[] = [];
@@ -50,9 +54,8 @@ export function hiddenTokenCount(tokens: string[], typed: string): number {
 }
 
 /**
- * Past spoken messages that start with the typed text, most recent first.
- * Mirrors Project Voice: history search only kicks in once a sentence is
- * started — the blank state is seeded by boards and LLM starters, not history.
+ * Sentences from past messages that start with the typed text, newest messages first.
+ * History matches require nonempty typed text.
  */
 export function historyMatches(typed: string, history: string[]): string[] {
   const lower = typed.trim().toLowerCase();
@@ -61,11 +64,13 @@ export function historyMatches(typed: string, history: string[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
   for (let i = history.length - 1; i >= 0; i--) {
-    const phrase = history[i].trim();
-    const key = phrase.toLowerCase();
-    if (!phrase || key === lower || seen.has(key) || !key.startsWith(lower)) continue;
-    seen.add(key);
-    out.push(phrase);
+    for (const { segment } of SENTENCES.segment(history[i])) {
+      const phrase = segment.trim();
+      const key = phrase.toLowerCase();
+      if (!phrase || key === lower || seen.has(key) || !key.startsWith(lower)) continue;
+      seen.add(key);
+      out.push(phrase);
+    }
   }
   return out;
 }
@@ -151,16 +156,30 @@ export function composeSuggestions({
 }
 
 /**
- * Returns the stripe descriptor for a single suggestion against the typed text.
- * Mirrors the inline .map in mock/page.tsx.
+ * Returns accepted tokens and the next slice of at most six words.
+ * A slice stops at a sentence boundary. The text retains the complete suggestion.
  */
 export function stripeForText(
   text: string,
   typed: string
-): { text: string; tokens: string[]; hidden: number } {
+): { text: string; tokens: string[]; hidden: number; hasMore: boolean } {
   const tokens = tokenize(text);
   const hidden = hiddenTokenCount(tokens, typed);
-  return { text, tokens, hidden };
+  let sentenceEnd = 0;
+  for (const { segment } of SENTENCES.segment(text)) {
+    sentenceEnd += tokenize(segment).length;
+    if (sentenceEnd > hidden) break;
+  }
+  let end = hidden;
+  let words = 0;
+  while (end < sentenceEnd) {
+    if (!PUNCTUATION.test(tokens[end])) {
+      if (words === MAX_SLICE_WORDS) break;
+      words++;
+    }
+    end++;
+  }
+  return { text, tokens: tokens.slice(0, end), hidden, hasMore: end < tokens.length };
 }
 
 /**

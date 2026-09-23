@@ -41,6 +41,8 @@ vi.mock('@platform/services/data', () => ({
 }));
 
 vi.mock('@platform/services/os', () => ({
+  currentSetup: () => null,
+  subscribeSetup: () => () => {},
   spaceModes: {},
   rememberModes: vi.fn(),
   listOutputs: vi.fn(async () => []),

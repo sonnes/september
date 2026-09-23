@@ -6,6 +6,13 @@ package: desktop, web
 
 # Saved phrases
 
+Writing settings include an Automatic phrase generation switch, which defaults
+to on. Turning it off stops automatic creation and refresh of phrases and
+starters. Existing phrases and explicit Agent requests remain available.
+Late results from a cancelled request cannot replace phrases or update the sync count.
+Turning the switch on resumes the existing generation schedule without a reset
+of the sync count.
+
 Each space keeps ready-to-use phrases and sentence starters. The desktop and web apps use the same row shape and interaction rules.
 
 The desktop app stores rows in SQLite. The web app stores rows in the `saved_phrases` IndexedDB store.
@@ -42,6 +49,17 @@ user approves the proposal.
 ## Suggestions
 
 The right panel shows pinned rows before generated rows. The Talk stripe combines phrases, starters, message history, and autocomplete words.
+
+History matches individual sentences, with newer messages first. Stored
+messages remain complete. Duplicate sentences appear once.
+
+Suggestion rows show at most six unaccepted words and stop at sentence
+boundaries. Punctuation does not count toward the limit. A word press inserts
+the suggestion through that word and reveals the next slice.
+
+An unfinished slice ends with an insert action. The final slice offers Speak
+for the complete suggestion. Starters always use an insert action.
+Selected model suggestions and phrase-code expansions retain their remaining words.
 
 The app learns code ideas from repeated messages. Dismissed ideas stay in the application settings.
 

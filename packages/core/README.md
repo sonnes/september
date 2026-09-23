@@ -72,6 +72,10 @@ sets what it shows and never has to join anything.
 All jobs use `defaultModel`. If `suggestionsModel` is not null, Suggestions use
 that value.
 
+The backup setup includes independent `autoSuggestions` and `autoPhrases`
+booleans. Missing fields default to `true`. Explicit `false` values survive
+export and restore. The parser rejects supplied values with another type.
+
 It also holds how that work reads. `groupAgentTurns` folds the flat transcript
 into turns, joining consecutive tools that share an outcome into one line,
 because a user asked one question and not three. A change waiting for a press
@@ -99,6 +103,11 @@ part that tells two tabs apart first and the name of the app last, because a
 user often keeps one tab open per person they talk to.
 
 Import autocomplete through `@september/core/autocomplete`.
+
+`rules/stripes.ts` matches individual history sentences and limits suggestion
+slices to six unaccepted words. Sentence boundaries also end a slice.
+Punctuation does not count toward the word limit. Each descriptor retains
+the complete text and reports whether more words remain.
 
 Run its checks from the repository root:
 

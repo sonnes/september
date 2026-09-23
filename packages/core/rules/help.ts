@@ -289,6 +289,7 @@ export const HELP_GUIDES: HelpGuide[] = [
     prerequisites: ["Open a space in Talk mode."],
     steps: [
       "Type the beginning of a word or sentence.",
+      "For AI suggestions, finish a word with a space or punctuation.",
       "Read the suggestions above the composer.",
       "Choose a suggestion that continues your thought.",
       "Repeat until the message is ready.",
@@ -606,6 +607,7 @@ export const HELP_GUIDES: HelpGuide[] = [
       "Open Settings.",
       "Open AI Assistance.",
       "Choose an available writing service or No AI Assistance.",
+      "Set Automatic AI suggestions and Automatic phrase generation independently.",
       "Connect the service if September asks for a key.",
     ],
     expectedResult:
@@ -1027,6 +1029,8 @@ export const HELP_GUIDES: HelpGuide[] = [
     steps: [
       "Type at least one letter in the composer.",
       "Check that the suggestions area is visible above it.",
+      "For AI suggestions, turn on Automatic AI suggestions in Settings under AI Assistance.",
+      "Finish a word with a space or punctuation.",
       "Open About this space and add a short description if it is empty.",
       "Return to Talk and type the beginning again.",
     ],

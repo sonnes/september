@@ -27,6 +27,8 @@ const validBackup = (): SeptemberBackup => ({
       mode: "advanced",
       defaultModel: { service: "openrouter", model: "default/model" },
       suggestionsModel: { service: "openrouter", model: "suggestions/model" },
+      autoSuggestions: true,
+      autoPhrases: true,
       voiceService: "elevenlabs",
     },
     speech: {
@@ -115,6 +117,49 @@ const validBackup = (): SeptemberBackup => ({
 });
 
 describe("the portable September backup", () => {
+  it.each([
+    [false, true],
+    [true, false],
+    [false, false],
+    [true, true],
+  ])(
+    "preserves independent automatic generation settings (%s, %s)",
+    (autoSuggestions, autoPhrases) => {
+      const backup = validBackup();
+      Object.assign(backup.settings.setup!, { autoSuggestions, autoPhrases });
+      expect(
+        parseBackup(encodeBackup(backup)).backup.settings.setup,
+      ).toMatchObject({
+        autoSuggestions,
+        autoPhrases,
+      });
+    },
+  );
+
+  it("defaults missing automatic generation settings to enabled", () => {
+    const backup = validBackup();
+    const setup = backup.settings.setup! as unknown as Record<string, unknown>;
+    delete setup.autoSuggestions;
+    delete setup.autoPhrases;
+    expect(
+      parseBackup(JSON.stringify(backup)).backup.settings.setup,
+    ).toMatchObject({
+      autoSuggestions: true,
+      autoPhrases: true,
+    });
+  });
+
+  it.each(["autoSuggestions", "autoPhrases"])(
+    "rejects invalid %s values",
+    (field) => {
+      const backup = validBackup();
+      Object.assign(backup.settings.setup!, { [field]: "false" });
+      const parsed = parseBackup(JSON.stringify(backup));
+      expect(parsed.backup.settings.setup).toBeNull();
+      expect(parsed.skipped).toBeGreaterThan(0);
+    },
+  );
+
   it("parses the fixture shared with the desktop backend", () => {
     const fixture = readFileSync(
       new URL("./fixtures/backup-v1.json", import.meta.url),

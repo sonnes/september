@@ -51,7 +51,12 @@ export async function bootstrapBrowserServices(): Promise<void> {
   // Every other setting here is normalised as it is read. This one was
   // not, so a setup written before `defaultModel` existed threw on the
   // first screen that read it.
-  setup = savedSetup && { ...savedSetup, ...modelSettingsFrom(savedSetup) };
+  setup = savedSetup && {
+    ...savedSetup,
+    ...modelSettingsFrom(savedSetup),
+    autoSuggestions: savedSetup.autoSuggestions ?? true,
+    autoPhrases: savedSetup.autoPhrases ?? true,
+  };
   lastPath = savedPath;
   speech = savedSpeech;
   dismissedIdeas.splice(0, dismissedIdeas.length, ...(savedDismissed ?? []));
@@ -61,6 +66,16 @@ export async function bootstrapBrowserServices(): Promise<void> {
   providerKeys = keys ?? {};
   selectedOutput = output ?? '';
   bootstrapped = true;
+}
+
+const setupListeners = new Set<() => void>();
+let setupWrite: Promise<unknown> = Promise.resolve();
+
+export function subscribeSetup(listener: () => void): () => void {
+  setupListeners.add(listener);
+  return () => {
+    setupListeners.delete(listener);
+  };
 }
 
 export function currentSetup(): SavedSetup | null {
@@ -75,16 +90,22 @@ export async function saveSetup(draft: OnboardingDraft): Promise<void> {
   const saved: SavedSetup = { ...draft, id: setup?.id ?? LOCAL_USER };
   await (await getRepository()).putSetting('setup', saved);
   setup = saved;
+  setupListeners.forEach((listener) => listener());
 }
 
-export async function updateSetup(patch: Partial<OnboardingDraft>): Promise<SavedSetup> {
-  const saved: SavedSetup = {
-    ...(setup ?? { id: LOCAL_USER, ...DEFAULT_DRAFT }),
-    ...patch,
-  };
-  await (await getRepository()).putSetting('setup', saved);
-  setup = saved;
-  return saved;
+export function updateSetup(patch: Partial<OnboardingDraft>): Promise<SavedSetup> {
+  const write = setupWrite.then(async () => {
+    const saved: SavedSetup = {
+      ...(setup ?? { id: LOCAL_USER, ...DEFAULT_DRAFT }),
+      ...patch,
+    };
+    await (await getRepository()).putSetting('setup', saved);
+    setup = saved;
+    setupListeners.forEach((listener) => listener());
+    return saved;
+  });
+  setupWrite = write.catch(() => undefined);
+  return write;
 }
 
 export function currentPath(): string | null {

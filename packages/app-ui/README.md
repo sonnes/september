@@ -70,6 +70,16 @@ The same file owns the writing-model controls. Writing settings select the
 default service and an optional Suggestions service. The OpenRouter connection
 screen selects the default model and the optional Suggestions model.
 
+Writing settings also contain independent switches for automatic AI suggestions
+and phrase generation. Both switches save immediately and retain their saved
+value after a failed write. Generation hooks subscribe to successful setup changes.
+
+Automatic AI suggestions require an edit that ends in whitespace or
+`. , ! ? ; :`, followed by a 200 ms pause. Restored drafts wait for an edit.
+Space changes, newer edits, and relevant settings changes cancel pending requests.
+Late responses cannot replace current results. Local word completion still
+responds to each letter.
+
 `pages/agent.tsx` owns the Agent conversation for one space, and the screen
 that makes a space. It shows the separately stored transcript and runs
 reads and changes without interruption. Only a delete stops for an Approve and
@@ -137,6 +147,12 @@ each edit through the platform settings service and never clears newer words
 when an earlier message finishes saving. Notes save text and titles on input,
 keep pending edits visible during query refreshes, and offer retry on failure.
 Both screens guard normal closing while writes are pending or failed.
+
+`blocks/suggestions.tsx` shows suggestions in slices of at most six words.
+The insert action accepts an unfinished slice and reveals the next words.
+The final slice offers Speak for the complete suggestion. Starters retain
+their insert action. Selected suggestions remain available across model
+responses and after phrase-code expansion.
 
 Speech returns whether playback completed successfully. Talk and Read aloud
 show speech notices. Present pauses on failure and keeps the unread chunk on

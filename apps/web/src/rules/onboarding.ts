@@ -9,6 +9,8 @@ export type WritingService = WritingModelConfig['service'];
 export type VoiceService = 'system' | 'elevenlabs';
 
 export interface OnboardingDraft extends ModelSettings {
+  autoSuggestions: boolean;
+  autoPhrases: boolean;
   name: string;
   speakingStyle: string;
   personalWords: string;
@@ -43,6 +45,8 @@ export const DEFAULT_DRAFT: OnboardingDraft = {
   mode: 'free',
   defaultModel: { service: 'none', model: '' },
   suggestionsModel: null,
+  autoSuggestions: true,
+  autoPhrases: true,
   voiceService: 'system',
 };
 

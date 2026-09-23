@@ -3,7 +3,7 @@ import { convertFileSrc, invoke, isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-shell";
 
-import type { OnboardingDraft } from "@/rules/onboarding";
+import { DEFAULT_DRAFT, type OnboardingDraft } from "@/rules/onboarding";
 import { panelStateFrom, type PanelState } from "@/rules/panel";
 import { presentSettings, type PresentSettings } from "@/rules/present";
 import type { SpeechSettings } from "@/services/speech";
@@ -40,9 +40,24 @@ let setup = await invoke<SavedSetup | null>("setting_get", {
   // A setup written before `defaultModel` existed held one flat service and
   // model, and every screen that reads one would throw on it.
   .then((saved) =>
-    saved ? { ...saved, ...modelSettingsFrom(saved) } : null,
+    saved ? {
+      ...saved,
+      ...modelSettingsFrom(saved),
+      autoSuggestions: saved.autoSuggestions ?? true,
+      autoPhrases: saved.autoPhrases ?? true,
+    } : null,
   )
   .catch(() => null);
+
+const setupListeners = new Set<() => void>();
+let setupWrite: Promise<unknown> = Promise.resolve();
+
+export function subscribeSetup(listener: () => void): () => void {
+  setupListeners.add(listener);
+  return () => {
+    setupListeners.delete(listener);
+  };
+}
 
 export function currentSetup(): SavedSetup | null {
   return setup;
@@ -66,6 +81,7 @@ export async function saveSetup(draft: OnboardingDraft): Promise<void> {
     request: { key: "setup", value: saved },
   }).catch(() => undefined);
   setup = saved;
+  setupListeners.forEach((listener) => listener());
 }
 
 /**
@@ -74,15 +90,19 @@ export async function saveSetup(draft: OnboardingDraft): Promise<void> {
  * Settings writes through here, so `currentSetup()` gives the new answer at
  * once. A screen never has to reload to see its own change.
  */
-export async function updateSetup(
-  patch: Partial<OnboardingDraft>,
-): Promise<SavedSetup> {
-  const saved: SavedSetup = { ...setup!, ...patch };
-  await invoke("setting_put", {
-    request: { key: "setup", value: saved },
-  }).catch(() => undefined);
-  setup = saved;
-  return saved;
+export function updateSetup(patch: Partial<OnboardingDraft>): Promise<SavedSetup> {
+  const write = setupWrite.then(async () => {
+    const saved: SavedSetup = {
+      ...(setup ?? { id: osUser, ...DEFAULT_DRAFT }),
+      ...patch,
+    };
+    await invoke("setting_put", { request: { key: "setup", value: saved } });
+    setup = saved;
+    setupListeners.forEach((listener) => listener());
+    return saved;
+  });
+  setupWrite = write.catch(() => undefined);
+  return write;
 }
 
 /**

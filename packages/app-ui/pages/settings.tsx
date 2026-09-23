@@ -2,6 +2,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type ChangeEvent,
   type ReactNode,
 } from "react";
@@ -43,6 +44,7 @@ import {
   openInBrowser,
   readConnections,
   saveSpeech,
+  subscribeSetup,
   updateSetup,
   type Connections,
   type Model,
@@ -580,6 +582,82 @@ function VoiceModelChoice({ connected }: { connected: boolean }) {
 
 // ------------------------------------------------------------ AI Assistance
 
+function AutomaticGenerationSettings() {
+  const setup =
+    useSyncExternalStore(subscribeSetup, currentSetup, currentSetup) ??
+    DEFAULT_DRAFT;
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+
+  const controls = [
+    {
+      key: "autoSuggestions",
+      label: "Automatic AI suggestions",
+      description: "Suggest text after a space or punctuation.",
+    },
+    {
+      key: "autoPhrases",
+      label: "Automatic phrase generation",
+      description: "Create and refresh phrases and starters for each space.",
+    },
+  ] as const;
+
+  return (
+    <Section
+      title="Automatic generation"
+      description="Choose which writing tasks run automatically."
+    >
+      <div className="flex flex-col gap-3">
+        {controls.map(({ key, label, description }) => (
+          <div
+            key={key}
+            className="flex items-center justify-between gap-4 rounded-xl border p-4"
+          >
+            <div>
+              <Label id={`${key}-label`}>{label}</Label>
+              <p
+                id={`${key}-description`}
+                className="text-muted-foreground mt-1 text-sm"
+              >
+                {description}
+              </p>
+            </div>
+            <Button
+              type="button"
+              role="switch"
+              aria-labelledby={`${key}-label`}
+              aria-describedby={`${key}-description`}
+              aria-checked={setup[key]}
+              aria-disabled={pending}
+              variant={setup[key] ? "default" : "outline"}
+              className="min-h-11 min-w-11"
+              onClick={async () => {
+                if (pending) return;
+                setPending(true);
+                setError("");
+                try {
+                  await updateSetup({ [key]: !setup[key] });
+                } catch {
+                  setError("September did not save the setting. Try again.");
+                } finally {
+                  setPending(false);
+                }
+              }}
+            >
+              {setup[key] ? "On" : "Off"}
+            </Button>
+          </div>
+        ))}
+      </div>
+      {error ? (
+        <p role="alert" className="text-destructive text-sm">
+          {error}
+        </p>
+      ) : null}
+    </Section>
+  );
+}
+
 export function WritingSettings() {
   const [setup, change] = useSetup();
   const [connections] = useConnections();
@@ -611,6 +689,8 @@ export function WritingSettings() {
         title="AI Assistance"
         description="September finishes your sentences while you type."
       />
+
+      <AutomaticGenerationSettings />
 
       <Section
         title="Who writes"

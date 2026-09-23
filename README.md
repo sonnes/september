@@ -34,6 +34,7 @@ The web app stores data and its bounded speech cache in one IndexedDB database. 
 - Phrase codes expand short input into a full phrase.
 - Local usage reports show saved keystrokes and provider use.
 - One default model writes all AI text. Suggestions can use a separate model.
+- Separate switches control automatic AI suggestions and phrase generation. AI suggestions wait for a space or punctuation.
 - A portable JSON backup moves settings and data between the browser and Mac apps.
 - ElevenLabs can create a cloned voice from browser or desktop recordings.
 - Help groups step-by-step guidance by task, searches the shared guide catalog,

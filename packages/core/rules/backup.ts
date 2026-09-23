@@ -37,6 +37,8 @@ export const PORTABLE_SETTING_KEYS = [
 ] as const;
 
 export interface BackupSetup {
+  autoSuggestions: boolean;
+  autoPhrases: boolean;
   id: string;
   name: string;
   speakingStyle: string;
@@ -323,6 +325,14 @@ function setupFrom(value: unknown): BackupSetup | null {
   if (value === null) return null;
   const row = objectOf(value, "settings.setup");
   return {
+    autoSuggestions:
+      row.autoSuggestions === undefined
+        ? true
+        : booleanOf(row.autoSuggestions, "automatic suggestions"),
+    autoPhrases:
+      row.autoPhrases === undefined
+        ? true
+        : booleanOf(row.autoPhrases, "automatic phrase generation"),
     id: identifier(row.id, "setup ID"),
     name: stringOf(row.name, "setup name", { empty: false }),
     speakingStyle: stringOf(row.speakingStyle, "setup speaking style"),

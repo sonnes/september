@@ -53,6 +53,10 @@ The `settings` table stores a unique text key and a JSON value. Keys must
 contain 1 to 256 bytes. The `audio-output` setting keeps the Core Audio UID for
 September's own playback device.
 
+The setup value includes `autoSuggestions` and `autoPhrases`. The backup type
+preserves these booleans through export and restore. Older backups default both
+fields to `true`. These fields require no schema migration.
+
 The `spaces`, `messages`, `agent_messages`, `notes`, and `saved_phrases` tables
 store domain fields in typed columns. Talk messages and notes can belong to a
 space. Every Agent message belongs to one space. Deleting a space deletes its

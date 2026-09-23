@@ -131,7 +131,15 @@ pub struct BackupSetup {
     pub mode: String,
     pub default_model: BackupModelConfig,
     pub suggestions_model: Option<BackupModelConfig>,
+    #[serde(default = "enabled_by_default")]
+    pub auto_suggestions: bool,
+    #[serde(default = "enabled_by_default")]
+    pub auto_phrases: bool,
     pub voice_service: String,
+}
+
+fn enabled_by_default() -> bool {
+    true
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -1453,6 +1461,8 @@ mod tests {
                         service: "openrouter".to_owned(),
                         model: "suggestions/model".to_owned(),
                     }),
+                    auto_suggestions: true,
+                    auto_phrases: true,
                     voice_service: "elevenlabs".to_owned(),
                 }),
                 speech: Some(BackupSpeech {
@@ -1561,6 +1571,36 @@ mod tests {
         let restored = repository.backup_contents("person-1").unwrap();
         assert_eq!(restored.spaces[0].id, "space-1");
         assert_eq!(restored.saved_phrases[0].id, "phrase-1");
+    }
+
+    #[test]
+    fn automatic_generation_settings_survive_backup_restore() {
+        for (suggestions, phrases) in [(false, true), (true, false), (false, false)] {
+            let mut value = serde_json::to_value(backup_contents("space-1")).unwrap();
+            value["settings"]["setup"]["autoSuggestions"] = serde_json::Value::Bool(suggestions);
+            value["settings"]["setup"]["autoPhrases"] = serde_json::Value::Bool(phrases);
+            let contents: BackupContents = serde_json::from_value(value).unwrap();
+            let mut repository = Repository::open_in_memory().unwrap();
+            repository.replace_backup_contents(&contents).unwrap();
+            let restored =
+                serde_json::to_value(repository.backup_contents("user-1").unwrap()).unwrap();
+            assert_eq!(
+                restored["settings"]["setup"]["autoSuggestions"],
+                suggestions
+            );
+            assert_eq!(restored["settings"]["setup"]["autoPhrases"], phrases);
+        }
+    }
+
+    #[test]
+    fn old_backups_enable_automatic_generation() {
+        let contents: BackupContents = serde_json::from_str(include_str!(
+            "../../../../packages/core/rules/fixtures/backup-v1.json"
+        ))
+        .unwrap();
+        let value = serde_json::to_value(contents).unwrap();
+        assert_eq!(value["settings"]["setup"]["autoSuggestions"], true);
+        assert_eq!(value["settings"]["setup"]["autoPhrases"], true);
     }
 
     #[test]

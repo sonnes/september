@@ -18,6 +18,8 @@ The development server uses `http://localhost:3009`. The production build writes
 
 The test suite covers interactions, routes, browser services, and persistence.
 It does not treat landing-page copy or CSS choices as application behavior.
+Suggestion tests cover sentence matching through the shared UI, slice
+selection, phrase-code continuation, and speech after the final slice.
 
 ## Every page names itself
 
@@ -191,8 +193,8 @@ expandable panels with keyboard support. Privacy and the founder story follow
 the demos. Compact browser and Mac choices provide the final calls to action.
 
 The Mac section presents the full desktop app with Apple Intelligence and an
-alpha download. Its direct DMG link targets `v0.1.0-alpha.1` for Apple Silicon
-and macOS 26 or later. Update this link when a new desktop alpha ships.
+alpha download. Its direct DMG link targets `v0.2.0` for Apple Silicon
+and macOS 14.2 or later. Apple Intelligence requires macOS 26 or later. Update this link when a new desktop alpha ships.
 
 The landing sections demonstrate the real feature machinery on marketing-only
 data: the phrase chapter runs `matchCode`, the Present chapter runs
@@ -251,6 +253,12 @@ OpenRouter and ElevenLabs calls go directly from the browser. Their keys stay
 in IndexedDB. Setup stores one default writing-model setting. Every AI text
 request uses this setting. If the separate Suggestions setting is not null,
 Suggestions use it.
+
+AI Assistance settings have independent switches for automatic suggestions and
+phrase generation. Both default to on. AI suggestions wait for an edit that
+ends in whitespace or `. , ! ? ; :`, then wait 200 ms. Local word completion
+still responds to each letter. Setup writes run in order and notify mounted
+generation hooks after a successful save. Portable backups preserve both switches.
 
 `src/services/ai.ts` reaches OpenRouter through `@earendil-works/pi-ai`. It
 loads the client on the first call that needs a model, so a reader who only

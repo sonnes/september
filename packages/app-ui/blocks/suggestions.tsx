@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import {
   ChevronsRight,
@@ -16,6 +16,7 @@ import {
   itemsFrom,
   userContext,
 } from "@platform/services/ai";
+import { currentSetup, subscribeSetup, type SavedSetup } from "@platform/services/os";
 import { useMessages, usePhrases } from "@platform/services/data";
 import {
   isKept,
@@ -43,7 +44,7 @@ import {
 /** Curated rows in the stripe, and how many of them may be starters. */
 const SAVED_LIMIT = 5;
 const STARTER_LIMIT = 2;
-/** How long the app waits after a keystroke before it asks the model. */
+/** The delay after a qualifying edit before a model request. */
 const THINK_AFTER_MS = 200;
 
 const PUNCTUATION = /^[.,!?;:]+$/;
@@ -52,6 +53,7 @@ interface Stripe {
   text: string;
   tokens: string[];
   hidden: number;
+  hasMore: boolean;
   source: SuggestionSource;
   code?: string;
   /** The user keeps this phrase, so the pin is solid, as in the panel. */
@@ -118,11 +120,27 @@ export function Suggestions({
   onSpeak: (sentence: string) => void;
   onPin: (phrase: string) => void;
 }) {
+  const setup = useSyncExternalStore(subscribeSetup, currentSetup, currentSetup);
   const { data: spacePhrases } = usePhrases(spaceId);
   // A code works in every space, so the lookup reads them all.
   const { data: allPhrases } = usePhrases();
   const { data: messages } = useMessages(spaceId);
   const [hover, setHover] = useState<Hover>(null);
+  const [selection, setSelection] = useState<{ stripe: Stripe; spaceId: string } | null>(null);
+  const selected = (selection?.stripe.source !== "llm" || setup?.autoSuggestions !== false) &&
+    selection?.spaceId === spaceId && text.trim() &&
+    selection.stripe.text.toLowerCase().startsWith(text.trim().toLowerCase())
+    ? selection.stripe : null;
+
+  useEffect(() => {
+    if (selection && !selected) setSelection(null);
+  }, [selection, selected]);
+
+  const take = (stripe: Stripe, next: string) => {
+    setSelection({ stripe, spaceId });
+    setHover(null);
+    onTake(next);
+  };
 
   const history = useMemo(
     () =>
@@ -137,7 +155,7 @@ export function Suggestions({
   // no wait.
   // A space that does not exist yet names no lane of the engine.
   const words = useSuggestions(spaceId || undefined, text);
-  const fromModel = useCompletions({ text, context, history });
+  const fromModel = useCompletions({ text, context, history, spaceId, setup });
   const stripes = useStripes({
     text,
     spaceId,
@@ -145,6 +163,7 @@ export function Suggestions({
     allPhrases: allPhrases ?? [],
     history,
     fromModel,
+    selected,
   });
 
   const chips = useMemo(() => {
@@ -243,7 +262,7 @@ export function Suggestions({
                     onMouseEnter={() => setHover({ stripe: row, index })}
                     onFocus={() => setHover({ stripe: row, index })}
                     onClick={() =>
-                      onTake(joinTokens(stripe.tokens.slice(0, index + 1)))
+                      take(stripe, joinTokens(stripe.tokens.slice(0, index + 1)))
                     }
                     style={{
                       fontSize: size(TILE.fontPx),
@@ -266,7 +285,7 @@ export function Suggestions({
               <EndKey
                 stripe={stripe}
                 scale={scale}
-                onTake={onTake}
+                onTake={(next) => take(stripe, next)}
                 onSpeak={onSpeak}
               />
             </div>
@@ -322,8 +341,8 @@ function useWidth() {
 /**
  * The key at the end of a row.
  *
- * A starter takes its whole opening into the composer. Every other row speaks
- * its sentence, because it is a whole thought.
+ * An unfinished slice or starter inserts its visible words into the composer.
+ * A final slice speaks the complete suggestion.
  */
 function EndKey({
   stripe,
@@ -342,12 +361,13 @@ function EndKey({
   };
   const glyph = { width: TILE.fontPx * scale, height: TILE.fontPx * scale };
 
-  if (stripe.source === "starter") {
+  if (stripe.hasMore || stripe.source === "starter") {
+    const label = stripe.hasMore ? "Insert this slice" : "Start with this opening";
     return (
       <button
         type="button"
-        aria-label="Start with this opening"
-        title="Start with this opening"
+        aria-label={label}
+        title={label}
         onClick={() => onTake(joinTokens(stripe.tokens))}
         style={box}
         className="border-primary/40 text-primary/70 hover:bg-primary/10 hover:text-primary focus-visible:ring-ring rounded-control inline-flex shrink-0 items-center justify-center border border-dashed transition-colors focus-visible:ring-2 focus-visible:outline-none"
@@ -451,6 +471,7 @@ function useStripes({
   allPhrases,
   history,
   fromModel,
+  selected,
 }: {
   text: string;
   spaceId: string;
@@ -458,6 +479,7 @@ function useStripes({
   allPhrases: SavedPhrase[];
   history: string[];
   fromModel: string[];
+  selected: Stripe | null;
 }): Stripe[] {
   return useMemo(() => {
     const starters = topRows(spacePhrases, STARTER_LIMIT, "starter").map(
@@ -486,6 +508,12 @@ function useStripes({
       }))
       .filter((one) => one.hidden < one.tokens.length);
 
+    if (selected && selected.text.trim().toLowerCase() !== text.trim().toLowerCase()) {
+      const continuation: Stripe = { ...selected, ...stripeForText(selected.text, text) };
+      return [continuation, ...rows.filter((one) => one.text.toLowerCase() !== selected.text.toLowerCase())]
+        .slice(0, MAX_COMPOSED);
+    }
+
     // A code at the caret is local and exact, so it never waits on the model.
     const word = trailingWord(text);
     const match = word ? matchCode(word, allPhrases, spaceId) : undefined;
@@ -506,7 +534,7 @@ function useStripes({
         (one) => one.text.toLowerCase() !== codeStripe.text.toLowerCase(),
       ),
     ].slice(0, MAX_COMPOSED);
-  }, [text, spaceId, spacePhrases, allPhrases, history, fromModel]);
+  }, [text, spaceId, spacePhrases, allPhrases, history, fromModel, selected]);
 }
 
 /** The last rows of the stripe, from the writing service. */
@@ -514,27 +542,38 @@ function useCompletions({
   text,
   context,
   history,
+  spaceId,
+  setup,
 }: {
   text: string;
   context: string;
   history: string[];
+  spaceId: string;
+  setup: SavedSetup | null;
 }): string[] {
   const [rows, setRows] = useState<string[]>([]);
-  const lines = history.slice(-20).map((one) => `Me: ${one}`);
-  const key = `${text} ${lines.length}`;
+  const enabled = setup?.autoSuggestions !== false;
+  const settingsKey = JSON.stringify([
+    setup?.defaultModel, setup?.suggestionsModel, setup?.speakingStyle, setup?.personalWords,
+  ]);
+  const previous = useRef({ text, spaceId, enabled, settingsKey });
+  const historyKey = JSON.stringify(history.slice(-20));
 
   useEffect(() => {
-    if (!hasWritingService("suggestions")) {
-      setRows([]);
-      return;
-    }
+    const edited = previous.current.text !== text &&
+      previous.current.spaceId === spaceId && previous.current.enabled === enabled &&
+      previous.current.settingsKey === settingsKey;
+    previous.current = { text, spaceId, enabled, settingsKey };
+    setRows([]);
+    if (!edited || !enabled || !text.trim() ||
+      !/[\s.,!?;:]$/.test(text) || !hasWritingService("suggestions")) return;
 
     const dropped = new AbortController();
     const timer = setTimeout(() => {
       const { system, user } = buildSuggestionPrompt({
         globalMd: userContext(),
         spaceMd: context,
-        history: lines,
+        history: (JSON.parse(historyKey) as string[]).map((one) => `Me: ${one}`),
         typed: text,
       });
 
@@ -549,17 +588,19 @@ function useCompletions({
         },
         { feature: "suggestions", signal: dropped.signal },
       )
-        .then((answer) => setRows(itemsFrom(answer, "suggestions")))
-        // A service that fails leaves the rows that do not need it.
-        .catch(() => setRows([]));
+        .then((answer) => {
+          if (!dropped.signal.aborted) setRows(itemsFrom(answer, "suggestions"));
+        })
+        .catch(() => {
+          if (!dropped.signal.aborted) setRows([]);
+        });
     }, THINK_AFTER_MS);
 
     return () => {
       clearTimeout(timer);
       dropped.abort();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, context]);
+  }, [text, spaceId, enabled, settingsKey, context, historyKey]);
 
   return rows;
 }

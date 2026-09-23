@@ -39,11 +39,12 @@ export function PlatformSection() {
               variant="outline"
               className="h-12 rounded-full border-zinc-400 bg-white px-6 text-base font-semibold"
             >
-              <a href="https://github.com/sonnes/september/releases/download/v0.1.0-alpha.1/September_0.1.0-alpha.1_aarch64.dmg">
+              <a href="https://github.com/sonnes/september/releases/download/v0.2.0/September_0.2.0_aarch64.dmg">
                 Download for Mac
               </a>
             </Button>
-            <p className="mt-3 text-sm text-zinc-600">Apple Silicon · macOS 26 or later</p>
+            <p className="mt-3 text-sm text-zinc-600">Apple Silicon · macOS 14.2 or later</p>
+            <p className="mt-1 text-sm text-zinc-600">Apple Intelligence requires macOS 26 or later.</p>
           </div>
         </div>
       </div>

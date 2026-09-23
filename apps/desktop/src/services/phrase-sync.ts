@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 
+import { currentSetup, subscribeSetup } from "@/services/os";
 import { generate, hasWritingService, itemsFrom } from "@/services/ai";
 import {
   useReplaceAiPhrases,
@@ -38,29 +39,39 @@ export function useSyncPhrases({
   phrases: SavedPhrase[] | undefined;
   messages: Message[] | undefined;
 }): void {
+  const setup = useSyncExternalStore(subscribeSetup, currentSetup, currentSetup);
+  const enabled = setup?.autoPhrases !== false;
+  const modelKey = JSON.stringify(setup?.defaultModel);
   const replace = useReplaceAiPhrases();
   const updateSpace = useUpdateSpace();
   // One run at a time for one space, so a slow model cannot start a second.
-  const running = useRef<string | null>(null);
+  const running = useRef<AbortController | null>(null);
+
+  useEffect(() => () => {
+    running.current?.abort();
+    running.current = null;
+  }, [space?.id, enabled, modelKey]);
 
   useEffect(() => {
-    if (!space || !phrases || !messages || !hasWritingService()) return;
+    if (!enabled || !space || !phrases || !messages || !hasWritingService()) return;
 
     const action = decidePhraseSync({
       syncedCount: space.phrases_synced_count ?? undefined,
       messageCount: messages.length,
       hasContext: Boolean(space.context?.trim()),
     });
-    if (action === "none" || running.current === space.id) return;
+    if (action === "none" || running.current) return;
 
-    running.current = space.id;
-    void writePhrases({ space, phrases, messages })
+    const controller = new AbortController();
+    running.current = controller;
+    void writePhrases({ space, phrases, messages, signal: controller.signal })
       .then(async (rows) => {
         // A model that wrote nothing leaves the count alone, so the next
         // message tries again instead of waiting for six.
-        if (rows.length === 0) return;
+        if (rows.length === 0 || controller.signal.aborted || currentSetup()?.autoPhrases === false) return;
 
         await replace.mutateAsync({ spaceId: space.id, phrases: rows });
+        if (controller.signal.aborted || currentSetup()?.autoPhrases === false) return;
         await updateSpace.mutateAsync({
           id: space.id,
           phrases_synced_count: messages.length,
@@ -70,10 +81,10 @@ export function useSyncPhrases({
       // message tries again.
       .catch(() => undefined)
       .finally(() => {
-        running.current = null;
+        if (running.current === controller) running.current = null;
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [space?.id, space?.phrases_synced_count, phrases?.length, messages?.length]);
+  }, [space?.id, space?.context, space?.phrases_synced_count, phrases?.length, messages?.length, enabled, modelKey]);
 }
 
 async function writePhrases({
