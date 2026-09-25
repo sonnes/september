@@ -1,3 +1,5 @@
+import { exampleTags, moodBlock, type MoodKey } from './moods.ts';
+
 
 /**
  * The two prompts for the last rows of a stripe.
@@ -33,6 +35,8 @@ const OPENING_PROMPT = `Generate 5 possible NEXT things the User might WANT TO S
 
 {USER_CONTEXT}
 
+{AUDIO_TAGS}
+
 Answer with JSON: {"suggestions": ["...", "...", "...", "...", "..."]}`;
 
 /**
@@ -58,6 +62,8 @@ const COMPLETION_PROMPT = `Complete the User's partial input into 5 full spoken 
 
 {USER_CONTEXT}
 
+{AUDIO_TAGS}
+
 Answer with JSON: {"suggestions": ["...", "...", "...", "...", "..."]}`;
 
 export interface BuildSuggestionPromptInput {
@@ -65,7 +71,22 @@ export interface BuildSuggestionPromptInput {
   spaceMd: string;
   history: string[];
   typed: string;
+  /** The mood of the conversation. It changes the tone for every voice. */
+  mood?: MoodKey | null;
+  /** True when the voice reads audio tags, so the suggestions can hold them. */
+  tags?: boolean;
 }
+
+/** The rules for audio tags. The prompt holds them only for a voice that reads tags. */
+const AUDIO_TAG_RULES = `<audio_tags>
+- You can add audio tags in square brackets, such as [laughs] or [whispers].
+- Choose any tag that fits the words. The example tags below are examples only.
+- A tag must describe the voice. Do not use tags for music or sound effects.
+- Put a tag just before or just after the words that it changes.
+- Give a tag only to a suggestion that needs one.
+- Do not change the words that the user typed. A tag can come before them, and the words after the tag still begin with the typed input verbatim.
+- Example tags: {EXAMPLES}.
+</audio_tags>`;
 
 export interface BuildSuggestionPromptResult {
   system: string;
@@ -77,9 +98,12 @@ export interface BuildSuggestionPromptResult {
  * wrapped in a <user_context> block, or removed entirely when there is none
  * (so no empty tag or dangling reference remains).
  */
-function applyUserContext(template: string, context: string): string {
+function applyUserContext(template: string, context: string, tags: string): string {
   const block = context ? `<user_context>\n${context}\n</user_context>` : '';
-  return template.replace('{USER_CONTEXT}', block).replace(/\n{3,}/g, '\n\n');
+  return template
+    .replace('{USER_CONTEXT}', block)
+    .replace('{AUDIO_TAGS}', tags)
+    .replace(/\n{3,}/g, '\n\n');
 }
 
 /**
@@ -97,10 +121,11 @@ function applyUserContext(template: string, context: string): string {
 export function buildSuggestionPrompt(
   input: BuildSuggestionPromptInput
 ): BuildSuggestionPromptResult {
-  const { globalMd, spaceMd, history, typed } = input;
+  const { globalMd, spaceMd, history, typed, mood = null, tags = false } = input;
 
   // Assemble context: trim each piece, drop empties, join with blank line.
-  const context = [globalMd, spaceMd]
+  // The mood comes last, after the speaking style and the space.
+  const context = [globalMd, spaceMd, moodBlock(mood)]
     .map(s => s.trim())
     .filter(Boolean)
     .join('\n\n');
@@ -110,7 +135,14 @@ export function buildSuggestionPrompt(
 
   const isCompletion = typed.trim().length > 0;
 
-  const system = applyUserContext(isCompletion ? COMPLETION_PROMPT : OPENING_PROMPT, context);
+  const tagRules = tags
+    ? AUDIO_TAG_RULES.replace('{EXAMPLES}', exampleTags(mood).join(', '))
+    : '';
+  const system = applyUserContext(
+    isCompletion ? COMPLETION_PROMPT : OPENING_PROMPT,
+    context,
+    tagRules
+  );
   const user = isCompletion
     ? `Current input: "${typed}"\n\nConversation:\n${messagesContent}`
     : `Conversation:\n${messagesContent}`;

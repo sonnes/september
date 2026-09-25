@@ -5,6 +5,8 @@
  * Both applications import the same stripe rules from this module.
  */
 
+import { isTag, stripTags } from "./audio-tags.ts";
+
 export type SuggestionSource = "md" | "starter" | "history" | "llm" | "code";
 
 export interface Suggestion {
@@ -20,15 +22,24 @@ const SENTENCES = new Intl.Segmenter('en', { granularity: 'sentence' });
 const MAX_SLICE_WORDS = 6;
 const PUNCTUATION = /^[\p{P}\p{S}]+$/u;
 
-/** Splits a sentence into word tokens, with trailing punctuation as its own token. */
+/**
+ * Splits a sentence into word tokens, with trailing punctuation as its own
+ * token. An audio tag such as `[clears throat]` is one token.
+ */
 export function tokenize(sentence: string): string[] {
   const tokens: string[] = [];
-  for (const word of sentence.split(/\s+/).filter(Boolean)) {
-    const m = word.match(/^(.*[^.,!?])([.,!?]+)$/);
-    if (m) {
-      tokens.push(m[1], m[2]);
-    } else {
-      tokens.push(word);
+  for (const part of sentence.split(/(\[[^\[\]]+\])/)) {
+    if (isTag(part)) {
+      tokens.push(part);
+      continue;
+    }
+    for (const word of part.split(/\s+/).filter(Boolean)) {
+      const m = word.match(/^(.*[^.,!?])([.,!?]+)$/);
+      if (m) {
+        tokens.push(m[1], m[2]);
+      } else {
+        tokens.push(word);
+      }
     }
   }
   return tokens;
@@ -39,16 +50,26 @@ export function joinTokens(tokens: string[]): string {
   return tokens.join(' ').replace(/ ([.,!?]+( |$))/g, '$1') + ' ';
 }
 
-/** Number of leading tokens already fully covered by the typed text. */
+/**
+ * Number of leading tokens already fully covered by the typed text.
+ *
+ * The words decide. A tag in the suggestion or in the typed text does not
+ * stop the match, and a tag between covered words is covered too.
+ */
 export function hiddenTokenCount(tokens: string[], typed: string): number {
-  const typedTokens = tokenize(typed);
+  const typedWords = tokenize(typed).filter((token) => !isTag(token));
+  let index = 0;
+  let matched = 0;
   let count = 0;
-  while (
-    count < tokens.length &&
-    count < typedTokens.length &&
-    tokens[count].toLowerCase() === typedTokens[count].toLowerCase()
-  ) {
-    count++;
+  while (index < tokens.length && matched < typedWords.length) {
+    if (isTag(tokens[index])) {
+      index++;
+      continue;
+    }
+    if (tokens[index].toLowerCase() !== typedWords[matched].toLowerCase()) break;
+    matched++;
+    index++;
+    count = index;
   }
   return count;
 }
@@ -58,7 +79,7 @@ export function hiddenTokenCount(tokens: string[], typed: string): number {
  * History matches require nonempty typed text.
  */
 export function historyMatches(typed: string, history: string[]): string[] {
-  const lower = typed.trim().toLowerCase();
+  const lower = stripTags(typed).toLowerCase();
   if (!lower) return [];
 
   const seen = new Set<string>();
@@ -67,7 +88,8 @@ export function historyMatches(typed: string, history: string[]): string[] {
     for (const { segment } of SENTENCES.segment(history[i])) {
       const phrase = segment.trim();
       const key = phrase.toLowerCase();
-      if (!phrase || key === lower || seen.has(key) || !key.startsWith(lower)) continue;
+      const words = stripTags(key);
+      if (!words || words === lower || seen.has(key) || !words.startsWith(lower)) continue;
       seen.add(key);
       out.push(phrase);
     }
@@ -120,12 +142,13 @@ export function composeSuggestions({
   history: string[];
   llm: string[];
 }): Suggestion[] {
-  const lower = typed.trim().toLowerCase();
+  const lower = stripTags(typed).toLowerCase();
   const out: Suggestion[] = [];
   const seen = new Set<string>();
 
+  // The words decide, so one sentence with two sets of tags is one row.
   const push = (text: string, source: SuggestionSource) => {
-    const key = text.toLowerCase();
+    const key = stripTags(text).toLowerCase();
     if (seen.has(key) || key === lower) return;
     seen.add(key);
     out.push({ text, source });
@@ -133,7 +156,7 @@ export function composeSuggestions({
   const pushAll = (texts: string[], source: SuggestionSource) => {
     for (const text of texts) push(text, source);
   };
-  const starting = (text: string) => text.toLowerCase().startsWith(lower);
+  const starting = (text: string) => stripTags(text).toLowerCase().startsWith(lower);
 
   // Nothing typed: the rows are the phrases that the user keeps, and then the
   // starters. History answers nothing here, and the model fills what is left.
@@ -158,28 +181,79 @@ export function composeSuggestions({
 /**
  * Returns accepted tokens and the next slice of at most six words.
  * A slice stops at a sentence boundary. The text retains the complete suggestion.
+ *
+ * A tag does not count as a word. A tag after the last sentence stays with
+ * it. A tag that the user typed stays where the user typed it. A tag among
+ * the covered words that the user did not type is a lead tag: it moves to
+ * the front of the slice, so the row shows it, and `takeTokens` puts it back
+ * at the start of the draft.
  */
 export function stripeForText(
   text: string,
   typed: string
-): { text: string; tokens: string[]; hidden: number; hasMore: boolean } {
-  const tokens = tokenize(text);
-  const hidden = hiddenTokenCount(tokens, typed);
-  let sentenceEnd = 0;
-  for (const { segment } of SENTENCES.segment(text)) {
-    sentenceEnd += tokenize(segment).length;
-    if (sentenceEnd > hidden) break;
+): { text: string; tokens: string[]; hidden: number; lead: number; hasMore: boolean } {
+  const all = tokenize(text);
+  const covered = hiddenTokenCount(all, typed);
+  const typedTokens = tokenize(typed);
+  const typedTags = new Set(typedTokens.filter(isTag));
+  const region = all.slice(0, covered);
+  const leads = region.filter((token) => isTag(token) && !typedTags.has(token));
+  // The covered words of the row, with the tags where the user typed them.
+  const coveredWords = region.filter((token) => !isTag(token));
+  const kept: string[] = [];
+  let word = 0;
+  for (const token of typedTokens) {
+    if (isTag(token)) kept.push(token);
+    else if (word < coveredWords.length) kept.push(coveredWords[word++]);
+    else break;
   }
+  const tokens = [...kept, ...leads, ...all.slice(covered)];
+  const hidden = kept.length;
+
+  const sentences = [...SENTENCES.segment(text)].map(({ segment }) => {
+    const parts = tokenize(segment);
+    return { count: parts.length, tagsOnly: parts.length > 0 && parts.every(isTag) };
+  });
+  let sentenceEnd = 0;
+  for (let index = 0; index < sentences.length; index++) {
+    sentenceEnd += sentences[index].count;
+    if (sentenceEnd > covered && !sentences[index + 1]?.tagsOnly) break;
+  }
+  // The typed tags are not in the text, so they move the end.
+  sentenceEnd += hidden + leads.length - covered;
   let end = hidden;
   let words = 0;
   while (end < sentenceEnd) {
-    if (!PUNCTUATION.test(tokens[end])) {
+    if (!PUNCTUATION.test(tokens[end]) && !isTag(tokens[end])) {
       if (words === MAX_SLICE_WORDS) break;
       words++;
     }
     end++;
   }
-  return { text, tokens: tokens.slice(0, end), hidden, hasMore: end < tokens.length };
+  return {
+    text,
+    tokens: tokens.slice(0, end),
+    hidden,
+    lead: leads.length,
+    hasMore: end < tokens.length,
+  };
+}
+
+/**
+ * The tokens that a press takes, up to `end`, in the order of the draft.
+ * The lead tags of the row go before the covered words.
+ */
+export function takeTokens(
+  stripe: { tokens: string[]; hidden: number; lead?: number },
+  end: number
+): string[] {
+  const lead = stripe.lead ?? 0;
+  const tags = stripe.tokens.slice(stripe.hidden, stripe.hidden + lead);
+  return [
+    ...tags,
+    ...stripe.tokens.slice(0, stripe.hidden),
+    ...stripe.tokens.slice(stripe.hidden + lead, Math.max(end, stripe.hidden + lead)),
+  ];
 }
 
 /**

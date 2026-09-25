@@ -101,7 +101,8 @@ export function VoiceScreen() {
   // visit, so a row never moves under a user who is scanning the list.
   const [heardBefore] = useState(() => [...heardVoiceIds]);
   const heard = useRef([...heardVoiceIds]);
-  const cloud = provider === "elevenlabs";
+  // Both ElevenLabs services speak with a voice from the same list.
+  const cloud = provider !== "system";
 
   useEffect(() => {
     void readConnections()
@@ -165,6 +166,11 @@ export function VoiceScreen() {
             value="elevenlabs"
             title="ElevenLabs"
             body="Natural voices from a cloud service. It needs your key."
+          />
+          <ServiceChoice
+            value="dialogue"
+            title="ElevenLabs Dialogue"
+            body="Eleven v3 voices that can laugh, sigh, and whisper. It needs your ElevenLabs key."
           />
         </RadioGroup>
 
@@ -498,9 +504,11 @@ export function VoiceCloneScreen() {
 
   const handleCreated = async (created: CreatedVoice) => {
     rememberCreatedVoice(created);
+    const current = speechSettings();
     await saveSpeech({
-      ...speechSettings(),
-      provider: "elevenlabs",
+      ...current,
+      // A new clone speaks through the ElevenLabs service in use.
+      provider: current.provider === "dialogue" ? "dialogue" : "elevenlabs",
       voiceId: created.id,
     });
     await navigate({ to: "/voice", replace: true });

@@ -53,7 +53,7 @@ vi.mock('@platform/services/os', () => ({
 }));
 
 vi.mock('@platform/services/suggest', () => ({
-  useSuggestions: () => ({ data: [] }),
+  useSuggestions: () => [],
   applySuggestion: (text: string) => text,
 }));
 

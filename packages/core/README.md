@@ -80,7 +80,9 @@ the Frontier and Open models groups.
 
 `rules/voice.ts` holds the ElevenLabs voice models and the Expression presets.
 `voiceModelFrom` reads the deprecated Turbo models as their Flash replacements.
-`stabilityFor` snaps stability to the three Eleven v3 modes. `voiceRows`
+`stabilityFor` snaps stability to the three Eleven v3 modes. `DIALOGUE_MODEL`
+is the model of the Dialogue voice, and `dialogueParts` cuts a long text into
+requests of at most 2,000 characters. `voiceRows`
 groups the voice list into Yours, Heard lately, From the library, and
 ElevenLabs voices, by `is_owner` and category, and
 `heardVoices` keeps the last three voices heard.
@@ -119,8 +121,14 @@ Import autocomplete through `@september/core/autocomplete`.
 
 `rules/stripes.ts` matches individual history sentences and limits suggestion
 slices to six unaccepted words. Sentence boundaries also end a slice.
-Punctuation does not count toward the word limit. Each descriptor retains
-the complete text and reports whether more words remain.
+Punctuation and audio tags do not count toward the word limit. Each descriptor retains
+the complete text and reports whether more words remain. `takeTokens` puts a
+tag that came before the typed words at the start of the draft. The tags that
+the user typed stay where the user typed them.
+
+`rules/audio-tags.ts` decides which voice receives audio tags, and removes them
+for every other voice. `rules/moods.ts` holds the five moods of Talk, with
+their prompt instructions and example tags. See `docs/concepts/audio-tags.md`.
 
 Run its checks from the repository root:
 

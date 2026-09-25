@@ -7,10 +7,12 @@ import { TalkScreen } from '@september/app-ui/pages/talk';
 const state = vi.hoisted(() => ({
   saved: vi.fn(async (_id: string, _words: string) => undefined),
   sent: undefined as (() => void) | undefined,
+  moodSaved: vi.fn(async (_id: string, _mood: string | null) => undefined),
 }));
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => () => {} }));
 vi.mock('@platform/services/os', () => ({
   readTalkDraft: async () => 'hello ', saveTalkDraft: state.saved, guardUnsavedChanges: () => () => {},
+  readTalkMood: async () => 'low', saveTalkMood: state.moodSaved,
 }));
 vi.mock('@platform/services/data', () => ({
   useSpaces: () => ({ data: [{ id: 'space', title: 'Family', context: '' }], isPending: false }),
@@ -24,7 +26,7 @@ vi.mock('@platform/services/speech', () => ({ speak: async () => true, stopSpeak
 vi.mock('@september/app-ui/blocks/screen', () => ({ ScreenHeader: ({ children }: { children: React.ReactNode }) => <>{children}</>, RightPanel: () => null }));
 vi.mock('@september/app-ui/blocks/space-panel', () => ({ PanelRail: () => null }));
 vi.mock('@september/app-ui/blocks/space', () => ({
-  Composer: ({ draft, onDraft, onAction }: { draft: string; onDraft: (text: string) => void; onAction: (text: string) => void }) => <><textarea aria-label="Draft" value={draft} onChange={event => onDraft(event.target.value)} /><button onClick={() => onAction(draft.trim())}>Speak</button></>,
+  Composer: ({ draft, onDraft, onAction, mood, onMood }: { draft: string; onDraft: (text: string) => void; onAction: (text: string) => void; mood: string | null; onMood: (mood: string | null) => void }) => <><textarea aria-label="Draft" value={draft} onChange={event => onDraft(event.target.value)} /><button onClick={() => onAction(draft.trim())}>Speak</button><output data-mood>{mood ?? 'none'}</output><button onClick={() => onMood('playful')}>Playful</button></>,
   Problem: () => null, SpaceDock: () => null, SpaceTitle: () => null, spaceParams: () => ({}), useRememberMode: () => {},
   useSpaceBySlug: () => ({ space: { id: 'space', title: 'Family', context: '' }, spaces: [], isPending: false }),
 }));
@@ -59,5 +61,17 @@ describe('unfinished Talk words', () => {
     await act(async () => state.sent!());
     expect(container.querySelector('textarea')?.value).toBe('next thought');
     expect(state.saved).not.toHaveBeenCalledWith('space', '');
+  });
+});
+
+describe('the mood of a Talk space', () => {
+  it('restores the saved mood and saves a new one for the space', async () => {
+    await render();
+    await vi.waitFor(() => expect(container.querySelector('[data-mood]')?.textContent).toBe('low'));
+
+    await act(async () => [...container.querySelectorAll('button')].find(button => button.textContent === 'Playful')!.click());
+
+    await vi.waitFor(() => expect(container.querySelector('[data-mood]')?.textContent).toBe('playful'));
+    expect(state.moodSaved).toHaveBeenCalledWith('space', 'playful');
   });
 });

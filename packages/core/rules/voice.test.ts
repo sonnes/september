@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEFAULT_VOICE_MODEL,
+  DIALOGUE_MODEL,
+  DIALOGUE_MODELS,
+  dialogueModelFrom,
+  dialogueParts,
   EXPRESSIONS,
   expressionOf,
   expressionSound,
@@ -154,5 +158,66 @@ describe("heardVoices", () => {
   it("puts the voice heard now first and keeps three", () => {
     expect(heardVoices(["a", "b", "c"], "d")).toEqual(["d", "a", "b"]);
     expect(heardVoices(["a", "b", "c"], "b")).toEqual(["b", "a", "c"]);
+  });
+});
+
+describe("dialogueParts", () => {
+  it("keeps a short text as one part", () => {
+    expect(dialogueParts("Hello there. How are you?")).toEqual([
+      "Hello there. How are you?",
+    ]);
+  });
+
+  it("cuts a long text at sentence ends", () => {
+    const text = "One two three. Four five six. Seven eight nine.";
+    expect(dialogueParts(text, 30)).toEqual([
+      "One two three. Four five six.",
+      "Seven eight nine.",
+    ]);
+  });
+
+  it("cuts a sentence longer than the limit at the last space", () => {
+    expect(dialogueParts("alpha beta gamma delta", 12)).toEqual([
+      "alpha beta",
+      "gamma delta",
+    ]);
+  });
+
+  it("never gives a part longer than the limit", () => {
+    const text = `${"word ".repeat(900)}end. ${"more ".repeat(300)}`;
+    const parts = dialogueParts(text);
+    expect(parts.every((part) => part.length <= 2000)).toBe(true);
+    expect(parts.join(" ").split(/\s+/)).toEqual(text.trim().split(/\s+/));
+  });
+
+  it("keeps punctuation at the start of a text", () => {
+    expect(dialogueParts("...I guess so")).toEqual(["... I guess so"]);
+    expect(dialogueParts("?!")).toEqual(["?!"]);
+  });
+
+  it("gives nothing for empty text", () => {
+    expect(dialogueParts("   ")).toEqual([]);
+  });
+
+  it("always uses Eleven v3", () => {
+    expect(DIALOGUE_MODEL).toBe("eleven_v3");
+  });
+});
+
+describe("dialogueModelFrom", () => {
+  it("offers Eleven v3 and Eleven v3 Conversational for the Dialogue voice", () => {
+    expect(DIALOGUE_MODELS.map((model) => model.id)).toEqual([
+      "eleven_v3",
+      "eleven_v3_conversational",
+    ]);
+  });
+
+  it("keeps a Dialogue model", () => {
+    expect(dialogueModelFrom("eleven_v3_conversational")).toBe("eleven_v3_conversational");
+  });
+
+  it("reads a missing or other model as Eleven v3", () => {
+    expect(dialogueModelFrom(undefined)).toBe("eleven_v3");
+    expect(dialogueModelFrom("eleven_flash_v2_5")).toBe("eleven_v3");
   });
 });

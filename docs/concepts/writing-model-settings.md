@@ -43,6 +43,8 @@ fields.
 Automatic suggestions require a text edit that ends in whitespace or
 `. , ! ? ; :`, followed by a 200 ms pause. Empty input and restored drafts do
 not trigger requests. Local word completion remains available after each letter.
+A change of the Talk mood also counts as an edit, so the suggestions follow the
+new mood at once. See [audio tags and moods](audio-tags.md).
 
 Turning automatic suggestions off clears generated rows and cancels pending
 requests. Turning automatic phrase generation off stops automatic creation and

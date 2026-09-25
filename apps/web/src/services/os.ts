@@ -4,6 +4,15 @@ import { DEFAULT_DRAFT, type OnboardingDraft } from '@/rules/onboarding';
 import { panelStateFrom, type PanelState } from '@/rules/panel';
 import { presentSettings, type PresentSettings, type SpeechAlignment } from '@/rules/present';
 import { getRepository } from '@/services/repository';
+import {
+  CONVERSATIONAL_MODEL,
+  DIALOGUE_MODEL,
+  dialogueModelFrom,
+  dialogueParts,
+  stabilityFor,
+} from '@september/core/rules/voice';
+import { fileSound } from '@september/core/rules/audio-tags';
+import { moodFrom, type MoodKey } from '@september/core/rules/moods';
 import type { SpeechSettings } from '@/services/speech';
 
 export const osName = '';
@@ -164,25 +173,29 @@ function elevenLabsKey(): string {
 }
 
 async function speechBlobId(text: string, settings: SpeechSettings): Promise<string> {
-  const input = new TextEncoder().encode(
-    JSON.stringify({
-      text,
-      voiceId: settings.voiceId,
-      modelId: settings.modelId,
-      stability: settings.stability,
-      similarity: settings.similarity,
-      speed: settings.speed,
-    })
-  );
+  return blobId('speech', {
+    text,
+    voiceId: settings.voiceId,
+    modelId: settings.modelId,
+    stability: settings.stability,
+    similarity: settings.similarity,
+    speed: settings.speed,
+  });
+}
+
+/** A cache key: the prefix and the SHA-256 hash of the fields. */
+async function blobId(prefix: string, fields: object): Promise<string> {
+  const input = new TextEncoder().encode(JSON.stringify(fields));
   const digest = await crypto.subtle.digest('SHA-256', input);
   const hash = [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
-  return `speech:${hash}`;
+  return `${prefix}:${hash}`;
 }
 
 export async function synthesizeSpeech(
-  text: string,
-  settings: SpeechSettings
+  words: string,
+  chosen: SpeechSettings
 ): Promise<{ path: string; from_cache: boolean }> {
+  const { text, settings } = fileSound(words, chosen);
   if (!settings.voiceId) throw new Error('Choose an ElevenLabs voice first.');
   const cacheId = await speechBlobId(text, settings);
   let repository: Awaited<ReturnType<typeof getRepository>> | null = null;
@@ -233,9 +246,10 @@ export async function synthesizeSpeech(
  * export of one note costs nothing.
  */
 export async function synthesizeTimed(
-  text: string,
-  settings: SpeechSettings
+  words: string,
+  chosen: SpeechSettings
 ): Promise<{ blob: Blob; alignment: SpeechAlignment }> {
+  const { text, settings } = fileSound(words, chosen);
   if (!settings.voiceId) throw new Error('Choose an ElevenLabs voice first.');
   const cacheId = `${await speechBlobId(text, settings)}:timed`;
   const timingId = `${cacheId}:alignment`;
@@ -388,25 +402,17 @@ export async function streamSpeech(
   settings: SpeechSettings,
   signal?: AbortSignal
 ): Promise<{ from_cache: boolean; latency_ms: number }> {
+  if (settings.provider === 'dialogue') return streamDialogue(text, settings, signal);
   const started = Date.now();
   if (!settings.voiceId) throw new Error('Choose an ElevenLabs voice first.');
 
-  const playFile = async (file: { path: string; from_cache: boolean }) => {
-    const latency_ms = Date.now() - started;
-    if (signal?.aborted) {
-      if (file.path.startsWith('blob:')) URL.revokeObjectURL(file.path);
-    } else {
-      await playSpeechFile(file.path);
-    }
-    return { from_cache: file.from_cache, latency_ms };
-  };
   if (FILE_ONLY_MODELS.includes(settings.modelId)) {
-    return playFile(await synthesizeSpeech(text, settings));
+    return playFile(await synthesizeSpeech(text, settings), started, signal);
   }
 
   const cacheId = await speechBlobId(text, settings);
   const kept = await keptSpeech(cacheId);
-  if (kept) return playFile({ path: URL.createObjectURL(kept), from_cache: true });
+  if (kept) return playFile({ path: URL.createObjectURL(kept), from_cache: true }, started, signal);
   if (signal?.aborted) return { from_cache: false, latency_ms: 0 };
 
   const heard = await playStream(text, settings, signal);
@@ -419,87 +425,51 @@ export async function streamSpeech(
   return { from_cache: false, latency_ms: heard.firstAudio - started };
 }
 
+/** Plays a speech file, or frees it when the sentence was stopped first. */
+async function playFile(
+  file: { path: string; from_cache: boolean },
+  started: number,
+  signal?: AbortSignal
+): Promise<{ from_cache: boolean; latency_ms: number }> {
+  const latency_ms = Date.now() - started;
+  if (signal?.aborted) {
+    if (file.path.startsWith('blob:')) URL.revokeObjectURL(file.path);
+  } else {
+    await playSpeechFile(file.path);
+  }
+  return { from_cache: file.from_cache, latency_ms };
+}
+
 /** The WAV file of a streamed sentence, or else the MP3 file of the file path. */
 async function keptSpeech(cacheId: string): Promise<Blob | null> {
-  try {
-    const repository = await getRepository();
-    return (
-      (await repository.getBlob(`${cacheId}:pcm`)) ?? (await repository.getBlob(cacheId)) ?? null
-    );
-  } catch {
-    // Speech remains available when private storage is denied or full.
-    return null;
-  }
+  return (await keptBlob(`${cacheId}:pcm`)) ?? (await keptBlob(cacheId));
 }
 
 /**
- * Plays the samples of the voice socket as they arrive.
+ * Plays 16-bit mono samples at 24 kHz, each chunk after the one before it.
  *
- * It resolves with the samples when the last one plays, or with null after a
- * stop. A chunk can end inside a sample, so the odd byte waits for the next
- * chunk.
+ * A chunk can end inside a sample, so the odd byte waits for the next chunk.
+ * `onEnded` runs each time a chunk stops playing.
  */
-function playStream(
-  text: string,
-  settings: SpeechSettings,
-  signal?: AbortSignal
-): Promise<{ chunks: Uint8Array[]; firstAudio: number } | null> {
-  stopStream?.();
-  return new Promise((resolve, reject) => {
-    const socket = new WebSocket(
-      `wss://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(
-        settings.voiceId ?? ''
-      )}/stream-input?model_id=${encodeURIComponent(settings.modelId)}&output_format=pcm_${STREAM_RATE}`
-    );
-    const context = new AudioContext({ sampleRate: STREAM_RATE });
-    if (selectedOutput && 'setSinkId' in context) {
-      void (context as AudioContext & { setSinkId(id: string): Promise<void> })
-        .setSinkId(selectedOutput)
-        .catch(() => undefined);
-    }
-    const sources: AudioBufferSourceNode[] = [];
-    const chunks: Uint8Array[] = [];
-    let carry: number | null = null;
-    let playhead = 0;
-    let playing = 0;
-    let firstAudio = 0;
-    let final = false;
-    let settled = false;
+function pcmPlayer(onEnded: () => void) {
+  const context = new AudioContext({ sampleRate: STREAM_RATE });
+  if (selectedOutput && 'setSinkId' in context) {
+    void (context as AudioContext & { setSinkId(id: string): Promise<void> })
+      .setSinkId(selectedOutput)
+      .catch(() => undefined);
+  }
+  const sources: AudioBufferSourceNode[] = [];
+  let carry: number | null = null;
+  let playhead = 0;
 
-    const end = () => {
-      settled = true;
-      clearTimeout(timer);
-      signal?.removeEventListener('abort', stop);
-      if (stopStream === stop) stopStream = null;
-      socket.onopen = socket.onmessage = socket.onerror = socket.onclose = null;
-      socket.close();
-    };
-    const silence = () => {
-      for (const source of sources) {
-        source.onended = null;
-        source.stop();
-      }
-      void context.close().catch(() => undefined);
-    };
-    const fail = (message: string) => {
-      if (settled) return;
-      end();
-      silence();
-      reject(firstAudio ? new InterruptedSpeech(message) : new Error(message));
-    };
-    function stop() {
-      if (settled) return;
-      end();
-      silence();
-      resolve(null);
-    }
-    const finishWhenPlayed = () => {
-      if (settled || !final || playing > 0) return;
-      end();
-      void context.close().catch(() => undefined);
-      resolve({ chunks, firstAudio });
-    };
-    const play = (audio: string) => {
+  const player = {
+    /** Every sample that played, for the kept WAV file. */
+    chunks: [] as Uint8Array[],
+    /** The chunks that are scheduled and not yet finished. */
+    playing: 0,
+    /** The time of the first sound, or 0 before it. */
+    firstAudio: 0,
+    play(audio: string) {
       let bytes = Uint8Array.from(atob(audio), character => character.charCodeAt(0));
       if (carry !== null) {
         const joined = new Uint8Array(bytes.length + 1);
@@ -514,7 +484,7 @@ function playStream(
       }
       if (bytes.length === 0) return;
 
-      chunks.push(bytes);
+      player.chunks.push(bytes);
       const samples = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
       const buffer = context.createBuffer(1, bytes.length / 2, STREAM_RATE);
       const channel = buffer.getChannelData(0);
@@ -528,62 +498,359 @@ function playStream(
       source.start(playhead);
       playhead += buffer.duration;
       sources.push(source);
-      playing += 1;
+      player.playing += 1;
       source.onended = () => {
-        playing -= 1;
-        finishWhenPlayed();
+        player.playing -= 1;
+        onEnded();
       };
-      if (!firstAudio) firstAudio = Date.now();
+      if (!player.firstAudio) player.firstAudio = Date.now();
+    },
+    /** Stops every chunk now. */
+    silence() {
+      for (const source of sources) {
+        source.onended = null;
+        source.stop();
+      }
+      player.close();
+    },
+    close() {
+      void context.close().catch(() => undefined);
+    },
+  };
+  return player;
+}
+
+/** Speaks one sentence through the text-to-speech socket of ElevenLabs. */
+function playStream(
+  text: string,
+  settings: SpeechSettings,
+  signal?: AbortSignal
+): Promise<{ chunks: Uint8Array[]; firstAudio: number } | null> {
+  return playSocket(
+    `wss://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(
+      settings.voiceId ?? ''
+    )}/stream-input?model_id=${encodeURIComponent(settings.modelId)}&output_format=pcm_${STREAM_RATE}`,
+    [
+      {
+        text: ' ',
+        voice_settings: {
+          stability: settings.stability,
+          similarity_boost: settings.similarity,
+          speed: settings.speed,
+        },
+        xi_api_key: elevenLabsKey(),
+      },
+      { text: `${text} `, flush: true },
+      { text: '' },
+    ],
+    FIRST_AUDIO_MS,
+    signal
+  );
+}
+
+/** The samples of a sentence that played, and the time of its first sound. */
+type Heard = { chunks: Uint8Array[]; firstAudio: number };
+
+/** What a request tells the player of `playArriving`. */
+interface Feed {
+  play(audio: string): void;
+  fail(message: string): void;
+  /** The last sound has arrived. */
+  done(): void;
+}
+
+/**
+ * Plays the samples of one ElevenLabs request as they arrive.
+ *
+ * `start` begins the request, gives it the feed, and returns the step that
+ * cancels it. The promise resolves with the samples when the last one plays,
+ * or with null after a stop. A failure after the first sound is an
+ * interruption.
+ */
+function playArriving(
+  firstAudioMs: number,
+  signal: AbortSignal | undefined,
+  start: (feed: Feed) => () => void
+): Promise<Heard | null> {
+  stopStream?.();
+  return new Promise((resolve, reject) => {
+    const player = pcmPlayer(() => finishWhenPlayed());
+    let final = false;
+    let settled = false;
+    let cancel = () => {};
+
+    const end = () => {
+      settled = true;
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', stop);
+      if (stopStream === stop) stopStream = null;
+      cancel();
     };
+    const fail = (message: string) => {
+      if (settled) return;
+      end();
+      player.silence();
+      reject(player.firstAudio ? new InterruptedSpeech(message) : new Error(message));
+    };
+    function stop() {
+      if (settled) return;
+      end();
+      player.silence();
+      resolve(null);
+    }
+    function finishWhenPlayed() {
+      if (settled || !final || player.playing > 0) return;
+      end();
+      player.close();
+      resolve({ chunks: player.chunks, firstAudio: player.firstAudio });
+    }
 
     const timer = setTimeout(() => {
-      if (!firstAudio) fail('ElevenLabs sent no sound in time.');
-    }, FIRST_AUDIO_MS);
+      if (!player.firstAudio) fail('ElevenLabs sent no sound in time.');
+    }, firstAudioMs);
     stopStream = stop;
     signal?.addEventListener('abort', stop, { once: true });
 
-    socket.onopen = () => {
-      socket.send(
-        JSON.stringify({
-          text: ' ',
-          voice_settings: {
-            stability: settings.stability,
-            similarity_boost: settings.similarity,
-            speed: settings.speed,
-          },
-          xi_api_key: elevenLabsKey(),
-        })
-      );
-      socket.send(JSON.stringify({ text: `${text} `, flush: true }));
-      socket.send(JSON.stringify({ text: '' }));
-    };
-    socket.onmessage = event => {
-      let reply: { audio?: string | null; isFinal?: boolean | null; message?: string; error?: string };
-      try {
-        reply = JSON.parse(String(event.data));
-      } catch {
-        fail('ElevenLabs sent a reply September could not read.');
-        return;
-      }
-      const problem = reply.message ?? reply.error;
-      if (problem) {
-        fail(problem);
-        return;
-      }
-      if (reply.audio) play(reply.audio);
-      if (reply.isFinal) {
-        if (!firstAudio) {
+    cancel = start({
+      play: audio => {
+        if (!settled) player.play(audio);
+      },
+      fail,
+      done: () => {
+        if (settled) return;
+        if (!player.firstAudio) {
           fail('ElevenLabs sent no sound.');
           return;
         }
         final = true;
         finishWhenPlayed();
+      },
+    });
+    if (settled) cancel();
+  });
+}
+
+/**
+ * Plays the samples of an ElevenLabs socket as they arrive.
+ *
+ * The text-to-speech socket and the dialogue socket send the same kind of
+ * replies: `audio`, a final mark, and a `message` for a problem. Only the
+ * final mark is spelled `isFinal` in one and `is_final` in the other.
+ */
+function playSocket(
+  url: string,
+  messages: object[],
+  firstAudioMs: number,
+  signal?: AbortSignal
+): Promise<Heard | null> {
+  return playArriving(firstAudioMs, signal, feed => {
+    const socket = new WebSocket(url);
+    let final = false;
+
+    socket.onopen = () => {
+      for (const message of messages) socket.send(JSON.stringify(message));
+    };
+    socket.onmessage = event => {
+      let reply: {
+        audio?: string | null;
+        isFinal?: boolean | null;
+        is_final?: boolean | null;
+        message?: string;
+        error?: string;
+      };
+      try {
+        reply = JSON.parse(String(event.data));
+      } catch {
+        feed.fail('ElevenLabs sent a reply September could not read.');
+        return;
+      }
+      const problem = reply.message ?? reply.error;
+      if (problem) {
+        feed.fail(problem);
+        return;
+      }
+      if (reply.audio) feed.play(reply.audio);
+      if (reply.isFinal || reply.is_final) {
+        final = true;
+        feed.done();
       }
     };
-    socket.onerror = () => fail('ElevenLabs could not speak. Try again in a minute.');
+    socket.onerror = () => feed.fail('ElevenLabs could not speak. Try again in a minute.');
     socket.onclose = () => {
-      if (!final) fail('ElevenLabs closed the voice before the end.');
+      if (!final) feed.fail('ElevenLabs closed the voice before the end.');
     };
+    return () => {
+      socket.onopen = socket.onmessage = socket.onerror = socket.onclose = null;
+      socket.close();
+    };
+  });
+}
+
+/** Eleven v3 starts to speak later than Flash, so it gets more time. */
+const DIALOGUE_FIRST_AUDIO_MS = 10_000;
+
+/**
+ * Speaks one sentence in the ElevenLabs Dialogue voice while its sound arrives.
+ *
+ * The voice is Eleven v3 or Eleven v3 Conversational, so the sentence keeps
+ * its audio tags. Eleven v3 streams over HTTP. Eleven v3 Conversational has
+ * only the dialogue socket. A text longer than one request holds goes in
+ * parts, one after the other. A complete sentence is kept as a WAV file, and a
+ * kept sentence plays without a request.
+ */
+async function streamDialogue(
+  text: string,
+  settings: SpeechSettings,
+  signal?: AbortSignal
+): Promise<{ from_cache: boolean; latency_ms: number }> {
+  const started = Date.now();
+  if (!settings.voiceId) throw new Error('Choose an ElevenLabs voice first.');
+  const stability = stabilityFor(DIALOGUE_MODEL, settings.stability);
+  const model = dialogueModelFrom(settings.dialogueModelId);
+  const cacheId = `${await blobId('dialogue', {
+    text,
+    voiceId: settings.voiceId,
+    modelId: model,
+    stability,
+  })}:pcm`;
+
+  const kept = await keptBlob(cacheId);
+  if (kept) return playFile({ path: URL.createObjectURL(kept), from_cache: true }, started, signal);
+  if (signal?.aborted) return { from_cache: false, latency_ms: 0 };
+
+  const voiceId = settings.voiceId;
+  const parts = dialogueParts(text);
+  const heard =
+    model === CONVERSATIONAL_MODEL
+      ? await playSocket(
+          `wss://api.elevenlabs.io/v1/text-to-dialogue/stream-input?model_id=${model}&output_format=pcm_${STREAM_RATE}`,
+          [
+            { voices: [voiceId], voice_settings: { stability }, xi_api_key: elevenLabsKey() },
+            ...parts.map(part => ({ inputs: [{ text: part, voice_id: voiceId }] })),
+            { close_socket: true },
+          ],
+          DIALOGUE_FIRST_AUDIO_MS,
+          signal
+        )
+      : await playDialogue(parts, voiceId, stability, signal);
+  if (!heard) return { from_cache: false, latency_ms: 0 };
+  try {
+    await (await getRepository()).putBlob(cacheId, wavFile(heard.chunks));
+  } catch {
+    // The sentence was heard. A failed write costs only a second request.
+  }
+  return { from_cache: false, latency_ms: heard.firstAudio - started };
+}
+
+async function keptBlob(id: string): Promise<Blob | null> {
+  try {
+    return (await (await getRepository()).getBlob(id)) ?? null;
+  } catch {
+    // Speech remains available when private storage is denied or full.
+    return null;
+  }
+}
+
+/**
+ * The complete JSON objects at the start of `text`, and the rest.
+ *
+ * The dialogue stream sends one object after the other. A line break between
+ * them is optional, and an object can arrive in pieces.
+ */
+function takeObjects(text: string): { objects: string[]; rest: string } {
+  const objects: string[] = [];
+  let depth = 0;
+  let start = -1;
+  let quoted = false;
+  let escaped = false;
+  let used = 0;
+  for (let index = 0; index < text.length; index++) {
+    const character = text[index];
+    if (quoted) {
+      if (escaped) escaped = false;
+      else if (character === '\\') escaped = true;
+      else if (character === '"') quoted = false;
+      continue;
+    }
+    if (character === '"') quoted = true;
+    else if (character === '{') {
+      if (depth === 0) start = index;
+      depth += 1;
+    } else if (character === '}' && depth > 0) {
+      depth -= 1;
+      if (depth === 0) {
+        objects.push(text.slice(start, index + 1));
+        used = index + 1;
+      }
+    }
+  }
+  return { objects, rest: text.slice(used) };
+}
+
+/** Plays the parts of a dialogue request, one after the other, as their sound arrives. */
+function playDialogue(
+  parts: string[],
+  voiceId: string,
+  stability: number,
+  signal?: AbortSignal
+): Promise<Heard | null> {
+  return playArriving(DIALOGUE_FIRST_AUDIO_MS, signal, feed => {
+    const request = new AbortController();
+
+    const speakPart = async (text: string) => {
+      const response = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-dialogue/stream/with-timestamps?output_format=pcm_${STREAM_RATE}`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'xi-api-key': elevenLabsKey() },
+          body: JSON.stringify({
+            inputs: [{ text, voice_id: voiceId }],
+            model_id: DIALOGUE_MODEL,
+            settings: { stability },
+          }),
+          signal: request.signal,
+        }
+      );
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('ElevenLabs did not accept the key. Check it in Settings.');
+      }
+      if (!response.ok || !response.body) {
+        throw new Error(`ElevenLabs could not speak. Try again in a minute. (${response.status})`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let waiting = '';
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (request.signal.aborted) return;
+        if (done) break;
+        const { objects, rest } = takeObjects(waiting + decoder.decode(value, { stream: true }));
+        waiting = rest;
+        for (const object of objects) {
+          const reply = JSON.parse(object) as { audio_base64?: string | null };
+          if (reply.audio_base64) feed.play(reply.audio_base64);
+        }
+      }
+      // A stream that ends inside a reply lost sound, so the sentence is not whole.
+      if ((waiting + decoder.decode()).trim()) {
+        throw new Error('ElevenLabs ended the voice inside a reply.');
+      }
+    };
+
+    void (async () => {
+      try {
+        for (const part of parts) {
+          await speakPart(part);
+          if (request.signal.aborted) return;
+        }
+      } catch (reason) {
+        feed.fail(reason instanceof Error ? reason.message : String(reason));
+        return;
+      }
+      feed.done();
+    })();
+    return () => request.abort();
   });
 }
 
@@ -647,6 +914,15 @@ export async function readTalkDraft(spaceId: string): Promise<string> {
 
 export async function saveTalkDraft(spaceId: string, words: string): Promise<void> {
   await (await getRepository()).putSetting(`talk-draft:${spaceId}`, words);
+}
+
+/** The mood of a Talk space. It stays until the user presses its key again. */
+export async function readTalkMood(spaceId: string): Promise<MoodKey | null> {
+  return moodFrom(await (await getRepository()).getSetting<string>(`talk-mood:${spaceId}`));
+}
+
+export async function saveTalkMood(spaceId: string, mood: MoodKey | null): Promise<void> {
+  await (await getRepository()).putSetting(`talk-mood:${spaceId}`, mood);
 }
 
 export function currentPanel(): PanelState {

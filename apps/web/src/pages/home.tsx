@@ -2,6 +2,7 @@ import { LANDING_TITLE } from '@september/core/rules/titles';
 
 import { AboutSection } from '@/components/home/about-section';
 import { AgentSection } from '@/components/home/agent-section';
+import { ExpressionSection } from '@/components/home/expression-section';
 import { Footer } from '@/components/home/footer';
 import { HeroSection } from '@/components/home/hero-section';
 import { LiveDemoSection } from '@/components/home/live-demo-section';
@@ -23,6 +24,7 @@ export function HomePage() {
         <div className="mx-auto max-w-7xl px-4 pb-8 sm:px-6">
           <NotesSection />
           <VoiceSection />
+          <ExpressionSection />
         </div>
         <PrivacySection />
         <AboutSection />

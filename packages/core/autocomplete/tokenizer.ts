@@ -32,6 +32,8 @@ export type TokenKind =
   | 'word'
   | 'punct'
   | 'emoji'
+  /** An audio tag such as `[laughs]`: a direction to the voice, kept whole. */
+  | 'tag'
   | 'sentence-start'
   | 'sentence-end';
 
@@ -49,6 +51,7 @@ export interface Token {
 
 const SENTENCE_TERMINATORS = new Set(['.', '!', '?', '…', '。', '！', '？']);
 const EMOJI_RE = /\p{Extended_Pictographic}/u;
+const TAG_RE = /\[[^[\]]+\]/g;
 
 // Cached because Intl.Segmenter construction is ~50µs per call and tokenize is
 // called on every keystroke during predictive suggestion.
@@ -84,35 +87,54 @@ export function tokenize(text: string): Token[] {
     inSentence = false;
   };
 
-  for (const seg of SEGMENTER.segment(text)) {
-    const s = seg.segment;
-    if (!s.trim()) continue;
+  const segmentPart = (part: string, offset: number) => {
+    for (const seg of SEGMENTER.segment(part)) {
+      const s = seg.segment;
+      if (!s.trim()) continue;
 
-    const start = seg.index;
-    const end = start + s.length;
+      const start = offset + seg.index;
+      const end = start + s.length;
 
-    if (seg.isWordLike) {
+      if (seg.isWordLike) {
+        openSentenceAt(start);
+        out.push({
+          text: s,
+          normalized: s.toLowerCase(),
+          kind: 'word',
+          start,
+          end,
+        });
+        continue;
+      }
+
+      if (EMOJI_RE.test(s)) {
+        openSentenceAt(start);
+        out.push({ text: s, normalized: s, kind: 'emoji', start, end });
+        continue;
+      }
+
       openSentenceAt(start);
-      out.push({
-        text: s,
-        normalized: s.toLowerCase(),
-        kind: 'word',
-        start,
-        end,
-      });
-      continue;
+      out.push({ text: s, normalized: s, kind: 'punct', start, end });
+      if (SENTENCE_TERMINATORS.has(s)) closeSentenceAt(end);
     }
+  };
 
-    if (EMOJI_RE.test(s)) {
-      openSentenceAt(start);
-      out.push({ text: s, normalized: s, kind: 'emoji', start, end });
-      continue;
-    }
-
+  // A tag holds spaces, so it never reaches the word segmenter.
+  let cursor = 0;
+  for (const match of text.matchAll(TAG_RE)) {
+    const start = match.index;
+    segmentPart(text.slice(cursor, start), cursor);
     openSentenceAt(start);
-    out.push({ text: s, normalized: s, kind: 'punct', start, end });
-    if (SENTENCE_TERMINATORS.has(s)) closeSentenceAt(end);
+    out.push({
+      text: match[0],
+      normalized: match[0].toLowerCase(),
+      kind: 'tag',
+      start,
+      end: start + match[0].length,
+    });
+    cursor = start + match[0].length;
   }
+  segmentPart(text.slice(cursor), cursor);
 
   closeSentenceAt(text.length);
   return out;

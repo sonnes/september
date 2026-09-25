@@ -114,3 +114,12 @@ it('marks the voice in use and saves a new choice', async () => {
   await act(async () => roger!.closest('button')!.click());
   expect(state.save).toHaveBeenLastCalledWith(expect.objectContaining({ voiceId: 'roger' }));
 });
+
+it('offers the Dialogue voice and keeps the voice list for it', async () => {
+  await render();
+  const choice = container.querySelector<HTMLButtonElement>('button[value="dialogue"]');
+  expect(choice).not.toBeNull();
+  await act(async () => choice!.click());
+  expect(state.save).toHaveBeenLastCalledWith(expect.objectContaining({ provider: 'dialogue' }));
+  expect(listed().length).toBeGreaterThan(0);
+});

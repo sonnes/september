@@ -150,6 +150,8 @@ pub struct BackupSpeech {
     pub provider: String,
     pub voice_id: Option<String>,
     pub model_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dialogue_model_id: Option<String>,
     pub stability: f64,
     pub similarity: f64,
     pub speed: f64,
@@ -1245,7 +1247,10 @@ fn validate_backup_contents(contents: &BackupContents) -> Result<()> {
         }
     }
     if let Some(speech) = &contents.settings.speech {
-        if !matches!(speech.provider.as_str(), "system" | "elevenlabs") {
+        if !matches!(
+            speech.provider.as_str(),
+            "system" | "elevenlabs" | "dialogue"
+        ) {
             return Err(BackendError::InvalidInput(
                 "backup speech provider is not supported".into(),
             ));
@@ -1254,6 +1259,9 @@ fn validate_backup_contents(contents: &BackupContents) -> Result<()> {
             validate_identifier("backup voice ID", voice_id)?;
         }
         validate_identifier("backup model ID", &speech.model_id)?;
+        if let Some(model_id) = &speech.dialogue_model_id {
+            validate_identifier("backup dialogue model ID", model_id)?;
+        }
         validate_range("backup speech stability", speech.stability, 0.0, 1.0)?;
         validate_range("backup speech similarity", speech.similarity, 0.0, 1.0)?;
         validate_range("backup speech speed", speech.speed, 0.7, 1.2)?;
@@ -1472,6 +1480,7 @@ mod tests {
                     provider: "elevenlabs".to_owned(),
                     voice_id: Some("voice-1".to_owned()),
                     model_id: "eleven_turbo_v2_5".to_owned(),
+                    dialogue_model_id: None,
                     stability: 0.5,
                     similarity: 0.75,
                     speed: 1.0,
@@ -1593,6 +1602,24 @@ mod tests {
             );
             assert_eq!(restored["settings"]["setup"]["autoPhrases"], phrases);
         }
+    }
+
+    #[test]
+    fn a_dialogue_voice_survives_backup_restore() {
+        let mut value = serde_json::to_value(backup_contents("space-1")).unwrap();
+        value["settings"]["speech"]["provider"] = "dialogue".into();
+        value["settings"]["speech"]["dialogueModelId"] = "eleven_v3_conversational".into();
+        let contents: BackupContents = serde_json::from_value(value).unwrap();
+        let mut repository = Repository::open_in_memory().unwrap();
+
+        repository.replace_backup_contents(&contents).unwrap();
+
+        let restored = serde_json::to_value(repository.backup_contents("user-1").unwrap()).unwrap();
+        assert_eq!(restored["settings"]["speech"]["provider"], "dialogue");
+        assert_eq!(
+            restored["settings"]["speech"]["dialogueModelId"],
+            "eleven_v3_conversational"
+        );
     }
 
     #[test]

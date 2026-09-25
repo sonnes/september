@@ -2,6 +2,8 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
 
 import { currentSetup, subscribeSetup } from "@/services/os";
 import { generate, hasWritingService, itemsFrom } from "@/services/ai";
+import { speechSettings } from "@/services/speech";
+import { tagsSpoken } from "@september/core/rules/audio-tags";
 import {
   useReplaceAiPhrases,
   useUpdateSpace,
@@ -109,6 +111,7 @@ async function writePhrases({
     existingStarters: rowsOf("starter"),
     history: formatPhraseHistory(messages.slice(-30)),
     context: space.context,
+    tags: tagsSpoken(speechSettings()),
   });
 
   const answer = await generate(

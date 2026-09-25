@@ -75,6 +75,11 @@ export * from './sample-data.ts';
 
 /** The most words that fit in the desktop suggestion stripe. */
 export const MAX_SUGGESTIONS = 6;
+/** The most learned audio tags in the stripe, and how deep the search for them goes. */
+const MAX_TAGS = 2;
+const TAG_SEARCH = 50;
+/** How deep the look for the next words goes, as `getNextWord` does. */
+const NEXT_WORDS = 5;
 
 /** Build the shared engine with September's spoken corpus and dictionary. */
 export function createEngine(): Autocomplete {
@@ -91,7 +96,7 @@ function words(text: string): string[] {
 }
 
 function isWordComplete(text: string): boolean {
-  return /[\s.,!?;:]$/.test(text);
+  return /[\s.,!?;:\]]$/.test(text);
 }
 
 /** Return the desktop stripe suggestions for the current composer text. */
@@ -105,15 +110,30 @@ export function suggestionsFor(
   const written = words(text);
   if (written.length === 0) return [];
 
-  const found = isWordComplete(text)
-    ? engine.getNextWord(written.slice(-3).join(' '), { chatId: spaceId })
-    : engine.getCompletions(written[written.length - 1]);
+  if (!isWordComplete(text)) {
+    return engine.getCompletions(written[written.length - 1]).slice(0, MAX_SUGGESTIONS);
+  }
 
-  return found.slice(0, MAX_SUGGESTIONS);
+  const context = written.slice(-3).join(' ');
+  const found = engine
+    .getNextWordAdvanced(context, { maxResults: TAG_SEARCH, chatId: spaceId })
+    .map((one) => one.word);
+  // A learned tag is rarer than a word, so it has its own look further down
+  // the list. It goes after the words.
+  const tags = found.filter((word) => word.startsWith('[')).slice(0, MAX_TAGS);
+  const nextWords = found.slice(0, NEXT_WORDS).filter((word) => !word.startsWith('['));
+
+  return [...nextWords, ...tags].slice(0, MAX_SUGGESTIONS);
 }
 
-/** Replace the partial word, or append after completed text. */
+/**
+ * Replace the partial word, or append after completed text. A tag never
+ * completes a word, so it goes after the text. A word after a tag gets a space.
+ */
 export function applySuggestion(text: string, word: string): string {
+  if (text.endsWith(']') || (word.startsWith('[') && /\S$/.test(text))) {
+    return `${text} ${word} `;
+  }
   const kept = isWordComplete(text) ? text : text.replace(/\S+$/, '');
   return `${kept}${word} `;
 }

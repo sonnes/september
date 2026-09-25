@@ -6,6 +6,7 @@ import ts from 'typescript';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as voice from '@september/core/rules/voice';
+import * as audioTags from '@september/core/rules/audio-tags';
 
 const os = vi.hoisted(() => ({
   currentSetup: vi.fn(() => ({ voiceService: 'elevenlabs' })),
@@ -15,6 +16,7 @@ const os = vi.hoisted(() => ({
   stopNativeSpeech: vi.fn(async () => undefined),
   InterruptedSpeech: class InterruptedSpeech extends Error {},
 }));
+const recordTtsUsage = vi.hoisted(() => vi.fn(async (_record: Record<string, unknown>) => undefined));
 type Streamed = { from_cache: boolean; latency_ms: number };
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -30,6 +32,7 @@ for (const platform of ['web', 'desktop']) {
       vi.resetModules();
       vi.clearAllMocks();
       os.currentSetup.mockReturnValue({ voiceService: 'elevenlabs' });
+      os.currentSpeech.mockReturnValue(null);
       os.speakSystem.mockResolvedValue(undefined);
       const source = readFileSync(resolve(process.cwd(), '..', platform, 'src/services/speech.ts'), 'utf8');
       const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
@@ -40,7 +43,8 @@ for (const platform of ['web', 'desktop']) {
           if (id === 'react') return { useSyncExternalStore: (_: unknown, snapshot: () => unknown) => snapshot() };
           if (id.endsWith('/os')) return os;
           if (id === '@september/core/rules/voice') return voice;
-          if (id.endsWith('/usage')) return { recordTtsUsage: async () => undefined };
+          if (id === '@september/core/rules/audio-tags') return audioTags;
+          if (id.endsWith('/usage')) return { recordTtsUsage };
           if (id.endsWith('/usage-summary')) return { elevenLabsCredits: () => 0 };
           throw new Error(`Unexpected import: ${id}`);
         },
@@ -111,6 +115,87 @@ for (const platform of ['web', 'desktop']) {
       os.streamSpeech.mockResolvedValue({ from_cache: false, latency_ms: 10 });
       expect(await speech.speak('hello again')).toBe(true);
       expect(speech.useVoiceFallback()).toBeNull();
+    });
+
+    it('streams the Dialogue voice and records Eleven v3 as its model', async () => {
+      os.currentSpeech.mockReturnValue({
+        provider: 'dialogue', voiceId: 'voice-1', modelId: 'eleven_flash_v2_5',
+        stability: 0.5, similarity: 0.75, speed: 1,
+      } as never);
+      os.streamSpeech.mockResolvedValue({ from_cache: false, latency_ms: 300 });
+
+      expect(await speech.speak('[laughs] hello')).toBe(true);
+
+      const [, settings] = os.streamSpeech.mock.calls[0];
+      expect(settings.provider).toBe('dialogue');
+      expect(recordTtsUsage).toHaveBeenCalledWith(
+        expect.objectContaining({ provider: 'elevenlabs', model: 'eleven_v3', success: true })
+      );
+    });
+
+    it('records Eleven v3 Conversational when the Dialogue voice uses it', async () => {
+      os.currentSpeech.mockReturnValue({
+        provider: 'dialogue', voiceId: 'voice-1', modelId: 'eleven_flash_v2_5',
+        dialogueModelId: 'eleven_v3_conversational', stability: 0.5, similarity: 0.75, speed: 1,
+      } as never);
+      os.streamSpeech.mockResolvedValue({ from_cache: false, latency_ms: 200 });
+
+      await speech.speak('hello');
+
+      expect(recordTtsUsage).toHaveBeenCalledWith(
+        expect.objectContaining({ model: 'eleven_v3_conversational', success: true })
+      );
+    });
+
+    it('falls back to the system voice when the Dialogue voice fails before any sound', async () => {
+      os.currentSpeech.mockReturnValue({
+        provider: 'dialogue', voiceId: 'voice-1', modelId: 'eleven_v3',
+        stability: 0.5, similarity: 0.75, speed: 1,
+      } as never);
+      os.streamSpeech.mockRejectedValueOnce(new Error('offline'));
+
+      expect(await speech.speak('hello')).toBe(true);
+      expect(os.speakSystem).toHaveBeenCalled();
+    });
+
+    it('keeps the tags for the Dialogue voice', async () => {
+      os.currentSpeech.mockReturnValue({
+        provider: 'dialogue', voiceId: 'voice-1', modelId: 'eleven_flash_v2_5',
+        stability: 0.5, similarity: 0.75, speed: 1,
+      } as never);
+      os.streamSpeech.mockResolvedValue({ from_cache: false, latency_ms: 300 });
+
+      await speech.speak('[laughs] That is funny.');
+
+      expect(os.streamSpeech.mock.calls[0][0]).toBe('[laughs] That is funny.');
+    });
+
+    it('never gives a tag to the system voice', async () => {
+      os.currentSetup.mockReturnValue({ voiceService: 'system' });
+
+      await speech.speak('[laughs] That is funny.');
+
+      expect(os.speakSystem.mock.calls[0][0]).toBe('That is funny.');
+    });
+
+    it('removes the tags for an ElevenLabs model that reads them aloud', async () => {
+      os.streamSpeech.mockResolvedValue({ from_cache: false, latency_ms: 10 });
+
+      await speech.speak('[whispers] Quiet now.');
+
+      expect(os.streamSpeech.mock.calls[0][0]).toBe('Quiet now.');
+    });
+
+    it('never gives a tag to the fallback voice', async () => {
+      os.currentSpeech.mockReturnValue({
+        provider: 'dialogue', voiceId: 'voice-1', modelId: 'eleven_v3',
+        stability: 0.5, similarity: 0.75, speed: 1,
+      } as never);
+      os.streamSpeech.mockRejectedValueOnce(new Error('offline'));
+
+      await speech.speak('[sighs] I am tired.');
+
+      expect(os.speakSystem.mock.calls[0][0]).toBe('I am tired.');
     });
 
     it('does not repeat the words in a second voice after the cloud voice broke mid-sentence', async () => {

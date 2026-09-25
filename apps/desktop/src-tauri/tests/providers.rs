@@ -342,6 +342,7 @@ fn voice_settings() -> SpeechSettings {
         provider: "elevenlabs".into(),
         voice_id: Some("voice-1".into()),
         model_id: "eleven_turbo_v2_5".into(),
+        dialogue_model_id: None,
         stability: 0.5,
         similarity: 0.75,
         speed: 1.0,
@@ -704,5 +705,393 @@ async fn a_model_without_a_socket_uses_a_file() {
             ..
         }
     ));
+    std::fs::remove_dir_all(&directory).ok();
+}
+
+// ------------------------------------------------------ the dialogue voice
+
+fn dialogue_settings() -> SpeechSettings {
+    SpeechSettings {
+        provider: "dialogue".into(),
+        stability: 0.1,
+        ..voice_settings()
+    }
+}
+
+fn dialogue_sound(bytes: &[u8]) -> String {
+    let audio = base64::engine::general_purpose::STANDARD.encode(bytes);
+    json!({ "audio_base64": audio, "alignment": null }).to_string()
+}
+
+/// Answers `connections` requests, one after the other. Each answer sends the
+/// pieces with a pause between them. When `hold` is true, the answer stays
+/// open after the last piece.
+async fn serve_dialogue(
+    status: &'static str,
+    pieces: Vec<String>,
+    connections: usize,
+    hold: bool,
+) -> (String, tokio::sync::mpsc::UnboundedReceiver<String>) {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = listener.local_addr().unwrap();
+    let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
+
+    tokio::spawn(async move {
+        for _ in 0..connections {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            let mut bytes = Vec::new();
+            let mut buffer = [0_u8; 8192];
+            let header_end = loop {
+                let read = stream.read(&mut buffer).await.unwrap();
+                assert!(read > 0, "request ended before its headers");
+                bytes.extend_from_slice(&buffer[..read]);
+                if let Some(end) = bytes.windows(4).position(|window| window == b"\r\n\r\n") {
+                    break end + 4;
+                }
+            };
+            let head = String::from_utf8_lossy(&bytes[..header_end]).into_owned();
+            let length = head
+                .lines()
+                .find_map(|line| {
+                    let (name, value) = line.split_once(':')?;
+                    name.eq_ignore_ascii_case("content-length")
+                        .then(|| value.trim().parse::<usize>().ok())
+                        .flatten()
+                })
+                .unwrap_or(0);
+            while bytes.len() < header_end + length {
+                let read = stream.read(&mut buffer).await.unwrap();
+                assert!(read > 0, "request ended before its body");
+                bytes.extend_from_slice(&buffer[..read]);
+            }
+            sender
+                .send(String::from_utf8_lossy(&bytes).into_owned())
+                .ok();
+
+            let answer = format!(
+                "HTTP/1.1 {status}\r\ncontent-type: application/json\r\nconnection: close\r\n\r\n"
+            );
+            stream.write_all(answer.as_bytes()).await.unwrap();
+            for piece in &pieces {
+                stream.write_all(piece.as_bytes()).await.unwrap();
+                stream.flush().await.unwrap();
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+            if hold {
+                tokio::time::sleep(Duration::from_secs(2)).await;
+            }
+        }
+    });
+
+    (format!("http://{address}"), receiver)
+}
+
+fn body_of(request: &str) -> Value {
+    let (_, body) = request.split_once("\r\n\r\n").unwrap();
+    serde_json::from_str(body).unwrap()
+}
+
+#[tokio::test]
+async fn a_dialogue_stream_sends_the_sentence_to_eleven_v3_and_returns_the_samples() {
+    let first = dialogue_sound(&[1, 0, 2, 0]);
+    let (head, tail) = first.split_at(9);
+    let (base, mut requests) = serve_dialogue(
+        "200 OK",
+        vec![
+            head.to_owned(),
+            format!("{tail}\n"),
+            dialogue_sound(&[0xff, 0xff]),
+        ],
+        1,
+        false,
+    )
+    .await;
+    let mut samples = Vec::new();
+
+    eleven_labs(&base)
+        .speak_dialogue_stream("xi-test", &dialogue_settings(), "[laughs] Hello", |chunk| {
+            samples.extend_from_slice(chunk)
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(samples, [1, 2, -1]);
+    let request = requests.recv().await.unwrap();
+    assert!(
+        request.starts_with(
+            "POST /v1/text-to-dialogue/stream/with-timestamps?output_format=pcm_24000 "
+        ),
+        "{request}"
+    );
+    assert!(
+        request.to_lowercase().contains("xi-api-key: xi-test"),
+        "{request}"
+    );
+    assert_eq!(
+        body_of(&request),
+        json!({
+            "inputs": [{ "text": "[laughs] Hello", "voice_id": "voice-1" }],
+            "model_id": "eleven_v3",
+            "settings": { "stability": 0.0 },
+        })
+    );
+}
+
+#[tokio::test]
+async fn a_dialogue_sample_split_between_chunks_arrives_whole() {
+    let (base, _requests) = serve_dialogue(
+        "200 OK",
+        vec![dialogue_sound(&[1, 0, 2]), dialogue_sound(&[0])],
+        1,
+        false,
+    )
+    .await;
+    let mut samples = Vec::new();
+
+    eleven_labs(&base)
+        .speak_dialogue_stream("xi-test", &dialogue_settings(), "Hi", |chunk| {
+            samples.extend_from_slice(chunk)
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(samples, [1, 2]);
+}
+
+#[tokio::test]
+async fn a_refused_dialogue_key_is_rejected() {
+    let (base, _requests) = serve_dialogue("401 Unauthorized", vec!["{}".into()], 1, false).await;
+
+    let error = eleven_labs(&base)
+        .speak_dialogue_stream("wrong", &dialogue_settings(), "Hi", |_| {})
+        .await
+        .unwrap_err();
+
+    assert!(matches!(error, ProviderError::Rejected), "{error:?}");
+}
+
+#[tokio::test]
+async fn a_dialogue_that_sends_no_sound_in_time_is_an_error() {
+    let (base, _requests) = serve_dialogue("200 OK", Vec::new(), 1, true).await;
+
+    let result = eleven_labs(&base)
+        .first_audio_within(Duration::from_millis(100))
+        .speak_dialogue_stream("xi-test", &dialogue_settings(), "Hi", |_| {})
+        .await;
+
+    assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn a_dialogue_that_breaks_after_the_first_sound_is_an_error() {
+    let (base, _requests) = serve_dialogue(
+        "200 OK",
+        vec![dialogue_sound(&[1, 0]), "{\"audio_base64\": \"AAA".into()],
+        1,
+        false,
+    )
+    .await;
+    let mut samples = Vec::new();
+
+    let result = eleven_labs(&base)
+        .speak_dialogue_stream("xi-test", &dialogue_settings(), "Hi", |chunk| {
+            samples.extend_from_slice(chunk)
+        })
+        .await;
+
+    assert!(result.is_err());
+    assert_eq!(samples, [1]);
+}
+
+#[tokio::test]
+async fn a_complete_dialogue_is_kept_as_a_wav_file_and_played_again() {
+    let directory = voice_folder();
+    let (base, _requests) =
+        serve_dialogue("200 OK", vec![dialogue_sound(&[1, 0, 2, 0])], 1, false).await;
+    let mut samples = Vec::new();
+
+    let first = speech::stream(
+        &directory,
+        &dialogue_settings(),
+        "Hello",
+        Some("xi-test"),
+        &eleven_labs(&base),
+        |chunk| samples.extend_from_slice(chunk),
+    )
+    .await
+    .unwrap();
+
+    assert!(matches!(first, Streamed::Spoken { .. }));
+    assert_eq!(samples, [1, 2]);
+    let kept = directory
+        .join(file_name(&dialogue_settings(), "Hello"))
+        .with_extension("wav");
+    assert_eq!(&std::fs::read(&kept).unwrap()[44..], [1, 0, 2, 0]);
+
+    let second = speech::stream(
+        &directory,
+        &dialogue_settings(),
+        "Hello",
+        Some("xi-test"),
+        &unreachable(),
+        |_| panic!("a kept sentence needs no request"),
+    )
+    .await
+    .unwrap();
+
+    assert!(matches!(second, Streamed::File { ref path, from_cache: true } if *path == kept));
+    std::fs::remove_dir_all(&directory).ok();
+}
+
+#[tokio::test]
+async fn a_dialogue_that_ends_without_sound_has_not_started() {
+    let directory = voice_folder();
+    let (base, _requests) = serve_dialogue("200 OK", Vec::new(), 1, false).await;
+
+    let error = speech::stream(
+        &directory,
+        &dialogue_settings(),
+        "Hello",
+        Some("xi-test"),
+        &eleven_labs(&base),
+        |_| {},
+    )
+    .await
+    .unwrap_err();
+
+    assert!(matches!(error, StreamError { started: false, .. }));
+    assert_eq!(std::fs::read_dir(&directory).unwrap().count(), 0);
+    std::fs::remove_dir_all(&directory).ok();
+}
+
+#[tokio::test]
+async fn a_long_dialogue_goes_in_parts_one_request_after_the_other() {
+    let directory = voice_folder();
+    let (base, mut requests) =
+        serve_dialogue("200 OK", vec![dialogue_sound(&[1, 0])], 2, false).await;
+    let first = format!("{}end.", "word ".repeat(396));
+    let text = format!("{first} The last sentence.");
+    let mut samples = Vec::new();
+
+    speech::stream(
+        &directory,
+        &dialogue_settings(),
+        &text,
+        Some("xi-test"),
+        &eleven_labs(&base),
+        |chunk| samples.extend_from_slice(chunk),
+    )
+    .await
+    .unwrap();
+
+    let one = body_of(&requests.recv().await.unwrap());
+    let two = body_of(&requests.recv().await.unwrap());
+    assert_eq!(one["inputs"][0]["text"], json!(first));
+    assert_eq!(two["inputs"][0]["text"], json!("The last sentence."));
+    assert_eq!(samples, [1, 1]);
+    std::fs::remove_dir_all(&directory).ok();
+}
+
+fn conversational_settings() -> SpeechSettings {
+    SpeechSettings {
+        dialogue_model_id: Some("eleven_v3_conversational".into()),
+        ..dialogue_settings()
+    }
+}
+
+fn dialogue_final() -> Message {
+    Message::Text(json!({ "is_final": true }).to_string().into())
+}
+
+#[tokio::test]
+async fn a_conversational_dialogue_uses_the_dialogue_socket() {
+    let (base, calls) = serve_voice(vec![
+        sound(&[1, 0, 2, 0]),
+        Message::Text(
+            json!({ "is_final_audio_for_turn": true })
+                .to_string()
+                .into(),
+        ),
+        dialogue_final(),
+    ])
+    .await;
+    let mut samples = Vec::new();
+
+    eleven_labs(&base)
+        .speak_dialogue_socket(
+            "xi-test",
+            &conversational_settings(),
+            &["[laughs] Hello".to_owned()],
+            |chunk| samples.extend_from_slice(chunk),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(samples, [1, 2]);
+    let call = calls.await.unwrap();
+    assert_eq!(
+        call.path,
+        "/v1/text-to-dialogue/stream-input?model_id=eleven_v3_conversational&output_format=pcm_24000"
+    );
+    assert_eq!(call.key.as_deref(), Some("xi-test"));
+    assert_eq!(
+        call.messages,
+        [
+            json!({ "voices": ["voice-1"], "voice_settings": { "stability": 0.0 } }),
+            json!({ "inputs": [{ "text": "[laughs] Hello", "voice_id": "voice-1" }] }),
+            json!({ "close_socket": true }),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn a_conversational_dialogue_error_is_an_error() {
+    let (base, _calls) = serve_voice(vec![Message::Text(
+        json!({ "message": "Invalid API key", "error": "authentication_required", "code": 1008 })
+            .to_string()
+            .into(),
+    )])
+    .await;
+
+    let error = eleven_labs(&base)
+        .speak_dialogue_socket(
+            "xi-test",
+            &conversational_settings(),
+            &["Hi".to_owned()],
+            |_| {},
+        )
+        .await
+        .unwrap_err();
+
+    assert!(error.to_string().contains("Invalid API key"), "{error}");
+}
+
+#[tokio::test]
+async fn a_conversational_dialogue_is_kept_apart_from_eleven_v3() {
+    let directory = voice_folder();
+    let (base, _calls) = serve_voice(vec![sound(&[1, 0]), dialogue_final()]).await;
+
+    let heard = speech::stream(
+        &directory,
+        &conversational_settings(),
+        "Hello",
+        Some("xi-test"),
+        &eleven_labs(&base),
+        |_| {},
+    )
+    .await
+    .unwrap();
+
+    assert!(matches!(heard, Streamed::Spoken { .. }));
+    assert_ne!(
+        file_name(&conversational_settings(), "Hello"),
+        file_name(&dialogue_settings(), "Hello")
+    );
+    assert!(directory
+        .join(file_name(&conversational_settings(), "Hello"))
+        .with_extension("wav")
+        .exists());
     std::fs::remove_dir_all(&directory).ok();
 }

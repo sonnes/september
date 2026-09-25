@@ -253,6 +253,8 @@ ElevenLabs speech files use a cache key made from the text and every sound setti
 
 `streamSpeech` in `src/services/os.ts` speaks a cloud sentence through the ElevenLabs text-to-speech WebSocket. It plays each chunk of samples on one `AudioContext` while the rest of the sentence arrives. A complete sentence is kept in the same cache as a WAV file. A kept WAV or MP3 file plays without the socket. If the voice breaks after its first sound, the system voice does not repeat the sentence. See `docs/concepts/streaming-voice.md`.
 
+For the ElevenLabs Dialogue voice, `streamSpeech` sends the sentence to the Text to Dialogue stream with `eleven_v3` instead. With `eleven_v3_conversational`, it uses the Text to Dialogue socket. The sound plays through the same `AudioContext` player. A text of more than 2,000 characters goes in parts, one request after the other. See the Dialogue voice section of `docs/concepts/streaming-voice.md`.
+
 A note presents and exports from its own screen. `src/services/export.ts` saves the words as `.md` with nothing configured, the voice as `.mp3` from the speech cache, and a 9:16 `.mp4` with word-synced captions. `synthesizeTimed` in `src/services/os.ts` asks ElevenLabs for the sound and the character alignment together and caches both in the same bounded store. `src/services/video.ts` draws every frame on a canvas and joins them to the voice with `ffmpeg.wasm`, which needs the cross-origin isolation headers in `public/_headers`. Video assembly stays in the browser; cloud speech requests still send text to ElevenLabs. See `docs/concepts/note-present-export.md`.
 
 OpenRouter and ElevenLabs calls go directly from the browser. Their keys stay
@@ -317,7 +319,8 @@ cloud result cannot play or trigger system fallback. An already submitted
 provider request can still complete and incur charges. Speech failures show a
 retry message. Present pauses on an unsuccessful chunk instead of advancing.
 
-Talk saves unfinished words per space in local settings (`talk-draft:<id>`).
+Talk saves unfinished words per space in local settings (`talk-draft:<id>`),
+and the mood of the space in `talk-mood:<id>`.
 These drafts are device-local and are not included in portable backups.
 A successful message save clears only the draft that was sent; later edits
 remain. Pending or failed saves show their state and offer retry on failure.

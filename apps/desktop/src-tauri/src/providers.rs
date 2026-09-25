@@ -26,6 +26,8 @@ const ELEVEN_LABS: &str = "https://api.elevenlabs.io";
 /// A voice that sends no sound in this time does not answer. The system voice
 /// then speaks, so the user never waits long in silence.
 const FIRST_AUDIO: Duration = Duration::from_secs(5);
+/// Eleven v3 starts to speak later than Flash, so the Dialogue voice gets more time.
+const FIRST_DIALOGUE_AUDIO: Duration = Duration::from_secs(10);
 
 /// One Keychain service holds both accounts, so the Mac shows them together.
 const KEYCHAIN_SERVICE: &str = "com.september.desktop";
@@ -283,6 +285,7 @@ pub struct Providers {
     open_router: String,
     eleven_labs: String,
     first_audio: Duration,
+    first_dialogue_audio: Duration,
 }
 
 impl Default for Providers {
@@ -299,12 +302,14 @@ impl Providers {
             open_router: open_router.trim_end_matches('/').to_owned(),
             eleven_labs: eleven_labs.trim_end_matches('/').to_owned(),
             first_audio: FIRST_AUDIO,
+            first_dialogue_audio: FIRST_DIALOGUE_AUDIO,
         }
     }
 
     /// A test shortens the wait for the first sound. Nothing else calls this.
     pub fn first_audio_within(mut self, limit: Duration) -> Self {
         self.first_audio = limit;
+        self.first_dialogue_audio = limit;
         self
     }
 
@@ -411,19 +416,90 @@ impl Providers {
         key: &str,
         settings: &crate::speech::SpeechSettings,
         text: &str,
+        on_samples: impl FnMut(&[i16]),
+    ) -> Result<()> {
+        let voice = settings.voice_id.as_deref().unwrap_or_default();
+        let messages = vec![
+            serde_json::json!({
+                "text": " ",
+                "voice_settings": {
+                    "stability": settings.stability,
+                    "similarity_boost": settings.similarity,
+                    "speed": settings.speed,
+                },
+            }),
+            serde_json::json!({ "text": format!("{text} "), "flush": true }),
+            serde_json::json!({ "text": "" }),
+        ];
+        self.socket_stream(
+            &format!(
+                "/v1/text-to-speech/{voice}/stream-input?model_id={}&output_format=pcm_24000",
+                settings.model_id
+            ),
+            key,
+            messages,
+            self.first_audio,
+            on_samples,
+        )
+        .await
+    }
+
+    /// Speaks the parts of one sentence through the ElevenLabs dialogue socket.
+    ///
+    /// Eleven v3 Conversational has only this socket. The first message
+    /// registers the one voice, then each part goes as one `inputs` frame, and
+    /// `close_socket` asks for the rest of the sound and the final mark.
+    pub async fn speak_dialogue_socket(
+        &self,
+        key: &str,
+        settings: &crate::speech::SpeechSettings,
+        parts: &[String],
+        on_samples: impl FnMut(&[i16]),
+    ) -> Result<()> {
+        let voice = settings.voice_id.as_deref().unwrap_or_default();
+        let mut messages = vec![serde_json::json!({
+            "voices": [voice],
+            "voice_settings": { "stability": crate::speech::v3_stability(settings.stability) },
+        })];
+        messages.extend(
+            parts
+                .iter()
+                .map(|part| serde_json::json!({ "inputs": [{ "text": part, "voice_id": voice }] })),
+        );
+        messages.push(serde_json::json!({ "close_socket": true }));
+        self.socket_stream(
+            &format!(
+                "/v1/text-to-dialogue/stream-input?model_id={}&output_format=pcm_24000",
+                crate::speech::dialogue_model(settings)
+            ),
+            key,
+            messages,
+            self.first_dialogue_audio,
+            on_samples,
+        )
+        .await
+    }
+
+    /// Sends the messages through one ElevenLabs socket and plays its sound.
+    ///
+    /// The text-to-speech socket and the dialogue socket send the same kind of
+    /// replies. Only the final mark is spelled `isFinal` in one and `is_final`
+    /// in the other.
+    async fn socket_stream(
+        &self,
+        path: &str,
+        key: &str,
+        messages: Vec<serde_json::Value>,
+        first_audio: Duration,
         mut on_samples: impl FnMut(&[i16]),
     ) -> Result<()> {
         let base = self
             .eleven_labs
             .replacen("https://", "wss://", 1)
             .replacen("http://", "ws://", 1);
-        let voice = settings.voice_id.as_deref().unwrap_or_default();
-        let mut request = format!(
-            "{base}/v1/text-to-speech/{voice}/stream-input?model_id={}&output_format=pcm_24000",
-            settings.model_id
-        )
-        .into_client_request()
-        .map_err(unexpected)?;
+        let mut request = format!("{base}{path}")
+            .into_client_request()
+            .map_err(unexpected)?;
         request.headers_mut().insert(
             "xi-api-key",
             key.parse()
@@ -441,18 +517,7 @@ impl Providers {
                 other => unexpected(other),
             })?;
 
-        for message in [
-            serde_json::json!({
-                "text": " ",
-                "voice_settings": {
-                    "stability": settings.stability,
-                    "similarity_boost": settings.similarity,
-                    "speed": settings.speed,
-                },
-            }),
-            serde_json::json!({ "text": format!("{text} "), "flush": true }),
-            serde_json::json!({ "text": "" }),
-        ] {
+        for message in messages {
             socket
                 .send(Message::Text(message.to_string().into()))
                 .await
@@ -465,7 +530,7 @@ impl Providers {
             let next = if heard {
                 socket.next().await
             } else {
-                tokio::time::timeout(self.first_audio, socket.next())
+                tokio::time::timeout(first_audio, socket.next())
                     .await
                     .map_err(|_| {
                         ProviderError::Unexpected("ElevenLabs sent no sound in time".into())
@@ -487,20 +552,7 @@ impl Providers {
                 return Err(ProviderError::Unexpected(problem));
             }
             if let Some(audio) = reply.audio {
-                let mut bytes = Vec::with_capacity(audio.len());
-                bytes.extend(carry.take());
-                bytes.extend(
-                    base64::engine::general_purpose::STANDARD
-                        .decode(audio)
-                        .map_err(unexpected)?,
-                );
-                if bytes.len() % 2 == 1 {
-                    carry = bytes.pop();
-                }
-                let samples: Vec<i16> = bytes
-                    .chunks_exact(2)
-                    .map(|pair| i16::from_le_bytes([pair[0], pair[1]]))
-                    .collect();
+                let samples = samples_from(&audio, &mut carry)?;
                 if !samples.is_empty() {
                     heard = true;
                     on_samples(&samples);
@@ -510,6 +562,86 @@ impl Providers {
                 return Ok(());
             }
         }
+    }
+
+    /// Speaks one part of a sentence through the ElevenLabs Dialogue stream.
+    ///
+    /// The voice is always Eleven v3, so the text keeps its audio tags. The
+    /// stream sends one JSON object after the other, with or without a line
+    /// break between them. Each chunk of sound goes to `on_samples` as it
+    /// arrives, as in `speak_stream`. The call returns when the stream ends.
+    pub async fn speak_dialogue_stream(
+        &self,
+        key: &str,
+        settings: &crate::speech::SpeechSettings,
+        text: &str,
+        mut on_samples: impl FnMut(&[i16]),
+    ) -> Result<()> {
+        let deadline = tokio::time::Instant::now() + self.first_dialogue_audio;
+        let late = || ProviderError::Unexpected("ElevenLabs sent no sound in time".into());
+        let voice = settings.voice_id.as_deref().unwrap_or_default();
+        let request = self
+            .client
+            .post(format!(
+                "{}/v1/text-to-dialogue/stream/with-timestamps?output_format=pcm_24000",
+                self.eleven_labs
+            ))
+            .header("xi-api-key", key)
+            .json(&serde_json::json!({
+                "inputs": [{ "text": text, "voice_id": voice }],
+                "model_id": crate::speech::DIALOGUE_MODEL,
+                "settings": { "stability": crate::speech::v3_stability(settings.stability) },
+            }))
+            .send();
+        let response = tokio::time::timeout_at(deadline, request)
+            .await
+            .map_err(|_| late())??;
+
+        let status = response.status();
+        if matches!(status, StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN) {
+            return Err(ProviderError::Rejected);
+        }
+        if !status.is_success() {
+            return Err(ProviderError::Unexpected(format!(
+                "ElevenLabs answered {status}"
+            )));
+        }
+
+        let mut body = response.bytes_stream();
+        let mut waiting: Vec<u8> = Vec::new();
+        let mut carry: Option<u8> = None;
+        let mut heard = false;
+        loop {
+            let next = if heard {
+                body.next().await
+            } else {
+                tokio::time::timeout_at(deadline, body.next())
+                    .await
+                    .map_err(|_| late())?
+            };
+            let Some(bytes) = next else { break };
+            waiting.extend_from_slice(&bytes?);
+
+            let (objects, used) = complete_objects(&waiting);
+            for (start, end) in objects {
+                let reply: DialogueReply = serde_json::from_slice(&waiting[start..end])?;
+                if let Some(audio) = reply.audio_base64 {
+                    let samples = samples_from(&audio, &mut carry)?;
+                    if !samples.is_empty() {
+                        heard = true;
+                        on_samples(&samples);
+                    }
+                }
+            }
+            waiting.drain(..used);
+        }
+
+        if !waiting.iter().all(u8::is_ascii_whitespace) {
+            return Err(ProviderError::Unexpected(
+                "ElevenLabs ended the voice inside a reply".into(),
+            ));
+        }
+        Ok(())
     }
 
     /// Creates one account voice from an already encoded multipart request.
@@ -720,12 +852,76 @@ struct VoiceList {
     voices: Vec<Voice>,
 }
 
+/// One object of the Dialogue stream. The timing fields are not read.
+#[derive(Deserialize)]
+struct DialogueReply {
+    #[serde(default)]
+    audio_base64: Option<String>,
+}
+
+/// The complete JSON objects at the start of `bytes`, as ranges, and the
+/// number of bytes they use. Braces inside a string do not count.
+fn complete_objects(bytes: &[u8]) -> (Vec<(usize, usize)>, usize) {
+    let mut objects = Vec::new();
+    let (mut depth, mut start, mut used) = (0_usize, 0_usize, 0_usize);
+    let (mut quoted, mut escaped) = (false, false);
+    for (index, &byte) in bytes.iter().enumerate() {
+        if quoted {
+            if escaped {
+                escaped = false;
+            } else if byte == b'\\' {
+                escaped = true;
+            } else if byte == b'"' {
+                quoted = false;
+            }
+            continue;
+        }
+        match byte {
+            b'"' => quoted = true,
+            b'{' => {
+                if depth == 0 {
+                    start = index;
+                }
+                depth += 1;
+            }
+            b'}' if depth > 0 => {
+                depth -= 1;
+                if depth == 0 {
+                    objects.push((start, index + 1));
+                    used = index + 1;
+                }
+            }
+            _ => {}
+        }
+    }
+    (objects, used)
+}
+
+/// The 16-bit samples of one base64 chunk. A chunk can end inside a sample,
+/// so the odd byte waits in `carry` for the next chunk.
+fn samples_from(audio: &str, carry: &mut Option<u8>) -> Result<Vec<i16>> {
+    let mut bytes = Vec::with_capacity(audio.len());
+    bytes.extend(carry.take());
+    bytes.extend(
+        base64::engine::general_purpose::STANDARD
+            .decode(audio)
+            .map_err(unexpected)?,
+    );
+    if bytes.len() % 2 == 1 {
+        *carry = bytes.pop();
+    }
+    Ok(bytes
+        .chunks_exact(2)
+        .map(|pair| i16::from_le_bytes([pair[0], pair[1]]))
+        .collect())
+}
+
 /// One message from the ElevenLabs voice socket.
 #[derive(Deserialize)]
 struct StreamReply {
     #[serde(default)]
     audio: Option<String>,
-    #[serde(default, rename = "isFinal")]
+    #[serde(default, rename = "isFinal", alias = "is_final")]
     is_final: Option<bool>,
     #[serde(default)]
     message: Option<String>,

@@ -15,6 +15,58 @@ export const VOICE_MODELS = [
   { id: "eleven_v3", name: "Eleven v3", note: "Most expressive" },
 ] as const;
 
+/** The first model of the ElevenLabs Dialogue voice, and the model of its files. */
+export const DIALOGUE_MODEL = "eleven_v3";
+
+/** The realtime Eleven v3 model. ElevenLabs serves it on the dialogue socket. */
+export const CONVERSATIONAL_MODEL = "eleven_v3_conversational";
+
+/** The models of the Dialogue voice. */
+export const DIALOGUE_MODELS = [
+  { id: DIALOGUE_MODEL, name: "Eleven v3", note: "Most expressive" },
+  { id: CONVERSATIONAL_MODEL, name: "Eleven v3 Conversational", note: "Starts to speak sooner" },
+] as const;
+
+/** A saved Dialogue model, or Eleven v3 for a missing or other model. */
+export const dialogueModelFrom = (id: string | null | undefined): string =>
+  DIALOGUE_MODELS.some((model) => model.id === id) ? id! : DIALOGUE_MODEL;
+
+/** ElevenLabs keeps a dialogue request reliable up to this many characters. */
+const DIALOGUE_LIMIT = 2000;
+
+/**
+ * The text in parts that one dialogue request each can hold.
+ *
+ * A part ends at a sentence end. A sentence longer than the limit ends at the
+ * last space before the limit, or at the limit when it has no space.
+ */
+export function dialogueParts(text: string, limit = DIALOGUE_LIMIT): string[] {
+  const sentences = text.trim().match(/[^.!?]*[.!?]+|[^.!?]+$/g) ?? [];
+  const pieces = sentences.flatMap((sentence) => {
+    const out: string[] = [];
+    let rest = sentence.trim();
+    while (rest.length > limit) {
+      const space = rest.lastIndexOf(" ", limit);
+      const cut = space > 0 ? space : limit;
+      out.push(rest.slice(0, cut).trim());
+      rest = rest.slice(cut).trim();
+    }
+    if (rest) out.push(rest);
+    return out;
+  });
+
+  const parts: string[] = [];
+  for (const piece of pieces) {
+    const last = parts.length - 1;
+    if (last >= 0 && parts[last].length + 1 + piece.length <= limit) {
+      parts[last] = `${parts[last]} ${piece}`;
+    } else {
+      parts.push(piece);
+    }
+  }
+  return parts;
+}
+
 const REPLACED: Record<string, string> = {
   eleven_turbo_v2_5: "eleven_flash_v2_5",
   eleven_turbo_v2: "eleven_flash_v2",

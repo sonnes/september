@@ -8,6 +8,8 @@
  * phrase that the user keeps is never moved, and never lost.
  */
 
+import { stripTags } from "./audio-tags.ts";
+
 /** The message fields used by the pure phrase rules. */
 export interface Message {
   type: string;
@@ -143,7 +145,8 @@ export function validateCode(raw: string, options: CodeCheckOptions): CodeValida
  */
 export function generateCode(phrase: string, options: CodeCheckOptions): string | undefined {
   const { existingCodes, isWord = isCommonWord } = options;
-  const words = phrase
+  // A tag is a direction to the voice, so it takes no letter of the code.
+  const words = stripTags(phrase)
     .toLowerCase()
     .split(/\s+/)
     .map(w => w.replace(/[^a-z0-9]/g, ''))
@@ -372,6 +375,14 @@ Given the User's current saved phrases and starters, their space context (who th
 
 Answer with JSON: {"phrases": ["...", "..."], "starters": ["...", "..."]}`;
 
+/** The phrase rules for audio tags. The prompt holds them only for a voice that reads tags. */
+const PHRASE_TAG_RULES = `<audio_tags>
+- A phrase with a clear feeling can start with one audio tag in square brackets, such as [laughs] That is hilarious or [sighs] I am so tired today.
+- A neutral phrase, such as Thank you, gets no tag. A starter gets no tag.
+- A tag must describe the voice. Do not use tags for music or sound effects.
+- [pinned] is a marker of the app, not an audio tag. Never write it in a phrase.
+</audio_tags>`;
+
 /** A phrase or starter row as embedded in the prompt — pinned rows get a [pinned] marker. */
 export interface PromptPhrase {
   text: string;
@@ -397,12 +408,15 @@ export function buildPhrasesPrompt({
   existingStarters = [],
   history,
   context,
+  tags = false,
 }: {
   existing: PromptPhrase[];
   existingStarters?: PromptPhrase[];
   /** Pre-formatted "Me:"/"Them:" lines — see formatPhraseHistory. */
   history: string[];
   context?: string;
+  /** True when the voice reads audio tags, so a phrase can hold one. */
+  tags?: boolean;
 }): { system: string; prompt: string } {
   const sections: string[] = [];
 
@@ -423,7 +437,10 @@ export function buildPhrasesPrompt({
     sections.push(`Recent conversation ("Me" is the User):\n${history.join('\n')}`);
   }
 
-  return { system: PHRASES_SYSTEM_PROMPT, prompt: sections.join('\n\n') };
+  const system = tags
+    ? PHRASES_SYSTEM_PROMPT.replace('\n\nAnswer with JSON:', `\n\n${PHRASE_TAG_RULES}\n\nAnswer with JSON:`)
+    : PHRASES_SYSTEM_PROMPT;
+  return { system, prompt: sections.join('\n\n') };
 }
 
 /**

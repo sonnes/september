@@ -24,6 +24,7 @@ import {
   Undo2,
   Volume2,
 } from "lucide-react";
+import { cn } from "@september/ui";
 import { Button } from "@september/ui/components/button";
 import {
   DropdownMenu,
@@ -55,6 +56,8 @@ import {
   virtualMicrophoneStatus,
 } from "@platform/services/os";
 import { Suggestions } from "@september/app-ui/blocks/suggestions";
+import { draftParts, tagBefore } from "@september/core/rules/audio-tags";
+import { MOODS, type MoodKey } from "@september/core/rules/moods";
 import { countsAsTypedKey } from "@september/core/rules/usage-summary";
 import {
   composerAction,
@@ -244,6 +247,8 @@ export function Composer({
   history,
   before,
   suggestions = true,
+  mood = null,
+  onMood,
 }: {
   mode: ComposerMode;
   /** The space the stripe reads. */
@@ -264,8 +269,15 @@ export function Composer({
   before?: ReactNode;
   /** Agent keeps its prompt private from speech-oriented suggestions. */
   suggestions?: boolean;
+  /** The mood of the conversation. Talk shows the mood keys. */
+  mood?: MoodKey | null;
+  /** Changes the mood. Without it, the mood keys do not show. */
+  onMood?: (mood: MoodKey | null) => void;
 }) {
   const field = useRef<HTMLTextAreaElement>(null);
+  const layer = useRef<HTMLDivElement>(null);
+  // The caret goes here after the draft that removed a tag is on the screen.
+  const caret = useRef<number | null>(null);
   const [undoStack, setUndoStack] = useState<string[]>([]);
   const action = composerAction(mode);
   const speaks = action.speaks;
@@ -276,6 +288,10 @@ export function Composer({
     if (!box) return;
     box.style.height = "auto";
     box.style.height = `${box.scrollHeight}px`;
+    if (caret.current !== null) {
+      box.setSelectionRange(caret.current, caret.current);
+      caret.current = null;
+    }
   }, [draft]);
 
   const write = (text: string) => {
@@ -309,6 +325,7 @@ export function Composer({
           context={context}
           text={draft}
           history={history}
+          mood={mood}
           onTake={write}
           onSpeak={act}
           onPin={onPin}
@@ -316,23 +333,62 @@ export function Composer({
       ) : null}
 
       <div className="bg-background focus-within:border-ring focus-within:ring-ring/20 rounded-2xl border p-3 shadow-sm transition-[box-shadow,border-color] focus-within:ring-[3px]">
-        <textarea
-          ref={field}
-          autoFocus
-          rows={1}
-          value={draft}
-          aria-label={action.field}
-          placeholder={action.placeholder}
-          onChange={(event) => onDraft(event.target.value)}
-          onKeyDown={(event) => {
-            if (countsAsTypedKey(event.key)) onTypedKey?.();
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              act(draft);
-            }
-          }}
-          className="placeholder:text-muted-foreground/60 max-h-60 w-full resize-none overflow-y-auto bg-transparent text-xl leading-snug focus:outline-none"
-        />
+        {/* The layer behind the field draws a chip under each audio tag. It
+            has the same type and wrap as the field, and its text is clear, so
+            only the chips show. The field on top keeps the caret, the
+            selection, and what a screen reader hears. */}
+        <div className="relative">
+          <div
+            ref={layer}
+            aria-hidden
+            className="pointer-events-none absolute inset-0 overflow-hidden text-xl leading-snug break-words whitespace-pre-wrap text-transparent"
+          >
+            {draftParts(draft).map((part, index) =>
+              part.tag ? (
+                <span
+                  key={index}
+                  data-tag
+                  className="bg-primary/15 ring-primary/20 rounded-md ring-2 [box-decoration-break:clone]"
+                >
+                  {part.text}
+                </span>
+              ) : (
+                <span key={index}>{part.text}</span>
+              ),
+            )}
+          </div>
+          <textarea
+            ref={field}
+            autoFocus
+            rows={1}
+            value={draft}
+            aria-label={action.field}
+            placeholder={action.placeholder}
+            onChange={(event) => onDraft(event.target.value)}
+            onScroll={(event) => {
+              if (layer.current) layer.current.scrollTop = event.currentTarget.scrollTop;
+            }}
+            onKeyDown={(event) => {
+              if (countsAsTypedKey(event.key)) onTypedKey?.();
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                act(draft);
+              }
+              // A half tag is neither a word nor a direction, so Backspace
+              // after a tag removes all of it.
+              const box = event.currentTarget;
+              if (event.key === "Backspace" && box.selectionStart === box.selectionEnd) {
+                const tag = tagBefore(draft, box.selectionStart);
+                if (tag) {
+                  event.preventDefault();
+                  caret.current = tag.start;
+                  write(draft.slice(0, tag.start) + draft.slice(tag.end));
+                }
+              }
+            }}
+            className="placeholder:text-muted-foreground/60 relative max-h-60 w-full resize-none overflow-y-auto bg-transparent text-xl leading-snug focus:outline-none"
+          />
+        </div>
         {note ? (
           <p role="status" className="text-muted-foreground mt-2 text-sm">{note}</p>
         ) : null}
@@ -373,6 +429,7 @@ export function Composer({
             </Button>
           </div>
           <div className="flex items-center gap-2">
+            {speaks && onMood ? <MoodKeys mood={mood} onMood={onMood} /> : null}
             {/* The sound output belongs beside the button that makes a sound.
                 Notes makes none. */}
             {speaks ? <AudioSelector /> : null}
@@ -389,6 +446,48 @@ export function Composer({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The five mood keys. One press chooses a mood, and a second press on the
+ * same key clears it. The mood changes the tone of the suggestions.
+ */
+function MoodKeys({
+  mood,
+  onMood,
+}: {
+  mood: MoodKey | null;
+  onMood: (mood: MoodKey | null) => void;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Mood"
+      className="bg-muted/60 flex items-center gap-0.5 rounded-full border p-0.5"
+    >
+      {MOODS.map((one) => {
+        const on = one.key === mood;
+        return (
+          <button
+            key={one.key}
+            type="button"
+            aria-label={`Mood: ${one.label}`}
+            aria-pressed={on}
+            title={one.label}
+            onClick={() => onMood(on ? null : one.key)}
+            className={cn(
+              "focus-visible:ring-ring grid size-11 place-items-center rounded-full border border-transparent text-2xl leading-none transition-colors focus-visible:ring-2 focus-visible:outline-none",
+              on
+                ? "border-primary bg-primary/15"
+                : "hover:bg-background hover:border-border",
+            )}
+          >
+            <span aria-hidden>{one.emoji}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

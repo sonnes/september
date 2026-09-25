@@ -42,6 +42,7 @@ vi.mock('@platform/services/data', () => ({
 
 vi.mock('@platform/services/os', () => ({
   currentSetup: () => null,
+  currentSpeech: () => null,
   subscribeSetup: () => () => {},
   spaceModes: {},
   rememberModes: vi.fn(),
@@ -54,7 +55,7 @@ vi.mock('@platform/services/os', () => ({
 }));
 
 vi.mock('@platform/services/suggest', () => ({
-  useSuggestions: () => ({ data: [] }),
+  useSuggestions: () => [],
   applySuggestion: (text: string) => text,
 }));
 

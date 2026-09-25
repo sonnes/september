@@ -36,6 +36,13 @@ Eleven v3, the tab snaps the stability to the nearest mode.
 `expressionOf` in `packages/core/rules/voice.ts` reads a saved sound for its
 model. If the sound matches no preset, the tab opens in Custom.
 
+The Dialogue voice has two models: Eleven v3 and Eleven v3 Conversational. Its
+tab shows Voice model with these two models, and Steady, Natural, and
+Expressive, which are the three stability modes of Eleven v3. Speed and Custom
+do not show. The model goes in `dialogueModelId`. The Dialogue endpoint has no speed field. The
+saved `modelId` stays, so a return to the ElevenLabs service finds the model
+that the user chose.
+
 ## Deprecated Models
 
 ElevenLabs replaced `eleven_turbo_v2_5` with `eleven_flash_v2_5`. The default

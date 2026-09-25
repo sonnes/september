@@ -10,15 +10,22 @@ import {
 } from "@/services/os";
 import { elevenLabsCredits } from "@/rules/usage-summary";
 import { recordTtsUsage } from "@/services/usage";
-import { DEFAULT_VOICE_MODEL, voiceModelFrom } from "@september/core/rules/voice";
+import {
+  DEFAULT_VOICE_MODEL,
+  dialogueModelFrom,
+  voiceModelFrom,
+} from "@september/core/rules/voice";
+import { speakableText, stripTags } from "@september/core/rules/audio-tags";
 
-export type VoiceService = "system" | "elevenlabs";
+export type VoiceService = "system" | "elevenlabs" | "dialogue";
 
 /** Everything that shapes the sound. All of it names the audio file. */
 export interface SpeechSettings {
   provider: VoiceService;
   voiceId: string | null;
   modelId: string;
+  /** The model of the Dialogue voice: Eleven v3 or Eleven v3 Conversational. */
+  dialogueModelId?: string;
   stability: number;
   similarity: number;
   speed: number;
@@ -100,17 +107,22 @@ const systemVoice = (settings: SpeechSettings): SpeechProvider => ({
   stop: () => void stopNativeSpeech().catch(() => undefined),
 });
 
+/** The ElevenLabs voice, or the ElevenLabs Dialogue voice with Eleven v3. */
 const cloudVoice = (settings: SpeechSettings): SpeechProvider => ({
-  id: "elevenlabs",
+  id: settings.provider,
   async speak(text, signal) {
     const started = Date.now();
+    const model =
+      settings.provider === "dialogue"
+        ? dialogueModelFrom(settings.dialogueModelId)
+        : settings.modelId;
     let heard: { from_cache: boolean; latency_ms: number };
     try {
       heard = await streamSpeech(text, settings, signal);
     } catch (reason) {
       void recordTtsUsage({
         provider: "elevenlabs",
-        model: settings.modelId,
+        model,
         voice_id: settings.voiceId ?? undefined,
         text_length: text.length,
         duration_seconds: 0,
@@ -125,18 +137,19 @@ const cloudVoice = (settings: SpeechSettings): SpeechProvider => ({
       // again, so the notice of `speak()` reports the break instead.
       if (reason instanceof InterruptedSpeech) throw reason;
       // A person who cannot speak must not meet silence, so the voice of the
-      // operating system says the words instead.
-      await systemVoice(settings).speak(text, signal);
+      // operating system says the words instead. It says a tag aloud, so it
+      // gets the words alone.
+      await systemVoice(settings).speak(stripTags(text), signal);
       if (!signal?.aborted) setFallback("The chosen voice did not answer, so this device spoke instead.");
       return;
     }
 
     const credits = heard.from_cache
       ? 0
-      : elevenLabsCredits(text, settings.modelId);
+      : elevenLabsCredits(text, model);
     void recordTtsUsage({
       provider: "elevenlabs",
-      model: settings.modelId,
+      model,
       voice_id: settings.voiceId ?? undefined,
       text_length: text.length,
       credits,
@@ -159,9 +172,9 @@ const cloudVoice = (settings: SpeechSettings): SpeechProvider => ({
 });
 
 export function providerFor(settings: SpeechSettings): SpeechProvider {
-  return settings.provider === "elevenlabs"
-    ? cloudVoice(settings)
-    : systemVoice(settings);
+  return settings.provider === "system"
+    ? systemVoice(settings)
+    : cloudVoice(settings);
 }
 
 // --------------------------------------------------- what is speaking now
@@ -205,7 +218,10 @@ export async function speak(text: string, id = "composer"): Promise<boolean> {
   const cancelled = new Promise<boolean>((resolve) => {
     request.signal.addEventListener("abort", () => resolve(false), { once: true });
   });
-  const playback = providerFor(speechSettings()).speak(words, request.signal).then(
+  const settings = speechSettings();
+  const playback = providerFor(settings)
+    .speak(speakableText(words, settings), request.signal)
+    .then(
     () => !request.signal.aborted,
     () => {
       if (!request.signal.aborted) {

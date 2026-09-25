@@ -22,6 +22,7 @@ import {
   usePutPhrase,
 } from "@platform/services/data";
 import { dismissedIdeas, rememberDismissed } from "@platform/services/os";
+import { TaggedText } from "@september/app-ui/blocks/suggestions";
 import {
   CODE_MAX_LENGTH,
   mineShortcuts,
@@ -340,7 +341,9 @@ function PhraseRow({
         onClick={() => onInsert(row.text)}
         className="focus-visible:ring-ring rounded-control flex min-h-11 min-w-0 flex-1 items-center truncate px-3 py-2 text-left text-sm focus-visible:ring-2 focus-visible:outline-none"
       >
-        {row.text}
+        <span className="truncate">
+          <TaggedText text={row.text} />
+        </span>
       </button>
 
       {rowKind(row) === "starter" ? (

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   composerAction,
+  deleteLastWord,
   newSpaceMode,
   newSpaceTitle,
   spaceForSlug,
@@ -138,5 +139,15 @@ describe("the setup console", () => {
     expect(action.label).toBe("Set up space");
     expect(action.field).toBe("What is this space for?");
     expect(action.speaks).toBe(false);
+  });
+});
+
+describe("deleteLastWord with audio tags", () => {
+  it("removes a whole tag as one word", () => {
+    expect(deleteLastWord("so funny [clears throat] ")).toBe("so funny ");
+  });
+
+  it("still removes one word", () => {
+    expect(deleteLastWord("so funny ")).toBe("so ");
   });
 });

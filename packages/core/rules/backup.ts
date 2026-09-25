@@ -56,9 +56,11 @@ export interface BackupModelConfig {
 }
 
 export interface BackupSpeech {
-  provider: "system" | "elevenlabs";
+  provider: "system" | "elevenlabs" | "dialogue";
   voiceId: string | null;
   modelId: string;
+  /** The model of the Dialogue voice. Older backups do not have it. */
+  dialogueModelId?: string;
   stability: number;
   similarity: number;
   speed: number;
@@ -377,10 +379,13 @@ function speechFrom(value: unknown): BackupSpeech | null {
   if (value === null) return null;
   const row = objectOf(value, "settings.speech");
   return {
-    provider: oneOf(row.provider, ["system", "elevenlabs"], "speech provider"),
+    provider: oneOf(row.provider, ["system", "elevenlabs", "dialogue"], "speech provider"),
     voiceId:
       row.voiceId === null ? null : identifier(row.voiceId, "speech voice ID"),
     modelId: identifier(row.modelId, "speech model ID"),
+    ...(row.dialogueModelId === undefined
+      ? {}
+      : { dialogueModelId: identifier(row.dialogueModelId, "speech dialogue model ID") }),
     stability: boundedNumber(row.stability, 0, 1, "speech stability"),
     similarity: boundedNumber(row.similarity, 0, 1, "speech similarity"),
     speed: boundedNumber(row.speed, 0.7, 1.2, "speech speed"),

@@ -150,6 +150,31 @@ describe("the portable September backup", () => {
     });
   });
 
+  it("preserves the ElevenLabs Dialogue voice", () => {
+    const backup = validBackup();
+    backup.settings.speech!.provider = "dialogue";
+    expect(
+      parseBackup(encodeBackup(backup)).backup.settings.speech?.provider,
+    ).toBe("dialogue");
+  });
+
+  it("preserves the model of the Dialogue voice", () => {
+    const backup = validBackup();
+    Object.assign(backup.settings.speech!, {
+      provider: "dialogue",
+      dialogueModelId: "eleven_v3_conversational",
+    });
+    expect(
+      parseBackup(encodeBackup(backup)).backup.settings.speech?.dialogueModelId,
+    ).toBe("eleven_v3_conversational");
+  });
+
+  it("reads a backup without a Dialogue model", () => {
+    expect(
+      parseBackup(encodeBackup(validBackup())).backup.settings.speech,
+    ).not.toHaveProperty("dialogueModelId");
+  });
+
   it("preserves a switched-off agent", () => {
     const backup = validBackup();
     backup.settings.setup!.agentEnabled = false;

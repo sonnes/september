@@ -32,7 +32,7 @@ needs no account and no network. A broken key can never stop speech.
 
 OpenRouter authorization and key exchange happen in Rust through PKCE and a
 temporary loopback callback. Its key never enters the WebView. An ElevenLabs
-key crosses from its input field to Rust once and never comes back. Rust also opens the ElevenLabs voice socket of Speak with this key. See [streaming voice](streaming-voice.md). `src-tauri/src/providers.rs` owns the Keychain and the
+key crosses from its input field to Rust once and never comes back. Rust also opens the ElevenLabs voice socket of Speak, and the Text to Dialogue stream of the Dialogue voice, with this key. See [streaming voice](streaming-voice.md). `src-tauri/src/providers.rs` owns the Keychain and the
 network. `src/services/os.ts` owns the only calls from React.
 
 The WebView writes with a typed model client, and a typed model client wants

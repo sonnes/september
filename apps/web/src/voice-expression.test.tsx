@@ -118,3 +118,27 @@ it('shows only the speed for the system voice', async () => {
   expect(slider('Speed')).not.toBeNull();
   expect(container.textContent).not.toContain('Expressive');
 });
+
+it('shows the two Dialogue models and the three presets, without the speed or Custom, for the Dialogue voice', async () => {
+  state.speech.provider = 'dialogue';
+  await render();
+  expect(button('Eleven v3 Conversational')).toBeDefined();
+  expect(button('Natural').getAttribute('aria-pressed')).toBe('true');
+  expect(slider('Speed')).toBeNull();
+  expect(container.textContent).not.toContain('Eleven Flash v2.5');
+  expect(container.textContent).not.toContain('Custom');
+  await act(async () => button('Expressive').click());
+  expect(state.save).toHaveBeenLastCalledWith(
+    expect.objectContaining({ provider: 'dialogue', stability: 0 }),
+  );
+});
+
+it('saves the Dialogue model and keeps the model of the ElevenLabs voice', async () => {
+  state.speech.provider = 'dialogue';
+  await render();
+  expect(button('Eleven v3').getAttribute('aria-current')).toBe('true');
+  await act(async () => button('Eleven v3 Conversational').click());
+  expect(state.save).toHaveBeenLastCalledWith(
+    expect.objectContaining({ dialogueModelId: 'eleven_v3_conversational', modelId: 'eleven_flash_v2_5' }),
+  );
+});

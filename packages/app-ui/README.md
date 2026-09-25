@@ -160,6 +160,11 @@ The final slice offers Speak for the complete suggestion. Starters retain
 their insert action. Selected suggestions remain available across model
 responses and after phrase-code expansion.
 
+The Talk composer has five mood keys left of the audio output. The mood
+changes the suggestion prompt. Suggestion rows, the word row, messages, and
+phrase rows show audio tags as chips, and a layer behind the composer field
+draws a chip under each tag. See `docs/concepts/audio-tags.md`.
+
 Speech returns whether playback completed successfully. Talk and Read aloud
 show speech notices. Present pauses on failure and keeps the unread chunk on
 screen for retry or silent use.

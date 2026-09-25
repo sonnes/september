@@ -302,7 +302,9 @@ export function transcriptPage<T>(
 /** The text without the word at the end. */
 export function deleteLastWord(text: string): string {
   const trimmed = text.replace(/\s+$/, "");
-  const start = trimmed.search(/\S+$/);
+  // An audio tag can hold a space, and it goes as one word.
+  const tag = trimmed.search(/\[[^[\]]+\]$/);
+  const start = tag >= 0 ? tag : trimmed.search(/\S+$/);
   return start > 0 ? trimmed.slice(0, start) : "";
 }
 

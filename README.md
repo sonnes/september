@@ -29,6 +29,7 @@ The web app stores data and its bounded speech cache in one IndexedDB database. 
 - Each space has an Agent that can read its context and propose approved
   changes to its setup, notes, phrases, and Talk transcript.
 - System and ElevenLabs voices speak Talk messages and notes.
+- The ElevenLabs Dialogue voice reads audio tags such as `[laughs]`. Five mood keys set the tone of the suggestions.
 - Notes store prepared long-form text inside a space.
 - A note presents full-screen in the user's voice, and exports as text, audio, or a captioned video.
 - Phrase codes expand short input into a full phrase.

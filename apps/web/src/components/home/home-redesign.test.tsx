@@ -10,6 +10,9 @@ import { Footer } from './footer';
 import { LiveDemoSection } from './live-demo-section';
 import { NOTE_SENTENCES, NotesSection, PRESENT_CHUNKS } from './notes-section';
 import { PhraseCodesSection, matchDemoCode } from './phrase-codes-section';
+import { MOODS } from '@september/core/rules/moods';
+
+import { ExpressionSection } from './expression-section';
 import { VoiceSection } from './voice-section';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -133,6 +136,21 @@ describe('phrase and space demo', () => {
     click(button('Speak'));
 
     expect(demoSpeech.speak).toHaveBeenCalledWith('What do you think is outside?');
+  });
+});
+
+describe('expression demo', () => {
+  it('shows a line with the tags of the chosen mood', () => {
+    render(<ExpressionSection />);
+    for (const mood of MOODS) {
+      const key = container.querySelector<HTMLButtonElement>(`button[aria-label="${mood.label}"]`)!;
+      click(key);
+
+      expect(key.getAttribute('aria-pressed')).toBe('true');
+      const tags = [...container.querySelectorAll('[data-tag]')].map(tag => tag.textContent);
+      expect(tags.length).toBeGreaterThan(0);
+      expect(tags.every(tag => mood.tags.includes(tag!))).toBe(true);
+    }
   });
 });
 

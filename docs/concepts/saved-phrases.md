@@ -62,6 +62,9 @@ Selected model suggestions and phrase-code expansions retain their remaining wor
 
 The app learns code ideas from repeated messages. Dismissed ideas stay in the application settings.
 
+A phrase can start with an audio tag, such as `[laughs] That is hilarious`. The
+code reads the words only. See [audio tags and moods](audio-tags.md).
+
 ## Generation
 
 OpenRouter can generate phrases from the space context and recent messages. A generation call runs only when the user connected that service.

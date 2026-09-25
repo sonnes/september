@@ -106,3 +106,18 @@ describe('tokenizer', () => {
     });
   });
 });
+
+describe('audio tags', () => {
+  it('keeps a tag as one tag token between the words', () => {
+    expect(
+      tokenize('so funny [clears throat] yes')
+        .filter(token => token.kind !== 'sentence-start' && token.kind !== 'sentence-end')
+        .map(token => [token.text, token.kind]),
+    ).toEqual([
+      ['so', 'word'],
+      ['funny', 'word'],
+      ['[clears throat]', 'tag'],
+      ['yes', 'word'],
+    ]);
+  });
+});

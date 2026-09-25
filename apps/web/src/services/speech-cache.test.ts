@@ -2,7 +2,14 @@ import 'fake-indexeddb/auto';
 
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { bootstrapBrowserServices, chooseOutput, playSpeechFile, stopNativeSpeech, synthesizeSpeech } from './os';
+import {
+  bootstrapBrowserServices,
+  chooseOutput,
+  playSpeechFile,
+  stopNativeSpeech,
+  synthesizeSpeech,
+  synthesizeTimed,
+} from './os';
 import { BrowserRepository, openRepository } from './repository';
 import type { SpeechSettings } from './speech';
 
@@ -127,5 +134,35 @@ describe('speech file cache', () => {
       path: 'blob:uncached',
       from_cache: false,
     });
+  });
+
+  it('sends Eleven v3 and keeps the tags when the Dialogue voice makes a file', async () => {
+    const fetchSpeech = vi.fn(async (_url: string, _init: RequestInit) => ({
+      ok: true,
+      json: async () => ({
+        audio_base64: btoa('mp3'),
+        alignment: { characters: ['H'], character_start_times_seconds: [0], character_end_times_seconds: [0.1] },
+      }),
+    }));
+    vi.stubGlobal('fetch', fetchSpeech);
+
+    await synthesizeTimed('[laughs] Hello there.', { ...settings, provider: 'dialogue' });
+
+    const body = JSON.parse(String(fetchSpeech.mock.calls[0][1].body));
+    expect(body).toMatchObject({ text: '[laughs] Hello there.', model_id: 'eleven_v3' });
+  });
+
+  it('removes the tags when a model that reads them aloud makes a file', async () => {
+    const fetchSpeech = vi.fn(async (_url: string, _init: RequestInit) => ({
+      ok: true,
+      blob: async () => new Blob(['speech bytes'], { type: 'audio/mpeg' }),
+    }));
+    vi.stubGlobal('fetch', fetchSpeech);
+    vi.stubGlobal('URL', class extends URL { static createObjectURL = vi.fn(() => 'blob:x'); });
+
+    await synthesizeSpeech('[sighs] A long day.', { ...settings, modelId: 'eleven_flash_v2_5' });
+
+    const body = JSON.parse(String(fetchSpeech.mock.calls[0][1].body));
+    expect(body).toMatchObject({ text: 'A long day.', model_id: 'eleven_flash_v2_5' });
   });
 });

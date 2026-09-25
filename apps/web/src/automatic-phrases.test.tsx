@@ -16,6 +16,7 @@ const state = vi.hoisted(() => ({
 }));
 vi.mock('@platform/services/os', () => ({
   currentSetup: () => state.setup,
+  currentSpeech: () => null,
   subscribeSetup: (listener: () => void) => {
     state.listeners.add(listener);
     return () => state.listeners.delete(listener);
@@ -23,6 +24,7 @@ vi.mock('@platform/services/os', () => ({
 }));
 vi.mock('../../desktop/src/services/os', () => ({
   currentSetup: () => state.setup,
+  currentSpeech: () => null,
   subscribeSetup: (listener: () => void) => {
     state.listeners.add(listener);
     return () => state.listeners.delete(listener);

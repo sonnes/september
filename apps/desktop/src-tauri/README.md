@@ -220,6 +220,9 @@ transcript.
 An older setup value can have no owner ID. Export uses the current Mac login
 name for that backup and does not change the stored value.
 
+The speech setting keeps the `dialogue` provider and its `dialogueModelId`.
+An older backup has no Dialogue model.
+
 An older panel setting can name the retired `camera` tab. Export writes the
 `phrases` tab instead. Import also accepts an existing file with that value.
 
@@ -390,6 +393,14 @@ output audio unit uses the selected device.
 `speech_stream` keeps a complete sentence as a WAV file beside the MP3 files,
 under the same SHA-256 name. A kept WAV or MP3 file plays without the socket.
 The `eleven_v3` model has no socket, so it plays as an MP3 file.
+When `settings.provider` is `dialogue`, `speech_stream` sends the sentence to
+the Text to Dialogue stream with `eleven_v3` instead of the socket.
+`Providers::speak_dialogue_stream` reads one JSON object after the other and
+gives each chunk of samples to the same engine. A text of more than 2,000
+characters goes in parts, from `speech::dialogue_parts`. The first sound can
+take 10 seconds. For `eleven_v3_conversational`,
+`Providers::speak_dialogue_socket` sends the parts through the Text to
+Dialogue socket, with the same reader as the text-to-speech socket.
 If the socket fails before the first sound, the command rejects. The WebView
 then speaks the sentence in the system voice. If the socket fails after the
 first sound, the sound stops and `interrupted` holds the reason.

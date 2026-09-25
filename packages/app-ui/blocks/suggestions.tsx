@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import {
+  AudioLines,
   ChevronsRight,
   CornerDownLeft,
   Ellipsis,
@@ -27,6 +28,15 @@ import {
   type SavedPhrase,
 } from "@september/core/rules/phrases";
 import { buildSuggestionPrompt } from "@september/core/rules/prompts";
+import {
+  draftParts,
+  isTag,
+  tagLabel,
+  tagsSpoken,
+  wordRow,
+} from "@september/core/rules/audio-tags";
+import { exampleTags, type MoodKey } from "@september/core/rules/moods";
+import { speechSettings } from "@platform/services/speech";
 import { applySuggestion, useSuggestions } from "@platform/services/suggest";
 import {
   boardWords,
@@ -36,6 +46,7 @@ import {
   MAX_COMPOSED,
   stripeForText,
   stripePhrases,
+  takeTokens,
   TILE,
   tileScale,
   type SuggestionSource,
@@ -53,11 +64,48 @@ interface Stripe {
   text: string;
   tokens: string[];
   hidden: number;
+  /** The tags after `hidden` that a take puts at the start of the draft. */
+  lead?: number;
   hasMore: boolean;
   source: SuggestionSource;
   code?: string;
   /** The user keeps this phrase, so the pin is solid, as in the panel. */
   kept?: boolean;
+}
+
+/** An audio tag in a row: a direction to the voice, not a word. */
+const TAG_TILE =
+  "border-primary/30 bg-primary/10 text-primary hover:border-primary/60 gap-1.5";
+
+/** The inside of a tag tile or chip: a sound mark and the words of the tag. */
+export function TagMark({ label }: { label: string }) {
+  return (
+    <>
+      <AudioLines className="size-[0.9em] shrink-0" aria-hidden />
+      {label}
+    </>
+  );
+}
+
+/** Text with each audio tag shown as a chip, for a message or a phrase. */
+export function TaggedText({ text }: { text: string }) {
+  return (
+    <>
+      {draftParts(text).map((part, index) =>
+        part.tag ? (
+          <span
+            key={index}
+            data-tag
+            className="bg-primary/10 text-primary inline-flex items-center gap-1 rounded-full px-2 align-baseline text-sm font-medium"
+          >
+            <TagMark label={tagLabel(part.text)} />
+          </span>
+        ) : (
+          part.text
+        ),
+      )}
+    </>
+  );
 }
 
 /**
@@ -107,6 +155,7 @@ export function Suggestions({
   context,
   text,
   history: given,
+  mood = null,
   onTake,
   onSpeak,
   onPin,
@@ -114,6 +163,8 @@ export function Suggestions({
   spaceId: string;
   context: string;
   text: string;
+  /** The mood of the conversation, from the keys of the composer. */
+  mood?: MoodKey | null;
   /** The words the engine reads. Notes gives it the note, not the messages. */
   history?: string[];
   onTake: (next: string) => void;
@@ -154,8 +205,13 @@ export function Suggestions({
   // The word engine answers from the words of the user, with no service and
   // no wait.
   // A space that does not exist yet names no lane of the engine.
-  const words = useSuggestions(spaceId || undefined, text);
-  const fromModel = useCompletions({ text, context, history, spaceId, setup });
+  const found = useSuggestions(spaceId || undefined, text);
+  const tagsOn = tagsSpoken(speechSettings());
+  const words = useMemo(
+    () => wordRow(found, { tags: tagsOn, examples: exampleTags(mood), draft: text }),
+    [found, tagsOn, mood, text],
+  );
+  const fromModel = useCompletions({ text, context, history, spaceId, setup, mood });
   const stripes = useStripes({
     text,
     spaceId,
@@ -254,6 +310,7 @@ export function Suggestions({
                   hover.stripe === row &&
                   index <= hover.index;
                 const punctuation = PUNCTUATION.test(token);
+                const tag = isTag(token);
 
                 return (
                   <button
@@ -262,8 +319,9 @@ export function Suggestions({
                     onMouseEnter={() => setHover({ stripe: row, index })}
                     onFocus={() => setHover({ stripe: row, index })}
                     onClick={() =>
-                      take(stripe, joinTokens(stripe.tokens.slice(0, index + 1)))
+                      take(stripe, joinTokens(takeTokens(stripe, index + 1)))
                     }
+                    aria-label={tag ? `${tagLabel(token)}, audio tag` : undefined}
                     style={{
                       fontSize: size(TILE.fontPx),
                       paddingInline: size(
@@ -274,10 +332,14 @@ export function Suggestions({
                     className={cn(
                       "rounded-chip focus-visible:ring-ring inline-flex shrink-0 items-center border transition-colors focus-visible:ring-2 focus-visible:outline-none",
                       punctuation ? "" : "font-medium",
-                      active ? lane.active : lane.idle,
+                      tag
+                        ? cn(TAG_TILE, active && "border-primary bg-primary/20")
+                        : active
+                          ? lane.active
+                          : lane.idle,
                     )}
                   >
-                    {token}
+                    {tag ? <TagMark label={tagLabel(token)} /> : token}
                   </button>
                 );
               })}
@@ -303,9 +365,15 @@ export function Suggestions({
               key={word}
               type="button"
               onClick={() => onTake(applySuggestion(text, word))}
-              className="border-chart-1/50 bg-card text-foreground hover:border-chart-1/70 hover:bg-chart-1/5 focus-visible:ring-ring min-h-12 rounded-lg border px-4 text-lg font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
+              aria-label={isTag(word) ? `${tagLabel(word)}, audio tag` : undefined}
+              className={cn(
+                "focus-visible:ring-ring inline-flex min-h-12 items-center rounded-lg border px-4 text-lg font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none",
+                isTag(word)
+                  ? TAG_TILE
+                  : "border-chart-1/50 bg-card text-foreground hover:border-chart-1/70 hover:bg-chart-1/5",
+              )}
             >
-              {word}
+              {isTag(word) ? <TagMark label={tagLabel(word)} /> : word}
             </button>
           ))}
         </div>
@@ -368,7 +436,7 @@ function EndKey({
         type="button"
         aria-label={label}
         title={label}
-        onClick={() => onTake(joinTokens(stripe.tokens))}
+        onClick={() => onTake(joinTokens(takeTokens(stripe, stripe.tokens.length)))}
         style={box}
         className="border-primary/40 text-primary/70 hover:bg-primary/10 hover:text-primary focus-visible:ring-ring rounded-control inline-flex shrink-0 items-center justify-center border border-dashed transition-colors focus-visible:ring-2 focus-visible:outline-none"
       >
@@ -382,7 +450,9 @@ function EndKey({
       type="button"
       aria-label="Speak this suggestion"
       title="Speak this suggestion"
-      onClick={() => onSpeak(joinTokens(stripe.tokens).trim())}
+      onClick={() =>
+        onSpeak(joinTokens(takeTokens(stripe, stripe.tokens.length)).trim())
+      }
       style={box}
       className={cn(
         "rounded-control focus-visible:ring-ring inline-flex shrink-0 items-center justify-center border transition-colors focus-visible:ring-2 focus-visible:outline-none",
@@ -544,26 +614,31 @@ function useCompletions({
   history,
   spaceId,
   setup,
+  mood,
 }: {
   text: string;
   context: string;
   history: string[];
   spaceId: string;
   setup: SavedSetup | null;
+  mood: MoodKey | null;
 }): string[] {
   const [rows, setRows] = useState<string[]>([]);
   const enabled = setup?.autoSuggestions !== false;
   const settingsKey = JSON.stringify([
     setup?.defaultModel, setup?.suggestionsModel, setup?.speakingStyle, setup?.personalWords,
   ]);
-  const previous = useRef({ text, spaceId, enabled, settingsKey });
+  // The voice decides whether a suggestion can hold audio tags.
+  const tags = tagsSpoken(speechSettings());
+  const previous = useRef({ text, spaceId, enabled, settingsKey, mood });
   const historyKey = JSON.stringify(history.slice(-20));
 
   useEffect(() => {
-    const edited = previous.current.text !== text &&
+    // A new mood asks again at once, because the user wants its tone now.
+    const edited = (previous.current.text !== text || previous.current.mood !== mood) &&
       previous.current.spaceId === spaceId && previous.current.enabled === enabled &&
       previous.current.settingsKey === settingsKey;
-    previous.current = { text, spaceId, enabled, settingsKey };
+    previous.current = { text, spaceId, enabled, settingsKey, mood };
     setRows([]);
     if (!edited || !enabled || !text.trim() ||
       !/[\s.,!?;:]$/.test(text) || !hasWritingService("suggestions")) return;
@@ -575,6 +650,8 @@ function useCompletions({
         spaceMd: context,
         history: (JSON.parse(historyKey) as string[]).map((one) => `Me: ${one}`),
         typed: text,
+        mood,
+        tags,
       });
 
       generate(
@@ -600,7 +677,7 @@ function useCompletions({
       clearTimeout(timer);
       dropped.abort();
     };
-  }, [text, spaceId, enabled, settingsKey, context, historyKey]);
+  }, [text, spaceId, enabled, settingsKey, context, historyKey, mood, tags]);
 
   return rows;
 }

@@ -1,6 +1,6 @@
 # September Desktop
 
-The current prerelease is `v0.2.0`. The signed DMG targets Apple Silicon and macOS 14.2 or later.
+The current prerelease is `v0.3.0`. The signed DMG targets Apple Silicon and macOS 14.2 or later.
 
 September Desktop is the Tauri edition of September, sized for the 13-inch iPad
 landscape window. It renders the workspace's shared application UI and supplies
@@ -155,8 +155,9 @@ The Talk screen has three parts, from the top:
 1. The transcript. It holds the spoken messages, 8 for each page, newest last.
    Press a message to speak it again.
 2. The composer. It has the text field, undo, delete last word, clear, the
-   audio selector, and Speak. The Enter key speaks. Shift and Enter make a new
-   line.
+   mood keys, the audio selector, and Speak. The Enter key speaks. Shift and
+   Enter make a new line. The mood of a space is kept in the
+   `talk-mood:<id>` setting. See `docs/concepts/audio-tags.md`.
 3. The dock. It holds the spaces on the left and the mode switch on the right,
    with a wide gap between them, so a press meant for a mode cannot land on a
    space. When the space tabs no longer fit the row, they become one button
@@ -499,6 +500,7 @@ and does not know which service answers.
 | ------------ | ---------------------------------------------------------------- |
 | `system`     | The native process uses the macOS system voice. No file, no key. |
 | `elevenlabs` | Rust streams the sound. The native process plays each chunk.     |
+| `dialogue`   | Rust streams Eleven v3 from the Text to Dialogue stream, or Eleven v3 Conversational from the Text to Dialogue socket. The native process plays each chunk. |
 
 Spoken messages now leave the native process. This path lets the Core Audio
 process tap receive both voices. Voice-list previews still use `src/services/player.ts`
@@ -534,7 +536,10 @@ with an old voice plays with the voice of today.
 
 The Voice tab of the right rail holds Speed, the ElevenLabs model, and
 Expression. Expression has three presets, Steady, Natural, and Expressive, and
-Custom. A preset keeps the model. Custom shows steadiness and likeness. The `/voice` screen holds who speaks and
+Custom. A preset keeps the model. Custom shows steadiness and likeness. The
+Dialogue voice shows its two models, Eleven v3 and Eleven v3 Conversational,
+and the three presets.
+It has no Speed, because the Dialogue endpoint has no speed field. The `/voice` screen holds who speaks and
 the voices of the account, with a **Try it** button beside the title. Each
 change is kept at once, in the `speech` setting. **Try it** speaks one short
 sentence, so the user hears a change before a real message. A voice sample

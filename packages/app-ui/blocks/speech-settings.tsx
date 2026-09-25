@@ -15,6 +15,9 @@ import {
   type SpeechSettings as Speech,
 } from "@platform/services/speech";
 import {
+  DIALOGUE_MODEL,
+  DIALOGUE_MODELS,
+  dialogueModelFrom,
   EXPRESSIONS,
   expressionOf,
   expressionSound,
@@ -36,10 +39,13 @@ const SPEED = { min: 0.7, max: 1.2 } as const;
  * who must leave the space to mend it loses the words they were writing.
  * Every change is kept as it is made, so there is no Save button to forget.
  *
- * Speed comes first, because every voice has it. An ElevenLabs voice then
- * shows its model, and three presets and Custom. A preset sets the stability
- * and the similarity, and keeps the model. Custom shows each of them. The
- * service and the list of voices live on `/voice`, which has the room.
+ * Speed comes first, because almost every voice has it. An ElevenLabs voice
+ * then shows its model, and three presets and Custom. A preset sets the
+ * stability and the similarity, and keeps the model. Custom shows each of
+ * them. The Dialogue voice has two Eleven v3 models and no speed, so it shows
+ * its models and the three presets, which are the three stability modes of
+ * Eleven v3.
+ * The service and the list of voices live on `/voice`, which has the room.
  */
 export function SpeechSettings() {
   const [settings, setSettings] = useState<Speech>(speechSettings);
@@ -60,8 +66,15 @@ export function SpeechSettings() {
       .catch(() => setConnected(false));
   }, []);
 
+  const dialogue = settings.provider === "dialogue";
   const cloud = settings.provider === "elevenlabs" && connected === true;
-  const preset = custom ? "custom" : expressionOf(settings);
+  const expressive = cloud || (dialogue && connected === true);
+  // The Dialogue voice ignores the saved model and always uses Eleven v3.
+  const soundModel = dialogue ? DIALOGUE_MODEL : settings.modelId;
+  const preset =
+    custom && !dialogue
+      ? "custom"
+      : expressionOf({ ...settings, modelId: soundModel });
 
   return (
     <div className="space-y-5 p-4">
@@ -69,16 +82,18 @@ export function SpeechSettings() {
         How your voice sounds in every space. A change is kept as you make it.
       </p>
 
-      <Range
-        id="speed"
-        label="Speed"
-        low="Slower"
-        high="Faster"
-        min={SPEED.min}
-        max={SPEED.max}
-        value={settings.speed}
-        onChange={(speed) => change({ speed })}
-      />
+      {dialogue ? null : (
+        <Range
+          id="speed"
+          label="Speed"
+          low="Slower"
+          high="Faster"
+          min={SPEED.min}
+          max={SPEED.max}
+          value={settings.speed}
+          onChange={(speed) => change({ speed })}
+        />
+      )}
 
       {cloud ? (
         <Group title="Voice model">
@@ -99,7 +114,19 @@ export function SpeechSettings() {
         </Group>
       ) : null}
 
-      {cloud ? (
+      {dialogue && expressive ? (
+        <Group title="Voice model">
+          <PickList
+            rows={DIALOGUE_MODELS.map((model) => ({ ...model }))}
+            columns={1}
+            value={dialogueModelFrom(settings.dialogueModelId)}
+            onPick={(dialogueModelId) => change({ dialogueModelId })}
+            label="Search models"
+          />
+        </Group>
+      ) : null}
+
+      {expressive ? (
         <Group title="Expression">
           <div className="flex flex-wrap gap-2">
             {EXPRESSIONS.map(({ key, label }) => (
@@ -108,15 +135,17 @@ export function SpeechSettings() {
                 on={preset === key}
                 onClick={() => {
                   setCustom(false);
-                  change(expressionSound(key, settings.modelId));
+                  change(expressionSound(key, soundModel));
                 }}
               >
                 {label}
               </Chip>
             ))}
-            <Chip on={preset === "custom"} onClick={() => setCustom(true)}>
-              Custom
-            </Chip>
+            {dialogue ? null : (
+              <Chip on={preset === "custom"} onClick={() => setCustom(true)}>
+                Custom
+              </Chip>
+            )}
           </div>
 
           {preset === "custom" ? (
@@ -143,7 +172,7 @@ export function SpeechSettings() {
           setCustom(false);
           change({
             modelId: DEFAULT_SPEECH.modelId,
-            ...expressionSound("natural"),
+            ...expressionSound("natural", dialogue ? DIALOGUE_MODEL : undefined),
             speed: DEFAULT_SPEECH.speed,
           });
         }}

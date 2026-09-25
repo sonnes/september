@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { guardUnsavedChanges, readTalkDraft, saveTalkDraft } from "@platform/services/os";
+import {
+  guardUnsavedChanges,
+  readTalkDraft,
+  readTalkMood,
+  saveTalkDraft,
+  saveTalkMood,
+} from "@platform/services/os";
+import type { MoodKey } from "@september/core/rules/moods";
 import { useNavigate } from "@tanstack/react-router";
 import {
   ChevronLeft,
@@ -24,6 +31,7 @@ import {
   ScreenHeader,
 } from "@september/app-ui/blocks/screen";
 import { PanelRail } from "@september/app-ui/blocks/space-panel";
+import { TaggedText } from "@september/app-ui/blocks/suggestions";
 import { pinnedPhrase } from "@september/core/rules/phrases";
 import { documentTitle } from "@september/core/rules/titles";
 import { useSyncPhrases } from "@platform/services/phrase-sync";
@@ -88,6 +96,16 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
     if (!draftSave.isPending && !draftSave.isError) return;
     return guardUnsavedChanges();
   }, [draftSave.isPending, draftSave.isError]);
+  // The mood stays with the space until the user presses its key again.
+  const savedMood = useQuery({
+    queryKey: ["talk-mood", space.id],
+    queryFn: () => readTalkMood(space.id),
+  });
+  const mood = savedMood.data ?? null;
+  const chooseMood = (next: MoodKey | null) => {
+    client.setQueryData(["talk-mood", space.id], next);
+    void saveTalkMood(space.id, next);
+  };
   const keysTyped = useRef(0);
   const [pageInput, setPageInput] = useState(0);
 
@@ -140,7 +158,7 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
 
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 p-2 md:p-4">
-        <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">
+        <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col">
           {error ? <Problem error={error} /> : null}
 
           {pageCount > 1 ? (
@@ -224,6 +242,8 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
             onPin={keep}
             pending={send.isPending}
             note={fallback ?? undefined}
+            mood={mood}
+            onMood={chooseMood}
           />
         </div>
 
@@ -266,7 +286,9 @@ function Bubble({ message }: { message: Message }) {
         ) : (
           <Volume2 className="mt-1 size-4 shrink-0 opacity-60" aria-hidden />
         )}
-        <p className="text-base leading-snug">{message.text}</p>
+        <p className="text-base leading-snug">
+          <TaggedText text={message.text} />
+        </p>
       </button>
     </div>
   );

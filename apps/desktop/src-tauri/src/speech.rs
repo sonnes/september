@@ -26,6 +26,9 @@ pub struct SpeechSettings {
     pub provider: String,
     pub voice_id: Option<String>,
     pub model_id: String,
+    /// The model of the Dialogue voice. An older setting does not have it.
+    #[serde(default)]
+    pub dialogue_model_id: Option<String>,
     pub stability: f64,
     pub similarity: f64,
     pub speed: f64,
@@ -42,11 +45,17 @@ pub fn normalize(text: &str) -> String {
 /// The name of the file that holds this sentence in this voice.
 pub fn file_name(settings: &SpeechSettings, text: &str) -> String {
     // Three decimal places, so 0.5 and 0.50 give one name.
+    // The Dialogue voice ignores the saved model and names its own.
+    let model = if settings.provider == DIALOGUE_PROVIDER {
+        dialogue_model(settings)
+    } else {
+        settings.model_id.as_str()
+    };
     let line = format!(
         "{}|{}|{}|{:.3}|{:.3}|{:.3}|{}",
         settings.provider,
         settings.voice_id.as_deref().unwrap_or(""),
-        settings.model_id,
+        model,
         settings.stability,
         settings.similarity,
         settings.speed,
@@ -95,6 +104,81 @@ pub const STREAM_SAMPLE_RATE: u32 = 24_000;
 /// The ElevenLabs models that the voice socket does not accept.
 const FILE_ONLY_MODELS: [&str; 1] = ["eleven_v3"];
 
+/// The provider name of the ElevenLabs Dialogue voice, as the WebView sends it.
+pub const DIALOGUE_PROVIDER: &str = "dialogue";
+/// The first model of the Dialogue voice.
+pub const DIALOGUE_MODEL: &str = "eleven_v3";
+/// The realtime model of the Dialogue voice. It has only the dialogue socket.
+pub const CONVERSATIONAL_MODEL: &str = "eleven_v3_conversational";
+
+/// The model of the Dialogue voice, or Eleven v3 for a missing or other model.
+/// The same rule is `dialogueModelFrom` in `packages/core/rules/voice.ts`.
+pub fn dialogue_model(settings: &SpeechSettings) -> &str {
+    match settings.dialogue_model_id.as_deref() {
+        Some(model @ (DIALOGUE_MODEL | CONVERSATIONAL_MODEL)) => model,
+        _ => DIALOGUE_MODEL,
+    }
+}
+/// ElevenLabs keeps a dialogue request reliable up to this many characters.
+const DIALOGUE_LIMIT: usize = 2000;
+
+/// The Eleven v3 stability mode nearest to `stability`: 1.0, 0.5, or 0.0.
+pub fn v3_stability(stability: f64) -> f64 {
+    [1.0, 0.5, 0.0]
+        .into_iter()
+        .min_by(|a: &f64, b: &f64| (a - stability).abs().total_cmp(&(b - stability).abs()))
+        .unwrap_or(0.5)
+}
+
+/// The text in parts that one dialogue request each can hold.
+///
+/// A part ends at a sentence end. A sentence longer than the limit ends at
+/// the last space before the limit, or at the limit when it has no space.
+/// The same rule is `dialogueParts` in `packages/core/rules/voice.ts`.
+pub fn dialogue_parts(text: &str, limit: usize) -> Vec<String> {
+    let mut sentences = Vec::new();
+    let mut current = String::new();
+    let mut chars = text.trim().chars().peekable();
+    while let Some(character) = chars.next() {
+        current.push(character);
+        let ends =
+            matches!(character, '.' | '!' | '?') && !matches!(chars.peek(), Some('.' | '!' | '?'));
+        if ends {
+            sentences.push(std::mem::take(&mut current));
+        }
+    }
+    sentences.push(current);
+
+    let mut pieces = Vec::new();
+    for sentence in sentences {
+        let mut rest = sentence.trim().to_owned();
+        while rest.chars().count() > limit {
+            let head: String = rest.chars().take(limit).collect();
+            let cut = match head.rfind(' ') {
+                Some(space) if space > 0 => space,
+                _ => head.len(),
+            };
+            pieces.push(rest[..cut].trim().to_owned());
+            rest = rest[cut..].trim().to_owned();
+        }
+        if !rest.is_empty() {
+            pieces.push(rest);
+        }
+    }
+
+    let mut parts: Vec<String> = Vec::new();
+    for piece in pieces {
+        match parts.last_mut() {
+            Some(last) if last.chars().count() + 1 + piece.chars().count() <= limit => {
+                last.push(' ');
+                last.push_str(&piece);
+            }
+            _ => parts.push(piece),
+        }
+    }
+    parts
+}
+
 /// How a sentence was heard.
 #[derive(Debug)]
 pub enum Streamed {
@@ -140,7 +224,8 @@ pub async fn stream(
         }
     }
 
-    if FILE_ONLY_MODELS.contains(&settings.model_id.as_str()) {
+    let dialogue = settings.provider == DIALOGUE_PROVIDER;
+    if !dialogue && FILE_ONLY_MODELS.contains(&settings.model_id.as_str()) {
         let (path, from_cache) = synthesize(directory, settings, text, key, providers)
             .await
             .map_err(not_started)?;
@@ -151,17 +236,42 @@ pub async fn stream(
     let began = Instant::now();
     let mut first_audio = None;
     let mut samples = Vec::new();
-    let spoken = providers
-        .speak_stream(key, settings, &normalize(text), |chunk| {
-            first_audio.get_or_insert_with(|| began.elapsed());
-            samples.extend_from_slice(chunk);
-            on_samples(chunk);
-        })
-        .await;
+    let mut heard = |chunk: &[i16]| {
+        first_audio.get_or_insert_with(|| began.elapsed());
+        samples.extend_from_slice(chunk);
+        on_samples(chunk);
+    };
+    let spoken = if dialogue && dialogue_model(settings) == CONVERSATIONAL_MODEL {
+        let parts = dialogue_parts(&normalize(text), DIALOGUE_LIMIT);
+        providers
+            .speak_dialogue_socket(key, settings, &parts, &mut heard)
+            .await
+    } else if dialogue {
+        let mut spoken = Ok(());
+        for part in dialogue_parts(&normalize(text), DIALOGUE_LIMIT) {
+            spoken = providers
+                .speak_dialogue_stream(key, settings, &part, &mut heard)
+                .await;
+            if spoken.is_err() {
+                break;
+            }
+        }
+        spoken
+    } else {
+        providers
+            .speak_stream(key, settings, &normalize(text), &mut heard)
+            .await
+    };
     if let Err(error) = spoken {
         return Err(StreamError {
             started: !samples.is_empty(),
             message: error.to_string(),
+        });
+    }
+    if samples.is_empty() {
+        return Err(StreamError {
+            started: false,
+            message: "ElevenLabs sent no sound.".into(),
         });
     }
 
@@ -204,7 +314,7 @@ fn keep_wav(path: &Path, samples: &[i16]) -> std::io::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::{file_name, normalize, synthesize, SpeechSettings};
+    use super::{dialogue_parts, file_name, normalize, synthesize, v3_stability, SpeechSettings};
     use crate::providers::Providers;
 
     fn settings() -> SpeechSettings {
@@ -212,6 +322,7 @@ mod tests {
             provider: "elevenlabs".into(),
             voice_id: Some("voice-1".into()),
             model_id: "eleven_turbo_v2_5".into(),
+            dialogue_model_id: None,
             stability: 0.5,
             similarity: 0.75,
             speed: 1.0,
@@ -321,5 +432,41 @@ mod tests {
         assert!(stem
             .chars()
             .all(|c| c.is_ascii_hexdigit() && !c.is_uppercase()));
+    }
+
+    #[test]
+    fn a_short_text_is_one_dialogue_part() {
+        assert_eq!(
+            dialogue_parts("Hello there. How are you?", 2000),
+            ["Hello there. How are you?"]
+        );
+    }
+
+    #[test]
+    fn a_long_text_is_cut_at_sentence_ends() {
+        assert_eq!(
+            dialogue_parts("One two three. Four five six. Seven eight nine.", 30),
+            ["One two three. Four five six.", "Seven eight nine."]
+        );
+    }
+
+    #[test]
+    fn a_sentence_longer_than_the_limit_is_cut_at_the_last_space() {
+        assert_eq!(
+            dialogue_parts("alpha beta gamma delta", 12),
+            ["alpha beta", "gamma delta"]
+        );
+    }
+
+    #[test]
+    fn an_empty_text_has_no_dialogue_parts() {
+        assert!(dialogue_parts("   ", 2000).is_empty());
+    }
+
+    #[test]
+    fn a_stability_snaps_to_the_nearest_eleven_v3_mode() {
+        assert_eq!(v3_stability(0.1), 0.0);
+        assert_eq!(v3_stability(0.35), 0.5);
+        assert_eq!(v3_stability(0.8), 1.0);
     }
 }

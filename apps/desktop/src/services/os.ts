@@ -1,4 +1,6 @@
 import { modelSettingsFrom } from "@september/core/rules/model-config";
+import { fileSound } from "@september/core/rules/audio-tags";
+import { moodFrom, type MoodKey } from "@september/core/rules/moods";
 import { convertFileSrc, invoke, isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-shell";
@@ -161,9 +163,9 @@ export async function saveSpeech(settings: SpeechSettings): Promise<void> {
 }
 
 /** The file that holds one sentence. Rust names it, and never sends a key. */
-export const synthesizeSpeech = (text: string, settings: SpeechSettings) =>
+export const synthesizeSpeech = (words: string, chosen: SpeechSettings) =>
   invoke<{ path: string; from_cache: boolean }>("speech_synthesize", {
-    request: { text, settings },
+    request: fileSound(words, chosen),
   });
 
 /** Speaks through the native process, where the process tap can hear it. */
@@ -290,6 +292,15 @@ export async function readTalkDraft(spaceId: string): Promise<string> {
 
 export async function saveTalkDraft(spaceId: string, words: string): Promise<void> {
   await invoke("setting_put", { request: { key: `talk-draft:${spaceId}`, value: words } });
+}
+
+/** The mood of a Talk space. It stays until the user presses its key again. */
+export async function readTalkMood(spaceId: string): Promise<MoodKey | null> {
+  return moodFrom(await invoke<string | null>("setting_get", { request: { key: `talk-mood:${spaceId}` } }));
+}
+
+export async function saveTalkMood(spaceId: string, mood: MoodKey | null): Promise<void> {
+  await invoke("setting_put", { request: { key: `talk-mood:${spaceId}`, value: mood } });
 }
 
 export function currentPanel(): PanelState {
