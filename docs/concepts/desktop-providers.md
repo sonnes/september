@@ -32,7 +32,7 @@ needs no account and no network. A broken key can never stop speech.
 
 OpenRouter authorization and key exchange happen in Rust through PKCE and a
 temporary loopback callback. Its key never enters the WebView. An ElevenLabs
-key crosses from its input field to Rust once and never comes back. `src-tauri/src/providers.rs` owns the Keychain and the
+key crosses from its input field to Rust once and never comes back. Rust also opens the ElevenLabs voice socket of Speak with this key. See [streaming voice](streaming-voice.md). `src-tauri/src/providers.rs` owns the Keychain and the
 network. `src/services/os.ts` owns the only calls from React.
 
 The WebView writes with a typed model client, and a typed model client wants
@@ -101,10 +101,10 @@ list of 44px rows in two columns, not a dropdown, because a dropdown closes
 when a dwell moves away from it. The 320px card of the space rail asks for one
 column, with `columns={1}`.
 
-The ElevenLabs model list appears twice. The key screen keeps the model beside
-the key that lists it, and the Voice tab of the space rail asks again, where a
-user hears the answer without leaving the conversation. Both write the one
-`speech` setting. The voice list appears once, on `/voice`, beside the service:
+The ElevenLabs model list appears once, under Custom in the Voice tab of the
+space rail. A user hears the answer there without leaving the conversation. It
+lists Flash v2.5, Multilingual v2, and Eleven v3, and it writes the `speech`
+setting. The voice list appears once, on `/voice`, beside the service:
 a hundred rows, each with a sample to hear, do not fit a 320px card.
 
 **Automatic** is the first row of the picker, and the default. It names no
@@ -112,9 +112,9 @@ model. The request then carries the free list of the app, and OpenRouter uses
 the first model that answers. One busy model is therefore not one lost
 sentence. A named model replaces that list, and the request asks for it alone.
 
-The first picker writes the default model settings. Every text-generation job
-uses these settings. A second picker can write separate Suggestions settings.
-If the separate value is not null, Suggestions use it.
+The Agent and phrases list writes the default model settings. The Suggestions
+list writes separate Suggestions settings. If the separate value is not null,
+Suggestions use it. Both lists are on AI Assistance, not on the key screen.
 
 ## The voice list holds the voices of the account
 
@@ -127,8 +127,11 @@ app asks the same way, so the two apps show one list.
 | `voice_type` | `non-default` | The stock voices are not the voices of this user. |
 | `page_size`  | `100`         | A page gives 10 without it.                       |
 
-Rust sorts the list by category, in the order of the web app: `cloned`,
-`professional`, `premade`, `similar`. The category does not reach the screen.
+Rust sorts the list by category: `cloned`, `professional`, `premade`,
+`similar`. The category and `is_owner` reach the screen. `voiceRows` puts a voice
+with `is_owner: true` in **Yours**, a `premade` voice in **ElevenLabs voices**,
+and every other voice in **From the library**. A professional voice from the
+library has `is_owner: false`, so the category alone cannot say whose it is.
 
 The web app also searches the public voice library, through
 `/v1/shared-voices`. The desktop app does not port that search. Voice cloning

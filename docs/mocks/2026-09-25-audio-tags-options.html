@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>September — Mood and audio tags in Talk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Lexend:wght@700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --indigo-700:#4338ca; --indigo-600:#4f46e5; --indigo-500:#6366f1; --indigo-400:#818cf8;
+    --indigo-300:#a5b4fc; --indigo-200:#c7d2fe; --indigo-100:#e0e7ff; --indigo-50:#eef2ff;
+    --zinc-900:#18181b; --zinc-800:#27272a; --zinc-700:#3f3f46; --zinc-600:#52525b;
+    --zinc-500:#71717a; --zinc-400:#a1a1aa; --zinc-300:#d4d4d8; --zinc-200:#e4e4e7; --zinc-100:#f4f4f5; --zinc-50:#fafafa;
+    --amber-50:#fffbeb; --amber-200:#fde68a; --amber-800:#92400e;
+    --em-50:#ecfdf5; --em-200:#a7f3d0; --em-700:#047857;
+    --rose-50:#fff1f2; --rose-200:#fecdd3; --rose-700:#be123c;
+    --chart-1:#f0703a; --chart-2:#0f9488;
+    --r-control:12px; --r-chip:14px; --r-surface:20px;
+    --shadow:0 1px 2px rgba(24,24,27,.06), 0 1px 3px rgba(24,24,27,.04);
+  }
+  * { box-sizing:border-box; margin:0; }
+  body {
+    font-family:"Noto Sans", Helvetica, sans-serif; background:var(--zinc-100); color:var(--zinc-900);
+    -webkit-font-smoothing:antialiased; padding:48px 24px 120px; font-size:14px; line-height:1.5;
+  }
+  .page { max-width:1320px; margin:0 auto; }
+  .eyebrow { font-size:14px; font-weight:500; color:var(--indigo-600); }
+  h1 { font-size:32px; font-weight:700; letter-spacing:-.02em; margin-top:6px; }
+  .lede { font-size:15px; color:var(--zinc-500); margin-top:10px; max-width:82ch; line-height:1.7; }
+  .toc { margin-top:18px; display:flex; flex-wrap:wrap; gap:8px; }
+  .toc a { font-size:13px; font-weight:500; color:var(--indigo-700); background:#fff; border:1px solid var(--zinc-200); border-radius:999px; padding:6px 12px; text-decoration:none; }
+
+  section { margin-top:56px; scroll-margin-top:20px; }
+  section > h2 { font-size:22px; font-weight:700; letter-spacing:-.01em; }
+  section > .sub { font-size:14px; color:var(--zinc-500); margin-top:6px; max-width:82ch; line-height:1.7; }
+  .rec { display:inline-block; font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--indigo-700); background:var(--indigo-50); border:1px solid var(--indigo-200); border-radius:999px; padding:2px 8px; margin-left:8px; vertical-align:4px; }
+
+  .option { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:28px; align-items:start; margin-top:18px; }
+  @media (max-width:1100px) { .option { grid-template-columns:1fr; } }
+  .side { display:grid; gap:12px; position:sticky; top:20px; }
+  .note { background:#fff; border:1px solid var(--zinc-200); border-radius:var(--r-chip); box-shadow:var(--shadow); padding:14px 16px; }
+  .note h4 { font-size:13.5px; font-weight:700; }
+  .note p { font-size:13px; color:var(--zinc-600); margin-top:4px; line-height:1.6; }
+  .note code, .panel code, td code { font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; background:var(--zinc-100); padding:1px 5px; border-radius:5px; }
+  .note.q { border-color:var(--amber-200); background:var(--amber-50); }
+  .note.q h4, .note.q p { color:var(--amber-800); }
+
+  .verdict { display:grid; gap:8px; }
+  .verdict .row { display:grid; grid-template-columns:44px minmax(0,1fr); gap:10px; font-size:13px; line-height:1.6; color:var(--zinc-700); }
+  .verdict .lbl { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding-top:2px; }
+  .verdict .lbl.pro { color:var(--em-700); }
+  .verdict .lbl.con { color:var(--rose-700); }
+
+  /* ---- app frame ---- */
+  .frame { background:var(--indigo-500); border-radius:var(--r-surface); padding:8px; display:flex; gap:8px; }
+  .rail { width:44px; flex:none; display:flex; flex-direction:column; align-items:center; padding:8px 0; gap:16px; }
+  .rail .key { width:30px; height:30px; border-radius:8px; background:#fff; color:var(--indigo-600); font-family:Lexend, sans-serif; font-weight:700; font-size:10px; display:grid; place-items:center; }
+  .rail .dot { width:20px; height:20px; border-radius:6px; background:rgba(255,255,255,.35); }
+  .rail .dot.on { background:var(--indigo-700); outline:6px solid var(--indigo-700); }
+  .inset { flex:1; min-width:0; background:#fff; border-radius:14px; box-shadow:var(--shadow); display:flex; flex-direction:column; }
+  .hdr { height:56px; border-bottom:1px solid var(--zinc-200); display:flex; align-items:center; padding:0 18px; font-weight:500; font-size:14px; gap:12px; }
+  .hdr .sp { flex:1; }
+  .seg { display:inline-flex; border:1px solid var(--zinc-300); border-radius:999px; padding:3px; background:var(--zinc-50); font-size:12px; }
+  .seg button { border:0; background:none; font:inherit; font-weight:500; color:var(--zinc-600); padding:6px 12px; border-radius:999px; cursor:pointer; min-height:32px; }
+  .seg button.on { background:#fff; color:var(--zinc-900); box-shadow:var(--shadow); }
+  .mocklbl { font-size:11px; font-weight:600; color:var(--zinc-400); text-transform:uppercase; letter-spacing:.06em; }
+  .rpanel { width:44px; flex:none; background:#fff; border-radius:14px; display:flex; flex-direction:column; align-items:center; padding:14px 0; gap:18px; color:var(--zinc-500); }
+
+  .stage { padding:20px 24px 16px; display:flex; flex-direction:column; gap:14px; flex:1; }
+  .bubbles { display:flex; flex-direction:column; gap:10px; }
+  .bubble { max-width:72%; padding:12px 16px; border-radius:var(--r-surface); font-size:16px; line-height:1.5; }
+  .bubble.them { align-self:flex-start; background:var(--zinc-100); color:var(--zinc-700); }
+  .bubble.them small { display:block; font-size:12px; color:var(--zinc-500); font-weight:500; margin-bottom:2px; }
+  .bubble.me { align-self:flex-end; background:var(--indigo-50); border:1px solid var(--indigo-100); display:flex; gap:10px; align-items:flex-start; }
+  .bubble.me .replay { width:28px; height:28px; flex:none; border-radius:8px; display:grid; place-items:center; color:var(--indigo-600); margin-top:-2px; }
+
+  .console { background:var(--zinc-50); border-radius:var(--r-surface); padding:14px; display:flex; flex-direction:column; gap:10px; }
+  .stripe { display:flex; align-items:center; gap:8px; flex-wrap:nowrap; }
+  .src { width:16px; flex:none; display:grid; place-items:center; color:var(--zinc-400); }
+  .tile { min-height:48px; padding:0 16px; border-radius:var(--r-chip); border:1px solid var(--zinc-200); background:#fff; font-size:18px; font-weight:500; display:inline-flex; align-items:center; cursor:pointer; }
+  .tile.hist { border-color:rgba(15,148,136,.45); }
+  .tile.word { border-color:rgba(240,112,58,.55); }
+  .tile.p { font-weight:400; padding:0 10px; }
+  .tile.tagtile { gap:8px; background:var(--indigo-50); border-color:var(--indigo-200); color:var(--indigo-700); font-size:15px; }
+  .endkey { min-height:48px; width:48px; border-radius:var(--r-control); background:var(--indigo-600); color:#fff; display:grid; place-items:center; flex:none; }
+  .words { display:flex; gap:6px; flex-wrap:wrap; }
+
+  .composer { background:#fff; border:1.5px solid var(--indigo-300); border-radius:var(--r-surface); padding:14px 16px 12px; box-shadow:0 0 0 3px rgba(99,102,241,.08); }
+  .composer .text { font-size:20px; line-height:1.7; min-height:34px; }
+  .composer .caret { display:inline-block; width:2px; height:24px; background:var(--indigo-600); vertical-align:-5px; margin-left:1px; animation:blink 1.1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+  @media (prefers-reduced-motion: reduce) { .composer .caret { animation:none; } }
+  .ph { color:var(--zinc-300); }
+  .tchip { display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 10px; margin:0 3px; border-radius:999px; background:var(--indigo-50); border:1px solid var(--indigo-200); color:var(--indigo-700); font-size:15px; font-weight:500; vertical-align:2px; line-height:1; }
+  .tchip.sm { height:24px; font-size:13px; padding:0 8px; gap:5px; margin:0 4px 0 0; vertical-align:1px; }
+  .tchip svg { width:14px; height:14px; }
+  .toolbar { display:flex; align-items:center; gap:8px; margin-top:10px; }
+  .toolbar .sp { flex:1; }
+  .ib { width:44px; height:44px; border-radius:var(--r-control); border:1px solid var(--zinc-200); background:#fff; display:grid; place-items:center; color:var(--zinc-600); cursor:pointer; }
+  .out { white-space:nowrap; flex:none; height:44px; padding:0 14px; border-radius:999px; border:1px solid var(--zinc-200); display:inline-flex; align-items:center; gap:8px; font-weight:500; background:#fff; }
+  .speak { height:44px; padding:0 20px; border-radius:999px; background:var(--indigo-600); color:#fff; display:inline-flex; align-items:center; gap:8px; font-weight:500; border:0; }
+  .exbtn { height:44px; padding:0 14px; border-radius:var(--r-control); border:1px solid var(--indigo-200); background:var(--indigo-50); color:var(--indigo-700); display:inline-flex; align-items:center; gap:8px; font-weight:500; }
+
+  .expr { display:grid; gap:8px; padding-top:2px; }
+  .expr .grp { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .expr .gl { font-size:12px; font-weight:600; color:var(--zinc-500); width:96px; flex:none; }
+  .xk { height:44px; padding:0 14px; border-radius:var(--r-chip); border:1px solid var(--zinc-300); background:#fff; font:inherit; font-size:14px; font-weight:500; color:var(--zinc-800); display:inline-flex; align-items:center; gap:8px; cursor:pointer; }
+  .xk svg { width:15px; height:15px; color:var(--indigo-500); }
+  .xk:hover { border-color:var(--indigo-400); background:var(--indigo-50); }
+  .xk:focus-visible, .seg button:focus-visible, .ib:focus-visible { outline:3px solid rgba(99,102,241,.5); outline-offset:1px; }
+  .xk.sugg { border-color:var(--indigo-600); box-shadow:0 0 0 3px var(--indigo-100); }
+  .xk.sugg::after { content:"Suggested"; font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--indigo-700); background:var(--indigo-100); border-radius:999px; padding:2px 6px; }
+  .off { display:none; }
+  .callout { border-radius:12px; border:1px solid var(--indigo-200); background:var(--indigo-50); padding:12px 14px; font-size:13px; color:var(--indigo-700); line-height:1.55; }
+  .callout.warn { border-color:var(--amber-200); background:var(--amber-50); color:var(--amber-800); }
+
+  .dock { border-top:1px solid var(--zinc-200); padding:12px 18px; display:flex; align-items:center; gap:12px; background:var(--zinc-50); border-radius:0 0 14px 14px; }
+  .dock .space { height:44px; padding:0 20px; border-radius:999px; background:var(--indigo-600); color:#fff; display:inline-flex; align-items:center; font-weight:500; }
+  .dock .sp { flex:1; }
+  .dock .tabs { display:flex; border:1px solid var(--zinc-200); border-radius:999px; padding:3px; background:#fff; }
+  .dock .tabs span { height:38px; padding:0 16px; display:inline-flex; align-items:center; border-radius:999px; color:var(--zinc-600); font-weight:500; }
+  .dock .tabs span.on { background:var(--indigo-600); color:#fff; }
+
+  .sends { margin-top:12px; background:var(--zinc-900); color:#e4e4e7; border-radius:var(--r-chip); padding:12px 16px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12.5px; line-height:1.8; }
+  .sends b { color:var(--indigo-300); font-weight:600; display:inline-block; width:190px; font-family:"Noto Sans", sans-serif; font-size:12px; }
+
+  /* ---- small frames ---- */
+  .plain { background:#fff; border:1px solid var(--zinc-200); border-radius:var(--r-surface); box-shadow:var(--shadow); padding:20px 22px; }
+  .sheet { margin-top:14px; border:1px solid var(--zinc-200); border-radius:var(--r-surface); box-shadow:0 12px 32px rgba(24,24,27,.12); padding:16px; display:grid; gap:12px; background:#fff; }
+  .sheet .grid { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:8px; }
+  .sheet .xk { justify-content:flex-start; }
+
+  .ppanel { width:360px; max-width:100%; border:1px solid var(--zinc-200); border-radius:14px; background:#fff; box-shadow:var(--shadow); }
+  .ppanel .tabs { display:flex; gap:6px; padding:12px; border-bottom:1px solid var(--zinc-200); }
+  .ppanel .tabs span { height:36px; padding:0 14px; border-radius:999px; display:inline-flex; align-items:center; font-weight:500; color:var(--zinc-600); }
+  .ppanel .tabs span.on { background:var(--indigo-50); color:var(--indigo-700); }
+  .ppanel .in { padding:14px; display:grid; gap:12px; }
+  .field { height:44px; border:1px solid var(--zinc-300); border-radius:var(--r-control); padding:0 12px; display:flex; align-items:center; font-size:14px; gap:4px; }
+  .mini { display:flex; flex-wrap:wrap; gap:6px; }
+  .mini .xk { height:36px; font-size:13px; padding:0 10px; }
+  .glabel { font-size:12px; font-weight:500; color:var(--zinc-500); display:flex; align-items:center; gap:6px; }
+  .prow { border:1px solid var(--zinc-200); border-radius:var(--r-control); display:flex; align-items:center; gap:10px; padding:8px 10px; min-height:52px; }
+  .prow .code { background:var(--indigo-600); color:#fff; border-radius:6px; font-size:11px; font-weight:700; padding:2px 6px; flex:none; }
+  .prow .t { flex:1; min-width:0; font-size:14px; line-height:1.5; }
+  .prow .pin { color:var(--indigo-600); flex:none; }
+
+  .card { border:1px solid var(--zinc-200); border-radius:var(--r-surface); box-shadow:var(--shadow); padding:20px 22px; background:#fff; max-width:560px; }
+  .card h3 { font-size:17px; font-weight:600; }
+  .card .q { font-size:14px; font-weight:500; margin-top:18px; }
+  .card .hint { font-size:12px; color:var(--zinc-500); margin-top:4px; line-height:1.55; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .chip { height:44px; padding:0 18px; border-radius:999px; border:1px solid var(--zinc-300); display:inline-flex; align-items:center; font-weight:500; background:#fff; }
+  .chip.on { background:var(--indigo-600); border-color:var(--indigo-600); color:#fff; }
+  .btn { height:44px; padding:0 18px; border-radius:999px; border:1px solid var(--zinc-300); display:inline-flex; align-items:center; gap:8px; font-weight:500; background:#fff; margin-top:16px; }
+
+  table.grid { width:100%; border-collapse:collapse; margin-top:16px; font-size:13.5px; background:#fff; border-radius:var(--r-surface); overflow:hidden; box-shadow:var(--shadow); }
+  table.grid th { text-align:left; font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--zinc-500); padding:14px 14px 10px; border-bottom:1px solid var(--zinc-200); }
+  table.grid td { padding:11px 14px; border-bottom:1px solid var(--zinc-100); color:var(--zinc-700); vertical-align:top; line-height:1.55; }
+  table.grid td strong { color:var(--zinc-900); font-weight:600; }
+  .k { color:var(--em-700); font-weight:600; }
+  .x { color:var(--rose-700); font-weight:600; }
+  .json { margin-top:12px; background:var(--zinc-900); color:#e4e4e7; border-radius:var(--r-chip); padding:12px 16px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12.5px; line-height:1.7; white-space:pre; overflow-x:auto; }
+  .moods { display:flex; flex:none; align-items:center; gap:2px; padding:3px; border:1px solid var(--zinc-200); border-radius:999px; background:var(--zinc-50); margin-right:4px; }
+  .mk { width:44px; height:44px; border-radius:999px; border:1px solid transparent; background:none; font-size:22px; line-height:1; display:grid; place-items:center; cursor:pointer; padding:0; }
+  .mk:hover { background:#fff; border-color:var(--zinc-300); }
+  .mk.on { border-color:var(--indigo-600); background:var(--indigo-100); box-shadow:0 0 0 2px var(--indigo-200); }
+  .mk:focus-visible, .tile:focus-visible { outline:3px solid rgba(99,102,241,.5); outline-offset:1px; }
+  button.tile, button.endkey { font-family:inherit; color:inherit; }
+  button.endkey { border:0; cursor:pointer; color:#fff; }
+  .tile.tagword { gap:8px; background:var(--indigo-50); border-color:var(--indigo-200); color:var(--indigo-700); font-size:15px; }
+  .empty { font-size:13px; color:var(--zinc-400); padding:4px 2px; }
+  .prompt { margin-top:12px; background:var(--zinc-900); color:#e4e4e7; border-radius:var(--r-chip); padding:12px 16px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12.5px; line-height:1.7; white-space:pre-wrap; }
+  .prompt .h { color:var(--indigo-300); font-family:"Noto Sans", sans-serif; font-size:12px; font-weight:600; display:block; margin-bottom:4px; }
+  td.e { font-size:22px; width:44px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-wave" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 10v3M6 6v11M10 3v18M14 8v7M18 5v13M22 10v3"/></symbol>
+  <symbol id="i-vol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+  <symbol id="i-del" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5a2 2 0 0 0-1.34.5l-6.3 5.8a1 1 0 0 0 0 1.4l6.3 5.8A2 2 0 0 0 10 19h9a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/><path d="m12 9 6 6M18 9l-6 6"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></symbol>
+  <symbol id="i-head" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></symbol>
+  <symbol id="i-enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4v7a4 4 0 0 1-4 4H4"/><path d="m9 10-5 5 5 5"/></symbol>
+  <symbol id="i-hist" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5M12 7v5l4 2"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1Z"/></symbol>
+  <symbol id="i-quote" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+</svg>
+
+<div class="page">
+  <p class="eyebrow">Mock · 2026-09-25</p>
+  <h1>Mood and audio tags in Talk</h1>
+  <p class="lede">Eleven v3 reads short directions in square brackets, such as <code>[laughs]</code> or <code>[whispers]</code>. The voice then laughs, or whispers the words after the tag. In this mock, five emoji set the mood of the conversation. The mood changes the instructions in the suggestion prompt. Tags come inside sentence suggestions and in the word row, so a tag costs one press.</p>
+  <nav class="toc">
+    <a href="#talk">1 · Talk</a>
+    <a href="#mood">2 · Mood in the prompt</a>
+    <a href="#suggest">3 · Sentence suggestions keep their tags</a>
+    <a href="#words">4 · Tags in the word row</a>
+    <a href="#transcript">5 · Transcript</a>
+    <a href="#phrases">6 · Phrases with tags</a>
+    <a href="#voice">7 · Voice settings</a>
+    <a href="#receives">8 · What the voice receives</a>
+  </nav>
+
+  <!-- ============================================================ 1 -->
+  <section id="talk">
+    <h2>1 · Talk</h2>
+    <p class="sub">The mood keys sit in the composer toolbar, left of Audio output. Sentence suggestions carry their tags, and the word row shows tags next to words. Press a mood, a tile, Undo, or Clear. The switch in the header changes the voice model.</p>
+
+    <div class="option">
+      <div>
+        <div class="frame">
+          <div class="rail"><span class="key">Sep</span><span class="dot"></span><span class="dot on"></span><span class="dot"></span><span class="dot"></span></div>
+          <div class="inset">
+            <div class="hdr">
+              <span>Family</span><span class="sp"></span>
+              <span class="mocklbl">Voice model</span>
+              <div class="seg" role="group" aria-label="Voice model">
+                <button type="button" class="on" data-model="v3">Eleven v3</button>
+                <button type="button" data-model="turbo">Turbo v2.5</button>
+                <button type="button" data-model="system">System voice</button>
+              </div>
+            </div>
+            <div class="stage">
+              <div class="bubbles">
+                <div class="bubble them"><small>Them</small>I tried to parallel park and hit the same bin twice.</div>
+              </div>
+              <div style="flex:1"></div>
+              <div class="console">
+                <div id="stripes" style="display:flex; flex-direction:column; gap:8px"></div>
+                <div class="words" id="words"></div>
+                <div class="composer">
+                  <div class="text" id="draft"></div>
+                  <div class="toolbar">
+                    <button type="button" class="ib" id="undo" aria-label="Undo"><svg width="18" height="18"><use href="#i-undo"/></svg></button>
+                    <button type="button" class="ib" aria-label="Delete last word"><svg width="18" height="18"><use href="#i-del"/></svg></button>
+                    <button type="button" class="ib" id="clear" aria-label="Clear"><svg width="18" height="18"><use href="#i-trash"/></svg></button>
+                    <span class="sp"></span>
+                    <div class="moods" id="moods" role="group" aria-label="Mood">
+                      <button type="button" class="mk" data-mood="warm" aria-pressed="false" aria-label="Mood: Warm" title="Warm">😊</button>
+                      <button type="button" class="mk" data-mood="playful" aria-pressed="false" aria-label="Mood: Playful" title="Playful">😄</button>
+                      <button type="button" class="mk" data-mood="low" aria-pressed="false" aria-label="Mood: Low" title="Low">😔</button>
+                      <button type="button" class="mk" data-mood="frustrated" aria-pressed="false" aria-label="Mood: Frustrated" title="Frustrated">😤</button>
+                      <button type="button" class="mk" data-mood="angry" aria-pressed="false" aria-label="Mood: Angry" title="Angry">😠</button>
+                    </div>
+                    <span class="out"><svg width="18" height="18"><use href="#i-head"/></svg>Audio output</span>
+                    <button type="button" class="speak"><svg width="18" height="18"><use href="#i-vol"/></svg>Speak</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="dock"><span class="space">Family</span><span class="sp"></span><div class="tabs"><span class="on">Talk</span><span>Notes</span><span>Agent</span></div></div>
+          </div>
+          <div class="rpanel"><svg width="20" height="20"><use href="#i-quote"/></svg><svg width="20" height="20"><use href="#i-vol"/></svg></div>
+        </div>
+        <div class="prompt" id="prompt"></div>
+        <div class="sends" id="sends"></div>
+      </div>
+
+      <aside class="side">
+        <div class="note"><h4>Mood</h4><p>Five emoji keys in the toolbar set the mood of the conversation. Each key has the mood name as its label for screen readers. One press selects a mood. A second press on the same key clears it. The mood stays in the space until the user changes it.</p></div>
+        <div class="note"><h4>Sentence suggestions</h4><p>The model writes tags into the suggestion text. Each tag shows as a tile in the row. A press on a tile takes the words and the tags up to that tile.</p></div>
+        <div class="note"><h4>Word row</h4><p>The word row shows up to two tag tiles after the words. The tags come from the mood, or from tags that the user sent before. A press adds the tag at the caret.</p></div>
+        <div class="note"><h4>Other voice models</h4><p>If the voice model is not Eleven v3, the mood still changes the wording. The prompt then asks for no tags, and the word row shows no tag tiles.</p></div>
+        <div class="note"><h4>Build note</h4><p>The composer is a plain <code>textarea</code> today. Chips need a highlight layer behind the textarea. The draft stays one string, with each tag in square brackets.</p></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============================================================ 2 -->
+  <section id="mood">
+    <h2>2 · Mood in the prompt</h2>
+    <p class="sub">Each mood adds one block to the user context of the suggestion prompt. The block gives the tone and some example tags. The model can choose any other tag that fits. Without a mood, the prompt has no block.</p>
+    <div class="option">
+      <div>
+        <table class="grid" style="margin-top:0">
+          <thead><tr><th></th><th>Mood</th><th>Instructions in the prompt</th><th>Example tags</th></tr></thead>
+          <tbody id="moodtable"></tbody>
+        </table>
+        <div class="prompt"><span class="h">Tag rules, added to OPENING_PROMPT and COMPLETION_PROMPT for Eleven v3 only</span>You can add audio tags in square brackets, such as [laughs] or [whispers].
+Choose any tag that fits the words. The tags in the mood block are examples only.
+A tag must describe the voice. Do not use tags for music or sound effects.
+Put a tag just before or just after the words that it changes.
+Give a tag only to a suggestion that needs one.
+Do not change the words that the user typed.</div>
+      </div>
+      <aside class="side">
+        <div class="note"><h4>Where the block goes</h4><p><code>buildSuggestionPrompt</code> puts the block in <code>&lt;user_context&gt;</code>, after the speaking style. The speaking style stays for every conversation. The mood is for this conversation.</p></div>
+        <div class="note"><h4>Requests</h4><p>A change of mood sends a new suggestion request at once. It does not wait for the next word.</p></div>
+        <div class="note"><h4>Phrases</h4><p>The phrase prompt does not get the mood. A phrase stays in a space longer than one mood.</p></div>
+        <div class="note q"><h4>Open question</h4><p>Must the mood clear after a time without messages, for example two hours? If not, the mood stays until the user presses it again.</p></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============================================================ 3 -->
+  <section id="suggest">
+    <h2>3 · Sentence suggestions keep their tags</h2>
+    <p class="sub">The model writes tags inside the suggestion text. The response format stays a list of strings, so <code>itemsFrom</code> does not change.</p>
+    <div class="option">
+      <div class="plain">
+        <div class="composer" style="margin-bottom:12px"><div class="text">That is<span class="caret"></span></div></div>
+        <div class="console">
+          <div class="stripe"><span class="src"></span>
+            <span class="tile tagtile"><svg width="15" height="15"><use href="#i-wave"/></svg>laughs</span>
+            <span class="tile">the</span><span class="tile">funniest</span><span class="tile">thing</span><span class="tile">all</span><span class="tile">week</span><span class="tile p">.</span>
+            <span class="endkey"><svg width="18" height="18"><use href="#i-enter"/></svg></span>
+          </div>
+          <div class="stripe"><span class="src"></span>
+            <span class="tile">a</span><span class="tile">new</span><span class="tile">parking</span><span class="tile">record</span><span class="tile p">.</span>
+            <span class="tile tagtile"><svg width="15" height="15"><use href="#i-wave"/></svg>giggles</span>
+            <span class="endkey"><svg width="18" height="18"><use href="#i-enter"/></svg></span>
+          </div>
+          <div class="stripe"><span class="src"><svg width="16" height="16"><use href="#i-hist"/></svg></span>
+            <span class="tile hist">so</span><span class="tile hist">typical</span><span class="tile p hist">!</span>
+            <span class="tile tagtile"><svg width="15" height="15"><use href="#i-wave"/></svg>sighs</span>
+            <span class="endkey"><svg width="18" height="18"><use href="#i-enter"/></svg></span>
+          </div>
+        </div>
+        <div class="json">{"suggestions": [
+  "[laughs] That is the funniest thing all week.",
+  "That is a new parking record. [giggles]",
+  "That is why I stopped driving."
+]}</div>
+      </div>
+      <aside class="side">
+        <div class="note"><h4>Prefix match</h4><p>The app removes tags before it compares a suggestion with the typed words. A tag before the typed words does not break the match.</p></div>
+        <div class="note"><h4>A press takes the tags</h4><p>A press on a tile takes the words and the tags up to that tile. A tag before the typed words goes to the start of the draft. Undo removes the words and the tags together.</p></div>
+        <div class="note"><h4>Slices</h4><p>A tag tile does not count toward the six words of a slice.</p></div>
+        <div class="note"><h4>History rows</h4><p>A history row comes from a sent message, so it keeps the tags of that message.</p></div>
+        <div class="note"><h4>Free choice</h4><p>The model can write any tag, not only the examples of the mood. The app does not filter tags. Eleven v3 reads tags that are not in its documented list.</p></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============================================================ 4 -->
+  <section id="words">
+    <h2>4 · Tags in the word row</h2>
+    <p class="sub">The word row changes with each letter. It now shows tags as well as words, so a sound is always near the caret.</p>
+    <div class="option">
+      <div class="plain">
+        <div class="words">
+          <span class="tile word">and</span><span class="tile word">but</span><span class="tile word">really</span><span class="tile word">right</span>
+          <span class="tile tagword"><svg width="15" height="15"><use href="#i-wave"/></svg>laughs</span>
+          <span class="tile tagword"><svg width="15" height="15"><use href="#i-wave"/></svg>giggles</span>
+        </div>
+        <div class="composer" style="margin-top:10px"><div class="text">That is so funny<span class="caret"></span></div></div>
+      </div>
+      <aside class="side">
+        <div class="note"><h4>Learning</h4><p>The local word engine learns tags as tokens from sent messages. If the user often sends "funny [laughs]", the engine shows the laughs tile after "funny".</p></div>
+        <div class="note"><h4>Mood tags</h4><p>If the engine has no tag for this place, the row shows the first tags of the mood.</p></div>
+        <div class="note"><h4>Limit</h4><p>Tag tiles take at most two of the six places in the row. They always come after the words.</p></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============================================================ 5 -->
+  <section id="transcript">
+    <h2>5 · Transcript</h2>
+    <p class="sub">A spoken message keeps its tags. The bubble shows each tag as a chip, so the user can see how the message sounded.</p>
+    <div class="option">
+      <div class="plain">
+        <div class="bubbles">
+          <div class="bubble them"><small>Them</small>I tried to parallel park and hit the same bin twice.</div>
+          <div class="bubble me"><span><span class="tchip sm"><svg><use href="#i-wave"/></svg>laughs</span>That is the funniest thing all week.</span><span class="replay"><svg width="16" height="16"><use href="#i-vol"/></svg></span></div>
+          <div class="bubble them"><small>Them</small>Please do not tell Mum.</div>
+          <div class="bubble me"><span><span class="tchip sm"><svg><use href="#i-wave"/></svg>whispers</span>That is our secret, then.</span><span class="replay"><svg width="16" height="16"><use href="#i-vol"/></svg></span></div>
+        </div>
+      </div>
+      <aside class="side">
+        <div class="note"><h4>Replay</h4><p>Replay sends the same text with the same tags. The speech cache key uses that text, so a replay plays the saved audio.</p></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============================================================ 6 -->
+  <section id="phrases">
+    <h2>6 · Phrases with tags</h2>
+    <p class="sub">A saved phrase can start with a tag. A code then gives the words and the delivery in two or three letters.</p>
+    <div class="option">
+      <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start">
+        <div class="ppanel">
+          <div class="tabs"><span class="on">Phrases</span><span>Speech</span></div>
+          <div class="in">
+            <div class="field">Excuse me, I have something to say</div>
+            <span class="glabel">Tag (optional)</span>
+            <div class="mini">
+              <span class="xk"><svg><use href="#i-wave"/></svg>laughs</span><span class="xk"><svg><use href="#i-wave"/></svg>whispers</span><span class="xk" style="border-color:var(--indigo-600);background:var(--indigo-50)"><svg><use href="#i-wave"/></svg>clears throat</span><span class="xk"><svg><use href="#i-wave"/></svg>sighs</span><span class="xk">More</span>
+            </div>
+            <div class="prow"><span class="code">LOL</span><span class="t"><span class="tchip sm"><svg><use href="#i-wave"/></svg>laughs</span>That is hilarious</span><svg class="pin" width="16" height="16"><use href="#i-pin"/></svg></div>
+            <div class="prow"><span class="code">IST</span><span class="t"><span class="tchip sm"><svg><use href="#i-wave"/></svg>sighs</span>I am so tired today</span><svg class="pin" width="16" height="16"><use href="#i-pin"/></svg></div>
+            <div class="prow"><span class="code">CWT</span><span class="t"><span class="tchip sm"><svg><use href="#i-wave"/></svg>whispers</span>Can we talk in private?</span></div>
+            <div class="prow"><span class="code">EMI</span><span class="t"><span class="tchip sm"><svg><use href="#i-wave"/></svg>clears throat</span>Excuse me, I have something to say</span></div>
+            <div class="prow"><span class="code">TY</span><span class="t">Thank you</span><svg class="pin" width="16" height="16"><use href="#i-pin"/></svg></div>
+          </div>
+        </div>
+        <div class="plain" style="flex:1; min-width:280px">
+          <span class="glabel">Code typed in the composer</span>
+          <div class="composer" style="margin-top:8px"><div class="text">lol<span class="caret"></span></div></div>
+          <div class="stripe" style="margin-top:10px">
+            <span style="background:var(--indigo-600);color:#fff;border-radius:6px;font-size:11px;font-weight:700;padding:2px 6px">LOL</span>
+            <span class="tile tagtile"><svg width="15" height="15"><use href="#i-wave"/></svg>laughs</span>
+            <span class="tile" style="border-color:rgba(79,70,229,.7);background:rgba(79,70,229,.1)">That</span><span class="tile" style="border-color:rgba(79,70,229,.7);background:rgba(79,70,229,.1)">is</span><span class="tile" style="border-color:rgba(79,70,229,.7);background:rgba(79,70,229,.1)">hilarious</span>
+            <span class="endkey"><svg width="18" height="18"><use href="#i-enter"/></svg></span>
+          </div>
+        </div>
+      </div>
+      <aside class="side">
+        <div class="note"><h4>Codes</h4><p><code>generateCode</code> reads the words only. A tag does not change the code, so "EMI" stays "EMI".</p></div>
+        <div class="note"><h4>Model-written phrases</h4><p><code>PHRASES_SYSTEM_PROMPT</code> can add a tag to a phrase with a clear feeling. It must not add a tag to a neutral phrase, such as "Thank you".</p></div>
+        <div class="note"><h4>Storage</h4><p>The tag is part of <code>SavedPhrase.text</code>. The schema and backups do not change.</p></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============================================================ 7 -->
+  <section id="voice">
+    <h2>7 · Voice settings</h2>
+    <p class="sub">The Expression choice from the 2026-09-24 settings mock maps to the three stability steps of Eleven v3. Tags have the most effect at Natural and Expressive.</p>
+    <div class="option">
+      <div class="card">
+        <h3>Speech</h3>
+        <div class="q">Voice model</div>
+        <div class="chips"><span class="chip on">Eleven v3</span><span class="chip">Turbo v2.5</span><span class="chip">More…</span></div>
+        <p class="hint">Only Eleven v3 reads audio tags. It starts to speak later than Turbo v2.5.</p>
+        <div class="q">Expression</div>
+        <div class="chips"><span class="chip">Steady</span><span class="chip on">Natural</span><span class="chip">Expressive</span></div>
+        <p class="hint">Steady mostly ignores tags. Natural sounds closest to your voice. Expressive has the most feeling.</p>
+        <div class="callout warn" style="margin-top:12px">Expressive can add sounds that you did not ask for.</div>
+        <div class="callout" style="margin-top:10px">Tags work best with a voice clone recorded in more than one mood. Include calm, happy, and tired samples.</div>
+        <span class="btn"><svg width="18" height="18"><use href="#i-vol"/></svg>Hear it</span>
+        <p class="hint" style="margin-top:6px">Plays <code>[excited] This is how I sound today! [laughs]</code></p>
+      </div>
+      <aside class="side">
+        <div class="note"><h4>Mapping</h4><p>Steady sends stability 1.0. Natural sends 0.5. Expressive sends 0.0. ElevenLabs calls these steps Robust, Natural, and Creative.</p></div>
+        <div class="note"><h4>Voice clones</h4><p>ElevenLabs says professional voice clones are not fully optimized for v3. It recommends an instant clone for v3. The clone sheet on /voice can show the sample tip above.</p></div>
+        <div class="note q"><h4>Open question</h4><p>Is the start delay of Eleven v3 acceptable in live Talk? <code>eleven_v3_conversational</code> is faster, but the docs show it only through the Text to Dialogue WebSocket. Measure both before v3 becomes a default.</p></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============================================================ 8 -->
+  <section id="receives">
+    <h2>8 · What the voice receives</h2>
+    <p class="sub">One rule in <code>packages/core</code> decides the text for each path. Tags go to Eleven v3 only. Every other voice gets the words without tags.</p>
+    <table class="grid">
+      <thead><tr><th>Path</th><th>Eleven v3</th><th>Other ElevenLabs models</th><th>System voice</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Talk: Speak, speak key on a row, replay</strong></td><td class="k">Tags kept</td><td class="x">Tags removed</td><td class="x">Tags removed</td></tr>
+        <tr><td><strong>Fallback after an ElevenLabs error</strong></td><td colspan="2">Not applicable</td><td class="x">Tags removed</td></tr>
+        <tr><td><strong>Notes read aloud, Present, Export</strong></td><td class="k">Tags kept</td><td class="x">Tags removed</td><td class="x">Tags removed</td></tr>
+        <tr><td><strong>Mood block in the suggestion prompt</strong></td><td>Tone and example tags</td><td colspan="2">Tone only. The prompt asks for no tags.</td></tr>
+        <tr><td><strong>Word row</strong></td><td>Words and tag tiles</td><td colspan="2">Words only</td></tr>
+        <tr><td><strong>Captions from <code>synthesizeTimed</code></strong></td><td colspan="3"><code>alignmentToWords</code> already skips tags.</td></tr>
+        <tr><td><strong>Word engine and history rows</strong></td><td colspan="3">Tags kept as tokens. The engine learns them from sent messages.</td></tr>
+        <tr><td><strong>Slice word count, phrase codes</strong></td><td colspan="3">Tags do not count.</td></tr>
+        <tr><td><strong>Transcript, phrase rows, notes preview</strong></td><td colspan="3">Tags show as chips.</td></tr>
+      </tbody>
+    </table>
+  </section>
+</div>
+
+<script>
+  const MOODS = {
+    warm: { e: "😊", name: "Warm", lines: ["The user feels warm.", "Write the suggestions in a kind, warm tone."], tags: ["warmly", "happy", "chuckles"],
+      sugg: ["[warmly] That is okay, it happens to everyone.", "That is a very brave bin. [chuckles]", "That is why we love you."] },
+    playful: { e: "😄", name: "Playful", lines: ["The user feels playful.", "Write the suggestions in a playful tone.", "Light jokes are good."], tags: ["laughs", "giggles", "mischievously", "sarcastic"],
+      sugg: ["[laughs] That is the funniest thing all week.", "That is a new parking record. [giggles]", "[sarcastic] That is a real talent, honestly."] },
+    low: { e: "😔", name: "Low", lines: ["The user feels low or tired.", "Write short, quiet suggestions.", "Do not try to change the mood of the user."], tags: ["sighs", "sad", "exhales"],
+      sugg: ["[sighs] That is the kind of day I have too.", "That is a hard day.", "[exhales] That is enough for one day."] },
+    frustrated: { e: "😤", name: "Frustrated", lines: ["The user feels frustrated.", "Write direct suggestions.", "Keep them clear, not rude."], tags: ["annoyed", "frustrated sigh", "exhales sharply"],
+      sugg: ["[annoyed] That is the third time this month!", "That is why I said to take the bus. [exhales sharply]", "That is not good for the car."] },
+    angry: { e: "😠", name: "Angry", lines: ["The user feels angry.", "Write firm, strong suggestions.", "Do not use insults or swear words."], tags: ["angry", "shouting", "firmly"],
+      sugg: ["[angry] That is the last time you drive my car!", "That is NOT funny. [exhales sharply]", "[firmly] That is it, no more parking for you."] },
+  };
+  const PLAIN = { tags: ["laughs", "sighs", "whispers", "excited", "curious"],
+    sugg: ["That is so unlucky.", "[sighs] That is a lot of bins.", "[whispers] That is our secret, then."] };
+
+  let mood = "playful";
+  let model = "v3";
+  let draft = "That is ";
+  const history = [];
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const isTag = (t) => /^\[.*\]$/.test(t);
+  const isPunct = (t) => /^[.,!?]$/.test(t);
+  const tokens = (s) => s.match(/\[[^\]]+\]|[A-Za-z']+|[.,!?]/g) || [];
+  const join = (ts) => ts.reduce((a, t) => a + (a && !isPunct(t) ? " " : "") + t, "");
+  const strip = (s) => s.replace(/\[[^\]]*\]/g, "").replace(/\s+/g, " ").trim();
+  const wave = (n) => `<svg width="${n}" height="${n}"><use href="#i-wave"/></svg>`;
+  const chip = (t) => `<span class="tchip">${wave(14)}${esc(t)}</span>`;
+  const v3 = () => model === "v3";
+
+  function set(next) { history.push(draft); draft = next; render(); }
+
+  function renderDraft() {
+    $("draft").innerHTML = (draft.trim()
+      ? esc(draft).replace(/\[([^\]]*)\]/g, (_, t) => chip(t))
+      : '<span class="ph">Type a message…</span>') + '<span class="caret"></span>';
+  }
+
+  function renderStripes() {
+    const typed = strip(draft).toLowerCase();
+    const typedWords = tokens(strip(draft)).length;
+    const list = (mood ? MOODS[mood] : PLAIN).sugg
+      .map((s) => (v3() ? s : strip(s)))
+      .filter((s) => strip(s).toLowerCase().startsWith(typed) && strip(s).toLowerCase() !== typed);
+    if (!list.length) { $("stripes").innerHTML = '<p class="empty">No sentence suggestions for this draft.</p>'; return; }
+    $("stripes").innerHTML = list.map((s, row) => {
+      const ts = tokens(s);
+      const have = new Set(tokens(draft).filter(isTag));
+      let seen = 0;
+      const tiles = ts.map((t, i) => {
+        if (isTag(t)) {
+          if (seen < typedWords && have.has(t)) return "";
+          return `<button type="button" class="tile tagtile" data-row="${row}" data-i="${i}">${wave(15)}${esc(t.slice(1, -1))}</button>`;
+        }
+        seen += 1;
+        if (seen <= typedWords) return "";
+        return `<button type="button" class="tile${isPunct(t) ? " p" : ""}" data-row="${row}" data-i="${i}">${esc(t)}</button>`;
+      }).join("");
+      return `<div class="stripe" data-s="${esc(s)}"><span class="src"></span>${tiles}<button type="button" class="endkey" data-row="${row}" data-i="${ts.length - 1}" aria-label="Take this suggestion"><svg width="18" height="18"><use href="#i-enter"/></svg></button></div>`;
+    }).join("");
+  }
+
+  function renderWords() {
+    const body = strip(draft);
+    const words = !body ? ["I", "Yes", "That", "Can"]
+      : /[.!?]$/.test(body) ? ["I", "You", "But", "Oh"]
+      : ["so", "really", "and", "but"];
+    const used = new Set(tokens(draft).filter(isTag));
+    const tags = v3() ? (mood ? MOODS[mood].tags : ["laughs", "whispers"]).filter((t) => !used.has(`[${t}]`)).slice(0, 2) : [];
+    $("words").innerHTML =
+      words.map((w) => `<button type="button" class="tile word" data-word="${w}">${w}</button>`).join("") +
+      tags.map((t) => `<button type="button" class="tile tagword" data-word="[${t}]">${wave(15)}${esc(t)}</button>`).join("");
+  }
+
+  function renderPrompt() {
+    const m = mood && MOODS[mood];
+    const examples = (m ? m.tags : PLAIN.tags).join(", ");
+    let block = m ? `<mood>\n${m.lines.join("\n")}` : "No mood block.";
+    if (v3()) block += m ? `\nExample tags: ${examples}. You can use other tags.\n</mood>` : `\nExample tags: ${examples}. You can use other tags.`;
+    else if (m) block += "\n</mood>";
+    const head = m ? `Mood block for ${m.e} ${m.name}` : "No mood selected";
+    $("prompt").innerHTML = `<span class="h">${esc(head)}, ${v3() ? "Eleven v3: tag rules on" : "not Eleven v3: tag rules off"}</span>${esc(block)}`;
+  }
+
+  function renderSends() {
+    const text = draft.trim();
+    const name = { v3: "Eleven v3", turbo: "Turbo v2.5", system: "System voice" }[model];
+    $("sends").innerHTML =
+      `<div><b>${name} receives</b>${esc(JSON.stringify(v3() ? text : strip(text)))}</div>` +
+      `<div><b>Fallback system voice</b>${esc(JSON.stringify(strip(text)))}</div>`;
+  }
+
+  function render() {
+    document.querySelectorAll(".mk").forEach((b) => {
+      const on = b.dataset.mood === mood;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", String(on));
+    });
+    renderDraft(); renderStripes(); renderWords(); renderPrompt(); renderSends();
+  }
+
+  $("moods").addEventListener("click", (e) => {
+    const b = e.target.closest(".mk"); if (!b) return;
+    mood = mood === b.dataset.mood ? null : b.dataset.mood; render();
+  });
+  $("stripes").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-i]"); if (!b) return;
+    const s = b.closest(".stripe").dataset.s;
+    set(join(tokens(s).slice(0, Number(b.dataset.i) + 1)) + " ");
+  });
+  $("words").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-word]"); if (!b) return;
+    set(join([...tokens(draft), b.dataset.word]) + " ");
+  });
+  $("undo").addEventListener("click", () => { if (history.length) { draft = history.pop(); render(); } });
+  $("clear").addEventListener("click", () => set(""));
+  document.querySelectorAll("[data-model]").forEach((b) => b.addEventListener("click", () => {
+    model = b.dataset.model;
+    document.querySelectorAll("[data-model]").forEach((x) => x.classList.toggle("on", x === b));
+    render();
+  }));
+
+  $("moodtable").innerHTML = Object.values(MOODS).map((m) =>
+    `<tr><td class="e">${m.e}</td><td><strong>${m.name}</strong></td><td>${m.lines.map(esc).join(" ")}</td><td>${m.tags.map((t) => `<span class="tchip sm">${wave(12)}${esc(t)}</span>`).join(" ")}</td></tr>`
+  ).join("") + `<tr><td class="e"></td><td><strong>No mood</strong></td><td>No block.</td><td>${PLAIN.tags.map((t) => `<span class="tchip sm">${wave(12)}${esc(t)}</span>`).join(" ")}</td></tr>`;
+
+  render();
+</script>
+</body>
+</html>

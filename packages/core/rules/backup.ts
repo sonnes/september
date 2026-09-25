@@ -39,6 +39,7 @@ export const PORTABLE_SETTING_KEYS = [
 export interface BackupSetup {
   autoSuggestions: boolean;
   autoPhrases: boolean;
+  agentEnabled: boolean;
   id: string;
   name: string;
   speakingStyle: string;
@@ -333,14 +334,23 @@ function setupFrom(value: unknown): BackupSetup | null {
       row.autoPhrases === undefined
         ? true
         : booleanOf(row.autoPhrases, "automatic phrase generation"),
+    agentEnabled:
+      row.agentEnabled === undefined
+        ? true
+        : booleanOf(row.agentEnabled, "agent switch"),
     id: identifier(row.id, "setup ID"),
     name: stringOf(row.name, "setup name", { empty: false }),
     speakingStyle: stringOf(row.speakingStyle, "setup speaking style"),
     personalWords: stringOf(row.personalWords, "setup personal words"),
     mode: oneOf(row.mode, ["free", "advanced"], "setup mode"),
-    defaultModel: modelConfigFrom(row.defaultModel, "setup default model"),
+    defaultModel: modelConfigFrom(
+      row.defaultModel === undefined
+        ? { service: row.writingService, model: row.writingModel }
+        : row.defaultModel,
+      "setup default model",
+    ),
     suggestionsModel:
-      row.suggestionsModel === null
+      row.suggestionsModel === undefined || row.suggestionsModel === null
         ? null
         : modelConfigFrom(row.suggestionsModel, "setup Suggestions model"),
     voiceService: oneOf(

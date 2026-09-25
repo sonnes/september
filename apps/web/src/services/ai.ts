@@ -120,15 +120,14 @@ function priceOf(
  *
  * `response_format` carries the JSON mode that Suggestions and the space
  * description rely on. `parallel_tool_calls` holds the model to one call at a
- * time, which the agent loop requires. An empty model is removed so that the
- * service picks, exactly as it did before.
+ * time, which the agent loop requires. The client supplies the selected model,
+ * including `openrouter/free` for Automatic requests.
  */
 function shapePayload(
   payload: unknown,
-  request: { model: string; responseFormat?: GenerateRequest['response_format']; tools?: boolean }
+  request: { responseFormat?: GenerateRequest['response_format']; tools?: boolean }
 ): unknown {
   const body = { ...(payload as Record<string, unknown>) };
-  if (!request.model) delete body.model;
   if (request.responseFormat) body.response_format = request.responseFormat;
   if (request.tools) body.parallel_tool_calls = false;
   return body;
@@ -213,7 +212,7 @@ export async function generate(
         ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
         ...(request.max_tokens === undefined ? {} : { maxTokens: request.max_tokens }),
         onPayload: payload =>
-          shapePayload(payload, { model: chosen, responseFormat: request.response_format }),
+          shapePayload(payload, { responseFormat: request.response_format }),
       }
     );
     answered = {
@@ -294,7 +293,7 @@ export async function openAgentWriter(): Promise<AgentWriter> {
         apiKey: key,
         temperature: AGENT_TEMPERATURE,
         maxTokens: AGENT_MAX_TOKENS,
-        onPayload: payload => shapePayload(payload, { model: requested, tools: true }),
+        onPayload: payload => shapePayload(payload, { tools: true }),
       });
     },
     spent: (message: AssistantMessage) => {

@@ -45,6 +45,7 @@ let setup = await invoke<SavedSetup | null>("setting_get", {
       ...modelSettingsFrom(saved),
       autoSuggestions: saved.autoSuggestions ?? true,
       autoPhrases: saved.autoPhrases ?? true,
+      agentEnabled: saved.agentEnabled ?? true,
     } : null,
   )
   .catch(() => null);
@@ -175,12 +176,34 @@ export const speakSystem = (text: string, settings: SpeechSettings) =>
     },
   });
 
-/** Plays one cached cloud-voice file through the native process. */
-export const playSpeechFile = (path: string) =>
-  invoke<void>("speech_file_play", { request: { path } });
-
-/** Stops either native voice now. */
+/** Stops every native voice now, and the cloud stream that feeds one. */
 export const stopNativeSpeech = () => invoke<void>("speech_native_stop");
+
+/**
+ * The cloud voice broke after its first sound. The listener heard part of the
+ * sentence, so a second voice must not say it again.
+ */
+export class InterruptedSpeech extends Error {}
+
+/**
+ * Speaks one sentence in the cloud voice while its sound arrives. Rust holds
+ * the key and the socket, and the native engine plays the sound. It resolves
+ * when the sound stops. A stop goes through `stopNativeSpeech`, so the signal
+ * is not sent.
+ */
+export async function streamSpeech(
+  text: string,
+  settings: SpeechSettings,
+  _signal?: AbortSignal,
+): Promise<{ from_cache: boolean; latency_ms: number }> {
+  const heard = await invoke<{
+    from_cache: boolean;
+    latency_ms: number;
+    interrupted: string | null;
+  }>("speech_stream", { request: { text, settings } });
+  if (heard.interrupted) throw new InterruptedSpeech(heard.interrupted);
+  return { from_cache: heard.from_cache, latency_ms: heard.latency_ms };
+}
 
 /** The address the WebView uses to read a file that Rust wrote. */
 export const audioUrl = (path: string) => convertFileSrc(path);
@@ -217,6 +240,19 @@ export const rememberModes = (modes: Record<string, string>) =>
   invoke("setting_put", {
     request: { key: "space-modes", value: modes },
   }).catch(() => undefined);
+
+/** The voices heard lately on the Voice screen, newest first. */
+export const heardVoiceIds =
+  (await invoke<string[] | null>("setting_get", {
+    request: { key: "heard-voices" },
+  }).catch(() => null)) ?? [];
+
+export const rememberHeardVoices = async (ids: string[]) => {
+  heardVoiceIds.splice(0, heardVoiceIds.length, ...ids);
+  await invoke("setting_put", {
+    request: { key: "heard-voices", value: ids },
+  }).catch(() => undefined);
+};
 
 let panel = panelStateFrom(
   await invoke<unknown>("setting_get", {
@@ -310,6 +346,10 @@ export interface Voice {
   id: string;
   name: string;
   preview_url: string | null;
+  /** `premade`, `cloned`, `generated`, `professional`, and more, from ElevenLabs. */
+  category?: string | null;
+  /** True for a voice the user made. A library voice they added is false. */
+  is_owner?: boolean | null;
 }
 
 /**

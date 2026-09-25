@@ -27,7 +27,7 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from "@september/ui/components/radio-group";
-import { Skeleton } from "@september/ui/components/skeleton";
+import { Switch } from "@september/ui/components/switch";
 import { Textarea } from "@september/ui/components/textarea";
 
 import {
@@ -39,20 +39,14 @@ import {
 import {
   BLANK_CONNECTIONS,
   currentSetup,
-  listModels,
-  listWritingModels,
   openInBrowser,
   readConnections,
-  saveSpeech,
   subscribeSetup,
   updateSetup,
   type Connections,
-  type Model,
   type Provider,
   type ProviderStatus,
-  type WritingModel,
 } from "@platform/services/os";
-import { speechSettings } from "@platform/services/speech";
 import { downloadBackup, importBackup } from "@platform/services/backup";
 import {
   backupProblem,
@@ -61,7 +55,12 @@ import {
   type BackupSummary,
   type SeptemberBackup,
 } from "@september/core/rules/backup";
-import { searchModels } from "@september/core/rules/pick";
+import {
+  AGENT_MODELS,
+  modelChoices,
+  SUGGESTIONS_MODELS,
+  type CuratedModel,
+} from "@september/core/rules/model-config";
 import {
   CONNECTION_GUIDES,
   type ConnectionId,
@@ -343,13 +342,12 @@ export function ConnectionScreen({ provider }: { provider: ConnectionId }) {
         The key stays on this device. September sends it only to {guide.name}.
       </p>
 
-      {provider === "elevenlabs" ? (
-        <VoiceModelChoice connected={status.connected} />
-      ) : (
-        <WritingModelChoice connected={status.connected} />
-      )}
-
-      <div className="border-t pt-6">
+      <div className="flex flex-wrap gap-3 border-t pt-6">
+        {provider === "openrouter" ? (
+          <Button asChild type="button" className="h-11 px-4">
+            <Link to="/settings/writing">Go to AI Assistance</Link>
+          </Button>
+        ) : null}
         <Button
           type="button"
           variant="outline"
@@ -364,324 +362,140 @@ export function ConnectionScreen({ provider }: { provider: ConnectionId }) {
   );
 }
 
-/** The row that asks for no model, and keeps the free list of the app. */
-const AUTOMATIC = "automatic";
-const USE_DEFAULT = "use-default";
-const CURRENT_DEFAULT = "current-default";
-const CURRENT_SUGGESTIONS = "current-suggestions";
-
-/**
- * The OpenRouter model, on the screen that holds the key.
- *
- * OpenRouter offers hundreds of models, and the search field lets a user find
- * the one they pay for. With no key, or with no choice, September uses the free
- * list of the app.
- */
-function WritingModelChoice({ connected }: { connected: boolean }) {
-  const [setup, change] = useSetup();
-  const [models, setModels] = useState<WritingModel[] | null>(null);
-
-  useEffect(() => {
-    if (!connected) return;
-    let live = true;
-    void listWritingModels()
-      .then((found) => {
-        if (live) setModels(found);
-      })
-      .catch(() => {
-        if (live) setModels([]);
-      });
-    return () => {
-      live = false;
-    };
-  }, [connected]);
-
-  if (!connected) return null;
-
-  const chosen =
-    setup.defaultModel.service === "openrouter"
-      ? setup.defaultModel.model || AUTOMATIC
-      : CURRENT_DEFAULT;
-  const suggestionsChosen = !setup.suggestionsModel
-    ? USE_DEFAULT
-    : setup.suggestionsModel.service === "openrouter"
-      ? setup.suggestionsModel.model || AUTOMATIC
-      : CURRENT_SUGGESTIONS;
-  // Automatic is free, so it sits at the head of the resting list and leaves
-  // when the words do not find it.
-  const rows = [
-    { id: AUTOMATIC, name: "Automatic (free models)", free: true },
-    ...(models ?? []).map((model) => ({
-      ...model,
-      note: model.free ? undefined : "Paid",
-    })),
-  ];
-  const defaultRows =
-    setup.defaultModel.service === "openrouter"
-      ? rows
-      : [
-          {
-            id: CURRENT_DEFAULT,
-            name: `Current: ${serviceName(setup.defaultModel.service)}`,
-            note: "Change in AI Assistance",
-            free: true,
-          },
-          ...rows,
-        ];
-  const suggestionsRows =
-    setup.suggestionsModel && setup.suggestionsModel.service !== "openrouter"
-      ? [
-          {
-            id: CURRENT_SUGGESTIONS,
-            name: `Current: ${serviceName(setup.suggestionsModel.service)}`,
-            note: "Change in AI Assistance",
-            free: true,
-          },
-          { id: USE_DEFAULT, name: "Use default", free: true },
-          ...rows,
-        ]
-      : [{ id: USE_DEFAULT, name: "Use default", free: true }, ...rows];
-
-  return (
-    <>
-      <Section
-        title="Default model"
-        description="Every writing task uses this model unless it has an override."
-      >
-        {models === null ? (
-          <Skeleton className="h-24 w-full" />
-        ) : (
-          <PickList
-            rows={defaultRows}
-            value={chosen}
-            onPick={(id) => {
-              if (id === CURRENT_DEFAULT) return;
-              change({
-                defaultModel: {
-                  service: "openrouter",
-                  model: id === AUTOMATIC ? "" : id,
-                },
-              });
-            }}
-            label="Search models"
-            filter={(all, query) => searchModels(all, query, chosen)}
-          />
-        )}
-        <p className="text-muted-foreground max-w-md text-sm">
-          {models?.length === 0
-            ? "No models came back from OpenRouter. Automatic still writes."
-            : "The list shows the free models. Search to reach every model of OpenRouter. A model marked Paid uses the credit of your account."}
-        </p>
-      </Section>
-      <Section
-        title="Suggestions model"
-        description="Use default keeps every writing task on one model. Choose another model only for suggestions while typing."
-      >
-        {models === null ? (
-          <Skeleton className="h-24 w-full" />
-        ) : (
-          <PickList
-            rows={suggestionsRows}
-            value={suggestionsChosen}
-            onPick={(id) => {
-              if (id === CURRENT_SUGGESTIONS) return;
-              change({
-                suggestionsModel:
-                  id === USE_DEFAULT
-                    ? null
-                    : {
-                        service: "openrouter",
-                        model: id === AUTOMATIC ? "" : id,
-                      },
-              });
-            }}
-            label="Search suggestion models"
-            filter={(all, query) => searchModels(all, query, suggestionsChosen)}
-          />
-        )}
-      </Section>
-    </>
-  );
-}
-
-function serviceName(
-  service: OnboardingDraft["defaultModel"]["service"],
-): string {
-  return (
-    WRITING_SERVICES.find((option) => option.value === service)?.label ??
-    "No AI Assistance"
-  );
-}
-
-/**
- * The ElevenLabs model, on the screen that holds the key.
- *
- * The account supplies the list, so the choice has no meaning before a key.
- * `speechSettings()` gives the model in use, and `saveSpeech` keeps the new
- * one at once. There is no Save button to forget.
- */
-function VoiceModelChoice({ connected }: { connected: boolean }) {
-  const [models, setModels] = useState<Model[] | null>(null);
-  const [modelId, setModelId] = useState(() => speechSettings().modelId);
-
-  useEffect(() => {
-    if (!connected) return;
-    let live = true;
-    void listModels()
-      .then((found) => {
-        if (live) setModels(found);
-      })
-      .catch(() => {
-        if (live) setModels([]);
-      });
-    return () => {
-      live = false;
-    };
-  }, [connected]);
-
-  if (!connected) return null;
-
-  const chosen = models?.find((option) => option.id === modelId);
-
-  const choose = (next: string) => {
-    setModelId(next);
-    void saveSpeech({ ...speechSettings(), modelId: next });
-  };
-
-  return (
-    <Section
-      title="Which model"
-      description="It decides the quality, the speed, and the price of each message."
-    >
-      {models === null ? (
-        <Skeleton className="h-24 w-full" />
-      ) : models.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
-          No models came back from ElevenLabs.
-        </p>
-      ) : (
-        <>
-          <PickList
-            rows={models}
-            value={modelId}
-            onPick={choose}
-            label="Search models"
-          />
-          {/* A model name says little. The service supplies the sentence
-              that tells a user what the choice costs and gives. */}
-          {chosen?.description ? (
-            <p className="text-muted-foreground max-w-md text-sm">
-              {chosen.description}
-            </p>
-          ) : null}
-        </>
-      )}
-    </Section>
-  );
-}
-
 // ------------------------------------------------------------ AI Assistance
 
-function AutomaticGenerationSettings() {
+type WritingServiceId = OnboardingDraft["defaultModel"]["service"];
+type SwitchField = "autoSuggestions" | "autoPhrases" | "agentEnabled";
+
+/**
+ * One saved switch of the setup.
+ *
+ * The switch shows the saved value, not the value it asked for, so a failed
+ * write never leaves a switch that says one thing and does another. The whole
+ * row is the label, so it gives a 44px target around the small switch.
+ */
+function SetupSwitch({
+  field,
+  label,
+  description,
+}: {
+  field: SwitchField;
+  label: string;
+  description: string;
+}) {
   const setup =
     useSyncExternalStore(subscribeSetup, currentSetup, currentSetup) ??
     DEFAULT_DRAFT;
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const id = `setting-${field}`;
 
-  const controls = [
-    {
-      key: "autoSuggestions",
-      label: "Automatic AI suggestions",
-      description: "Suggest text after a space or punctuation.",
-    },
-    {
-      key: "autoPhrases",
-      label: "Automatic phrase generation",
-      description: "Create and refresh phrases and starters for each space.",
-    },
-  ] as const;
+  const toggle = async () => {
+    if (pending) return;
+    setPending(true);
+    setError("");
+    try {
+      await updateSetup({ [field]: !setup[field] });
+    } catch {
+      setError("September did not save the setting. Try again.");
+    } finally {
+      setPending(false);
+    }
+  };
 
   return (
-    <Section
-      title="Automatic generation"
-      description="Choose which writing tasks run automatically."
-    >
-      <div className="flex flex-col gap-3">
-        {controls.map(({ key, label, description }) => (
-          <div
-            key={key}
-            className="flex items-center justify-between gap-4 rounded-xl border p-4"
+    <div className="flex flex-col gap-1.5">
+      <div className="flex min-h-11 items-center justify-between gap-4 rounded-xl border px-4 py-3">
+        <Label htmlFor={id} className="flex flex-1 cursor-pointer flex-col items-start gap-1">
+          <span className="text-sm font-medium">{label}</span>
+          <span
+            id={`${id}-description`}
+            className="text-muted-foreground text-xs leading-relaxed font-normal"
           >
-            <div>
-              <Label id={`${key}-label`}>{label}</Label>
-              <p
-                id={`${key}-description`}
-                className="text-muted-foreground mt-1 text-sm"
-              >
-                {description}
-              </p>
-            </div>
-            <Button
-              type="button"
-              role="switch"
-              aria-labelledby={`${key}-label`}
-              aria-describedby={`${key}-description`}
-              aria-checked={setup[key]}
-              aria-disabled={pending}
-              variant={setup[key] ? "default" : "outline"}
-              className="min-h-11 min-w-11"
-              onClick={async () => {
-                if (pending) return;
-                setPending(true);
-                setError("");
-                try {
-                  await updateSetup({ [key]: !setup[key] });
-                } catch {
-                  setError("September did not save the setting. Try again.");
-                } finally {
-                  setPending(false);
-                }
-              }}
-            >
-              {setup[key] ? "On" : "Off"}
-            </Button>
-          </div>
-        ))}
+            {description}
+          </span>
+        </Label>
+        <Switch
+          id={id}
+          checked={setup[field] !== false}
+          aria-describedby={`${id}-description`}
+          aria-disabled={pending}
+          onCheckedChange={() => void toggle()}
+        />
       </div>
       {error ? (
         <p role="alert" className="text-destructive text-sm">
           {error}
         </p>
       ) : null}
-    </Section>
+    </div>
   );
 }
 
+/** A curated model list, with Automatic first. An empty id is Automatic. */
+function ModelList({
+  models,
+  value,
+  onPick,
+}: {
+  models: readonly CuratedModel[];
+  value: string;
+  onPick: (id: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-sm font-medium">Model</span>
+      <PickList
+        rows={modelChoices(models, value)}
+        value={value}
+        onPick={onPick}
+        label="Search models"
+        fixedHeight
+      />
+    </div>
+  );
+}
+
+/** Apple Intelligence has one model, so there is nothing to choose. */
+function AppleModel() {
+  return (
+    <p className="text-muted-foreground text-sm">
+      Apple Intelligence runs on this Mac with one model.
+    </p>
+  );
+}
+
+/**
+ * The provider first, then one section for each feature.
+ *
+ * `defaultModel` holds the provider and the model of the agent and phrases.
+ * `suggestionsModel` holds the model of suggestions. A provider change moves
+ * both, so a feature can never point at a provider the user left.
+ */
 export function WritingSettings() {
   const [setup, change] = useSetup();
   const [connections] = useConnections();
+  const provider = setup.defaultModel.service;
 
-  const ready = {
+  const ready: Record<WritingServiceId, boolean> = {
     apple: connections.apple.available,
     openrouter: connections.openrouter.connected,
     none: true,
   };
-  const suggestionsService = setup.suggestionsModel?.service ?? USE_DEFAULT;
-  const suggestionOptions: Array<{
-    value: typeof USE_DEFAULT | OnboardingDraft["defaultModel"]["service"];
-    label: string;
-    description: string;
-  }> = [
-    {
-      value: USE_DEFAULT,
-      label: "Use default",
-      description: "Suggestions use the default model configuration.",
-    },
-    ...WRITING_SERVICES.filter(
-      (option) => option.value !== "apple" || connections.apple.supported,
-    ),
-  ];
+
+  const chooseProvider = (value: string) => {
+    const service = value as WritingServiceId;
+    if (!ready[service] || service === provider) return;
+    change({
+      defaultModel: { ...setup.defaultModel, service },
+      suggestionsModel: setup.suggestionsModel && {
+        ...setup.suggestionsModel,
+        service,
+      },
+    });
+  };
+
+  const suggestionsValue = (setup.suggestionsModel ?? setup.defaultModel).model;
 
   return (
     <div className="flex flex-col gap-8">
@@ -690,147 +504,181 @@ export function WritingSettings() {
         description="September finishes your sentences while you type."
       />
 
-      <AutomaticGenerationSettings />
-
       <Section
-        title="Who writes"
-        description="Only a connected service can write. Add a key in Services."
+        title="Provider"
+        description="Every feature below uses this provider."
       >
         <RadioGroup
-          aria-label="AI Assistance"
+          aria-label="Provider"
           className="gap-3"
-          value={setup.defaultModel.service}
-          onValueChange={(value) =>
-            change({
-              defaultModel: {
-                ...setup.defaultModel,
-                service: value as OnboardingDraft["defaultModel"]["service"],
-              },
-            })
-          }
+          value={provider}
+          onValueChange={chooseProvider}
         >
           {WRITING_SERVICES.filter(
             // A Mac that cannot run it never shows a control it must disable.
             (option) => option.value !== "apple" || connections.apple.supported,
           ).map((option) => (
-            <Label
+            <div
               key={option.value}
-              className={`hover:bg-accent has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5 flex cursor-pointer items-center gap-4 rounded-xl border p-4 ${
-                ready[option.value] ? "" : "opacity-60"
-              }`}
+              className="has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5 flex items-center gap-3 rounded-xl border p-4"
             >
-              <RadioGroupItem
-                value={option.value}
-                disabled={!ready[option.value]}
-                className="size-5"
-              />
-              <Mark service={option.value} />
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold">
-                  {option.label}
-                </span>
-                <span className="text-muted-foreground mt-1 block text-xs leading-relaxed">
-                  {ready[option.value]
-                    ? option.description
-                    : "Not connected yet. Finish it in Services."}
-                </span>
-              </span>
-            </Label>
-          ))}
-        </RadioGroup>
-      </Section>
-
-      <Section
-        title="Suggestions"
-        description="Use the default model, or override it only for suggestions while you type."
-      >
-        <RadioGroup
-          aria-label="Suggestions model service"
-          className="gap-3"
-          value={suggestionsService}
-          onValueChange={(value) =>
-            change({
-              suggestionsModel:
-                value === USE_DEFAULT
-                  ? null
-                  : {
-                      service:
-                        value as OnboardingDraft["defaultModel"]["service"],
-                      model:
-                        setup.suggestionsModel?.service === value
-                          ? setup.suggestionsModel.model
-                          : "",
-                    },
-            })
-          }
-        >
-          {suggestionOptions.map((option) => {
-            const available =
-              option.value === USE_DEFAULT ? true : ready[option.value];
-            return (
               <Label
-                key={option.value}
-                className={`hover:bg-accent has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5 flex cursor-pointer items-center gap-4 rounded-xl border p-4 ${
-                  available ? "" : "opacity-60"
+                className={`flex flex-1 cursor-pointer items-center gap-4 ${
+                  ready[option.value] ? "" : "opacity-60"
                 }`}
               >
                 <RadioGroupItem
                   value={option.value}
-                  disabled={!available}
+                  aria-disabled={!ready[option.value]}
                   className="size-5"
                 />
-                <Mark
-                  service={
-                    option.value === USE_DEFAULT
-                      ? setup.defaultModel.service
-                      : option.value
-                  }
-                />
+                <Mark service={option.value} />
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-semibold">
                     {option.label}
                   </span>
                   <span className="text-muted-foreground mt-1 block text-xs leading-relaxed">
-                    {available
+                    {ready[option.value]
                       ? option.description
-                      : "Not connected yet. Finish it in Services."}
+                      : option.value === "apple"
+                        ? appleState(connections)
+                        : "Not connected yet."}
                   </span>
                 </span>
               </Label>
-            );
-          })}
+              {option.value === "openrouter" ? (
+                <ManageLink provider="openrouter" status={connections.openrouter} />
+              ) : null}
+            </div>
+          ))}
         </RadioGroup>
       </Section>
 
-      <Section
-        title="About you"
-        description="Choose how September writes suggestions for you."
-      >
-        <div className="flex flex-wrap gap-2">
-          {SPEAKING_STYLES.map((option) => (
+      {provider === "none" ? (
+        <p className="text-muted-foreground text-sm">
+          Choose a provider to turn on suggestions, phrases, and the agent.
+        </p>
+      ) : (
+        <>
+          <Section
+            title="Suggestions"
+            description="Words as you type, after a space or punctuation."
+          >
+            <SetupSwitch
+              field="autoSuggestions"
+              label="Suggest as I type"
+              description="Off waits for a press of Suggest."
+            />
+            {provider === "openrouter" ? (
+              <ModelList
+                models={SUGGESTIONS_MODELS}
+                value={suggestionsValue}
+                onPick={(model) =>
+                  change({ suggestionsModel: { service: provider, model } })
+                }
+              />
+            ) : (
+              <AppleModel />
+            )}
+          </Section>
+
+          <Section
+            title="Agent and phrases"
+            description="One model writes phrases and runs the agent."
+          >
+            <SetupSwitch
+              field="autoPhrases"
+              label="Phrases"
+              description="Phrases and starters for each space, made in the background."
+            />
+            <SetupSwitch
+              field="agentEnabled"
+              label="Agent"
+              description="Changes a space when you ask. Off hides Agent in every space."
+            />
+            {provider === "openrouter" ? (
+              <ModelList
+                models={AGENT_MODELS}
+                value={setup.defaultModel.model}
+                onPick={(model) =>
+                  change({ defaultModel: { service: provider, model } })
+                }
+              />
+            ) : (
+              <AppleModel />
+            )}
+          </Section>
+
+          <SpeakingStyle
+            value={setup.speakingStyle}
+            onChange={(speakingStyle) => change({ speakingStyle })}
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Three styles and Custom. The instructions field shows only for Custom, so a
+ * stray edit cannot change every suggestion.
+ */
+function SpeakingStyle({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const preset = SPEAKING_STYLES.find((option) => option.value === value);
+  const [custom, setCustom] = useState(!preset);
+
+  return (
+    <Section
+      title="Speaking style"
+      description="How September writes for you, in every feature."
+    >
+      <div className="flex flex-wrap gap-2">
+        {SPEAKING_STYLES.map((option) => {
+          const on = !custom && preset?.label === option.label;
+          return (
             <Button
               key={option.label}
               type="button"
-              variant={
-                setup.speakingStyle === option.value ? "default" : "outline"
-              }
-              aria-pressed={setup.speakingStyle === option.value}
-              onClick={() => change({ speakingStyle: option.value })}
+              variant={on ? "default" : "outline"}
+              aria-pressed={on}
+              onClick={() => {
+                setCustom(false);
+                onChange(option.value);
+              }}
               className="h-11 rounded-full px-4"
             >
               {option.label}
             </Button>
-          ))}
-        </div>
+          );
+        })}
+        <Button
+          type="button"
+          variant={custom ? "default" : "outline"}
+          aria-pressed={custom}
+          onClick={() => setCustom(true)}
+          className="h-11 rounded-full px-4"
+        >
+          Custom
+        </Button>
+      </div>
+      {custom ? (
         <SavedText
-          label="Speaking style"
-          value={setup.speakingStyle}
+          label="Your instructions"
+          value={value}
           rows={4}
           maxLength={1000}
-          onSave={(speakingStyle) => change({ speakingStyle })}
+          onSave={onChange}
         />
-      </Section>
-    </div>
+      ) : (
+        <p className="text-muted-foreground text-sm">{preset?.value}</p>
+      )}
+    </Section>
   );
 }
 
@@ -940,35 +788,51 @@ export function DataSettings() {
   const [fileName, setFileName] = useState("");
   const [skipped, setSkipped] = useState(0);
   const [problem, setProblem] = useState<string | null>(null);
+  const [progress, setProgress] = useState<string[]>([]);
+  const [reading, setReading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
+  const busy = reading || exporting || importing;
 
   const chooseBackup = async (event: ChangeEvent<HTMLInputElement>) => {
     const input = event.currentTarget;
     const file = input.files?.[0];
-    if (!file) return;
+    if (!file || busy) return;
 
+    setReading(true);
+    setProgress(["Reading backup file."]);
     setProblem(null);
     setSelected(null);
     setSkipped(0);
     try {
-      const { backup, skipped: withErrors } = parseBackup(await file.text());
+      const source = await file.text();
+      setProgress((lines) => [...lines, "Checking backup contents."]);
+      const { backup, skipped: withErrors } = parseBackup(source);
       setFileName(file.name);
       setSelected(backup);
       setSkipped(withErrors);
+      setProgress((lines) => [
+        ...lines,
+        withErrors > 0
+          ? `Backup checked. ${withErrors} entries will be skipped. Review the counts before import.`
+          : "Backup checked. Review the counts before import.",
+      ]);
     } catch (error) {
       setProblem(backupProblem(error));
     } finally {
+      setReading(false);
       input.value = "";
     }
   };
 
   const exportData = async () => {
-    if (exporting) return;
+    if (busy) return;
     setExporting(true);
+    setProgress(["Preparing backup from saved settings and data."]);
     setProblem(null);
     try {
       await downloadBackup();
+      setProgress((lines) => [...lines, "Backup ready. Download requested."]);
     } catch (error) {
       setProblem(backupProblem(error));
     } finally {
@@ -977,8 +841,9 @@ export function DataSettings() {
   };
 
   const replaceData = async () => {
-    if (!selected || importing) return;
+    if (!selected || busy) return;
     setImporting(true);
+    setProgress(["Restoring settings and data. The app will reload when complete."]);
     setProblem(null);
     try {
       await importBackup(selected);
@@ -997,6 +862,24 @@ export function DataSettings() {
         description="Keep a private copy of your September settings and data."
       />
 
+      <div role="log" aria-label="Backup activity" aria-live="polite" className="empty:hidden">
+        {progress.length > 0 ? (
+          <div className="rounded-surface border p-5 text-sm shadow-sm">
+            <p className="font-semibold">Backup activity</p>
+            <ol className="mt-2 list-inside list-decimal space-y-1 leading-relaxed">
+              {progress.map((line, index) => (
+                <li key={index}>{line}</li>
+              ))}
+            </ol>
+            {problem ? (
+              <p role="alert" className="text-destructive mt-2 break-words leading-relaxed">
+                Error: {problem}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+
       <div className="border-primary/20 bg-primary/5 rounded-surface border p-5">
         <p className="text-sm font-semibold">Keep the file private</p>
         <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
@@ -1012,7 +895,7 @@ export function DataSettings() {
         <Button
           type="button"
           className="h-11 self-start px-4"
-          aria-disabled={exporting}
+          aria-disabled={busy}
           onClick={() => void exportData()}
         >
           <Download aria-hidden />
@@ -1037,7 +920,10 @@ export function DataSettings() {
           type="button"
           variant="outline"
           className="h-11 self-start px-4"
-          onClick={() => fileInput.current?.click()}
+          aria-disabled={busy}
+          onClick={() => {
+            if (!busy) fileInput.current?.click();
+          }}
         >
           <Upload aria-hidden />
           Choose backup file
@@ -1060,7 +946,10 @@ export function DataSettings() {
                   type="button"
                   variant="destructive"
                   className="h-11 self-start px-4"
-                  aria-disabled={importing}
+                  aria-disabled={busy}
+                  onClick={(event) => {
+                    if (busy) event.preventDefault();
+                  }}
                 >
                   {importing ? "Importing…" : "Import and replace"}
                 </Button>
@@ -1088,12 +977,6 @@ export function DataSettings() {
               </AlertDialogContent>
             </AlertDialog>
           </>
-        ) : null}
-
-        {problem ? (
-          <p role="alert" className="text-destructive text-sm leading-relaxed">
-            {problem}
-          </p>
         ) : null}
       </Section>
     </div>

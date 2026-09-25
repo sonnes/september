@@ -32,11 +32,15 @@ import { Textarea } from "@september/ui/components/textarea";
 
 import { navFor } from "@platform/rules/app-nav";
 import {
+  heardVoiceIds,
   listVoices,
   readConnections,
+  rememberHeardVoices,
   saveSpeech,
   type Voice,
 } from "@platform/services/os";
+import { matchesWords } from "@september/core/rules/pick";
+import { heardVoices, voiceRows } from "@september/core/rules/voice";
 import { play } from "@platform/services/player";
 import {
   cloneVoice,
@@ -75,7 +79,9 @@ const SAMPLE_TEXTS = [
 /** A voice made a moment ago, before ElevenLabs lists it. */
 function optimisticCreatedVoice(): Voice | null {
   const created = recentCreatedVoice();
-  return created ? { ...created, preview_url: null } : null;
+  return created
+    ? { ...created, preview_url: null, category: "cloned", is_owner: true }
+    : null;
 }
 
 /**
@@ -91,6 +97,10 @@ export function VoiceScreen() {
   const [voiceId, setVoiceId] = useState(() => speechSettings().voiceId ?? "");
   const [voices, setVoices] = useState<Voice[] | null>(null);
   const [connected, setConnected] = useState<boolean | null>(null);
+  // The order is read once. A voice heard now joins Heard lately on the next
+  // visit, so a row never moves under a user who is scanning the list.
+  const [heardBefore] = useState(() => [...heardVoiceIds]);
+  const heard = useRef([...heardVoiceIds]);
   const cloud = provider === "elevenlabs";
 
   useEffect(() => {
@@ -114,6 +124,13 @@ export function VoiceScreen() {
   const chooseService = (next: VoiceService) => {
     setProvider(next);
     void saveSpeech({ ...speechSettings(), provider: next });
+  };
+
+  const hear = (voice: Voice) => {
+    if (!voice.preview_url) return;
+    void play(voice.preview_url);
+    heard.current = heardVoices(heard.current, voice.id);
+    void rememberHeardVoices(heard.current);
   };
 
   const chooseVoice = (next: string) => {
@@ -172,28 +189,37 @@ export function VoiceScreen() {
               No voices came back from ElevenLabs.
             </p>
           ) : (
-            <PickList
-              rows={voices}
-              value={voiceId}
-              onPick={chooseVoice}
-              label="Search voices"
-              // The button stays in every row, so it always reads as part of
-              // the voice on its left.
-              after={(voice) => (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Hear ${voice.name}`}
-                  disabled={!voice.preview_url}
-                  // The sample is public, so it needs no key and no speech
-                  // call.
-                  onClick={() => void play(voice.preview_url!)}
-                >
-                  <Play aria-hidden />
-                </Button>
-              )}
-            />
+            <div role="group" aria-label="Voices">
+              <PickList
+                rows={voiceRows(voices, heardBefore)}
+                value={voiceId}
+                onPick={chooseVoice}
+                label="Search voices"
+                layout="list"
+                filter={(rows, query) =>
+                  rows.filter((row) =>
+                    matchesWords(`${row.name} ${row.detail ?? ""}`, query),
+                  )
+                }
+                // The button sits inside the row, so it always reads as part
+                // of the voice beside it.
+                after={({ voice }) => (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="size-11 shrink-0 rounded-full"
+                    aria-label={`Hear ${voice.name}`}
+                    aria-disabled={!voice.preview_url}
+                    // The sample is public, so it needs no key and no speech
+                    // call.
+                    onClick={() => hear(voice)}
+                  >
+                    <Play aria-hidden />
+                  </Button>
+                )}
+              />
+            </div>
           )}
         </section>
       ) : cloud ? null : (

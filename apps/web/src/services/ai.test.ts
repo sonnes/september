@@ -110,7 +110,8 @@ describe('the browser writing service', () => {
     expect(bodyOf(request, 0).model).toBe('default/model');
   });
 
-  it('lets the service choose when the user named no model, and keeps JSON mode', async () => {
+  it.each(['', '   '])('routes an automatic model (%j) through the free router and keeps JSON mode', async model => {
+    state.setup.defaultModel.model = model;
     const request = vi.fn(async () => text('{"items":[]}'));
     vi.stubGlobal('fetch', request);
 
@@ -126,11 +127,30 @@ describe('the browser writing service', () => {
     );
 
     const body = bodyOf(request);
-    // A user who named no model gets the service's own choice, as before.
-    expect(body).not.toHaveProperty('model');
+    expect(body.model).toBe('openrouter/free');
     expect(body.response_format).toEqual({ type: 'json_object' });
     const messages = body.messages as Array<Record<string, unknown>>;
     expect(messages[0]).toEqual({ role: 'system', content: 'Be brief.' });
+  });
+
+  it('uses the free router for an automatic Suggestions override and other automatic requests', async () => {
+    state.setup.defaultModel.model = 'default/model';
+    state.setup.suggestionsModel = { service: 'openrouter', model: '' };
+    const request = vi.fn(async () => text('Hello.'));
+    vi.stubGlobal('fetch', request);
+
+    await generate(
+      { messages: [{ role: 'user', content: 'Suggest something' }] },
+      { feature: 'suggestions' }
+    );
+    expect(bodyOf(request).model).toBe('openrouter/free');
+
+    state.setup.defaultModel.model = '';
+    await generate(
+      { messages: [{ role: 'user', content: 'Describe this space' }] },
+      { feature: 'context' }
+    );
+    expect(bodyOf(request, 1).model).toBe('openrouter/free');
   });
 
   it('records what an Agent answer spent, and what a failed one did not', async () => {

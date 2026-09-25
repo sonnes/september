@@ -2,7 +2,7 @@ use std::{
     fs,
     path::PathBuf,
     sync::Mutex,
-    time::{SystemTime, UNIX_EPOCH},
+    time::{Instant, SystemTime, UNIX_EPOCH},
 };
 
 use serde::{Deserialize, Serialize};
@@ -25,11 +25,14 @@ use crate::{
         AgentMessage, AnalyticsEvent, BackupContents, Message, Note, Repository, SavedPhrase,
         Space, SpacePatch,
     },
-    speech::{self, SpeechSettings},
+    speech::{self, SpeechSettings, StreamError, Streamed},
 };
 
 pub(crate) struct BackendState {
     repository: Mutex<Repository>,
+    /// The cloud-voice sentence that streams now. A stop or a new sentence
+    /// cancels it.
+    speech_stream: Mutex<Option<tokio::task::AbortHandle>>,
 }
 
 pub(crate) const ANALYTICS_RETENTION_MS: i64 = 90 * 24 * 60 * 60 * 1_000;
@@ -118,16 +121,21 @@ pub(crate) struct SystemSpeechRequest {
     speed: f32,
 }
 
-#[derive(Deserialize)]
-pub(crate) struct SpeechFileRequest {
-    path: PathBuf,
-}
-
 #[derive(Serialize)]
 pub(crate) struct SpokenAudio {
     /// The file on disk. The WebView reads it through the asset protocol.
     path: String,
     from_cache: bool,
+}
+
+/// One streamed sentence. `interrupted` holds the reason when the sound
+/// started and then broke, because the WebView must not repeat those words in
+/// a second voice.
+#[derive(Serialize)]
+pub(crate) struct StreamedAudio {
+    from_cache: bool,
+    latency_ms: u64,
+    interrupted: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -153,6 +161,7 @@ pub(crate) fn setup(app: &mut tauri::App) -> std::result::Result<(), Box<dyn std
     let provider_keys = ProviderKeys::load();
     app.manage(BackendState {
         repository: Mutex::new(repository),
+        speech_stream: Mutex::new(None),
     });
     app.manage(provider_keys);
     app.manage(ApfelState::default());
@@ -656,13 +665,145 @@ pub(crate) async fn speech_synthesize(
         .map_err(rpc_error)?
         .join("audio");
     let key = keys.get(Provider::ElevenLabs).map_err(rpc_error)?;
-    let (path, from_cache) =
-        speech::synthesize(&directory, &request.settings, &request.text, key.as_deref()).await?;
+    let (path, from_cache) = speech::synthesize(
+        &directory,
+        &request.settings,
+        &request.text,
+        key.as_deref(),
+        &Providers::default(),
+    )
+    .await?;
 
     Ok(SpokenAudio {
         path: path.to_string_lossy().into_owned(),
         from_cache,
     })
+}
+
+/// Speaks one sentence in the cloud voice while its sound arrives.
+///
+/// Rust holds the key and the socket. The native engine plays the samples, so
+/// the virtual microphone hears them. The command returns when the sound
+/// stops. A kept file, or a model without a socket, plays as a file.
+#[tauri::command]
+pub(crate) async fn speech_stream(
+    app: AppHandle,
+    state: State<'_, BackendState>,
+    keys: State<'_, ProviderKeys>,
+    request: SpeakRequest,
+) -> RpcResult<StreamedAudio> {
+    let directory = app
+        .path()
+        .app_local_data_dir()
+        .map_err(rpc_error)?
+        .join("audio");
+    let key = keys.get(Provider::ElevenLabs).map_err(rpc_error)?;
+    let output = september_output(&state)?;
+
+    let task = tauri::async_runtime::spawn(stream_sentence(
+        directory,
+        request.settings,
+        request.text,
+        key,
+        output,
+    ));
+    if let Some(previous) = state
+        .speech_stream
+        .lock()
+        .map_err(rpc_error)?
+        .replace(task.inner().abort_handle())
+    {
+        previous.abort();
+    }
+
+    // A cancelled sentence was stopped on purpose, so it is no failure.
+    task.await.unwrap_or(Ok(StreamedAudio {
+        from_cache: false,
+        latency_ms: 0,
+        interrupted: None,
+    }))
+}
+
+async fn stream_sentence(
+    directory: PathBuf,
+    settings: SpeechSettings,
+    text: String,
+    key: Option<String>,
+    output: String,
+) -> RpcResult<StreamedAudio> {
+    let began = Instant::now();
+    let mut playing: Option<audio::SpeechStream> = None;
+    let mut refused: Option<String> = None;
+    let outcome = speech::stream(
+        &directory,
+        &settings,
+        &text,
+        key.as_deref(),
+        &Providers::default(),
+        |samples| {
+            if refused.is_some() {
+                return;
+            }
+            if playing.is_none() {
+                match audio::SpeechStream::begin(speech::STREAM_SAMPLE_RATE, &output) {
+                    Ok(stream) => playing = Some(stream),
+                    Err(error) => {
+                        refused = Some(error);
+                        return;
+                    }
+                }
+            }
+            if let Some(stream) = &playing {
+                // An append fails only after a stop, which ends this task.
+                let _ = stream.append(samples);
+            }
+        },
+    )
+    .await;
+
+    // No sound went out when the engine did not start, so the system voice
+    // can still say the whole sentence.
+    if let Some(error) = refused {
+        return Err(error);
+    }
+
+    match outcome {
+        Ok(Streamed::File { path, from_cache }) => {
+            let latency_ms = began.elapsed().as_millis() as u64;
+            tauri::async_runtime::spawn_blocking(move || audio::play_speech_file(&path, &output))
+                .await
+                .map_err(rpc_error)??;
+            Ok(StreamedAudio {
+                from_cache,
+                latency_ms,
+                interrupted: None,
+            })
+        }
+        Ok(Streamed::Spoken { first_audio }) => {
+            if let Some(stream) = playing {
+                tauri::async_runtime::spawn_blocking(move || stream.finish())
+                    .await
+                    .map_err(rpc_error)??;
+            }
+            Ok(StreamedAudio {
+                from_cache: false,
+                latency_ms: first_audio.as_millis() as u64,
+                interrupted: None,
+            })
+        }
+        Err(StreamError {
+            started: true,
+            message,
+        }) if playing.is_some() => {
+            audio::stop_speech();
+            Ok(StreamedAudio {
+                from_cache: false,
+                latency_ms: 0,
+                interrupted: Some(message),
+            })
+        }
+        Err(StreamError { message, .. }) => Err(message),
+    }
 }
 
 /// Speaks with the voice of the operating system from the native process.
@@ -684,34 +825,17 @@ pub(crate) async fn speech_system(
     .map_err(rpc_error)?
 }
 
-/// Plays one cached cloud-voice file from the native process.
-#[tauri::command]
-pub(crate) async fn speech_file_play(
-    app: AppHandle,
-    state: State<'_, BackendState>,
-    request: SpeechFileRequest,
-) -> RpcResult<()> {
-    let directory = app
-        .path()
-        .app_local_data_dir()
-        .map_err(rpc_error)?
-        .join("audio")
-        .canonicalize()
-        .map_err(rpc_error)?;
-    let path = request.path.canonicalize().map_err(rpc_error)?;
-    if !path.starts_with(&directory) {
-        return Err("the voice file is outside the September audio folder".into());
-    }
-
-    let output = september_output(&state)?;
-    tauri::async_runtime::spawn_blocking(move || audio::play_speech_file(&path, &output))
-        .await
-        .map_err(rpc_error)?
-}
-
-/// Stops either native voice now.
+/// Stops every native voice now, and the cloud stream that feeds one.
 #[tauri::command(async)]
-pub(crate) fn speech_native_stop() {
+pub(crate) fn speech_native_stop(state: State<'_, BackendState>) {
+    if let Some(stream) = state
+        .speech_stream
+        .lock()
+        .ok()
+        .and_then(|mut stream| stream.take())
+    {
+        stream.abort();
+    }
     audio::stop_speech();
 }
 

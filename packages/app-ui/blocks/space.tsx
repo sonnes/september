@@ -46,6 +46,7 @@ import { hasWritingService } from "@platform/services/ai";
 import {
   chooseOutput,
   currentOutput,
+  currentSetup,
   listOutputs,
   rememberModes,
   spaceModes,
@@ -96,9 +97,15 @@ export const spaceParams = (space: Pick<Space, "title">, mode: SpaceMode) =>
 // only differ while a write is in flight.
 let modes = spaceModes;
 
+/** Whether AI Assistance shows the agent. It is on unless the user turned it off. */
+export const agentEnabled = (): boolean => currentSetup()?.agentEnabled !== false;
+
 /** The mode a space was left in, for a screen that opens one. */
 export const openParams = (space: Pick<Space, "title">) =>
-  spaceParams(space, spaceModeFrom(modes, spaceSlug(space.title)));
+  spaceParams(
+    space,
+    spaceModeFrom(modes, spaceSlug(space.title), agentEnabled()),
+  );
 
 /**
  * Keeps the mode a space is open in, so it opens the same way next time.
@@ -155,7 +162,9 @@ export function useNewSpace(): NewSpace {
             ? held
             : [space, ...(held ?? [])],
         );
-        return navigate(spaceParams(space, newSpaceMode(hasWritingService())));
+        return navigate(
+          spaceParams(space, newSpaceMode(hasWritingService(), agentEnabled())),
+        );
       })
       .catch((reason: unknown) =>
         setError(reason instanceof Error ? reason : new Error(String(reason))),
@@ -728,6 +737,8 @@ function ModeGroup({
   onMode: (mode: SpaceMode) => void;
 }) {
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
+  // A user who turned the agent off in AI Assistance does not see it here.
+  const shown = MODES.filter(({ key }) => key !== "agent" || agentEnabled());
 
   const onKey = (event: React.KeyboardEvent, at: number) => {
     const step =
@@ -739,7 +750,7 @@ function ModeGroup({
     if (!step) return;
 
     event.preventDefault();
-    buttons.current[(at + step + MODES.length) % MODES.length]?.focus();
+    buttons.current[(at + step + shown.length) % shown.length]?.focus();
   };
 
   return (
@@ -748,7 +759,7 @@ function ModeGroup({
       aria-label="Space mode"
       className="bg-card flex items-center gap-0.5 rounded-full border p-0.5"
     >
-      {MODES.map(({ key, label, icon: Icon }, at) => (
+      {shown.map(({ key, label, icon: Icon }, at) => (
         <button
           key={key}
           ref={(element) => {

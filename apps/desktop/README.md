@@ -191,8 +191,8 @@ visible on a Mac with one output so the microphone control stays available.
 `src-tauri/src/audio.rs` reads the outputs from CoreAudio. The browser cannot
 do this job: WKWebView holds `setSinkId`, but `navigator.mediaDevices` lists no
 output device until the user grants the microphone, and September must not ask
-for a microphone to name a speaker. Native system speech and cloud-voice files
-both pass through a September-owned `AVAudioEngine`. Its output audio unit uses
+for a microphone to name a speaker. Native system speech, cloud-voice streams,
+and cloud-voice files all pass through a September-owned `AVAudioEngine`. Its output audio unit uses
 the chosen device without writing the system default.
 
 ## Write a note
@@ -498,20 +498,27 @@ and does not know which service answers.
 | Voice        | How it speaks                                                    |
 | ------------ | ---------------------------------------------------------------- |
 | `system`     | The native process uses the macOS system voice. No file, no key. |
-| `elevenlabs` | Rust makes a file. The native process plays the cached file.     |
+| `elevenlabs` | Rust streams the sound. The native process plays each chunk.     |
 
 Spoken messages now leave the native process. This path lets the Core Audio
 process tap receive both voices. Voice-list previews still use `src/services/player.ts`
 and do not enter a call.
 
 A cloud voice that fails falls back to the voice of this Mac, and the composer
-says so. A person who cannot speak must not meet silence.
+says so. A person who cannot speak must not meet silence. If the cloud voice
+breaks after its first sound, the sound stops and the composer says so. The
+voice of this Mac does not repeat words that the listener already heard. See
+`docs/concepts/streaming-voice.md`.
 
 A voice file is named for what makes its sound:
 
 ```
 audio/<sha256 of the settings and the words>.mp3
+audio/<sha256 of the settings and the words>.wav
 ```
+
+The MP3 file comes from the file path, which exports and `eleven_v3` use. The
+WAV file holds the samples of a complete streamed sentence.
 
 The words lose the spaces at their ends, and each run of spaces becomes one
 space. Case and punctuation stay, because both change how a voice reads a
@@ -525,8 +532,9 @@ erases the old files yet.
 A message keeps no path to a file. The name is the index, so a message spoken
 with an old voice plays with the voice of today.
 
-The Voice tab of the right rail holds the ElevenLabs model and three sliders
-for speed, steadiness, and likeness. The `/voice` screen holds who speaks and
+The Voice tab of the right rail holds Speed, the ElevenLabs model, and
+Expression. Expression has three presets, Steady, Natural, and Expressive, and
+Custom. A preset keeps the model. Custom shows steadiness and likeness. The `/voice` screen holds who speaks and
 the voices of the account, with a **Try it** button beside the title. Each
 change is kept at once, in the `speech` setting. **Try it** speaks one short
 sentence, so the user hears a change before a real message. A voice sample
@@ -677,9 +685,22 @@ The voice list comes from `GET /v2/voices`, with `voice_type=non-default` and
 ElevenLabs voices, so the list holds the voices of this account only. A page
 gives 10 voices without `page_size`.
 
-The order is the order of the web app: a cloned voice first, then a
-professional voice, then a stock voice, then a similar voice. Rust sorts the
-list, and the category never reaches the screen.
+Rust sorts the list by category: a cloned voice first, then a professional
+voice, then a stock voice, then a similar voice. The category and `is_owner` also
+reach the screen.
+
+The Voice screen shows the voices in four groups, each in two columns.
+**Yours** holds the voices the user made: ElevenLabs sets `is_owner` on a
+cloned or designed voice. **Heard lately** holds the last three voices that
+the user played, newest first. **From the library** holds the voices the user
+added from the ElevenLabs library, such as a professional voice with
+`is_owner: false`. **ElevenLabs voices** holds the `premade` voices. Each group
+other than Heard lately is sorted by name.
+`voiceRows` in `packages/core/rules/voice.ts` makes the groups. It also moves the
+description in a name such as "Roger - Laid-Back" to a second line. A voice
+played now joins Heard lately on the next visit, so a row does not move while
+the user scans the list. The `heard-voices` setting keeps the list on this
+device, and a backup leaves it out.
 
 The ElevenLabs voice list carries a public sample for each voice. The preview
 button plays that sample, so it needs no key and no speech call.
@@ -715,6 +736,14 @@ transcripts. Import also accepts version 1 with no Agent messages, validates
 the complete file, previews its counts, and replaces the portable SQLite rows
 in one transaction. A file from the browser app uses the same format.
 
+Import accepts the older `writingService` and `writingModel` fields and converts
+them to `defaultModel`. It preserves the setup owner ID so restored rows remain
+visible after reload.
+
+The Data screen shows a brief activity log during backup and import. It reports
+progress, skipped-entry counts, and errors. Each attempt starts a new log.
+A successful import reloads the app and clears the log.
+
 Older setup values can have no owner ID. Export uses the current Mac login
 name in the backup and keeps the stored setup value unchanged.
 
@@ -726,36 +755,31 @@ A press on **Set up** opens `/settings/connections/openrouter` or
 and opens the address of the service in the browser of the Mac. The key goes
 straight to the Keychain, through `src/services/os.ts`.
 
-Each page also holds **Which model**. The model decides the quality,
-the speed, and the languages. `provider_models` reads the list from ElevenLabs
-and keeps the models that speak. The page shows the name of each one, and the
-sentence that the service gives about it. Only the key lists the models, so the
-choice appears after the key is stored. The new model goes into the `speech`
-setting, beside the voice and the sliders.
+The key pages hold no model list. The OpenRouter page links to AI Assistance,
+where the user chooses the models.
 
-Both lists are `PickList`, in `packages/app-ui/blocks/pick-list.tsx`. See
-[One list picks one row](#one-list-picks-one-row).
+AI Assistance shows the provider first: Apple Intelligence, OpenRouter, or No
+AI Assistance. The Suggestions section has a switch and a model list. The Agent
+and phrases section has two switches and one model list. Each list is a
+`PickList` with a fixed height. See [One list picks one row](#one-list-picks-one-row).
 
-The OpenRouter page shows the free models, because September promises that the
-user needs no card. With no words in the search field, the list holds the free
-models. With words, the search reaches every model of the service, and a row
-that needs credit reads **Paid**. The rule is `searchModels` in
-`packages/core/rules/pick.ts`, where a test can read it without a renderer.
+`packages/core/rules/model-config.ts` holds the two curated lists,
+`SUGGESTIONS_MODELS` and `AGENT_MODELS`. Each list starts with **Automatic**.
+A Frontier group and an Open models group follow. A saved model that is not on
+a list shows as the first row, "Current: <id>".
 
 **Automatic** is the first row, and the default. It asks for no model, so the
 app sends its own free list and OpenRouter uses the first model that answers.
-A named model goes into `setup.defaultModel`. `src/services/ai.ts` sends this
-model with each text-generation request.
+The agent and phrases model goes into `setup.defaultModel`. The suggestions
+model goes into `setup.suggestionsModel`. If `suggestionsModel` is null,
+Suggestions use `defaultModel`. A provider change writes the new service into
+both values. `src/services/ai.ts` sends the model with each request.
 
-The setup value can also contain `suggestionsModel`. This value is null by
-default. If it contains model settings, Suggestions use them instead of
-`defaultModel`. All other text-generation requests continue to use
-`defaultModel`.
-
-AI Assistance settings have independent switches for automatic suggestions and
-phrase generation. Both default to on. AI suggestions wait for whitespace or
+AI Assistance settings have independent switches for automatic suggestions,
+phrase generation, and the agent. All three default to on. If the agent is off,
+the space mode control hides Agent, and a new or saved space opens in Talk. AI suggestions wait for whitespace or
 `. , ! ? ; :` after an edit. Local word completion stays immediate.
-SQLite settings and portable backups preserve both switches. Failed settings
+SQLite settings and portable backups preserve all three switches. Failed settings
 writes report an error and keep the saved value.
 
 The default writing selection powers the Agent. The desktop backend forwards a
@@ -772,7 +796,9 @@ asset is therefore named one time.
 ### One list picks one row
 
 `PickList` in `packages/app-ui/blocks/pick-list.tsx` picks one row of many. The model
-lists and the voice list use it.
+lists and the voice list use it. A row with a `group` starts a heading. A caller
+sends `fixedHeight` to scroll the rows inside one box height, as the model lists
+of AI Assistance do.
 
 A dropdown is not a control for a dwell. It opens on a press, and it closes
 when the pointer rests somewhere else. `PickList` stays on the screen: two
@@ -782,9 +808,11 @@ border. A caller with no room for two columns sends `columns={1}`, as the
 
 A search field appears above the rows when the list holds more than eight.
 Each word of the query must be in the name, through `matchesWords` in
-`packages/core/rules/pick.ts`. A caller with another rule sends `filter`, and the model
-list sends `searchModels`. A caller with a control for each row sends `after`,
-and the voice list sends the play button.
+`packages/core/rules/pick.ts`. A caller with another rule sends `filter`. A caller with a control for each row sends `after`,
+and the voice list sends the play button. The voice list sends
+`layout="list"`: a card for each row with a radio mark, the name, a detail
+line, and the play button inside the card. The cards of each group fill two
+columns under the group heading.
 
 Every change is kept at once, as the Voice card of the rail does. There is no
 Save button to forget. A text field waits half a second after the last keystroke, so one

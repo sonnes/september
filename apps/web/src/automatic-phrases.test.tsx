@@ -161,6 +161,15 @@ describe.each([
     expect(state.update).toHaveBeenCalledTimes(1);
   });
 
+  // OpenAI and Azure reject JSON mode when no message says "json".
+  it('names JSON in the messages of its JSON-mode request', async () => {
+    await act(async () => root.render(<Harness />));
+    const request = state.generate.mock.calls[0][0];
+    expect(request.response_format).toEqual({ type: 'json_object' });
+    const text = request.messages.map((message: { content: string }) => message.content).join('\n');
+    expect(text).toMatch(/json/i);
+  });
+
   it('skips generation without a provider', async () => {
     state.writing = false;
     await act(async () => root.render(<Harness />));

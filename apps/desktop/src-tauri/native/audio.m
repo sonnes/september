@@ -103,6 +103,10 @@ static AVSpeechSynthesizer *SeptemberSynthesizer = nil;
 @end
 
 static SeptemberSpeechRun *SeptemberRun = nil;
+/// The number of the open stream, or 0. A late call from a stopped stream
+/// carries an old number, so it cannot touch a newer sentence.
+static int64_t SeptemberStreamActive = 0;
+static int64_t SeptemberStreamCount = 0;
 
 /// The lock for the process tap and its aggregate device.
 static NSObject *SeptemberDeviceLock(void) {
@@ -488,6 +492,7 @@ void september_speech_stop(void) {
       SeptemberSpeechNode = nil;
       SeptemberSynthesizer = nil;
       SeptemberRun = nil;
+      SeptemberStreamActive = 0;
     }
     [node stop];
     [engine stop];
@@ -627,6 +632,128 @@ int32_t september_speech_file(const char *path, const char *outputUID,
     dispatch_semaphore_wait(run.done, DISPATCH_TIME_FOREVER);
     [node stop];
     [engine stop];
+    ClearSpeech(run);
+    if (run.error != nil) {
+      WriteError(error, errorCapacity, run.error);
+      return -1;
+    }
+    return 0;
+  }
+}
+
+/// Opens a stream of 16-bit mono samples on the September speech engine.
+///
+/// The stream uses the same engine and node as the other voices, so the
+/// process tap and the chosen output hear it, and a stop ends it. The result
+/// is the number of the stream, or -1.
+int64_t september_speech_stream_begin(double sampleRate, const char *outputUID,
+                                      char *error, uintptr_t errorCapacity) {
+  @autoreleasepool {
+    september_speech_stop();
+    AVAudioEngine *engine = nil;
+    AVAudioPlayerNode *node = nil;
+    if (!CreateSpeechEngine(outputUID, &engine, &node, error, errorCapacity)) {
+      return -1;
+    }
+    AVAudioFormat *format =
+        [[AVAudioFormat alloc] initStandardFormatWithSampleRate:sampleRate
+                                                      channels:1];
+    [engine connect:node to:engine.mainMixerNode format:format];
+
+    SeptemberSpeechRun *run = [SeptemberSpeechRun new];
+    int64_t stream = 0;
+    @synchronized(SeptemberSpeechLock()) {
+      SeptemberSpeechEngine = engine;
+      SeptemberSpeechNode = node;
+      SeptemberRun = run;
+      stream = ++SeptemberStreamCount;
+      SeptemberStreamActive = stream;
+    }
+    if (!StartSpeechEngine(engine, node, run)) {
+      ClearSpeech(run);
+      WriteError(error, errorCapacity, run.error);
+      return -1;
+    }
+    return stream;
+  }
+}
+
+/// The run of the open stream, when `stream` is still the open stream.
+static SeptemberSpeechRun *StreamRun(int64_t stream, AVAudioEngine **engine,
+                                     AVAudioPlayerNode **node) {
+  @synchronized(SeptemberSpeechLock()) {
+    if (stream == 0 || SeptemberStreamActive != stream) {
+      return nil;
+    }
+    if (engine != NULL) {
+      *engine = SeptemberSpeechEngine;
+    }
+    *node = SeptemberSpeechNode;
+    return SeptemberRun;
+  }
+}
+
+/// Schedules one chunk of the open stream directly after the chunk before it.
+int32_t september_speech_stream_append(int64_t stream, const int16_t *samples,
+                                       uintptr_t count, char *error,
+                                       uintptr_t errorCapacity) {
+  @autoreleasepool {
+    AVAudioPlayerNode *node = nil;
+    SeptemberSpeechRun *run = StreamRun(stream, NULL, &node);
+    if (node == nil || run == nil || run.cancelled) {
+      WriteError(error, errorCapacity, @"the voice stopped");
+      return -1;
+    }
+    if (samples == NULL || count == 0) {
+      return 0;
+    }
+
+    AVAudioPCMBuffer *buffer =
+        [[AVAudioPCMBuffer alloc] initWithPCMFormat:[node outputFormatForBus:0]
+                                      frameCapacity:(AVAudioFrameCount)count];
+    buffer.frameLength = (AVAudioFrameCount)count;
+    float *channel = buffer.floatChannelData[0];
+    for (uintptr_t index = 0; index < count; index++) {
+      channel[index] = (float)samples[index] / 32768.0f;
+    }
+
+    @synchronized(run) {
+      if (run.cancelled || run.finished) {
+        return 0;
+      }
+      [run scheduledBuffer];
+      [node scheduleBuffer:buffer
+          completionCallbackType:AVAudioPlayerNodeCompletionDataPlayedBack
+               completionHandler:^(
+                   AVAudioPlayerNodeCompletionCallbackType callbackType) {
+                 (void)callbackType;
+                 [run playedBuffer];
+               }];
+    }
+    return 0;
+  }
+}
+
+/// Waits until the last chunk of the stream plays, or a stop ends it.
+int32_t september_speech_stream_finish(int64_t stream, char *error,
+                                       uintptr_t errorCapacity) {
+  @autoreleasepool {
+    AVAudioEngine *engine = nil;
+    AVAudioPlayerNode *node = nil;
+    SeptemberSpeechRun *run = StreamRun(stream, &engine, &node);
+    if (run == nil) {
+      return 0;
+    }
+
+    [run finishedSynthesis];
+    dispatch_semaphore_wait(run.done, DISPATCH_TIME_FOREVER);
+    [node stop];
+    [engine stop];
+    @synchronized(SeptemberSpeechLock()) {
+      if (SeptemberStreamActive == stream) {
+        SeptemberStreamActive = 0;
+      }
+    }
     ClearSpeech(run);
     if (run.error != nil) {
       WriteError(error, errorCapacity, run.error);

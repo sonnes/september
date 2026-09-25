@@ -241,11 +241,17 @@ write aborts the transaction and keeps the existing data. The same file can be
 restored in the Mac app. Import changes the retired `camera` panel tab from an
 older desktop backup to `phrases`.
 
+The Data screen shows a brief activity log during backup and import. It reports
+progress, skipped-entry counts, and errors. Each attempt starts a new log.
+A successful import reloads the app and clears the log.
+
 ## Browser services
 
 The browser uses the Web Speech API for the system voice. A system voice does not create an audio file.
 
 ElevenLabs speech files use a cache key made from the text and every sound setting. The repository splits each file into 1 MiB chunks. The cache holds at most 100 MiB and evicts whole least-recently-used files before each write. Reading a file refreshes its access time. A cache failure does not prevent new speech from playing.
+
+`streamSpeech` in `src/services/os.ts` speaks a cloud sentence through the ElevenLabs text-to-speech WebSocket. It plays each chunk of samples on one `AudioContext` while the rest of the sentence arrives. A complete sentence is kept in the same cache as a WAV file. A kept WAV or MP3 file plays without the socket. If the voice breaks after its first sound, the system voice does not repeat the sentence. See `docs/concepts/streaming-voice.md`.
 
 A note presents and exports from its own screen. `src/services/export.ts` saves the words as `.md` with nothing configured, the voice as `.mp3` from the speech cache, and a 9:16 `.mp4` with word-synced captions. `synthesizeTimed` in `src/services/os.ts` asks ElevenLabs for the sound and the character alignment together and caches both in the same bounded store. `src/services/video.ts` draws every frame on a canvas and joins them to the voice with `ffmpeg.wasm`, which needs the cross-origin isolation headers in `public/_headers`. Video assembly stays in the browser; cloud speech requests still send text to ElevenLabs. See `docs/concepts/note-present-export.md`.
 
@@ -266,6 +272,10 @@ opens the landing page or a Help guide never downloads it. The client knows
 the published rates of the models it lists, which is where a recorded cost
 comes from; a model it does not list still runs, and records no cost rather
 than a wrong one.
+
+Automatic text-generation requests send `model: "openrouter/free"`, including
+Suggestions overrides that select Automatic. Named model selections retain
+their model ID. Requests preserve JSON response settings.
 
 The space Agent uses OpenRouter's tool-calling request shape.
 When the model choice is Automatic, the Agent uses `openrouter/free` so

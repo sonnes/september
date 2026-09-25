@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  AGENT_MODELS,
+  modelChoices,
   modelConfigFor,
   modelSettingsFrom,
+  SUGGESTIONS_MODELS,
   type ModelSettings,
 } from "./model-config.ts";
 
@@ -64,5 +67,54 @@ describe("a setup written in an older shape", () => {
         suggestionsModel: null,
       });
     }
+  });
+});
+
+describe("modelChoices", () => {
+  it.each([
+    ["suggestions", SUGGESTIONS_MODELS],
+    ["agent", AGENT_MODELS],
+  ] as const)("starts the %s list with Automatic", (_, list) => {
+    expect(modelChoices(list, "")[0]).toMatchObject({ id: "", name: "Automatic" });
+  });
+
+  it.each([
+    ["suggestions", SUGGESTIONS_MODELS],
+    ["agent", AGENT_MODELS],
+  ] as const)(
+    "keeps the %s list short enough to need no search field",
+    (_, list) => {
+      expect(modelChoices(list, "").length).toBeLessThanOrEqual(8);
+    },
+  );
+
+  it.each([
+    ["suggestions", SUGGESTIONS_MODELS],
+    ["agent", AGENT_MODELS],
+  ] as const)("puts the frontier models before the open models in %s", (_, list) => {
+    const groups = modelChoices(list, "")
+      .slice(1)
+      .map((row) => row.group);
+    expect(groups.length).toBeGreaterThan(0);
+    expect(groups).toEqual([...groups].sort((a, b) =>
+      a === b ? 0 : a === "Frontier" ? -1 : 1,
+    ));
+    expect(new Set(groups)).toEqual(new Set(["Frontier", "Open models"]));
+  });
+
+  it("adds a saved model that is not in the list as the first row", () => {
+    const rows = modelChoices(SUGGESTIONS_MODELS, "vendor/old-model");
+    expect(rows[0]).toMatchObject({
+      id: "vendor/old-model",
+      name: "Current: vendor/old-model",
+    });
+    expect(rows[1]).toMatchObject({ id: "", name: "Automatic" });
+  });
+
+  it("adds no extra row for a saved model in the list", () => {
+    const saved = SUGGESTIONS_MODELS[0].id;
+    expect(modelChoices(SUGGESTIONS_MODELS, saved)).toHaveLength(
+      modelChoices(SUGGESTIONS_MODELS, "").length,
+    );
   });
 });

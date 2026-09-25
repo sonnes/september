@@ -14,7 +14,7 @@ export const SETTINGS_NAV = [
   {
     path: "/settings/writing",
     title: "AI Assistance",
-    description: "The service that writes, and what it knows about you.",
+    description: "The provider, and the model for each feature.",
   },
   {
     path: "/settings/usage",
@@ -51,7 +51,7 @@ export const CONNECTION_GUIDES = {
     steps: [
       "Choose Connect OpenRouter below.",
       "Sign in and authorize September in your browser.",
-      "Return here to choose a writing model.",
+      "Return to AI Assistance to choose the models.",
     ],
     url: "https://openrouter.ai/keys",
   },

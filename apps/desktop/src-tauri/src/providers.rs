@@ -2,10 +2,13 @@
 //! and ElevenLabs for a voice. A key persists in the macOS Keychain, is cached
 //! in Rust for one run, and never reaches the WebView.
 
-use std::sync::RwLock;
+use std::{sync::RwLock, time::Duration};
 
+use base64::Engine as _;
+use futures_util::{SinkExt, StreamExt};
 use reqwest::StatusCode;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use tokio_tungstenite::tungstenite::{self, client::IntoClientRequest, Message};
 
 pub(crate) const OPEN_ROUTER: &str = "https://openrouter.ai";
 
@@ -19,6 +22,10 @@ pub(crate) const OPEN_ROUTER_MODELS: [&str; 4] = [
     "openai/gpt-oss-20b:free",
 ];
 const ELEVEN_LABS: &str = "https://api.elevenlabs.io";
+
+/// A voice that sends no sound in this time does not answer. The system voice
+/// then speaks, so the user never waits long in silence.
+const FIRST_AUDIO: Duration = Duration::from_secs(5);
 
 /// One Keychain service holds both accounts, so the Mac shows them together.
 const KEYCHAIN_SERVICE: &str = "com.september.desktop";
@@ -106,9 +113,13 @@ pub struct Voice {
     pub name: String,
     #[serde(default)]
     pub preview_url: Option<String>,
-    /// `cloned`, `professional`, `premade`, or `similar`. It sets the order.
-    #[serde(default, skip_serializing)]
+    /// `cloned`, `professional`, `premade`, or `similar`. It sets the order,
+    /// and the Voice screen groups the voices of the user by it.
+    #[serde(default)]
     pub category: Option<String>,
+    /// True for a voice the user made. A library voice they added is false.
+    #[serde(default)]
+    pub is_owner: Option<bool>,
 }
 
 /// The account voice that an ElevenLabs cloning request created.
@@ -271,6 +282,7 @@ pub struct Providers {
     client: reqwest::Client,
     open_router: String,
     eleven_labs: String,
+    first_audio: Duration,
 }
 
 impl Default for Providers {
@@ -286,7 +298,14 @@ impl Providers {
             client: reqwest::Client::new(),
             open_router: open_router.trim_end_matches('/').to_owned(),
             eleven_labs: eleven_labs.trim_end_matches('/').to_owned(),
+            first_audio: FIRST_AUDIO,
         }
+    }
+
+    /// A test shortens the wait for the first sound. Nothing else calls this.
+    pub fn first_audio_within(mut self, limit: Duration) -> Self {
+        self.first_audio = limit;
+        self
     }
 
     pub async fn check(&self, provider: Provider, key: &str) -> Result<ProviderStatus> {
@@ -379,6 +398,118 @@ impl Providers {
         }
 
         Ok(response.bytes().await?.to_vec())
+    }
+
+    /// Speaks one sentence through the ElevenLabs socket.
+    ///
+    /// Each chunk of sound goes to `on_samples` as it arrives: 16-bit mono
+    /// samples at 24 kHz. A chunk can end inside a sample, so the odd byte
+    /// waits for the next chunk. The call returns when the service marks the
+    /// sentence final.
+    pub async fn speak_stream(
+        &self,
+        key: &str,
+        settings: &crate::speech::SpeechSettings,
+        text: &str,
+        mut on_samples: impl FnMut(&[i16]),
+    ) -> Result<()> {
+        let base = self
+            .eleven_labs
+            .replacen("https://", "wss://", 1)
+            .replacen("http://", "ws://", 1);
+        let voice = settings.voice_id.as_deref().unwrap_or_default();
+        let mut request = format!(
+            "{base}/v1/text-to-speech/{voice}/stream-input?model_id={}&output_format=pcm_24000",
+            settings.model_id
+        )
+        .into_client_request()
+        .map_err(unexpected)?;
+        request.headers_mut().insert(
+            "xi-api-key",
+            key.parse()
+                .map_err(|_| ProviderError::Unexpected("the key is not a header value".into()))?,
+        );
+
+        let (mut socket, _) = tokio_tungstenite::connect_async(request)
+            .await
+            .map_err(|error| match error {
+                tungstenite::Error::Http(response)
+                    if matches!(response.status().as_u16(), 401 | 403) =>
+                {
+                    ProviderError::Rejected
+                }
+                other => unexpected(other),
+            })?;
+
+        for message in [
+            serde_json::json!({
+                "text": " ",
+                "voice_settings": {
+                    "stability": settings.stability,
+                    "similarity_boost": settings.similarity,
+                    "speed": settings.speed,
+                },
+            }),
+            serde_json::json!({ "text": format!("{text} "), "flush": true }),
+            serde_json::json!({ "text": "" }),
+        ] {
+            socket
+                .send(Message::Text(message.to_string().into()))
+                .await
+                .map_err(unexpected)?;
+        }
+
+        let mut carry: Option<u8> = None;
+        let mut heard = false;
+        loop {
+            let next = if heard {
+                socket.next().await
+            } else {
+                tokio::time::timeout(self.first_audio, socket.next())
+                    .await
+                    .map_err(|_| {
+                        ProviderError::Unexpected("ElevenLabs sent no sound in time".into())
+                    })?
+            };
+            let text = match next {
+                Some(Ok(Message::Text(text))) => text,
+                Some(Ok(Message::Close(_))) | None => {
+                    return Err(ProviderError::Unexpected(
+                        "ElevenLabs closed the voice before the end".into(),
+                    ))
+                }
+                Some(Ok(_)) => continue,
+                Some(Err(error)) => return Err(unexpected(error)),
+            };
+
+            let reply: StreamReply = serde_json::from_str(&text)?;
+            if let Some(problem) = reply.message.or(reply.error) {
+                return Err(ProviderError::Unexpected(problem));
+            }
+            if let Some(audio) = reply.audio {
+                let mut bytes = Vec::with_capacity(audio.len());
+                bytes.extend(carry.take());
+                bytes.extend(
+                    base64::engine::general_purpose::STANDARD
+                        .decode(audio)
+                        .map_err(unexpected)?,
+                );
+                if bytes.len() % 2 == 1 {
+                    carry = bytes.pop();
+                }
+                let samples: Vec<i16> = bytes
+                    .chunks_exact(2)
+                    .map(|pair| i16::from_le_bytes([pair[0], pair[1]]))
+                    .collect();
+                if !samples.is_empty() {
+                    heard = true;
+                    on_samples(&samples);
+                }
+            }
+            if reply.is_final == Some(true) {
+                return Ok(());
+            }
+        }
     }
 
     /// Creates one account voice from an already encoded multipart request.
@@ -589,6 +720,23 @@ struct VoiceList {
     voices: Vec<Voice>,
 }
 
+/// One message from the ElevenLabs voice socket.
+#[derive(Deserialize)]
+struct StreamReply {
+    #[serde(default)]
+    audio: Option<String>,
+    #[serde(default, rename = "isFinal")]
+    is_final: Option<bool>,
+    #[serde(default)]
+    message: Option<String>,
+    #[serde(default)]
+    error: Option<String>,
+}
+
+fn unexpected(error: impl std::fmt::Display) -> ProviderError {
+    ProviderError::Unexpected(error.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use std::cell::Cell;
@@ -639,6 +787,21 @@ mod tests {
             Err(super::ProviderError::Keychain(detail)) if detail == "locked"
         ));
         assert_eq!(reads.get(), Provider::ALL.len());
+    }
+
+    #[test]
+    fn the_screen_reads_the_category_and_owner_of_a_voice() {
+        // The Voice screen puts a voice the user made in its own group.
+        let voice: Voice = serde_json::from_value(serde_json::json!({
+            "voice_id": "v1",
+            "name": "My voice",
+            "category": "cloned",
+            "is_owner": true,
+        }))
+        .unwrap();
+        let sent = serde_json::to_value(&voice).unwrap();
+        assert_eq!(sent["category"], "cloned");
+        assert_eq!(sent["is_owner"], true);
     }
 
     #[test]

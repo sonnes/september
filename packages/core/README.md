@@ -36,6 +36,10 @@ browser and desktop tests read the same fixture from
 Agent transcript and changes the retired `camera` panel tab to `phrases` in
 older desktop files.
 
+Import converts the older `writingService` and `writingModel` fields to
+`defaultModel`. A missing `suggestionsModel` defaults to null. This conversion
+preserves the setup owner ID so restored rows remain visible.
+
 `rules/agent.ts` owns the space-scoped Agent contract and loop. It validates
 provider tool calls before a platform adapter receives them, runs read tools
 immediately, persists write proposals for approval, and resumes the model
@@ -70,10 +74,19 @@ sets what it shows and never has to join anything.
 
 `rules/model-config.ts` selects the model settings for a text-generation job.
 All jobs use `defaultModel`. If `suggestionsModel` is not null, Suggestions use
-that value.
+that value. The file also holds the curated model lists, `SUGGESTIONS_MODELS`
+and `AGENT_MODELS`. `modelChoices` turns a list into rows: Automatic first, then
+the Frontier and Open models groups.
 
-The backup setup includes independent `autoSuggestions` and `autoPhrases`
-booleans. Missing fields default to `true`. Explicit `false` values survive
+`rules/voice.ts` holds the ElevenLabs voice models and the Expression presets.
+`voiceModelFrom` reads the deprecated Turbo models as their Flash replacements.
+`stabilityFor` snaps stability to the three Eleven v3 modes. `voiceRows`
+groups the voice list into Yours, Heard lately, From the library, and
+ElevenLabs voices, by `is_owner` and category, and
+`heardVoices` keeps the last three voices heard.
+
+The backup setup includes independent `autoSuggestions`, `autoPhrases`, and
+`agentEnabled` booleans. Missing fields default to `true`. Explicit `false` values survive
 export and restore. The parser rejects supplied values with another type.
 
 It also holds how that work reads. `groupAgentTurns` folds the flat transcript

@@ -24,6 +24,11 @@ The setup object contains `defaultModel` and `suggestionsModel`. The second
 value is null when Suggestions use the default. Each non-null value contains
 one service and one model ID.
 
+Import converts the older `writingService` and `writingModel` fields to
+`defaultModel` when that field is absent. A missing `suggestionsModel` defaults
+to null. The parser validates the converted values and preserves the setup
+owner ID, which both apps use to find restored rows.
+
 The file does not contain provider keys. It also excludes the selected audio
 output, last path, migration state, cached speech files, and local message
 audio paths. The Mac app keeps provider keys in the Keychain. The browser
@@ -62,6 +67,10 @@ storage.
 The screen shows the source, export time, row counts, and how many entries
 have errors. Import needs a second confirmation because it replaces portable
 settings and all domain data. It does not merge rows.
+
+An accessible activity log shows file reading, validation, download preparation,
+and restore progress. It includes skipped-entry counts and keeps errors visible
+until the next attempt. The log stays in memory and clears after the import reload.
 
 IndexedDB uses one write transaction across the settings and domain stores.
 SQLite uses one database transaction. A write failure keeps the current data. A successful import reloads the application.

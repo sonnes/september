@@ -25,8 +25,11 @@ removes the device with the fixed UID
 ## Send only spoken messages
 
 System speech comes from `AVSpeechSynthesizer` buffers in the native process.
-Cached ElevenLabs speech opens as an `AVAudioFile`. Both feed the same
-September-owned `AVAudioEngine`, so the process tap can receive either voice.
+Streamed ElevenLabs speech arrives from Rust as chunks of samples, and the
+native process schedules each chunk as a buffer. A kept ElevenLabs sentence
+opens as an `AVAudioFile`. All three feed the same September-owned
+`AVAudioEngine`, so the process tap can receive every voice. See
+[streaming voice](streaming-voice.md).
 
 The engine routes its output audio unit to the speaker chosen in Talk. This
 changes only September audio and never changes the macOS sound output.
@@ -37,11 +40,11 @@ voice and do not enter the virtual microphone.
 ## Cross the Tauri boundary
 
 The React app calls three microphone commands to read, start, and stop the
-device. It also calls native commands to speak system text, play a cached file,
-and stop speech.
+device. It also calls native commands to speak system text, stream a
+cloud-voice sentence, and stop speech.
 
-Rust validates every cached file before native playback. The file must resolve
-inside the application audio directory.
+Rust chooses every kept file itself, from the hash of the settings and the
+words. The WebView never sends a file path for native playback.
 
 ## Ask for system permission
 

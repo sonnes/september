@@ -5,6 +5,7 @@ import {
   newSpaceMode,
   newSpaceTitle,
   spaceForSlug,
+  spaceModeFrom,
   spaceNeedsSetup,
 } from "./spaces.ts";
 
@@ -73,6 +74,22 @@ describe("newSpaceMode", () => {
 
   it("opens Talk when no service is connected", () => {
     expect(newSpaceMode(false)).toBe("talk");
+  });
+
+  it("opens Talk when the agent is off", () => {
+    expect(newSpaceMode(true, false)).toBe("talk");
+  });
+});
+
+describe("spaceModeFrom", () => {
+  it("opens a space in the mode it was left in", () => {
+    expect(spaceModeFrom({ mum: "agent" }, "mum")).toBe("agent");
+    expect(spaceModeFrom({ mum: "notes" }, "mum")).toBe("notes");
+  });
+
+  it("opens a space left in Agent in Talk when the agent is off", () => {
+    expect(spaceModeFrom({ mum: "agent" }, "mum", false)).toBe("talk");
+    expect(spaceModeFrom({ mum: "notes" }, "mum", false)).toBe("notes");
   });
 });
 

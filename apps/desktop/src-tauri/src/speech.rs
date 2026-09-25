@@ -3,7 +3,10 @@
 //! A file is named for what makes its sound: the settings and the words. The
 //! same request therefore never goes to the service twice.
 
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    time::{Duration, Instant},
+};
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -63,6 +66,7 @@ pub async fn synthesize(
     settings: &SpeechSettings,
     text: &str,
     key: Option<&str>,
+    providers: &Providers,
 ) -> Result<(PathBuf, bool)> {
     let path = directory.join(file_name(settings, text));
     if path.exists() {
@@ -70,7 +74,7 @@ pub async fn synthesize(
     }
 
     let key = key.ok_or("Connect ElevenLabs in Settings first.")?;
-    let audio = Providers::default()
+    let audio = providers
         .speak(key, settings, &normalize(text))
         .await
         .map_err(|error| error.to_string())?;
@@ -85,9 +89,123 @@ pub async fn synthesize(
     Ok((path, false))
 }
 
+/// The ElevenLabs sound format of a stream: 16-bit mono samples at 24 kHz.
+pub const STREAM_SAMPLE_RATE: u32 = 24_000;
+
+/// The ElevenLabs models that the voice socket does not accept.
+const FILE_ONLY_MODELS: [&str; 1] = ["eleven_v3"];
+
+/// How a sentence was heard.
+#[derive(Debug)]
+pub enum Streamed {
+    /// A file plays the sentence: a kept file, or a model without a socket.
+    File { path: PathBuf, from_cache: bool },
+    /// The socket sent the sound, and the first sound came after this time.
+    Spoken { first_audio: Duration },
+}
+
+/// A stream that stopped. `started` says whether any sound went out, because
+/// a second voice must not say the words again after the first one began.
+#[derive(Debug)]
+pub struct StreamError {
+    pub started: bool,
+    pub message: String,
+}
+
+/// Speaks one sentence through the voice socket, or finds a kept file.
+///
+/// Each chunk of samples goes to `on_samples` as it arrives. The samples of a
+/// complete sentence are kept as a WAV file beside the MP3 files, so the same
+/// sentence never goes to the service twice. A stopped sentence keeps nothing.
+pub async fn stream(
+    directory: &Path,
+    settings: &SpeechSettings,
+    text: &str,
+    key: Option<&str>,
+    providers: &Providers,
+    mut on_samples: impl FnMut(&[i16]),
+) -> std::result::Result<Streamed, StreamError> {
+    let not_started = |message: String| StreamError {
+        started: false,
+        message,
+    };
+    let mp3 = directory.join(file_name(settings, text));
+    let wav = mp3.with_extension("wav");
+    for path in [wav.clone(), mp3] {
+        if path.exists() {
+            return Ok(Streamed::File {
+                path,
+                from_cache: true,
+            });
+        }
+    }
+
+    if FILE_ONLY_MODELS.contains(&settings.model_id.as_str()) {
+        let (path, from_cache) = synthesize(directory, settings, text, key, providers)
+            .await
+            .map_err(not_started)?;
+        return Ok(Streamed::File { path, from_cache });
+    }
+
+    let key = key.ok_or_else(|| not_started("Connect ElevenLabs in Settings first.".into()))?;
+    let began = Instant::now();
+    let mut first_audio = None;
+    let mut samples = Vec::new();
+    let spoken = providers
+        .speak_stream(key, settings, &normalize(text), |chunk| {
+            first_audio.get_or_insert_with(|| began.elapsed());
+            samples.extend_from_slice(chunk);
+            on_samples(chunk);
+        })
+        .await;
+    if let Err(error) = spoken {
+        return Err(StreamError {
+            started: !samples.is_empty(),
+            message: error.to_string(),
+        });
+    }
+
+    // The sentence was heard, so a file that cannot be written costs only a
+    // second request later.
+    let _ = keep_wav(&wav, &samples);
+    Ok(Streamed::Spoken {
+        first_audio: first_audio.unwrap_or_default(),
+    })
+}
+
+/// Writes 16-bit mono samples as a WAV file, under a name that is complete
+/// only after the last byte.
+fn keep_wav(path: &Path, samples: &[i16]) -> std::io::Result<()> {
+    let data = (samples.len() * 2) as u32;
+    let mut bytes = Vec::with_capacity(44 + samples.len() * 2);
+    bytes.extend_from_slice(b"RIFF");
+    bytes.extend_from_slice(&(36 + data).to_le_bytes());
+    bytes.extend_from_slice(b"WAVEfmt ");
+    bytes.extend_from_slice(&16_u32.to_le_bytes());
+    bytes.extend_from_slice(&1_u16.to_le_bytes()); // PCM
+    bytes.extend_from_slice(&1_u16.to_le_bytes()); // mono
+    bytes.extend_from_slice(&STREAM_SAMPLE_RATE.to_le_bytes());
+    bytes.extend_from_slice(&(STREAM_SAMPLE_RATE * 2).to_le_bytes());
+    bytes.extend_from_slice(&2_u16.to_le_bytes());
+    bytes.extend_from_slice(&16_u16.to_le_bytes());
+    bytes.extend_from_slice(b"data");
+    bytes.extend_from_slice(&data.to_le_bytes());
+    for sample in samples {
+        bytes.extend_from_slice(&sample.to_le_bytes());
+    }
+
+    if let Some(directory) = path.parent() {
+        std::fs::create_dir_all(directory)?;
+    }
+    let partial = path.with_extension("part");
+    std::fs::write(&partial, &bytes)?;
+    std::fs::rename(&partial, path)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{file_name, normalize, synthesize, SpeechSettings};
+    use crate::providers::Providers;
 
     fn settings() -> SpeechSettings {
         SpeechSettings {
@@ -178,9 +296,15 @@ mod tests {
 
         // No key is passed in a test, so a call to the service would fail.
         // The extra spaces prove that the lookup reads the normalized words.
-        let (found, from_cache) = synthesize(&directory, &settings(), "  Hello  ", None)
-            .await
-            .unwrap();
+        let (found, from_cache) = synthesize(
+            &directory,
+            &settings(),
+            "  Hello  ",
+            None,
+            &Providers::default(),
+        )
+        .await
+        .unwrap();
 
         assert!(from_cache);
         assert_eq!(found, path);

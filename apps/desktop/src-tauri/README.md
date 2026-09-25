@@ -53,9 +53,9 @@ The `settings` table stores a unique text key and a JSON value. Keys must
 contain 1 to 256 bytes. The `audio-output` setting keeps the Core Audio UID for
 September's own playback device.
 
-The setup value includes `autoSuggestions` and `autoPhrases`. The backup type
-preserves these booleans through export and restore. Older backups default both
-fields to `true`. These fields require no schema migration.
+The setup value includes `autoSuggestions`, `autoPhrases`, and `agentEnabled`.
+The backup type preserves these booleans through export and restore. Older
+backups default all three fields to `true`. These fields require no schema migration.
 
 The `spaces`, `messages`, `agent_messages`, `notes`, and `saved_phrases` tables
 store domain fields in typed columns. Talk messages and notes can belong to a
@@ -374,7 +374,7 @@ their sound. Voice-list previews stay in the WebView and do not enter the tap.
 | `audio_output`       | none                         | The UID September uses |
 | `audio_output_set`   | `{ uid }`                    | none                   |
 | `speech_system`      | `{ text, voice_id?, speed }` | none                   |
-| `speech_file_play`   | `{ path }`                   | none                   |
+| `speech_stream`      | `{ text, settings }`         | `{ from_cache, latency_ms, interrupted }` |
 | `speech_native_stop` | none                         | none                   |
 
 `audio_output_set` verifies the device and saves its UID without changing the
@@ -382,9 +382,18 @@ macOS sound output. If the saved device is absent, `audio_output` returns the
 current macOS output until the saved device returns.
 
 `speech_system` receives buffers from `AVSpeechSynthesizer`.
-`speech_file_play` accepts only a cached file inside the application audio
-directory. Both commands feed an `AVAudioPlayerNode` in a September-owned
-`AVAudioEngine`. The engine's output audio unit uses the selected device.
+`speech_stream` opens the ElevenLabs voice socket with the stored key. It
+schedules each chunk of 16-bit samples as the chunk arrives. Both commands feed
+an `AVAudioPlayerNode` in a September-owned `AVAudioEngine`. The engine's
+output audio unit uses the selected device.
+
+`speech_stream` keeps a complete sentence as a WAV file beside the MP3 files,
+under the same SHA-256 name. A kept WAV or MP3 file plays without the socket.
+The `eleven_v3` model has no socket, so it plays as an MP3 file.
+If the socket fails before the first sound, the command rejects. The WebView
+then speaks the sentence in the system voice. If the socket fails after the
+first sound, the sound stops and `interrupted` holds the reason.
+`speech_native_stop` also cancels the stream.
 
 ## Publish the virtual microphone
 

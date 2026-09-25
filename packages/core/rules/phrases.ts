@@ -368,7 +368,9 @@ Given the User's current saved phrases and starters, their space context (who th
 - The space context and the User's own words decide the subject of every row. Do NOT add phrases about needs, care, health, or thanks unless the context or the history raises them.
 - STRICTLY keep the same language as the context and history.
 - Return 6-8 phrases and 4-6 starters.
-</rules>`;
+</rules>
+
+Answer with JSON: {"phrases": ["...", "..."], "starters": ["...", "..."]}`;
 
 /** A phrase or starter row as embedded in the prompt — pinned rows get a [pinned] marker. */
 export interface PromptPhrase {

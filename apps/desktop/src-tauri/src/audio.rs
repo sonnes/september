@@ -121,6 +121,20 @@ extern "C" {
         capacity: usize,
     ) -> i32;
     fn september_speech_stop();
+    fn september_speech_stream_begin(
+        sample_rate: f64,
+        output_uid: *const c_char,
+        error: *mut c_char,
+        capacity: usize,
+    ) -> i64;
+    fn september_speech_stream_append(
+        stream: i64,
+        samples: *const i16,
+        count: usize,
+        error: *mut c_char,
+        capacity: usize,
+    ) -> i32;
+    fn september_speech_stream_finish(stream: i64, error: *mut c_char, capacity: usize) -> i32;
 }
 
 #[link(name = "CoreFoundation", kind = "framework")]
@@ -513,6 +527,56 @@ pub fn play_speech_file(path: &Path, output_uid: &str) -> Result<(), String> {
 /// Stops either native voice now.
 pub fn stop_speech() {
     unsafe { september_speech_stop() };
+}
+
+/// A cloud-voice sentence that plays while its samples arrive.
+///
+/// It plays through the same native engine as the other voices, so the process
+/// tap hears it. A stop ends it like any other voice.
+pub struct SpeechStream(i64);
+
+impl SpeechStream {
+    /// Opens the stream on the September output, for 16-bit mono samples.
+    pub fn begin(sample_rate: u32, output_uid: &str) -> Result<Self, String> {
+        let output = native_text(output_uid, "the sound output identifier")?;
+        let mut error = [0 as c_char; NATIVE_ERROR_CAPACITY];
+        let stream = unsafe {
+            september_speech_stream_begin(
+                f64::from(sample_rate),
+                output.as_ptr(),
+                error.as_mut_ptr(),
+                NATIVE_ERROR_CAPACITY,
+            )
+        };
+        if stream < 0 {
+            native_result(-1, &error)?;
+        }
+        Ok(Self(stream))
+    }
+
+    /// Plays these samples directly after the samples before them.
+    pub fn append(&self, samples: &[i16]) -> Result<(), String> {
+        let mut error = [0 as c_char; NATIVE_ERROR_CAPACITY];
+        let status = unsafe {
+            september_speech_stream_append(
+                self.0,
+                samples.as_ptr(),
+                samples.len(),
+                error.as_mut_ptr(),
+                NATIVE_ERROR_CAPACITY,
+            )
+        };
+        native_result(status, &error)
+    }
+
+    /// Waits until the last samples play, or until a stop.
+    pub fn finish(self) -> Result<(), String> {
+        let mut error = [0 as c_char; NATIVE_ERROR_CAPACITY];
+        let status = unsafe {
+            september_speech_stream_finish(self.0, error.as_mut_ptr(), NATIVE_ERROR_CAPACITY)
+        };
+        native_result(status, &error)
+    }
 }
 
 #[cfg(test)]

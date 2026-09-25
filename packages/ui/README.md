@@ -21,6 +21,9 @@ Each app's CSS entry point imports the shared theme and scans this package:
 @source "../../../packages/ui";
 ```
 
+`Switch` is the shadcn switch at 24px. Put it in a row with a `Label` that
+names it, so the row gives the 44px target that `DESIGN.md` asks for.
+
 `theme.css` owns the fonts, semantic colors, dark tokens, scrollbar treatment,
 and the `control`, `chip`, and `surface` radius roles from `DESIGN.md`.
 

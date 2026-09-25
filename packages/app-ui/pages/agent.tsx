@@ -43,6 +43,7 @@ import {
   Problem,
   SpaceDock,
   SpaceTitle,
+  agentEnabled,
   spaceParams,
   useRememberMode,
   useSpaceBySlug,
@@ -55,8 +56,15 @@ import {
 
 export function AgentScreen({ slug }: { slug: string }) {
   const { space, spaces } = useSpaceBySlug(slug, "agent");
+  const navigate = useNavigate();
+  // An address saved before the user turned the agent off opens Talk.
+  const off = !agentEnabled();
 
-  if (!space) return null;
+  useEffect(() => {
+    if (off && space) void navigate({ ...spaceParams(space, "talk"), replace: true });
+  }, [off, space, navigate]);
+
+  if (!space || off) return null;
   return <Agent key={space.id} space={space} spaces={spaces} />;
 }
 

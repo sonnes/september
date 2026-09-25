@@ -131,10 +131,13 @@ export type SpaceMode = "talk" | "notes" | "agent";
  * A space is made empty, and the agent is what fills it: it asks what the
  * space is for and writes the name, the description, and the first phrases
  * from the answer. With no writing service there is nothing to ask, so the
- * space opens where a user can use it straight away.
+ * space opens where a user can use it straight away. A user who turned the
+ * agent off in AI Assistance also starts in Talk.
  */
-export const newSpaceMode = (hasWriting: boolean): SpaceMode =>
-  hasWriting ? "agent" : "talk";
+export const newSpaceMode = (
+  hasWriting: boolean,
+  agentEnabled = true,
+): SpaceMode => (hasWriting && agentEnabled ? "agent" : "talk");
 
 /**
  * Whether a space has still to be told what it is for.
@@ -218,9 +221,14 @@ export type SpaceModes = Record<string, string>;
  * The slug is the key, not the identifier, so the space list can choose the
  * mode before it reads a row.
  */
-export function spaceModeFrom(modes: SpaceModes, slug: string): SpaceMode {
+export function spaceModeFrom(
+  modes: SpaceModes,
+  slug: string,
+  agentEnabled = true,
+): SpaceMode {
   const mode = modes[slug];
-  return mode === "notes" || mode === "agent" ? mode : "talk";
+  if (mode === "agent") return agentEnabled ? "agent" : "talk";
+  return mode === "notes" ? mode : "talk";
 }
 
 /** The modes with one space changed. The others keep the mode they hold. */

@@ -135,6 +135,8 @@ pub struct BackupSetup {
     pub auto_suggestions: bool,
     #[serde(default = "enabled_by_default")]
     pub auto_phrases: bool,
+    #[serde(default = "enabled_by_default")]
+    pub agent_enabled: bool,
     pub voice_service: String,
 }
 
@@ -1463,6 +1465,7 @@ mod tests {
                     }),
                     auto_suggestions: true,
                     auto_phrases: true,
+                    agent_enabled: true,
                     voice_service: "elevenlabs".to_owned(),
                 }),
                 speech: Some(BackupSpeech {
@@ -1601,6 +1604,27 @@ mod tests {
         let value = serde_json::to_value(contents).unwrap();
         assert_eq!(value["settings"]["setup"]["autoSuggestions"], true);
         assert_eq!(value["settings"]["setup"]["autoPhrases"], true);
+    }
+
+    #[test]
+    fn a_switched_off_agent_survives_backup_restore() {
+        let mut value = serde_json::to_value(backup_contents("space-1")).unwrap();
+        value["settings"]["setup"]["agentEnabled"] = serde_json::Value::Bool(false);
+        let contents: BackupContents = serde_json::from_value(value).unwrap();
+        let mut repository = Repository::open_in_memory().unwrap();
+        repository.replace_backup_contents(&contents).unwrap();
+        let restored = serde_json::to_value(repository.backup_contents("user-1").unwrap()).unwrap();
+        assert_eq!(restored["settings"]["setup"]["agentEnabled"], false);
+    }
+
+    #[test]
+    fn old_backups_turn_the_agent_on() {
+        let contents: BackupContents = serde_json::from_str(include_str!(
+            "../../../../packages/core/rules/fixtures/backup-v1.json"
+        ))
+        .unwrap();
+        let value = serde_json::to_value(contents).unwrap();
+        assert_eq!(value["settings"]["setup"]["agentEnabled"], true);
     }
 
     #[test]

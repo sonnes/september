@@ -66,13 +66,19 @@ a matching Lucide icon in the layout, including desktop-only destinations.
 the file with `@september/core`, shows its date and row counts, and asks for a
 second confirmation before it replaces data.
 
-The same file owns the writing-model controls. Writing settings select the
-default service and an optional Suggestions service. The OpenRouter connection
-screen selects the default model and the optional Suggestions model.
+The Data screen shows an accessible activity log for file reading, validation,
+download preparation, and restore. Errors remain visible until the next attempt.
+The log stays in memory and contains no conversation text. A successful restore
+reloads the app and clears the log.
 
-Writing settings also contain independent switches for automatic AI suggestions
-and phrase generation. Both switches save immediately and retain their saved
-value after a failed write. Generation hooks subscribe to successful setup changes.
+The same file owns the writing-model controls. AI Assistance shows the
+provider first. The Suggestions section has a switch and a model list. The
+Agent and phrases section has a Phrases switch, an Agent switch, and one model
+list. The key screens hold no model list.
+
+Each switch saves immediately and keeps its saved value after a failed write.
+Speaking style offers Plain, Warm, Detailed, and Custom. The instructions field
+shows only for Custom. Generation hooks subscribe to successful setup changes.
 
 Automatic AI suggestions require an edit that ends in whitespace or
 `. , ! ? ; :`, followed by a 200 ms pause. Restored drafts wait for an edit.
@@ -162,8 +168,8 @@ screen for retry or silent use.
 in both apps. It opens the full policies through the platform browser
 service, preserving the in-memory setup answers. It adds no consent flag.
 
-About you asks for a name and speaking style during setup. Writing settings
-edit the speaking style; neither screen includes a Personal words field.
+About you asks for a name and speaking style during setup. AI Assistance
+edits the speaking style; neither screen includes a Personal words field.
 
 Setup follows Welcome → About you → Connect → Finish in both apps. It no
 longer asks for a setup mode; Connect keeps working defaults and optional

@@ -22,6 +22,8 @@ let bootstrapped = false;
 
 export const dismissedIdeas: string[] = [];
 export const spaceModes: Record<string, string> = {};
+/** The voices heard lately on the Voice screen, newest first. */
+export const heardVoiceIds: string[] = [];
 
 /** Loads the small settings cache before the router chooses its first screen. */
 export async function bootstrapBrowserServices(): Promise<void> {
@@ -37,6 +39,7 @@ export async function bootstrapBrowserServices(): Promise<void> {
     savedPresent,
     keys,
     output,
+    savedHeard,
   ] = await Promise.all([
     repository.getSetting<SavedSetup>('setup'),
     repository.getSetting<string>('lastPath'),
@@ -47,6 +50,7 @@ export async function bootstrapBrowserServices(): Promise<void> {
     repository.getSetting<unknown>('present'),
     repository.getSetting<Partial<Record<Provider, string>>>('provider-keys'),
     repository.getSetting<string>('audio-output'),
+    repository.getSetting<string[]>('heard-voices'),
   ]);
   // Every other setting here is normalised as it is read. This one was
   // not, so a setup written before `defaultModel` existed threw on the
@@ -56,6 +60,7 @@ export async function bootstrapBrowserServices(): Promise<void> {
     ...modelSettingsFrom(savedSetup),
     autoSuggestions: savedSetup.autoSuggestions ?? true,
     autoPhrases: savedSetup.autoPhrases ?? true,
+    agentEnabled: savedSetup.agentEnabled ?? true,
   };
   lastPath = savedPath;
   speech = savedSpeech;
@@ -65,6 +70,7 @@ export async function bootstrapBrowserServices(): Promise<void> {
   present = presentSettings(savedPresent);
   providerKeys = keys ?? {};
   selectedOutput = output ?? '';
+  heardVoiceIds.splice(0, heardVoiceIds.length, ...(savedHeard ?? []));
   bootstrapped = true;
 }
 
@@ -350,7 +356,259 @@ export async function playSpeechFile(path: string): Promise<void> {
 
 export async function stopNativeSpeech(): Promise<void> {
   window.speechSynthesis?.cancel();
+  stopStream?.();
   clearActiveAudio();
+}
+
+/** The voice socket sends 16-bit mono samples at this rate. */
+const STREAM_RATE = 24_000;
+/** A voice that sends no sound in this time does not answer. */
+const FIRST_AUDIO_MS = 5_000;
+/** The ElevenLabs models that the voice socket does not accept. */
+const FILE_ONLY_MODELS = ['eleven_v3'];
+
+/**
+ * The cloud voice broke after its first sound. The listener heard part of the
+ * sentence, so a second voice must not say it again.
+ */
+export class InterruptedSpeech extends Error {}
+
+let stopStream: (() => void) | null = null;
+
+/**
+ * Speaks one sentence in the cloud voice while its sound arrives.
+ *
+ * The first sound plays before ElevenLabs finishes the sentence. A complete
+ * sentence is kept as a WAV file, and a kept sentence plays without the
+ * socket. A model without a socket plays as a file. The promise resolves when
+ * the sound stops.
+ */
+export async function streamSpeech(
+  text: string,
+  settings: SpeechSettings,
+  signal?: AbortSignal
+): Promise<{ from_cache: boolean; latency_ms: number }> {
+  const started = Date.now();
+  if (!settings.voiceId) throw new Error('Choose an ElevenLabs voice first.');
+
+  const playFile = async (file: { path: string; from_cache: boolean }) => {
+    const latency_ms = Date.now() - started;
+    if (signal?.aborted) {
+      if (file.path.startsWith('blob:')) URL.revokeObjectURL(file.path);
+    } else {
+      await playSpeechFile(file.path);
+    }
+    return { from_cache: file.from_cache, latency_ms };
+  };
+  if (FILE_ONLY_MODELS.includes(settings.modelId)) {
+    return playFile(await synthesizeSpeech(text, settings));
+  }
+
+  const cacheId = await speechBlobId(text, settings);
+  const kept = await keptSpeech(cacheId);
+  if (kept) return playFile({ path: URL.createObjectURL(kept), from_cache: true });
+  if (signal?.aborted) return { from_cache: false, latency_ms: 0 };
+
+  const heard = await playStream(text, settings, signal);
+  if (!heard) return { from_cache: false, latency_ms: 0 };
+  try {
+    await (await getRepository()).putBlob(`${cacheId}:pcm`, wavFile(heard.chunks));
+  } catch {
+    // The sentence was heard. A failed write costs only a second request.
+  }
+  return { from_cache: false, latency_ms: heard.firstAudio - started };
+}
+
+/** The WAV file of a streamed sentence, or else the MP3 file of the file path. */
+async function keptSpeech(cacheId: string): Promise<Blob | null> {
+  try {
+    const repository = await getRepository();
+    return (
+      (await repository.getBlob(`${cacheId}:pcm`)) ?? (await repository.getBlob(cacheId)) ?? null
+    );
+  } catch {
+    // Speech remains available when private storage is denied or full.
+    return null;
+  }
+}
+
+/**
+ * Plays the samples of the voice socket as they arrive.
+ *
+ * It resolves with the samples when the last one plays, or with null after a
+ * stop. A chunk can end inside a sample, so the odd byte waits for the next
+ * chunk.
+ */
+function playStream(
+  text: string,
+  settings: SpeechSettings,
+  signal?: AbortSignal
+): Promise<{ chunks: Uint8Array[]; firstAudio: number } | null> {
+  stopStream?.();
+  return new Promise((resolve, reject) => {
+    const socket = new WebSocket(
+      `wss://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(
+        settings.voiceId ?? ''
+      )}/stream-input?model_id=${encodeURIComponent(settings.modelId)}&output_format=pcm_${STREAM_RATE}`
+    );
+    const context = new AudioContext({ sampleRate: STREAM_RATE });
+    if (selectedOutput && 'setSinkId' in context) {
+      void (context as AudioContext & { setSinkId(id: string): Promise<void> })
+        .setSinkId(selectedOutput)
+        .catch(() => undefined);
+    }
+    const sources: AudioBufferSourceNode[] = [];
+    const chunks: Uint8Array[] = [];
+    let carry: number | null = null;
+    let playhead = 0;
+    let playing = 0;
+    let firstAudio = 0;
+    let final = false;
+    let settled = false;
+
+    const end = () => {
+      settled = true;
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', stop);
+      if (stopStream === stop) stopStream = null;
+      socket.onopen = socket.onmessage = socket.onerror = socket.onclose = null;
+      socket.close();
+    };
+    const silence = () => {
+      for (const source of sources) {
+        source.onended = null;
+        source.stop();
+      }
+      void context.close().catch(() => undefined);
+    };
+    const fail = (message: string) => {
+      if (settled) return;
+      end();
+      silence();
+      reject(firstAudio ? new InterruptedSpeech(message) : new Error(message));
+    };
+    function stop() {
+      if (settled) return;
+      end();
+      silence();
+      resolve(null);
+    }
+    const finishWhenPlayed = () => {
+      if (settled || !final || playing > 0) return;
+      end();
+      void context.close().catch(() => undefined);
+      resolve({ chunks, firstAudio });
+    };
+    const play = (audio: string) => {
+      let bytes = Uint8Array.from(atob(audio), character => character.charCodeAt(0));
+      if (carry !== null) {
+        const joined = new Uint8Array(bytes.length + 1);
+        joined[0] = carry;
+        joined.set(bytes, 1);
+        bytes = joined;
+        carry = null;
+      }
+      if (bytes.length % 2 === 1) {
+        carry = bytes[bytes.length - 1];
+        bytes = bytes.subarray(0, bytes.length - 1);
+      }
+      if (bytes.length === 0) return;
+
+      chunks.push(bytes);
+      const samples = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      const buffer = context.createBuffer(1, bytes.length / 2, STREAM_RATE);
+      const channel = buffer.getChannelData(0);
+      for (let index = 0; index < channel.length; index++) {
+        channel[index] = samples.getInt16(index * 2, true) / 32768;
+      }
+      const source = context.createBufferSource();
+      source.buffer = buffer;
+      source.connect(context.destination);
+      playhead = Math.max(playhead, context.currentTime);
+      source.start(playhead);
+      playhead += buffer.duration;
+      sources.push(source);
+      playing += 1;
+      source.onended = () => {
+        playing -= 1;
+        finishWhenPlayed();
+      };
+      if (!firstAudio) firstAudio = Date.now();
+    };
+
+    const timer = setTimeout(() => {
+      if (!firstAudio) fail('ElevenLabs sent no sound in time.');
+    }, FIRST_AUDIO_MS);
+    stopStream = stop;
+    signal?.addEventListener('abort', stop, { once: true });
+
+    socket.onopen = () => {
+      socket.send(
+        JSON.stringify({
+          text: ' ',
+          voice_settings: {
+            stability: settings.stability,
+            similarity_boost: settings.similarity,
+            speed: settings.speed,
+          },
+          xi_api_key: elevenLabsKey(),
+        })
+      );
+      socket.send(JSON.stringify({ text: `${text} `, flush: true }));
+      socket.send(JSON.stringify({ text: '' }));
+    };
+    socket.onmessage = event => {
+      let reply: { audio?: string | null; isFinal?: boolean | null; message?: string; error?: string };
+      try {
+        reply = JSON.parse(String(event.data));
+      } catch {
+        fail('ElevenLabs sent a reply September could not read.');
+        return;
+      }
+      const problem = reply.message ?? reply.error;
+      if (problem) {
+        fail(problem);
+        return;
+      }
+      if (reply.audio) play(reply.audio);
+      if (reply.isFinal) {
+        if (!firstAudio) {
+          fail('ElevenLabs sent no sound.');
+          return;
+        }
+        final = true;
+        finishWhenPlayed();
+      }
+    };
+    socket.onerror = () => fail('ElevenLabs could not speak. Try again in a minute.');
+    socket.onclose = () => {
+      if (!final) fail('ElevenLabs closed the voice before the end.');
+    };
+  });
+}
+
+/** 16-bit mono samples in a WAV file, which every browser can play. */
+function wavFile(chunks: Uint8Array[]): Blob {
+  const size = chunks.reduce((total, chunk) => total + chunk.length, 0);
+  const header = new DataView(new ArrayBuffer(44));
+  const write = (offset: number, word: string) =>
+    [...word].forEach((character, index) =>
+      header.setUint8(offset + index, character.charCodeAt(0))
+    );
+  write(0, 'RIFF');
+  header.setUint32(4, 36 + size, true);
+  write(8, 'WAVE');
+  write(12, 'fmt ');
+  header.setUint32(16, 16, true);
+  header.setUint16(20, 1, true);
+  header.setUint16(22, 1, true);
+  header.setUint32(24, STREAM_RATE, true);
+  header.setUint32(28, STREAM_RATE * 2, true);
+  header.setUint16(32, 2, true);
+  header.setUint16(34, 16, true);
+  write(36, 'data');
+  header.setUint32(40, size, true);
+  return new Blob([header.buffer, ...(chunks as BlobPart[])], { type: 'audio/wav' });
 }
 
 export const audioUrl = (path: string) => path;
@@ -358,6 +616,11 @@ export const audioUrl = (path: string) => path;
 export async function rememberDismissed(texts: string[]): Promise<void> {
   dismissedIdeas.splice(0, dismissedIdeas.length, ...texts);
   await (await getRepository()).putSetting('dismissed-ideas', texts);
+}
+
+export async function rememberHeardVoices(ids: string[]): Promise<void> {
+  heardVoiceIds.splice(0, heardVoiceIds.length, ...ids);
+  await (await getRepository()).putSetting('heard-voices', ids);
 }
 
 export async function rememberModes(modes: Record<string, string>): Promise<void> {
@@ -429,6 +692,10 @@ export interface Voice {
   id: string;
   name: string;
   preview_url: string | null;
+  /** `premade`, `cloned`, `generated`, `professional`, and more, from ElevenLabs. */
+  category?: string | null;
+  /** True for a voice the user made. A library voice they added is false. */
+  is_owner?: boolean | null;
 }
 
 export interface WritingModel {
@@ -550,12 +817,20 @@ async function providerJson<T>(provider: Provider, url: string): Promise<T> {
 
 export async function listVoices(): Promise<Voice[]> {
   const answer = await providerJson<{
-    voices: Array<{ voice_id: string; name: string; preview_url?: string }>;
+    voices: Array<{
+      voice_id: string;
+      name: string;
+      preview_url?: string;
+      category?: string;
+      is_owner?: boolean;
+    }>;
   }>('elevenlabs', 'https://api.elevenlabs.io/v1/voices');
   return answer.voices.map(voice => ({
     id: voice.voice_id,
     name: voice.name,
     preview_url: voice.preview_url ?? null,
+    category: voice.category ?? null,
+    is_owner: voice.is_owner ?? null,
   }));
 }
 

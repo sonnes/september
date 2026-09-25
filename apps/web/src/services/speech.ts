@@ -3,13 +3,14 @@ import { useSyncExternalStore } from "react";
 import {
   currentSetup,
   currentSpeech,
-  playSpeechFile,
+  InterruptedSpeech,
   speakSystem,
   stopNativeSpeech,
-  synthesizeSpeech,
+  streamSpeech,
 } from "@/services/os";
 import { elevenLabsCredits } from "@/rules/usage-summary";
 import { recordTtsUsage } from "@/services/usage";
+import { DEFAULT_VOICE_MODEL, voiceModelFrom } from "@september/core/rules/voice";
 
 export type VoiceService = "system" | "elevenlabs";
 
@@ -26,7 +27,7 @@ export interface SpeechSettings {
 export const DEFAULT_SPEECH: SpeechSettings = {
   provider: "system",
   voiceId: null,
-  modelId: "eleven_turbo_v2_5",
+  modelId: DEFAULT_VOICE_MODEL,
   stability: 0.5,
   similarity: 0.75,
   speed: 1,
@@ -38,7 +39,11 @@ export const DEFAULT_SPEECH: SpeechSettings = {
  */
 export function speechSettings(): SpeechSettings {
   const saved = currentSpeech();
-  if (saved) return { ...DEFAULT_SPEECH, ...saved };
+  // ElevenLabs deprecated Turbo, so a saved Turbo model reads as its Flash replacement.
+  if (saved) {
+    const kept = { ...DEFAULT_SPEECH, ...saved };
+    return { ...kept, modelId: voiceModelFrom(kept.modelId) };
+  }
 
   const setup = currentSetup();
   return {
@@ -99,34 +104,9 @@ const cloudVoice = (settings: SpeechSettings): SpeechProvider => ({
   id: "elevenlabs",
   async speak(text, signal) {
     const started = Date.now();
-    let path: string;
+    let heard: { from_cache: boolean; latency_ms: number };
     try {
-      const result = await synthesizeSpeech(text, settings);
-      path = result.path;
-      if (signal?.aborted) {
-        if (path.startsWith("blob:")) URL.revokeObjectURL(path);
-        return;
-      }
-      const credits = result.from_cache
-        ? 0
-        : elevenLabsCredits(text, settings.modelId);
-      void recordTtsUsage({
-        provider: "elevenlabs",
-        model: settings.modelId,
-        voice_id: settings.voiceId ?? undefined,
-        text_length: text.length,
-        credits,
-        duration_seconds: 0,
-        latency_ms: Date.now() - started,
-        success: true,
-        cached: result.from_cache,
-        cost_usd: result.from_cache ? 0 : undefined,
-        cost_source: result.from_cache
-          ? "free"
-          : credits === undefined
-            ? "unknown"
-            : "quota",
-      });
+      heard = await streamSpeech(text, settings, signal);
     } catch (reason) {
       void recordTtsUsage({
         provider: "elevenlabs",
@@ -141,21 +121,37 @@ const cloudVoice = (settings: SpeechSettings): SpeechProvider => ({
         error_message: reason instanceof Error ? reason.message : String(reason),
       });
       if (signal?.aborted) return;
+      // The listener already heard the first words. A second voice says them
+      // again, so the notice of `speak()` reports the break instead.
+      if (reason instanceof InterruptedSpeech) throw reason;
+      // A person who cannot speak must not meet silence, so the voice of the
+      // operating system says the words instead.
       await systemVoice(settings).speak(text, signal);
       if (!signal?.aborted) setFallback("The chosen voice did not answer, so this device spoke instead.");
       return;
     }
 
-    try {
-      await playSpeechFile(path);
-      if (!signal?.aborted) setFallback(null);
-    } catch {
-      // A person who cannot speak must not meet silence, so the voice of the
-      // operating system says the words instead.
-      if (signal?.aborted) return;
-      await systemVoice(settings).speak(text, signal);
-      if (!signal?.aborted) setFallback("The chosen voice did not answer, so this device spoke instead.");
-    }
+    const credits = heard.from_cache
+      ? 0
+      : elevenLabsCredits(text, settings.modelId);
+    void recordTtsUsage({
+      provider: "elevenlabs",
+      model: settings.modelId,
+      voice_id: settings.voiceId ?? undefined,
+      text_length: text.length,
+      credits,
+      duration_seconds: 0,
+      latency_ms: heard.latency_ms,
+      success: true,
+      cached: heard.from_cache,
+      cost_usd: heard.from_cache ? 0 : undefined,
+      cost_source: heard.from_cache
+        ? "free"
+        : credits === undefined
+          ? "unknown"
+          : "quota",
+    });
+    if (!signal?.aborted) setFallback(null);
   },
   stop() {
     void stopNativeSpeech().catch(() => undefined);

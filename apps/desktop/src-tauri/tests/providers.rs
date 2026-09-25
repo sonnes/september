@@ -316,3 +316,393 @@ async fn an_unreachable_service_is_not_a_rejected_key() {
 
     assert!(matches!(error, ProviderError::Unreachable(_)), "{error:?}");
 }
+
+// ------------------------------------------------------------ voice stream
+
+use base64::Engine as _;
+use futures_util::{SinkExt, StreamExt};
+use september_desktop_lib::speech::SpeechSettings;
+use std::time::Duration;
+use tokio_tungstenite::tungstenite::{
+    handshake::server::{ErrorResponse, Request, Response},
+    http::StatusCode,
+    Message,
+};
+
+/// What one voice socket received: the address, the key header, and the
+/// open, text, and close messages.
+struct VoiceCall {
+    path: String,
+    key: Option<String>,
+    messages: Vec<Value>,
+}
+
+fn voice_settings() -> SpeechSettings {
+    SpeechSettings {
+        provider: "elevenlabs".into(),
+        voice_id: Some("voice-1".into()),
+        model_id: "eleven_turbo_v2_5".into(),
+        stability: 0.5,
+        similarity: 0.75,
+        speed: 1.0,
+    }
+}
+
+fn sound(bytes: &[u8]) -> Message {
+    let audio = base64::engine::general_purpose::STANDARD.encode(bytes);
+    Message::Text(
+        json!({ "audio": audio, "alignment": null })
+            .to_string()
+            .into(),
+    )
+}
+
+fn last_sound() -> Message {
+    Message::Text(json!({ "audio": null, "isFinal": true }).to_string().into())
+}
+
+/// Accepts one socket, reads three messages, then sends the replies.
+async fn serve_voice(replies: Vec<Message>) -> (String, tokio::sync::oneshot::Receiver<VoiceCall>) {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = listener.local_addr().unwrap();
+    let (sender, receiver) = tokio::sync::oneshot::channel();
+
+    tokio::spawn(async move {
+        let (stream, _) = listener.accept().await.unwrap();
+        let mut seen = None;
+        let mut socket =
+            tokio_tungstenite::accept_hdr_async(stream, |request: &Request, response: Response| {
+                seen = Some((
+                    request.uri().to_string(),
+                    request
+                        .headers()
+                        .get("xi-api-key")
+                        .map(|value| value.to_str().unwrap().to_owned()),
+                ));
+                Ok(response)
+            })
+            .await
+            .unwrap();
+        let (path, key) = seen.unwrap();
+
+        let mut messages = Vec::new();
+        while messages.len() < 3 {
+            match socket.next().await {
+                Some(Ok(Message::Text(text))) => {
+                    messages.push(serde_json::from_str(&text).unwrap())
+                }
+                Some(Ok(_)) => {}
+                _ => break,
+            }
+        }
+        sender
+            .send(VoiceCall {
+                path,
+                key,
+                messages,
+            })
+            .ok();
+
+        for reply in replies {
+            if socket.send(reply).await.is_err() {
+                return;
+            }
+        }
+        // The socket stays open, so only the replies can end the sentence.
+        tokio::time::sleep(Duration::from_secs(2)).await;
+    });
+
+    (format!("http://{address}"), receiver)
+}
+
+/// Refuses the socket the way a service refuses a bad key.
+async fn refuse_voice() -> String {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = listener.local_addr().unwrap();
+
+    tokio::spawn(async move {
+        let (stream, _) = listener.accept().await.unwrap();
+        let _ = tokio_tungstenite::accept_hdr_async(stream, |_: &Request, _: Response| {
+            let mut refusal = ErrorResponse::new(None);
+            *refusal.status_mut() = StatusCode::UNAUTHORIZED;
+            Err(refusal)
+        })
+        .await;
+    });
+
+    format!("http://{address}")
+}
+
+#[tokio::test]
+async fn a_voice_stream_sends_the_sentence_and_returns_the_samples() {
+    let (base, calls) = serve_voice(vec![
+        sound(&[1, 0, 2, 0]),
+        sound(&[0xff, 0xff]),
+        last_sound(),
+    ])
+    .await;
+    let mut samples = Vec::new();
+
+    eleven_labs(&base)
+        .speak_stream("xi-test", &voice_settings(), "Hello there", |chunk| {
+            samples.extend_from_slice(chunk)
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(samples, [1, 2, -1]);
+    let call = calls.await.unwrap();
+    assert!(
+        call.path
+            .starts_with("/v1/text-to-speech/voice-1/stream-input?"),
+        "{}",
+        call.path
+    );
+    assert!(
+        call.path.contains("model_id=eleven_turbo_v2_5"),
+        "{}",
+        call.path
+    );
+    assert!(
+        call.path.contains("output_format=pcm_24000"),
+        "{}",
+        call.path
+    );
+    assert_eq!(call.key.as_deref(), Some("xi-test"));
+    assert_eq!(
+        call.messages[0],
+        json!({
+            "text": " ",
+            "voice_settings": { "stability": 0.5, "similarity_boost": 0.75, "speed": 1.0 },
+        })
+    );
+    assert_eq!(
+        call.messages[1],
+        json!({ "text": "Hello there ", "flush": true })
+    );
+    assert_eq!(call.messages[2], json!({ "text": "" }));
+}
+
+#[tokio::test]
+async fn a_sample_split_between_chunks_arrives_whole() {
+    let (base, _calls) = serve_voice(vec![sound(&[1, 0, 2]), sound(&[0]), last_sound()]).await;
+    let mut samples = Vec::new();
+
+    eleven_labs(&base)
+        .speak_stream("xi-test", &voice_settings(), "Hi", |chunk| {
+            samples.extend_from_slice(chunk)
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(samples, [1, 2]);
+}
+
+#[tokio::test]
+async fn a_refused_voice_key_is_rejected() {
+    let base = refuse_voice().await;
+
+    let error = eleven_labs(&base)
+        .speak_stream("wrong", &voice_settings(), "Hi", |_| {})
+        .await
+        .unwrap_err();
+
+    assert!(matches!(error, ProviderError::Rejected), "{error:?}");
+}
+
+#[tokio::test]
+async fn a_voice_that_closes_before_the_end_is_an_error() {
+    let (base, _calls) = serve_voice(vec![sound(&[1, 0]), Message::Close(None)]).await;
+    let mut samples = Vec::new();
+
+    let result = eleven_labs(&base)
+        .speak_stream("xi-test", &voice_settings(), "Hi", |chunk| {
+            samples.extend_from_slice(chunk)
+        })
+        .await;
+
+    assert!(result.is_err());
+    assert_eq!(samples, [1]);
+}
+
+#[tokio::test]
+async fn a_voice_that_sends_no_sound_in_time_is_an_error() {
+    let (base, _calls) = serve_voice(Vec::new()).await;
+
+    let result = eleven_labs(&base)
+        .first_audio_within(Duration::from_millis(100))
+        .speak_stream("xi-test", &voice_settings(), "Hi", |_| {})
+        .await;
+
+    assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn an_error_reply_from_the_voice_is_an_error() {
+    let (base, _calls) = serve_voice(vec![Message::Text(
+        json!({ "message": "Voice not found", "error": "voice_not_found" })
+            .to_string()
+            .into(),
+    )])
+    .await;
+
+    let error = eleven_labs(&base)
+        .speak_stream("xi-test", &voice_settings(), "Hi", |_| {})
+        .await
+        .unwrap_err();
+
+    assert!(error.to_string().contains("Voice not found"), "{error}");
+}
+
+// ------------------------------------------------------ the kept voice file
+
+use september_desktop_lib::speech::{self, file_name, StreamError, Streamed};
+
+fn voice_folder() -> std::path::PathBuf {
+    let directory = std::env::temp_dir().join(format!("september-stream-{}", uuid::Uuid::new_v4()));
+    std::fs::create_dir_all(&directory).unwrap();
+    directory
+}
+
+fn unreachable() -> Providers {
+    eleven_labs("http://127.0.0.1:1")
+}
+
+#[tokio::test]
+async fn a_complete_stream_is_kept_as_a_wav_file_and_played_again() {
+    let directory = voice_folder();
+    let (base, _calls) = serve_voice(vec![sound(&[1, 0, 2, 0]), last_sound()]).await;
+    let mut samples = Vec::new();
+
+    let first = speech::stream(
+        &directory,
+        &voice_settings(),
+        "  Hello  ",
+        Some("xi-test"),
+        &eleven_labs(&base),
+        |chunk| samples.extend_from_slice(chunk),
+    )
+    .await
+    .unwrap();
+
+    assert!(matches!(first, Streamed::Spoken { .. }));
+    assert_eq!(samples, [1, 2]);
+    let kept = directory
+        .join(file_name(&voice_settings(), "Hello"))
+        .with_extension("wav");
+    let bytes = std::fs::read(&kept).unwrap();
+    assert_eq!(&bytes[..4], b"RIFF");
+    assert_eq!(&bytes[8..12], b"WAVE");
+    assert_eq!(
+        u32::from_le_bytes(bytes[24..28].try_into().unwrap()),
+        24_000
+    );
+    assert_eq!(&bytes[44..], [1, 0, 2, 0]);
+
+    // The service is gone now, so only the kept file can answer.
+    let second = speech::stream(
+        &directory,
+        &voice_settings(),
+        "Hello",
+        Some("xi-test"),
+        &unreachable(),
+        |_| panic!("a kept sentence needs no socket"),
+    )
+    .await
+    .unwrap();
+
+    assert!(matches!(second, Streamed::File { ref path, from_cache: true } if *path == kept));
+    std::fs::remove_dir_all(&directory).ok();
+}
+
+#[tokio::test]
+async fn an_interrupted_stream_keeps_no_file() {
+    let directory = voice_folder();
+    let (base, _calls) = serve_voice(vec![sound(&[1, 0]), Message::Close(None)]).await;
+
+    let error = speech::stream(
+        &directory,
+        &voice_settings(),
+        "Hello",
+        Some("xi-test"),
+        &eleven_labs(&base),
+        |_| {},
+    )
+    .await
+    .unwrap_err();
+
+    assert!(matches!(error, StreamError { started: true, .. }));
+    assert_eq!(std::fs::read_dir(&directory).unwrap().count(), 0);
+    std::fs::remove_dir_all(&directory).ok();
+}
+
+#[tokio::test]
+async fn a_stream_that_fails_before_any_sound_has_not_started() {
+    let directory = voice_folder();
+    let base = refuse_voice().await;
+
+    let error = speech::stream(
+        &directory,
+        &voice_settings(),
+        "Hello",
+        Some("wrong"),
+        &eleven_labs(&base),
+        |_| {},
+    )
+    .await
+    .unwrap_err();
+
+    assert!(matches!(error, StreamError { started: false, .. }));
+    std::fs::remove_dir_all(&directory).ok();
+}
+
+#[tokio::test]
+async fn an_mp3_from_before_the_stream_is_played_again() {
+    let directory = voice_folder();
+    let kept = directory.join(file_name(&voice_settings(), "Hello"));
+    std::fs::write(&kept, b"pretend audio").unwrap();
+
+    let found = speech::stream(
+        &directory,
+        &voice_settings(),
+        "Hello",
+        None,
+        &unreachable(),
+        |_| {},
+    )
+    .await
+    .unwrap();
+
+    assert!(matches!(found, Streamed::File { ref path, from_cache: true } if *path == kept));
+    std::fs::remove_dir_all(&directory).ok();
+}
+
+#[tokio::test]
+async fn a_model_without_a_socket_uses_a_file() {
+    let directory = voice_folder();
+    let (base, requests) = serve_once("200 OK", json!("pretend audio"));
+    let mut settings = voice_settings();
+    settings.model_id = "eleven_v3".into();
+
+    let found = speech::stream(
+        &directory,
+        &settings,
+        "Hello",
+        Some("xi-test"),
+        &eleven_labs(&base),
+        |_| panic!("this model has no socket"),
+    )
+    .await
+    .unwrap();
+
+    let head = requests.recv().unwrap();
+    assert!(head.contains("POST /v1/text-to-speech/voice-1?"), "{head}");
+    assert!(matches!(
+        found,
+        Streamed::File {
+            from_cache: false,
+            ..
+        }
+    ));
+    std::fs::remove_dir_all(&directory).ok();
+}

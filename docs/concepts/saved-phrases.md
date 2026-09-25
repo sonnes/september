@@ -6,8 +6,7 @@ package: desktop, web
 
 # Saved phrases
 
-Writing settings include an Automatic phrase generation switch, which defaults
-to on. Turning it off stops automatic creation and refresh of phrases and
+AI Assistance includes a Phrases switch, which defaults to on. Turning it off stops automatic creation and refresh of phrases and
 starters. Existing phrases and explicit Agent requests remain available.
 Late results from a cancelled request cannot replace phrases or update the sync count.
 Turning the switch on resumes the existing generation schedule without a reset

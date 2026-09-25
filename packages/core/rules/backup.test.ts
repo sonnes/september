@@ -29,6 +29,7 @@ const validBackup = (): SeptemberBackup => ({
       suggestionsModel: { service: "openrouter", model: "suggestions/model" },
       autoSuggestions: true,
       autoPhrases: true,
+      agentEnabled: true,
       voiceService: "elevenlabs",
     },
     speech: {
@@ -149,7 +150,24 @@ describe("the portable September backup", () => {
     });
   });
 
-  it.each(["autoSuggestions", "autoPhrases"])(
+  it("preserves a switched-off agent", () => {
+    const backup = validBackup();
+    backup.settings.setup!.agentEnabled = false;
+    expect(
+      parseBackup(encodeBackup(backup)).backup.settings.setup?.agentEnabled,
+    ).toBe(false);
+  });
+
+  it("turns the agent on for a backup made before the agent switch", () => {
+    const backup = validBackup();
+    delete (backup.settings.setup as unknown as Record<string, unknown>)
+      .agentEnabled;
+    expect(
+      parseBackup(JSON.stringify(backup)).backup.settings.setup?.agentEnabled,
+    ).toBe(true);
+  });
+
+  it.each(["autoSuggestions", "autoPhrases", "agentEnabled"])(
     "rejects invalid %s values",
     (field) => {
       const backup = validBackup();
@@ -159,6 +177,48 @@ describe("the portable September backup", () => {
       expect(parsed.skipped).toBeGreaterThan(0);
     },
   );
+
+  it.each([1, 2])("restores legacy model settings in version %s", (formatVersion) => {
+    const backup = validBackup();
+    const setup = backup.settings.setup! as unknown as Record<string, unknown>;
+    delete setup.defaultModel;
+    delete setup.suggestionsModel;
+    setup.writingService = "openrouter";
+    setup.writingModel = "legacy/model";
+    backup.spaces[0].user_id = "previous-owner";
+
+    const parsed = parseBackup(JSON.stringify({ ...backup, formatVersion }));
+
+    expect(parsed.skipped).toBe(0);
+    expect(parsed.backup.settings.setup).toEqual({
+      ...validBackup().settings.setup,
+      defaultModel: { service: "openrouter", model: "legacy/model" },
+      suggestionsModel: null,
+    });
+    expect(parsed.backup.spaces.every((space) => space.user_id === "person-1")).toBe(true);
+  });
+
+  it("defaults a missing Suggestions model to the default model", () => {
+    const backup = validBackup();
+    delete (backup.settings.setup! as unknown as Record<string, unknown>).suggestionsModel;
+    const parsed = parseBackup(JSON.stringify(backup));
+    expect(parsed.skipped).toBe(0);
+    expect(parsed.backup.settings.setup?.suggestionsModel).toBeNull();
+  });
+
+  it.each([
+    { writingService: "unknown", writingModel: "" },
+    { writingService: "openrouter", writingModel: 42 },
+  ])("rejects invalid legacy model settings: %j", (legacy) => {
+    const backup = validBackup();
+    const setup = backup.settings.setup! as unknown as Record<string, unknown>;
+    delete setup.defaultModel;
+    delete setup.suggestionsModel;
+    Object.assign(setup, legacy);
+    const parsed = parseBackup(JSON.stringify(backup));
+    expect(parsed.backup.settings.setup).toBeNull();
+    expect(parsed.skipped).toBe(1);
+  });
 
   it("parses the fixture shared with the desktop backend", () => {
     const fixture = readFileSync(
