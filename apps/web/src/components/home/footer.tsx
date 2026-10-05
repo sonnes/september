@@ -27,10 +27,10 @@ export function Footer() {
             Features
           </a>
           <a
-            href="/#calls"
+            href="/#apps"
             className="inline-flex min-h-11 items-center transition hover:text-zinc-950"
           >
-            Mac app
+            Browser &amp; Mac
           </a>
           <a
             href="/#privacy"

@@ -7,7 +7,7 @@ import { BrandMark, BrandWordmark } from '@/components/brand';
 
 const NAV_LINKS = [
   { label: 'Features', href: '#features' },
-  { label: 'Mac app', href: '#calls' },
+  { label: 'Browser & Mac', href: '#apps' },
   { label: 'Privacy', href: '#privacy' },
   { label: 'About', href: '#about' },
 ];

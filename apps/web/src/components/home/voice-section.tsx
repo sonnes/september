@@ -68,7 +68,8 @@ function VoiceDemo() {
           <div className="min-w-48 flex-1">
             <p className="font-semibold text-zinc-950">Clone your voice</p>
             <p className="mt-1 text-sm leading-relaxed text-zinc-600">
-              Use a 30-second recording of yourself, or audio from an old home video.
+              Use a 30-second recording of yourself, or audio from an old home video. Cloning
+              uses ElevenLabs, an optional voice service.
             </p>
           </div>
           <Link

@@ -7,11 +7,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { HomePage } from '../../pages/home';
 import { AGENT_DEMO_ASKS, AgentSection } from './agent-section';
+import { HeroSection } from './hero-section';
 import { ExpressionSection } from './expression-section';
 import { Footer } from './footer';
 import { LiveDemoSection } from './live-demo-section';
 import { NOTE_SENTENCES, NotesSection, PRESENT_CHUNKS } from './notes-section';
 import { PhraseCodesSection, matchDemoCode } from './phrase-codes-section';
+import { PlatformSection } from './platform-section';
 import { VoiceSection } from './voice-section';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -102,22 +104,39 @@ describe('Talk demo', () => {
 
   it('shows only the rows that hold the typed words', () => {
     render(<LiveDemoSection />);
-    typeInto(container.querySelector('textarea')!, 'differ');
+    typeInto(container.querySelector('textarea')!, 'feeling');
 
     const rows = [...container.querySelectorAll('[data-source]')];
     expect(
       rows.map(row => row.querySelector('[aria-label^="Speak "]')?.getAttribute('aria-label'))
-    ).toEqual(['Speak I see it differently.']);
+    ).toEqual(['Speak I had a feeling about that.']);
+  });
+
+  it('leaves two rows for the hint in the lede', () => {
+    render(<LiveDemoSection />);
+    typeInto(container.querySelector('textarea')!, 'I ha');
+
+    const rows = [...container.querySelectorAll('[data-source]')];
+    expect(
+      rows.map(row => row.querySelector('[aria-label^="Speak "]')?.getAttribute('aria-label'))
+    ).toEqual(['Speak I have a better idea.', 'Speak I had a feeling about that.']);
+  });
+
+  it('seeds the transcript with the sentence the history row offers', () => {
+    render(<LiveDemoSection />);
+
+    expect(container.textContent).toContain('That reminds me.');
+    expect(container.querySelector('[data-source="history"]')).toBeTruthy();
   });
 
   it('replaces the draft with a row that contains the typed words', () => {
     render(<LiveDemoSection />);
     const composer = container.querySelector('textarea')!;
-    typeInto(composer, 'differ');
+    typeInto(composer, 'feeling');
     const tokens = container.querySelectorAll('[data-source] button:not([aria-label])');
     click(tokens[tokens.length - 1]);
 
-    expect(composer.value).toBe('I see it differently. ');
+    expect(composer.value).toBe('I had a feeling about that. ');
   });
 });
 
@@ -136,6 +155,20 @@ describe('phrase and space demo', () => {
     });
     expect(matchDemoCode('wood', 0)).toBeUndefined();
     expect(matchDemoCode('cm', 3)).toBeUndefined();
+  });
+
+  it('offers a two-letter code in the placeholder on load', () => {
+    render(<PhraseCodesSection />);
+
+    expect(container.querySelector('textarea')?.placeholder).toBe('Try: cm');
+  });
+
+  it('shares the Friends phrases with the Talk demo', () => {
+    render(<PhraseCodesSection />);
+    click(button('Friends'));
+
+    expect(button('I have a better idea.')).toBeTruthy();
+    expect(matchDemoCode('pt', 1)).toEqual({ code: 'pt', phrase: 'Plot twist!' });
   });
 
   it('expands a phrase code in the composer', () => {
@@ -173,6 +206,22 @@ describe('expression demo', () => {
       expect(tags.length).toBeGreaterThan(0);
       expect(tags.every(tag => mood.tags.includes(tag!))).toBe(true);
     }
+  });
+
+  it('keeps the same words under every mood', () => {
+    render(<ExpressionSection />);
+    const words = new Set<string>();
+    for (const mood of MOODS) {
+      click(container.querySelector<HTMLButtonElement>(`button[aria-label="${mood.label}"]`)!);
+      const line = container.querySelector('[data-tag]')!.parentElement!;
+      const spoken = [...line.childNodes]
+        .filter(node => node.nodeType === Node.TEXT_NODE)
+        .map(node => node.textContent)
+        .join('')
+        .trim();
+      words.add(spoken);
+    }
+    expect(words.size).toBe(1);
   });
 });
 
@@ -257,6 +306,16 @@ describe('Agent demo', () => {
     expect(result.textContent).toContain(change.args.text);
   });
 
+  it('shows only what the first request wrote', () => {
+    render(<AgentSection />);
+    click(button(AGENT_DEMO_ASKS[0].label));
+    const result = container.querySelector('[role="region"][aria-label="Customized space"]')!;
+
+    expect(result.textContent).not.toContain('Questions for the doctor');
+    expect(AGENT_DEMO_ASKS[0].label).toBe('Set up a space for my doctor calls');
+    expect(AGENT_DEMO_ASKS[0].ask).toMatch(/^Set up this space/);
+  });
+
   it('switches the transcript to the selected request', () => {
     render(<AgentSection />);
     const choice = button(AGENT_DEMO_ASKS[1].label);
@@ -274,6 +333,15 @@ describe('landing navigation', () => {
 
     expect(container.querySelector('a[href="/privacy-policy"]')).toBeTruthy();
     expect(container.querySelector('a[href="/terms-of-service"]')).toBeTruthy();
+  });
+
+  it('names the platform section after both apps', () => {
+    render(<HeroSection />);
+    const link = [...container.querySelectorAll<HTMLAnchorElement>('a[href="#apps"]')][0];
+    expect(link?.textContent).toBe('Browser & Mac');
+
+    render(<PlatformSection />);
+    expect(container.querySelector('#apps')).toBeTruthy();
   });
 
   it('provides a target for every in-page navigation link', async () => {

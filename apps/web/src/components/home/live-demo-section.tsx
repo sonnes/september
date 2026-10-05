@@ -21,17 +21,17 @@ import { type SuggestionSource, joinTokens, matchTyped, stripeForText } from '@/
 import { useDemoSpeech } from './use-demo-speech';
 
 // Seed one spoken message so the transcript reads as live, not a screenshot.
-const DEMO_TRANSCRIPT: string[] = ['I liked the villain more than the hero.'];
+const DEMO_TRANSCRIPT: string[] = ['That reminds me.', 'I liked the villain more than the hero.'];
 
 // The demo shows a conversation with opinions and room to change direction.
-const DEMO_PINNED = ['Tell me more', 'Plot twist!'];
+const DEMO_PINNED = ['Tell me more.', 'Plot twist!'];
 
 export const LANDING_SPACE_SEED = {
   title: 'Friends',
   phrases: [
     { text: 'I have a better idea.', source: 'md' },
     { text: 'That reminds me.', source: 'history' },
-    { text: 'I see it differently.', source: 'llm' },
+    { text: 'I had a feeling about that.', source: 'llm' },
   ],
 } as const;
 

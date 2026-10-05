@@ -28,8 +28,6 @@ interface DemoStep {
 interface DemoSpace {
   title: string;
   context: string;
-  /** The note that the result card shows when the turn did not change a note. */
-  note?: { title: string; text: string };
 }
 
 export interface AgentDemoAsk {
@@ -58,13 +56,9 @@ export const AGENT_DEMO_ASKS: readonly AgentDemoAsk[] = [
     space: {
       title: 'Doctor calls',
       context: 'Video calls with my neurologist. Keep my answers short, because I tire quickly.',
-      note: {
-        title: 'Questions for the doctor',
-        text: 'Your questions for the next call, kept in this space.',
-      },
     },
-    label: 'Make a space for my doctor calls',
-    ask: 'Make a space for my calls with my neurologist. I tire quickly, so I want short answers ready.',
+    label: 'Set up a space for my doctor calls',
+    ask: 'Set up this space for my calls with my neurologist. I tire quickly, so I want short answers ready.',
     steps: [
       // The user's own words are already the space's note by the time its
       // agent takes the first turn — so there is one note and nothing else.
@@ -110,7 +104,7 @@ export const AGENT_DEMO_ASKS: readonly AgentDemoAsk[] = [
     label: 'Add a phrase, and shorten another',
     ask: 'Add “Anyone have wood for sheep?” And shorten my phrase about whose turn it is to roll.',
     steps: [
-      { name: 'inspect_space', args: {}, result: inspected(1, 6, 2) },
+      { name: 'inspect_space', args: {}, result: inspected(1, 2, 2) },
       {
         name: 'change_phrase',
         args: {
@@ -255,7 +249,7 @@ function AgentDemo() {
               </ul>
             </div>
           )}
-          {note ? (
+          {note && (
             <div>
               <p className="mb-4 flex items-center gap-2 text-sm font-medium text-zinc-600">
                 <FileText className="size-4" aria-hidden="true" />
@@ -265,18 +259,6 @@ function AgentDemo() {
                 {String(note.args.text)}
               </p>
             </div>
-          ) : (
-            demo.space.note && (
-              <div className="mt-6 border-t border-zinc-200 pt-5">
-                <p className="flex items-center gap-2 text-base font-semibold text-zinc-950">
-                  <FileText className="size-4 text-indigo-600" aria-hidden="true" />
-                  {demo.space.note.title}
-                </p>
-                <p className="mt-2 text-base leading-relaxed text-zinc-700">
-                  {demo.space.note.text}
-                </p>
-              </div>
-            )
           )}
         </div>
       </div>

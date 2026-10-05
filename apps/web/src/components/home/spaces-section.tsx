@@ -2,23 +2,23 @@ export const DEMO_SPACES: { title: string; phrases: { text: string; code: string
   {
     title: 'Family',
     phrases: [
+      { text: 'I’ve changed my mind.', code: 'cm' },
       { text: 'Let’s make a weekend of it.', code: 'trip' },
       { text: 'I’m choosing the film.', code: 'film' },
-      { text: 'I’ve changed my mind.', code: 'cm' },
     ],
   },
   {
     title: 'Friends',
     phrases: [
-      { text: 'I owe you a rematch.', code: 'rem' },
-      { text: 'Tell me the whole story.', code: 'story' },
-      { text: 'I’m joking!', code: 'jk' },
+      { text: 'Plot twist!', code: 'pt' },
+      { text: 'Tell me more.', code: 'more' },
+      { text: 'I have a better idea.', code: 'idea' },
     ],
   },
   {
     title: 'Work',
     phrases: [
-      { text: 'Let’s try another angle.', code: 'idea' },
+      { text: 'Let’s try another angle.', code: 'angle' },
       { text: 'I see it differently.', code: 'imo' },
       { text: 'I’ll sketch an idea.', code: 'sketch' },
     ],

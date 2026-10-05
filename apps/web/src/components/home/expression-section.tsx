@@ -4,13 +4,14 @@ import { draftParts, tagLabel } from '@september/core/rules/audio-tags';
 import { MOODS, type MoodKey } from '@september/core/rules/moods';
 import { AudioLines, Plus } from 'lucide-react';
 
-// One line for each mood, with the example tags of that mood.
+// One sentence under every mood, with an example tag of that mood, so the
+// reader sees the tone change and not the words.
 const LINES: Record<MoodKey, string> = {
-  warm: '[warmly] It is so good to see you.',
-  playful: 'What did you [mischievously] break this time?',
-  low: '[sighs] I need a quiet day today.',
+  warm: '[warmly] Can we try that one more time?',
+  playful: '[laughs] Can we try that one more time?',
+  low: '[sighs] Can we try that one more time?',
   frustrated: '[frustrated sigh] Can we try that one more time?',
-  angry: '[firmly] No. Please stop doing that.',
+  angry: '[firmly] Can we try that one more time?',
 };
 
 export function ExpressionSection() {

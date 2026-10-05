@@ -3,7 +3,7 @@ import { Link } from '@tanstack/react-router';
 
 export function PlatformSection() {
   return (
-    <section id="calls" className="scroll-mt-4 bg-zinc-100 px-4 py-14 sm:px-6 lg:px-8">
+    <section id="apps" className="scroll-mt-4 bg-zinc-100 px-4 py-14 sm:px-6 lg:px-8">
       <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.2fr_1fr_1fr] lg:gap-12">
         <div>
           <h2 className="text-3xl font-semibold leading-tight tracking-tight text-zinc-950 sm:text-4xl">
