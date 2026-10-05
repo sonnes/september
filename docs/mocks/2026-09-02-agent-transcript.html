@@ -1,0 +1,806 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>September — Agent transcript redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Lexend:wght@600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --indigo-700:#4338ca; --indigo-600:#4f46e5; --indigo-500:#6366f1; --indigo-400:#818cf8;
+    --indigo-300:#a5b4fc; --indigo-200:#c7d2fe; --indigo-100:#e0e7ff; --indigo-50:#eef2ff;
+    --zinc-900:#18181b; --zinc-800:#27272a; --zinc-700:#3f3f46; --zinc-600:#52525b;
+    --zinc-500:#71717a; --zinc-400:#a1a1aa; --zinc-300:#d4d4d8; --zinc-200:#e4e4e7;
+    --zinc-100:#f4f4f5; --zinc-50:#fafafa;
+    --em-600:#059669; --em-700:#047857; --em-50:#ecfdf5; --em-200:#a7f3d0;
+    --amber-700:#b45309; --amber-50:#fffbeb; --amber-200:#fde68a;
+    --red-600:#dc2626; --red-700:#b91c1c; --red-50:#fef2f2; --red-200:#fecaca;
+    --r-control:12px; --r-surface:20px;
+    --shadow:0 1px 2px rgba(24,24,27,.06), 0 1px 3px rgba(24,24,27,.04);
+    --shadow-lift:0 1px 2px rgba(24,24,27,.06), 0 8px 24px -12px rgba(24,24,27,.25);
+  }
+  * { box-sizing:border-box; margin:0; }
+  body { font-family:"Noto Sans", Helvetica, sans-serif; background:var(--zinc-100); color:var(--zinc-900);
+    -webkit-font-smoothing:antialiased; padding:48px 24px 140px; font-size:14px; line-height:1.5; }
+  .page { max-width:1180px; margin:0 auto; }
+  .eyebrow { font-size:14px; font-weight:500; color:var(--indigo-600); }
+  h1 { font-size:34px; font-weight:700; letter-spacing:-.02em; margin-top:6px; }
+  .lede { font-size:15px; color:var(--zinc-500); margin-top:12px; max-width:80ch; line-height:1.75; }
+  .lede strong { color:var(--zinc-900); font-weight:600; }
+  section { margin-top:56px; }
+  section > h2 { font-size:20px; font-weight:600; letter-spacing:-.01em; }
+  section > .sub { font-size:14px; color:var(--zinc-500); margin-top:8px; max-width:82ch; line-height:1.75; }
+  h3 { font-size:16px; font-weight:600; margin-top:26px; }
+  .panel { background:#fff; border:1px solid var(--zinc-200); border-radius:var(--r-surface); box-shadow:var(--shadow); padding:26px; margin-top:18px; }
+  .rule { height:1px; background:var(--zinc-200); margin:26px 0; }
+  code { font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12.5px; background:var(--zinc-100); border:1px solid var(--zinc-200); border-radius:6px; padding:1px 5px; }
+  .badge { display:inline-block; font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; border-radius:999px; padding:3px 10px; vertical-align:2px; }
+  .badge.rec { color:#fff; background:var(--indigo-600); }
+  .badge.opt { color:var(--indigo-600); background:var(--indigo-50); border:1px solid var(--indigo-100); }
+  .badge.no  { color:var(--zinc-500); background:var(--zinc-100); border:1px solid var(--zinc-200); }
+  table.grid { width:100%; border-collapse:collapse; margin-top:16px; font-size:13.5px; }
+  table.grid th { text-align:left; font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--zinc-500); padding:0 14px 10px 0; border-bottom:1px solid var(--zinc-200); }
+  table.grid td { padding:11px 14px 11px 0; border-bottom:1px solid var(--zinc-100); color:var(--zinc-700); vertical-align:top; }
+  table.grid td strong { color:var(--zinc-900); font-weight:600; }
+  .two-up { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:18px; align-items:start; }
+  @media (max-width:1000px){ .two-up { grid-template-columns:1fr; } }
+  .callout { border-radius:var(--r-control); padding:14px 16px; font-size:13.5px; line-height:1.7; margin-top:16px; }
+  .callout.info { background:var(--indigo-50); border:1px solid var(--indigo-100); color:var(--indigo-700); }
+  .callout.warn { background:var(--amber-50); border:1px solid var(--amber-200); color:var(--amber-700); }
+  .callout.ok   { background:var(--em-50); border:1px solid var(--em-200); color:var(--em-700); }
+  .callout b { font-weight:700; }
+  .frame-label { font-size:12.5px; color:var(--zinc-500); margin-top:12px; line-height:1.65; }
+  .frame-label b { color:var(--zinc-700); font-weight:600; }
+  svg.i { width:1em; height:1em; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+
+  /* ───────────────────────── app frame ───────────────────────── */
+  .app { background:#fff; border:1px solid var(--zinc-200); border-radius:var(--r-surface); box-shadow:var(--shadow-lift); overflow:hidden; display:flex; flex-direction:column; }
+  .app.tall { height:780px; }
+  .app-head { height:64px; flex:none; border-bottom:1px solid var(--zinc-200); display:flex; align-items:center; gap:10px; padding:0 16px; }
+  .space-name { font-size:14px; font-weight:500; padding:5px 8px; border-radius:8px; }
+  .space-name:hover { background:var(--indigo-50); }
+  .head-mode { margin-left:auto; font-size:12px; color:var(--zinc-400); }
+  .app-body { flex:1; min-height:0; display:flex; flex-direction:column; padding:8px 16px 12px; }
+  .col { width:100%; max-width:720px; margin:0 auto; flex:1; min-height:0; display:flex; flex-direction:column; }
+  .stream { flex:1; min-height:0; overflow-y:auto; padding:16px 2px 12px; display:flex; flex-direction:column; gap:14px; }
+  .stream::-webkit-scrollbar { width:8px; } .stream::-webkit-scrollbar-thumb { background:var(--zinc-200); border-radius:99px; }
+
+  /* ───────────────────────── transcript rows ───────────────────────── */
+  .turn { display:flex; flex-direction:column; gap:8px; }
+  .bubble-user { align-self:flex-end; max-width:76%; background:var(--indigo-600); color:#fff; font-size:16px; line-height:1.55;
+    border-radius:18px; border-bottom-right-radius:6px; padding:12px 18px; }
+  .reply { display:grid; grid-template-columns:28px 1fr; gap:10px; align-items:start; }
+  .reply-mark { width:28px; height:28px; border-radius:999px; background:var(--indigo-50); color:var(--indigo-600); display:grid; place-items:center; font-size:15px; margin-top:1px; }
+  .reply-text { font-size:16px; line-height:1.65; color:var(--zinc-900); padding-top:2px; }
+  .reply-text p + p { margin-top:12px; }
+
+  /* the work rail: everything the agent did, in the reply's gutter */
+  .work { grid-column:2; display:flex; flex-direction:column; }
+  .work-line { border-left:2px solid var(--zinc-200); padding-left:14px; margin-left:-1px; }
+
+  /* collapsed tool line */
+  details.tool { border:0; }
+  details.tool > summary { list-style:none; cursor:pointer; display:flex; align-items:center; gap:10px;
+    min-height:44px; padding:2px 10px 2px 0; border-radius:10px; color:var(--zinc-500); font-size:14px; }
+  details.tool > summary::-webkit-details-marker { display:none; }
+  details.tool > summary:hover { background:var(--zinc-50); color:var(--zinc-700); }
+  details.tool > summary:focus-visible { outline:2px solid var(--indigo-500); outline-offset:2px; }
+  .tool-mark { width:22px; height:22px; border-radius:999px; display:grid; place-items:center; font-size:12px; flex:none; }
+  .tool-mark.read    { background:var(--zinc-100); color:var(--zinc-500); }
+  .tool-mark.applied { background:var(--em-50); color:var(--em-600); }
+  .tool-mark.reject  { background:var(--zinc-100); color:var(--zinc-500); }
+  .tool-mark.failed  { background:var(--red-50); color:var(--red-600); }
+  .tool-name { color:var(--zinc-700); font-weight:500; }
+  .tool-tail { margin-left:auto; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--zinc-400); }
+  .chev { transition:transform .15s ease; }
+  details.tool[open] .chev { transform:rotate(90deg); }
+  .tool-body { margin:2px 0 8px 32px; border:1px solid var(--zinc-200); border-radius:var(--r-control); background:var(--zinc-50); padding:12px 14px; font-size:13px; color:var(--zinc-600); line-height:1.65; }
+  .kv { display:grid; grid-template-columns:104px 1fr; gap:4px 12px; }
+  .kv dt { color:var(--zinc-500); font-size:12px; }
+  .kv dd { color:var(--zinc-800); }
+  .tool-out { margin-top:10px; padding-top:10px; border-top:1px solid var(--zinc-200); font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; color:var(--zinc-600); max-height:120px; overflow:auto; white-space:pre-wrap; }
+
+  /* grouped folded work summary (option B) */
+  .fold summary .tool-name { color:var(--zinc-500); font-weight:400; }
+
+  /* pending proposal card */
+  .proposal { border:1px solid var(--indigo-200); background:#fff; border-radius:var(--r-surface); box-shadow:var(--shadow); overflow:hidden; }
+  .proposal.danger { border-color:var(--red-200); }
+  .prop-head { display:flex; align-items:flex-start; gap:12px; padding:16px 18px 0; }
+  .prop-mark { width:36px; height:36px; border-radius:999px; background:var(--indigo-50); color:var(--indigo-600); display:grid; place-items:center; font-size:17px; flex:none; }
+  .proposal.danger .prop-mark { background:var(--red-50); color:var(--red-600); }
+  .prop-title { font-size:15px; font-weight:600; }
+  .prop-sub { font-size:13px; color:var(--zinc-500); margin-top:2px; }
+  .prop-preview { margin:14px 18px 0; border:1px solid var(--zinc-200); border-radius:var(--r-control); overflow:hidden; font-size:14px; }
+  .prow { display:grid; grid-template-columns:64px 1fr; gap:12px; padding:10px 12px; align-items:baseline; }
+  .prow + .prow { border-top:1px solid var(--zinc-100); }
+  .prow .k { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--zinc-400); }
+  .prow.was { background:var(--zinc-50); } .prow.was .v { color:var(--zinc-500); text-decoration:line-through; text-decoration-color:var(--zinc-300); }
+  .prow.now .v { color:var(--zinc-900); font-weight:500; }
+  .prop-warn { margin:12px 18px 0; font-size:12.5px; color:var(--amber-700); background:var(--amber-50); border:1px solid var(--amber-200); border-radius:10px; padding:8px 12px; }
+  .prop-foot { display:flex; gap:10px; justify-content:flex-end; padding:16px 18px; }
+
+  /* buttons */
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:0 18px;
+    border-radius:var(--r-control); font-size:14px; font-weight:500; border:1px solid transparent; cursor:pointer; background:none; font-family:inherit; }
+  .btn.primary { background:var(--indigo-600); color:#fff; }
+  .btn.outline { border-color:var(--zinc-200); color:var(--zinc-800); background:#fff; }
+  .btn.ghost { color:var(--zinc-600); }
+  .btn.danger { background:var(--red-600); color:#fff; }
+  .btn.pill { border-radius:999px; padding:0 24px; font-weight:600; }
+  .btn.icon { width:44px; min-height:44px; padding:0; border-radius:var(--r-control); border-color:var(--zinc-200); color:var(--zinc-600); background:#fff; font-size:17px; }
+
+  /* composer (unchanged) */
+  .composer { flex:none; background:rgba(244,244,245,.6); border-radius:var(--r-surface); padding:12px; display:flex; flex-direction:column; gap:12px; }
+  .console { background:#fff; border:1px solid var(--zinc-200); border-radius:18px; box-shadow:var(--shadow); padding:12px; }
+  .console textarea, .console .fake-field { width:100%; border:0; resize:none; font-family:inherit; font-size:20px; line-height:1.35; color:var(--zinc-900); outline:none; background:transparent; min-height:28px; }
+  .console .fake-field.ph { color:rgba(113,113,122,.6); }
+  .console-note { font-size:12px; color:var(--zinc-500); margin-top:8px; }
+  .console-foot { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:12px; }
+  .console-left { display:flex; gap:6px; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .chip { display:inline-flex; align-items:center; gap:6px; height:44px; padding:0 20px; border-radius:999px; border:1px solid var(--indigo-300);
+    background:#fff; color:var(--zinc-900); font-size:16px; font-weight:500; cursor:pointer; font-family:inherit; }
+  .chip:hover { border-color:var(--indigo-500); background:rgba(79,70,229,.05); }
+  .chip .dots { color:var(--zinc-400); }
+
+  /* dock */
+  .dock { flex:none; background:rgba(244,244,245,.6); border-top:1px solid var(--zinc-200); display:flex; align-items:center; gap:8px; padding:10px 16px; }
+  .tab { min-height:44px; padding:0 16px; border-radius:999px; border:1px solid var(--zinc-200); background:#fff; color:var(--zinc-500); font-size:14px; font-weight:500; display:inline-flex; align-items:center; font-family:inherit; }
+  .tab.on { background:var(--indigo-600); color:#fff; border-color:transparent; }
+  .modes { margin-left:auto; display:flex; gap:2px; background:#fff; border:1px solid var(--zinc-200); border-radius:999px; padding:2px; }
+  .mode { display:inline-flex; align-items:center; gap:8px; min-height:40px; padding:0 16px; border-radius:999px; font-size:14px; font-weight:500; color:var(--zinc-500); }
+  .mode.on { background:var(--indigo-600); color:#fff; }
+
+  /* empty state */
+  .empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; padding:24px; }
+  .empty-mark { width:52px; height:52px; border-radius:999px; background:var(--indigo-50); color:var(--indigo-600); display:grid; place-items:center; font-size:24px; }
+  .empty h4 { font-size:17px; font-weight:600; }
+  .empty p { font-size:14px; color:var(--zinc-500); max-width:44ch; line-height:1.7; }
+
+  .status { display:flex; align-items:center; gap:10px; font-size:14px; color:var(--zinc-500); padding-left:38px; }
+  .dot { width:6px; height:6px; border-radius:99px; background:var(--indigo-500); animation:pulse 1.1s ease-in-out infinite; }
+  .dot:nth-child(2){ animation-delay:.15s } .dot:nth-child(3){ animation-delay:.3s }
+  @keyframes pulse { 0%,100%{opacity:.25} 50%{opacity:1} }
+  .stack { display:flex; flex-direction:column; gap:10px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="eye" viewBox="0 0 24 24"><path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="bot" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></symbol>
+  <symbol id="shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+  <symbol id="del" viewBox="0 0 24 24"><path d="M10 5a2 2 0 0 0-1.34.52l-6.33 5.74a1 1 0 0 0 0 1.48l6.33 5.74A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/><path d="m12 9 6 6M18 9l-6 6"/></symbol>
+  <symbol id="trash" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+  <symbol id="file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8M16 17H8M10 9H8"/></symbol>
+  <symbol id="msg" viewBox="0 0 24 24"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></symbol>
+  <symbol id="pencil" viewBox="0 0 24 24"><path d="M21.17 6.81a1 1 0 0 0-3.98-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.63l4.35-1.32a2 2 0 0 0 .83-.5z"/></symbol>
+  <symbol id="wand" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8-5.8 1.9 5.8 1.9L12 18.4l1.9-5.8 5.8-1.9-5.8-1.9z"/></symbol>
+  <symbol id="pin" viewBox="0 0 24 24"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></symbol>
+  <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+  <symbol id="head" viewBox="0 0 24 24"><path d="M3 14h3v7H5a2 2 0 0 1-2-2zM18 14h3v5a2 2 0 0 1-2 2h-1z"/><path d="M3 14a9 9 0 0 1 18 0"/></symbol>
+  <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></symbol>
+</defs></svg>
+
+<div class="page">
+  <div class="eyebrow">September — design mock · 2026-09-02 · pairs with <code>docs/plans/2026-09-02-space-agent.md</code></div>
+  <h1>Agent — transcript redesign, and the new space flow</h1>
+  <p class="lede">
+    The Agent screen shipped with a transcript that gives every event the same weight: each tool call
+    is a bordered, shadowed card the size of a message, so a single question that reads four things
+    fills the screen with paperwork before the answer arrives. That is exactly backwards for this
+    audience. <strong>The user's words and the agent's answer are the content; the machinery is a
+    footnote.</strong>
+    <br /><br />
+    Three changes here. <strong>One:</strong> the transcript becomes a quiet timeline — tool calls
+    collapse to a single 44px line in the reply's gutter, and only a change that needs a press is a
+    card. <strong>Two:</strong> the composer is untouched — same undo, delete-last-word, clear,
+    audio-free Ask button, same 20px field. <strong>Three:</strong> <code>/spaces/new</code> stops
+    being a bespoke three-step wizard and becomes the Agent's first conversation, so the tool-line
+    component draws the space being made and the user can keep talking to it afterwards.
+  </p>
+
+  <div class="callout info">
+    <b>The one rule this redesign rests on.</b> Anything the user must act on is a card. Everything
+    else is a line. There is no third weight. Today the screen has one weight for everything, which
+    is why a read looks as urgent as a delete.
+  </div>
+
+  <!-- ══════════════════════════ 1. today vs proposed ══════════════════════════ -->
+  <section>
+    <h2>1 · What the screen does today</h2>
+    <p class="sub">
+      Same conversation, drawn both ways. One question — <em>“what phrases do I have for the
+      hospital?”</em> — that the agent answers after three reads.
+    </p>
+
+    <div class="two-up">
+      <div>
+        <div class="app">
+          <div class="app-head"><span class="space-name">Hospital</span><span class="head-mode">Agent</span></div>
+          <div class="app-body" style="padding-bottom:16px">
+            <div class="col">
+              <div class="stream" style="gap:12px">
+                <div class="bubble-user" style="font-size:14px">What phrases do I have for the hospital?</div>
+
+                <!-- today: three identical cards -->
+                <section style="border:1px solid var(--zinc-200); background:#fff; border-radius:16px; box-shadow:var(--shadow); padding:16px; display:flex; gap:12px">
+                  <div style="width:36px;height:36px;border-radius:999px;background:var(--zinc-100);color:var(--zinc-500);display:grid;place-items:center;flex:none"><svg class="i" style="font-size:16px"><use href="#shield"/></svg></div>
+                  <div><p style="font-weight:600">Read this space</p><p style="font-size:12px;color:var(--zinc-500);margin-top:4px">Read</p></div>
+                </section>
+                <section style="border:1px solid var(--zinc-200); background:#fff; border-radius:16px; box-shadow:var(--shadow); padding:16px; display:flex; gap:12px">
+                  <div style="width:36px;height:36px;border-radius:999px;background:var(--zinc-100);color:var(--zinc-500);display:grid;place-items:center;flex:none"><svg class="i" style="font-size:16px"><use href="#shield"/></svg></div>
+                  <div><p style="font-weight:600">Read note</p><p style="font-size:12px;color:var(--zinc-500);margin-top:4px">Read</p></div>
+                </section>
+                <section style="border:1px solid var(--zinc-200); background:#fff; border-radius:16px; box-shadow:var(--shadow); padding:16px; display:flex; gap:12px">
+                  <div style="width:36px;height:36px;border-radius:999px;background:var(--zinc-100);color:var(--zinc-500);display:grid;place-items:center;flex:none"><svg class="i" style="font-size:16px"><use href="#shield"/></svg></div>
+                  <div><p style="font-weight:600">Read this space</p><p style="font-size:12px;color:var(--zinc-500);margin-top:4px">Read</p></div>
+                </section>
+
+                <div style="background:var(--zinc-100); border-radius:18px; border-bottom-left-radius:6px; padding:12px 16px; font-size:14px; line-height:1.6; max-width:85%">
+                  You have six saved phrases here. Four are pinned…
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="frame-label"><b>Today.</b> Four scrolls of chrome for one sentence of answer. Every
+        card is <code>rounded-2xl border shadow-sm p-4</code> with a 36px avatar, whether it read a
+        list or is about to delete a note. The answer itself is <code>text-sm</code> in a grey
+        bubble — smaller and quieter than the machinery that produced it.</p>
+      </div>
+
+      <div>
+        <div class="app">
+          <div class="app-head"><span class="space-name">Hospital</span><span class="head-mode">Agent</span></div>
+          <div class="app-body" style="padding-bottom:16px">
+            <div class="col">
+              <div class="stream">
+                <div class="turn">
+                  <div class="bubble-user">What phrases do I have for the hospital?</div>
+                </div>
+                <div class="turn">
+                  <div class="reply">
+                    <div class="reply-mark"><svg class="i"><use href="#bot"/></svg></div>
+                    <div class="work work-line">
+                      <details class="tool">
+                        <summary>
+                          <span class="tool-mark read"><svg class="i"><use href="#eye"/></svg></span>
+                          <span class="tool-name">Read this space</span>
+                          <span class="tool-tail">and 2 more <svg class="i chev" style="font-size:15px"><use href="#chev"/></svg></span>
+                        </summary>
+                        <div class="tool-body">
+                          <dl class="kv">
+                            <dt>Read</dt><dd>Space details, 6 phrases, 12 recent Talk messages</dd>
+                            <dt>Read note</dt><dd>“Hospital visits” — 1,240 characters</dd>
+                            <dt>Read</dt><dd>Space details, phrases</dd>
+                          </dl>
+                        </div>
+                      </details>
+                    </div>
+                    <div class="reply-text" style="grid-column:2">
+                      You have six saved phrases here. Four are pinned, so phrase generation will
+                      keep them: <em>“Can you raise the bed?”</em>, <em>“I need the nurse”</em>,
+                      <em>“Not right now, thank you”</em>, and <em>“Can you write that down?”</em>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="frame-label"><b>Proposed.</b> One 44px line stands for the whole read, folded by
+        default and expandable to the detail. The answer is <code>text-base</code> prose on the white
+        surface, not a bubble — the agent is the app answering, not a second person in the
+        conversation. The gutter rail ties the work to the reply it produced.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ 2. the row system ══════════════════════════ -->
+  <section>
+    <h2>2 · The row system</h2>
+    <p class="sub">
+      Five row types, two weights. Every specimen below is live — click a fold to open it.
+    </p>
+
+    <table class="grid">
+      <thead><tr><th style="width:150px">Row</th><th style="width:90px">Weight</th><th>Treatment</th></tr></thead>
+      <tbody>
+        <tr><td><strong>User turn</strong></td><td>Bubble</td><td>Indigo bubble, right, <code>text-base</code> (16px). Matches the Talk spoken-message bubble role in <code>DESIGN.md</code>.</td></tr>
+        <tr><td><strong>Agent reply</strong></td><td>Prose</td><td>No bubble. <code>text-base</code> on the white surface with a 28px bot mark in the gutter. Long answers read as text, not as a chat balloon that grows to fill the screen.</td></tr>
+        <tr><td><strong>Read tool</strong></td><td>Line</td><td>Folded 44px row in the reply gutter. Consecutive reads in one turn fold into <em>one</em> row: “Read this space <span style="color:var(--zinc-400)">and 2 more</span>”.</td></tr>
+        <tr><td><strong>Settled write</strong></td><td>Line</td><td>Same folded row, with an outcome mark: applied (emerald check), not applied (grey ×), could not apply (red alert). Expanding shows what changed.</td></tr>
+        <tr><td><strong>Pending write</strong></td><td><strong>Card</strong></td><td>The only card. Never folds. Carries the before/after preview and the two 44px buttons. A delete gets red framing and still opens the confirm dialog.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>2.1 · Folded lines, every state</h3>
+    <div class="panel">
+      <div class="stack" style="max-width:600px">
+        <details class="tool"><summary>
+          <span class="tool-mark read"><svg class="i"><use href="#eye"/></svg></span>
+          <span class="tool-name">Read this space</span>
+          <span class="tool-tail">and 2 more <svg class="i chev" style="font-size:15px"><use href="#chev"/></svg></span></summary>
+          <div class="tool-body"><dl class="kv"><dt>inspect_space</dt><dd>Space details, note list, phrases, 12 recent Talk messages</dd><dt>read_note</dt><dd>“Hospital visits”, characters 0–1240</dd><dt>inspect_space</dt><dd>Phrases only</dd></dl></div></details>
+
+        <details class="tool"><summary>
+          <span class="tool-mark applied"><svg class="i"><use href="#check"/></svg></span>
+          <span class="tool-name">Created a phrase</span>
+          <span class="tool-tail">Applied <svg class="i chev" style="font-size:15px"><use href="#chev"/></svg></span></summary>
+          <div class="tool-body"><dl class="kv"><dt>Phrase</dt><dd>“Could you speak a bit slower?”</dd><dt>Code</dt><dd>SLOW</dd><dt>Pinned</dt><dd>Yes</dd></dl></div></details>
+
+        <details class="tool"><summary>
+          <span class="tool-mark reject"><svg class="i"><use href="#x"/></svg></span>
+          <span class="tool-name">Delete note</span>
+          <span class="tool-tail">Not applied <svg class="i chev" style="font-size:15px"><use href="#chev"/></svg></span></summary>
+          <div class="tool-body">You rejected this change. Nothing in the space was altered.</div></details>
+
+        <details class="tool"><summary>
+          <span class="tool-mark failed"><svg class="i"><use href="#alert"/></svg></span>
+          <span class="tool-name">Rename note</span>
+          <span class="tool-tail">Could not apply <svg class="i chev" style="font-size:15px"><use href="#chev"/></svg></span></summary>
+          <div class="tool-body">The note changed after the agent read it, so September did not overwrite it. Ask again to work from the current note.</div></details>
+      </div>
+      <p class="frame-label">
+        The whole row is the control, at 44px, with the fold state on the row rather than a separate
+        hit target — one reach, not two. The mark carries the outcome, so a settled write never needs
+        the word “Applied” to be read to be understood, and colour is never the only signal.
+      </p>
+    </div>
+
+    <h3>2.2 · The pending write is the only card</h3>
+    <div class="two-up">
+      <div>
+        <div class="panel" style="padding:20px; background:var(--zinc-50)">
+          <div class="proposal">
+            <div class="prop-head">
+              <div class="prop-mark"><svg class="i"><use href="#pencil"/></svg></div>
+              <div style="min-width:0">
+                <p class="prop-title">Edit a phrase</p>
+                <p class="prop-sub">Waiting for you. Nothing has changed yet.</p>
+              </div>
+            </div>
+            <div class="prop-preview">
+              <div class="prow was"><span class="k">Now</span><span class="v">Can you raise the bed</span></div>
+              <div class="prow now"><span class="k">After</span><span class="v">Could you raise the bed a little?</span></div>
+            </div>
+            <div class="prop-foot">
+              <button class="btn outline"><svg class="i" style="font-size:17px"><use href="#x"/></svg>Reject</button>
+              <button class="btn primary"><svg class="i" style="font-size:17px"><use href="#check"/></svg>Approve</button>
+            </div>
+          </div>
+        </div>
+        <p class="frame-label"><b>Ordinary write.</b> The before/after preview replaces today's
+        single line of <code>proposalDetail()</code>, which showed whichever of title/context/name/text
+        it found first and often showed nothing useful. The user can see the change without opening
+        another screen to compare.</p>
+      </div>
+      <div>
+        <div class="panel" style="padding:20px; background:var(--zinc-50)">
+          <div class="proposal danger">
+            <div class="prop-head">
+              <div class="prop-mark"><svg class="i"><use href="#trash"/></svg></div>
+              <div style="min-width:0">
+                <p class="prop-title">Delete the note “Old appointments”</p>
+                <p class="prop-sub">1,240 characters. You cannot undo this.</p>
+              </div>
+            </div>
+            <div class="prop-preview">
+              <div class="prow"><span class="k">Note</span><span class="v" style="color:var(--zinc-500)">“Tuesday — bloods at 9. Ask about the new dose…”</span></div>
+            </div>
+            <div class="prop-warn"><svg class="i" style="font-size:14px;vertical-align:-2px"><use href="#alert"/></svg> Deleting asks you once more before anything is removed.</div>
+            <div class="prop-foot">
+              <button class="btn outline">Keep it</button>
+              <button class="btn danger"><svg class="i" style="font-size:17px"><use href="#trash"/></svg>Delete…</button>
+            </div>
+          </div>
+        </div>
+        <p class="frame-label"><b>Destructive write.</b> Red framing, an excerpt of what is about to
+        go, the ellipsis on the button saying a dialog follows, and the existing
+        <code>AlertDialog</code> unchanged behind it. The unpin warning keeps its amber band in the
+        same slot.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ 3. whole screen ══════════════════════════ -->
+  <section>
+    <h2>3 · The screen, whole</h2>
+    <p class="sub">
+      A conversation with reads, a settled write, a pending write, and the agent still working.
+      The composer and dock are exactly what ships today.
+    </p>
+
+    <div class="app tall" style="margin-top:18px">
+      <div class="app-head"><span class="space-name">Hospital</span><span class="head-mode">Agent</span></div>
+      <div class="app-body">
+        <div class="col">
+          <div class="stream">
+            <div class="turn"><div class="bubble-user">Add a phrase for asking them to slow down, and pin it</div></div>
+
+            <div class="turn">
+              <div class="reply">
+                <div class="reply-mark"><svg class="i"><use href="#bot"/></svg></div>
+                <div class="work work-line">
+                  <details class="tool"><summary>
+                    <span class="tool-mark read"><svg class="i"><use href="#eye"/></svg></span>
+                    <span class="tool-name">Read this space</span>
+                    <span class="tool-tail"><svg class="i chev" style="font-size:15px"><use href="#chev"/></svg></span></summary>
+                    <div class="tool-body"><dl class="kv"><dt>Tool</dt><dd><code>inspect_space</code></dd><dt>Read</dt><dd>Space details, 6 phrases, 12 Talk messages</dd></dl>
+                    <div class="tool-out">6 phrases · 4 pinned · codes in use: BED, NURSE, NOTNOW, WRITE</div></div></details>
+                </div>
+                <div class="reply-text" style="grid-column:2">You have four pinned phrases already and none of them is about pace. Here is one:</div>
+              </div>
+            </div>
+
+            <div class="turn">
+              <div class="reply" style="grid-template-columns:28px 1fr">
+                <div></div>
+                <div class="proposal">
+                  <div class="prop-head">
+                    <div class="prop-mark"><svg class="i"><use href="#pin"/></svg></div>
+                    <div style="min-width:0">
+                      <p class="prop-title">Create a pinned phrase</p>
+                      <p class="prop-sub">September will pick the code when you approve.</p>
+                    </div>
+                  </div>
+                  <div class="prop-preview">
+                    <div class="prow now"><span class="k">Phrase</span><span class="v">Could you speak a bit slower, please?</span></div>
+                    <div class="prow"><span class="k">Pinned</span><span class="v" style="color:var(--zinc-600)">Yes — generation will keep it</span></div>
+                  </div>
+                  <div class="prop-foot">
+                    <button class="btn outline"><svg class="i" style="font-size:17px"><use href="#x"/></svg>Reject</button>
+                    <button class="btn primary"><svg class="i" style="font-size:17px"><use href="#check"/></svg>Approve</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="turn"><div class="bubble-user">yes, and tidy the note while you're there</div></div>
+
+            <div class="turn">
+              <div class="reply">
+                <div class="reply-mark"><svg class="i"><use href="#bot"/></svg></div>
+                <div class="work work-line">
+                  <details class="tool"><summary>
+                    <span class="tool-mark applied"><svg class="i"><use href="#check"/></svg></span>
+                    <span class="tool-name">Created a pinned phrase</span>
+                    <span class="tool-tail">Applied <svg class="i chev" style="font-size:15px"><use href="#chev"/></svg></span></summary>
+                    <div class="tool-body"><dl class="kv"><dt>Phrase</dt><dd>“Could you speak a bit slower, please?”</dd><dt>Code</dt><dd>SLOW</dd></dl></div></details>
+                  <details class="tool"><summary>
+                    <span class="tool-mark read"><svg class="i"><use href="#eye"/></svg></span>
+                    <span class="tool-name">Read note</span>
+                    <span class="tool-tail">and 1 more <svg class="i chev" style="font-size:15px"><use href="#chev"/></svg></span></summary>
+                    <div class="tool-body"><dl class="kv"><dt>read_note</dt><dd>“Hospital visits”, characters 0–1240</dd><dt>read_talk_messages</dt><dd>page 1, 40 messages</dd></dl></div></details>
+                </div>
+                <div class="reply-text" style="grid-column:2">Saved as <strong>SLOW</strong>. The note repeats the ward name three times — shall I fold that into one line at the top?</div>
+              </div>
+            </div>
+
+            <div class="status"><span class="dot"></span><span class="dot"></span><span class="dot"></span>Working…</div>
+          </div>
+
+          <div class="composer">
+            <div class="console">
+              <div class="fake-field ph">Ask about this space or request a change…</div>
+              <div class="console-foot">
+                <div class="console-left">
+                  <button class="btn icon" aria-label="Undo"><svg class="i"><use href="#undo"/></svg></button>
+                  <button class="btn icon" aria-label="Delete last word"><svg class="i"><use href="#del"/></svg></button>
+                  <button class="btn icon" aria-label="Clear"><svg class="i"><use href="#trash"/></svg></button>
+                </div>
+                <button class="btn primary pill"><svg class="i" style="font-size:17px"><use href="#bot"/></svg>Ask</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="dock">
+            <button class="tab on">Hospital</button>
+            <button class="tab">Sister</button>
+            <button class="tab">Home</button>
+            <button class="btn icon" style="border:0;background:none" aria-label="New space"><svg class="i"><use href="#plus"/></svg></button>
+            <div class="modes">
+              <span class="mode"><svg class="i" style="font-size:16px"><use href="#msg"/></svg>Talk</span>
+              <span class="mode"><svg class="i" style="font-size:16px"><use href="#file"/></svg>Notes</span>
+              <span class="mode on"><svg class="i" style="font-size:16px"><use href="#bot"/></svg>Agent</span>
+            </div>
+      </div>
+    </div>
+
+    <div class="callout ok" style="max-width:82ch">
+      <b>Nothing about the composer moves.</b> Undo, delete-last-word and clear stay in the same
+      corner at the same size; the field is still the 20px <code>text-xl</code> role; Ask is still
+      the pill on the right with the bot mark and no audio selector, because Agent makes no sound.
+      The suggestion stripe stays off, as <code>suggestions={false}</code> already sets. The pending
+      note — <em>“Approve or reject the proposed change before asking again”</em> — still prints under
+      the field when a proposal is open.
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ 4. empty state ══════════════════════════ -->
+  <section>
+    <h2>4 · The empty state earns its screen</h2>
+    <p class="sub">
+      Today's empty state is a grey circle and two paragraphs of prose, and a user who types slowly
+      is asked to compose their first sentence from nothing. Give it pressable openers, the way
+      <code>NEW_SPACE_OPENERS</code> already does on the create screen. An example you can press costs
+      no keystrokes; one you have to retype costs all of them.
+    </p>
+    <div class="two-up">
+      <div>
+        <div class="app" style="height:540px">
+          <div class="app-head"><span class="space-name">Hospital</span><span class="head-mode">Agent</span></div>
+          <div class="app-body"><div class="col">
+            <div class="empty">
+              <div class="empty-mark" style="background:var(--zinc-100);color:var(--zinc-500)"><svg class="i"><use href="#bot"/></svg></div>
+              <p style="max-width:38ch">Ask about this space, or request a change to its setup, notes, saved phrases, or Talk messages.</p>
+              <p style="font-size:12px">Reads happen automatically. You approve every change.</p>
+            </div>
+            <div class="composer"><div class="console"><div class="fake-field ph">Ask about this space or request a change…</div>
+              <div class="console-foot"><div class="console-left">
+                <button class="btn icon"><svg class="i"><use href="#undo"/></svg></button>
+                <button class="btn icon"><svg class="i"><use href="#del"/></svg></button>
+                <button class="btn icon"><svg class="i"><use href="#trash"/></svg></button></div>
+                <button class="btn primary pill"><svg class="i" style="font-size:17px"><use href="#bot"/></svg>Ask</button></div></div></div>
+          </div></div>
+        </div>
+        <p class="frame-label"><b>Today.</b> Two sentences and a grey circle. Everything to do next
+        must be typed.</p>
+      </div>
+      <div>
+        <div class="app" style="height:540px">
+          <div class="app-head"><span class="space-name">Hospital</span><span class="head-mode">Agent</span></div>
+          <div class="app-body"><div class="col">
+            <div class="empty">
+              <div class="empty-mark"><svg class="i"><use href="#bot"/></svg></div>
+              <h4>What shall we change?</h4>
+              <p>The agent reads this space on its own. It never changes anything until you approve it.</p>
+              <div class="chips" style="justify-content:center; margin-top:4px">
+                <button class="chip">Add a phrase for <span class="dots">…</span></button>
+                <button class="chip">Tidy my note <span class="dots">…</span></button>
+                <button class="chip">What do I say most <span class="dots">…</span></button>
+              </div>
+            </div>
+            <div class="composer"><div class="console"><div class="fake-field ph">Ask about this space or request a change…</div>
+              <div class="console-foot"><div class="console-left">
+                <button class="btn icon"><svg class="i"><use href="#undo"/></svg></button>
+                <button class="btn icon"><svg class="i"><use href="#del"/></svg></button>
+                <button class="btn icon"><svg class="i"><use href="#trash"/></svg></button></div>
+                <button class="btn primary pill"><svg class="i" style="font-size:17px"><use href="#bot"/></svg>Ask</button></div></div></div>
+          </div></div>
+        </div>
+        <p class="frame-label"><b>Proposed.</b> Three 44px openers that append into the field, the
+        same behaviour and the same shape as the create screen's openers — one component,
+        <code>Openers</code>, used by both. The approval promise moves up into one sentence.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ 5. new space into agent ══════════════════════════ -->
+  <section>
+    <h2>5 · The new space flow becomes the Agent's first conversation</h2>
+    <p class="sub">
+      <code>NewSpaceScreen</code> is 300 lines inside <code>pages/spaces.tsx</code> that already does
+      what the Agent does: take the user's words, call models, write to storage, and report each write
+      as it lands. It has its own vocabulary for that — <code>CreateProgress</code>,
+      <code>createSteps()</code>, <code>StepState</code>, a <code>MARKS</code> icon table and a
+      <code>Steps</code> list — none of which is reused anywhere. The Agent transcript's folded line
+      is the same object with a better name.
+    </p>
+
+    <div class="callout ok">
+      <b>Decision (2026-09-02, after building A once):</b> none of the three as written.
+      The first build of A rendered the three create steps through <code>ToolLine</code> and
+      nothing else — no rows reached <code>agent_messages</code>, and the conversation ended the
+      moment the space opened. It was B wearing A's label.
+      <br /><br />
+      What shipped is a fourth shape, <b>the doorway</b>. <code>/spaces/new</code> keeps the
+      question, the openers, and the composer, and shows no transcript — there is nothing yet to
+      show. On submit it awaits three <em>local</em> writes (the space, the words as its note, and a
+      user turn in the transcript) and then hands the user to that space's Agent. The naming and
+      the phrases run on past the screen and write their reply into the same transcript.
+      <br /><br />
+      C stays rejected for a reason this mock did not name: <code>AGENT_MAX_STEPS</code> is 8 and the
+      loop runs one tool call at a time, so seeding eight phrases through <code>change_phrase</code>
+      is eight sequential round trips. <code>describeSpace</code> and <code>seedPhrases</code> also
+      run in parallel today, and an agent loop cannot. The model still does not create.
+      <br /><br />
+      The §5 frames below are therefore <b>superseded</b>: there is no progress list, no
+      <em>Open the space anyway</em>, no <em>Open Sister</em>, and no auto-open decision. The
+      argument for waiting was always about landing on Talk, whose suggestion stripe would fill
+      under a reaching hand; Agent sets <code>suggestions={false}</code>, so it dissolves.
+    </div>
+
+    <h3>Three ways to do it</h3>
+    <table class="grid">
+      <thead><tr><th style="width:230px">Option</th><th>What it means</th><th style="width:120px">Verdict</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>A · Seeded conversation</strong><br /><span style="color:var(--zinc-500)">Keep the deterministic writes, render them as agent turns</span></td>
+          <td>
+            <code>/spaces/new</code> renders the Agent screen with no space yet. Pressing
+            <em>Create space</em> still runs the same code path it does today — make the space, save
+            the words, then <code>describeSpace</code> and <code>seedPhrases</code> in parallel under
+            the 20s timeout — but each write reports as an applied tool line instead of a
+            <code>Steps</code> row. When the run lands, the space is real, the conversation continues
+            in it, and the user can say “add a phrase for mornings” without leaving.
+          </td>
+          <td><span class="badge rec">Recommended</span></td>
+        </tr>
+        <tr>
+          <td><strong>B · Shared shell only</strong></td>
+          <td>Keep <code>NewSpaceScreen</code>'s state machine and swap the <code>Steps</code> list for the transcript components. Cheapest change; the two screens still diverge in behaviour, and the user still cannot talk to the thing that just made their space.</td>
+          <td><span class="badge opt">Fallback</span></td>
+        </tr>
+        <tr>
+          <td><strong>C · Model-driven creation</strong></td>
+          <td>Give the agent a <code>create_space</code> tool and let the loop decide when to call it. Reads well; loses every guarantee the current flow has. A model that hangs or answers badly leaves the user with no space and their paragraph gone.</td>
+          <td><span class="badge no">No</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout warn">
+      <b>Why not C.</b> The current create flow has three safety properties worth more than the
+      elegance: the space and the user's words reach local storage <em>before</em> any model runs; a
+      model that stalls is abandoned at 20s and becomes a note beside its line, not an error; and a
+      failed run patches the space it already made rather than making a second one. Option A keeps
+      all three — the model never decides <em>whether</em> to create, only what to call it and what to
+      write. The transcript is the presentation layer; it is not given the steering wheel.
+    </div>
+
+    <h3>Option A, drawn</h3>
+    <div class="two-up">
+      <div>
+        <div class="app" style="height:640px">
+          <div class="app-head"><span class="space-name" style="color:var(--zinc-500)">New space</span></div>
+          <div class="app-body"><div class="col">
+            <div class="empty">
+              <div class="empty-mark"><svg class="i"><use href="#msg"/></svg></div>
+              <h4>What is this space for?</h4>
+              <p>Your words tell September what this space is for. Talk reads them for every suggestion and every phrase.</p>
+              <div class="chips" style="justify-content:center; margin-top:4px">
+                <button class="chip">I speak to my <span class="dots">…</span></button>
+                <button class="chip">I use this at <span class="dots">…</span></button>
+                <button class="chip">We talk about <span class="dots">…</span></button>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:6px">
+                <button class="btn ghost">Skip for now</button>
+                <button class="btn ghost">Cancel</button>
+              </div>
+            </div>
+            <div class="composer"><div class="console"><div class="fake-field ph">Say who you speak to here, and what you talk about.</div>
+              <div class="console-foot"><div class="console-left">
+                <button class="btn icon"><svg class="i"><use href="#undo"/></svg></button>
+                <button class="btn icon"><svg class="i"><use href="#del"/></svg></button>
+                <button class="btn icon"><svg class="i"><use href="#trash"/></svg></button></div>
+                <button class="btn primary pill"><svg class="i" style="font-size:17px"><use href="#plus"/></svg>Create space</button></div></div></div>
+          </div></div>
+        </div>
+        <p class="frame-label"><b>Before.</b> Identical to today's screen, because today's screen is
+        already right: the question, the pressable openers, Skip and Cancel, and the same console with
+        the <code>new</code> action. Only the frame around it changes — it is the transcript's empty
+        state now, so the openers are the <code>Openers</code> component shared with §4.</p>
+      </div>
+
+      <div>
+        <div class="app" style="height:640px">
+          <div class="app-head"><span class="space-name" style="color:var(--zinc-500)">New space</span></div>
+          <div class="app-body"><div class="col">
+            <div class="stream">
+              <div class="turn"><div class="bubble-user">I speak to my sister here. She lives abroad and we mostly catch up about the grandchildren and about my appointments.</div></div>
+              <div class="turn">
+                <div class="reply">
+                  <div class="reply-mark"><svg class="i"><use href="#bot"/></svg></div>
+                  <div class="work work-line">
+                    <details class="tool"><summary>
+                      <span class="tool-mark applied"><svg class="i"><use href="#check"/></svg></span>
+                      <span class="tool-name">Made the space</span>
+                      <span class="tool-tail">Applied <svg class="i chev" style="font-size:15px"><use href="#chev"/></svg></span></summary>
+                      <div class="tool-body">Your words were saved before anything else ran. This space exists now, whatever the rest of this does.</div></details>
+                    <details class="tool"><summary>
+                      <span class="tool-mark applied"><svg class="i"><use href="#check"/></svg></span>
+                      <span class="tool-name">Named it Sister</span>
+                      <span class="tool-tail">Applied <svg class="i chev" style="font-size:15px"><use href="#chev"/></svg></span></summary>
+                      <div class="tool-body"><dl class="kv"><dt>Was</dt><dd>Amber Cedar Meadow</dd><dt>Now</dt><dd>Sister</dd></dl></div></details>
+                    <details class="tool"><summary>
+                      <span class="tool-mark failed"><svg class="i"><use href="#alert"/></svg></span>
+                      <span class="tool-name">Wrote the first phrases</span>
+                      <span class="tool-tail">Took too long <svg class="i chev" style="font-size:15px"><use href="#chev"/></svg></span></summary>
+                      <div class="tool-body">The writing service did not answer in 20 seconds. September will write these the first time you send a message here — nothing is lost.</div></details>
+                  </div>
+                  <div class="reply-text" style="grid-column:2">
+                    Your space is ready. I have called it <strong>Sister</strong> and kept your words as
+                    its note. The first phrases did not arrive — they will be written when you send
+                    your first message.
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;gap:10px;padding-left:38px">
+                <button class="btn primary">Open Sister<svg class="i" style="font-size:17px"><use href="#arrow"/></svg></button>
+                <button class="btn outline">Rename it</button>
+              </div>
+            </div>
+            <div class="composer"><div class="console"><div class="fake-field ph">Ask about this space or request a change…</div>
+              <div class="console-note">Sister is made. Ask for anything else here, or open it to start talking.</div>
+              <div class="console-foot"><div class="console-left">
+                <button class="btn icon"><svg class="i"><use href="#undo"/></svg></button>
+                <button class="btn icon"><svg class="i"><use href="#del"/></svg></button>
+                <button class="btn icon"><svg class="i"><use href="#trash"/></svg></button></div>
+                <button class="btn primary pill"><svg class="i" style="font-size:17px"><use href="#bot"/></svg>Ask</button></div></div></div>
+          </div></div>
+        </div>
+        <p class="frame-label"><b>After.</b> The three <code>Steps</code> rows are three folded tool
+        lines with the same states — running, done, skipped, failed map onto the marks in §2.1 with
+        nothing left over. The failed phrase step gets what today's note never gets: a reader. Today
+        the screen writes that note and then navigates away from it in the same tick, which the
+        archived note calls out as a known gap. Here the user stays, sees it, and can act.</p>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <b>The gap this closes.</b> <code>docs/notes/2026-08-23-new-space-flow.md</code> (archived) ends
+      on an open problem: a failed <code>describeSpace</code> leaves the space called
+      <em>Amber Cedar Meadow</em> for good, “and nothing tells them why”. In Option A the naming step
+      is a line the user is looking at, and <em>Rename it</em> is one press from it — no new mechanism,
+      just a flow that does not navigate away from its own failure.
+    </div>
+
+    <h3>What moves in the code</h3>
+    <table class="grid">
+      <thead><tr><th style="width:300px">File</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><code>packages/app-ui/blocks/agent-transcript.tsx</code> <span class="badge opt">new</span></td><td><code>Transcript</code>, <code>UserTurn</code>, <code>ReplyTurn</code>, <code>ToolLine</code>, <code>ProposalCard</code>, <code>Openers</code>. Everything drawn in §2, §3, §4.</td></tr>
+        <tr><td><code>packages/app-ui/pages/agent.tsx</code></td><td>Keeps <code>AgentScreen</code> and the ask/resolve/refresh logic. Loses <code>AgentBubble</code>, <code>ToolCard</code> and the four proposal helpers to the block. Gains <code>NewSpaceScreen</code>, moved in from <code>spaces.tsx</code>.</td></tr>
+        <tr><td><code>packages/app-ui/pages/spaces.tsx</code></td><td>Drops ~300 lines: <code>NewSpaceScreen</code>, <code>Steps</code>, <code>MARKS</code>, <code>callWithin</code>, <code>whyStopped</code>. Keeps <code>SpacesScreen</code> and the delete dialog.</td></tr>
+        <tr><td><code>packages/core/rules/agent.ts</code></td><td>New pure helpers: <code>groupAgentTurns(rows)</code> folds a flat message list into turns with their tool runs, and <code>agentToolOutcome(row)</code> returns the mark and the words for a settled row. Both testable without React.</td></tr>
+        <tr><td><code>packages/core/rules/spaces.ts</code></td><td><code>createSteps</code>/<code>StepState</code>/<code>CreateProgress</code> either retire, or become a mapper into the same tool-line shape. <code>NEW_SPACE_OPENERS</code> gains an Agent sibling for §4.</td></tr>
+        <tr><td>Routes — web + desktop</td><td><code>/spaces/new</code> keeps its address and its <code>Cancel</code>/<code>Skip</code> behaviour. No route graph change; only the component behind it moves.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ══════════════════════════ 6. decisions ══════════════════════════ -->
+  <section>
+    <h2>6 · Decisions to make before code</h2>
+    <table class="grid">
+      <thead><tr><th style="width:60px">#</th><th style="width:280px">Question</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><strong>D1</strong></td><td>Does the agent's reply keep its grey bubble, or become prose on the surface?</td><td><strong>Prose.</strong> The agent is the app answering, not a second speaker. Long answers read badly in a balloon, and it halves the visual noise of a turn.</td></tr>
+        <tr><td><strong>D2</strong></td><td>Do consecutive tool calls fold into one line, or stay one line each?</td><td><strong>Fold.</strong> “Read this space <em>and 2 more</em>”, expanding to the list. A turn with four reads is one row, not four. A write never folds into a group — it always gets its own line.</td></tr>
+        <tr><td><strong>D3</strong></td><td>Is the tool detail shown as prose or as raw arguments and results?</td><td><strong>Prose keys, raw tail.</strong> A labelled key/value list at the top, and the raw tool result in a monospace block underneath, bounded and scrollable. Neither audience is left out.</td></tr>
+        <tr><td><strong>D4</strong></td><td>New space: A, B, or C from §5?</td><td><strong>A.</strong> Every safety property kept, ~300 lines removed, and the create failure finally has a reader.</td></tr>
+        <tr><td><strong>D5</strong></td><td>Do agent bubbles move from <code>text-sm</code> to <code>text-base</code>?</td><td><strong>Yes.</strong> <code>DESIGN.md</code> assigns <code>text-base</code> to the message-bubble role, and Talk already follows it. The Agent screen shipping at <code>text-sm</code> is drift, not a decision.</td></tr>
+        <tr><td><strong>D6</strong></td><td>Should a folded line remember that it was opened?</td><td><strong>No.</strong> Fold state is per-row and resets on mount. A remembered fold means a returning user meets a screen full of open detail they last opened weeks ago.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout ok">
+      <b>Accessibility held throughout.</b> Every fold, chip and button is ≥44px. The fold is a
+      <code>&lt;summary&gt;</code>, so it is a real control with real keyboard behaviour and it
+      announces its expanded state without help. Outcome is carried by mark <em>and</em> word, never
+      by colour alone. The <code>aria-live</code> region still wraps the stream, and folded detail is
+      inside it — so a screen reader hears “Read this space, collapsed”, not three paragraphs of tool
+      output it did not ask for.
+    </div>
+  </section>
+</div>
+<script>
+  // The app scrolls the newest turn into view. The mock does the same, so a
+  // screenshot shows the end of the conversation rather than the start.
+  for (const stream of document.querySelectorAll('.stream')) {
+    stream.scrollTop = stream.scrollHeight;
+  }
+</script>
+</body>
+</html>

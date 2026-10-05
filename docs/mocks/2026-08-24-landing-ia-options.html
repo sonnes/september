@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>September — Landing page: information architecture options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Lexend:wght@700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --indigo-700:#4338ca; --indigo-600:#4f46e5; --indigo-500:#6366f1; --indigo-400:#818cf8;
+    --indigo-300:#a5b4fc; --indigo-200:#c7d2fe; --indigo-100:#e0e7ff; --indigo-50:#eef2ff;
+    --zinc-950:#09090b; --zinc-900:#18181b; --zinc-800:#27272a; --zinc-700:#3f3f46; --zinc-600:#52525b;
+    --zinc-500:#71717a; --zinc-400:#a1a1aa; --zinc-300:#d4d4d8; --zinc-200:#e4e4e7; --zinc-100:#f4f4f5; --zinc-50:#fafafa;
+    --amber-50:#fffbeb; --amber-200:#fde68a; --amber-700:#b45309; --amber-800:#92400e;
+    --em-50:#ecfdf5; --em-200:#a7f3d0; --em-700:#047857;
+    --sky-50:#f0f9ff; --sky-200:#bae6fd; --sky-700:#0369a1;
+    --violet-50:#f5f3ff; --violet-200:#ddd6fe; --violet-700:#6d28d9;
+    --rose-50:#fff1f2; --rose-200:#fecdd3; --rose-700:#be123c;
+    --r-control:12px; --r-chip:14px; --r-surface:20px;
+    --shadow:0 1px 2px rgba(24,24,27,.06), 0 1px 3px rgba(24,24,27,.04);
+  }
+  * { box-sizing:border-box; margin:0; }
+  body {
+    font-family:"Noto Sans", Helvetica, sans-serif; background:var(--zinc-100); color:var(--zinc-900);
+    -webkit-font-smoothing:antialiased; padding:48px 24px 120px; font-size:14px; line-height:1.5;
+  }
+  .page { max-width:1280px; margin:0 auto; }
+  .eyebrow { font-size:14px; font-weight:500; color:var(--indigo-600); }
+  h1 { font-size:32px; font-weight:700; letter-spacing:-.02em; margin-top:6px; }
+  .lede { font-size:15px; color:var(--zinc-500); margin-top:10px; max-width:82ch; line-height:1.7; }
+
+  section { margin-top:52px; scroll-margin-top:20px; }
+  section > h2 { font-size:22px; font-weight:700; letter-spacing:-.01em; }
+  section > .sub { font-size:14px; color:var(--zinc-500); margin-top:6px; max-width:82ch; line-height:1.7; }
+
+  .panel { background:#fff; border:1px solid var(--zinc-200); border-radius:var(--r-surface); box-shadow:var(--shadow); padding:28px; margin-top:18px; }
+
+  table.grid { width:100%; border-collapse:collapse; margin-top:16px; font-size:13.5px; }
+  table.grid th { text-align:left; font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--zinc-500); padding:0 14px 10px 0; border-bottom:1px solid var(--zinc-200); }
+  table.grid td { padding:11px 14px 11px 0; border-bottom:1px solid var(--zinc-100); color:var(--zinc-700); vertical-align:top; }
+  table.grid td strong { color:var(--zinc-900); font-weight:600; }
+
+  /* ---- wireframe skeleton ---- */
+  .option { display:grid; grid-template-columns:400px minmax(0,1fr); gap:28px; align-items:start; margin-top:18px; }
+  @media (max-width: 900px) { .option { grid-template-columns:1fr; } }
+  .wire { display:flex; flex-direction:column; gap:6px; background:#fff; border:1px solid var(--zinc-200); border-radius:var(--r-surface); box-shadow:var(--shadow); padding:14px; }
+  .band { border-radius:10px; padding:12px 14px; border:1px solid var(--zinc-200); position:relative; }
+  .band .k { font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; opacity:.75; }
+  .band .t { font-size:13.5px; font-weight:600; margin-top:2px; line-height:1.35; }
+  .band .c { font-size:12px; margin-top:3px; line-height:1.5; opacity:.85; }
+  .band.white  { background:#fff; }
+  .band.gray   { background:var(--zinc-100); }
+  .band.indigo { background:var(--indigo-600); color:#fff; border-color:var(--indigo-700); }
+  .band.dark   { background:var(--zinc-950); color:#fff; border-color:var(--zinc-950); }
+  .band.tall   { padding-top:22px; padding-bottom:26px; }
+  .band.short  { padding-top:8px; padding-bottom:8px; }
+  .demo { margin-top:8px; border:2px dashed rgba(99,102,241,.55); background:rgba(238,242,255,.6); border-radius:10px; padding:8px 10px; font-size:11.5px; font-weight:600; color:var(--indigo-700); }
+  .band.indigo .demo, .band.dark .demo { background:rgba(255,255,255,.12); border-color:rgba(255,255,255,.5); color:#fff; }
+
+  .tag { display:inline-block; font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+         border-radius:999px; padding:2px 8px; margin-left:6px; vertical-align:2px; }
+  .tag.new    { background:var(--em-50); color:var(--em-700); border:1px solid var(--em-200); }
+  .tag.merged { background:var(--amber-50); color:var(--amber-800); border:1px solid var(--amber-200); }
+  .tag.kept   { background:var(--zinc-100); color:var(--zinc-600); border:1px solid var(--zinc-200); }
+  .tag.moved  { background:var(--sky-50); color:var(--sky-700); border:1px solid var(--sky-200); }
+  .tag.cut    { background:var(--rose-50); color:var(--rose-700); border:1px solid var(--rose-200); }
+  .band.indigo .tag, .band.dark .tag { background:rgba(255,255,255,.15); color:#fff; border-color:rgba(255,255,255,.35); }
+
+  .notes { display:grid; gap:12px; }
+  .note { background:#fff; border:1px solid var(--zinc-200); border-radius:var(--r-chip); box-shadow:var(--shadow); padding:14px 16px; }
+  .note h4 { font-size:13.5px; font-weight:700; }
+  .note p { font-size:13px; color:var(--zinc-600); margin-top:4px; line-height:1.6; }
+
+  .verdict { margin-top:14px; display:grid; gap:8px; }
+  .verdict .row { display:grid; grid-template-columns:64px minmax(0,1fr); gap:12px; font-size:13px; }
+  .verdict .lbl { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding-top:2px; }
+  .verdict .lbl.pro { color:var(--em-700); }
+  .verdict .lbl.con { color:var(--rose-700); }
+
+  .legend { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; font-size:12px; color:var(--zinc-600); align-items:center; }
+  .legend .sw { display:inline-block; width:14px; height:14px; border-radius:4px; border:1px solid var(--zinc-300); vertical-align:-2px; margin-right:5px; }
+
+  .pill-rec { display:inline-block; background:var(--indigo-600); color:#fff; font-size:11px; font-weight:700;
+              letter-spacing:.05em; text-transform:uppercase; border-radius:999px; padding:3px 10px; margin-left:10px; vertical-align:3px; }
+  code { font-family:ui-monospace, Menlo, monospace; font-size:12.5px; background:var(--zinc-100); border:1px solid var(--zinc-200); border-radius:5px; padding:1px 5px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow">September — mock · 2026-08-24</p>
+  <h1>Landing page redesign: information architecture</h1>
+  <p class="lede">
+    Structure only — section order, what each section carries, and what is new, merged, or cut.
+    Copy in the blocks is directional, not final. Visual design (type, color, art direction)
+    comes in a second mock after one structure is chosen. All three options keep the page's
+    strongest asset: <strong>every demo on the page is the real feature, working</strong>.
+  </p>
+
+  <!-- ======================= AUDIT ======================= -->
+  <section id="audit">
+    <h2>What the current page does, and where it strains</h2>
+    <p class="sub">Today: hero → six feature demos of equal weight → about → privacy → setup → CTA → footer.</p>
+    <div class="panel">
+      <table class="grid">
+        <tr><th style="width:220px">Observation</th><th>Consequence</th></tr>
+        <tr>
+          <td><strong>Six feature sections in a row, all the same size</strong></td>
+          <td>No hierarchy — Talk (the product) weighs the same as Present (a nice moment). A tired reader stops scrolling around section three and never reaches trust or setup.</td>
+        </tr>
+        <tr>
+          <td><strong>The Mac app does not exist on this page</strong></td>
+          <td>September's biggest differentiator — joining FaceTime and Zoom calls through September Microphone and September Camera, plus on-device Apple Intelligence writing help — is unmarketed. The page sells only the browser.</td>
+        </tr>
+        <tr>
+          <td><strong>Notes and Present are one story told twice</strong></td>
+          <td>Present literally replays the Notes section's sentences. Two sections, one idea.</td>
+        </tr>
+        <tr>
+          <td><strong>Privacy band and Setup choices overlap</strong></td>
+          <td>"Stays on this device / no account / free" appears in both, back to back.</td>
+        </tr>
+        <tr>
+          <td><strong>Caregivers appear only in the last two sections</strong></td>
+          <td>The person most likely doing the setup is addressed last.</td>
+        </tr>
+        <tr>
+          <td><strong>Nav is Features / About only, inside the hero card</strong></td>
+          <td>Once you scroll, there is no way back except the footer.</td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ======================= FOUNDATIONS ======================= -->
+  <section id="foundations">
+    <h2>Shared foundations (all options)</h2>
+    <div class="panel">
+      <table class="grid">
+        <tr><th style="width:220px">Rule</th><th>Detail</th></tr>
+        <tr><td><strong>One job</strong></td><td>Get the right person to press <em>Get started</em> with confidence — or to send the link to the person who will set it up for them.</td></tr>
+        <tr><td><strong>Three readers</strong></td><td>① The person losing speech (often eye-gaze / single-finger — big targets, short lines, no hurry). ② The family member or caregiver who will do the setup. ③ The clinician or speech therapist evaluating it.</td></tr>
+        <tr><td><strong>Live demos stay</strong></td><td>"Everything on this page is the real thing" is the page's proof. Demos are reused, not rebuilt.</td></tr>
+        <tr><td><strong>Vocabulary standard</strong></td><td>The approved copy standard applies (<code>docs/plans/2026-08-24-copy-vocabulary.md</code>): Talk, Notes, space, Speak, Read aloud, Hear it, writing help, "Get started" — no "AI", no "provider".</td></tr>
+        <tr><td><strong>Band rhythm</strong></td><td>Sections alternate white / zinc-100, with at most two full-color bands (indigo for privacy, dark for the closing CTA) so color stays a signal.</td></tr>
+        <tr><td><strong>Accessibility</strong></td><td>DESIGN.md floors hold on marketing too: ≥44px targets, no hover-gated content, reduced-motion safe, body ≥14px.</td></tr>
+      </table>
+    </div>
+    <div class="legend">
+      <span><span class="sw" style="background:#fff"></span>white band</span>
+      <span><span class="sw" style="background:var(--zinc-100)"></span>zinc-100 band</span>
+      <span><span class="sw" style="background:var(--indigo-600)"></span>indigo band</span>
+      <span><span class="sw" style="background:var(--zinc-950)"></span>dark band</span>
+      <span><span class="sw" style="border:2px dashed var(--indigo-400); background:var(--indigo-50)"></span>working demo embedded</span>
+      <span class="tag new">new</span>
+      <span class="tag merged">merged</span>
+      <span class="tag kept">kept</span>
+      <span class="tag moved">moved</span>
+      <span class="tag cut">cut</span>
+    </div>
+  </section>
+
+  <!-- ======================= OPTION A ======================= -->
+  <section id="option-a">
+    <h2>Option A — Proof first, then chapters <span class="pill-rec">Recommended</span></h2>
+    <p class="sub">
+      An evolution, not a rebuild. The hero hands you the keyboard immediately; six feature sections
+      become four chapters; a new platform section finally sells the Mac app and the browser side by side.
+      11 bands become 9.
+    </p>
+    <div class="option">
+      <div class="wire">
+        <div class="band indigo tall">
+          <p class="k">A1 · Hero + working Talk demo</p>
+          <p class="t">Say more. Type less. <span class="tag merged">merged</span></p>
+          <p class="c">Who it is for · Get started · open source badge · "Everything on this page is the real thing." The Talk demo sits directly under the headline, peeking above the fold.</p>
+          <div class="demo">▸ Live Talk demo — type "go", tap a suggestion, press Speak</div>
+        </div>
+        <div class="band gray">
+          <p class="k">A2 · Chapter — Saved phrases &amp; codes</p>
+          <p class="t">Your everyday sentences, two letters away. <span class="tag kept">kept</span></p>
+          <div class="demo">▸ Codes demo — ty / hlp / wtr</div>
+        </div>
+        <div class="band white">
+          <p class="k">A3 · Chapter — Spaces</p>
+          <p class="t">The right words for the room you're in. <span class="tag kept">kept</span></p>
+          <div class="demo">▸ Spaces demo — Family / Clinic / Café</div>
+        </div>
+        <div class="band gray">
+          <p class="k">A4 · Chapter — Your voice</p>
+          <p class="t">Keep your own voice. <span class="tag kept">kept</span></p>
+          <p class="c">Clone from 30 seconds, even from an old video.</p>
+          <div class="demo">▸ Hear it — natural voices on this device</div>
+        </div>
+        <div class="band white">
+          <p class="k">A5 · Chapter — Notes &amp; Present</p>
+          <p class="t">Longer thoughts, ready ahead of time. <span class="tag merged">merged</span></p>
+          <p class="c">Write it once → September reads it aloud → fill the room, or export as text, audio, or captioned video. One demo flows from the note into the stage.</p>
+          <div class="demo">▸ Note plays sentence by sentence, then Present takes the frame</div>
+        </div>
+        <div class="band gray">
+          <p class="k">A6 · Where September works</p>
+          <p class="t">In your browser today. On your Mac for calls. <span class="tag new">new</span></p>
+          <p class="c">Browser: nothing to install, start now. Mac app: September Microphone &amp; September Camera join FaceTime and Zoom; Apple Intelligence writing help stays on the device.</p>
+        </div>
+        <div class="band indigo">
+          <p class="k">A7 · Privacy + cost</p>
+          <p class="t">Your words can stay on this device. <span class="tag merged">merged</span></p>
+          <p class="c">Free · no account · open source · on-device. Absorbs the "free" facts so Setup can stop repeating them.</p>
+        </div>
+        <div class="band white">
+          <p class="k">A8 · About</p>
+          <p class="t">Built by someone who lives it. <span class="tag kept">kept</span></p>
+          <p class="c">Ravi's story, the pull-quote, link to the full article.</p>
+        </div>
+        <div class="band gray">
+          <p class="k">A9 · Getting started</p>
+          <p class="t">Choose the setup that feels right. <span class="tag kept">kept</span></p>
+          <p class="c">Free start / Use your own services (from SETUP_MODES) + one line inviting a caregiver to do this part.</p>
+        </div>
+        <div class="band dark short">
+          <p class="k">A10 · Closing CTA</p>
+          <p class="t">Being understood shouldn't be hard work. — Get started <span class="tag kept">kept</span></p>
+        </div>
+        <div class="band white short">
+          <p class="k">A11 · Footer</p>
+          <p class="c">Section anchors · GitHub · the story link · © <span class="tag kept">kept</span></p>
+        </div>
+      </div>
+      <div class="notes">
+        <div class="note"><h4>Why the demo moves into the hero</h4>
+          <p>The strongest claim the page can make is not a headline — it is the product working in the first viewport. The current page already puts the demo second; fusing it with the hero removes one scroll and makes the promise ("fewer keystrokes") and its proof one gesture apart.</p></div>
+        <div class="note"><h4>Six features → four chapters</h4>
+          <p>Talk is the hero, so it stops being a chapter. Notes and Present collapse into one arc (the Present demo already replays the Notes sentences). Each remaining chapter keeps its color lane and its working demo, alternating text-left / text-right as today.</p></div>
+        <div class="note"><h4>The new platform section (A6)</h4>
+          <p>The single biggest content gap. Two calm columns, no screenshots needed at IA stage: browser = start now; Mac = calls and on-device writing help. Decision needed on the Mac column's action — "Download for Mac" if a bundle will be published, otherwise an honest "The Mac app is on its way" with a link to GitHub.</p></div>
+        <div class="note"><h4>Privacy absorbs "free" (A7)</h4>
+          <p>One indigo band answers the two anxieties that arrive together — "where do my words go?" and "what does it cost?" — and Setup (A9) stops re-stating them, which was the current overlap.</p></div>
+        <div class="note"><h4>Nav</h4>
+          <p>Hero-card nav grows to Features · Calls · Privacy · About + Get started. No sticky header — calm wins; the footer keeps the same anchors for the way back up.</p></div>
+        <div class="verdict">
+          <div class="row"><span class="lbl pro">For</span><span>Lowest risk and least new content; every existing demo is reused; fixes all six audit findings.</span></div>
+          <div class="row"><span class="lbl con">Against</span><span>Still a feature-shaped page — the emotional register lives only in the About section and the chapter ledes.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= OPTION B ======================= -->
+  <section id="option-b">
+    <h2>Option B — A day with September</h2>
+    <p class="sub">
+      Narrative structure: the features appear as scenes in one day, in the order the day happens.
+      Same demos, re-framed as moments. The most emotive option, and the most new writing.
+    </p>
+    <div class="option">
+      <div class="wire">
+        <div class="band indigo tall">
+          <p class="k">B1 · Hero + working Talk demo</p>
+          <p class="t">Say more. Type less. <span class="tag merged">merged</span></p>
+          <p class="c">Same fused hero as Option A, closing with: "Here is one day with it."</p>
+          <div class="demo">▸ Live Talk demo</div>
+        </div>
+        <div class="band gray">
+          <p class="k">B2 · Morning, at home</p>
+          <p class="t">"Good morning" before the coffee is poured. <span class="tag moved">moved</span></p>
+          <p class="c">Family space: pinned phrases + codes in one scene (ty, hlp, wtr).</p>
+          <div class="demo">▸ Codes demo, framed in the Family space</div>
+        </div>
+        <div class="band white">
+          <p class="k">B3 · Out in the world</p>
+          <p class="t">The words follow the room. <span class="tag merged">merged</span></p>
+          <p class="c">Clinic and café: switching spaces switches the phrases at hand.</p>
+          <div class="demo">▸ Spaces demo — Clinic / Café</div>
+        </div>
+        <div class="band gray">
+          <p class="k">B4 · On a call</p>
+          <p class="t">Your seat at the video call. <span class="tag new">new</span></p>
+          <p class="c">The Mac app joins FaceTime and Zoom as September Microphone and September Camera — your words spoken and captioned into the call.</p>
+        </div>
+        <div class="band white">
+          <p class="k">B5 · In the evening</p>
+          <p class="t">A story for the grandkids, told in your voice. <span class="tag merged">merged</span></p>
+          <p class="c">Notes + Present as one scene: written ahead, read aloud, filling the screen, saved as a video.</p>
+          <div class="demo">▸ Note → Present demo</div>
+        </div>
+        <div class="band gray">
+          <p class="k">B6 · The voice in all of it</p>
+          <p class="t">Every scene above, in your own voice. <span class="tag moved">moved</span></p>
+          <p class="c">Cloning from 30 seconds or an old video. Placed after the day so "your voice" retroactively colors every scene.</p>
+          <div class="demo">▸ Hear it — voices on this device</div>
+        </div>
+        <div class="band indigo"><p class="k">B7 · Privacy + cost</p><p class="t">Same band as A7 <span class="tag merged">merged</span></p></div>
+        <div class="band white"><p class="k">B8 · About</p><p class="t">Built by someone who lives it <span class="tag kept">kept</span></p></div>
+        <div class="band gray"><p class="k">B9 · Getting started</p><p class="t">Setup choices + caregiver line <span class="tag kept">kept</span></p></div>
+        <div class="band dark short"><p class="k">B10 · Closing CTA</p><p class="t">Get started <span class="tag kept">kept</span></p></div>
+        <div class="band white short"><p class="k">B11 · Footer</p><p class="c"><span class="tag kept">kept</span></p></div>
+      </div>
+      <div class="notes">
+        <div class="note"><h4>Why a day</h4>
+          <p>The audience does not shop for features — they picture tomorrow morning. A day-shaped page lets each demo answer a concrete moment ("breakfast", "the clinic", "the call", "the story") instead of a category name. The founder's article is written in exactly this register, so the page and the story land in one voice.</p></div>
+        <div class="note"><h4>What it costs</h4>
+          <p>Every scene needs new framing copy, and each demo needs a scene-specific seed (morning phrases, clinic phrases — partly existing). Feature names (Spaces, Notes) become secondary, which is worse for the clinician skimming for AAC capabilities, and worse for anchor navigation.</p></div>
+        <div class="note"><h4>The call scene earns its place</h4>
+          <p>In a day-shaped page the Mac app is not an appendix — it is the noon scene. This is the structure that markets the virtual microphone and camera hardest.</p></div>
+        <div class="verdict">
+          <div class="row"><span class="lbl pro">For</span><span>Most emotionally persuasive; the Mac app gets a starring scene; one narrative thread from hero to About.</span></div>
+          <div class="row"><span class="lbl con">Against</span><span>Most new copy; feature findability drops for evaluators; scenes date faster than chapters as features change.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= OPTION C ======================= -->
+  <section id="option-c">
+    <h2>Option C — Questions, answered</h2>
+    <p class="sub">
+      Every section header is the question a newly diagnosed person — or their family — actually asks.
+      The page reads as a calm conversation. Most scannable for an anxious reader; least conventional as marketing.
+    </p>
+    <div class="option">
+      <div class="wire">
+        <div class="band indigo tall">
+          <p class="k">C1 · Hero + working Talk demo</p>
+          <p class="t">Say more. Type less. <span class="tag merged">merged</span></p>
+          <div class="demo">▸ Live Talk demo</div>
+        </div>
+        <div class="band gray">
+          <p class="k">C2</p>
+          <p class="t">"Will I keep up with the conversation?" <span class="tag merged">merged</span></p>
+          <p class="c">Suggestions + saved phrases + codes, answered in one section.</p>
+          <div class="demo">▸ Codes demo</div>
+        </div>
+        <div class="band white">
+          <p class="k">C3</p>
+          <p class="t">"Will it still sound like me?" <span class="tag kept">kept</span></p>
+          <div class="demo">▸ Hear it — voices on this device</div>
+        </div>
+        <div class="band gray">
+          <p class="k">C4</p>
+          <p class="t">"Will it know the words I need, where I need them?" <span class="tag kept">kept</span></p>
+          <div class="demo">▸ Spaces demo</div>
+        </div>
+        <div class="band white">
+          <p class="k">C5</p>
+          <p class="t">"What about the longer things I want to say?" <span class="tag merged">merged</span></p>
+          <div class="demo">▸ Note → Present demo</div>
+        </div>
+        <div class="band gray">
+          <p class="k">C6</p>
+          <p class="t">"Can I use it on video calls?" <span class="tag new">new</span></p>
+          <p class="c">The Mac app, September Microphone &amp; Camera, Apple Intelligence.</p>
+        </div>
+        <div class="band indigo">
+          <p class="k">C7</p>
+          <p class="t">"Is it private? What does it cost?" <span class="tag merged">merged</span></p>
+        </div>
+        <div class="band white">
+          <p class="k">C8</p>
+          <p class="t">"Who made this?" <span class="tag kept">kept</span></p>
+        </div>
+        <div class="band gray">
+          <p class="k">C9</p>
+          <p class="t">"How do I start — and can someone do it for me?" <span class="tag merged">merged</span></p>
+          <p class="c">Setup choices + caregiver framing + Get started, in one closing section (no separate dark CTA band).</p>
+        </div>
+        <div class="band white short"><p class="k">C10 · Footer</p><p class="c"><span class="tag kept">kept</span></p></div>
+      </div>
+      <div class="notes">
+        <div class="note"><h4>Why questions</h4>
+          <p>The audience arrives scared and skimming. Question headers let a reader self-serve: they scroll until they see their own worry in 30px type, and read only that answer. It is also the friendliest structure for a caregiver forwarding the page — "scroll to the third question".</p></div>
+        <div class="note"><h4>The trade</h4>
+          <p>Headers stop naming features, so the page markets reassurance more than capability. Nine question bands in a row also risk monotony — the rhythm depends entirely on the answers alternating demo / prose well. The closing merge (C9) removes the dark CTA band, which weakens the final beat.</p></div>
+        <div class="verdict">
+          <div class="row"><span class="lbl pro">For</span><span>Matches the reader's emotional state; extremely scannable; caregiver question gets first-class placement.</span></div>
+          <div class="row"><span class="lbl con">Against</span><span>Feature names vanish from the skeleton; weakest closing CTA; headline tone can tip from calm into clinical if the questions read as a symptom list.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= MAPPING ======================= -->
+  <section id="mapping">
+    <h2>Where each current section lands (Option A)</h2>
+    <div class="panel">
+      <table class="grid">
+        <tr><th style="width:260px">Today</th><th style="width:180px">In Option A</th><th>Note</th></tr>
+        <tr><td><strong>HeroSection</strong></td><td>A1</td><td>Fused with the live demo; nav gains Calls · Privacy anchors.</td></tr>
+        <tr><td><strong>LiveDemoSection</strong> (Talk)</td><td>A1</td><td>Becomes the hero's proof; keeps its section id for anchors.</td></tr>
+        <tr><td><strong>PhraseCodesSection</strong></td><td>A2</td><td>Unchanged in substance.</td></tr>
+        <tr><td><strong>SpacesSection</strong></td><td>A3</td><td>Unchanged in substance.</td></tr>
+        <tr><td><strong>VoiceSection</strong></td><td>A4</td><td>Unchanged in substance.</td></tr>
+        <tr><td><strong>NotesSection + PresentSection</strong></td><td>A5</td><td>One chapter, one continuous demo (note → stage → export row).</td></tr>
+        <tr><td><em>— nothing today —</em></td><td>A6</td><td><strong>New:</strong> browser + Mac platform section (calls, on-device writing help).</td></tr>
+        <tr><td><strong>PrivacySection</strong></td><td>A7</td><td>Absorbs the free / no-account facts.</td></tr>
+        <tr><td><strong>AboutSection</strong></td><td>A8</td><td>Unchanged.</td></tr>
+        <tr><td><strong>SetupChoicesSection</strong></td><td>A9</td><td>Drops repeated privacy facts; adds the caregiver invitation line.</td></tr>
+        <tr><td><strong>EnhancedCTASection</strong></td><td>A10</td><td>Unchanged.</td></tr>
+        <tr><td><strong>Footer</strong></td><td>A11</td><td>Anchors updated to the new section set.</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ======================= DECISIONS ======================= -->
+  <section id="decisions">
+    <h2>Decisions needed</h2>
+    <div class="panel">
+      <table class="grid">
+        <tr><th style="width:60px">#</th><th style="width:320px">Question</th><th>Recommendation</th></tr>
+        <tr><td><strong>1</strong></td><td>Which structure?</td><td><strong>Option A</strong>, borrowing Option B's scene-writing for the chapter ledes (the Spaces demo already speaks in scenes: Family / Clinic / Café).</td></tr>
+        <tr><td><strong>2</strong></td><td>Merge Notes + Present into one chapter?</td><td><strong>Yes.</strong> The Present demo already replays the Notes sentences; one chapter tells the whole arc: write → read aloud → fill the room → export.</td></tr>
+        <tr><td><strong>3</strong></td><td>How does the Mac column end (A6)?</td><td>If a bundle will be published, "Download for Mac". Until then, "The Mac app is on its way" + GitHub link. <em>Needs your call — is the desktop app ready to distribute?</em></td></tr>
+        <tr><td><strong>4</strong></td><td>Hero headline direction?</td><td>Plainer and shorter than today: "Say more. Type less." over the current "Faster Communication / Fewer Keystrokes". Final copy in the visual mock.</td></tr>
+      </table>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

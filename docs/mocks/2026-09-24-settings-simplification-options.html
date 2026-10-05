@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>September — Settings: simpler knobs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Lexend:wght@700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --indigo-700:#4338ca; --indigo-600:#4f46e5; --indigo-500:#6366f1; --indigo-400:#818cf8;
+    --indigo-300:#a5b4fc; --indigo-200:#c7d2fe; --indigo-100:#e0e7ff; --indigo-50:#eef2ff;
+    --zinc-950:#09090b; --zinc-900:#18181b; --zinc-800:#27272a; --zinc-700:#3f3f46; --zinc-600:#52525b;
+    --zinc-500:#71717a; --zinc-400:#a1a1aa; --zinc-300:#d4d4d8; --zinc-200:#e4e4e7; --zinc-100:#f4f4f5; --zinc-50:#fafafa;
+    --amber-50:#fffbeb; --amber-200:#fde68a; --amber-800:#92400e;
+    --em-50:#ecfdf5; --em-200:#a7f3d0; --em-700:#047857;
+    --sky-50:#f0f9ff; --sky-200:#bae6fd; --sky-700:#0369a1;
+    --rose-50:#fff1f2; --rose-200:#fecdd3; --rose-700:#be123c;
+    --r-control:12px; --r-chip:14px; --r-surface:20px;
+    --shadow:0 1px 2px rgba(24,24,27,.06), 0 1px 3px rgba(24,24,27,.04);
+  }
+  * { box-sizing:border-box; margin:0; }
+  body {
+    font-family:"Noto Sans", Helvetica, sans-serif; background:var(--zinc-100); color:var(--zinc-900);
+    -webkit-font-smoothing:antialiased; padding:48px 24px 120px; font-size:14px; line-height:1.5;
+  }
+  .page { max-width:1280px; margin:0 auto; }
+  .eyebrow { font-size:14px; font-weight:500; color:var(--indigo-600); }
+  h1 { font-size:32px; font-weight:700; letter-spacing:-.02em; margin-top:6px; }
+  .lede { font-size:15px; color:var(--zinc-500); margin-top:10px; max-width:82ch; line-height:1.7; }
+  .toc { margin-top:18px; display:flex; flex-wrap:wrap; gap:8px; }
+  .toc a { font-size:13px; font-weight:500; color:var(--indigo-700); background:#fff; border:1px solid var(--zinc-200); border-radius:999px; padding:6px 12px; text-decoration:none; }
+
+  section { margin-top:56px; scroll-margin-top:20px; }
+  section > h2 { font-size:22px; font-weight:700; letter-spacing:-.01em; }
+  section > .sub { font-size:14px; color:var(--zinc-500); margin-top:6px; max-width:82ch; line-height:1.7; }
+  section > h3 { font-size:16px; font-weight:600; margin-top:28px; }
+
+  .panel { background:#fff; border:1px solid var(--zinc-200); border-radius:var(--r-surface); box-shadow:var(--shadow); padding:24px 28px; margin-top:18px; }
+  .panel p { max-width:82ch; line-height:1.7; color:var(--zinc-700); }
+  .panel p + p { margin-top:10px; }
+  .panel ul { margin:10px 0 0 18px; color:var(--zinc-700); line-height:1.7; max-width:82ch; }
+  .panel li + li { margin-top:4px; }
+
+  table.grid { width:100%; border-collapse:collapse; margin-top:16px; font-size:13.5px; }
+  table.grid th { text-align:left; font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--zinc-500); padding:0 14px 10px 0; border-bottom:1px solid var(--zinc-200); }
+  table.grid td { padding:11px 14px 11px 0; border-bottom:1px solid var(--zinc-100); color:var(--zinc-700); vertical-align:top; line-height:1.55; }
+  table.grid td strong { color:var(--zinc-900); font-weight:600; }
+  table.grid td code { font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; background:var(--zinc-100); padding:1px 5px; border-radius:5px; }
+
+  .tag { display:inline-block; font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; border-radius:999px; padding:2px 8px; margin-left:6px; vertical-align:2px; }
+  .tag.new    { background:var(--em-50); color:var(--em-700); border:1px solid var(--em-200); }
+  .tag.moved  { background:var(--sky-50); color:var(--sky-700); border:1px solid var(--sky-200); }
+  .tag.hidden { background:var(--amber-50); color:var(--amber-800); border:1px solid var(--amber-200); }
+  .tag.cut    { background:var(--rose-50); color:var(--rose-700); border:1px solid var(--rose-200); }
+  .tag.kept   { background:var(--zinc-100); color:var(--zinc-600); border:1px solid var(--zinc-200); }
+
+  .verdict { margin-top:16px; display:grid; gap:8px; }
+  .verdict .row { display:grid; grid-template-columns:64px minmax(0,1fr); gap:12px; font-size:13px; line-height:1.6; }
+  .verdict .lbl { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding-top:2px; }
+  .verdict .lbl.pro { color:var(--em-700); }
+  .verdict .lbl.con { color:var(--rose-700); }
+
+  /* ---- rendered app frame ---- */
+  .option { display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:28px; align-items:start; margin-top:18px; }
+  @media (max-width: 1000px) { .option { grid-template-columns:1fr; } }
+  .frame { background:var(--zinc-100); border:1px solid var(--zinc-200); border-radius:var(--r-surface); padding:8px; display:flex; gap:8px; }
+  .rail { width:48px; flex:none; background:var(--indigo-500); border-radius:14px; display:flex; flex-direction:column; align-items:center; padding:12px 0; gap:14px; }
+  .rail .key { width:28px; height:28px; border-radius:8px; background:#fff; color:var(--indigo-600); font-family:Lexend, sans-serif; font-weight:700; font-size:10px; display:grid; place-items:center; }
+  .rail .dot { width:18px; height:18px; border-radius:6px; background:rgba(255,255,255,.35); }
+  .rail .dot.on { background:var(--indigo-700); }
+  .inset { flex:1; min-width:0; background:#fff; border-radius:14px; box-shadow:var(--shadow); border:1px solid var(--zinc-200); }
+  .inset .hdr { height:56px; border-bottom:1px solid var(--zinc-200); display:flex; align-items:center; padding:0 20px; font-weight:500; font-size:14px; gap:10px; }
+  .inset .hdr .crumb { color:var(--zinc-400); font-weight:400; }
+  .body { padding:28px 32px 36px; max-width:720px; }
+  .body h1 { font-size:26px; margin:0; }
+  .body .lede { font-size:14px; margin-top:6px; }
+
+  .card { border:1px solid var(--zinc-200); border-radius:var(--r-surface); box-shadow:var(--shadow); padding:22px 24px; margin-top:20px; }
+  .card h2 { font-size:17px; font-weight:600; }
+  .card .now { color:var(--zinc-500); font-size:14px; margin-top:4px; line-height:1.6; }
+  .card .now b { color:var(--zinc-900); font-weight:600; }
+  .card .q { font-size:14px; font-weight:500; margin-top:18px; }
+
+  .choices { display:grid; gap:10px; margin-top:10px; }
+  .choices.cols-3 { grid-template-columns:repeat(3, minmax(0,1fr)); }
+  .choice { border:1px solid var(--zinc-200); border-radius:var(--r-chip); padding:14px 16px; min-height:44px; display:flex; gap:12px; align-items:flex-start; background:#fff; }
+  .choice.on { border-color:var(--indigo-600); background:rgba(79,70,229,.05); }
+  .choice.dim { opacity:.6; }
+  .choice .radio { width:20px; height:20px; border-radius:50%; border:1.5px solid var(--zinc-400); flex:none; margin-top:1px; }
+  .choice.on .radio { border-color:var(--indigo-600); border-width:6px; }
+  .choice .t { font-size:14px; font-weight:600; line-height:1.35; }
+  .choice .c { font-size:12px; color:var(--zinc-500); margin-top:3px; line-height:1.5; }
+  .choice .c.act { color:var(--indigo-700); font-weight:500; }
+  .rec { display:inline-block; font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--indigo-700); background:var(--indigo-50); border:1px solid var(--indigo-200); border-radius:999px; padding:1px 7px; margin-left:6px; vertical-align:1px; }
+
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .chip { height:44px; padding:0 18px; border-radius:999px; border:1px solid var(--zinc-300); display:inline-flex; align-items:center; font-weight:500; font-size:14px; background:#fff; }
+  .chip.on { background:var(--indigo-600); border-color:var(--indigo-600); color:#fff; }
+
+  .btn { height:44px; padding:0 18px; border-radius:var(--r-control); border:1px solid var(--zinc-300); display:inline-flex; align-items:center; gap:8px; font-weight:500; font-size:14px; background:#fff; }
+  .btn.primary { background:var(--indigo-600); border-color:var(--indigo-600); color:#fff; }
+  .btn.pill { border-radius:999px; }
+  .btn.sm { height:36px; font-size:13px; padding:0 14px; }
+  .actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:16px; }
+
+  .slider { margin-top:14px; }
+  .slider .lbl { display:flex; justify-content:space-between; font-size:12px; color:var(--zinc-500); }
+  .slider .lbl b { color:var(--zinc-900); font-weight:500; font-size:14px; }
+  .slider .track { height:6px; border-radius:999px; background:var(--zinc-200); margin-top:8px; position:relative; }
+  .slider .fill { position:absolute; left:0; top:0; bottom:0; width:55%; background:var(--indigo-600); border-radius:999px; }
+  .slider .knob { position:absolute; left:55%; top:50%; width:20px; height:20px; border-radius:50%; background:#fff; border:1.5px solid var(--indigo-600); transform:translate(-50%,-50%); }
+
+  details.adv { margin-top:18px; border-top:1px solid var(--zinc-100); padding-top:12px; }
+  details.adv summary { cursor:pointer; list-style:none; font-size:13px; font-weight:500; color:var(--zinc-600); display:flex; align-items:center; gap:8px; min-height:36px; }
+  details.adv summary::before { content:""; width:8px; height:8px; border-right:1.5px solid var(--zinc-500); border-bottom:1.5px solid var(--zinc-500); transform:rotate(-45deg); transition:transform .15s; margin-left:2px; }
+  details.adv[open] summary::before { transform:rotate(45deg); }
+  details.adv .in { margin-top:10px; padding:14px 16px; background:var(--zinc-50); border:1px solid var(--zinc-200); border-radius:var(--r-chip); display:grid; gap:12px; }
+  .row { display:flex; justify-content:space-between; align-items:center; gap:16px; min-height:44px; }
+  .row .l { font-size:14px; font-weight:500; }
+  .row .l small { display:block; font-size:12px; color:var(--zinc-500); font-weight:400; margin-top:2px; }
+  .row .v { font-size:13px; color:var(--zinc-600); display:flex; align-items:center; gap:10px; white-space:nowrap; }
+  .toggle { width:44px; height:26px; border-radius:999px; background:var(--zinc-300); position:relative; flex:none; }
+  .toggle::after { content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; }
+  .toggle.on { background:var(--indigo-600); }
+  .toggle.on::after { left:21px; }
+  .link { color:var(--indigo-700); font-weight:500; font-size:13px; }
+
+  .callout { border-radius:12px; border:1px solid var(--indigo-200); background:var(--indigo-50); padding:12px 14px; font-size:13px; color:var(--indigo-700); margin-top:14px; line-height:1.55; }
+  .callout.warn { border-color:var(--amber-200); background:var(--amber-50); color:var(--amber-800); }
+
+  .foot { margin-top:26px; display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--zinc-500); font-size:13px; flex-wrap:wrap; }
+
+  .side { display:grid; gap:12px; position:sticky; top:20px; }
+  .note { background:#fff; border:1px solid var(--zinc-200); border-radius:var(--r-chip); box-shadow:var(--shadow); padding:14px 16px; }
+  .note h4 { font-size:13.5px; font-weight:700; }
+  .note p { font-size:13px; color:var(--zinc-600); margin-top:4px; line-height:1.6; }
+  .note ul { margin:6px 0 0 16px; font-size:13px; color:var(--zinc-600); line-height:1.6; }
+
+  .seg { display:inline-flex; border:1px solid var(--zinc-300); border-radius:999px; padding:3px; background:var(--zinc-50); }
+  .seg span { height:36px; padding:0 16px; border-radius:999px; display:inline-flex; align-items:center; font-size:13px; font-weight:500; color:var(--zinc-600); }
+  .seg span.on { background:#fff; color:var(--zinc-900); box-shadow:var(--shadow); border:1px solid var(--zinc-200); }
+
+  .nav { display:flex; flex-direction:column; gap:4px; width:200px; flex:none; }
+  .nav a { display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border-radius:10px; text-decoration:none; color:inherit; min-height:44px; }
+  .nav a.on { background:var(--zinc-100); }
+  .nav .i { width:16px; height:16px; border-radius:4px; background:var(--zinc-300); margin-top:2px; flex:none; }
+  .nav .t { font-size:14px; font-weight:500; }
+  .nav .d { font-size:12px; color:var(--zinc-500); line-height:1.4; }
+  .two { display:flex; gap:32px; }
+  .two .body { padding:0; flex:1; }
+
+  .qpage { padding:36px 40px 40px; max-width:760px; }
+  .qpage .step { font-size:13px; font-weight:500; color:var(--indigo-600); }
+  .qpage h1 { font-size:28px; margin-top:6px; }
+  .qpage .choices { margin-top:22px; gap:12px; }
+  .qpage .choice { padding:18px 20px; }
+  .qpage .choice .t { font-size:16px; }
+  .qpage .choice .c { font-size:13px; }
+  .qpage .nextrow { display:flex; justify-content:space-between; align-items:center; margin-top:28px; }
+  .dots { display:flex; gap:6px; }
+  .dots i { width:8px; height:8px; border-radius:50%; background:var(--zinc-300); display:block; }
+  .dots i.on { background:var(--indigo-600); }
+
+  .count { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; margin-top:16px; }
+  @media (max-width: 800px) { .count { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+  .stat { background:var(--zinc-50); border:1px solid var(--zinc-200); border-radius:var(--r-chip); padding:14px 16px; }
+  .stat .n { font-size:26px; font-weight:700; letter-spacing:-.02em; }
+  .stat .n span { font-size:14px; color:var(--zinc-500); font-weight:500; margin-left:6px; }
+  .stat .k { font-size:12px; color:var(--zinc-500); margin-top:2px; }
+</style>
+<style>
+  .pair { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:20px; margin-top:18px; align-items:start; }
+  @media (max-width: 1000px) { .pair { grid-template-columns:1fr; } }
+  .pair > div > .cap { font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--zinc-500); margin-bottom:8px; }
+  .pair > div > .cap.now { color:var(--rose-700); }
+  .pair > div > .cap.next { color:var(--em-700); }
+  .shot { background:#fff; border:1px solid var(--zinc-200); border-radius:var(--r-surface); box-shadow:var(--shadow); padding:22px 24px; }
+  .shot h2 { font-size:16px; font-weight:600; }
+  .shot .d { font-size:13px; color:var(--zinc-500); margin-top:2px; line-height:1.55; }
+  .shot .q { font-size:14px; font-weight:500; margin-top:16px; }
+  .list { border:1px solid var(--zinc-200); border-radius:var(--r-chip); margin-top:10px; overflow:hidden; }
+  .list .it { display:flex; align-items:center; gap:12px; padding:12px 14px; min-height:44px; border-top:1px solid var(--zinc-100); font-size:14px; }
+  .list .it:first-child { border-top:0; }
+  .list .it.on { background:rgba(79,70,229,.05); }
+  .list .it .r { width:18px; height:18px; border-radius:50%; border:1.5px solid var(--zinc-400); flex:none; }
+  .list .it.on .r { border:6px solid var(--indigo-600); }
+  .list .it .n { flex:1; }
+  .list .it .n small { display:block; font-size:12px; color:var(--zinc-500); }
+  .list .it .m { font-size:12px; color:var(--zinc-500); }
+  .list .it .m.paid { color:var(--amber-800); }
+  .search { display:flex; align-items:center; gap:8px; height:40px; border:1px solid var(--zinc-300); border-radius:var(--r-control); padding:0 12px; color:var(--zinc-400); font-size:14px; margin-top:10px; }
+  .list .hd { font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--zinc-500); padding:10px 14px 4px; background:var(--zinc-50); border-top:1px solid var(--zinc-100); }
+  .ta { border:1px solid var(--zinc-300); border-radius:var(--r-control); padding:10px 12px; font-size:14px; color:var(--zinc-700); line-height:1.6; margin-top:8px; min-height:84px; }
+  .lbl2 { font-size:14px; font-weight:500; margin-top:14px; }
+  .sw { display:flex; justify-content:space-between; align-items:center; gap:16px; border:1px solid var(--zinc-200); border-radius:var(--r-chip); padding:14px 16px; margin-top:10px; }
+  .sw .l { font-size:14px; font-weight:500; }
+  .sw .l small { display:block; font-size:12px; color:var(--zinc-500); font-weight:400; margin-top:2px; line-height:1.5; }
+  .sw .b { height:44px; min-width:44px; padding:0 14px; border-radius:var(--r-control); display:inline-flex; align-items:center; font-weight:500; font-size:14px; border:1px solid var(--zinc-300); }
+  .sw .b.on { background:var(--indigo-600); color:#fff; border-color:var(--indigo-600); }
+  .mark { width:28px; height:28px; border-radius:8px; flex:none; display:grid; place-items:center; font-size:11px; font-weight:700; color:#fff; }
+  .mark.or { background:#6366f1; } .mark.ap { background:#111; } .mark.el { background:#000; } .mark.no { background:var(--zinc-400); }
+  .status { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:500; color:var(--em-700); }
+  .status::before { content:""; width:8px; height:8px; border-radius:50%; background:var(--em-700); }
+  .status.off { color:var(--zinc-500); } .status.off::before { background:var(--zinc-400); }
+  .variants { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:20px; margin-top:18px; align-items:start; }
+  @media (max-width: 1100px) { .variants { grid-template-columns:1fr; } }
+  .variants h4 { font-size:14px; font-weight:700; margin-bottom:8px; }
+  .variants .v { background:#fff; border:1px solid var(--zinc-200); border-radius:var(--r-surface); box-shadow:var(--shadow); padding:18px 20px; }
+  .cnt { display:inline-block; font-size:12px; font-weight:600; border-radius:999px; padding:2px 10px; background:var(--zinc-100); color:var(--zinc-700); border:1px solid var(--zinc-200); margin-left:8px; vertical-align:2px; }
+</style>
+<style>
+  .feat { border:1px solid var(--zinc-200); border-radius:var(--r-surface); box-shadow:var(--shadow); padding:20px 22px; margin-top:16px; background:#fff; }
+  .feat.off { background:var(--zinc-50); }
+  .feat .top { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+  .feat h2 { font-size:16px; font-weight:600; }
+  .feat .d { font-size:13px; color:var(--zinc-500); margin-top:3px; line-height:1.55; max-width:52ch; }
+  .feat .b { height:44px; min-width:56px; padding:0 14px; border-radius:var(--r-control); display:inline-flex; align-items:center; justify-content:center; font-weight:500; font-size:14px; border:1px solid var(--zinc-300); background:#fff; flex:none; }
+  .feat .b.on { background:var(--indigo-600); color:#fff; border-color:var(--indigo-600); }
+  .pick { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; border:1px solid var(--zinc-300); border-radius:var(--r-control); min-height:48px; padding:0 14px; background:#fff; }
+  .pick .l { font-size:12px; color:var(--zinc-500); }
+  .pick .v { font-size:14px; font-weight:500; flex:1; }
+  .pick .m { font-size:12px; color:var(--zinc-500); }
+  .pick .m.paid { color:var(--amber-800); }
+  .pick .chev { width:8px; height:8px; border-right:1.5px solid var(--zinc-500); border-bottom:1.5px solid var(--zinc-500); transform:rotate(45deg); margin:-4px 2px 0 6px; }
+  .feat.off .pick { opacity:.55; }
+  .prov { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px; margin-top:12px; }
+  .prov .choice { flex-direction:column; gap:8px; }
+  .prov .choice .hd2 { display:flex; align-items:center; gap:10px; }
+  .prov .choice .c { margin-top:0; }
+  .prov .foot2 { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:auto; padding-top:6px; }
+  .sheet { background:#fff; border:1px solid var(--zinc-200); border-radius:var(--r-surface); box-shadow:0 12px 32px rgba(24,24,27,.12); padding:20px 22px; max-width:520px; }
+  .sheet h2 { font-size:17px; font-weight:600; }
+  .sheet .d { font-size:13px; color:var(--zinc-500); margin-top:3px; }
+  .tagx { font-size:11px; font-weight:600; color:var(--zinc-600); background:var(--zinc-100); border:1px solid var(--zinc-200); border-radius:999px; padding:1px 8px; margin-left:6px; }
+  .swc { display:inline-flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; flex:none; }
+  .swc i { display:block; width:44px; height:24px; border-radius:999px; background:var(--zinc-200); position:relative; box-shadow:inset 0 0 0 1px rgba(0,0,0,.04); }
+  .swc i::after { content:""; position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2); }
+  .swc.on i { background:var(--indigo-600); }
+  .swc.on i::after { left:22px; }
+  .plbox { height:176px; overflow-y:auto; margin-top:14px; padding-right:6px; scrollbar-width:thin; scrollbar-color:var(--zinc-300) transparent; }
+  .pl { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
+  .pl.one { grid-template-columns:1fr; }
+  .pl .pr { display:flex; align-items:center; gap:8px; min-height:44px; border:1px solid var(--zinc-200); border-radius:12px; padding:0 16px; font-size:14px; font-weight:500; background:#fff; }
+  .pl .pr span:first-child { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pl .pr em { font-style:normal; font-size:12px; font-weight:400; color:var(--zinc-500); }
+  .pl .pr.on { border-color:var(--indigo-600); background:rgba(79,70,229,.05); }
+  .feat.off .plbox { opacity:.55; }
+  .plcap { font-size:13px; font-weight:500; margin-top:14px; }
+  .pl .gh { grid-column:1 / -1; font-size:12px; font-weight:600; color:var(--zinc-500); padding:6px 2px 0; }
+  .swrow { display:flex; justify-content:space-between; align-items:center; gap:16px; border:1px solid var(--zinc-200); border-radius:var(--r-chip); padding:6px 8px 6px 16px; margin-top:10px; background:#fff; }
+  .swrow .l { font-size:14px; font-weight:500; }
+  .swrow .l small { display:block; font-size:12px; color:var(--zinc-500); font-weight:400; margin-top:2px; line-height:1.5; }
+  .swrow.off { background:var(--zinc-50); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="eyebrow">Settings mock · 2026-09-25 · revision 3</div>
+  <h1>Simpler knobs, same names</h1>
+  <p class="lede">
+    The tabs stay: Services, AI Assistance, Usage, Data, and the Voice screen. The provider names stay: Apple Intelligence, OpenRouter, ElevenLabs. AI Assistance puts the provider first. Then Suggestions has its own section, and Agent and phrases share one. Each section has switches and a model. Each model list is a short curated list of frontier and open models.
+  </p>
+  <div class="toc">
+    <a href="#knobs">Knob by knob</a>
+    <a href="#assist">AI Assistance page</a>
+    <a href="#model">Model list</a>
+    <a href="#style">Speaking style</a>
+    <a href="#voice">Voice and the Talk rail</a>
+    <a href="#services">Services and the key page</a>
+    <a href="#pick">Decisions and open calls</a>
+  </div>
+
+  <!-- ============================================================ KNOBS -->
+  <section id="knobs">
+    <h2>Knob by knob</h2>
+    <p class="sub">Today the model knobs are split between AI Assistance and the OpenRouter key page, and each model list holds every OpenRouter model. The proposal keeps every feature adjustable and makes each knob smaller.</p>
+
+    <div class="panel">
+      <div class="count">
+        <div class="stat"><div class="n">460 <span>→ 8</span></div><div class="k">rows in a model list</div></div>
+        <div class="stat"><div class="n">2 <span>→ 0</span></div><div class="k">search fields for models</div></div>
+        <div class="stat"><div class="n">2 <span>→ 1</span></div><div class="k">screens with model choices</div></div>
+        <div class="stat"><div class="n">1 <span>→ 2</span></div><div class="k">model lists, each with its own purpose</div></div>
+      </div>
+
+      <table class="grid">
+        <thead><tr><th style="width:22%">Knob</th><th style="width:30%">Today</th><th style="width:30%">Proposed</th><th>Change</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Provider</strong></td><td>"Who writes" radios, below the automatic switches.</td><td>The first section of AI Assistance. Apple Intelligence, OpenRouter, No AI Assistance, each with its status and a Connect button.</td><td><span class="tag moved">moved</span> First on the page.</td></tr>
+          <tr><td><strong>Suggestions</strong></td><td>An automatic switch on AI Assistance. An override radio group on AI Assistance. A model list on the OpenRouter key page.</td><td>One section: switch and model.</td><td><span class="tag new">simpler</span> Three places become one.</td></tr>
+          <tr><td><strong>Phrases</strong></td><td>An automatic switch. The model is the default model.</td><td>A switch in the Agent and phrases section. Uses the agent model.</td><td><span class="tag new">merged</span> Phrases follow the agent model.</td></tr>
+          <tr><td><strong>Agent</strong></td><td>No switch. Always on. The model is the default model.</td><td>A switch in the Agent and phrases section, on by default. The section model also describes a new space.</td><td><span class="tag new">new</span> Switch is new. Default keeps today's behavior.</td></tr>
+          <tr><td><strong>Default model</strong></td><td>A list of every OpenRouter model, with search, on the key page.</td><td>Removed. Each feature has its own model.</td><td><span class="tag cut">cut</span> No "Use default" row anywhere.</td></tr>
+          <tr><td><strong>Model list</strong></td><td>Every OpenRouter model, with search.</td><td>Automatic, then Frontier and Open models groups, inline in a fixed-height PickList. No search.</td><td><span class="tag new">simpler</span> Option 2, curated only.</td></tr>
+          <tr><td><strong>Speaking style</strong></td><td>Three chips, and a text area that always shows the raw prompt.</td><td>Plain, Warm, Detailed, Custom. The text area shows only when Custom is on.</td><td><span class="tag new">simpler</span></td></tr>
+          <tr><td><strong>Voice service, voice list, Speed</strong></td><td>Radios, a searchable list, a slider.</td><td>Same. Your clone and recent voices pin to the top of the list.</td><td><span class="tag kept">kept</span></td></tr>
+          <tr><td><strong>Steadiness, Likeness, Voice model</strong></td><td>Two sliders and a model list in the Talk rail. The default model, Turbo v2.5, is deprecated.</td><td>Expression: Steady, Natural, Expressive, Custom. Presets use Flash v2.5. Custom shows the two sliders and the model list.</td><td><span class="tag new">simpler</span> All options stay, behind Custom.</td></tr>
+          <tr><td><strong>Keys</strong></td><td>Key page per provider, with model lists under the key.</td><td>Key page holds the guide and the key only.</td><td><span class="tag kept">kept</span> Shorter page.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================ AI ASSISTANCE -->
+  <section id="assist">
+    <h2>AI Assistance page</h2>
+    <p class="sub">The provider comes first. Suggestions has its own section. Agent and phrases share a section and the agent model. Each section has shadcn Switches and an inline model list. OpenRouter state shown.</p>
+
+    <div class="option">
+      <div class="frame">
+        <div class="rail"><div class="key">Sep</div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot on"></div></div>
+        <div class="inset">
+          <div class="hdr">Settings</div>
+          <div class="body two" style="max-width:none">
+            <nav class="nav">
+              <a><span class="i"></span><span><span class="t">Services</span><br /><span class="d">The services September uses, and their keys.</span></span></a>
+              <a class="on"><span class="i"></span><span><span class="t">AI Assistance</span><br /><span class="d">The provider, and what each feature uses.</span></span></a>
+              <a><span class="i"></span><span><span class="t">Usage</span><br /><span class="d">Typing saved and service use.</span></span></a>
+              <a><span class="i"></span><span><span class="t">Data</span><br /><span class="d">Download a backup or restore one.</span></span></a>
+            </nav>
+            <div class="body">
+              <h1>AI Assistance</h1>
+              <p class="lede">September finishes your sentences while you type.</p>
+
+              <div class="feat">
+                <h2>Provider</h2>
+                <div class="d">Every feature below uses this provider.</div>
+                <div class="list">
+                  <div class="it" style="opacity:.6"><span class="r"></span><span class="mark ap">A</span><span class="n">Apple Intelligence<small>On this Mac. Your words do not leave the device.</small></span><span class="status off">Not available</span></div>
+                  <div class="it on"><span class="r"></span><span class="mark or">OR</span><span class="n">OpenRouter<small>Cloud service. Free models are available.</small></span><span class="status">Connected</span><span class="btn sm">Manage</span></div>
+                  <div class="it"><span class="r"></span><span class="mark no">–</span><span class="n">No AI Assistance<small>September stays a keyboard and a voice.</small></span></div>
+                </div>
+              </div>
+
+              <div class="feat">
+                <div class="top">
+                  <div><h2>Suggestions</h2><div class="d">Words as you type, after a space or punctuation.</div></div>
+                  <span class="swc on" role="switch" aria-checked="true"><i></i></span>
+                </div>
+                <div class="plcap">Model</div><div class="plbox"><div class="pl"><div class="pr"><span>Automatic</span><em>Free</em></div><div class="gh">Frontier</div><div class="pr on"><span>GPT-6 Luna</span><em>Paid</em></div><div class="pr"><span>Gemini 3.8 Flash</span><em>Paid</em></div><div class="pr"><span>Gemini 3.5 Flash-Lite</span><em>Paid</em></div><div class="pr"><span>Claude Haiku 4.5</span><em>Paid</em></div><div class="gh">Open models</div><div class="pr"><span>gpt-oss-20b</span><em>Paid</em></div><div class="pr"><span>DeepSeek V4 Flash</span><em>Paid</em></div><div class="pr"><span>Qwen3.8 27B</span><em>Free</em></div></div></div>
+              </div>
+
+              <div class="feat">
+                <h2>Agent and phrases</h2>
+                <div class="d">One model writes phrases, describes a new space, and runs the agent. Every model here can use tools.</div>
+                <div class="swrow"><div class="l">Phrases<small>Phrases and starters for each space, made and refreshed in the background.</small></div><span class="swc on" role="switch" aria-checked="true"><i></i></span></div>
+                <div class="swrow"><div class="l">Agent<small>Changes a space when you ask. Off hides Agent in every space.</small></div><span class="swc on" role="switch" aria-checked="true"><i></i></span></div>
+                <div class="plcap">Model</div><div class="plbox"><div class="pl"><div class="pr"><span>Automatic</span><em>Free</em></div><div class="gh">Frontier</div><div class="pr on"><span>Claude Sonnet 5</span><em>Paid</em></div><div class="pr"><span>GPT-6 Sol</span><em>Paid</em></div><div class="pr"><span>Gemini 3.8 Flash</span><em>Paid</em></div><div class="pr"><span>Claude Haiku 4.5</span><em>Paid</em></div><div class="gh">Open models</div><div class="pr"><span>Kimi K3</span><em>Paid</em></div><div class="pr"><span>GLM 5.3</span><em>Paid</em></div><div class="pr"><span>gpt-oss-120b</span><em>Paid</em></div></div></div>
+              </div>
+
+              <div class="feat">
+                <h2>Speaking style</h2>
+                <div class="d">How September writes for you, in every feature.</div>
+                <div class="chips"><span class="chip on">Plain</span><span class="chip">Warm</span><span class="chip">Detailed</span><span class="chip">Custom</span></div>
+                <div class="d" style="margin-top:10px">Plain, warm, and direct. Everyday language.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="side">
+        <div class="note"><h4>Provider first</h4><p>One provider for all features. Connect and Manage sit on the provider card and open the key page. A provider that is not connected shows Connect in place of the status.</p></div>
+        <div class="note"><h4>Apple Intelligence chosen</h4><p>Each model row reads "Apple Intelligence, on this Mac" and cannot be pressed, because Apple has one model. The Agent section says "Needs the macOS app" in the browser.</p></div>
+        <div class="note"><h4>No AI Assistance chosen</h4><p>The feature sections and Speaking style are not shown. One line says "Choose a provider to turn on suggestions, phrases, and the agent."</p></div>
+        <div class="note"><h4>Switch off</h4><p>The section stays, with a gray background and a dimmed list. The model can still change. Suggestions off keeps the Suggest button on Talk. Phrases off keeps the Refresh button.</p></div>
+        <div class="note"><h4>Agent switch</h4><p>New, and on by default, so nothing changes for people who use the agent today. Off removes Agent from the space mode control. Phrases and new-space descriptions still run, because they have their own switch and the same model.</p></div>
+        <div class="verdict">
+          <div class="row"><span class="lbl pro">Pro</span><span>Each section answers "is it on" and "which model" in the same place. The fast model and the tool model never mix.</span></div>
+          <div class="row"><span class="lbl pro">Pro</span><span>The provider choice is made once, at the top. The feature sections cannot pick a provider that is not connected.</span></div>
+          <div class="row"><span class="lbl con">Con</span><span>Two model lists is one more than today's default model. Automatic in both is the default, so a person who never touches them gets today's behavior.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ MODEL -->
+  <section id="model">
+    <h2>Model list</h2>
+    <p class="sub">Option 2, cut to a curated list, drawn with the existing PickList. Automatic comes first, then a Frontier group and an Open models group. The list sits inline in a box of fixed height, and a half row at the bottom shows that the box scrolls. Every row is a real OpenRouter model id, checked 2026-09-25, and every row supports tool calls.</p>
+
+    <div class="option">
+      <div class="shot" style="max-width:560px">
+        <div class="top" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
+          <div><h2>Suggestions</h2><div class="d">Words as you type, after a space or punctuation.</div></div>
+          <span class="swc on" role="switch" aria-checked="true"><i></i></span>
+        </div>
+        <div class="plcap">Model</div><div class="plbox"><div class="pl"><div class="pr"><span>Automatic</span><em>Free</em></div><div class="gh">Frontier</div><div class="pr on"><span>GPT-6 Luna</span><em>Paid</em></div><div class="pr"><span>Gemini 3.8 Flash</span><em>Paid</em></div><div class="pr"><span>Gemini 3.5 Flash-Lite</span><em>Paid</em></div><div class="pr"><span>Claude Haiku 4.5</span><em>Paid</em></div><div class="gh">Open models</div><div class="pr"><span>gpt-oss-20b</span><em>Paid</em></div><div class="pr"><span>DeepSeek V4 Flash</span><em>Paid</em></div><div class="pr"><span>Qwen3.8 27B</span><em>Free</em></div></div></div>
+      </div>
+
+      <div class="side">
+        <div class="note"><h4>Existing PickList</h4><p>Same rows as the OpenRouter key page today: two columns, 44px rows, a border on the chosen row, and Free or Paid at the right. The list has fewer than nine rows, so PickList shows no search field.</p></div>
+        <div class="note"><h4>Fixed height</h4><p>Every model list box is the same height, so the page does not jump when a list grows or a model leaves it. The box scrolls with the thin zinc scrollbar from DESIGN.md.</p></div>
+        <div class="note"><h4>Two lists</h4><p>Suggestions list small, quick models, because they run on every space bar. The Agent and phrases list holds stronger models. Both lists have eight rows, so PickList shows no search field.</p></div>
+        <div class="note"><h4>Group headers</h4><p>Frontier and Open models are new group rows in PickList. Today PickList has no groups, so this is a small addition to the block.</p></div>
+        <div class="note"><h4>Who owns the list</h4><p>A constant in core, reviewed each release. A saved model that is not on the list shows as a first row, "Current: model name", until the person picks another.</p></div>
+        <div class="note"><h4>Switch</h4><p>The shadcn Switch. <code>packages/ui</code> has no switch today, so it is a new primitive. The stock switch is 18px tall. The mock draws it at 24px with a 44px hit area, as DESIGN.md asks.</p></div>
+      </div>
+    </div>
+  
+      <div class="panel" style="margin-top:18px">
+        <table class="grid">
+          <thead><tr><th style="width:18%">List</th><th style="width:16%">Group</th><th style="width:26%">Row</th><th style="width:28%">OpenRouter id</th><th>Price in / out, per 1M tokens</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Both</strong></td><td>-</td><td>Automatic</td><td><code>openrouter/free</code></td><td>Free</td></tr>
+            <tr><td><strong>Suggestions</strong></td><td>Frontier</td><td>GPT-6 Luna</td><td><code>openai/gpt-6-luna</code></td><td>$0.10 / $0.50</td></tr>
+            <tr><td></td><td>Frontier</td><td>Gemini 3.8 Flash</td><td><code>google/gemini-3.8-flash</code></td><td>$0.75 / $3.75</td></tr>
+            <tr><td></td><td>Frontier</td><td>Gemini 3.5 Flash-Lite</td><td><code>google/gemini-3.5-flash-lite</code></td><td>$0.30 / $2.50</td></tr>
+            <tr><td></td><td>Frontier</td><td>Claude Haiku 4.5</td><td><code>anthropic/claude-haiku-4.5</code></td><td>$1 / $5</td></tr>
+            <tr><td></td><td>Open</td><td>gpt-oss-20b</td><td><code>openai/gpt-oss-20b</code></td><td>$0.02 / $0.09</td></tr>
+            <tr><td></td><td>Open</td><td>DeepSeek V4 Flash</td><td><code>deepseek/deepseek-v4-flash</code></td><td>$0.05 / $0.10</td></tr>
+            <tr><td></td><td>Open</td><td>Qwen3.8 27B</td><td><code>qwen/qwen3.8-27b:free</code></td><td>Free</td></tr>
+            <tr><td><strong>Agent and phrases</strong></td><td>Frontier</td><td>Claude Sonnet 5</td><td><code>anthropic/claude-sonnet-5</code></td><td>$2 / $10</td></tr>
+            <tr><td></td><td>Frontier</td><td>GPT-6 Sol</td><td><code>openai/gpt-6-sol</code></td><td>$2 / $10</td></tr>
+            <tr><td></td><td>Frontier</td><td>Gemini 3.8 Flash</td><td><code>google/gemini-3.8-flash</code></td><td>$0.75 / $3.75</td></tr>
+            <tr><td></td><td>Frontier</td><td>Claude Haiku 4.5</td><td><code>anthropic/claude-haiku-4.5</code></td><td>$1 / $5</td></tr>
+            <tr><td></td><td>Open</td><td>Kimi K3</td><td><code>moonshotai/kimi-k3</code></td><td>$0.88 / $10.53</td></tr>
+            <tr><td></td><td>Open</td><td>GLM 5.3</td><td><code>z-ai/glm-5.3</code></td><td>$1.40 / $4.40</td></tr>
+            <tr><td></td><td>Open</td><td>gpt-oss-120b</td><td><code>openai/gpt-oss-120b</code></td><td>$0.15 / $0.60</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top:14px;font-size:13px;color:var(--zinc-500)">Prices and ids come from the OpenRouter models API on 2026-09-25. The Open group assumes open weights for each family. Make sure of this for DeepSeek V4 Flash, Qwen3.8 27B, Kimi K3, and GLM 5.3 before release.</p>
+      </div>
+  </section>
+
+  <!-- ============================================================ STYLE -->
+  <section id="style">
+    <h2>Speaking style</h2>
+    <p class="sub">The raw prompt is a text area on the page today. A stray edit changes every suggestion. Custom becomes a fourth chip, so the text area shows only when the person chose it.</p>
+    <div class="pair">
+      <div>
+        <div class="cap now">Today</div>
+        <div class="shot">
+          <h2>About you</h2>
+          <div class="d">Choose how September writes suggestions for you.</div>
+          <div class="chips"><span class="chip on">Plain</span><span class="chip">Warm</span><span class="chip">Detailed</span></div>
+          <div class="lbl2">Speaking style</div>
+          <div class="ta">Plain, warm, and direct. Use everyday language.</div>
+        </div>
+      </div>
+      <div>
+        <div class="cap next">Proposed</div>
+        <div class="shot">
+          <h2>Speaking style</h2>
+          <div class="d">How September writes for you, in every feature.</div>
+          <div class="chips"><span class="chip">Plain</span><span class="chip">Warm</span><span class="chip">Detailed</span><span class="chip on">Custom</span></div>
+          <div class="lbl2">Your instructions</div>
+          <div class="ta">Short sentences. I am a retired teacher. Call my wife Ann.</div>
+          <div class="actions"><span class="btn sm">Start from Plain</span></div>
+        </div>
+        <div class="callout" style="margin-top:12px">With Plain, Warm, or Detailed on, the page shows the one-line description and no text area. Pressing Custom copies the current text into the field.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ VOICE -->
+  <section id="voice">
+    <h2>Voice and the Talk rail</h2>
+    <p class="sub">Expression replaces the two sliders and the model list with Steady, Natural, and Expressive. Custom keeps every option from today. Speed and the voice list stay. The values below follow the ElevenLabs documentation, checked 2026-09-25.</p>
+    <div class="panel">
+      <table class="grid">
+        <thead><tr><th style="width:24%">ElevenLabs fact</th><th style="width:38%">Documentation</th><th>Effect on the mock</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Turbo v2.5 is deprecated</strong></td><td><code>eleven_turbo_v2_5</code> is replaced by <code>eleven_flash_v2_5</code>, which has lower latency and a 50% lower price per character.</td><td>September sends <code>eleven_turbo_v2_5</code> today in web, desktop, and Rust. Presets use Flash v2.5. Turbo leaves the Custom list.</td></tr>
+          <tr><td><strong>Current models</strong></td><td>Eleven v3 for expressive speech. Multilingual v2 for quality and long text. Flash v2.5 for about 75ms latency. Flash v2 is English only.</td><td>Custom lists Flash v2.5, Multilingual v2, and Eleven v3.</td></tr>
+          <tr><td><strong>Stability</strong></td><td>Default 0.5. Lower values give a broader emotional range. The guide gives 0.30 to 0.50 for dynamic speech and 0.60 to 0.85 for consistent speech.</td><td>Expressive 0.35, Natural 0.5, Steady 0.75.</td></tr>
+          <tr><td><strong>Similarity</strong></td><td>Default 0.75. Not available on Eleven v3.</td><td>All presets keep 0.75. Custom hides Likeness when Eleven v3 is on.</td></tr>
+          <tr><td><strong>Eleven v3 stability</strong></td><td>Three modes, not a slider: Creative, Natural, Robust. The docs give no numbers.</td><td>With Eleven v3, Custom shows three chips for Steadiness in place of the slider.</td></tr>
+          <tr><td><strong>Style</strong></td><td>Default 0. The guide recommends 0 at all times.</td><td>Not shown. September does not send it today.</td></tr>
+          <tr><td><strong>Speaker boost</strong></td><td>Default on. Adds latency.</td><td>Not shown. The default stays.</td></tr>
+          <tr><td><strong>Speed</strong></td><td>Default 1.0, minimum 0.7, maximum 1.2. Most conversations sound natural at 0.9 to 1.1.</td><td>Slider range stays 0.7 to 1.2.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pair">
+      <div>
+        <div class="cap next">Proposed, Talk rail, a preset</div>
+        <div class="shot">
+          <div class="d">How your voice sounds in every space. A change is kept as you make it.</div>
+          <div class="q">Voice</div>
+          <div class="sw" style="margin-top:8px"><div class="l">Rachel<small>ElevenLabs</small></div><span class="btn sm">▶ Hear</span></div>
+          <div class="slider"><div class="lbl"><b>Speed</b></div><div class="track"><div class="fill"></div><div class="knob"></div></div><div class="lbl"><span>Slower</span><span>Faster</span></div></div>
+          <div class="q">Expression</div>
+          <div class="chips"><span class="chip">Steady</span><span class="chip on">Natural</span><span class="chip">Expressive</span><span class="chip">Custom</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="cap next">Proposed, Talk rail, Custom</div>
+        <div class="shot">
+          <div class="d">How your voice sounds in every space. A change is kept as you make it.</div>
+          <div class="q">Voice</div>
+          <div class="sw" style="margin-top:8px"><div class="l">Rachel<small>ElevenLabs</small></div><span class="btn sm">▶ Hear</span></div>
+          <div class="slider"><div class="lbl"><b>Speed</b></div><div class="track"><div class="fill"></div><div class="knob"></div></div><div class="lbl"><span>Slower</span><span>Faster</span></div></div>
+          <div class="q">Expression</div>
+          <div class="chips"><span class="chip">Steady</span><span class="chip">Natural</span><span class="chip">Expressive</span><span class="chip on">Custom</span></div>
+          <div class="slider"><div class="lbl"><b>Steadiness</b></div><div class="track"><div class="fill" style="width:40%"></div><div class="knob" style="left:40%"></div></div><div class="lbl"><span>Expressive</span><span>Consistent</span></div></div>
+          <div class="slider"><div class="lbl"><b>Likeness</b></div><div class="track"><div class="fill" style="width:70%"></div><div class="knob" style="left:70%"></div></div><div class="lbl"><span>Natural</span><span>Exact</span></div></div>
+          <div class="q">Voice model</div>
+          <div class="pl one" style="margin-top:10px"><div class="pr on"><span>Eleven Flash v2.5</span><em>Fastest</em></div><div class="pr"><span>Eleven Multilingual v2</span><em>Best quality</em></div><div class="pr"><span>Eleven v3</span><em>Most expressive</em></div></div>
+        </div>
+        <div class="callout" style="margin-top:12px">Every preset uses Flash v2.5 and likeness 0.75. Steady sets steadiness to 0.75, Natural to 0.5, and Expressive to 0.35. Custom starts from the preset that was on. With Eleven v3, Likeness is hidden and Steadiness becomes three chips: Robust, Natural, Creative.</div>
+      </div>
+    </div>
+    <div class="pair">
+      <div>
+        <div class="cap now">Today, Voice screen</div>
+        <div class="shot">
+          <h2>Voice</h2>
+          <div class="list">
+            <div class="it"><span class="r"></span><span class="n">System voice<small>Built into this browser. Free.</small></span></div>
+            <div class="it on"><span class="r"></span><span class="n">ElevenLabs<small>Natural voices, and a clone.</small></span></div>
+          </div>
+          <div class="search">Search voices</div>
+          <div class="list">
+            <div class="it"><span class="n">Adam<small>American, deep</small></span><span class="btn sm">▶</span></div>
+            <div class="it"><span class="n">Alice<small>British, clear</small></span><span class="btn sm">▶</span></div>
+            <div class="it"><span class="n">Aria<small>American, warm</small></span><span class="btn sm">▶</span></div>
+            <div class="it" style="color:var(--zinc-400)"><span class="n">… more, alphabetical</span></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="cap next">Proposed, Voice screen</div>
+        <div class="shot">
+          <h2>Voice</h2>
+          <div class="list">
+            <div class="it"><span class="r"></span><span class="n">System voice<small>Built into this browser. Free.</small></span></div>
+            <div class="it on"><span class="r"></span><span class="n">ElevenLabs<small>Natural voices, and a clone of your own.</small></span><span class="status">Connected</span></div>
+          </div>
+          <div class="search">Search voices</div>
+          <div class="list">
+            <div class="hd">Yours</div>
+            <div class="it on"><span class="r"></span><span class="n">My voice<small>Cloned 12 Sep</small></span><span class="btn sm">▶</span></div>
+            <div class="hd">Heard lately</div>
+            <div class="it"><span class="r"></span><span class="n">Rachel<small>American, calm</small></span><span class="btn sm">▶</span></div>
+            <div class="hd">All voices</div>
+            <div class="it"><span class="r"></span><span class="n">Adam<small>American, deep</small></span><span class="btn sm">▶</span></div>
+            <div class="it" style="color:var(--zinc-400)"><span class="n">… more, alphabetical</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ SERVICES -->
+  <section id="services">
+    <h2>Services and the key page</h2>
+    <p class="sub">The Services tab stays. The key page loses both model lists, because each feature now picks its model on AI Assistance.</p>
+    <div class="pair">
+      <div>
+        <div class="cap now">Today, OpenRouter key page</div>
+        <div class="shot">
+          <div class="d">← Back / OpenRouter</div>
+          <h2 style="margin-top:8px">OpenRouter</h2>
+          <div class="d">One service that gives AI Assistance. Free models are available, and no card is necessary.</div>
+          <div class="sw"><div class="l">Connected<small>Key ends in …a3f9</small></div><span class="btn sm">Forget</span></div>
+          <div class="q">Default model</div>
+          <div class="search">Search models</div>
+          <div class="list"><div class="it on"><span class="r"></span><span class="n">Automatic (free models)</span></div><div class="it" style="color:var(--zinc-400)"><span class="n">… every OpenRouter model</span></div></div>
+          <div class="q">Suggestions model</div>
+          <div class="search">Search suggestion models</div>
+          <div class="list"><div class="it on"><span class="r"></span><span class="n">Use default</span></div><div class="it" style="color:var(--zinc-400)"><span class="n">… every OpenRouter model</span></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="cap next">Proposed, OpenRouter key page</div>
+        <div class="shot">
+          <div class="d">← Back / OpenRouter</div>
+          <h2 style="margin-top:8px">OpenRouter</h2>
+          <div class="d">One service that gives AI Assistance. Free models are available, and no card is necessary.</div>
+          <div class="d" style="margin-top:10px">1. Choose Connect OpenRouter below.<br />2. Sign in and authorize September in your browser.<br />3. Return to AI Assistance to choose models.</div>
+          <div class="sw"><div class="l">Connected<small>Key ends in …a3f9</small></div><span class="btn sm">Forget</span></div>
+          <div class="d" style="margin-top:12px">The key stays on this device. September sends it only to OpenRouter.</div>
+          <div class="actions"><span class="btn">Open OpenRouter ↗</span><span class="btn primary">Go to AI Assistance</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ PICK -->
+  <section id="pick">
+    <h2>Decisions and open calls</h2>
+    <div class="panel">
+      <p><strong>AI Assistance.</strong> Provider first. Suggestions has a switch and a model. Agent and phrases share a section, a model, and two switches. The Agent is on by default. Speaking style comes last.</p>
+      <p><strong>Model lists.</strong> Automatic, then Frontier and Open models groups, inline in the existing PickList at a fixed height. Suggestions list quick models. Agent and phrases list models that are strong at tool calls.</p>
+      <p><strong>Voice.</strong> Expression presets with Custom. Presets move to Flash v2.5, because Turbo v2.5 is deprecated.</p>
+      <p><strong>Settings data.</strong> The default model and the suggestions override become two models: <code>suggestions</code> and <code>agent</code>. Phrases and the new-space description read the agent model. The model lookup already takes a feature name, so the change is in the settings shape, the backup format, and the migration of saved settings.</p>
+
+      <h3 style="font-size:15px;font-weight:600;margin-top:24px">Calls for you</h3>
+      <ul>
+        <li>Open weights. Make sure that each row in the Open models group has open weights.</li>
+        <li>Voice model migration. Saved settings with Turbo v2.5 can move to Flash v2.5 without a question, because ElevenLabs names Flash as the replacement.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+</body>
+</html>

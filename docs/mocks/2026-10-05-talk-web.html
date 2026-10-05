@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Talk on the Web With the Panel Layout</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --indigo-800:#3730a3; --indigo-700:#4338ca; --indigo-600:#4f46e5; --indigo-500:#6366f1; --indigo-400:#818cf8;
+    --indigo-300:#a5b4fc; --indigo-200:#c7d2fe; --indigo-100:#e0e7ff; --indigo-50:#eef2ff;
+    --zinc-900:#18181b; --zinc-800:#27272a; --zinc-700:#3f3f46; --zinc-600:#52525b;
+    --zinc-500:#71717a; --zinc-400:#a1a1aa; --zinc-300:#d4d4d8; --zinc-200:#e4e4e7; --zinc-100:#f4f4f5; --zinc-50:#fafafa;
+    --amber-50:#fffbeb; --amber-200:#fde68a; --amber-700:#b45309; --amber-800:#92400e;
+    --teal-600:#0d9488; --teal-50:#f0fdfa;
+    --orange-50:#fff7ed; --orange-200:#fed7aa; --orange-800:#9a3412;
+    --em-50:#ecfdf5; --em-200:#a7f3d0; --em-700:#047857;
+    --red-50:#fef2f2; --red-200:#fecaca; --red-600:#dc2626;
+    --r-control:12px; --r-chip:14px; --r-surface:20px;
+    --shadow:0 1px 2px rgba(24,24,27,.06), 0 1px 3px rgba(24,24,27,.04);
+    --panel-shadow:0 24px 48px -12px rgba(24,24,27,.35), 0 0 0 1px rgba(24,24,27,.10);
+  }
+
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Noto Sans", Helvetica, sans-serif; background:var(--zinc-100); color:var(--zinc-900); -webkit-font-smoothing:antialiased; padding:48px 24px 120px; font-size:14px; line-height:1.5; }
+  .page { max-width:1440px; margin:0 auto; }
+  .eyebrow { font-size:14px; font-weight:500; color:var(--indigo-600); }
+  h1 { font-size:32px; font-weight:700; letter-spacing:-.02em; margin-top:6px; }
+  .lede { font-size:15px; color:var(--zinc-600); margin-top:10px; max-width:84ch; line-height:1.7; }
+  section { margin-top:56px; }
+  section > h2 { font-size:22px; font-weight:700; }
+  section > .sub { font-size:14px; color:var(--zinc-600); margin-top:6px; max-width:84ch; line-height:1.7; }
+  code { font-family:ui-monospace, Menlo, monospace; font-size:12px; background:var(--zinc-200); padding:1px 5px; border-radius:5px; }
+  table { border-collapse:collapse; margin-top:16px; background:#fff; border-radius:16px; overflow:hidden; box-shadow:var(--shadow); width:100%; max-width:1000px; }
+  th, td { text-align:left; padding:11px 14px; border-top:1px solid var(--zinc-100); font-size:13.5px; vertical-align:top; line-height:1.55; }
+  th { background:var(--zinc-50); font-size:12px; font-weight:600; color:var(--zinc-600); border-top:0; }
+  td:first-child { white-space:nowrap; font-weight:600; }
+  .q { background:var(--amber-50); border:1px solid var(--amber-200); border-radius:var(--r-chip); padding:14px 16px; margin-top:16px; max-width:1000px; }
+  .q h4 { font-size:14px; font-weight:700; color:var(--amber-800); }
+  .q p { font-size:13.5px; color:var(--amber-800); margin-top:4px; line-height:1.6; }
+  .icon-sym svg { width:20px; height:20px; }
+  svg { stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .pb { flex:1; overflow:hidden; padding:12px 12px 0; display:flex; flex-direction:column; gap:10px; min-height:0; }
+  .pb > * { flex:none; }
+  .lbl { font-size:12px; font-weight:600; color:var(--zinc-600); display:flex; align-items:center; gap:6px; padding:0 6px; }
+  .lbl .ct { color:var(--zinc-400); font-weight:500; }
+  .lbl .act { margin-left:auto; color:var(--indigo-600); font-weight:500; }
+  .card { background:#fff; border-radius:16px; box-shadow:var(--shadow); overflow:hidden; }
+  .msg { display:flex; align-items:center; gap:10px; padding:10px 8px 10px 14px; min-height:52px; border-top:1px solid var(--zinc-100); }
+  .msg:first-child { border-top:0; }
+  .msg .t { flex:1; font-size:15px; line-height:1.4; }
+  .msg .tm { font-size:12px; color:var(--zinc-400); white-space:nowrap; }
+  .msg .rowkey { color:var(--zinc-500); }
+  .rowkey { width:44px; height:44px; border-radius:var(--r-control); display:grid; place-items:center; flex:none; color:var(--indigo-600); }
+  .rowkey.solid { background:var(--indigo-600); color:#fff; }
+  .rowkey.soft { background:var(--indigo-50); }
+  /* suggestion rows, gutter line and mark per kind */
+  .row { display:flex; align-items:center; gap:8px; padding:4px 4px 4px 0; min-height:52px; border-top:1px solid var(--zinc-100); border-left:4px solid var(--zinc-300); }
+  .row:first-child { border-top:0; }
+  .row .mark { width:30px; display:grid; place-items:center; color:var(--zinc-400); flex:none; }
+  .row .mark svg { width:16px; height:16px; }
+  .row .t { flex:1; font-size:15px; line-height:1.4; }
+  .row .t b { font-weight:600; }
+  .row.code { border-left-color:var(--indigo-700); background:var(--indigo-50); }
+  .row.code .mark { color:var(--indigo-700); font-size:11px; font-weight:700; font-family:ui-monospace,Menlo,monospace; }
+  .row.phrase { border-left-color:var(--indigo-400); }
+  .row.phrase .mark { color:var(--indigo-500); }
+  .row.open { border-left:4px dashed var(--indigo-400); }
+  .row.open .mark { color:var(--indigo-500); }
+  .row.past { border-left-color:var(--teal-600); }
+  .row.past .mark { color:var(--teal-600); }
+  .row.model { border-left-color:var(--zinc-300); }
+  .words { display:flex; flex-wrap:wrap; gap:8px; }
+  .w { height:44px; padding:0 16px; border-radius:var(--r-chip); background:var(--orange-50); border:1px solid var(--orange-200); color:var(--orange-800); font-size:16px; font-weight:500; display:grid; place-items:center; }
+  .w.tag { background:#fff; border-style:dashed; border-color:var(--indigo-300); color:var(--indigo-700); font-size:14px; }
+  /* composer */
+  .comp { flex:none; margin:10px 12px 0; background:#fff; border-radius:var(--r-surface); box-shadow:0 0 0 3px rgba(99,102,241,.45), var(--shadow); padding:12px 12px 10px; }
+  .comp .field { font-size:20px; line-height:1.4; min-height:56px; color:var(--zinc-900); }
+  .comp .field.ph-text { color:var(--zinc-400); }
+  .caret { display:inline-block; width:2px; height:22px; background:var(--indigo-600); vertical-align:-4px; margin-left:1px; }
+  .tools { display:flex; align-items:center; gap:4px; margin-top:8px; }
+  .k { width:44px; height:44px; border-radius:var(--r-control); display:grid; place-items:center; color:var(--zinc-600); background:var(--zinc-100); flex:none; }
+  .mood { width:36px; height:44px; border-radius:var(--r-control); display:grid; place-items:center; font-size:18px; flex:none; opacity:.55; }
+  .mood.on { background:var(--indigo-100); opacity:1; box-shadow:inset 0 0 0 2px var(--indigo-400); }
+  .moodmenu { height:44px; padding:0 10px; border-radius:var(--r-control); background:var(--zinc-100); display:flex; align-items:center; gap:6px; font-size:13px; color:var(--zinc-700); font-weight:500; flex:none; }
+  .moodmenu .e { font-size:18px; }
+  .tools .sp { flex:1; }
+  .speak { height:44px; padding:0 18px; border-radius:999px; background:var(--indigo-600); color:#fff; font-weight:600; font-size:15px; display:flex; align-items:center; gap:8px; flex:none; }
+  .speak.stop { background:var(--zinc-900); }
+  .out { display:flex; align-items:center; gap:8px; margin:8px 12px 0; padding:0 6px; font-size:12px; color:var(--zinc-600); }
+  .out .pill { display:flex; align-items:center; gap:6px; height:28px; padding:0 10px; border-radius:999px; background:#fff; box-shadow:var(--shadow); font-weight:500; }
+  .out .live { width:8px; height:8px; border-radius:50%; background:#22c55e; }
+  .pf { flex:none; display:flex; justify-content:space-between; gap:8px; padding:8px 18px 12px; font-size:11.5px; color:var(--zinc-500); }
+  .kbd { font-family:inherit; font-size:11.5px; font-weight:600; color:var(--zinc-600); }
+
+  /* speaking */
+  .speaking { flex:none; margin:10px 12px 0; background:var(--indigo-600); color:#fff; border-radius:var(--r-surface); padding:14px; }
+  .speaking .who { font-size:12px; font-weight:500; opacity:.85; display:flex; align-items:center; gap:6px; }
+  .speaking .txt { font-size:20px; line-height:1.4; margin-top:6px; }
+  .speaking .txt .done { color:#fff; }
+  .speaking .txt .todo { color:var(--indigo-200); }
+  .wave { display:flex; align-items:center; gap:3px; height:28px; margin-top:10px; }
+  .wave i { display:block; width:4px; border-radius:2px; background:#fff; opacity:.9; }
+  .speaking .ctl { display:flex; align-items:center; gap:8px; margin-top:12px; }
+  .speaking .ctl .sp { flex:1; }
+  .btn-w { height:44px; padding:0 16px; border-radius:999px; background:#fff; color:var(--indigo-700); font-weight:600; display:flex; align-items:center; gap:8px; }
+  .btn-w svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2.2; }
+  .btn-g { height:44px; padding:0 14px; border-radius:999px; background:var(--indigo-700); color:#fff; font-weight:500; display:flex; align-items:center; }
+
+  .k svg, .speak svg, .rowkey svg, .mark svg, .audio svg { width:20px; height:20px; }
+  .row .mark svg { width:16px; height:16px; }
+  /* the web shell */
+  .browser { margin-top:24px; border-radius:14px; overflow:hidden; box-shadow:0 24px 48px -12px rgba(24,24,27,.25), 0 0 0 1px rgba(24,24,27,.08); background:#fff; }
+  .chrome { height:36px; background:var(--zinc-200); display:flex; align-items:center; gap:7px; padding:0 12px; }
+  .chrome i { width:11px; height:11px; border-radius:50%; background:var(--zinc-300); display:block; }
+  .chrome span { margin-left:16px; height:22px; flex:0 1 360px; background:#fff; border-radius:6px; font-size:12px; color:var(--zinc-500); display:flex; align-items:center; padding:0 10px; }
+  .app { display:flex; height:880px; background:var(--zinc-100); }
+  .side { width:240px; background:var(--indigo-500); color:#fff; padding:14px 10px; flex:none; display:flex; flex-direction:column; gap:18px; }
+  .brand { display:flex; align-items:center; gap:8px; font-weight:700; font-size:19px; height:48px; padding:0 6px; }
+  .bm { width:32px; height:32px; border-radius:8px; background:#fff; color:var(--indigo-600); display:grid; place-items:center; font-size:15px; }
+  .nav { display:flex; flex-direction:column; gap:2px; }
+  .nav span { height:44px; display:flex; align-items:center; padding:0 12px; border-radius:var(--r-control); font-weight:500; }
+  .nav span.on { background:var(--indigo-600); }
+  .inset { flex:1; min-width:0; display:flex; flex-direction:column; background:#fff; margin:8px; border-radius:16px; box-shadow:var(--shadow); overflow:hidden; }
+  .shead { height:64px; flex:none; display:flex; align-items:center; gap:8px; padding:0 16px; border-bottom:1px solid var(--zinc-200); font-size:17px; }
+  .k.ghost { background:none; }
+  .work { flex:1; min-height:0; display:flex; }
+  .col { flex:1; min-width:0; display:flex; flex-direction:column; background:var(--zinc-100); }
+  .col .inner { flex:1; min-height:0; width:100%; max-width:760px; margin:0 auto; display:flex; flex-direction:column; }
+  .col .pb { justify-content:flex-end; padding:16px 12px 0; }
+  .rail { width:60px; flex:none; border-left:1px solid var(--zinc-200); display:flex; flex-direction:column; align-items:center; gap:8px; padding-top:12px; background:#fff; }
+  .dock { flex:none; display:flex; align-items:center; gap:6px; padding:10px 16px; border-top:1px solid var(--zinc-200); background:var(--zinc-50); }
+  .dtab { height:44px; padding:0 16px; border-radius:999px; border:1px solid var(--zinc-200); background:#fff; display:grid; place-items:center; font-size:14px; font-weight:500; }
+  .dtab.on { background:var(--indigo-600); border-color:var(--indigo-600); color:#fff; }
+  .dock .sp { flex:1; }
+  .dseg { display:flex; background:var(--zinc-200); border-radius:var(--r-control); padding:4px; gap:2px; height:44px; }
+  .dseg span { display:grid; place-items:center; padding:0 16px; border-radius:9px; font-weight:500; }
+  .dseg span.on { background:#fff; color:var(--indigo-700); font-weight:600; box-shadow:var(--shadow); }
+  .moods { display:flex; gap:2px; background:var(--zinc-100); border-radius:var(--r-control); padding:0 2px; margin-left:8px; }
+  .audio { height:44px; padding:0 14px; border-radius:999px; border:1px solid var(--zinc-200); display:flex; align-items:center; gap:8px; font-weight:500; font-size:14px; white-space:nowrap; margin-right:8px; }
+  .tiles { flex:1; display:flex; flex-wrap:nowrap; gap:6px; overflow:hidden; }
+  .tile { height:44px; padding:0 14px; border-radius:var(--r-chip); border:1px solid var(--zinc-200); background:#fff; display:grid; place-items:center; font-size:16px; font-weight:500; white-space:nowrap; }
+  .row.past .tile { border-color:#99f6e4; }
+  .row.phrase .tile { border-color:var(--indigo-200); }
+  /* phone */
+  .phones { margin-top:24px; display:flex; gap:32px; flex-wrap:wrap; align-items:flex-start; }
+  .phone { width:390px; height:844px; border-radius:44px; background:var(--zinc-900); padding:12px; box-shadow:0 24px 48px -12px rgba(24,24,27,.35); flex:none; }
+  .screen { width:100%; height:100%; border-radius:34px; overflow:hidden; background:var(--zinc-100); display:flex; flex-direction:column; }
+  .status { height:44px; flex:none; background:#fff; }
+  .phone .shead { background:#fff; height:56px; }
+  .phone .pb { justify-content:flex-end; padding:10px 10px 0; }
+  .phone .comp { margin:8px 8px 0; }
+  .phone .out { margin:8px 8px 0; }
+  .phone .dock { padding:8px 10px 26px; margin-top:10px; }
+  .phone .dtab { padding:0 12px; }
+  .phone .dseg span { padding:0 10px; }
+  .cap { font-size:13.5px; color:var(--zinc-600); margin-top:10px; max-width:390px; line-height:1.6; }
+  .cap b { color:var(--zinc-900); }
+  .opts { margin-top:24px; display:grid; grid-template-columns:repeat(auto-fill,minmax(560px,1fr)); gap:28px; }
+  .opt h3 { font-size:16px; font-weight:600; }
+  .opt p { font-size:13.5px; color:var(--zinc-600); margin:4px 0 12px; line-height:1.6; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<svg width="0" height="0" style="position:absolute">
+  
+    <symbol id="i-vol" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></symbol>
+    <symbol id="i-pinf" viewBox="0 0 24 24"><path fill="currentColor" d="M12 17v5"/><path fill="currentColor" d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+    <symbol id="i-arrows" viewBox="0 0 24 24"><path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+    <symbol id="i-del" viewBox="0 0 24 24"><path d="M10 5a2 2 0 0 0-1.34.52l-5.5 5.5a1 1 0 0 0 0 1.46l5.5 5.5A2 2 0 0 0 10 19h9a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/><path d="m12 9 6 6"/><path d="m18 9-6 6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="m6 3 14 9-14 9V3z"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></symbol>
+    <symbol id="i-shrink" viewBox="0 0 24 24"><path d="m14 10 7-7"/><path d="M20 10h-6V4"/><path d="m3 21 7-7"/><path d="M4 14h6v6"/></symbol>
+    <symbol id="i-quote" viewBox="0 0 24 24"><path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></symbol>
+  
+</svg>
+
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+<symbol id="i-head" viewBox="0 0 24 24"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></symbol>
+<symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></symbol>
+</defs></svg>
+
+<div class="page">
+  <div class="eyebrow">Mock · 2026-10-05 · packages/app-ui</div>
+  <h1>Talk on the Web With the Panel Layout</h1>
+  <p class="lede">
+    Talk is one shared screen. If the Talk body of the panel mock goes into <code>pages/talk.tsx</code>, the web app gets the same body.
+    This mock shows that body inside the web shell, at desktop width and on a phone. The sidebar, the screen header, the dock, and the right rail do not change.
+  </p>
+
+  <section>
+    <h2>Desktop Browser, 1440 Wide</h2>
+    <p class="sub">The body keeps a column of 760 points at the center. History, suggestions, and the word row are cards on zinc, as in the panel. The composer keeps the five mood keys, Clear, and the sound output on one row, because the width is enough. The key footer shows the keys that work now.</p>
+    <div class="browser">
+      <div class="chrome"><i></i><i></i><i></i><span>september.app/spaces/dr-patel/talk</span></div>
+      <div class="app">
+        <aside class="side"><div class="brand"><span class="bm">S</span>September</div><div class="nav"><span>Today</span><span class="on">Spaces</span><span>Voice</span><span>Help</span><span>Settings</span></div></aside>
+        <div class="inset">
+          <div class="shead"><span class="k ghost"><svg><use href="#i-sidebar"/></svg></span><b>Dr Patel</b></div>
+          <div class="work">
+            <div class="col"><div class="inner">
+              <div class="pb"><div class="lbl">Said today <span class="ct">3</span><span class="act">See all</span></div>
+<div class="card"><div class="msg"><div class="t">Morning. Thanks for fitting me in.</div><div class="tm">10:31</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div><div class="msg"><div class="t">The new dose makes me very tired after lunch.</div><div class="tm">10:36</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div><div class="msg"><div class="t">I slept better on Tuesday.</div><div class="tm">10:38</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div></div>
+<div class="lbl">Suggestions</div>
+<div class="card"><div class="row past"><div class="mark"><svg><use href="#i-clock"/></svg></div><div class="t"><b>Can we</b> move the appointment to Thursday?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div><div class="row model"><div class="mark"></div><div class="t"><b>Can we</b> try a smaller dose in the morning?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div><div class="row model"><div class="mark"></div><div class="t"><b>Can we</b> talk about the breathing test?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div><div class="row phrase"><div class="mark"><svg><use href="#i-pinf"/></svg></div><div class="t"><b>Can we</b> pause for a moment, please?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div></div>
+<div class="words"><span class="w">try</span><span class="w">talk</span><span class="w">change</span><span class="w">move</span><span class="w">stop</span><span class="w tag">[sighs]</span></div></div>
+              <div class="comp"><div class="field">Can we <span class="caret"></span></div><div class="tools"><span class="k"><svg><use href="#i-undo"/></svg></span><span class="k"><svg><use href="#i-del"/></svg></span><span class="k"><svg><use href="#i-trash"/></svg></span><span class="moods"><span class="mood">😊</span><span class="mood">😄</span><span class="mood on">😔</span><span class="mood">😤</span><span class="mood">😠</span></span><span class="sp"></span><span class="audio"><svg><use href="#i-head"/></svg>MacBook Pro Speakers<svg width="14" height="14"><use href="#i-chev"/></svg></span><span class="speak"><svg><use href="#i-vol"/></svg>Speak</span></div></div>
+              <div class="pf"><span><span class="kbd">Return</span> speaks · <span class="kbd">Up</span> and <span class="kbd">Down</span> move through the rows</span></div>
+            </div>
+            <div class="dock"><span class="dtab on">Dr Patel</span><span class="dtab">Mum</span><span class="dtab">Book club</span><span class="dtab">+</span><span class="sp"></span><span class="dseg"><span class="on">Talk</span><span>Notes</span><span>Agent</span></span></div>
+            </div>
+            <div class="rail"><span class="k"><svg><use href="#i-pin"/></svg></span><span class="k"><svg><use href="#i-sliders"/></svg></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Phone, 390 Wide</h2>
+    <p class="sub">Under 560 points, the composer folds as the compact panel does: one mood menu key, and the sound output on its own line. History shows the last two messages. A phone has no keyboard keys, so the key footer does not show.</p>
+    <div class="phones">
+      <div>
+        <div class="phone"><div class="screen">
+          <div class="status"></div>
+          <div class="shead"><span class="k ghost"><svg><use href="#i-sidebar"/></svg></span><b>Dr Patel</b></div>
+          <div class="pb">
+            <div class="lbl">Said today <span class="ct">3</span><span class="act">See all</span></div>
+            <div class="card"><div class="msg"><div class="t">The new dose makes me very tired after lunch.</div><div class="tm">10:36</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div><div class="msg"><div class="t">I slept better on Tuesday.</div><div class="tm">10:38</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div></div>
+            <div class="lbl">Suggestions</div>
+            <div class="card"><div class="row past"><div class="mark"><svg><use href="#i-clock"/></svg></div><div class="t"><b>Can we</b> move the appointment to Thursday?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div><div class="row model"><div class="mark"></div><div class="t"><b>Can we</b> try a smaller dose in the morning?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div><div class="row phrase"><div class="mark"><svg><use href="#i-pinf"/></svg></div><div class="t"><b>Can we</b> pause for a moment, please?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div></div>
+            <div class="words"><span class="w">try</span><span class="w">talk</span><span class="w">move</span><span class="w tag">[sighs]</span></div>
+          </div>
+          <div class="comp"><div class="field">Can we <span class="caret"></span></div><div class="tools"><span class="k"><svg><use href="#i-undo"/></svg></span><span class="k"><svg><use href="#i-del"/></svg></span><span class="moodmenu"><span class="e">😔</span>Low<svg width="14" height="14"><use href="#i-chev"/></svg></span><span class="sp"></span><span class="speak"><svg><use href="#i-vol"/></svg>Speak</span></div></div>
+          <div class="out"><span class="pill"><svg width="14" height="14"><use href="#i-head"/></svg>iPhone Speaker</span></div>
+          <div class="dock"><span class="dtab on">Dr Patel</span><span class="sp"></span><span class="dseg"><span class="on">Talk</span><span>Notes</span><span>Agent</span></span></div>
+        </div></div>
+        <p class="cap"><b>Typing.</b> The rows answer "Can we". A press on a row puts it in the field. The speak key at the end of a row speaks it.</p>
+      </div>
+
+      <div>
+        <div class="phone"><div class="screen">
+          <div class="status"></div>
+          <div class="shead"><span class="k ghost"><svg><use href="#i-sidebar"/></svg></span><b>Dr Patel</b></div>
+          <div class="pb">
+            <div class="lbl">Said today <span class="ct">4</span><span class="act">See all</span></div>
+            <div class="card"><div class="msg"><div class="t">The new dose makes me very tired after lunch.</div><div class="tm">10:36</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div><div class="msg"><div class="t">I slept better on Tuesday.</div><div class="tm">10:38</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div></div>
+            <div class="lbl">Next</div>
+            <div class="card"><div class="row model"><div class="mark"></div><div class="t">Is there something I can take instead?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div><div class="row phrase"><div class="mark"><svg><use href="#i-pinf"/></svg></div><div class="t">Can you say that again, slowly?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div></div>
+          </div>
+          <div class="speaking" style="margin:8px 8px 0">
+            <div class="who">Speaking · Rachel, Eleven v3</div>
+            <div class="txt"><span class="done">[sighs] Can we try a smaller dose </span><span class="todo">in the morning?</span></div>
+            <div class="ctl"><span class="btn-w"><svg><use href="#i-stop"/></svg>Stop</span><span class="sp"></span><span class="btn-g">Write next</span></div>
+          </div>
+          <div class="out"><span class="pill"><svg width="14" height="14"><use href="#i-head"/></svg>iPhone Speaker</span></div>
+          <div class="dock"><span class="dtab on">Dr Patel</span><span class="sp"></span><span class="dseg"><span class="on">Talk</span><span>Notes</span><span>Agent</span></span></div>
+        </div></div>
+        <p class="cap"><b>Speaking.</b> The composer turns into the speaking card. The words that the voice said are white. Write next gives the field back while the voice continues.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Suggestion Rows</h2>
+    <p class="sub">The panel mock draws each suggestion as one sentence. Talk today draws each one as a row of word tiles, and a press on a tile takes the sentence up to that word. The two options below show the same four suggestions.</p>
+    <div class="opts">
+      <div class="opt">
+        <h3>A. Sentence Rows, as in the Panel Mock</h3>
+        <p>A press on the sentence puts it in the field. The speak key speaks it. The user cannot take only part of a sentence.</p>
+        <div class="card"><div class="row past"><div class="mark"><svg><use href="#i-clock"/></svg></div><div class="t"><b>Can we</b> move the appointment to Thursday?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div><div class="row model"><div class="mark"></div><div class="t"><b>Can we</b> try a smaller dose in the morning?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div><div class="row model"><div class="mark"></div><div class="t"><b>Can we</b> talk about the breathing test?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div><div class="row phrase"><div class="mark"><svg><use href="#i-pinf"/></svg></div><div class="t"><b>Can we</b> pause for a moment, please?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div></div>
+      </div>
+      <div class="opt">
+        <h3>B. Word Tiles in the Card</h3>
+        <p>The tiles stay as they are today, inside the card and with the gutter colors. A press on a tile takes the sentence up to that word. Each row is 52 points high and does not wrap.</p>
+        <div class="card"><div class="row past"><div class="mark"><svg><use href="#i-clock"/></svg></div><div class="tiles"><span class="tile">move</span><span class="tile">the</span><span class="tile">appointment</span><span class="tile">to</span><span class="tile">Thursday?</span></div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div><div class="row model"><div class="mark"></div><div class="tiles"><span class="tile">try</span><span class="tile">a</span><span class="tile">smaller</span><span class="tile">dose</span><span class="tile">in</span><span class="tile">the</span></div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div><div class="row model"><div class="mark"></div><div class="tiles"><span class="tile">talk</span><span class="tile">about</span><span class="tile">the</span><span class="tile">breathing</span><span class="tile">test?</span></div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div><div class="row phrase"><div class="mark"><svg><use href="#i-pinf"/></svg></div><div class="tiles"><span class="tile">pause</span><span class="tile">for</span><span class="tile">a</span><span class="tile">moment,</span><span class="tile">please?</span></div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div></div>
+      </div>
+    </div>
+    <div class="q"><h4>Open question</h4><p>Option A has fewer targets and reads faster. Option B keeps the part-sentence take, which saves keystrokes when only the start of a suggestion is correct. The choice applies to the web app and the panel.</p></div>
+  </section>
+
+  <section>
+    <h2>Changes on the Web</h2>
+    <table>
+      <tr><th>Part</th><th>Today</th><th>With this change</th></tr>
+      <tr><td>History</td><td>Bubbles at the right, 8 for each page, with Older and Newer</td><td>A "Said today" card with the time and a speak key on each message. "See all" shows the pages of 8.</td></tr>
+      <tr><td>Suggestions</td><td>Stripe rows with no card</td><td>A labeled card with the same gutter colors and marks. The rows depend on option A or B.</td></tr>
+      <tr><td>Word row</td><td>Wraps</td><td>Wraps to two lines at most</td></tr>
+      <tr><td>Composer</td><td>Gray tray with a ring on focus</td><td>A white card with a constant indigo ring, as in the panel</td></tr>
+      <tr><td>Speaking</td><td>A stop mark on the bubble</td><td>The speaking card in place of the composer</td></tr>
+      <tr><td>Key footer</td><td>None</td><td>The keys that work now. It does not show on a touch screen.</td></tr>
+      <tr><td>Shell</td><td>Sidebar, screen header, dock, right rail</td><td>No change</td></tr>
+    </table>
+  </section>
+</div>
+</body>
+</html>
