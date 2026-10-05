@@ -98,11 +98,8 @@ pub async fn synthesize(
     Ok((path, false))
 }
 
-/// The ElevenLabs sound format of a stream: 16-bit mono samples at 24 kHz.
+/// The ElevenLabs sound format of a Dialogue stream: 16-bit mono samples at 24 kHz.
 pub const STREAM_SAMPLE_RATE: u32 = 24_000;
-
-/// The ElevenLabs models that the voice socket does not accept.
-const FILE_ONLY_MODELS: [&str; 1] = ["eleven_v3"];
 
 /// The provider name of the ElevenLabs Dialogue voice, as the WebView sends it.
 pub const DIALOGUE_PROVIDER: &str = "dialogue";
@@ -182,9 +179,9 @@ pub fn dialogue_parts(text: &str, limit: usize) -> Vec<String> {
 /// How a sentence was heard.
 #[derive(Debug)]
 pub enum Streamed {
-    /// A file plays the sentence: a kept file, or a model without a socket.
+    /// A file plays the sentence: a kept file, or the MP3 file of the ElevenLabs voice.
     File { path: PathBuf, from_cache: bool },
-    /// The socket sent the sound, and the first sound came after this time.
+    /// The Dialogue voice sent the sound, and the first sound came after this time.
     Spoken { first_audio: Duration },
 }
 
@@ -196,11 +193,12 @@ pub struct StreamError {
     pub message: String,
 }
 
-/// Speaks one sentence through the voice socket, or finds a kept file.
+/// Finds a kept file, or makes the MP3 file of the ElevenLabs voice, or speaks
+/// one sentence in the Dialogue voice.
 ///
-/// Each chunk of samples goes to `on_samples` as it arrives. The samples of a
-/// complete sentence are kept as a WAV file beside the MP3 files, so the same
-/// sentence never goes to the service twice. A stopped sentence keeps nothing.
+/// Each Dialogue chunk of samples goes to `on_samples` as it arrives. The
+/// samples of a complete sentence are kept as a WAV file beside the MP3 files,
+/// so the same sentence never goes to the service twice. A stopped sentence keeps nothing.
 pub async fn stream(
     directory: &Path,
     settings: &SpeechSettings,
@@ -224,11 +222,14 @@ pub async fn stream(
         }
     }
 
-    let dialogue = settings.provider == DIALOGUE_PROVIDER;
-    if !dialogue && FILE_ONLY_MODELS.contains(&settings.model_id.as_str()) {
-        let (path, from_cache) = synthesize(directory, settings, text, key, providers)
-            .await
-            .map_err(not_started)?;
+    if settings.provider != DIALOGUE_PROVIDER {
+        let (path, from_cache) = tokio::time::timeout(
+            providers.first_file_audio(),
+            synthesize(directory, settings, text, key, providers),
+        )
+        .await
+        .map_err(|_| not_started("ElevenLabs sent no sound in time.".into()))?
+        .map_err(not_started)?;
         return Ok(Streamed::File { path, from_cache });
     }
 
@@ -241,12 +242,12 @@ pub async fn stream(
         samples.extend_from_slice(chunk);
         on_samples(chunk);
     };
-    let spoken = if dialogue && dialogue_model(settings) == CONVERSATIONAL_MODEL {
+    let spoken = if dialogue_model(settings) == CONVERSATIONAL_MODEL {
         let parts = dialogue_parts(&normalize(text), DIALOGUE_LIMIT);
         providers
             .speak_dialogue_socket(key, settings, &parts, &mut heard)
             .await
-    } else if dialogue {
+    } else {
         let mut spoken = Ok(());
         for part in dialogue_parts(&normalize(text), DIALOGUE_LIMIT) {
             spoken = providers
@@ -257,10 +258,6 @@ pub async fn stream(
             }
         }
         spoken
-    } else {
-        providers
-            .speak_stream(key, settings, &normalize(text), &mut heard)
-            .await
     };
     if let Err(error) = spoken {
         return Err(StreamError {

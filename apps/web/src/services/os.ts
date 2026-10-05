@@ -374,12 +374,10 @@ export async function stopNativeSpeech(): Promise<void> {
   clearActiveAudio();
 }
 
-/** The voice socket sends 16-bit mono samples at this rate. */
+/** The dialogue voice sends 16-bit mono samples at this rate. */
 const STREAM_RATE = 24_000;
-/** A voice that sends no sound in this time does not answer. */
-const FIRST_AUDIO_MS = 5_000;
-/** The ElevenLabs models that the voice socket does not accept. */
-const FILE_ONLY_MODELS = ['eleven_v3'];
+/** An ElevenLabs file that does not arrive in this time does not answer. */
+const FILE_AUDIO_MS = 15_000;
 
 /**
  * The cloud voice broke after its first sound. The listener heard part of the
@@ -390,11 +388,10 @@ export class InterruptedSpeech extends Error {}
 let stopStream: (() => void) | null = null;
 
 /**
- * Speaks one sentence in the cloud voice while its sound arrives.
+ * Speaks one sentence in the cloud voice.
  *
- * The first sound plays before ElevenLabs finishes the sentence. A complete
- * sentence is kept as a WAV file, and a kept sentence plays without the
- * socket. A model without a socket plays as a file. The promise resolves when
+ * The ElevenLabs voice plays an MP3 file from the text-to-speech endpoint. The
+ * Dialogue voice plays its sound while it arrives. The promise resolves when
  * the sound stops.
  */
 export async function streamSpeech(
@@ -404,25 +401,15 @@ export async function streamSpeech(
 ): Promise<{ from_cache: boolean; latency_ms: number }> {
   if (settings.provider === 'dialogue') return streamDialogue(text, settings, signal);
   const started = Date.now();
-  if (!settings.voiceId) throw new Error('Choose an ElevenLabs voice first.');
-
-  if (FILE_ONLY_MODELS.includes(settings.modelId)) {
-    return playFile(await synthesizeSpeech(text, settings), started, signal);
-  }
-
-  const cacheId = await speechBlobId(text, settings);
-  const kept = await keptSpeech(cacheId);
-  if (kept) return playFile({ path: URL.createObjectURL(kept), from_cache: true }, started, signal);
-  if (signal?.aborted) return { from_cache: false, latency_ms: 0 };
-
-  const heard = await playStream(text, settings, signal);
-  if (!heard) return { from_cache: false, latency_ms: 0 };
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('ElevenLabs sent no sound in time.')), FILE_AUDIO_MS);
+  });
   try {
-    await (await getRepository()).putBlob(`${cacheId}:pcm`, wavFile(heard.chunks));
-  } catch {
-    // The sentence was heard. A failed write costs only a second request.
+    return playFile(await Promise.race([synthesizeSpeech(text, settings), late]), started, signal);
+  } finally {
+    clearTimeout(timer);
   }
-  return { from_cache: false, latency_ms: heard.firstAudio - started };
 }
 
 /** Plays a speech file, or frees it when the sentence was stopped first. */
@@ -438,11 +425,6 @@ async function playFile(
     await playSpeechFile(file.path);
   }
   return { from_cache: file.from_cache, latency_ms };
-}
-
-/** The WAV file of a streamed sentence, or else the MP3 file of the file path. */
-async function keptSpeech(cacheId: string): Promise<Blob | null> {
-  return (await keptBlob(`${cacheId}:pcm`)) ?? (await keptBlob(cacheId));
 }
 
 /**
@@ -518,34 +500,6 @@ function pcmPlayer(onEnded: () => void) {
     },
   };
   return player;
-}
-
-/** Speaks one sentence through the text-to-speech socket of ElevenLabs. */
-function playStream(
-  text: string,
-  settings: SpeechSettings,
-  signal?: AbortSignal
-): Promise<{ chunks: Uint8Array[]; firstAudio: number } | null> {
-  return playSocket(
-    `wss://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(
-      settings.voiceId ?? ''
-    )}/stream-input?model_id=${encodeURIComponent(settings.modelId)}&output_format=pcm_${STREAM_RATE}`,
-    [
-      {
-        text: ' ',
-        voice_settings: {
-          stability: settings.stability,
-          similarity_boost: settings.similarity,
-          speed: settings.speed,
-        },
-        xi_api_key: elevenLabsKey(),
-      },
-      { text: `${text} `, flush: true },
-      { text: '' },
-    ],
-    FIRST_AUDIO_MS,
-    signal
-  );
 }
 
 /** The samples of a sentence that played, and the time of its first sound. */
@@ -631,11 +585,9 @@ function playArriving(
 }
 
 /**
- * Plays the samples of an ElevenLabs socket as they arrive.
+ * Plays the samples of the ElevenLabs dialogue socket as they arrive.
  *
- * The text-to-speech socket and the dialogue socket send the same kind of
- * replies: `audio`, a final mark, and a `message` for a problem. Only the
- * final mark is spelled `isFinal` in one and `is_final` in the other.
+ * The socket sends `audio`, the `is_final` mark, and a `message` for a problem.
  */
 function playSocket(
   url: string,
@@ -653,7 +605,6 @@ function playSocket(
     socket.onmessage = event => {
       let reply: {
         audio?: string | null;
-        isFinal?: boolean | null;
         is_final?: boolean | null;
         message?: string;
         error?: string;
@@ -670,7 +621,7 @@ function playSocket(
         return;
       }
       if (reply.audio) feed.play(reply.audio);
-      if (reply.isFinal || reply.is_final) {
+      if (reply.is_final) {
         final = true;
         feed.done();
       }

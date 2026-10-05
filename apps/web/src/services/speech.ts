@@ -138,11 +138,14 @@ const cloudVoice = (settings: SpeechSettings): SpeechProvider => ({
       if (reason instanceof InterruptedSpeech) throw reason;
       // A person who cannot speak must not meet silence, so the voice of the
       // operating system says the words instead. It says a tag aloud, so it
-      // gets the words alone.
-      await systemVoice(settings).speak(stripTags(text), signal);
+      // gets the words alone. The cloud voice ID names no voice of the
+      // system, so the system uses its default voice.
+      await systemVoice({ ...settings, voiceId: null }).speak(stripTags(text), signal);
       if (!signal?.aborted) setFallback("The chosen voice did not answer, so this device spoke instead.");
       return;
     }
+    // A stopped sentence did not finish, so it is not a success.
+    if (signal?.aborted) return;
 
     const credits = heard.from_cache
       ? 0
@@ -164,7 +167,7 @@ const cloudVoice = (settings: SpeechSettings): SpeechProvider => ({
           ? "unknown"
           : "quota",
     });
-    if (!signal?.aborted) setFallback(null);
+    setFallback(null);
   },
   stop() {
     void stopNativeSpeech().catch(() => undefined);

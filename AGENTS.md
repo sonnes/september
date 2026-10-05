@@ -33,6 +33,15 @@ september/
 Run commands from the app directory or via the root `Makefile` (`make dev`,
 `make desktop-dev`, `make mac-run`, `make mac-test`).
 
+## Dev Server
+
+doze serves the web app at https://september.localhost. The first request starts the dev server. The dev server stops after 30 minutes without requests. The port changes each time the dev server starts.
+
+- If you need the running web app, use https://september.localhost. Do not start a second dev server with `make dev`.
+- To see the state and the port, run `doze ls`.
+- To read the log of the dev server, run `doze logs september`.
+- To restart the dev server, run `doze stop september`. The next request starts it again.
+
 ## TDD (strict)
 
 Write tests BEFORE implementation. Run failing test, write minimum code to pass, confirm green. No exceptions.

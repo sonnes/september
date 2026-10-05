@@ -115,13 +115,16 @@ extern "C" {
         capacity: usize,
     ) -> i32;
     fn september_speech_file(
+        sentence: i64,
         path: *const c_char,
         output_uid: *const c_char,
         error: *mut c_char,
         capacity: usize,
     ) -> i32;
     fn september_speech_stop();
+    fn september_speech_claim() -> i64;
     fn september_speech_stream_begin(
+        sentence: i64,
         sample_rate: f64,
         output_uid: *const c_char,
         error: *mut c_char,
@@ -508,25 +511,53 @@ pub fn speak_system(
     native_result(status, &error)
 }
 
-/// Plays one cached cloud-voice file from the native process.
-pub fn play_speech_file(path: &Path, output_uid: &str) -> Result<(), String> {
-    let path = native_text(&path.to_string_lossy(), "the voice file path")?;
+/// How a voice file ended.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Played {
+    /// The whole file played, or a stop ended it.
+    Whole,
+    /// The sound began, then the output changed under it.
+    Interrupted(String),
+}
+
+/// Plays one cloud-voice file from the native process.
+///
+/// A file of `sentence` plays only while no stop or newer sentence came after
+/// it. A file that is not audio is removed, so the next request asks the
+/// service again.
+pub fn play_speech_file(sentence: i64, path: &Path, output_uid: &str) -> Result<Played, String> {
+    let native_path = native_text(&path.to_string_lossy(), "the voice file path")?;
     let output = native_text(output_uid, "the sound output identifier")?;
     let mut error = [0 as c_char; NATIVE_ERROR_CAPACITY];
     let status = unsafe {
         september_speech_file(
-            path.as_ptr(),
+            sentence,
+            native_path.as_ptr(),
             output.as_ptr(),
             error.as_mut_ptr(),
             NATIVE_ERROR_CAPACITY,
         )
     };
-    native_result(status, &error)
+    match status {
+        -2 => Ok(Played::Interrupted(
+            native_result(status, &error).unwrap_err(),
+        )),
+        -3 => {
+            let _ = std::fs::remove_file(path);
+            native_result(status, &error).map(|()| Played::Whole)
+        }
+        _ => native_result(status, &error).map(|()| Played::Whole),
+    }
 }
 
-/// Stops either native voice now.
+/// Stops every native voice now, and every sentence that has not begun to play.
 pub fn stop_speech() {
     unsafe { september_speech_stop() };
+}
+
+/// Stops every native voice now, and gives the number of the next sentence.
+pub fn claim_speech() -> i64 {
+    unsafe { september_speech_claim() }
 }
 
 /// A cloud-voice sentence that plays while its samples arrive.
@@ -536,18 +567,23 @@ pub fn stop_speech() {
 pub struct SpeechStream(i64);
 
 impl SpeechStream {
-    /// Opens the stream on the September output, for 16-bit mono samples.
-    pub fn begin(sample_rate: u32, output_uid: &str) -> Result<Self, String> {
+    /// Opens the stream on the September output, for 16-bit mono samples,
+    /// while no stop or newer sentence came after `sentence`.
+    pub fn begin(sentence: i64, sample_rate: u32, output_uid: &str) -> Result<Self, String> {
         let output = native_text(output_uid, "the sound output identifier")?;
         let mut error = [0 as c_char; NATIVE_ERROR_CAPACITY];
         let stream = unsafe {
             september_speech_stream_begin(
+                sentence,
                 f64::from(sample_rate),
                 output.as_ptr(),
                 error.as_mut_ptr(),
                 NATIVE_ERROR_CAPACITY,
             )
         };
+        if stream == 0 {
+            return Err("the voice stopped".into());
+        }
         if stream < 0 {
             native_result(-1, &error)?;
         }

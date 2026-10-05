@@ -65,6 +65,18 @@ for (const platform of ['web', 'desktop']) {
       expect(speech.useVoiceFallback()).toBeNull();
     });
 
+    it('records no successful sentence when Stop ends the cloud voice', async () => {
+      const pending = deferred<Streamed>();
+      os.streamSpeech.mockReturnValue(pending.promise);
+      const spoken = speech.speak('old words');
+      speech.stopSpeaking();
+      pending.resolve({ from_cache: false, latency_ms: 0 });
+      await spoken;
+      await pending.promise;
+      await Promise.resolve();
+      expect(recordTtsUsage).not.toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
+
     it('does not fall back when a cancelled request fails', async () => {
       const pending = deferred<never>();
       os.streamSpeech.mockReturnValue(pending.promise);
@@ -115,6 +127,16 @@ for (const platform of ['web', 'desktop']) {
       os.streamSpeech.mockResolvedValue({ from_cache: false, latency_ms: 10 });
       expect(await speech.speak('hello again')).toBe(true);
       expect(speech.useVoiceFallback()).toBeNull();
+    });
+
+    it('gives the fallback voice no cloud voice ID', async () => {
+      os.currentSpeech.mockReturnValue({ provider: 'elevenlabs', voiceId: 'cloud-voice-1' });
+      os.streamSpeech.mockRejectedValueOnce(new Error('offline'));
+
+      await speech.speak('hello');
+
+      const [, settings] = os.speakSystem.mock.calls[0];
+      expect(settings.voiceId).toBeNull();
     });
 
     it('streams the Dialogue voice and records Eleven v3 as its model', async () => {

@@ -297,6 +297,9 @@ for a microphone to name a speaker. Native system speech, cloud-voice streams,
 and cloud-voice files all pass through a September-owned `AVAudioEngine`. Its output audio unit uses
 the chosen device without writing the system default.
 
+Native speech startup returns audio engine exceptions as errors. A failed
+cloud-voice startup uses the existing system-voice fallback.
+
 ## Write a note
 
 A space has three modes. Talk is for one sentence, said now. Notes is for long
@@ -609,7 +612,7 @@ and does not know which service answers.
 | Voice        | How it speaks                                                    |
 | ------------ | ---------------------------------------------------------------- |
 | `system`     | The native process uses the macOS system voice. No file, no key. |
-| `elevenlabs` | Rust streams the sound. The native process plays each chunk.     |
+| `elevenlabs` | Rust gets an MP3 file over HTTP. The native process plays the file. |
 | `dialogue`   | Rust streams Eleven v3 from the Text to Dialogue stream, or Eleven v3 Conversational from the Text to Dialogue socket. The native process plays each chunk. |
 
 Spoken messages now leave the native process. This path lets the Core Audio
@@ -617,7 +620,7 @@ process tap receive both voices. Voice-list previews still use `src/services/pla
 and do not enter a call.
 
 A cloud voice that fails falls back to the voice of this Mac, and the composer
-says so. A person who cannot speak must not meet silence. If the cloud voice
+says so. A person who cannot speak must not meet silence. If the Dialogue voice
 breaks after its first sound, the sound stops and the composer says so. The
 voice of this Mac does not repeat words that the listener already heard. See
 `docs/concepts/streaming-voice.md`.
@@ -629,8 +632,8 @@ audio/<sha256 of the settings and the words>.mp3
 audio/<sha256 of the settings and the words>.wav
 ```
 
-The MP3 file comes from the file path, which exports and `eleven_v3` use. The
-WAV file holds the samples of a complete streamed sentence.
+The MP3 file comes from the text-to-speech endpoint, which Speak and exports
+use. The WAV file holds the samples of a complete Dialogue sentence.
 
 The words lose the spaces at their ends, and each run of spaces becomes one
 space. Case and punctuation stay, because both change how a voice reads a
@@ -978,7 +981,7 @@ The backend starts apfel when a screen first asks for its status or generation.
 It reuses a healthy process and replaces one that stops responding, so apfel
 does not delay an app start that never needs local AI Assistance.
 
-`pnpm tauri:dev` downloads the pinned apfel v1.9.1 binary on the first run.
+`pnpm tauri:dev` downloads the pinned apfel v1.12.0 binary on the first run.
 The command makes sure that both archive and binary checksums match.
 `pnpm tauri:build` does the same work before it builds the app bundle.
 

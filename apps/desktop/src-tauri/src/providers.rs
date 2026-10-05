@@ -23,10 +23,11 @@ pub(crate) const OPEN_ROUTER_MODELS: [&str; 4] = [
 ];
 const ELEVEN_LABS: &str = "https://api.elevenlabs.io";
 
-/// A voice that sends no sound in this time does not answer. The system voice
-/// then speaks, so the user never waits long in silence.
-const FIRST_AUDIO: Duration = Duration::from_secs(5);
-/// Eleven v3 starts to speak later than Flash, so the Dialogue voice gets more time.
+/// An ElevenLabs file that does not arrive in this time does not answer. The
+/// system voice then speaks, so the user never waits long in silence.
+const FIRST_FILE_AUDIO: Duration = Duration::from_secs(15);
+/// A Dialogue voice that sends no sound in this time does not answer. The
+/// system voice then speaks. Eleven v3 starts to speak late, so the wait is long.
 const FIRST_DIALOGUE_AUDIO: Duration = Duration::from_secs(10);
 
 /// One Keychain service holds both accounts, so the Mac shows them together.
@@ -284,7 +285,7 @@ pub struct Providers {
     client: reqwest::Client,
     open_router: String,
     eleven_labs: String,
-    first_audio: Duration,
+    first_file_audio: Duration,
     first_dialogue_audio: Duration,
 }
 
@@ -301,16 +302,21 @@ impl Providers {
             client: reqwest::Client::new(),
             open_router: open_router.trim_end_matches('/').to_owned(),
             eleven_labs: eleven_labs.trim_end_matches('/').to_owned(),
-            first_audio: FIRST_AUDIO,
+            first_file_audio: FIRST_FILE_AUDIO,
             first_dialogue_audio: FIRST_DIALOGUE_AUDIO,
         }
     }
 
     /// A test shortens the wait for the first sound. Nothing else calls this.
     pub fn first_audio_within(mut self, limit: Duration) -> Self {
-        self.first_audio = limit;
+        self.first_file_audio = limit;
         self.first_dialogue_audio = limit;
         self
+    }
+
+    /// The longest wait for the file of the ElevenLabs voice.
+    pub fn first_file_audio(&self) -> Duration {
+        self.first_file_audio
     }
 
     pub async fn check(&self, provider: Provider, key: &str) -> Result<ProviderStatus> {
@@ -405,45 +411,6 @@ impl Providers {
         Ok(response.bytes().await?.to_vec())
     }
 
-    /// Speaks one sentence through the ElevenLabs socket.
-    ///
-    /// Each chunk of sound goes to `on_samples` as it arrives: 16-bit mono
-    /// samples at 24 kHz. A chunk can end inside a sample, so the odd byte
-    /// waits for the next chunk. The call returns when the service marks the
-    /// sentence final.
-    pub async fn speak_stream(
-        &self,
-        key: &str,
-        settings: &crate::speech::SpeechSettings,
-        text: &str,
-        on_samples: impl FnMut(&[i16]),
-    ) -> Result<()> {
-        let voice = settings.voice_id.as_deref().unwrap_or_default();
-        let messages = vec![
-            serde_json::json!({
-                "text": " ",
-                "voice_settings": {
-                    "stability": settings.stability,
-                    "similarity_boost": settings.similarity,
-                    "speed": settings.speed,
-                },
-            }),
-            serde_json::json!({ "text": format!("{text} "), "flush": true }),
-            serde_json::json!({ "text": "" }),
-        ];
-        self.socket_stream(
-            &format!(
-                "/v1/text-to-speech/{voice}/stream-input?model_id={}&output_format=pcm_24000",
-                settings.model_id
-            ),
-            key,
-            messages,
-            self.first_audio,
-            on_samples,
-        )
-        .await
-    }
-
     /// Speaks the parts of one sentence through the ElevenLabs dialogue socket.
     ///
     /// Eleven v3 Conversational has only this socket. The first message
@@ -480,11 +447,10 @@ impl Providers {
         .await
     }
 
-    /// Sends the messages through one ElevenLabs socket and plays its sound.
-    ///
-    /// The text-to-speech socket and the dialogue socket send the same kind of
-    /// replies. Only the final mark is spelled `isFinal` in one and `is_final`
-    /// in the other.
+    /// Sends the messages through the ElevenLabs dialogue socket and plays its
+    /// sound. Each chunk of sound goes to `on_samples` as it arrives: 16-bit
+    /// mono samples at 24 kHz. A chunk can end inside a sample, so the odd byte
+    /// waits for the next chunk. The call returns at the final mark.
     async fn socket_stream(
         &self,
         path: &str,
@@ -569,7 +535,7 @@ impl Providers {
     /// The voice is always Eleven v3, so the text keeps its audio tags. The
     /// stream sends one JSON object after the other, with or without a line
     /// break between them. Each chunk of sound goes to `on_samples` as it
-    /// arrives, as in `speak_stream`. The call returns when the stream ends.
+    /// arrives, as in `socket_stream`. The call returns when the stream ends.
     pub async fn speak_dialogue_stream(
         &self,
         key: &str,
@@ -916,12 +882,12 @@ fn samples_from(audio: &str, carry: &mut Option<u8>) -> Result<Vec<i16>> {
         .collect())
 }
 
-/// One message from the ElevenLabs voice socket.
+/// One message from the ElevenLabs dialogue socket.
 #[derive(Deserialize)]
 struct StreamReply {
     #[serde(default)]
     audio: Option<String>,
-    #[serde(default, rename = "isFinal", alias = "is_final")]
+    #[serde(default)]
     is_final: Option<bool>,
     #[serde(default)]
     message: Option<String>,

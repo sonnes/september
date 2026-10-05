@@ -680,11 +680,12 @@ pub(crate) async fn speech_synthesize(
     })
 }
 
-/// Speaks one sentence in the cloud voice while its sound arrives.
+/// Speaks one sentence in the cloud voice.
 ///
-/// Rust holds the key and the socket. The native engine plays the samples, so
-/// the virtual microphone hears them. The command returns when the sound
-/// stops. A kept file, or a model without a socket, plays as a file.
+/// Rust holds the key. The native engine plays the sound, so the virtual
+/// microphone hears it. The ElevenLabs voice and a kept sentence play as a
+/// file. The Dialogue voice plays its samples while they arrive. The command
+/// returns when the sound stops.
 #[tauri::command]
 pub(crate) async fn speech_stream(
     app: AppHandle,
@@ -699,8 +700,11 @@ pub(crate) async fn speech_stream(
         .join("audio");
     let key = keys.get(Provider::ElevenLabs).map_err(rpc_error)?;
     let output = september_output(&state)?;
+    // From here on, a stop silences this sentence even before it plays.
+    let sentence = audio::claim_speech();
 
     let task = tauri::async_runtime::spawn(stream_sentence(
+        sentence,
         directory,
         request.settings,
         request.text,
@@ -725,6 +729,7 @@ pub(crate) async fn speech_stream(
 }
 
 async fn stream_sentence(
+    sentence: i64,
     directory: PathBuf,
     settings: SpeechSettings,
     text: String,
@@ -745,7 +750,7 @@ async fn stream_sentence(
                 return;
             }
             if playing.is_none() {
-                match audio::SpeechStream::begin(speech::STREAM_SAMPLE_RATE, &output) {
+                match audio::SpeechStream::begin(sentence, speech::STREAM_SAMPLE_RATE, &output) {
                     Ok(stream) => playing = Some(stream),
                     Err(error) => {
                         refused = Some(error);
@@ -770,25 +775,33 @@ async fn stream_sentence(
     match outcome {
         Ok(Streamed::File { path, from_cache }) => {
             let latency_ms = began.elapsed().as_millis() as u64;
-            tauri::async_runtime::spawn_blocking(move || audio::play_speech_file(&path, &output))
-                .await
-                .map_err(rpc_error)??;
+            let played = tauri::async_runtime::spawn_blocking(move || {
+                audio::play_speech_file(sentence, &path, &output)
+            })
+            .await
+            .map_err(rpc_error)??;
             Ok(StreamedAudio {
                 from_cache,
                 latency_ms,
-                interrupted: None,
+                interrupted: match played {
+                    audio::Played::Whole => None,
+                    audio::Played::Interrupted(message) => Some(message),
+                },
             })
         }
         Ok(Streamed::Spoken { first_audio }) => {
-            if let Some(stream) = playing {
-                tauri::async_runtime::spawn_blocking(move || stream.finish())
+            // The sound began, so a failure now is an interruption.
+            let interrupted = match playing {
+                Some(stream) => tauri::async_runtime::spawn_blocking(move || stream.finish())
                     .await
-                    .map_err(rpc_error)??;
-            }
+                    .map_err(rpc_error)?
+                    .err(),
+                None => None,
+            };
             Ok(StreamedAudio {
                 from_cache: false,
                 latency_ms: first_audio.as_millis() as u64,
-                interrupted: None,
+                interrupted,
             })
         }
         Err(StreamError {

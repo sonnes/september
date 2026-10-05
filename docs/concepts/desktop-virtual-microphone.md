@@ -25,8 +25,8 @@ removes the device with the fixed UID
 ## Send only spoken messages
 
 System speech comes from `AVSpeechSynthesizer` buffers in the native process.
-Streamed ElevenLabs speech arrives from Rust as chunks of samples, and the
-native process schedules each chunk as a buffer. A kept ElevenLabs sentence
+Dialogue speech arrives from Rust as chunks of samples, and the native process
+schedules each chunk as a buffer. An ElevenLabs MP3 file, or a kept sentence,
 opens as an `AVAudioFile`. All three feed the same September-owned
 `AVAudioEngine`, so the process tap can receive every voice. See
 [streaming voice](streaming-voice.md).

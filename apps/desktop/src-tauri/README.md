@@ -467,24 +467,57 @@ macOS sound output. If the saved device is absent, `audio_output` returns the
 current macOS output until the saved device returns.
 
 `speech_system` receives buffers from `AVSpeechSynthesizer`.
-`speech_stream` opens the ElevenLabs voice socket with the stored key. It
-schedules each chunk of 16-bit samples as the chunk arrives. Both commands feed
+`speech_stream` gets the MP3 file of the ElevenLabs voice over HTTP with the
+stored key, and plays the file. For the Dialogue voice, it schedules each chunk
+of 16-bit samples as the chunk arrives. Both commands feed
 an `AVAudioPlayerNode` in a September-owned `AVAudioEngine`. The engine's
 output audio unit uses the selected device.
 
-`speech_stream` keeps a complete sentence as a WAV file beside the MP3 files,
-under the same SHA-256 name. A kept WAV or MP3 file plays without the socket.
-The `eleven_v3` model has no socket, so it plays as an MP3 file.
-When `settings.provider` is `dialogue`, `speech_stream` sends the sentence to
-the Text to Dialogue stream with `eleven_v3` instead of the socket.
+Every September engine turns off the input side of its I/O unit, turns the
+output side on, and then selects its output device by ID. On macOS, one unit
+runs both sides, and an engine left alone also opens the default input. If
+that input cannot run, for example an aggregate device with a missing member,
+the engine starts but plays nothing, and `play` fails with "player did not see
+an IO cycle". The keepalive engine of the virtual microphone selects the
+default output in the same way.
+
+The voices share one speech engine while the output stays the same. A
+sentence after another sentence starts about 25 ms sooner, because the engine
+is already running. A stop ends the sound of the player node and keeps the
+engine. A new output gets a new engine. An engine that stopped also gets
+replaced, for example after a device change. Each voice connects the node to
+the mixer in the format of its own sound. After 30 seconds without a sentence,
+the engine stops, so a Bluetooth output is not held open.
+
+`StartSpeechEngine` catches Objective-C exceptions during preparation and startup
+and returns their details through the speech error path. A failed stream startup
+stops its engine and clears the active stream before it returns an error.
+`cargo test --test speech_startup` injects a playback exception and checks the
+returned error and engine shutdown. This test requires a macOS sound output
+and plays no samples.
+
+Each sentence of `speech_stream` gets a number from `audio::claim_speech`.
+A stop, or a newer sentence, raises the number. The native side plays a file
+or opens a stream only for the current number, so a stop that arrives just
+before the sound begins keeps the sentence silent. Each native voice watches
+its engine for `AVAudioEngineConfigurationChangeNotification`. If the output
+changes after the sound began, the sentence ends as interrupted. If a voice
+file is not audio, `audio::play_speech_file` removes it, so the next request
+asks ElevenLabs again. `cargo test --test speech_playback` covers these cases
+without sound.
+
+`speech_stream` keeps a complete Dialogue sentence as a WAV file beside the
+MP3 files, under the same SHA-256 name. A kept WAV or MP3 file plays without a
+request. When `settings.provider` is `dialogue`, `speech_stream` sends the
+sentence to the Text to Dialogue stream with `eleven_v3`.
 `Providers::speak_dialogue_stream` reads one JSON object after the other and
 gives each chunk of samples to the same engine. A text of more than 2,000
 characters goes in parts, from `speech::dialogue_parts`. The first sound can
 take 10 seconds. For `eleven_v3_conversational`,
 `Providers::speak_dialogue_socket` sends the parts through the Text to
-Dialogue socket, with the same reader as the text-to-speech socket.
-If the socket fails before the first sound, the command rejects. The WebView
-then speaks the sentence in the system voice. If the socket fails after the
+Dialogue socket.
+If the stream fails before the first sound, the command rejects. The WebView
+then speaks the sentence in the system voice. If the stream fails after the
 first sound, the sound stops and `interrupted` holds the reason.
 `speech_native_stop` also cancels the stream.
 
@@ -618,7 +651,7 @@ only the two Tauri commands. Rust checks the current process before each use
 and replaces it when the health request fails. It stops the child process when
 the backend exits.
 
-The bundle contains apfel v1.9.1 and its MIT license. The preparation script
+The bundle contains apfel v1.12.0 and its MIT license. The preparation script
 makes sure that the downloaded archive and extracted binary match pinned
 SHA-256 checksums.
 

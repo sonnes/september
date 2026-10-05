@@ -5,9 +5,9 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const version = "1.9.1";
-const archiveSha256 = "0963364beffe20017b8ee484b0bc7c82560a518f2ae6229f3f2490f71750d403";
-const binarySha256 = "d31df659ab2d1a61b7194d44f1b94b42de97cb4751616f362e25513b03efc3da";
+const version = "1.12.0";
+const archiveSha256 = "17ff71b8480e4897d26edfc5908073c48db90690e165e82b47124de7c2a6bb36";
+const binarySha256 = "8dc7779dbd4e6a0ee77ce9c03bf0a6e186623cd9c7ad81936815ede3672fe61b";
 const url = `https://github.com/Arthur-Ficial/apfel/releases/download/v${version}/apfel-${version}-arm64-macos.tar.gz`;
 const desktopRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const target = join(
