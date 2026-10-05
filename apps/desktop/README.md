@@ -1,6 +1,6 @@
 # September Desktop
 
-The current prerelease is `v0.3.0`. The signed DMG targets Apple Silicon and macOS 14.2 or later.
+The current prerelease is `v0.4.0`. The signed DMG targets Apple Silicon and macOS 14.2 or later.
 
 September Desktop is the Tauri edition of September, in one floating window,
 the panel. It renders the workspace's shared application UI and supplies

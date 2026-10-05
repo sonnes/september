@@ -26,6 +26,7 @@ The web app stores data and its bounded speech cache in one IndexedDB database. 
 ## Features
 
 - Talk spaces combine saved phrases, word suggestions, and a text composer.
+- A suggestion row can start with the typed words or contain them. The Mac app shows Talk in one panel that floats above other apps.
 - Each space has an Agent that can read its context and propose approved
   changes to its setup, notes, phrases, and Talk transcript.
 - System and ElevenLabs voices speak Talk messages and notes.
