@@ -22,6 +22,11 @@ export const SETTINGS_NAV = [
     description: "Typing saved and service use on this Mac.",
   },
   {
+    path: "/settings/panel",
+    title: "Panel",
+    description: "Keep the panel above other apps.",
+  },
+  {
     path: "/settings/data",
     title: "Data",
     description: "Download a backup or restore one.",

@@ -205,7 +205,7 @@ function Agent({ space, spaces }: { space: Space; spaces: Space[] }) {
         <SpaceTitle space={space} mode="agent" />
       </ScreenHeader>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3 p-2 md:p-4">
+      <div className="@container flex min-h-0 flex-1 flex-col gap-3 p-2 md:p-4">
         <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">
           {error ? <Problem error={error} /> : null}
           {problem ? (

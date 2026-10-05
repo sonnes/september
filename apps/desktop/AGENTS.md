@@ -38,13 +38,20 @@ cargo fmt --all -- --check
   UI imports them through `@platform/*`, which maps to `src/`.
 - Do not add a desktop copy of a shared screen, primitive, token, or pure rule.
   Add or change the canonical workspace package instead.
-- The app has two shells. `packages/app-ui/layouts/onboarding.tsx` holds the setup shell:
-  a left indigo sidebar with the brand, the setup title, and the step list.
-  `packages/app-ui/layouts/app.tsx` holds the app shell: the shadcn `Sidebar` and
-  `SidebarInset` pair. Show all sections. Do not add collapsible groups.
-- Keep the sidebar destinations in `src/rules/app-nav.ts`, where a test can read
-  them. Give each path an icon in `packages/app-ui/layouts/app.tsx`. The icon record is
-  typed by path, so a missing icon fails the build.
+- The app has one window, `panel`, and two shells.
+  `packages/app-ui/layouts/onboarding.tsx` holds the setup shell: a left indigo
+  sidebar with the brand, the setup title, and the step list.
+  `packages/app-ui/layouts/panel.tsx` holds `PanelShell`, the shell of every
+  other route. Show all sections. Do not add collapsible groups.
+- Keep the pages of the More menu in `APP_NAV` in `src/rules/app-nav.ts`, where
+  a test can read them. Give each path an icon in `packages/app-ui/layouts/app.tsx`,
+  the web shell. The icon record is typed by path, so a missing icon fails the
+  build.
+- Keep the rules of the panel paths in `src/rules/panel-nav.ts`:
+  `SPACE_MODE_PATH` and `isSpaceModePath`.
+- Let the float choice decide the Dock icon. `policy(setup, float)` in
+  `src-tauri/src/window.rs` holds the rule. `panel_show` must not change the
+  activation policy.
 - Call the Rust backend from a service module: `src/services/os.ts` for settings and
   the system, `src/services/data.ts` for the rows, `src/services/ai.ts` for the writing service.
   Do not call `invoke` from a component or from `src/services/speech.ts`.
@@ -57,7 +64,8 @@ cargo fmt --all -- --check
 - Route speech through September's native audio engine. Never change the macOS
   default output when the user chooses a speaker in September.
 - Keep the virtual microphone control in the Talk audio selector beside Speak.
-  The selector must remain visible when the Mac has one sound output.
+  In the compact tier of the panel, the selector is on the line below the
+  composer. The selector must remain visible when the Mac has one sound output.
 - Never put the words of the user in a log. A line carries a count, a device
   name, or a reason. The sentence in the composer is what they are about to say
   out loud, and it belongs to them. The same goes for an API key.
@@ -73,13 +81,14 @@ cargo fmt --all -- --check
 - Put every title through `freeTitle` in `packages/core/rules/spaces.ts` before writing
   it — the default name, the model's, and the user's. Two spaces with one title
   share one address, and SQLite has no unique constraint to catch it.
-- Put the Talk and Notes switch in the dock, never in the header. The web app
-  puts it there, so a user who knows one app knows the other.
+- Put the Talk, Notes, and Agent switch in `PanelHeader`, because the panel
+  has no dock. The web app puts the switch in its dock.
 - Pick one row of many with `PickList` in `packages/app-ui/blocks/pick-list.tsx`. Do not
   use a dropdown: it opens on a press and closes when a dwell moves away.
 - Put a panel that needs a card of its own through `RightPanel` in
   `packages/app-ui/blocks/screen.tsx`. A panel drawn inside a screen shares the card of
-  the inset. `packages/app-ui/layouts/app.tsx` gives it the slot it draws into.
+  the inset. `PanelShell` gives it the slot it draws into, in the wide tier
+  only.
 - Keep the right rail of a space in `packages/app-ui/blocks/space-panel.tsx`, and its tabs
   and saved state in `packages/core/rules/panel.ts`, where a test can read them. Add a
   tab as a row of `PANEL_TABS` and a card beside `Phrases`, never as a second
@@ -101,6 +110,8 @@ cargo fmt --all -- --check
   `packages/app-ui/blocks/present.tsx`. Present is an overlay, never a route: a
   route would need a window title, an opening path, and a place in the frozen
   route list, and the address must stay on the note the user is holding.
+  `PresentOverlay` calls `fullScreen(true)` when it opens and
+  `fullScreen(false)` when it closes.
 - Let a presentation run with no voice at all. Silence is a mode, not a
   failure: big words and a partner who reads them is the oldest assistive move
   there is, and it is the reason Present needs no setup.
@@ -181,5 +192,6 @@ cargo fmt --all -- --check
   `invoke` in a route. The module holds the value it wrote, so a guard right
   after setup sees the new answers.
 - Follow the root `DESIGN.md` for every screen.
-- Keep the 1376×1032 baseline usable before adapting a screen to other sizes.
+- Keep each screen usable from the 400×560 minimum of the panel to the full
+  screen.
 - Write a failing test before each implementation change.

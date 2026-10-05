@@ -6,6 +6,7 @@ import { SidebarTrigger } from "@september/ui/components/sidebar";
 
 import { navFor, type AppPath } from "@platform/rules/app-nav";
 import { documentTitle } from "@september/core/rules/titles";
+import { useChrome } from "@september/app-ui/blocks/chrome";
 
 /**
  * The slot the app layout gives the right rail.
@@ -26,8 +27,13 @@ export function RightPanel({ children }: { children: ReactNode }) {
   return slot ? createPortal(children, slot) : null;
 }
 
-/** The 64px header of a screen. It carries the sidebar toggle. */
+/**
+ * The 64px header of a screen. It carries the sidebar toggle.
+ *
+ * The panel has no sidebar, and its own header takes this place.
+ */
 export function ScreenHeader({ children }: { children?: ReactNode }) {
+  if (useChrome() === "panel") return null;
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
       <SidebarTrigger className="-ml-1 size-11" />

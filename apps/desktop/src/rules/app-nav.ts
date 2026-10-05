@@ -4,20 +4,17 @@
  */
 
 import { helpGuide } from "@september/core/rules/help";
+import { spaceFromSlug, spaceSlug } from "@september/core/rules/spaces";
 
 import { STEPS } from "./onboarding.ts";
-import { CONNECTION_GUIDES, SETTINGS_NAV } from "./settings-nav.ts";
+import { SPACE_MODE_PATH } from "./panel-nav.ts";
+import { CONNECTION_GUIDES, isConnectionId, SETTINGS_NAV } from "./settings-nav.ts";
 
 /** The name macOS and every window title show for the app. */
 export const APP_NAME = "September";
 
 /** The screens the sidebar links to, in order. Setup ends at the first one. */
 export const APP_NAV = [
-  {
-    path: "/dashboard",
-    title: "Today",
-    description: "What happened today, and what to do next.",
-  },
   {
     path: "/spaces",
     title: "Spaces",
@@ -84,26 +81,44 @@ export function windowTitle(pathname: string): string {
   return page ? `${APP_NAME} — ${page}` : APP_NAME;
 }
 
+const HELP_GUIDE_PATH = /^\/help\/([^/]+)$/;
+const CONNECTION_PATH = /^\/settings\/connections\/([^/]+)$/;
+
+/** True for a page of `APP_NAV`, a settings section, a connection page, or a
+ *  Help guide. */
+function isAppPage(path: string): boolean {
+  if (path === "/voice/clone") return true;
+  if (APP_NAV.some((item) => item.path === path)) return true;
+  if (SETTINGS_NAV.some((item) => item.path === path)) return true;
+  const provider = path.match(CONNECTION_PATH)?.[1];
+  if (provider) return isConnectionId(provider);
+  const guide = path.match(HELP_GUIDE_PATH)?.[1];
+  return !!guide && !!helpGuide(guide);
+}
+
 /**
- * Where the app opens after a restart.
+ * Where the app opens at launch.
  *
- * It is the screen the user left, when that screen is one of the app. A
- * nested screen counts, so a space and a settings section both come back.
- * Everything else opens the dashboard: a setup step must never come back, and
- * an address that names no screen is not a place to start.
+ * It is the saved path when that path is a space-mode path of a space that
+ * exists, or a page of the app. Else it is Talk of the space that changed
+ * last. With no spaces, it is the Spaces list. A setup step and an address
+ * that names no screen never decide where the app opens.
  */
-/** A route an older version had. A space is made from the space list now, so
- *  a saved address that names it opens nothing. */
-const NEVER_OPENS: readonly string[] = ["/spaces/new"];
+export function openingPath(
+  saved: string | null | undefined,
+  spaces: readonly { title?: string | null; updated_at: number }[],
+): string {
+  if (saved) {
+    const slug = saved.match(SPACE_MODE_PATH)?.[1];
+    if (slug && spaceFromSlug(slug, spaces)) return saved;
+    if (isAppPage(saved)) return saved;
+  }
 
-export function openingPath(saved: string | null): string {
-  if (saved && NEVER_OPENS.includes(saved)) return APP_NAV[0].path;
-
-  const known = APP_NAV.some(
-    (item) => saved === item.path || saved?.startsWith(`${item.path}/`),
+  const recent = spaces.reduce<(typeof spaces)[number] | undefined>(
+    (best, space) => (!best || space.updated_at > best.updated_at ? space : best),
+    undefined,
   );
-
-  return known ? saved! : APP_NAV[0].path;
+  return recent ? `/spaces/${spaceSlug(recent.title)}/talk` : APP_NAV[0].path;
 }
 
 /**

@@ -20,7 +20,8 @@ rusqlite = { version = "0.38", features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
 sha2 = "0.10"
 serde_json = "1"
-tauri = { version = "2", features = ["protocol-asset"] }
+tauri = { version = "2", features = ["image-png", "protocol-asset", "tray-icon"] }
+tauri-plugin-global-shortcut = "~2.3"
 tauri-plugin-shell = "2"
 tauri-plugin-window-state = "2"
 thiserror = "2"

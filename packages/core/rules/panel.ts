@@ -6,6 +6,8 @@
  * whether the card beside the rail was open.
  */
 
+import { MOODS, type MoodKey } from "./moods.ts";
+
 export const PANEL_TABS = [
   { key: "phrases", title: "Phrases" },
   { key: "voice", title: "Voice" },
@@ -47,4 +49,31 @@ export function panelStateFrom(saved: unknown): PanelState {
  */
 export function pressTab(state: PanelState, tab: PanelTab): PanelState {
   return { open: !(state.open && state.tab === tab), tab };
+}
+
+/** What Escape does in the panel, in order of what it finds first. */
+export function escapeStep({
+  speaking,
+  sheetOpen,
+  draft,
+}: {
+  speaking: boolean;
+  sheetOpen: boolean;
+  draft: string;
+}): "stop" | "close" | "hide" | "none" {
+  if (speaking) return "stop";
+  if (sheetOpen) return "close";
+  return draft.trim() === "" ? "hide" : "none";
+}
+
+/**
+ * The mood that Control and a digit set.
+ *
+ * The key is the digit of the key event. 1 to 5 give the five moods in their
+ * order, 0 gives `null` to clear the mood, and any other key gives `undefined`.
+ */
+export function moodForKey(key: string): MoodKey | null | undefined {
+  if (key === "0") return null;
+  const index = /^[1-9]$/.test(key) ? Number(key) - 1 : -1;
+  return MOODS[index]?.key;
 }

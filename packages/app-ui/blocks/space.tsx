@@ -35,6 +35,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@september/ui/components/dropdown-menu";
 import {
@@ -56,6 +57,7 @@ import {
   virtualMicrophoneStatus,
 } from "@platform/services/os";
 import { Suggestions } from "@september/app-ui/blocks/suggestions";
+import { useChrome, usePanel } from "@september/app-ui/blocks/chrome";
 import { draftParts, tagBefore } from "@september/core/rules/audio-tags";
 import { MOODS, type MoodKey } from "@september/core/rules/moods";
 import { countsAsTypedKey } from "@september/core/rules/usage-summary";
@@ -281,6 +283,8 @@ export function Composer({
   const [undoStack, setUndoStack] = useState<string[]>([]);
   const action = composerAction(mode);
   const speaks = action.speaks;
+  const chrome = useChrome();
+  const panel = usePanel();
 
   // The field grows with its text, up to the height the class holds.
   useEffect(() => {
@@ -314,6 +318,25 @@ export function Composer({
     setUndoStack([]);
     field.current?.focus();
   };
+
+  // The panel header reaches the draft through this: Clear in the More menu,
+  // a phrase from the Phrases sheet, Escape, and the mood keys.
+  const composer = panel?.composer;
+  useEffect(() => {
+    if (!composer) return;
+    const handle = {
+      draft,
+      clear: () => draft && write(""),
+      insert: (text: string) =>
+        write(!draft || /\s$/.test(draft) ? draft + text : `${draft} ${text}`),
+      speaks,
+      onMood: speaks ? onMood : undefined,
+    };
+    composer.current = handle;
+    return () => {
+      if (composer.current === handle) composer.current = null;
+    };
+  });
 
   return (
     <div className="bg-muted/40 flex shrink-0 flex-col gap-3 rounded-2xl p-3">
@@ -392,7 +415,10 @@ export function Composer({
         {note ? (
           <p role="status" className="text-muted-foreground mt-2 text-sm">{note}</p>
         ) : null}
-        <div className="mt-3 flex items-center justify-between gap-3">
+        {/* The row folds in the compact tier, under 560 points of the
+            screen body: one mood menu key for the five, and the sound output
+            on a line of its own. */}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-1.5">
             <Button
               type="button"
@@ -401,7 +427,7 @@ export function Composer({
               aria-label="Undo"
               onClick={undo}
               aria-disabled={undoStack.length === 0}
-              className="aria-disabled:opacity-50"
+              className="size-11 aria-disabled:opacity-50"
             >
               <Undo2 aria-hidden />
             </Button>
@@ -412,10 +438,11 @@ export function Composer({
               aria-label="Delete last word"
               onClick={() => draft && write(deleteLastWord(draft))}
               aria-disabled={!draft}
-              className="aria-disabled:opacity-50"
+              className="size-11 aria-disabled:opacity-50"
             >
               <Delete aria-hidden />
             </Button>
+            {/* In the compact panel, Clear lives in the More menu. */}
             <Button
               type="button"
               variant="outline"
@@ -423,20 +450,36 @@ export function Composer({
               aria-label="Clear"
               onClick={() => draft && write("")}
               aria-disabled={!draft}
-              className="aria-disabled:opacity-50"
+              className={cn(
+                "size-11 aria-disabled:opacity-50",
+                chrome === "panel" && "@max-[35rem]:hidden",
+              )}
             >
               <Trash2 aria-hidden />
             </Button>
           </div>
-          <div className="flex items-center gap-2">
-            {speaks && onMood ? <MoodKeys mood={mood} onMood={onMood} /> : null}
+          <div className="flex items-center gap-2 @max-[35rem]:contents">
+            {speaks && onMood ? (
+              <>
+                <div className="@max-[35rem]:hidden">
+                  <MoodKeys mood={mood} onMood={onMood} />
+                </div>
+                <div className="@min-[35rem]:hidden">
+                  <MoodMenu mood={mood} onMood={onMood} keys={chrome === "panel"} />
+                </div>
+              </>
+            ) : null}
             {/* The sound output belongs beside the button that makes a sound.
                 Notes makes none. */}
-            {speaks ? <AudioSelector /> : null}
+            {speaks ? (
+              <div className="@max-[35rem]:order-last @max-[35rem]:basis-full">
+                <AudioSelector />
+              </div>
+            ) : null}
             <Button
               type="button"
               size="lg"
-              className="rounded-full px-6 font-semibold aria-disabled:opacity-50"
+              className="h-11 rounded-full px-6 font-semibold aria-disabled:opacity-50"
               onClick={() => act(draft)}
               aria-disabled={!draft.trim() || pending}
             >
@@ -447,6 +490,74 @@ export function Composer({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * One key for the five moods, for a narrow screen. It shows the mood in use
+ * and opens a menu of the moods and No mood. A second choice of the mood in
+ * use clears it, the same as the mood keys.
+ */
+function MoodMenu({
+  mood,
+  onMood,
+  keys,
+}: {
+  mood: MoodKey | null;
+  onMood: (mood: MoodKey | null) => void;
+  /** Shows Control and a digit beside each mood. Only the panel binds them. */
+  keys: boolean;
+}) {
+  const current = MOODS.find((one) => one.key === mood);
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label={`Mood menu: ${current?.label ?? "no mood"}`}
+          className={cn(
+            "focus-visible:ring-ring bg-muted text-foreground inline-flex h-11 items-center gap-1.5 rounded-control px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none",
+            current && "ring-primary/60 bg-accent ring-2 ring-inset",
+          )}
+        >
+          <span aria-hidden className="text-lg leading-none">
+            {current?.emoji ?? "🙂"}
+          </span>
+          {current?.label ?? "Mood"}
+          <ChevronDown className="size-4 opacity-60" aria-hidden />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent side="top" align="start" className="w-56 rounded-surface p-1.5">
+        <DropdownMenuRadioGroup value={mood ?? ""}>
+          {MOODS.map((one, at) => (
+            <DropdownMenuRadioItem
+              key={one.key}
+              value={one.key}
+              className="min-h-13 text-base"
+              onSelect={() => onMood(one.key === mood ? null : one.key)}
+            >
+              <span aria-hidden className="text-xl leading-none">
+                {one.emoji}
+              </span>
+              <span className="flex-1">{one.label}</span>
+              {keys ? (
+                <DropdownMenuShortcut>⌃{at + 1}</DropdownMenuShortcut>
+              ) : null}
+            </DropdownMenuRadioItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuRadioItem
+            value=""
+            className="min-h-13 text-base"
+            onSelect={() => onMood(null)}
+          >
+            <span className="text-muted-foreground flex-1">No mood</span>
+            {keys ? <DropdownMenuShortcut>⌃0</DropdownMenuShortcut> : null}
+          </DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -582,6 +693,7 @@ export function SpaceTitle({
  * Speak because it carries what Speak makes.
  */
 function AudioSelector() {
+  const panel = usePanel();
   const client = useQueryClient();
   const outputs = useQuery({ queryKey: ["outputs"], queryFn: listOutputs });
   const chosen = useQuery({ queryKey: ["output"], queryFn: currentOutput });
@@ -609,7 +721,10 @@ function AudioSelector() {
 
   return (
     <DropdownMenu
+      // The More menu of the panel opens this menu too.
+      open={panel?.outputOpen}
       onOpenChange={(open) => {
+        panel?.setOutputOpen(open);
         if (!open) return;
         // A device plugged in while the app runs appears when the menu opens.
         void outputs.refetch();
@@ -622,7 +737,7 @@ function AudioSelector() {
           type="button"
           size="lg"
           variant="outline"
-          className="max-w-56 rounded-full px-4 font-medium"
+          className="h-11 max-w-56 rounded-full px-4 font-medium"
         >
           <Headphones aria-hidden />
           <span className="truncate">{selected?.name ?? "Audio"}</span>
@@ -690,17 +805,19 @@ function AudioSelector() {
  * ponytail: the row scrolls when the tabs no longer fit. The web app collapses
  * them into a menu — port that when a user keeps more spaces than fit.
  */
-export function SpaceDock({
-  current,
-  spaces,
-  mode,
-  onMode,
-}: {
+export function SpaceDock(props: DockProps) {
+  // The panel header holds the space button and the mode switch instead.
+  return useChrome() === "panel" ? null : <Dock {...props} />;
+}
+
+interface DockProps {
   current: Space;
   spaces: Space[];
   mode: SpaceMode;
   onMode: (mode: SpaceMode) => void;
-}) {
+}
+
+function Dock({ current, spaces, mode, onMode }: DockProps) {
   const navigate = useNavigate();
   const newSpace = useNewSpace();
   const row = useRef<HTMLDivElement>(null);

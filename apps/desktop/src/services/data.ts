@@ -51,14 +51,22 @@ export async function call<T>(command: string, request?: unknown): Promise<T> {
   }
 }
 
-const refresh = (client: QueryClient) => () =>
-  client.invalidateQueries({ queryKey: ["spaces"] });
+/** Reads the keys again. */
+function changed(client: QueryClient, ...keys: unknown[][]) {
+  return Promise.all(
+    keys.map((queryKey) => client.invalidateQueries({ queryKey })),
+  );
+}
+
+const refresh = (client: QueryClient) => () => changed(client, ["spaces"]);
+
+export const listSpaces = () =>
+  call<Space[]>("space_list", { user_id: currentUserId() });
 
 export function useSpaces() {
   return useQuery({
     queryKey: ["spaces"],
-    queryFn: () =>
-      call<Space[]>("space_list", { user_id: currentUserId() }),
+    queryFn: listSpaces,
   });
 }
 
@@ -97,8 +105,7 @@ export function useCreateSpace() {
       return space;
     },
     onSuccess: () => {
-      void refresh(client)();
-      void client.invalidateQueries({ queryKey: ["phrases"] });
+      void changed(client, ["spaces"], ["phrases"]);
     },
   });
 }
@@ -186,11 +193,12 @@ export function useSendMessage(spaceId: string) {
     // The transcript shows the sentence as soon as SQLite accepts it.
     // ponytail: no rollback path — the write is a local file, and a failure
     // keeps the text in the composer.
-    onSuccess: (message) =>
+    onSuccess: (message) => {
       client.setQueryData<Message[]>(messagesKey(spaceId), (rows = []) => [
         ...rows,
         message,
-      ]),
+      ]);
+    },
   });
 }
 
@@ -206,7 +214,7 @@ export function usePutAgentMessage(spaceId: string) {
   const client = useQueryClient();
   return useMutation({
     mutationFn: (message: AgentMessage) => call<AgentMessage>("agent_message_put", message),
-    onSuccess: () => client.invalidateQueries({ queryKey: agentMessagesKey(spaceId) }),
+    onSuccess: () => changed(client, agentMessagesKey(spaceId)),
   });
 }
 
@@ -228,7 +236,7 @@ export function useResolveAgentTool(spaceId: string) {
       content,
       updated_at: Date.now(),
     }),
-    onSuccess: () => client.invalidateQueries({ queryKey: agentMessagesKey(spaceId) }),
+    onSuccess: () => changed(client, agentMessagesKey(spaceId)),
   });
 }
 
@@ -267,7 +275,7 @@ export function useCreateNote(spaceId: string) {
         updated_at: at,
       });
     },
-    onSuccess: () => client.invalidateQueries({ queryKey: notesKey(spaceId) }),
+    onSuccess: () => changed(client, notesKey(spaceId)),
   });
 }
 
@@ -304,7 +312,7 @@ export function useUpdateNote(spaceId: string) {
         updated_at: Date.now(),
       });
     },
-    onSuccess: () => client.invalidateQueries({ queryKey: notesKey(spaceId) }),
+    onSuccess: () => changed(client, notesKey(spaceId)),
   });
 }
 
@@ -313,7 +321,7 @@ export function useDeleteNote(spaceId: string) {
 
   return useMutation({
     mutationFn: (id: string) => call<boolean>("note_delete", { id }),
-    onSuccess: () => client.invalidateQueries({ queryKey: notesKey(spaceId) }),
+    onSuccess: () => changed(client, notesKey(spaceId)),
   });
 }
 
@@ -342,7 +350,7 @@ export function usePutPhrase() {
   return useMutation({
     mutationFn: (phrase: SavedPhrase) =>
       call<SavedPhrase>("phrase_put", { ...phrase, updated_at: Date.now() }),
-    onSuccess: () => client.invalidateQueries({ queryKey: ["phrases"] }),
+    onSuccess: () => changed(client, ["phrases"]),
   });
 }
 
@@ -351,7 +359,7 @@ export function useDeletePhrase() {
 
   return useMutation({
     mutationFn: (id: string) => call<boolean>("phrase_delete", { id }),
-    onSuccess: () => client.invalidateQueries({ queryKey: ["phrases"] }),
+    onSuccess: () => changed(client, ["phrases"]),
   });
 }
 
@@ -367,6 +375,6 @@ export function useReplaceAiPhrases() {
   return useMutation({
     mutationFn: ({ spaceId, phrases }: { spaceId: string; phrases: SavedPhrase[] }) =>
       call<SavedPhrase[]>("phrase_replace_ai", { space_id: spaceId, phrases }),
-    onSuccess: () => client.invalidateQueries({ queryKey: ["phrases"] }),
+    onSuccess: () => changed(client, ["phrases"]),
   });
 }

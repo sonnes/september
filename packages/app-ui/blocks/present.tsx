@@ -16,7 +16,11 @@ import {
   type PresentTone,
 } from "@september/core/rules/present";
 import { BrandMark, BrandWordmark } from "@september/app-ui/blocks/brand";
-import { currentPresent, rememberPresent } from "@platform/services/os";
+import {
+  currentPresent,
+  fullScreen,
+  rememberPresent,
+} from "@platform/services/os";
 import { speak, stopSpeaking } from "@platform/services/speech";
 import { recordPresentUsage } from "@platform/services/usage";
 
@@ -53,6 +57,13 @@ export function PresentOverlay({
   const held = useRef<HTMLDivElement>(null);
 
   useEffect(() => held.current?.focus(), []);
+
+  // The desktop panel fills the screen while it presents, and goes back to
+  // its size when the overlay closes. The browser does nothing.
+  useEffect(() => {
+    void fullScreen(true);
+    return () => void fullScreen(false);
+  }, []);
 
   const tone = presentTone(settings.tone);
   const chunk = chunks[index];

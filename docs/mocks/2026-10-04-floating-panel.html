@@ -1,0 +1,1069 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>September Desktop as a Floating Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Lexend:wght@700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --indigo-800:#3730a3; --indigo-700:#4338ca; --indigo-600:#4f46e5; --indigo-500:#6366f1; --indigo-400:#818cf8;
+    --indigo-300:#a5b4fc; --indigo-200:#c7d2fe; --indigo-100:#e0e7ff; --indigo-50:#eef2ff;
+    --zinc-900:#18181b; --zinc-800:#27272a; --zinc-700:#3f3f46; --zinc-600:#52525b;
+    --zinc-500:#71717a; --zinc-400:#a1a1aa; --zinc-300:#d4d4d8; --zinc-200:#e4e4e7; --zinc-100:#f4f4f5; --zinc-50:#fafafa;
+    --amber-50:#fffbeb; --amber-200:#fde68a; --amber-700:#b45309; --amber-800:#92400e;
+    --teal-600:#0d9488; --teal-50:#f0fdfa;
+    --orange-50:#fff7ed; --orange-200:#fed7aa; --orange-800:#9a3412;
+    --em-50:#ecfdf5; --em-200:#a7f3d0; --em-700:#047857;
+    --red-50:#fef2f2; --red-200:#fecaca; --red-600:#dc2626;
+    --r-control:12px; --r-chip:14px; --r-surface:20px;
+    --shadow:0 1px 2px rgba(24,24,27,.06), 0 1px 3px rgba(24,24,27,.04);
+    --panel-shadow:0 24px 48px -12px rgba(24,24,27,.35), 0 0 0 1px rgba(24,24,27,.10);
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Noto Sans", Helvetica, sans-serif; background:var(--zinc-100); color:var(--zinc-900);
+    -webkit-font-smoothing:antialiased; padding:48px 24px 120px; font-size:14px; line-height:1.5; }
+  .page { max-width:1400px; margin:0 auto; }
+  .eyebrow { font-size:14px; font-weight:500; color:var(--indigo-600); }
+  h1 { font-size:32px; font-weight:700; letter-spacing:-.02em; margin-top:6px; }
+  .lede { font-size:15px; color:var(--zinc-600); margin-top:10px; max-width:84ch; line-height:1.7; }
+  .toc { margin-top:18px; display:flex; flex-wrap:wrap; gap:8px; }
+  .toc a { font-size:13px; font-weight:500; color:var(--indigo-700); background:#fff; border:1px solid var(--zinc-200); border-radius:999px; padding:6px 12px; text-decoration:none; }
+  section { margin-top:64px; scroll-margin-top:20px; }
+  section > h2 { font-size:22px; font-weight:700; letter-spacing:-.01em; }
+  section > .sub { font-size:14px; color:var(--zinc-600); margin-top:6px; max-width:84ch; line-height:1.7; }
+  code { font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; background:var(--zinc-200); padding:1px 5px; border-radius:5px; }
+
+  /* ---------- desktop backdrop ---------- */
+  .desk { margin-top:24px; border-radius:18px; overflow:hidden; position:relative; height:900px;
+    background:linear-gradient(160deg,#c7d2fe 0%,#a5b4fc 35%,#818cf8 70%,#6366f1 100%); box-shadow:var(--shadow); }
+  .menubar { height:28px; background:rgba(255,255,255,.55); backdrop-filter:blur(12px); display:flex; align-items:center; gap:18px; padding:0 14px; font-size:13px; font-weight:500; color:var(--zinc-900); }
+  .menubar .sp { flex:1; }
+  .menubar .mb-icon { width:22px; height:18px; border-radius:5px; background:var(--indigo-600); color:#fff; font-family:Lexend; font-size:8px; display:grid; place-items:center; outline:2px solid rgba(79,70,229,.25); }
+  .call { position:absolute; left:28px; top:56px; width:820px; height:600px; background:#1f1f23; border-radius:12px; box-shadow:0 20px 40px rgba(0,0,0,.3); overflow:hidden; }
+  .call .bar { height:34px; background:#2a2a2f; display:flex; align-items:center; padding:0 12px; gap:7px; }
+  .call .bar i { width:12px; height:12px; border-radius:50%; background:#ff5f57; display:block; }
+  .call .bar i:nth-child(2){background:#febc2e} .call .bar i:nth-child(3){background:#28c840}
+  .call .bar span { color:#a1a1aa; font-size:12px; margin-left:10px; }
+  .tiles { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:8px; height:500px; }
+  .tile { background:#34343a; border-radius:10px; position:relative; display:grid; place-items:center; }
+  .tile .av { width:96px; height:96px; border-radius:50%; background:#52525b; color:#e4e4e7; font-size:34px; font-weight:600; display:grid; place-items:center; }
+  .tile .nm { position:absolute; left:10px; bottom:10px; color:#fff; font-size:12px; background:rgba(0,0,0,.45); padding:2px 8px; border-radius:6px; display:flex; gap:6px; align-items:center; }
+  .tile.talking { outline:3px solid #22c55e; outline-offset:-3px; }
+  .callctl { display:flex; justify-content:center; gap:12px; padding-top:10px; }
+  .callctl span { width:40px; height:40px; border-radius:50%; background:#3f3f46; display:block; }
+  .callctl span.end { background:#ef4444; width:56px; border-radius:20px; }
+  .desk .panel { position:absolute; right:28px; top:48px; }
+  .desk-note { position:absolute; left:28px; bottom:24px; width:820px; display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .desk-note div { background:rgba(255,255,255,.88); border-radius:var(--r-chip); padding:12px 14px; font-size:13px; color:var(--zinc-700); line-height:1.55; }
+  .desk-note b { color:var(--zinc-900); display:block; font-size:13px; margin-bottom:2px; }
+
+  /* ---------- the panel ---------- */
+  .panel { width:440px; height:820px; background:var(--zinc-100); border-radius:22px; box-shadow:var(--panel-shadow); display:flex; flex-direction:column; overflow:hidden; position:relative; }
+  .panel.short { height:auto; }
+  .ph { background:var(--indigo-500); padding:10px 10px 10px 10px; display:flex; align-items:center; gap:8px; flex:none; }
+  .space-btn { height:44px; padding:0 12px 0 10px; border-radius:var(--r-control); background:var(--indigo-600); color:#fff; font-weight:600; font-size:14px; display:flex; align-items:center; gap:8px; white-space:nowrap; }
+  .space-btn .dot { width:24px; height:24px; border-radius:8px; background:#fff; color:var(--indigo-600); font-size:12px; font-weight:700; display:grid; place-items:center; }
+  .seg { flex:1; display:flex; background:var(--indigo-600); border-radius:var(--r-control); padding:4px; gap:2px; height:44px; }
+  .seg span { flex:1; display:grid; place-items:center; border-radius:9px; color:#fff; font-weight:500; font-size:14px; }
+  .seg span.on { background:#fff; color:var(--indigo-700); font-weight:600; box-shadow:var(--shadow); }
+  .icon-btn { width:44px; height:44px; border-radius:var(--r-control); display:grid; place-items:center; color:#fff; flex:none; }
+  .icon-btn.on { background:var(--indigo-700); }
+  .icon-btn svg, .k svg, .speak svg, .rowkey svg, .mark svg { width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .pb { flex:1; overflow:hidden; padding:12px 12px 0; display:flex; flex-direction:column; gap:10px; min-height:0; }
+  .pb > * { flex:none; }
+  .lbl { font-size:12px; font-weight:600; color:var(--zinc-600); display:flex; align-items:center; gap:6px; padding:0 6px; }
+  .lbl .ct { color:var(--zinc-400); font-weight:500; }
+  .lbl .act { margin-left:auto; color:var(--indigo-600); font-weight:500; }
+  .card { background:#fff; border-radius:16px; box-shadow:var(--shadow); overflow:hidden; }
+  .msg { display:flex; align-items:center; gap:10px; padding:10px 8px 10px 14px; min-height:52px; border-top:1px solid var(--zinc-100); }
+  .msg:first-child { border-top:0; }
+  .msg .t { flex:1; font-size:15px; line-height:1.4; }
+  .msg .tm { font-size:12px; color:var(--zinc-400); white-space:nowrap; }
+  .msg .rowkey { color:var(--zinc-500); }
+  .rowkey { width:44px; height:44px; border-radius:var(--r-control); display:grid; place-items:center; flex:none; color:var(--indigo-600); }
+  .rowkey.solid { background:var(--indigo-600); color:#fff; }
+  .rowkey.soft { background:var(--indigo-50); }
+  /* suggestion rows, gutter line and mark per kind */
+  .row { display:flex; align-items:center; gap:8px; padding:4px 4px 4px 0; min-height:52px; border-top:1px solid var(--zinc-100); border-left:4px solid var(--zinc-300); }
+  .row:first-child { border-top:0; }
+  .row .mark { width:30px; display:grid; place-items:center; color:var(--zinc-400); flex:none; }
+  .row .mark svg { width:16px; height:16px; }
+  .row .t { flex:1; font-size:15px; line-height:1.4; }
+  .row .t b { font-weight:600; }
+  .row.code { border-left-color:var(--indigo-700); background:var(--indigo-50); }
+  .row.code .mark { color:var(--indigo-700); font-size:11px; font-weight:700; font-family:ui-monospace,Menlo,monospace; }
+  .row.phrase { border-left-color:var(--indigo-400); }
+  .row.phrase .mark { color:var(--indigo-500); }
+  .row.open { border-left:4px dashed var(--indigo-400); }
+  .row.open .mark { color:var(--indigo-500); }
+  .row.past { border-left-color:var(--teal-600); }
+  .row.past .mark { color:var(--teal-600); }
+  .row.model { border-left-color:var(--zinc-300); }
+  .words { display:flex; flex-wrap:wrap; gap:8px; }
+  .w { height:44px; padding:0 16px; border-radius:var(--r-chip); background:var(--orange-50); border:1px solid var(--orange-200); color:var(--orange-800); font-size:16px; font-weight:500; display:grid; place-items:center; }
+  .w.tag { background:#fff; border-style:dashed; border-color:var(--indigo-300); color:var(--indigo-700); font-size:14px; }
+  /* composer */
+  .comp { flex:none; margin:10px 12px 0; background:#fff; border-radius:var(--r-surface); box-shadow:0 0 0 3px rgba(99,102,241,.45), var(--shadow); padding:12px 12px 10px; }
+  .comp .field { font-size:20px; line-height:1.4; min-height:56px; color:var(--zinc-900); }
+  .comp .field.ph-text { color:var(--zinc-400); }
+  .caret { display:inline-block; width:2px; height:22px; background:var(--indigo-600); vertical-align:-4px; margin-left:1px; }
+  .tools { display:flex; align-items:center; gap:4px; margin-top:8px; }
+  .k { width:44px; height:44px; border-radius:var(--r-control); display:grid; place-items:center; color:var(--zinc-600); background:var(--zinc-100); flex:none; }
+  .mood { width:36px; height:44px; border-radius:var(--r-control); display:grid; place-items:center; font-size:18px; flex:none; opacity:.55; }
+  .mood.on { background:var(--indigo-100); opacity:1; box-shadow:inset 0 0 0 2px var(--indigo-400); }
+  .moodmenu { height:44px; padding:0 10px; border-radius:var(--r-control); background:var(--zinc-100); display:flex; align-items:center; gap:6px; font-size:13px; color:var(--zinc-700); font-weight:500; flex:none; }
+  .moodmenu .e { font-size:18px; }
+  .tools .sp { flex:1; }
+  .speak { height:44px; padding:0 18px; border-radius:999px; background:var(--indigo-600); color:#fff; font-weight:600; font-size:15px; display:flex; align-items:center; gap:8px; flex:none; }
+  .speak.stop { background:var(--zinc-900); }
+  .out { display:flex; align-items:center; gap:8px; margin:8px 12px 0; padding:0 6px; font-size:12px; color:var(--zinc-600); }
+  .out .pill { display:flex; align-items:center; gap:6px; height:28px; padding:0 10px; border-radius:999px; background:#fff; box-shadow:var(--shadow); font-weight:500; }
+  .out .live { width:8px; height:8px; border-radius:50%; background:#22c55e; }
+  .pf { flex:none; display:flex; justify-content:space-between; gap:8px; padding:8px 18px 12px; font-size:11.5px; color:var(--zinc-500); }
+  .kbd { font-family:inherit; font-size:11.5px; font-weight:600; color:var(--zinc-600); }
+
+  /* speaking */
+  .speaking { flex:none; margin:10px 12px 0; background:var(--indigo-600); color:#fff; border-radius:var(--r-surface); padding:14px; }
+  .speaking .who { font-size:12px; font-weight:500; opacity:.85; display:flex; align-items:center; gap:6px; }
+  .speaking .txt { font-size:20px; line-height:1.4; margin-top:6px; }
+  .speaking .txt .done { color:#fff; }
+  .speaking .txt .todo { color:var(--indigo-200); }
+  .wave { display:flex; align-items:center; gap:3px; height:28px; margin-top:10px; }
+  .wave i { display:block; width:4px; border-radius:2px; background:#fff; opacity:.9; }
+  .speaking .ctl { display:flex; align-items:center; gap:8px; margin-top:12px; }
+  .speaking .ctl .sp { flex:1; }
+  .btn-w { height:44px; padding:0 16px; border-radius:999px; background:#fff; color:var(--indigo-700); font-weight:600; display:flex; align-items:center; gap:8px; }
+  .btn-w svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2.2; }
+  .btn-g { height:44px; padding:0 14px; border-radius:999px; background:var(--indigo-700); color:#fff; font-weight:500; display:flex; align-items:center; }
+
+  /* misc */
+  .ctx { background:var(--amber-50); border:1px solid var(--amber-200); border-radius:16px; padding:12px 14px; }
+  .ctx .h { font-size:12px; font-weight:600; color:var(--amber-800); display:flex; align-items:center; gap:6px; }
+  .ctx .h .x { margin-left:auto; font-weight:500; }
+  .ctx .q { font-size:15px; margin-top:4px; color:var(--zinc-900); line-height:1.45; }
+  .callout { border-radius:14px; padding:10px 12px; font-size:13px; line-height:1.5; display:flex; gap:8px; }
+  .callout.warn { background:var(--amber-50); border:1px solid var(--amber-200); color:var(--amber-800); }
+  .callout.info { background:var(--indigo-50); border:1px solid var(--indigo-200); color:var(--indigo-800); }
+  .callout.ok { background:var(--em-50); border:1px solid var(--em-200); color:var(--em-700); }
+  .sheet { position:absolute; inset:64px 0 0 0; background:rgba(24,24,27,.28); display:flex; flex-direction:column; justify-content:flex-start; }
+  .sheet .s { background:#fff; margin:8px; border-radius:var(--r-surface); box-shadow:var(--panel-shadow); padding:14px; }
+  .s h4 { font-size:17px; font-weight:600; }
+  .s .search { height:44px; border-radius:var(--r-control); background:var(--zinc-100); display:flex; align-items:center; gap:8px; padding:0 12px; color:var(--zinc-400); margin-top:10px; font-size:15px; }
+  .s .search svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; }
+  .li { display:flex; align-items:center; gap:10px; min-height:52px; padding:4px 8px; border-radius:var(--r-control); }
+  .li.on { background:var(--indigo-50); }
+  .li .dot { width:32px; height:32px; border-radius:10px; background:var(--indigo-100); color:var(--indigo-700); font-weight:700; display:grid; place-items:center; font-size:13px; }
+  .li .tt { flex:1; }
+  .li .tt b { font-weight:600; font-size:15px; display:block; }
+  .li .tt span { font-size:12px; color:var(--zinc-500); }
+  .li .kb { font-size:12px; color:var(--zinc-400); font-weight:600; }
+  .slider { margin-top:14px; }
+  .slider .top { display:flex; justify-content:space-between; font-size:14px; font-weight:500; }
+  .slider .top span:last-child { color:var(--zinc-500); font-weight:400; }
+  .slider .track { height:8px; border-radius:4px; background:var(--zinc-200); margin-top:12px; position:relative; }
+  .slider .fill { position:absolute; left:0; top:0; bottom:0; border-radius:4px; background:var(--indigo-500); }
+  .slider .knob { position:absolute; top:50%; width:28px; height:28px; border-radius:50%; background:#fff; box-shadow:0 0 0 2px var(--indigo-500), var(--shadow); transform:translate(-50%,-50%); }
+  .chips { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .chip { height:44px; padding:0 16px; border-radius:999px; border:1px solid var(--zinc-200); display:grid; place-items:center; font-weight:500; }
+  .chip.on { background:var(--indigo-600); color:#fff; border-color:var(--indigo-600); }
+  .note-body { background:#fff; border-radius:var(--r-surface); box-shadow:var(--shadow); padding:16px; font-size:15px; line-height:1.65; color:var(--zinc-800); flex:1; min-height:0; overflow:hidden; }
+  .note-body h5 { font-size:17px; font-weight:600; color:var(--zinc-900); margin-bottom:6px; }
+  .note-body p + p { margin-top:10px; }
+  .note-acts { display:flex; gap:8px; }
+  .pill-btn { height:44px; padding:0 14px; border-radius:999px; background:#fff; box-shadow:var(--shadow); display:flex; align-items:center; gap:8px; font-weight:500; color:var(--zinc-800); }
+  .pill-btn svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; }
+  .pill-btn.pri { background:var(--indigo-600); color:#fff; }
+  .bubble { border-radius:16px; padding:10px 14px; font-size:15px; line-height:1.45; max-width:86%; }
+  .bubble.me { background:var(--indigo-600); color:#fff; align-self:flex-end; }
+  .bubble.ai { background:#fff; box-shadow:var(--shadow); align-self:flex-start; }
+  .tool { background:#fff; border:1px solid var(--indigo-200); border-radius:16px; padding:12px 14px; box-shadow:var(--shadow); }
+  .tool .h { font-size:12px; font-weight:600; color:var(--indigo-700); }
+  .tool .b { font-size:14px; margin-top:4px; line-height:1.5; }
+  .tool .b s { color:var(--zinc-400); }
+  .tool .acts { display:flex; gap:8px; margin-top:10px; }
+  .tool .acts span { height:44px; padding:0 16px; border-radius:999px; display:grid; place-items:center; font-weight:600; }
+  .tool .acts .y { background:var(--indigo-600); color:#fff; }
+  .tool .acts .n { background:var(--zinc-100); color:var(--zinc-700); }
+
+  /* layout of state grid */
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(460px,1fr)); gap:40px 28px; margin-top:24px; }
+  .state h3 { font-size:16px; font-weight:600; }
+  .state p.d { font-size:13.5px; color:var(--zinc-600); margin:4px 0 14px; line-height:1.6; max-width:52ch; min-height:44px; }
+  .state .tag-n { display:inline-block; font-size:11px; font-weight:700; color:var(--indigo-700); background:var(--indigo-50); border:1px solid var(--indigo-200); border-radius:999px; padding:1px 8px; margin-right:6px; vertical-align:2px; }
+
+  /* mini */
+  .mini { width:640px; background:var(--zinc-100); border-radius:22px; box-shadow:var(--panel-shadow); padding:10px; display:flex; flex-direction:column; gap:8px; }
+  .mini .r1 { display:flex; gap:8px; align-items:center; }
+  .mini .fld { flex:1; height:52px; background:#fff; border-radius:16px; box-shadow:0 0 0 3px rgba(99,102,241,.45); display:flex; align-items:center; padding:0 14px; font-size:18px; }
+  .mini .r2 { display:flex; gap:8px; overflow:hidden; }
+  .mini .r2 .p { height:44px; padding:0 14px; border-radius:999px; background:#fff; box-shadow:var(--shadow); display:flex; align-items:center; gap:6px; font-size:14px; white-space:nowrap; }
+  .mini .r2 .p.c { background:var(--indigo-50); box-shadow:inset 0 0 0 1px var(--indigo-200); }
+  .mini .grip { width:28px; height:52px; display:grid; place-items:center; color:var(--zinc-400); }
+
+  table { border-collapse:collapse; margin-top:16px; background:#fff; border-radius:16px; overflow:hidden; box-shadow:var(--shadow); width:100%; max-width:1000px; }
+  th, td { text-align:left; padding:11px 14px; border-top:1px solid var(--zinc-100); font-size:13.5px; vertical-align:top; line-height:1.55; }
+  th { background:var(--zinc-50); font-size:12px; font-weight:600; color:var(--zinc-600); border-top:0; }
+  td:first-child { white-space:nowrap; font-weight:600; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:28px; margin-top:20px; }
+  @media (max-width:1100px){ .two{grid-template-columns:1fr} }
+  .qs { margin-top:16px; display:grid; gap:12px; max-width:1000px; }
+  .q { background:var(--amber-50); border:1px solid var(--amber-200); border-radius:var(--r-chip); padding:14px 16px; }
+  .q h4 { font-size:14px; font-weight:700; color:var(--amber-800); }
+  .q p { font-size:13.5px; color:var(--amber-800); margin-top:4px; line-height:1.6; }
+  .flow { display:flex; gap:10px; align-items:stretch; margin-top:18px; flex-wrap:wrap; }
+  .flow .st { background:#fff; border-radius:var(--r-chip); box-shadow:var(--shadow); padding:12px 14px; width:210px; font-size:13px; line-height:1.55; color:var(--zinc-700); }
+  .flow .st b { display:block; color:var(--zinc-900); font-size:14px; margin-bottom:2px; }
+  .flow .ar { display:grid; place-items:center; color:var(--indigo-400); font-weight:700; }
+</style>
+</head>
+<body>
+<!-- Lucide-style icons, reused through <use> -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-vol" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></symbol>
+    <symbol id="i-pinf" viewBox="0 0 24 24"><path fill="currentColor" d="M12 17v5"/><path fill="currentColor" d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+    <symbol id="i-arrows" viewBox="0 0 24 24"><path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+    <symbol id="i-del" viewBox="0 0 24 24"><path d="M10 5a2 2 0 0 0-1.34.52l-5.5 5.5a1 1 0 0 0 0 1.46l5.5 5.5A2 2 0 0 0 10 19h9a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/><path d="m12 9 6 6"/><path d="m18 9-6 6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="m6 3 14 9-14 9V3z"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></symbol>
+    <symbol id="i-shrink" viewBox="0 0 24 24"><path d="m14 10 7-7"/><path d="M20 10h-6V4"/><path d="m3 21 7-7"/><path d="M4 14h6v6"/></symbol>
+    <symbol id="i-quote" viewBox="0 0 24 24"><path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></symbol>
+  </defs>
+</svg>
+
+<div class="page">
+  <div class="eyebrow">Mock · 2026-10-04 · apps/desktop</div>
+  <h1>September Desktop as a Floating Panel</h1>
+  <p class="lede">
+    The desktop app becomes a 440px panel that floats beside the app the user talks through, such as a video call.
+    The panel is the one window of the app. Talk, Notes, and Agent show in it, and so do setup, voices, settings, Help, and Present.
+  </p>
+  <div class="toc">
+    <a href="#hero">On the desktop</a>
+    <a href="#anatomy">Panel anatomy</a>
+    <a href="#talk">Talk states</a>
+    <a href="#modes">Notes and Agent</a>
+    <a href="#sheets">Spaces, phrases, voice</a>
+    <a href="#edges">Errors and empty states</a>
+    <a href="#compact">Compact bar</a>
+    <a href="#pages">Pages in the panel</a>
+    <a href="#behavior">Window behavior</a>
+    <a href="#keys">Keys</a>
+    <a href="#questions">Open questions</a>
+  </div>
+
+  <!-- ===================================================== HERO -->
+  <section id="hero">
+    <h2>On the Desktop</h2>
+    <p class="sub">The user is in a call. The panel floats at the right edge, above the call window. Speak sends the voice to the speakers and to the September Microphone, so the other person hears it in the call.</p>
+
+    <div class="desk">
+      <div class="menubar">
+        <span style="font-size:15px"></span><b>zoom.us</b><span>Meeting</span><span>View</span><span>Window</span>
+        <span class="sp"></span>
+        <span class="mb-icon">Sep</span><span>Sun 4 Oct 10:42</span>
+      </div>
+      <div class="call">
+        <div class="bar"><i></i><i></i><i></i><span>Zoom Meeting · Weekly check-in</span></div>
+        <div class="tiles">
+          <div class="tile"><div class="av">DP</div><div class="nm">Dr Patel</div></div>
+          <div class="tile talking"><div class="av">You</div><div class="nm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><use href="#i-mic"/></svg>You · September Microphone</div></div>
+        </div>
+        <div class="callctl"><span></span><span></span><span></span><span class="end"></span></div>
+      </div>
+
+      <div class="panel">
+        <div class="ph">
+          <div class="space-btn"><span class="dot">D</span>Dr Patel<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></div>
+          <div class="seg"><span class="on">Talk</span><span>Notes</span><span>Agent</span></div>
+          <div class="icon-btn"><svg><use href="#i-more"/></svg></div>
+        </div>
+        <div class="pb">
+          <div class="lbl">Said today <span class="ct">3</span><span class="act">See all</span></div>
+          <div class="card">
+            <div class="msg"><div class="t">Morning. Thanks for fitting me in.</div><div class="tm">10:31</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+            <div class="msg"><div class="t">The new dose makes me very tired after lunch.</div><div class="tm">10:36</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+          </div>
+          <div class="lbl">Suggestions</div>
+          <div class="card">
+            <div class="row past"><div class="mark"><svg><use href="#i-clock"/></svg></div><div class="t"><b>Can we</b> move the appointment to Thursday?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+            <div class="row model"><div class="mark"></div><div class="t"><b>Can we</b> try a smaller dose in the morning?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+            <div class="row model"><div class="mark"></div><div class="t"><b>Can we</b> talk about the breathing test?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+            <div class="row phrase"><div class="mark"><svg><use href="#i-pinf"/></svg></div><div class="t"><b>Can we</b> pause for a moment, please?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+          </div>
+          <div class="words">
+            <span class="w">try</span><span class="w">talk</span><span class="w">change</span><span class="w">move</span><span class="w">stop</span><span class="w tag">[sighs]</span>
+          </div>
+        </div>
+        <div class="comp">
+          <div class="field">Can we <span class="caret"></span></div>
+          <div class="tools">
+            <span class="k"><svg><use href="#i-undo"/></svg></span>
+            <span class="k"><svg><use href="#i-del"/></svg></span>
+            <span class="moodmenu"><span class="e">😔</span>Low<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></span>
+            <span class="sp"></span>
+            <span class="speak"><svg><use href="#i-vol"/></svg>Speak</span>
+          </div>
+        </div>
+        <div class="out"><span class="pill"><span class="live"></span>Speakers + September Microphone</span><span>Zoom is listening</span></div>
+        <div class="pf"><span><span class="kbd">Return</span> speaks · <span class="kbd">⌘K</span> spaces</span><span><span class="kbd">⇧⇧</span> replies to a selection</span></div>
+      </div>
+
+      <div class="desk-note">
+        <div><b>The call stays in front</b>The panel does not take the call out of focus. Typing goes to the panel, and the call keeps its video and controls.</div>
+        <div><b>One sentence, one place</b>The draft, the suggestions, and Speak stay in one column. The eyes travel down, never across the screen.</div>
+        <div><b>The menu bar keycap</b>The <code>Sep</code> icon holds Show Panel and Quit September. With the float on, the app has no Dock icon.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== ANATOMY -->
+  <section id="anatomy">
+    <h2>Panel Anatomy</h2>
+    <p class="sub">The panel keeps the order of the current Talk screen, top to bottom. The changes are in the frame: one header replaces the sidebar, the dock, and the right rail.</p>
+    <table>
+      <tr><th>Part</th><th>Holds</th><th>Today on desktop</th></tr>
+      <tr><td>Header</td><td>The space button (opens the space list), the Talk, Notes, and Agent switch, and the More menu. Indigo, so the panel reads as September beside any app.</td><td>The indigo sidebar, the dock spaces, and the dock mode switch.</td></tr>
+      <tr><td>History</td><td>The messages of the space, newest last. The panel shows the last two to four. "See all" opens the full transcript in the panel. A press on a message speaks it again.</td><td>The transcript, 8 for each page.</td></tr>
+      <tr><td>Suggestions</td><td>The stripe rows, with the same gutter colours and marks: code, phrase, opening, past message, model. Each row has a speak key at the end. Up to four rows.</td><td>The stripe above the composer.</td></tr>
+      <tr><td>Word row</td><td>The next words, or the endings of a part-written word. Tag tiles when the voice reads tags. The tiles wrap to two lines and do not scroll.</td><td>The word row.</td></tr>
+      <tr><td>Composer</td><td>The 20px field, undo, delete last word, the mood menu, and Speak. Clear moves into More, because the panel has no room for a fifth key on the row.</td><td>The composer with five mood keys and the audio selector.</td></tr>
+      <tr><td>Output line</td><td>Where the sound goes, and whether the September Microphone is live. A press opens the output list.</td><td>The audio selector beside Speak.</td></tr>
+      <tr><td>Footer</td><td>The keys that the user can press now.</td><td>None.</td></tr>
+    </table>
+  </section>
+
+  <!-- ===================================================== TALK STATES -->
+  <section id="talk">
+    <h2>Talk States</h2>
+    <p class="sub">Each panel below is at its real size, 440 by 820 points. All targets are 44 points or larger.</p>
+
+    <div class="grid">
+      <!-- 1 empty -->
+      <div class="state">
+        <h3><span class="tag-n">1</span>Empty Draft</h3>
+        <p class="d">With nothing typed, the rows show the kept phrases and the starters of the space. The word row shows starting words.</p>
+        <div class="panel">
+          <div class="ph">
+            <div class="space-btn"><span class="dot">M</span>Mum<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></div>
+            <div class="seg"><span class="on">Talk</span><span>Notes</span><span>Agent</span></div>
+            <div class="icon-btn"><svg><use href="#i-more"/></svg></div>
+          </div>
+          <div class="pb">
+            <div class="lbl">Said today <span class="ct">5</span><span class="act">See all</span></div>
+            <div class="card">
+              <div class="msg"><div class="t">Can you open the window a little?</div><div class="tm">9:40</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+            </div>
+            <div class="lbl">Phrases and starters</div>
+            <div class="card">
+              <div class="row phrase"><div class="mark"><svg><use href="#i-pinf"/></svg></div><div class="t">Thank you, that helps a lot.</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+              <div class="row phrase"><div class="mark"><svg><use href="#i-pinf"/></svg></div><div class="t">Give me a minute to type.</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+              <div class="row phrase"><div class="mark"><svg><use href="#i-pin"/></svg></div><div class="t">How was your morning?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+              <div class="row open"><div class="mark"><svg><use href="#i-arrows"/></svg></div><div class="t">Could you help me with</div><div class="rowkey soft"><svg><use href="#i-arrows"/></svg></div></div>
+            </div>
+            <div class="words"><span class="w">I</span><span class="w">Can</span><span class="w">Thank</span><span class="w">Yes</span><span class="w">No</span><span class="w">Please</span></div>
+          </div>
+          <div class="comp">
+            <div class="field ph-text"><span class="caret"></span> Type, or press a row</div>
+            <div class="tools">
+              <span class="k"><svg><use href="#i-undo"/></svg></span>
+              <span class="k"><svg><use href="#i-del"/></svg></span>
+              <span class="moodmenu"><span class="e">🙂</span>Mood<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></span>
+              <span class="sp"></span>
+              <span class="speak" style="opacity:.45"><svg><use href="#i-vol"/></svg>Speak</span>
+            </div>
+          </div>
+          <div class="out"><span class="pill">MacBook Pro Speakers</span><span>Microphone off</span></div>
+          <div class="pf"><span><span class="kbd">Return</span> speaks · <span class="kbd">⌘K</span> spaces</span><span><span class="kbd">⌘?</span> help</span></div>
+        </div>
+      </div>
+
+      <!-- 2 code -->
+      <div class="state">
+        <h3><span class="tag-n">2</span>A Code at the Caret</h3>
+        <p class="d">The user types <code>ty</code>. The code row goes to the top in strong indigo with a solid speak key. Return speaks the code row.</p>
+        <div class="panel">
+          <div class="ph">
+            <div class="space-btn"><span class="dot">M</span>Mum<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></div>
+            <div class="seg"><span class="on">Talk</span><span>Notes</span><span>Agent</span></div>
+            <div class="icon-btn"><svg><use href="#i-more"/></svg></div>
+          </div>
+          <div class="pb">
+            <div class="lbl">Said today <span class="ct">5</span><span class="act">See all</span></div>
+            <div class="card">
+              <div class="msg"><div class="t">Can you open the window a little?</div><div class="tm">9:40</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+            </div>
+            <div class="lbl">Suggestions</div>
+            <div class="card">
+              <div class="row code"><div class="mark">ty</div><div class="t">Thank you, that helps a lot.</div><div class="rowkey solid"><svg><use href="#i-vol"/></svg></div></div>
+              <div class="row past"><div class="mark"><svg><use href="#i-clock"/></svg></div><div class="t"><b>Ty</b>pe it out for me, please.</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+              <div class="row model"><div class="mark"></div><div class="t"><b>Ty</b>pical Monday, I am afraid.</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+            </div>
+            <div class="words"><span class="w">type</span><span class="w">typical</span><span class="w">tyre</span><span class="w">Tyler</span></div>
+          </div>
+          <div class="comp">
+            <div class="field">ty<span class="caret"></span></div>
+            <div class="tools">
+              <span class="k"><svg><use href="#i-undo"/></svg></span>
+              <span class="k"><svg><use href="#i-del"/></svg></span>
+              <span class="moodmenu"><span class="e">😊</span>Warm<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></span>
+              <span class="sp"></span>
+              <span class="speak"><svg><use href="#i-vol"/></svg>Speak</span>
+            </div>
+          </div>
+          <div class="out"><span class="pill">MacBook Pro Speakers</span><span>Microphone off</span></div>
+          <div class="pf"><span><span class="kbd">Return</span> speaks the code · <span class="kbd">⌥Return</span> speaks "ty"</span><span></span></div>
+        </div>
+      </div>
+
+      <!-- 3 speaking -->
+      <div class="state">
+        <h3><span class="tag-n">3</span>Speaking</h3>
+        <p class="d">The composer turns into the speaking card. The words that the voice said are white. Stop is the largest key. The field is empty and ready for the next sentence.</p>
+        <div class="panel">
+          <div class="ph">
+            <div class="space-btn"><span class="dot">D</span>Dr Patel<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></div>
+            <div class="seg"><span class="on">Talk</span><span>Notes</span><span>Agent</span></div>
+            <div class="icon-btn"><svg><use href="#i-more"/></svg></div>
+          </div>
+          <div class="pb">
+            <div class="lbl">Said today <span class="ct">4</span><span class="act">See all</span></div>
+            <div class="card">
+              <div class="msg"><div class="t">Morning. Thanks for fitting me in.</div><div class="tm">10:31</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+              <div class="msg"><div class="t">The new dose makes me very tired after lunch.</div><div class="tm">10:36</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+            </div>
+            <div class="lbl">Next</div>
+            <div class="card">
+              <div class="row model"><div class="mark"></div><div class="t">Is there something I can take instead?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+              <div class="row model"><div class="mark"></div><div class="t">How long until it settles?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+              <div class="row phrase"><div class="mark"><svg><use href="#i-pinf"/></svg></div><div class="t">Can you say that again, slowly?</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+            </div>
+          </div>
+          <div class="speaking">
+            <div class="who"><span class="live" style="width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block"></span>Speaking to the call · Rachel, Eleven v3</div>
+            <div class="txt"><span class="done">[sighs] Can we try a smaller dose </span><span class="todo">in the morning?</span></div>
+            <div class="wave">
+              <i style="height:8px"></i><i style="height:16px"></i><i style="height:24px"></i><i style="height:14px"></i><i style="height:20px"></i><i style="height:28px"></i><i style="height:12px"></i><i style="height:22px"></i><i style="height:18px"></i><i style="height:10px"></i><i style="height:24px"></i><i style="height:16px"></i><i style="height:8px"></i><i style="height:20px"></i><i style="height:12px"></i><i style="height:6px"></i><i style="height:6px;opacity:.35"></i><i style="height:6px;opacity:.35"></i><i style="height:6px;opacity:.35"></i><i style="height:6px;opacity:.35"></i>
+            </div>
+            <div class="ctl"><span class="btn-w"><svg><use href="#i-stop"/></svg>Stop</span><span class="sp"></span><span class="btn-g">Write next</span></div>
+          </div>
+          <div class="out"><span class="pill"><span class="live"></span>Speakers + September Microphone</span></div>
+          <div class="pf"><span><span class="kbd">Esc</span> stops · typing starts the next sentence</span><span></span></div>
+        </div>
+      </div>
+
+      <!-- 4 selection -->
+      <div class="state">
+        <h3><span class="tag-n">4</span>Reply to a Selection</h3>
+        <p class="d">The user selects a message in another app and presses Shift twice. The panel takes the text as context. The suggestions answer it. Nothing is spoken or saved until the user presses Speak.</p>
+        <div class="panel">
+          <div class="ph">
+            <div class="space-btn"><span class="dot">B</span>Book club<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></div>
+            <div class="seg"><span class="on">Talk</span><span>Notes</span><span>Agent</span></div>
+            <div class="icon-btn"><svg><use href="#i-more"/></svg></div>
+          </div>
+          <div class="pb">
+            <div class="ctx">
+              <div class="h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-quote"/></svg>From Messages · Sam<span class="x">Clear</span></div>
+              <div class="q">Did you finish it? I could not put it down. Same time next week at mine?</div>
+            </div>
+            <div class="lbl">Replies</div>
+            <div class="card">
+              <div class="row model"><div class="mark"></div><div class="t">Yes, finished it last night. The ending got me.</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+              <div class="row model"><div class="mark"></div><div class="t">Not yet, about halfway. No spoilers, please.</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+              <div class="row model"><div class="mark"></div><div class="t">Next week works. I will bring the biscuits.</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+              <div class="row phrase"><div class="mark"><svg><use href="#i-pinf"/></svg></div><div class="t">Let me think and get back to you.</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+            </div>
+            <div class="callout info">A reply goes to the voice. To type the reply into Messages instead, use the More menu: Copy, or Type into Messages.</div>
+          </div>
+          <div class="comp">
+            <div class="field ph-text"><span class="caret"></span> Reply to Sam</div>
+            <div class="tools">
+              <span class="k"><svg><use href="#i-undo"/></svg></span>
+              <span class="k"><svg><use href="#i-del"/></svg></span>
+              <span class="moodmenu"><span class="e">😄</span>Playful<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></span>
+              <span class="sp"></span>
+              <span class="speak" style="opacity:.45"><svg><use href="#i-vol"/></svg>Speak</span>
+            </div>
+          </div>
+          <div class="out"><span class="pill">MacBook Pro Speakers</span></div>
+          <div class="pf"><span><span class="kbd">⇧⇧</span> in any app sends a selection here</span><span></span></div>
+        </div>
+      </div>
+
+      <!-- 5 mood menu -->
+      <div class="state">
+        <h3><span class="tag-n">5</span>Mood Menu</h3>
+        <p class="d">The five mood keys need 200 points. The panel folds them into one menu key that shows the current mood. The menu opens upward, with 52-point rows. A second press on the current mood clears it, as today.</p>
+        <div class="panel">
+          <div class="ph">
+            <div class="space-btn"><span class="dot">M</span>Mum<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></div>
+            <div class="seg"><span class="on">Talk</span><span>Notes</span><span>Agent</span></div>
+            <div class="icon-btn"><svg><use href="#i-more"/></svg></div>
+          </div>
+          <div class="pb" style="opacity:.35">
+            <div class="lbl">Said today</div>
+            <div class="card"><div class="msg"><div class="t">Can you open the window a little?</div><div class="tm">9:40</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div></div>
+            <div class="lbl">Suggestions</div>
+            <div class="card">
+              <div class="row model"><div class="mark"></div><div class="t">I am fed up with this weather.</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+              <div class="row model"><div class="mark"></div><div class="t">I am not in the mood today.</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+            </div>
+          </div>
+          <div style="position:absolute;left:112px;bottom:150px;width:220px;background:#fff;border-radius:16px;box-shadow:var(--panel-shadow);padding:6px">
+            <div class="li"><span style="font-size:20px">😊</span><div class="tt"><b>Warm</b></div><span class="kb">⌃1</span></div>
+            <div class="li"><span style="font-size:20px">😄</span><div class="tt"><b>Playful</b></div><span class="kb">⌃2</span></div>
+            <div class="li"><span style="font-size:20px">😔</span><div class="tt"><b>Low</b></div><span class="kb">⌃3</span></div>
+            <div class="li on"><span style="font-size:20px">😤</span><div class="tt"><b>Frustrated</b></div><span class="kb">⌃4</span></div>
+            <div class="li"><span style="font-size:20px">😠</span><div class="tt"><b>Angry</b></div><span class="kb">⌃5</span></div>
+            <div class="li" style="border-top:1px solid var(--zinc-100);border-radius:0 0 10px 10px"><div class="tt"><b style="font-weight:500;color:var(--zinc-600)">No mood</b></div><span class="kb">⌃0</span></div>
+          </div>
+          <div class="comp">
+            <div class="field">I am <span class="caret"></span></div>
+            <div class="tools">
+              <span class="k"><svg><use href="#i-undo"/></svg></span>
+              <span class="k"><svg><use href="#i-del"/></svg></span>
+              <span class="moodmenu" style="box-shadow:inset 0 0 0 2px var(--indigo-400);background:var(--indigo-50)"><span class="e">😤</span>Frustrated<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></span>
+              <span class="sp"></span>
+              <span class="speak"><svg><use href="#i-vol"/></svg>Speak</span>
+            </div>
+          </div>
+          <div class="out"><span class="pill">MacBook Pro Speakers</span></div>
+          <div class="pf"><span><span class="kbd">⌃1</span> to <span class="kbd">⌃5</span> set the mood without the menu</span><span></span></div>
+        </div>
+      </div>
+
+      <!-- 6 full transcript -->
+      <div class="state">
+        <h3><span class="tag-n">6</span>Full Transcript</h3>
+        <p class="d">"See all" grows the history to fill the panel and hides the suggestions. The composer stays. Pages of 8 messages, newest last, as today.</p>
+        <div class="panel">
+          <div class="ph">
+            <div class="space-btn"><span class="dot">M</span>Mum<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></div>
+            <div class="seg"><span class="on">Talk</span><span>Notes</span><span>Agent</span></div>
+            <div class="icon-btn"><svg><use href="#i-more"/></svg></div>
+          </div>
+          <div class="pb">
+            <div class="lbl">All messages <span class="ct">142</span><span class="act">Back to suggestions</span></div>
+            <div class="card">
+              <div class="msg" style="justify-content:center;color:var(--indigo-600);font-weight:500">Earlier messages</div>
+              <div class="msg"><div class="t">Yesterday was a good day.</div><div class="tm">Sat</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+              <div class="msg"><div class="t">Did the pharmacy call back?</div><div class="tm">Sat</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+              <div class="msg"><div class="t">Can you put the kettle on?</div><div class="tm">9:02</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+              <div class="msg"><div class="t">I slept better last night.</div><div class="tm">9:05</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+              <div class="msg"><div class="t">Not too hot, please.</div><div class="tm">9:06</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+              <div class="msg"><div class="t">Can you open the window a little?</div><div class="tm">9:40</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+              <div class="msg"><div class="t">Thank you, that helps a lot.</div><div class="tm">9:41</div><div class="rowkey"><svg><use href="#i-vol"/></svg></div></div>
+            </div>
+          </div>
+          <div class="comp">
+            <div class="field ph-text"><span class="caret"></span> Type, or press a message</div>
+            <div class="tools">
+              <span class="k"><svg><use href="#i-undo"/></svg></span>
+              <span class="k"><svg><use href="#i-del"/></svg></span>
+              <span class="moodmenu"><span class="e">🙂</span>Mood<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></span>
+              <span class="sp"></span>
+              <span class="speak" style="opacity:.45"><svg><use href="#i-vol"/></svg>Speak</span>
+            </div>
+          </div>
+          <div class="out"><span class="pill">MacBook Pro Speakers</span></div>
+          <div class="pf"><span><span class="kbd">Esc</span> goes back to suggestions</span><span></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== NOTES / AGENT -->
+  <section id="modes">
+    <h2>Notes and Agent</h2>
+    <p class="sub">The same composer drives all three modes. Only the end key changes: Speak, Add to note, or Send.</p>
+    <div class="grid">
+      <!-- notes list -->
+      <div class="state">
+        <h3><span class="tag-n">7</span>Notes List</h3>
+        <p class="d">The notes of the space as rows, last changed first. About is the first row and opens the note of the space. The composer adds to the note that the user changed last.</p>
+        <div class="panel">
+          <div class="ph">
+            <div class="space-btn"><span class="dot">D</span>Dr Patel<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></div>
+            <div class="seg"><span>Talk</span><span class="on">Notes</span><span>Agent</span></div>
+            <div class="icon-btn"><svg><use href="#i-more"/></svg></div>
+          </div>
+          <div class="pb">
+            <div class="card">
+              <div class="msg"><div class="t"><b style="font-weight:600">About this space</b><div style="font-size:13px;color:var(--zinc-500)">My neurologist. Monthly check-ins about medication and breathing.</div></div></div>
+            </div>
+            <div class="lbl">Notes <span class="ct">4</span><span class="act">New note</span></div>
+            <div class="card">
+              <div class="msg" style="background:var(--indigo-50)"><div class="t"><b style="font-weight:600">Questions for October</b><div style="font-size:13px;color:var(--zinc-500)">Can we try a smaller dose in the morning?</div></div><div class="tm">Today</div></div>
+              <div class="msg"><div class="t"><b style="font-weight:600">Breathing test results</b><div style="font-size:13px;color:var(--zinc-500)">FVC down 4% since June.</div></div><div class="tm">Sep 18</div></div>
+              <div class="msg"><div class="t"><b style="font-weight:600">Side effects diary</b><div style="font-size:13px;color:var(--zinc-500)">Tired after lunch on most days.</div></div><div class="tm">Sep 12</div></div>
+              <div class="msg"><div class="t"><b style="font-weight:600">What I want to say about care</b><div style="font-size:13px;color:var(--zinc-500)">I want to stay at home as long as I can.</div></div><div class="tm">Aug 30</div></div>
+            </div>
+            <div class="words"><span class="w">and</span><span class="w">also</span><span class="w">the</span><span class="w">my</span></div>
+          </div>
+          <div class="comp">
+            <div class="field">Ask about the sleep <span class="caret"></span></div>
+            <div class="tools">
+              <span class="k"><svg><use href="#i-undo"/></svg></span>
+              <span class="k"><svg><use href="#i-del"/></svg></span>
+              <span class="sp"></span>
+              <span class="speak"><svg><use href="#i-down"/></svg>Add to note</span>
+            </div>
+          </div>
+          <div class="out"><span>Adds to <b style="color:var(--zinc-800)">Questions for October</b></span></div>
+          <div class="pf"><span><span class="kbd">Return</span> adds · <span class="kbd">⌘O</span> opens the note</span><span></span></div>
+        </div>
+      </div>
+
+      <!-- note open -->
+      <div class="state">
+        <h3><span class="tag-n">8</span>A Note, Open</h3>
+        <p class="d">The note fills the body as an editable field. Read aloud plays in the panel. Present fills the screen with the panel while the stage shows. Export saves a file from the panel.</p>
+        <div class="panel">
+          <div class="ph">
+            <div class="space-btn"><span class="dot">D</span>Dr Patel<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></div>
+            <div class="seg"><span>Talk</span><span class="on">Notes</span><span>Agent</span></div>
+            <div class="icon-btn"><svg><use href="#i-more"/></svg></div>
+          </div>
+          <div class="pb">
+            <div class="lbl">All notes<span class="act">Saved</span></div>
+            <div class="note-acts">
+              <span class="pill-btn pri"><svg><use href="#i-play"/></svg>Read aloud</span>
+              <span class="pill-btn"><svg><use href="#i-expand"/></svg>Present</span>
+              <span class="pill-btn"><svg><use href="#i-more"/></svg></span>
+            </div>
+            <div class="note-body">
+              <h5>Questions for October</h5>
+              <p>1. Can we try a smaller dose in the morning? The new dose makes me very tired after lunch.</p>
+              <p>2. When is the next breathing test? I would like it before the winter.</p>
+              <p>3. Ask about the sleep study.<span class="caret"></span></p>
+            </div>
+          </div>
+          <div class="comp">
+            <div class="field ph-text"><span class="caret"></span> Add a line</div>
+            <div class="tools">
+              <span class="k"><svg><use href="#i-undo"/></svg></span>
+              <span class="k"><svg><use href="#i-del"/></svg></span>
+              <span class="sp"></span>
+              <span class="speak" style="opacity:.45"><svg><use href="#i-down"/></svg>Add to note</span>
+            </div>
+          </div>
+          <div class="pf"><span><span class="kbd">Esc</span> goes back to the list</span><span></span></div>
+        </div>
+      </div>
+
+      <!-- agent -->
+      <div class="state">
+        <h3><span class="tag-n">9</span>Agent</h3>
+        <p class="d">The Agent conversation of the space, in bubbles. A change to the space shows as a card with Approve and Decline. Reads happen with no card.</p>
+        <div class="panel">
+          <div class="ph">
+            <div class="space-btn"><span class="dot">D</span>Dr Patel<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></div>
+            <div class="seg"><span>Talk</span><span>Notes</span><span class="on">Agent</span></div>
+            <div class="icon-btn"><svg><use href="#i-more"/></svg></div>
+          </div>
+          <div class="pb" style="gap:8px">
+            <div class="bubble me">Add phrases for the breathing test.</div>
+            <div class="bubble ai">I read your note about the test in June. Three phrases for the day of the test:</div>
+            <div class="tool">
+              <div class="h">Add 3 phrases</div>
+              <div class="b">I need a short rest before the next try. <code>rst</code><br>Can you hold the mask a little tighter? <code>msk</code><br>How did that compare to June? <code>cmp</code></div>
+              <div class="acts"><span class="y">Approve</span><span class="n">Decline</span></div>
+            </div>
+            <div class="bubble me">Also rename the space to Neurology.</div>
+            <div class="tool">
+              <div class="h">Rename the space</div>
+              <div class="b"><s>Dr Patel</s> to Neurology</div>
+              <div class="acts"><span class="y">Approve</span><span class="n">Decline</span></div>
+            </div>
+          </div>
+          <div class="comp">
+            <div class="field ph-text"><span class="caret"></span> Ask the agent</div>
+            <div class="tools">
+              <span class="k"><svg><use href="#i-undo"/></svg></span>
+              <span class="k"><svg><use href="#i-del"/></svg></span>
+              <span class="sp"></span>
+              <span class="speak" style="opacity:.45">Send</span>
+            </div>
+          </div>
+          <div class="pf"><span><span class="kbd">Return</span> sends · <span class="kbd">⌘Return</span> approves</span><span></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== SHEETS -->
+  <section id="sheets">
+    <h2>Spaces, Phrases, and Voice</h2>
+    <p class="sub">These open as sheets over the panel, below the header. Esc closes a sheet. The right rail of today becomes two items in the More menu, because the panel has no room for a second column.</p>
+    <div class="grid">
+      <!-- spaces -->
+      <div class="state">
+        <h3><span class="tag-n">10</span>Space Switcher</h3>
+        <p class="d">Command-K or the space button. Most recent first, with a search field. While the list is open, the digits alone open a row.</p>
+        <div class="panel" style="height:620px">
+          <div class="ph">
+            <div class="space-btn" style="background:var(--indigo-700)"><span class="dot">M</span>Mum<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></div>
+            <div class="seg"><span class="on">Talk</span><span>Notes</span><span>Agent</span></div>
+            <div class="icon-btn"><svg><use href="#i-more"/></svg></div>
+          </div>
+          <div class="sheet">
+            <div class="s">
+              <h4>Spaces</h4>
+              <div class="search"><svg><use href="#i-search"/></svg>Find a space</div>
+              <div style="margin-top:8px">
+                <div class="li on"><span class="dot">M</span><div class="tt"><b>Mum</b><span>Talk · 9:41</span></div><span class="kb">1</span></div>
+                <div class="li"><span class="dot">D</span><div class="tt"><b>Dr Patel</b><span>Notes · Today</span></div><span class="kb">2</span></div>
+                <div class="li"><span class="dot">B</span><div class="tt"><b>Book club</b><span>Talk · Yesterday</span></div><span class="kb">3</span></div>
+                <div class="li"><span class="dot">W</span><div class="tt"><b>Work calls</b><span>Talk · Sep 28</span></div><span class="kb">4</span></div>
+                <div class="li"><span class="dot">C</span><div class="tt"><b>Carers</b><span>Agent · Sep 20</span></div><span class="kb">5</span></div>
+                <div class="li" style="color:var(--indigo-600)"><span class="dot" style="background:var(--indigo-600);color:#fff"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><use href="#i-plus"/></svg></span><div class="tt"><b>New space</b></div><span class="kb">⌘N</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- phrases -->
+      <div class="state">
+        <h3><span class="tag-n">11</span>Phrases</h3>
+        <p class="d">The phrases card of today, at panel width. Kept phrases first, then the written ones, then shortcut ideas. The badge opens the code field.</p>
+        <div class="panel" style="height:620px">
+          <div class="ph">
+            <div class="space-btn"><span class="dot">M</span>Mum<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></div>
+            <div class="seg"><span class="on">Talk</span><span>Notes</span><span>Agent</span></div>
+            <div class="icon-btn on"><svg><use href="#i-more"/></svg></div>
+          </div>
+          <div class="sheet">
+            <div class="s">
+              <div style="display:flex;align-items:center"><h4 style="flex:1">Phrases of Mum</h4><span class="rowkey" style="color:var(--zinc-500)"><svg><use href="#i-x"/></svg></span></div>
+              <div class="search" style="color:var(--zinc-400)"><svg><use href="#i-plus"/></svg>Add a phrase</div>
+              <div style="margin-top:8px">
+                <div class="li"><svg width="16" height="16" style="color:var(--indigo-500)"><use href="#i-pinf"/></svg><div class="tt"><b style="font-weight:500">Thank you, that helps a lot.</b></div><code>ty</code></div>
+                <div class="li"><svg width="16" height="16" style="color:var(--indigo-500)"><use href="#i-pinf"/></svg><div class="tt"><b style="font-weight:500">Give me a minute to type.</b></div><code>gm</code></div>
+                <div class="li"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--indigo-500)"><use href="#i-pin"/></svg><div class="tt"><b style="font-weight:500">How was your morning?</b></div><code>hm</code></div>
+                <div class="li"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--indigo-500)"><use href="#i-pin"/></svg><div class="tt"><b style="font-weight:500">Not too hot, please.</b></div><code>nth</code></div>
+              </div>
+              <div class="lbl" style="margin-top:12px;padding:0 8px">Shortcut ideas</div>
+              <div class="li"><div class="tt"><b style="font-weight:500">Can you put the kettle on?</b><span>Typed 7 times</span></div><span class="chip" style="height:44px;white-space:nowrap;display:flex;align-items:center">Keep as <code style="margin-left:4px">kt</code></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- voice -->
+      <div class="state">
+        <h3><span class="tag-n">12</span>Voice</h3>
+        <p class="d">Speed, model, and Expression, as in the Voice card of today. Who speaks and the voice list stay on the Voice page. "Try it" speaks one short sentence.</p>
+        <div class="panel" style="height:620px">
+          <div class="ph">
+            <div class="space-btn"><span class="dot">M</span>Mum<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></div>
+            <div class="seg"><span class="on">Talk</span><span>Notes</span><span>Agent</span></div>
+            <div class="icon-btn on"><svg><use href="#i-more"/></svg></div>
+          </div>
+          <div class="sheet">
+            <div class="s">
+              <div style="display:flex;align-items:center"><h4 style="flex:1">Voice</h4><span class="pill-btn" style="box-shadow:none;background:var(--indigo-50);color:var(--indigo-700)"><svg><use href="#i-play"/></svg>Try it</span></div>
+              <div style="font-size:13px;color:var(--zinc-500);margin-top:2px">Rachel · ElevenLabs</div>
+              <div class="slider"><div class="top"><span>Speed</span><span>1.05×</span></div><div class="track"><div class="fill" style="width:58%"></div><div class="knob" style="left:58%"></div></div></div>
+              <div style="margin-top:18px;font-size:14px;font-weight:500">Model</div>
+              <div class="chips"><span class="chip">Flash v2.5</span><span class="chip on">Eleven v3</span><span class="chip">Multilingual</span></div>
+              <div style="margin-top:18px;font-size:14px;font-weight:500">Expression</div>
+              <div class="chips"><span class="chip">Steady</span><span class="chip on">Natural</span><span class="chip">Expressive</span><span class="chip">Custom</span></div>
+              <div style="margin-top:18px;font-size:13px;color:var(--indigo-600);font-weight:500">Change the voice on the Voice page</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- more menu -->
+      <div class="state">
+        <h3><span class="tag-n">13</span>More Menu</h3>
+        <p class="d">Every action that does not fit the header, with its key. The panel never hides an action behind hover.</p>
+        <div class="panel" style="height:620px">
+          <div class="ph">
+            <div class="space-btn"><span class="dot">M</span>Mum<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></div>
+            <div class="seg"><span class="on">Talk</span><span>Notes</span><span>Agent</span></div>
+            <div class="icon-btn on"><svg><use href="#i-more"/></svg></div>
+          </div>
+          <div style="position:absolute;right:10px;top:62px;width:290px;background:#fff;border-radius:16px;box-shadow:var(--panel-shadow);padding:6px">
+            <div class="li"><div class="tt"><b style="font-weight:500">Phrases</b></div><span class="kb">⌘P</span></div>
+            <div class="li"><div class="tt"><b style="font-weight:500">Voice</b></div><span class="kb">⌘⇧V</span></div>
+            <div class="li"><div class="tt"><b style="font-weight:500">Sound output</b></div><span class="kb">⌘⇧O</span></div>
+            <div class="li" style="border-top:1px solid var(--zinc-100)"><div class="tt"><b style="font-weight:500">Copy the draft</b></div><span class="kb">⌘⇧C</span></div>
+            <div class="li"><div class="tt"><b style="font-weight:500">Type the draft into the front app</b></div><span class="kb">⌘⇧T</span></div>
+            <div class="li"><div class="tt"><b style="font-weight:500">Clear the draft</b></div><span class="kb">⌘⌫</span></div>
+            <div class="li" style="border-top:1px solid var(--zinc-100)"><div class="tt"><b style="font-weight:500">Compact bar</b></div><span class="kb">⌘M</span></div>
+                        <div class="li"><div class="tt"><b style="font-weight:500">Help</b></div><span class="kb">⌘?</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== EDGES -->
+  <section id="edges">
+    <h2>Errors and Empty States</h2>
+    <p class="sub">The current rules stay: a failed cloud voice falls back to the voice of this Mac and says so, and a failed write keeps the draft.</p>
+    <div class="grid">
+      <div class="state">
+        <h3><span class="tag-n">14</span>Voice Fell Back</h3>
+        <p class="d">The cloud voice failed before the first sound. The voice of this Mac spoke the sentence. The note stays until the next Speak.</p>
+        <div class="panel short">
+          <div class="ph">
+            <div class="space-btn"><span class="dot">D</span>Dr Patel<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></div>
+            <div class="seg"><span class="on">Talk</span><span>Notes</span><span>Agent</span></div>
+            <div class="icon-btn"><svg><use href="#i-more"/></svg></div>
+          </div>
+          <div class="pb" style="padding-bottom:0">
+            <div class="callout warn">ElevenLabs did not answer. The voice of this Mac said "How long until it settles?"</div>
+          </div>
+          <div class="comp">
+            <div class="field ph-text"><span class="caret"></span> Type, or press a row</div>
+            <div class="tools"><span class="k"><svg><use href="#i-undo"/></svg></span><span class="k"><svg><use href="#i-del"/></svg></span><span class="sp"></span><span class="speak" style="opacity:.45"><svg><use href="#i-vol"/></svg>Speak</span></div>
+          </div>
+          <div class="pf"><span></span><span></span></div>
+        </div>
+      </div>
+      <div class="state">
+        <h3><span class="tag-n">15</span>Microphone Not Live</h3>
+        <p class="d">A calling app is open, but the September Microphone is off. The output line turns amber and offers the switch. One press turns it on.</p>
+        <div class="panel short">
+          <div class="ph">
+            <div class="space-btn"><span class="dot">W</span>Work calls<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></div>
+            <div class="seg"><span class="on">Talk</span><span>Notes</span><span>Agent</span></div>
+            <div class="icon-btn"><svg><use href="#i-more"/></svg></div>
+          </div>
+          <div class="pb" style="padding-bottom:0">
+            <div class="callout warn" style="align-items:center"><span style="flex:1">Zoom is open. Zoom does not hear September now.</span><span class="pill-btn" style="background:var(--amber-800);color:#fff;box-shadow:none;white-space:nowrap">Turn on microphone</span></div>
+          </div>
+          <div class="comp">
+            <div class="field ph-text"><span class="caret"></span> Type, or press a row</div>
+            <div class="tools"><span class="k"><svg><use href="#i-undo"/></svg></span><span class="k"><svg><use href="#i-del"/></svg></span><span class="sp"></span><span class="speak" style="opacity:.45"><svg><use href="#i-vol"/></svg>Speak</span></div>
+          </div>
+          <div class="pf"><span></span><span></span></div>
+        </div>
+      </div>
+      <div class="state">
+        <h3><span class="tag-n">16</span>No Writing Service</h3>
+        <p class="d">Phrases, codes, past messages, and the word row still work. The Agent segment shows a short setup card that opens Settings in the panel.</p>
+        <div class="panel short">
+          <div class="ph">
+            <div class="space-btn"><span class="dot">M</span>Mum<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></div>
+            <div class="seg"><span>Talk</span><span>Notes</span><span class="on">Agent</span></div>
+            <div class="icon-btn"><svg><use href="#i-more"/></svg></div>
+          </div>
+          <div class="pb" style="padding-bottom:14px">
+            <div class="callout info" style="flex-direction:column;gap:10px">The agent needs a writing service. Apple Intelligence works on this Mac with no account.<span class="pill-btn pri" style="align-self:flex-start">Set up in Settings</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="state">
+        <h3><span class="tag-n">17</span>Selection Capture Needs Access</h3>
+        <p class="d">Shift twice needs Accessibility access. The panel asks only when the user first presses Shift twice, never at launch.</p>
+        <div class="panel short">
+          <div class="ph">
+            <div class="space-btn"><span class="dot">B</span>Book club<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></div>
+            <div class="seg"><span class="on">Talk</span><span>Notes</span><span>Agent</span></div>
+            <div class="icon-btn"><svg><use href="#i-more"/></svg></div>
+          </div>
+          <div class="pb" style="padding-bottom:14px">
+            <div class="callout info" style="flex-direction:column;gap:10px">To read a selection in another app, September needs Accessibility access. September reads the selection only when you press Shift twice.<span style="display:flex;gap:8px"><span class="pill-btn pri">Open System Settings</span><span class="pill-btn">Not now</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== COMPACT -->
+  <section id="compact">
+    <h2>Compact Bar</h2>
+    <p class="sub">Command-M folds the panel into a bar for a screen share or a small display. The bar keeps the field, Speak, the code row, and the first three rows as pills. Command-M again opens the full panel at its last position.</p>
+    <div style="margin-top:24px;display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+      <div class="mini">
+        <div class="r1">
+          <span class="grip"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg></span>
+          <span class="space-btn" style="background:var(--indigo-500)"><span class="dot">D</span>Dr Patel</span>
+          <div class="fld">Can we <span class="caret"></span></div>
+          <span class="speak"><svg><use href="#i-vol"/></svg>Speak</span>
+          <span class="k"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-expand"/></svg></span>
+        </div>
+        <div class="r2">
+          <span class="p"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--teal-600)" stroke-width="2"><use href="#i-clock"/></svg>Can we move the appointment to Thursday?</span>
+          <span class="p">Can we try a smaller dose?</span>
+        </div>
+      </div>
+      <div class="mini" style="width:420px">
+        <div class="r1">
+          <span class="grip"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg></span>
+          <div class="fld" style="background:var(--indigo-600);color:#fff;box-shadow:none">Speaking: Can we try a smaller…</div>
+          <span class="speak stop"><svg><use href="#i-stop"/></svg>Stop</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== PAGES -->
+  <section id="pages">
+    <h2>Pages in the Panel</h2>
+    <p class="sub">The desktop app has one window, the panel. Spaces, Voice, Eye tracker, Help, and Settings open in the panel body. On these pages, the header shows Back and the page title. Back goes to the last space the user had open.</p>
+    <div class="grid">
+      <!-- settings page -->
+      <div class="state">
+        <h3><span class="tag-n">18</span>A Page: Settings</h3>
+        <p class="d">The header shows Back, the title of the page, and More. A settings section keeps the title Settings. The page keeps all of its controls in the body.</p>
+        <div class="panel" style="height:620px">
+          <div class="ph">
+            <div class="space-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-back"/></svg>Back</div>
+            <div style="flex:1;text-align:center;color:#fff;font-weight:600;font-size:16px">Settings</div>
+            <div class="icon-btn"><svg><use href="#i-more"/></svg></div>
+          </div>
+          <div class="pb" style="background:#fff">
+            <div class="li on"><div class="tt"><b>Setup</b><span>The state of each service, its key, and its model</span></div></div>
+            <div class="li"><div class="tt"><b>AI Assistance</b><span>Who writes, and what the model knows about you</span></div></div>
+            <div class="li"><div class="tt"><b>Usage</b><span>Typing saved, service use, and CSV</span></div></div>
+            <div class="li"><div class="tt"><b>Panel</b><span>Float on top</span></div></div>
+            <div class="li"><div class="tt"><b>Data</b><span>A backup download and restore</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- more menu on a page -->
+      <div class="state">
+        <h3><span class="tag-n">19</span>More Menu on a Page</h3>
+        <p class="d">The More menu lists each page of the app. In a space, the space items come first: Phrases, Voice controls, Rename space, and Delete space.</p>
+        <div class="panel" style="height:620px">
+          <div class="ph">
+            <div class="space-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-back"/></svg>Back</div>
+            <div style="flex:1;text-align:center;color:#fff;font-weight:600;font-size:16px">Voice</div>
+            <div class="icon-btn on"><svg><use href="#i-more"/></svg></div>
+          </div>
+          <div style="position:absolute;right:10px;top:62px;width:290px;background:#fff;border-radius:16px;box-shadow:var(--panel-shadow);padding:6px">
+            <div class="li"><div class="tt"><b style="font-weight:500">Spaces</b></div></div>
+            <div class="li"><div class="tt"><b style="font-weight:500">Voice</b></div></div>
+            <div class="li"><div class="tt"><b style="font-weight:500">Eye tracker</b></div></div>
+            <div class="li"><div class="tt"><b style="font-weight:500">Help</b></div><span class="kb">⌘?</span></div>
+            <div class="li"><div class="tt"><b style="font-weight:500">Settings</b></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- all spaces -->
+      <div class="state">
+        <h3><span class="tag-n">20</span>All Spaces</h3>
+        <p class="d">The space switcher ends with All spaces and New space. All spaces opens the Spaces page in the panel.</p>
+        <div class="panel" style="height:620px">
+          <div class="ph">
+            <div class="space-btn" style="background:var(--indigo-700)"><span class="dot">M</span>Mum<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-chev"/></svg></div>
+            <div class="seg"><span class="on">Talk</span><span>Notes</span><span>Agent</span></div>
+            <div class="icon-btn"><svg><use href="#i-more"/></svg></div>
+          </div>
+          <div class="sheet">
+            <div class="s">
+              <h4>Spaces</h4>
+              <div class="search"><svg><use href="#i-search"/></svg>Find a space</div>
+              <div style="margin-top:8px">
+                <div class="li on"><span class="dot">M</span><div class="tt"><b>Mum</b><span>9:41</span></div><span class="kb">1</span></div>
+                <div class="li"><span class="dot">D</span><div class="tt"><b>Dr Patel</b><span>Today</span></div><span class="kb">2</span></div>
+                <div class="li"><span class="dot">B</span><div class="tt"><b>Book club</b><span>Yesterday</span></div><span class="kb">3</span></div>
+                <div class="li"><span class="dot"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-list"/></svg></span><div class="tt"><b>All spaces</b></div></div>
+                <div class="li" style="color:var(--indigo-600)"><span class="dot" style="background:var(--indigo-600);color:#fff"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><use href="#i-plus"/></svg></span><div class="tt"><b>New space</b></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <table>
+      <tr><th>Task</th><th>In the panel</th><th>Why there</th></tr>
+      <tr><td>Setup</td><td>The panel, as a normal window with a Dock icon</td><td>Setup asks questions with long answers and opens system permission panes. The float choice applies when setup is done.</td></tr>
+      <tr><td>Talk, Notes, Agent</td><td>A space, with the mode switch in the header</td><td>The user does these during a conversation, beside another app.</td></tr>
+      <tr><td>Spaces list, new space</td><td>All spaces in the switcher, and Spaces in the More menu</td><td>A press on a space opens it in the same panel.</td></tr>
+      <tr><td>Present a note</td><td>The panel fills the screen</td><td>The stage sizes the text to the full screen. Escape gives the panel back its size and place.</td></tr>
+      <tr><td>Export a note</td><td>The note actions</td><td>Export saves files on the Mac and needs no full screen.</td></tr>
+      <tr><td>Long note editing</td><td>The panel, made larger</td><td>The panel resizes to the full screen. From 900 points it shows the full Notes screen.</td></tr>
+      <tr><td>Choose and clone a voice</td><td>Voice in the More menu</td><td>An account holds many voices, and each needs a preview.</td></tr>
+      <tr><td>Space rename, delete, About</td><td>The More menu, and the About tab</td><td>These belong to one space.</td></tr>
+      <tr><td>Eye control</td><td>Eye tracker in the More menu</td><td>The user makes the panel larger for calibration.</td></tr>
+      <tr><td>Settings, usage, backup, Help</td><td>Settings and Help in the More menu</td><td>The user opens these rarely.</td></tr>
+    </table>
+  </section>
+
+  <!-- ===================================================== BEHAVIOR -->
+  <section id="behavior">
+    <h2>Window Behavior</h2>
+    <div class="flow">
+      <div class="st"><b>First launch</b>The panel opens on setup as a normal window with a Dock icon. The menu bar keycap appears.</div><div class="ar">-&gt;</div>
+      <div class="st"><b>Setup done</b>The panel takes the saved float choice and opens Talk of the new space.</div><div class="ar">-&gt;</div>
+      <div class="st"><b>Every launch after</b>The panel opens where the user left it.</div><div class="ar">-&gt;</div>
+      <div class="st"><b>More menu</b>A page opens in the panel body. Back returns to the last space, and the draft stays.</div>
+    </div>
+    <table>
+      <tr><th>Behavior</th><th>Rule</th></tr>
+      <tr><td>Level</td><td>The panel floats above normal windows and above full-screen apps. It shows on every desktop.</td></tr>
+      <tr><td>Focus</td><td>The panel takes keystrokes without making September the active app. The call app keeps its menu bar and its focus state.</td></tr>
+      <tr><td>Position</td><td>The user drags the header. The panel snaps to the left or right edge within 24 points. September keeps the position and size for each display, as the window does today.</td></tr>
+      <tr><td>Size</td><td>Width 400 to 560 points. Height 560 points to the full screen height. Below 640 points of height, the history hides first, then the word row wraps to one line.</td></tr>
+      <tr><td>Hide</td><td>Esc with an empty draft, or the global key, hides the panel. The draft stays. Closing never discards words.</td></tr>
+      <tr><td>Global key</td><td>Control-Option-Space shows and hides the panel from any app. The user can change it in Settings.</td></tr>
+      <tr><td>Dock</td><td>With the float on, September has no Dock icon. With the float off, and during setup, September has a Dock icon. A click on the Dock icon shows the panel.</td></tr>
+      <tr><td>Appearance</td><td>The panel follows DESIGN.md, not the system: Noto Sans, zinc, and one indigo accent. The header stays indigo in dark mode, as the sidebar does.</td></tr>
+    </table>
+  </section>
+
+  <!-- ===================================================== KEYS -->
+  <section id="keys">
+    <h2>Keys</h2>
+    <div class="two">
+      <table>
+        <tr><th>Key</th><th>Action in the panel</th></tr>
+        <tr><td>Return</td><td>Speak, Add to note, or Send. With a code at the caret, speak the code row.</td></tr>
+        <tr><td>Shift-Return</td><td>New line</td></tr>
+        <tr><td>Option-Return</td><td>Speak the typed text, not the code row</td></tr>
+        <tr><td>Up and Down</td><td>Move through the rows. Return on a row speaks it. Tab takes it into the field.</td></tr>
+        <tr><td>Esc</td><td>Stop the voice, then close a sheet, then hide the panel</td></tr>
+        <tr><td>Command-Z</td><td>Undo</td></tr>
+        <tr><td>Option-Delete</td><td>Delete last word</td></tr>
+        <tr><td>Control-1 to Control-5</td><td>Set the mood. Control-0 clears it.</td></tr>
+      </table>
+      <table>
+        <tr><th>Key</th><th>Action anywhere</th></tr>
+        <tr><td>Control-Option-Space</td><td>Show or hide the panel</td></tr>
+        <tr><td>Shift, Shift</td><td>Send the selection of the front app to the panel as context</td></tr>
+        <tr><td>Command-K</td><td>Space switcher</td></tr>
+        <tr><td>Command-Option-1 to 3</td><td>Talk, Notes, Agent</td></tr>
+        <tr><td>Command-M</td><td>Compact bar</td></tr>
+        <tr><td>Command-N</td><td>New space</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================================================== QUESTIONS -->
+  <section id="questions">
+    <h2>Open Questions</h2>
+    <div class="qs">
+      <div class="q"><h4>Overlap with apps/keyboard</h4><p>The macOS keyboard already floats and types into other apps. This panel speaks. Two floating September windows on one screen compete for the same edge. Options: keep them separate, or let the keyboard dock under the panel as one column.</p></div>
+      <div class="q"><h4>Selection as context</h4><p>Shift twice sends a selection of another app into the suggestion prompt. That text leaves the Mac when the writing service is in the cloud. The mock shows no consent step beyond the Accessibility grant. A per-capture note, or a setting, is possible.</p></div>
+      <div class="q"><h4>Mood keys folded into a menu</h4><p>The menu adds one press for each mood change. The alternative is a second tools row with all five keys, which costs 52 points of height.</p></div>
+      <div class="q"><h4>Eye-gaze and switch users</h4><p>A 440-point panel with 44-point targets fits dwell input, but rows are close together. A "Large" panel size of 560 points with 56-point rows is a possible setting.</p></div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

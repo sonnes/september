@@ -3,7 +3,7 @@
   "identifier": "default",
   "description": "Core permissions for September app windows.",
   "windows": [
-    "main",
+    "panel",
     "display-*",
     "present-*"
   ],

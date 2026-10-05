@@ -70,6 +70,16 @@ skins the stage and the exported video. The choice is remembered in the
 September Microphone captures native speech playback, so a callee hears a
 presented note when the user enables the microphone in Talk.
 
+## Present from the panel (desktop)
+
+On desktop, Notes is in the floating panel. Present opens `PresentOverlay` over
+the panel, as in the web app. The overlay calls `fullScreen(true)` when it
+opens, and the panel fills the screen. The overlay calls `fullScreen(false)`
+when it closes, and the panel goes back to its size.
+
+In the panel, the note actions sit in a row above the note. See
+[the floating panel](desktop-floating-panel.md).
+
 ## Export
 
 | Row | File | Needs |

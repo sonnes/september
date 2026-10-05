@@ -1,5 +1,8 @@
+use september_desktop_lib::window;
 use std::{env, fs, process::Command, thread, time::Duration};
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
+
+const WINDOWS: [(&str, u32, u32, i32, i32); 1] = [("panel", 480, 640, 260, 120)];
 
 fn main() {
     if env::var_os("SEPTEMBER_WINDOW_TEST").is_none() {
@@ -29,6 +32,11 @@ fn main() {
         return;
     }
 
+    let report = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        report(info);
+        std::process::exit(1);
+    }));
     let mut context = tauri::generate_context!();
     context.config_mut().identifier = args[2].clone();
     let app = september_desktop_lib::builder()
@@ -40,28 +48,42 @@ fn main() {
     let restore = args[1] == "restore";
     thread::spawn(move || {
         thread::sleep(Duration::from_millis(700));
-        let window = handle.get_webview_window("main").unwrap();
         if !restore {
-            window.set_size(PhysicalSize::new(920, 680)).unwrap();
-            window
-                .set_position(PhysicalPosition::new(180, 160))
-                .unwrap();
+            window::show_panel(&handle).unwrap();
+            for (label, width, height, x, y) in WINDOWS {
+                let window = handle.get_webview_window(label).unwrap();
+                window.set_size(PhysicalSize::new(width, height)).unwrap();
+                window.set_position(PhysicalPosition::new(x, y)).unwrap();
+            }
             thread::sleep(Duration::from_millis(700));
         }
-        let size = window.inner_size().unwrap();
-        let position = window.outer_position().unwrap();
-        let actual = serde_json::json!([size.width, size.height, position.x, position.y]);
+        let geometry: Vec<_> = WINDOWS
+            .iter()
+            .map(|(label, ..)| {
+                let window = handle.get_webview_window(label).unwrap();
+                let size = window.inner_size().unwrap();
+                let position = window.outer_position().unwrap();
+                serde_json::json!([label, size.width, size.height, position.x, position.y])
+            })
+            .collect();
         let output = if restore {
             std::path::PathBuf::from(&args[4]).with_extension("actual.json")
         } else {
             std::path::PathBuf::from(&args[4])
         };
-        fs::write(output, serde_json::to_vec(&actual).unwrap()).unwrap();
-        if args[3] == "close" {
-            window.close().unwrap();
-        } else {
-            handle.exit(0);
+        if args[3] == "close" && !restore {
+            let panel = handle.get_webview_window("panel").unwrap();
+            panel.close().unwrap();
+            thread::sleep(Duration::from_millis(500));
+            let panel = handle.get_webview_window("panel");
+            let hidden = panel.is_some_and(|panel| !panel.is_visible().unwrap());
+            if !hidden {
+                eprintln!("close: the panel must stay open and hidden");
+                std::process::exit(1);
+            }
         }
+        fs::write(output, serde_json::to_vec(&geometry).unwrap()).unwrap();
+        handle.exit(0);
     });
     let code = app.run_return(|_, _| {});
     if restore && state_dir.exists() {

@@ -16,7 +16,9 @@ cargo fmt --all -- --check
 ```
 
 The native window test opens temporary windows with separate application
-identifiers. It checks size and position after both quit and window close:
+identifiers. It shows the panel, then sets its size and position. After a quit,
+it reads the same values. A second run closes the panel and makes sure that the
+panel is hidden and the process still runs:
 
 ```sh
 SEPTEMBER_WINDOW_TEST=1 cargo test --test window_state
@@ -27,16 +29,15 @@ the complete application.
 
 To test window persistence on macOS:
 
-1. Open the app, then move and resize its window.
-2. Record the window size and position.
-3. Quit the app with Command-Q.
+1. Open the app, then move and resize the panel.
+2. Record the size and position of the panel.
+3. Quit the app with Quit September in the menu bar item.
 4. Open the app again.
-5. Check that the window size and position match the recorded values.
-6. Repeat the test with the window close button instead of Command-Q.
+5. Make sure that the size and position of the panel match the recorded values.
 
-The Tauri product and initial window are named `September`. The default
-capability lets the UI replace the native window title after navigation, so
-each page adds its name to the app name.
+The Tauri product and the panel are named `September`. The default capability
+lets the UI replace the native window title after navigation, so each page adds
+its name to the app name.
 
 The `tauri-plugin-window-state` plugin saves window size and position on exit.
 It restores these values on launch from `.window-state.json` in the application
@@ -45,6 +46,87 @@ monitor, the operating system chooses the position.
 
 The Tauri commands prepare apfel automatically on an Apple Silicon Mac.
 Run `pnpm apfel:prepare` from `apps/desktop` to prepare only the sidecar.
+
+## Show the panel
+
+`tauri.conf.json` creates one window, `panel`. It starts hidden, and the UI
+shows it at boot.
+
+| Label   | Size     | Minimum | Other                                                                     |
+| ------- | -------- | ------- | ------------------------------------------------------------------------- |
+| `panel` | 834×1194 | 400×560 | `alwaysOnTop`, `visibleOnAllWorkspaces`, `skipTaskbar`, title `September` |
+
+The default capability covers the `panel` label. `src/window.rs` holds the
+panel commands:
+
+| Command           | Arguments  | Result                                                                                                                       |
+| ----------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `panel_show`      | none       | Shows and focuses the panel. The activation policy does not change.                                                          |
+| `panel_hide`      | none       | Hides the panel.                                                                                                             |
+| `panel_float`     | none       | Returns `false` only when the user turned the float off.                                                                     |
+| `panel_set_float` | `on: bool` | Saves the choice, then applies it to the panel and to the activation policy.                                                 |
+| `panel_setup`     | `on: bool` | On: a normal window with the `Regular` policy. The saved choice does not change. Off: applies the saved float choice.        |
+| `panel_present`   | `on: bool` | On: `set_simple_fullscreen(true)`. Off: `set_simple_fullscreen(false)`.                                                      |
+
+`BackendState.repository` is `pub(crate)` so that `window.rs` can read and
+write the `panel-float` setting.
+
+`lib.rs` handles `WindowEvent::CloseRequested` for `panel`. It prevents the
+close and hides the panel, so the draft and the close guard stay. Quit still
+stops speech, the microphone, and gaze on `RunEvent::Exit`.
+
+On macOS, `RunEvent::Reopen` comes from a click on the Dock icon. The handler
+shows the panel.
+
+### The Dock icon
+
+`policy(setup, float)` is a pure rule with its own `Policy` enum. A unit test
+reads it.
+
+| Setup  | Float | Policy      | Result                                       |
+| ------ | ----- | ----------- | -------------------------------------------- |
+| On     | Any   | `Regular`   | A Dock icon and a place in Command-Tab       |
+| Off    | On    | `Accessory` | No Dock icon and no place in Command-Tab     |
+| Off    | Off   | `Regular`   | A Dock icon and a place in Command-Tab       |
+
+`apply_float` maps `Policy` to the Tauri `ActivationPolicy` on macOS. It sets
+the float on the panel only when the float is on and setup is off. As a
+result, `panel_setup(true)` also turns off always-on-top, all desktops, and the
+floating level.
+
+### The menu bar item and the global key
+
+`window::setup` runs after `rpc::setup`. It applies the saved float choice. It
+adds a tray icon with the `icons/tray.png` keycap as a template image. The tray
+menu holds Show Panel and Quit September. The `tauri` crate needs the
+`tray-icon` and `image-png` features for this.
+
+The same setup registers Control-Option-Space through
+`tauri-plugin-global-shortcut`. The crate is pinned to `~2.3`, because 2.4
+needs a newer `tauri`. A press shows the panel. If the panel is visible and is
+the key window, the press hides it. `panel_toggle` holds this rule, and a unit
+test reads it. If another app owns the key, the registration fails with no
+error.
+
+### Float over a full-screen app
+
+`native/window.m` holds `september_window_float(void *nsWindow, bool on)`.
+When `on` is true, it adds `NSWindowCollectionBehaviorFullScreenAuxiliary` and
+`NSWindowCollectionBehaviorCanJoinAllSpaces` to the window, and it sets the
+level to `NSFloatingWindowLevel`. When `on` is false, it removes the two
+behaviors and sets the level to `NSNormalWindowLevel`. `build.rs` compiles the
+file with ARC and links AppKit.
+
+The `panel-float` setting holds the choice of Settings > Panel. The float is on
+until the user turns it off. `float_on` holds this default rule, and a unit
+test reads it.
+
+Present uses `set_simple_fullscreen` through `panel_present`. It fills the
+screen without a new macOS desktop, so it works with the floating window level.
+
+The panel is a normal Tauri window, not a nonactivating `NSPanel`. A click in
+the panel makes September the active app. See
+[the floating panel](../../../docs/concepts/desktop-floating-panel.md).
 
 ## Understand storage
 

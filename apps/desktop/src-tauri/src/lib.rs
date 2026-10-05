@@ -6,6 +6,7 @@ pub mod providers;
 pub mod proxy;
 pub mod repository;
 pub mod speech;
+pub mod window;
 
 mod oauth;
 mod rpc;
@@ -21,7 +22,18 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
                 )
                 .build(),
         )
-        .setup(rpc::setup)
+        .setup(|app| {
+            rpc::setup(app)?;
+            window::setup(app)
+        })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if window.label() == "panel" {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             rpc::setting_get,
             rpc::setting_put,
@@ -77,6 +89,12 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
             rpc::virtual_microphone_stop,
             gaze::gaze_start,
             gaze::gaze_stop,
+            window::panel_show,
+            window::panel_hide,
+            window::panel_float,
+            window::panel_set_float,
+            window::panel_setup,
+            window::panel_present,
         ])
 }
 
@@ -85,6 +103,11 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building September desktop")
         .run(|app, event| {
+            // A click on the Dock icon shows the panel.
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = event {
+                let _ = window::show_panel(app);
+            }
             if matches!(event, tauri::RunEvent::Exit) {
                 audio::stop_speech();
                 let _ = audio::virtual_microphone_stop();

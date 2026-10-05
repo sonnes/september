@@ -28,23 +28,16 @@ import { APP_NAV, type AppPath } from "@platform/rules/app-nav";
 import { BrandMark, BrandWordmark } from "@september/app-ui/blocks/brand";
 import { RightPanelSlot } from "@september/app-ui/blocks/screen";
 
-const COMMON_ICONS: Record<Exclude<AppPath, "/eyetracker">, LucideIcon> = {
+// Each platform has its own `AppPath`. Web keeps Today, and desktop adds the
+// eye tracker. The key type names both, so this one record stays exhaustive
+// for either platform route union.
+const ICONS: Record<AppPath | "/dashboard" | "/eyetracker", LucideIcon> = {
   "/dashboard": House,
   "/spaces": MessageSquare,
   "/voice": Mic,
   "/help": CircleHelp,
   "/settings": Settings2,
-};
-
-const DESKTOP_ICONS: Record<"/eyetracker", LucideIcon> = {
   "/eyetracker": Eye,
-};
-
-// Desktop has one native-only destination. Spreading its icon keeps this
-// shared layout exhaustive for both platform route unions.
-const ICONS: Record<AppPath, LucideIcon> = {
-  ...COMMON_ICONS,
-  ...DESKTOP_ICONS,
 };
 
 /** The app sidebar starts collapsed; manual toggles survive resizing. */

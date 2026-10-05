@@ -15,6 +15,10 @@ test("settings paths resolve to their configured section", () => {
   assert.equal(sectionFor("/settings/connections/openrouter"), SETTINGS_NAV[0]);
 });
 
+test("the panel section opens at its own path", () => {
+  assert.equal(sectionFor("/settings/panel").path, "/settings/panel");
+});
+
 test("connection identifiers and guide links validate at the settings boundary", () => {
   for (const [provider, guide] of Object.entries(CONNECTION_GUIDES)) {
     assert.equal(isConnectionId(provider), true);

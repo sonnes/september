@@ -148,6 +148,87 @@ whole viewport instead of inside the shell, because a presentation is for the
 room and not for the person holding the keyboard. It stays a block and not a
 route, so no app has to change its route set to present a note.
 
+`PresentOverlay` calls `fullScreen(true)` from `@platform/services/os` when it
+opens, and `fullScreen(false)` when it closes. In the desktop app, the panel
+fills the screen while the overlay shows, then goes back to its size. The web
+version of `fullScreen` does nothing.
+
+`blocks/chrome.tsx` exports `ChromeContext`, with the value `"shell"` or
+`"panel"`. The default is `"shell"`, and the web app always uses it. In
+`"panel"`, `ScreenHeader` and `SpaceDock` render nothing, and the Notes screen
+puts the note actions in a row above the note. A page reads the value through
+`useChrome()`, so Talk, Notes, and Agent have one implementation for both
+frames. The same file holds `PanelContext`, `usePanel()`, and `tierFor`.
+
+`layouts/panel.tsx` holds `PanelShell`, the frame of the desktop floating
+panel. The desktop app has one window, and every route after setup renders in
+`PanelShell`. It renders `ChromeContext` `"panel"`, `PanelHeader`, and an
+`<Outlet/>`. With no spaces, a space-mode path shows `No spaces yet` with New
+space. The other pages show as usual.
+
+The desktop bootstrap gives `PanelShell` one prop, `onHide`, because the shared
+package cannot hide a window. Escape calls it when there is nothing to stop or
+close.
+
+`PanelShell` binds the panel keys: Command-K, Command-Option-1 to 3, Escape,
+Command-? for `/help`, the More menu keys, and Control-0 to Control-5 in the
+compact tier.
+`escapeStep` and `moodForKey` in `@september/core/rules/panel` hold the rules.
+Escape stops the voice first. Else it closes the open sheet or menu. Else, with
+an empty draft, it hides the panel. A draft of only spaces counts as empty.
+`PanelRail` handles its Escape in the capture phase, so one press does not also
+hide the panel.
+
+`blocks/panel-header.tsx` holds `PanelHeader` and `PanelSheets`. The header
+uses the indigo sidebar tokens. Its content depends on the path:
+
+| Path              | Left         | Middle                                       | Right |
+| ----------------- | ------------ | -------------------------------------------- | ----- |
+| A space-mode path | Space button | The Talk, Notes, and Agent switch            | More  |
+| Any other page    | Back         | The title of the `APP_NAV` page of the path  | More  |
+
+`PanelShell` gives the header a `PanelPage` on a page that is not a space. For
+example, `/settings/writing` shows the title Settings. Back goes to the last
+space-mode path that the panel showed. If no such path exists, Back goes to
+`/spaces`.
+
+The space button opens the space switcher: a search field, the spaces by last
+use, All spaces, and New space. All spaces opens `/spaces`. While the switcher
+is open and its search is empty, the digits 1 to 9 open a row.
+
+On a space-mode path, the More menu holds Phrases, Voice controls, Rename
+space, and Delete space. Sound output shows when the composer speaks. Clear the
+draft shows in the compact tier only. Below these items, the menu lists each
+page of `@platform/rules/app-nav` `APP_NAV` with its title. Phrases, Voice
+controls, and Rename space open as sheets below the header. The Voice controls
+sheet has this name so that it is different from the Voice page.
+Delete space uses `DeleteSpaceDialog` from `pages/spaces.tsx`. After a delete,
+the panel goes to `/`. The composer puts a `ComposerHandle` in `PanelContext`,
+so the header can read the draft, clear it, add a phrase, and set the mood.
+
+The panel has three width tiers. `tierFor` gives the tier for a width:
+
+| Tier    | Width                | Right rail | Phrases and Voice |
+| ------- | -------------------- | ---------- | ----------------- |
+| Compact | Less than 560 points | No slot    | A sheet           |
+| Regular | 560 to 899 points    | No slot    | A sheet           |
+| Wide    | 900 points and more  | The slot   | The right rail    |
+
+`PanelShell` measures its own width with a `ResizeObserver`. That tier decides
+the slot of the right rail, Clear in the More menu, and the Control mood keys.
+Without a slot, `RightPanel` renders nothing.
+
+The composer and the Talk history read the width of the screen body instead.
+Each page marks its screen body with `@container`. The breakpoint is
+`@min-[35rem]` (560 pixels), because Tailwind has no named container size at
+560. Below that width, one mood menu key replaces the five mood keys, and the
+audio selector moves to a line below the composer. Talk then shows the last 3
+messages and See all. These container queries apply in the web app too. In the
+panel only, Clear also leaves the composer row.
+
+Undo, Delete last word, Clear, Speak, and the audio selector are 44 points high
+in every tier, in both apps.
+
 Talk restores its device-local draft before mounting the composer. It saves
 each edit through the platform settings service and never clears newer words
 when an earlier message finishes saving. Notes save text and titles on input,
@@ -160,7 +241,8 @@ The final slice offers Speak for the complete suggestion. Starters retain
 their insert action. Selected suggestions remain available across model
 responses and after phrase-code expansion.
 
-The Talk composer has five mood keys left of the audio output. The mood
+The Talk composer has five mood keys left of the audio output. Below 560 pixels
+of screen body, one mood menu key replaces them. The mood
 changes the suggestion prompt. Suggestion rows, the word row, messages, and
 phrase rows show audio tags as chips, and a layer behind the composer field
 draws a chip under each tag. See `docs/concepts/audio-tags.md`.

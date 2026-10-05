@@ -12,6 +12,7 @@ import { Button } from "@september/ui/components/button";
 import { Phrases } from "@september/app-ui/blocks/phrase-panel";
 import { SpeechSettings } from "@september/app-ui/blocks/speech-settings";
 import { currentPanel, rememberPanel } from "@platform/services/os";
+import { usePanel } from "@september/app-ui/blocks/chrome";
 import { PANEL_TABS, pressTab, type PanelTab } from "@september/core/rules/panel";
 
 const ICONS: Record<PanelTab, LucideIcon> = {
@@ -35,21 +36,32 @@ export function PanelRail({
   onInsert: (text: string) => void;
 }) {
   const [state, setState] = useState(currentPanel);
+  // The More menu of the panel asks for a tab here in the wide tier.
+  const request = usePanel()?.rail ?? null;
 
   const show = (next: typeof state) => {
     setState(next);
     void rememberPanel(next);
   };
 
+  useEffect(() => {
+    if (request) show({ open: true, tab: request.tab });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request]);
+
   // Escape closes the card and leaves the rail, the same as the web app.
   useEffect(() => {
     if (!state.open) return;
 
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") show({ ...state, open: false });
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      // The key is used, so the panel does not hide on the same press.
+      event.preventDefault();
+      show({ ...state, open: false });
     };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    // The capture phase runs before the Escape of the panel.
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 

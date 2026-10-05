@@ -47,5 +47,22 @@ The header switches between Talk, Notes, and Agent. A space dock gives access
 to other spaces and makes a new one.
 
 The right rail has Phrases and Voice tabs, and all three modes carry it. It expands to a 320px panel on large screens.
+In the desktop panel, the rail shows only when the panel is 900 points wide or
+more. At a smaller width, Phrases and Voice open as sheets.
 
 The `panel-open` setting stores the active tab and open state. The desktop and web apps use the same panel rules.
+
+## Desktop panel
+
+The desktop app has one window, the floating panel. Every space route opens in
+the panel: `/spaces`, and Talk, Notes, and Agent of one space.
+
+The panel header takes the place of the dock. On a space-mode path, its space
+button opens a space switcher, and its mode switch moves between Talk, Notes,
+and Agent. The switcher opens the chosen space in the current mode. Its All
+spaces row opens `/spaces`. On `/spaces`, the header shows Back and the title
+Spaces. Back goes to the last space-mode path.
+
+The panel keeps its last path in the `lastPath` setting. `openingPath` reopens
+a saved space-mode path while its space exists. Else it opens Talk of the space
+that changed last. See [the floating panel](desktop-floating-panel.md).

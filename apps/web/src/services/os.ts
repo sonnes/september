@@ -1184,3 +1184,6 @@ const browserMicrophone: VirtualMicrophoneStatus = {
 export const virtualMicrophoneStatus = async () => browserMicrophone;
 export const startVirtualMicrophone = async () => browserMicrophone;
 export const stopVirtualMicrophone = async () => browserMicrophone;
+
+/** The browser does not resize its window for Present, so this does nothing. */
+export async function fullScreen(_on: boolean): Promise<void> {}

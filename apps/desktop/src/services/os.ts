@@ -36,21 +36,24 @@ const osUser =
 /** The finished setup, with the identifier of the owner beside its answers. */
 export type SavedSetup = OnboardingDraft & { id: string };
 
-let setup = await invoke<SavedSetup | null>("setting_get", {
-  request: { key: "setup" },
-})
-  // A setup written before `defaultModel` existed held one flat service and
-  // model, and every screen that reads one would throw on it.
-  .then((saved) =>
-    saved ? {
-      ...saved,
-      ...modelSettingsFrom(saved),
-      autoSuggestions: saved.autoSuggestions ?? true,
-      autoPhrases: saved.autoPhrases ?? true,
-      agentEnabled: saved.agentEnabled ?? true,
-    } : null,
-  )
-  .catch(() => null);
+const readSetup = () =>
+  invoke<SavedSetup | null>("setting_get", {
+    request: { key: "setup" },
+  })
+    // A setup written before `defaultModel` existed held one flat service and
+    // model, and every screen that reads one would throw on it.
+    .then((saved) =>
+      saved ? {
+        ...saved,
+        ...modelSettingsFrom(saved),
+        autoSuggestions: saved.autoSuggestions ?? true,
+        autoPhrases: saved.autoPhrases ?? true,
+        agentEnabled: saved.agentEnabled ?? true,
+      } : null,
+    )
+    .catch(() => null);
+
+let setup = await readSetup();
 
 const setupListeners = new Set<() => void>();
 let setupWrite: Promise<unknown> = Promise.resolve();
@@ -147,9 +150,12 @@ export const openInBrowser = (url: string) => open(url);
  * How the sound is made, from the last time the rail card saved it. Null
  * before the user changes it, and in a browser.
  */
-let speech = await invoke<SpeechSettings | null>("setting_get", {
-  request: { key: "speech" },
-}).catch(() => null);
+const readSpeech = () =>
+  invoke<SpeechSettings | null>("setting_get", {
+    request: { key: "speech" },
+  }).catch(() => null);
+
+let speech = await readSpeech();
 
 export function currentSpeech(): SpeechSettings | null {
   return speech;
@@ -487,3 +493,29 @@ export const startVirtualMicrophone = () =>
 /** Removes the system input. */
 export const stopVirtualMicrophone = () =>
   invoke<VirtualMicrophoneStatus>("virtual_microphone_stop");
+
+// ----------------------------------------------------------------- the panel
+
+/** Shows and focuses the panel. */
+export const showPanel = (): Promise<void> =>
+  invoke<void>("panel_show").catch(() => undefined);
+
+export const hidePanel = (): Promise<void> =>
+  invoke<void>("panel_hide").catch(() => undefined);
+
+/**
+ * Makes the panel a normal window with a Dock icon while setup runs. Off
+ * applies the saved float choice again.
+ */
+export const panelSetup = (on: boolean): Promise<void> =>
+  invoke<void>("panel_setup", { on }).catch(() => undefined);
+
+/** Whether the panel stays above other apps. Rust keeps the choice. */
+export const panelFloat = (): Promise<boolean> => invoke<boolean>("panel_float");
+
+export const setPanelFloat = (on: boolean): Promise<void> =>
+  invoke<void>("panel_set_float", { on });
+
+/** Fills the screen with the panel while Present shows, and gives it back. */
+export const fullScreen = (on: boolean): Promise<void> =>
+  invoke<void>("panel_present", { on }).catch(() => undefined);

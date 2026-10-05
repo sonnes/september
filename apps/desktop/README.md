@@ -2,8 +2,8 @@
 
 The current prerelease is `v0.3.0`. The signed DMG targets Apple Silicon and macOS 14.2 or later.
 
-September Desktop is the Tauri edition of September, sized for the 13-inch iPad
-landscape window. It renders the workspace's shared application UI and supplies
+September Desktop is the Tauri edition of September, in one floating window,
+the panel. It renders the workspace's shared application UI and supplies
 macOS services through Tauri. The Rust backend also provides local text
 generation through a bundled apfel sidecar on supported Macs.
 
@@ -14,15 +14,15 @@ The UI uses Tailwind CSS v4, shadcn/ui primitives, and TanStack Router.
 The root workspace owns the application UI. This app owns the route bootstrap
 and the services that connect that UI to macOS.
 
-| Directory                  | Holds                                                                                                                | Rule                                                 |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `packages/app-ui/layouts/` | `onboarding.tsx`, `app.tsx`, `settings.tsx`                                                                          | The component renders an `<Outlet/>`.                |
-| `packages/app-ui/pages/`   | Route screens: `steps` `dashboard` `spaces` `talk` `agent` `notes` `voice` `settings` `usage`                        | A `createRoute` call in `src/main.tsx` names it.     |
-| `packages/app-ui/blocks/`  | `screen` `space` `services` `space-panel` `phrase-panel` `speech-settings` `pick-list` `suggestions` `usage` `brand` | Two or more pages or layouts use it.                 |
-| `src/services/`            | `os` `data` `backup` `ai` `agent` `speech` `cloning` `player` `phrase-sync` `suggest` `usage`                        | It speaks to Rust, the platform, or a cloud service. |
-| `packages/core/`           | autocomplete and platform-independent rules                                                                          | Both web and desktop import the same implementation. |
-| `packages/ui/`             | Tailwind theme and shadcn primitives                                                                                 | A token or primitive has one source.                 |
-| `src/rules/`               | `app-nav` `settings-nav` `onboarding` and core compatibility exports                                                 | Platform route rules stay local.                     |
+| Directory                  | Holds                                                                                                                                                      | Rule                                                 |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `packages/app-ui/layouts/` | `onboarding.tsx`, `app.tsx`, `panel.tsx`, `settings.tsx`                                                                                                   | The component renders an `<Outlet/>`.                |
+| `packages/app-ui/pages/`   | Route screens: `steps` `spaces` `talk` `agent` `notes` `voice` `settings` `usage`                                                                          | A `createRoute` call in `src/main.tsx` names it.     |
+| `packages/app-ui/blocks/`  | `screen` `space` `chrome` `panel-header` `present` `services` `space-panel` `phrase-panel` `speech-settings` `pick-list` `suggestions` `usage` `brand` | Two or more pages or layouts use it.                 |
+| `src/services/`            | `os` `data` `backup` `ai` `agent` `speech` `cloning` `player` `phrase-sync` `suggest` `usage`                                                              | It speaks to Rust, the platform, or a cloud service. |
+| `packages/core/`           | autocomplete and platform-independent rules                                                                                                                | Both web and desktop import the same implementation. |
+| `packages/ui/`             | Tailwind theme and shadcn primitives                                                                                                                       | A token or primitive has one source.                 |
+| `src/rules/`               | `app-nav` `panel-nav` `settings-nav` `onboarding` and core compatibility exports                                                                           | Platform route rules stay local.                     |
 
 Shared UI imports `@platform/*`; the desktop build maps that alias to `src/`.
 This keeps SQLite, Keychain, speech, and native-media calls outside the shared
@@ -30,44 +30,68 @@ screen package.
 
 ## Move through the app
 
+The app has one window, the panel. Its label is `panel`. It opens at 834×1194,
+the 11-inch iPad portrait size. The minimum size is 400×560.
+
+The panel floats above other apps, including an app in full screen. It shows on
+every macOS desktop. If the user turns off Float on top in Settings > Panel,
+the panel is a normal window. See
+[the floating panel](../../docs/concepts/desktop-floating-panel.md).
+
+The panel starts hidden. At boot, `src/main.tsx` shows it with `panel_show`.
+
 The root route holds an outlet only. Below it are two layouts, so a setup step
-never wears the app sidebar, and an app screen never wears the setup sidebar.
+never wears the panel chrome, and an app screen never wears the setup sidebar.
 
-| Layout      | Component                                                    | Routes                                                                                                                                                                                                                                                                          |
-| ----------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Setup       | `OnboardingLayout`, `packages/app-ui/layouts/onboarding.tsx` | `/welcome` `/profile` `/connect` `/finish`                                                                                                                                                                                                                              |
-| Application | `AppShell`, `packages/app-ui/layouts/app.tsx`                | `/dashboard` `/spaces` `/spaces/$slug/talk` `/spaces/$slug/agent` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/voice` `/voice/clone` `/help` `/help/$guideSlug` `/settings` `/settings/writing` `/settings/usage` `/settings/data` `/settings/connections/$provider` |
+| Layout | Component                                                    | Routes                                                                                                                                                                                                                                                                                                         |
+| ------ | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Setup  | `OnboardingLayout`, `packages/app-ui/layouts/onboarding.tsx` | `/welcome` `/profile` `/connect` `/finish`                                                                                                                                                                                                                                                                     |
+| Panel  | `PanelShell`, `packages/app-ui/layouts/panel.tsx`            | `/spaces` `/spaces/$slug/talk` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/spaces/$slug/agent` `/voice` `/voice/clone` `/eyetracker` `/help` `/help/$guideSlug` `/settings` `/settings/writing` `/settings/usage` `/settings/panel` `/settings/data` `/settings/connections/$provider` |
 
-`AppShell` is the shadcn `Sidebar` and `SidebarInset` pair: a solid indigo
-sidebar beside a white inset card. `src/rules/app-nav.ts` lists the destinations
-and their descriptions. `packages/app-ui/layouts/app.tsx` gives each path an
-icon. Today, Spaces, Voice, Help, and Settings use the same screens as the
+`/` redirects to the opening path. `/dashboard` and any other path that names
+no screen redirect to `/`. The bootstrap gives `PanelShell` one callback,
+`onHide`, which calls `panel_hide`.
+
+`src/rules/app-nav.ts` lists the pages of `APP_NAV` and their descriptions:
+Spaces, Voice, Eye tracker, Help, and Settings. The More menu of the panel
+header lists them. All of them except Eye tracker use the same screens as the
 browser app.
 
 Help uses the shared task catalog at `/help` and one stable guide slug at
-`/help/$guideSlug`. Both Help routes use `AppShell` but stay outside the
+`/help/$guideSlug`. Both Help routes use `PanelShell` but stay outside the
 finished-setup guard. The setup sidebar can open the setup guide inline without
 leaving the current step or changing its answers. An unknown guide slug returns
 to `/help`.
 
-The sidebar starts collapsed at every window width as a 48px icon
-rail. Command-B toggles it, and that choice holds across window resizes.
+Setup runs one time. Before setup is done, `src/main.tsx` calls
+`panel_setup(true)`, then shows the panel. The panel is then a normal window,
+and September has a Dock icon. The last step keeps its answers in the `setup`
+setting, then opens `/dashboard`, which redirects to `/`.
 
-Setup runs one time. The last step keeps its answers in the `setup` setting,
-then opens `/dashboard`. After that, `/` opens the screen the user left, and
-the setup flow does not show again.
+When setup becomes done, the bootstrap calls `panel_setup(false)` and goes to
+`/`. `panel_setup(false)` applies the saved float choice. If setup goes back to
+not done, the bootstrap calls `panel_setup(true)` again.
 
 The app comes back where it was. The router keeps each arrival in the
-`lastPath` setting, and `/` reads it. `openingPath` in `src/rules/app-nav.ts` owns
-the rule, and answers with a path from `APP_NAV` or a child of one. Everything
-else opens `/dashboard`: a setup step must never come back, and an address that
-names no screen is not a place to start. A space that the user erased opens the
-space list, because the Talk screen sends a stale slug there.
+`lastPath` setting, and `/` reads it. `openingPath(saved, spaces)` in
+`src/rules/app-nav.ts` owns the rule. It gives the saved path only when the path
+is exactly one of these pages:
 
-The macOS app and its initial window are named `September`. After each route
-settles, the window adds the page name, such as `September — Talk`. The
-`windowTitle` rule in `src/rules/app-nav.ts` names setup steps, nested space and
-note screens, voice cloning, settings sections, and connection pages.
+- A space-mode path whose space exists. `SPACE_MODE_PATH` in
+  `src/rules/panel-nav.ts` matches the Talk, Notes, note, and Agent paths.
+- A page of `APP_NAV`, or `/voice/clone`.
+- A settings section.
+- A connection page of a known provider.
+- A Help guide that exists.
+
+Else `openingPath` gives Talk of the space with the highest `updated_at`. With
+no spaces, it gives `/spaces`. A setup step and an address that names no screen
+never decide where the app opens.
+
+The macOS app and the panel are named `September`. After each route settles,
+the window adds the page name, such as `September — Talk`. The `windowTitle`
+rule in `src/rules/app-nav.ts` names setup steps, space and note screens, voice
+cloning, settings sections, and connection pages.
 
 `isSetupDone` in `src/rules/onboarding.ts` owns that rule: setup is done when it
 holds a name and a mode. The app layout reads the same rule, so an app screen
@@ -75,11 +99,86 @@ opened before setup turns back to `/welcome`.
 
 To run setup again, erase the `setup` setting.
 
+### The panel header
+
+`PanelShell` sets `ChromeContext` to `"panel"`, so the screens draw no screen
+header and no dock. The panel header takes their place. See
+`packages/app-ui/README.md`.
+
+| Path              | Left         | Middle                                         | Right |
+| ----------------- | ------------ | ---------------------------------------------- | ----- |
+| A space-mode path | Space button | The Talk, Notes, and Agent switch              | More  |
+| Any other page    | Back         | The title of the `APP_NAV` page of the path    | More  |
+
+For example, `/settings/writing` shows the title Settings. Back goes to the
+last space-mode path that the panel showed. If no such path exists, Back goes
+to `/spaces`.
+
+The More menu lists the space items on a space-mode path: Phrases, Voice
+controls, Rename space, and Delete space. Below them, it lists each page of
+`APP_NAV`. The space switcher sheet lists the spaces, All spaces, and New
+space. All spaces opens `/spaces`.
+
+The space sheet with the model and the sliders is named Voice controls. This
+name keeps it apart from the Voice page. With no spaces, a space-mode path
+shows `No spaces yet` and New space. The other pages show as usual.
+
+The layout of a screen follows the width of the panel:
+
+| Tier    | Width                | Layout                                                                                                                                                                                                              |
+| ------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Compact | Less than 560 points | One mood menu key replaces the five mood keys. The audio selector moves to a line below the composer. Clear moves into the More menu. Talk shows the last 3 messages and See all. Phrases and Voice controls open as sheets. |
+| Regular | 560 to 899 points    | The composer and the history are the same as in the web app. Phrases and Voice controls open as sheets below the panel header.                                                                                       |
+| Wide    | 900 points and more  | Phrases and Voice open in the right rail.                                                                                                                                                                           |
+
+`PanelShell` measures the width of the whole panel for the tier. The composer and the
+history read the width of the screen body through CSS container queries.
+
+### Keys
+
+| Key                               | Where               | Action                                                                                           |
+| --------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------ |
+| Control-Option-Space              | Any app             | Shows the panel. If the panel is visible and is the key window, the key hides it.                |
+| Command-K                         | Panel               | Opens the space switcher                                                                         |
+| Command-Option-1, 2, 3            | Panel               | Opens Talk, Notes, or Agent of the space                                                         |
+| Command-P                         | Panel               | Opens Phrases                                                                                    |
+| Command-Shift-V                   | Panel               | Opens Voice controls                                                                             |
+| Command-Shift-O                   | Panel, Talk         | Opens the sound output menu                                                                      |
+| Command-Delete                    | Panel               | Clears the draft                                                                                 |
+| Command-?                         | Panel               | Opens `/help`                                                                                    |
+| Escape                            | Panel               | Stops the voice. Else closes the open sheet or menu. Else, with an empty draft, hides the panel. |
+| Control-1 to Control-5, Control-0 | Panel, compact tier | Sets the mood. Control-0 clears it.                                                              |
+
+`PanelShell` binds the panel keys. Rust registers Control-Option-Space. If
+another app owns that key, the registration fails with no error. The menu bar
+item still shows the panel.
+
+### The Dock and the menu bar
+
+The Dock icon follows the float choice. `policy(setup, float)` in
+`src-tauri/src/window.rs` gives the macOS activation policy:
+
+| State             | Policy      | Dock icon                           |
+| ----------------- | ----------- | ----------------------------------- |
+| Setup is not done | `Regular`   | Yes                                 |
+| Float on          | `Accessory` | No. September is not in Command-Tab. |
+| Float off         | `Regular`   | Yes                                 |
+
+A click on the Dock icon shows the panel. The menu bar item shows the
+September keycap. Its menu holds Show Panel and Quit September.
+
+The close button of the panel hides the panel. The app keeps running, and the
+draft stays. Quit September in the menu bar item quits the app.
+
+A click in the panel makes September the active app. A call app then loses key
+focus, but the call and its sound continue.
+
 ## Talk in a space
 
 A space keeps the words that the user says to one person or in one place.
 `/spaces` lists them. `/spaces/$slug/talk` opens one. A new one is made from
-the list or the dock, and there is no route between the press and the space.
+the list or from the space switcher, and there is no route between the press
+and the space.
 
 The list shows the spaces, most recently used first. Each row gives the title
 and the time of the last message. A search field keeps the rows whose title
@@ -144,7 +243,8 @@ rename instead of reading the address as a stale link. `openingPath` still
 refuses the address an older version used for the form.
 
 Delete asks first. Deleting a space deletes its messages too, so a dialog with
-a red button holds the action.
+a red button holds the action. In the panel, Rename space and Delete space are
+in the More menu.
 
 The slug is the title of the space, and it holds no identifier. A stale slug
 goes back to the list. A new title moves the address with it. Two spaces cannot
@@ -152,16 +252,17 @@ share a title, because one slug must name one space.
 
 The Talk screen has three parts, from the top:
 
-1. The transcript. It holds the spoken messages, 8 for each page, newest last.
+1. The panel header. It holds the space button, the mode switch, and the More
+   menu.
+2. The transcript. It holds the spoken messages, 8 for each page, newest last.
    Press a message to speak it again.
-2. The composer. It has the text field, undo, delete last word, clear, the
+3. The composer. It has the text field, undo, delete last word, clear, the
    mood keys, the audio selector, and Speak. The Enter key speaks. Shift and
    Enter make a new line. The mood of a space is kept in the
    `talk-mood:<id>` setting. See `docs/concepts/audio-tags.md`.
-3. The dock. It holds the spaces on the left and the mode switch on the right,
-   with a wide gap between them, so a press meant for a mode cannot land on a
-   space. When the space tabs no longer fit the row, they become one button
-   that opens a list.
+
+In the compact tier, the transcript and the composer fold. See
+[The panel](#the-panel).
 
 `packages/core/rules/spaces.ts` owns the rules that a test can read: the slug, the page, the
 unique title, and the word that delete removes.
@@ -204,19 +305,21 @@ a separate conversation that can read the space and propose changes.
 
 `/spaces/$slug/notes` opens the note the user changed last.
 `/spaces/$slug/notes/$noteSlug` opens one note by name. The mode switch in the
-dock moves between all three, and a space tab keeps the mode the user is in.
+panel header moves between all three. The space switcher opens the chosen space
+in the mode the user is in.
 
 September keeps the mode of each space, by slug, in the `space-modes` setting.
 The space list opens each space the way the user left it. A new space starts
 in Agent, where it is set up, unless no writing service is connected.
 
-The screen has the same parts as Talk, from the top:
+The screen has these parts, from the top:
 
-1. The title. A note with no title of its own shows `Untitled note`.
-2. The note. A plain text field that holds markdown.
-3. The console. The About tab, the note tabs, the word tiles, the field, undo,
+1. The panel header. The same one that Talk has.
+2. The note actions: Read aloud, Present, Export, and Delete.
+3. The title. A note with no title of its own shows `Untitled note`.
+4. The note. A plain text field that holds markdown.
+5. The console. The About tab, the note tabs, the word tiles, the field, undo,
    delete last word, clear, and **Add to note**.
-4. The dock. The same one that Talk has.
 
 `Composer` in `packages/app-ui/blocks/space.tsx` is that console, and both modes use it. A user who
 cannot type reaches a sentence through the word tiles, the phrase codes, undo,
@@ -260,9 +363,14 @@ same.
 
 ### Present and export
 
-The note header carries four actions: Read aloud, Present, Export, and Delete.
+A row above the note carries four actions: Read aloud, Present, Export, and
+Delete.
 
-Present opens `packages/app-ui/blocks/present.tsx` over the whole window. The
+Present opens `PresentOverlay` from `packages/app-ui/blocks/present.tsx` over
+the panel. When the overlay opens, it calls `fullScreen(true)`, and the panel
+fills the screen. When the overlay closes, it calls `fullScreen(false)`, and
+the panel goes back to its size and place. `fullScreen` calls `panel_present`,
+which uses `set_simple_fullscreen`, so Present makes no new macOS desktop. The
 note fills the screen one chunk at a time, in one of seven tones, spoken in the
 chosen voice. When the sound stops the next chunk rises, which is the whole of
 the timing: `speak()` resolves when playback ends. With no voice configured the
@@ -305,8 +413,9 @@ one.
 
 ### The right rail
 
-A rail of icons stands at the right of both modes, in a card of its own beside
-the screen. It holds two buttons: Phrases and Voice. A press opens a 320px
+A rail of icons stands at the right of Talk, Notes, and Agent, in a card of its
+own beside the screen. In the panel, the rail shows in the wide tier only. In
+the other tiers, Phrases and Voice open as sheets below the panel header. It holds two buttons: Phrases and Voice. A press opens a 320px
 card. Phrases holds the phrases of the space and the shortcut ideas from
 repeated messages. Voice holds the ElevenLabs model and the three sliders that
 shape the sound.
@@ -332,7 +441,8 @@ test reads them without a renderer. `packages/app-ui/blocks/space-panel.tsx` hol
 rail, `packages/app-ui/blocks/phrase-panel.tsx` the phrases card, and
 `packages/app-ui/blocks/speech-settings.tsx` the voice card. `RightPanel` in
 `packages/app-ui/blocks/screen.tsx` puts them beside the screen: the shell renders a slot as a
-sibling of the inset, and the rail goes through it. A rail drawn inside the
+sibling of the inset, and the rail goes through it. `PanelShell` renders the
+slot in the wide tier only. A rail drawn inside the
 screen would share the one white card of the inset, and the design gives the
 rail a card of its own.
 
@@ -582,7 +692,8 @@ the draft.
 The Talk audio selector can publish `September Microphone` as a macOS audio
 input. The input exists only while September runs and the control is on.
 
-1. Open Talk and open the audio selector beside **Speak**.
+1. Open Talk in the panel, and open the audio selector beside **Speak**. In the
+   compact tier, the selector is on the line below the composer.
 2. Turn on **September Microphone**.
 3. Allow system audio capture when macOS asks.
 4. Open FaceTime and select **September Microphone** from the Video menu.
@@ -607,15 +718,16 @@ DMG, checks it with Gatekeeper, and prints its SHA-256 checksum.
 
 ## Measure saved typing and service use
 
-The Today screen shows two local signals. Efficiency compares the characters
+September records two local signals. Efficiency compares the characters
 in spoken messages with the keys pressed in the Talk composer. Service use
 counts writing and speech requests in dollars, tokens, characters, and
 ElevenLabs credits.
 
-The period selector uses the local calendar day, Monday-to-Sunday week, or
-calendar month. The Today screen starts on the current week. Settings > Usage
-starts on the current month and adds service and feature breakdowns, recent
-requests, the current ElevenLabs credits, and CSV download.
+Settings > Usage shows service use, with service and feature breakdowns, recent
+requests, the current ElevenLabs credits, and CSV download. The period selector
+uses the local calendar day, Monday-to-Sunday week, or calendar month. It
+starts on the current month. The desktop app has no Today screen, so it does
+not show Efficiency.
 
 Talk counts printable keys, Backspace, and Enter. A phrase, suggestion, undo,
 or clear action does not add a key. September records the count only after
@@ -636,7 +748,7 @@ Recording is best-effort and never stops speaking or writing.
 
 `src/usage-summary.ts` holds the key-count, range, aggregation, and CSV rules.
 `src/usage.ts` records and reads events through `call()` in `src/services/data.ts`.
-`packages/app-ui/pages/dashboard.tsx` and `packages/app-ui/pages/usage.tsx` draw the two reports.
+`packages/app-ui/pages/usage.tsx` draws the report.
 
 ## Walk through setup
 
@@ -653,7 +765,7 @@ The brand, the setup title, and the step list are in a left indigo sidebar.
 Each step opens as an inset white card beside it. All sections on a step stay
 open. There are no collapsible groups.
 
-Both sidebars show the same brand mark. `packages/app-ui/blocks/brand.tsx` reads it from
+The setup sidebar shows the brand mark. `packages/app-ui/blocks/brand.tsx` reads it from
 `public/logo.svg`, the file the brand publishes.
 
 The name field starts with the name from the operating system. The user can
@@ -724,6 +836,7 @@ section list beside the open section, ported from the web app.
 | Setup         | `/settings`         | The state of each service, its key, and its model       |
 | AI Assistance | `/settings/writing` | Who writes, and what the model knows about you          |
 | Usage         | `/settings/usage`   | Typing saved, service use, quota, recent calls, and CSV |
+| Panel         | `/settings/panel`   | Float on top, for the panel                             |
 | Data          | `/settings/data`    | A portable backup download and restore                  |
 
 Listening still needs a transcription backend, and Account needs an account.
@@ -846,9 +959,9 @@ pnpm install
 pnpm tauri:dev
 ```
 
-The UI dev server uses `http://localhost:3010`. The main desktop window first
-opens at 1376×1032, the project's 13-inch iPad landscape baseline. Later launches
-restore the window size and position from the last exit.
+The UI dev server uses `http://localhost:3010`. The panel first opens at
+834×1194, the 11-inch iPad portrait size. Later launches restore its size and
+position from the last exit.
 
 The app runs on macOS 14.2 or later. That floor comes from the Core Audio
 process tap behind September Microphone, the newest system call the app makes.
@@ -880,7 +993,7 @@ command reports that the local provider is unsupported.
 
 ## Try the eye tracker
 
-Select **Eye tracker** in the sidebar. Press **Start camera** to see one camera
+Select **Eye tracker** in the More menu of the panel header. Press **Start camera** to see one camera
 box zoomed around your face. When September finds both eyes, press
 **Calibrate**. Look at each of the four dots until it moves to the next corner.
 The indigo pointer appears after calibration. It is clipped to the box, cannot
@@ -899,7 +1012,8 @@ pnpm test
 pnpm build
 ```
 
-The JavaScript tests cover desktop-only navigation and onboarding rules. Rust
+The JavaScript tests cover desktop-only navigation, the rules of the panel,
+and onboarding rules. Rust
 tests cover native services, persistence, providers, and process boundaries.
 
 Run the Rust checks from `src-tauri/`:
@@ -929,7 +1043,8 @@ remain. Pending or failed saves show their state and offer retry on failure.
 
 Note text and titles start saving on each edit. Writes through the note-update
 hook run in order within a space. Browser close/reload warns while a save is
-pending or failed; the Mac window close action waits until those edits save.
+pending or failed. The close button of the panel hides the panel, so those
+edits continue to save.
 A forced quit, crash, or power loss before a write finishes can still lose it.
 
 The Welcome screen includes a Terms & privacy summary before personal details

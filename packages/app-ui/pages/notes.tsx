@@ -72,7 +72,12 @@ import {
   saveNoteVideo,
   type VideoStage,
 } from "@platform/services/export";
-import { currentPresent, rememberPresent, guardUnsavedChanges } from "@platform/services/os";
+import {
+  currentPresent,
+  guardUnsavedChanges,
+  rememberPresent,
+} from "@platform/services/os";
+import { useChrome } from "@september/app-ui/blocks/chrome";
 import { speak, stopSpeaking, useSpeaking, useVoiceFallback } from "@platform/services/speech";
 import {
   Composer,
@@ -123,6 +128,7 @@ function Notes({
   const [about, setAbout] = useState(!wanted && !space.context?.trim());
   useRememberMode(space, "notes");
   const remove = useDeleteNote(space.id);
+  const chrome = useChrome();
 
   const rows = notes ?? [];
   // The address names the note. Without a name in it, the newest note opens,
@@ -200,7 +206,7 @@ function Notes({
       </title>
       <ScreenHeader>
         <SpaceTitle space={space} mode="notes" />
-        {note ? (
+        {note && chrome === "shell" ? (
           <NoteActions note={note} onDelete={() => setToDelete(note)} />
         ) : null}
       </ScreenHeader>
@@ -222,8 +228,18 @@ function Notes({
         }
       />
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3 p-2 md:p-4">
+      <div className="@container flex min-h-0 flex-1 flex-col gap-3 p-2 md:p-4">
         <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">
+          {/* The panel has no screen header, so the actions of the note
+              sit above it. */}
+          {note && chrome === "panel" ? (
+            <div className="flex shrink-0 flex-wrap items-center gap-2 pb-2">
+              <NoteActions
+                note={note}
+                onDelete={() => setToDelete(note)}
+              />
+            </div>
+          ) : null}
           {error ? (
             <p className="text-destructive rounded-xl border border-dashed p-8 text-center text-sm">
               {error.message}

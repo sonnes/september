@@ -13,6 +13,7 @@ const platform = vi.hoisted(() => ({
   stopSpeaking: vi.fn(),
   currentPresent: vi.fn(() => ({ tone: 'indigo' as const, spoken: false })),
   rememberPresent: vi.fn(async () => undefined),
+  fullScreen: vi.fn(async () => undefined),
   recordPresentUsage: vi.fn(async () => undefined),
 }));
 
@@ -23,6 +24,7 @@ vi.mock('@platform/services/speech', () => ({
 vi.mock('@platform/services/os', () => ({
   currentPresent: platform.currentPresent,
   rememberPresent: platform.rememberPresent,
+  fullScreen: platform.fullScreen,
 }));
 vi.mock('@platform/services/usage', () => ({
   recordPresentUsage: platform.recordPresentUsage,

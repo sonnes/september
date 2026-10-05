@@ -164,12 +164,15 @@ function Empty({
 }
 
 /** Deleting a space deletes its messages too, so the user says yes first. */
-function DeleteSpaceDialog({
+export function DeleteSpaceDialog({
   space,
   onClose,
+  onDeleted,
 }: {
   space: Space | null;
   onClose: () => void;
+  /** Runs after the space is gone, before the dialog closes. */
+  onDeleted?: () => void;
 }) {
   const deleteSpace = useDeleteSpace();
 
@@ -194,7 +197,13 @@ function DeleteSpaceDialog({
             disabled={deleteSpace.isPending}
             onClick={(event) => {
               event.preventDefault();
-              if (space) deleteSpace.mutate(space.id, { onSuccess: onClose });
+              if (space)
+                deleteSpace.mutate(space.id, {
+                  onSuccess: () => {
+                    onDeleted?.();
+                    onClose();
+                  },
+                });
             }}
           >
             {deleteSpace.isPending ? "Deleting…" : "Delete space"}

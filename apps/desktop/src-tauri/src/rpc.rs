@@ -29,7 +29,7 @@ use crate::{
 };
 
 pub(crate) struct BackendState {
-    repository: Mutex<Repository>,
+    pub(crate) repository: Mutex<Repository>,
     /// The cloud-voice sentence that streams now. A stop or a new sentence
     /// cancels it.
     speech_stream: Mutex<Option<tokio::task::AbortHandle>>,

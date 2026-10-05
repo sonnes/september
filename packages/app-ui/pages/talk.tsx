@@ -108,6 +108,8 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
   };
   const keysTyped = useRef(0);
   const [pageInput, setPageInput] = useState(0);
+  // A narrow screen shows the last three messages until the user asks for all.
+  const [allShown, setAllShown] = useState(false);
 
   const spoken = (messages ?? []).filter((message) => message.type === "user");
   const { page, pageCount, slice } = transcriptPage(spoken, pageInput);
@@ -157,7 +159,7 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
       </ScreenHeader>
 
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3 p-2 md:p-4">
+      <div className="@container flex min-h-0 flex-1 flex-col gap-3 p-2 md:p-4">
         <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col">
           {error ? <Problem error={error} /> : null}
 
@@ -217,9 +219,29 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
                 )}
               </div>
             ) : (
-              slice.map((message) => (
-                <Bubble key={message.id} message={message} />
-              ))
+              <>
+                {slice.length > 3 && !allShown ? (
+                  <button
+                    type="button"
+                    onClick={() => setAllShown(true)}
+                    className="text-primary focus-visible:ring-ring min-h-11 self-start rounded-full px-3 text-sm font-medium focus-visible:ring-2 focus-visible:outline-none @min-[35rem]:hidden"
+                  >
+                    See all
+                  </button>
+                ) : null}
+                {slice.map((message, at) => (
+                  <div
+                    key={message.id}
+                    className={
+                      !allShown && at < slice.length - 3
+                        ? "@max-[35rem]:hidden"
+                        : undefined
+                    }
+                  >
+                    <Bubble message={message} />
+                  </div>
+                ))}
+              </>
             )}
           </div>
 

@@ -20,22 +20,54 @@ test("navigation resolves each configured destination", () => {
   }
 });
 
-test("the app reopens a saved application route", () => {
-  assert.equal(openingPath("/voice"), "/voice");
-  assert.equal(openingPath("/spaces/amma/talk"), "/spaces/amma/talk");
+const spaces = [
+  { title: "Amma", updated_at: 10 },
+  { title: "Work Team", updated_at: 30 },
+  { title: "Doctor", updated_at: 20 },
+];
+
+test("the app reopens a saved space-mode path when its space exists", () => {
+  assert.equal(openingPath("/spaces/amma/talk", spaces), "/spaces/amma/talk");
   assert.equal(
-    openingPath("/settings/connections/openrouter"),
+    openingPath("/spaces/doctor/notes/shopping", spaces),
+    "/spaces/doctor/notes/shopping",
+  );
+  assert.equal(openingPath("/spaces/amma/agent", spaces), "/spaces/amma/agent");
+});
+
+test("the app reopens a saved page, settings section, connection, or guide", () => {
+  for (const { path } of APP_NAV) {
+    assert.equal(openingPath(path, spaces), path);
+  }
+  assert.equal(openingPath("/voice/clone", spaces), "/voice/clone");
+  assert.equal(openingPath("/settings/writing", spaces), "/settings/writing");
+  assert.equal(
+    openingPath("/settings/connections/openrouter", spaces),
     "/settings/connections/openrouter",
+  );
+  assert.equal(
+    openingPath("/help/set-up-september", spaces),
+    "/help/set-up-september",
   );
 });
 
-test("the app uses its default route for transient or unknown saved routes", () => {
-  const fallback = APP_NAV[0].path;
+test("the app opens Talk of the most recent space for any other saved path", () => {
+  const recent = "/spaces/work-team/talk";
+  assert.equal(openingPath(null, spaces), recent);
+  assert.equal(openingPath("/spaces/gone/talk", spaces), recent);
+  assert.equal(openingPath("/spaces/new", spaces), recent);
+  assert.equal(openingPath("/dashboard", spaces), recent);
+  assert.equal(openingPath("/welcome", spaces), recent);
+  assert.equal(openingPath("/spacesomething", spaces), recent);
+  assert.equal(openingPath("/settings/nowhere", spaces), recent);
+  assert.equal(openingPath("/settings/connections/nobody", spaces), recent);
+  assert.equal(openingPath("/help/no-such-guide", spaces), recent);
+});
 
-  assert.equal(openingPath("/spaces/new"), fallback);
-  assert.equal(openingPath("/welcome"), fallback);
-  assert.equal(openingPath("/spacesomething"), fallback);
-  assert.equal(openingPath(null), fallback);
+test("the app opens the Spaces list with no spaces", () => {
+  assert.equal(openingPath(null, []), "/spaces");
+  assert.equal(openingPath("/spaces/amma/talk", []), "/spaces");
+  assert.equal(openingPath("/settings", []), "/settings");
 });
 
 test("all saved modes follow the same setup steps", () => {
