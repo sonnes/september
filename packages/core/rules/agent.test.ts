@@ -463,6 +463,62 @@ describe("space agent", () => {
     });
   });
 
+  it("reads a note when the model leaves out the arguments that may be null", async () => {
+    const transcript: Array<Record<string, unknown>> = [
+      {
+        id: "asked",
+        space_id: "space-1",
+        role: "user",
+        content: "What is in my note?",
+        created_at: 1,
+        updated_at: 1,
+      },
+    ];
+    const space = {
+      id: "space-1",
+      user_id: "user-1",
+      title: "General",
+      created_at: 1,
+      updated_at: 1,
+    };
+    const note = {
+      id: "note-1",
+      space_id: "space-1",
+      title: "Monday",
+      content: "Doctor at nine.",
+      created_at: 1,
+      updated_at: 1,
+    };
+    // Apple Intelligence sends only the arguments it has a value for.
+    const writer = scripted(
+      uses("read_note", { note_id: "note-1" }),
+      says("It says the doctor is at nine."),
+    );
+    const adapter = {
+      ...writer,
+      listAgentMessages: async () => transcript,
+      putAgentMessage: async (row: Record<string, unknown>) => {
+        transcript.push(row);
+        return row;
+      },
+      getSpace: async () => space,
+      getNote: async () => note,
+    };
+
+    await continueSpaceAgent(adapter as never, space, {
+      now: () => 10,
+      id: (() => {
+        let at = 0;
+        return () => `row-${++at}`;
+      })(),
+    });
+
+    expect(transcript.find((row) => row.role === "tool")).toMatchObject({
+      tool_name: "read_note",
+      tool_state: "applied",
+    });
+  });
+
   it("applies a write as it makes it, and generates the phrase code itself", async () => {
     const transcript: Array<Record<string, unknown>> = [];
     const phrases: Array<Record<string, unknown>> = [];

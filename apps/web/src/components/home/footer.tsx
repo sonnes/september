@@ -6,18 +6,30 @@ export function Footer() {
           © {new Date().getFullYear()} September. Communication with fewer keystrokes.
         </p>
         <div className="flex shrink-0 flex-wrap items-center gap-6">
-          <a href="/privacy-policy" className="inline-flex min-h-11 items-center transition hover:text-zinc-950">
+          <a
+            href="/privacy-policy"
+            className="inline-flex min-h-11 items-center transition hover:text-zinc-950"
+          >
             Privacy Policy
           </a>
-          <a href="/terms-of-service" className="inline-flex min-h-11 items-center transition hover:text-zinc-950">
+          <a
+            href="/terms-of-service"
+            className="inline-flex min-h-11 items-center transition hover:text-zinc-950"
+          >
             Terms of Service
           </a>
           {/* Anchor links here give small screens a path to the sections — the
               hero nav hides Features/About below md. */}
-          <a href="/#features" className="inline-flex min-h-11 items-center transition hover:text-zinc-950">
+          <a
+            href="/#features"
+            className="inline-flex min-h-11 items-center transition hover:text-zinc-950"
+          >
             Features
           </a>
-          <a href="/#calls" className="inline-flex min-h-11 items-center transition hover:text-zinc-950">
+          <a
+            href="/#calls"
+            className="inline-flex min-h-11 items-center transition hover:text-zinc-950"
+          >
             Mac app
           </a>
           <a
@@ -26,7 +38,10 @@ export function Footer() {
           >
             Privacy
           </a>
-          <a href="/#about" className="inline-flex min-h-11 items-center transition hover:text-zinc-950">
+          <a
+            href="/#about"
+            className="inline-flex min-h-11 items-center transition hover:text-zinc-950"
+          >
             About
           </a>
           <a

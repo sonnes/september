@@ -49,6 +49,16 @@ user approves the proposal.
 
 The right panel shows pinned rows before generated rows. The Talk stripe combines phrases, starters, message history, and autocomplete words.
 
+History, phrases, and starters match a row that starts with the draft, or a
+row that contains the draft at the start of a word. For example, `water` finds
+`Could I get a glass of water`. The rows that start with the draft come first.
+A row that contains the draft shows in full and underlines the typed words. A
+word press replaces the draft with the row through that word.
+
+For a draft of one or two words, the model writes sentences about what the
+words refer to. For example, `water` can give `I am really thirsty`. For a
+longer draft, each model row starts with the draft.
+
 History matches individual sentences, with newer messages first. Stored
 messages remain complete. Duplicate sentences appear once.
 

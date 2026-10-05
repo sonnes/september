@@ -30,8 +30,9 @@ export function PlatformSection() {
             </span>
           </h3>
           <p className="text-base leading-relaxed text-zinc-700">
-            The full app, designed for Apple Intelligence on supported Macs. On-device AI Assistance,
-            with September Microphone for calls.
+            The full app in one panel that floats above your other apps, beside a call or a
+            document. Press Control-Option-Space to bring it back. On-device AI Assistance with
+            Apple Intelligence on supported Macs, and September Microphone for calls.
           </p>
           <div className="mt-auto">
             <Button
@@ -44,7 +45,9 @@ export function PlatformSection() {
               </a>
             </Button>
             <p className="mt-3 text-sm text-zinc-600">Apple Silicon · macOS 14.2 or later</p>
-            <p className="mt-1 text-sm text-zinc-600">Apple Intelligence requires macOS 26 or later.</p>
+            <p className="mt-1 text-sm text-zinc-600">
+              Apple Intelligence requires macOS 26 or later.
+            </p>
           </div>
         </div>
       </div>

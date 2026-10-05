@@ -53,7 +53,7 @@ The model writes tags inside the suggestion text. The response is still a list
 of strings.
 
 - `tokenize` in `rules/stripes.ts` keeps a tag as one token.
-- The prefix match compares the words and skips the tags.
+- The match of the draft compares the words and skips the tags.
 - A tag does not count toward the six words of a slice.
 - A tag after the last sentence stays with that sentence.
 - A tag before the typed words is a lead tag. The row shows it first, and

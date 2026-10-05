@@ -1,18 +1,22 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { cn } from '@september/ui';
 import {
+  ChevronsRight,
   Delete,
   Headphones,
+  History,
   PanelLeft,
   PanelRight,
   Pin,
   Plus,
+  Sparkles,
   Trash2,
   Undo2,
   Volume2,
 } from 'lucide-react';
 
-import { type SuggestionSource, joinTokens, stripeForText } from '@/rules/stripes';
+import { type SuggestionSource, joinTokens, matchTyped, stripeForText } from '@/rules/stripes';
 
 import { useDemoSpeech } from './use-demo-speech';
 
@@ -37,6 +41,8 @@ export interface LandingStripe {
   hidden: number;
   source: SuggestionSource;
   code?: string;
+  /** The tokens that the typed words found inside the row, as [start, end). */
+  found?: [number, number];
 }
 
 const DEMO_SUGGESTIONS: readonly { text: string; source: SuggestionSource }[] =
@@ -102,10 +108,15 @@ function WorkingDemo() {
     el.style.height = `${el.scrollHeight}px`;
   }, [text]);
 
-  // Recompute stripes against the current draft so the already-typed prefix is
-  // hidden — same descriptor shape the real useStripes feeds SuggestionStripes.
+  // Like the app, keep the rows that start with or contain the typed words.
+  // The already-typed prefix is hidden, and the words found inside a row are
+  // marked.
   const stripes = useMemo<LandingStripe[]>(
-    () => DEMO_SUGGESTIONS.map(s => ({ ...stripeForText(s.text, text), source: s.source })),
+    () =>
+      DEMO_SUGGESTIONS.filter(s => !text.trim() || matchTyped(s.text, text) !== null).map(s => ({
+        ...stripeForText(s.text, text),
+        source: s.source,
+      })),
     [text]
   );
 
@@ -224,23 +235,26 @@ function WorkingDemo() {
                     <RailButton label="Clear" onClick={clearText} disabled={!text}>
                       <Trash2 className="size-5" />
                     </RailButton>
-                    {/* Static speaker pill — the live selector needs enumerated
-                        output devices; here we mirror its look only, without the
-                        dropdown chevron so it doesn't pretend to be interactive. */}
-                    <span className="hidden h-auto items-center gap-2 rounded-full border border-input bg-background px-3 py-1.5 text-xs text-muted-foreground sm:inline-flex">
-                      <Headphones className="size-4 shrink-0" aria-hidden="true" />
-                      System Default
-                    </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => speak()}
-                    disabled={!text.trim()}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:enabled:scale-[1.02] active:enabled:scale-95 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
-                  >
-                    <Volume2 className="size-4" aria-hidden="true" />
-                    Speak
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {/* Static sound output key. The live selector needs the
+                      output devices, so here it only mirrors the look. */}
+                    <span
+                      title="System Default"
+                      className="hidden size-11 place-items-center rounded-md border bg-card text-muted-foreground sm:grid"
+                    >
+                      <Headphones className="size-5" aria-hidden="true" />
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => speak()}
+                      disabled={!text.trim()}
+                      className="inline-flex min-h-11 items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:enabled:scale-[1.02] active:enabled:scale-95 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+                    >
+                      <Volume2 className="size-4" aria-hidden="true" />
+                      Speak
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -299,51 +313,98 @@ export function LandingSuggestionStripes({
           ))}
         </div>
       )}
-      {stripes.map(stripe => {
-        const shown = stripe.tokens.slice(stripe.hidden);
-        return (
-          <div
-            key={`${stripe.source}:${stripe.text}`}
-            data-source={stripe.source}
-            className="flex flex-nowrap items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          >
-            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-muted text-xs font-bold uppercase text-muted-foreground">
-              {stripe.code ?? stripe.source.slice(0, 1)}
-            </span>
-            {shown.map((token, index) => (
-              <button
-                key={`${token}:${index}`}
-                type="button"
-                onClick={() =>
-                  onTake(joinTokens(stripe.tokens.slice(0, stripe.hidden + index + 1)))
-                }
-                className="min-h-11 shrink-0 rounded-md border border-primary/40 bg-card px-4 text-base font-medium text-foreground transition-colors hover:border-primary/70 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      {stripes.length > 0 && (
+        <section aria-label="Suggestions" className="flex flex-col gap-1">
+          <h2 className="px-1.5 text-xs font-semibold text-muted-foreground">Suggestions</h2>
+          <div className="flex flex-col gap-1.5">
+            {stripes.map(stripe => (
+              <div
+                key={`${stripe.source}:${stripe.text}`}
+                data-source={stripe.source}
+                className="flex flex-nowrap items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               >
-                {token}
-              </button>
+                <SourceMark source={stripe.source} code={stripe.code} />
+                {stripe.tokens.map((token, index) => {
+                  if (index < stripe.hidden) return null;
+                  // The typed words inside the row, so the reader sees why it is here.
+                  const found =
+                    stripe.found !== undefined &&
+                    index >= stripe.found[0] &&
+                    index < stripe.found[1];
+                  return (
+                    <button
+                      key={`${token}:${index}`}
+                      type="button"
+                      onClick={() => onTake(joinTokens(stripe.tokens.slice(0, index + 1)))}
+                      className={cn(
+                        'min-h-11 shrink-0 rounded-chip border px-4 text-base font-medium text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        LANE[stripe.source],
+                        found && 'underline decoration-primary decoration-2 underline-offset-4'
+                      )}
+                    >
+                      {token}
+                    </button>
+                  );
+                })}
+                {onPin && (
+                  <button
+                    type="button"
+                    aria-label={`Keep ${stripe.text}`}
+                    onClick={() => onPin(stripe.text)}
+                    className="grid size-11 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted"
+                  >
+                    <Pin className="size-4" aria-hidden="true" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  aria-label={`Speak ${stripe.text}`}
+                  onClick={() => onSubmit(stripe.text)}
+                  className="grid size-11 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted"
+                >
+                  <Volume2 className="size-4" aria-hidden="true" />
+                </button>
+              </div>
             ))}
-            {onPin && (
-              <button
-                type="button"
-                aria-label={`Keep ${stripe.text}`}
-                onClick={() => onPin(stripe.text)}
-                className="grid size-11 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted"
-              >
-                <Pin className="size-4" aria-hidden="true" />
-              </button>
-            )}
-            <button
-              type="button"
-              aria-label={`Speak ${stripe.text}`}
-              onClick={() => onSubmit(stripe.text)}
-              className="grid size-11 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted"
-            >
-              <Volume2 className="size-4" aria-hidden="true" />
-            </button>
           </div>
-        );
-      })}
+        </section>
+      )}
     </div>
+  );
+}
+
+// The tile colors of each source, as in the app.
+const LANE: Record<SuggestionSource, string> = {
+  md: 'border-primary/40 bg-card hover:border-primary/70 hover:bg-primary/5',
+  history: 'border-chart-2/45 bg-card hover:border-chart-2/70 hover:bg-chart-2/5',
+  llm: 'border-border bg-card hover:border-primary/50 hover:bg-primary/5',
+  code: 'border-primary/70 bg-primary/10 hover:border-primary hover:bg-primary/15',
+  starter: 'border-primary/40 bg-card hover:border-primary/70 hover:bg-primary/5',
+};
+
+// The mark at the start of a row says where the row came from.
+function SourceMark({ source, code }: { source: SuggestionSource; code?: string }) {
+  if (source === 'code') {
+    return (
+      <span
+        aria-label={`Code ${code}`}
+        className="inline-flex shrink-0 items-center rounded-md bg-primary px-1.5 py-0.5 text-xs font-bold text-primary-foreground"
+      >
+        {code}
+      </span>
+    );
+  }
+  if (source === 'starter') {
+    return <ChevronsRight className="size-4 shrink-0 text-primary" aria-label="An opening" />;
+  }
+  if (source === 'history') {
+    return <History className="size-4 shrink-0 text-chart-2" aria-label="You said this before" />;
+  }
+  if (source === 'md') {
+    return <Pin className="size-4 shrink-0 text-primary/70" aria-label="A saved phrase" />;
+  }
+  return (
+    <Sparkles className="size-4 shrink-0 text-muted-foreground" aria-label="From AI Assistance" />
   );
 }
 

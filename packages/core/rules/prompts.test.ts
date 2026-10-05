@@ -45,3 +45,18 @@ describe("buildSuggestionPrompt with a mood and audio tags", () => {
     expect(system).toContain("Example tags: sighs, sad, exhales.");
   });
 });
+
+describe("buildSuggestionPrompt for a short draft", () => {
+  const system = (typed: string) => buildSuggestionPrompt({ ...base, typed }).system;
+
+  it("gives one or two words the search prompt, and a longer draft the completion prompt", () => {
+    expect(system("water ")).toBe(system("glass of "));
+    expect(system("water ")).not.toBe(system("I want to go "));
+    expect(system("That is so ")).toBe(system("I want to go "));
+    expect(system("water ")).not.toBe(system(""));
+  });
+
+  it("does not count a tag as a word", () => {
+    expect(system("[sighs] water ")).toBe(system("water "));
+  });
+});

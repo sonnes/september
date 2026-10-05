@@ -206,3 +206,36 @@ it.each([
     expect(state.generate).toHaveBeenCalledTimes(autoSuggestions && writing ? 1 : 0);
   }
 );
+
+it('says that AI Assistance is writing until the answer comes', async () => {
+  let resolve!: (value: string[]) => void;
+  state.generate.mockImplementationOnce(
+    () =>
+      new Promise<string[]>(done => {
+        resolve = done;
+      })
+  );
+  const status = () => container.querySelector('[role="status"][aria-label="AI Assistance is writing"]');
+  await render('hello');
+  await render('hello ');
+  await advance();
+  expect(status()).not.toBeNull();
+
+  await act(async () => resolve(['hello fresh result']));
+  expect(status()).toBeNull();
+});
+
+it('stops the writing status when the request fails', async () => {
+  state.generate.mockReset().mockRejectedValue(new Error('No answer'));
+  await render('hello');
+  await render('hello ');
+  await advance();
+  expect(container.querySelector('[role="status"][aria-label="AI Assistance is writing"]')).toBeNull();
+});
+
+it('marks a row that AI Assistance wrote', async () => {
+  await render('hello');
+  await render('hello ');
+  await advance();
+  expect(container.querySelector('[aria-label="From AI Assistance"]')).not.toBeNull();
+});

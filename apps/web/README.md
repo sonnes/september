@@ -184,8 +184,10 @@ Public copy calls writing-model features “AI assistance.”
 
 The examples follow the About narrative: express opinions, change your mind,
 make jokes, and create something. The hero proposes an idea; Talk shares a
-reaction; Agent prepares a Silo discussion space and spoiler-free theory notes. Family,
-friends, work, and Silo each supply different phrases, codes, and typing prompts. The note demo tells a
+reaction. Each Agent example has its own space: Doctor calls gets its setup,
+Game night gets its phrases changed, and Work presentation gets its notes
+organized for a Q&A. Family, friends, work, and game night each supply
+different phrases, codes, and typing prompts. The note demo tells a
 bedtime story, with family celebrations and project pitches as other examples. These examples use marketing-only data.
 
 Spaces and saved phrases share one composer. Notes and Voice use native

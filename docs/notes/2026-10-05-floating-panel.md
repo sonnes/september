@@ -82,3 +82,34 @@ These notes belong to `docs/plans/2026-10-05-single-panel.md`.
 - Help is reachable before setup is done. The Help routes sit under the `PanelShell` layout route but outside the setup guard.
 - `FinishStep` still goes to `/dashboard`. `/dashboard` redirects to `/`.
 - If setup goes back to not done, the bootstrap calls `panel_setup(true)` again.
+
+## Review Fixes
+
+- The composer reads the tier from `PanelShell`, not from a container query, in the panel. With two measures, Clear was in neither place between 560 and 576 points.
+- `useNewSpace().create` gives a promise of `true` when the space opens. The space switcher closes only then, so a failure shows its reason in the switcher.
+- The title bar is an overlay, with the window buttons at x 20 over the header. The header has a left inset of 84 points for them.
+- `trafficLightPosition` in `tauri.conf.json` has no effect in tauri 2.11. The config path does not give the place to the webview, and the place applies only on a resize. Rust makes the panel with the builder, and `native/window.m` puts the buttons back on each window update.
+- Setup uses the overlay too. A runtime change of the title bar style drops the place of the buttons. At 768 points and wider, the buttons sit above the brand of the setup sidebar. Below 768 points, they cover the brand.
+
+## Talk Body
+
+Mock: `docs/mocks/2026-10-05-talk-web.html`. The user chose option B, the word tiles in the card.
+
+- The body is the same in the web app and the panel, at every width. It is a shared screen.
+- The history label says "Said today" with the count of today. With no message today, it says "Said before". The mock does not show that case.
+- The time of a message is the hour and minute today, the day of the week in the last six days, and the month and day before that. `messageTime` in `packages/core/rules/spaces.ts` holds the rule.
+- The history row is one button. The speak mark at its end is not a second target.
+- The speaking card shows the whole sentence in white. The mock marks the words that the voice said. The voice gives no word timing, so the card does not.
+- The speaking card focuses Stop. A second Return stops the voice.
+- The key line lists Return, Shift-Return, and, in the panel, Command-K. It does not list Up and Down, because the rows have no arrow-key navigation.
+- The pinned word chips stay above the Suggestions card.
+- At 440 points, the space name in the header shows its first letters only. The window buttons take 84 points, which the mock did not have.
+
+## Sound Output Key
+
+Mock: `docs/mocks/2026-10-05-audio-output-options.html`. The user chose option C.
+
+- The audio selector is a 44-point headphones key in every tier and in both apps. The name of the output is in the menu, the tooltip, and the accessible name.
+- The suggestion rows have no card and no colored left edge. The mark at the start of a row has the color of its tiles.
+- A row from AI Assistance has a gray sparkle mark. A "Writing" status with a pulsing sparkle shows beside the Suggestions label from the request until the answer or the failure.
+- The Talk body is `bg-muted/40`, lighter than the mock.

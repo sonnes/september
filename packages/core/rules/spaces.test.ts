@@ -3,11 +3,13 @@ import { describe, expect, it } from "vitest";
 import {
   composerAction,
   deleteLastWord,
+  messageTime,
   newSpaceMode,
   newSpaceTitle,
   spaceForSlug,
   spaceModeFrom,
   spaceNeedsSetup,
+  spokenToday,
 } from "./spaces.ts";
 
 const space = (id: string, title: string, context?: string) => ({
@@ -149,5 +151,30 @@ describe("deleteLastWord with audio tags", () => {
 
   it("still removes one word", () => {
     expect(deleteLastWord("so funny ")).toBe("so ");
+  });
+});
+
+describe("the time of a message", () => {
+  // Sunday 4 October 2026, 10:42 local time.
+  const now = new Date(2026, 9, 4, 10, 42).getTime();
+
+  it("gives the hour and minute for a message of today", () => {
+    expect(messageTime(new Date(2026, 9, 4, 9, 5).getTime(), now)).toBe("9:05");
+    expect(messageTime(new Date(2026, 9, 4, 0, 0).getTime(), now)).toBe("0:00");
+  });
+
+  it("gives the day of the week for a message of the last six days", () => {
+    expect(messageTime(new Date(2026, 9, 3, 18, 0).getTime(), now)).toBe("Sat");
+    expect(messageTime(new Date(2026, 8, 28, 23, 0).getTime(), now)).toBe("Mon");
+  });
+
+  it("gives the month and the day for an older message", () => {
+    expect(messageTime(new Date(2026, 8, 27, 12, 0).getTime(), now)).toBe("Sep 27");
+  });
+
+  it("counts the messages of today", () => {
+    const at = (day: number) => ({ created_at: new Date(2026, 9, day, 8, 0).getTime() });
+    expect(spokenToday([at(3), at(4), at(4)], now)).toBe(2);
+    expect(spokenToday([], now)).toBe(0);
   });
 });

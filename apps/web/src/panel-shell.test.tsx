@@ -177,6 +177,16 @@ describe('the panel header', () => {
     expect(state.navigate).toHaveBeenLastCalledWith({ to: '/spaces/$slug/talk', params: { slug: 'new-space' } });
   });
 
+  it('keeps the switcher open and shows the reason when a new space fails', async () => {
+    state.create.mockRejectedValue(new Error('The disk is full.'));
+    await render();
+
+    openSwitcher();
+    await act(async () => button('New space')!.click());
+
+    expect(dialog()?.querySelector('[role="alert"]')?.textContent).toBe('The disk is full.');
+  });
+
   it('keeps rename and delete of the space reachable', async () => {
     await render();
 

@@ -7,6 +7,7 @@ import {
   Ellipsis,
   History,
   Pin,
+  Sparkles,
 } from "lucide-react";
 
 import { cn } from "@september/ui";
@@ -71,6 +72,8 @@ interface Stripe {
   code?: string;
   /** The user keeps this phrase, so the pin is solid, as in the panel. */
   kept?: boolean;
+  /** The tiles that the typed words found inside the row, as [start, end). */
+  found?: [number, number];
 }
 
 /** An audio tag in a row: a direction to the voice, not a word. */
@@ -125,7 +128,7 @@ const LANE: Record<SuggestionSource, { idle: string; active: string }> = {
     idle: "border-chart-2/45 bg-card text-foreground hover:border-chart-2/70 hover:bg-chart-2/5",
     active: "border-chart-2 bg-chart-2/10 text-chart-2",
   },
-  // From a model. The quiet baseline, with no mark.
+  // From a model. The quiet baseline, with a gray sparkle mark.
   llm: {
     idle: "border-border bg-card text-foreground hover:border-primary/50 hover:bg-primary/5",
     active: "border-primary bg-primary/10 text-primary",
@@ -211,7 +214,14 @@ export function Suggestions({
     () => wordRow(found, { tags: tagsOn, examples: exampleTags(mood), draft: text }),
     [found, tagsOn, mood, text],
   );
-  const fromModel = useCompletions({ text, context, history, spaceId, setup, mood });
+  const { rows: fromModel, writing } = useCompletions({
+    text,
+    context,
+    history,
+    spaceId,
+    setup,
+    mood,
+  });
   const stripes = useStripes({
     text,
     spaceId,
@@ -244,7 +254,7 @@ export function Suggestions({
   );
   const size = (base: number) => base * scale;
 
-  if (stripes.length === 0 && chips.length === 0 && words.length === 0) {
+  if (stripes.length === 0 && chips.length === 0 && words.length === 0 && !writing) {
     return null;
   }
 
@@ -281,7 +291,26 @@ export function Suggestions({
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-2">
+      {stripes.length > 0 || writing ? (
+      <section aria-label="Suggestions" className="flex flex-col gap-1">
+      <div className="flex min-h-5 items-center gap-2 px-1.5">
+        <h2 className="text-muted-foreground text-xs font-semibold">
+          Suggestions
+        </h2>
+        {/* The model answers in a second or two. The rows that need no
+            model are already here, and its rows join them. */}
+        {writing ? (
+          <span
+            role="status"
+            aria-label="AI Assistance is writing"
+            className="text-primary inline-flex items-center gap-1 text-xs font-medium"
+          >
+            <Sparkles className="size-3.5 animate-pulse" aria-hidden />
+            Writing
+          </span>
+        ) : null}
+      </div>
+      <div className="flex flex-col gap-1.5">
         {stripes.map((stripe, row) => {
           const lane = LANE[stripe.source];
           return (
@@ -311,6 +340,11 @@ export function Suggestions({
                   index <= hover.index;
                 const punctuation = PUNCTUATION.test(token);
                 const tag = isTag(token);
+                // The typed words inside the row, so the user sees why it is here.
+                const found =
+                  stripe.found !== undefined &&
+                  index >= stripe.found[0] &&
+                  index < stripe.found[1];
 
                 return (
                   <button
@@ -332,6 +366,7 @@ export function Suggestions({
                     className={cn(
                       "rounded-chip focus-visible:ring-ring inline-flex shrink-0 items-center border transition-colors focus-visible:ring-2 focus-visible:outline-none",
                       punctuation ? "" : "font-medium",
+                      found && "decoration-primary underline decoration-2 underline-offset-4",
                       tag
                         ? cn(TAG_TILE, active && "border-primary bg-primary/20")
                         : active
@@ -354,12 +389,15 @@ export function Suggestions({
           );
         })}
       </div>
+      </section>
+      ) : null}
 
       {/* The word row sits nearest the composer, because it changes with each
           letter. `applySuggestion` knows a part-written word from a finished
           one, so the screen never splits the text itself. */}
       {words.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5">
+        // Two lines at most, so the word row never pushes the field down.
+        <div className="flex max-h-[6.375rem] flex-wrap gap-1.5 overflow-hidden">
           {words.map((word) => (
             <button
               key={word}
@@ -497,7 +535,7 @@ function SourceMark({
   if (source === "starter") {
     return (
       <ChevronsRight
-        className="text-primary/60 size-4 shrink-0"
+        className="text-primary size-4 shrink-0"
         aria-label="An opening"
       />
     );
@@ -506,7 +544,7 @@ function SourceMark({
   if (source === "history") {
     return (
       <History
-        className="text-muted-foreground size-4 shrink-0"
+        className="text-chart-2 size-4 shrink-0"
         aria-label="You said this before"
       />
     );
@@ -522,7 +560,7 @@ function SourceMark({
         title={label}
         className={cn(
           "focus-visible:ring-ring size-4 shrink-0 cursor-pointer rounded focus-visible:ring-2 focus-visible:outline-none",
-          kept ? "text-primary" : "text-primary/60 hover:text-primary",
+          kept ? "text-primary" : "text-primary/70 hover:text-primary",
         )}
       >
         <Pin className={cn("size-4", kept && "fill-current")} aria-hidden />
@@ -530,8 +568,12 @@ function SourceMark({
     );
   }
 
-  // A row from a model carries no mark. It is the quiet baseline.
-  return <span className="w-4 shrink-0" aria-hidden />;
+  return (
+    <Sparkles
+      className="text-muted-foreground size-4 shrink-0"
+      aria-label="From AI Assistance"
+    />
+  );
 }
 
 function useStripes({
@@ -622,8 +664,10 @@ function useCompletions({
   spaceId: string;
   setup: SavedSetup | null;
   mood: MoodKey | null;
-}): string[] {
+}): { rows: string[]; writing: boolean } {
   const [rows, setRows] = useState<string[]>([]);
+  // A request is on its way to the model.
+  const [writing, setWriting] = useState(false);
   const enabled = setup?.autoSuggestions !== false;
   const settingsKey = JSON.stringify([
     setup?.defaultModel, setup?.suggestionsModel, setup?.speakingStyle, setup?.personalWords,
@@ -640,11 +684,13 @@ function useCompletions({
       previous.current.settingsKey === settingsKey;
     previous.current = { text, spaceId, enabled, settingsKey, mood };
     setRows([]);
+    setWriting(false);
     if (!edited || !enabled || !text.trim() ||
       !/[\s.,!?;:]$/.test(text) || !hasWritingService("suggestions")) return;
 
     const dropped = new AbortController();
     const timer = setTimeout(() => {
+      setWriting(true);
       const { system, user } = buildSuggestionPrompt({
         globalMd: userContext(),
         spaceMd: context,
@@ -670,6 +716,9 @@ function useCompletions({
         })
         .catch(() => {
           if (!dropped.signal.aborted) setRows([]);
+        })
+        .finally(() => {
+          if (!dropped.signal.aborted) setWriting(false);
         });
     }, THINK_AFTER_MS);
 
@@ -679,5 +728,5 @@ function useCompletions({
     };
   }, [text, spaceId, enabled, settingsKey, context, historyKey, mood, tags]);
 
-  return rows;
+  return { rows, writing };
 }

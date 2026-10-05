@@ -40,7 +40,7 @@ fn main() {
     let mut context = tauri::generate_context!();
     context.config_mut().identifier = args[2].clone();
     let app = september_desktop_lib::builder()
-        .setup(|_| Ok(()))
+        .setup(|app| Ok(window::create_panel(app)?))
         .build(context)
         .unwrap();
     let handle = app.handle().clone();

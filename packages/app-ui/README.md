@@ -218,13 +218,37 @@ The panel has three width tiers. `tierFor` gives the tier for a width:
 the slot of the right rail, Clear in the More menu, and the Control mood keys.
 Without a slot, `RightPanel` renders nothing.
 
-The composer and the Talk history read the width of the screen body instead.
-Each page marks its screen body with `@container`. The breakpoint is
+In the panel, the composer reads the tier from `usePanel()`. The composer and
+the More menu then use the same width, so Clear is always in one of the two.
+In the compact tier, one mood menu key replaces the five mood keys, and Clear
+leaves the composer row.
+
+The audio selector is one 44-point headphones key beside Speak, at every width.
+The name of the output is in its menu and in its accessible name. A green dot on
+the key shows that the September Microphone is on.
+
+The web app has no panel. There, the composer reads the width of the screen
+body. Each page marks its screen body with `@container`. The breakpoint is
 `@min-[35rem]` (560 pixels), because Tailwind has no named container size at
-560. Below that width, one mood menu key replaces the five mood keys, and the
-audio selector moves to a line below the composer. Talk then shows the last 3
-messages and See all. These container queries apply in the web app too. In the
-panel only, Clear also leaves the composer row.
+560. Below that width, the composer folds in the same way, but Clear stays.
+
+Talk shows the last 3 messages in a card over the suggestions, at every
+width. Each row shows the time of the message, and a press on the row speaks it
+again. See all shows the pages of 8 messages in place of the suggestions. Back
+to suggestions or Escape closes the pages.
+
+The suggestion rows have no card. The mark at the start of a row shows its
+source, in the color of its tiles: a teal clock for a past message, an indigo
+pin for a phrase, indigo arrows for an opening, the code for a typed code, and
+a gray sparkle for AI Assistance. While a request to AI Assistance is open, a
+"Writing" status shows beside the Suggestions label. The word row shows two
+lines at most.
+
+While Speak plays a sentence, `Composer` shows the speaking card through its
+`cover` prop, in place of the field. Stop, or Escape, stops the voice. Write
+next, or a typed letter, gives the field back while the voice goes on. Under
+the composer, a line shows the keys that work now. A touch screen does not show
+this line.
 
 Undo, Delete last word, Clear, Speak, and the audio selector are 44 points high
 in every tier, in both apps.
@@ -236,6 +260,7 @@ keep pending edits visible during query refreshes, and offer retry on failure.
 Both screens guard normal closing while writes are pending or failed.
 
 `blocks/suggestions.tsx` shows suggestions in slices of at most six words.
+A row that contains the draft after its opening underlines the typed words.
 The insert action accepts an unfinished slice and reveals the next words.
 The final slice offers Speak for the complete suggestion. Starters retain
 their insert action. Selected suggestions remain available across model

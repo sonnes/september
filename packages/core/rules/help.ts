@@ -284,11 +284,12 @@ export const HELP_GUIDES: HelpGuide[] = [
     title: "Use word and sentence suggestions",
     summary:
       "Choose ready words and sentences instead of typing the whole message.",
-    keywords: ["autocomplete", "prediction", "tiles", "sentence", "word"],
+    keywords: ["autocomplete", "prediction", "tiles", "sentence", "word", "search"],
     platforms: BOTH_APPS,
     prerequisites: ["Open a space in Talk mode."],
     steps: [
       "Type the beginning of a word or sentence.",
+      "To find a saved phrase or an earlier sentence, type one word from it.",
       "For AI suggestions, finish a word with a space or punctuation.",
       "Read the suggestions above the composer.",
       "Choose a suggestion that continues your thought.",

@@ -5,7 +5,7 @@ use tauri::{
     image::Image,
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
-    AppHandle, Manager, Runtime, WebviewWindow,
+    AppHandle, Manager, Runtime, WebviewWindow, WebviewWindowBuilder,
 };
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
@@ -62,6 +62,17 @@ fn panel<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<WebviewWindow<R>> {
 pub fn show_panel<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let panel = panel(app)?;
     panel.show()?;
+    #[cfg(target_os = "macos")]
+    {
+        let ns_window = panel.ns_window()? as usize;
+        panel.run_on_main_thread(move || {
+            // SAFETY: the closure runs on the main thread, and the pointer is
+            // the NSWindow of the panel, which lives as long as the app.
+            unsafe {
+                september_window_buttons(ns_window as *mut std::ffi::c_void, BUTTONS.0, BUTTONS.1)
+            };
+        })?;
+    }
     panel.set_focus()
 }
 
@@ -77,6 +88,7 @@ pub fn toggle_panel<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
 #[cfg(target_os = "macos")]
 extern "C" {
     fn september_window_float(ns_window: *mut std::ffi::c_void, on: bool);
+    fn september_window_buttons(ns_window: *mut std::ffi::c_void, x: f64, y: f64);
 }
 
 /// The saved float choice. Only a saved `false` turns the float off.
@@ -124,8 +136,34 @@ fn apply_float<R: Runtime>(app: &AppHandle<R>, setup: bool, float: bool) -> taur
     Ok(())
 }
 
-/// Applies the saved float choice, adds the menu bar item and the global key.
+/// The place of the window buttons over the header, in points: the left inset,
+/// and the height that the title bar gains.
+#[cfg(target_os = "macos")]
+const BUTTONS: (f64, f64) = (20.0, 32.0);
+
+/// Makes the panel from its entry in `tauri.conf.json`. The title bar is an
+/// overlay, and the window buttons sit at the middle of the 64-point indigo
+/// header. Only the builder passes this position to the webview, so the
+/// config does not create the panel.
+pub fn create_panel(app: &tauri::App) -> tauri::Result<()> {
+    let config = app
+        .config()
+        .app
+        .windows
+        .iter()
+        .find(|window| window.label == PANEL)
+        .ok_or(tauri::Error::WindowNotFound)?;
+    let builder = WebviewWindowBuilder::from_config(app.handle(), config)?;
+    #[cfg(target_os = "macos")]
+    let builder = builder.traffic_light_position(tauri::LogicalPosition::new(BUTTONS.0, BUTTONS.1));
+    builder.build()?;
+    Ok(())
+}
+
+/// Makes the panel, applies the saved float choice, and adds the menu bar item
+/// and the global key.
 pub(crate) fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    create_panel(app)?;
     apply_float(app.handle(), false, saved_float(app.handle())?)?;
 
     let menu = Menu::with_items(

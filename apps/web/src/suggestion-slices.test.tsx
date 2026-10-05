@@ -173,3 +173,18 @@ it('shows no tag tiles when the voice says tags aloud', async () => {
   expect(container.textContent).not.toContain('giggles');
   expect(container.textContent).not.toContain('laughs');
 });
+
+it('replaces the draft with a saved phrase that contains it, and keeps the rest as a continuation', async () => {
+  state.phrases = [{ text: 'Could I get a glass of water', code: 'cg', kind: 'phrase', pinned: true, space_id: 'space' }];
+  await act(async () => root.render(<Composer initial="water" />));
+  await act(async () => button('glass').click());
+  expect(container.querySelector('output')?.textContent).toBe('Could I get a glass ');
+  await act(async () => button('water').click());
+  expect(container.querySelector('output')?.textContent).toBe('Could I get a glass of water ');
+});
+
+it('speaks a past sentence that contains the draft', async () => {
+  await act(async () => root.render(<Composer initial="wat" history={['Can I have some water please?']} />));
+  await act(async () => button('Speak this suggestion').click());
+  expect(state.speak).toHaveBeenCalledWith('Can I have some water please?');
+});

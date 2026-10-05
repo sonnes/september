@@ -361,6 +361,8 @@ export async function openAgentWriter(): Promise<AgentWriter> {
   const chosen = service === "openrouter" ? configuredModel("agent").model.trim() : "";
   const requested = service === "apple" ? APPLE_MODEL : chosen || FREE_AGENT_MODEL;
   const { models, model, priced, key } = await modelFor(requested, service);
+  // The address and the model only. The token and the words stay out of logs.
+  console.info("[agent] writer", { service, model: model.id, baseUrl: model.baseUrl });
   let asked = 0;
   let sent = 0;
 
@@ -386,6 +388,16 @@ export async function openAgentWriter(): Promise<AgentWriter> {
     spent: (message: AssistantMessage) => {
       const failed =
         message.stopReason === "error" || message.stopReason === "aborted";
+      if (failed) {
+        console.warn("[agent] stream failed", {
+          service,
+          model: model.id,
+          baseUrl: model.baseUrl,
+          stopReason: message.stopReason,
+          errorMessage: message.errorMessage,
+          latencyMs: Date.now() - asked,
+        });
+      }
       const named =
         service === "apple"
           ? APPLE_MODEL

@@ -74,8 +74,43 @@ export function hiddenTokenCount(tokens: string[], typed: string): number {
   return count;
 }
 
+/** How a row holds the typed words: as its opening, or from a later word. */
+export type Match = "prefix" | "contains";
+
 /**
- * Sentences from past messages that start with the typed text, newest messages first.
+ * Where the typed words sit in the text. The typed words must start at the
+ * start of a word, so "ate" does not find "water". Tags and case do not count.
+ */
+export function matchTyped(text: string, typed: string): Match | null {
+  const lower = stripTags(typed).toLowerCase();
+  const words = stripTags(text).toLowerCase();
+  if (!lower || words === lower) return null;
+  if (words.startsWith(lower)) return "prefix";
+  for (let at = words.indexOf(lower, 1); at > 0; at = words.indexOf(lower, at + 1)) {
+    if (!/[\p{L}\p{N}]/u.test(words[at - 1])) return "contains";
+  }
+  return null;
+}
+
+/** The tokens of the text that the typed words found, as [start, end). */
+function foundRange(tokens: string[], typed: string): [number, number] | null {
+  const want = tokenize(stripTags(typed).toLowerCase());
+  const words = tokens.flatMap((token, index) =>
+    isTag(token) ? [] : [{ token: token.toLowerCase(), index }],
+  );
+  for (let start = 0; start + want.length <= words.length; start++) {
+    const hit = want.every((word, k) =>
+      k === want.length - 1
+        ? words[start + k].token.startsWith(word)
+        : words[start + k].token === word,
+    );
+    if (hit) return [words[start].index, words[start + want.length - 1].index + 1];
+  }
+  return null;
+}
+
+/**
+ * Sentences from past messages that hold the typed text, newest messages first.
  * History matches require nonempty typed text.
  */
 export function historyMatches(typed: string, history: string[]): string[] {
@@ -89,7 +124,7 @@ export function historyMatches(typed: string, history: string[]): string[] {
       const phrase = segment.trim();
       const key = phrase.toLowerCase();
       const words = stripTags(key);
-      if (!words || words === lower || seen.has(key) || !words.startsWith(lower)) continue;
+      if (!words || seen.has(key) || !matchTyped(phrase, typed)) continue;
       seen.add(key);
       out.push(phrase);
     }
@@ -156,7 +191,7 @@ export function composeSuggestions({
   const pushAll = (texts: string[], source: SuggestionSource) => {
     for (const text of texts) push(text, source);
   };
-  const starting = (text: string) => stripTags(text).toLowerCase().startsWith(lower);
+  const by = (match: Match) => (text: string) => matchTyped(text, typed) === match;
 
   // Nothing typed: the rows are the phrases that the user keeps, and then the
   // starters. History answers nothing here, and the model fills what is left.
@@ -169,11 +204,20 @@ export function composeSuggestions({
 
   // A sentence started: the past messages and the model answer first, because
   // they follow the words that are already there. The saved phrases come
-  // after them, prefix-filtered, and deduped by `seen`.
-  pushAll(historyMatches(typed, history), "history");
-  pushAll(llm, "llm");
-  pushAll(phrases.filter(starting), "md");
-  pushAll(starters.filter(starting), "starter");
+  // after them, and `seen` drops the repeats.
+  //
+  // A row that starts with the draft saves more keys, so every one of them
+  // goes before a row that only contains the draft. A model row that does
+  // not hold the draft is related to it, and keeps the place of a model row.
+  const said = historyMatches(typed, history);
+  pushAll(said.filter(by("prefix")), "history");
+  pushAll(llm.filter((text) => !by("contains")(text)), "llm");
+  pushAll(phrases.filter(by("prefix")), "md");
+  pushAll(starters.filter(by("prefix")), "starter");
+  pushAll(said.filter(by("contains")), "history");
+  pushAll(llm.filter(by("contains")), "llm");
+  pushAll(phrases.filter(by("contains")), "md");
+  pushAll(starters.filter(by("contains")), "starter");
 
   return out.slice(0, MAX_COMPOSED);
 }
@@ -187,13 +231,26 @@ export function composeSuggestions({
  * the covered words that the user did not type is a lead tag: it moves to
  * the front of the slice, so the row shows it, and `takeTokens` puts it back
  * at the start of the draft.
+ *
+ * A row that contains the typed words after its opening hides no words, so a
+ * press replaces the draft. `found` marks the typed words in the row, and the
+ * slice reaches at least to them.
  */
 export function stripeForText(
   text: string,
   typed: string
-): { text: string; tokens: string[]; hidden: number; lead: number; hasMore: boolean } {
+): {
+  text: string;
+  tokens: string[];
+  hidden: number;
+  lead: number;
+  hasMore: boolean;
+  /** The tokens that the typed words found inside the row, as [start, end). */
+  found?: [number, number];
+} {
   const all = tokenize(text);
-  const covered = hiddenTokenCount(all, typed);
+  const inside = matchTyped(text, typed) === "contains" ? foundRange(all, typed) : null;
+  const covered = inside ? 0 : hiddenTokenCount(all, typed);
   const typedTokens = tokenize(typed);
   const typedTags = new Set(typedTokens.filter(isTag));
   const region = all.slice(0, covered);
@@ -223,9 +280,10 @@ export function stripeForText(
   sentenceEnd += hidden + leads.length - covered;
   let end = hidden;
   let words = 0;
-  while (end < sentenceEnd) {
+  const reach = inside ? inside[1] + hidden : 0;
+  while (end < sentenceEnd || end < reach) {
     if (!PUNCTUATION.test(tokens[end]) && !isTag(tokens[end])) {
-      if (words === MAX_SLICE_WORDS) break;
+      if (words >= MAX_SLICE_WORDS && end >= reach) break;
       words++;
     }
     end++;
@@ -236,6 +294,7 @@ export function stripeForText(
     hidden,
     lead: leads.length,
     hasMore: end < tokens.length,
+    found: inside ? [inside[0] + hidden, inside[1] + hidden] : undefined,
   };
 }
 

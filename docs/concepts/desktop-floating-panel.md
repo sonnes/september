@@ -38,6 +38,10 @@ frame draws around it. The value is `"shell"` or `"panel"`, and the default is
 `PanelShell` in `packages/app-ui/layouts/panel.tsx` sets the value and draws
 `PanelHeader` in their place.
 
+The panel has no title bar. The macOS window buttons sit over the left end of
+the indigo header, and a drag on the free space of the header moves the
+window.
+
 | Path              | Left         | Middle                                       | Right |
 | ----------------- | ------------ | -------------------------------------------- | ----- |
 | A space-mode path | Space button | The Talk, Notes, and Agent switch            | More  |
@@ -99,14 +103,14 @@ tiers:
 
 | Tier    | Width                | Layout                                                                                                                 |
 | ------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Compact | Less than 560 points | One mood menu key, the audio selector on its own line, Clear in the More menu, the last 3 messages and See all. Sheets for Phrases and Voice controls. |
+| Compact | Less than 560 points | One mood menu key, Clear in the More menu. Sheets for Phrases and Voice controls. |
 | Regular | 560 to 899 points    | The composer and the history of the web app. Sheets for Phrases and Voice controls.                                   |
 | Wide    | 900 points and more  | The full screens of the web app, with the right rail.                                                                 |
 
-`PanelShell` measures the width of the panel for the right rail, Clear, and the
-Control mood keys. The composer and the Talk history use CSS container queries
-on the screen body. The container queries apply in the web app too, so a phone
-also shows the mood menu key.
+`PanelShell` measures the width of the panel for the right rail, the composer,
+Clear in the More menu, and the Control mood keys. In the web app, the
+composer uses a CSS container query on the screen body, so a phone also shows
+the mood menu key.
 
 ## Present
 

@@ -306,3 +306,54 @@ async fn it_says_when_this_mac_has_no_apple_intelligence() {
 
     assert_eq!(answer.status(), 502);
 }
+
+/// The WebView reaches the proxy on a loopback port that changes each run, so
+/// the content policy must let it connect to any port there.
+#[test]
+fn the_webview_may_connect_to_the_proxy() {
+    let config: Value = serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
+    let csp = config["app"]["security"]["csp"].as_str().unwrap();
+    let connect = csp
+        .split(';')
+        .map(str::trim)
+        .find(|directive| directive.starts_with("connect-src"))
+        .unwrap();
+    assert!(connect
+        .split_whitespace()
+        .any(|source| source == "http://127.0.0.1:*"));
+}
+
+/// The typed client adds its own headers, such as `x-stainless-os`, so the
+/// preflight must allow the headers the browser asks for.
+#[tokio::test]
+async fn it_allows_the_headers_the_client_sends() {
+    let endpoint = proxy::serve(config("http://127.0.0.1:9"), || Ok("sk-real".to_owned()))
+        .await
+        .unwrap();
+    let asked = "authorization,content-type,user-agent,x-stainless-os,x-stainless-retry-count";
+
+    let answer = reqwest::Client::new()
+        .request(
+            reqwest::Method::OPTIONS,
+            format!("{}/chat/completions", endpoint.base_url),
+        )
+        .header("origin", "http://localhost:3010")
+        .header("access-control-request-method", "POST")
+        .header("access-control-request-headers", asked)
+        .send()
+        .await
+        .unwrap();
+
+    let allowed = answer
+        .headers()
+        .get("access-control-allow-headers")
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    for header in asked.split(',') {
+        assert!(
+            allowed.split(',').any(|name| name.trim() == header),
+            "{header} is not allowed: {allowed}"
+        );
+    }
+}

@@ -107,7 +107,9 @@ where
         .fallback(missing)
         .with_state(state);
     tokio::spawn(async move {
-        let _ = axum::serve(listener, router).await;
+        if let Err(error) = axum::serve(listener, router).await {
+            eprintln!("[writing-proxy] stopped: {error}");
+        }
     });
 
     Ok(Endpoint {
@@ -120,6 +122,7 @@ where
 /// One request from the WebView, forwarded with the key of this Mac.
 async fn completions(State(state): State<ProxyState>, headers: HeaderMap, body: Bytes) -> Response {
     let Some(mut request) = accepted(&state, &headers, &body) else {
+        eprintln!("[writing-proxy] cloud: rejected, no run token or body is not JSON");
         return failure(StatusCode::UNAUTHORIZED, "This request has no run token.");
     };
     let Some(fields) = request.as_object_mut() else {
@@ -138,7 +141,10 @@ async fn completions(State(state): State<ProxyState>, headers: HeaderMap, body: 
 
     let key = match (state.key)() {
         Ok(key) => key,
-        Err(reason) => return failure(StatusCode::BAD_GATEWAY, &reason),
+        Err(reason) => {
+            eprintln!("[writing-proxy] cloud: no key ({reason})");
+            return failure(StatusCode::BAD_GATEWAY, &reason);
+        }
     };
     let target = format!("{}/api/v1/chat/completions", state.upstream);
     forward(&state, target, key, &request).await
@@ -155,9 +161,11 @@ async fn apple_completions(
     body: Bytes,
 ) -> Response {
     let Some(request) = accepted(&state, &headers, &body) else {
+        eprintln!("[writing-proxy] apple: rejected, no run token or body is not JSON");
         return failure(StatusCode::UNAUTHORIZED, "This request has no run token.");
     };
     let Some(source) = state.apple.clone() else {
+        eprintln!("[writing-proxy] apple: no sidecar on this Mac");
         return failure(
             StatusCode::BAD_GATEWAY,
             "Apple Intelligence is not available on this Mac.",
@@ -165,7 +173,10 @@ async fn apple_completions(
     };
     let (base_url, token) = match source().await {
         Ok(found) => found,
-        Err(reason) => return failure(StatusCode::BAD_GATEWAY, &reason),
+        Err(reason) => {
+            eprintln!("[writing-proxy] apple: sidecar did not start ({reason})");
+            return failure(StatusCode::BAD_GATEWAY, &reason);
+        }
     };
     let target = format!("{}/v1/chat/completions", base_url.trim_end_matches('/'));
     forward(&state, target, token, &request).await
@@ -181,9 +192,21 @@ fn accepted(state: &ProxyState, headers: &HeaderMap, body: &Bytes) -> Option<Val
 
 /// Sends one request on, and hands the reply back as it arrives.
 async fn forward(state: &ProxyState, target: String, key: String, request: &Value) -> Response {
+    // The target, the model, and the stream flag only. The messages are the
+    // user's words, and the key is a secret.
+    let model = request
+        .get("model")
+        .and_then(Value::as_str)
+        .unwrap_or("(free list)");
+    let streamed = request
+        .get("stream")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    eprintln!("[writing-proxy] -> {target} model={model} stream={streamed}");
+    let started = std::time::Instant::now();
     let answer = state
         .client
-        .post(target)
+        .post(&target)
         .bearer_auth(key)
         .header(header::CONTENT_TYPE, "application/json")
         .body(serde_json::to_vec(request).unwrap_or_default())
@@ -193,14 +216,24 @@ async fn forward(state: &ProxyState, target: String, key: String, request: &Valu
     let answer = match answer {
         Ok(answer) => answer,
         Err(error) => {
+            eprintln!(
+                "[writing-proxy] <- {target} failed after {:?}: {error} (connect={}, timeout={})",
+                started.elapsed(),
+                error.is_connect(),
+                error.is_timeout(),
+            );
             return failure(
                 StatusCode::BAD_GATEWAY,
                 &format!("Could not reach the writing service. ({error})"),
-            )
+            );
         }
     };
 
     let status = StatusCode::from_u16(answer.status().as_u16()).unwrap_or(StatusCode::BAD_GATEWAY);
+    eprintln!(
+        "[writing-proxy] <- {target} {status} after {:?}",
+        started.elapsed()
+    );
     let content_type = answer
         .headers()
         .get(header::CONTENT_TYPE)
@@ -221,10 +254,24 @@ async fn forward(state: &ProxyState, target: String, key: String, request: &Valu
 }
 
 /// The client sends an authorization header, so the browser asks first.
-async fn preflight() -> Response {
+///
+/// The typed client also adds headers of its own, such as `x-stainless-os`.
+/// The answer allows each header the browser names, because the run token is
+/// the gate. A header left out makes the browser drop the request, and the
+/// client reports only "Connection error."
+async fn preflight(headers: HeaderMap) -> Response {
     let mut response = Response::builder().status(StatusCode::NO_CONTENT);
     for (name, value) in shared_headers() {
         response = response.header(name, value);
+    }
+    let asked = headers
+        .get(header::ACCESS_CONTROL_REQUEST_HEADERS)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|asked| {
+            HeaderValue::from_str(&format!("authorization, content-type, {asked}")).ok()
+        });
+    if let (Some(asked), Some(sent)) = (asked, response.headers_mut()) {
+        sent.insert(header::ACCESS_CONTROL_ALLOW_HEADERS, asked);
     }
     response
         .body(Body::empty())
@@ -232,7 +279,8 @@ async fn preflight() -> Response {
 }
 
 /// The proxy serves one path. Everything else is not here.
-async fn missing() -> Response {
+async fn missing(uri: axum::http::Uri) -> Response {
+    eprintln!("[writing-proxy] no route for {}", uri.path());
     failure(StatusCode::NOT_FOUND, "This proxy serves one path.")
 }
 
@@ -323,6 +371,7 @@ impl WritingProxy {
                 .ok_or_else(|| "Connect OpenRouter in Settings first.".to_owned())
         })
         .await?;
+        eprintln!("[writing-proxy] listening at {}", endpoint.base_url);
         *held = Some(endpoint.clone());
         Ok(endpoint)
     }

@@ -3,6 +3,7 @@ import {
   composeSuggestions,
   historyMatches,
   joinTokens,
+  matchTyped,
   stripeForText,
   takeTokens,
   tokenize,
@@ -130,5 +131,67 @@ describe("audio tags in a row", () => {
     expect(
       composeSuggestions({ typed: "I am", history: [], mdPhrases: ["[sighs] I am tired."], llm: [] }),
     ).toEqual([{ text: "[sighs] I am tired.", source: "md" }]);
+  });
+});
+
+describe("rows that contain the draft", () => {
+  it("matches the draft at the start of a word inside a row", () => {
+    expect(matchTyped("Water, no ice", "water")).toBe("prefix");
+    expect(matchTyped("Could I get a glass of water", "water")).toBe("contains");
+    expect(matchTyped("Could I get a glass of water", "glass of")).toBe("contains");
+    expect(matchTyped("Can I have some water please?", "wat")).toBe("contains");
+    expect(matchTyped("[sighs] I need some water", "need")).toBe("contains");
+    expect(matchTyped("Could I get a glass of water", "ate")).toBeNull();
+    expect(matchTyped("Water", "water")).toBeNull();
+    expect(matchTyped("Water", "")).toBeNull();
+  });
+
+  it("finds past sentences that contain the draft", () => {
+    expect(historyMatches("water", ["Hi. Can I have some water please?", "Water is cold."]))
+      .toEqual(["Water is cold.", "Can I have some water please?"]);
+  });
+
+  it("puts every row that starts with the draft before every row that contains it", () => {
+    const rows = composeSuggestions({
+      typed: "water",
+      mdPhrases: ["Could I get a glass of water", "Water, no ice"],
+      starters: ["Some water for"],
+      history: ["Can I have some water please?", "Water is cold."],
+      llm: ["Water is my favourite drink", "Is the water warm?", "I am really thirsty"],
+    });
+    expect(rows).toEqual([
+      { text: "Water is cold.", source: "history" },
+      { text: "Water is my favourite drink", source: "llm" },
+      { text: "I am really thirsty", source: "llm" },
+      { text: "Water, no ice", source: "md" },
+      { text: "Can I have some water please?", source: "history" },
+      { text: "Is the water warm?", source: "llm" },
+    ]);
+  });
+
+  it("hides no words, marks the found words, and replaces the draft on a take", () => {
+    const row = stripeForText("Could I get a glass of water", "glass of");
+    expect(row.hidden).toBe(0);
+    expect(row.tokens.slice(...row.found!)).toEqual(["glass", "of"]);
+    expect(joinTokens(takeTokens(row, 5))).toBe("Could I get a glass ");
+  });
+
+  it("reaches past six words to show the found words", () => {
+    const row = stripeForText("Could you please bring me a glass of cold water", "water");
+    expect(row.tokens.slice(...row.found!)).toEqual(["water"]);
+    expect(row.hasMore).toBe(false);
+  });
+
+  it("keeps a row that does not hold the draft whole, with nothing found", () => {
+    const row = stripeForText("I am really thirsty", "water");
+    expect(row.hidden).toBe(0);
+    expect(row.found).toBeUndefined();
+    expect(joinTokens(takeTokens(row, 4))).toBe("I am really thirsty ");
+  });
+
+  it("keeps the rows that start with the draft as they were", () => {
+    const row = stripeForText("Water, no ice", "water");
+    expect(row.hidden).toBe(1);
+    expect(row.found).toBeUndefined();
   });
 });

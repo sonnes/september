@@ -24,11 +24,11 @@ export const DEMO_SPACES: { title: string; phrases: { text: string; code: string
     ],
   },
   {
-    title: 'Silo',
+    title: 'Game night',
     phrases: [
-      { text: 'What do you think is outside?', code: 'out' },
-      { text: 'Who do you trust in Silo?', code: 'trust' },
-      { text: 'I have a theory about Silo.', code: 'theory' },
+      { text: 'Anyone have wood for sheep?', code: 'wood' },
+      { text: 'Your turn to roll.', code: 'roll' },
+      { text: 'I’ll buy it!', code: 'buy' },
     ],
   },
 ];

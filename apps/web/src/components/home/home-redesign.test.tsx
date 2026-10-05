@@ -1,18 +1,17 @@
 // @vitest-environment jsdom
 import React, { act } from 'react';
 
+import { MOODS } from '@september/core/rules/moods';
 import { type Root, createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { HomePage } from '../../pages/home';
 import { AGENT_DEMO_ASKS, AgentSection } from './agent-section';
+import { ExpressionSection } from './expression-section';
 import { Footer } from './footer';
 import { LiveDemoSection } from './live-demo-section';
 import { NOTE_SENTENCES, NotesSection, PRESENT_CHUNKS } from './notes-section';
 import { PhraseCodesSection, matchDemoCode } from './phrase-codes-section';
-import { MOODS } from '@september/core/rules/moods';
-
-import { ExpressionSection } from './expression-section';
 import { VoiceSection } from './voice-section';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -100,6 +99,26 @@ describe('Talk demo', () => {
     expect(demoSpeech.speak).toHaveBeenCalledWith('Hello there');
     expect(composer.value).toBe('');
   });
+
+  it('shows only the rows that hold the typed words', () => {
+    render(<LiveDemoSection />);
+    typeInto(container.querySelector('textarea')!, 'differ');
+
+    const rows = [...container.querySelectorAll('[data-source]')];
+    expect(
+      rows.map(row => row.querySelector('[aria-label^="Speak "]')?.getAttribute('aria-label'))
+    ).toEqual(['Speak I see it differently.']);
+  });
+
+  it('replaces the draft with a row that contains the typed words', () => {
+    render(<LiveDemoSection />);
+    const composer = container.querySelector('textarea')!;
+    typeInto(composer, 'differ');
+    const tokens = container.querySelectorAll('[data-source] button:not([aria-label])');
+    click(tokens[tokens.length - 1]);
+
+    expect(composer.value).toBe('I see it differently. ');
+  });
 });
 
 describe('phrase and space demo', () => {
@@ -111,8 +130,11 @@ describe('phrase and space demo', () => {
   });
 
   it('matches codes from the selected space', () => {
-    expect(matchDemoCode('out', 3)).toEqual({ code: 'out', phrase: 'What do you think is outside?' });
-    expect(matchDemoCode('out', 0)).toBeUndefined();
+    expect(matchDemoCode('wood', 3)).toEqual({
+      code: 'wood',
+      phrase: 'Anyone have wood for sheep?',
+    });
+    expect(matchDemoCode('wood', 0)).toBeUndefined();
     expect(matchDemoCode('cm', 3)).toBeUndefined();
   });
 
@@ -128,14 +150,14 @@ describe('phrase and space demo', () => {
 
   it('uses the selected space phrases in the composer and speech service', () => {
     render(<PhraseCodesSection />);
-    click(button('Silo'));
-    expect(button('Silo').getAttribute('aria-pressed')).toBe('true');
+    click(button('Game night'));
+    expect(button('Game night').getAttribute('aria-pressed')).toBe('true');
 
-    click(button('What do you think is outside?'));
-    expect(container.querySelector('textarea')?.value).toBe('What do you think is outside? ');
+    click(button('Anyone have wood for sheep?'));
+    expect(container.querySelector('textarea')?.value).toBe('Anyone have wood for sheep? ');
     click(button('Speak'));
 
-    expect(demoSpeech.speak).toHaveBeenCalledWith('What do you think is outside?');
+    expect(demoSpeech.speak).toHaveBeenCalledWith('Anyone have wood for sheep?');
   });
 });
 
@@ -206,6 +228,16 @@ describe('note demo', () => {
 });
 
 describe('Agent demo', () => {
+  it('shows the space of each request', () => {
+    render(<AgentSection />);
+    for (const ask of AGENT_DEMO_ASKS) {
+      click(button(ask.label));
+      const result = container.querySelector('[role="region"][aria-label="Customized space"]')!;
+      expect(result.querySelector('h3')?.textContent).toBe(ask.space.title);
+    }
+    expect(new Set(AGENT_DEMO_ASKS.map(ask => ask.space.title)).size).toBe(AGENT_DEMO_ASKS.length);
+  });
+
   it('shows the phrases produced by the selected request in the customized space', () => {
     render(<AgentSection />);
     click(button(AGENT_DEMO_ASKS[1].label));

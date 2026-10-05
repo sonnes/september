@@ -1,8 +1,9 @@
+import { stripTags } from './audio-tags.ts';
 import { exampleTags, moodBlock, type MoodKey } from './moods.ts';
 
 
 /**
- * The two prompts for the last rows of a stripe.
+ * The three prompts for the last rows of a stripe.
  *
  * Both platform suggestion services import the same prompts from this module.
  */
@@ -58,6 +59,39 @@ const COMPLETION_PROMPT = `Complete the User's partial input into 5 full spoken 
 - Keep completions speakable and natural — full sentences of 5-7 words (including the typed prefix) when the input allows; this is spoken conversation
 - Take the subject, the tone, and the wording from the user context. Where it is silent, follow the conversation history.
 - Do NOT complete into needs, care, health, or thanks unless the context or the history raises it
+</rules>
+
+{USER_CONTEXT}
+
+{AUDIO_TAGS}
+
+Answer with JSON: {"suggestions": ["...", "...", "...", "...", "..."]}`;
+
+/** A draft of this many words or fewer is a search, so the model can write about it freely. */
+const SEARCH_WORDS = 2;
+
+/**
+ * Search prompt. It is used when the draft has one or two words.
+ * The model writes full sentences about what the typed words refer to.
+ */
+const SEARCH_PROMPT = `Write 5 full spoken sentences that the User can want to say about their current input.
+
+<context>
+- The User is using a communication app to speak out loud
+- The "current input" below is one or two words. The User typed them to find a sentence about them.
+- The user context below, when provided, decides the subject and the tone of every sentence
+- The "Me:" and "Them:" lines are the recent conversation history for context
+</context>
+
+<rules>
+- Each sentence MUST be about what the current input refers to, in this conversation
+- A sentence can contain the current input at the start, in the middle, or at the end
+- A sentence can also use a different form of the input, or other words on the same topic. For example, "water" can give "I am really thirsty".
+- Do NOT start every sentence with the current input
+- Keep sentences speakable and natural, 5-7 words each. This is spoken conversation.
+- Use the same language as the current input
+- Take the subject, the tone, and the wording from the user context. Where it is silent, follow the conversation history.
+- Do NOT write about needs, care, health, or thanks unless the context or the history raises it
 </rules>
 
 {USER_CONTEXT}
@@ -134,12 +168,14 @@ export function buildSuggestionPrompt(
   const messagesContent = history.join('\n');
 
   const isCompletion = typed.trim().length > 0;
+  const isSearch =
+    isCompletion && stripTags(typed).split(/\s+/).filter(Boolean).length <= SEARCH_WORDS;
 
   const tagRules = tags
     ? AUDIO_TAG_RULES.replace('{EXAMPLES}', exampleTags(mood).join(', '))
     : '';
   const system = applyUserContext(
-    isCompletion ? COMPLETION_PROMPT : OPENING_PROMPT,
+    isSearch ? SEARCH_PROMPT : isCompletion ? COMPLETION_PROMPT : OPENING_PROMPT,
     context,
     tagRules
   );

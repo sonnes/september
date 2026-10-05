@@ -1419,6 +1419,21 @@ const textOf = (content: unknown): string =>
  * point when the permission gate let it through, which happens on the first
  * turn of a new space and nowhere else.
  */
+/** The arguments, with null for each missing property that may be null. */
+function withNulls(schema: Record<string, unknown>, args: object): object {
+  const properties = (schema.properties ?? {}) as Record<
+    string,
+    { type?: unknown }
+  >;
+  const filled: Record<string, unknown> = { ...args };
+  for (const [name, property] of Object.entries(properties)) {
+    const nullable =
+      Array.isArray(property.type) && property.type.includes("null");
+    if (nullable && !(name in filled)) filled[name] = null;
+  }
+  return filled;
+}
+
 function agentTools(
   adapter: AgentRuntimeAdapter,
   space: AgentSpace,
@@ -1434,9 +1449,13 @@ function agentTools(
       parameters: definition.function.parameters as unknown as TSchema,
       executionMode: "sequential",
       // A model given a schema with no properties can answer `[]` where it
-      // means `{}`. Apple Intelligence does. Neither is worth a failed turn.
+      // means `{}`. A model can also leave out an argument that may be null.
+      // Apple Intelligence does both. Neither is worth a failed turn.
       prepareArguments: (args: unknown) =>
-        args && typeof args === "object" && !Array.isArray(args) ? args : {},
+        withNulls(
+          definition.function.parameters,
+          args && typeof args === "object" && !Array.isArray(args) ? args : {},
+        ),
       execute: async (toolCallId: string, params: unknown) => {
         const raw = JSON.stringify(params ?? {});
         const text = isAgentWriteTool(name)

@@ -64,8 +64,10 @@ cargo fmt --all -- --check
 - Route speech through September's native audio engine. Never change the macOS
   default output when the user chooses a speaker in September.
 - Keep the virtual microphone control in the Talk audio selector beside Speak.
-  In the compact tier of the panel, the selector is on the line below the
-  composer. The selector must remain visible when the Mac has one sound output.
+  The selector is one 44-point headphones key in every tier. Its accessible
+  name says the output and the state of the microphone, and a green dot shows
+  that the microphone is on. The selector must remain visible when the Mac has
+  one sound output.
 - Never put the words of the user in a log. A line carries a count, a device
   name, or a reason. The sentence in the composer is what they are about to say
   out loud, and it belongs to them. The same goes for an API key.

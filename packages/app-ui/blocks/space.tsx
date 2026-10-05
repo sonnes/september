@@ -129,8 +129,8 @@ export function useRememberMode(space: Space, mode: SpaceMode) {
 }
 
 export interface NewSpace {
-  /** Makes a space and opens it. */
-  create: () => void;
+  /** Makes a space and opens it. Gives false when the space could not be made. */
+  create: () => Promise<boolean>;
   pending: boolean;
   error: Error | null;
 }
@@ -153,7 +153,7 @@ export function useNewSpace(): NewSpace {
 
   const create = useCallback(() => {
     setError(null);
-    void createSpace
+    return createSpace
       .mutateAsync(newSpaceTitle((spaces ?? []).map((one) => one.title)))
       .then((space) => {
         // The screen this opens finds its space by slug, in this list. The
@@ -171,8 +171,12 @@ export function useNewSpace(): NewSpace {
           spaceParams(space, newSpaceMode(hasWritingService(), agentEnabled())),
         );
       })
-      .catch((reason: unknown) =>
-        setError(reason instanceof Error ? reason : new Error(String(reason))),
+      .then(
+        () => true,
+        (reason: unknown) => {
+          setError(reason instanceof Error ? reason : new Error(String(reason)));
+          return false;
+        },
       );
   }, [client, createSpace, navigate, spaces]);
 
@@ -251,6 +255,7 @@ export function Composer({
   suggestions = true,
   mood = null,
   onMood,
+  cover,
 }: {
   mode: ComposerMode;
   /** The space the stripe reads. */
@@ -275,6 +280,8 @@ export function Composer({
   mood?: MoodKey | null;
   /** Changes the mood. Without it, the mood keys do not show. */
   onMood?: (mood: MoodKey | null) => void;
+  /** Takes the place of the field, for example while a sentence plays. */
+  cover?: ReactNode;
 }) {
   const field = useRef<HTMLTextAreaElement>(null);
   const layer = useRef<HTMLDivElement>(null);
@@ -283,8 +290,11 @@ export function Composer({
   const [undoStack, setUndoStack] = useState<string[]>([]);
   const action = composerAction(mode);
   const speaks = action.speaks;
-  const chrome = useChrome();
   const panel = usePanel();
+  // The panel decides the compact tier by its own width, so the composer and
+  // the More menu of the panel always agree. The web app has no panel, and a
+  // container query on the screen body decides there.
+  const compact = panel ? panel.tier === "compact" : null;
 
   // The field grows with its text, up to the height the class holds.
   useEffect(() => {
@@ -339,7 +349,7 @@ export function Composer({
   });
 
   return (
-    <div className="bg-muted/40 flex shrink-0 flex-col gap-3 rounded-2xl p-3">
+    <div className="flex shrink-0 flex-col gap-2.5">
       {before}
 
       {suggestions ? (
@@ -355,7 +365,8 @@ export function Composer({
         />
       ) : null}
 
-      <div className="bg-background focus-within:border-ring focus-within:ring-ring/20 rounded-2xl border p-3 shadow-sm transition-[box-shadow,border-color] focus-within:ring-[3px]">
+      {cover ?? (
+      <div className="bg-background ring-primary/45 focus-within:ring-primary/70 rounded-surface p-3 shadow-sm ring-[3px] transition-[box-shadow]">
         {/* The layer behind the field draws a chip under each audio tag. It
             has the same type and wrap as the field, and its text is clear, so
             only the chips show. The field on top keeps the caret, the
@@ -415,9 +426,8 @@ export function Composer({
         {note ? (
           <p role="status" className="text-muted-foreground mt-2 text-sm">{note}</p>
         ) : null}
-        {/* The row folds in the compact tier, under 560 points of the
-            screen body: one mood menu key for the five, and the sound output
-            on a line of its own. */}
+        {/* The row folds in the compact tier, under 560 points: one mood
+            menu key for the five. */}
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-1.5">
             <Button
@@ -443,39 +453,45 @@ export function Composer({
               <Delete aria-hidden />
             </Button>
             {/* In the compact panel, Clear lives in the More menu. */}
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              aria-label="Clear"
-              onClick={() => draft && write("")}
-              aria-disabled={!draft}
-              className={cn(
-                "size-11 aria-disabled:opacity-50",
-                chrome === "panel" && "@max-[35rem]:hidden",
-              )}
-            >
-              <Trash2 aria-hidden />
-            </Button>
+            {compact ? null : (
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Clear"
+                onClick={() => draft && write("")}
+                aria-disabled={!draft}
+                className="size-11 aria-disabled:opacity-50"
+              >
+                <Trash2 aria-hidden />
+              </Button>
+            )}
           </div>
-          <div className="flex items-center gap-2 @max-[35rem]:contents">
+          <div
+            className={cn(
+              "flex items-center gap-2",
+              compact === null ? "@max-[35rem]:contents" : compact && "contents",
+            )}
+          >
             {speaks && onMood ? (
-              <>
-                <div className="@max-[35rem]:hidden">
-                  <MoodKeys mood={mood} onMood={onMood} />
-                </div>
-                <div className="@min-[35rem]:hidden">
-                  <MoodMenu mood={mood} onMood={onMood} keys={chrome === "panel"} />
-                </div>
-              </>
+              compact === null ? (
+                <>
+                  <div className="@max-[35rem]:hidden">
+                    <MoodKeys mood={mood} onMood={onMood} />
+                  </div>
+                  <div className="@min-[35rem]:hidden">
+                    <MoodMenu mood={mood} onMood={onMood} keys={false} />
+                  </div>
+                </>
+              ) : compact ? (
+                <MoodMenu mood={mood} onMood={onMood} keys />
+              ) : (
+                <MoodKeys mood={mood} onMood={onMood} />
+              )
             ) : null}
             {/* The sound output belongs beside the button that makes a sound.
                 Notes makes none. */}
-            {speaks ? (
-              <div className="@max-[35rem]:order-last @max-[35rem]:basis-full">
-                <AudioSelector />
-              </div>
-            ) : null}
+            {speaks ? <AudioSelector /> : null}
             <Button
               type="button"
               size="lg"
@@ -489,6 +505,7 @@ export function Composer({
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
@@ -733,19 +750,24 @@ function AudioSelector() {
       }}
     >
       <DropdownMenuTrigger asChild>
+        {/* One key, so the tools row keeps its room. The name of the
+            output is in the menu, and in the name that a screen reader says.
+            A green dot shows that calls hear September. */}
         <Button
           type="button"
-          size="lg"
+          size="icon"
           variant="outline"
-          className="h-11 max-w-56 rounded-full px-4 font-medium"
+          aria-label={`Sound output: ${selected?.name ?? "not chosen"}. September Microphone ${microphoneOn ? "on" : "off"}`}
+          title={selected?.name ?? "Sound output"}
+          className="relative size-11"
         >
           <Headphones aria-hidden />
-          <span className="truncate">{selected?.name ?? "Audio"}</span>
-          {microphoneOn ? <Mic className="text-primary" aria-hidden /> : null}
-          <span className="sr-only">
-            September Microphone {microphoneOn ? "on" : "off"}
-          </span>
-          <ChevronDown className="opacity-50" aria-hidden />
+          {microphoneOn ? (
+            <span
+              aria-hidden
+              className="ring-background absolute top-2 right-2 size-2.5 rounded-full bg-emerald-500 ring-2"
+            />
+          ) : null}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">

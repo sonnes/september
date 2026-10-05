@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Suggestion Stripes That Match Inside a Phrase</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --indigo-700:#4338ca; --indigo-600:#4f46e5; --indigo-400:#818cf8; --indigo-200:#c7d2fe; --indigo-100:#e0e7ff; --indigo-50:#eef2ff;
+    --zinc-900:#18181b; --zinc-700:#3f3f46; --zinc-600:#52525b; --zinc-500:#71717a; --zinc-400:#a1a1aa;
+    --zinc-300:#d4d4d8; --zinc-200:#e4e4e7; --zinc-100:#f4f4f5; --zinc-50:#fafafa;
+    --chart-2:#0f9488; --chart-2-soft:rgba(15,148,136,.45); --chart-1:#f97316;
+    --r-control:12px; --r-chip:14px; --r-surface:20px;
+    --shadow:0 1px 2px rgba(24,24,27,.06), 0 1px 3px rgba(24,24,27,.04);
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Noto Sans", Helvetica, sans-serif; background:var(--zinc-100); color:var(--zinc-900); -webkit-font-smoothing:antialiased; padding:48px 24px 120px; font-size:14px; line-height:1.5; }
+  .page { max-width:1200px; margin:0 auto; }
+  .eyebrow { font-size:14px; font-weight:500; color:var(--indigo-600); }
+  h1 { font-size:32px; font-weight:700; letter-spacing:-.02em; margin-top:6px; }
+  .lede { font-size:15px; color:var(--zinc-600); margin-top:10px; max-width:84ch; line-height:1.7; }
+  section { margin-top:56px; }
+  section > h2 { font-size:22px; font-weight:700; }
+  section > .sub { font-size:14px; color:var(--zinc-600); margin-top:6px; max-width:84ch; line-height:1.7; }
+  code { font-family:ui-monospace, Menlo, monospace; font-size:12px; background:var(--zinc-200); padding:1px 5px; border-radius:5px; }
+  pre { font-family:ui-monospace, Menlo, monospace; font-size:12.5px; line-height:1.6; background:var(--zinc-900); color:#e4e4e7; border-radius:16px; padding:18px 20px; overflow-x:auto; margin-top:14px; }
+  pre .add { color:#86efac; } pre .del { color:#fca5a5; } pre .file { color:var(--indigo-200); font-weight:600; }
+  table { border-collapse:collapse; margin-top:16px; background:#fff; border-radius:16px; overflow:hidden; box-shadow:var(--shadow); width:100%; }
+  th, td { text-align:left; padding:11px 14px; border-top:1px solid var(--zinc-100); font-size:13.5px; vertical-align:top; line-height:1.55; }
+  th { background:var(--zinc-50); font-weight:600; border-top:0; }
+
+  .compare { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:20px; }
+  .card { background:#fff; border-radius:var(--r-surface); box-shadow:var(--shadow); padding:20px; }
+  .card h3 { font-size:15px; font-weight:600; }
+  .card .note { font-size:13px; color:var(--zinc-500); margin-top:4px; }
+  .talk { margin-top:16px; display:flex; flex-direction:column; gap:10px; }
+
+  .row { display:flex; align-items:center; gap:6px; flex-wrap:nowrap; overflow-x:auto; }
+  .mark { width:16px; height:16px; flex-shrink:0; color:var(--indigo-400); }
+  .mark.hist { color:var(--zinc-500); }
+  .tile { display:inline-flex; align-items:center; min-height:46px; padding:0 16px; border:1px solid; border-radius:var(--r-chip); font-size:16px; font-weight:500; background:#fff; white-space:nowrap; cursor:pointer; }
+  .tile.p { padding:0 10px; font-weight:400; }
+  .md { border-color:rgba(79,70,229,.4); }
+  .hist { border-color:var(--chart-2-soft); }
+  .starter { border-style:dashed; border-color:rgba(79,70,229,.5); background:var(--indigo-50); }
+  .tile.on { border-color:var(--indigo-600); background:var(--indigo-100); color:var(--indigo-700); }
+  .tile.hist.on { border-color:var(--chart-2); background:rgba(15,148,136,.1); color:var(--chart-2); }
+  /* The words that the search found. */
+  .tile.found { text-decoration:underline; text-decoration-color:var(--indigo-600); text-decoration-thickness:2px; text-underline-offset:5px; }
+  .end { display:inline-flex; align-items:center; justify-content:center; min-height:46px; padding:0 16px; border-radius:var(--r-control); border:1px solid rgba(79,70,229,.4); background:var(--indigo-50); color:var(--indigo-600); flex-shrink:0; }
+  .end.more { border-style:dashed; background:#fff; }
+  .words { display:flex; gap:6px; flex-wrap:wrap; }
+  .word { display:inline-flex; align-items:center; min-height:48px; padding:0 16px; border:1px solid rgba(249,115,22,.5); border-radius:8px; font-size:18px; font-weight:500; background:#fff; }
+  .composer { border:1px solid var(--zinc-200); border-radius:var(--r-control); padding:14px 16px; font-size:18px; background:#fff; }
+  .caret { display:inline-block; width:2px; height:20px; background:var(--indigo-600); vertical-align:-3px; margin-left:1px; }
+  .empty { font-size:13px; color:var(--zinc-400); font-style:italic; padding:8px 0; }
+  .tag { display:inline-block; font-size:11px; font-weight:600; color:var(--indigo-700); background:var(--indigo-100); border-radius:999px; padding:1px 8px; margin-left:6px; vertical-align:2px; }
+  .flow { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; margin-top:20px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></symbol>
+  <symbol id="history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></symbol>
+  <symbol id="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/></symbol>
+  <symbol id="enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></symbol>
+  <symbol id="dots" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></symbol>
+</svg>
+
+<div class="page">
+  <div class="eyebrow">Mock, 2026-10-05</div>
+  <h1>Suggestion Stripes That Match Inside a Phrase</h1>
+  <p class="lede">Today a row shows only when its words start with the draft. With this change, a row also shows when the draft starts at any word inside it. A user who remembers "water" finds "Could I get a glass of water" without typing the opening words.</p>
+
+  <section>
+    <h2>The Draft "water"</h2>
+    <p class="sub">The space keeps the phrases "Water, no ice" and "Could I get a glass of water". The user said "Can I have some water please?" yesterday.</p>
+    <div class="compare">
+      <div class="card">
+        <h3>Today</h3>
+        <p class="note">Only a phrase that starts with "water" shows.</p>
+        <div class="talk">
+          <div class="row">
+            <svg class="mark"><use href="#pin"/></svg>
+            <span class="tile md p">,</span><span class="tile md">no</span><span class="tile md">ice</span>
+            <span class="end"><svg width="16" height="16"><use href="#enter"/></svg></span>
+          </div>
+          <div class="empty">The two other sentences do not show.</div>
+          <div class="words"><span class="word">water</span><span class="word">waiting</span><span class="word">watch</span></div>
+          <div class="composer">water<span class="caret"></span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Proposed</h3>
+        <p class="note">The rows that start with the draft come first. The rows that contain it come after them, in full, with the found word underlined.</p>
+        <div class="talk">
+          <div class="row">
+            <svg class="mark"><use href="#pin"/></svg>
+            <span class="tile md p">,</span><span class="tile md">no</span><span class="tile md">ice</span>
+            <span class="end"><svg width="16" height="16"><use href="#enter"/></svg></span>
+          </div>
+          <div class="row">
+            <svg class="mark hist"><use href="#history"/></svg>
+            <span class="tile hist">Can</span><span class="tile hist">I</span><span class="tile hist">have</span><span class="tile hist">some</span><span class="tile hist found">water</span><span class="tile hist">please</span><span class="tile hist p">?</span>
+            <span class="end"><svg width="16" height="16"><use href="#enter"/></svg></span>
+          </div>
+          <div class="row">
+            <svg class="mark"><use href="#pin"/></svg>
+            <span class="tile md">Could</span><span class="tile md">I</span><span class="tile md">get</span><span class="tile md">a</span><span class="tile md">glass</span><span class="tile md">of</span><span class="tile md found">water</span>
+            <span class="end"><svg width="16" height="16"><use href="#enter"/></svg></span>
+          </div>
+          <div class="words"><span class="word">water</span><span class="word">waiting</span><span class="word">watch</span></div>
+          <div class="composer">water<span class="caret"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>A Press on a Found Row</h2>
+    <p class="sub">A row that contains the draft hides no words, because the draft is not its opening. A press replaces the draft with the row up to the pressed tile. A code row works the same way today.</p>
+    <div class="flow">
+      <div class="card">
+        <h3>1. Hover "glass"</h3>
+        <p class="note">The tiles from the start to "glass" light up.</p>
+        <div class="talk">
+          <div class="row">
+            <svg class="mark"><use href="#pin"/></svg>
+            <span class="tile md on">Could</span><span class="tile md on">I</span><span class="tile md on">get</span><span class="tile md on">a</span><span class="tile md on">glass</span><span class="tile md">of</span><span class="tile md found">water</span>
+          </div>
+          <div class="composer">water<span class="caret"></span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>2. Press "glass"</h3>
+        <p class="note">The draft becomes the opening of the row. The row stays as the continuation.</p>
+        <div class="talk">
+          <div class="row">
+            <svg class="mark"><use href="#pin"/></svg>
+            <span class="tile md">of</span><span class="tile md">water</span>
+            <span class="end"><svg width="16" height="16"><use href="#enter"/></svg></span>
+          </div>
+          <div class="composer">Could I get a glass <span class="caret"></span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Or press the end key</h3>
+        <p class="note">The end key speaks the full row, the same as a row that starts with the draft.</p>
+        <div class="talk">
+          <div class="row">
+            <svg class="mark"><use href="#pin"/></svg>
+            <span class="tile md">Could</span><span class="tile md">I</span><span class="tile md">get</span><span class="tile md">a</span><span class="tile md">glass</span><span class="tile md">of</span><span class="tile md found">water</span>
+            <span class="end" style="background:var(--indigo-100);border-color:var(--indigo-600)"><svg width="16" height="16"><use href="#enter"/></svg></span>
+          </div>
+          <div class="composer">water<span class="caret"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The Match Rule</h2>
+    <p class="sub">The draft must start at the start of a word. Tags do not count. Case does not count.</p>
+    <table>
+      <tr><th>Draft</th><th>Row</th><th>Result</th></tr>
+      <tr><td>water</td><td>Water, no ice</td><td>Starts with the draft. The row hides "Water", as today.</td></tr>
+      <tr><td>water</td><td>Could I get a glass of water</td><td>Contains the draft. The row shows in full.</td></tr>
+      <tr><td>glass of</td><td>Could I get a glass of water</td><td>Contains the draft. Two words underlined.</td></tr>
+      <tr><td>wat</td><td>Can I have some water please?</td><td>Contains the draft. A part-written word matches the start of a word.</td></tr>
+      <tr><td>ate</td><td>Could I get a glass of water</td><td>No match. "ate" is inside "water", not at the start of a word.</td></tr>
+    </table>
+    <table>
+      <tr><th>Source</th><th>Change</th></tr>
+      <tr><td>Past messages <span class="tag">history</span></td><td>Starts with, then contains.</td></tr>
+      <tr><td>Saved phrases <span class="tag">md</span></td><td>Starts with, then contains.</td></tr>
+      <tr><td>Starters <span class="tag">starter</span></td><td>Starts with, then contains.</td></tr>
+      <tr><td>Model <span class="tag">llm</span></td><td>For a draft of one or two words, the model writes sentences about what the words refer to. A sentence can hold the words anywhere, or hold none of them. For a longer draft, the model continues the draft, as today.</td></tr>
+      <tr><td>Code <span class="tag">code</span></td><td>No change. A code is an exact match on the last word.</td></tr>
+      <tr><td>One-word chips</td><td>No change. A chip is one word, so "starts with" and "contains at a word start" give the same result.</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Row Order After the Change</h2>
+    <p class="sub">The cap stays at six rows. A row that starts with the draft saves more keys, so all of those rows come first.</p>
+    <table>
+      <tr><th>#</th><th>Rows</th></tr>
+      <tr><td>1</td><td>Past messages that start with the draft</td></tr>
+      <tr><td>2</td><td>Model rows that start with the draft, and model rows that do not hold it</td></tr>
+      <tr><td>3</td><td>Saved phrases that start with the draft</td></tr>
+      <tr><td>4</td><td>Starters that start with the draft</td></tr>
+      <tr><td>5</td><td>Past messages that contain the draft</td></tr>
+      <tr><td>6</td><td>Model rows that contain the draft</td></tr>
+      <tr><td>7</td><td>Saved phrases that contain the draft</td></tr>
+      <tr><td>8</td><td>Starters that contain the draft</td></tr>
+    </table>
+    <p class="sub" style="margin-top:12px">A model row that does not hold the draft stays at its place today. For a short draft, these are the related sentences, such as "I am really thirsty" for "water". They show in full, with no underline, and a press replaces the draft.</p>
+  </section>
+
+  <section>
+    <h2>Model Rows for a Short Draft</h2>
+    <p class="sub">The model gets a request only after a word ends. If the draft has one or two words, the model reads it as a search. If the draft has three words or more, the model continues it, as today.</p>
+    <div class="compare">
+      <div class="card">
+        <h3>Draft "water " <span class="tag">search</span></h3>
+        <p class="note">The model writes about water. A row can hold "water" anywhere, or hold none of it. A row that starts with "water" still sorts first.</p>
+        <div class="talk">
+          <div class="row">
+            <span class="mark"></span>
+            <span class="tile md">is</span><span class="tile md">too</span><span class="tile md">cold</span>
+            <span class="end"><svg width="16" height="16"><use href="#enter"/></svg></span>
+          </div>
+          <div class="row">
+            <svg class="mark hist"><use href="#history"/></svg>
+            <span class="tile hist">Can</span><span class="tile hist">I</span><span class="tile hist">have</span><span class="tile hist">some</span><span class="tile hist found">water</span><span class="tile hist">please</span><span class="tile hist p">?</span>
+            <span class="end"><svg width="16" height="16"><use href="#enter"/></svg></span>
+          </div>
+          <div class="row">
+            <span class="mark"></span>
+            <span class="tile md">Could</span><span class="tile md">you</span><span class="tile md">refill</span><span class="tile md">my</span><span class="tile md found">water</span><span class="tile md">bottle</span>
+            <span class="end"><svg width="16" height="16"><use href="#enter"/></svg></span>
+          </div>
+          <div class="row">
+            <span class="mark"></span>
+            <span class="tile md">I</span><span class="tile md">am</span><span class="tile md">really</span><span class="tile md">thirsty</span>
+            <span class="end"><svg width="16" height="16"><use href="#enter"/></svg></span>
+          </div>
+          <div class="composer">water <span class="caret"></span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Draft "I want to go " <span class="tag">continue</span></h3>
+        <p class="note">Four words, so the model continues the draft, as today.</p>
+        <div class="talk">
+          <div class="row">
+            <span class="mark"></span>
+            <span class="tile md">home</span><span class="tile md">now</span>
+            <span class="end"><svg width="16" height="16"><use href="#enter"/></svg></span>
+          </div>
+          <div class="row">
+            <span class="mark"></span>
+            <span class="tile md">outside</span><span class="tile md">for</span><span class="tile md">a</span><span class="tile md">bit</span>
+            <span class="end"><svg width="16" height="16"><use href="#enter"/></svg></span>
+          </div>
+          <div class="row">
+            <span class="mark"></span>
+            <span class="tile md">to</span><span class="tile md">the</span><span class="tile md">park</span><span class="tile md">later</span>
+            <span class="end"><svg width="16" height="16"><use href="#enter"/></svg></span>
+          </div>
+          <div class="composer">I want to go <span class="caret"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Code Changes</h2>
+    <p class="sub">All the rules change in <code>packages/core/rules/stripes.ts</code>. The block in <code>packages/app-ui/blocks/suggestions.tsx</code> only underlines the found tiles. The take path does not change, because a found row hides no words.</p>
+<pre><span class="file">packages/core/rules/stripes.ts</span>
+
+<span class="add">+/** How a row holds the typed words: as its opening, or from a later word. */
++export type Match = "prefix" | "contains";
++
++/**
++ * Where the typed words sit in the text. The typed words must start at the
++ * start of a word, so "ate" does not find "water". Tags and case do not count.
++ */
++export function matchTyped(text: string, typed: string): Match | null {
++  const lower = stripTags(typed).toLowerCase();
++  const words = stripTags(text).toLowerCase();
++  if (!lower || words === lower) return null;
++  if (words.startsWith(lower)) return "prefix";
++  for (let at = words.indexOf(lower, 1); at > 0; at = words.indexOf(lower, at + 1)) {
++    if (!/[\p{L}\p{N}]/u.test(words[at - 1])) return "contains";
++  }
++  return null;
++}
++
++/** The tokens of the text that the typed words found, as [start, end). */
++function foundRange(tokens: string[], typed: string): [number, number] | null {
++  const want = tokenize(stripTags(typed).toLowerCase());
++  const words = tokens.flatMap((token, index) => (isTag(token) ? [] : [{ token: token.toLowerCase(), index }]));
++  for (let start = 0; start + want.length &lt;= words.length; start++) {
++    const hit = want.every((word, k) =>
++      k === want.length - 1 ? words[start + k].token.startsWith(word) : words[start + k].token === word,
++    );
++    if (hit) return [words[start].index, words[start + want.length - 1].index + 1];
++  }
++  return null;
++}</span>
+
+ /**
+<span class="del">- * Sentences from past messages that start with the typed text, newest messages first.</span>
+<span class="add">+ * Sentences from past messages that hold the typed text, newest messages first.</span>
+  * History matches require nonempty typed text.
+  */
+ export function historyMatches(typed: string, history: string[]): string[] {
+   ...
+<span class="del">-      if (!words || words === lower || seen.has(key) || !words.startsWith(lower)) continue;</span>
+<span class="add">+      if (!words || seen.has(key) || !matchTyped(phrase, typed)) continue;</span>
+   ...
+ }
+
+ export function composeSuggestions({ ... }): Suggestion[] {
+   ...
+<span class="del">-  const starting = (text: string) => stripTags(text).toLowerCase().startsWith(lower);</span>
+<span class="add">+  const by = (match: Match) => (text: string) => matchTyped(text, typed) === match;</span>
+   ...
+<span class="del">-  pushAll(historyMatches(typed, history), "history");
+-  pushAll(llm, "llm");
+-  pushAll(phrases.filter(starting), "md");
+-  pushAll(starters.filter(starting), "starter");</span>
+<span class="add">+  // A row that starts with the draft saves more keys, so every one of them
++  // goes before a row that only contains the draft. A model row that does
++  // not hold the draft keeps the place that it has today.
++  const said = historyMatches(typed, history);
++  pushAll(said.filter(by("prefix")), "history");
++  pushAll(llm.filter((text) => !by("contains")(text)), "llm");
++  pushAll(phrases.filter(by("prefix")), "md");
++  pushAll(starters.filter(by("prefix")), "starter");
++  pushAll(said.filter(by("contains")), "history");
++  pushAll(llm.filter(by("contains")), "llm");
++  pushAll(phrases.filter(by("contains")), "md");
++  pushAll(starters.filter(by("contains")), "starter");</span>
+   return out.slice(0, MAX_COMPOSED);
+ }
+
+ export function stripeForText(text: string, typed: string): {
+<span class="del">-  text: string; tokens: string[]; hidden: number; lead: number; hasMore: boolean
+-} {
+-  const all = tokenize(text);
+-  const covered = hiddenTokenCount(all, typed);</span>
+<span class="add">+  text: string; tokens: string[]; hidden: number; lead: number; hasMore: boolean;
++  /** The tokens that the typed words found inside the row, as [start, end). */
++  found?: [number, number];
++} {
++  const all = tokenize(text);
++  // A row that contains the draft hides nothing. A press replaces the draft.
++  const inside = matchTyped(text, typed) === "contains" ? foundRange(all, typed) : null;
++  const covered = inside ? 0 : hiddenTokenCount(all, typed);</span>
+   ...
+<span class="add">+  // The slice reaches at least to the found words, so the row shows why it matched.
++  const reach = inside ? inside[1] + hidden : 0;</span>
+   while (end &lt; sentenceEnd) {
+     if (!PUNCTUATION.test(tokens[end]) &amp;&amp; !isTag(tokens[end])) {
+<span class="del">-      if (words === MAX_SLICE_WORDS) break;</span>
+<span class="add">+      if (words >= MAX_SLICE_WORDS &amp;&amp; end >= reach) break;</span>
+       words++;
+     }
+     end++;
+   }
+   return {
+     ...
+<span class="add">+    found: inside ? [inside[0] + hidden, inside[1] + hidden] : undefined,</span>
+   };
+ }
+
+
+<span class="file">packages/app-ui/blocks/suggestions.tsx</span>
+
+ interface Stripe {
+   ...
+<span class="add">+  /** The tiles that the typed words found inside the row. */
++  found?: [number, number];</span>
+ }
+
+               {stripe.tokens.map((token, index) => {
+                 ...
+<span class="add">+                const found = stripe.found !== undefined &amp;&amp;
++                  index >= stripe.found[0] &amp;&amp; index &lt; stripe.found[1];</span>
+                 ...
+                     className={cn(
+                       "rounded-chip ...",
+                       punctuation ? "" : "font-medium",
+<span class="add">+                      found &amp;&amp; "underline decoration-primary decoration-2 underline-offset-4",</span>
+                       ...
+                     )}
+
+
+<span class="file">packages/core/rules/prompts.ts</span>
+
+<span class="add">+import { stripTags } from './audio-tags.ts';
++
++/** A draft of this many words or fewer is a search, so the model can put it anywhere. */
++const SEARCH_WORDS = 2;
++
++/**
++ * Search prompt. It is used when the draft has one or two words.
++ * The model writes full sentences that contain the typed words.
++ */
++const SEARCH_PROMPT = `Write 5 full spoken sentences that the User can want to say about their current input.
++
++&lt;context&gt;
++- The User is using a communication app to speak out loud
++- The "current input" below is one or two words. The User typed them to find a sentence about them.
++- The user context below, when provided, decides the subject and the tone of every sentence
++- The "Me:" and "Them:" lines are the recent conversation history for context
++&lt;/context&gt;
++
++&lt;rules&gt;
++- Each sentence MUST be about what the current input refers to, in this conversation
++- A sentence can contain the current input at the start, in the middle, or at the end
++- A sentence can also use a different form of the input, or other words on the same topic. For example, "water" can give "I am really thirsty".
++- Do NOT start every sentence with the current input
++- Keep sentences speakable and natural, 5-7 words each. This is spoken conversation.
++- Use the same language as the current input
++- Take the subject, the tone, and the wording from the user context. Where it is silent, follow the conversation history.
++- Do NOT write about needs, care, health, or thanks unless the context or the history raises it
++&lt;/rules&gt;
++
++{USER_CONTEXT}
++
++{AUDIO_TAGS}
++
++Answer with JSON: {"suggestions": ["...", "...", "...", "...", "..."]}`;</span>
+
+ export function buildSuggestionPrompt(input: BuildSuggestionPromptInput): BuildSuggestionPromptResult {
+   ...
+   const isCompletion = typed.trim().length > 0;
+<span class="add">+  const isSearch = isCompletion &amp;&amp;
++    stripTags(typed).split(/\s+/).filter(Boolean).length &lt;= SEARCH_WORDS;</span>
+   ...
+   const system = applyUserContext(
+<span class="del">-    isCompletion ? COMPLETION_PROMPT : OPENING_PROMPT,</span>
+<span class="add">+    isSearch ? SEARCH_PROMPT : isCompletion ? COMPLETION_PROMPT : OPENING_PROMPT,</span>
+     context,
+     tagRules
+   );</pre>
+
+    <table>
+      <tr><th>Test first, in <code>packages/core/rules/stripes.test.ts</code></th></tr>
+      <tr><td><code>matchTyped</code> gives "prefix", "contains", or null for the rows in the match table.</td></tr>
+      <tr><td><code>historyMatches("water", ["Can I have some water please?"])</code> gives the sentence.</td></tr>
+      <tr><td><code>composeSuggestions</code> puts every "prefix" row before every "contains" row, and keeps the cap of six.</td></tr>
+      <tr><td><code>stripeForText</code> on a found row gives <code>hidden: 0</code>, a <code>found</code> range on the typed words, and a slice that reaches the found words past six words.</td></tr>
+      <tr><td><code>takeTokens</code> on a found row up to "glass" gives "Could I get a glass".</td></tr>
+      <tr><td><code>composeSuggestions</code> puts a model row that contains the draft after the past messages that contain it, and keeps a model row that does not hold the draft at its current place.</td></tr>
+      <tr><td><code>buildSuggestionPrompt</code> in <code>prompts.test.ts</code> gives the search prompt for "water " and "glass of ", and the completion prompt for "I want to go ". Tags do not count as words.</td></tr>
+      <tr><td><code>composeSuggestions</code> keeps a model row that does not hold the draft, with no <code>found</code> range, and a press on it replaces the draft.</td></tr>
+    </table>
+  </section>
+</div>
+</body>
+</html>

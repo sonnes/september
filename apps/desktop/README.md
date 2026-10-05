@@ -127,12 +127,12 @@ The layout of a screen follows the width of the panel:
 
 | Tier    | Width                | Layout                                                                                                                                                                                                              |
 | ------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Compact | Less than 560 points | One mood menu key replaces the five mood keys. The audio selector moves to a line below the composer. Clear moves into the More menu. Talk shows the last 3 messages and See all. Phrases and Voice controls open as sheets. |
+| Compact | Less than 560 points | One mood menu key replaces the five mood keys. Clear moves into the More menu. Phrases and Voice controls open as sheets. |
 | Regular | 560 to 899 points    | The composer and the history are the same as in the web app. Phrases and Voice controls open as sheets below the panel header.                                                                                       |
 | Wide    | 900 points and more  | Phrases and Voice open in the right rail.                                                                                                                                                                           |
 
-`PanelShell` measures the width of the whole panel for the tier. The composer and the
-history read the width of the screen body through CSS container queries.
+`PanelShell` measures the width of the whole panel for the tier. The composer reads
+that tier.
 
 ### Keys
 
@@ -254,15 +254,22 @@ The Talk screen has three parts, from the top:
 
 1. The panel header. It holds the space button, the mode switch, and the More
    menu.
-2. The transcript. It holds the spoken messages, 8 for each page, newest last.
-   Press a message to speak it again.
-3. The composer. It has the text field, undo, delete last word, clear, the
-   mood keys, the audio selector, and Speak. The Enter key speaks. Shift and
+2. The history. A card holds the last 3 messages, newest last. Each row shows
+   the time of the message. Press a message to speak it again. See all shows
+   the pages of 8 messages in place of the suggestions. Back to suggestions,
+   or Escape, closes the pages.
+3. The suggestions and the word row. See [Say more with fewer keys](#say-more-with-fewer-keys).
+4. The composer. It has the text field, undo, delete last word, clear, the
+   mood keys, the headphones key, and Speak. The Enter key speaks. Shift and
    Enter make a new line. The mood of a space is kept in the
    `talk-mood:<id>` setting. See `docs/concepts/audio-tags.md`.
 
-In the compact tier, the transcript and the composer fold. See
-[The panel](#the-panel).
+While Speak plays a sentence, the speaking card takes the place of the field.
+Stop, or Escape, stops the voice. Write next, or a typed letter, gives the
+field back while the voice goes on. Under the composer, a line shows the keys
+that work now.
+
+In the compact tier, the composer folds. See [The panel header](#the-panel-header).
 
 `packages/core/rules/spaces.ts` owns the rules that a test can read: the slug, the page, the
 unique title, and the word that delete removes.
@@ -282,7 +289,7 @@ changes only the fields it is given, in one statement.
 
 ### Where the sound comes out
 
-The audio selector beside Speak lists every output of this Mac. It moves both
+The audio selector beside Speak is a headphones key. Its menu lists every output of this Mac. It moves both
 voices to the output the user chooses without changing the macOS sound output.
 September keeps the device UID in its SQLite settings. If that device is not
 connected, September follows the current macOS output until it returns.
@@ -574,17 +581,22 @@ from the messages of the user, so it needs no service and no wait.
 `applySuggestion` knows a part-written word from a finished one, so the screen
 never splits the text itself.
 
-Each row reads differently. The colour and the mark in the gutter say the same
-thing, so a user who does not read colour still knows what a row is:
+Each row reads differently. The colour of the tiles and the mark at the start
+of the row say the same thing, so a user who does not read colour still knows
+what a row is. The mark has the colour of its tiles.
 
-| Row            | Colour and line | Mark                   | The key at the end |
-| -------------- | --------------- | ---------------------- | ------------------ |
-| A code         | Strong indigo   | The code               | Speak, solid       |
-| A phrase       | Indigo          | A pin, solid when kept | Speak              |
-| An opening     | Indigo, broken  | Two arrows             | Take the opening   |
-| A past message | Teal            | A clock                | Speak              |
-| From a model   | Grey            | none                   | Speak              |
-| A word         | Warm            | none                   | none               |
+| Row            | Tile colour    | Mark                   | The key at the end |
+| -------------- | -------------- | ---------------------- | ------------------ |
+| A code         | Strong indigo  | The code               | Speak, solid       |
+| A phrase       | Indigo         | A pin, solid when kept | Speak              |
+| An opening     | Indigo, broken | Two arrows             | Take the opening   |
+| A past message | Teal           | A clock                | Speak              |
+| From a model   | Grey           | A sparkle              | Speak              |
+| A word         | Warm           | none                   | none               |
+
+While a request to the writing service is open, a "Writing" status shows beside
+the Suggestions label. The rows that need no model show at once, and the rows
+of the model join them when the answer comes.
 
 A pin is solid when the user keeps the phrase, and it is an outline when a
 model wrote it. The panel uses the same two shapes, so one phrase reads the
@@ -695,8 +707,7 @@ the draft.
 The Talk audio selector can publish `September Microphone` as a macOS audio
 input. The input exists only while September runs and the control is on.
 
-1. Open Talk in the panel, and open the audio selector beside **Speak**. In the
-   compact tier, the selector is on the line below the composer.
+1. Open Talk in the panel. Then press the headphones key beside **Speak**.
 2. Turn on **September Microphone**.
 3. Allow system audio capture when macOS asks.
 4. Open FaceTime and select **September Microphone** from the Video menu.

@@ -1,9 +1,8 @@
 import { useState } from 'react';
 
-import { AudioLines, Plus } from 'lucide-react';
-
 import { draftParts, tagLabel } from '@september/core/rules/audio-tags';
 import { MOODS, type MoodKey } from '@september/core/rules/moods';
+import { AudioLines, Plus } from 'lucide-react';
 
 // One line for each mood, with the example tags of that mood.
 const LINES: Record<MoodKey, string> = {
@@ -25,8 +24,8 @@ export function ExpressionSection() {
               Say it the way you feel it.
             </h2>
             <p className="mt-2 max-w-2xl text-base leading-relaxed text-zinc-600">
-              Pick a mood, and the suggestions change their tone. With an Eleven v3 voice, tags
-              like [laughs] and [sighs] tell your voice how to say each line.
+              Pick a mood, and the suggestions change their tone. With an Eleven v3 voice, tags like
+              [laughs] and [sighs] tell your voice how to say each line.
             </p>
           </div>
         </div>

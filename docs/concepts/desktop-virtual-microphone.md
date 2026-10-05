@@ -12,7 +12,8 @@ September can publish its spoken messages as a macOS audio input named
 ## Keep the microphone temporary
 
 The microphone is off when September starts. The user controls it from the
-Talk audio selector beside Speak.
+Talk audio selector, the headphones key beside Speak. A green dot on the key
+shows that the microphone is on.
 
 The app creates a public Core Audio aggregate device while the control is on.
 The aggregate device contains a mono process tap for the September process.

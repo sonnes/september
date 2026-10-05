@@ -39,6 +39,16 @@ The Tauri product and the panel are named `September`. The default capability
 lets the UI replace the native window title after navigation, so each page adds
 its name to the app name.
 
+The panel has no title bar. The title bar is an overlay, and the window buttons
+sit over the indigo header. The header drags the window, so the capability
+allows `core:window:allow-start-dragging`.
+
+`create_panel` in `src/window.rs` makes the panel from its entry in
+`tauri.conf.json`, which has `create: false`. Only the builder gives the webview
+the place of the window buttons. AppKit lays out the title bar again after the
+window shows, so `september_window_buttons` in `native/window.m` puts the
+buttons back on each update of the window.
+
 The `tauri-plugin-window-state` plugin saves window size and position on exit.
 It restores these values on launch from `.window-state.json` in the application
 configuration directory. If the saved position is outside every connected

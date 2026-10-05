@@ -4,24 +4,15 @@ import { Transcript } from '@september/app-ui/blocks/agent-transcript';
 import type { AgentMessage, AgentToolName, AgentToolState } from '@september/core/rules/agent';
 import { ArrowRight, Check, FileText, Pin } from 'lucide-react';
 
-// The space the demo agent is looking at. Every row below is scoped to it —
-// the real runtime binds a turn to the open space, so there is no other space
-// for these tools to reach.
-const DEMO_SPACE = {
-  title: 'Silo',
-  context:
-    'Conversations about Silo with friends. Compare theories and reactions without spoilers.',
-};
-
 const NOTE_TEXT =
-  'Silo discussion on Thursday. The rules make me suspicious. ' +
-  'Who benefits from keeping everyone in the dark? What do we think is outside? ' +
-  'I keep changing my mind about who to trust. No spoilers.';
+  'Quarterly review on Monday. Sign-ups grew 18% after the new onboarding. ' +
+  'Support tickets fell by a third. Budget question: we stay within plan. ' +
+  'Mobile app question: a beta in March. I want to ask for one more designer.';
 
 const TIDIED_NOTE =
-  'My take\n\nThe rules make me suspicious. I keep changing my mind about who to trust.\n\n' +
-  'For discussion\n\nWho benefits from keeping everyone in the dark?\n' +
-  'What do we think is outside?\n\nNo spoilers.';
+  'Talking points\n\nSign-ups grew 18% after the new onboarding. Support tickets fell by a third. ' +
+  'I want to ask for one more designer.\n\n' +
+  'Likely questions\n\nBudget? We stay within plan.\nMobile app? A beta in March.';
 
 /** One step of a demo turn, in the shape the real transcript reads. */
 interface DemoStep {
@@ -33,7 +24,16 @@ interface DemoStep {
   waits?: boolean;
 }
 
+/** The space the demo agent is looking at. The real runtime binds a turn to the open space. */
+interface DemoSpace {
+  title: string;
+  context: string;
+  /** The note that the result card shows when the turn did not change a note. */
+  note?: { title: string; text: string };
+}
+
 export interface AgentDemoAsk {
+  space: DemoSpace;
   /** The words on the chip. A full request does not fit on one. */
   label: string;
   /** What the user actually said. */
@@ -51,30 +51,38 @@ const inspected = (notes: number, phrases: number, messages: number) => ({
   recent_talk_messages: Array.from({ length: messages }, () => ({})),
 });
 
-const SPACE_CONTEXT =
-  'Thursday conversations about Silo with friends. Compare theories about the ' +
-  'outside world and who to trust. Keep the discussion spoiler-free.';
-
 // Marketing-only turns. The tool names, the arguments, and the transcript that
 // draws them are the app's own — only these three conversations are demo-local.
 export const AGENT_DEMO_ASKS: readonly AgentDemoAsk[] = [
   {
-    label: 'Make a space to talk about Silo',
-    ask: 'Make a space for our conversations about Silo. I want to compare theories without spoiling anything.',
+    space: {
+      title: 'Doctor calls',
+      context: 'Video calls with my neurologist. Keep my answers short, because I tire quickly.',
+      note: {
+        title: 'Questions for the doctor',
+        text: 'Your questions for the next call, kept in this space.',
+      },
+    },
+    label: 'Make a space for my doctor calls',
+    ask: 'Make a space for my calls with my neurologist. I tire quickly, so I want short answers ready.',
     steps: [
       // The user's own words are already the space's note by the time its
       // agent takes the first turn — so there is one note and nothing else.
       { name: 'inspect_space', args: {}, result: inspected(1, 0, 0) },
       {
         name: 'configure_space',
-        args: { title: 'Silo', context: SPACE_CONTEXT },
+        args: {
+          title: 'Doctor calls',
+          context:
+            'Video calls with my neurologist. Keep my answers short, because I tire quickly.',
+        },
         result: { ok: true },
       },
       {
         name: 'change_phrase',
         args: {
           operation: 'create',
-          text: 'I have a different theory about Silo.',
+          text: 'Can you say that again, more slowly?',
           kind: 'phrase',
           pinned: true,
         },
@@ -84,7 +92,7 @@ export const AGENT_DEMO_ASKS: readonly AgentDemoAsk[] = [
         name: 'change_phrase',
         args: {
           operation: 'create',
-          text: 'Who do you trust in Silo?',
+          text: 'What are the side effects?',
           kind: 'phrase',
           pinned: true,
         },
@@ -92,18 +100,22 @@ export const AGENT_DEMO_ASKS: readonly AgentDemoAsk[] = [
       },
     ],
     reply:
-      'Your Silo space is ready, with your discussion ideas and two phrases for comparing theories. I’ve added the no-spoilers preference to its context.',
+      'Your Doctor calls space is ready, with two phrases for the call. I added your wish for short answers to its context.',
   },
   {
+    space: {
+      title: 'Game night',
+      context: 'Catan and Monopoly with friends. Quick phrases for trades and turns.',
+    },
     label: 'Add a phrase, and shorten another',
-    ask: 'Add “What do you think is outside?” And shorten my phrase about not trusting the official story.',
+    ask: 'Add “Anyone have wood for sheep?” And shorten my phrase about whose turn it is to roll.',
     steps: [
       { name: 'inspect_space', args: {}, result: inspected(1, 6, 2) },
       {
         name: 'change_phrase',
         args: {
           operation: 'create',
-          text: 'What do you think is outside?',
+          text: 'Anyone have wood for sheep?',
           kind: 'phrase',
           pinned: true,
         },
@@ -113,32 +125,36 @@ export const AGENT_DEMO_ASKS: readonly AgentDemoAsk[] = [
         name: 'change_phrase',
         args: {
           operation: 'edit',
-          phrase_id: 'phrase-official-story',
-          text: 'I don’t buy the official story.',
+          phrase_id: 'phrase-turn',
+          text: 'Your turn to roll.',
         },
         result: { ok: true },
       },
     ],
     reply:
-      '“What do you think is outside?” is pinned. Your other phrase now reads “I don’t buy the official story.” Keep editing until they sound like you.',
+      '“Anyone have wood for sheep?” is pinned. Your other phrase now reads “Your turn to roll.” Keep editing until they sound like you.',
   },
   {
-    label: 'Organize my Silo theories',
-    ask: 'Organize my Silo notes into my take and questions for the group. Keep my theories in my words.',
+    space: {
+      title: 'Work presentation',
+      context: 'Quarterly review with my team. Present the results, then answer questions.',
+    },
+    label: 'Organize my notes for the Q&A',
+    ask: 'Organize my presentation notes into talking points and likely questions. Keep my answers in my words.',
     steps: [
       {
         name: 'read_note',
-        args: { note_id: 'note-thursday' },
-        result: { name: 'Silo discussion', content: NOTE_TEXT, has_more: false },
+        args: { note_id: 'note-review' },
+        result: { name: 'Quarterly review', content: NOTE_TEXT, has_more: false },
       },
       {
         name: 'change_note',
-        args: { operation: 'replace', note_id: 'note-thursday', text: TIDIED_NOTE },
+        args: { operation: 'replace', note_id: 'note-review', text: TIDIED_NOTE },
         result: { ok: true },
       },
     ],
     reply:
-      'Your take comes first, then two questions for the group. I’ve kept your theories in your words and the no-spoilers reminder.',
+      'Your talking points come first, then the likely questions with your answers. I kept your answers in your words.',
   },
 ];
 
@@ -185,6 +201,7 @@ function AgentDemo() {
     .filter(step => step.name === 'change_phrase')
     .map(step => String(step.args.text));
   const note = demo.steps.find(step => step.name === 'change_note');
+  const noteTitle = demo.steps.find(step => step.name === 'read_note')?.result.name;
 
   return (
     <div className="min-w-0">
@@ -216,7 +233,7 @@ function AgentDemo() {
           className="min-w-0 rounded-surface border border-zinc-200 bg-white p-5 shadow-sm sm:p-8"
         >
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 pb-5">
-            <h3 className="text-2xl font-semibold text-zinc-950">{DEMO_SPACE.title}</h3>
+            <h3 className="text-2xl font-semibold text-zinc-950">{demo.space.title}</h3>
             <span className="flex items-center gap-2 text-sm font-medium text-indigo-700">
               <Check className="size-4" aria-hidden="true" />
               Ready for you
@@ -242,21 +259,21 @@ function AgentDemo() {
             <div>
               <p className="mb-4 flex items-center gap-2 text-sm font-medium text-zinc-600">
                 <FileText className="size-4" aria-hidden="true" />
-                Silo discussion
+                {String(noteTitle)}
               </p>
               <p className="whitespace-pre-line text-lg leading-relaxed text-zinc-900">
                 {String(note.args.text)}
               </p>
             </div>
           ) : (
-            asked === 0 && (
+            demo.space.note && (
               <div className="mt-6 border-t border-zinc-200 pt-5">
                 <p className="flex items-center gap-2 text-base font-semibold text-zinc-950">
                   <FileText className="size-4 text-indigo-600" aria-hidden="true" />
-                  Silo theories
+                  {demo.space.note.title}
                 </p>
                 <p className="mt-2 text-base leading-relaxed text-zinc-700">
-                  Your questions and theories, kept in this space.
+                  {demo.space.note.text}
                 </p>
               </div>
             )
@@ -271,7 +288,7 @@ function AgentDemo() {
           <Transcript
             rows={rows}
             busy={false}
-            space={DEMO_SPACE}
+            space={demo.space}
             onApprove={() => setResolution('applied')}
             onReject={() => setResolution('rejected')}
           />

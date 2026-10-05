@@ -276,6 +276,34 @@ export function timeAgo(at: number, now: number = Date.now()): string {
   return format.format(Math.round(seconds / divisor), unit);
 }
 
+const startOfDay = (at: number) => new Date(at).setHours(0, 0, 0, 0);
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * The time beside a message: the hour and minute today, the day of the week in
+ * the last six days, and the month and the day before that.
+ */
+export function messageTime(at: number, now: number = Date.now()): string {
+  const days = Math.round((startOfDay(now) - startOfDay(at)) / DAY_MS);
+  const date = new Date(at);
+  if (days <= 0) {
+    return `${date.getHours()}:${String(date.getMinutes()).padStart(2, "0")}`;
+  }
+  if (days < 7) {
+    return date.toLocaleDateString("en-US", { weekday: "short" });
+  }
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+/** The number of messages that the user said today. */
+export function spokenToday(
+  messages: readonly { created_at: number }[],
+  now: number = Date.now(),
+): number {
+  const today = startOfDay(now);
+  return messages.filter((message) => startOfDay(message.created_at) === today).length;
+}
+
 export interface TranscriptPage<T> {
   /** The number of pages. It is 1 even when the space is empty. */
   pageCount: number;

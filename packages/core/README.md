@@ -120,11 +120,20 @@ user often keeps one tab open per person they talk to.
 Import autocomplete through `@september/core/autocomplete`.
 
 `rules/stripes.ts` matches individual history sentences and limits suggestion
-slices to six unaccepted words. Sentence boundaries also end a slice.
+slices to six unaccepted words. `matchTyped` finds a row that starts with the
+draft, or a row that contains the draft at the start of a word. The rows that
+start with the draft come first. A row that contains the draft hides no words,
+so a press replaces the draft. Its `found` range marks the typed words, and its
+slice reaches at least to them. Sentence boundaries also end a slice.
 Punctuation and audio tags do not count toward the word limit. Each descriptor retains
 the complete text and reports whether more words remain. `takeTokens` puts a
 tag that came before the typed words at the start of the draft. The tags that
 the user typed stay where the user typed them.
+
+`rules/prompts.ts` gives a draft of one or two words the search prompt. The
+model then writes sentences about what the words refer to, and the words can be
+anywhere in the sentence, or not in it. A longer draft gets the completion
+prompt, and each row starts with the draft.
 
 `rules/audio-tags.ts` decides which voice receives audio tags, and removes them
 for every other voice. `rules/moods.ts` holds the five moods of Talk, with

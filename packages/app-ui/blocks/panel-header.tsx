@@ -105,7 +105,13 @@ export function PanelHeader({
   const composer = panel?.composer.current;
 
   return (
-    <header className="bg-sidebar text-sidebar-foreground flex h-16 shrink-0 items-center gap-2 px-2.5">
+    // The header is the title bar of the desktop window: a press on its free
+    // space drags the window, and the left inset keeps clear of the window
+    // buttons, which macOS draws over it.
+    <header
+      data-tauri-drag-region
+      className="bg-sidebar text-sidebar-foreground flex h-16 shrink-0 items-center gap-2 pr-2.5 pl-21"
+    >
       {page ? (
         <>
           <button
@@ -119,7 +125,10 @@ export function PanelHeader({
             <ChevronLeft className="size-4 shrink-0" aria-hidden />
             Back
           </button>
-          <span className="min-w-0 flex-1 truncate text-center text-base font-semibold">
+          <span
+            data-tauri-drag-region
+            className="min-w-0 flex-1 truncate text-center text-base font-semibold"
+          >
             {page.title}
           </span>
         </>
@@ -133,7 +142,7 @@ export function PanelHeader({
             aria-haspopup="dialog"
             onClick={() => onSheet("spaces")}
             className={cn(
-              "bg-sidebar-primary flex h-11 max-w-40 shrink-0 items-center gap-2 rounded-control pr-3 pl-2.5 text-sm font-semibold",
+              "bg-sidebar-primary flex h-11 max-w-56 min-w-0 items-center gap-2 rounded-control pr-3 pl-2.5 text-sm font-semibold whitespace-nowrap",
               ring,
             )}
           >
@@ -146,7 +155,7 @@ export function PanelHeader({
             <div
               role="tablist"
               aria-label="Space mode"
-              className="bg-sidebar-primary flex min-w-0 flex-1 gap-0.5 rounded-control p-0.5"
+              className="bg-sidebar-primary flex h-11 min-w-40 flex-1 rounded-control"
             >
               {shown.map(({ key, label }, at) => (
                 <button
@@ -160,15 +169,23 @@ export function PanelHeader({
                   tabIndex={key === mode ? 0 : -1}
                   onClick={() => navigate(spaceParams(space, key))}
                   onKeyDown={(event) => onTabKey(event, at)}
+                  // The whole 44-point height takes the press. The pill inside
+                  // is inset, as the mock draws it.
                   className={cn(
-                    "min-h-11 min-w-0 flex-1 rounded-[10px] px-2 text-sm font-medium transition-colors",
+                    "group h-11 min-w-0 flex-1 rounded-control p-1 text-sm font-medium",
                     ring,
-                    key === mode
-                      ? "bg-sidebar-foreground text-sidebar-primary font-semibold shadow-sm"
-                      : "hover:bg-sidebar-border/40",
                   )}
                 >
-                  {label}
+                  <span
+                    className={cn(
+                      "grid h-full place-items-center rounded-[9px] px-2 transition-colors",
+                      key === mode
+                        ? "bg-sidebar-foreground text-sidebar-primary font-semibold shadow-sm"
+                        : "group-hover:bg-sidebar-border/40",
+                    )}
+                  >
+                    {label}
+                  </span>
                 </button>
               ))}
             </div>
@@ -509,10 +526,11 @@ function SpaceSwitcher({
 
       <button
         type="button"
-        onClick={() => {
-          newSpace.create();
-          onCreated();
-        }}
+        // The switcher stays open until the space opens, so a failure shows
+        // its reason here.
+        onClick={() =>
+          void newSpace.create().then((made) => made && onCreated())
+        }
         aria-disabled={newSpace.pending}
         className="text-primary hover:bg-muted focus-visible:ring-ring flex min-h-13 items-center gap-3 rounded-control px-2 text-base font-semibold focus-visible:ring-2 focus-visible:outline-none aria-disabled:opacity-50"
       >
