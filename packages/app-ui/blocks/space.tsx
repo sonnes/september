@@ -623,7 +623,6 @@ function MoodKeys({
 /** The mark on the action button. `composerAction` holds everything else. */
 function ActionIcon({ mode }: { mode: ComposerMode }) {
   if (mode === "talk") return <Volume2 aria-hidden />;
-  if (mode === "notes") return <FileText aria-hidden />;
   // Setting a space up is the agent reading the words, so it wears the mark
   // of the thing that answers.
   return <Bot aria-hidden />;

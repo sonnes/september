@@ -239,3 +239,50 @@ it('marks a row that AI Assistance wrote', async () => {
   await advance();
   expect(container.querySelector('[aria-label="From AI Assistance"]')).not.toBeNull();
 });
+
+it('sends the note and the caret with a request from a note', async () => {
+  const note = { before: 'Intro.\nhello ', after: '\nEnd.' };
+  const show = async (text: string) =>
+    act(async () =>
+      root.render(
+        <Suggestions
+          text={text}
+          spaceId="space"
+          context=""
+          history={[]}
+          document={note}
+          onTake={() => {}}
+          onPin={() => {}}
+          onSpeak={() => {}}
+        />
+      )
+    );
+  await show('hello');
+  await show('hello ');
+  await advance();
+  const [{ messages }] = state.generate.mock.calls[0] as [{ messages: { content: string }[] }];
+  expect(messages[1].content).toContain('Intro.\nhello <caret/>\nEnd.');
+});
+
+it('names the end key of a row with the label it is given', async () => {
+  const show = async (text: string) =>
+    act(async () =>
+      root.render(
+        <Suggestions
+          text={text}
+          spaceId="space"
+          context=""
+          history={[]}
+          finishLabel="Add this suggestion to the note"
+          onTake={() => {}}
+          onPin={() => {}}
+          onSpeak={() => {}}
+        />
+      )
+    );
+  await show('hello');
+  await show('hello ');
+  await advance();
+  expect(container.querySelector('[aria-label="Add this suggestion to the note"]')).not.toBeNull();
+  expect(container.querySelector('[aria-label="Speak this suggestion"]')).toBeNull();
+});

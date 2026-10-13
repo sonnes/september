@@ -155,8 +155,7 @@ version of `fullScreen` does nothing.
 
 `blocks/chrome.tsx` exports `ChromeContext`, with the value `"shell"` or
 `"panel"`. The default is `"shell"`, and the web app always uses it. In
-`"panel"`, `ScreenHeader` and `SpaceDock` render nothing, and the Notes screen
-puts the note actions in a row above the note. A page reads the value through
+`"panel"`, `ScreenHeader` and `SpaceDock` render nothing. A page reads the value through
 `useChrome()`, so Talk, Notes, and Agent have one implementation for both
 frames. The same file holds `PanelContext`, `usePanel()`, and `tierFor`.
 
@@ -258,6 +257,27 @@ each edit through the platform settings service and never clears newer words
 when an earlier message finishes saving. Notes save text and titles on input,
 keep pending edits visible during query refreshes, and offer retry on failure.
 Both screens guard normal closing while writes are pending or failed.
+
+`blocks/note-document.tsx` holds `NoteDocument`, the editor of Notes and the
+About tab. It keeps the text as Markdown lines. The line rules are in
+`@september/core/rules/note-document`. Each line is a `div` with a `data-kind`,
+and the marks of a line show only while the caret is on it. The styles are in
+`packages/ui/theme.css`, under `.note-document`. The first typed key opens the
+writing tools under the caret line. The tools hold the style keys, Undo,
+Delete word, and Esc in one row, then `Suggestions`. The stripes read the
+sentence before the caret, and a take replaces that sentence. `Suggestions`
+gets the full note around the caret as `document` for the writing service, the
+other lines of the note as `history`, and a `finishLabel` for the end key. Escape and Hide close the tools, and
+⌘J opens them. A handle gives the screen `insert`, `selection`, `text`, and
+`openTools`.
+
+`pages/notes.tsx` puts `NoteList` beside the page and `NoteReadingBar` at its
+foot. From 52rem of the screen body, the list is a column at the left. Below
+it, the list and the note take turns through `data-pane`, and the note has a
+Notes back key. The list shows About first, then each note with
+`notePreview` and `messageTime`, and a search field from five notes. The bar has Read aloud, Present, Suggestions, and a More menu with Export
+and Delete note. Read aloud reads the selection when there is one. The bar
+hides while the writing tools are open.
 
 `blocks/suggestions.tsx` shows suggestions in slices of at most six words.
 A row that contains the draft after its opening underlines the typed words.

@@ -26,6 +26,7 @@ Design that serves this thesis: large calm targets, one confident accent, predic
 ## Typography
 
 - **UI family:** Noto Sans across display, body, and controls. Brand lettering is the only app-chrome exception.
+- **Note headings:** Fraunces (variable, 600) for the title and the headings of a note, through `--font-heading`. The note body stays in Noto Sans. The font is fetched when a note opens.
 - **Brand family:** Lexend 700 for the `Sep` keycap legend and `September` wordmark only.
 - **Loading:** Self-hosted `@fontsource/noto-sans` and `@fontsource/lexend`; `--font-sans` and `--font-brand` expose the two roles.
 - **Why:** Noto keeps the interface coherent and multilingual. Lexend gives the compact brand lettering open, substantial forms without changing reading typography.
@@ -52,8 +53,9 @@ The interactive work surfaces (Talk, Notes) standardize on five type roles. Four
 | Label / eyebrow      | `text-xs`    | 12 / 500–600  | Working-set labels, sidebar group labels      |
 | Body & UI            | `text-sm`    | 14 / 400–500  | Default text, buttons, tabs, dock, chips      |
 | Token / message      | `text-base`  | 16 / 400–500  | Suggestion word tiles, spoken-message rows    |
-| Note / section title | `text-title` | 17 / 600      | Note title field, section headings            |
-| Composer input       | `text-xl`    | 20 / 400      | The message/note composer textarea            |
+| Note / section title | `text-title` | 17 / 600      | Section headings                              |
+| Composer input       | `text-xl`    | 20 / 400      | The message composer and the note body        |
+| Note document title  | `font-heading text-3xl` | 30 / 600 | The title of a note, in Fraunces       |
 
 `--text-title` (17px) is defined in `globals.css`. Do not reintroduce arbitrary sizes (`text-[15px]`, `text-[11px]`); snap to a role.
 
@@ -149,7 +151,7 @@ The sidebar is a **solid indigo panel** in light _and_ dark mode — September's
   | control | `rounded-control` | 12px  | Buttons, inputs, icon/rail buttons, stripe submit (enter) key    |
   | chip    | `rounded-chip`    | 14px  | Suggestion word tiles                                            |
   | surface | `rounded-surface` | 20px  | Cards, composer, editor, speaking card                           |
-  | pill    | `rounded-full`    | full  | Primary actions, dock tabs, note tabs, pinned chips, suggestions |
+  | pill    | `rounded-full`    | full  | Primary actions, dock tabs, pinned chips, suggestions |
 
   The legacy shadcn `--radius-sm/md/lg/xl` scale still exists for overlays (dropdowns, popovers, dialogs), which stay slightly tighter than content surfaces on purpose. Nested micro-controls (tiptap toolbar buttons) keep `rounded-md` (8px) so they read as keys inside a surface.
 
@@ -221,6 +223,8 @@ All UI primitives live in `@/packages/ui` (`src/packages/ui/components`) — sha
 | 2026-08-18 | Lexend autocomplete brand identity                       | Replaced the fox mascot with an inverted 2D mechanical `Sep` keycap and a Lexend 700 wordmark. Solid `Sep` plus ghosted `tember` makes the core autocomplete feature part of the identity; Noto remains the UI font. User-approved.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | 2026-10-05 | Desktop app moves to one floating panel | Supersedes the 2026-08-21 desktop layout row. The desktop app has one window, a floating panel, beside the call app. It opens at 834×1194 points and resizes from 400×560 to the full screen. Its 64px indigo header uses the sidebar tokens and replaces the screen header and the dock. On a space path, the header holds a space button, the Talk, Notes, and Agent switch, and a More menu. On every other page, it holds Back, the page title, and the More menu. The More menu lists Spaces, Voice, Eye tracker, Help, and Settings, and the space switcher has an All spaces row. The panel reuses the shared screens and folds them by width. Under 560 points, one mood menu key replaces the five mood keys, the audio selector takes its own line, and Clear moves into the More menu. Under 900 points, Phrases and Voice controls open as sheets below the header. From 900 points they open in the right rail. Every control stays at 44 points. Setup shows in the panel as a normal window. Present fills the screen with the panel while the overlay shows. With the float on, September has no Dock icon. With the float off or during setup, it has one. There is no Today screen. User-approved (mock `docs/mocks/2026-10-04-floating-panel.html`, plans `docs/plans/2026-10-05-floating-panel.md` and `docs/plans/2026-10-05-single-panel.md`). |
 | 2026-10-05 | Talk body from the panel mock, in both apps | Talk is one shared screen, so the web app and the panel get the same body. The last 3 messages sit in a white card with the time and a speak mark on each row. See all shows the pages of 8 in place of the suggestions. The suggestion rows keep their word tiles and have no card. The mark at the start of a row has the colour of its tiles, and a model row has a grey sparkle. The composer is a white card with a constant 3px indigo ring. While a sentence plays, an indigo speaking card takes the place of the field. A key line under the composer shows only with a fine pointer. The sound output is one 44px headphones key, with a green dot when the September Microphone is on. The Talk body is `bg-muted/40`. Mocks: `docs/mocks/2026-10-05-talk-web.html`, `docs/mocks/2026-10-05-audio-output-options.html`. |
+| 2026-10-13 | Notes as a Markdown document | The note is one document: the title is the first line in Fraunces 600, the body is Noto Sans at the 20px composer size, and the body has no box. Each Markdown line shows its format, and the caret line also shows its syntax. The composer leaves Notes. The writing tools (style keys, Undo, Delete word, Hide, and the Talk stripes) open on the first typed key under the caret line, and over it near the bottom. Escape or Hide closes them, and ⌘J opens them. The note actions move to a floating reading bar at the foot of the page: Read aloud (the selection, or the whole note), Present, Suggestions, and a More menu with Export and Delete note. The notes are a list (see the row below). Fraunces in Notes extends its approved use in Present. User-approved (mock `docs/mocks/2026-10-13-notes-doc-editor.html`). |
+| 2026-10-13 | The note list replaces the note tabs | The notes of a space are a list of large rows: About first, then each note with its name, its first line of words, and the time of its last change. A search field shows from five notes. From 52rem of screen body, the list is a 288px column beside the note. Below it, the list and the note take turns, and a note opens with a "Notes" back key. Notes opens on the last note, not on the list. The reading bar shows only icons for Present, Suggestions, and More below 36rem. Chosen over a title menu and over tabs with an All notes sheet. User-approved (mock `docs/mocks/2026-10-13-note-selector-options.html`, Option B). |
 
 ### Known gaps (honest state, not yet enforced)
 

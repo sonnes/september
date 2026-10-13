@@ -34,13 +34,13 @@ afterEach(() => {
 
 const onMood = vi.fn();
 
-function Harness({ initial, mode = 'talk', mood = null }: { initial: string; mode?: 'talk' | 'notes'; mood?: MoodKey | null }) {
+function Harness({ initial, mood = null }: { initial: string; mood?: MoodKey | null }) {
   const [draft, setDraft] = useState(initial);
   return (
     <>
       <output>{draft}</output>
       <Composer
-        mode={mode}
+        mode="talk"
         spaceId="space"
         context=""
         draft={draft}
@@ -49,7 +49,7 @@ function Harness({ initial, mode = 'talk', mood = null }: { initial: string; mod
         onPin={() => {}}
         suggestions={false}
         mood={mood}
-        onMood={mode === 'talk' ? onMood : undefined}
+        onMood={onMood}
       />
     </>
   );
@@ -83,11 +83,6 @@ describe('mood keys', () => {
     expect(onMood).toHaveBeenLastCalledWith('playful');
     await act(async () => labelled('Mood: Low')!.click());
     expect(onMood).toHaveBeenLastCalledWith(null);
-  });
-
-  it('shows no mood keys in Notes', async () => {
-    await render(<Harness initial="" mode="notes" />);
-    expect(labelled('Mood: Warm')).toBeNull();
   });
 });
 

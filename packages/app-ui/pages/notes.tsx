@@ -1,12 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MutableRefObject } from "react";
 
 import { useNavigate } from "@tanstack/react-router";
 import {
+  ChevronLeft,
   Download,
+  Ellipsis,
   FileText,
   Film,
   Info,
   Loader2,
+  PenLine,
   Play,
   Plus,
   Square,
@@ -24,6 +27,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@september/ui/components/alert-dialog";
+import { cn } from "@september/ui";
 import { Button } from "@september/ui/components/button";
 import {
   Dialog,
@@ -32,6 +36,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@september/ui/components/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@september/ui/components/dropdown-menu";
+import { Input } from "@september/ui/components/input";
 import { Progress } from "@september/ui/components/progress";
 
 import {
@@ -46,13 +58,16 @@ import {
   type Space,
 } from "@platform/services/data";
 import {
-  appendToNote,
   markdownToVoiceText,
   noteContentUpdates,
   noteFromSlug,
   noteSlug,
   UNTITLED_NOTE,
 } from "@september/core/rules/notes";
+import {
+  NoteDocument,
+  type NoteDocumentHandle,
+} from "@september/app-ui/blocks/note-document";
 import { PanelRail } from "@september/app-ui/blocks/space-panel";
 import { PresentOverlay } from "@september/app-ui/blocks/present";
 import { RightPanel, ScreenHeader } from "@september/app-ui/blocks/screen";
@@ -64,7 +79,9 @@ import {
   type ExportKind,
   type PresentToneKey,
 } from "@september/core/rules/present";
-import { spaceSlug } from "@september/core/rules/spaces";
+import { messageTime, spaceSlug } from "@september/core/rules/spaces";
+import { notePreview } from "@september/core/rules/note-document";
+import { matchesWords } from "@september/core/rules/pick";
 import {
   exportUnavailable,
   saveNoteAudio,
@@ -77,10 +94,8 @@ import {
   guardUnsavedChanges,
   rememberPresent,
 } from "@platform/services/os";
-import { useChrome } from "@september/app-ui/blocks/chrome";
 import { speak, stopSpeaking, useSpeaking, useVoiceFallback } from "@platform/services/speech";
 import {
-  Composer,
   spaceParams,
   SpaceDock,
   SpaceTitle,
@@ -118,7 +133,11 @@ function Notes({
   const { data: phrases } = usePhrases(space.id);
   const putPhrase = usePutPhrase();
   const patch = useUpdateSpace();
-  const [draft, setDraft] = useState("");
+  const handle = useRef<NoteDocumentHandle | null>(null);
+  const [tools, setTools] = useState(false);
+  // On a narrow screen, the list and the note take turns. The note comes
+  // first, because a user who writes one note at a time needs no extra press.
+  const [pane, setPane] = useState<"list" | "note">("note");
   // The About tab is state, not an address. Give it an address when a user
   // asks to open the app on it.
   //
@@ -128,7 +147,6 @@ function Notes({
   const [about, setAbout] = useState(!wanted && !space.context?.trim());
   useRememberMode(space, "notes");
   const remove = useDeleteNote(space.id);
-  const chrome = useChrome();
 
   const rows = notes ?? [];
   // The address names the note. Without a name in it, the newest note opens,
@@ -138,6 +156,7 @@ function Notes({
 
   const open = (row: Note) => {
     setAbout(false);
+    setPane("note");
     return navigate({
       to: "/spaces/$slug/notes/$noteSlug",
       params: { slug: spaceSlug(space.title), noteSlug: noteSlug(row.name) },
@@ -145,51 +164,6 @@ function Notes({
   };
 
   const add = () => create.mutateAsync().then(open);
-
-  /**
-   * Puts the composed words under the note.
-   *
-   * A space with no note yet gets one, so the words are never turned away for
-   * want of a note the user has not made.
-   */
-  const put = (words: string) => {
-    // The About tab is not a note, so the words go to the space instead.
-    if (about) {
-      void patch
-        .mutateAsync({
-          id: space.id,
-          context: appendToNote(space.context ?? "", words),
-        })
-        .then(() => setDraft(""));
-      return;
-    }
-
-    const written = note
-      ? update.mutateAsync({
-          id: note.id,
-          ...noteContentUpdates(note.name, appendToNote(note.content, words)),
-        })
-      : create.mutateAsync().then((made) =>
-          update.mutateAsync({
-            id: made.id,
-            ...noteContentUpdates(undefined, words),
-          }),
-        );
-
-    void written.then((saved) => {
-      setDraft("");
-      if (saved.name && noteSlug(saved.name) !== wanted) {
-        navigate({
-          to: "/spaces/$slug/notes/$noteSlug",
-          params: {
-            slug: spaceSlug(space.title),
-            noteSlug: noteSlug(saved.name),
-          },
-          replace: true,
-        });
-      }
-    });
-  };
 
   /** Keeps a row of the stripe, so a regeneration cannot take it away. */
   const keep = (text: string) => {
@@ -206,9 +180,6 @@ function Notes({
       </title>
       <ScreenHeader>
         <SpaceTitle space={space} mode="notes" />
-        {note && chrome === "shell" ? (
-          <NoteActions note={note} onDelete={() => setToDelete(note)} />
-        ) : null}
       </ScreenHeader>
 
       <DeleteNoteDialog
@@ -229,73 +200,77 @@ function Notes({
       />
 
       <div className="@container flex min-h-0 flex-1 flex-col gap-3 p-2 md:p-4">
-        <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">
-          {/* The panel has no screen header, so the actions of the note
-              sit above it. */}
-          {note && chrome === "panel" ? (
-            <div className="flex shrink-0 flex-wrap items-center gap-2 pb-2">
-              <NoteActions
+        {/* From 52rem the list is a column beside the note. Below it, one
+            of the two fills the screen. */}
+        <div data-pane={pane} className="group/notes flex min-h-0 flex-1 gap-4">
+          <NoteList
+            space={space}
+            notes={rows}
+            current={note}
+            about={about}
+            onAbout={() => {
+              setAbout(true);
+              setPane("note");
+            }}
+            onOpen={open}
+            onCreate={add}
+            isCreating={create.isPending}
+            className="@max-[52rem]:flex-1 @max-[52rem]:group-data-[pane=note]/notes:hidden @min-[52rem]:w-72 @min-[52rem]:shrink-0 @min-[52rem]:border-r @min-[52rem]:pr-4"
+          />
+          <div className="relative flex min-h-0 min-w-0 flex-1 flex-col @max-[52rem]:group-data-[pane=list]/notes:hidden">
+            <div className="shrink-0 @min-[52rem]:hidden">
+              <button
+                type="button"
+                aria-label="All notes"
+                onClick={() => setPane("list")}
+                className="text-primary hover:bg-primary/10 focus-visible:ring-ring inline-flex h-11 items-center gap-1 rounded-full pr-4 pl-2 text-sm font-semibold focus-visible:ring-2 focus-visible:outline-none"
+              >
+                <ChevronLeft className="size-5" aria-hidden />
+                Notes
+              </button>
+            </div>
+            {error ? (
+              <p className="text-destructive rounded-xl border border-dashed p-8 text-center text-sm">
+                {error.message}
+              </p>
+            ) : null}
+
+            {about ? (
+              <SpaceAbout space={space} onPin={keep} handle={handle} onTools={setTools} />
+            ) : note ? (
+              <NoteEditor
+                key={note.id}
                 note={note}
+                spaceId={space.id}
+                context={space.context ?? ""}
+                onPin={keep}
+                handle={handle}
+                onTools={setTools}
+                onRenamed={(name) =>
+                  navigate({
+                    to: "/spaces/$slug/notes/$noteSlug",
+                    params: {
+                      slug: spaceSlug(space.title),
+                      noteSlug: noteSlug(name),
+                    },
+                    replace: true,
+                  })
+                }
+              />
+            ) : (
+              <Empty onCreate={add} isPending={create.isPending} />
+            )}
+
+            {/* The bar steps away while the writing tools are open, so one
+                floating panel is on the page at a time. */}
+            {note && !about && !tools ? (
+              <NoteReadingBar
+                note={note}
+                handle={handle}
                 onDelete={() => setToDelete(note)}
               />
-            </div>
-          ) : null}
-          {error ? (
-            <p className="text-destructive rounded-xl border border-dashed p-8 text-center text-sm">
-              {error.message}
-            </p>
-          ) : null}
-
-          {about ? (
-            <SpaceAbout space={space} />
-          ) : note ? (
-            <NoteEditor
-              key={note.id}
-              note={note}
-              spaceId={space.id}
-              onRenamed={(name) =>
-                navigate({
-                  to: "/spaces/$slug/notes/$noteSlug",
-                  params: {
-                    slug: spaceSlug(space.title),
-                    noteSlug: noteSlug(name),
-                  },
-                  replace: true,
-                })
-              }
-            />
-          ) : (
-            <Empty onCreate={add} isPending={create.isPending} />
-          )}
-
-          {/* The composer always shows, because the About tab lives in its
-              slot. A space with no note of its own still has that one. */}
-          <Composer
-            mode="notes"
-            spaceId={space.id}
-            context={space.context ?? ""}
-            draft={draft}
-            onDraft={setDraft}
-            onAction={put}
-            onPin={keep}
-            pending={about ? patch.isPending : update.isPending}
-            // The engine reads the note, not the spoken messages, so the
-            // words it offers follow what the user is writing here.
-            history={
-              about ? [space.context ?? ""] : note ? [note.content] : []
-            }
-            before={
-              <NoteTabs
-                notes={rows}
-                current={note}
-                about={about}
-                onAbout={() => setAbout(true)}
-                onOpen={open}
-                onCreate={add}
-                isCreating={create.isPending}
-              />
-            }
-          />
+            ) : null}
+          </div>
         </div>
 
         <SpaceDock
@@ -309,11 +284,7 @@ function Notes({
       <RightPanel>
         <PanelRail
           spaceId={space.id}
-          onInsert={(text) =>
-            setDraft((current) =>
-              !current || /\s$/.test(current) ? current + text : `${current} ${text}`,
-            )
-          }
+          onInsert={(text) => handle.current?.insert(text)}
         />
       </RightPanel>
     </>
@@ -354,11 +325,20 @@ function Empty({
 export function NoteEditor({
   note,
   spaceId,
+  context = "",
   onRenamed,
+  onPin,
+  onTools,
+  handle,
 }: {
   note: Note;
   spaceId: string;
+  /** The About words of the space, for the suggestion stripes. */
+  context?: string;
   onRenamed: (name: string) => void;
+  onPin?: (phrase: string) => void;
+  onTools?: (open: boolean) => void;
+  handle?: MutableRefObject<NoteDocumentHandle | null>;
 }) {
   const update = useUpdateNote(spaceId);
   const [name, setName] = useState(note.name ?? "");
@@ -424,100 +404,171 @@ export function NoteEditor({
   }, [dirty]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2">
-      {failed ? (
-        <div role="alert">
-          <p>Your note could not be saved. Keep this page open and retry.</p>
-          <Button onClick={save}>Retry saving</Button>
-        </div>
-      ) : dirty ? <p role="status">Saving…</p> : null}
-      <input
-        value={name}
-        aria-label="Note title"
-        placeholder={UNTITLED_NOTE}
-        onChange={(event) => writeName(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") event.currentTarget.blur();
-          if (event.key === "Escape") {
-            writeName(note.name ?? "");
-            event.currentTarget.blur();
-          }
-        }}
-        className="placeholder:text-muted-foreground/60 hover:bg-accent focus-visible:ring-ring shrink-0 rounded-md bg-transparent px-2 py-1 text-title font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none"
-      />
-      <textarea
-        autoFocus
-        value={content}
-        aria-label="Note"
-        placeholder="Write your note here…"
-        onChange={(event) => write(event.target.value)}
-        className="placeholder:text-muted-foreground/60 focus-within:border-ring focus-within:ring-ring/20 min-h-0 flex-1 resize-none rounded-2xl border bg-transparent p-4 text-xl leading-relaxed shadow-sm transition-[box-shadow,border-color] focus:outline-none focus-within:ring-[3px]"
-      />
+    // The page scrolls, and the writing tools scroll with the line they serve.
+    <div data-note-scroll className="min-h-0 flex-1 overflow-y-auto">
+      <div className="mx-auto flex max-w-2xl flex-col px-2 pt-6 pb-32 md:px-6">
+        {failed ? (
+          <div role="alert" className="mb-4">
+            <p>Your note could not be saved. Keep this page open and retry.</p>
+            <Button onClick={save}>Retry saving</Button>
+          </div>
+        ) : null}
+        <input
+          value={name}
+          aria-label="Note title"
+          placeholder={UNTITLED_NOTE}
+          onChange={(event) => writeName(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") event.currentTarget.blur();
+            if (event.key === "Escape") {
+              writeName(note.name ?? "");
+              event.currentTarget.blur();
+            }
+          }}
+          className="font-heading placeholder:text-muted-foreground/50 focus-visible:ring-ring w-full rounded-md bg-transparent text-3xl leading-tight @max-[36rem]:text-2xl font-semibold tracking-tight focus-visible:ring-2 focus-visible:outline-none"
+        />
+        <p role="status" className="text-muted-foreground mt-1 mb-5 text-xs font-medium">
+          {failed ? "Not saved" : dirty ? "Saving…" : "Saved"}
+        </p>
+        <NoteDocument
+          value={content}
+          onChange={write}
+          label="Note"
+          placeholder="Write your note here…"
+          spaceId={spaceId}
+          context={context}
+          onPin={onPin}
+          onTools={onTools}
+          handle={handle}
+        />
+      </div>
     </div>
   );
 }
 
 /**
- * What a note can do, beside its own words.
+ * What a note can do, beside its own words, in a bar at the foot of the page.
  *
- * Voice-over reads it where it stands. Present gives it the whole screen for
- * the person in the room. Export writes it to a file. The bin is last, and
- * apart, because it is the one action that cannot be undone.
+ * Read aloud reads the selected words, or the whole note when nothing is
+ * selected. Present gives the note the whole screen for the person in the
+ * room. Suggestions opens the writing tools without a typed key. Export and
+ * Delete are in the More menu, because they are used less often, and Delete
+ * is last because it is the one action that cannot be undone.
  */
-function NoteActions({
+export function NoteReadingBar({
   note,
+  handle,
   onDelete,
 }: {
   note: Note;
+  handle: MutableRefObject<NoteDocumentHandle | null>;
   onDelete: () => void;
 }) {
+  const speaking = useSpeaking();
+  const notice = useVoiceFallback();
   const [presenting, setPresenting] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [part, setPart] = useState(false);
+  const id = `note-${note.id}`;
+  const busy = speaking === id;
   const words = note.content.trim().length > 0;
+
+  // The label says what a press reads: the selection, or the whole note.
+  useEffect(() => {
+    const onSelection = () => setPart(Boolean(handle.current?.selection().trim()));
+    document.addEventListener("selectionchange", onSelection);
+    return () => document.removeEventListener("selectionchange", onSelection);
+  }, [handle]);
+
+  const read = () => {
+    if (busy) return stopSpeaking();
+    const chosen = handle.current?.selection().trim();
+    const text = markdownToVoiceText(chosen || handle.current?.text() || note.content);
+    if (text) void speak(text, id);
+  };
+
+  const bar =
+    "focus-visible:ring-ring inline-flex h-12 shrink-0 items-center gap-2 rounded-full px-5 text-sm font-semibold @max-[36rem]:px-3.5 transition-colors focus-visible:ring-2 focus-visible:outline-none aria-disabled:opacity-50 [&_svg]:size-[18px]";
 
   return (
     <>
-      <VoiceOver note={note} />
-
-      <Button
-        type="button"
-        size="lg"
-        className="shrink-0 rounded-full"
-        aria-disabled={!words}
-        aria-label="Present this note"
-        onClick={() => words && setPresenting(true)}
+      <div
+        role="toolbar"
+        aria-label="Note actions"
+        // A press keeps the selection in the note, so Read selection reads it.
+        onMouseDown={(event) => event.preventDefault()}
+        className="bg-background/95 absolute inset-x-0 bottom-4 z-10 mx-auto flex w-fit max-w-[calc(100%-1rem)] items-center gap-1.5 overflow-x-auto rounded-full border p-1.5 shadow-lg backdrop-blur [scrollbar-width:none]"
       >
-        <Play aria-hidden />
-        Present
-      </Button>
-
-      <Button
-        type="button"
-        size="lg"
-        variant="outline"
-        className="shrink-0 rounded-full"
-        aria-disabled={!words}
-        aria-label="Export this note"
-        onClick={() => words && setExporting(true)}
-      >
-        <Download aria-hidden />
-        Export
-      </Button>
-
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        aria-label="Delete note"
-        onClick={onDelete}
-      >
-        <Trash2 aria-hidden />
-      </Button>
+        <button
+          type="button"
+          aria-disabled={!words && !part}
+          onClick={read}
+          className={cn(bar, busy ? "bg-foreground text-background" : "bg-primary text-primary-foreground")}
+        >
+          {busy ? <Square aria-hidden /> : <Volume2 aria-hidden />}
+          {busy ? "Stop" : part ? "Read selection" : "Read aloud"}
+        </button>
+        <button
+          type="button"
+          aria-label="Present this note"
+          aria-disabled={!words}
+          onClick={() => words && setPresenting(true)}
+          className={cn(bar, "hover:bg-accent")}
+        >
+          <Play aria-hidden />
+          <span className="@max-[36rem]:sr-only">Present</span>
+        </button>
+        <button
+          type="button"
+          aria-label="Suggestions"
+          onClick={() => handle.current?.openTools()}
+          className={cn(bar, "hover:bg-accent")}
+        >
+          <PenLine aria-hidden />
+          <span className="@max-[36rem]:sr-only">Suggestions</span>
+          <kbd className="bg-muted text-muted-foreground rounded px-1.5 text-xs font-medium @max-[36rem]:hidden">⌘J</kbd>
+        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="More note actions"
+              className={cn(bar, "hover:bg-accent w-12 justify-center px-0")}
+            >
+              <Ellipsis aria-hidden />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="end" className="min-w-52">
+            <DropdownMenuItem
+              aria-disabled={!words}
+              onSelect={() => words && setExporting(true)}
+              className="min-h-11 aria-disabled:opacity-50"
+            >
+              <Download aria-hidden />
+              Export…
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={onDelete}
+              className="min-h-11"
+            >
+              <Trash2 aria-hidden />
+              Delete note…
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      {notice ? (
+        <p role="status" className="absolute inset-x-0 bottom-20 text-center text-sm">
+          {notice}
+        </p>
+      ) : null}
 
       {presenting ? (
         <PresentOverlay
           name={note.name}
-          content={note.content}
+          content={handle.current?.text() ?? note.content}
           onClose={() => setPresenting(false)}
         />
       ) : null}
@@ -692,32 +743,6 @@ function ExportDialog({
   );
 }
 
-/** Reads the note aloud in the chosen voice. It writes no message. */
-function VoiceOver({ note }: { note: Note }) {
-  const speaking = useSpeaking();
-  const notice = useVoiceFallback();
-  const id = `note-${note.id}`;
-  const busy = speaking === id;
-  const words = markdownToVoiceText(note.content);
-
-  return (
-    <>
-    <Button
-      type="button"
-      variant={busy ? "outline" : "default"}
-      className="shrink-0 rounded-full"
-      disabled={!words}
-      aria-label={busy ? "Stop" : "Read this note aloud"}
-      onClick={() => (busy ? stopSpeaking() : void speak(words, id))}
-    >
-      {busy ? <Square aria-hidden /> : <Volume2 aria-hidden />}
-      Read aloud
-    </Button>
-    {notice ? <p role="status" className="text-sm">{notice}</p> : null}
-    </>
-  );
-}
-
 /**
  * The note that says who a space is for.
  *
@@ -729,7 +754,17 @@ function VoiceOver({ note }: { note: Note }) {
  * hook. The two differ — a note carries a name and a slug, and this one
  * carries neither. Join them when a third writer needs the same save.
  */
-function SpaceAbout({ space }: { space: Space }) {
+function SpaceAbout({
+  space,
+  onPin,
+  onTools,
+  handle,
+}: {
+  space: Space;
+  onPin: (phrase: string) => void;
+  onTools: (open: boolean) => void;
+  handle: MutableRefObject<NoteDocumentHandle | null>;
+}) {
   const patch = useUpdateSpace();
   const remote = space.context ?? "";
   const [text, setText] = useState(remote);
@@ -738,8 +773,8 @@ function SpaceAbout({ space }: { space: Space }) {
   const held = useRef({ text, saved: text });
   held.current.text = text;
 
-  // The composer is a second writer. With nothing unsaved here, the screen
-  // takes the words it added, so the next save does not write over them.
+  // The agent is a second writer. With nothing unsaved here, the screen takes
+  // the words it wrote, so the next save does not write over them.
   if (text === held.current.saved && remote !== text) {
     setText(remote);
     held.current = { text: remote, saved: remote };
@@ -752,42 +787,52 @@ function SpaceAbout({ space }: { space: Space }) {
     void patch.mutateAsync({ id: space.id, context: written });
   };
 
-  // ponytail: the note saves when the field loses focus, and again as the tab
-  // closes. No timer — the composer writes only after this field blurs. Bring
-  // a delay back when a user asks to keep the focus and still be saved.
+  // ponytail: the note saves when the document loses focus, and again as the
+  // tab closes. No timer. Bring a delay back when a user asks to keep the
+  // focus and still be saved.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => save, [space.id]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2">
-      <div className="shrink-0 px-2">
-        <h2 className="text-title font-semibold">About this space</h2>
-        <p className="text-muted-foreground text-xs">
+    <div data-note-scroll className="min-h-0 flex-1 overflow-y-auto">
+      <div className="mx-auto flex max-w-2xl flex-col px-2 pt-6 pb-32 md:px-6">
+        <h2 className="font-heading text-3xl leading-tight font-semibold tracking-tight">
+          About this space
+        </h2>
+        <p className="text-muted-foreground mt-1 mb-5 text-sm">
           Who you speak to here, and why. Talk reads it for every suggestion
           and every phrase.
         </p>
+        <NoteDocument
+          value={text}
+          onChange={setText}
+          onBlur={save}
+          label="About this space"
+          placeholder="Who I speak to here, and what we talk about"
+          spaceId={space.id}
+          context={text}
+          onPin={onPin}
+          onTools={onTools}
+          handle={handle}
+        />
       </div>
-      <textarea
-        autoFocus
-        value={text}
-        aria-label="About this space"
-        placeholder={"- Who I speak to here\n- What we talk about"}
-        onBlur={save}
-        onChange={(event) => setText(event.target.value)}
-        className="placeholder:text-muted-foreground/60 focus-within:border-ring focus-within:ring-ring/20 min-h-0 flex-1 resize-none rounded-2xl border bg-transparent p-4 text-xl leading-relaxed shadow-sm transition-[box-shadow,border-color] focus:outline-none focus-within:ring-[3px]"
-      />
     </div>
   );
 }
 
+/** A list this long gets a search field. */
+const SEARCH_FROM = 5;
+
 /**
- * One tab for each note, in the slot the suggestions fill in Talk.
+ * The notes of a space, as a list of large rows.
  *
- * ponytail: the row scrolls sideways. The web app collapses it into a list,
- * which needs a `ResizeObserver`; add that when a space holds enough notes
- * for the row to feel long.
+ * About comes first, because it decides the words that every other screen
+ * offers. Each note shows its name, its first line of words, and the time of
+ * its last change, so a name is never the only clue. The list is a column
+ * beside the note on a wide screen, and the whole screen on a narrow one.
  */
-function NoteTabs({
+function NoteList({
+  space,
   notes,
   current,
   about,
@@ -795,7 +840,9 @@ function NoteTabs({
   onOpen,
   onCreate,
   isCreating,
+  className,
 }: {
+  space: Space;
   notes: Note[];
   current?: Note;
   about: boolean;
@@ -803,57 +850,98 @@ function NoteTabs({
   onOpen: (note: Note) => void;
   onCreate: () => void;
   isCreating: boolean;
+  className?: string;
 }) {
-  const tab = (selected: boolean) =>
-    `focus-visible:ring-ring inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${
-      selected
-        ? "bg-primary text-primary-foreground border-transparent"
-        : "hover:bg-accent"
-    }`;
+  const [query, setQuery] = useState("");
+  const words = query.trim();
+  const shown = words
+    ? notes.filter((one) => matchesWords(`${one.name ?? ""}\n${one.content}`, words))
+    : notes;
+
+  const row = (selected: boolean) =>
+    cn(
+      "focus-visible:ring-ring flex min-h-14 w-full flex-col justify-center gap-0.5 rounded-control px-3 py-2 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none",
+      selected ? "bg-primary/10 ring-primary/30 ring-1" : "hover:bg-accent",
+    );
 
   return (
-    <div
-      role="tablist"
-      aria-label="Notes"
-      className="flex shrink-0 items-center gap-2 overflow-x-auto"
-    >
-      {/* The note of the space comes first, because it decides the words that
-          every other screen offers. */}
-      <button
-        type="button"
-        role="tab"
-        aria-selected={about}
-        onClick={onAbout}
-        className={tab(about)}
-      >
-        <Info className="size-4 shrink-0" aria-hidden />
-        About
-      </button>
-
-      {notes.map((note) => (
-        <button
-          key={note.id}
+    <nav aria-label="Notes" className={cn("flex min-h-0 min-w-0 flex-col gap-2", className)}>
+      <div className="flex shrink-0 items-center gap-2 px-1">
+        <h2 className="text-base font-semibold">Notes</h2>
+        <Button
           type="button"
-          role="tab"
-          aria-selected={note.id === current?.id}
-          onClick={() => onOpen(note)}
-          className={tab(note.id === current?.id)}
+          size="lg"
+          className="ml-auto rounded-full aria-disabled:opacity-50"
+          aria-disabled={isCreating}
+          onClick={() => !isCreating && onCreate()}
         >
-          <FileText className="size-4 shrink-0" aria-hidden />
-          <span className="max-w-40 truncate">{note.name || UNTITLED_NOTE}</span>
-        </button>
-      ))}
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        aria-label="New note"
-        disabled={isCreating}
-        onClick={onCreate}
-      >
-        <Plus aria-hidden />
-      </Button>
-    </div>
+          <Plus aria-hidden />
+          New note
+        </Button>
+      </div>
+
+      {notes.length >= SEARCH_FROM ? (
+        <Input
+          type="search"
+          value={query}
+          aria-label="Search notes"
+          placeholder="Search notes"
+          onChange={(event) => setQuery(event.target.value)}
+          className="h-11 shrink-0"
+        />
+      ) : null}
+
+      <ul className="flex min-h-0 flex-col gap-1 overflow-y-auto">
+        {words ? null : (
+          <li>
+            <button
+              type="button"
+              data-note-row
+              aria-current={about ? "page" : undefined}
+              onClick={onAbout}
+              className={row(about)}
+            >
+              <span className="text-primary flex items-center gap-2 font-semibold">
+                <Info className="size-4 shrink-0" aria-hidden />
+                About this space
+              </span>
+              <span className="text-muted-foreground truncate text-xs">
+                {notePreview(space.context ?? "", "") || "Who you speak to here, and why"}
+              </span>
+            </button>
+          </li>
+        )}
+        {shown.map((one) => {
+          const selected = !about && one.id === current?.id;
+          return (
+            <li key={one.id}>
+              <button
+                type="button"
+                data-note-row
+                aria-current={selected ? "page" : undefined}
+                onClick={() => onOpen(one)}
+                className={row(selected)}
+              >
+                <span className="flex items-baseline gap-2">
+                  <span className="min-w-0 flex-1 truncate font-semibold">
+                    {one.name || UNTITLED_NOTE}
+                  </span>
+                  <span className="text-muted-foreground shrink-0 text-xs">
+                    {messageTime(one.updated_at)}
+                  </span>
+                </span>
+                <span className="text-muted-foreground truncate text-xs">
+                  {notePreview(one.content, one.name) || "Empty note"}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+        {words && shown.length === 0 ? (
+          <li className="text-muted-foreground px-3 py-4 text-sm">No note has these words.</li>
+        ) : null}
+      </ul>
+    </nav>
   );
 }
 

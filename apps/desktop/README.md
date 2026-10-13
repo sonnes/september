@@ -325,18 +325,21 @@ in Agent, where it is set up, unless no writing service is connected.
 The screen has these parts, from the top:
 
 1. The panel header. The same one that Talk has.
-2. The note actions: Read aloud, Present, Export, and Delete.
-3. The title. A note with no title of its own shows `Untitled note`.
-4. The note. A plain text field that holds markdown.
-5. The console. The About tab, the note tabs, the word tiles, the field, undo,
-   delete last word, clear, and **Add to note**.
+2. The list of notes: About, then each note with its name, its first line,
+   and its time, and New note. Below 52rem the list and the note take turns,
+   and the note has a Notes back key.
+3. The title, in the Fraunces serif. A note with no title of its own shows
+   `Untitled note`.
+4. The note. A document of Markdown lines. Each line shows its format, and
+   the line that has the caret also shows its Markdown.
+5. The reading bar: Read aloud, Present, Suggestions, and a More menu with
+   Export and Delete note.
 
-`Composer` in `packages/app-ui/blocks/space.tsx` is that console, and both modes use it. A user who
-cannot type reaches a sentence through the word tiles, the phrase codes, undo,
-and delete last word. Notes needs every one of them as much as Talk does, so
-there is one console, not two. Only the end differs: Talk speaks the sentence,
-Notes puts it under the note after a blank line. Notes shows no sound output,
-because it makes no sound.
+The words go in at the caret. On the first typed key, the writing tools open
+under the caret line: the style keys, Undo, Delete word, Hide, and the same
+suggestion stripes as Talk. Escape or Hide closes them. ⌘J opens them with no
+typed key. `NoteDocument` in `packages/app-ui/blocks/note-document.tsx` is the
+editor, and the line rules are in `packages/core/rules/note-document.ts`.
 
 The word engine reads the note in Notes mode, not the spoken messages, so the
 words it offers follow what the user is writing.

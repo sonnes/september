@@ -8,6 +8,8 @@ const save = vi.hoisted(() => vi.fn(async (_patch: unknown) => undefined));
 vi.mock('@platform/services/data', () => ({
   useUpdateNote: () => ({ mutateAsync: save }),
 }));
+// The writing tools open on input. Their stripes are not under test here.
+vi.mock('@september/app-ui/blocks/suggestions', () => ({ Suggestions: () => null }));
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const container = document.createElement('div');
 document.body.append(container);
@@ -18,9 +20,17 @@ afterEach(() => {
   save.mockReset();
 });
 function type(label: string, text: string) {
-  const field = container.querySelector(`[aria-label="${label}"]`)!;
-  const prototype = label === 'Note' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
-  Object.getOwnPropertyDescriptor(prototype, 'value')!.set!.call(field, text);
+  const field = container.querySelector<HTMLElement>(`[aria-label="${label}"]`)!;
+  if (label === 'Note') {
+    // The note is an editable document of lines.
+    field.replaceChildren(...text.split('\n').map((line) => {
+      const row = document.createElement('div');
+      row.textContent = line;
+      return row;
+    }));
+  } else {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(field, text);
+  }
   field.dispatchEvent(new Event('input', { bubbles: true }));
 }
 const note = {
@@ -63,12 +73,10 @@ describe('note durability', () => {
     window.dispatchEvent(closing);
     expect(closing.defaultPrevented).toBe(true);
     save.mockResolvedValue(undefined);
-    await act(async () => (container.querySelector('button') as HTMLButtonElement).click());
+    await act(async () => (container.querySelector('[role="alert"] button') as HTMLButtonElement).click());
     const saved = new Event('beforeunload', { cancelable: true });
     window.dispatchEvent(saved);
     expect(saved.defaultPrevented).toBe(false);
-    expect((container.querySelector('[aria-label="Note"]') as HTMLTextAreaElement).value).toBe(
-      'keep these words'
-    );
+    expect(container.querySelector('[aria-label="Note"]')!.textContent).toBe('keep these words');
   });
 });

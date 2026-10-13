@@ -159,14 +159,15 @@ export function spaceNeedsSetup(
 }
 
 /**
- * Where a console writes. Three of them are the modes of a space; the fourth
- * is the first turn of a space that has still to be set up.
+ * Where a console writes. Talk and Agent are modes of a space; setup is the
+ * first turn of a space that has still to be set up. Notes writes in the note
+ * document, which has no console.
  *
  * This is not `SpaceMode`. That type is the mode a space is *kept* in, which
  * `spaceModeFrom` and `spaceParams` both read, and setup is a state the agent
  * passes through rather than a mode a space is left in.
  */
-export type ComposerMode = SpaceMode | "setup";
+export type ComposerMode = Exclude<SpaceMode, "notes"> | "setup";
 
 export interface ComposerAction {
   /** The button under the field. */
@@ -184,12 +185,6 @@ const COMPOSER_ACTIONS: Record<ComposerMode, ComposerAction> = {
     field: "Message",
     placeholder: "Write a message…",
     speaks: true,
-  },
-  notes: {
-    label: "Add to note",
-    field: "Words for the note",
-    placeholder: "Write words to add to this note…",
-    speaks: false,
   },
   agent: {
     label: "Ask",

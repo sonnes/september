@@ -229,11 +229,11 @@ export function PanelHeader({
               Sound output
             </MenuItem>
           ) : null}
-          {composer && panel?.tier === "compact" ? (
+          {composer?.clear && panel?.tier === "compact" ? (
             <MenuItem
               keys="⌘⌫"
               disabled={!composer.draft}
-              onSelect={() => composer.clear()}
+              onSelect={() => composer.clear?.()}
             >
               Clear the draft
             </MenuItem>

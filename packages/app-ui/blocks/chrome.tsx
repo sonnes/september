@@ -31,8 +31,8 @@ export function tierFor(width: number): Tier {
 /** What the composer on the screen lets the panel header do. */
 export interface ComposerHandle {
   draft: string;
-  /** Clears the draft, as the Clear key does. */
-  clear: () => void;
+  /** Clears the draft, as the Clear key does. A note document has no Clear. */
+  clear?: () => void;
   /** Adds words at the end of the draft. */
   insert: (text: string) => void;
   /** Whether the composer speaks, so the sound output belongs to it. */

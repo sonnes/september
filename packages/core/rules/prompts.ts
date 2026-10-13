@@ -38,6 +38,8 @@ const OPENING_PROMPT = `Generate 5 possible NEXT things the User might WANT TO S
 
 {AUDIO_TAGS}
 
+{NOTE_RULES}
+
 Answer with JSON: {"suggestions": ["...", "...", "...", "...", "..."]}`;
 
 /**
@@ -64,6 +66,8 @@ const COMPLETION_PROMPT = `Complete the User's partial input into 5 full spoken 
 {USER_CONTEXT}
 
 {AUDIO_TAGS}
+
+{NOTE_RULES}
 
 Answer with JSON: {"suggestions": ["...", "...", "...", "...", "..."]}`;
 
@@ -98,6 +102,8 @@ const SEARCH_PROMPT = `Write 5 full spoken sentences that the User can want to s
 
 {AUDIO_TAGS}
 
+{NOTE_RULES}
+
 Answer with JSON: {"suggestions": ["...", "...", "...", "...", "..."]}`;
 
 export interface BuildSuggestionPromptInput {
@@ -109,7 +115,23 @@ export interface BuildSuggestionPromptInput {
   mood?: MoodKey | null;
   /** True when the voice reads audio tags, so the suggestions can hold them. */
   tags?: boolean;
+  /**
+   * The full note around the caret, when the User writes a note. The note
+   * takes the place of the conversation history.
+   */
+  document?: { before: string; after: string };
 }
+
+/** The mark of the caret in a note. */
+export const CARET = '<caret/>';
+
+/** The rules for a note. The prompt holds them only when the User writes a note. */
+const NOTE_RULES = `<note>
+- The User is writing a note, not a spoken message. The full note is below, and ${CARET} marks the caret.
+- Each suggestion is the words that go at the caret. They must fit the words before and after the caret.
+- Keep the style of the note: its language, its person, and its list or heading format at the caret.
+- Do not repeat what the note already says.
+</note>`;
 
 /** The rules for audio tags. The prompt holds them only for a voice that reads tags. */
 const AUDIO_TAG_RULES = `<audio_tags>
@@ -132,11 +154,17 @@ export interface BuildSuggestionPromptResult {
  * wrapped in a <user_context> block, or removed entirely when there is none
  * (so no empty tag or dangling reference remains).
  */
-function applyUserContext(template: string, context: string, tags: string): string {
+function applyUserContext(
+  template: string,
+  context: string,
+  tags: string,
+  note: string,
+): string {
   const block = context ? `<user_context>\n${context}\n</user_context>` : '';
   return template
     .replace('{USER_CONTEXT}', block)
     .replace('{AUDIO_TAGS}', tags)
+    .replace('{NOTE_RULES}', note)
     .replace(/\n{3,}/g, '\n\n');
 }
 
@@ -155,7 +183,7 @@ function applyUserContext(template: string, context: string, tags: string): stri
 export function buildSuggestionPrompt(
   input: BuildSuggestionPromptInput
 ): BuildSuggestionPromptResult {
-  const { globalMd, spaceMd, history, typed, mood = null, tags = false } = input;
+  const { globalMd, spaceMd, history, typed, mood = null, tags = false, document } = input;
 
   // Assemble context: trim each piece, drop empties, join with blank line.
   // The mood comes last, after the speaking style and the space.
@@ -177,11 +205,13 @@ export function buildSuggestionPrompt(
   const system = applyUserContext(
     isSearch ? SEARCH_PROMPT : isCompletion ? COMPLETION_PROMPT : OPENING_PROMPT,
     context,
-    tagRules
+    tagRules,
+    document ? NOTE_RULES : ''
   );
-  const user = isCompletion
-    ? `Current input: "${typed}"\n\nConversation:\n${messagesContent}`
+  const background = document
+    ? `Note:\n${document.before}${CARET}${document.after}`
     : `Conversation:\n${messagesContent}`;
+  const user = isCompletion ? `Current input: "${typed}"\n\n${background}` : background;
 
   return { system, user };
 }

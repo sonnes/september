@@ -1,0 +1,754 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>September: Notes as a Markdown document</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Noto+Sans+Mono:wght@400&family=Atkinson+Hyperlegible+Next:wght@400;700&family=Atkinson+Hyperlegible+Mono:wght@400;700&family=Lexend:wght@400;600;700&family=Literata:opsz,wght@7..72,400;7..72,700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --indigo-700:#4338ca; --indigo-600:#4f46e5; --indigo-500:#6366f1; --indigo-400:#818cf8;
+    --indigo-300:#a5b4fc; --indigo-200:#c7d2fe; --indigo-100:#e0e7ff; --indigo-50:#eef2ff;
+    --zinc-900:#18181b; --zinc-800:#27272a; --zinc-700:#3f3f46; --zinc-600:#52525b;
+    --zinc-500:#71717a; --zinc-400:#a1a1aa; --zinc-300:#d4d4d8; --zinc-200:#e4e4e7; --zinc-100:#f4f4f5; --zinc-50:#fafafa;
+    --r-control:12px; --r-chip:14px; --r-surface:20px;
+    --shadow:0 1px 2px rgba(24,24,27,.06), 0 1px 3px rgba(24,24,27,.04);
+    --lift:0 -1px 0 rgba(24,24,27,.04), 0 12px 32px -8px rgba(24,24,27,.22), 0 2px 6px rgba(24,24,27,.06);
+  }
+  * { box-sizing:border-box; margin:0; }
+  [hidden] { display:none !important; }
+  body { font-family:"Noto Sans", Helvetica, sans-serif; background:var(--zinc-100); color:var(--zinc-900);
+    -webkit-font-smoothing:antialiased; padding:40px 24px 80px; font-size:14px; line-height:1.5; }
+  button { font:inherit; color:inherit; cursor:pointer; }
+  .page { max-width:1240px; margin:0 auto; }
+  .eyebrow { font-size:14px; font-weight:500; color:var(--indigo-600); }
+  h1.mock-title { font-size:32px; font-weight:700; letter-spacing:-.02em; margin-top:6px; }
+  .lede { font-size:15px; color:var(--zinc-500); margin-top:8px; max-width:80ch; line-height:1.7; }
+
+  .layout { display:grid; grid-template-columns:740px minmax(0,1fr); gap:32px; margin-top:28px; align-items:start; }
+  @media (max-width:1100px) { .layout { grid-template-columns:1fr; } }
+
+  /* Mock controls */
+  .controls { display:flex; flex-wrap:wrap; gap:16px 24px; margin-bottom:14px; }
+  .seg { display:inline-flex; background:#fff; border:1px solid var(--zinc-200); border-radius:999px; padding:3px; gap:2px; }
+  .seg button { border:0; background:none; border-radius:999px; padding:6px 12px; font-size:13px; font-weight:500; color:var(--zinc-600); }
+  .seg button[aria-pressed="true"] { background:var(--indigo-600); color:#fff; }
+  .ctl-label { font-size:12px; font-weight:600; color:var(--zinc-500); display:block; margin-bottom:4px; }
+
+  /* Window */
+  .win { width:740px; height:940px; background:#fff; border-radius:22px; box-shadow:0 30px 60px -20px rgba(24,24,27,.35), 0 0 0 1px rgba(24,24,27,.08);
+    overflow:hidden; display:flex; flex-direction:column; position:relative; }
+  .bar { background:var(--indigo-500); height:64px; display:flex; align-items:center; gap:10px; padding:0 14px; flex-shrink:0; }
+  .lights { display:flex; gap:7px; margin-right:4px; } .lights i { width:12px; height:12px; border-radius:50%; display:block; }
+  .space { display:flex; align-items:center; gap:8px; background:var(--indigo-600); color:#fff; border-radius:var(--r-control); padding:8px 12px; font-weight:600; }
+  .space b { width:22px; height:22px; border-radius:50%; background:#fff; color:var(--indigo-600); display:grid; place-items:center; font-size:12px; }
+  .modes { flex:1; display:flex; background:var(--indigo-600); border-radius:var(--r-control); padding:4px; }
+  .modes span { flex:1; text-align:center; color:#fff; font-weight:600; padding:7px 0; border-radius:9px; }
+  .modes span.on { background:#fff; color:var(--indigo-600); }
+  .more { color:#fff; font-size:20px; padding:0 6px; }
+
+  /* Note tabs, one row above the document */
+  .docbar { display:flex; align-items:center; gap:8px; padding:12px 20px; border-bottom:1px solid var(--zinc-200); flex-shrink:0; }
+  .tabs { display:flex; gap:6px; overflow:auto; flex:1; min-width:0; scrollbar-width:none; }
+  .tabs > * { flex-shrink:0; }
+  .tab { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; height:40px; padding:0 14px; border-radius:999px; border:1px solid var(--zinc-200); background:#fff; font-weight:500; }
+  .tab.on { background:var(--indigo-600); border-color:var(--indigo-600); color:#fff; }
+  .tab.add { width:40px; padding:0; justify-content:center; font-size:20px; color:var(--zinc-500); }
+  .icon-btn { width:40px; height:40px; display:grid; place-items:center; border-radius:var(--r-control); border:1px solid var(--zinc-200); background:#fff; }
+  .icon-btn svg, .tab svg, .pill svg, .tool svg { width:18px; height:18px; }
+
+  /* Document */
+  .stage { flex:1; min-height:0; position:relative; display:flex; }
+  .scroll { flex:1; overflow:auto; }
+  .doc { max-width:620px; margin:0 auto; padding:40px 32px 0; }
+  .pill { display:inline-flex; align-items:center; gap:8px; height:40px; padding:0 16px; border-radius:999px; font-weight:600; border:1px solid var(--zinc-200); background:#fff; }
+  .pill.primary { background:var(--indigo-600); border-color:var(--indigo-600); color:#fff; }
+  .meta { font-size:12px; font-weight:500; color:var(--zinc-400); margin:-10px 0 22px; }
+  .title { font-size:32px; font-weight:700; letter-spacing:-.02em; line-height:1.2; outline:none; margin-bottom:14px; }
+  .title:empty::before { content:"Untitled note"; color:var(--zinc-300); }
+
+  .body { outline:none; font-size:20px; line-height:1.65; color:var(--zinc-800); padding-bottom:calc(var(--overlay-h, 0px) + 140px); caret-color:var(--indigo-600); }
+  .body > div { min-height:1.65em; }
+  .body .mk { color:var(--indigo-300); font-weight:400; }
+  .body > div:not(.active) .mk { display:none; }
+  .body > div[data-k="h1"] { font-size:28px; font-weight:700; letter-spacing:-.015em; margin:26px 0 6px; color:var(--zinc-900); line-height:1.3; }
+  .body > div[data-k="h2"] { font-size:23px; font-weight:650; margin:22px 0 4px; color:var(--zinc-900); line-height:1.35; }
+  .body > div[data-k="li"] { padding-left:28px; position:relative; }
+  .body > div[data-k="li"]:not(.active)::before { content:""; position:absolute; left:10px; top:.72em; width:6px; height:6px; border-radius:50%; background:var(--indigo-500); }
+  .body > div[data-k="ol"] { padding-left:28px; }
+  .body > div[data-k="ol"]:not(.active) { padding-left:4px; }
+  .body > div[data-k="ol"]:not(.active) .mk-ol { display:inline; color:var(--indigo-600); font-weight:600; margin-right:6px; }
+  .body > div[data-k="task"] { padding-left:4px; }
+  .body > div[data-k="task"]:not(.active) { display:flex; align-items:center; }
+  .body > div:not(.active):has(> br:only-child) { min-height:.7em; height:.7em; }
+  .body > div[data-k="task"]:not(.active) .mk-box { display:inline-block; width:18px; height:18px; border:2px solid var(--indigo-400); border-radius:5px; margin-right:10px; font-size:0; flex-shrink:0; }
+  .body > div[data-k="task"][data-done]:not(.active) .mk-box { background:var(--indigo-600) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5"><path d="M5 12l5 5 9-10"/></svg>') center/12px no-repeat; border-color:var(--indigo-600); }
+  .body > div[data-k="task"][data-done]:not(.active) { color:var(--zinc-400); text-decoration:line-through; }
+  .body > div[data-k="quote"] { border-left:3px solid var(--indigo-200); padding-left:16px; color:var(--zinc-600); }
+  .body > div[data-k="hr"]:not(.active) { height:1px; min-height:0; background:var(--zinc-200); margin:22px 0; font-size:0; }
+  .body strong { font-weight:700; color:var(--zinc-900); }
+  .body em { font-style:italic; }
+  .body > div.active { background:linear-gradient(90deg, transparent, transparent); }
+
+  /* Stripes overlay */
+  .overlay { position:absolute; left:16px; right:16px; z-index:5; background:rgba(255,255,255,.94); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    border:1px solid var(--zinc-200); border-radius:var(--r-surface); box-shadow:var(--lift); padding:12px 14px 12px;
+    transition:opacity .16s ease, transform .16s ease; }
+  .overlay.hidden { opacity:0; transform:translateY(8px); pointer-events:none; }
+  @media (prefers-reduced-motion:reduce) { .overlay { transition:none; } }
+  .ov-top { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .styles { display:flex; align-items:center; gap:6px; padding-bottom:10px; margin-bottom:10px; border-bottom:1px solid var(--zinc-200); }
+  .st { min-width:44px; height:44px; padding:0 10px; display:grid; place-items:center; border-radius:var(--r-control); border:1px solid var(--zinc-200); background:#fff; color:var(--zinc-700); font-weight:700; font-size:15px; }
+  .st svg { width:20px; height:20px; }
+  .st:hover { background:var(--zinc-100); }
+  .st[aria-pressed="true"] { background:var(--indigo-100); border-color:var(--indigo-300); color:var(--indigo-700); }
+  .st-gap { width:1px; height:28px; background:var(--zinc-200); margin:0 4px; }
+  .ov-top .chips { display:flex; gap:6px; flex:1; overflow:auto; scrollbar-width:none; }
+  .chip { display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 14px; border-radius:999px; border:1px solid var(--indigo-200); background:#fff; font-weight:500; white-space:nowrap; }
+  .chip svg { width:14px; height:14px; color:var(--indigo-500); }
+  .tool { width:40px; height:40px; display:grid; place-items:center; border-radius:var(--r-control); border:1px solid var(--zinc-200); background:#fff; color:var(--zinc-600); flex-shrink:0; }
+  .done { height:40px; padding:0 16px; border-radius:999px; border:0; background:var(--zinc-900); color:#fff; font-weight:600; flex-shrink:0; }
+  .rows { display:flex; flex-direction:column; gap:6px; }
+  .row { display:flex; align-items:center; gap:6px; overflow:auto; scrollbar-width:none; }
+  .row .pin { width:20px; flex-shrink:0; color:var(--indigo-400); display:grid; place-items:center; }
+  .row .pin svg { width:15px; height:15px; }
+  .w { height:44px; padding:0 16px; border-radius:var(--r-chip); border:1px solid var(--zinc-200); background:#fff; font-size:16px; font-weight:500; white-space:nowrap; flex-shrink:0; }
+  .w:hover { background:var(--indigo-50); border-color:var(--indigo-200); }
+  .w.tag { background:var(--indigo-50); border-color:var(--indigo-200); color:var(--indigo-600); }
+  .w.enter { background:var(--indigo-100); border-color:var(--indigo-200); color:var(--indigo-600); width:52px; padding:0; }
+  .w.ghost { border-style:dashed; border-color:var(--indigo-200); background:var(--indigo-50); }
+  .w.more { border-style:dashed; color:var(--indigo-400); }
+
+  .ov-tail { position:absolute; width:14px; height:14px; background:#fff; border-left:1px solid var(--zinc-200); border-top:1px solid var(--zinc-200); transform:rotate(45deg); top:-8px; left:var(--tail-x, 40px); }
+  .overlay.above .ov-tail { top:auto; bottom:-8px; transform:rotate(225deg); }
+
+  /* Show suggestions button when stripes are hidden */
+  kbd { font:500 11px "Noto Sans Mono", monospace; background:rgba(255,255,255,.18); border-radius:5px; padding:1px 5px; }
+
+  /* Note fonts: the document only. The app chrome stays Noto Sans. */
+  .win { --doc-font:"Noto Sans", sans-serif; }
+  .win[data-font="atkinson"] { --doc-font:"Atkinson Hyperlegible Next", sans-serif; }
+  .win[data-font="lexend"] { --doc-font:"Lexend", sans-serif; }
+  .win[data-font="literata"] { --doc-font:"Literata", serif; }
+  .win[data-font="source"] { --doc-font:"Source Serif 4", serif; }
+  .win[data-font="mono"] { --doc-font:"Atkinson Hyperlegible Mono", monospace; }
+  .title, .body { font-family:var(--doc-font); }
+  .win { --doc-head:var(--doc-font); --head-weight:700; }
+  .win[data-head="fraunces"] { --doc-head:"Fraunces", serif; --head-weight:600; }
+  .win[data-head="literata"] { --doc-head:"Literata", serif; --head-weight:700; }
+  .win[data-head="source"] { --doc-head:"Source Serif 4", serif; --head-weight:600; }
+  .win[data-head="newsreader"] { --doc-head:"Newsreader", serif; --head-weight:600; }
+  .title, .body > div[data-k="h1"], .body > div[data-k="h2"] { font-family:var(--doc-head); font-weight:var(--head-weight); }
+  .win[data-head] .title { letter-spacing:-.01em; }
+  .win[data-font="mono"] .body { font-size:18px; }
+
+  /* Font specimens */
+  .specimens { margin-top:56px; }
+  .specimens > h2 { font-size:22px; font-weight:700; letter-spacing:-.01em; }
+  .specimens > p { color:var(--zinc-500); margin-top:6px; max-width:80ch; line-height:1.7; }
+  .spec-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(360px, 1fr)); gap:16px; margin-top:18px; }
+  .spec { background:#fff; border:1px solid var(--zinc-200); border-radius:var(--r-surface); box-shadow:var(--shadow); padding:22px 24px; cursor:pointer; text-align:left; }
+  .spec[aria-pressed="true"] { border-color:var(--indigo-500); box-shadow:0 0 0 3px var(--indigo-100); }
+  .spec .name { font:600 14px "Noto Sans", sans-serif; display:flex; align-items:center; gap:8px; }
+  .spec .tag { font:600 11px "Noto Sans", sans-serif; color:var(--indigo-700); background:var(--indigo-50); border:1px solid var(--indigo-200); border-radius:999px; padding:1px 8px; }
+  .spec .why { font:13px/1.6 "Noto Sans", sans-serif; color:var(--zinc-500); margin-top:4px; }
+  .spec .sample { margin-top:16px; color:var(--zinc-800); }
+  .spec .sample h3 { font-size:23px; font-weight:700; color:var(--zinc-900); line-height:1.3; }
+  .spec .sample p { font-size:20px; line-height:1.65; margin-top:6px; }
+  .spec .sample h3 + p { margin-top:4px; }
+  .spec .sample h4 { font-size:23px; color:var(--zinc-900); line-height:1.3; margin-top:16px; }
+  .spec .sample h3 { font-size:30px; }
+  .spec .sample .glyphs { font-size:20px; color:var(--zinc-500); margin-top:10px; letter-spacing:.04em; }
+
+  /* Note actions */
+  .readbar { position:absolute; left:50%; bottom:20px; transform:translateX(-50%); z-index:4; display:flex; gap:6px; padding:6px; border-radius:999px;
+    background:rgba(255,255,255,.94); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border:1px solid var(--zinc-200); box-shadow:var(--lift);
+    transition:opacity .16s ease, transform .16s ease; white-space:nowrap; }
+  .readbar.hidden { opacity:0; transform:translate(-50%, 8px); pointer-events:none; }
+  @media (prefers-reduced-motion:reduce) { .readbar { transition:none; } }
+  .rb { display:inline-flex; align-items:center; gap:8px; height:48px; padding:0 18px; border-radius:999px; border:0; background:none; font-weight:600; color:var(--zinc-700); }
+  .rb:hover { background:var(--zinc-100); }
+  .rb svg { width:18px; height:18px; }
+  .rb.primary { background:var(--indigo-600); color:#fff; }
+  .rb.primary.on, .pill.primary.on { background:var(--zinc-900); }
+  .rb.icon { width:48px; padding:0; justify-content:center; }
+  .rb kbd { background:var(--zinc-100); color:var(--zinc-500); }
+  .menu { position:absolute; z-index:6; min-width:210px; background:#fff; border:1px solid var(--zinc-200); border-radius:var(--r-control); box-shadow:var(--lift); padding:6px; }
+  .menu button { display:flex; align-items:center; gap:10px; width:100%; height:44px; padding:0 12px; border:0; background:none; border-radius:8px; font-weight:500; text-align:left; }
+  .menu button:hover { background:var(--zinc-100); }
+  .menu button svg { width:18px; height:18px; color:var(--zinc-500); }
+  .menu .danger { color:#dc2626; } .menu .danger svg { color:#dc2626; }
+  .menu hr { border:0; border-top:1px solid var(--zinc-200); margin:6px 4px; }
+  .presenting { position:absolute; inset:0; z-index:8; background:var(--indigo-600); color:#fff; display:grid; place-content:center; gap:16px; text-align:center; font-size:20px; font-weight:600; }
+  .presenting .pill { justify-self:center; color:var(--zinc-900); }
+  .body > div.reading { background:var(--indigo-50); box-shadow:-12px 0 0 var(--indigo-50), 12px 0 0 var(--indigo-50); border-radius:4px; }
+  .done kbd { background:rgba(255,255,255,.18); color:#fff; margin-left:4px; }
+
+  /* Side notes */
+  .notes h2 { font-size:18px; font-weight:700; margin:0 0 8px; }
+  .notes h2 + p, .notes p { color:var(--zinc-600); line-height:1.7; }
+  .notes section { background:#fff; border:1px solid var(--zinc-200); border-radius:var(--r-surface); box-shadow:var(--shadow); padding:20px 22px; margin-bottom:16px; }
+  .notes ul { padding-left:18px; color:var(--zinc-600); line-height:1.7; }
+  .notes li + li { margin-top:4px; }
+  .notes code { font:13px "Noto Sans Mono", monospace; background:var(--zinc-100); border-radius:5px; padding:1px 5px; color:var(--zinc-800); }
+  .q { border-color:var(--indigo-200) !important; background:var(--indigo-50) !important; }
+  .q h2 { color:var(--indigo-700); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="eyebrow">Mock · Notes</div>
+  <h1 class="mock-title">Notes as a Markdown document</h1>
+  <p class="lede">The note fills the screen as a document. Words go in at the caret, and Markdown shows its format as you write. The suggestion stripes float below the line only while you type, and Esc hides them. The separate composer and "Add to note" go away. Click into the note and type to try it. Select text and press Read aloud to hear only that part.</p>
+
+  <div class="layout">
+    <div>
+      <div class="controls">
+        <div><span class="ctl-label">Note font</span>
+          <div class="seg" id="fontSeg">
+            <button aria-pressed="true" data-v="noto">Noto Sans</button>
+            <button aria-pressed="false" data-v="atkinson">Atkinson Next</button>
+            <button aria-pressed="false" data-v="lexend">Lexend</button>
+            <button aria-pressed="false" data-v="literata">Literata</button>
+            <button aria-pressed="false" data-v="source">Source Serif</button>
+            <button aria-pressed="false" data-v="mono">Atkinson Mono</button>
+          </div>
+        </div>
+        <div><span class="ctl-label">Serif heading + sans body</span>
+          <div class="seg" id="pairSeg">
+            <button aria-pressed="false" data-v="fraunces/atkinson">Fraunces + Atkinson</button>
+            <button aria-pressed="false" data-v="literata/atkinson">Literata + Atkinson</button>
+            <button aria-pressed="false" data-v="source/atkinson">Source Serif + Atkinson</button>
+            <button aria-pressed="false" data-v="newsreader/atkinson">Newsreader + Atkinson</button>
+            <button aria-pressed="false" data-v="fraunces/noto">Fraunces + Noto</button>
+            <button aria-pressed="false" data-v="source/noto">Source Serif + Noto</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="win">
+        <div class="bar">
+          <div class="lights"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>
+          <div class="space"><b>D</b>Daily Conversations <span style="opacity:.8">⌄</span></div>
+          <div class="modes"><span>Talk</span><span class="on">Notes</span><span>Agent</span></div>
+          <div class="more">···</div>
+        </div>
+
+        <div class="docbar">
+          <div class="tabs">
+            <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>About</button>
+            <button class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Holiday</button>
+            <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>w</button>
+            <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>Tin and the Magic Door</button>
+            <button class="tab add" aria-label="New note">+</button>
+          </div>
+        </div>
+
+        <div class="stage">
+        <div class="scroll" id="scroll">
+          <div class="doc">
+            <div class="title" id="title" contenteditable="true" spellcheck="false">Holiday</div>
+            <div class="meta" id="meta">Saved · 0 words</div>
+            <div class="body" id="body" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true" aria-label="Note"></div>
+          </div>
+        </div>
+
+          <div class="overlay hidden" id="overlay" aria-label="Suggestions">
+            <div class="ov-tail"></div>
+            <div class="styles" role="toolbar" aria-label="Style">
+              <button class="st" data-style="h1" aria-label="Heading 1">H1</button>
+              <button class="st" data-style="h2" aria-label="Heading 2">H2</button>
+              <button class="st" data-style="li" aria-label="Bulleted list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4" cy="6" r="1.2" fill="currentColor"/><circle cx="4" cy="12" r="1.2" fill="currentColor"/><circle cx="4" cy="18" r="1.2" fill="currentColor"/></svg></button>
+              <button class="st" data-style="ol" aria-label="Numbered list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 6h10M10 12h10M10 18h10"/><path d="M4 4h1v4M3.5 8h2.5M3.5 12.5a1.2 1.2 0 1 1 2 .9L3.5 16h2.5" stroke-width="1.5"/></svg></button>
+              <button class="st" data-style="task" aria-label="Checklist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="6" height="6" rx="1.5"/><path d="m3.5 17 2 2 3.5-4M12 7h9M12 17h9"/></svg></button>
+              <button class="st" data-style="quote" aria-label="Quote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5v14M9 8h11M9 12h11M9 16h7"/></svg></button>
+              <span class="st-gap"></span>
+              <button class="st" data-style="bold" aria-label="Bold"><b>B</b></button>
+              <button class="st" data-style="italic" aria-label="Italic"><i style="font-family:Georgia,serif">I</i></button>
+            </div>
+            <div class="ov-top">
+              <div class="chips">
+                <button class="chip" data-ins="Reyu"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 3H8v2l1 1v5l-3 3v2h5v6l1 1 1-1v-6h5v-2l-3-3V6l1-1z"/></svg>Reyu</button>
+                <button class="chip" data-ins="Testing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3H8v2l1 1v5l-3 3v2h5v6l1 1 1-1v-6h5v-2l-3-3V6l1-1z"/></svg>Testing</button>
+              </div>
+              <button class="tool" data-act="undo" aria-label="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
+              <button class="tool" data-act="word" aria-label="Delete word"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 5H9l-7 7 7 7h12z"/><path d="m12 9 6 6M18 9l-6 6"/></svg></button>
+              <button class="done" data-act="done">Hide <kbd>Esc</kbd></button>
+            </div>
+            <div class="rows" id="rows"></div>
+          </div>
+
+          <div class="readbar" id="readbar" role="toolbar" aria-label="Note actions">
+            <button class="rb primary" data-act="read"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4zM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg><span class="read-label">Read aloud</span></button>
+            <button class="rb" data-act="present"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l14 8-14 8z"/></svg>Present</button>
+            <button class="rb" data-act="suggest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h7"/></svg>Suggestions <kbd>⌘J</kbd></button>
+            <button class="rb icon" data-act="menu" aria-label="More actions"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
+          </div>
+          <div class="menu" id="menu" role="menu" hidden>
+            <button role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Export…</button>
+            <hr />
+            <button role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Delete note…</button>
+          </div>
+          <div class="presenting" id="presenting" hidden><p>Present opens the note on the full screen.</p><button class="pill" data-act="close-present">Close</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <section>
+        <h2>The document</h2>
+        <ul>
+          <li>The title is the first line of the page. It has no field border. The save state and the word count sit below it.</li>
+          <li>The body has no box. It uses the 20px composer size, so the text keeps the size that the user types at today.</li>
+          <li>The Markdown syntax shows only on the line that has the caret. The other lines show the format: headings, bullets, numbers, tasks, quotes, bold, and rules.</li>
+          <li>The note stores plain Markdown in <code>content</code>, as it does today. Read aloud, Present, and Export read the same text.</li>
+        </ul>
+      </section>
+      <section>
+        <h2>The stripes</h2>
+        <ul>
+          <li>The stripes appear on the first key, below the line that has the caret. If the line is near the bottom, they appear above it.</li>
+          <li>A tap on a word puts it at the caret. The return key on a row puts in the full row.</li>
+          <li>Esc hides the stripes. The Hide button does the same for a user who has no keyboard.</li>
+          <li>The style row is at the top of the overlay. A line style (heading, list, checklist, quote) changes the line that has the caret. A second tap removes it. The button of the current style has a highlight.</li>
+          <li>Bold and italic wrap the selected text. With no selection, they wrap the word at the caret.</li>
+          <li>Undo, delete word, and the pinned phrases are in the overlay. The overlay has no clear action, because one tap must not erase a full document.</li>
+        </ul>
+      </section>
+      <section>
+        <h2>The note actions</h2>
+        <ul>
+          <li>Read aloud reads the selected text when there is a selection. Otherwise, it reads the full note. The line that it speaks has a highlight, so the room can follow.</li>
+          <li>Read aloud changes to Stop while it speaks.</li>
+          <li>Present stays one tap away. Export and Delete go into the more menu, because the user needs them less often. Delete is last and red, and it asks for confirmation as it does today.</li>
+          <li>The reading bar shows the Suggestions button too. Thus, a switch user or an eye-gaze user can start to write without a key.</li>
+          <li>The reading bar hides while the stripes are open, so only one floating panel is on the page.</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="page specimens">
+  <h2>Serif heading with a sans body</h2>
+  <p>The title and the headings use a serif. The body text stays in a sans font for legibility at the 20px note size. Click a card to put the pair in the note.</p>
+  <div class="spec-grid">
+        <button class="spec" data-v="fraunces/atkinson" aria-pressed="false">
+          <div class="name">Fraunces + Atkinson Hyperlegible Next <span class="tag">Present</span></div>
+          <div class="why">Fraunces is the display serif of the Reading light tones in Present. A note and its presentation then share one heading font.</div>
+          <div class="sample">
+            <h3 style="font-family:'Fraunces', serif; font-weight:600">Holiday</h3>
+            <p style="font-family:'Atkinson Hyperlegible Next', sans-serif">I want you to bring a paper and write down your <b>daily time table</b>.</p>
+            <h4 style="font-family:'Fraunces', serif; font-weight:600">After lunch</h4>
+            <p style="font-family:'Atkinson Hyperlegible Next', sans-serif">Rest of the time is up to you. You can have <b>1 hour</b> of TV after you finish.</p>
+          </div>
+        </button>
+        <button class="spec" data-v="literata/atkinson" aria-pressed="false">
+          <div class="name">Literata + Atkinson Hyperlegible Next <span class="tag">Book</span></div>
+          <div class="why">Literata headings have the most weight. They give the strongest split between the headings and the body.</div>
+          <div class="sample">
+            <h3 style="font-family:'Literata', serif; font-weight:700">Holiday</h3>
+            <p style="font-family:'Atkinson Hyperlegible Next', sans-serif">I want you to bring a paper and write down your <b>daily time table</b>.</p>
+            <h4 style="font-family:'Literata', serif; font-weight:700">After lunch</h4>
+            <p style="font-family:'Atkinson Hyperlegible Next', sans-serif">Rest of the time is up to you. You can have <b>1 hour</b> of TV after you finish.</p>
+          </div>
+        </button>
+        <button class="spec" data-v="source/atkinson" aria-pressed="false">
+          <div class="name">Source Serif 4 + Atkinson Hyperlegible Next <span class="tag">Editor</span></div>
+          <div class="why">A quiet serif heading over a legible body. It looks like a document editor.</div>
+          <div class="sample">
+            <h3 style="font-family:'Source Serif 4', serif; font-weight:600">Holiday</h3>
+            <p style="font-family:'Atkinson Hyperlegible Next', sans-serif">I want you to bring a paper and write down your <b>daily time table</b>.</p>
+            <h4 style="font-family:'Source Serif 4', serif; font-weight:600">After lunch</h4>
+            <p style="font-family:'Atkinson Hyperlegible Next', sans-serif">Rest of the time is up to you. You can have <b>1 hour</b> of TV after you finish.</p>
+          </div>
+        </button>
+        <button class="spec" data-v="newsreader/atkinson" aria-pressed="false">
+          <div class="name">Newsreader + Atkinson Hyperlegible Next <span class="tag">Editorial</span></div>
+          <div class="why">Narrow headings with high contrast. Long titles take less space.</div>
+          <div class="sample">
+            <h3 style="font-family:'Newsreader', serif; font-weight:600">Holiday</h3>
+            <p style="font-family:'Atkinson Hyperlegible Next', sans-serif">I want you to bring a paper and write down your <b>daily time table</b>.</p>
+            <h4 style="font-family:'Newsreader', serif; font-weight:600">After lunch</h4>
+            <p style="font-family:'Atkinson Hyperlegible Next', sans-serif">Rest of the time is up to you. You can have <b>1 hour</b> of TV after you finish.</p>
+          </div>
+        </button>
+        <button class="spec" data-v="fraunces/noto" aria-pressed="false">
+          <div class="name">Fraunces + Noto Sans <span class="tag">Present</span></div>
+          <div class="why">The Present heading over the font of the app today. Only the headings change.</div>
+          <div class="sample">
+            <h3 style="font-family:'Fraunces', serif; font-weight:600">Holiday</h3>
+            <p style="font-family:'Noto Sans', sans-serif">I want you to bring a paper and write down your <b>daily time table</b>.</p>
+            <h4 style="font-family:'Fraunces', serif; font-weight:600">After lunch</h4>
+            <p style="font-family:'Noto Sans', sans-serif">Rest of the time is up to you. You can have <b>1 hour</b> of TV after you finish.</p>
+          </div>
+        </button>
+        <button class="spec" data-v="source/noto" aria-pressed="false">
+          <div class="name">Source Serif 4 + Noto Sans <span class="tag">Editor</span></div>
+          <div class="why">A quiet serif heading over the font of the app today.</div>
+          <div class="sample">
+            <h3 style="font-family:'Source Serif 4', serif; font-weight:600">Holiday</h3>
+            <p style="font-family:'Noto Sans', sans-serif">I want you to bring a paper and write down your <b>daily time table</b>.</p>
+            <h4 style="font-family:'Source Serif 4', serif; font-weight:600">After lunch</h4>
+            <p style="font-family:'Noto Sans', sans-serif">Rest of the time is up to you. You can have <b>1 hour</b> of TV after you finish.</p>
+          </div>
+        </button>
+  </div>
+</div>
+
+<div class="page specimens">
+  <h2>Font alternatives</h2>
+  <p>Each card shows the same lines at the note size. Click a card or a button above to put that font in the note. The font changes the title and the body only. The tabs, the stripes, and the bar stay in Noto Sans.</p>
+  <div class="spec-grid">
+        <button class="spec" data-v="noto" aria-pressed="true">
+          <div class="name">Noto Sans <span class="tag">Today</span></div>
+          <div class="why">The app font. One family for the UI and the note. It has the widest language coverage.</div>
+          <div class="sample" style="font-family:'Noto Sans', sans-serif">
+            <h3>After lunch</h3>
+            <p>Rest of the time is up to you. You can have <b>1 hour</b> of TV after you finish.</p>
+            <div class="glyphs">Il1 O0 rn m · 3:45 pm · “Yes”</div>
+          </div>
+        </button>
+        <button class="spec" data-v="atkinson" aria-pressed="false">
+          <div class="name">Atkinson Hyperlegible Next <span class="tag">Legibility</span></div>
+          <div class="why">Made by the Braille Institute for low-vision readers. Letters that look alike, such as I, l, 1 and O, 0, have different shapes.</div>
+          <div class="sample" style="font-family:'Atkinson Hyperlegible Next', sans-serif">
+            <h3>After lunch</h3>
+            <p>Rest of the time is up to you. You can have <b>1 hour</b> of TV after you finish.</p>
+            <div class="glyphs">Il1 O0 rn m · 3:45 pm · “Yes”</div>
+          </div>
+        </button>
+        <button class="spec" data-v="lexend" aria-pressed="false">
+          <div class="name">Lexend <span class="tag">Brand</span></div>
+          <div class="why">The brand font, used for the wordmark today. It has wide letter spacing that helps slow readers. A body use is a deviation from DESIGN.md.</div>
+          <div class="sample" style="font-family:'Lexend', sans-serif">
+            <h3>After lunch</h3>
+            <p>Rest of the time is up to you. You can have <b>1 hour</b> of TV after you finish.</p>
+            <div class="glyphs">Il1 O0 rn m · 3:45 pm · “Yes”</div>
+          </div>
+        </button>
+        <button class="spec" data-v="literata" aria-pressed="false">
+          <div class="name">Literata <span class="tag">Serif</span></div>
+          <div class="why">A serif for long text on a screen. The note looks like a book page and does not look like the app UI.</div>
+          <div class="sample" style="font-family:'Literata', serif">
+            <h3>After lunch</h3>
+            <p>Rest of the time is up to you. You can have <b>1 hour</b> of TV after you finish.</p>
+            <div class="glyphs">Il1 O0 rn m · 3:45 pm · “Yes”</div>
+          </div>
+        </button>
+        <button class="spec" data-v="source" aria-pressed="false">
+          <div class="name">Source Serif 4 <span class="tag">Serif</span></div>
+          <div class="why">A calm serif with less contrast than Literata. It looks like a document editor.</div>
+          <div class="sample" style="font-family:'Source Serif 4', serif">
+            <h3>After lunch</h3>
+            <p>Rest of the time is up to you. You can have <b>1 hour</b> of TV after you finish.</p>
+            <div class="glyphs">Il1 O0 rn m · 3:45 pm · “Yes”</div>
+          </div>
+        </button>
+        <button class="spec" data-v="mono" aria-pressed="false">
+          <div class="name">Atkinson Hyperlegible Mono <span class="tag">Writer</span></div>
+          <div class="why">A monospace font, like a Markdown writing app. The <code>#</code> and <code>**</code> marks line up. Each line holds fewer words.</div>
+          <div class="sample" style="font-family:'Atkinson Hyperlegible Mono', monospace">
+            <h3>After lunch</h3>
+            <p>Rest of the time is up to you. You can have <b>1 hour</b> of TV after you finish.</p>
+            <div class="glyphs">Il1 O0 rn m · 3:45 pm · “Yes”</div>
+          </div>
+        </button>
+  </div>
+</div>
+
+<script>
+const body = document.getElementById('body');
+const overlay = document.getElementById('overlay');
+const scroll = document.getElementById('scroll');
+const rowsEl = document.getElementById('rows');
+const meta = document.getElementById('meta');
+const readbar = document.getElementById('readbar');
+const menu = document.getElementById('menu');
+let open = false;
+
+const seed = [
+  'I want you to bring a paper and write down your **daily time table**.',
+  '',
+  '## Before lunch',
+  '- Do 1 page of abacus',
+  '- Practice for your olympiad',
+  '- [x] Read for 20 minutes',
+  '',
+  '## After lunch',
+  'Rest of the time is up to you. You can have **1 hour** of TV after you finish.',
+  '',
+  '> Show me the time table before dinner.',
+];
+
+const rows = [
+  { pin:'solid', words:['you','have','to'], enter:true },
+  { pin:'line', words:['That','makes',{tag:'laughs'},'sense','now'], enter:true },
+  { pin:'line', words:['I','can','take','my','table'], enter:true },
+  { pin:'line', words:['You','should','divide','numerator','and','denominator'], more:true },
+  { pin:'next', words:['Look','at','the'], ghost:true, more:true },
+];
+const pinSolid = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 3H8v2l1 1v5l-3 3v2h5v6l1 1 1-1v-6h5v-2l-3-3V6l1-1z"/></svg>';
+const pinLine = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3H8v2l1 1v5l-3 3v2h5v6l1 1 1-1v-6h5v-2l-3-3V6l1-1z"/></svg>';
+const next = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 17 5-5-5-5M13 17l5-5-5-5"/></svg>';
+rowsEl.innerHTML = rows.map(r => {
+  const icon = r.pin === 'solid' ? pinSolid : r.pin === 'line' ? pinLine : next;
+  const words = r.words.map(w => typeof w === 'string'
+    ? `<button class="w${r.ghost ? ' ghost' : ''}" data-ins="${w}">${w}</button>`
+    : `<button class="w tag" data-ins="[${w.tag}]">⦀ ${w.tag}</button>`).join('');
+  const phrase = r.words.map(w => typeof w === 'string' ? w : `[${w.tag}]`).join(' ');
+  const tail = r.enter ? `<button class="w enter" data-ins="${phrase}" data-line="1" aria-label="Insert the full row">↵</button>`
+             : r.more ? '<button class="w more" aria-label="More">···</button>' : '';
+  return `<div class="row"><span class="pin">${icon}</span>${words}${tail}</div>`;
+}).join('');
+
+// Live Markdown: classify each line; wrap the syntax so it hides off the caret line.
+function kind(t) {
+  if (/^# /.test(t)) return 'h1';
+  if (/^## /.test(t)) return 'h2';
+  if (/^- \[( |x)\] /.test(t)) return 'task';
+  if (/^[-*] /.test(t)) return 'li';
+  if (/^\d+\. /.test(t)) return 'ol';
+  if (/^> /.test(t)) return 'quote';
+  if (/^---$/.test(t)) return 'hr';
+  return 'p';
+}
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+function render(line) {
+  const t = line.textContent;
+  const k = kind(t);
+  line.dataset.k = k;
+  if (k === 'task' && /^- \[x\]/.test(t)) line.dataset.done = ''; else delete line.dataset.done;
+  let m = t.match(/^(#{1,2} |- \[[ x]\] |[-*] |\d+\. |> |---$)?(.*)$/s);
+  let lead = m[1] || '', rest = m[2];
+  let leadHtml = '';
+  if (lead) {
+    if (k === 'ol') leadHtml = `<span class="mk">${esc(lead)}</span><span class="mk-ol" style="display:none">${esc(lead.trim())}</span>`;
+    else if (k === 'task') leadHtml = `<span class="mk">${esc(lead)}</span><span class="mk-box" style="display:none">.</span>`;
+    else leadHtml = `<span class="mk">${esc(lead)}</span>`;
+  }
+  let inner = esc(rest)
+    .replace(/\*\*([^*]+)\*\*/g, '<span class="mk">**</span><strong>$1</strong><span class="mk">**</span>')
+    .replace(/(^|[^*])\*([^*]+)\*/g, '$1<span class="mk">*</span><em>$2</em><span class="mk">*</span>');
+  line.innerHTML = (leadHtml + inner) || '<br>';
+}
+// The hidden helper glyphs show only off the caret line.
+const style = document.createElement('style');
+style.textContent = `.body > div:not(.active) .mk-ol{display:inline!important}.body > div:not(.active) .mk-box{display:inline-block!important}`;
+document.head.appendChild(style);
+
+body.innerHTML = seed.map(s => `<div>${esc(s) || '<br>'}</div>`).join('');
+[...body.children].forEach(render);
+document.execCommand('defaultParagraphSeparator', false, 'div');
+count();
+
+function caretLine() {
+  const sel = getSelection();
+  if (!sel.rangeCount || !body.contains(sel.anchorNode)) return null;
+  let n = sel.anchorNode;
+  while (n && n.parentNode !== body) n = n.parentNode;
+  return n && n.nodeType === 1 ? n : null;
+}
+let active = null;
+document.addEventListener('selectionchange', () => {
+  const line = caretLine();
+  if (line === active) return;
+  if (active && active.isConnected) { active.classList.remove('active'); render(active); }
+  active = line;
+  if (active) active.classList.add('active');
+  if (open) position();
+});
+body.addEventListener('input', () => {
+  // Plain text inside new lines, so the classifier always sees Markdown source.
+  [...body.childNodes].forEach(n => { if (n.nodeType === 3) { const d = document.createElement('div'); n.replaceWith(d); d.append(n); } });
+  const line = caretLine();
+  if (line) { line.dataset.k = kind(line.textContent); }
+  show(); count();
+});
+body.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { hide(); e.preventDefault(); }
+});
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') { e.preventDefault(); open ? hide() : (focusEnd(), show()); }
+});
+
+function count() {
+  const words = body.textContent.replace(/[#>*\-\[\]x]/g,' ').trim().split(/\s+/).filter(Boolean).length;
+  meta.textContent = `Saved · ${words} words`;
+}
+
+function show() {
+  if (!open) { open = true; overlay.classList.remove('hidden'); bars(); closeMenu(); position(); }
+}
+function hide() {
+  open = false;
+  overlay.classList.add('hidden'); bars();
+  body.style.setProperty('--overlay-h', '0px');
+}
+function position() {
+  const h = overlay.offsetHeight;
+  body.style.setProperty('--overlay-h', h + 'px');
+  overlay.classList.remove('above');
+  const sel = getSelection(); if (!sel.rangeCount) return;
+  const r = sel.getRangeAt(0).getClientRects()[0] || (active && active.getBoundingClientRect());
+  if (!r) return;
+  const sr = scroll.getBoundingClientRect();
+  let top = r.bottom - sr.top + 14;
+  if (top + h > sr.height - 8) { top = r.top - sr.top - h - 14; overlay.classList.add('above'); }
+  overlay.style.top = Math.max(8, top) + 'px';
+  overlay.style.setProperty('--tail-x', Math.max(20, Math.min(r.left - sr.left - 22, 640)) + 'px');
+}
+
+function focusEnd() {
+  if (body.contains(document.activeElement) || document.activeElement === body) return;
+  body.focus();
+  const r = document.createRange(); r.selectNodeContents(body); r.collapse(false);
+  getSelection().removeAllRanges(); getSelection().addRange(r);
+}
+function insert(text, line) {
+  focusEnd();
+  const sel = getSelection(); const r = sel.getRangeAt(0);
+  const before = r.startContainer.nodeType === 3 ? r.startContainer.textContent.slice(0, r.startOffset) : '';
+  const pad = before && !/\s$/.test(before) ? ' ' : '';
+  document.execCommand('insertText', false, pad + text + (line ? '' : ' '));
+  if (line) document.execCommand('insertParagraph');
+}
+overlay.addEventListener('mousedown', e => e.preventDefault()); // keep the caret in the note
+overlay.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.ins) insert(b.dataset.ins, b.dataset.line);
+  const act = b.dataset.act;
+  if (b.dataset.style) applyStyle(b.dataset.style);
+  if (act === 'undo') document.execCommand('undo');
+  if (act === 'word') { for (let i = 0; i < 2; i++) getSelection().modify('extend', 'backward', 'word'); document.execCommand('delete'); }
+  if (act === 'done') hide();
+});
+scroll.addEventListener('scroll', () => { if (open) position(); });
+
+function seg(id, fn) {
+  const el = document.getElementById(id);
+  el.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    el.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+    fn(b.dataset.v);
+  });
+}
+
+// While the stripes are open, the page is for writing, so the reading bar steps away.
+function bars() {
+  readbar.classList.toggle('hidden', open);
+}
+bars();
+
+// Read aloud reads the selection when there is one, and the whole note when not.
+let reading = null;
+function readLabel() {
+  const sel = getSelection();
+  const part = sel.rangeCount && !sel.isCollapsed && body.contains(sel.anchorNode);
+  document.querySelectorAll('.read-label').forEach(l => l.textContent = reading ? 'Stop' : part ? 'Read selection' : 'Read aloud');
+  document.querySelectorAll('[data-act="read"]').forEach(b => b.classList.toggle('on', !!reading));
+}
+document.addEventListener('selectionchange', readLabel);
+
+// Style buttons. A line style swaps the Markdown prefix of the caret line, and a
+// second tap removes it. Bold and italic wrap the selection, or the word at the caret.
+const PREFIX = { h1:'# ', h2:'## ', li:'- ', ol:'1. ', task:'- [ ] ', quote:'> ' };
+const LEAD = /^(#{1,2} |- \[[ x]\] |[-*] |\d+\. |> )/;
+function caretOffset(line) {
+  const r = getSelection().getRangeAt(0).cloneRange();
+  r.selectNodeContents(line); r.setEnd(getSelection().anchorNode, getSelection().anchorOffset);
+  return r.toString().length;
+}
+function placeCaret(line, offset) {
+  const node = line.firstChild || line.appendChild(document.createTextNode(''));
+  const r = document.createRange(); r.setStart(node, Math.min(offset, node.length)); r.collapse(true);
+  getSelection().removeAllRanges(); getSelection().addRange(r);
+}
+function applyStyle(kindName) {
+  focusEnd();
+  if (kindName === 'bold' || kindName === 'italic') return wrap(kindName === 'bold' ? '**' : '*');
+  const line = caretLine(); if (!line) return;
+  const text = line.textContent, at = caretOffset(line);
+  const old = (text.match(LEAD) || [''])[0];
+  const next = kind(text) === kindName ? '' : PREFIX[kindName];
+  line.textContent = next + text.slice(old.length);
+  placeCaret(line, Math.max(next.length, at - old.length + next.length));
+  line.dataset.k = kind(line.textContent);
+  pressed(); position();
+}
+function wrap(mark) {
+  const sel = getSelection();
+  if (sel.isCollapsed) {
+    sel.modify('move', 'backward', 'word');
+    sel.modify('extend', 'forward', 'word');
+  }
+  const raw = sel.toString(), text = raw.replace(/\s+$/, '');
+  if (!text) { document.execCommand('insertText', false, mark + mark); for (let i = 0; i < mark.length; i++) sel.modify('move', 'backward', 'character'); return; }
+  document.execCommand('insertText', false, mark + text + mark + raw.slice(text.length));
+}
+function pressed() {
+  const line = caretLine();
+  const k = line ? kind(line.textContent) : null;
+  document.querySelectorAll('.st[data-style]').forEach(b => {
+    const st = b.dataset.style;
+    b.setAttribute('aria-pressed', st === k || (st === 'li' && k === 'li'));
+  });
+}
+document.addEventListener('selectionchange', pressed);
+function read() {
+  if (reading) return stop();
+  const sel = getSelection();
+  let lines = [...body.children].filter(l => l.textContent.trim());
+  if (sel.rangeCount && !sel.isCollapsed && body.contains(sel.anchorNode)) lines = lines.filter(l => sel.containsNode(l, true));
+  let i = 0;
+  const step = () => {
+    lines.forEach(l => l.classList.remove('reading'));
+    if (i >= lines.length) return stop();
+    lines[i].classList.add('reading'); lines[i].scrollIntoView({ block:'nearest' }); i++;
+    reading = setTimeout(step, 1500);
+  };
+  reading = -1; step(); readLabel();
+}
+function stop() { clearTimeout(reading); reading = null; body.querySelectorAll('.reading').forEach(l => l.classList.remove('reading')); readLabel(); }
+
+// The font picker and the specimen cards set the same font.
+// A value of "head/body" sets a serif heading over a sans body.
+function setFont(v) {
+  const win = document.querySelector('.win');
+  const [head, bodyFont] = v.includes('/') ? v.split('/') : [null, v];
+  win.dataset.font = bodyFont;
+  if (head) win.dataset.head = head; else delete win.dataset.head;
+  document.querySelectorAll('#fontSeg button, #pairSeg button, .spec').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === v));
+  if (open) position();
+}
+document.querySelectorAll('.spec-grid').forEach(g => g.addEventListener('click', e => { const c = e.target.closest('.spec'); if (c) { setFont(c.dataset.v); document.querySelector('.win').scrollIntoView({ behavior:'smooth', block:'center' }); } }));
+seg('fontSeg', setFont);
+seg('pairSeg', setFont);
+
+function closeMenu() { menu.hidden = true; }
+function openMenu(btn) {
+  const stage = document.querySelector('.stage').getBoundingClientRect();
+  const r = btn.getBoundingClientRect();
+  menu.hidden = false;
+  menu.style.left = Math.min(r.right - stage.left - menu.offsetWidth, stage.width - menu.offsetWidth - 12) + 'px';
+  menu.style.top = (r.top - stage.top - menu.offsetHeight - 8) + 'px';
+}
+document.querySelector('.win').addEventListener('mousedown', e => {
+  if (e.target.closest('[data-act="read"]')) e.preventDefault(); // keep the selection for Read selection
+});
+document.querySelector('.win').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (!e.target.closest('#menu') && !(b && b.dataset.act === 'menu')) closeMenu();
+  if (!b) return;
+  const act = b.dataset.act;
+  if (act === 'read') read();
+  if (act === 'present') document.getElementById('presenting').hidden = false;
+  if (act === 'close-present') document.getElementById('presenting').hidden = true;
+  if (act === 'suggest') { focusEnd(); show(); }
+  if (act === 'menu') menu.hidden ? openMenu(b) : closeMenu();
+});
+menu.addEventListener('click', closeMenu);
+</script>
+</body>
+</html>

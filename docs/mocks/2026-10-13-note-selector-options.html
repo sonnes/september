@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>September: Note selector options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --indigo-700:#4338ca; --indigo-600:#4f46e5; --indigo-500:#6366f1; --indigo-300:#a5b4fc; --indigo-200:#c7d2fe; --indigo-100:#e0e7ff; --indigo-50:#eef2ff;
+    --zinc-900:#18181b; --zinc-800:#27272a; --zinc-700:#3f3f46; --zinc-600:#52525b; --zinc-500:#71717a; --zinc-400:#a1a1aa; --zinc-300:#d4d4d8; --zinc-200:#e4e4e7; --zinc-100:#f4f4f5; --zinc-50:#fafafa;
+    --r-control:12px; --r-surface:20px;
+    --shadow:0 1px 2px rgba(24,24,27,.06), 0 1px 3px rgba(24,24,27,.04);
+    --lift:0 18px 40px -12px rgba(24,24,27,.28), 0 2px 6px rgba(24,24,27,.06);
+  }
+  * { box-sizing:border-box; margin:0; }
+  [hidden] { display:none !important; }
+  body { font-family:"Noto Sans", sans-serif; background:var(--zinc-100); color:var(--zinc-900); -webkit-font-smoothing:antialiased; padding:40px 28px 80px; font-size:14px; line-height:1.5; }
+  button { font:inherit; color:inherit; cursor:pointer; }
+  .page { max-width:1500px; margin:0 auto; }
+  .eyebrow { font-size:14px; font-weight:500; color:var(--indigo-600); }
+  h1.t { font-size:32px; font-weight:700; letter-spacing:-.02em; margin-top:6px; }
+  .lede { font-size:15px; color:var(--zinc-500); margin-top:8px; max-width:86ch; line-height:1.7; }
+  .toc { display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
+  .toc a { font-size:13px; font-weight:500; color:var(--indigo-700); background:#fff; border:1px solid var(--zinc-200); border-radius:999px; padding:6px 12px; text-decoration:none; }
+
+  section.opt { margin-top:56px; scroll-margin-top:20px; }
+  section.opt > h2 { font-size:22px; font-weight:700; letter-spacing:-.01em; display:flex; align-items:center; gap:10px; }
+  .rec { font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--indigo-700); background:var(--indigo-50); border:1px solid var(--indigo-200); border-radius:999px; padding:2px 8px; }
+  .sub { color:var(--zinc-600); margin-top:6px; max-width:90ch; line-height:1.7; }
+  .pc { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:14px; max-width:980px; }
+  .pc div { background:#fff; border:1px solid var(--zinc-200); border-radius:14px; padding:12px 16px; }
+  .pc b { font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--zinc-500); }
+  .pc ul { padding-left:18px; color:var(--zinc-700); line-height:1.7; margin-top:4px; }
+
+  .row { display:flex; gap:28px; align-items:flex-start; margin-top:20px; overflow-x:auto; padding-bottom:12px; }
+  .devwrap { flex-shrink:0; }
+  .devlabel { font-size:12px; font-weight:600; color:var(--zinc-500); margin-bottom:8px; }
+
+  /* Device frames */
+  .dev { background:#fff; border-radius:22px; box-shadow:0 24px 50px -20px rgba(24,24,27,.35), 0 0 0 1px rgba(24,24,27,.08); overflow:hidden; position:relative; display:flex; flex-direction:column; }
+  .dev.phone { width:360px; height:720px; border-radius:36px; }
+  .dev.panel { width:480px; height:640px; }
+  .scaler { width:calc(1180px * .62); height:calc(780px * .62); }
+  .scaler .dev.wide { width:1180px; height:780px; transform:scale(.62); transform-origin:top left; }
+
+  .bar { background:var(--indigo-500); color:#fff; display:flex; align-items:center; gap:8px; padding:0 12px; height:56px; flex-shrink:0; }
+  .phone .bar { height:auto; padding:40px 16px 12px; }
+  .bar .sp { background:var(--indigo-600); border-radius:var(--r-control); padding:7px 11px; font-weight:600; display:flex; gap:7px; align-items:center; white-space:nowrap; }
+  .bar .sp i { width:20px; height:20px; border-radius:50%; background:#fff; color:var(--indigo-600); display:grid; place-items:center; font-size:11px; font-style:normal; font-weight:700; }
+  .bar .modes { margin-left:auto; display:flex; background:var(--indigo-600); border-radius:var(--r-control); padding:3px; }
+  .bar .modes span { padding:6px 12px; border-radius:9px; font-weight:600; font-size:13px; }
+  .bar .modes span.on { background:#fff; color:var(--indigo-600); }
+  .wide .bar { display:none; }
+  .wide .shell { display:flex; flex:1; min-height:0; background:var(--indigo-500); }
+  .wide .rail { width:56px; flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:14px; padding-top:16px; }
+  .wide .rail i { width:28px; height:28px; border-radius:8px; background:rgba(255,255,255,.2); display:block; }
+  .wide .rail i.logo { background:#fff; }
+  .wide .inset { flex:1; background:#fff; margin:8px 8px 8px 0; border-radius:16px; display:flex; flex-direction:column; min-width:0; overflow:hidden; }
+  .wide .hdr { height:56px; border-bottom:1px solid var(--zinc-200); display:flex; align-items:center; padding:0 18px; font-weight:600; flex-shrink:0; gap:10px; }
+  .wide .dock { height:64px; border-top:1px solid var(--zinc-200); display:flex; align-items:center; justify-content:flex-end; padding:0 18px; flex-shrink:0; background:var(--zinc-50); }
+  .wide .dock .modes { display:flex; border:1px solid var(--zinc-200); border-radius:999px; padding:3px; background:#fff; }
+  .wide .dock .modes span { padding:7px 16px; border-radius:999px; font-weight:600; font-size:13px; color:var(--zinc-600); }
+  .wide .dock .modes span.on { background:var(--indigo-600); color:#fff; }
+  .body { flex:1; min-height:0; display:flex; position:relative; }
+
+  /* The note page */
+  .notepage { flex:1; min-width:0; overflow:hidden; position:relative; display:flex; flex-direction:column; }
+  .doc { padding:22px 26px 0; max-width:640px; width:100%; margin:0 auto; }
+  .phone .doc { padding:18px 20px 0; }
+  .ttl { font-family:"Fraunces", serif; font-weight:600; font-size:28px; line-height:1.15; letter-spacing:-.01em; }
+  .phone .ttl { font-size:25px; }
+  .meta { font-size:12px; color:var(--zinc-400); font-weight:500; margin-top:3px; }
+  .txt { font-size:18px; line-height:1.6; color:var(--zinc-800); margin-top:14px; }
+  .txt h4 { font-family:"Fraunces", serif; font-weight:600; font-size:21px; margin:14px 0 2px; color:var(--zinc-900); }
+  .txt ul { padding-left:22px; } .txt li::marker { color:var(--indigo-500); }
+  .readbar { position:absolute; left:0; right:0; bottom:14px; margin:0 auto; width:fit-content; display:flex; gap:4px; padding:5px; border-radius:999px; border:1px solid var(--zinc-200); background:rgba(255,255,255,.95); box-shadow:var(--lift); }
+  .readbar span { height:40px; padding:0 14px; border-radius:999px; display:inline-flex; align-items:center; font-weight:600; font-size:13px; color:var(--zinc-700); }
+  .readbar span.p { background:var(--indigo-600); color:#fff; }
+
+  /* Shared controls */
+  .pill { display:inline-flex; align-items:center; gap:7px; height:44px; padding:0 15px; border-radius:999px; border:1px solid var(--zinc-200); background:#fff; font-weight:500; white-space:nowrap; flex-shrink:0; }
+  .pill.on { background:var(--indigo-600); border-color:var(--indigo-600); color:#fff; }
+  .pill.ghost { border-style:dashed; color:var(--indigo-700); border-color:var(--indigo-300); background:var(--indigo-50); }
+  .ico { width:16px; height:16px; flex-shrink:0; }
+  .key { width:44px; height:44px; border-radius:var(--r-control); border:1px solid var(--zinc-200); background:#fff; display:grid; place-items:center; flex-shrink:0; color:var(--zinc-600); }
+  .search { height:44px; border:1px solid var(--zinc-200); border-radius:var(--r-control); display:flex; align-items:center; gap:8px; padding:0 12px; color:var(--zinc-400); background:#fff; }
+  .rowitem { display:flex; flex-direction:column; gap:1px; width:100%; text-align:left; border:0; background:none; padding:10px 12px; border-radius:12px; min-height:56px; justify-content:center; }
+  .rowitem:hover { background:var(--zinc-100); }
+  .rowitem.on { background:var(--indigo-50); box-shadow:inset 0 0 0 1px var(--indigo-200); }
+  .rowitem .n { font-weight:600; display:flex; align-items:center; gap:8px; }
+  .rowitem .d { font-size:12.5px; color:var(--zinc-500); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rowitem .n small { margin-left:auto; font-size:11.5px; color:var(--zinc-400); font-weight:500; }
+  .about { border:1px solid var(--indigo-200); background:var(--indigo-50); }
+  .about .n { color:var(--indigo-700); }
+  .newbtn { height:44px; border-radius:999px; border:0; background:var(--indigo-600); color:#fff; font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:0 16px; }
+
+  /* Option A: the title is the selector */
+  .titlebtn { display:inline-flex; align-items:center; gap:8px; border:0; background:none; padding:4px 10px 4px 0; border-radius:12px; text-align:left; }
+  .titlebtn:hover { background:var(--zinc-100); }
+  .titlebtn .chev { width:30px; height:30px; border-radius:999px; background:var(--indigo-50); color:var(--indigo-600); display:grid; place-items:center; flex-shrink:0; }
+  .count { font-size:12px; color:var(--zinc-500); font-weight:500; margin-top:2px; }
+  .picker { position:absolute; z-index:5; background:#fff; border:1px solid var(--zinc-200); border-radius:var(--r-surface); box-shadow:var(--lift); padding:12px; display:flex; flex-direction:column; gap:8px; }
+  .panel .picker, .wide .picker { left:18px; top:84px; width:380px; }
+  .phone .picker { left:0; right:0; bottom:0; border-radius:28px 28px 0 0; padding:10px 14px 24px; max-height:78%; }
+  .phone .picker::before { content:""; width:40px; height:5px; border-radius:9px; background:var(--zinc-300); align-self:center; margin-bottom:6px; }
+  .scrim { position:absolute; inset:0; background:rgba(24,24,27,.28); z-index:4; }
+  .panel .scrim, .wide .scrim { background:transparent; }
+  .pickhead { display:flex; align-items:center; gap:8px; }
+  .pickhead b { font-size:15px; }
+  .pickhead .newbtn { margin-left:auto; height:40px; }
+  .list { display:flex; flex-direction:column; gap:2px; overflow:auto; }
+
+  /* Option B: list and note */
+  .side { width:280px; flex-shrink:0; border-right:1px solid var(--zinc-200); display:flex; flex-direction:column; gap:8px; padding:14px 12px; background:var(--zinc-50); }
+  .sidehead { display:flex; align-items:center; gap:8px; padding:0 2px; }
+  .sidehead b { font-size:15px; }
+  .sidehead .newbtn { margin-left:auto; height:40px; padding:0 14px; }
+  .home { flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; padding:16px; overflow:auto; }
+  .home h3 { font-size:22px; font-weight:700; letter-spacing:-.01em; }
+  .homehead { display:flex; align-items:center; gap:10px; }
+  .homehead .newbtn { margin-left:auto; }
+  .back { display:inline-flex; align-items:center; gap:4px; height:44px; padding:0 12px 0 6px; border-radius:999px; border:0; background:none; color:var(--indigo-700); font-weight:600; }
+  .back:hover { background:var(--indigo-50); }
+  .topline { display:flex; align-items:center; gap:6px; padding:8px 12px 0; }
+
+  /* Option C: tabs with All notes */
+  .tabs { display:flex; gap:6px; padding:12px 16px; border-bottom:1px solid var(--zinc-200); overflow:hidden; flex-shrink:0; align-items:center; }
+  .tabs .pill { height:40px; }
+  .tabs .spacer { flex:1; }
+  .ttlrow { display:flex; align-items:center; gap:8px; }
+  .ttlrow .key { width:36px; height:36px; border-radius:999px; }
+  .sheet { position:absolute; z-index:5; background:#fff; border:1px solid var(--zinc-200); box-shadow:var(--lift); padding:14px; display:flex; flex-direction:column; gap:10px; }
+  .panel .sheet, .wide .sheet { left:16px; right:16px; top:70px; border-radius:var(--r-surface); }
+  .wide .sheet { left:auto; right:24px; width:560px; }
+  .phone .sheet { left:0; right:0; bottom:0; border-radius:28px 28px 0 0; padding-bottom:26px; max-height:80%; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; overflow:auto; }
+  .card { border:1px solid var(--zinc-200); border-radius:16px; padding:12px; text-align:left; background:#fff; min-height:92px; display:flex; flex-direction:column; gap:4px; }
+  .card.on { border-color:var(--indigo-500); box-shadow:0 0 0 3px var(--indigo-100); }
+  .card b { font-family:"Fraunces", serif; font-weight:600; font-size:16px; line-height:1.2; }
+  .card span { font-size:12px; color:var(--zinc-500); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .card small { font-size:11px; color:var(--zinc-400); margin-top:auto; }
+
+  .notes h2 { font-size:18px; }
+  .decide { margin-top:56px; background:var(--indigo-50); border:1px solid var(--indigo-200); border-radius:var(--r-surface); padding:20px 24px; max-width:980px; }
+  .decide h2 { font-size:18px; color:var(--indigo-700); }
+  .decide ul { padding-left:18px; margin-top:6px; color:var(--zinc-700); line-height:1.7; }
+  .hint { font-size:12px; color:var(--zinc-500); margin-top:6px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="eyebrow">Mock · Notes</div>
+  <h1 class="t">Note selector options</h1>
+  <p class="lede">Today the note tabs are a row of pills above the page. With more than four notes, the row scrolls sideways and long names are cut. About sits in the same row as the notes. Each option below is shown on a phone, the compact desktop panel, and the web app at the iPad landscape size. The frames are live: press the controls to open the selector.</p>
+  <div class="toc"><a href="#a">A · Title menu</a><a href="#b">B · Notes list</a><a href="#c">C · Tabs and All notes</a><a href="#decide">Decisions</a></div>
+
+  <section class="opt" id="a">
+    <h2>A · Title menu</h2>
+    <p class="sub">The title of the note is the selector. A press on the title opens a list of the notes, with search, New note, and About. The list stays open until the user picks a row, so a dwell does not close it. The page has no row of tabs.</p>
+    <div class="pc">
+      <div><b>For</b><ul><li>The most room for the note. No chrome above it.</li><li>One place to find a note on every device.</li><li>The list shows every note, with its first line and its time.</li></ul></div>
+      <div><b>Against</b><ul><li>Two presses to change notes.</li><li>The other notes are out of sight. A user does not see that more notes exist, other than the count.</li></ul></div>
+    </div>
+    <div class="row" data-opt="a"></div>
+  </section>
+
+  <section class="opt" id="b">
+    <h2>B · Notes list <span class="rec">Recommended</span></h2>
+    <p class="sub">The notes are a list, and the note opens beside it or in its place. On a wide screen, the list is a column at the left and the note fills the rest. On the phone and the compact panel, Notes opens on the list, and a note opens on the full screen with a Notes back key. About is the first row of the list.</p>
+    <div class="pc">
+      <div><b>For</b><ul><li>One model on every device: a list, then a note.</li><li>Large rows with a name, a first line, and a time. Names are not cut.</li><li>On a wide screen, any note is one press away.</li><li>About is apart from the notes, and still in the list.</li></ul></div>
+      <div><b>Against</b><ul><li>On a narrow screen, the change of note is two presses: Notes, then the note.</li><li>The column takes 280 points of the wide screen.</li></ul></div>
+    </div>
+    <div class="row" data-opt="b"></div>
+  </section>
+
+  <section class="opt" id="c">
+    <h2>C · Tabs and All notes</h2>
+    <p class="sub">The tabs stay for the three most recent notes. An All notes key opens a sheet of note cards. About moves to an info key beside the title. This is the nearest option to the screen of today.</p>
+    <div class="pc">
+      <div><b>For</b><ul><li>Small change from today.</li><li>The recent notes are one press away on every device.</li></ul></div>
+      <div><b>Against</b><ul><li>Two places to find a note: the tabs and the sheet.</li><li>The phone has room for only one or two tabs.</li><li>Tab names are still cut.</li></ul></div>
+    </div>
+    <div class="row" data-opt="c"></div>
+  </section>
+
+  <div class="decide" id="decide">
+    <h2>Decisions for you</h2>
+    <ul>
+      <li><b>The option.</b> My choice is B. It is the same model on every device, its rows are the largest targets, and a wide screen gets one-press switching.</li>
+      <li><b>Where Notes opens on a narrow screen (B).</b> On the list, or on the last note with the back key. My choice is the last note, because a user who writes one note at a time then needs no extra press.</li>
+      <li><b>The order of the list.</b> The most recent change first, as today. Pinning a note to the top is an option for later.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const NOTES = [
+  { id:'holiday', name:'Holiday', line:'I want you to bring a paper and write down your daily time table.', time:'2 h' },
+  { id:'doctor', name:'Questions for Dr. Rao', line:'Can we try a smaller dose before the next visit?', time:'Yesterday' },
+  { id:'tin', name:'Tin and the Magic Door', line:'Once upon a time, a small tin soldier found a door in the garden.', time:'Mon' },
+  { id:'birthday', name:'Birthday speech for Amma', line:'Thank you all for coming. Amma, you taught me to keep going.', time:'Sep 30' },
+  { id:'shop', name:'Shopping list', line:'Milk, bread, the blue pens, and batteries for the remote.', time:'Sep 28' },
+  { id:'w', name:'w', line:'', time:'Sep 20' },
+];
+const ABOUT = { id:'about', name:'About this space', line:'Who I speak to here: my son Reyu, and his school work.' };
+
+const I = {
+  chev:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg>',
+  back:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m15 18-6-6 6-6"/></svg>',
+  plus:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>',
+  search:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+  info:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+  file:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>',
+  grid:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>',
+};
+
+function noteBody(id) {
+  const n = NOTES.find(x => x.id === id) || NOTES[0];
+  if (id === 'holiday') return `<div class="txt">${n.line}<h4>Before lunch</h4><ul><li>Do 1 page of abacus</li><li>Practice for your olympiad</li></ul><h4>After lunch</h4>Rest of the time is up to you.</div>`;
+  if (id === 'about') return `<div class="txt">${ABOUT.line}<ul><li>Homework and the time table</li><li>Stories at night</li></ul></div>`;
+  return `<div class="txt">${n.line || '<span style="color:var(--zinc-400)">Write your note here…</span>'}</div>`;
+}
+function rows(current, { about = true } = {}) {
+  const a = about ? `<button class="rowitem about ${current==='about'?'on':''}" data-pick="about"><span class="n">${I.info} About this space</span><span class="d">${ABOUT.line}</span></button>` : '';
+  return a + NOTES.map(n => `<button class="rowitem ${current===n.id?'on':''}" data-pick="${n.id}"><span class="n">${n.name}<small>${n.time}</small></span><span class="d">${n.line || 'Empty note'}</span></button>`).join('');
+}
+const nameOf = id => id === 'about' ? 'About this space' : NOTES.find(n => n.id === id).name;
+const readbar = `<div class="readbar"><span class="p">Read aloud</span><span>Present</span><span>Suggestions</span><span>···</span></div>`;
+
+function chrome(dev, inner) {
+  if (dev === 'wide') return `<div class="shell"><div class="rail"><i class="logo"></i><i></i><i></i><i></i></div><div class="inset"><div class="hdr">Daily Conversations</div><div class="body">${inner}</div><div class="dock"><div class="modes"><span>Talk</span><span class="on">Notes</span><span>Agent</span></div></div></div></div>`;
+  return `<div class="bar"><div class="sp"><i>D</i>${dev==='phone'?'Daily':'Daily Conversations'}</div><div class="modes"><span>Talk</span><span class="on">Notes</span><span>Agent</span></div></div><div class="body">${inner}</div>`;
+}
+
+// Each frame keeps its own state and draws itself again on a press.
+function frame(opt, dev) {
+  const el = document.createElement('div');
+  el.className = 'dev ' + dev;
+  const st = { current:'holiday', open:false, list:false };
+  const draw = () => { el.innerHTML = chrome(dev, OPT[opt](dev, st)); };
+  el.addEventListener('click', e => {
+    const t = e.target.closest('[data-pick],[data-act]'); if (!t) return;
+    if (t.dataset.pick) { st.current = t.dataset.pick; st.open = false; st.list = false; }
+    const act = t.dataset.act;
+    if (act === 'toggle') st.open = !st.open;
+    if (act === 'close') st.open = false;
+    if (act === 'list') st.list = true;
+    draw();
+  });
+  draw();
+  return el;
+}
+
+const OPT = {
+  a(dev, st) {
+    const count = `${NOTES.length} notes`;
+    const picker = st.open ? `<div class="scrim" data-act="close"></div><div class="picker" role="dialog" aria-label="Notes">
+      <div class="pickhead"><b>Notes</b><button class="newbtn">${I.plus}New note</button></div>
+      <div class="search">${I.search}Search notes</div>
+      <div class="list">${rows(st.current)}</div></div>` : '';
+    return `<div class="notepage"><div class="doc">
+      <button class="titlebtn" data-act="toggle" aria-expanded="${st.open}"><span><span class="ttl">${nameOf(st.current)}</span></span><span class="chev">${I.chev}</span></button>
+      <div class="count">${count} · Saved</div>
+      ${noteBody(st.current)}</div>${readbar}</div>${picker}`;
+  },
+  b(dev, st) {
+    const list = `<div class="sidehead"><b>Notes</b><button class="newbtn">${I.plus}New</button></div><div class="search">${I.search}Search notes</div><div class="list">${rows(st.current)}</div>`;
+    const page = (back) => `<div class="notepage">${back ? `<div class="topline"><button class="back" data-act="list">${I.back}Notes</button></div>` : ''}<div class="doc"><div class="ttl">${nameOf(st.current)}</div><div class="meta">Saved</div>${noteBody(st.current)}</div>${readbar}</div>`;
+    if (dev === 'wide') return `<div class="side">${list}</div>${page(false)}`;
+    if (st.list) return `<div class="home"><div class="homehead"><h3>Notes</h3><button class="newbtn">${I.plus}New note</button></div><div class="search">${I.search}Search notes</div><div class="list">${rows(st.current)}</div></div>`;
+    return page(true);
+  },
+  c(dev, st) {
+    const shown = dev === 'phone' ? 1 : dev === 'panel' ? 2 : 3;
+    const recent = NOTES.slice(0, shown).map(n => `<button class="pill ${st.current===n.id?'on':''}" data-pick="${n.id}">${I.file}<span style="max-width:${dev==='wide'?160:120}px;overflow:hidden;text-overflow:ellipsis">${n.name}</span></button>`).join('');
+    const sheet = st.open ? `<div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-label="All notes">
+      <div class="pickhead"><b>All notes</b><button class="newbtn">${I.plus}New note</button></div>
+      <div class="grid">${NOTES.map(n => `<button class="card ${st.current===n.id?'on':''}" data-pick="${n.id}"><b>${n.name}</b><span>${n.line || 'Empty note'}</span><small>${n.time}</small></button>`).join('')}</div></div>` : '';
+    return `<div class="notepage"><div class="tabs">${recent}<button class="pill ghost" data-act="toggle">${I.grid}All notes · ${NOTES.length}</button><span class="spacer"></span><button class="key" aria-label="New note">${I.plus}</button></div>
+      <div class="doc"><div class="ttlrow"><div class="ttl">${nameOf(st.current)}</div><button class="key" data-pick="about" aria-label="About this space">${I.info}</button></div><div class="meta">Saved</div>${noteBody(st.current)}</div>${readbar}</div>${sheet}`;
+  },
+};
+
+document.querySelectorAll('.row[data-opt]').forEach(row => {
+  const opt = row.dataset.opt;
+  for (const [dev, label] of [['phone','Phone · 360'], ['panel','Desktop panel · compact 480'], ['wide','Web · iPad landscape (shown at 62%)']]) {
+    const wrap = document.createElement('div');
+    wrap.className = 'devwrap';
+    wrap.innerHTML = `<div class="devlabel">${label}</div>`;
+    const f = frame(opt, dev);
+    if (dev === 'wide') { const s = document.createElement('div'); s.className = 'scaler'; s.append(f); wrap.append(s); }
+    else wrap.append(f);
+    row.append(wrap);
+  }
+});
+</script>
+</body>
+</html>

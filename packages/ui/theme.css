@@ -10,6 +10,8 @@ body {
 @theme inline {
   --font-sans: 'Noto Sans', Helvetica, system-ui, sans-serif;
   --font-brand: 'Lexend', 'Noto Sans', Helvetica, sans-serif;
+  /* The title and the headings of a note. The body stays in Noto Sans. */
+  --font-heading: 'Fraunces Variable', 'Fraunces', Georgia, serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -173,5 +175,112 @@ body {
   }
   .dark ::-webkit-scrollbar-thumb:hover {
     background-color: var(--color-zinc-500);
+  }
+}
+
+/* The note document. Each line is a `div` with a `data-kind`. The Markdown
+   marks of a line show only while the caret is on it (`data-active`). */
+@layer components {
+  .note-document {
+    position: relative;
+    color: var(--foreground);
+    /* Spaces are part of the Markdown, such as the space after `-`. */
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .note-document[data-empty]::before {
+    content: attr(data-placeholder);
+    position: absolute;
+    color: color-mix(in oklab, var(--muted-foreground) 60%, transparent);
+    pointer-events: none;
+  }
+  .note-document > div {
+    min-height: 1.625em;
+  }
+  .note-document [data-mark] {
+    color: color-mix(in oklab, var(--primary) 50%, transparent);
+    font-weight: 400;
+  }
+  .note-document > div:not([data-active]) [data-mark] {
+    display: none;
+  }
+  .note-document strong {
+    font-weight: 700;
+  }
+  .note-document > div[data-kind='h1'],
+  .note-document > div[data-kind='h2'] {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+  .note-document > div[data-kind='h1'] {
+    font-size: 1.75rem;
+    margin: 1.5rem 0 0.25rem;
+  }
+  .note-document > div[data-kind='h2'] {
+    font-size: 1.4375rem;
+    margin: 1.25rem 0 0.25rem;
+  }
+  .note-document > div[data-kind='li'],
+  .note-document > div[data-kind='task'],
+  .note-document > div[data-kind='done'] {
+    position: relative;
+    padding-left: 1.75rem;
+  }
+  .note-document > div[data-kind='li']:not([data-active])::before {
+    content: '';
+    position: absolute;
+    left: 0.55rem;
+    top: 0.72em;
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 9999px;
+    background: var(--primary);
+  }
+  .note-document > div[data-kind='task']:not([data-active])::before,
+  .note-document > div[data-kind='done']:not([data-active])::before {
+    content: '';
+    position: absolute;
+    left: 0.15rem;
+    top: 0.38em;
+    width: 1.125rem;
+    height: 1.125rem;
+    border: 2px solid color-mix(in oklab, var(--primary) 70%, transparent);
+    border-radius: 0.3rem;
+  }
+  .note-document > div[data-kind='done']:not([data-active])::before {
+    background: var(--primary)
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E")
+      center / 0.75rem no-repeat;
+    border-color: var(--primary);
+  }
+  .note-document > div[data-kind='done']:not([data-active]) {
+    color: var(--muted-foreground);
+    text-decoration: line-through;
+  }
+  .note-document > div[data-kind='li'][data-active],
+  .note-document > div[data-kind='task'][data-active],
+  .note-document > div[data-kind='done'][data-active] {
+    padding-left: 0;
+  }
+  /* A number is the word of a numbered line, so it always shows. */
+  .note-document > div[data-kind='ol'] [data-mark='lead'] {
+    display: inline;
+    color: var(--primary);
+    font-weight: 600;
+  }
+  .note-document > div[data-kind='quote'] {
+    border-left: 3px solid color-mix(in oklab, var(--primary) 30%, transparent);
+    padding-left: 1rem;
+    color: var(--muted-foreground);
+  }
+  .note-document > div[data-kind='hr']:not([data-active]) {
+    min-height: 0;
+    height: 1px;
+    margin: 1.25rem 0;
+    overflow: hidden;
+    background: var(--border);
+    color: transparent;
   }
 }

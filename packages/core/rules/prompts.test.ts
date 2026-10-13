@@ -60,3 +60,20 @@ describe("buildSuggestionPrompt for a short draft", () => {
     expect(system("[sighs] water ")).toBe(system("water "));
   });
 });
+
+describe("buildSuggestionPrompt for a note", () => {
+  const note = { before: "# Day\nRead for 20 minutes before you ", after: "\n> Show me." };
+
+  it("sends the full note with a caret mark in place of the conversation", () => {
+    const { user } = buildSuggestionPrompt({ ...base, typed: "before you ", document: note });
+    expect(user).toContain('Current input: "before you "');
+    expect(user).toContain("# Day\nRead for 20 minutes before you <caret/>\n> Show me.");
+    expect(user).not.toContain("Me: Hello");
+  });
+
+  it("tells the model that the words continue the note at the caret", () => {
+    const { system } = buildSuggestionPrompt({ ...base, document: note });
+    expect(system).toContain("<caret/>");
+    expect(buildSuggestionPrompt(base).system).not.toContain("<caret/>");
+  });
+});

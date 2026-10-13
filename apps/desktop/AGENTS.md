@@ -71,11 +71,13 @@ cargo fmt --all -- --check
 - Never put the words of the user in a log. A line carries a count, a device
   name, or a reason. The sentence in the composer is what they are about to say
   out loud, and it belongs to them. The same goes for an API key.
-- Write through `Composer` in `packages/app-ui/blocks/space.tsx` in every mode, including
-  the first turn that sets a space up. A second console would leave one mode without the word tiles,
-  the codes, or undo, which a user who cannot type depends on. `composerAction`
-  in `packages/core/rules/spaces.ts` holds what each mode says, so a test reads the words
-  without a renderer.
+- Write through `Composer` in `packages/app-ui/blocks/space.tsx` in Talk, Agent, and
+  the first turn that sets a space up. Notes writes in `NoteDocument` in
+  `packages/app-ui/blocks/note-document.tsx`, which shows the same `Suggestions`,
+  Undo, and Delete word. A writing surface without the word tiles, the codes, or
+  undo leaves out a user who cannot type. `composerAction` in
+  `packages/core/rules/spaces.ts` holds what each console says, so a test reads the
+  words without a renderer.
 - Say a control is unavailable with `aria-disabled`, never with `disabled`, in
   the console and on anything a user waits on. A disabled element cannot hold
   focus, so the browser moves focus to the body and a switch user loses their

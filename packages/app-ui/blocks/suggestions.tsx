@@ -159,6 +159,8 @@ export function Suggestions({
   text,
   history: given,
   mood = null,
+  document,
+  finishLabel = "Speak this suggestion",
   onTake,
   onSpeak,
   onPin,
@@ -166,9 +168,13 @@ export function Suggestions({
   spaceId: string;
   context: string;
   text: string;
+  /** The full note around the caret. Notes gives it, so the model reads the note. */
+  document?: { before: string; after: string };
+  /** The name of the key that ends a row. Notes adds the row instead of speaking it. */
+  finishLabel?: string;
   /** The mood of the conversation, from the keys of the composer. */
   mood?: MoodKey | null;
-  /** The words the engine reads. Notes gives it the note, not the messages. */
+  /** The words the engine reads. Notes gives it the other lines of the note. */
   history?: string[];
   onTake: (next: string) => void;
   onSpeak: (sentence: string) => void;
@@ -221,6 +227,7 @@ export function Suggestions({
     spaceId,
     setup,
     mood,
+    document,
   });
   const stripes = useStripes({
     text,
@@ -382,6 +389,7 @@ export function Suggestions({
               <EndKey
                 stripe={stripe}
                 scale={scale}
+                label={finishLabel}
                 onTake={(next) => take(stripe, next)}
                 onSpeak={onSpeak}
               />
@@ -453,11 +461,13 @@ function useWidth() {
 function EndKey({
   stripe,
   scale,
+  label: finish,
   onTake,
   onSpeak,
 }: {
   stripe: Stripe;
   scale: number;
+  label: string;
   onTake: (next: string) => void;
   onSpeak: (sentence: string) => void;
 }) {
@@ -486,8 +496,8 @@ function EndKey({
   return (
     <button
       type="button"
-      aria-label="Speak this suggestion"
-      title="Speak this suggestion"
+      aria-label={finish}
+      title={finish}
       onClick={() =>
         onSpeak(joinTokens(takeTokens(stripe, stripe.tokens.length)).trim())
       }
@@ -657,6 +667,7 @@ function useCompletions({
   spaceId,
   setup,
   mood,
+  document,
 }: {
   text: string;
   context: string;
@@ -664,7 +675,12 @@ function useCompletions({
   spaceId: string;
   setup: SavedSetup | null;
   mood: MoodKey | null;
+  document?: { before: string; after: string };
 }): { rows: string[]; writing: boolean } {
+  // The note changes with every key, and only an edit of the typed words asks
+  // again. The request reads the note as it stands when it leaves.
+  const note = useRef(document);
+  note.current = document;
   const [rows, setRows] = useState<string[]>([]);
   // A request is on its way to the model.
   const [writing, setWriting] = useState(false);
@@ -698,6 +714,7 @@ function useCompletions({
         typed: text,
         mood,
         tags,
+        document: note.current,
       });
 
       generate(

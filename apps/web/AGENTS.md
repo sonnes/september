@@ -32,7 +32,7 @@ The production output is `dist/`. Vercel serves prerendered public pages and `ap
   build alias. Keep that alias mapped to this app's `src/` directory.
 - Keep application route paths equal to the desktop paths in `src/router.tsx`. Preserve the web-only landing page at `/`.
 - Use `useNavigate` and `Link` from `@tanstack/react-router`.
-- Styling: shadcn/ui + Tailwind. Font family is Noto Sans (self-hosted via `@fontsource/noto-sans`)
+- Styling: shadcn/ui + Tailwind. Font family is Noto Sans (self-hosted via `@fontsource/noto-sans`). Note titles and headings use Fraunces (`@fontsource-variable/fraunces`, `font-heading`).
 - React Query owns the UI cache. `src/services/repository.ts` owns all durable browser data.
 - Keep blob writes chunked and bounded by the repository's least-recently-used byte limit.
 - Cloud provider keys stay in IndexedDB. Components must not keep a second copy.

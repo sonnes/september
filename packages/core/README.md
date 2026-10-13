@@ -119,6 +119,11 @@ user often keeps one tab open per person they talk to.
 
 Import autocomplete through `@september/core/autocomplete`.
 
+`rules/note-document.ts` holds the line rules of the note editor: the kind of
+a line, the style toggle, bold and italic marks, the sentence before the caret,
+Delete word, the prefix that Enter carries to the next line, a range
+replace, and `notePreview`, the line that the list of notes shows under a name. The note stays plain Markdown, so the editor never parses it itself.
+
 `rules/stripes.ts` matches individual history sentences and limits suggestion
 slices to six unaccepted words. `matchTyped` finds a row that starts with the
 draft, or a row that contains the draft at the start of a word. The rows that
@@ -130,7 +135,7 @@ the complete text and reports whether more words remain. `takeTokens` puts a
 tag that came before the typed words at the start of the draft. The tags that
 the user typed stay where the user typed them.
 
-`rules/prompts.ts` gives a draft of one or two words the search prompt. The
+`rules/prompts.ts` takes an optional `document`, the note before and after the caret. With it, the user message holds the full note with a `<caret/>` mark in place of the conversation, and the system prompt holds the note rules. `rules/prompts.ts` also gives a draft of one or two words the search prompt. The
 model then writes sentences about what the words refer to, and the words can be
 anywhere in the sentence, or not in it. A longer draft gets the completion
 prompt, and each row starts with the draft.

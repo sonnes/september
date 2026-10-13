@@ -95,7 +95,7 @@ export function markdownToVoiceText(content: string): string {
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
     .replace(/^#{1,6}\s+/gm, "")
     .replace(/^>\s?/gm, "")
-    .replace(/^\s*[-*+]\s+/gm, "")
+    .replace(/^\s*[-*+]\s+(\[[ xX]\]\s+)?/gm, "")
     .replace(/`([^`]+)`/g, "$1")
     .replace(/[*_~]/g, "")
     .replace(/\s+/g, " ")

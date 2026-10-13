@@ -159,7 +159,7 @@ export function PanelShell({
       else if (key === "v" && event.shiftKey && space) openTab("voice");
       else if (key === "o" && event.shiftKey && composer.current?.speaks)
         setOutputOpen(true);
-      else if (key === "backspace" && composer.current) composer.current.clear();
+      else if (key === "backspace" && composer.current?.clear) composer.current.clear();
       else if (key === "?") void navigate({ to: "/help" });
       else return;
       event.preventDefault();
