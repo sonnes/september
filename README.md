@@ -27,6 +27,7 @@ The web app stores data and its bounded speech cache in one IndexedDB database. 
 
 - Talk spaces combine saved phrases, word suggestions, and a text composer.
 - A suggestion row can start with the typed words or contain them. The Mac app shows Talk in one panel that floats above other apps.
+- A note is a Markdown document. The writing tools and the Talk suggestions open at the caret, and a list of notes sits beside the page.
 - Each space has an Agent that can read its context and propose approved
   changes to its setup, notes, phrases, and Talk transcript.
 - System and ElevenLabs voices speak Talk messages and notes.
