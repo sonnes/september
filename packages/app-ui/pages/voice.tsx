@@ -548,7 +548,7 @@ function VoiceCloneForm({
   return (
     <form onSubmit={submit} className="space-y-6 pb-12">
       {connected === false ? (
-        <div className="rounded-control border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="rounded-control border border-input bg-muted text-foreground p-4 text-sm">
           Add an ElevenLabs key before you create a voice.{" "}
           <Link
             to="/settings/connections/$provider"
