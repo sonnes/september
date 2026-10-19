@@ -322,6 +322,22 @@ export function transcriptPage<T>(
   return { pageCount, page: held, slice: rows.slice(Math.max(0, end - size), end) };
 }
 
+/**
+ * The number of recent messages that fit whole in the space. The heights are
+ * newest first. A row that does not fit whole does not show, but the newest
+ * row always shows.
+ */
+export function recentThatFit(heights: readonly number[], space: number): number {
+  let used = 0;
+  let count = 0;
+  for (const height of heights) {
+    if (used + height > space) break;
+    used += height;
+    count += 1;
+  }
+  return heights.length === 0 ? 0 : Math.max(count, 1);
+}
+
 /** The text without the word at the end. */
 export function deleteLastWord(text: string): string {
   const trimmed = text.replace(/\s+$/, "");

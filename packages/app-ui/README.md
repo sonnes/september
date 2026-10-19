@@ -286,8 +286,11 @@ body. Each page marks its screen body with `@container`. The breakpoint is
 `@min-[35rem]` (560 pixels), because Tailwind has no named container size at
 560. Below that width, the composer folds in the same way, but Clear stays.
 
-Talk shows the last 3 messages in a card over the suggestions, at every
-width. Each row shows the time of the message, and a press on the row speaks it
+Talk shows the newest messages that fit whole in the space over the
+suggestions, up to 8, and at least the newest one. A copy of the rows that
+nobody sees or reaches gives their heights, and `recentThatFit` counts the rows
+that fit. The count changes only when a size or the messages change, so a row
+does not move under a dwell. See all shows when older messages do not fit. Each row shows the time of the message, and a press on the row speaks it
 again. The name of a row is "Speak again:" and the words of the message. The
 newest row is larger. A status region on the page says "Speaking:" and the
 sentence that Speak plays. See all shows the pages of 8 messages in place of the suggestions. Back

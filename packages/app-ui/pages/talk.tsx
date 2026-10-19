@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   guardUnsavedChanges,
@@ -39,8 +39,10 @@ import {
 import { useChrome } from "@september/app-ui/blocks/chrome";
 import {
   messageTime,
+  recentThatFit,
   spaceSlug,
   spokenToday,
+  TRANSCRIPT_PAGE_SIZE,
   transcriptPage,
 } from "@september/core/rules/spaces";
 
@@ -122,7 +124,20 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
 
   const spoken = (messages ?? []).filter((message) => message.type === "user");
   const { page, pageCount, slice } = transcriptPage(spoken, pageInput);
-  const shown = transcript ? slice : spoken.slice(-RECENT);
+  // The history shows the newest messages that fit whole in its space, and
+  // See all opens the rest.
+  const recent = spoken.slice(-TRANSCRIPT_PAGE_SIZE);
+  const historyArea = useRef<HTMLElement>(null);
+  const historyLabel = useRef<HTMLDivElement>(null);
+  const historyCopy = useRef<HTMLDivElement>(null);
+  const fit = useRecentFit(
+    historyArea,
+    historyLabel,
+    historyCopy,
+    !transcript && recent.length > 0,
+    recent.map((message) => message.id).join(" "),
+  );
+  const shown = transcript ? slice : recent.slice(-(fit ?? RECENT));
   const today = spokenToday(spoken);
 
   // Escape closes the transcript before the panel uses the key.
@@ -141,14 +156,6 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
   // behind an old page.
   const newest = spoken[spoken.length - 1]?.id;
   useEffect(() => setPageInput(0), [newest]);
-
-  // The newest message stays in view when a message arrives and when the
-  // speaking card takes room from the messages.
-  const scroller = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const box = scroller.current;
-    if (box && !transcript) box.scrollTop = box.scrollHeight;
-  }, [newest, playing, transcript]);
 
   /** Keeps a row of the stripe, so a regeneration cannot take it away. */
   const keep = (text: string) => {
@@ -200,9 +207,14 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
         <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col gap-2.5">
           {error ? <Problem error={error} /> : null}
 
-          {/* `mt-auto` keeps the messages at the foot of the scroll. A long
-              list still scrolls up to its first message. */}
-          <div ref={scroller} className="flex min-h-0 flex-1 flex-col overflow-y-auto pt-2">
+          {/* The history sits at the foot of its space. All messages
+              scroll, so a long list still reaches its first message. */}
+          <div
+            className={cn(
+              "flex min-h-0 flex-1 flex-col pt-2",
+              transcript ? "overflow-y-auto" : "overflow-hidden",
+            )}
+          >
             {spoken.length === 0 ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
                 <div className="bg-background text-muted-foreground flex size-12 items-center justify-center rounded-full">
@@ -231,8 +243,19 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
                 )}
               </div>
             ) : (
-              <section aria-label="Messages" data-scan-group className="mt-auto flex flex-col gap-1">
-                <div className="text-muted-foreground flex min-h-11 items-center gap-1.5 pl-1.5 text-xs font-semibold">
+              <section
+                ref={historyArea}
+                aria-label="Messages"
+                data-scan-group
+                className={cn(
+                  "relative flex flex-col gap-1",
+                  transcript ? "mt-auto" : "min-h-0 flex-1 justify-end",
+                )}
+              >
+                <div
+                  ref={historyLabel}
+                  className="text-muted-foreground flex min-h-11 shrink-0 items-center gap-1.5 pl-1.5 text-xs font-semibold"
+                >
                   {transcript ? "All messages" : today ? "Said today" : "Said before"}
                   <span className="text-muted-foreground font-medium">
                     {transcript ? spoken.length : today || null}
@@ -241,7 +264,7 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
                     <LabelButton onClick={() => setTranscript(false)}>
                       Back to suggestions
                     </LabelButton>
-                  ) : spoken.length > RECENT ? (
+                  ) : spoken.length > shown.length ? (
                     <LabelButton
                       onClick={() => {
                         setPageInput(0);
@@ -271,6 +294,24 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
                     </PageRow>
                   ) : null}
                 </div>
+                {/* A copy of the recent rows that nobody sees or reaches. Its
+                    rows give the heights that decide how many rows fit. */}
+                {transcript ? null : (
+                  <div
+                    ref={historyCopy}
+                    aria-hidden
+                    inert
+                    className="bg-card divide-muted pointer-events-none invisible absolute inset-x-0 top-0 divide-y"
+                  >
+                    {recent.map((message, at) => (
+                      <MessageRow
+                        key={message.id}
+                        message={message}
+                        newest={at === recent.length - 1}
+                      />
+                    ))}
+                  </div>
+                )}
               </section>
             )}
           </div>
@@ -349,8 +390,45 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
     </>
   );
 }
-/** The number of messages that Talk shows over the suggestions. */
+/** The number of messages that Talk shows before it measures its space. */
 const RECENT = 3;
+
+/** The gap between the label of the history and its card. */
+const HISTORY_GAP = 4;
+
+/**
+ * Counts the recent messages that fit whole in the space of the history. It
+ * counts again only when a size changes or the messages change, so a row does
+ * not move while a gaze dwells on it.
+ */
+function useRecentFit(
+  area: RefObject<HTMLElement | null>,
+  label: RefObject<HTMLElement | null>,
+  copy: RefObject<HTMLElement | null>,
+  enabled: boolean,
+  rows: string,
+): number | null {
+  const [count, setCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    const box = area.current;
+    const list = copy.current;
+    if (!enabled || !box || !list || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      const heights = [...list.children]
+        .map((row) => (row as HTMLElement).offsetHeight)
+        .reverse();
+      const space = box.clientHeight - (label.current?.offsetHeight ?? 0) - HISTORY_GAP;
+      setCount(recentThatFit(heights, space));
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(box);
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, [area, label, copy, enabled, rows]);
+
+  return count;
+}
 
 /**
  * A message of the history. A press speaks it again. The name is the action,

@@ -1,7 +1,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TalkScreen } from '@september/app-ui/pages/talk';
 import { axeViolations } from './axe';
 
@@ -106,6 +106,51 @@ it('moves to the field on Write next while the sentence plays on', async () => {
 
   expect(document.activeElement).toBe(container.querySelector('textarea[aria-label="Message"]'));
   expect(container.querySelector('[role="region"][aria-label="Speaking"]')).not.toBeNull();
+});
+
+describe('the history in the space it has', () => {
+  const said = (count: number) =>
+    Array.from({ length: count }, (_, index) => ({
+      id: `m${index}`, type: 'user', text: `Message ${'ABCDEFGH'[index]}`, created_at: new Date().toISOString(),
+    }));
+  const visibleRows = () =>
+    [...container.querySelectorAll('button')]
+      .filter(one => one.textContent?.startsWith('Speak again') && !one.closest('[aria-hidden="true"]'))
+      .map(one => one.textContent?.replace(/^Speak again: /, '').replace(/[\d:]+$/, ''));
+  let space = 0;
+
+  beforeEach(() => {
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(50);
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(() => space);
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(private readonly react: () => void) {}
+      observe() { this.react(); }
+      unobserve() {}
+      disconnect() {}
+    });
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('shows the newest messages that fit whole, and See all for the rest', async () => {
+    state.messages = said(5);
+    space = 160;
+    await render();
+
+    expect(visibleRows()).toEqual(['Message D', 'Message E']);
+    expect([...container.querySelectorAll('button')].some(one => one.textContent === 'See all')).toBe(true);
+  });
+
+  it('shows more of the history when it has more space', async () => {
+    state.messages = said(5);
+    space = 400;
+    await render();
+
+    expect(visibleRows()).toEqual(['Message A', 'Message B', 'Message C', 'Message D', 'Message E']);
+    expect([...container.querySelectorAll('button')].some(one => one.textContent === 'See all')).toBe(false);
+  });
 });
 
 it('passes the axe rules that jsdom can run', async () => {

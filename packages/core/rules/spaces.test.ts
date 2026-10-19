@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   composerAction,
+  recentThatFit,
   deleteLastWord,
   messageTime,
   newSpaceMode,
@@ -176,5 +177,24 @@ describe("the time of a message", () => {
     const at = (day: number) => ({ created_at: new Date(2026, 9, day, 8, 0).getTime() });
     expect(spokenToday([at(3), at(4), at(4)], now)).toBe(2);
     expect(spokenToday([], now)).toBe(0);
+  });
+});
+
+describe("recentThatFit", () => {
+  it("counts the newest rows that fit whole in the space", () => {
+    expect(recentThatFit([60, 50, 50, 50], 170)).toBe(3);
+    expect(recentThatFit([60, 50, 50, 50], 159)).toBe(2);
+  });
+
+  it("keeps the newest row when nothing fits", () => {
+    expect(recentThatFit([80, 50], 40)).toBe(1);
+  });
+
+  it("shows every row when the space holds them all", () => {
+    expect(recentThatFit([60, 50], 900)).toBe(2);
+  });
+
+  it("shows nothing when there are no rows", () => {
+    expect(recentThatFit([], 900)).toBe(0);
   });
 });

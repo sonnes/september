@@ -301,10 +301,13 @@ const named = (name: string) =>
   [...container.querySelectorAll<HTMLButtonElement>('button')].find(
     (one) => one.textContent?.trim() === name || one.getAttribute('aria-label') === name,
   );
-/** The rows of past messages. Each name starts with what a press does. */
+/**
+ * The rows of past messages that a person can reach. Each name starts with
+ * what a press does.
+ */
 const messageKeys = () =>
-  [...container.querySelectorAll<HTMLButtonElement>('button')].filter((one) =>
-    one.textContent?.startsWith('Speak again: '),
+  [...container.querySelectorAll<HTMLButtonElement>('button')].filter(
+    (one) => one.textContent?.startsWith('Speak again: ') && !one.closest('[aria-hidden="true"]'),
   );
 const spokenRows = () => messageKeys().map((row) => row.querySelectorAll('span')[1]?.textContent);
 
@@ -325,7 +328,7 @@ describe('the history of Talk', () => {
     setSpeaking(null);
   });
 
-  it('shows the last three messages over the suggestions', async () => {
+  it('shows the last three messages over the suggestions before it measures its space', async () => {
     await renderTalk(10);
 
     expect(spokenRows()).toEqual(['Message 8', 'Message 9', 'Message 10']);

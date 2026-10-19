@@ -254,7 +254,9 @@ The Talk screen has three parts, from the top:
 
 1. The panel header. It holds the space button, the mode switch, and the More
    menu.
-2. The history. A card holds the last 3 messages, newest last. Each row shows
+2. The history. A card holds the newest messages that fit whole in the
+   space, up to 8, newest last. A small panel shows fewer, and at least the
+   newest message shows. Each row shows
    the time of the message. Press a message to speak it again. See all shows
    the pages of 8 messages in place of the suggestions. Back to suggestions,
    or Escape, closes the pages.
