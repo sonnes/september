@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type RefObject,
 } from "react";
 import {
   useMutation,
@@ -255,7 +256,7 @@ export function Composer({
   suggestions = true,
   mood = null,
   onMood,
-  cover,
+  fieldRef,
 }: {
   mode: ComposerMode;
   /** The space the stripe reads. */
@@ -280,10 +281,11 @@ export function Composer({
   mood?: MoodKey | null;
   /** Changes the mood. Without it, the mood keys do not show. */
   onMood?: (mood: MoodKey | null) => void;
-  /** Takes the place of the field, for example while a sentence plays. */
-  cover?: ReactNode;
+  /** The field, so a screen can move the focus to it. */
+  fieldRef?: RefObject<HTMLTextAreaElement | null>;
 }) {
-  const field = useRef<HTMLTextAreaElement>(null);
+  const ownField = useRef<HTMLTextAreaElement>(null);
+  const field = fieldRef ?? ownField;
   const layer = useRef<HTMLDivElement>(null);
   // The caret goes here after the draft that removed a tag is on the screen.
   const caret = useRef<number | null>(null);
@@ -365,8 +367,9 @@ export function Composer({
         />
       ) : null}
 
-      {cover ?? (
-      <div className="focus-attention-within bg-background ring-primary/45 rounded-surface p-3 shadow-sm ring-[3px] transition-[box-shadow]">
+      {/* The ring is indigo. It is full strength while the composer has the
+          focus, a change of 3.8:1 from the resting ring. */}
+      <div className="bg-background ring-primary/30 focus-within:ring-primary rounded-surface p-3 shadow-sm ring-[3px] transition-[box-shadow]">
         {/* The layer behind the field draws a chip under each audio tag. It
             has the same type and wrap as the field, and its text is clear, so
             only the chips show. The field on top keeps the caret, the
@@ -513,7 +516,6 @@ export function Composer({
           </div>
         </div>
       </div>
-      )}
     </div>
   );
 }

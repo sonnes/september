@@ -381,25 +381,24 @@ const speakingCard = () => container.querySelector('[role="region"][aria-label="
 describe('the speaking card', () => {
   afterEach(() => setSpeaking(null));
 
-  it('takes the place of the field while the sentence plays, and Stop gives it back', async () => {
+  it('shows the sentence that plays beside a field that stays, and Stop ends it', async () => {
     await renderTalk(0);
 
     typeAndSpeak('Hello there');
     expect(speakingCard()?.textContent).toContain('Hello there');
-    expect(container.querySelector('textarea')).toBeNull();
+    expect(container.querySelector('textarea')).not.toBeNull();
 
     act(() => named('Stop')!.click());
     expect(voice.speaking).toBeNull();
     expect(speakingCard()).toBeNull();
-    expect(container.querySelector('textarea')).not.toBeNull();
   });
 
-  it('gives the field back with Write next while the voice goes on', async () => {
+  it('moves to the field with Write next while the voice goes on', async () => {
     await renderTalk(0);
 
     typeAndSpeak('Hello there');
     act(() => named('Write next')!.click());
-    expect(container.querySelector('textarea')).not.toBeNull();
+    expect(document.activeElement).toBe(container.querySelector('textarea'));
     expect(voice.speaking).toBe('composer');
   });
 });

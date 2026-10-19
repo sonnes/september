@@ -310,9 +310,11 @@ end of a long row fades, and the end key stays outside the scroll. Only the
 padding of a tile shrinks to fit a row: the word and the height stay at full
 size.
 
-While Speak plays a sentence, `Composer` shows the speaking card through its
-`cover` prop, in place of the field. Stop, or Escape, stops the voice. Write
-next, or a typed letter, gives the field back while the voice goes on. Under
+While Speak plays a sentence, Talk shows the speaking card below the messages,
+and the field stays. Stop, or Escape, stops the voice. Write next, or a typed
+letter, moves the focus to the field while the voice goes on. `Composer` takes
+a `fieldRef`, so a screen can move the focus to the field. The composer ring is
+indigo, and it is full strength while the composer has the focus. Under
 the composer, a line shows the keys that work now. A touch screen does not show
 this line.
 

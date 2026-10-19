@@ -29,8 +29,8 @@ vi.mock('@platform/services/speech', () => ({
 vi.mock('@september/app-ui/blocks/screen', () => ({ ScreenHeader: ({ children }: { children: React.ReactNode }) => <>{children}</>, RightPanel: () => null }));
 vi.mock('@september/app-ui/blocks/space-panel', () => ({ PanelRail: () => null }));
 vi.mock('@september/app-ui/blocks/space', () => ({
-  Composer: ({ cover, onAction }: { cover?: React.ReactNode; onAction: (text: string) => void }) =>
-    <>{cover}<button onClick={() => onAction('Good morning')}>Speak</button></>,
+  Composer: ({ fieldRef, onAction }: { fieldRef?: React.Ref<HTMLTextAreaElement>; onAction: (text: string) => void }) =>
+    <><textarea ref={fieldRef} aria-label="Message" /><button onClick={() => onAction('Good morning')}>Speak</button></>,
   Problem: () => null, SpaceDock: () => null, SpaceTitle: () => null, spaceParams: () => ({}), useRememberMode: () => {},
   useSpaceBySlug: () => ({ space: { id: 'space', title: 'Family', context: 'Home' }, spaces: [], isPending: false }),
 }));
@@ -77,6 +77,35 @@ it('announces the sentence that plays through a status that is already there', a
 
   expect(container.querySelector('[role="status"]')).toBe(status);
   expect(status?.textContent).toBe('Speaking: Good morning');
+});
+
+async function speakGoodMorning() {
+  const queries = await render();
+  await act(async () => [...container.querySelectorAll('button')].find(one => one.textContent === 'Speak')!.click());
+  state.speaking = 'composer';
+  await render(queries);
+}
+
+const follows = (later: Element | null, earlier: Element | null) =>
+  Boolean(earlier && later && earlier.compareDocumentPosition(later) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+it('shows the sentence that plays below the messages and above the field', async () => {
+  state.messages = [{ id: 'one', type: 'user', text: 'Could you open the window?', created_at: new Date().toISOString() }];
+  await speakGoodMorning();
+
+  const card = container.querySelector('[role="region"][aria-label="Speaking"]');
+  expect(card?.textContent).toContain('Good morning');
+  expect(follows(card, container.querySelector('[aria-label="Messages"]'))).toBe(true);
+  expect(follows(container.querySelector('textarea[aria-label="Message"]'), card)).toBe(true);
+});
+
+it('moves to the field on Write next while the sentence plays on', async () => {
+  await speakGoodMorning();
+
+  await act(async () => [...container.querySelectorAll('button')].find(one => one.textContent === 'Write next')!.click());
+
+  expect(document.activeElement).toBe(container.querySelector('textarea[aria-label="Message"]'));
+  expect(container.querySelector('[role="region"][aria-label="Speaking"]')).not.toBeNull();
 });
 
 it('passes the axe rules that jsdom can run', async () => {

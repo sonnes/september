@@ -117,7 +117,8 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
   // while it plays.
   const [sentence, setSentence] = useState<string | null>(null);
   const [writing, setWriting] = useState(false);
-  const playing = speaking === "composer" && sentence !== null && !writing;
+  const playing = speaking === "composer" && sentence !== null;
+  const field = useRef<HTMLTextAreaElement>(null);
 
   const spoken = (messages ?? []).filter((message) => message.type === "user");
   const { page, pageCount, slice } = transcriptPage(spoken, pageInput);
@@ -140,6 +141,14 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
   // behind an old page.
   const newest = spoken[spoken.length - 1]?.id;
   useEffect(() => setPageInput(0), [newest]);
+
+  // The newest message stays in view when a message arrives and when the
+  // speaking card takes room from the messages.
+  const scroller = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const box = scroller.current;
+    if (box && !transcript) box.scrollTop = box.scrollHeight;
+  }, [newest, playing, transcript]);
 
   /** Keeps a row of the stripe, so a regeneration cannot take it away. */
   const keep = (text: string) => {
@@ -193,7 +202,7 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
 
           {/* `mt-auto` keeps the messages at the foot of the scroll. A long
               list still scrolls up to its first message. */}
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pt-2">
+          <div ref={scroller} className="flex min-h-0 flex-1 flex-col overflow-y-auto pt-2">
             {spoken.length === 0 ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
                 <div className="bg-background text-muted-foreground flex size-12 items-center justify-center rounded-full">
@@ -266,6 +275,20 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
             )}
           </div>
 
+          {/* The sentence that plays shows below the messages, outside their
+              scroll, so the card and its keys always show in full. The field
+              stays, so the user can write the next sentence. */}
+          {playing && sentence ? (
+            <SpeakingCard
+              text={sentence}
+              onWrite={(key) => {
+                setWriting(true);
+                if (key) write(draft + key);
+                field.current?.focus();
+              }}
+            />
+          ) : null}
+
           {draftSave.isError ? (
             <div role="alert">
               <p>Your unfinished words could not be saved. Keep this page open and retry.</p>
@@ -288,21 +311,11 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
             mood={mood}
             onMood={chooseMood}
             suggestions={!transcript}
-            cover={
-              playing ? (
-                <SpeakingCard
-                  text={sentence}
-                  onWrite={(key) => {
-                    setWriting(true);
-                    if (key) write(draft + key);
-                  }}
-                />
-              ) : undefined
-            }
+            fieldRef={field}
           />
           <KeyHints
             items={
-              playing
+              playing && !writing
                 ? [["Esc", "stops"], ["", "typing starts the next sentence"]]
                 : transcript
                   ? [["Esc", "goes back to the suggestions"]]
@@ -417,9 +430,8 @@ function LabelButton({
 }
 
 /**
- * The card that takes the place of the field while a sentence plays. Stop is
- * the first key. Write next, or a typed letter, gives the field back while the
- * voice goes on.
+ * The card below the messages while a sentence plays. Stop is the first key.
+ * Write next, or a typed letter, moves to the field while the voice goes on.
  */
 function SpeakingCard({
   text,
@@ -448,7 +460,7 @@ function SpeakingCard({
         event.preventDefault();
         onWrite(event.key);
       }}
-      className="bg-primary text-primary-foreground rounded-surface p-3.5"
+      className="bg-primary text-primary-foreground rounded-surface shrink-0 p-3.5"
     >
       <p className="flex items-center gap-1.5 text-xs font-medium">
         <span aria-hidden className="size-2 rounded-full bg-emerald-400" />
