@@ -131,8 +131,10 @@ composer when Talk opens, does not stop the scan.
 
 `ScanPauseKey` stops the scan. It shows only while a switch scans. The web app
 puts it at the foot of the sidebar, and at the foot of the screen on a phone,
-where the screen keeps room for it. The desktop panel puts it in the header,
-and setup puts it in the setup sidebar. While the scan waits, the key reads
+where the screen keeps room for it. The desktop panel puts it in the header.
+In the compact tier, under 560 points, the panel puts it in a row under the
+header, so the header keeps room for the space key. Setup puts it in the setup
+sidebar. While the scan waits, the key reads
 Resume scan, and the next press of the switch starts the scan again.
 
 A sheet, a dialog, or a menu holds the scan while it is open, so the key of the

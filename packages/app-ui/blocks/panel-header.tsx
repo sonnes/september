@@ -84,18 +84,20 @@ export function PanelHeader({
   onSheet: (sheet: PanelSheet) => void;
 }) {
   const navigate = useNavigate();
+  const panel = usePanel();
   const shown = MODES.filter(({ key }) => key !== "agent" || agentEnabled());
 
   return (
     // The header is the title bar of the desktop window: a press on its free
     // space drags the window, and the left inset keeps clear of the window
     // buttons, which macOS draws over it.
-    // One scan group. The scan band on the indigo is a ring alone.
+    // One scan group. The scan band on the indigo is a ring alone. Under
+    // 460 points, the space key shows only the initial of the space.
     <header
       data-tauri-drag-region
       data-scan-group
       data-housing
-      className="bg-sidebar text-sidebar-foreground flex h-16 shrink-0 items-center gap-2 pr-2.5 pl-21"
+      className="@container/header bg-sidebar text-sidebar-foreground flex h-16 shrink-0 items-center gap-2 pr-2.5 pl-21"
     >
       {page ? (
         <>
@@ -125,14 +127,20 @@ export function PanelHeader({
             aria-haspopup="dialog"
             onClick={() => onSheet("spaces")}
             className={cn(
-              "bg-sidebar-primary flex h-11 max-w-56 min-w-0 items-center gap-2 rounded-control pr-3 pl-2.5 text-sm font-semibold whitespace-nowrap",
+              "bg-sidebar-primary flex h-12 max-w-56 min-w-12 shrink-0 items-center gap-2 rounded-control pr-3 pl-2.5 text-sm font-semibold whitespace-nowrap @min-[23rem]/header:shrink",
+              "@max-[23rem]/header:w-12 @max-[23rem]/header:justify-center @max-[23rem]/header:px-0",
               ring,
             )}
           >
             {space ? <Initial title={space.title} /> : null}
-            <span className="truncate">{space?.title ?? "Spaces"}</span>
+            <span className="truncate @max-[23rem]/header:sr-only">
+              {space?.title ?? "Spaces"}
+            </span>
             <span className="sr-only">, switch space</span>
-            <ChevronDown className="size-4 shrink-0" aria-hidden />
+            <ChevronDown
+              className="size-4 shrink-0 @max-[23rem]/header:hidden"
+              aria-hidden
+            />
           </button>
 
           {space ? (
@@ -157,7 +165,7 @@ export function PanelHeader({
                 >
                   <span
                     className={cn(
-                      "grid h-full place-items-center rounded-[9px] px-2 transition-colors",
+                      "grid h-full place-items-center rounded-[9px] px-2 transition-colors @max-[23rem]/header:px-1",
                       key === mode
                         ? "bg-sidebar-foreground text-sidebar-primary font-semibold shadow-sm"
                         : "group-hover:bg-sidebar-border/40",
@@ -174,7 +182,11 @@ export function PanelHeader({
         </>
       )}
 
-      <ScanPauseKey />
+      {/* A narrow panel has no room for the pause key here. The shell puts
+          it under the header instead. */}
+      {panel?.tier === "compact" ? null : (
+        <ScanPauseKey className="min-h-12 min-w-12" />
+      )}
       <button
         type="button"
         aria-label="More"

@@ -68,7 +68,8 @@ access profile on the root element: the dark theme, the input method, the
 motion, the contrast, and the reach tokens. `InputLayer` answers each press
 with a check and a click, presses a key after a dwell for Eyes, and scans the
 screen for Switch. Each shell also places `ScanPauseKey`, the key that pauses
-the scan: the foot of the sidebar, the panel header, or the setup sidebar.
+the scan: the foot of the sidebar, the panel header, or the setup sidebar. In
+the compact tier, the panel puts it in a row under the header instead.
 While a sheet, a dialog, or a menu is open, `InputLayer` puts a second pause
 key at the end of it. The
 scan steps through the elements marked `data-scan-group`, then through their
@@ -253,9 +254,10 @@ space-mode path that the panel showed. If no such path exists, Back goes to
 `/spaces`.
 
 The space button shows the initial and the title of the space. Its name is the
-title, then "switch space". The space button opens the space switcher: a search
-field, the spaces by last use, All spaces, and New space. Each row of the
-switcher is named by its words. All spaces opens `/spaces`. While the switcher
+title, then "switch space". When the header is narrower than 23rem, the button
+is a 48-point key with the initial alone, and the title is in its name only.
+The space button opens the space switcher: a search field, the spaces by last
+use, All spaces, and New space. Each row of the switcher is named by its words. All spaces opens `/spaces`. While the switcher
 is open and its search is empty, the digits 1 to 9 open a row.
 
 The mode switch is a `nav` named Space mode, and the open mode has

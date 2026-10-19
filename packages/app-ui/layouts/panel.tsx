@@ -26,7 +26,11 @@ import {
   SkipLink,
   useRouteFocus,
 } from "@september/app-ui/blocks/screen";
-import { ApplyAccess, InputLayer } from "@september/app-ui/blocks/access";
+import {
+  ApplyAccess,
+  InputLayer,
+  ScanPauseKey,
+} from "@september/app-ui/blocks/access";
 import { spaceParams, useNewSpace } from "@september/app-ui/blocks/space";
 import { escapeStep, moodForKey } from "@september/core/rules/panel";
 import { spaceFromSlug, type SpaceMode } from "@september/core/rules/spaces";
@@ -198,6 +202,16 @@ export function PanelShell({
               onSheet={setSheet}
               page={page}
             />
+            {/* In the compact tier, the scan pause key has its own row under
+                the header. The row is empty, and hidden, without a scan. */}
+            {tier === "compact" ? (
+              <div
+                data-housing
+                className="bg-sidebar flex shrink-0 justify-end px-2.5 pb-2 empty:hidden"
+              >
+                <ScanPauseKey className="min-h-12 min-w-12" />
+              </div>
+            ) : null}
             <div className="flex min-h-0 flex-1">
               <main
                 ref={main}

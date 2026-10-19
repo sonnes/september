@@ -295,6 +295,24 @@ describe('the panel', () => {
     expect(document.documentElement.dataset.input).toBe('eyes');
   });
 
+  it('keeps the scan pause key out of the header in a narrow panel', async () => {
+    state.setup = { access: { input: 'switch' } };
+    await render();
+
+    const pause = document.querySelector<HTMLElement>('[data-scan-pause]');
+    expect(pause).not.toBeNull();
+    expect(pause!.closest('header')).toBeNull();
+  });
+
+  it('keeps the scan pause key in the header of a wider panel', async () => {
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(834);
+    state.setup = { access: { input: 'switch' } };
+    await render();
+
+    expect(document.querySelector('[data-scan-pause]')?.closest('header')).not.toBeNull();
+    vi.restoreAllMocks();
+  });
+
   it('scans the header as one group', async () => {
     state.setup = { access: { input: 'switch' } };
     await render();
