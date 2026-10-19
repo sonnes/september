@@ -224,7 +224,7 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
             )}
           >
             {spoken.length === 0 ? (
-              <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+              <div className="flex flex-1 flex-col items-center gap-3 text-center [justify-content:safe_center]">
                 <div className="bg-background text-muted-foreground flex size-12 items-center justify-center rounded-full">
                   <MessagesSquare className="size-6" aria-hidden />
                 </div>
