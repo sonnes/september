@@ -140,7 +140,7 @@ export const HELP_GUIDES: HelpGuide[] = [
       {
         type: "screenshot",
         src: "/help/setup-local-services-detail.png",
-        width: 705,
+        width: 677,
         alt: "Connect offers No AI Assistance and System voice without external accounts.",
         caption:
           "Browser: these choices let you start without connecting a service.",
@@ -149,7 +149,7 @@ export const HELP_GUIDES: HelpGuide[] = [
       {
         type: "screenshot",
         src: "/help/setup-continue-detail.png",
-        width: 111,
+        width: 118,
         alt: "Continue at the bottom of the Connect setup page.",
         caption:
           "Browser: choose Continue after reviewing the optional services.",
@@ -281,7 +281,7 @@ export const HELP_GUIDES: HelpGuide[] = [
       "When the band is on the group that you want, press Enter.",
       "The amber focus then moves through the keys of that group. Press Enter on the key that you want.",
       "If you use one switch, set it to Enter. The scan moves on by itself.",
-      "To stop the scan for a time, press Enter on Pause scan, the last key of the page. The next press of your switch starts the scan again.",
+      "To stop the scan for a time, press Enter on Pause scan. The next press of your switch starts the scan again.",
       "If the scan is too fast or too slow, change the Scan step in Settings, Access. The longest step is 30 seconds.",
     ],
     expectedResult: "You reach every key on the screen with one or two switches.",
@@ -324,7 +324,7 @@ export const HELP_GUIDES: HelpGuide[] = [
       {
         type: "screenshot",
         src: "/help/talk-composer-detail.png",
-        width: 780,
+        width: 792,
         alt: "Talk message input with suggestions above it and Speak at the lower right.",
         caption: "Browser: write your message here, then press Speak.",
         afterStep: 3,
@@ -348,16 +348,16 @@ export const HELP_GUIDES: HelpGuide[] = [
     platforms: BOTH_APPS,
     prerequisites: ["Open a space."],
     steps: [
-      "Read earlier messages in the conversation area.",
+      "Read the messages that you said in the history above the suggestions. The history shows the newest messages that fit, and See all shows the rest.",
       "Choose a suggestion above the message input to add words.",
-      "Write or edit your message in the message input near the bottom.",
-      "Press Speak at the lower right of the message input.",
+      "Write or edit your message in the message input near the bottom. Undo, Delete, and Clear are under the input.",
+      "Press Speak at the lower right of the message input. While the sentence plays, a card below the history shows it, with Stop.",
       "Choose Talk, Notes, or Agent in the bottom-right mode switch. Use the space name at the bottom left to change spaces.",
     ],
     expectedResult:
       "You can reach the main Talk controls without leaving the space.",
     recovery:
-      "If controls are hard to read, enlarge the screenshot below or rotate your iPad. On a small screen, open the navigation menu to reach Spaces.",
+      "If controls are hard to read, enlarge the screenshot below or rotate your iPad. On a phone, Menu at the top left opens the navigation, and Phrases and Voice are at the top right.",
     related: [
       "speak-your-first-message",
       "create-and-switch-spaces",
@@ -367,7 +367,7 @@ export const HELP_GUIDES: HelpGuide[] = [
       {
         type: "screenshot",
         src: "/help/talk-composer-detail.png",
-        width: 780,
+        width: 792,
         alt: "Talk message input with suggestions above it and Speak at the lower right.",
         caption: "Browser: write your message here, then press Speak.",
         afterStep: 3,
@@ -375,7 +375,7 @@ export const HELP_GUIDES: HelpGuide[] = [
       {
         type: "screenshot",
         src: "/help/talk-mode-dock-detail.png",
-        width: 285,
+        width: 300,
         alt: "The mode switch offers Talk, Notes, and Agent.",
         caption:
           "Browser: choose Talk to speak, Notes to prepare writing, or Agent for help with this space.",
@@ -502,14 +502,13 @@ export const HELP_GUIDES: HelpGuide[] = [
     platforms: BOTH_APPS,
     prerequisites: ["Open a space with earlier messages."],
     steps: [
-      "Start typing words from the earlier message.",
-      "Find the past-message suggestion marked with a clock.",
-      "Choose the suggestion to put it in the composer.",
-      "Press Speak to say it again.",
+      "Find the message in the history above the suggestions.",
+      "If the message is older, press See all. Earlier messages shows the page before.",
+      "Press the message. September says it again.",
     ],
     expectedResult: "September speaks the earlier message again.",
     recovery:
-      "If the message does not appear, type more of its opening words or write it again.",
+      "If you cannot find the message, type its first words. Then choose the suggestion with a clock mark, and press Speak.",
     related: ["use-word-and-sentence-suggestions", "save-a-phrase"],
   },
 
@@ -594,7 +593,7 @@ export const HELP_GUIDES: HelpGuide[] = [
     expectedResult:
       "The note stays in this space and is ready to read, present, or export.",
     recovery:
-      "If no note is selected, create one or choose an existing note tab.",
+      "If no note is open, choose All notes. Then create a note or choose one from the list.",
     related: ["read-or-present-a-note", "export-text-audio-or-video"],
   },
   {
@@ -609,7 +608,7 @@ export const HELP_GUIDES: HelpGuide[] = [
       "Choose Read aloud to hear the note without changing the conversation.",
       "Choose Present to open the full-screen stage.",
       "Choose a tone and whether September speaks.",
-      "Move through the chunks or let spoken chunks advance.",
+      "Move through the chunks with Previous and Next, or let spoken chunks advance. Stop pauses the voice, and Start goes on.",
     ],
     expectedResult:
       "The note is heard or shown clearly without adding it as a Talk message.",
@@ -638,7 +637,7 @@ export const HELP_GUIDES: HelpGuide[] = [
     platforms: BOTH_APPS,
     prerequisites: ["Open a note that contains text."],
     steps: [
-      "Open your note in Notes and choose Export beside Read aloud and Present.",
+      "Open your note in Notes. In the reading bar at the foot of the note, press More note actions, then choose Export.",
       "Find Text, Audio, or Video in the Export dialog. Audio needs an ElevenLabs voice. Video also needs the browser app. Text works without a connected service.",
       "Choose the file button beside the format: .md for text, .mp3 for audio, or .mp4 for video. For Video, choose the tone first.",
       "Wait for the file to finish. Use the download controls in your browser or app to find the saved file.",
@@ -655,9 +654,9 @@ export const HELP_GUIDES: HelpGuide[] = [
       {
         type: "screenshot",
         src: "/help/notes-actions-detail.png",
-        width: 420,
-        alt: "Note actions Read aloud, Present, and Export.",
-        caption: "Browser: choose Export beside Present.",
+        width: 551,
+        alt: "The reading bar of a note with Read aloud, Present, Suggestions, and the More menu open on Export.",
+        caption: "Browser: choose Export in the More menu of the reading bar.",
         afterStep: 1,
       },
       {
@@ -672,8 +671,8 @@ export const HELP_GUIDES: HelpGuide[] = [
         type: "screenshot",
         src: "/help/notes-overview.png",
         width: 1376,
-        alt: "A note with its Export action visible.",
-        caption: "Browser: find the note actions above your prepared text.",
+        alt: "A note with the reading bar at its foot.",
+        caption: "Browser: the note actions are in the reading bar at the foot of the note.",
       },
     ],
   },
@@ -783,7 +782,7 @@ export const HELP_GUIDES: HelpGuide[] = [
           {
             type: "screenshot",
             src: "/help/settings-openrouter-detail.png",
-            width: 715,
+            width: 712,
             alt: "OpenRouter connection page with Connect OpenRouter.",
             caption: "Browser: this button opens OpenRouter authorization.",
             afterStep: 2,
@@ -810,7 +809,7 @@ export const HELP_GUIDES: HelpGuide[] = [
           {
             type: "screenshot",
             src: "/help/settings-elevenlabs-detail.png",
-            width: 715,
+            width: 712,
             alt: "ElevenLabs API key field and Connect button.",
             caption: "Browser: enter your key here. This example has no key.",
             afterStep: 2,
@@ -1123,7 +1122,7 @@ export const HELP_GUIDES: HelpGuide[] = [
     prerequisites: ["Keep a short test message in the Talk composer."],
     steps: [
       "Raise the device volume and check that it is not muted.",
-      "In Talk, open Audio output beside Speak. Choose the intended output when your device offers a choice. September Microphone is only available in the Mac app.",
+      "In Talk, press the headphones key beside Speak. Choose the intended output when your device offers a choice. September Microphone is only available in the Mac app.",
       "Open Voice from the navigation menu and choose Hear it to preview the selected voice.",
       "Choose System voice if an ElevenLabs voice does not play.",
       "Return to Talk and press Speak again.",
@@ -1136,8 +1135,8 @@ export const HELP_GUIDES: HelpGuide[] = [
       {
         type: "screenshot",
         src: "/help/audio-detail.png",
-        width: 440,
-        alt: "Audio output menu beside Speak with the current output and unavailable September Microphone.",
+        width: 312,
+        alt: "The sound output menu of the headphones key, with the current output and September Microphone, which needs the Mac app.",
         caption:
           "Browser: check the selected output here. September Microphone requires the Mac app.",
         afterStep: 2,
@@ -1146,8 +1145,8 @@ export const HELP_GUIDES: HelpGuide[] = [
         type: "screenshot",
         src: "/help/audio-overview.png",
         width: 1376,
-        alt: "Talk screen with the Audio output menu open.",
-        caption: "Browser: Audio output sits beside Speak.",
+        alt: "Talk screen with the sound output menu open.",
+        caption: "Browser: the headphones key sits beside Speak.",
       },
     ],
     related: ["choose-and-preview-a-voice", "reconnect-a-service"],
