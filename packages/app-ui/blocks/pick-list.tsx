@@ -1,5 +1,8 @@
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, useState, type KeyboardEvent, type ReactNode } from "react";
 
+import { Check } from "lucide-react";
+
+import { cn } from "@september/ui";
 import { Input } from "@september/ui/components/input";
 import { matchesWords } from "@september/core/rules/pick";
 
@@ -17,26 +20,108 @@ export interface PickRow {
 }
 
 /**
+ * Moves the choice with the arrow keys, as a screen reader user expects of a
+ * radio group. The next choice takes the focus and is chosen.
+ */
+function moveChoice(event: KeyboardEvent<HTMLButtonElement>) {
+  const step =
+    event.key === "ArrowRight" || event.key === "ArrowDown"
+      ? 1
+      : event.key === "ArrowLeft" || event.key === "ArrowUp"
+        ? -1
+        : 0;
+  if (!step) return;
+  const group = event.currentTarget.closest('[role="radiogroup"]');
+  const keys = [...(group?.querySelectorAll<HTMLElement>('[role="radio"]') ?? [])].filter(
+    (key) => key.getAttribute("aria-disabled") !== "true",
+  );
+  const at = keys.indexOf(event.currentTarget);
+  if (at < 0 || keys.length < 2) return;
+  event.preventDefault();
+  const next = keys[(at + step + keys.length) % keys.length]!;
+  next.focus();
+  next.click();
+}
+
+/**
+ * One choice of a radio group, drawn as a key of 48px or more.
+ *
+ * The chosen key shows a check, so the state is not color alone. Only the
+ * chosen key, or the first key when none is chosen, takes a Tab stop. The
+ * arrow keys move between the choices.
+ */
+export function ChoiceKey({
+  checked,
+  tabbable,
+  onChoose,
+  value,
+  disabled = false,
+  className,
+  children,
+}: {
+  checked: boolean;
+  /** The key that takes the Tab stop of the group. */
+  tabbable: boolean;
+  onChoose: () => void;
+  value?: string;
+  /** The choice is not ready. It stays in place and says so. */
+  disabled?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={checked}
+      aria-disabled={disabled || undefined}
+      value={value}
+      tabIndex={tabbable ? 0 : -1}
+      onClick={() => !disabled && onChoose()}
+      onKeyDown={moveChoice}
+      className={cn(
+        "focus-attention key-disabled bg-background text-foreground hover:bg-accent flex min-h-[var(--reach-target)] min-w-0 items-center gap-3 rounded-xl border px-4 py-2 text-left transition-colors",
+        checked && "border-brand bg-primary/5",
+        disabled && "cursor-default",
+        className,
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          "grid size-6 shrink-0 place-items-center rounded-full border-2",
+          checked ? "border-brand bg-primary text-primary-foreground" : "border-input",
+        )}
+      >
+        {checked ? <Check className="size-4" strokeWidth={3} /> : null}
+      </span>
+      {children}
+    </button>
+  );
+}
+
+/**
  * A list that picks one row of many.
  *
  * A dropdown is not a control for a dwell: it opens on a press, and it closes
- * when the pointer rests somewhere else. This list stays on the screen. Each
- * row is a 44px target in two columns, as `DESIGN.md` asks.
+ * when the pointer rests somewhere else. This list stays on the screen. It is
+ * a radio group, and each row is a `ChoiceKey` of 48px or more.
  *
  * The search field appears when the list is long enough to need one. A list
  * with `fixedHeight` scrolls inside a box of one height, so a screen with
  * several lists does not move when one of them grows.
  *
- * The `list` layout draws each row as a card: a radio mark, the name and its
- * detail, and the control of `after` inside the card. Each group gets its own
- * heading, and its cards fill the columns under it. The voice list uses it,
- * because a voice needs its description and its play button beside it.
+ * The `list` layout draws each row as a card: the name and its detail, and
+ * the control of `after` beside the key. Each group gets its own heading, and
+ * its cards fill the columns under it. The voice list uses it, because a
+ * voice needs its description and its play button beside it.
  */
 export function PickList<Row extends PickRow>({
   rows,
   value,
   onPick,
   label,
+  name,
   columns = 2,
   filter,
   after,
@@ -49,6 +134,8 @@ export function PickList<Row extends PickRow>({
   onPick: (id: string) => void;
   /** What the search field says, for example `Search models`. */
   label: string;
+  /** The name of the radio group, for example `Voices`. */
+  name: string;
   /** How many rows fit across. The narrow card of the rail asks for one. */
   columns?: 1 | 2;
   /** The rows the words show. The words find a name by default. */
@@ -74,7 +161,7 @@ export function PickList<Row extends PickRow>({
           onChange={(event) => setQuery(event.target.value)}
           placeholder={label}
           aria-label={label}
-          className="h-11 max-w-md"
+          className="max-w-md"
         />
       ) : null}
 
@@ -82,55 +169,46 @@ export function PickList<Row extends PickRow>({
         <p className="text-muted-foreground text-sm">Nothing has these words.</p>
       ) : layout === "list" ? (
         <ul
+          role="radiogroup"
+          aria-label={name}
           className={`grid content-start gap-2 ${columns === 2 ? "sm:grid-cols-2" : ""} ${
-            fixedHeight ? "h-44 overflow-y-auto pr-1" : ""
+            fixedHeight ? "h-[calc(var(--reach-target)*4)] overflow-y-auto pr-1" : ""
           }`}
         >
           {found.map((row, at) => (
             <Fragment key={row.id}>
               {row.group && row.group !== found[at - 1]?.group ? (
                 <li
+                  role="none"
                   data-group
-                  className="text-muted-foreground col-span-full pt-3 text-xs font-semibold first:pt-0"
+                  className="text-muted-foreground col-span-full pt-3 text-sm font-semibold first:pt-0"
                 >
                   {row.group}
                 </li>
               ) : null}
-              <li
-                className={`flex min-w-0 items-center gap-2 rounded-xl border pr-2 ${
-                  row.id === value ? "border-primary bg-primary/5" : ""
-                }`}
-              >
-                <button
-                  type="button"
-                  aria-current={row.id === value || undefined}
-                  onClick={() => onPick(row.id)}
-                  className="focus-visible:ring-ring hover:bg-accent/60 flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-xl px-4 py-2 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
+              <li role="none" className="flex min-w-0 items-center gap-2">
+                <ChoiceKey
+                  checked={row.id === value}
+                  tabbable={tabbable(found, value, row)}
+                  onChoose={() => onPick(row.id)}
+                  className="flex-1"
                 >
-                  <span
-                    aria-hidden
-                    className={`size-[18px] shrink-0 rounded-full border ${
-                      row.id === value
-                        ? "border-primary border-[6px]"
-                        : "border-muted-foreground/50"
-                    }`}
-                  />
                   <span className="min-w-0 flex-1">
-                    <span data-row-name className="block truncate text-sm font-medium">
+                    <span data-row-name className="block truncate text-base font-medium">
                       {row.name}
                     </span>
                     {row.detail ? (
-                      <span className="text-muted-foreground block truncate text-xs">
+                      <span className="text-muted-foreground block truncate text-sm">
                         {row.detail}
                       </span>
                     ) : null}
                   </span>
                   {row.note ? (
-                    <span className="text-muted-foreground shrink-0 text-xs">
+                    <span className="text-muted-foreground shrink-0 text-sm">
                       {row.note}
                     </span>
                   ) : null}
-                </button>
+                </ChoiceKey>
                 {after?.(row)}
               </li>
             </Fragment>
@@ -138,42 +216,41 @@ export function PickList<Row extends PickRow>({
         </ul>
       ) : (
         <ul
+          role="radiogroup"
+          aria-label={name}
           className={`grid content-start gap-2 ${columns === 2 ? "sm:grid-cols-2" : ""} ${
-            fixedHeight ? "h-44 overflow-y-auto pr-1" : ""
+            fixedHeight ? "h-[calc(var(--reach-target)*4)] overflow-y-auto pr-1" : ""
           }`}
         >
           {found.map((row, at) => (
             <Fragment key={row.id}>
               {row.group && row.group !== found[at - 1]?.group ? (
                 <li
+                  role="none"
                   data-group
-                  className="text-muted-foreground col-span-full pt-2 text-xs font-semibold"
+                  className="text-muted-foreground col-span-full pt-2 text-sm font-semibold"
                 >
                   {row.group}
                 </li>
               ) : null}
               {/* min-w-0 lets a long name truncate instead of pushing into
                   the next column. */}
-              <li className="flex min-w-0 items-center gap-2">
-                <button
-                  type="button"
-                  aria-current={row.id === value || undefined}
-                  onClick={() => onPick(row.id)}
-                  className={`focus-visible:ring-ring flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border px-4 text-left text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${
-                    row.id === value
-                      ? "border-primary bg-primary/5"
-                      : "hover:bg-accent"
-                  }`}
+              <li role="none" className="flex min-w-0 items-center gap-2">
+                <ChoiceKey
+                  checked={row.id === value}
+                  tabbable={tabbable(found, value, row)}
+                  onChoose={() => onPick(row.id)}
+                  className="flex-1 text-base font-medium"
                 >
                   <span data-row-name className="min-w-0 flex-1 truncate">
                     {row.name}
                   </span>
                   {row.note ? (
-                    <span className="text-muted-foreground shrink-0 text-xs">
+                    <span className="text-muted-foreground shrink-0 text-sm">
                       {row.note}
                     </span>
                   ) : null}
-                </button>
+                </ChoiceKey>
                 {after?.(row)}
               </li>
             </Fragment>
@@ -182,4 +259,9 @@ export function PickList<Row extends PickRow>({
       )}
     </div>
   );
+}
+
+/** The chosen row takes the Tab stop, or the first row when none is chosen. */
+function tabbable(rows: PickRow[], value: string, row: PickRow): boolean {
+  return rows.some((one) => one.id === value) ? row.id === value : row === rows[0];
 }

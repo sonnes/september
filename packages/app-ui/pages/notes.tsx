@@ -223,12 +223,11 @@ function Notes({
             <div className="shrink-0 @min-[52rem]:hidden">
               <button
                 type="button"
-                aria-label="All notes"
                 onClick={() => setPane("list")}
-                className="text-brand hover:bg-primary/10 focus-visible:ring-ring inline-flex h-11 items-center gap-1 rounded-full pr-4 pl-2 text-sm font-semibold focus-visible:ring-2 focus-visible:outline-none"
+                className="focus-attention text-brand hover:bg-primary/10 inline-flex min-h-12 items-center gap-1 rounded-full pr-4 pl-2 text-sm font-semibold"
               >
                 <ChevronLeft className="size-5" aria-hidden />
-                Notes
+                All notes
               </button>
             </div>
             {error ? (
@@ -427,7 +426,7 @@ export function NoteEditor({
               event.currentTarget.blur();
             }
           }}
-          className="font-heading placeholder:text-muted-foreground/50 focus-visible:ring-ring w-full rounded-md bg-transparent text-3xl leading-tight @max-[36rem]:text-2xl font-semibold tracking-tight focus-visible:ring-2 focus-visible:outline-none"
+          className="focus-attention font-heading placeholder:text-muted-foreground w-full rounded-md bg-transparent text-3xl leading-tight @max-[36rem]:text-2xl font-semibold tracking-tight"
         />
         <p role="status" className="text-muted-foreground mt-1 mb-5 text-xs font-medium">
           {failed ? "Not saved" : dirty ? "Saving…" : "Saved"}
@@ -490,7 +489,7 @@ export function NoteReadingBar({
   };
 
   const bar =
-    "focus-visible:ring-ring inline-flex h-12 shrink-0 items-center gap-2 rounded-full px-5 text-sm font-semibold @max-[36rem]:px-3.5 transition-colors focus-visible:ring-2 focus-visible:outline-none aria-disabled:opacity-50 [&_svg]:size-[18px]";
+    "focus-attention key-disabled inline-flex h-12 shrink-0 items-center gap-2 rounded-full px-5 text-sm font-semibold @max-[36rem]:px-3.5 transition-colors [&_svg]:size-[18px]";
 
   return (
     <>
@@ -544,7 +543,7 @@ export function NoteReadingBar({
             <DropdownMenuItem
               aria-disabled={!words}
               onSelect={() => words && setExporting(true)}
-              className="min-h-11 aria-disabled:opacity-50"
+              className="min-h-12 aria-disabled:opacity-50"
             >
               <Download aria-hidden />
               Export…
@@ -553,7 +552,7 @@ export function NoteReadingBar({
             <DropdownMenuItem
               variant="destructive"
               onSelect={onDelete}
-              className="min-h-11"
+              className="min-h-12"
             >
               <Trash2 aria-hidden />
               Delete note…
@@ -711,10 +710,12 @@ function ExportDialog({
                         aria-label={option.name}
                         aria-pressed={option.key === tone}
                         onClick={() => chooseTone(option.key)}
-                        className={`focus-visible:ring-ring size-11 rounded-full border-2 focus-visible:ring-2 focus-visible:outline-none ${
+                        // The chosen tone has a 4px line, so the choice is not
+                        // a color alone.
+                        className={`focus-attention size-12 rounded-full ${
                           option.key === tone
-                            ? "border-primary"
-                            : "border-border"
+                            ? "border-brand border-4"
+                            : "border-input border-2"
                         }`}
                         style={{ backgroundColor: option.background }}
                       />
@@ -862,8 +863,8 @@ function NoteList({
 
   const row = (selected: boolean) =>
     cn(
-      "focus-visible:ring-ring flex min-h-14 w-full flex-col justify-center gap-0.5 rounded-control px-3 py-2 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none",
-      selected ? "bg-primary/10 ring-primary/30 ring-1" : "hover:bg-accent",
+      "focus-attention flex min-h-14 w-full flex-col justify-center gap-0.5 rounded-control px-3 py-2 text-left transition-colors",
+      selected ? "bg-primary/10 ring-brand ring-1" : "hover:bg-accent",
     );
 
   return (
@@ -873,7 +874,7 @@ function NoteList({
         <Button
           type="button"
           size="lg"
-          className="ml-auto rounded-full aria-disabled:opacity-50"
+          className="ml-auto rounded-full"
           aria-disabled={isCreating}
           onClick={() => !isCreating && onCreate()}
         >
@@ -889,7 +890,7 @@ function NoteList({
           aria-label="Search notes"
           placeholder="Search notes"
           onChange={(event) => setQuery(event.target.value)}
-          className="h-11 shrink-0"
+          className="shrink-0"
         />
       ) : null}
 

@@ -272,8 +272,15 @@ body {
     color: var(--brand);
     font-weight: 400;
   }
+  /* The marks of a line leave the eye, not the text. A screen reader still
+     reads them, so a list or a task keeps its meaning. */
   .note-document > div:not([data-active]) [data-mark] {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .note-document strong {
     font-weight: 700;
@@ -337,6 +344,11 @@ body {
   }
   /* A number is the word of a numbered line, so it always shows. */
   .note-document > div[data-kind='ol'] [data-mark='lead'] {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
     display: inline;
     color: var(--brand);
     font-weight: 600;

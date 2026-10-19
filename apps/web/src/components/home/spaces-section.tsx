@@ -42,6 +42,7 @@ export function SpaceTabs({
 }) {
   return (
     <div
+      role="group"
       aria-label="Demo spaces"
       className="flex w-fit max-w-full flex-wrap items-center gap-1 rounded-surface border bg-card p-1"
     >
@@ -51,7 +52,7 @@ export function SpaceTabs({
           type="button"
           aria-pressed={index === active}
           onClick={() => onSelect(index)}
-          className={`h-11 shrink-0 rounded-full px-4 text-sm font-medium focus-visible:ring-2 focus-visible:ring-ring ${index === active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
+          className={`focus-attention h-11 shrink-0 rounded-full px-4 text-sm font-medium ${index === active ?'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
         >
           {space.title}
         </button>

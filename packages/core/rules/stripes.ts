@@ -345,13 +345,17 @@ export const TILE = {
   wordPadXPx: 16,
   punctPadXPx: 10,
   minHeightPx: 46,
-  /** The mark in the gutter keeps its size, so it leaves the width alone. */
-  markPx: 16,
+  /** The gutter that holds the mark of a row. The pin key fills it. */
+  markPx: 44,
   /** A tile draws a line on each side, and the line takes width too. */
   borderPx: 1,
 };
 
-/** The smallest a tile may shrink before it stops being easy to press. */
+/**
+ * The smallest the padding and the gaps of a tile may shrink. Only the
+ * padding and the gaps shrink: the word size and the height stay at full
+ * size, so a tile is never less than 44 px high.
+ */
 export const TILE_SCALE_MIN = 0.5;
 
 /**

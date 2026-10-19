@@ -17,7 +17,7 @@ const LINES: Record<MoodKey, string> = {
 export function ExpressionSection() {
   return (
     <details className="group border-t border-zinc-200 last:border-b">
-      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-6 py-7 focus-visible:outline-offset-4 focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+      <summary className="focus-attention flex min-h-11 cursor-pointer list-none items-center gap-6 py-7 [&::-webkit-details-marker]:hidden">
         <div className="grid flex-1 gap-3 lg:grid-cols-[12rem_1fr] lg:gap-8">
           <p className="text-sm font-semibold text-indigo-600">Expression</p>
           <div>
@@ -55,7 +55,7 @@ function ExpressionDemo() {
             aria-label={one.label}
             aria-pressed={mood === one.key}
             onClick={() => setMood(one.key)}
-            className="grid size-12 place-items-center rounded-full border border-transparent text-2xl transition-colors hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:border-primary aria-pressed:bg-primary/10"
+            className="focus-attention grid size-12 place-items-center rounded-full border border-transparent text-2xl transition-colors hover:bg-zinc-100 aria-pressed:border-primary aria-pressed:bg-primary/10"
           >
             <span aria-hidden="true">{one.emoji}</span>
           </button>

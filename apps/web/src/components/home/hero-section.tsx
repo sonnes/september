@@ -75,14 +75,14 @@ export function HeroSection() {
               <Badge
                 asChild
                 variant="secondary"
-                className="w-fit border-primary-foreground/20 bg-primary-foreground/10 px-3 py-1.5 text-xs font-medium text-primary-foreground transition hover:bg-primary-foreground/20 sm:px-4 sm:py-2 sm:text-sm"
+                className="focus-attention min-h-11 w-fit border-primary-foreground/20 bg-primary-foreground/10 px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary-foreground/20"
               >
                 <a
                   href="https://github.com/sonnes/september"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Github className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <Github className="size-4" aria-hidden />
                   <span>Open source</span>
                 </a>
               </Badge>

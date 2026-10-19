@@ -217,11 +217,7 @@ function Agent({ space, spaces }: { space: Space; spaces: Space[] }) {
             </p>
           ) : null}
 
-          <div
-            aria-live="polite"
-            aria-busy={working}
-            className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto py-4"
-          >
+          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto py-4">
             {/* A turn in flight is drawn even before its first row is
                 stored: the transcript is where this screen says it is
                 working, and a first turn that drew nothing would look like a
@@ -277,7 +273,6 @@ function Agent({ space, spaces }: { space: Space; spaces: Space[] }) {
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11"
                 onClick={() => navigate({ to: "/settings/writing" })}
               >
                 Open AI Assistance settings

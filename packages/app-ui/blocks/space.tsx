@@ -366,7 +366,7 @@ export function Composer({
       ) : null}
 
       {cover ?? (
-      <div className="bg-background ring-primary/45 focus-within:ring-primary/70 rounded-surface p-3 shadow-sm ring-[3px] transition-[box-shadow]">
+      <div className="focus-attention-within bg-background ring-primary/45 rounded-surface p-3 shadow-sm ring-[3px] transition-[box-shadow]">
         {/* The layer behind the field draws a chip under each audio tag. It
             has the same type and wrap as the field, and its text is clear, so
             only the chips show. The field on top keeps the caret, the
@@ -420,7 +420,7 @@ export function Composer({
                 }
               }
             }}
-            className="placeholder:text-muted-foreground/60 relative max-h-60 w-full resize-none overflow-y-auto bg-transparent text-xl leading-snug focus:outline-none"
+            className="placeholder:text-muted-foreground relative max-h-60 w-full resize-none overflow-y-auto bg-transparent text-xl leading-snug focus:outline-none"
           />
         </div>
         {note ? (
@@ -429,41 +429,42 @@ export function Composer({
         {/* The row folds in the compact tier, under 560 points: one mood
             menu key for the five. */}
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          {/* Each key shows its label, and its name starts with that label. */}
           <div className="flex items-center gap-1.5">
             <Button
               type="button"
               variant="outline"
-              size="icon"
+              size="sm"
               aria-label="Undo"
               onClick={undo}
               aria-disabled={undoStack.length === 0}
-              className="size-11 aria-disabled:opacity-50"
             >
               <Undo2 aria-hidden />
+              Undo
             </Button>
             <Button
               type="button"
               variant="outline"
-              size="icon"
+              size="sm"
               aria-label="Delete last word"
               onClick={() => draft && write(deleteLastWord(draft))}
               aria-disabled={!draft}
-              className="size-11 aria-disabled:opacity-50"
             >
               <Delete aria-hidden />
+              Delete
             </Button>
             {/* In the compact panel, Clear lives in the More menu. */}
             {compact ? null : (
               <Button
                 type="button"
                 variant="outline"
-                size="icon"
+                size="sm"
                 aria-label="Clear"
                 onClick={() => draft && write("")}
                 aria-disabled={!draft}
-                className="size-11 aria-disabled:opacity-50"
               >
                 <Trash2 aria-hidden />
+                Clear
               </Button>
             )}
           </div>
@@ -492,10 +493,13 @@ export function Composer({
             {/* The sound output belongs beside the button that makes a sound.
                 Notes makes none. */}
             {speaks ? <AudioSelector /> : null}
+            {/* A gap and a line keep Speak apart from the keys before it, so
+                a near miss does not speak. Speak is the largest key. */}
+            <span aria-hidden className="bg-border mx-1 h-8 w-px shrink-0" />
             <Button
               type="button"
               size="lg"
-              className="h-11 rounded-full px-6 font-semibold aria-disabled:opacity-50"
+              className="min-h-14 rounded-full px-7 text-base font-semibold"
               onClick={() => act(draft)}
               aria-disabled={!draft.trim() || pending}
             >
@@ -534,7 +538,7 @@ function MoodMenu({
           type="button"
           aria-label={`Mood menu: ${current?.label ?? "no mood"}`}
           className={cn(
-            "focus-visible:ring-ring bg-muted text-foreground inline-flex h-11 items-center gap-1.5 rounded-control px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none",
+            "focus-attention bg-muted text-foreground inline-flex min-h-12 items-center gap-1.5 rounded-control px-3 text-sm font-medium transition-colors",
             current && "ring-primary/60 bg-accent ring-2 ring-inset",
           )}
         >
@@ -542,7 +546,7 @@ function MoodMenu({
             {current?.emoji ?? "🙂"}
           </span>
           {current?.label ?? "Mood"}
-          <ChevronDown className="size-4 opacity-60" aria-hidden />
+          <ChevronDown className="size-4" aria-hidden />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="top" align="start" className="w-56 rounded-surface p-1.5">
@@ -605,14 +609,17 @@ function MoodKeys({
             aria-pressed={on}
             title={one.label}
             onClick={() => onMood(on ? null : one.key)}
+            // The mood in use shows its name, so the choice is not an
+            // emoji alone.
             className={cn(
-              "focus-visible:ring-ring grid size-11 place-items-center rounded-full border border-transparent text-2xl leading-none transition-colors focus-visible:ring-2 focus-visible:outline-none",
+              "focus-attention inline-flex min-h-12 min-w-12 items-center justify-center gap-1.5 rounded-full border border-transparent leading-none transition-colors",
               on
-                ? "border-primary bg-primary/15"
+                ? "border-primary bg-primary/15 pr-3 pl-2 text-sm font-semibold"
                 : "hover:bg-background hover:border-border",
             )}
           >
-            <span aria-hidden>{one.emoji}</span>
+            <span aria-hidden className="text-2xl">{one.emoji}</span>
+            {on ? one.label : null}
           </button>
         );
       })}
@@ -692,7 +699,7 @@ export function SpaceTitle({
         onKeyDown={(event) => {
           if (event.key === "Enter") event.currentTarget.blur();
         }}
-        className="hover:bg-accent focus-visible:ring-ring min-w-0 rounded-md bg-transparent px-2 py-1 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        className="focus-attention hover:bg-accent min-w-0 rounded-md bg-transparent px-2 py-1 text-sm font-medium transition-colors"
       />
       {taken ? (
         <span role="alert" className="text-destructive px-2 text-xs">

@@ -309,7 +309,7 @@ function RowButton({
       aria-label={label}
       onClick={onClick}
       className={cn(
-        "text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-control flex size-11 shrink-0 items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none",
+        "focus-attention text-muted-foreground hover:text-foreground rounded-control flex size-12 shrink-0 items-center justify-center transition-colors",
         className,
       )}
     >
@@ -339,7 +339,7 @@ function PhraseRow({
         type="button"
         title={row.text}
         onClick={() => onInsert(row.text)}
-        className="focus-visible:ring-ring rounded-control flex min-h-11 min-w-0 flex-1 items-center truncate px-3 py-2 text-left text-sm focus-visible:ring-2 focus-visible:outline-none"
+        className="focus-attention rounded-control flex min-h-12 min-w-0 flex-1 items-center truncate px-3 py-2 text-left text-sm"
       >
         <span className="truncate">
           <TaggedText text={row.text} />
@@ -347,7 +347,7 @@ function PhraseRow({
       </button>
 
       {rowKind(row) === "starter" ? (
-        <span className="border-primary/40 text-brand/70 shrink-0 rounded-md border border-dashed px-1.5 py-0.5 text-xs">
+        <span className="border-primary/50 text-brand shrink-0 rounded-md border border-dashed px-1.5 py-0.5 text-xs">
           opening
         </span>
       ) : null}
@@ -369,7 +369,7 @@ function PhraseRow({
               : "September can replace this code. Keep the phrase to hold it."
           }
           onClick={() => setEditing(true)}
-          className="focus-visible:ring-ring shrink-0 rounded-md focus-visible:ring-2 focus-visible:outline-none"
+          className="focus-attention grid min-h-12 min-w-12 shrink-0 place-items-center rounded-md"
         >
           <CodeBadge code={row.code} muted={!row.pinned} />
         </button>
@@ -454,7 +454,7 @@ function CodeField({
       title={problem ?? undefined}
       maxLength={CODE_MAX_LENGTH}
       className={cn(
-        "h-8 w-16 shrink-0 px-1.5 font-mono text-xs",
+        "w-20 shrink-0 px-2 font-mono text-sm",
         problem && "border-destructive",
       )}
       onChange={(event) => setValue(event.target.value)}

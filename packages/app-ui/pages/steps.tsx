@@ -628,18 +628,20 @@ function Choice({
 }) {
   return (
     <div
+      // A choice that is not ready has a dashed line, not a fade, so its
+      // words stay readable.
       className={`grid gap-4 rounded-xl border p-4 ${
         selected
-          ? "border-indigo-600 ring-[3px] ring-indigo-500/30"
-          : "border-zinc-200"
-      } ${disabled ? "opacity-60" : ""}`}
+          ? "border-brand ring-[3px] ring-indigo-500/30"
+          : "border-border"
+      } ${disabled ? "border-input border-dashed" : ""}`}
     >
       <label className="grid cursor-pointer grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[auto_auto_minmax(0,1fr)_auto] sm:gap-4">
         <RadioGroupItem value={value} disabled={disabled} className="size-5" />
         <Mark service={value} />
         <span>
           <span className="text-sm font-semibold">{label}</span>
-          <span className="mt-1 block text-xs leading-relaxed text-zinc-500">
+          <span className="text-muted-foreground mt-1 block text-xs leading-relaxed">
             {description}
           </span>
         </span>

@@ -68,7 +68,7 @@ const LINE_STYLES: { style: LineStyle; label: string; icon: ReactNode }[] = [
 ];
 
 const KEY =
-  "focus-visible:ring-ring inline-flex size-11 shrink-0 items-center justify-center rounded-control border bg-background transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:outline-none aria-disabled:opacity-50 [&_svg]:size-5";
+  "focus-attention key-disabled inline-flex size-12 shrink-0 items-center justify-center rounded-control border bg-background transition-colors hover:bg-accent [&_svg]:size-5";
 
 /**
  * A note as a document of Markdown lines.
@@ -79,7 +79,7 @@ const KEY =
  *
  * The writing tools appear on the first typed key, under the line that holds
  * the caret. They give the suggestion stripes, the style keys, Undo, and
- * Delete word. Escape hides them, so the page is quiet again for reading.
+ * Delete last word. Escape hides them, so the page is quiet again for reading.
  */
 export function NoteDocument({
   value,
@@ -475,7 +475,7 @@ export function NoteDocument({
               >
                 <Undo2 aria-hidden />
               </button>
-              <button type="button" aria-label="Delete word" onClick={deleteWord} className={KEY}>
+              <button type="button" aria-label="Delete last word" onClick={deleteWord} className={KEY}>
                 <Delete aria-hidden />
               </button>
               <button
@@ -483,7 +483,7 @@ export function NoteDocument({
                 aria-label="Hide writing tools"
                 title="Hide (Esc)"
                 onClick={() => setOpen(false)}
-                className="bg-foreground text-background focus-visible:ring-ring inline-flex h-11 shrink-0 items-center rounded-control px-3 text-sm font-semibold focus-visible:ring-2 focus-visible:outline-none"
+                className="focus-attention bg-foreground text-background inline-flex min-h-12 shrink-0 items-center rounded-control px-3 text-sm font-semibold"
               >
                 Esc
               </button>
@@ -500,7 +500,7 @@ export function NoteDocument({
               // The other lines are the words the user wrote before. The caret
               // line would only give back the words being typed.
               history={earlier(lines.current, span.current.to.line)}
-              finishLabel="Add this suggestion to the note"
+              finishLabel="Add to the note"
               onTake={take}
               onSpeak={finish}
               onPin={(phrase) => onPin?.(phrase)}
@@ -557,7 +557,17 @@ function draw(element: HTMLElement, lines: string[]) {
 }
 
 function fill(row: HTMLElement, text: string) {
-  row.dataset.kind = lineKind(text);
+  const kind = lineKind(text);
+  row.dataset.kind = kind;
+  // A heading line is a heading for a screen reader too. The marks of the
+  // other lines stay in the text, so a reader still says what each line is.
+  if (kind === "h1" || kind === "h2") {
+    row.setAttribute("role", "heading");
+    row.setAttribute("aria-level", kind === "h1" ? "1" : "2");
+  } else {
+    row.removeAttribute("role");
+    row.removeAttribute("aria-level");
+  }
   row.replaceChildren(
     ...(text
       ? inlineParts(text).map((part) => {

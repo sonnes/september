@@ -75,7 +75,7 @@ it('marks the preset that the saved sound matches', async () => {
 it('shows the voice model with a preset and keeps it when a preset is chosen', async () => {
   state.speech.modelId = 'eleven_multilingual_v2';
   await render();
-  expect(button('Eleven Multilingual v2').getAttribute('aria-current')).toBe('true');
+  expect(button('Eleven Multilingual v2').getAttribute('aria-checked')).toBe('true');
   await act(async () => button('Steady').click());
   expect(state.save).toHaveBeenLastCalledWith(
     expect.objectContaining({ modelId: 'eleven_multilingual_v2', stability: 0.75, similarity: 0.75 }),
@@ -136,7 +136,7 @@ it('shows the two Dialogue models and the three presets, without the speed or Cu
 it('saves the Dialogue model and keeps the model of the ElevenLabs voice', async () => {
   state.speech.provider = 'dialogue';
   await render();
-  expect(button('Eleven v3').getAttribute('aria-current')).toBe('true');
+  expect(button('Eleven v3').getAttribute('aria-checked')).toBe('true');
   await act(async () => button('Eleven v3 Conversational').click());
   expect(state.save).toHaveBeenLastCalledWith(
     expect.objectContaining({ dialogueModelId: 'eleven_v3_conversational', modelId: 'eleven_flash_v2_5' }),

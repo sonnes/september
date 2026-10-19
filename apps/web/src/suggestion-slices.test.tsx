@@ -61,18 +61,64 @@ const systemPrompt = (call = 0) =>
   (state.generate.mock.calls[call][0] as { messages: { content: string }[] }).messages[0].content;
 
 function button(label: string) {
-  const found = [...container.querySelectorAll('button')].find(one => one.getAttribute('aria-label') === label || one.textContent === label);
+  const found = [...container.querySelectorAll('button')].find(one =>
+    one.getAttribute('aria-label') === label || one.getAttribute('aria-label')?.startsWith(`${label} `) || one.textContent === label);
   expect(found).toBeDefined();
   return found!;
 }
 
+it('names each stripe, tile, and end key by what a press takes', async () => {
+  const sentence = 'Please bring me some cold water from the kitchen.';
+  await act(async () => root.render(<Composer initial="" history={[sentence]} />));
+  await type('Pl');
+  const stripe = container.querySelector('[role="group"][aria-label^="Stripe 1 of"]');
+  expect(stripe?.getAttribute('aria-label')).toBe(`Stripe 1 of 1, said before. ${sentence}`);
+  expect(button('cold').getAttribute('aria-label')).toBe('cold. Takes: Please bring me some cold');
+  expect(button('Insert:').getAttribute('aria-label')).toBe('Insert: Please bring me some cold water');
+});
+
+it('names a chip by its phrase, then by where it came from', async () => {
+  state.phrases = [
+    { text: 'Yes', code: '', kind: 'phrase', pinned: true, space_id: 'space' },
+    { text: 'Thanks', code: '', kind: 'phrase', pinned: false, space_id: 'space' },
+  ];
+  await act(async () => root.render(<Composer initial="" />));
+
+  expect(button('Yes. Kept phrase.')).toBeDefined();
+  expect(button('Thanks. Suggested phrase.')).toBeDefined();
+  await act(async () => button('Yes. Kept phrase.').click());
+  expect(container.querySelector('output')?.textContent?.trim()).toBe('Yes');
+});
+
+it('says on the pin key whether the user keeps the row', async () => {
+  state.phrases = [
+    { text: 'Could I get a glass of water', code: '', kind: 'phrase', pinned: true, space_id: 'space' },
+  ];
+  await act(async () => root.render(<Composer initial="Could" />));
+
+  expect(button('Keep this phrase').getAttribute('aria-pressed')).toBe('true');
+});
+
+it('keeps a word that the word row clips out of the tab order', async () => {
+  state.words = ['and', 'then', 'later'];
+  const rects = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+    const bottom = this.hasAttribute('data-word-row') ? 100 : this.textContent === 'later' ? 160 : 60;
+    return { top: bottom - 48, bottom, left: 0, right: 80, width: 80, height: 48, x: 0, y: bottom - 48, toJSON: () => ({}) } as DOMRect;
+  });
+  await act(async () => root.render(<Composer initial="so " />));
+
+  expect(button('then').hasAttribute('inert')).toBe(false);
+  expect(button('later').hasAttribute('inert')).toBe(true);
+  rects.mockRestore();
+});
+
 it('inserts successive slices before speaking the complete history sentence', async () => {
   const sentence = 'Please bring me some cold water from the kitchen.';
   await act(async () => root.render(<Composer initial="Pl" history={[`Hello there. ${sentence}`]} />));
-  await act(async () => button('Insert this slice').click());
+  await act(async () => button('Insert:').click());
   expect(container.querySelector('output')?.textContent).toBe('Please bring me some cold water ');
   expect(state.speak).not.toHaveBeenCalled();
-  await act(async () => button('Speak this suggestion').click());
+  await act(async () => button('Speak:').click());
   expect(state.speak).toHaveBeenCalledWith(sentence);
 });
 
@@ -96,18 +142,18 @@ it('retains the selected model suggestion after a new response', async () => {
     input.dispatchEvent(new Event('input', { bubbles: true }));
   });
   await act(async () => vi.advanceTimersByTimeAsync(200));
-  await act(async () => button('Insert this slice').click());
+  await act(async () => button('Insert:').click());
   state.answer = [];
   await act(async () => vi.advanceTimersByTimeAsync(200));
-  await act(async () => button('Speak this suggestion').click());
+  await act(async () => button('Speak:').click());
   expect(state.speak).toHaveBeenCalledWith('Please bring me some cold water from the kitchen.');
 });
 
 it('keeps the insert action for the final slice of a starter', async () => {
   state.phrases = [{ text: 'I would like to ask you about', code: 'iw', kind: 'starter', pinned: true, space_id: 'space' }];
   await act(async () => root.render(<Composer initial="" />));
-  await act(async () => button('Insert this slice').click());
-  await act(async () => button('Start with this opening').click());
+  await act(async () => button('Insert:').click());
+  await act(async () => button('Start with:').click());
   expect(container.querySelector('output')?.textContent).toBe('I would like to ask you about ');
   expect(state.speak).not.toHaveBeenCalled();
 });
@@ -185,6 +231,6 @@ it('replaces the draft with a saved phrase that contains it, and keeps the rest 
 
 it('speaks a past sentence that contains the draft', async () => {
   await act(async () => root.render(<Composer initial="wat" history={['Can I have some water please?']} />));
-  await act(async () => button('Speak this suggestion').click());
+  await act(async () => button('Speak:').click());
   expect(state.speak).toHaveBeenCalledWith('Can I have some water please?');
 });

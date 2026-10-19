@@ -44,7 +44,6 @@ export function SpacesScreen() {
       type="button"
       onClick={add}
       aria-disabled={newSpace.pending}
-      className="aria-disabled:opacity-50"
     >
       <Plus aria-hidden />
       New space
@@ -93,7 +92,6 @@ export function SpacesScreen() {
               type="button"
               onClick={add}
               aria-disabled={newSpace.pending}
-              className="aria-disabled:opacity-50"
             >
               <Plus aria-hidden />
               Create your first space
@@ -113,7 +111,7 @@ export function SpacesScreen() {
               <button
                 type="button"
                 onClick={() => navigate(openParams(space))}
-                className="hover:text-brand focus-visible:ring-ring min-w-0 flex-1 rounded-md px-2 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                className="focus-attention hover:text-brand min-h-14 min-w-0 flex-1 rounded-md px-2 py-3 text-left transition-colors"
               >
                 <span className="block truncate text-base font-medium">
                   {space.title}

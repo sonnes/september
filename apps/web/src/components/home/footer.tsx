@@ -8,13 +8,13 @@ export function Footer() {
         <div className="flex shrink-0 flex-wrap items-center gap-6">
           <a
             href="/privacy-policy"
-            className="inline-flex min-h-11 items-center transition hover:text-zinc-950"
+            className="focus-attention inline-flex min-h-11 items-center rounded-sm transition hover:text-zinc-950"
           >
             Privacy Policy
           </a>
           <a
             href="/terms-of-service"
-            className="inline-flex min-h-11 items-center transition hover:text-zinc-950"
+            className="focus-attention inline-flex min-h-11 items-center rounded-sm transition hover:text-zinc-950"
           >
             Terms of Service
           </a>
@@ -22,25 +22,25 @@ export function Footer() {
               hero nav hides Features/About below md. */}
           <a
             href="/#features"
-            className="inline-flex min-h-11 items-center transition hover:text-zinc-950"
+            className="focus-attention inline-flex min-h-11 items-center rounded-sm transition hover:text-zinc-950"
           >
             Features
           </a>
           <a
             href="/#apps"
-            className="inline-flex min-h-11 items-center transition hover:text-zinc-950"
+            className="focus-attention inline-flex min-h-11 items-center rounded-sm transition hover:text-zinc-950"
           >
             Browser &amp; Mac
           </a>
           <a
             href="/#privacy"
-            className="inline-flex min-h-11 items-center transition hover:text-zinc-950"
+            className="focus-attention inline-flex min-h-11 items-center rounded-sm transition hover:text-zinc-950"
           >
             Privacy
           </a>
           <a
             href="/#about"
-            className="inline-flex min-h-11 items-center transition hover:text-zinc-950"
+            className="focus-attention inline-flex min-h-11 items-center rounded-sm transition hover:text-zinc-950"
           >
             About
           </a>
@@ -48,7 +48,7 @@ export function Footer() {
             href="https://github.com/sonnes/september"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-11 items-center transition hover:text-zinc-950"
+            className="focus-attention inline-flex min-h-11 items-center rounded-sm transition hover:text-zinc-950"
           >
             Source
           </a>

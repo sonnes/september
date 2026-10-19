@@ -279,7 +279,7 @@ function ConnectionRow({
   action: ReactNode;
 }) {
   return (
-    <div className="flex min-h-11 items-center gap-4 py-4">
+    <div className="flex min-h-12 items-center gap-4 py-4">
       <Mark service={service} />
       <div className="min-w-0 flex-1">
         <div className="text-sm font-semibold">{name}</div>
@@ -405,7 +405,7 @@ function SetupSwitch({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex min-h-11 items-center justify-between gap-4 rounded-xl border px-4 py-3">
+      <div className="flex min-h-12 items-center justify-between gap-4 rounded-xl border px-4 py-3">
         <Label htmlFor={id} className="flex flex-1 cursor-pointer flex-col items-start gap-1">
           <span className="text-sm font-medium">{label}</span>
           <span
@@ -450,6 +450,7 @@ function ModelList({
         value={value}
         onPick={onPick}
         label="Search models"
+        name="Model"
         fixedHeight
       />
     </div>
@@ -520,13 +521,13 @@ export function WritingSettings() {
           ).map((option) => (
             <div
               key={option.value}
-              className="has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5 flex items-center gap-3 rounded-xl border p-4"
+              // A provider that is not ready has a dashed line, not a fade,
+              // so its words stay readable.
+              className={`has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5 flex min-h-12 items-center gap-3 rounded-xl border p-4 ${
+                ready[option.value] ? "" : "border-input border-dashed"
+              }`}
             >
-              <Label
-                className={`flex flex-1 cursor-pointer items-center gap-4 ${
-                  ready[option.value] ? "" : "opacity-60"
-                }`}
-              >
+              <Label className="flex flex-1 cursor-pointer items-center gap-4">
                 <RadioGroupItem
                   value={option.value}
                   aria-disabled={!ready[option.value]}

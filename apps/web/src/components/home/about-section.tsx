@@ -27,7 +27,7 @@ export function AboutSection() {
             href="https://raviatluri.in/articles/building-september"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-zinc-700 underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+            className="focus-attention mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-zinc-700 underline-offset-4 hover:underline"
           >
             Read the full story <ArrowUpRight className="size-4" aria-hidden="true" />
           </a>

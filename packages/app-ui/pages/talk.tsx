@@ -10,6 +10,7 @@ import {
 import type { MoodKey } from "@september/core/rules/moods";
 import { useNavigate } from "@tanstack/react-router";
 import { MessagesSquare, Square, Volume2 } from "lucide-react";
+import { cn } from "@september/ui";
 import { Button } from "@september/ui/components/button";
 import { recordMessageUsage } from "@platform/services/usage";
 import {
@@ -180,6 +181,11 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
       <ScreenHeader heading={`${space.title} · Talk`}>
         <SpaceTitle space={space} />
       </ScreenHeader>
+      {/* The status is on the page before it has words, so a screen reader
+          reads each new sentence. */}
+      <p role="status" className="sr-only">
+        {playing && sentence ? `Speaking: ${sentence}` : ""}
+      </p>
 
 
       <div className="@container bg-muted/40 flex min-h-0 flex-1 flex-col gap-3 p-2 md:p-4">
@@ -218,7 +224,7 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
               <section aria-label="Messages" className="flex flex-col gap-1">
                 <div className="text-muted-foreground flex min-h-11 items-center gap-1.5 pl-1.5 text-xs font-semibold">
                   {transcript ? "All messages" : today ? "Said today" : "Said before"}
-                  <span className="text-muted-foreground/70 font-medium">
+                  <span className="text-muted-foreground font-medium">
                     {transcript ? spoken.length : today || null}
                   </span>
                   {transcript ? (
@@ -242,8 +248,12 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
                       Earlier messages
                     </PageRow>
                   ) : null}
-                  {shown.map((message) => (
-                    <MessageRow key={message.id} message={message} />
+                  {shown.map((message, at) => (
+                    <MessageRow
+                      key={message.id}
+                      message={message}
+                      newest={!transcript && at === shown.length - 1}
+                    />
                   ))}
                   {transcript && page > 0 ? (
                     <PageRow onClick={() => setPageInput(page - 1)}>
@@ -328,23 +338,32 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
 /** The number of messages that Talk shows over the suggestions. */
 const RECENT = 3;
 
-/** A message of the history. A press speaks it again. */
-function MessageRow({ message }: { message: Message }) {
+/**
+ * A message of the history. A press speaks it again. The name is the action,
+ * then the words, so a screen reader says what the user said. The newest
+ * message is larger, because it is the one a partner reads.
+ */
+function MessageRow({ message, newest }: { message: Message; newest: boolean }) {
   const speaking = useSpeaking() === message.id;
 
   return (
     <button
       type="button"
-      aria-label={speaking ? "Stop" : "Speak this message again"}
       onClick={() =>
         speaking ? stopSpeaking() : void speak(message.text, message.id)
       }
-      className="hover:bg-muted/60 focus-visible:ring-ring flex min-h-13 w-full items-center gap-2.5 py-1 pr-1 pl-3.5 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
+      className="focus-attention-inset hover:bg-muted/60 flex min-h-13 w-full items-center gap-2.5 py-1 pr-1 pl-3.5 text-left transition-colors"
     >
-      <span className="min-w-0 flex-1 text-base leading-snug">
+      <span className="sr-only">{speaking ? "Stop: " : "Speak again: "}</span>
+      <span
+        className={cn(
+          "min-w-0 flex-1 leading-snug",
+          newest ? "text-xl font-medium" : "text-base",
+        )}
+      >
         <TaggedText text={message.text} />
       </span>
-      <span className="text-muted-foreground/80 shrink-0 text-xs">
+      <span className="text-muted-foreground shrink-0 text-xs">
         {messageTime(message.created_at)}
       </span>
       <span className="text-muted-foreground grid size-11 shrink-0 place-items-center">
@@ -370,7 +389,7 @@ function PageRow({
     <button
       type="button"
       onClick={onClick}
-      className="text-brand hover:bg-muted/60 focus-visible:ring-ring flex min-h-13 w-full items-center justify-center text-sm font-medium focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
+      className="focus-attention-inset text-brand hover:bg-muted/60 flex min-h-13 w-full items-center justify-center text-sm font-medium"
     >
       {children}
     </button>
@@ -389,7 +408,7 @@ function LabelButton({
     <button
       type="button"
       onClick={onClick}
-      className="text-brand focus-visible:ring-ring ml-auto min-h-11 rounded-full px-3 text-sm font-medium focus-visible:ring-2 focus-visible:outline-none"
+      className="focus-attention text-brand ml-auto min-h-12 rounded-full px-3 text-sm font-medium"
     >
       {children}
     </button>
@@ -430,7 +449,7 @@ function SpeakingCard({
       }}
       className="bg-primary text-primary-foreground rounded-surface p-3.5"
     >
-      <p className="flex items-center gap-1.5 text-xs font-medium opacity-85">
+      <p className="flex items-center gap-1.5 text-xs font-medium">
         <span aria-hidden className="size-2 rounded-full bg-emerald-400" />
         Speaking
       </p>
@@ -440,7 +459,7 @@ function SpeakingCard({
           ref={stop}
           type="button"
           onClick={() => stopSpeaking()}
-          className="bg-background text-brand focus-visible:ring-ring inline-flex h-11 items-center gap-2 rounded-full px-4 font-semibold focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-primary focus-visible:outline-none"
+          className="focus-attention bg-background text-brand inline-flex min-h-12 items-center gap-2 rounded-full px-4 font-semibold"
         >
           <Square className="size-4 fill-current" aria-hidden />
           Stop
@@ -449,7 +468,7 @@ function SpeakingCard({
         <button
           type="button"
           onClick={() => onWrite()}
-          className="focus-visible:ring-ring inline-flex h-11 items-center rounded-full bg-white/15 px-4 font-medium hover:bg-white/25 focus-visible:ring-2 focus-visible:outline-none"
+          className="focus-attention inline-flex min-h-12 items-center rounded-full bg-white/15 px-4 font-medium hover:bg-white/25"
         >
           Write next
         </button>
@@ -469,7 +488,7 @@ function KeyHints({ items }: { items: readonly (readonly [string, string])[] }) 
         <span key={at}>
           {at > 0 ? " · " : null}
           {key ? (
-            <kbd className="text-foreground/70 font-sans font-semibold">{key}</kbd>
+            <kbd className="text-foreground font-sans font-semibold">{key}</kbd>
           ) : null}
           {key ? " " : null}
           {action}

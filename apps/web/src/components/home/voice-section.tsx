@@ -10,7 +10,7 @@ const PREVIEW_TEXT = 'I’ve changed my mind. Let’s take the scenic route.';
 export function VoiceSection() {
   return (
     <details className="group border-t border-zinc-200 last:border-b">
-      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-6 py-7 focus-visible:outline-offset-4 focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+      <summary className="focus-attention flex min-h-11 cursor-pointer list-none items-center gap-6 py-7 [&::-webkit-details-marker]:hidden">
         <div className="grid flex-1 gap-3 lg:grid-cols-[12rem_1fr] lg:gap-8">
           <p className="text-sm font-semibold text-indigo-600">Your voice</p>
           <div>
@@ -74,7 +74,7 @@ function VoiceDemo() {
           </div>
           <Link
             to="/welcome"
-            className="inline-flex h-11 items-center rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="focus-attention inline-flex h-11 items-center rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
           >
             Start cloning
           </Link>
@@ -90,7 +90,7 @@ function VoiceDemo() {
               value={selected}
               onChange={event => setSelected(Number(event.target.value))}
               aria-label="Choose a voice"
-              className="h-11 min-w-56 flex-1 rounded-control border border-input bg-background px-3 text-sm text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="focus-attention h-11 min-w-56 flex-1 rounded-control border border-input bg-background px-3 text-sm text-foreground shadow-xs"
             >
               {voices.map((voice, index) => (
                 <option key={voice.id} value={index}>
@@ -107,7 +107,7 @@ function VoiceDemo() {
             type="button"
             onClick={() => speak(PREVIEW_TEXT, voices[selected])}
             disabled={voices.length === 0}
-            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-input bg-background px-6 text-sm font-semibold text-foreground transition-colors hover:enabled:bg-accent disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="focus-attention inline-flex min-h-11 items-center gap-2 rounded-full border border-input bg-background px-6 text-sm font-semibold text-foreground transition-colors hover:enabled:bg-accent key-disabled"
           >
             <Play className="size-4" aria-hidden="true" />
             Hear it

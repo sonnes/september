@@ -115,6 +115,14 @@ describe('the note document', () => {
     expect(doc().children[0].getAttribute('data-kind')).toBe('h1');
   });
 
+  it('gives a heading line its level for a screen reader', async () => {
+    await open('# Trip\n## Day one\nWe left early.');
+    const [title, day, body] = [...doc().children];
+    expect([title.getAttribute('role'), title.getAttribute('aria-level')]).toEqual(['heading', '1']);
+    expect([day.getAttribute('role'), day.getAttribute('aria-level')]).toEqual(['heading', '2']);
+    expect(body.hasAttribute('role')).toBe(false);
+  });
+
   it('shows the writing tools after a typed key, and Escape hides them', async () => {
     await open('It is late.');
     expect(tools()).toBeNull();
@@ -142,7 +150,7 @@ describe('the note document', () => {
     await open('# Day\n- Read a book\nIt is late.');
     await act(async () => typeAtEnd(2, ' Then'));
     expect(container.querySelector('[data-history]')?.textContent).toBe('Day|Read a book');
-    expect(container.querySelector('[data-finish]')?.textContent).toBe('Add this suggestion to the note');
+    expect(container.querySelector('[data-finish]')?.textContent).toBe('Add to the note');
   });
 
   it('gives the stripes the full note, split at the caret', async () => {
@@ -182,7 +190,7 @@ describe('the note document', () => {
   it('deletes the word before the caret, and Undo brings it back', async () => {
     await open('Rest of');
     await act(async () => typeAtEnd(0, ' time'));
-    await act(async () => button('Delete word').click());
+    await act(async () => button('Delete last word').click());
     expect(lastSaved()).toBe('Rest of ');
     await act(async () => button('Undo').click());
     expect(lastSaved()).toBe('Rest of time');

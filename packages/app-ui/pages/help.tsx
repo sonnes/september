@@ -108,6 +108,14 @@ function HelpHome() {
   }
   const searching = query.trim().length > 0;
   const results = searchHelpGuides(query);
+  const count = results.length === 1 ? "1 guide" : `${results.length} guides`;
+  // The count waits until the typing stops, so a screen reader says it once
+  // and does not talk over each key.
+  const [announced, setAnnounced] = useState("");
+  useEffect(() => {
+    const wait = setTimeout(() => setAnnounced(searching ? count : ""), 800);
+    return () => clearTimeout(wait);
+  }, [searching, count]);
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-6 sm:px-6 md:py-8">
@@ -156,7 +164,7 @@ function HelpHome() {
             );
 
             const className =
-              "bg-card text-card-foreground focus-visible:ring-ring/50 flex min-h-28 items-center gap-4 rounded-surface border p-5 shadow-sm outline-none transition-colors hover:bg-accent/40 focus-visible:ring-[3px]";
+              "focus-attention bg-card text-card-foreground flex min-h-28 items-center gap-4 rounded-surface border p-5 shadow-sm transition-colors hover:bg-accent/40";
 
             return shortcut.target.type === "guide" ? (
               <Link
@@ -211,11 +219,15 @@ function HelpHome() {
         </div>
       </section>
 
+      <p role="status" className="sr-only">
+        {announced}
+      </p>
+
       {searching ? (
         <Button
           type="button"
           variant="outline"
-          className="min-h-11 self-start"
+          className="self-start"
           onClick={() => {
             changeQuery("");
             input.current?.focus();
@@ -231,7 +243,7 @@ function HelpHome() {
             key={category.id}
             asChild
             variant="outline"
-            className="min-h-11 h-auto whitespace-normal py-3 text-left"
+            className="h-auto whitespace-normal py-3 text-left"
           >
             <a
               href={`#help-category-${category.id}`}
@@ -247,18 +259,12 @@ function HelpHome() {
       </nav>
 
       {searching ? (
-        <section
-          className="space-y-4"
-          aria-live="polite"
-          aria-labelledby="search-results-title"
-        >
+        <section className="space-y-4" aria-labelledby="search-results-title">
           <div className="space-y-1">
             <h2 id="search-results-title" className="text-xl font-semibold">
               Search results
             </h2>
-            <p className="text-muted-foreground text-sm">
-              {results.length === 1 ? "1 guide" : `${results.length} guides`}
-            </p>
+            <p className="text-muted-foreground text-sm">{count}</p>
           </div>
           {results.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2">
@@ -298,7 +304,7 @@ function HelpHome() {
                 <h3
                   id={`help-category-${category.id}-title`}
                   tabIndex={-1}
-                  className="scroll-mt-6 rounded-control text-base font-semibold focus-visible:outline-2 focus-visible:outline-ring"
+                  className="focus-attention scroll-mt-6 rounded-control text-base font-semibold"
                 >
                   {category.title}
                 </h3>
@@ -324,7 +330,7 @@ function GuideLink({ guide }: { guide: HelpGuide }) {
     <Link
       to="/help/$guideSlug"
       params={{ guideSlug: guide.slug }}
-      className="focus-visible:ring-ring/50 group flex min-h-24 items-center justify-between gap-4 rounded-surface border bg-card p-5 shadow-sm outline-none transition-colors hover:bg-accent/40 focus-visible:ring-[3px]"
+      className="focus-attention group flex min-h-24 items-center justify-between gap-4 rounded-surface border bg-card p-5 shadow-sm transition-colors hover:bg-accent/40"
       data-help-guide-slug={guide.slug}
     >
       <span className="min-w-0 space-y-2">
@@ -481,7 +487,7 @@ function GuideSteps({ steps, media }: { steps: string[]; media: HelpMedia[] }) {
         (item) => item.type === "screenshot" && item.src && !item.afterStep,
       ) ? (
         <details className="rounded-surface border p-4">
-          <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">
+          <summary className="focus-attention min-h-12 cursor-pointer rounded-md py-3 text-sm font-medium">
             Screen overview
           </summary>
           <GuideMedia
@@ -599,7 +605,7 @@ function GuideMedia({ media }: { media: HelpMedia[] }) {
               <track kind="captions" src={medium.captionsSrc} default />
             </video>
             <details className="rounded-control border p-4 text-sm">
-              <summary className="min-h-11 cursor-pointer py-3 font-medium">
+              <summary className="focus-attention min-h-12 cursor-pointer rounded-md py-3 font-medium">
                 Transcript
               </summary>
               <p className="text-muted-foreground leading-relaxed">

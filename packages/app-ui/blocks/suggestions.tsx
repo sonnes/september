@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 
 import {
   AudioLines,
@@ -145,6 +154,17 @@ const LANE: Record<SuggestionSource, { idle: string; active: string }> = {
   },
 };
 
+/** What a screen reader says a row came from. */
+function sourceName(stripe: Stripe): string {
+  if (stripe.source === "code") return `code ${stripe.code}`;
+  return {
+    md: "kept phrase",
+    history: "said before",
+    llm: "from AI Assistance",
+    starter: "an opening",
+  }[stripe.source];
+}
+
 type Hover = { stripe: number; index: number } | null;
 
 /**
@@ -160,7 +180,7 @@ export function Suggestions({
   history: given,
   mood = null,
   document,
-  finishLabel = "Speak this suggestion",
+  finishLabel = "Speak",
   onTake,
   onSpeak,
   onPin,
@@ -170,7 +190,7 @@ export function Suggestions({
   text: string;
   /** The full note around the caret. Notes gives it, so the model reads the note. */
   document?: { before: string; after: string };
-  /** The name of the key that ends a row. Notes adds the row instead of speaking it. */
+  /** The verb of the key that ends a row. Notes adds the row instead of speaking it. */
   finishLabel?: string;
   /** The mood of the conversation, from the keys of the composer. */
   mood?: MoodKey | null;
@@ -269,10 +289,14 @@ export function Suggestions({
     <div className="flex flex-col gap-2.5" ref={ref}>
       {chips.length > 0 ? (
         <div className="flex flex-wrap gap-2">
-          {chips.map((word) => (
+          {chips.map((word) => {
+            const kept = isKept(word, spacePhrases ?? []);
+            return (
             <button
               key={word}
               type="button"
+              // The phrase, then where it came from, as the pin shows it.
+              aria-label={`${word}. ${kept ? "Kept phrase" : "Suggested phrase"}.`}
               onClick={() =>
                 onTake(
                   joinTokens([
@@ -281,20 +305,16 @@ export function Suggestions({
                   ]),
                 )
               }
-              className="border-primary/30 bg-card text-foreground hover:border-primary/60 hover:bg-primary/5 focus-visible:ring-ring flex h-11 items-center gap-1.5 rounded-full border px-5 text-base font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
+              className="focus-attention border-primary/30 bg-card text-foreground hover:border-primary/60 hover:bg-primary/5 flex min-h-12 items-center gap-1.5 rounded-full border px-5 text-base font-medium transition-colors"
             >
               <Pin
-                className={cn(
-                  "size-3.5",
-                  isKept(word, spacePhrases ?? [])
-                    ? "text-brand fill-current"
-                    : "text-brand/60",
-                )}
+                className={cn("text-brand size-3.5", kept && "fill-current")}
                 aria-hidden
               />
               {word}
             </button>
-          ))}
+            );
+          })}
         </div>
       ) : null}
 
@@ -324,19 +344,27 @@ export function Suggestions({
             <div
               key={stripe.text}
               data-source={stripe.source}
-              // One line, never wrapped. A row longer than the shrink allows
-              // scrolls, so no tile is out of reach. The bar stays hidden.
-              className="flex flex-nowrap items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              role="group"
+              aria-label={`Stripe ${row + 1} of ${stripes.length}, ${sourceName(stripe)}. ${stripe.text}`}
+              className="flex flex-nowrap items-center"
               style={{ gap: size(TILE.gapPx) }}
               onMouseLeave={() => setHover(null)}
             >
-              <SourceMark
-                source={stripe.source}
-                code={stripe.code}
-                kept={Boolean(stripe.kept)}
-                onPin={() => onPin(stripe.text)}
-              />
+              {/* One gutter for every mark, so the rows line up. The pin key
+                  fills it, so the key is a full target. */}
+              <span
+                className="grid shrink-0 place-items-center"
+                style={{ width: TILE.markPx, height: TILE.minHeightPx }}
+              >
+                <SourceMark
+                  source={stripe.source}
+                  code={stripe.code}
+                  kept={Boolean(stripe.kept)}
+                  onPin={() => onPin(stripe.text)}
+                />
+              </span>
 
+              <StripeWords gap={size(TILE.gapPx)}>
               {/* The words already typed are not shown again, so a tile always
                   adds something. A hover marks the tiles a press would take,
                   and the tile under the pointer is amber, the attention color. */}
@@ -361,19 +389,26 @@ export function Suggestions({
                     type="button"
                     onMouseEnter={() => setHover({ stripe: row, index })}
                     onFocus={() => setHover({ stripe: row, index })}
+                    onBlur={() => setHover(null)}
                     onClick={() =>
                       take(stripe, joinTokens(takeTokens(stripe, index + 1)))
                     }
-                    aria-label={tag ? `${tagLabel(token)}, audio tag` : undefined}
+                    aria-label={
+                      tag
+                        ? `${tagLabel(token)}, audio tag`
+                        : `${token}. Takes: ${joinTokens(takeTokens(stripe, index + 1)).trim()}`
+                    }
+                    // A word keeps its size and the tile its height. Only the
+                    // padding shrinks to fit a row, and a longer row scrolls.
                     style={{
-                      fontSize: size(TILE.fontPx),
+                      fontSize: TILE.fontPx,
                       paddingInline: size(
                         punctuation ? TILE.punctPadXPx : TILE.wordPadXPx,
                       ),
-                      minHeight: size(TILE.minHeightPx),
+                      minHeight: TILE.minHeightPx,
                     }}
                     className={cn(
-                      "rounded-chip focus-visible:ring-ring inline-flex shrink-0 items-center border transition-colors focus-visible:ring-2 focus-visible:outline-none",
+                      "focus-attention rounded-chip inline-flex shrink-0 items-center border transition-colors",
                       punctuation ? "" : "font-medium",
                       found && "decoration-primary underline decoration-2 underline-offset-4",
                       pointed
@@ -389,6 +424,7 @@ export function Suggestions({
                   </button>
                 );
               })}
+              </StripeWords>
 
               <EndKey
                 stripe={stripe}
@@ -408,26 +444,100 @@ export function Suggestions({
           letter. `applySuggestion` knows a part-written word from a finished
           one, so the screen never splits the text itself. */}
       {words.length > 0 ? (
-        // Two lines at most, so the word row never pushes the field down.
-        <div className="flex max-h-[6.375rem] flex-wrap gap-1.5 overflow-hidden">
-          {words.map((word) => (
-            <button
-              key={word}
-              type="button"
-              onClick={() => onTake(applySuggestion(text, word))}
-              aria-label={isTag(word) ? `${tagLabel(word)}, audio tag` : undefined}
-              className={cn(
-                "focus-visible:ring-ring inline-flex min-h-12 items-center rounded-lg border px-4 text-lg font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none",
-                isTag(word)
-                  ? TAG_TILE
-                  : "border-chart-1/50 bg-card text-foreground hover:border-chart-1/70 hover:bg-chart-1/5",
-              )}
-            >
-              {isTag(word) ? <TagMark label={tagLabel(word)} /> : word}
-            </button>
-          ))}
-        </div>
+        <WordRow
+          words={words}
+          onWord={(word) => onTake(applySuggestion(text, word))}
+        />
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * The words of one row, on one line. A row longer than the shrink allows
+ * scrolls, so no tile is out of reach, and its end fades to show that more
+ * words follow. The end key stays outside, so the whole row can always be
+ * spoken.
+ */
+function StripeWords({ gap, children }: { gap: number; children: ReactNode }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState(false);
+
+  useLayoutEffect(() => {
+    const words = box.current;
+    if (!words) return;
+    const measure = () =>
+      setMore(words.scrollLeft + words.clientWidth < words.scrollWidth - 1);
+    measure();
+    words.addEventListener("scroll", measure);
+    return () => words.removeEventListener("scroll", measure);
+  });
+
+  return (
+    <div
+      ref={box}
+      // The ring of a focused tile needs room, so the box pads by 7 points.
+      className={cn(
+        "-my-[7px] flex min-w-0 flex-nowrap items-center overflow-x-auto px-[7px] py-[7px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        more &&
+          "[mask-image:linear-gradient(90deg,#000_calc(100%-3rem),transparent)]",
+      )}
+      style={{ gap }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
+ * The words that finish the word being typed. The row shows two lines at
+ * most, so it never pushes the field down. A word that the row clips leaves
+ * the tab order, so the focus never lands on a word the user cannot see.
+ */
+function WordRow({
+  words,
+  onWord,
+}: {
+  words: string[];
+  onWord: (word: string) => void;
+}) {
+  const box = useRef<HTMLDivElement>(null);
+  const [clipped, setClipped] = useState<string[]>([]);
+
+  useLayoutEffect(() => {
+    const row = box.current;
+    if (!row) return;
+    const bottom = row.getBoundingClientRect().bottom;
+    const next = [...row.querySelectorAll<HTMLElement>("[data-word]")]
+      .filter((key) => key.getBoundingClientRect().bottom > bottom + 1)
+      .map((key) => key.dataset.word ?? "");
+    setClipped((last) => (last.join("\n") === next.join("\n") ? last : next));
+  });
+
+  return (
+    <div
+      ref={box}
+      data-word-row
+      className="flex max-h-[calc(6.375rem+6px)] flex-wrap gap-1.5 overflow-hidden p-[3px]"
+    >
+      {words.map((word) => (
+        <button
+          key={word}
+          type="button"
+          data-word={word}
+          inert={clipped.includes(word) || undefined}
+          onClick={() => onWord(word)}
+          aria-label={isTag(word) ? `${tagLabel(word)}, audio tag` : undefined}
+          className={cn(
+            "focus-attention inline-flex min-h-12 items-center rounded-lg border px-4 text-lg font-medium transition-colors",
+            isTag(word)
+              ? TAG_TILE
+              : "border-chart-1/50 bg-card text-foreground hover:border-chart-1/70 hover:bg-chart-1/5",
+          )}
+        >
+          {isTag(word) ? <TagMark label={tagLabel(word)} /> : word}
+        </button>
+      ))}
     </div>
   );
 }
@@ -476,21 +586,24 @@ function EndKey({
   onSpeak: (sentence: string) => void;
 }) {
   const box = {
-    minHeight: TILE.minHeightPx * scale,
+    minHeight: TILE.minHeightPx,
+    minWidth: TILE.minHeightPx,
     paddingInline: TILE.wordPadXPx * scale,
   };
-  const glyph = { width: TILE.fontPx * scale, height: TILE.fontPx * scale };
+  const glyph = { width: TILE.fontPx, height: TILE.fontPx };
+  // The name says what a press does with which words.
+  const words = joinTokens(takeTokens(stripe, stripe.tokens.length)).trim();
 
   if (stripe.hasMore || stripe.source === "starter") {
-    const label = stripe.hasMore ? "Insert this slice" : "Start with this opening";
+    const verb = stripe.hasMore ? "Insert" : "Start with";
     return (
       <button
         type="button"
-        aria-label={label}
-        title={label}
+        aria-label={`${verb}: ${words}`}
+        title={verb}
         onClick={() => onTake(joinTokens(takeTokens(stripe, stripe.tokens.length)))}
         style={box}
-        className="border-primary/40 text-brand/70 hover:bg-primary/10 hover:text-brand focus-visible:ring-ring rounded-control inline-flex shrink-0 items-center justify-center border border-dashed transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        className="focus-attention border-primary/50 text-brand hover:bg-primary/10 rounded-control inline-flex shrink-0 items-center justify-center border border-dashed transition-colors"
       >
         <Ellipsis style={glyph} aria-hidden />
       </button>
@@ -500,14 +613,12 @@ function EndKey({
   return (
     <button
       type="button"
-      aria-label={finish}
+      aria-label={`${finish}: ${words}`}
       title={finish}
-      onClick={() =>
-        onSpeak(joinTokens(takeTokens(stripe, stripe.tokens.length)).trim())
-      }
+      onClick={() => onSpeak(words)}
       style={box}
       className={cn(
-        "rounded-control focus-visible:ring-ring inline-flex shrink-0 items-center justify-center border transition-colors focus-visible:ring-2 focus-visible:outline-none",
+        "focus-attention rounded-control inline-flex shrink-0 items-center justify-center border transition-colors",
         stripe.source === "code"
           ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
           : "border-primary/40 bg-primary/10 text-brand hover:bg-primary/20",
@@ -537,6 +648,7 @@ function SourceMark({
   if (source === "code") {
     return (
       <span
+        role="img"
         aria-label={`Code ${code}`}
         title={`You typed the code ${code}`}
         className="bg-primary text-primary-foreground inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-xs font-bold"
@@ -550,6 +662,7 @@ function SourceMark({
     return (
       <ChevronsRight
         className="text-brand size-4 shrink-0"
+        role="img"
         aria-label="An opening"
       />
     );
@@ -559,22 +672,22 @@ function SourceMark({
     return (
       <History
         className="text-chart-2 size-4 shrink-0"
+        role="img"
         aria-label="You said this before"
       />
     );
   }
 
   if (source === "md") {
-    const label = kept ? "You keep this phrase" : "Keep this phrase";
     return (
       <button
         type="button"
         onClick={onPin}
-        aria-label={label}
-        title={label}
+        aria-label="Keep this phrase"
+        aria-pressed={kept}
+        title={kept ? "You keep this phrase" : "Keep this phrase"}
         className={cn(
-          "focus-visible:ring-ring size-4 shrink-0 cursor-pointer rounded focus-visible:ring-2 focus-visible:outline-none",
-          kept ? "text-brand" : "text-brand/70 hover:text-brand",
+          "focus-attention text-brand hover:bg-primary/10 grid size-full cursor-pointer place-items-center rounded-control",
         )}
       >
         <Pin className={cn("size-4", kept && "fill-current")} aria-hidden />
@@ -585,6 +698,7 @@ function SourceMark({
   return (
     <Sparkles
       className="text-muted-foreground size-4 shrink-0"
+      role="img"
       aria-label="From AI Assistance"
     />
   );

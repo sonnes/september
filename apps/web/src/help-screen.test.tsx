@@ -60,6 +60,7 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   container.remove();
+  vi.useRealTimers();
 });
 
 function render(ui: React.ReactElement) {
@@ -91,6 +92,20 @@ describe('the Help home', () => {
     expect(guideLinks().map(link => link.dataset.helpGuideSlug)).toEqual(
       expected.map(guide => guide.slug)
     );
+  });
+
+  it('says the count of guides once, after the typing stops', () => {
+    vi.useFakeTimers();
+    const status = container.querySelector('[role="status"]');
+    typeInto(container.querySelector<HTMLInputElement>('[data-help-search]')!, 'so');
+    typeInto(container.querySelector<HTMLInputElement>('[data-help-search]')!, 'sound');
+    expect(status?.textContent).toBe('');
+
+    act(() => vi.advanceTimersByTime(1000));
+    const count = searchHelpGuides('sound').length;
+    expect(container.querySelector('[role="status"]')).toBe(status);
+    expect(status?.textContent).toBe(count === 1 ? '1 guide' : `${count} guides`);
+    expect(container.querySelector('[aria-live]')).toBeNull();
   });
 
   it('reveals and focuses a category selected during search', () => {

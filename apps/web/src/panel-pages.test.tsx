@@ -64,6 +64,14 @@ describe('a page in the panel', () => {
     expect(container.textContent).toContain('The section');
   });
 
+  it('puts the sections in a named nav and marks the open one', () => {
+    inPanel(<SettingsLayout />);
+
+    const nav = container.querySelector('nav[aria-label="Settings sections"]');
+    const current = [...(nav?.querySelectorAll('a[aria-current="page"]') ?? [])];
+    expect(current.map((link) => link.getAttribute('href'))).toEqual(['/settings']);
+  });
+
   it('keeps the Help search', () => {
     Element.prototype.scrollIntoView = vi.fn();
     inPanel(<HelpScreen />);

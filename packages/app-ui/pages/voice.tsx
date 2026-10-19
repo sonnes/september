@@ -23,10 +23,9 @@ import {
 
 import { Button } from "@september/ui/components/button";
 
-import { PickList } from "@september/app-ui/blocks/pick-list";
+import { ChoiceKey, PickList } from "@september/app-ui/blocks/pick-list";
 import { Input } from "@september/ui/components/input";
 import { Label } from "@september/ui/components/label";
-import { RadioGroup, RadioGroupItem } from "@september/ui/components/radio-group";
 import { Skeleton } from "@september/ui/components/skeleton";
 import { Textarea } from "@september/ui/components/textarea";
 
@@ -152,27 +151,22 @@ export function VoiceScreen() {
     >
       <section className="space-y-3">
         <h2 className="text-sm font-semibold">Who speaks</h2>
-        <RadioGroup
-          value={provider}
-          onValueChange={(value) => chooseService(value as VoiceService)}
-          className="grid gap-2"
-        >
-          <ServiceChoice
-            value="system"
-            title="System voice"
-            body="Built into this device. It needs no account."
-          />
-          <ServiceChoice
-            value="elevenlabs"
-            title="ElevenLabs"
-            body="Natural voices from a cloud service. It needs your key."
-          />
-          <ServiceChoice
-            value="dialogue"
-            title="ElevenLabs Dialogue"
-            body="Eleven v3 voices that can laugh, sigh, and whisper. It needs your ElevenLabs key."
-          />
-        </RadioGroup>
+        <div role="radiogroup" aria-label="Who speaks" className="grid gap-2">
+          {VOICE_SERVICES.map((service) => (
+            <ChoiceKey
+              key={service.value}
+              value={service.value}
+              checked={provider === service.value}
+              tabbable={provider === service.value}
+              onChoose={() => chooseService(service.value)}
+            >
+              <span className="min-w-0 flex-1 space-y-1">
+                <span className="block text-sm font-medium">{service.title}</span>
+                <span className="text-muted-foreground block text-sm">{service.body}</span>
+              </span>
+            </ChoiceKey>
+          ))}
+        </div>
 
         {cloud && connected === false ? (
           <p className="text-muted-foreground text-sm">
@@ -201,6 +195,7 @@ export function VoiceScreen() {
                 value={voiceId}
                 onPick={chooseVoice}
                 label="Search voices"
+                name="Voices"
                 layout="list"
                 filter={(rows, query) =>
                   rows.filter((row) =>
@@ -236,7 +231,7 @@ export function VoiceScreen() {
 
       <Link
         to="/voice/clone"
-        className="focus-visible:ring-ring hover:bg-accent flex min-h-16 w-full items-center gap-3 rounded-surface border border-dashed border-primary/50 bg-primary/5 px-4 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        className="focus-attention hover:bg-accent flex min-h-16 w-full items-center gap-3 rounded-surface border border-dashed border-primary/50 bg-primary/5 px-4 py-3 text-left transition-colors"
       >
         <span className="text-brand flex size-11 shrink-0 items-center justify-center rounded-control border bg-background">
           <Mic className="size-5" aria-hidden />
@@ -573,36 +568,35 @@ function VoiceCloneForm({
             Use an existing recording, record the prompts, or do both.
           </p>
         </div>
+        {/* A choice of two, not tabs: the section under it changes in place. */}
         <div
-          role="tablist"
+          role="radiogroup"
           aria-label="Voice sample source"
           className="grid grid-cols-2 gap-2"
         >
-          <Button
-            type="button"
-            role="tab"
-            aria-selected={draft.mode === "upload"}
-            variant={draft.mode === "upload" ? "default" : "outline"}
-            className="h-11"
-            onClick={() => {
+          <ChoiceKey
+            value="upload"
+            checked={draft.mode === "upload"}
+            tabbable={draft.mode === "upload"}
+            onChoose={() => {
               draft.pause();
               draft.setMode("upload");
             }}
+            className="text-sm font-medium"
           >
-            <Upload aria-hidden />
+            <Upload className="size-4" aria-hidden />
             Upload audio
-          </Button>
-          <Button
-            type="button"
-            role="tab"
-            aria-selected={draft.mode === "record"}
-            variant={draft.mode === "record" ? "default" : "outline"}
-            className="h-11"
-            onClick={() => draft.setMode("record")}
+          </ChoiceKey>
+          <ChoiceKey
+            value="record"
+            checked={draft.mode === "record"}
+            tabbable={draft.mode === "record"}
+            onChoose={() => draft.setMode("record")}
+            className="text-sm font-medium"
           >
-            <Mic aria-hidden />
+            <Mic className="size-4" aria-hidden />
             Record now
-          </Button>
+          </ChoiceKey>
         </div>
 
         {draft.mode === "upload" ? (
@@ -717,6 +711,7 @@ function UploadSamples({ draft }: { draft: VoiceCloneDraft }) {
         <input
           ref={inputRef}
           id="voice-sample-upload"
+          aria-label="Audio files"
           type="file"
           accept="audio/*"
           multiple
@@ -865,25 +860,21 @@ function RecordSamples({ draft }: { draft: VoiceCloneDraft }) {
   );
 }
 
-function ServiceChoice({
-  value,
-  title,
-  body,
-}: {
-  value: VoiceService;
-  title: string;
-  body: string;
-}) {
-  return (
-    <Label
-      htmlFor={value}
-      className="hover:bg-accent has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5 flex cursor-pointer items-start gap-3 rounded-xl border p-4"
-    >
-      <RadioGroupItem id={value} value={value} className="mt-1" />
-      <span className="space-y-1">
-        <span className="block text-sm font-medium">{title}</span>
-        <span className="text-muted-foreground block text-sm">{body}</span>
-      </span>
-    </Label>
-  );
-}
+/** The services that can speak, in the order of the choice. */
+const VOICE_SERVICES: readonly { value: VoiceService; title: string; body: string }[] = [
+  {
+    value: "system",
+    title: "System voice",
+    body: "Built into this device. It needs no account.",
+  },
+  {
+    value: "elevenlabs",
+    title: "ElevenLabs",
+    body: "Natural voices from a cloud service. It needs your key.",
+  },
+  {
+    value: "dialogue",
+    title: "ElevenLabs Dialogue",
+    body: "Eleven v3 voices that can laugh, sigh, and whisper. It needs your ElevenLabs key.",
+  },
+];

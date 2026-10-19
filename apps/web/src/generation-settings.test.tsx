@@ -145,7 +145,7 @@ it('saves Automatic as an empty model', async () => {
 it('shows a saved model that is not on the list as the chosen first row', async () => {
   state.setup.defaultModel = { service: 'openrouter', model: 'vendor/old-model' };
   await render();
-  const chosen = section('Agent and phrases').querySelector('[aria-current="true"]');
+  const chosen = section('Agent and phrases').querySelector('[role="radio"][aria-checked="true"]');
   expect(chosen?.textContent).toContain('vendor/old-model');
 });
 

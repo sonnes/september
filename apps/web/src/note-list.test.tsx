@@ -163,6 +163,13 @@ describe('the list of notes', () => {
     expect(pane()).toBe('note');
   });
 
+  it('names the key back to the list by the words it shows', async () => {
+    await render('holiday');
+    const back = button('All notes');
+    expect(back.hasAttribute('aria-label')).toBe(false);
+    expect(back.textContent?.trim()).toBe('All notes');
+  });
+
   it('finds a note by its words when the list is long', async () => {
     state.notes = ['One', 'Two', 'Three', 'Four', 'Five'].map((name, index) =>
       note(name.toLowerCase(), name, `${name} words`, index),

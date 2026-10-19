@@ -249,7 +249,7 @@ function WorkingDemo() {
                       type="button"
                       onClick={() => speak()}
                       disabled={!text.trim()}
-                      className="inline-flex min-h-11 items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:enabled:scale-[1.02] active:enabled:scale-95 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+                      className="focus-attention inline-flex min-h-11 items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:enabled:scale-[1.02] active:enabled:scale-95 key-disabled motion-reduce:transition-none"
                     >
                       <Volume2 className="size-4" aria-hidden="true" />
                       Speak
@@ -305,7 +305,7 @@ export function LandingSuggestionStripes({
               key={chip}
               type="button"
               onClick={() => onTake(`${chip} `)}
-              className="flex min-h-12 items-center gap-2 rounded-chip border border-zinc-300 bg-card px-4 py-2 text-left text-lg font-medium text-foreground transition-colors hover:border-primary/60 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="focus-attention flex min-h-12 items-center gap-2 rounded-chip border border-zinc-300 bg-card px-4 py-2 text-left text-lg font-medium text-foreground transition-colors hover:border-primary/60 hover:bg-primary/5"
             >
               <Pin className="size-3.5 text-brand/60" aria-hidden="true" />
               {chip}
@@ -337,7 +337,7 @@ export function LandingSuggestionStripes({
                       type="button"
                       onClick={() => onTake(joinTokens(stripe.tokens.slice(0, index + 1)))}
                       className={cn(
-                        'min-h-11 shrink-0 rounded-chip border px-4 text-base font-medium text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        'focus-attention min-h-11 shrink-0 rounded-chip border px-4 text-base font-medium text-foreground transition-colors',
                         LANE[stripe.source],
                         found && 'underline decoration-primary decoration-2 underline-offset-4'
                       )}
@@ -427,7 +427,7 @@ function RailButton({
       title={label}
       onClick={onClick}
       disabled={disabled}
-      className="flex size-11 items-center justify-center rounded-md border bg-card text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="focus-attention flex size-11 items-center justify-center rounded-md border bg-card text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none key-disabled"
     >
       {children}
     </button>

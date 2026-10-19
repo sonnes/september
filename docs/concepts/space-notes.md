@@ -41,7 +41,7 @@ Each line shows its format: headings, bullets, numbers, checklists, quotes, bold
 The words go in at the caret. On the first typed key, the writing tools open under the caret line. Near the bottom of the page, they open above the line. The tools contain these parts:
 
 - The style keys: Heading 1, Heading 2, Bulleted list, Numbered list, Checklist, Quote, Bold, and Italic. A second tap on a line style removes it.
-- Undo and Delete word. The tools have no Clear action.
+- Undo and Delete last word. The tools have no Clear action.
 - The suggestion stripes of Talk. The stripes read the sentence before the caret, and a take replaces that sentence. The end key of a row puts in the full row and starts a new line.
 - The writing service gets the full note with a `<caret/>` mark, in place of the conversation. Its rows continue the note at the caret. The history rows come from the other lines of the note.
 

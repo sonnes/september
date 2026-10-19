@@ -66,6 +66,27 @@ function draw(rows: AgentMessage[], props: Partial<React.ComponentProps<typeof T
 }
 
 describe('the Agent transcript', () => {
+  it('has one live region, and it says the newest reply', () => {
+    draw([
+      said('a', 'user', 'Rename the space'),
+      said('b', 'assistant', 'Which name?'),
+      said('c', 'user', 'Kitchen'),
+      said('d', 'assistant', 'The space is now Kitchen.'),
+    ]);
+
+    const live = container.querySelectorAll('[role="status"], [role="log"], [aria-live]');
+    expect(live).toHaveLength(1);
+    expect(live[0].textContent).toBe('The space is now Kitchen.');
+  });
+
+  it('says that it works in the same live region', () => {
+    draw([said('a', 'user', 'Rename the space')], { busy: true });
+
+    const live = container.querySelectorAll('[role="status"], [role="log"], [aria-live]');
+    expect(live).toHaveLength(1);
+    expect(live[0].textContent).toBe('Working…');
+  });
+
   it('groups consecutive tool calls into a collapsed disclosure', () => {
     draw([
       used('a', 'inspect_space', 'applied', '{}', '{"notes":[]}'),
@@ -136,6 +157,8 @@ describe('the Agent transcript', () => {
     expect(partial.getAttribute('aria-hidden')).toBe('true');
 
     draw([said('a', 'user', 'Say two things'), said('b', 'assistant', 'One. Two.')]);
-    expect(container.textContent?.match(/One\. Two\./g)).toHaveLength(1);
+    // The status says the stored reply once. The transcript draws it once.
+    const drawn = [...container.querySelectorAll('p:not([role="status"])')].map(line => line.textContent);
+    expect(drawn.filter(text => text?.includes('One. Two.'))).toHaveLength(1);
   });
 });

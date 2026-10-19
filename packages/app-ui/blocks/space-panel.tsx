@@ -75,7 +75,7 @@ export function PanelRail({
           aria-label={`${open.title} panel`}
           className="bg-background my-2 flex w-80 shrink-0 flex-col overflow-hidden rounded-xl border shadow-sm"
         >
-          <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3">
+          <header className="flex min-h-14 shrink-0 items-center gap-2 border-b px-3">
             <OpenIcon className="text-muted-foreground size-4" aria-hidden />
             <span className="text-sm font-semibold">{open.title}</span>
             <Button
@@ -83,7 +83,7 @@ export function PanelRail({
               variant="ghost"
               size="icon"
               aria-label="Collapse panel"
-              className="text-muted-foreground hover:text-foreground ml-auto shrink-0"
+              className="hover:text-foreground ml-auto shrink-0"
               onClick={() => show({ ...state, open: false })}
             >
               <PanelRightClose aria-hidden />
@@ -101,25 +101,26 @@ export function PanelRail({
 
       <nav
         aria-label="Panel rail"
-        className="bg-background my-2 mr-2 flex w-14 shrink-0 flex-col items-center gap-1 rounded-xl border py-2 shadow-sm"
+        className="bg-background my-2 mr-2 flex w-20 shrink-0 flex-col items-stretch gap-1.5 rounded-xl border p-1.5 shadow-sm"
       >
         {PANEL_TABS.map((tab) => {
           const Icon = ICONS[tab.key];
           const showing = state.open && state.tab === tab.key;
 
           return (
+            // The key shows its label, so the rail does not ask the user to
+            // know the icons. The label is the name.
             <button
               key={tab.key}
               type="button"
-              aria-label={tab.title}
-              title={tab.title}
               aria-pressed={showing}
               onClick={() => show(pressTab(state, tab.key))}
-              className={`text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-ring flex size-10 items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none ${
-                showing ? "bg-muted text-foreground" : ""
+              className={`focus-attention text-muted-foreground hover:bg-muted hover:text-foreground flex min-h-16 flex-col items-center justify-center gap-1 rounded-lg text-xs font-medium transition-colors ${
+                showing ? "bg-accent text-accent-foreground" : ""
               }`}
             >
               <Icon className="size-5" aria-hidden />
+              {tab.title}
             </button>
           );
         })}

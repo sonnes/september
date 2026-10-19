@@ -84,7 +84,7 @@ export function ToolLine({
       </span>
       <span className="text-foreground/80 shrink-0 font-medium">{title}</span>
       {inline ? <span className="truncate">{inline}</span> : null}
-      <span className="text-muted-foreground/70 ml-auto flex shrink-0 items-center gap-2 text-xs">
+      <span className="text-muted-foreground ml-auto flex shrink-0 items-center gap-2 text-xs">
         {label}
         {folds ? (
           <ChevronRight
@@ -108,7 +108,7 @@ export function ToolLine({
 
   return (
     <details className="group">
-      <summary className="hover:bg-muted/60 focus-visible:ring-ring text-muted-foreground flex min-h-11 cursor-pointer list-none items-center gap-2.5 rounded-xl pr-2.5 text-sm hover:text-foreground focus-visible:ring-2 focus-visible:outline-none [&::-webkit-details-marker]:hidden">
+      <summary className="focus-attention hover:bg-muted/60 text-muted-foreground flex min-h-12 cursor-pointer list-none items-center gap-2.5 rounded-xl pr-2.5 text-sm hover:text-foreground [&::-webkit-details-marker]:hidden">
         {face}
       </summary>
       <div className="border-border bg-muted/40 text-muted-foreground mt-0.5 mb-2 ml-8 rounded-xl border p-3 text-sm leading-relaxed">
@@ -128,7 +128,7 @@ function Pairs({
     <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
       {pairs.map((pair, at) => (
         <div key={at} className="col-span-2 grid grid-cols-subgrid">
-          <dt className="text-foreground/70 font-medium whitespace-nowrap">
+          <dt className="text-foreground font-medium whitespace-nowrap">
             {pair.label}
           </dt>
           <dd className="min-w-0 break-words">{pair.value}</dd>
@@ -222,7 +222,7 @@ export function ProposalCard({
         <span
           className={`grid size-9 shrink-0 place-items-center rounded-full ${
             destructive
-              ? "bg-red-50 text-destructive"
+              ? "bg-destructive/10 text-destructive"
               : "bg-accent text-accent-foreground"
           }`}
         >
@@ -243,7 +243,9 @@ export function ProposalCard({
       {lines.length ? <Preview lines={lines} /> : null}
 
       {agentProposalIsUnpin(row) ? (
-        <p className="mx-4 mt-3 rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-xs font-medium text-amber-700">
+        // Amber marks attention only, so a warning is zinc with its icon.
+        <p className="border-input bg-muted text-foreground mx-4 mt-3 flex items-start gap-2 rounded-xl border p-2.5 text-sm font-medium">
+          <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
           Unpinning lets later phrase generation replace this phrase.
         </p>
       ) : null}
@@ -252,7 +254,7 @@ export function ProposalCard({
         <Button
           type="button"
           variant="outline"
-          className="min-h-11"
+          className={destructive ? undefined : "text-destructive hover:text-destructive"}
           aria-disabled={busy}
           onClick={() => !busy && onReject()}
         >
@@ -262,7 +264,6 @@ export function ProposalCard({
         <Button
           type="button"
           variant={destructive ? "destructive" : "default"}
-          className="min-h-11"
           aria-disabled={busy}
           onClick={() => !busy && onApprove()}
         >
@@ -285,7 +286,7 @@ function Preview({ lines }: { lines: readonly AgentChangeLine[] }) {
             at > 0 ? "border-t" : ""
           } ${line.was ? "bg-muted/50" : ""}`}
         >
-          <span className="text-muted-foreground/70 truncate text-xs font-bold tracking-wider uppercase">
+          <span className="text-muted-foreground truncate text-xs font-bold tracking-wider uppercase">
             {line.label}
           </span>
           <span
@@ -427,8 +428,17 @@ export function Transcript({
     );
   };
 
+  // One live region says the newest reply, or that the agent works. A region
+  // around the whole transcript would read every row again on each change.
+  const newest = [...rows]
+    .reverse()
+    .find((row) => row.role === "assistant" && row.content.trim());
+
   return (
     <>
+      <p role="status" className="sr-only">
+        {busy ? "Working…" : (newest?.content ?? "")}
+      </p>
       {groupAgentTurns(rows).map((turn) =>
         turn.role === "user" && turn.parts[0].kind === "text" ? (
           <UserTurn key={turn.id} text={turn.parts[0].row.content} />
@@ -457,9 +467,7 @@ export function Transcript({
           </p>
         </ReplyTurn>
       ) : busy ? (
-        <p className="text-muted-foreground pl-10 text-sm" role="status">
-          Working…
-        </p>
+        <p className="text-muted-foreground pl-10 text-sm">Working…</p>
       ) : null}
     </>
   );
@@ -506,7 +514,7 @@ export function Openers({
           key={opener}
           type="button"
           onClick={() => onTake(opener)}
-          className="border-primary/30 bg-card text-foreground hover:border-primary/60 hover:bg-primary/5 focus-visible:ring-ring flex h-11 items-center gap-1.5 rounded-full border px-5 text-base font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          className="focus-attention border-primary/30 bg-card text-foreground hover:border-primary/60 hover:bg-primary/5 flex min-h-12 items-center gap-1.5 rounded-full border px-5 text-base font-medium transition-colors"
         >
           {opener.trim()}
           <span className="text-muted-foreground" aria-hidden>

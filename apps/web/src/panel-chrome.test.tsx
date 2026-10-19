@@ -300,10 +300,12 @@ const named = (name: string) =>
   [...container.querySelectorAll<HTMLButtonElement>('button')].find(
     (one) => one.textContent?.trim() === name || one.getAttribute('aria-label') === name,
   );
-const spokenRows = () =>
-  [...container.querySelectorAll('button[aria-label="Speak this message again"]')].map(
-    (row) => row.querySelector('span')?.textContent,
+/** The rows of past messages. Each name starts with what a press does. */
+const messageKeys = () =>
+  [...container.querySelectorAll<HTMLButtonElement>('button')].filter((one) =>
+    one.textContent?.startsWith('Speak again: '),
   );
+const spokenRows = () => messageKeys().map((row) => row.querySelectorAll('span')[1]?.textContent);
 
 async function renderTalk(count: number) {
   messages.list = Array.from({ length: count }, (_, at) => ({
@@ -357,7 +359,7 @@ describe('the history of Talk', () => {
   it('speaks a message again with a press on it', async () => {
     await renderTalk(2);
 
-    act(() => (container.querySelector('button[aria-label="Speak this message again"]') as HTMLButtonElement).click());
+    act(() => messageKeys()[0].click());
     expect(voice.speaking).toBe('m1');
   });
 });

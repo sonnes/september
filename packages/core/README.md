@@ -130,6 +130,8 @@ draft, or a row that contains the draft at the start of a word. The rows that
 start with the draft come first. A row that contains the draft hides no words,
 so a press replaces the draft. Its `found` range marks the typed words, and its
 slice reaches at least to them. Sentence boundaries also end a slice.
+`tileScale` shrinks only the padding and the gaps of a tile, never below
+`TILE_SCALE_MIN`. The word and the height of a tile stay at full size.
 Punctuation and audio tags do not count toward the word limit. Each descriptor retains
 the complete text and reports whether more words remain. `takeTokens` puts a
 tag that came before the typed words at the start of the draft. The tags that

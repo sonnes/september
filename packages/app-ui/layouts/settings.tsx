@@ -28,7 +28,9 @@ export function SettingsLayout() {
       </ScreenHeader>
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-2 md:p-4">
         <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-4 py-6 sm:px-6 md:flex-row md:gap-10 md:py-8">
-          <nav className="flex shrink-0 gap-1 overflow-x-auto md:w-60 md:flex-col md:self-start md:overflow-visible">
+          <nav
+            aria-label="Settings sections"
+            className="flex shrink-0 gap-1 overflow-x-auto md:w-60 md:flex-col md:self-start md:overflow-visible">
             {SETTINGS_NAV.map((item) => {
               const Icon = ICONS[item.path];
               const active = item.path === open.path;
@@ -37,8 +39,9 @@ export function SettingsLayout() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex min-h-11 shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 transition-colors md:items-start ${
-                    active ? "bg-muted" : "hover:bg-muted/60"
+                  aria-current={active ? "page" : undefined}
+                  className={`focus-attention flex min-h-12 shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 transition-colors md:items-start ${
+                    active ? "bg-muted shadow-[inset_3px_0_0_var(--brand)]" : "hover:bg-muted/60"
                   }`}
                 >
                   <Icon

@@ -199,14 +199,14 @@ function AgentDemo() {
 
   return (
     <div className="min-w-0">
-      <div className="mb-8 flex flex-wrap gap-3" aria-label="Agent examples">
+      <div role="group" className="mb-8 flex flex-wrap gap-3" aria-label="Agent examples">
         {AGENT_DEMO_ASKS.map((one, index) => (
           <button
             key={one.label}
             type="button"
             aria-pressed={index === asked}
             onClick={() => choose(index)}
-            className={`min-h-12 rounded-full border px-5 py-3 text-left text-base font-medium focus-visible:ring-2 focus-visible:ring-ring ${index === asked ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-zinc-300 bg-white text-zinc-700 hover:border-indigo-400'}`}
+            className={`focus-attention min-h-12 rounded-full border px-5 py-3 text-left text-base font-medium ${index === asked ?'border-indigo-600 bg-indigo-600 text-white' : 'border-zinc-300 bg-white text-zinc-700 hover:border-indigo-400'}`}
           >
             {one.label}
           </button>
@@ -263,7 +263,7 @@ function AgentDemo() {
         </div>
       </div>
       <details className="mt-8 border-t border-zinc-300 pt-3">
-        <summary className="w-fit cursor-pointer py-3 text-sm font-medium text-zinc-700 focus-visible:ring-2 focus-visible:ring-ring">
+        <summary className="focus-attention w-fit cursor-pointer py-3 text-sm font-medium text-zinc-700">
           See the Agent conversation
         </summary>
         <div className="max-w-3xl py-5 [&_summary]:flex-wrap [&_summary]:gap-y-2">

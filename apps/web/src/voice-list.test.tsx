@@ -1,6 +1,6 @@
 import React, { act } from 'react';
 
-import { VoiceScreen } from '@september/app-ui/pages/voice';
+import { VoiceCloneScreen, VoiceScreen } from '@september/app-ui/pages/voice';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
@@ -106,13 +106,20 @@ it('lists the voices heard on an earlier visit under Heard lately', async () => 
 
 it('marks the voice in use and saves a new choice', async () => {
   await render();
-  const chosen = container.querySelector('[aria-current="true"]');
+  const chosen = container.querySelector('[aria-label="Voices"] [role="radio"][aria-checked="true"]');
   expect(chosen?.textContent).toContain('Alice');
   const roger = [...container.querySelectorAll<HTMLButtonElement>('[data-row-name]')].find(
     name => name.textContent === 'Roger',
   );
   await act(async () => roger!.closest('button')!.click());
   expect(state.save).toHaveBeenLastCalledWith(expect.objectContaining({ voiceId: 'roger' }));
+});
+
+it('shows who speaks as choices, with the one in use checked', async () => {
+  await render();
+  const group = container.querySelector('[role="radiogroup"][aria-label="Who speaks"]');
+  const checked = [...(group?.querySelectorAll('[role="radio"][aria-checked="true"]') ?? [])];
+  expect(checked.map(one => one.textContent)).toEqual([expect.stringContaining('ElevenLabs')]);
 });
 
 it('offers the Dialogue voice and keeps the voice list for it', async () => {
@@ -122,4 +129,23 @@ it('offers the Dialogue voice and keeps the voice list for it', async () => {
   await act(async () => choice!.click());
   expect(state.save).toHaveBeenLastCalledWith(expect.objectContaining({ provider: 'dialogue' }));
   expect(listed().length).toBeGreaterThan(0);
+});
+
+it('offers the source of the voice samples as a choice of two', async () => {
+  await act(async () => root.render(<VoiceCloneScreen />));
+  const choices = () =>
+    [...container.querySelectorAll<HTMLButtonElement>('[role="radiogroup"][aria-label="Voice sample source"] [role="radio"]')];
+  expect(choices().map(one => [one.textContent, one.getAttribute('aria-checked')])).toEqual([
+    ['Upload audio', 'true'],
+    ['Record now', 'false'],
+  ]);
+
+  await act(async () => choices()[1].click());
+  expect(choices()[1].getAttribute('aria-checked')).toBe('true');
+});
+
+it('names the file field of the voice samples', async () => {
+  await act(async () => root.render(<VoiceCloneScreen />));
+  const field = container.querySelector<HTMLInputElement>('input[type="file"]');
+  expect(field?.getAttribute('aria-label') || field?.labels?.[0]?.textContent).toBeTruthy();
 });

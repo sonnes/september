@@ -110,6 +110,7 @@ export function SpeechSettings() {
               })
             }
             label="Search models"
+            name="Voice model"
           />
         </Group>
       ) : null}
@@ -122,6 +123,7 @@ export function SpeechSettings() {
             value={dialogueModelFrom(settings.dialogueModelId)}
             onPick={(dialogueModelId) => change({ dialogueModelId })}
             label="Search models"
+            name="Voice model"
           />
         </Group>
       ) : null}

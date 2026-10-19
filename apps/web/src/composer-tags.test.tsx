@@ -62,6 +62,13 @@ async function render(element: React.ReactElement) {
 
 const labelled = (label: string) => container.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`);
 const draft = () => container.querySelector('output')?.textContent;
+/** The words a sighted user reads on a key, without hidden marks. */
+const visibleText = (key: Element) =>
+  [...key.childNodes]
+    .filter(node => !(node instanceof Element && (node.getAttribute('aria-hidden') === 'true' || node.classList.contains('sr-only'))))
+    .map(node => node.textContent)
+    .join('')
+    .trim();
 
 describe('mood keys', () => {
   it('shows five mood keys in Talk and marks the mood in use', async () => {
@@ -75,6 +82,11 @@ describe('mood keys', () => {
     expect(labelled('Mood: Warm')?.getAttribute('aria-pressed')).toBe('false');
   });
 
+  it('shows the name of the mood in use on its key', async () => {
+    await render(<Harness initial="" mood="low" />);
+    expect(visibleText(labelled('Mood: Low')!)).toBe('Low');
+  });
+
   it('chooses a mood, and a second press on it clears the mood', async () => {
     onMood.mockReset();
     await render(<Harness initial="" mood="low" />);
@@ -83,6 +95,17 @@ describe('mood keys', () => {
     expect(onMood).toHaveBeenLastCalledWith('playful');
     await act(async () => labelled('Mood: Low')!.click());
     expect(onMood).toHaveBeenLastCalledWith(null);
+  });
+});
+
+describe('console keys', () => {
+  it('shows a label that starts the name of each key', async () => {
+    await render(<Harness initial="so far" />);
+    for (const name of ['Undo', 'Delete last word', 'Clear']) {
+      const key = labelled(name)!;
+      expect(visibleText(key)).not.toBe('');
+      expect(name.startsWith(visibleText(key))).toBe(true);
+    }
   });
 });
 

@@ -136,8 +136,10 @@ press costs no keystrokes and one you must retype costs all of them.
 `Transcript` takes a `partial`: the words of an answer still being written. It
 draws them where `Working…` would go, and the stored row replaces them when the
 turn ends. Those words are `aria-hidden`, because reading an answer a word at a
-time would talk over a user for as long as the model keeps writing. Only the
-finished row is announced.
+time would talk over a user for as long as the model keeps writing. The
+transcript has one live region. It says `Working…` during a turn, then the
+newest reply. A pending change has a red Reject key, and a warning in a card is
+zinc with a warning icon.
 
 `pages/steps.tsx` lays a step out for 320px first. Anything that would overflow
 that width carries a breakpoint prefix, so a service status drops under the
@@ -145,8 +147,15 @@ name rather than squeezing the description, the panel under a service starts at
 the edge of its card, and the primary action takes the whole row. Keep new
 setup work to the same rule.
 
+`blocks/pick-list.tsx` holds `PickList` and `ChoiceKey`. A `PickList` is a
+radio group with a name. Each row is a `ChoiceKey`: a key of 48px or more with
+a check on the chosen row. Only the chosen row takes a Tab stop, and the arrow
+keys move the choice. Who speaks and the source of voice samples use
+`ChoiceKey` too.
+
 `blocks/space-panel.tsx` draws the right rail and the card beside it. The tabs
-come from `@september/core/rules/panel`. The rail keeps phrases and speech
+come from `@september/core/rules/panel`. Each rail key shows its label under
+its icon, and the label is its name. The rail keeps phrases and speech
 settings one press away on every screen inside a space — Talk, Notes, and
 Agent. Agent is where the phrases are written, so it is where seeing them
 matters most.
@@ -252,15 +261,27 @@ body. Each page marks its screen body with `@container`. The breakpoint is
 
 Talk shows the last 3 messages in a card over the suggestions, at every
 width. Each row shows the time of the message, and a press on the row speaks it
-again. See all shows the pages of 8 messages in place of the suggestions. Back
+again. The name of a row is "Speak again:" and the words of the message. The
+newest row is larger. A status region on the page says "Speaking:" and the
+sentence that Speak plays. See all shows the pages of 8 messages in place of the suggestions. Back
 to suggestions or Escape closes the pages.
 
 The suggestion rows have no card. The mark at the start of a row shows its
 source, in the color of its tiles: a teal clock for a past message, an indigo
 pin for a phrase, indigo arrows for an opening, the code for a typed code, and
-a gray sparkle for AI Assistance. While a request to AI Assistance is open, a
-"Writing" status shows beside the Suggestions label. The word row shows two
-lines at most.
+a gray sparkle for AI Assistance. Every mark has the same 44px gutter, and the
+pin fills it as a key with `aria-pressed`. While a request to AI Assistance is
+open, a "Writing" status shows beside the Suggestions label. The word row
+shows two lines at most. A word that the row clips is `inert`, so the focus
+never lands on it.
+
+Each row is a group named "Stripe 1 of 3", its source, and its words. A tile
+is named by its word and by the words a press takes, for example "cold. Takes:
+Please bring me some cold". The end key is named by its verb and the words of
+the row, for example "Insert: …" or "Speak: …". The tiles of a row scroll, the
+end of a long row fades, and the end key stays outside the scroll. Only the
+padding of a tile shrinks to fit a row: the word and the height stay at full
+size.
 
 While Speak plays a sentence, `Composer` shows the speaking card through its
 `cover` prop, in place of the field. Stop, or Escape, stops the voice. Write
@@ -268,8 +289,10 @@ next, or a typed letter, gives the field back while the voice goes on. Under
 the composer, a line shows the keys that work now. A touch screen does not show
 this line.
 
-Undo, Delete last word, Clear, Speak, and the audio selector are 44 points high
-in every tier, in both apps.
+Undo, Delete, and Clear show their labels, and each name starts with the
+label. They are 48 points high in every tier, in both apps. A gap and a line
+come before Speak, and Speak is the largest key. The mood in use shows its
+name beside its emoji.
 
 Talk restores its device-local draft before mounting the composer. It saves
 each edit through the platform settings service and never clears newer words
@@ -283,7 +306,9 @@ About tab. It keeps the text as Markdown lines. The line rules are in
 and the marks of a line show only while the caret is on it. The styles are in
 `packages/ui/theme.css`, under `.note-document`. The first typed key opens the
 writing tools under the caret line. The tools hold the style keys, Undo,
-Delete word, and Esc in one row, then `Suggestions`. The stripes read the
+Delete last word, and Esc in one row, then `Suggestions`. A heading line has
+`role="heading"` and its level. The marks of the other lines leave the eye but
+stay in the text, so a screen reader still says what a line is. The stripes read the
 sentence before the caret, and a take replaces that sentence. `Suggestions`
 gets the full note around the caret as `document` for the writing service, the
 other lines of the note as `history`, and a `finishLabel` for the end key. Escape and Hide close the tools, and
@@ -292,8 +317,8 @@ other lines of the note as `history`, and a `finishLabel` for the end key. Escap
 
 `pages/notes.tsx` puts `NoteList` beside the page and `NoteReadingBar` at its
 foot. From 52rem of the screen body, the list is a column at the left. Below
-it, the list and the note take turns through `data-pane`, and the note has a
-Notes back key. The list shows About first, then each note with
+it, the list and the note take turns through `data-pane`, and the note has an
+All notes back key. The list shows About first, then each note with
 `notePreview` and `messageTime`, and a search field from five notes. The bar has Read aloud, Present, Suggestions, and a More menu with Export
 and Delete note. Read aloud reads the selection when there is one. The bar
 hides while the writing tools are open.

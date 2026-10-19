@@ -97,8 +97,8 @@ Each word of the query must be in the name or in the id. A paid row reads
 user always sees what speaks for them now.
 
 The model lists and the voice list are the same control, `PickList`. It is a
-list of 44px rows in two columns, not a dropdown, because a dropdown closes
-when a dwell moves away from it. The 320px card of the space rail asks for one
+radio group of 48px rows in two columns, not a dropdown, because a dropdown
+closes when a dwell moves away from it. The arrow keys move the choice. The 320px card of the space rail asks for one
 column, with `columns={1}`.
 
 The ElevenLabs model list appears once, under Custom in the Voice tab of the

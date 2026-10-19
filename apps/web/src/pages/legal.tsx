@@ -11,7 +11,7 @@ function LegalPage({ title, children }: { title: string; children: ReactNode }) 
         <a
           href="/"
           aria-label="September home"
-          className="inline-flex min-h-11 items-center gap-2 rounded-control focus-visible:outline-2 focus-visible:outline-ring"
+          className="focus-attention inline-flex min-h-11 items-center gap-2 rounded-control"
         >
           <BrandMark size={40} />
           <BrandWordmark aria-hidden="true" className="text-xl" />

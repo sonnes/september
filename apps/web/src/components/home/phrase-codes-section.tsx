@@ -139,7 +139,7 @@ function CodesDemo() {
               type="button"
               onClick={() => speakMessage(text)}
               disabled={!text.trim()}
-              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:enabled:scale-[1.02] active:enabled:scale-95 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+              className="focus-attention inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:enabled:scale-[1.02] active:enabled:scale-95 key-disabled motion-reduce:transition-none"
             >
               <Volume2 className="size-4" aria-hidden="true" />
               Speak

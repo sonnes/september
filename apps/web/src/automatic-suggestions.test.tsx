@@ -237,7 +237,8 @@ it('marks a row that AI Assistance wrote', async () => {
   await render('hello');
   await render('hello ');
   await advance();
-  expect(container.querySelector('[aria-label="From AI Assistance"]')).not.toBeNull();
+  const mark = container.querySelector('[aria-label="From AI Assistance"]');
+  expect(mark?.getAttribute('role')).toBe('img');
 });
 
 it('sends the note and the caret with a request from a note', async () => {
@@ -273,7 +274,7 @@ it('names the end key of a row with the label it is given', async () => {
           spaceId="space"
           context=""
           history={[]}
-          finishLabel="Add this suggestion to the note"
+          finishLabel="Add to the note"
           onTake={() => {}}
           onPin={() => {}}
           onSpeak={() => {}}
@@ -283,6 +284,6 @@ it('names the end key of a row with the label it is given', async () => {
   await show('hello');
   await show('hello ');
   await advance();
-  expect(container.querySelector('[aria-label="Add this suggestion to the note"]')).not.toBeNull();
-  expect(container.querySelector('[aria-label="Speak this suggestion"]')).toBeNull();
+  expect(container.querySelector('[aria-label^="Add to the note:"]')).not.toBeNull();
+  expect(container.querySelector('[aria-label^="Speak:"]')).toBeNull();
 });

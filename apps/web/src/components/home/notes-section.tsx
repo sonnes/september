@@ -32,7 +32,7 @@ const EXPORTS = ['Text (.md)', 'Audio (.mp3)', 'Captioned video (.mp4)'];
 export function NotesSection() {
   return (
     <details className="group border-t border-zinc-200 last:border-b">
-      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-6 py-7 focus-visible:outline-offset-4 focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+      <summary className="focus-attention flex min-h-11 cursor-pointer list-none items-center gap-6 py-7 [&::-webkit-details-marker]:hidden">
         <div className="grid flex-1 gap-3 lg:grid-cols-[12rem_1fr] lg:gap-8">
           <p className="text-sm font-semibold text-indigo-600">Notes & Present</p>
           <div>
@@ -196,8 +196,8 @@ function PlayButton({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex min-h-11 items-center gap-2 rounded-full px-6 text-sm font-semibold transition-[opacity,transform] hover:scale-[1.02] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none ${
-        variant === 'solid'
+      className={`focus-attention inline-flex min-h-11 items-center gap-2 rounded-full px-6 text-sm font-semibold transition-[opacity,transform] hover:scale-[1.02] active:scale-95 motion-reduce:transition-none ${
+        variant ==='solid'
           ? 'bg-primary text-primary-foreground'
           : 'border border-primary/40 bg-card text-foreground hover:bg-primary/5'
       }`}
