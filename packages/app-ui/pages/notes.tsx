@@ -223,7 +223,7 @@ function Notes({
                 type="button"
                 aria-label="All notes"
                 onClick={() => setPane("list")}
-                className="text-primary hover:bg-primary/10 focus-visible:ring-ring inline-flex h-11 items-center gap-1 rounded-full pr-4 pl-2 text-sm font-semibold focus-visible:ring-2 focus-visible:outline-none"
+                className="text-brand hover:bg-primary/10 focus-visible:ring-ring inline-flex h-11 items-center gap-1 rounded-full pr-4 pl-2 text-sm font-semibold focus-visible:ring-2 focus-visible:outline-none"
               >
                 <ChevronLeft className="size-5" aria-hidden />
                 Notes
@@ -901,7 +901,7 @@ function NoteList({
               onClick={onAbout}
               className={row(about)}
             >
-              <span className="text-primary flex items-center gap-2 font-semibold">
+              <span className="text-brand flex items-center gap-2 font-semibold">
                 <Info className="size-4 shrink-0" aria-hidden />
                 About this space
               </span>

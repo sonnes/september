@@ -112,7 +112,7 @@ function HelpHome() {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-6 sm:px-6 md:py-8">
       <header className="space-y-2">
-        <p className="text-primary text-sm font-medium">Help</p>
+        <p className="text-brand text-sm font-medium">Help</p>
         <h1 className="text-3xl font-bold tracking-tight">
           What do you want to do?
         </h1>
@@ -386,7 +386,7 @@ export function HelpGuideContent({ guide }: { guide: HelpGuide }) {
           <ul className="space-y-2 text-sm leading-relaxed">
             {guide.prerequisites.map((prerequisite) => (
               <li key={prerequisite} className="flex gap-3">
-                <span aria-hidden="true" className="text-primary font-semibold">
+                <span aria-hidden="true" className="text-brand font-semibold">
                   •
                 </span>
                 <span>{prerequisite}</span>

@@ -307,7 +307,7 @@ export function LandingSuggestionStripes({
               onClick={() => onTake(`${chip} `)}
               className="flex min-h-12 items-center gap-2 rounded-chip border border-zinc-300 bg-card px-4 py-2 text-left text-lg font-medium text-foreground transition-colors hover:border-primary/60 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <Pin className="size-3.5 text-primary/60" aria-hidden="true" />
+              <Pin className="size-3.5 text-brand/60" aria-hidden="true" />
               {chip}
             </button>
           ))}
@@ -395,13 +395,13 @@ function SourceMark({ source, code }: { source: SuggestionSource; code?: string 
     );
   }
   if (source === 'starter') {
-    return <ChevronsRight className="size-4 shrink-0 text-primary" aria-label="An opening" />;
+    return <ChevronsRight className="size-4 shrink-0 text-brand" aria-label="An opening" />;
   }
   if (source === 'history') {
     return <History className="size-4 shrink-0 text-chart-2" aria-label="You said this before" />;
   }
   if (source === 'md') {
-    return <Pin className="size-4 shrink-0 text-primary/70" aria-label="A saved phrase" />;
+    return <Pin className="size-4 shrink-0 text-brand/70" aria-label="A saved phrase" />;
   }
   return (
     <Sparkles className="size-4 shrink-0 text-muted-foreground" aria-label="From AI Assistance" />

@@ -103,7 +103,7 @@ export function EditableText({ value, placeholder = 'Untitled', className, onSav
       type="button"
     >
       <span className={className ?? 'text-sm font-medium'}>{value || placeholder}</span>
-      <Pencil className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+      <Pencil className="h-4 w-4 text-muted-foreground" aria-hidden />
     </button>
   );
 }

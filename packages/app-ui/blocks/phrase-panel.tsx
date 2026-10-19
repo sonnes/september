@@ -208,7 +208,7 @@ export function Phrases({
                 </div>
                 <RowButton
                   label={`Keep ${idea.text}`}
-                  className="text-primary"
+                  className="text-brand"
                   onClick={() => keep(idea.text, idea.code)}
                 >
                   <Check className="size-4" aria-hidden />
@@ -283,7 +283,7 @@ function CodeBadge({ code, muted }: { code: string; muted?: boolean }) {
         "inline-flex items-center rounded-md border px-1.5 py-0.5 font-mono text-xs font-semibold",
         muted
           ? "border-border bg-muted text-muted-foreground"
-          : "border-primary/30 bg-primary/10 text-primary",
+          : "border-primary/30 bg-primary/10 text-brand",
       )}
     >
       {code}
@@ -347,7 +347,7 @@ function PhraseRow({
       </button>
 
       {rowKind(row) === "starter" ? (
-        <span className="border-primary/40 text-primary/70 shrink-0 rounded-md border border-dashed px-1.5 py-0.5 text-xs">
+        <span className="border-primary/40 text-brand/70 shrink-0 rounded-md border border-dashed px-1.5 py-0.5 text-xs">
           opening
         </span>
       ) : null}
@@ -384,7 +384,7 @@ function PhraseRow({
 
       <RowButton
         label={row.pinned ? "Let September replace this" : "Keep this"}
-        className={row.pinned ? "text-primary" : undefined}
+        className={row.pinned ? "text-brand" : undefined}
         onClick={() => onChange({ ...row, pinned: !row.pinned })}
       >
         <Pin className={cn("size-4", row.pinned && "fill-current")} aria-hidden />

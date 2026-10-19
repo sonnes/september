@@ -452,7 +452,7 @@ export function NoteDocument({
                   aria-label={one.label}
                   aria-pressed={pressed === one.style}
                   onClick={() => style(one.style)}
-                  className={cn(KEY, "aria-pressed:border-primary/40 aria-pressed:bg-primary/10 aria-pressed:text-primary")}
+                  className={cn(KEY, "aria-pressed:border-primary/40 aria-pressed:bg-primary/10 aria-pressed:text-brand")}
                 >
                   {one.icon}
                 </button>

@@ -532,7 +532,7 @@ function SpaceSwitcher({
           void newSpace.create().then((made) => made && onCreated())
         }
         aria-disabled={newSpace.pending}
-        className="text-primary hover:bg-muted focus-visible:ring-ring flex min-h-13 items-center gap-3 rounded-control px-2 text-base font-semibold focus-visible:ring-2 focus-visible:outline-none aria-disabled:opacity-50"
+        className="text-brand hover:bg-muted focus-visible:ring-ring flex min-h-13 items-center gap-3 rounded-control px-2 text-base font-semibold focus-visible:ring-2 focus-visible:outline-none aria-disabled:opacity-50"
       >
         <span
           aria-hidden

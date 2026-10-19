@@ -36,7 +36,7 @@ function LegalPage({ title, children }: { title: string; children: ReactNode }) 
           <h1 className="text-3xl font-bold sm:text-4xl">{title}</h1>
           <p className="text-sm text-muted-foreground">Last updated 5 September 2026 · India</p>
         </div>
-        <article className="space-y-8 text-base leading-relaxed [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-4 [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:font-semibold [&_li]:pl-1 [&_section]:space-y-3 [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-6">
+        <article className="space-y-8 text-base leading-relaxed [&_a]:text-brand [&_a]:underline [&_a]:underline-offset-4 [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:font-semibold [&_li]:pl-1 [&_section]:space-y-3 [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-6">
           {children}
         </article>
       </main>

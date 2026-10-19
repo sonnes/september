@@ -40,9 +40,9 @@ Design that serves this thesis: large calm targets, one confident accent, predic
   | H3        | 16px (`text-base`)       | 600     | Sub-sections                                 |
   | Body      | 14px (`text-sm`)         | 400     | `leading-relaxed` for prose; default UI text |
   | UI label  | 14px (`text-sm`)         | 500     | Buttons, fields, nav items                   |
-  | Small     | 12px (`text-xs`)         | 400–500 | Badges, helper text, sidebar group labels    |
+  | Small     | 14px (`text-xs`)         | 400–500 | Badges, helper text, sidebar group labels    |
 
-- **Accessibility floor:** Body text never below 14px; mobile inputs render at 16px (`text-base md:text-sm`) to avoid iOS zoom. Avoid all-caps for anything a user must read quickly.
+- **Accessibility floor:** No text is smaller than 14px, so `text-xs` is 14px. Inputs are 16px at every width. Every text role grows with `--reach-scale`. Avoid all-caps for anything a user must read quickly.
 
 ### App surface type roles (B·s, 2026-07-18)
 
@@ -50,7 +50,7 @@ The interactive work surfaces (Talk, Notes) standardize on five type roles. Four
 
 | Role                 | Utility      | Size / weight | Applies to                                    |
 | -------------------- | ------------ | ------------- | --------------------------------------------- |
-| Label / eyebrow      | `text-xs`    | 12 / 500–600  | Working-set labels, sidebar group labels      |
+| Label / eyebrow      | `text-xs`    | 14 / 500–600  | Working-set labels, sidebar group labels      |
 | Body & UI            | `text-sm`    | 14 / 400–500  | Default text, buttons, tabs, dock, chips      |
 | Token / message      | `text-base`  | 16 / 400–500  | Suggestion word tiles, spoken-message rows    |
 | Note / section title | `text-title` | 17 / 600      | Section headings                              |
@@ -81,9 +81,10 @@ The interactive work surfaces (Talk, Notes) standardize on five type roles. Four
 | `--card`               | white    | zinc-800 | Card surfaces                     |
 | `--popover`            | white    | zinc-800 | Popovers, menus                   |
 | `--muted`              | zinc-100 | zinc-700 | Muted backgrounds                 |
-| `--muted-foreground`   | zinc-500 | zinc-400 | Secondary text                    |
+| `--muted-foreground`   | zinc-600 | zinc-300 | Secondary text, 7:1 on `--muted`  |
 | `--secondary`          | zinc-100 | zinc-700 | Secondary surfaces                |
-| `--border` / `--input` | zinc-200 | zinc-700 | Borders, dividers, field outlines |
+| `--border`             | zinc-200 | zinc-700 | Dividers and card edges           |
+| `--input`              | zinc-500 | zinc-500 | Field outlines and tracks, 3:1 or more |
 
 > Note: the page is shipped on a `bg-zinc-100` `<html>` so the white inset app shell floats on a faint gray. Pure white is reserved for content surfaces so they pop.
 
@@ -95,8 +96,18 @@ The interactive work surfaces (Talk, Notes) standardize on five type roles. Four
 | `--primary-foreground`   | white      | white      | Text on primary                     |
 | `--accent`               | indigo-100 | indigo-900 | Hover/active tints, soft highlights |
 | `--accent-foreground`    | indigo-600 | white      | Text on accent                      |
-| `--ring`                 | indigo-500 | indigo-400 | Focus rings                         |
+| `--brand`                | indigo-600 | indigo-400 | Indigo as text or as a line         |
 | `--secondary-foreground` | indigo-600 | white      | Accented text on secondary surfaces |
+
+### Attention (Amber)
+
+Amber marks attention only: focus, dwell, and the scan band. Nothing else is amber.
+
+| Token                    | Light    | Dark     | Usage                                     |
+| ------------------------ | -------- | -------- | ----------------------------------------- |
+| `--attention`            | amber-300 | amber-300 | The ring of `.focus-attention`, the dwell fill, the scan band |
+| `--attention-foreground` | zinc-900 | zinc-900 | Ink on amber, and the line inside the ring |
+| `--ring`                 | zinc-900 | amber-300 | The outline of a focused control         |
 
 ### Sidebar (signature — stays indigo in both themes)
 
@@ -108,16 +119,16 @@ The sidebar is a **solid indigo panel** in light _and_ dark mode — September's
 | `--sidebar-foreground`                   | white      | Sidebar text/icons    |
 | `--sidebar-primary` / `--sidebar-accent` | indigo-600 | Active / hovered item |
 | `--sidebar-border`                       | indigo-400 | Internal dividers     |
-| `--sidebar-ring`                         | indigo-300 | Focus within sidebar  |
+| `--sidebar-ring`                         | amber-300  | Focus within sidebar  |
 
-> **Contrast note:** white on indigo-500 clears AA for large/medium-weight UI text and icons (~3:1+) but is tight for small body text. Keep sidebar labels ≥14px and ≥500 weight; never set fine print on the indigo.
+> **Contrast note:** white on indigo-500 is 4.58:1, which passes AA for text by a small margin. Keep sidebar labels ≥14px and ≥500 weight, and set them in full white, never at an opacity. Amber-300 is 3.16:1 on indigo-500, so the focus ring shows on the sidebar.
 
 ### Semantic (from `callout.tsx`)
 
 | Token   | Color   | Light surface                   | Usage                                                          |
 | ------- | ------- | ------------------------------- | -------------------------------------------------------------- |
 | info    | Indigo  | indigo-50 / indigo-200 border   | Neutral info, brand-aligned notes                              |
-| warning | Amber   | amber-50 / amber-200 border     | Attention needed                                               |
+| warning | Zinc    | zinc-100 / zinc-500 border, triangle icon | Attention needed. Not amber, because amber marks focus |
 | success | Emerald | emerald-50 / emerald-200 border | Completed, positive                                            |
 | danger  | Red     | red-50 / red-200 border         | Errors, destructive (`--destructive` = red-600 / dark red-500) |
 
@@ -156,7 +167,7 @@ The sidebar is a **solid indigo panel** in light _and_ dark mode — September's
   The legacy shadcn `--radius-sm/md/lg/xl` scale still exists for overlays (dropdowns, popovers, dialogs), which stay slightly tighter than content surfaces on purpose. Nested micro-controls (tiptap toolbar buttons) keep `rounded-md` (8px) so they read as keys inside a surface.
 
 - **Surface treatment:** border **plus** a soft `shadow-sm` on cards and the inset shell — a gentle depth cue (a deliberate step warmer than a flat, border-only system).
-- **Scrollbars:** custom, calm, and rounded — a slim zinc pill thumb (`zinc-300`, `zinc-400` on hover; `zinc-600`/`zinc-500` in dark) on a transparent track, `scrollbar-width: thin` + 12px WebKit width with a 3px transparent inset. Defined once in `globals.css`. Surfaces that deliberately hide their scrollbar (suggestion stripes) still do.
+- **Scrollbars:** custom, calm, and rounded — a slim zinc pill thumb (`zinc-500`, `zinc-600` on hover; `zinc-400`/`zinc-300` in dark) on a transparent track, `scrollbar-width: thin` + 12px WebKit width with a 3px transparent inset. Defined once in `globals.css`. Surfaces that deliberately hide their scrollbar (suggestion stripes) still do.
 - **Toasts:** Sonner, `position="top-center"`, `closeButton`, `duration={15000}` — long dwell so slow readers aren't rushed.
 
 ## Motion
@@ -164,16 +175,16 @@ The sidebar is a **solid indigo panel** in light _and_ dark mode — September's
 - **Approach:** Minimal-functional — motion only when it aids comprehension.
 - **Libraries:** `tw-animate-css` (utility keyframes) + `framer-motion` (component transitions).
 - **Patterns in use:** `transition-all` on buttons; `transition-[color,box-shadow]` on inputs/fields; sidebar width/position `duration-200 ease-linear`.
-- **Accessibility:** honor `prefers-reduced-motion` — animation is never required to understand state. (Not yet globally wired — see Decisions Log.)
+- **Accessibility:** `theme.css` stops every animation and transition when `prefers-reduced-motion` is on. No state depends on motion.
 
 ## Accessibility (first-class)
 
 September is operated under physical constraint. These are requirements, not nice-to-haves. In QA mode, flag violations.
 
-- **Target size:** Interactive controls should present a **≥44×44px** effective hit area. Button `default` is `h-9` (36px) — for primary/standalone actions and anything switch- or gaze-driven, use `lg` (`h-10`) or larger and add padding; never pack small icon-only controls tightly.
+- **Target size:** Every key is at least `--reach-target`, 48px for touch. Every `Button` size, `Input`, `Select`, `Tabs`, menu row, and close key has this minimum. A checkbox or a radio is 24px inside a labelled row of 48px. Never pack small icon-only controls tightly.
 - **Spacing between actions:** Generous gaps between adjacent targets so imprecise input (tremor, eye-gaze dwell) doesn't mis-hit. The roomy density exists to serve this.
-- **Focus visibility:** Every interactive element keeps a visible focus ring — `focus-visible:ring-[3px] ring-ring/50` is the standard (already baked into `Button`, `Input`, sidebar). **Never** remove the outline.
-- **Contrast:** Target WCAG **AA** minimum (4.5:1 body text, 3:1 large text / UI). indigo-600 on white passes for text; white on the indigo-500 sidebar is large/medium-weight only (see Sidebar note).
+- **Focus visibility:** Every interactive element shows focus with `.focus-attention`: a 2px zinc-900 line inside a 5px amber-300 ring. The line passes 3:1 on white and zinc, and the amber passes 3:1 on indigo and on dark surfaces. A menu row or a scroll area uses `.focus-attention-inset`. **Never** remove the outline.
+- **Contrast:** WCAG **AA** at the minimum: 4.5:1 for text, 3:1 for large text, field lines, and focus. Secondary text is zinc-600 (7:1 on zinc-100). Indigo text is `--brand`, so it passes in dark too. A disabled key uses `.key-disabled`, a dotted border, so its state is not a fade alone.
 - **Keyboard & switch operability:** Everything reachable and operable without a pointer. No hover-only affordances — hover may enhance, never gate. Visible, logical focus order.
 - **Reduced motion:** Respect `prefers-reduced-motion`; no parallax, no motion that conveys required meaning.
 - **Reading pace:** Don't auto-dismiss important content quickly (toasts dwell 15s). Avoid timeouts on input.
@@ -183,11 +194,11 @@ September is operated under physical constraint. These are requirements, not nic
 
 All UI primitives live in `@/packages/ui` (`src/packages/ui/components`) — shadcn wrappers over Radix, composed with `cva`. Icons: `lucide-react`. No raw Radix or hand-rolled primitives in app code.
 
-- **Buttons:** `Button` with `rounded-control` (12px), `transition-all`. Variants: `default` (indigo), `destructive`, `outline`, `secondary`, `ghost`, `link`. Sizes: `default` h-9 · `sm` h-8 · `lg` h-10 · `icon` / `icon-sm` / `icon-lg`. Prefer `lg`/`icon-lg` for primary and touch-critical actions. Pill actions (Speak, Voice-over, Present, Export, tabs) override with `rounded-full`.
+- **Buttons:** `Button` with `rounded-control` (12px), `transition-all`. Variants: `default` (indigo), `destructive`, `outline`, `secondary`, `ghost`, `link`. Sizes: `default` · `sm` · `lg` · `icon` / `icon-sm` / `icon-lg`. Every size is at least `--reach-target` (48px) high. The sizes differ only in padding, and the icon sizes are 48px square. Pill actions (Speak, Voice-over, Present, Export, tabs) override with `rounded-full`.
 - **Suggestion pills:** `Suggestion` / `Suggestions` — `rounded-full`, `outline`, `size="sm"`, `px-4`, in a horizontal `ScrollArea`. The autocomplete/contextual-reply surface; the product's signature interaction. Keep targets comfortable and well-spaced.
 - **Cards:** `Card` — `rounded-surface border py-6 shadow-sm`, `gap-6`; `CardTitle` = `font-semibold leading-none`. Roomy, lightly elevated.
 - **Badges:** `Badge` — `rounded-full border px-2 py-0.5 text-xs font-medium`. Variants `default`/`secondary`/`destructive`/`outline`.
-- **Inputs / fields:** `Input` = `h-9 rounded-control border shadow-xs`; mobile `text-base`, desktop `text-sm`. Compose with `Field`/`Form` (react-hook-form). Always pair with a visible `Label`.
+- **Inputs / fields:** `Input` = 48px high, `rounded-control border border-input shadow-xs`, `text-base` (16px) at every width. Compose with `Field`/`Form` (react-hook-form). Always pair with a visible `Label`.
 - **Callouts:** `Callout` — `rounded-lg border px-4 py-3 text-sm`, tones `info`/`warning`/`success`/`danger`, each with a lucide icon. Use for legal/explanatory notes.
 - **Sidebar nav:** `SidebarMenuButton` items (icon + label), collapsible groups via shadcn `Collapsible`, `SidebarGroupLabel` (`text-xs font-medium`), active state by `data-active`. Indigo surface throughout.
 - **Dropdowns / comboboxes:** shadcn `DropdownMenu` and `Command` + `Popover`.
@@ -225,10 +236,9 @@ All UI primitives live in `@/packages/ui` (`src/packages/ui/components`) — sha
 | 2026-10-05 | Talk body from the panel mock, in both apps | Talk is one shared screen, so the web app and the panel get the same body. The last 3 messages sit in a white card with the time and a speak mark on each row. See all shows the pages of 8 in place of the suggestions. The suggestion rows keep their word tiles and have no card. The mark at the start of a row has the colour of its tiles, and a model row has a grey sparkle. The composer is a white card with a constant 3px indigo ring. While a sentence plays, an indigo speaking card takes the place of the field. A key line under the composer shows only with a fine pointer. The sound output is one 44px headphones key, with a green dot when the September Microphone is on. The Talk body is `bg-muted/40`. Mocks: `docs/mocks/2026-10-05-talk-web.html`, `docs/mocks/2026-10-05-audio-output-options.html`. |
 | 2026-10-13 | Notes as a Markdown document | The note is one document: the title is the first line in Fraunces 600, the body is Noto Sans at the 20px composer size, and the body has no box. Each Markdown line shows its format, and the caret line also shows its syntax. The composer leaves Notes. The writing tools (style keys, Undo, Delete word, Hide, and the Talk stripes) open on the first typed key under the caret line, and over it near the bottom. Escape or Hide closes them, and ⌘J opens them. The note actions move to a floating reading bar at the foot of the page: Read aloud (the selection, or the whole note), Present, Suggestions, and a More menu with Export and Delete note. The notes are a list (see the row below). Fraunces in Notes extends its approved use in Present. User-approved (mock `docs/mocks/2026-10-13-notes-doc-editor.html`). |
 | 2026-10-13 | The note list replaces the note tabs | The notes of a space are a list of large rows: About first, then each note with its name, its first line of words, and the time of its last change. A search field shows from five notes. From 52rem of screen body, the list is a 288px column beside the note. Below it, the list and the note take turns, and a note opens with a "Notes" back key. Notes opens on the last note, not on the list. The reading bar shows only icons for Present, Suggestions, and More below 36rem. Chosen over a title menu and over tabs with an All notes sheet. User-approved (mock `docs/mocks/2026-10-13-note-selector-options.html`, Option B). |
+| 2026-10-19 | Accessibility polish on the layout of main | The layout, Noto Sans, zinc, the filled tiles, and Fraunces stay. Secondary text is zinc-600 and field lines are zinc-500, so both pass AA. Focus is a zinc-900 line inside an amber-300 ring, and amber marks attention only, so a warning is zinc. Every key is 48px or more, and no text is smaller than 14px. Reduced motion is global. User-approved. |
 
 ### Known gaps (honest state, not yet enforced)
 
-- `prefers-reduced-motion` is not globally wired.
-- Button `default` (36px) is below the 44px touch target; touch-critical actions must opt up to `lg`/`icon-lg`.
 - Marketing/legal pages use raw Tailwind color utilities instead of semantic tokens.
 - No custom focus-visible audit across all domain components yet; verify suggestion pills and sidebar items meet the focus-ring standard.

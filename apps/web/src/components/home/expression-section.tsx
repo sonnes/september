@@ -68,7 +68,7 @@ function ExpressionDemo() {
             <span
               key={index}
               data-tag
-              className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 align-baseline text-base font-medium text-primary"
+              className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 align-baseline text-base font-medium text-brand"
             >
               <AudioLines className="size-[0.9em] shrink-0" aria-hidden="true" />
               {tagLabel(part.text)}

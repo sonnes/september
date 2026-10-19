@@ -113,7 +113,7 @@ export function SpacesScreen() {
               <button
                 type="button"
                 onClick={() => navigate(openParams(space))}
-                className="hover:text-primary focus-visible:ring-ring min-w-0 flex-1 rounded-md px-2 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                className="hover:text-brand focus-visible:ring-ring min-w-0 flex-1 rounded-md px-2 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
               >
                 <span className="block truncate text-base font-medium">
                   {space.title}

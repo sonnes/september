@@ -370,7 +370,7 @@ function PageRow({
     <button
       type="button"
       onClick={onClick}
-      className="text-primary hover:bg-muted/60 focus-visible:ring-ring flex min-h-13 w-full items-center justify-center text-sm font-medium focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
+      className="text-brand hover:bg-muted/60 focus-visible:ring-ring flex min-h-13 w-full items-center justify-center text-sm font-medium focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
     >
       {children}
     </button>
@@ -389,7 +389,7 @@ function LabelButton({
     <button
       type="button"
       onClick={onClick}
-      className="text-primary focus-visible:ring-ring ml-auto min-h-11 rounded-full px-3 text-sm font-medium focus-visible:ring-2 focus-visible:outline-none"
+      className="text-brand focus-visible:ring-ring ml-auto min-h-11 rounded-full px-3 text-sm font-medium focus-visible:ring-2 focus-visible:outline-none"
     >
       {children}
     </button>
@@ -440,7 +440,7 @@ function SpeakingCard({
           ref={stop}
           type="button"
           onClick={() => stopSpeaking()}
-          className="bg-background text-primary focus-visible:ring-ring inline-flex h-11 items-center gap-2 rounded-full px-4 font-semibold focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-primary focus-visible:outline-none"
+          className="bg-background text-brand focus-visible:ring-ring inline-flex h-11 items-center gap-2 rounded-full px-4 font-semibold focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-primary focus-visible:outline-none"
         >
           <Square className="size-4 fill-current" aria-hidden />
           Stop

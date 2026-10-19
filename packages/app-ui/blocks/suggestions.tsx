@@ -78,7 +78,7 @@ interface Stripe {
 
 /** An audio tag in a row: a direction to the voice, not a word. */
 const TAG_TILE =
-  "border-primary/30 bg-primary/10 text-primary hover:border-primary/60 gap-1.5";
+  "border-primary/30 bg-primary/10 text-brand hover:border-primary/60 gap-1.5";
 
 /** The inside of a tag tile or chip: a sound mark and the words of the tag. */
 export function TagMark({ label }: { label: string }) {
@@ -99,7 +99,7 @@ export function TaggedText({ text }: { text: string }) {
           <span
             key={index}
             data-tag
-            className="bg-primary/10 text-primary inline-flex items-center gap-1 rounded-full px-2 align-baseline text-sm font-medium"
+            className="bg-primary/10 text-brand inline-flex items-center gap-1 rounded-full px-2 align-baseline text-sm font-medium"
           >
             <TagMark label={tagLabel(part.text)} />
           </span>
@@ -121,7 +121,7 @@ const LANE: Record<SuggestionSource, { idle: string; active: string }> = {
   // From the phrases of the space.
   md: {
     idle: "border-primary/40 bg-card text-foreground hover:border-primary/70 hover:bg-primary/5",
-    active: "border-primary bg-primary/10 text-primary",
+    active: "border-primary bg-primary/10 text-brand",
   },
   // Words the user said before.
   history: {
@@ -131,17 +131,17 @@ const LANE: Record<SuggestionSource, { idle: string; active: string }> = {
   // From a model. The quiet baseline, with a gray sparkle mark.
   llm: {
     idle: "border-border bg-card text-foreground hover:border-primary/50 hover:bg-primary/5",
-    active: "border-primary bg-primary/10 text-primary",
+    active: "border-primary bg-primary/10 text-brand",
   },
   // A phrase that a typed code brought up. The strongest tint.
   code: {
     idle: "border-primary/70 bg-primary/10 text-foreground hover:border-primary hover:bg-primary/15",
-    active: "border-primary bg-primary/20 text-primary",
+    active: "border-primary bg-primary/20 text-brand",
   },
   // An opening, not a whole thought. A broken line says so.
   starter: {
     idle: "border-dashed border-primary/50 bg-primary/5 text-foreground hover:border-primary/80 hover:bg-primary/10",
-    active: "border-dashed border-primary bg-primary/10 text-primary",
+    active: "border-dashed border-primary bg-primary/10 text-brand",
   },
 };
 
@@ -287,8 +287,8 @@ export function Suggestions({
                 className={cn(
                   "size-3.5",
                   isKept(word, spacePhrases ?? [])
-                    ? "text-primary fill-current"
-                    : "text-primary/60",
+                    ? "text-brand fill-current"
+                    : "text-brand/60",
                 )}
                 aria-hidden
               />
@@ -310,7 +310,7 @@ export function Suggestions({
           <span
             role="status"
             aria-label="AI Assistance is writing"
-            className="text-primary inline-flex items-center gap-1 text-xs font-medium"
+            className="text-brand inline-flex items-center gap-1 text-xs font-medium"
           >
             <Sparkles className="size-3.5 animate-pulse" aria-hidden />
             Writing
@@ -486,7 +486,7 @@ function EndKey({
         title={label}
         onClick={() => onTake(joinTokens(takeTokens(stripe, stripe.tokens.length)))}
         style={box}
-        className="border-primary/40 text-primary/70 hover:bg-primary/10 hover:text-primary focus-visible:ring-ring rounded-control inline-flex shrink-0 items-center justify-center border border-dashed transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        className="border-primary/40 text-brand/70 hover:bg-primary/10 hover:text-brand focus-visible:ring-ring rounded-control inline-flex shrink-0 items-center justify-center border border-dashed transition-colors focus-visible:ring-2 focus-visible:outline-none"
       >
         <Ellipsis style={glyph} aria-hidden />
       </button>
@@ -506,7 +506,7 @@ function EndKey({
         "rounded-control focus-visible:ring-ring inline-flex shrink-0 items-center justify-center border transition-colors focus-visible:ring-2 focus-visible:outline-none",
         stripe.source === "code"
           ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
-          : "border-primary/40 bg-primary/10 text-primary hover:bg-primary/20",
+          : "border-primary/40 bg-primary/10 text-brand hover:bg-primary/20",
       )}
     >
       <CornerDownLeft style={glyph} aria-hidden />
@@ -545,7 +545,7 @@ function SourceMark({
   if (source === "starter") {
     return (
       <ChevronsRight
-        className="text-primary size-4 shrink-0"
+        className="text-brand size-4 shrink-0"
         aria-label="An opening"
       />
     );
@@ -570,7 +570,7 @@ function SourceMark({
         title={label}
         className={cn(
           "focus-visible:ring-ring size-4 shrink-0 cursor-pointer rounded focus-visible:ring-2 focus-visible:outline-none",
-          kept ? "text-primary" : "text-primary/70 hover:text-primary",
+          kept ? "text-brand" : "text-brand/70 hover:text-brand",
         )}
       >
         <Pin className={cn("size-4", kept && "fill-current")} aria-hidden />

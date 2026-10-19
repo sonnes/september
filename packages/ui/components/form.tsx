@@ -240,10 +240,10 @@ export function FormSlider<
             {description && <FieldDescription>{description}</FieldDescription>}
             <div className="space-y-3">
               {leftLabel && rightLabel && (
-                <div className="flex items-center justify-between text-xs text-zinc-600">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>{leftLabel}</span>
                   {showValue && (
-                    <span className="font-medium text-zinc-900">{valueFormatter(value)}</span>
+                    <span className="font-medium text-foreground">{valueFormatter(value)}</span>
                   )}
                   <span>{rightLabel}</span>
                 </div>

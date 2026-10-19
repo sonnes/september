@@ -40,7 +40,7 @@ export function DashboardScreen() {
         <div className="grid gap-6">
           <UsageCard className="bg-primary/5 md:grid md:grid-cols-[minmax(0,1fr)_minmax(240px,0.62fr)] md:items-end md:gap-10">
             <div className="space-y-5">
-              <div className="text-primary flex items-center gap-2 text-sm font-bold">
+              <div className="text-brand flex items-center gap-2 text-sm font-bold">
                 <Keyboard className="size-4" aria-hidden />
                 Efficiency
               </div>
@@ -74,7 +74,7 @@ export function DashboardScreen() {
           <UsageCard>
             <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
               <div className="space-y-4">
-                <div className="text-primary flex items-center gap-2 text-sm font-bold">
+                <div className="text-brand flex items-center gap-2 text-sm font-bold">
                   <Activity className="size-4" aria-hidden />
                   Service use
                 </div>

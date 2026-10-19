@@ -1,8 +1,8 @@
 import * as React from 'react';
 import {
-  AlertCircleIcon,
   CheckCircle2Icon,
   InfoIcon,
+  TriangleAlertIcon,
   XCircleIcon,
   type LucideIcon,
 } from 'lucide-react';
@@ -16,8 +16,9 @@ const calloutVariants = cva(
     variants: {
       tone: {
         info: 'border-indigo-200 bg-indigo-50 text-indigo-900 [&>svg]:text-indigo-600 dark:border-indigo-900 dark:bg-indigo-950 dark:text-indigo-100 dark:[&>svg]:text-indigo-400',
-        warning:
-          'border-amber-200 bg-amber-50 text-amber-900 [&>svg]:text-amber-600 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100 dark:[&>svg]:text-amber-400',
+        // Amber marks attention only, so a warning is zinc. Each tone has its
+        // own icon, so the tone is not a color alone.
+        warning: 'border-input bg-muted text-foreground [&>svg]:text-foreground',
         success:
           'border-emerald-200 bg-emerald-50 text-emerald-900 [&>svg]:text-emerald-600 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-100 dark:[&>svg]:text-emerald-400',
         destructive:
@@ -32,7 +33,7 @@ const calloutVariants = cva(
 
 const toneIcon: Record<NonNullable<VariantProps<typeof calloutVariants>['tone']>, LucideIcon> = {
   info: InfoIcon,
-  warning: AlertCircleIcon,
+  warning: TriangleAlertIcon,
   success: CheckCircle2Icon,
   destructive: XCircleIcon,
 };

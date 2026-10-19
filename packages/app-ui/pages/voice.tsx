@@ -177,7 +177,7 @@ export function VoiceScreen() {
         {cloud && connected === false ? (
           <p className="text-muted-foreground text-sm">
             No ElevenLabs key is stored, so this device speaks instead.{" "}
-            <Link to="/settings" className="text-primary underline">
+            <Link to="/settings" className="text-brand underline">
               Add a key in Settings
             </Link>
             .
@@ -238,7 +238,7 @@ export function VoiceScreen() {
         to="/voice/clone"
         className="focus-visible:ring-ring hover:bg-accent flex min-h-16 w-full items-center gap-3 rounded-surface border border-dashed border-primary/50 bg-primary/5 px-4 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
       >
-        <span className="text-primary flex size-11 shrink-0 items-center justify-center rounded-control border bg-background">
+        <span className="text-brand flex size-11 shrink-0 items-center justify-center rounded-control border bg-background">
           <Mic className="size-5" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
@@ -247,7 +247,7 @@ export function VoiceScreen() {
             Record or upload a few samples to make a personal voice.
           </span>
         </span>
-        <span className="text-primary flex shrink-0 items-center gap-2 text-sm font-semibold">
+        <span className="text-brand flex shrink-0 items-center gap-2 text-sm font-semibold">
           <Plus className="size-4" aria-hidden />
           Clone
         </span>
@@ -256,7 +256,7 @@ export function VoiceScreen() {
       <p className="text-muted-foreground text-sm">
         The model and the sound are in the Voice tab of the rail beside a
         space, so a change is heard next to the sentence you are writing.{" "}
-        <Link to="/spaces" className="text-primary underline">
+        <Link to="/spaces" className="text-brand underline">
           Open a space
         </Link>
         .
@@ -823,7 +823,7 @@ function RecordSamples({ draft }: { draft: VoiceCloneDraft }) {
                 >
                   <Trash2 aria-hidden />
                 </Button>
-                <span className="text-primary flex items-center gap-1 text-xs font-medium">
+                <span className="text-brand flex items-center gap-1 text-xs font-medium">
                   <CheckCircle2 className="size-4" aria-hidden />
                   Recorded
                 </span>
