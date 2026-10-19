@@ -324,8 +324,8 @@ export function transcriptPage<T>(
 
 /**
  * The number of recent messages that fit whole in the space. The heights are
- * newest first. A row that does not fit whole does not show, but the newest
- * row always shows.
+ * newest first. A row that does not fit whole does not show. When not even the
+ * newest row fits, the count is 0, and See all keeps the history in reach.
  */
 export function recentThatFit(heights: readonly number[], space: number): number {
   let used = 0;
@@ -335,7 +335,7 @@ export function recentThatFit(heights: readonly number[], space: number): number
     used += height;
     count += 1;
   }
-  return heights.length === 0 ? 0 : Math.max(count, 1);
+  return count;
 }
 
 /** The text without the word at the end. */

@@ -143,6 +143,15 @@ describe('the history in the space it has', () => {
     expect([...container.querySelectorAll('button')].some(one => one.textContent === 'See all')).toBe(true);
   });
 
+  it('keeps the history one press away when not even the newest message fits', async () => {
+    state.messages = said(5);
+    space = 60;
+    await render();
+
+    expect(visibleRows()).toEqual([]);
+    expect([...container.querySelectorAll('button')].some(one => one.textContent === 'See all (5)')).toBe(true);
+  });
+
   it('shows more of the history when it has more space', async () => {
     state.messages = said(5);
     space = 400;

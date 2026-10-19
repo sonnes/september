@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import {
@@ -33,6 +33,7 @@ import {
   ScanPauseKey,
 } from "@september/app-ui/blocks/access";
 import {
+  HeaderActionsSlot,
   MAIN_ID,
   RightPanelSlot,
   SkipLink,
@@ -54,6 +55,11 @@ const ICONS: Record<AppPath | "/dashboard" | "/eyetracker", LucideIcon> = {
 /** The app sidebar starts collapsed; manual toggles survive resizing. */
 export function AppShell() {
   const [slot, setSlot] = useState<HTMLElement | null>(null);
+  const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null);
+  const headerActions = useMemo(
+    () => ({ slot: headerSlot, setSlot: setHeaderSlot }),
+    [headerSlot],
+  );
   const main = useRef<HTMLElement>(null);
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
@@ -64,12 +70,12 @@ export function AppShell() {
     <SidebarProvider
       defaultOpen={false}
       // A definite height, so the screen body scrolls inside the inset
-      // instead of the whole shell growing past the window. On a phone the
-      // right rail goes under the screen, so the screen keeps its width.
-      className="h-svh max-md:flex-col"
+      // instead of the whole shell growing past the window.
+      className="h-svh"
       data-scan-room
     >
       <RightPanelSlot.Provider value={slot}>
+      <HeaderActionsSlot.Provider value={headerActions}>
         <SkipLink />
         <ApplyAccess />
         <InputLayer />
@@ -87,8 +93,10 @@ export function AppShell() {
           <Outlet />
         </SidebarInset>
         {/* `display: contents` makes the panel itself the flex child, so it
-            sits beside the inset as its own card, or under it on a phone. */}
+            sits beside the inset as its own card. On a phone the rail keys
+            are in the screen header, and this slot is empty. */}
         <div ref={setSlot} style={{ display: "contents" }} />
+      </HeaderActionsSlot.Provider>
       </RightPanelSlot.Provider>
     </SidebarProvider>
   );

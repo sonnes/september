@@ -137,7 +137,8 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
     !transcript && recent.length > 0,
     recent.map((message) => message.id).join(" "),
   );
-  const shown = transcript ? slice : recent.slice(-(fit ?? RECENT));
+  const count = fit ?? Math.min(RECENT, recent.length);
+  const shown = transcript ? slice : recent.slice(recent.length - count);
   const today = spokenToday(spoken);
 
   // Escape closes the transcript before the panel uses the key.
@@ -204,15 +205,21 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
       </p>
 
       <div className="@container bg-muted/40 flex min-h-0 flex-1 flex-col gap-3 p-2 md:p-4">
-        <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col gap-2.5">
+        {/* The column gives way in this order: the history drops rows down
+            to its label, then the stripes shrink and scroll. Only after that
+            does the column itself scroll, so the field, its keys, and the dock
+            are never under other content. The padding keeps edge focus rings
+            inside the scroll. */}
+        <div className="mx-auto flex min-h-0 w-full max-w-[calc(48rem+0.75rem)] flex-1 flex-col gap-2.5 overflow-y-auto px-1.5 pb-1">
           {error ? <Problem error={error} /> : null}
 
           {/* The history sits at the foot of its space. All messages
-              scroll, so a long list still reaches its first message. */}
+              scroll, so a long list still reaches its first message. The
+              label row always has room. */}
           <div
             className={cn(
-              "flex min-h-0 flex-1 flex-col pt-2",
-              transcript ? "overflow-y-auto" : "overflow-hidden",
+              "flex min-h-13 flex-1 flex-col pt-2",
+              transcript || spoken.length === 0 ? "overflow-y-auto" : "overflow-hidden",
             )}
           >
             {spoken.length === 0 ? (
@@ -271,29 +278,32 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
                         setTranscript(true);
                       }}
                     >
-                      See all
+                      {/* With no row in view, the key says how many wait. */}
+                      {shown.length === 0 ? `See all (${spoken.length})` : "See all"}
                     </LabelButton>
                   ) : null}
                 </div>
-                <div className="bg-card divide-muted overflow-hidden rounded-2xl shadow-sm divide-y">
-                  {transcript && page < pageCount - 1 ? (
-                    <PageRow onClick={() => setPageInput(page + 1)}>
-                      Earlier messages
-                    </PageRow>
-                  ) : null}
-                  {shown.map((message, at) => (
-                    <MessageRow
-                      key={message.id}
-                      message={message}
-                      newest={!transcript && at === shown.length - 1}
-                    />
-                  ))}
-                  {transcript && page > 0 ? (
-                    <PageRow onClick={() => setPageInput(page - 1)}>
-                      Newer messages
-                    </PageRow>
-                  ) : null}
-                </div>
+                {transcript || shown.length > 0 ? (
+                  <div className="bg-card divide-muted overflow-hidden rounded-2xl shadow-sm divide-y">
+                    {transcript && page < pageCount - 1 ? (
+                      <PageRow onClick={() => setPageInput(page + 1)}>
+                        Earlier messages
+                      </PageRow>
+                    ) : null}
+                    {shown.map((message, at) => (
+                      <MessageRow
+                        key={message.id}
+                        message={message}
+                        newest={!transcript && at === shown.length - 1}
+                      />
+                    ))}
+                    {transcript && page > 0 ? (
+                      <PageRow onClick={() => setPageInput(page - 1)}>
+                        Newer messages
+                      </PageRow>
+                    ) : null}
+                  </div>
+                ) : null}
                 {/* A copy of the recent rows that nobody sees or reaches. Its
                     rows give the heights that decide how many rows fit. */}
                 {transcript ? null : (
@@ -574,7 +584,7 @@ function SpeakingCard({
  */
 function KeyHints({ items }: { items: readonly (readonly [string, string])[] }) {
   return (
-    <p className="text-muted-foreground hidden px-4 text-xs pointer-fine:block">
+    <p className="text-muted-foreground hidden shrink-0 px-4 text-xs pointer-fine:block">
       {items.map(([key, action], at) => (
         <span key={at}>
           {at > 0 ? " · " : null}

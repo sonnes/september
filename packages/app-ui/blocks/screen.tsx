@@ -34,6 +34,22 @@ export function RightPanel({ children }: { children: ReactNode }) {
   return slot ? createPortal(children, slot) : null;
 }
 
+/**
+ * The place at the end of the screen header for keys that a screen adds, and
+ * the setter that the header gives its place to. On a phone, the rail keys of
+ * a space go here, so the screen keeps the height of a row.
+ */
+export const HeaderActionsSlot = createContext<{
+  slot: HTMLElement | null;
+  setSlot: (slot: HTMLElement | null) => void;
+} | null>(null);
+
+/** Keys that belong at the end of the screen header. */
+export function HeaderActions({ children }: { children: ReactNode }) {
+  const slot = useContext(HeaderActionsSlot)?.slot;
+  return slot ? createPortal(children, slot) : null;
+}
+
 /** The id of the `main` element of a shell. The skip link points to it. */
 export const MAIN_ID = "main";
 
@@ -126,6 +142,7 @@ export function ScreenHeader({
   children?: ReactNode;
 }) {
   const title = heading ? <h1 className="sr-only">{heading}</h1> : null;
+  const actions = useContext(HeaderActionsSlot);
   if (useChrome() === "panel") return title;
   return (
     <header data-scan-group className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
@@ -136,6 +153,7 @@ export function ScreenHeader({
         className="mr-2 data-[orientation=vertical]:h-4"
       />
       {children}
+      <div ref={actions?.setSlot} className="ml-auto flex shrink-0 items-center gap-1.5 empty:hidden" />
     </header>
   );
 }

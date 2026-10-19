@@ -351,25 +351,32 @@ export function Composer({
   });
 
   return (
-    <div className="flex shrink-0 flex-col gap-2.5">
+    // The parts of the composer are items of the screen column, so the
+    // stripes are the part that gives way when the screen is short. They
+    // shrink and scroll, and the field and its keys keep their full height.
+    <div className="contents">
       {before}
 
       {suggestions ? (
-        <Suggestions
-          spaceId={spaceId}
-          context={context}
-          text={draft}
-          history={history}
-          mood={mood}
-          onTake={write}
-          onSpeak={act}
-          onPin={onPin}
-        />
+        // The padding keeps the focus ring of an edge key inside the scroll.
+        // The floor of 96px holds only while there are stripes to show.
+        <div className="-mx-1.5 shrink overflow-y-auto px-1.5 empty:hidden has-[*]:min-h-24">
+          <Suggestions
+            spaceId={spaceId}
+            context={context}
+            text={draft}
+            history={history}
+            mood={mood}
+            onTake={write}
+            onSpeak={act}
+            onPin={onPin}
+          />
+        </div>
       ) : null}
 
       {/* The ring is indigo. It is full strength while the composer has the
           focus, a change of 3.8:1 from the resting ring. */}
-      <div className="bg-background ring-primary/30 focus-within:ring-primary rounded-surface p-3 shadow-sm ring-[3px] transition-[box-shadow]">
+      <div className="bg-background ring-primary/30 focus-within:ring-primary rounded-surface shrink-0 p-3 shadow-sm ring-[3px] transition-[box-shadow]">
         {/* The layer behind the field draws a chip under each audio tag. It
             has the same type and wrap as the field, and its text is clear, so
             only the chips show. The field on top keeps the caret, the
@@ -884,8 +891,9 @@ function Dock({ current, spaces, mode, onMode }: DockProps) {
 
   return (
     // On a narrow screen the modes wrap to a second line, so the space key
-    // keeps a full key width beside them.
-    <div className="bg-muted/40 flex shrink-0 flex-wrap items-center gap-x-2 gap-y-3 border-t px-4 py-2.5">
+    // keeps a full key width beside them. The smaller padding below 40rem
+    // keeps the three modes inside a 320px screen.
+    <div className="bg-muted/40 flex shrink-0 flex-wrap items-center gap-x-2 gap-y-3 border-t px-2 py-2.5 sm:px-4">
       <nav aria-label="Spaces" data-scan-group className="relative min-w-40 flex-1">
         {/* A row that does not fit is inert: no pointer, key, or screen
             reader reaches it, and the Switch space key takes its place. The

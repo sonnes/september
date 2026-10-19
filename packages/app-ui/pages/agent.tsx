@@ -206,7 +206,10 @@ function Agent({ space, spaces }: { space: Space; spaces: Space[] }) {
       </ScreenHeader>
 
       <div className="@container flex min-h-0 flex-1 flex-col gap-3 p-2 md:p-4">
-        <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">
+        {/* The same order as Talk: the conversation and the stripes give way
+            first, and the column scrolls last, so the field and the dock are
+            never under other content. */}
+        <div className="mx-auto flex min-h-0 w-full max-w-[calc(48rem+0.75rem)] flex-1 flex-col gap-2.5 overflow-y-auto px-1.5 pb-1">
           {error ? <Problem error={error} /> : null}
           {problem ? (
             <p
@@ -217,7 +220,7 @@ function Agent({ space, spaces }: { space: Space; spaces: Space[] }) {
             </p>
           ) : null}
 
-          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto py-4">
+          <div className="flex min-h-32 flex-1 flex-col gap-3 overflow-y-auto py-4">
             {/* A turn in flight is drawn even before its first row is
                 stored: the transcript is where this screen says it is
                 working, and a first turn that drew nothing would look like a
@@ -266,7 +269,7 @@ function Agent({ space, spaces }: { space: Space; spaces: Space[] }) {
           </div>
 
           {!hasWritingService() ? (
-            <div className="border-border bg-muted/40 mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3">
+            <div className="border-border bg-muted/40 flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-xl border p-3">
               <p className="text-sm">
                 Connect AI Assistance before asking the agent.
               </p>

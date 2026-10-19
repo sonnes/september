@@ -175,8 +175,10 @@ come from `@september/core/rules/panel`. Each rail key shows its label under
 its icon, and the label is its name. The rail keeps phrases and speech
 settings one press away on every screen inside a space — Talk, Notes, and
 Agent. Agent is where the phrases are written, so it is where seeing them
-matters most. Below 48rem, the rail is a row under the screen, and the card
-opens above the row.
+matters most. Below 48rem, the two keys sit at the end of the screen header,
+through `HeaderActions`. A key opens its tab as a sheet from the bottom, and
+the sheet gives the focus back to the key when it closes. A phrase pressed in
+the sheet closes the sheet, because the sheet covers the composer.
 
 `blocks/space.tsx` owns the Talk, Notes, and Agent mode dock. It also keeps the
 Talk audio selector beside Speak. The selector names September audio because
@@ -287,10 +289,17 @@ body. Each page marks its screen body with `@container`. The breakpoint is
 560. Below that width, the composer folds in the same way, but Clear stays.
 
 Talk shows the newest messages that fit whole in the space over the
-suggestions, up to 8, and at least the newest one. A copy of the rows that
-nobody sees or reaches gives their heights, and `recentThatFit` counts the rows
-that fit. The count changes only when a size or the messages change, so a row
-does not move under a dwell. See all shows when older messages do not fit. Each row shows the time of the message, and a press on the row speaks it
+suggestions, up to 8. A copy of the rows that nobody sees or reaches gives
+their heights, and `recentThatFit` counts the rows that fit. The count changes
+only when a size or the messages change, so a row does not move under a dwell.
+See all shows when older messages do not fit. When not even the newest row
+fits, only the label row shows, and its key says "See all (N)".
+
+The parts of `Composer` are items of the screen column, through `contents`.
+The column of Talk and Agent gives way in this order. First the history drops
+rows down to its label. Then the stripes shrink and scroll, down to 96px. Last,
+the column itself scrolls. The field, its keys, and the dock are never under
+other content. Each row shows the time of the message, and a press on the row speaks it
 again. The name of a row is "Speak again:" and the words of the message. The
 newest row is larger. A status region on the page says "Speaking:" and the
 sentence that Speak plays. See all shows the pages of 8 messages in place of the suggestions. Back

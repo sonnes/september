@@ -186,8 +186,8 @@ describe("recentThatFit", () => {
     expect(recentThatFit([60, 50, 50, 50], 159)).toBe(2);
   });
 
-  it("keeps the newest row when nothing fits", () => {
-    expect(recentThatFit([80, 50], 40)).toBe(1);
+  it("shows no row when not even the newest row fits whole", () => {
+    expect(recentThatFit([80, 50], 40)).toBe(0);
   });
 
   it("shows every row when the space holds them all", () => {

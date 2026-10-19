@@ -53,8 +53,9 @@ takes its place. On a narrow screen, the mode switch wraps to a second line, so
 the space keys keep at least 10rem.
 
 The right rail has Phrases and Voice tabs, and all three modes carry it. It expands to a 320px panel on large screens.
-Below 48rem on web, the rail is a row under the screen, and its panel opens
-above the row. The screen keeps its full width.
+Below 48rem on web, the two rail keys sit at the end of the screen header, and
+a key opens its tab as a sheet from the bottom. The screen keeps its full width
+and height.
 In the desktop panel, the rail shows only when the panel is 900 points wide or
 more. At a smaller width, Phrases and Voice open as sheets.
 
