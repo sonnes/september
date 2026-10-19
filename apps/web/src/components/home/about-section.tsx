@@ -2,10 +2,10 @@ import { ArrowUpRight } from 'lucide-react';
 
 export function AboutSection() {
   return (
-    <section id="about" className="scroll-mt-4 px-4 py-12 sm:px-6 lg:px-8">
+    <section id="about" className="scroll-mt-4 border-y border-amber-100 bg-amber-50 px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="max-w-3xl">
-          <p className="mb-3 text-sm font-medium text-zinc-700">About</p>
+          <p className="mb-3 text-sm font-semibold text-amber-800">About</p>
           <h2 className="text-3xl font-semibold tracking-tight text-zinc-950">
             Type words, not keys.
           </h2>

@@ -101,7 +101,7 @@ The interactive work surfaces (Talk, Notes) standardize on five type roles. Four
 
 ### Attention (Amber)
 
-Amber marks attention only: focus, dwell, the scan band, and the stripe tile under the pointer. Nothing else is amber.
+Amber marks attention only: focus, dwell, the scan band, and the stripe tile under the pointer. In the app, nothing else is amber. The home page uses amber as its warm accent: the second line of the hero title, the Free & open source pill, the September speaks panel (amber-50), the section labels (amber-700, amber-800 on gray), the About band (amber-50), and the Alpha badge. A home page key never uses an amber fill, so amber focus stays clear.
 
 | Token                    | Light    | Dark     | Usage                                     |
 | ------------------------ | -------- | -------- | ----------------------------------------- |
@@ -255,6 +255,7 @@ All UI primitives live in `@/packages/ui` (`src/packages/ui/components`) — sha
 | 2026-10-19 | Speaking card below the messages, indigo composer ring | While a sentence plays, the indigo speaking card shows below the messages, and the composer stays in place. Write next, or a typed letter, moves the focus to the field. The composer keeps its indigo ring, at 30% at rest and full strength with the focus, a change of 3.8:1. It does not take the amber focus ring. Supersedes the speaking card part of the 2026-10-05 row. User-approved. |
 | 2026-10-19 | The Talk history fits its space | Talk shows the newest messages that fit whole above the suggestions, up to 8. When not even the newest fits, only the label row shows, with a "See all (N)" key. A row that does not fit whole does not show, so no row is cut, and the scan and the keyboard never reach a hidden row. See all shows when older messages do not fit. The count changes only when a size or the messages change, so a row does not move under a dwell. Supersedes the fixed 3 messages of the 2026-10-05 row. User-approved. |
 | 2026-10-19 | The narrow panel header and the console row | In the panel, the space key is a 48-point key with only the initial when the header is narrower than 23rem, about a 460-point panel. Its name is the title, then "switch space". In the compact tier, the scan pause key moves to a row under the header. In the console of both apps, the voice keys and Speak are one group at the end of the row, so Speak stays at the right end when the row wraps. User-approved. |
+| 2026-10-19 | Amber on the home page only | The home page was indigo, white, and gray from top to bottom. Amber is its warm accent: the second line of the hero title in amber-300 on indigo (4.47:1, large text), the Free & open source pill, an amber-50 September speaks panel, amber-700 section labels (5.03:1 on white, 4.58:1 on zinc-100), an amber-50 About band, and the Alpha badge. The app keeps amber for attention only. Three options that spread amber into the app (warm words, warm highlights, warm paper) were turned down. User-approved. |
 
 ### Known gaps (honest state, not yet enforced)
 

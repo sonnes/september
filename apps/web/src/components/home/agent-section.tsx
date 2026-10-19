@@ -158,7 +158,7 @@ export function AgentSection() {
       <div className="mx-auto grid max-w-7xl gap-10">
         <div className="grid gap-6 lg:grid-cols-2 lg:items-end lg:gap-16">
           <div>
-            <p className="mb-4 text-base font-medium text-indigo-700">Make September your own</p>
+            <p className="mb-4 text-base font-semibold text-amber-800">Make September your own</p>
             <h2 className="max-w-xl text-4xl font-semibold leading-[1.1] tracking-tight text-zinc-950 sm:text-5xl">
               Say what you need.
               <br />

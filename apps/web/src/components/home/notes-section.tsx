@@ -34,7 +34,7 @@ export function NotesSection() {
     <details className="group border-t border-zinc-200 last:border-b">
       <summary className="focus-attention flex min-h-11 cursor-pointer list-none items-center gap-6 py-7 [&::-webkit-details-marker]:hidden">
         <div className="grid flex-1 gap-3 lg:grid-cols-[12rem_1fr] lg:gap-8">
-          <p className="text-sm font-semibold text-indigo-600">Notes & Present</p>
+          <p className="text-sm font-semibold text-amber-700">Notes & Present</p>
           <div>
             <h2 className="text-xl font-semibold leading-snug tracking-tight text-zinc-950 sm:text-2xl">
               Longer thoughts, ready ahead of time.

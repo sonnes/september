@@ -8,7 +8,7 @@ interface SectionHeaderProps {
 export function SectionHeader({ eyebrow, title, lede, hint }: SectionHeaderProps) {
   return (
     <div className="max-w-3xl">
-      <p className="mb-3 text-sm font-medium text-zinc-600">{eyebrow}</p>
+      <p className="mb-3 text-sm font-semibold text-amber-700">{eyebrow}</p>
       <h2 className="text-3xl font-semibold leading-tight tracking-tight text-zinc-950 sm:text-4xl">
         {title}
       </h2>

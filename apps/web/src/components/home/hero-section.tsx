@@ -44,7 +44,9 @@ export function HeroSection() {
         <div className="grid overflow-hidden rounded-surface border border-indigo-100 shadow-sm lg:grid-cols-2">
           {/* Copy panel — the one bold indigo surface on the page. */}
           <div className="flex flex-col items-start gap-5 bg-indigo-600 p-6 sm:gap-6 sm:p-10 lg:p-12">
-            <span className="rounded-full border border-primary-foreground/25 bg-primary-foreground/10 px-3 py-1.5 text-sm font-semibold text-primary-foreground">
+            {/* Amber is the warm accent of the home page. The app keeps amber
+                for attention only. */}
+            <span className="rounded-full bg-amber-300 px-3 py-1.5 text-sm font-semibold text-zinc-950">
               Free &amp; open source
             </span>
 
@@ -54,8 +56,8 @@ export function HeroSection() {
               <span data-tagline-line className="block whitespace-nowrap">
                 <span className="text-white">Faster</span> Communication
               </span>
-              <span data-tagline-line className="block whitespace-nowrap">
-                <span className="text-white">Fewer</span> Keystrokes
+              <span data-tagline-line className="block whitespace-nowrap text-amber-300">
+                Fewer Keystrokes
               </span>
             </h1>
 
@@ -111,7 +113,7 @@ function ConsolePeek() {
     <div
       data-hero-peek
       aria-hidden="true"
-      className="flex min-w-0 flex-col justify-center gap-6 bg-zinc-50 p-6 sm:p-10 lg:p-12"
+      className="flex min-w-0 flex-col justify-center gap-6 bg-amber-50 p-6 sm:p-10 lg:p-12"
     >
       <div>
         <p className="mb-3 text-sm font-medium text-zinc-600">You type</p>
@@ -137,8 +139,8 @@ function ConsolePeek() {
         </div>
       </div>
       <ArrowDown className="size-6 text-indigo-400" />
-      <div className="border-t border-zinc-200 pt-6">
-        <p className="mb-3 flex items-center gap-2 text-sm font-medium text-indigo-600">
+      <div className="border-t border-amber-200 pt-6">
+        <p className="mb-3 flex items-center gap-2 text-sm font-medium text-amber-800">
           <Volume2 className="size-5" />
           September speaks
         </p>

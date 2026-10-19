@@ -25,7 +25,7 @@ export function PlatformSection() {
         <div className="flex flex-col items-start gap-4 border-t border-zinc-300 pt-6 lg:border-t-0 lg:pt-0">
           <h3 className="flex flex-wrap items-center gap-3 text-xl font-semibold text-zinc-950">
             On your Mac{' '}
-            <span className="rounded-full bg-zinc-100 px-3 py-1 text-sm font-medium text-zinc-800">
+            <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">
               Alpha
             </span>
           </h3>
