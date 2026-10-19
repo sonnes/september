@@ -515,7 +515,7 @@ export function ConnectStep() {
               >
                 {option.value === "apple" && !connections.apple.available
                   ? connections.apple.reason && (
-                      <p className="text-xs leading-relaxed text-amber-700">
+                      <p className="text-foreground text-xs leading-relaxed">
                         {connections.apple.reason}
                       </p>
                     )
