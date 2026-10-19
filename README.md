@@ -2,9 +2,10 @@
 
 September is an assistive communication app for people with ALS, MND, or other speech and motor difficulties. It helps a user express a full thought with fewer keystrokes.
 
-![The Talk screen of a space named Family. Six spoken messages sit above a row of
-pinned phrases and suggested words, and a composer with a Speak
-button.](docs/screenshots/talk.png)
+![The Talk screen of a space named Family. Six spoken messages sit in a card
+above a stripe of suggested words, a row of word endings, and a composer that
+holds "I wo". Undo, Delete, Clear, the mood keys, and Speak sit under the
+composer.](docs/screenshots/talk.png)
 
 The screenshots on this page show the browser app with sample data.
 
@@ -26,6 +27,9 @@ The web app stores data and its bounded speech cache in one IndexedDB database. 
 ## Features
 
 - Talk spaces combine saved phrases, word suggestions, and a text composer.
+- Setup asks how the person chooses things: touch, a mouse, a keyboard, a
+  switch, or eye gaze. Every key is 48px or more. Eye gaze presses a key after a
+  dwell, and switch scanning steps through the groups of keys.
 - A suggestion row can start with the typed words or contain them. The Mac app shows Talk in one panel that floats above other apps.
 - A note is a Markdown document. The writing tools and the Talk suggestions open at the caret, and a list of notes sits beside the page.
 - Each space has an Agent that can read its context and propose approved
@@ -52,22 +56,24 @@ screen.
 A note holds prepared long-form text inside a space. The same words read aloud,
 present, or export.
 
-![A note named Thursday appointment, open in the note editor. Read aloud,
-Present, and Export buttons sit at the top, and the other notes of the space sit
-in a row under the text.](docs/screenshots/note.png)
+![A note named Questions for the physio on Thursday, open beside the list of
+notes. The note has a heading, a list, and a sentence. Read aloud, Present,
+Suggestions, and a More key sit in the reading bar at the foot of the
+note.](docs/screenshots/note.png)
 
 Present fills the screen with one chunk of the note at a time and speaks it in
 the user's voice.
 
-![A presented note on a full indigo screen. One sentence reads, in large white
-type, "Seventy years, and she still gets to the kitchen before anyone else is
-awake."](docs/screenshots/present.png)
+![A presented note on a full indigo screen. The first chunk reads, in large
+white type, "Questions for the physio on Thursday". Previous, Stop, and Next
+sit under the words.](docs/screenshots/present.png)
 
 Today reports the typing the app saved and what the services cost. The numbers
 stay on the device.
 
-![The Today screen. Efficiency reads 66 percent less typing this week, beside
-508 keystrokes saved and 12 messages spoken. Service use reads 6 cents across 16
+![The Today screen with This week chosen from Today, This week, and This month.
+Efficiency reads 7 percent less typing, beside 19 keystrokes saved and 9
+messages spoken. Service use reads no cost across 10 System voice
 requests.](docs/screenshots/today.png)
 
 ## Requirements

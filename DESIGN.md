@@ -166,9 +166,9 @@ The sidebar is a **solid indigo panel** in light _and_ dark mode — September's
   | control | `rounded-control` | 12px  | Buttons, inputs, icon/rail buttons, stripe submit (enter) key    |
   | chip    | `rounded-chip`    | 14px  | Suggestion word tiles                                            |
   | surface | `rounded-surface` | 20px  | Cards, composer, editor, speaking card                           |
-  | pill    | `rounded-full`    | full  | Primary actions, dock tabs, pinned chips, suggestions |
+  | pill    | `rounded-full`    | full  | Primary actions, dock tabs, pinned chips, Speak       |
 
-  The legacy shadcn `--radius-sm/md/lg/xl` scale still exists for overlays (dropdowns, popovers, dialogs), which stay slightly tighter than content surfaces on purpose. Nested micro-controls (tiptap toolbar buttons) keep `rounded-md` (8px) so they read as keys inside a surface.
+  The legacy shadcn `--radius-sm/md/lg/xl` scale still exists for overlays (dropdowns, popovers, dialogs), which stay slightly tighter than content surfaces on purpose. The note tool keys are 48px `rounded-control` keys.
 
 - **Surface treatment:** border **plus** a soft `shadow-sm` on cards and the inset shell — a gentle depth cue (a deliberate step warmer than a flat, border-only system).
 - **Scrollbars:** custom, calm, and rounded — a slim zinc pill thumb (`zinc-500`, `zinc-600` on hover; `zinc-400`/`zinc-300` in dark) on a transparent track, `scrollbar-width: thin` + 12px WebKit width with a 3px transparent inset. Defined once in `globals.css`. Surfaces that deliberately hide their scrollbar (suggestion stripes) still do.
@@ -201,7 +201,7 @@ September is operated under physical constraint. These are requirements, not nic
 All UI primitives live in `@/packages/ui` (`src/packages/ui/components`) — shadcn wrappers over Radix, composed with `cva`. Icons: `lucide-react`. No raw Radix or hand-rolled primitives in app code.
 
 - **Buttons:** `Button` with `rounded-control` (12px), `transition-all`. Variants: `default` (indigo), `destructive`, `outline`, `secondary`, `ghost`, `link`. Sizes: `default` · `sm` · `lg` · `icon` / `icon-sm` / `icon-lg`. Every size is at least `--reach-target` (48px) high. The sizes differ only in padding, and the icon sizes are 48px square. Pill actions (Speak, Voice-over, Present, Export, tabs) override with `rounded-full`.
-- **Suggestion pills:** `Suggestion` / `Suggestions` — `rounded-full`, `outline`, `size="sm"`, `px-4`, in a horizontal `ScrollArea`. The autocomplete/contextual-reply surface; the product's signature interaction. Keep targets comfortable and well-spaced.
+- **Suggestion stripes:** `Suggestions` shows rows of word tiles above the composer, the signature interaction of the product. A tile is `rounded-chip` and filled in the lane of its source, and a mark at the start of the row names the source. Each row is a group named by its number, its source, and its words. A tile is named by its word and the words that a press takes, for example "go. Takes: I want to go". The tile under the pointer is amber, and the tiles before it show the indigo tint of their lane. The word size and the tile height stay fixed, and only the padding shrinks. The end key stays outside the scroll of the row, and a long row fades at its end. The pin is a 44px key. The stripes never scroll up and down.
 - **Cards:** `Card` — `rounded-surface border py-6 shadow-sm`, `gap-6`; `CardTitle` = `font-semibold leading-none`. Roomy, lightly elevated.
 - **Badges:** `Badge` — `rounded-full border px-2 py-0.5 text-xs font-medium`. Variants `default`/`secondary`/`destructive`/`outline`.
 - **Inputs / fields:** `Input` = 48px high, `rounded-control border border-input shadow-xs`, `text-base` (16px) at every width. Compose with `Field`/`Form` (react-hook-form). Always pair with a visible `Label`, a search field too. A placeholder is a hint, never the only label.
@@ -209,9 +209,9 @@ All UI primitives live in `@/packages/ui` (`src/packages/ui/components`) — sha
 - **Switches:** `Switch` is 32 by 56px. The thumb sits 2px from each edge and shows an indigo check when the switch is on. The whole labelled row of 48px turns it on and off.
 - **Callouts:** `Callout` — `rounded-lg border px-4 py-3 text-sm`, tones `info`/`warning`/`success`/`danger`, each with a lucide icon. Use for legal/explanatory notes.
 - **Sidebar nav:** `SidebarMenuButton` items (icon + label) in a `nav` named Main, collapsible groups via shadcn `Collapsible`, `SidebarGroupLabel` (`text-xs font-medium`, full white). Every row is 48px. The current row has `aria-current="page"`, the indigo-600 fill, and a 4px white bar at its start edge, so the state is not a fill alone. Rows use the inset focus. The edge strip (`SidebarRail`) is for a pointer only. Indigo surface throughout.
-- **Current tab:** a space tab in the dock shows a dot before its name when it is open. The Talk, Notes, and Agent switch is a `nav` with `aria-current`, not a `tablist`.
+- **Current tab:** a space tab in the dock shows a dot before its name when it is open. The Talk, Notes, and Agent switch is a `nav` with `aria-current`.
 - **Skip link:** the first key of each shell is "Skip to main content". It shows at the top left while it has the focus, with the attention focus.
-- **Dropdowns / comboboxes:** shadcn `DropdownMenu` and `Command` + `Popover`. Dwell and scan open them with a pointer press. The desktop More key opens a sheet of 48px rows, not a dropdown. A short fixed list of choices, such as the usage period, is a row of `ChoiceKey` keys.
+- **Dropdowns / comboboxes:** shadcn `DropdownMenu` and `Command` + `Popover`. Dwell and scan open them with a pointer press. The desktop More key opens a sheet of 48px rows. A short fixed list of choices, such as the usage period, is a row of `ChoiceKey` keys.
 - **Word being read:** while the browser system voice reads a message, its current word is indigo-600 with white words. It is not amber, because amber marks attention only.
 - **Present keys:** Previous, Stop, and Next are keys below the words, in the ink of the tone. A key with nothing to do keeps its place and shows a dotted line. Tab stays inside the stage, and the focus goes back to the Present key when the stage closes.
 - **Note focus:** while the note document has the focus, a 3px zinc-900 bar in a 2px amber ring shows at its start edge. A ring around the whole page pulls the eye from the words. A note opens at its top. After the person moves the caret or writes, the caret line stays clear of the reading bar and has 24px of room above it.

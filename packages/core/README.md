@@ -135,7 +135,7 @@ Import autocomplete through `@september/core/autocomplete`.
 
 `rules/note-document.ts` holds the line rules of the note editor: the kind of
 a line, the style toggle, bold and italic marks, the sentence before the caret,
-Delete word, the prefix that Enter carries to the next line, a range
+Delete last word, the prefix that Enter carries to the next line, a range
 replace, and `notePreview`, the line that the list of notes shows under a name. The note stays plain Markdown, so the editor never parses it itself.
 
 `rules/stripes.ts` matches individual history sentences and limits suggestion

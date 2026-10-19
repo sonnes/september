@@ -338,7 +338,7 @@ The screen has these parts, from the top:
    Export and Delete note.
 
 The words go in at the caret. On the first typed key, the writing tools open
-under the caret line: the style keys, Undo, Delete word, Hide, and the same
+under the caret line: the style keys, Undo, Delete last word, Hide, and the same
 suggestion stripes as Talk. Escape or Hide closes them. ⌘J opens them with no
 typed key. `NoteDocument` in `packages/app-ui/blocks/note-document.tsx` is the
 editor, and the line rules are in `packages/core/rules/note-document.ts`.
@@ -575,10 +575,6 @@ Below the rows are shortcut ideas: words the user typed five or more times,
 with a code ready. `mineShortcuts` counts them locally, with no model, so they
 work in privacy mode. An idea the user turns down is kept in a setting and
 never comes back.
-
-One thing does not match the web app. Each control of a row is 44px, where the
-web app uses 36px. `DESIGN.md` asks for 44px, and a user of September points
-with less accuracy than a user of a browser.
 
 Nearest the composer is the word row. It offers the next word, or the endings
 of the word that the user started. The engine in `packages/core/autocomplete/` learns

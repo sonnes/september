@@ -74,7 +74,7 @@ cargo fmt --all -- --check
 - Write through `Composer` in `packages/app-ui/blocks/space.tsx` in Talk, Agent, and
   the first turn that sets a space up. Notes writes in `NoteDocument` in
   `packages/app-ui/blocks/note-document.tsx`, which shows the same `Suggestions`,
-  Undo, and Delete word. A writing surface without the word tiles, the codes, or
+  Undo, and Delete last word. A writing surface without the word tiles, the codes, or
   undo leaves out a user who cannot type. `composerAction` in
   `packages/core/rules/spaces.ts` holds what each console says, so a test reads the
   words without a renderer.

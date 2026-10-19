@@ -45,7 +45,7 @@ treating the space as gone.
 
 The dock has two navigation landmarks. Spaces holds one key for each space and
 the New space key. Space mode holds Talk, Notes, and Agent. Each mode is a page
-of the space, so the switch is a `nav`, not a `tablist`. The open space and the
+of the space, so the switch is a `nav`. The open space and the
 open mode have `aria-current="page"`, and the open space shows a dot.
 
 If the space keys do not fit, their row is `inert`, and one Switch space key
