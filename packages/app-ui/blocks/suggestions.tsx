@@ -338,13 +338,15 @@ export function Suggestions({
               />
 
               {/* The words already typed are not shown again, so a tile always
-                  adds something. A hover marks the tiles a press would take. */}
+                  adds something. A hover marks the tiles a press would take,
+                  and the tile under the pointer is amber, the attention color. */}
               {stripe.tokens.map((token, index) => {
                 if (index < stripe.hidden) return null;
                 const active =
                   hover !== null &&
                   hover.stripe === row &&
                   index <= hover.index;
+                const pointed = active && hover.index === index;
                 const punctuation = PUNCTUATION.test(token);
                 const tag = isTag(token);
                 // The typed words inside the row, so the user sees why it is here.
@@ -374,11 +376,13 @@ export function Suggestions({
                       "rounded-chip focus-visible:ring-ring inline-flex shrink-0 items-center border transition-colors focus-visible:ring-2 focus-visible:outline-none",
                       punctuation ? "" : "font-medium",
                       found && "decoration-primary underline decoration-2 underline-offset-4",
-                      tag
-                        ? cn(TAG_TILE, active && "border-primary bg-primary/20")
-                        : active
-                          ? lane.active
-                          : lane.idle,
+                      pointed
+                        ? "border-attention-foreground bg-attention text-attention-foreground"
+                        : tag
+                          ? cn(TAG_TILE, active && "border-primary bg-primary/20")
+                          : active
+                            ? lane.active
+                            : lane.idle,
                     )}
                   >
                     {tag ? <TagMark label={tagLabel(token)} /> : token}

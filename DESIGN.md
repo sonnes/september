@@ -101,11 +101,11 @@ The interactive work surfaces (Talk, Notes) standardize on five type roles. Four
 
 ### Attention (Amber)
 
-Amber marks attention only: focus, dwell, and the scan band. Nothing else is amber.
+Amber marks attention only: focus, dwell, the scan band, and the stripe tile under the pointer. Nothing else is amber.
 
 | Token                    | Light    | Dark     | Usage                                     |
 | ------------------------ | -------- | -------- | ----------------------------------------- |
-| `--attention`            | amber-300 | amber-300 | The ring of `.focus-attention`, the dwell fill, the scan band |
+| `--attention`            | amber-300 | amber-300 | The ring of `.focus-attention`, the dwell fill, the scan band, the hovered stripe tile |
 | `--attention-foreground` | zinc-900 | zinc-900 | Ink on amber, and the line inside the ring |
 | `--ring`                 | zinc-900 | amber-300 | The outline of a focused control         |
 
