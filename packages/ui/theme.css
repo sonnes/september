@@ -342,6 +342,14 @@ body {
   * {
     @apply border-border outline-ring;
   }
+  /* After a move to another screen, or after the skip link, the focus goes to
+     the heading or to the main area. Neither one is a control, so neither one
+     shows a ring. A control that a person reaches with Tab keeps its ring. */
+  h1[tabindex='-1']:focus,
+  main[tabindex='-1']:focus,
+  [data-slot='sidebar-inset'][tabindex='-1']:focus {
+    outline: none;
+  }
   body {
     @apply bg-background text-foreground;
   }

@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  STAGE_PADDING_RATIO,
   activeCaptionIndex,
   alignmentToWords,
   captionProgress,
   CHUNK_CHARACTER_LIMIT,
+  chunkFontRatio,
   DEFAULT_TONE,
   exportFileName,
   exportReason,
@@ -198,5 +200,51 @@ describe("what the app remembers about presenting", () => {
       tone: "sage",
       spoken: false,
     });
+  });
+});
+
+describe("the size of a chunk on the stage", () => {
+  // A bold capital is about 0.62 of the font size wide, wider than the
+  // average glyph.
+  const widest = (text: string) => Math.max(...text.split(/\s+/).map((word) => word.length)) * 0.62;
+  const usable = 1 - STAGE_PADDING_RATIO * 2;
+
+  it("keeps the longest word of a heading on one line of the stage", () => {
+    for (const aspect of [1.4, 1.43, 0.75, 1.78]) {
+      const ratio = chunkFontRatio("Questions for the doctor", "display", aspect);
+      expect(ratio * widest("Questions for the doctor")).toBeLessThanOrEqual(usable);
+    }
+  });
+
+  // The lines that the words take when they wrap at word ends, with each
+  // glyph about 0.52 of the font size wide.
+  const lines = (text: string, ratio: number) => {
+    const room = usable / (ratio * 0.52);
+    let count = 1;
+    let used = 0;
+    for (const word of text.split(/\s+/)) {
+      const need = used === 0 ? word.length : used + 1 + word.length;
+      if (need > room && used > 0) {
+        count += 1;
+        used = word.length;
+      } else {
+        used = need;
+      }
+    }
+    return count;
+  };
+
+  it("keeps the wrapped lines of a heading inside the height of the stage", () => {
+    const text = "Questions for the doctor";
+    for (const aspect of [0.525, 0.62, 1.4, 1.78]) {
+      const ratio = chunkFontRatio(text, "display", aspect);
+      expect(lines(text, ratio) * 1.08 * ratio).toBeLessThanOrEqual(0.62 * aspect);
+    }
+  });
+
+  it("keeps the longest word of a sentence on one line of the stage", () => {
+    const text = "Remember the physiotherapy appointment";
+    const ratio = chunkFontRatio(text, "support", 1.4);
+    expect(ratio * widest(text)).toBeLessThanOrEqual(usable);
   });
 });

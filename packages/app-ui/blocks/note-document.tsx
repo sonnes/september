@@ -112,6 +112,8 @@ export function NoteDocument({
   const box = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLDivElement>(null);
   const tray = useRef<HTMLDivElement>(null);
+  // Becomes true when the user moves the caret or writes.
+  const moved = useRef(false);
   const lines = useRef(value.split("\n"));
   const span = useRef<Span>(endOf(lines.current));
   const history = useRef<{ lines: string[]; caret: Point }[]>([]);
@@ -168,6 +170,7 @@ export function NoteDocument({
   /** Puts text in the place of a span. Undo can take back a remembered edit. */
   const apply = useCallback(
     (from: Point, to: Point, text: string, remember = true) => {
+      moved.current = true;
       if (remember) {
         history.current = [
           ...history.current.slice(-49),
@@ -258,7 +261,9 @@ export function NoteDocument({
       span.current = forward ? { from: anchor, to: focus } : { from: focus, to: anchor };
       markActive(element, focus.line, selection.isCollapsed);
       refresh();
-      keepCaretClear(element, focus.line);
+      // The note opens at its top. The scroll follows the caret only after
+      // the user moves it or writes.
+      if (moved.current) keepCaretClear(element, focus.line);
       if (open) measure();
     };
     document.addEventListener("selectionchange", onSelection);
@@ -333,6 +338,7 @@ export function NoteDocument({
   };
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    moved.current = true;
     if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
     event.preventDefault();
     const { from, to } = span.current;
@@ -415,6 +421,9 @@ export function NoteDocument({
         spellCheck
         onInput={onInput}
         onKeyDown={onKeyDown}
+        onPointerDown={() => {
+          moved.current = true;
+        }}
         onPaste={onPaste}
         onBlur={onBlur}
         className="note-document caret-primary min-h-40 text-xl leading-relaxed focus:outline-none"
@@ -671,6 +680,9 @@ function placeCaret(element: HTMLElement, { line, offset }: Point) {
  */
 const CARET_ROOM_PX = 96;
 
+/** The room above the caret line, so the line never sits on the top edge. */
+const CARET_TOP_ROOM_PX = 24;
+
 /** The box of the caret, or of its line when the caret has no box. */
 function caretRect(element: HTMLElement, line: number): DOMRect | null {
   const selection = getSelection();
@@ -684,7 +696,10 @@ function caretRect(element: HTMLElement, line: number): DOMRect | null {
   return row?.getBoundingClientRect() ?? null;
 }
 
-/** Scrolls the note until the caret line is clear of the reading bar. */
+/**
+ * Scrolls the note until the caret line is clear of the reading bar at the
+ * foot and has room above it at the top.
+ */
 function keepCaretClear(element: HTMLElement, line: number) {
   const scroller = element.closest<HTMLElement>("[data-note-scroll]");
   const caret = caretRect(element, line);
@@ -693,5 +708,10 @@ function keepCaretClear(element: HTMLElement, line: number) {
   // A hidden or tiny scroll has no room to keep.
   if (view.height <= CARET_ROOM_PX) return;
   const over = caret.bottom - (view.bottom - CARET_ROOM_PX);
-  if (over > 0) scroller.scrollTop += over;
+  if (over > 0) {
+    scroller.scrollTop += over;
+    return;
+  }
+  const under = view.top + CARET_TOP_ROOM_PX - caret.top;
+  if (under > 0) scroller.scrollTop = Math.max(0, scroller.scrollTop - under);
 }

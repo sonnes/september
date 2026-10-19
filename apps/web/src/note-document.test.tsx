@@ -208,8 +208,35 @@ describe('the note document', () => {
     scroller.getBoundingClientRect = () => rect(0, 400);
     (doc().children[2] as HTMLElement).getBoundingClientRect = () => rect(370, 400);
 
+    doc().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
     await act(async () => caret(2, 0));
     expect(scroller.scrollTop).toBeGreaterThan(0);
+  });
+
+  it('opens a note at its top, though the caret starts at the end', async () => {
+    await open('One\nTwo\nThree');
+    const scroller = container.querySelector<HTMLElement>('[data-note-scroll]')!;
+    const rect = (top: number, bottom: number) =>
+      ({ top, bottom, left: 0, right: 600, width: 600, height: bottom - top, x: 0, y: top }) as DOMRect;
+    scroller.getBoundingClientRect = () => rect(0, 400);
+    (doc().children[2] as HTMLElement).getBoundingClientRect = () => rect(370, 400);
+
+    await act(async () => caret(2, 0));
+    expect(scroller.scrollTop).toBe(0);
+  });
+
+  it('keeps the caret line clear of the top edge', async () => {
+    await open('One\nTwo\nThree');
+    const scroller = container.querySelector<HTMLElement>('[data-note-scroll]')!;
+    const rect = (top: number, bottom: number) =>
+      ({ top, bottom, left: 0, right: 600, width: 600, height: bottom - top, x: 0, y: top }) as DOMRect;
+    scroller.getBoundingClientRect = () => rect(100, 500);
+    (doc().children[0] as HTMLElement).getBoundingClientRect = () => rect(95, 125);
+    scroller.scrollTop = 200;
+
+    doc().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+    await act(async () => caret(0, 0));
+    expect(scroller.scrollTop).toBeLessThan(200);
   });
 
   it('leaves the scroll alone while the caret line is clear', async () => {

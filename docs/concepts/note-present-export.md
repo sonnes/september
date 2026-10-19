@@ -35,7 +35,9 @@ and **support** otherwise. The markup never reaches the stage, the same way it
 never reaches the voice.
 
 `chunkFontRatio` gives the font size as a share of the stage width, from the
-length of the chunk and the shape of the stage. The live stage is full-bleed:
+length of the chunk and the shape of the stage. The longest word fits on one
+line, because a word does not break. The size then comes down until the lines
+that the words wrap into fit the height of the stage. The live stage is full-bleed:
 a Mac or an iPad faces the room in landscape, and locking a phone shape would
 waste most of the screen. The 9:16 frame is the shape of the exported video
 only.

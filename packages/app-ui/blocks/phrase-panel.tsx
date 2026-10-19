@@ -138,7 +138,8 @@ export function Phrases({
               onChange={(event) => setDraft(event.target.value)}
             />
           </div>
-          <div className="flex w-20 shrink-0 flex-col gap-1.5">
+          {/* Wide enough for its placeholder in the code face. */}
+          <div className="flex w-28 shrink-0 flex-col gap-1.5">
             <Label htmlFor={codeId}>Code</Label>
             <Input
               id={codeId}

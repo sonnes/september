@@ -6,6 +6,7 @@ import {
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
+  type RefObject,
 } from "react";
 
 import {
@@ -72,6 +73,11 @@ export function PresentOverlay({
   const [colours, setColours] = useState(false);
   const stage = useStageSize();
   const held = useRef<HTMLDivElement>(null);
+  // The words fit between the top bar and the keys, so the keys never cover
+  // them.
+  const topBar = useRef<HTMLDivElement>(null);
+  const keyRow = useRef<HTMLDivElement>(null);
+  const room = useChromeRoom(topBar, keyRow);
 
   // The stage takes the focus, and gives it back to the key that opened it.
   useEffect(() => {
@@ -179,17 +185,29 @@ export function PresentOverlay({
     >
       <Progress index={index} total={total} tone={tone} />
 
-      {chunk ? (
-        <Stage chunk={chunk} tone={tone} stage={stage} />
-      ) : (
-        <p className="grid h-full place-items-center px-8 text-center text-2xl opacity-70">
-          This note has no words yet.
-        </p>
-      )}
+      <div className="absolute inset-x-0" style={{ top: room.top, bottom: room.bottom }}>
+        {chunk ? (
+          <Stage
+            chunk={chunk}
+            tone={tone}
+            stage={{
+              width: stage.width,
+              height: Math.max(1, stage.height - room.top - room.bottom),
+            }}
+          />
+        ) : (
+          <p className="grid h-full place-items-center px-8 text-center text-2xl opacity-70">
+            This note has no words yet.
+          </p>
+        )}
+      </div>
 
       <Zones index={index} total={total} onMove={move} />
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-4">
+      <div
+        ref={topBar}
+        className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-4"
+      >
         <span className="pointer-events-none opacity-80">
           {tone.mark === "keycap" ? (
             <BrandMark size={28} />
@@ -208,7 +226,10 @@ export function PresentOverlay({
         </button>
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 p-4">
+      <div
+        ref={keyRow}
+        className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 p-4"
+      >
         {speechFailed ? (
           <p role="alert" className="px-4 text-center text-sm">
             Speech could not play. Start the voice again to retry, or continue with the words on screen.
@@ -496,6 +517,33 @@ function ChromeButton({
       {children}
     </button>
   );
+}
+
+/**
+ * The heights of the top bar and the keys at the foot of the stage. The words
+ * fit in the room between them.
+ */
+function useChromeRoom(
+  top: RefObject<HTMLElement | null>,
+  bottom: RefObject<HTMLElement | null>,
+): { top: number; bottom: number } {
+  const [room, setRoom] = useState({ top: 0, bottom: 0 });
+
+  useEffect(() => {
+    const above = top.current;
+    const below = bottom.current;
+    if (!above || !below || typeof ResizeObserver === "undefined") return;
+    const read = () => {
+      const next = { top: above.offsetHeight, bottom: below.offsetHeight };
+      setRoom((held) => (held.top === next.top && held.bottom === next.bottom ? held : next));
+    };
+    const observer = new ResizeObserver(read);
+    observer.observe(above);
+    observer.observe(below);
+    return () => observer.disconnect();
+  }, [top, bottom]);
+
+  return room;
 }
 
 /**

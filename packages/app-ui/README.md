@@ -201,7 +201,8 @@ room and not for the person holding the keyboard. It stays a block and not a
 route, so no app has to change its route set to present a note.
 
 Below the words of Present, Previous, Stop, and Next are keys at the reach size,
-in one scan group. A key that has nothing to do keeps its place, has
+in one scan group. The words fit in the room between the top bar and these
+keys, so the keys never cover them. A key that has nothing to do keeps its place, has
 `aria-disabled`, and shows a dotted line. The thirds of the stage still move
 the story for a hand, but they are not keys, so a gaze that reads the words
 presses nothing.

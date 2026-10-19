@@ -48,8 +48,9 @@ The words go in at the caret. On the first typed key, the writing tools open und
 Escape or Hide closes the tools. ⌘J or Ctrl+J opens them with no typed key.
 
 While the note has the focus, a bar shows at its start edge: an ink line inside
-amber. When the caret moves, the note scrolls until the caret line is clear of
-the 96px that the reading bar takes at the foot of the page.
+amber. A note opens at its top. After the user moves the caret or writes, the
+note scrolls until the caret line is clear of the 96px that the reading bar
+takes at the foot of the page, with 24px of room above the line.
 
 ## Reading bar
 

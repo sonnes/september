@@ -193,6 +193,12 @@ export const STAGE_PADDING_RATIO = 0.07;
 const GLYPH_WIDTH_RATIO = 0.52;
 
 /**
+ * How wide a wide glyph is, such as a bold capital, as a share of the font
+ * size. The longest word must fit on one line at this width.
+ */
+const WIDE_GLYPH_RATIO = 0.62;
+
+/**
  * The font size of a chunk, as a share of the stage width.
  *
  * The stage is one colour and one thought, so the words take as much of it as
@@ -216,8 +222,38 @@ export function chunkFontRatio(
     (usableHeight * usableWidth) /
       (characters * GLYPH_WIDTH_RATIO * spec.lineHeightRatio),
   );
+  // A word does not break, so the longest word must fit across the stage.
+  const words = text.trim().split(/\s+/);
+  const longest = Math.max(...words.map((word) => word.length));
+  const wordFit = usableWidth / (longest * WIDE_GLYPH_RATIO);
 
-  return Math.min(spec.maxFontRatio, Math.max(spec.minFontRatio, fitted));
+  // Words wrap at their ends, which leaves room unused at the end of a line.
+  // The size comes down until the wrapped lines fit the height.
+  let ratio = Math.min(spec.maxFontRatio, fitted, wordFit);
+  while (
+    ratio > spec.minFontRatio &&
+    wrappedLines(words, usableWidth / (ratio * GLYPH_WIDTH_RATIO)) * spec.lineHeightRatio * ratio >
+      usableHeight
+  ) {
+    ratio *= 0.96;
+  }
+  return Math.max(spec.minFontRatio, ratio);
+}
+
+/** The lines that words take when they wrap at word ends. */
+function wrappedLines(words: readonly string[], room: number): number {
+  let lines = 1;
+  let used = 0;
+  for (const word of words) {
+    const need = used === 0 ? word.length : used + 1 + word.length;
+    if (need > room && used > 0) {
+      lines += 1;
+      used = word.length;
+    } else {
+      used = need;
+    }
+  }
+  return lines;
 }
 
 // ---------------------------------------------------------------- chunking

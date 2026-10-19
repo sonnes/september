@@ -127,7 +127,7 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
   // The history shows the newest messages that fit whole in its space, and
   // See all opens the rest.
   const recent = spoken.slice(-TRANSCRIPT_PAGE_SIZE);
-  const historyArea = useRef<HTMLElement>(null);
+  const historyArea = useRef<HTMLDivElement>(null);
   const historyLabel = useRef<HTMLDivElement>(null);
   const historyCopy = useRef<HTMLDivElement>(null);
   const fit = useRecentFit(
@@ -216,9 +216,10 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
           {/* The history sits at the foot of its space. All messages
               scroll, so a long list still reaches its first message. The
               label row always has room. */}
+          {/* The side padding keeps a focus ring inside the scroll. */}
           <div
             className={cn(
-              "flex min-h-13 flex-1 flex-col pt-2",
+              "-mx-1.5 flex min-h-13 flex-1 flex-col px-1.5 pt-2",
               transcript || spoken.length === 0 ? "overflow-y-auto" : "overflow-hidden",
             )}
           >
@@ -250,60 +251,62 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
                 )}
               </div>
             ) : (
-              <section
+              <div
                 ref={historyArea}
-                aria-label="Messages"
-                data-scan-group
                 className={cn(
-                  "relative flex flex-col gap-1",
+                  "relative flex flex-col",
                   transcript ? "mt-auto" : "min-h-0 flex-1 justify-end",
                 )}
               >
-                <div
-                  ref={historyLabel}
-                  className="text-muted-foreground flex min-h-11 shrink-0 items-center gap-1.5 pl-1.5 text-xs font-semibold"
-                >
-                  {transcript ? "All messages" : today ? "Said today" : "Said before"}
-                  <span className="text-muted-foreground font-medium">
-                    {transcript ? spoken.length : today || null}
-                  </span>
-                  {transcript ? (
-                    <LabelButton onClick={() => setTranscript(false)}>
-                      Back to suggestions
-                    </LabelButton>
-                  ) : spoken.length > shown.length ? (
-                    <LabelButton
-                      onClick={() => {
-                        setPageInput(0);
-                        setTranscript(true);
-                      }}
-                    >
-                      {/* With no row in view, the key says how many wait. */}
-                      {shown.length === 0 ? `See all (${spoken.length})` : "See all"}
-                    </LabelButton>
-                  ) : null}
-                </div>
-                {transcript || shown.length > 0 ? (
-                  <div className="bg-card divide-muted overflow-hidden rounded-2xl shadow-sm divide-y">
-                    {transcript && page < pageCount - 1 ? (
-                      <PageRow onClick={() => setPageInput(page + 1)}>
-                        Earlier messages
-                      </PageRow>
-                    ) : null}
-                    {shown.map((message, at) => (
-                      <MessageRow
-                        key={message.id}
-                        message={message}
-                        newest={!transcript && at === shown.length - 1}
-                      />
-                    ))}
-                    {transcript && page > 0 ? (
-                      <PageRow onClick={() => setPageInput(page - 1)}>
-                        Newer messages
-                      </PageRow>
+                {/* The group holds only the label and the messages, so the
+                    scan band marks them and not the empty space above. */}
+                <section aria-label="Messages" data-scan-group className="flex flex-col gap-1">
+                  <div
+                    ref={historyLabel}
+                    className="text-muted-foreground flex min-h-11 shrink-0 items-center gap-1.5 pl-1.5 text-xs font-semibold"
+                  >
+                    {transcript ? "All messages" : today ? "Said today" : "Said before"}
+                    <span className="text-muted-foreground font-medium">
+                      {transcript ? spoken.length : today || null}
+                    </span>
+                    {transcript ? (
+                      <LabelButton onClick={() => setTranscript(false)}>
+                        Back to suggestions
+                      </LabelButton>
+                    ) : spoken.length > shown.length ? (
+                      <LabelButton
+                        onClick={() => {
+                          setPageInput(0);
+                          setTranscript(true);
+                        }}
+                      >
+                        {/* With no row in view, the key says how many wait. */}
+                        {shown.length === 0 ? `See all (${spoken.length})` : "See all"}
+                      </LabelButton>
                     ) : null}
                   </div>
-                ) : null}
+                  {transcript || shown.length > 0 ? (
+                    <div className="bg-card divide-muted overflow-hidden rounded-2xl shadow-sm divide-y">
+                      {transcript && page < pageCount - 1 ? (
+                        <PageRow onClick={() => setPageInput(page + 1)}>
+                          Earlier messages
+                        </PageRow>
+                      ) : null}
+                      {shown.map((message, at) => (
+                        <MessageRow
+                          key={message.id}
+                          message={message}
+                          newest={!transcript && at === shown.length - 1}
+                        />
+                      ))}
+                      {transcript && page > 0 ? (
+                        <PageRow onClick={() => setPageInput(page - 1)}>
+                          Newer messages
+                        </PageRow>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </section>
                 {/* A copy of the recent rows that nobody sees or reaches. Its
                     rows give the heights that decide how many rows fit. */}
                 {transcript ? null : (
@@ -322,7 +325,7 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
                     ))}
                   </div>
                 )}
-              </section>
+              </div>
             )}
           </div>
 
