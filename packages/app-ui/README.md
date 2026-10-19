@@ -252,8 +252,10 @@ example, `/settings/writing` shows the title Settings. Back goes to the last
 space-mode path that the panel showed. If no such path exists, Back goes to
 `/spaces`.
 
-The space button opens the space switcher: a search field, the spaces by last
-use, All spaces, and New space. All spaces opens `/spaces`. While the switcher
+The space button shows the initial and the title of the space. Its name is the
+title, then "switch space". The space button opens the space switcher: a search
+field, the spaces by last use, All spaces, and New space. Each row of the
+switcher is named by its words. All spaces opens `/spaces`. While the switcher
 is open and its search is empty, the digits 1 to 9 open a row.
 
 The mode switch is a `nav` named Space mode, and the open mode has

@@ -119,11 +119,9 @@ export function PanelHeader({
         </>
       ) : (
         <>
+          {/* The name is the words on the key, then what the key does. */}
           <button
             type="button"
-            aria-label={
-              space ? `Switch space, now ${space.title}` : "Switch space"
-            }
             aria-haspopup="dialog"
             onClick={() => onSheet("spaces")}
             className={cn(
@@ -133,6 +131,7 @@ export function PanelHeader({
           >
             {space ? <Initial title={space.title} /> : null}
             <span className="truncate">{space?.title ?? "Spaces"}</span>
+            <span className="sr-only">, switch space</span>
             <ChevronDown className="size-4 shrink-0" aria-hidden />
           </button>
 
@@ -522,9 +521,10 @@ function SpaceSwitcher({
       <ul className="flex flex-col gap-0.5">
         {shown.map((space, at) => (
           <li key={space.id}>
+            {/* The name is the words of the row. The initial and the digit
+                are hidden from it. */}
             <button
               type="button"
-              aria-label={space.title}
               aria-current={space.id === current?.id ? "true" : undefined}
               onClick={() => onOpen(space)}
               className={cn(

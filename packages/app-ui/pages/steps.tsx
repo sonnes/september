@@ -80,7 +80,7 @@ function Step({
           <h2 className="text-2xl leading-tight font-bold md:text-3xl lg:text-4xl">
             {step.title}
           </h2>
-          <p className="max-w-2xl text-sm leading-relaxed text-zinc-500 md:text-base">
+          <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
             {step.subtitle}
           </p>
         </div>
@@ -103,7 +103,7 @@ function Step({
       <div className="min-h-0 flex-1 overflow-y-auto pr-1">{children}</div>
 
       <div className="flex shrink-0 flex-col gap-4 border-t border-zinc-200 pt-4 sm:flex-row sm:items-center sm:justify-between sm:pt-6">
-        <p className="text-xs text-zinc-500">{step.helper}</p>
+        <p className="text-xs text-muted-foreground">{step.helper}</p>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
           {footer}
         </div>
@@ -261,7 +261,7 @@ export function ProfileStep() {
                 </Button>
               ))}
             </div>
-            <p className="text-xs leading-relaxed text-zinc-500">
+            <p className="text-xs leading-relaxed text-muted-foreground">
               {selected?.description ?? "Edit the note below any time."}
             </p>
             <Textarea
@@ -297,7 +297,7 @@ function Field({
         <Label htmlFor={htmlFor} className="text-sm font-semibold">
           {title}
         </Label>
-        <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
           {description}
         </p>
       </div>
@@ -361,7 +361,7 @@ export function FinishStep() {
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="grid gap-1 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-3">
-      <dt className="text-sm text-zinc-500">{label}</dt>
+      <dt className="text-sm text-muted-foreground">{label}</dt>
       <dd className="text-sm font-semibold">{value}</dd>
     </div>
   );
@@ -635,7 +635,7 @@ function Section({
     <div className="grid gap-5 border-l border-zinc-200 pl-4 sm:pl-5 lg:grid-cols-[15rem_1fr] lg:gap-8">
       <div>
         <p className="text-sm font-semibold">{title}</p>
-        <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
           {description}
         </p>
       </div>
@@ -679,7 +679,7 @@ function Choice({
       } ${disabled ? "border-input border-dashed" : ""}`}
     >
       <label className="grid cursor-pointer grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[auto_auto_minmax(0,1fr)_auto] sm:gap-4">
-        <RadioGroupItem value={value} disabled={disabled} className="size-5" />
+        <RadioGroupItem value={value} disabled={disabled} />
         <Mark service={value} />
         <span>
           <span className="text-sm font-semibold">{label}</span>

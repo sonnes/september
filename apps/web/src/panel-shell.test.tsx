@@ -113,8 +113,28 @@ function press(key: string, init: KeyboardEventInit = {}) {
   });
 }
 
+/** The name of a key from its content: its words without the hidden parts. */
+const nameOf = (element: HTMLElement | undefined) => {
+  if (!element) return undefined;
+  const copy = element.cloneNode(true) as HTMLElement;
+  copy.querySelectorAll('[aria-hidden="true"]').forEach((one) => one.remove());
+  return copy.textContent?.trim();
+};
+
+/** A row of the space switcher, by the title at the start of its name. */
+const switcherRow = (title: string) =>
+  [...(dialog()?.querySelectorAll<HTMLElement>('li button') ?? [])].find((one) =>
+    nameOf(one)?.startsWith(title),
+  );
+
+/** The space key of the header, found by the words it shows. */
+const spaceKey = () =>
+  [...document.querySelectorAll<HTMLElement>('header button[aria-haspopup="dialog"]')].find(
+    (one) => one.textContent?.includes('switch space'),
+  );
+
 function openSwitcher() {
-  click(document.querySelector<HTMLElement>('button[aria-label^="Switch space"]')!);
+  click(spaceKey());
 }
 
 function openMore() {
@@ -139,6 +159,23 @@ function type(label: string, text: string) {
 const dialog = () => document.querySelector('[role="dialog"]');
 
 describe('the panel header', () => {
+  it('names the space key by the title it shows, then by what it does', async () => {
+    await render();
+
+    const key = spaceKey();
+    expect(key?.hasAttribute('aria-label')).toBe(false);
+    expect(nameOf(key)).toBe('Family, switch space');
+  });
+
+  it('names each row of the space switcher by the words it shows', async () => {
+    await render();
+
+    openSwitcher();
+    const row = switcherRow('Work');
+    expect(row).toBeDefined();
+    expect(row?.hasAttribute('aria-label')).toBe(false);
+  });
+
   it('switches Talk, Notes, and Agent of the same space', async () => {
     await render();
 
@@ -159,7 +196,7 @@ describe('the panel header', () => {
     expect(rows.some((row) => row?.includes('Work'))).toBe(true);
     expect(rows.some((row) => row?.includes('Dr Patel'))).toBe(false);
 
-    click(button('Work'));
+    click(switcherRow('Work'));
     expect(state.navigate).toHaveBeenLastCalledWith({ to: '/spaces/$slug/notes', params: { slug: 'work' } });
     expect(dialog()).toBeNull();
   });
