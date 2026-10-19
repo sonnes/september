@@ -43,8 +43,13 @@ treating the space as gone.
 
 ## Space screen
 
-The header switches between Talk, Notes, and Agent. A space dock gives access
-to other spaces and makes a new one.
+The dock has two navigation landmarks. Spaces holds one key for each space and
+the New space key. Space mode holds Talk, Notes, and Agent. Each mode is a page
+of the space, so the switch is a `nav`, not a `tablist`. The open space and the
+open mode have `aria-current="page"`, and the open space shows a dot.
+
+If the space keys do not fit, their row is `inert`, and one Switch space key
+takes its place.
 
 The right rail has Phrases and Voice tabs, and all three modes carry it. It expands to a 320px panel on large screens.
 In the desktop panel, the rail shows only when the panel is 900 points wide or

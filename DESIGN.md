@@ -151,9 +151,9 @@ The sidebar is a **solid indigo panel** in light _and_ dark mode — September's
 - **Base viewport:** **13" iPad Pro (M4), landscape — 1376×1032.** Primary designs target this size; lay things out here first, then scale up for wider desktops and down for tablet portrait / mobile. The constant lives in `BASE_VIEWPORT_WIDTH` (`@/packages/shared`).
 - **Approach:** shadcn `Sidebar` + `SidebarInset`, grid-disciplined.
 - **Sidebar default state:** collapsed to the icon rail at every desktop width. A manual toggle (rail or ⌘/Ctrl-B) persists while the app shell is mounted, including across resizes. Below 768px it becomes the mobile sheet, closed by default.
-- **Sidebar widths:** `16rem` (256px) expanded · `18rem` mobile sheet · `3rem` icon rail.
+- **Sidebar widths:** `16rem` (256px) expanded · `18rem` mobile sheet · `3.25rem` icon rail, which holds a 48px key.
 - **Inset shell:** content floats as an inset card — `md:m-2 md:ml-0 md:rounded-xl md:shadow-sm` — over the `zinc-100` page, beside the indigo sidebar.
-- **Header:** `SidebarLayout.Header` = `h-16 border-b`, icon + title at `px-4`.
+- **Header:** `ScreenHeader` = `h-16 border-b`, the 48px Menu key + title at `px-4`. A screen with no visible `h1` gives the header a `heading`, which only a screen reader reads.
 - **Marketing / legal:** centered single column, `max-w-3xl`, `px-4 py-12 sm:px-6`; eyebrow → H1 → lede header block.
 - **Border radius (B·s roles, 2026-07-18):** four named roles plus the pill, defined as `--radius-*` tokens in `globals.css`. This replaces the old "buttons=`md`, cards=`xl`" mapping and collapses the 14 ad-hoc radii the app had drifted into.
 
@@ -185,7 +185,7 @@ September is operated under physical constraint. These are requirements, not nic
 - **Spacing between actions:** Generous gaps between adjacent targets so imprecise input (tremor, eye-gaze dwell) doesn't mis-hit. The roomy density exists to serve this.
 - **Focus visibility:** Every interactive element shows focus with `.focus-attention`: a 2px zinc-900 line inside a 5px amber-300 ring. The line passes 3:1 on white and zinc, and the amber passes 3:1 on indigo and on dark surfaces. A menu row or a scroll area uses `.focus-attention-inset`. **Never** remove the outline.
 - **Contrast:** WCAG **AA** at the minimum: 4.5:1 for text, 3:1 for large text, field lines, and focus. Secondary text is zinc-600 (7:1 on zinc-100). Indigo text is `--brand`, so it passes in dark too. A disabled key uses `.key-disabled`, a dotted border, so its state is not a fade alone.
-- **Keyboard & switch operability:** Everything reachable and operable without a pointer. No hover-only affordances — hover may enhance, never gate. Visible, logical focus order.
+- **Keyboard & switch operability:** Everything reachable and operable without a pointer. No hover-only affordances — hover may enhance, never gate. Visible, logical focus order. A move to another screen puts the focus on its `h1`, unless the screen puts it on a field.
 - **Reduced motion:** Respect `prefers-reduced-motion`; no parallax, no motion that conveys required meaning.
 - **Reading pace:** Don't auto-dismiss important content quickly (toasts dwell 15s). Avoid timeouts on input.
 - **Minimal keystrokes (product-level a11y):** Suggestion pills, autocomplete, and contextual shortcuts are accessibility features — every interaction that removes a keystroke is on-thesis.
@@ -200,8 +200,10 @@ All UI primitives live in `@/packages/ui` (`src/packages/ui/components`) — sha
 - **Badges:** `Badge` — `rounded-full border px-2 py-0.5 text-xs font-medium`. Variants `default`/`secondary`/`destructive`/`outline`.
 - **Inputs / fields:** `Input` = 48px high, `rounded-control border border-input shadow-xs`, `text-base` (16px) at every width. Compose with `Field`/`Form` (react-hook-form). Always pair with a visible `Label`.
 - **Callouts:** `Callout` — `rounded-lg border px-4 py-3 text-sm`, tones `info`/`warning`/`success`/`danger`, each with a lucide icon. Use for legal/explanatory notes.
-- **Sidebar nav:** `SidebarMenuButton` items (icon + label), collapsible groups via shadcn `Collapsible`, `SidebarGroupLabel` (`text-xs font-medium`), active state by `data-active`. Indigo surface throughout.
-- **Dropdowns / comboboxes:** shadcn `DropdownMenu` and `Command` + `Popover`.
+- **Sidebar nav:** `SidebarMenuButton` items (icon + label) in a `nav` named Main, collapsible groups via shadcn `Collapsible`, `SidebarGroupLabel` (`text-xs font-medium`, full white). Every row is 48px. The current row has `aria-current="page"`, the indigo-600 fill, and a 4px white bar at its start edge, so the state is not a fill alone. Rows use the inset focus. The edge strip (`SidebarRail`) is for a pointer only. Indigo surface throughout.
+- **Current tab:** a space tab in the dock shows a dot before its name when it is open. The Talk, Notes, and Agent switch is a `nav` with `aria-current`, not a `tablist`.
+- **Skip link:** the first key of each shell is "Skip to main content". It shows at the top left while it has the focus, with the attention focus.
+- **Dropdowns / comboboxes:** shadcn `DropdownMenu` and `Command` + `Popover`. The desktop More key opens a sheet of 48px rows, not a dropdown.
 - **Overlays:** `Dialog`, `Sheet`, `AlertDialog`, `HoverCard`, `Tooltip` — Radix-backed.
 - **States:** `Skeleton` / `LoadingState` (loading), `EmptyState` (centered muted text + primary action), `ErrorState`, `Spinner`.
 - **Toasts:** Sonner `Toaster` — top-center, close button, 15s.

@@ -178,7 +178,9 @@ function Notes({
           ? documentTitle(note.name, space.title)
           : documentTitle(space.title, "Notes")}
       </title>
-      <ScreenHeader>
+      <ScreenHeader
+        heading={note ? `${note.name} · ${space.title}` : `${space.title} · Notes`}
+      >
         <SpaceTitle space={space} mode="notes" />
       </ScreenHeader>
 

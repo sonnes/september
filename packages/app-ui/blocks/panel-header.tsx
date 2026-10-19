@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   ChevronDown,
@@ -10,15 +10,8 @@ import {
 } from "lucide-react";
 
 import { cn } from "@september/ui";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuTrigger,
-} from "@september/ui/components/dropdown-menu";
 import { Input } from "@september/ui/components/input";
+import { Separator } from "@september/ui/components/separator";
 import {
   Sheet,
   SheetContent,
@@ -44,7 +37,13 @@ import {
 } from "@september/core/rules/spaces";
 
 /** The sheets and dialogs that open over the panel. */
-export type PanelSheet = "spaces" | "phrases" | "voice" | "rename" | "delete";
+export type PanelSheet =
+  | "spaces"
+  | "more"
+  | "phrases"
+  | "voice"
+  | "rename"
+  | "delete";
 
 const MODES: { key: SpaceMode; label: string }[] = [
   { key: "talk", label: "Talk" },
@@ -52,8 +51,7 @@ const MODES: { key: SpaceMode; label: string }[] = [
   { key: "agent", label: "Agent" },
 ];
 
-const ring =
-  "focus-visible:ring-sidebar-ring focus-visible:ring-2 focus-visible:outline-none";
+const ring = "focus-attention";
 
 /** A page in the panel that is not a space: its title, and the way back. */
 export interface PanelPage {
@@ -67,15 +65,14 @@ export interface PanelPage {
  * September beside any app.
  *
  * In a space, it holds the space button, the Talk, Notes, and Agent switch,
- * and the More menu. On a page, such as Settings, it holds Back, the title of
- * the page, and the More menu.
+ * and the More key. On a page, such as Settings, it holds Back, the title of
+ * the page, and the More key. More opens the More sheet.
  */
 export function PanelHeader({
   space,
   mode,
   page,
   onSheet,
-  onPanelTab,
 }: {
   /** The space on the screen, or nothing when the panel shows no space. */
   space: Space | undefined;
@@ -83,26 +80,9 @@ export function PanelHeader({
   /** The page on the screen, or null on a space path. */
   page: PanelPage | null;
   onSheet: (sheet: PanelSheet) => void;
-  /** Opens Phrases or Voice: a sheet, or the right rail in the wide tier. */
-  onPanelTab: (tab: "phrases" | "voice") => void;
 }) {
   const navigate = useNavigate();
-  const panel = usePanel();
   const shown = MODES.filter(({ key }) => key !== "agent" || agentEnabled());
-  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
-
-  // The arrow keys move between the tabs, as a screen reader user expects of
-  // a `tablist`. Only the open tab is in the tab order.
-  const onTabKey = (event: React.KeyboardEvent, at: number) => {
-    const step =
-      event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
-    if (!step) return;
-    event.preventDefault();
-    tabs.current[(at + step + shown.length) % shown.length]?.focus();
-  };
-
-  // The menu reads the composer as it opens, so it lists only what works now.
-  const composer = panel?.composer.current;
 
   return (
     // The header is the title bar of the desktop window: a press on its free
@@ -152,27 +132,22 @@ export function PanelHeader({
           </button>
 
           {space ? (
-            <div
-              role="tablist"
+            // Each mode is another page of the space, so the switch is
+            // navigation, and the open mode is the current page.
+            <nav
               aria-label="Space mode"
-              className="bg-sidebar-primary flex h-11 min-w-40 flex-1 rounded-control"
+              className="bg-sidebar-primary flex h-12 min-w-40 flex-1 rounded-control"
             >
-              {shown.map(({ key, label }, at) => (
+              {shown.map(({ key, label }) => (
                 <button
                   key={key}
-                  ref={(element) => {
-                    tabs.current[at] = element;
-                  }}
                   type="button"
-                  role="tab"
-                  aria-selected={key === mode}
-                  tabIndex={key === mode ? 0 : -1}
+                  aria-current={key === mode ? "page" : undefined}
                   onClick={() => navigate(spaceParams(space, key))}
-                  onKeyDown={(event) => onTabKey(event, at)}
-                  // The whole 44-point height takes the press. The pill inside
+                  // The whole 48-point height takes the press. The pill inside
                   // is inset, as the mock draws it.
                   className={cn(
-                    "group h-11 min-w-0 flex-1 rounded-control p-1 text-sm font-medium",
+                    "group h-12 min-w-0 flex-1 rounded-control p-1 text-sm font-medium",
                     ring,
                   )}
                 >
@@ -188,106 +163,163 @@ export function PanelHeader({
                   </span>
                 </button>
               ))}
-            </div>
+            </nav>
           ) : (
             <span className="flex-1" />
           )}
         </>
       )}
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            aria-label="More"
-            className={cn(
-              "data-[state=open]:bg-sidebar-primary hover:bg-sidebar-primary grid size-11 shrink-0 place-items-center rounded-control transition-colors",
-              ring,
-            )}
-          >
-            <Ellipsis className="size-5" aria-hidden />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-72 rounded-surface p-1.5">
-          {space ? (
-            <>
-              <MenuItem keys="⌘P" onSelect={() => onPanelTab("phrases")}>
-                Phrases
-              </MenuItem>
-              <MenuItem keys="⌘⇧V" onSelect={() => onPanelTab("voice")}>
-                Voice controls
-              </MenuItem>
-            </>
-          ) : null}
-          {composer?.speaks ? (
-            <MenuItem
-              keys="⌘⇧O"
-              // The output menu opens once this menu has closed and given
-              // the focus back.
-              onSelect={() => setTimeout(() => panel?.setOutputOpen(true), 0)}
-            >
-              Sound output
-            </MenuItem>
-          ) : null}
-          {composer?.clear && panel?.tier === "compact" ? (
-            <MenuItem
-              keys="⌘⌫"
-              disabled={!composer.draft}
-              onSelect={() => composer.clear?.()}
-            >
-              Clear the draft
-            </MenuItem>
-          ) : null}
-          {space ? (
-            <>
-              <DropdownMenuSeparator />
-              <MenuItem onSelect={() => onSheet("rename")}>
-                Rename space
-              </MenuItem>
-              <MenuItem destructive onSelect={() => onSheet("delete")}>
-                Delete space
-              </MenuItem>
-            </>
-          ) : null}
-          <DropdownMenuSeparator />
-          {APP_NAV.map((item) => (
-            <MenuItem
-              key={item.path}
-              keys={item.path === "/help" ? "⌘?" : undefined}
-              onSelect={() => void navigate({ to: item.path })}
-            >
-              {item.title}
-            </MenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <button
+        type="button"
+        aria-label="More"
+        aria-haspopup="dialog"
+        onClick={() => onSheet("more")}
+        className={cn(
+          "hover:bg-sidebar-primary grid size-12 shrink-0 place-items-center rounded-control transition-colors",
+          ring,
+        )}
+      >
+        <Ellipsis className="size-5" aria-hidden />
+      </button>
     </header>
   );
 }
 
-function MenuItem({
+/**
+ * The rows of the More sheet: the space, the composer, and the pages of the
+ * app. The sheet reads the composer as it opens, so it lists only what works
+ * now. Each row is a 48-point key.
+ */
+function MoreRows({
+  space,
+  onSheet,
+  onPanelTab,
+}: {
+  space: Space | undefined;
+  onSheet: (sheet: PanelSheet | null) => void;
+  onPanelTab: (tab: "phrases" | "voice") => void;
+}) {
+  const navigate = useNavigate();
+  const panel = usePanel();
+  const composer = panel?.composer.current;
+  const close = () => onSheet(null);
+
+  return (
+    <div className="flex flex-col gap-1">
+      {space ? (
+        <>
+          <MoreRow
+            keys="⌘P"
+            shortcut="Meta+P"
+            onSelect={() => {
+              close();
+              onPanelTab("phrases");
+            }}
+          >
+            Phrases
+          </MoreRow>
+          <MoreRow
+            keys="⌘⇧V"
+            shortcut="Meta+Shift+V"
+            onSelect={() => {
+              close();
+              onPanelTab("voice");
+            }}
+          >
+            Voice controls
+          </MoreRow>
+        </>
+      ) : null}
+      {composer?.speaks ? (
+        <MoreRow
+          keys="⌘⇧O"
+          shortcut="Meta+Shift+O"
+          onSelect={() => {
+            close();
+            // The output menu opens once the sheet has closed and given the
+            // focus back.
+            setTimeout(() => panel?.setOutputOpen(true), 0);
+          }}
+        >
+          Sound output
+        </MoreRow>
+      ) : null}
+      {composer?.clear && panel?.tier === "compact" ? (
+        <MoreRow
+          keys="⌘⌫"
+          shortcut="Meta+Backspace"
+          disabled={!composer.draft}
+          onSelect={() => {
+            composer.clear?.();
+            close();
+          }}
+        >
+          Clear the draft
+        </MoreRow>
+      ) : null}
+      {space ? (
+        <>
+          <Separator className="my-1" />
+          <MoreRow onSelect={() => onSheet("rename")}>Rename space</MoreRow>
+          <MoreRow destructive onSelect={() => onSheet("delete")}>
+            Delete space
+          </MoreRow>
+        </>
+      ) : null}
+      <Separator className="my-1" />
+      {APP_NAV.map((item) => (
+        <MoreRow
+          key={item.path}
+          keys={item.path === "/help" ? "⌘?" : undefined}
+          shortcut={item.path === "/help" ? "Meta+?" : undefined}
+          onSelect={() => {
+            close();
+            void navigate({ to: item.path });
+          }}
+        >
+          {item.title}
+        </MoreRow>
+      ))}
+    </div>
+  );
+}
+
+function MoreRow({
   keys,
+  shortcut,
   destructive,
   disabled,
   onSelect,
   children,
 }: {
+  /** The keys as the row shows them, such as ⌘P. */
   keys?: string;
+  /** The same keys for `aria-keyshortcuts`, such as Meta+P. */
+  shortcut?: string;
   destructive?: boolean;
   disabled?: boolean;
   onSelect: () => void;
   children: ReactNode;
 }) {
   return (
-    <DropdownMenuItem
-      variant={destructive ? "destructive" : "default"}
+    <button
+      type="button"
       disabled={disabled}
-      onSelect={onSelect}
-      className="min-h-11 text-sm"
+      aria-keyshortcuts={shortcut}
+      onClick={onSelect}
+      className={cn(
+        "focus-attention-inset key-disabled hover:bg-muted flex min-h-12 w-full items-center gap-3 rounded-control px-3 text-left text-base font-medium transition-colors",
+        destructive && "text-destructive",
+      )}
     >
       <span className="flex-1">{children}</span>
-      {keys ? <DropdownMenuShortcut>{keys}</DropdownMenuShortcut> : null}
-    </DropdownMenuItem>
+      {keys ? (
+        <kbd aria-hidden className="text-muted-foreground font-sans text-sm">
+          {keys}
+        </kbd>
+      ) : null}
+    </button>
   );
 }
 
@@ -314,12 +346,15 @@ function Initial({ title, list }: { title?: string; list?: boolean }) {
 export function PanelSheets({
   sheet,
   onSheet,
+  onPanelTab,
   space,
   spaces,
   mode,
 }: {
   sheet: PanelSheet | null;
   onSheet: (sheet: PanelSheet | null) => void;
+  /** Opens Phrases or Voice: a sheet, or the right rail in the wide tier. */
+  onPanelTab: (tab: "phrases" | "voice") => void;
   space: Space | undefined;
   spaces: Space[];
   mode: SpaceMode;
@@ -344,6 +379,10 @@ export function PanelSheets({
             void navigate({ to: "/spaces" });
           }}
         />
+      </PanelSheet>
+
+      <PanelSheet open={sheet === "more"} onClose={close} title="More">
+        <MoreRows space={space} onSheet={onSheet} onPanelTab={onPanelTab} />
       </PanelSheet>
 
       {space ? (
@@ -402,11 +441,12 @@ function PanelSheet({
       <SheetContent
         side="top"
         aria-describedby={undefined}
-        // Below the 64-point header, inset as a card. The close key of the
-        // sheet keeps a 44-point target.
-        className="rounded-surface inset-x-2 top-[4.5rem] max-h-[calc(100svh-5rem)] gap-3 overflow-y-auto border p-4 [&>button:last-child]:top-2.5 [&>button:last-child]:right-2.5 [&>button:last-child]:grid [&>button:last-child]:size-11 [&>button:last-child]:place-items-center"
+        // Below the 64-point header, inset as a card.
+        className="rounded-surface inset-x-2 top-[4.5rem] max-h-[calc(100svh-5rem)] gap-3 overflow-y-auto border p-4"
       >
-        <SheetTitle className="text-title pr-12">{title}</SheetTitle>
+        <SheetTitle className="text-title flex min-h-10 items-center pr-14">
+          {title}
+        </SheetTitle>
         {children}
       </SheetContent>
     </Sheet>
@@ -479,7 +519,7 @@ function SpaceSwitcher({
               aria-current={space.id === current?.id ? "true" : undefined}
               onClick={() => onOpen(space)}
               className={cn(
-                "hover:bg-muted focus-visible:ring-ring flex min-h-13 w-full items-center gap-3 rounded-control px-2 text-left focus-visible:ring-2 focus-visible:outline-none",
+                "focus-attention-inset hover:bg-muted flex min-h-13 w-full items-center gap-3 rounded-control px-2 text-left",
                 space.id === current?.id && "bg-accent/60",
               )}
             >
@@ -513,7 +553,7 @@ function SpaceSwitcher({
       <button
         type="button"
         onClick={onAllSpaces}
-        className="hover:bg-muted focus-visible:ring-ring flex min-h-13 items-center gap-3 rounded-control px-2 text-base font-semibold focus-visible:ring-2 focus-visible:outline-none"
+        className="focus-attention-inset hover:bg-muted flex min-h-13 items-center gap-3 rounded-control px-2 text-base font-semibold"
       >
         <span
           aria-hidden
@@ -532,7 +572,7 @@ function SpaceSwitcher({
           void newSpace.create().then((made) => made && onCreated())
         }
         aria-disabled={newSpace.pending}
-        className="text-brand hover:bg-muted focus-visible:ring-ring flex min-h-13 items-center gap-3 rounded-control px-2 text-base font-semibold focus-visible:ring-2 focus-visible:outline-none aria-disabled:opacity-50"
+        className="text-brand focus-attention-inset hover:bg-muted flex min-h-13 items-center gap-3 rounded-control px-2 text-base font-semibold aria-disabled:opacity-50"
       >
         <span
           aria-hidden

@@ -70,11 +70,12 @@ export function OnboardingLayout() {
         {/* ponytail: the sidebar uses indigo utilities directly. DESIGN.md's
             --sidebar tokens are worth adding once a second screen needs them. */}
         <aside className="flex shrink-0 flex-row items-center gap-3 rounded-xl bg-indigo-600 px-3 py-3 text-white shadow-sm md:w-72 md:flex-col md:items-stretch md:gap-8 md:overflow-y-auto md:px-6 md:py-8">
-          <div
-            className="flex shrink-0 items-center gap-2"
-            aria-label="September"
-          >
-            <BrandMark size={40} className="size-10 rounded-[11px]" />
+          <div className="flex shrink-0 items-center gap-2">
+            <BrandMark
+              alt="September"
+              size={40}
+              className="size-10 rounded-[11px]"
+            />
             {/* The bar spends its width on the steps, so the wordmark waits
                 for a screen that can hold both. The mark still names us. */}
             <BrandWordmark
@@ -155,7 +156,7 @@ function ProgressNav({
             ? "border-white bg-white text-indigo-600"
             : completed
               ? "border-indigo-200 bg-indigo-200 text-indigo-700"
-              : "border-indigo-400 text-indigo-200";
+              : "border-indigo-300 text-indigo-100";
 
           return (
             <li
@@ -163,12 +164,13 @@ function ProgressNav({
               className="flex min-w-0 flex-row items-center gap-0.5 md:flex-col md:items-stretch md:gap-0"
             >
               {/* The padding below `md` is the touch target the bare 32px
-                  circle does not give on a phone. */}
+                  circle does not give on a phone. The name of the link is
+                  the words it shows, so a voice user can say them. */}
               <Link
                 to={step.path}
                 disabled={!canReach(step.path, draft)}
-                aria-label={`Step ${index + 1}: ${step.label}${isCurrent ? ", current" : completed ? ", completed" : ""}`}
-                className="flex items-center gap-3 rounded-full p-1.5 focus-visible:ring-[3px] focus-visible:ring-indigo-300 focus-visible:outline-none aria-disabled:cursor-default md:rounded-md md:p-0"
+                aria-current={isCurrent ? "step" : undefined}
+                className="focus-attention flex items-center gap-3 rounded-full p-1.5 aria-disabled:cursor-default md:rounded-md md:p-0"
               >
                 <span
                   className={`flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-bold ${state}`}
@@ -176,12 +178,14 @@ function ProgressNav({
                   {completed ? "✓" : index + 1}
                 </span>
                 {/* The bar has no room for five words, and the step title is
-                    already the heading beside it. The link keeps its name. */}
+                    already the heading beside it. Below `md` only a screen
+                    reader reads the label. */}
                 <span
-                  className={`hidden text-sm font-semibold md:inline ${current >= index ? "text-white" : "text-indigo-200"}`}
+                  className={`sr-only text-sm font-semibold md:not-sr-only ${current >= index ? "text-white" : "text-indigo-100"}`}
                 >
                   {step.label}
                 </span>
+                {completed ? <span className="sr-only">, completed</span> : null}
               </Link>
               {!isLast && (
                 <span

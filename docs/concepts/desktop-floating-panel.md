@@ -19,12 +19,12 @@ The panel resizes to the full screen, and Settings > Panel turns the float off.
 | ----------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | Setup                                                 | The panel is a normal window with a Dock icon until setup is done.                 |
 | Talk, Notes, Agent                                    | A space-mode path, with the space button and the mode switch in the header         |
-| Rename a space, delete a space, About                 | The More menu, and the About tab                                                   |
+| Rename a space, delete a space, About                 | The More sheet, and the About tab                                                  |
 | Export a note                                         | The note actions                                                                   |
 | Edit a long note                                      | The user makes the panel larger.                                                   |
 | Present a note                                        | The panel fills the screen while the overlay shows.                                |
-| Spaces list                                           | All spaces in the space switcher, and Spaces in the More menu                      |
-| Voice choice and cloning, Eye tracker, Help, Settings | Items in the More menu. Each page opens in the panel body.                         |
+| Spaces list                                           | All spaces in the space switcher, and Spaces in the More sheet                     |
+| Voice choice and cloning, Eye tracker, Help, Settings | Rows in the More sheet. Each page opens in the panel body.                         |
 
 ## One set of screens
 
@@ -34,7 +34,8 @@ Talk.
 
 `ChromeContext` in `packages/app-ui/blocks/chrome.tsx` tells a screen which
 frame draws around it. The value is `"shell"` or `"panel"`, and the default is
-`"shell"`. In `"panel"`, `ScreenHeader` and `SpaceDock` render nothing.
+`"shell"`. In `"panel"`, `SpaceDock` renders nothing, and `ScreenHeader` renders
+only the `h1` of the screen, which only a screen reader reads.
 `PanelShell` in `packages/app-ui/layouts/panel.tsx` sets the value and draws
 `PanelHeader` in their place.
 
@@ -50,9 +51,13 @@ window.
 Back goes to the last space-mode path that the panel showed. If no such path
 exists, Back goes to `/spaces`.
 
-On a space-mode path, the More menu holds Phrases, Voice controls, Rename
+The mode switch is a `nav` named Space mode, and the open mode has
+`aria-current="page"`. More opens the More sheet below the header. Each row of
+the sheet is a 48-point key, and a row that has a shortcut shows its keys.
+
+On a space-mode path, the More sheet holds Phrases, Voice controls, Rename
 space, and Delete space. Sound output and Clear the draft show when they apply.
-Below them, the menu lists each page of `APP_NAV`: Spaces, Voice, Eye tracker,
+Below them, the sheet lists each page of `APP_NAV`: Spaces, Voice, Eye tracker,
 Help, and Settings. The space sheet is named Voice controls, so that it is
 different from the Voice page. Command-? opens `/help`.
 
@@ -103,12 +108,12 @@ tiers:
 
 | Tier    | Width                | Layout                                                                                                                 |
 | ------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Compact | Less than 560 points | One mood menu key, Clear in the More menu. Sheets for Phrases and Voice controls. |
+| Compact | Less than 560 points | One mood menu key, Clear in the More sheet. Sheets for Phrases and Voice controls. |
 | Regular | 560 to 899 points    | The composer and the history of the web app. Sheets for Phrases and Voice controls.                                   |
 | Wide    | 900 points and more  | The full screens of the web app, with the right rail.                                                                 |
 
 `PanelShell` measures the width of the panel for the right rail, the composer,
-Clear in the More menu, and the Control mood keys. In the web app, the
+Clear in the More sheet, and the Control mood keys. In the web app, the
 composer uses a CSS container query on the screen body, so a phone also shows
 the mood menu key.
 

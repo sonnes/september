@@ -1,4 +1,11 @@
-import { createContext, useContext, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { createPortal } from "react-dom";
 
 import { Separator } from "@september/ui/components/separator";
@@ -27,16 +34,101 @@ export function RightPanel({ children }: { children: ReactNode }) {
   return slot ? createPortal(children, slot) : null;
 }
 
+/** The id of the `main` element of a shell. The skip link points to it. */
+export const MAIN_ID = "main";
+
+/**
+ * The first link of a shell. It shows when it has the focus, and it moves the
+ * focus past the navigation to the screen.
+ */
+export function SkipLink() {
+  return (
+    <a
+      href={`#${MAIN_ID}`}
+      onClick={(event) => {
+        // The focus moves here too, because a browser can leave it on the link.
+        event.preventDefault();
+        document.getElementById(MAIN_ID)?.focus();
+      }}
+      className="focus-attention bg-background text-foreground sr-only z-50 rounded-control px-4 text-sm font-medium focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:inline-flex focus:min-h-12 focus:items-center"
+    >
+      Skip to main content
+    </a>
+  );
+}
+
+/** How many frames the focus waits for the new screen to replace the old one. */
+const ROUTE_FOCUS_FRAMES = 20;
+
+/**
+ * After a move to another screen, the focus goes to the `h1` of the new
+ * screen, so a screen reader reads where the user is. If the new screen has
+ * no `h1` yet, the focus goes to `main`.
+ *
+ * The focus stays where it is on the first screen, and when the new screen
+ * has put the focus inside `main` itself, such as on the composer. A screen
+ * can load after the path changes, so the hook looks again for some frames.
+ * If the old `h1` took the focus and then left the page, the new `h1` gets it.
+ */
+export function useRouteFocus(
+  pathname: string,
+  main: RefObject<HTMLElement | null>,
+) {
+  const last = useRef(pathname);
+
+  useEffect(() => {
+    if (last.current === pathname) return;
+    last.current = pathname;
+
+    let placed: HTMLElement | null = null;
+    const place = () => {
+      const area = main.current;
+      if (!area) return;
+      const active = document.activeElement;
+      const owned =
+        active instanceof HTMLElement &&
+        active !== document.body &&
+        active !== placed &&
+        area.contains(active);
+      if (owned) return;
+      if (placed?.isConnected && active === placed) return;
+
+      const heading = area.querySelector<HTMLElement>("h1");
+      if (heading && !heading.hasAttribute("tabindex")) heading.tabIndex = -1;
+      placed = heading ?? area;
+      placed.focus({ preventScroll: true });
+    };
+
+    place();
+    let frames = 0;
+    let frame = requestAnimationFrame(function again() {
+      place();
+      if (++frames < ROUTE_FOCUS_FRAMES) frame = requestAnimationFrame(again);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [pathname, main]);
+}
+
 /**
  * The 64px header of a screen. It carries the sidebar toggle.
  *
- * The panel has no sidebar, and its own header takes this place.
+ * A screen with no `h1` of its own gives `heading`. The header then holds an
+ * `h1` that only a screen reader reads. The panel has no sidebar, and its own
+ * header takes this place, so the panel gets the heading alone.
  */
-export function ScreenHeader({ children }: { children?: ReactNode }) {
-  if (useChrome() === "panel") return null;
+export function ScreenHeader({
+  heading,
+  children,
+}: {
+  heading?: string;
+  children?: ReactNode;
+}) {
+  const title = heading ? <h1 className="sr-only">{heading}</h1> : null;
+  if (useChrome() === "panel") return title;
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-      <SidebarTrigger className="-ml-1 size-11" />
+      {title}
+      <SidebarTrigger className="-ml-1" />
       <Separator
         orientation="vertical"
         className="mr-2 data-[orientation=vertical]:h-4"

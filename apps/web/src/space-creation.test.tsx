@@ -249,7 +249,7 @@ describe('the space mode control', () => {
         </QueryClientProvider>
       )
     );
-    return [...container.querySelectorAll('[role="tab"]')].map(tab => tab.textContent);
+    return [...container.querySelectorAll('nav[aria-label="Space mode"] button')].map(one => one.textContent);
   };
 
   it('offers Agent while the agent is on', async () => {

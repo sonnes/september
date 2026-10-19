@@ -20,7 +20,12 @@ import {
   PanelSheets,
   type PanelSheet,
 } from "@september/app-ui/blocks/panel-header";
-import { RightPanelSlot } from "@september/app-ui/blocks/screen";
+import {
+  MAIN_ID,
+  RightPanelSlot,
+  SkipLink,
+  useRouteFocus,
+} from "@september/app-ui/blocks/screen";
 import { spaceParams, useNewSpace } from "@september/app-ui/blocks/space";
 import { escapeStep, moodForKey } from "@september/core/rules/panel";
 import { spaceFromSlug, type SpaceMode } from "@september/core/rules/spaces";
@@ -107,6 +112,8 @@ export function PanelShell({
   const tier = tierFor(width);
 
   const [slot, setSlot] = useState<HTMLElement | null>(null);
+  const main = useRef<HTMLElement>(null);
+  useRouteFocus(pathname, main);
 
   const openTab = (tab: "phrases" | "voice") => {
     if (tier === "wide") setRail({ tab, at: Date.now() });
@@ -181,15 +188,20 @@ export function PanelShell({
             ref={setFrame}
             className="bg-muted text-foreground flex h-svh flex-col overflow-hidden"
           >
+            <SkipLink />
             <PanelHeader
               space={space}
               mode={mode}
               onSheet={setSheet}
-              onPanelTab={openTab}
               page={page}
             />
             <div className="flex min-h-0 flex-1">
-              <main className="bg-background flex min-h-0 min-w-0 flex-1 flex-col">
+              <main
+                ref={main}
+                id={MAIN_ID}
+                tabIndex={-1}
+                className="bg-background flex min-h-0 min-w-0 flex-1 flex-col focus:outline-none"
+              >
                 {empty && at ? <PanelEmpty /> : <Outlet />}
               </main>
               {/* `display: contents` makes the rail itself the flex child. */}
@@ -200,6 +212,7 @@ export function PanelShell({
             <PanelSheets
               sheet={sheet}
               onSheet={setSheet}
+              onPanelTab={openTab}
               space={space}
               spaces={spaces ?? []}
               mode={mode}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import {
@@ -26,7 +26,12 @@ import {
 
 import { APP_NAV, type AppPath } from "@platform/rules/app-nav";
 import { BrandMark, BrandWordmark } from "@september/app-ui/blocks/brand";
-import { RightPanelSlot } from "@september/app-ui/blocks/screen";
+import {
+  MAIN_ID,
+  RightPanelSlot,
+  SkipLink,
+  useRouteFocus,
+} from "@september/app-ui/blocks/screen";
 
 // Each platform has its own `AppPath`. Web keeps Today, and desktop adds the
 // eye tracker. The key type names both, so this one record stays exhaustive
@@ -43,6 +48,11 @@ const ICONS: Record<AppPath | "/dashboard" | "/eyetracker", LucideIcon> = {
 /** The app sidebar starts collapsed; manual toggles survive resizing. */
 export function AppShell() {
   const [slot, setSlot] = useState<HTMLElement | null>(null);
+  const main = useRef<HTMLElement>(null);
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+  useRouteFocus(pathname, main);
 
   return (
     <SidebarProvider
@@ -52,9 +62,15 @@ export function AppShell() {
       className="h-svh"
     >
       <RightPanelSlot.Provider value={slot}>
+        <SkipLink />
         <AppSidebar />
         {/* min-w-0 lets the surface shrink, so long content wraps. */}
-        <SidebarInset className="flex min-h-0 min-w-0 flex-col">
+        <SidebarInset
+          ref={main}
+          id={MAIN_ID}
+          tabIndex={-1}
+          className="flex min-h-0 min-w-0 flex-col"
+        >
           <Outlet />
         </SidebarInset>
         {/* `display: contents` makes the panel itself the flex child, so it
@@ -78,7 +94,7 @@ function AppSidebar() {
         <Link
           to="/"
           aria-label="September home"
-          className="ring-sidebar-ring group-data-[collapsible=icon]:justify-center flex h-12 items-center gap-2 rounded-lg outline-hidden focus-visible:ring-2"
+          className="focus-attention-inset group-data-[collapsible=icon]:justify-center flex h-12 items-center gap-2 rounded-lg outline-hidden"
         >
           <BrandMark size={32} className="size-8 rounded-lg" />
           <BrandWordmark
@@ -92,28 +108,32 @@ function AppSidebar() {
         {/* The group insets the menu by 8px, the same as the header, so the
             brand and the nav icons share one left edge. */}
         <SidebarGroup className="group-data-[collapsible=icon]:px-0.5">
-          <SidebarMenu>
-            {APP_NAV.map((item) => {
-              const Icon = ICONS[item.path];
-              return (
-                <SidebarMenuItem key={item.path}>
-                  <SidebarMenuButton
-                    asChild
-                    size="lg"
-                    tooltip={item.title}
-                    data-active={pathname.startsWith(item.path)}
-                    // Keep a 44px target inside the compact rail.
-                    className="group-data-[collapsible=icon]:size-11! group-data-[collapsible=icon]:p-3!"
-                  >
-                    <Link to={item.path}>
-                      <Icon />
-                      <span className="font-medium">{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              );
-            })}
-          </SidebarMenu>
+          <nav aria-label="Main">
+            <SidebarMenu>
+              {APP_NAV.map((item) => {
+                const Icon = ICONS[item.path];
+                const current = pathname.startsWith(item.path);
+                return (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton
+                      asChild
+                      size="lg"
+                      tooltip={item.title}
+                      isActive={current}
+                    >
+                      <Link
+                        to={item.path}
+                        aria-current={current ? "page" : undefined}
+                      >
+                        <Icon />
+                        <span className="font-medium">{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </nav>
         </SidebarGroup>
       </SidebarContent>
       <SidebarRail />

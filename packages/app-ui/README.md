@@ -47,16 +47,29 @@ from stretching. Failed images leave the written instructions available.
 Videos require both a source and captions. Alternative tasks have separate
 steps and outcomes, including provider connections and backup operations.
 
-The shared app shell provides 44px navigation targets in its compact rail.
-The screen header uses a 44px sidebar toggle.
+The shared app shell puts the pages of `APP_NAV` in a `nav` named Main. Each
+row is a 48px key, in the rail and in the open sidebar. The open page has
+`aria-current="page"` and a bar at the start of its row. The screen header has
+a 48px Menu key with `aria-expanded`.
+
+`AppShell` and `PanelShell` start with `SkipLink`, which moves the focus to the
+`main` element (`MAIN_ID`). Both call `useRouteFocus` from `blocks/screen.tsx`.
+After a move to another screen, the hook puts the focus on the `h1` of the new
+screen, or on `main` if the screen has no `h1`. It leaves the focus alone on
+the first screen, and on a field that the new screen focused itself.
+
+A screen that has no `h1` of its own gives `ScreenHeader` a `heading`. Talk,
+Notes, and Agent do this. The header then holds an `h1` that only a screen
+reader reads.
 
 `layouts/onboarding.tsx` owns the setup shell. Its indigo panel is the sidebar
 from `md` (768px) up and a bar across the top below it — the same width at
 which `layouts/app.tsx` turns its sidebar into a sheet. The bar keeps the brand
 mark, the numbered steps, and Help; the pitch and the step labels wait for a
 screen wide enough. The progress list is one `<ol>` in both shapes, so no step
-is announced twice, and each step link keeps its name when its label is
-hidden.
+is announced twice. Each step link is named by the words that it shows. Below
+`md`, only a screen reader reads the label. The current step has
+`aria-current="step"`.
 
 `layouts/app.tsx` draws each platform's `APP_NAV` destinations. Every path has
 a matching Lucide icon in the layout, including desktop-only destinations.
@@ -155,7 +168,8 @@ version of `fullScreen` does nothing.
 
 `blocks/chrome.tsx` exports `ChromeContext`, with the value `"shell"` or
 `"panel"`. The default is `"shell"`, and the web app always uses it. In
-`"panel"`, `ScreenHeader` and `SpaceDock` render nothing. A page reads the value through
+`"panel"`, `SpaceDock` renders nothing, and `ScreenHeader` renders only its
+`heading`. A page reads the value through
 `useChrome()`, so Talk, Notes, and Agent have one implementation for both
 frames. The same file holds `PanelContext`, `usePanel()`, and `tierFor`.
 
@@ -170,7 +184,7 @@ package cannot hide a window. Escape calls it when there is nothing to stop or
 close.
 
 `PanelShell` binds the panel keys: Command-K, Command-Option-1 to 3, Escape,
-Command-? for `/help`, the More menu keys, and Control-0 to Control-5 in the
+Command-? for `/help`, the keys of the More sheet, and Control-0 to Control-5 in the
 compact tier.
 `escapeStep` and `moodForKey` in `@september/core/rules/panel` hold the rules.
 Escape stops the voice first. Else it closes the open sheet or menu. Else, with
@@ -195,9 +209,14 @@ The space button opens the space switcher: a search field, the spaces by last
 use, All spaces, and New space. All spaces opens `/spaces`. While the switcher
 is open and its search is empty, the digits 1 to 9 open a row.
 
-On a space-mode path, the More menu holds Phrases, Voice controls, Rename
+The mode switch is a `nav` named Space mode, and the open mode has
+`aria-current="page"`. More opens the More sheet below the header. Each row of
+the sheet is a 48-point key. A row with a shortcut shows its keys and has
+`aria-keyshortcuts`.
+
+On a space-mode path, the More sheet holds Phrases, Voice controls, Rename
 space, and Delete space. Sound output shows when the composer speaks. Clear the
-draft shows in the compact tier only. Below these items, the menu lists each
+draft shows in the compact tier only. Below these rows, the sheet lists each
 page of `@platform/rules/app-nav` `APP_NAV` with its title. Phrases, Voice
 controls, and Rename space open as sheets below the header. The Voice controls
 sheet has this name so that it is different from the Voice page.
@@ -214,11 +233,11 @@ The panel has three width tiers. `tierFor` gives the tier for a width:
 | Wide    | 900 points and more  | The slot   | The right rail    |
 
 `PanelShell` measures its own width with a `ResizeObserver`. That tier decides
-the slot of the right rail, Clear in the More menu, and the Control mood keys.
+the slot of the right rail, Clear in the More sheet, and the Control mood keys.
 Without a slot, `RightPanel` renders nothing.
 
 In the panel, the composer reads the tier from `usePanel()`. The composer and
-the More menu then use the same width, so Clear is always in one of the two.
+the More sheet then use the same width, so Clear is always in one of the two.
 In the compact tier, one mood menu key replaces the five mood keys, and Clear
 leaves the composer row.
 

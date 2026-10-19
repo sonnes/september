@@ -863,7 +863,7 @@ function Dock({ current, spaces, mode, onMode }: DockProps) {
   const add = newSpace.create;
 
   const tabClass = (space: Space) =>
-    `focus-visible:ring-ring min-h-11 shrink-0 rounded-full border px-4 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:outline-none ${
+    `focus-attention inline-flex min-h-12 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-medium whitespace-nowrap transition-colors ${
       space.id === current.id
         ? "bg-primary text-primary-foreground border-transparent"
         : "bg-card text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -871,25 +871,26 @@ function Dock({ current, spaces, mode, onMode }: DockProps) {
 
   return (
     <div className="bg-muted/40 flex shrink-0 items-center gap-2 border-t px-4 py-2.5">
-      <div className="relative min-w-0 flex-1">
+      <nav aria-label="Spaces" className="relative min-w-0 flex-1">
+        {/* A row that does not fit is inert: no pointer, key, or screen
+            reader reaches it, and the Switch space key takes its place. The
+            row keeps its size, so it can still be measured. */}
         <div
           ref={row}
-          role="group"
-          aria-label="Switch space"
-          aria-hidden={full}
-          className={`flex items-center gap-1.5 overflow-hidden ${
-            full ? "pointer-events-none opacity-0" : ""
+          inert={full}
+          className={`flex items-center gap-1.5 overflow-hidden p-1.5 ${
+            full ? "opacity-0" : ""
           }`}
         >
           {spaces.map((space) => (
             <button
               key={space.id}
               type="button"
-              tabIndex={full ? -1 : undefined}
               aria-current={space.id === current.id ? "page" : undefined}
               onClick={() => open(space)}
               className={tabClass(space)}
             >
+              {space.id === current.id ? <CurrentDot /> : null}
               {space.title}
             </button>
           ))}
@@ -898,7 +899,7 @@ function Dock({ current, spaces, mode, onMode }: DockProps) {
             variant="ghost"
             size="icon"
             aria-label="New space"
-            tabIndex={full ? -1 : undefined}
+            className="focus-attention"
             onClick={add}
           >
             <Plus aria-hidden />
@@ -911,8 +912,8 @@ function Dock({ current, spaces, mode, onMode }: DockProps) {
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  aria-label="Switch space"
-                  className="bg-card hover:bg-accent focus-visible:ring-ring flex h-full min-h-11 w-full items-center justify-between gap-2 rounded-full border px-4 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                  aria-label={`Switch space, now ${current.title}`}
+                  className="focus-attention bg-card hover:bg-accent flex h-full min-h-12 w-full items-center justify-between gap-2 rounded-full border px-4 text-sm font-medium transition-colors"
                 >
                   <span className="truncate">{current.title}</span>
                   <ChevronDown
@@ -944,7 +945,7 @@ function Dock({ current, spaces, mode, onMode }: DockProps) {
             </DropdownMenu>
           </div>
         ) : null}
-      </div>
+      </nav>
 
       {/* A wide gap, so a press meant for a mode cannot land on a space. */}
       <div className="ml-auto shrink-0 pl-5">
@@ -960,11 +961,17 @@ const MODES = [
   { key: "agent", label: "Agent", icon: Bot },
 ] as const;
 
+/** The dot on the current tab, so the state is not a fill alone. */
+function CurrentDot() {
+  return <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-current" />;
+}
+
 /**
  * Talk, Notes, or Agent, as a segmented switch.
  *
- * Only the open tab is in the tab order. The arrow keys move between the
- * tabs, which is what a screen reader user expects of a `tablist`.
+ * Each mode is another page of the space, so the switch is navigation, not a
+ * `tablist`. Each key is in the tab order, and the open one is the current
+ * page.
  */
 function ModeGroup({
   mode,
@@ -973,42 +980,21 @@ function ModeGroup({
   mode: SpaceMode;
   onMode: (mode: SpaceMode) => void;
 }) {
-  const buttons = useRef<(HTMLButtonElement | null)[]>([]);
   // A user who turned the agent off in AI Assistance does not see it here.
   const shown = MODES.filter(({ key }) => key !== "agent" || agentEnabled());
 
-  const onKey = (event: React.KeyboardEvent, at: number) => {
-    const step =
-      event.key === "ArrowRight" || event.key === "ArrowDown"
-        ? 1
-        : event.key === "ArrowLeft" || event.key === "ArrowUp"
-          ? -1
-          : 0;
-    if (!step) return;
-
-    event.preventDefault();
-    buttons.current[(at + step + shown.length) % shown.length]?.focus();
-  };
-
   return (
-    <div
-      role="tablist"
+    <nav
       aria-label="Space mode"
       className="bg-card flex items-center gap-0.5 rounded-full border p-0.5"
     >
-      {shown.map(({ key, label, icon: Icon }, at) => (
+      {shown.map(({ key, label, icon: Icon }) => (
         <button
           key={key}
-          ref={(element) => {
-            buttons.current[at] = element;
-          }}
           type="button"
-          role="tab"
-          aria-selected={key === mode}
-          tabIndex={key === mode ? 0 : -1}
+          aria-current={key === mode ? "page" : undefined}
           onClick={() => onMode(key)}
-          onKeyDown={(event) => onKey(event, at)}
-          className={`focus-visible:ring-ring inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${
+          className={`focus-attention inline-flex min-h-12 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors ${
             key === mode
               ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -1018,6 +1004,6 @@ function ModeGroup({
           {label}
         </button>
       ))}
-    </div>
+    </nav>
   );
 }

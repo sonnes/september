@@ -41,7 +41,17 @@ outline inside a 5px amber ring. A menu item or a scroll area uses
 key uses `key-disabled`, so it loses its fill and gets a dotted border.
 
 A `Slider` with one thumb gives its `aria-label` or `aria-labelledby` to the
-thumb. The `warning` tone of `Callout` is zinc with a warning icon, because
+thumb.
+
+Every `Sidebar` menu row, sub row, and row action is 48px. The rows use
+`focus-attention-inset`, because the sidebar clips a ring outside a row. The
+current row shows a bar at its start edge. `SidebarTrigger` is named Menu and
+has `aria-expanded`. `SidebarRail` is a pointer strip only: it has
+`aria-hidden` and is not in the tab order, because `SidebarTrigger` does the
+same thing. On a phone, the sidebar sheet is named Menu and keeps its close
+key.
+
+The `warning` tone of `Callout` is zinc with a warning icon, because
 amber marks attention only.
 
 Run the type check from the repository root:

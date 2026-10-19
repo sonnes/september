@@ -110,8 +110,8 @@ async function render(element: React.ReactElement) {
   );
 }
 
-const modeSwitch = () => container.querySelector('[role="tablist"][aria-label="Space mode"]');
-const spaceTabs = () => container.querySelector('[role="group"][aria-label="Switch space"]');
+const modeSwitch = () => container.querySelector('nav[aria-label="Space mode"]');
+const spaceTabs = () => container.querySelector('nav[aria-label="Spaces"]');
 
 describe('the chrome of a screen', () => {
   it('draws the dock with the mode switch and the space tabs in the shell', async () => {
@@ -120,6 +120,51 @@ describe('the chrome of a screen', () => {
 
     expect(modeSwitch()).not.toBeNull();
     expect(spaceTabs()).not.toBeNull();
+  });
+
+  it('marks the open mode and the open space as the current page', async () => {
+    await render(<TalkScreen slug="family" />);
+    await vi.waitFor(() => expect(container.querySelector('textarea')).not.toBeNull());
+
+    const current = [...container.querySelectorAll('[aria-current="page"]')].map((one) => one.textContent?.trim());
+    expect(current).toEqual(['Family', 'Talk']);
+  });
+
+  it('names the screen with a heading', async () => {
+    await render(<TalkScreen slug="family" />);
+    await vi.waitFor(() => expect(container.querySelector('textarea')).not.toBeNull());
+
+    expect([...container.querySelectorAll('h1')].map((one) => one.textContent)).toEqual(['Family · Talk']);
+  });
+
+  it('keeps the heading of the screen in the panel', async () => {
+    await render(
+      <ChromeContext.Provider value="panel">
+        <TalkScreen slug="family" />
+      </ChromeContext.Provider>,
+    );
+    await vi.waitFor(() => expect(container.querySelector('textarea')).not.toBeNull());
+
+    expect(container.querySelector('h1')?.textContent).toBe('Family · Talk');
+  });
+
+  it('takes the space tabs that do not fit out of reach and offers one Switch space key', async () => {
+    const scroll = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollWidth');
+    const client = Object.getOwnPropertyDescriptor(Element.prototype, 'clientWidth');
+    Object.defineProperty(Element.prototype, 'scrollWidth', { configurable: true, get: () => 900 });
+    Object.defineProperty(Element.prototype, 'clientWidth', { configurable: true, get: () => 300 });
+    try {
+      await render(<TalkScreen slug="family" />);
+      await vi.waitFor(() => expect(container.querySelector('textarea')).not.toBeNull());
+
+      const row = [...container.querySelectorAll<HTMLElement>('nav[aria-label="Spaces"] [inert]')];
+      expect(row.length).toBe(1);
+      expect(row[0].textContent).toContain('Work');
+      expect(container.querySelector('button[aria-label^="Switch space"]')).not.toBeNull();
+    } finally {
+      Object.defineProperty(Element.prototype, 'scrollWidth', scroll!);
+      Object.defineProperty(Element.prototype, 'clientWidth', client!);
+    }
   });
 
   it('leaves the dock to the panel header in the panel', async () => {

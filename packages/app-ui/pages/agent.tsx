@@ -201,7 +201,7 @@ function Agent({ space, spaces }: { space: Space; spaces: Space[] }) {
   return (
     <>
       <title>{documentTitle(space.title, "Agent")}</title>
-      <ScreenHeader>
+      <ScreenHeader heading={`${space.title} · Agent`}>
         <SpaceTitle space={space} mode="agent" />
       </ScreenHeader>
 

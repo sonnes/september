@@ -177,7 +177,7 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
   return (
     <>
       <title>{documentTitle(space.title, "Talk")}</title>
-      <ScreenHeader>
+      <ScreenHeader heading={`${space.title} · Talk`}>
         <SpaceTitle space={space} />
       </ScreenHeader>
 

@@ -81,13 +81,19 @@ async function render() {
 }
 
 const button = (name: string) =>
-  [...document.querySelectorAll<HTMLElement>('button, [role="menuitem"], [role="tab"]')].find(
+  [...document.querySelectorAll<HTMLElement>('button')].find(
     (one) => one.getAttribute('aria-label') === name || one.textContent?.trim() === name,
   );
 
-/** A More menu item by its name, without the key that follows it. */
-const menuItem = (name: string) =>
-  [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
+/** The sheet that is open, by its title. */
+const sheetNamed = (title: string) =>
+  [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find(
+    (one) => document.getElementById(one.getAttribute('aria-labelledby') ?? '')?.textContent === title,
+  );
+
+/** A row of the More sheet by its name, without the keys that follow it. */
+const moreRow = (name: string) =>
+  [...(sheetNamed('More')?.querySelectorAll<HTMLElement>('button') ?? [])].find(
     (one) => one.querySelector('span')?.textContent?.trim() === name,
   );
 
@@ -110,9 +116,8 @@ function openSwitcher() {
 function openMore() {
   const trigger = document.querySelector<HTMLElement>('button[aria-label="More"]')!;
   expect(trigger).not.toBeNull();
-  act(() => {
-    trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
-  });
+  act(() => trigger.click());
+  expect(sheetNamed('More')).toBeDefined();
 }
 
 function type(label: string, text: string) {
@@ -191,12 +196,12 @@ describe('the panel header', () => {
     await render();
 
     openMore();
-    click(button('Rename space'));
+    click(moreRow('Rename space'));
     expect(document.querySelector('input[aria-label="Space name"]')).not.toBeNull();
     press('Escape');
 
     openMore();
-    click(button('Delete space'));
+    click(moreRow('Delete space'));
     expect(document.querySelector('[role="alertdialog"]')).not.toBeNull();
   });
 
@@ -214,6 +219,38 @@ describe('the panel header', () => {
     await render();
 
     expect(container.textContent).toContain('The screen');
+  });
+});
+
+describe('the panel', () => {
+  it('marks the open mode as the current page of a navigation landmark', async () => {
+    state.path = '/spaces/family/notes';
+    await render();
+
+    const nav = document.querySelector('nav[aria-label="Space mode"]');
+    expect(nav).not.toBeNull();
+    expect(nav!.querySelector('[aria-current="page"]')?.textContent?.trim()).toBe('Notes');
+  });
+
+  it('starts with a link that skips to the screen', async () => {
+    await render();
+
+    const skip = document.querySelector('a');
+    const main = document.querySelector('main');
+    expect(skip?.getAttribute('href')).toBe(`#${main?.id}`);
+
+    act(() => skip!.click());
+    expect(document.activeElement).toBe(main);
+  });
+
+  it('moves the focus to the screen after a move to another page', async () => {
+    await render();
+    document.querySelector<HTMLElement>('button[aria-label="More"]')!.focus();
+
+    state.path = '/settings';
+    await render();
+
+    expect(document.activeElement).toBe(document.querySelector('main'));
   });
 });
 
@@ -237,23 +274,34 @@ describe('the panel header on a page', () => {
     expect(state.navigate).toHaveBeenLastCalledWith({ to: '/spaces' });
   });
 
-  it('opens each page of the app from the More menu', async () => {
+  it('opens each page of the app from the More sheet, and the sheet closes', async () => {
     for (const page of APP_NAV) {
       await render();
       openMore();
-      click(menuItem(page.title));
+      click(moreRow(page.title));
       expect(state.navigate).toHaveBeenLastCalledWith({ to: page.path });
+      expect(sheetNamed('More')).toBeUndefined();
     }
   });
 
-  it('gives each item of the More menu its own name', async () => {
+  it('gives each row of the More sheet its own name', async () => {
     await render();
     openMore();
 
-    const names = [...document.querySelectorAll('[role="menuitem"]')].map((item) =>
-      item.querySelector('span')?.textContent?.trim(),
-    );
+    const names = [...sheetNamed('More')!.querySelectorAll('button')]
+      .map((row) => row.getAttribute('aria-label') ?? row.querySelector('span')?.textContent?.trim())
+      .filter((name) => name !== 'Close');
+    expect(names.length).toBeGreaterThan(0);
     expect(new Set(names).size).toBe(names.length);
+  });
+
+  it('opens Phrases from the More sheet', async () => {
+    await render();
+    openMore();
+
+    click(moreRow('Phrases'));
+    expect(sheetNamed('More')).toBeUndefined();
+    expect(sheetNamed('Phrases of Family')).toBeDefined();
   });
 
   it('opens the list of spaces from the space switcher', async () => {
