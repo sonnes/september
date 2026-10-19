@@ -121,11 +121,12 @@ export const HELP_GUIDES: HelpGuide[] = [
     title: "Set up September",
     summary:
       "Choose your name, speaking style, and optional services before opening your first space.",
-    keywords: ["setup", "start", "onboarding", "name", "needs"],
+    keywords: ["setup", "start", "onboarding", "name", "needs", "access"],
     platforms: BOTH_APPS,
     prerequisites: [],
     steps: [
       "On Welcome, read the Terms & privacy summary and choose Get started.",
+      "On How you choose, choose the way that you use September. Then choose Continue.",
       "On About you, enter your name, choose a speaking style, then choose Save and continue.",
       "On Connect, keep No AI Assistance and System voice to start without a service account. You can connect an optional service later in Settings.",
       "Choose Continue to review your setup.",
@@ -143,7 +144,7 @@ export const HELP_GUIDES: HelpGuide[] = [
         alt: "Connect offers No AI Assistance and System voice without external accounts.",
         caption:
           "Browser: these choices let you start without connecting a service.",
-        afterStep: 3,
+        afterStep: 4,
       },
       {
         type: "screenshot",
@@ -152,7 +153,7 @@ export const HELP_GUIDES: HelpGuide[] = [
         alt: "Continue at the bottom of the Connect setup page.",
         caption:
           "Browser: choose Continue after reviewing the optional services.",
-        afterStep: 4,
+        afterStep: 5,
       },
       {
         type: "screenshot",
@@ -163,6 +164,138 @@ export const HELP_GUIDES: HelpGuide[] = [
       },
     ],
     related: ["speak-your-first-message", "choose-browser-or-mac-app"],
+  },
+  {
+    slug: "choose-how-you-use-september",
+    category: "start-here",
+    title: "Choose how you use September",
+    summary:
+      "Set the size and the timing of the screen for touch, a mouse, a keyboard, a switch, or your eyes.",
+    keywords: [
+      "access",
+      "access profile",
+      "accessibility",
+      "input method",
+      "touch",
+      "mouse",
+      "keyboard",
+      "switch",
+      "eyes",
+      "large keys",
+      "text size",
+      "contrast",
+      "theme",
+      "dark",
+      "motion",
+      "click sound",
+    ],
+    platforms: BOTH_APPS,
+    prerequisites: [],
+    steps: [
+      "Open Settings.",
+      "Choose Access.",
+      "Under How you choose, choose the way that you use September most.",
+      "Look at the Preview. It shows the keys at the size of your choice.",
+      "Choose Use and the name of the way, for example Use Eyes. The new way starts only after this key.",
+      "If you chose Eyes or Switch, set the Dwell time or the Scan step with Shorter and Longer.",
+      "If the words are hard to read, choose a larger Text size or High contrast.",
+      "Under Theme, choose Light, Dark, or Same as this device.",
+      "If the click of a press disturbs you, set Click sound to Off.",
+    ],
+    expectedResult:
+      "Every screen uses the key size, the gaps, and the timing of your choice. Your backup keeps this choice.",
+    recovery:
+      "If the keys do not fit on the screen, choose a smaller Text size. Setup asks the same questions in How you choose.",
+    related: ["use-eye-gaze", "use-switch-scanning", "set-up-september"],
+  },
+  {
+    slug: "use-eye-gaze",
+    category: "start-here",
+    title: "Use eye gaze",
+    summary:
+      "A key fills while you look at it. When the fill is full, September presses the key.",
+    keywords: [
+      "eyes",
+      "eye gaze",
+      "eye tracker",
+      "gaze",
+      "dwell",
+      "dwell time",
+      "fill",
+      "hands-free",
+    ],
+    platforms: BOTH_APPS,
+    prerequisites: [
+      "Connect an eye tracker that moves the pointer of the device.",
+      "Choose Eyes in Settings, Access.",
+    ],
+    steps: [
+      "Look at a key.",
+      "Keep your gaze on the key. The key fills from the bottom in amber.",
+      "Wait until the fill reaches the top. September then presses the key and plays a click.",
+      "To press the same key again, look away from the key first.",
+      "To rest your eyes, look at the space between the keys. That space presses nothing.",
+      "If keys press too soon or too late, change the Dwell time in Settings, Access.",
+    ],
+    expectedResult:
+      "You write and speak a message without a touch or a click. A menu opens when you look at its key.",
+    recovery:
+      "If a key does not fill, make sure that Eyes is chosen in Settings, Access. Then make sure that the eye tracker moves the pointer.",
+    related: ["choose-how-you-use-september", "use-switch-scanning"],
+    media: [
+      {
+        type: "video",
+        title: "Press a key with your gaze",
+        transcript:
+          "Look at a key. The key fills from the bottom in amber, and ink marks show the level of the fill. When the fill is full, the key presses and a click plays. Look at the space between the keys to rest your eyes.",
+      },
+    ],
+  },
+  {
+    slug: "use-switch-scanning",
+    category: "start-here",
+    title: "Use switch scanning",
+    summary:
+      "An amber band moves through the groups of keys. Your switch chooses the group and then the key.",
+    keywords: [
+      "switch",
+      "switch access",
+      "scan",
+      "scanning",
+      "scan step",
+      "pause scan",
+      "resume scan",
+      "one switch",
+      "two switches",
+      "Space",
+      "Enter",
+    ],
+    platforms: BOTH_APPS,
+    prerequisites: [
+      "Set your switch to send Space, Enter, or both.",
+      "Choose Switch in Settings, Access.",
+    ],
+    steps: [
+      "Watch the amber band. After each scan step, it moves to the next group of keys.",
+      "To move the band yourself, press Space.",
+      "When the band is on the group that you want, press Enter.",
+      "The amber focus then moves through the keys of that group. Press Enter on the key that you want.",
+      "If you use one switch, set it to Enter. The scan moves on by itself.",
+      "To stop the scan for a time, press Enter on Pause scan, the last key of the page. The next press of your switch starts the scan again.",
+      "If the scan is too fast or too slow, change the Scan step in Settings, Access. The longest step is 30 seconds.",
+    ],
+    expectedResult: "You reach every key on the screen with one or two switches.",
+    recovery:
+      "If the band does not move, make sure that Switch is chosen in Settings, Access. If Resume scan shows, press your switch once.",
+    related: ["choose-how-you-use-september", "use-eye-gaze"],
+    media: [
+      {
+        type: "video",
+        title: "Choose a word with a switch",
+        transcript:
+          "The amber band moves from one group of keys to the next. Press Enter on a group. The amber focus then moves through its keys. Press Enter again to press a key.",
+      },
+    ],
   },
   {
     slug: "speak-your-first-message",

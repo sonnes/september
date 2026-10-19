@@ -326,7 +326,12 @@ export async function synthesizeTimed(
   return { blob, alignment };
 }
 
-export async function speakSystem(text: string, settings: SpeechSettings): Promise<void> {
+export async function speakSystem(
+  text: string,
+  settings: SpeechSettings,
+  /** Hears the character where each spoken word starts. */
+  onWord?: (charIndex: number) => void
+): Promise<void> {
   if (!('speechSynthesis' in window)) throw new Error('This browser has no system voice.');
   await new Promise<void>((resolve, reject) => {
     const utterance = new SpeechSynthesisUtterance(text);
@@ -338,6 +343,9 @@ export async function speakSystem(text: string, settings: SpeechSettings): Promi
           .find(voice => voice.voiceURI === settings.voiceId || voice.name === settings.voiceId) ??
         null;
     }
+    utterance.onboundary = event => {
+      if (event.name === 'word') onWord?.(event.charIndex);
+    };
     utterance.onend = () => resolve();
     utterance.onerror = event => reject(new Error(event.error || 'The browser voice stopped.'));
     speechSynthesis.cancel();

@@ -72,6 +72,8 @@ body {
   --color-sidebar-ring: var(--sidebar-ring);
   /* Amber marks attention only: focus, dwell, and the scan band. */
   --color-attention: var(--attention);
+  --color-attention-soft: var(--attention-soft);
+  --color-attention-strong: var(--attention-strong);
   --color-attention-foreground: var(--attention-foreground);
 }
 
@@ -106,6 +108,9 @@ body {
      ring, so one of the two passes 3:1 on white, zinc, and indigo. */
   --ring: var(--color-zinc-900);
   --attention: var(--color-amber-300);
+  /* The dwell fill runs from the soft amber to the strong amber. */
+  --attention-soft: var(--color-amber-200);
+  --attention-strong: var(--color-amber-400);
   --attention-foreground: var(--color-zinc-900);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
@@ -157,6 +162,109 @@ body {
   --sidebar-ring: var(--color-amber-300);
 }
 
+/* High contrast from the access profile: every line and every quiet word
+   takes the full ink. */
+[data-contrast='high'] {
+  --border: var(--foreground);
+  --input: var(--foreground);
+  --muted-foreground: var(--foreground);
+}
+
+/* The answers of the input layer. Amber is attention: the key that the gaze
+   fills and the group or key that the scan is on. A pressed key squeezes and
+   springs back, and shows a check in indigo. The input layer makes a static
+   key relative while it fills or shows a check. */
+[data-dwelling] {
+  background-image: linear-gradient(
+    to top,
+    var(--attention-strong) calc(var(--dwell, 0) * 100%),
+    var(--attention-soft) calc(var(--dwell, 0) * 100%)
+  ) !important;
+  color: var(--attention-foreground) !important;
+  border-color: var(--attention-foreground) !important;
+}
+/* Ink marks at the fill level on both edges show the progress without color. */
+[data-dwelling]::before,
+[data-dwelling]::after {
+  content: '';
+  position: absolute;
+  bottom: calc(var(--dwell, 0) * 100% - 2px);
+  width: 10px;
+  height: 4px;
+  background: var(--attention-foreground);
+  pointer-events: none;
+}
+[data-dwelling]::before {
+  left: 0;
+}
+[data-dwelling]::after {
+  right: 0;
+}
+[data-scan='group'] {
+  background: var(--attention-soft) !important;
+  outline: 3px solid var(--attention-foreground);
+  outline-offset: 4px;
+  border-radius: 1.125rem;
+}
+/* On the indigo sidebar and header, an amber fill would hide the white words,
+   so the band is the amber ring alone. */
+[data-housing][data-scan='group'],
+[data-housing] [data-scan='group'] {
+  background: transparent !important;
+  outline: 3px solid var(--attention);
+  box-shadow: 0 0 0 6px var(--attention-foreground);
+}
+[data-scan='key'] {
+  background: var(--attention) !important;
+  color: var(--attention-foreground) !important;
+  border-color: var(--attention-foreground) !important;
+}
+[data-accepted] {
+  animation: accepted-squeeze 0.28s cubic-bezier(0.3, 0, 0.3, 1.4) 1;
+}
+/* Without motion, two rings show the press in place of the squeeze. */
+[data-motion='reduced'] [data-accepted] {
+  box-shadow:
+    0 0 0 4px var(--background),
+    0 0 0 8px var(--brand) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-accepted] {
+    box-shadow:
+      0 0 0 4px var(--background),
+      0 0 0 8px var(--brand) !important;
+  }
+}
+/* A pressed key shows a check, so the answer is not a color alone. */
+[data-accepted]::after {
+  content: '✓';
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  background: var(--brand);
+  color: var(--background);
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+@keyframes accepted-squeeze {
+  0% {
+    scale: 1;
+  }
+  35% {
+    scale: 0.94;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
 /* Focus is attention: an ink line inside an amber ring. One of the two
    passes 3:1 on white, on zinc, and on the indigo sidebar. */
 .focus-attention:focus-visible,
@@ -189,7 +297,36 @@ body {
   opacity: 1 !important;
 }
 
-/* No meaning depends on motion, so the screen loses nothing. */
+/* On a phone, the pause key of the scan sits at the foot of the screen. The
+   screen keeps room for it, so it covers no key. */
+@media (width < 48rem) {
+  [data-input='switch'] [data-scan-room] {
+    padding-bottom: 4.5rem;
+  }
+}
+
+/* This rule is for a disabled key on the stage of Present. The key sets
+   `--stage-ink` and `--stage-line` from the tone of the stage. The name keeps
+   the ink of the tone, and the dotted border shows the state. */
+.key-disabled-on-stage:disabled,
+.key-disabled-on-stage[aria-disabled='true'] {
+  background: transparent !important;
+  border: 2px dotted var(--stage-line) !important;
+  color: var(--stage-ink) !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+/* Reduced motion, from the access profile or from the system. No meaning
+   depends on motion, so the screen loses nothing. */
+[data-motion='reduced'] *,
+[data-motion='reduced'] *::before,
+[data-motion='reduced'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

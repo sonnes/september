@@ -1,6 +1,22 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 
-import { Palette, Volume2, VolumeX, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Palette,
+  Play,
+  Square,
+  Volume2,
+  VolumeX,
+  X,
+} from "lucide-react";
 
 import {
   chunkFontRatio,
@@ -162,19 +178,7 @@ export function PresentOverlay({
         </p>
       )}
 
-      {speechFailed ? (
-        <p role="alert" className="pointer-events-none absolute inset-x-0 bottom-16 z-20 px-4 text-center text-sm">
-          Speech could not play. Start the voice again to retry, or continue with the words on screen.
-        </p>
-      ) : null}
-      <Zones
-        index={index}
-        total={total}
-        spoken={spoken}
-        paused={paused}
-        onMove={move}
-        onHold={() => setPaused((held) => !held)}
-      />
+      <Zones index={index} total={total} onMove={move} />
 
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-4">
         <span className="pointer-events-none opacity-80">
@@ -188,7 +192,7 @@ export function PresentOverlay({
           type="button"
           aria-label="Close the presentation"
           onClick={onClose}
-          className="pointer-events-auto grid size-11 place-items-center rounded-full transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:outline-none"
+          className="focus-attention pointer-events-auto grid size-[max(3rem,var(--reach-target,3rem))] place-items-center rounded-full transition-opacity hover:opacity-80"
           style={{ backgroundColor: chrome(12), color: tone.display }}
         >
           <X aria-hidden />
@@ -196,6 +200,11 @@ export function PresentOverlay({
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 p-4">
+        {speechFailed ? (
+          <p role="alert" className="px-4 text-center text-sm">
+            Speech could not play. Start the voice again to retry, or continue with the words on screen.
+          </p>
+        ) : null}
         {colours ? (
           <div
             role="group"
@@ -210,7 +219,7 @@ export function PresentOverlay({
                 aria-label={option.name}
                 aria-pressed={option.key === tone.key}
                 onClick={() => choose({ tone: option.key })}
-                className="size-11 rounded-full border-2 transition-transform focus-visible:ring-2 focus-visible:outline-none"
+                className="focus-attention size-[max(3rem,var(--reach-target,3rem))] rounded-full border-2 transition-transform"
                 style={{
                   backgroundColor: option.background,
                   borderColor:
@@ -221,7 +230,16 @@ export function PresentOverlay({
           </div>
         ) : null}
 
-        <div className="pointer-events-auto flex items-center gap-2">
+        <div className="pointer-events-auto flex flex-wrap items-center justify-center gap-[var(--reach-gap,0.5rem)]">
+          <MoveKeys
+            index={index}
+            total={total}
+            spoken={spoken}
+            paused={paused}
+            tone={tone}
+            onMove={move}
+            onHold={() => setPaused((held) => !held)}
+          />
           <ChromeButton
             label={spoken ? "Turn the voice off" : "Turn the voice on"}
             tone={tone}
@@ -317,13 +335,41 @@ function Progress({
  * The stage in thirds: back, hold, on.
  *
  * A press anywhere lands somewhere useful, which matters most for a partner
- * holding the iPad who has never used September before.
+ * holding the iPad who has never used September before. The thirds are for a
+ * hand only. They are not keys, so a gaze that reads the words presses
+ * nothing, and a switch scan steps over them. The keys below the words do the
+ * same moves for everyone.
  */
 function Zones({
   index,
   total,
+  onMove,
+}: {
+  index: number;
+  total: number;
+  onMove: (delta: number) => void;
+}) {
+  return (
+    <div aria-hidden className="absolute inset-0 flex">
+      <div className="h-full flex-1" onClick={() => index > 0 && onMove(-1)} />
+      <div className="h-full flex-1" />
+      <div className="h-full flex-1" onClick={() => index < total - 1 && onMove(1)} />
+    </div>
+  );
+}
+
+/**
+ * Previous, Stop, and Next: keys at the reach size, in one scan group.
+ *
+ * Each key stays in place at both ends and in silence. A key that has
+ * nothing to do says so with `aria-disabled` and a dotted line.
+ */
+function MoveKeys({
+  index,
+  total,
   spoken,
   paused,
+  tone,
   onMove,
   onHold,
 }: {
@@ -331,37 +377,60 @@ function Zones({
   total: number;
   spoken: boolean;
   paused: boolean;
+  tone: PresentTone;
   onMove: (delta: number) => void;
   onHold: () => void;
 }) {
-  const zone =
-    "h-full flex-1 focus-visible:ring-2 focus-visible:outline-none aria-disabled:cursor-default";
+  const key =
+    "focus-attention key-disabled-on-stage inline-flex min-h-[max(3rem,var(--reach-target,3rem))] min-w-[max(3rem,var(--reach-target,3rem))] items-center justify-center gap-2 rounded-control border-2 px-4 text-base font-semibold";
+  const line = `color-mix(in srgb, ${tone.display} 55%, transparent)`;
+  // A disabled key keeps the ink of the tone, so its name stays readable on
+  // the stage. The dotted line says that it has nothing to do.
+  const style = {
+    backgroundColor: `color-mix(in srgb, ${tone.display} 12%, transparent)`,
+    borderColor: line,
+    color: tone.display,
+    "--stage-ink": tone.display,
+    "--stage-line": line,
+  } as CSSProperties;
 
   return (
-    <div className="absolute inset-0 flex">
+    <div data-scan-group className="flex items-center gap-[var(--reach-gap,0.5rem)]">
       <button
         type="button"
         aria-label="Previous chunk"
         aria-disabled={index === 0}
         onClick={() => index > 0 && onMove(-1)}
-        className={zone}
-      />
+        className={key}
+        style={style}
+      >
+        <ChevronLeft aria-hidden />
+        Previous
+      </button>
       <button
         type="button"
-        aria-label={paused ? "Start the voice again" : "Hold the voice"}
-        // Silence has nothing to hold. The zone stays, so the thirds of the
-        // stage never move under a hand that has learned where they are.
+        aria-label={paused ? "Start the voice again" : "Stop the voice"}
+        // Silence has nothing to stop. The key stays, so the row never moves
+        // under a hand that has learned where it is.
         aria-disabled={!spoken}
         onClick={() => spoken && onHold()}
-        className={zone}
-      />
+        className={key}
+        style={style}
+      >
+        {paused ? <Play aria-hidden /> : <Square aria-hidden />}
+        {paused ? "Start" : "Stop"}
+      </button>
       <button
         type="button"
         aria-label="Next chunk"
         aria-disabled={index >= total - 1}
         onClick={() => index < total - 1 && onMove(1)}
-        className={zone}
-      />
+        className={key}
+        style={style}
+      >
+        Next
+        <ChevronRight aria-hidden />
+      </button>
     </div>
   );
 }
@@ -385,7 +454,7 @@ function ChromeButton({
       aria-label={label}
       aria-pressed={pressed}
       onClick={onClick}
-      className="grid size-11 place-items-center rounded-full transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:outline-none"
+      className="focus-attention grid size-[max(3rem,var(--reach-target,3rem))] place-items-center rounded-full transition-opacity hover:opacity-80"
       style={{
         backgroundColor: `color-mix(in srgb, ${tone.display} ${pressed ? 24 : 12}%, transparent)`,
         color: tone.display,

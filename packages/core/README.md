@@ -90,6 +90,20 @@ ElevenLabs voices, by `is_owner` and category, and
 The backup setup includes independent `autoSuggestions`, `autoPhrases`, and
 `agentEnabled` booleans. Missing fields default to `true`. Explicit `false` values survive
 export and restore. The parser rejects supplied values with another type.
+The backup setup also holds the access profile. `parseAccess` checks each of
+its fields, and a backup made before the profile gets the default profile.
+
+`rules/access.ts` holds the access profile: the input method, the text size,
+the contrast, the motion, the theme, the click sound, and an optional dwell
+time and scan step. `reachFor` turns a profile into the target size, the gap,
+the word size, the dwell, the scan step, the number of stripes, and the words
+in a slice. `isDark` tells if the screen shows the dark theme. A dwell time or
+a scan step is from `TIME_MIN_MS` (0.3 s) to `TIME_MAX_MS` (30 s). See
+`docs/concepts/access-profile.md`.
+
+`rules/spoken-word.ts` finds the word that a voice reads. `wordAt` gives the
+place of the word that holds a character, and `wordsOf` cuts a text into words
+and spaces. See `docs/concepts/spoken-word.md`.
 
 It also holds how that work reads. `groupAgentTurns` folds the flat transcript
 into turns, joining consecutive tools that share an outcome into one line,
@@ -125,7 +139,8 @@ Delete word, the prefix that Enter carries to the next line, a range
 replace, and `notePreview`, the line that the list of notes shows under a name. The note stays plain Markdown, so the editor never parses it itself.
 
 `rules/stripes.ts` matches individual history sentences and limits suggestion
-slices to six unaccepted words. `matchTyped` finds a row that starts with the
+slices to six unaccepted words. `stripeForText` takes a smaller limit from the
+access profile. `matchTyped` finds a row that starts with the
 draft, or a row that contains the draft at the start of a word. The rows that
 start with the draft come first. A row that contains the draft hides no words,
 so a press replaces the draft. Its `found` range marks the typed words, and its

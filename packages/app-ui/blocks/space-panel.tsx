@@ -100,6 +100,7 @@ export function PanelRail({
       ) : null}
 
       <nav
+        data-scan-group
         aria-label="Panel rail"
         className="bg-background my-2 mr-2 flex w-20 shrink-0 flex-col items-stretch gap-1.5 rounded-xl border p-1.5 shadow-sm"
       >

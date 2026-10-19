@@ -42,6 +42,7 @@ import {
   ConnectionScreen,
   DataSettings,
   SetupSettings,
+  AccessSettings,
   WritingSettings,
 } from "@september/app-ui/pages/settings";
 import { UsageSettings } from "@september/app-ui/pages/usage";
@@ -55,6 +56,7 @@ import {
   ConnectStep,
   FinishStep,
   ProfileStep,
+  ChooseStep,
   WelcomeStep,
 } from "@september/app-ui/pages/steps";
 import "./styles.css";
@@ -204,6 +206,11 @@ const guardedAppRoute = appRoute.addChildren([
     }),
     createRoute({
       getParentRoute: () => settingsRoute,
+      path: "/access",
+      component: AccessSettings,
+    }),
+    createRoute({
+      getParentRoute: () => settingsRoute,
       path: "/writing",
       component: WritingSettings,
     }),
@@ -242,6 +249,7 @@ const routeTree = rootRoute.addChildren([
   }),
   setupRoute.addChildren([
     step("/welcome", WelcomeStep),
+    step("/choose", ChooseStep),
     step("/profile", ProfileStep),
     step("/connect", ConnectStep),
     step("/finish", FinishStep),

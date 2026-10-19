@@ -45,6 +45,8 @@ export function SkipLink() {
   return (
     <a
       href={`#${MAIN_ID}`}
+      // A dwell or a scan cannot reach a link that shows only on focus.
+      data-access-skip=""
       onClick={(event) => {
         // The focus moves here too, because a browser can leave it on the link.
         event.preventDefault();
@@ -126,7 +128,7 @@ export function ScreenHeader({
   const title = heading ? <h1 className="sr-only">{heading}</h1> : null;
   if (useChrome() === "panel") return title;
   return (
-    <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+    <header data-scan-group className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
       {title}
       <SidebarTrigger className="-ml-1" />
       <Separator

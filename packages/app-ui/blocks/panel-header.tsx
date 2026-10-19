@@ -23,6 +23,7 @@ import type { Space } from "@platform/services/data";
 import { Phrases } from "@september/app-ui/blocks/phrase-panel";
 import { SpeechSettings } from "@september/app-ui/blocks/speech-settings";
 import { usePanel } from "@september/app-ui/blocks/chrome";
+import { ScanPauseKey } from "@september/app-ui/blocks/access";
 import {
   SpaceTitle,
   agentEnabled,
@@ -88,8 +89,11 @@ export function PanelHeader({
     // The header is the title bar of the desktop window: a press on its free
     // space drags the window, and the left inset keeps clear of the window
     // buttons, which macOS draws over it.
+    // One scan group. The scan band on the indigo is a ring alone.
     <header
       data-tauri-drag-region
+      data-scan-group
+      data-housing
       className="bg-sidebar text-sidebar-foreground flex h-16 shrink-0 items-center gap-2 pr-2.5 pl-21"
     >
       {page ? (
@@ -170,6 +174,7 @@ export function PanelHeader({
         </>
       )}
 
+      <ScanPauseKey />
       <button
         type="button"
         aria-label="More"

@@ -13,6 +13,7 @@ import {
 } from "./present.ts";
 import { spaceSlug } from "./spaces.ts";
 import { USAGE_EVENT_TYPES, type UsageEventType } from "./usage-summary.ts";
+import { parseAccess, type AccessProfile } from "./access.ts";
 
 export const BACKUP_FORMAT = "september-backup" as const;
 export const BACKUP_FORMAT_VERSION = 2 as const;
@@ -48,6 +49,8 @@ export interface BackupSetup {
   defaultModel: BackupModelConfig;
   suggestionsModel: BackupModelConfig | null;
   voiceService: "system" | "elevenlabs";
+  /** How the person chooses things. A backup made before it has the default. */
+  access: AccessProfile;
 }
 
 export interface BackupModelConfig {
@@ -360,6 +363,7 @@ function setupFrom(value: unknown): BackupSetup | null {
       ["system", "elevenlabs"],
       "setup voice service",
     ),
+    access: parseAccess(row.access),
   };
 }
 

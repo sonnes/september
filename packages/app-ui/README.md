@@ -62,6 +62,21 @@ A screen that has no `h1` of its own gives `ScreenHeader` a `heading`. Talk,
 Notes, and Agent do this. The header then holds an `h1` that only a screen
 reader reads.
 
+`blocks/access.tsx` holds the access layer. `AppShell`, `PanelShell`, and the
+setup layout mount `ApplyAccess` and `InputLayer`. `ApplyAccess` puts the
+access profile on the root element: the dark theme, the input method, the
+motion, the contrast, and the reach tokens. `InputLayer` answers each press
+with a check and a click, presses a key after a dwell for Eyes, and scans the
+screen for Switch. Each shell also places `ScanPauseKey`, the key that pauses
+the scan: the foot of the sidebar, the panel header, or the setup sidebar. The
+scan steps through the elements marked `data-scan-group`, then through their
+keys. `data-housing` marks an indigo surface, where the scan band is an amber
+ring with no fill. `AccessForm` asks the questions of the profile in the How
+you choose step and in Settings, Access. A new input method applies only on
+Continue in setup and on its Use key in Settings. `useAccess` and `useReach`
+give the profile and its reach to a screen. See
+`docs/concepts/access-profile.md`.
+
 `layouts/onboarding.tsx` owns the setup shell. Its indigo panel is the sidebar
 from `md` (768px) up and a bar across the top below it — the same width at
 which `layouts/app.tsx` turns its sidebar into a sheet. The bar keeps the brand
@@ -169,6 +184,12 @@ the device's system-wide sound output.
 whole viewport instead of inside the shell, because a presentation is for the
 room and not for the person holding the keyboard. It stays a block and not a
 route, so no app has to change its route set to present a note.
+
+Below the words of Present, Previous, Stop, and Next are keys at the reach size,
+in one scan group. A key that has nothing to do keeps its place, has
+`aria-disabled`, and shows a dotted line. The thirds of the stage still move
+the story for a hand, but they are not keys, so a gaze that reads the words
+presses nothing.
 
 `PresentOverlay` calls `fullScreen(true)` from `@platform/services/os` when it
 opens, and `fullScreen(false)` when it closes. In the desktop app, the panel
@@ -339,6 +360,16 @@ draws a chip under each tag. See `docs/concepts/audio-tags.md`.
 Speech returns whether playback completed successfully. Talk and Read aloud
 show speech notices. Present pauses on failure and keeps the unread chunk on
 screen for retry or silent use.
+
+`SpokenText` in `blocks/suggestions.tsx` draws a message of Talk. While the
+browser system voice reads it, the word that the voice reads is indigo. See
+`docs/concepts/spoken-word.md`. The stripes take the number of stripes, the
+words in a slice, the word size, the tile height, and the gap from the access
+profile. `TimeRangeSelect` in `blocks/usage.tsx` shows the periods of a report
+as three `ChoiceKey` keys, not a dropdown.
+
+`ChooseStep` in `pages/steps.tsx` is How you choose, the step after Welcome.
+`AccessSettings` in `pages/settings.tsx` is Settings, Access.
 
 `WelcomeStep` in `pages/steps.tsx` includes a four-point Terms and Privacy summary
 in both apps. It opens the full policies through the platform browser

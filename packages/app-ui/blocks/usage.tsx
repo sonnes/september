@@ -1,10 +1,6 @@
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@september/ui/components/select";
+import type { KeyboardEvent } from "react";
+
+import { ChoiceKey } from "@september/app-ui/blocks/pick-list";
 import type { CostSource, TimeRange } from "@september/core/rules/usage-summary";
 
 export const formatCount = (value: number) =>
@@ -30,6 +26,17 @@ export const providerLabel = (id: string): string =>
 export const formatCost = (value: number) =>
   new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(value);
 
+const PERIODS: readonly { value: TimeRange; label: string }[] = [
+  { value: "day", label: "Today" },
+  { value: "week", label: "This week" },
+  { value: "month", label: "This month" },
+];
+
+/**
+ * The period of a report, as three keys. A dwell and a scan cannot open a
+ * dropdown that closes when the gaze moves, so each period is a key. The
+ * arrow keys move between the periods, as in every radio group.
+ */
 export function TimeRangeSelect({
   value,
   onChange,
@@ -37,17 +44,40 @@ export function TimeRangeSelect({
   value: TimeRange;
   onChange: (value: TimeRange) => void;
 }) {
+  const move = (event: KeyboardEvent<HTMLDivElement>) => {
+    const step =
+      event.key === "ArrowRight" || event.key === "ArrowDown"
+        ? 1
+        : event.key === "ArrowLeft" || event.key === "ArrowUp"
+          ? -1
+          : 0;
+    if (!step) return;
+    event.preventDefault();
+    const at = PERIODS.findIndex((period) => period.value === value);
+    const next = (at + step + PERIODS.length) % PERIODS.length;
+    onChange(PERIODS[next].value);
+    event.currentTarget.querySelectorAll<HTMLElement>('[role="radio"]')[next]?.focus();
+  };
+
   return (
-    <Select value={value} onValueChange={(next) => onChange(next as TimeRange)}>
-      <SelectTrigger className="h-11 min-w-32" aria-label="Usage period">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="day">Today</SelectItem>
-        <SelectItem value="week">This week</SelectItem>
-        <SelectItem value="month">This month</SelectItem>
-      </SelectContent>
-    </Select>
+    <div
+      role="radiogroup"
+      aria-label="Usage period"
+      onKeyDown={move}
+      className="flex flex-wrap gap-2"
+    >
+      {PERIODS.map((period) => (
+        <ChoiceKey
+          key={period.value}
+          checked={period.value === value}
+          tabbable={period.value === value}
+          onChoose={() => onChange(period.value)}
+          className="text-sm font-semibold"
+        >
+          {period.label}
+        </ChoiceKey>
+      ))}
+    </div>
   );
 }
 

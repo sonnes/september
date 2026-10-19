@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
+import { DEFAULT_ACCESS } from "./access";
 import {
   backupContents,
   backupFileName,
@@ -31,6 +32,7 @@ const validBackup = (): SeptemberBackup => ({
       autoPhrases: true,
       agentEnabled: true,
       voiceService: "elevenlabs",
+      access: DEFAULT_ACCESS,
     },
     speech: {
       provider: "elevenlabs",
@@ -181,6 +183,22 @@ describe("the portable September backup", () => {
     expect(
       parseBackup(encodeBackup(backup)).backup.settings.setup?.agentEnabled,
     ).toBe(false);
+  });
+
+  it("preserves the access profile of the setup", () => {
+    const backup = validBackup();
+    Object.assign(backup.settings.setup!, {
+      access: { ...DEFAULT_ACCESS, input: "eyes", theme: "dark", dwellMs: 900 },
+    });
+    expect(
+      parseBackup(encodeBackup(backup)).backup.settings.setup?.access,
+    ).toEqual({ ...DEFAULT_ACCESS, input: "eyes", theme: "dark", dwellMs: 900 });
+  });
+
+  it("gives a backup made before the access profile the default profile", () => {
+    expect(
+      parseBackup(encodeBackup(validBackup())).backup.settings.setup?.access,
+    ).toEqual(DEFAULT_ACCESS);
   });
 
   it("turns the agent on for a backup made before the agent switch", () => {

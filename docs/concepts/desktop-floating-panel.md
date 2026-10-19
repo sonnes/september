@@ -48,6 +48,10 @@ window.
 | A space-mode path | Space button | The Talk, Notes, and Agent switch            | More  |
 | Any other page    | Back         | The title of the `APP_NAV` page of the path  | More  |
 
+The header is one scan group. While a switch scans the panel, the Pause scan
+key shows before More. `PanelShell` mounts `ApplyAccess` and `InputLayer`, so
+the panel takes the access profile. See `docs/concepts/access-profile.md`.
+
 Back goes to the last space-mode path that the panel showed. If no such path
 exists, Back goes to `/spaces`.
 

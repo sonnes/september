@@ -74,6 +74,7 @@ vi.mock('@september/app-ui/blocks/space-panel', () => ({ PanelRail: () => null }
 vi.mock('@september/app-ui/blocks/suggestions', () => ({
   Suggestions: () => <p>The suggestions</p>,
   TaggedText: ({ text }: { text: string }) => <>{text}</>,
+  SpokenText: ({ text }: { text: string }) => <>{text}</>,
 }));
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

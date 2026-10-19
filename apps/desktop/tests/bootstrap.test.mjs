@@ -79,7 +79,9 @@ test("all saved modes follow the same setup steps", () => {
 });
 
 test("setup navigation moves through the steps for the selected mode", () => {
-  assert.equal(nextStep("/welcome", free), "/profile");
+  assert.equal(nextStep("/welcome", free), "/choose");
+  assert.equal(nextStep("/choose", free), "/profile");
+  assert.equal(previousStep("/profile", free), "/choose");
   assert.equal(nextStep("/profile", free), "/connect");
   assert.equal(previousStep("/finish", free), "/connect");
   assert.equal(nextStep("/profile", advanced), "/connect");
@@ -91,6 +93,7 @@ test("setup steps unlock only after their required answers exist", () => {
   const blank = { name: "", mode: null };
 
   assert.equal(canReach("/welcome", blank), true);
+  assert.equal(canReach("/choose", blank), true);
   assert.equal(canReach("/profile", blank), true);
   assert.equal(canReach("/connect", blank), false);
   assert.equal(canReach("/connect", { name: "Ravi", mode: null }), true);

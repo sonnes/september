@@ -1,5 +1,12 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { DatabaseBackup, Gauge, Lightbulb, PanelTop, SlidersHorizontal } from "lucide-react";
+import {
+  Accessibility,
+  DatabaseBackup,
+  Gauge,
+  Lightbulb,
+  PanelTop,
+  SlidersHorizontal,
+} from "lucide-react";
 
 import { SETTINGS_NAV, sectionFor, type SettingsPath } from "@platform/rules/settings-nav";
 import { ScreenHeader } from "@september/app-ui/blocks/screen";
@@ -8,6 +15,7 @@ import { documentTitle } from "@september/core/rules/titles";
 // The panel section is on the desktop only.
 const ICONS: Record<SettingsPath | "/settings/panel", typeof SlidersHorizontal> = {
   "/settings": SlidersHorizontal,
+  "/settings/access": Accessibility,
   "/settings/writing": Lightbulb,
   "/settings/usage": Gauge,
   "/settings/panel": PanelTop,

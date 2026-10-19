@@ -12,6 +12,11 @@ export const SETTINGS_NAV = [
     description: "The services September uses, and their keys.",
   },
   {
+    path: "/settings/access",
+    title: "Access",
+    description: "How you choose things, the text size, and the theme.",
+  },
+  {
     path: "/settings/writing",
     title: "AI Assistance",
     description: "The provider, and the model for each feature.",

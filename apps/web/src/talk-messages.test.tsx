@@ -23,6 +23,7 @@ vi.mock('@platform/services/phrase-sync', () => ({ useSyncPhrases: () => {} }));
 vi.mock('@platform/services/usage', () => ({ recordMessageUsage: async () => {} }));
 vi.mock('@platform/services/speech', () => ({
   speak: async () => true, stopSpeaking: () => {}, useSpeaking: () => state.speaking, useVoiceFallback: () => null,
+  useSpokenWord: () => null,
 }));
 vi.mock('@september/app-ui/blocks/screen', () => ({ ScreenHeader: ({ children }: { children: React.ReactNode }) => <>{children}</>, RightPanel: () => null }));
 vi.mock('@september/app-ui/blocks/space-panel', () => ({ PanelRail: () => null }));

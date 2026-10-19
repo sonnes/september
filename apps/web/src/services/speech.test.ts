@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as voice from '@september/core/rules/voice';
 import * as audioTags from '@september/core/rules/audio-tags';
+import * as spokenWord from '@september/core/rules/spoken-word';
 
 const os = vi.hoisted(() => ({
   currentSetup: vi.fn(() => ({ voiceService: 'elevenlabs' })),
@@ -44,12 +45,26 @@ for (const platform of ['web', 'desktop']) {
           if (id.endsWith('/os')) return os;
           if (id === '@september/core/rules/voice') return voice;
           if (id === '@september/core/rules/audio-tags') return audioTags;
+          if (id === '@september/core/rules/spoken-word') return spokenWord;
           if (id.endsWith('/usage')) return { recordTtsUsage };
           if (id.endsWith('/usage-summary')) return { elevenLabsCredits: () => 0 };
           throw new Error(`Unexpected import: ${id}`);
         },
       });
       speech = exports as typeof speech;
+    });
+
+    it('tells which word the system voice is reading, and forgets it at the end', async () => {
+      os.currentSetup.mockReturnValue({ voiceService: 'system' });
+      const sentence = 'Thursday is the physio appointment.';
+      let heard: unknown = 'nothing';
+      os.speakSystem.mockImplementation(async (text: string, _settings: unknown, onWord: (at: number) => void) => {
+        onWord(text.indexOf('physio'));
+        heard = speech.currentSpokenWord();
+      });
+      await speech.speak(sentence, 'message-1');
+      expect(heard).toEqual({ id: 'message-1', word: 3 });
+      expect(speech.currentSpokenWord()).toBeNull();
     });
 
     it('settles Stop immediately and ignores a late cloud result', async () => {

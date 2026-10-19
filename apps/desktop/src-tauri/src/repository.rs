@@ -138,6 +138,10 @@ pub struct BackupSetup {
     #[serde(default = "enabled_by_default")]
     pub agent_enabled: bool,
     pub voice_service: String,
+    /// How the person chooses things. The web app checks its fields; here it
+    /// only travels with the setup.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub access: Option<serde_json::Value>,
 }
 
 fn enabled_by_default() -> bool {
@@ -1475,6 +1479,7 @@ mod tests {
                     auto_phrases: true,
                     agent_enabled: true,
                     voice_service: "elevenlabs".to_owned(),
+                    access: None,
                 }),
                 speech: Some(BackupSpeech {
                     provider: "elevenlabs".to_owned(),
@@ -1642,6 +1647,27 @@ mod tests {
         repository.replace_backup_contents(&contents).unwrap();
         let restored = serde_json::to_value(repository.backup_contents("user-1").unwrap()).unwrap();
         assert_eq!(restored["settings"]["setup"]["agentEnabled"], false);
+    }
+
+    #[test]
+    fn the_access_profile_survives_backup_restore() {
+        let mut value = serde_json::to_value(backup_contents("space-1")).unwrap();
+        value["settings"]["setup"]["access"] = serde_json::json!({
+            "input": "eyes",
+            "textSize": "large",
+            "contrast": "standard",
+            "motion": "reduced",
+            "theme": "dark",
+            "sound": "off",
+            "dwellMs": 900
+        });
+        let contents: BackupContents = serde_json::from_value(value).unwrap();
+        let mut repository = Repository::open_in_memory().unwrap();
+        repository.replace_backup_contents(&contents).unwrap();
+        let restored = serde_json::to_value(repository.backup_contents("user-1").unwrap()).unwrap();
+        assert_eq!(restored["settings"]["setup"]["access"]["input"], "eyes");
+        assert_eq!(restored["settings"]["setup"]["access"]["dwellMs"], 900);
+        assert_eq!(restored["settings"]["setup"]["access"]["sound"], "off");
     }
 
     #[test]

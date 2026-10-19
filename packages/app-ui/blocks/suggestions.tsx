@@ -46,7 +46,9 @@ import {
   wordRow,
 } from "@september/core/rules/audio-tags";
 import { exampleTags, type MoodKey } from "@september/core/rules/moods";
-import { speechSettings } from "@platform/services/speech";
+import { speechSettings, useSpokenWord } from "@platform/services/speech";
+import { wordsOf } from "@september/core/rules/spoken-word";
+import { useReach } from "@september/app-ui/blocks/access";
 import { applySuggestion, useSuggestions } from "@platform/services/suggest";
 import {
   boardWords,
@@ -95,6 +97,34 @@ export function TagMark({ label }: { label: string }) {
     <>
       <AudioLines className="size-[0.9em] shrink-0" aria-hidden />
       {label}
+    </>
+  );
+}
+
+/**
+ * A sentence that the voice can read. While the voice reads this sentence,
+ * the word it is on is indigo with white words. Amber marks attention only,
+ * so the word that is read is not amber. A sentence with audio tags shows its
+ * tags instead, because the voice does not read them as words.
+ */
+export function SpokenText({ id, text }: { id: string; text: string }) {
+  const spoken = useSpokenWord();
+  if (draftParts(text).some((part) => part.tag)) return <TaggedText text={text} />;
+  const reading = spoken?.id === id ? spoken.word : null;
+  return (
+    <>
+      {wordsOf(text).map((part, index) =>
+        part.word !== null && part.word === reading ? (
+          <mark
+            key={index}
+            className="bg-primary text-primary-foreground rounded-md px-0.5 [box-decoration-break:clone]"
+          >
+            {part.text}
+          </mark>
+        ) : (
+          part.text
+        ),
+      )}
     </>
   );
 }
@@ -249,6 +279,9 @@ export function Suggestions({
     mood,
     document,
   });
+  // The access profile sets how many stripes show, how many words a slice
+  // holds, and the size of a word, a tile, and a gap.
+  const reach = useReach();
   const stripes = useStripes({
     text,
     spaceId,
@@ -257,7 +290,8 @@ export function Suggestions({
     history,
     fromModel,
     selected,
-  });
+    sliceWords: reach.slice,
+  }).slice(0, reach.stripes);
 
   const chips = useMemo(() => {
     const board = boardWords(topPhrases(spacePhrases ?? [], SAVED_LIMIT));
@@ -268,6 +302,11 @@ export function Suggestions({
   }, [spacePhrases, text]);
 
   const { ref, width } = useWidth();
+  const word = Math.max(TILE.fontPx, reach.wordPx);
+  const tall = Math.max(TILE.minHeightPx, reach.targetPx);
+  // The rows fit the width at the word size of the profile, so the fit reads
+  // the width as if the words were at the base size.
+  const grow = word / TILE.fontPx;
   const scale = useMemo(
     () =>
       tileScale(
@@ -275,11 +314,12 @@ export function Suggestions({
           const shown = stripe.tokens.slice(stripe.hidden);
           return { chars: shown.join("").length, tokens: shown.length };
         }),
-        width,
+        width / grow,
       ),
-    [stripes, width],
+    [stripes, width, grow],
   );
-  const size = (base: number) => base * scale;
+  const size = (base: number) => base * scale * grow;
+  const gap = Math.max(size(TILE.gapPx), reach.gapPx);
 
   if (stripes.length === 0 && chips.length === 0 && words.length === 0 && !writing) {
     return null;
@@ -288,7 +328,7 @@ export function Suggestions({
   return (
     <div className="flex flex-col gap-2.5" ref={ref}>
       {chips.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
+        <div role="group" aria-label="Phrases" data-scan-group className="flex flex-wrap gap-2">
           {chips.map((word) => {
             const kept = isKept(word, spacePhrases ?? []);
             return (
@@ -345,16 +385,17 @@ export function Suggestions({
               key={stripe.text}
               data-source={stripe.source}
               role="group"
+              data-scan-group
               aria-label={`Stripe ${row + 1} of ${stripes.length}, ${sourceName(stripe)}. ${stripe.text}`}
               className="flex flex-nowrap items-center"
-              style={{ gap: size(TILE.gapPx) }}
+              style={{ gap }}
               onMouseLeave={() => setHover(null)}
             >
               {/* One gutter for every mark, so the rows line up. The pin key
                   fills it, so the key is a full target. */}
               <span
                 className="grid shrink-0 place-items-center"
-                style={{ width: TILE.markPx, height: TILE.minHeightPx }}
+                style={{ width: TILE.markPx, height: tall }}
               >
                 <SourceMark
                   source={stripe.source}
@@ -364,7 +405,7 @@ export function Suggestions({
                 />
               </span>
 
-              <StripeWords gap={size(TILE.gapPx)}>
+              <StripeWords gap={gap}>
               {/* The words already typed are not shown again, so a tile always
                   adds something. A hover marks the tiles a press would take,
                   and the tile under the pointer is amber, the attention color. */}
@@ -401,11 +442,11 @@ export function Suggestions({
                     // A word keeps its size and the tile its height. Only the
                     // padding shrinks to fit a row, and a longer row scrolls.
                     style={{
-                      fontSize: TILE.fontPx,
+                      fontSize: word,
                       paddingInline: size(
                         punctuation ? TILE.punctPadXPx : TILE.wordPadXPx,
                       ),
-                      minHeight: TILE.minHeightPx,
+                      minHeight: tall,
                     }}
                     className={cn(
                       "focus-attention rounded-chip inline-flex shrink-0 items-center border transition-colors",
@@ -429,6 +470,7 @@ export function Suggestions({
               <EndKey
                 stripe={stripe}
                 scale={scale}
+                tall={tall}
                 label={finishLabel}
                 onTake={(next) => take(stripe, next)}
                 onSpeak={onSpeak}
@@ -518,6 +560,9 @@ function WordRow({
     <div
       ref={box}
       data-word-row
+      role="group"
+      aria-label="Words"
+      data-scan-group
       className="flex max-h-[calc(6.375rem+6px)] flex-wrap gap-1.5 overflow-hidden p-[3px]"
     >
       {words.map((word) => (
@@ -575,19 +620,22 @@ function useWidth() {
 function EndKey({
   stripe,
   scale,
+  tall,
   label: finish,
   onTake,
   onSpeak,
 }: {
   stripe: Stripe;
   scale: number;
+  /** The height of a tile, from the access profile. */
+  tall: number;
   label: string;
   onTake: (next: string) => void;
   onSpeak: (sentence: string) => void;
 }) {
   const box = {
-    minHeight: TILE.minHeightPx,
-    minWidth: TILE.minHeightPx,
+    minHeight: tall,
+    minWidth: tall,
     paddingInline: TILE.wordPadXPx * scale,
   };
   const glyph = { width: TILE.fontPx, height: TILE.fontPx };
@@ -712,6 +760,7 @@ function useStripes({
   history,
   fromModel,
   selected,
+  sliceWords,
 }: {
   text: string;
   spaceId: string;
@@ -720,6 +769,8 @@ function useStripes({
   history: string[];
   fromModel: string[];
   selected: Stripe | null;
+  /** The most words in a slice, from the access profile. */
+  sliceWords: number;
 }): Stripe[] {
   return useMemo(() => {
     const starters = topRows(spacePhrases, STARTER_LIMIT, "starter").map(
@@ -742,14 +793,14 @@ function useStripes({
 
     const rows = composed
       .map((one) => ({
-        ...stripeForText(one.text, text),
+        ...stripeForText(one.text, text, sliceWords),
         source: one.source,
         kept: isKept(one.text, spacePhrases),
       }))
       .filter((one) => one.hidden < one.tokens.length);
 
     if (selected && selected.text.trim().toLowerCase() !== text.trim().toLowerCase()) {
-      const continuation: Stripe = { ...selected, ...stripeForText(selected.text, text) };
+      const continuation: Stripe = { ...selected, ...stripeForText(selected.text, text, sliceWords) };
       return [continuation, ...rows.filter((one) => one.text.toLowerCase() !== selected.text.toLowerCase())]
         .slice(0, MAX_COMPOSED);
     }
@@ -764,7 +815,7 @@ function useStripes({
       return rows;
 
     const codeStripe: Stripe = {
-      ...stripeForText(expanded, text),
+      ...stripeForText(expanded, text, sliceWords),
       source: "code",
       code: match.code,
     };
@@ -774,7 +825,7 @@ function useStripes({
         (one) => one.text.toLowerCase() !== codeStripe.text.toLowerCase(),
       ),
     ].slice(0, MAX_COMPOSED);
-  }, [text, spaceId, spacePhrases, allPhrases, history, fromModel, selected]);
+  }, [text, spaceId, spacePhrases, allPhrases, history, fromModel, selected, sliceWords]);
 }
 
 /** The last rows of the stripe, from the writing service. */

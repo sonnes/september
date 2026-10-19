@@ -37,16 +37,16 @@ for (const [name, rules] of [
       expect(
         rules
           .stepsFor(draft)
-          .slice(0, 2)
+          .slice(0, 3)
           .map(step => step.path)
-      ).toEqual(['/welcome', '/profile']);
-      expect(rules.nextStep('/welcome', draft)).toBe('/profile');
-      expect(rules.previousStep('/profile', draft)).toBe('/welcome');
+      ).toEqual(['/welcome', '/choose', '/profile']);
+      expect(rules.nextStep('/welcome', draft)).toBe('/choose');
+      expect(rules.previousStep('/profile', draft)).toBe('/choose');
       expect(rules.canReach('/welcome', { name: '', mode: null })).toBe(true);
     }
   });
 }
-it('opens the full policies without leaving setup and continues to personal details', async () => {
+it('opens the full policies without leaving setup and continues to the access step', async () => {
   await act(async () => root.render(<WelcomeStep />));
   const buttons = [...container.querySelectorAll('button')];
   for (const button of buttons.slice(0, -1)) {
@@ -58,14 +58,14 @@ it('opens the full policies without leaving setup and continues to personal deta
   ]);
 
   await act(async () => buttons.at(-1)!.click());
-  expect(platform.navigate).toHaveBeenCalledWith({ to: '/profile' });
+  expect(platform.navigate).toHaveBeenCalledWith({ to: '/choose' });
 });
 
 for (const [name, rules] of [['web', web], ['desktop', desktop]] as const) {
   it(`${name}: follows one setup flow without choosing a mode`, () => {
     for (const mode of [null, 'free', 'advanced'] as const) {
       const draft = { name: 'Meera', mode };
-      expect(rules.stepsFor(draft).map(step => step.path)).toEqual(['/welcome', '/profile', '/connect', '/finish']);
+      expect(rules.stepsFor(draft).map(step => step.path)).toEqual(['/welcome', '/choose', '/profile', '/connect', '/finish']);
       expect(rules.nextStep('/profile', draft)).toBe('/connect');
       expect(rules.previousStep('/connect', draft)).toBe('/profile');
       expect(rules.canReach('/connect', draft)).toBe(true);

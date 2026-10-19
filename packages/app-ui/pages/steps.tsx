@@ -18,6 +18,8 @@ import {
 import { Textarea } from "@september/ui/components/textarea";
 
 import { useDraft } from "@september/app-ui/layouts/onboarding";
+import { AccessForm } from "@september/app-ui/blocks/access";
+import { INPUT_METHODS } from "@september/core/rules/access";
 import {
   nextStep,
   previousStep,
@@ -148,6 +150,40 @@ export function WelcomeStep() {
           </Button>
         </div>
       </div>
+    </Step>
+  );
+}
+
+/**
+ * How the person chooses things. It comes first after Welcome, so a person
+ * who uses a switch or their eyes meets a screen that fits them from here on.
+ * The answers apply when the person continues, so an arrow key that passes
+ * Switch does not start the scan.
+ */
+export function ChooseStep() {
+  const navigate = useNavigate();
+  const { draft, setDraft } = useDraft();
+  const [access, setAccess] = useState(draft.access);
+
+  return (
+    <Step
+      path="/choose"
+      footer={
+        <Button
+          type="button"
+          size="lg"
+          className={ACTION}
+          onClick={() => {
+            const next = { ...draft, access };
+            setDraft(() => next);
+            navigate({ to: nextStep("/choose", next)! });
+          }}
+        >
+          {stepFor("/choose").action}
+        </Button>
+      }
+    >
+      <AccessForm value={access} onChange={setAccess} />
     </Step>
   );
 }
@@ -304,6 +340,12 @@ export function FinishStep() {
           <p className="text-xs font-bold text-indigo-600">Your setup</p>
           <dl className="mt-5 grid gap-3">
             <SummaryRow label="Name" value={draft.name} />
+            <SummaryRow
+              label="How you choose"
+              value={
+                INPUT_METHODS.find((one) => one.value === draft.access.input)?.label ?? ""
+              }
+            />
             <SummaryRow
               label="Speaking style"
               value={style?.label ?? "Custom"}

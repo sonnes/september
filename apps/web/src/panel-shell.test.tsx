@@ -8,6 +8,7 @@ import { PanelShell } from '@september/app-ui/layouts/panel';
 import { APP_NAV } from '@platform/rules/app-nav';
 
 const state = vi.hoisted(() => ({
+  setup: null as null | { access?: unknown },
   path: '/spaces/family/talk',
   navigate: vi.fn(),
   create: vi.fn(),
@@ -27,7 +28,8 @@ vi.mock('@platform/services/data', () => ({
   useDeleteSpace: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 vi.mock('@platform/services/os', () => ({
-  currentSetup: () => null,
+  currentSetup: () => state.setup,
+  subscribeSetup: () => () => {},
   spaceModes: {},
   rememberModes: vi.fn(),
 }));
@@ -67,6 +69,7 @@ afterEach(() => {
   act(() => root.unmount());
   container.remove();
   document.body.innerHTML = '';
+  state.setup = null;
 });
 
 async function render() {
@@ -241,6 +244,26 @@ describe('the panel', () => {
 
     act(() => skip!.click());
     expect(document.activeElement).toBe(main);
+  });
+
+  it('puts the saved access profile on the page', async () => {
+    state.setup = { access: { theme: 'dark', input: 'eyes' } };
+    await render();
+
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(document.documentElement.dataset.input).toBe('eyes');
+  });
+
+  it('scans the header as one group', async () => {
+    state.setup = { access: { input: 'switch' } };
+    await render();
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+    });
+    const band = document.querySelector<HTMLElement>('[data-scan="group"]');
+    expect(band).not.toBeNull();
+    expect(band!.querySelector('[aria-label="More"]')).not.toBeNull();
   });
 
   it('moves the focus to the screen after a move to another page', async () => {

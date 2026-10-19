@@ -44,6 +44,12 @@ describe("suggestion slices", () => {
     expect(next.hasMore).toBe(false);
   });
 
+  it("limits a slice to the words that the access profile allows", () => {
+    const first = stripeForText(sentence, "", 4);
+    expect(joinTokens(first.tokens)).toBe("One two, three four ");
+    expect(first.hasMore).toBe(true);
+  });
+
   it("counts a partial word and advances after partial selection", () => {
     const row = stripeForText(sentence, "One tw");
     expect(joinTokens(row.tokens.slice(row.hidden))).toBe("two, three four five six seven ");

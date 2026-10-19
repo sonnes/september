@@ -2,6 +2,7 @@ import React, { act, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, expect, it, vi } from 'vitest';
 import { Suggestions } from '@september/app-ui/blocks/suggestions';
+import { InputLayer } from '@september/app-ui/blocks/access';
 
 const state = vi.hoisted(() => ({
   phrases: [] as { text: string; code: string; kind: string; pinned: boolean; space_id: string }[],
@@ -11,6 +12,12 @@ const state = vi.hoisted(() => ({
   generate: vi.fn(),
   words: [] as string[],
   speech: { provider: 'elevenlabs', modelId: 'eleven_flash_v2_5' } as Record<string, unknown>,
+  setup: null as null | { access: unknown },
+}));
+vi.mock('@platform/services/os', async (original) => ({
+  ...(await original<typeof import('./services/os')>()),
+  currentSetup: () => state.setup,
+  subscribeSetup: () => () => {},
 }));
 vi.mock('@platform/services/data', () => ({
   useMessages: () => ({ data: [] }),
@@ -24,7 +31,7 @@ vi.mock('@platform/services/ai', () => ({
   generate: async (request: unknown) => { state.generate(request); return state.answer; },
   itemsFrom: (answer: string[]) => answer, userContext: () => '',
 }));
-vi.mock('@platform/services/speech', () => ({ speechSettings: () => state.speech }));
+vi.mock('@platform/services/speech', () => ({ speechSettings: () => state.speech, useSpeaking: () => null, useSpokenWord: () => null }));
 vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const container = document.createElement('div');
@@ -40,6 +47,7 @@ afterEach(() => {
   state.generate.mockReset();
   state.words = [];
   state.speech = { provider: 'elevenlabs', modelId: 'eleven_flash_v2_5' };
+  state.setup = null;
   vi.useRealTimers();
 });
 
@@ -75,6 +83,40 @@ it('names each stripe, tile, and end key by what a press takes', async () => {
   expect(stripe?.getAttribute('aria-label')).toBe(`Stripe 1 of 1, said before. ${sentence}`);
   expect(button('cold').getAttribute('aria-label')).toBe('cold. Takes: Please bring me some cold');
   expect(button('Insert:').getAttribute('aria-label')).toBe('Insert: Please bring me some cold water');
+});
+
+it('shows fewer stripes and shorter slices for eye gaze', async () => {
+  const said = [
+    'Please bring me some cold water from the kitchen.',
+    'Please open the window in the bedroom for me.',
+    'Please call my sister after lunch today.',
+    'Please turn the television down a little.',
+    'Please put the blanket over my legs now.',
+    'Please read me the news from this morning.',
+  ];
+  const stripes = () => [...container.querySelectorAll('[role="group"][aria-label^="Stripe"]')];
+  await act(async () => root.render(<Composer initial="" history={said} />));
+  await type('Pl');
+  expect(stripes().length).toBeGreaterThan(4);
+
+  state.setup = { access: { input: 'eyes' } };
+  await act(async () => root.render(<Composer initial="" history={said} />));
+  await type('Pl');
+  expect(stripes()).toHaveLength(4);
+  // A slice of four words, then its end key.
+  expect(button('Insert:').getAttribute('aria-label')?.split(' ')).toHaveLength(5);
+});
+
+it('scans each stripe as one group', async () => {
+  state.setup = { access: { input: 'switch' } };
+  const sentence = 'Please bring me some cold water from the kitchen.';
+  await act(async () => root.render(<><InputLayer /><Composer initial="" history={[sentence]} /></>));
+  await type('Pl');
+  await act(async () => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+  });
+  const band = document.querySelector('[data-scan="group"]');
+  expect(band?.getAttribute('aria-label')).toBe(`Stripe 1 of 1, said before. ${sentence}`);
 });
 
 it('names a chip by its phrase, then by where it came from', async () => {

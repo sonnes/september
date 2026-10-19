@@ -113,7 +113,7 @@ describe('the present overlay', () => {
     render(<PresentOverlay content={NOTE} onClose={() => {}} />);
 
     expect(platform.speak).not.toHaveBeenCalled();
-    expect(labelled('Hold the voice').getAttribute('aria-disabled')).toBe('true');
+    expect(labelled('Stop the voice').getAttribute('aria-disabled')).toBe('true');
     expect(container.querySelectorAll('[disabled]')).toHaveLength(0);
   });
 
@@ -139,6 +139,30 @@ describe('the present overlay', () => {
     expect(platform.speak).toHaveBeenCalledTimes(1);
     expect(container.querySelector('[role="alert"]')).toBeTruthy();
     expect(labelled('Start the voice again')).toBeTruthy();
+  });
+
+  it('puts Previous, Stop, and Next in one scan group, in that order', () => {
+    render(<PresentOverlay content={NOTE} onClose={() => {}} />);
+    const stage = container.querySelector('[role="dialog"]')!;
+
+    const groups = [...container.querySelectorAll('[data-scan-group]')];
+    const keys = groups.map((group) =>
+      [...group.querySelectorAll('button')].map((key) => key.getAttribute('aria-label')),
+    );
+    expect(keys).toContainEqual(['Previous chunk', 'Stop the voice', 'Next chunk']);
+
+    click(labelled('Next chunk'));
+    expect(stage.textContent).toContain('We met in June.');
+    click(labelled('Previous chunk'));
+    expect(stage.textContent).toContain('Maya');
+  });
+
+  it('has one key for each move, so a gaze on the words presses nothing', () => {
+    render(<PresentOverlay content={NOTE} onClose={() => {}} />);
+
+    for (const name of ['Previous chunk', 'Stop the voice', 'Next chunk']) {
+      expect(container.querySelectorAll(`button[aria-label="${name}"]`)).toHaveLength(1);
+    }
   });
 
   it('remembers the tone the user picked', () => {

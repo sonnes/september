@@ -106,6 +106,8 @@ Amber marks attention only: focus, dwell, the scan band, and the stripe tile und
 | Token                    | Light    | Dark     | Usage                                     |
 | ------------------------ | -------- | -------- | ----------------------------------------- |
 | `--attention`            | amber-300 | amber-300 | The ring of `.focus-attention`, the dwell fill, the scan band, the hovered stripe tile |
+| `--attention-soft`       | amber-200 | amber-200 | The dwell fill before the gaze, the scan band fill |
+| `--attention-strong`     | amber-400 | amber-400 | The dwell fill after the gaze           |
 | `--attention-foreground` | zinc-900 | zinc-900 | Ink on amber, and the line inside the ring |
 | `--ring`                 | zinc-900 | amber-300 | The outline of a focused control         |
 
@@ -186,7 +188,9 @@ September is operated under physical constraint. These are requirements, not nic
 - **Focus visibility:** Every interactive element shows focus with `.focus-attention`: a 2px zinc-900 line inside a 5px amber-300 ring. The line passes 3:1 on white and zinc, and the amber passes 3:1 on indigo and on dark surfaces. A menu row or a scroll area uses `.focus-attention-inset`. **Never** remove the outline.
 - **Contrast:** WCAG **AA** at the minimum: 4.5:1 for text, 3:1 for large text, field lines, and focus. Secondary text is zinc-600 (7:1 on zinc-100). Indigo text is `--brand`, so it passes in dark too. A disabled key uses `.key-disabled`, a dotted border, so its state is not a fade alone.
 - **Keyboard & switch operability:** Everything reachable and operable without a pointer. No hover-only affordances — hover may enhance, never gate. Visible, logical focus order. A move to another screen puts the focus on its `h1`, unless the screen puts it on a field.
-- **Reduced motion:** Respect `prefers-reduced-motion`; no parallax, no motion that conveys required meaning.
+- **Reduced motion:** Respect `prefers-reduced-motion` and the Reduced motion choice of the access profile; no parallax, no motion that conveys required meaning.
+- **Access profile:** Setup and Settings ask how the person chooses things: touch, mouse, keyboard, switch, or eyes. The profile sets `--reach-target`, `--reach-gap`, `--reach-word`, and `--reach-scale`, the number of stripes, and the words in a slice. Eyes is 88px keys with 24px gaps, and Switch is 64px keys with 16px gaps. A new input method applies only on Continue or on its Use key. See `docs/concepts/access-profile.md`.
+- **Answers to a press:** An accepted press squeezes the key and shows an indigo check, or two indigo rings with reduced motion. A click plays unless the voice speaks or the person turned the click off. A dwell fills the key from the bottom in amber, with ink marks at the fill level. The scan band is an amber fill with an ink line, or an amber ring alone on the indigo sidebar and header. The Pause scan key sits where it covers nothing: the foot of the sidebar, the panel header, the setup sidebar, or a reserved space at the foot of a phone screen.
 - **Reading pace:** Don't auto-dismiss important content quickly (toasts dwell 15s). Avoid timeouts on input.
 - **Minimal keystrokes (product-level a11y):** Suggestion pills, autocomplete, and contextual shortcuts are accessibility features — every interaction that removes a keystroke is on-thesis.
 
@@ -203,7 +207,9 @@ All UI primitives live in `@/packages/ui` (`src/packages/ui/components`) — sha
 - **Sidebar nav:** `SidebarMenuButton` items (icon + label) in a `nav` named Main, collapsible groups via shadcn `Collapsible`, `SidebarGroupLabel` (`text-xs font-medium`, full white). Every row is 48px. The current row has `aria-current="page"`, the indigo-600 fill, and a 4px white bar at its start edge, so the state is not a fill alone. Rows use the inset focus. The edge strip (`SidebarRail`) is for a pointer only. Indigo surface throughout.
 - **Current tab:** a space tab in the dock shows a dot before its name when it is open. The Talk, Notes, and Agent switch is a `nav` with `aria-current`, not a `tablist`.
 - **Skip link:** the first key of each shell is "Skip to main content". It shows at the top left while it has the focus, with the attention focus.
-- **Dropdowns / comboboxes:** shadcn `DropdownMenu` and `Command` + `Popover`. The desktop More key opens a sheet of 48px rows, not a dropdown.
+- **Dropdowns / comboboxes:** shadcn `DropdownMenu` and `Command` + `Popover`. Dwell and scan open them with a pointer press. The desktop More key opens a sheet of 48px rows, not a dropdown. A short fixed list of choices, such as the usage period, is a row of `ChoiceKey` keys.
+- **Word being read:** while the browser system voice reads a message, its current word is indigo-600 with white words. It is not amber, because amber marks attention only.
+- **Present keys:** Previous, Stop, and Next are keys below the words, in the ink of the tone. A key with nothing to do keeps its place and shows a dotted line.
 - **Overlays:** `Dialog`, `Sheet`, `AlertDialog`, `HoverCard`, `Tooltip` — Radix-backed.
 - **States:** `Skeleton` / `LoadingState` (loading), `EmptyState` (centered muted text + primary action), `ErrorState`, `Spinner`.
 - **Toasts:** Sonner `Toaster` — top-center, close button, 15s.
@@ -240,6 +246,7 @@ All UI primitives live in `@/packages/ui` (`src/packages/ui/components`) — sha
 | 2026-10-13 | The note list replaces the note tabs | The notes of a space are a list of large rows: About first, then each note with its name, its first line of words, and the time of its last change. A search field shows from five notes. From 52rem of screen body, the list is a 288px column beside the note. Below it, the list and the note take turns, and a note opens with a "Notes" back key. Notes opens on the last note, not on the list. The reading bar shows only icons for Present, Suggestions, and More below 36rem. Chosen over a title menu and over tabs with an All notes sheet. User-approved (mock `docs/mocks/2026-10-13-note-selector-options.html`, Option B). |
 | 2026-10-19 | Accessibility polish on the layout of main | The layout, Noto Sans, zinc, the filled tiles, and Fraunces stay. Secondary text is zinc-600 and field lines are zinc-500, so both pass AA. Focus is a zinc-900 line inside an amber-300 ring, and amber marks attention only, so a warning is zinc. Every key is 48px or more, and no text is smaller than 14px. Reduced motion is global. User-approved. |
 | 2026-10-19 | Screens: labels and choices that a reader and a switch can use | The console keys Undo, Delete, and Clear show their labels. A gap and a line come before Speak, and Speak is the largest key. The mood in use shows its name. The rail keys show their labels under the icons. A list of choices is a radio group of `ChoiceKey` rows with a check on the chosen row. A choice that is not ready has a dashed line, not a fade. The chosen tone swatch has a 4px line. The newest message in Talk is `text-xl`. A stripe tile keeps its word size and height, and only its padding shrinks. User-approved as part of the accessibility polish. |
+| 2026-10-19 | The access profile on the layout of main | Setup asks How you choose after Welcome, and Settings has Access. Each of touch, mouse, keyboard, switch, and eyes sets the key size, the gap, the word size, the timing, and the number of stripes. The theme is Light, Dark, or Same as this device, on the zinc tokens. A new input method applies on Continue or on its Use key, never on an arrow key. Dwell and scan open menus. The scan has a Pause scan key and a scan step of up to 30 seconds. The click of a press can be turned off. The word being read is indigo. User-approved. |
 
 ### Known gaps (honest state, not yet enforced)
 

@@ -40,6 +40,17 @@ outline inside a 5px amber ring. A menu item or a scroll area uses
 `focus-attention-inset`, which draws the same focus inside its edge. A disabled
 key uses `key-disabled`, so it loses its fill and gets a dotted border.
 
+`theme.css` also styles the answers of the access layer. A key under a dwell
+fills with amber from the bottom, with ink marks at the fill level. The scan
+band is an amber fill with an ink line, or an amber ring alone on an element
+marked `data-housing`. A key that the scan is on is amber. An accepted press
+squeezes the key and shows an indigo check, or two rings with reduced motion.
+`[data-contrast='high']` sets every line and every quiet word to the full ink.
+`[data-motion='reduced']` stops every animation, the same as
+`prefers-reduced-motion`. A disabled key on the stage of Present uses
+`key-disabled-on-stage`, which reads `--stage-ink` and `--stage-line` from the
+key.
+
 A `Slider` with one thumb gives its `aria-label` or `aria-labelledby` to the
 thumb.
 

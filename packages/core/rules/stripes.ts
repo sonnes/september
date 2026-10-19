@@ -238,7 +238,9 @@ export function composeSuggestions({
  */
 export function stripeForText(
   text: string,
-  typed: string
+  typed: string,
+  /** The most words in a slice. The access profile sets it. */
+  maxWords: number = MAX_SLICE_WORDS
 ): {
   text: string;
   tokens: string[];
@@ -283,7 +285,7 @@ export function stripeForText(
   const reach = inside ? inside[1] + hidden : 0;
   while (end < sentenceEnd || end < reach) {
     if (!PUNCTUATION.test(tokens[end]) && !isTag(tokens[end])) {
-      if (words >= MAX_SLICE_WORDS && end >= reach) break;
+      if (words >= maxWords && end >= reach) break;
       words++;
     }
     end++;

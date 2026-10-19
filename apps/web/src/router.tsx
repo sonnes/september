@@ -20,10 +20,11 @@ import {
   ConnectionScreen,
   DataSettings,
   SetupSettings,
+  AccessSettings,
   WritingSettings,
 } from '@september/app-ui/pages/settings';
 import { SpacesScreen } from '@september/app-ui/pages/spaces';
-import { ConnectStep, FinishStep, ProfileStep, WelcomeStep } from '@september/app-ui/pages/steps';
+import { ChooseStep, ConnectStep, FinishStep, ProfileStep, WelcomeStep } from '@september/app-ui/pages/steps';
 import { TalkScreen } from '@september/app-ui/pages/talk';
 import { UsageSettings } from '@september/app-ui/pages/usage';
 import { VoiceCloneScreen, VoiceScreen } from '@september/app-ui/pages/voice';
@@ -41,6 +42,7 @@ import {
 export const APP_ROUTE_PATHS = [
   '/',
   '/welcome',
+  '/choose',
   '/profile',
   '/connect',
   '/finish',
@@ -55,6 +57,7 @@ export const APP_ROUTE_PATHS = [
   '/help',
   '/help/$guideSlug',
   '/settings',
+  '/settings/access',
   '/settings/writing',
   '/settings/usage',
   '/settings/data',
@@ -81,6 +84,11 @@ const setupRoute = createRoute({
 const shellRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'shell',
+  // Help has no setup guard, but it still shows the access profile. The build
+  // machine that draws the Help pages has no saved settings to read.
+  beforeLoad: async () => {
+    if (typeof indexedDB !== 'undefined') await bootstrapBrowserServices();
+  },
   component: AppShell,
 });
 
@@ -200,6 +208,11 @@ const guardedAppRoute = appRoute.addChildren([
     }),
     createRoute({
       getParentRoute: () => settingsRoute,
+      path: '/access',
+      component: AccessSettings,
+    }),
+    createRoute({
+      getParentRoute: () => settingsRoute,
       path: '/writing',
       component: WritingSettings,
     }),
@@ -235,6 +248,7 @@ const routeTree = rootRoute.addChildren([
   }),
   setupRoute.addChildren([
     step('/welcome', WelcomeStep),
+    step('/choose', ChooseStep),
     step('/profile', ProfileStep),
     step('/connect', ConnectStep),
     step('/finish', FinishStep),

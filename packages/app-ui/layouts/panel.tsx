@@ -26,6 +26,7 @@ import {
   SkipLink,
   useRouteFocus,
 } from "@september/app-ui/blocks/screen";
+import { ApplyAccess, InputLayer } from "@september/app-ui/blocks/access";
 import { spaceParams, useNewSpace } from "@september/app-ui/blocks/space";
 import { escapeStep, moodForKey } from "@september/core/rules/panel";
 import { spaceFromSlug, type SpaceMode } from "@september/core/rules/spaces";
@@ -189,6 +190,8 @@ export function PanelShell({
             className="bg-muted text-foreground flex h-svh flex-col overflow-hidden"
           >
             <SkipLink />
+            <ApplyAccess />
+            <InputLayer />
             <PanelHeader
               space={space}
               mode={mode}

@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Composer } from '@september/app-ui/blocks/space';
+import { InputLayer } from '@september/app-ui/blocks/access';
+import { DEFAULT_ACCESS } from '@september/core/rules/access';
 import type { MoodKey } from '@september/core/rules/moods';
 
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => () => {} }));
@@ -10,6 +12,7 @@ vi.mock('@platform/services/os', () => ({
   chooseOutput: async () => undefined,
   currentOutput: async () => '',
   currentSetup: () => null,
+  subscribeSetup: () => () => {},
   listOutputs: async () => [],
   rememberModes: async () => undefined,
   spaceModes: {},
@@ -145,4 +148,24 @@ describe('tagged text', () => {
     expect([...container.querySelectorAll('[data-tag]')].map(one => one.textContent)).toEqual(['laughs']);
     expect(container.querySelector('p')?.textContent).toBe('laughs That is funny.');
   });
+});
+
+it('scans the edit keys, then the voice keys, as groups', async () => {
+  await render(
+    <>
+      <InputLayer profile={{ ...DEFAULT_ACCESS, input: 'switch' }} />
+      <Harness initial="Hello there" />
+    </>,
+  );
+  const step = () =>
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+    });
+  const band = () => document.querySelector<HTMLElement>('[data-scan="group"]');
+
+  step();
+  expect(band()?.textContent).toContain('Undo');
+  expect(band()?.textContent).not.toContain('Speak');
+  step();
+  expect(band()?.textContent).toContain('Speak');
 });

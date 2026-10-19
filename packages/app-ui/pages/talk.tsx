@@ -26,7 +26,7 @@ import {
   ScreenHeader,
 } from "@september/app-ui/blocks/screen";
 import { PanelRail } from "@september/app-ui/blocks/space-panel";
-import { TaggedText } from "@september/app-ui/blocks/suggestions";
+import { SpokenText } from "@september/app-ui/blocks/suggestions";
 import { pinnedPhrase } from "@september/core/rules/phrases";
 import { documentTitle } from "@september/core/rules/titles";
 import { useSyncPhrases } from "@platform/services/phrase-sync";
@@ -221,7 +221,7 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
                 )}
               </div>
             ) : (
-              <section aria-label="Messages" className="flex flex-col gap-1">
+              <section aria-label="Messages" data-scan-group className="flex flex-col gap-1">
                 <div className="text-muted-foreground flex min-h-11 items-center gap-1.5 pl-1.5 text-xs font-semibold">
                   {transcript ? "All messages" : today ? "Said today" : "Said before"}
                   <span className="text-muted-foreground font-medium">
@@ -361,7 +361,7 @@ function MessageRow({ message, newest }: { message: Message; newest: boolean }) 
           newest ? "text-xl font-medium" : "text-base",
         )}
       >
-        <TaggedText text={message.text} />
+        <SpokenText id={message.id} text={message.text} />
       </span>
       <span className="text-muted-foreground shrink-0 text-xs">
         {messageTime(message.created_at)}

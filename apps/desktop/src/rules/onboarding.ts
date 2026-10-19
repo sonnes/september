@@ -2,6 +2,7 @@ import type {
   ModelSettings,
   WritingModelConfig,
 } from "@september/core/rules/model-config";
+import { DEFAULT_ACCESS, type AccessProfile } from "@september/core/rules/access";
 
 export type SetupMode = "free" | "advanced";
 
@@ -20,6 +21,8 @@ export interface OnboardingDraft extends ModelSettings {
   personalWords: string;
   mode: SetupMode | null;
   voiceService: VoiceService;
+  /** How the person chooses things, and how large the screen must be. */
+  access: AccessProfile;
 }
 
 export const SPEAKING_STYLES = [
@@ -54,6 +57,7 @@ export const DEFAULT_DRAFT: OnboardingDraft = {
   autoPhrases: true,
   agentEnabled: true,
   voiceService: "system",
+  access: DEFAULT_ACCESS,
 };
 
 export const WRITING_SERVICES = [
@@ -105,6 +109,15 @@ export const STEPS = [
       "September helps you speak naturally with fewer keystrokes. Start simple now, and customize anytime.",
     helper: "Get started in minutes.",
     action: "Get started",
+  },
+  {
+    path: "/choose",
+    label: "How you choose",
+    title: "How do you choose things?",
+    subtitle:
+      "Pick the way you use September most. The screen sets its size and timing to match.",
+    helper: "A caregiver can choose this now. You can change it later in Settings.",
+    action: "Continue",
   },
   {
     path: "/profile",
@@ -206,7 +219,7 @@ export function canReach(
   path: StepPath,
   draft: Pick<OnboardingDraft, "name" | "mode">,
 ): boolean {
-  if (path === "/welcome" || path === "/profile") return true;
+  if (path === "/welcome" || path === "/choose" || path === "/profile") return true;
   if (!draft.name.trim()) return false;
   return true;
 }

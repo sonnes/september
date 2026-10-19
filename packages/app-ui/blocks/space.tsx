@@ -429,8 +429,9 @@ export function Composer({
         {/* The row folds in the compact tier, under 560 points: one mood
             menu key for the five. */}
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-          {/* Each key shows its label, and its name starts with that label. */}
-          <div className="flex items-center gap-1.5">
+          {/* Each key shows its label, and its name starts with that label.
+              The edit keys are one scan group, and the voice keys another. */}
+          <div role="group" aria-label="Edit" data-scan-group className="flex items-center gap-1.5">
             <Button
               type="button"
               variant="outline"
@@ -469,6 +470,9 @@ export function Composer({
             )}
           </div>
           <div
+            role="group"
+            aria-label="Voice"
+            data-scan-group
             className={cn(
               "flex items-center gap-2",
               compact === null ? "@max-[35rem]:contents" : compact && "contents",
@@ -878,7 +882,7 @@ function Dock({ current, spaces, mode, onMode }: DockProps) {
 
   return (
     <div className="bg-muted/40 flex shrink-0 items-center gap-2 border-t px-4 py-2.5">
-      <nav aria-label="Spaces" className="relative min-w-0 flex-1">
+      <nav aria-label="Spaces" data-scan-group className="relative min-w-0 flex-1">
         {/* A row that does not fit is inert: no pointer, key, or screen
             reader reaches it, and the Switch space key takes its place. The
             row keeps its size, so it can still be measured. */}
@@ -993,6 +997,7 @@ function ModeGroup({
   return (
     <nav
       aria-label="Space mode"
+      data-scan-group
       className="bg-card flex items-center gap-0.5 rounded-full border p-0.5"
     >
       {shown.map(({ key, label, icon: Icon }) => (

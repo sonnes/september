@@ -7,6 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SidebarProvider } from '@september/ui/components/sidebar';
 import { SpacesScreen } from '@september/app-ui/pages/spaces';
 import { SpaceDock, useSpaceBySlug } from '@september/app-ui/blocks/space';
+import { InputLayer } from '@september/app-ui/blocks/access';
+import { DEFAULT_ACCESS } from '@september/core/rules/access';
 
 const state = vi.hoisted(() => ({
   navigate: vi.fn(),
@@ -40,8 +42,12 @@ vi.mock('@platform/services/data', () => ({
   usePhrases: () => ({ data: [] }),
 }));
 
+const setups = vi.hoisted(() => ({ on: { agentEnabled: true }, off: { agentEnabled: false } }));
+
 vi.mock('@platform/services/os', () => ({
-  currentSetup: () => ({ agentEnabled: state.agentEnabled }),
+  // One object for each answer, as the real setup store keeps one object.
+  currentSetup: () => (state.agentEnabled ? setups.on : setups.off),
+  subscribeSetup: () => () => {},
   spaceModes: {},
   rememberModes: vi.fn(),
   listOutputs: vi.fn(async () => []),
@@ -259,5 +265,27 @@ describe('the space mode control', () => {
   it('hides Agent when the agent is off', async () => {
     state.agentEnabled = false;
     expect(await tabs()).toEqual(['Talk', 'Notes']);
+  });
+
+  it('scans the spaces, then the modes, each as one group', async () => {
+    await tabs();
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={client}>
+          <InputLayer profile={{ ...DEFAULT_ACCESS, input: 'switch' }} />
+          <SpaceDock current={space} spaces={[space]} mode="talk" onMode={vi.fn()} />
+        </QueryClientProvider>
+      )
+    );
+    const step = () =>
+      act(() => {
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+      });
+    const band = () => document.querySelector<HTMLElement>('[data-scan="group"]');
+
+    step();
+    expect(band()?.getAttribute('aria-label')).toBe('Spaces');
+    step();
+    expect(band()?.getAttribute('aria-label')).toBe('Space mode');
   });
 });

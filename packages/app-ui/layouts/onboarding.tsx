@@ -11,6 +11,11 @@ import { Link, Navigate, Outlet, useRouterState } from "@tanstack/react-router";
 import { CircleHelp } from "lucide-react";
 
 import { BrandMark, BrandWordmark } from "@september/app-ui/blocks/brand";
+import {
+  ApplyAccess,
+  InputLayer,
+  ScanPauseKey,
+} from "@september/app-ui/blocks/access";
 import { HelpGuideContent } from "@september/app-ui/pages/help";
 import { helpGuide } from "@september/core/rules/help";
 import { Button } from "@september/ui/components/button";
@@ -64,12 +69,15 @@ export function OnboardingLayout() {
 
   return (
     <DraftContext.Provider value={value}>
+      {/* The profile of How you choose applies once the person continues. */}
+      <ApplyAccess profile={draft.access} />
+      <InputLayer profile={draft.access} />
       {/* Below `md` the indigo panel is a bar across the top; from `md` up it
           is the sidebar. DESIGN.md moves the app sidebar at the same width. */}
-      <div className="flex h-dvh flex-col gap-2 bg-zinc-100 p-2 md:flex-row">
+      <div className="flex h-dvh flex-col gap-2 bg-zinc-100 p-2 md:flex-row dark:bg-zinc-950">
         {/* ponytail: the sidebar uses indigo utilities directly. DESIGN.md's
             --sidebar tokens are worth adding once a second screen needs them. */}
-        <aside className="flex shrink-0 flex-row items-center gap-3 rounded-xl bg-indigo-600 px-3 py-3 text-white shadow-sm md:w-72 md:flex-col md:items-stretch md:gap-8 md:overflow-y-auto md:px-6 md:py-8">
+        <aside data-housing className="flex shrink-0 flex-row items-center gap-3 rounded-xl bg-indigo-600 px-3 py-3 text-white shadow-sm md:w-72 md:flex-col md:items-stretch md:gap-8 md:overflow-y-auto md:px-6 md:py-8">
           <div className="flex shrink-0 items-center gap-2">
             <BrandMark
               alt="September"
@@ -97,6 +105,7 @@ export function OnboardingLayout() {
 
           <ProgressNav current={current} draft={draft} />
 
+          <ScanPauseKey className="md:mt-auto" />
           <Sheet>
             <SheetTrigger asChild>
               <Button
@@ -123,7 +132,7 @@ export function OnboardingLayout() {
           </Sheet>
         </aside>
 
-        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto rounded-xl bg-white px-4 py-6 shadow-sm md:px-10 md:py-8">
+        <main className="bg-card flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto rounded-xl px-4 py-6 shadow-sm md:px-10 md:py-8">
           <Outlet />
         </main>
       </div>
@@ -145,6 +154,7 @@ function ProgressNav({
     // it lies on its side in the bar and stands up in the sidebar.
     <nav
       aria-label="Onboarding progress"
+      data-scan-group
       className="min-w-0 flex-1 overflow-x-auto md:flex-none md:overflow-visible"
     >
       <ol className="flex min-w-max flex-row items-center justify-between gap-0.5 sm:justify-start md:flex-col md:items-stretch md:gap-0">

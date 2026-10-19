@@ -41,6 +41,42 @@ describe("the Help catalog", () => {
   });
 });
 
+describe("the guides for how a person reaches the screen", () => {
+  it("finds the access profile, eye gaze, and switch scanning guides", () => {
+    const found = (query: string) => searchHelpGuides(query).map((guide) => guide.slug);
+
+    expect(found("access profile")).toContain("choose-how-you-use-september");
+    expect(found("Settings Access")).toContain("choose-how-you-use-september");
+    expect(found("dwell time")).toContain("use-eye-gaze");
+    expect(found("switch scan")).toContain("use-switch-scanning");
+    expect(found("pause scan")).toContain("use-switch-scanning");
+  });
+
+  it("links the three guides to each other", () => {
+    const slugs = ["choose-how-you-use-september", "use-eye-gaze", "use-switch-scanning"];
+    for (const slug of slugs) {
+      const guide = helpGuide(slug);
+      expect(guide, slug).toBeDefined();
+      for (const other of slugs.filter((one) => one !== slug)) {
+        expect(guide!.related).toContain(other);
+      }
+    }
+  });
+
+  it("gives every picture and recording a written fallback", () => {
+    for (const guide of HELP_GUIDES) {
+      const media = [
+        ...(guide.media ?? []),
+        ...(guide.alternatives ?? []).flatMap((task) => task.media ?? []),
+      ];
+      for (const item of media) {
+        const fallback = item.type === "screenshot" ? item.alt : item.transcript;
+        expect(fallback.trim(), guide.slug).not.toBe("");
+      }
+    }
+  });
+});
+
 describe("Help search", () => {
   it("searches titles, summaries, keywords, and steps without caring about case", () => {
     expect(

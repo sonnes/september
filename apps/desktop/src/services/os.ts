@@ -174,8 +174,15 @@ export const synthesizeSpeech = (words: string, chosen: SpeechSettings) =>
     request: fileSound(words, chosen),
   });
 
-/** Speaks through the native process, where the process tap can hear it. */
-export const speakSystem = (text: string, settings: SpeechSettings) =>
+/**
+ * Speaks through the native process, where the process tap can hear it. The
+ * native voice does not report its words yet, so `onWord` is never called.
+ */
+export const speakSystem = (
+  text: string,
+  settings: SpeechSettings,
+  _onWord?: (charIndex: number) => void,
+) =>
   invoke<void>("speech_system", {
     request: {
       text,

@@ -14,6 +14,7 @@ import {
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarHeader,
   SidebarInset,
@@ -26,6 +27,11 @@ import {
 
 import { APP_NAV, type AppPath } from "@platform/rules/app-nav";
 import { BrandMark, BrandWordmark } from "@september/app-ui/blocks/brand";
+import {
+  ApplyAccess,
+  InputLayer,
+  ScanPauseKey,
+} from "@september/app-ui/blocks/access";
 import {
   MAIN_ID,
   RightPanelSlot,
@@ -63,12 +69,18 @@ export function AppShell() {
     >
       <RightPanelSlot.Provider value={slot}>
         <SkipLink />
+        <ApplyAccess />
+        <InputLayer />
         <AppSidebar />
         {/* min-w-0 lets the surface shrink, so long content wraps. */}
+        {/* On a phone the sidebar is a sheet, so the pause key of the scan
+            sits at the foot of the screen, and the screen keeps room for it. */}
+        <ScanPauseKey className="fixed bottom-2 left-2 z-50 md:hidden" />
         <SidebarInset
           ref={main}
           id={MAIN_ID}
           tabIndex={-1}
+          data-scan-room
           className="flex min-h-0 min-w-0 flex-col"
         >
           <Outlet />
@@ -108,7 +120,8 @@ function AppSidebar() {
         {/* The group insets the menu by 8px, the same as the header, so the
             brand and the nav icons share one left edge. */}
         <SidebarGroup className="group-data-[collapsible=icon]:px-0.5">
-          <nav aria-label="Main">
+          {/* One scan group. The scan band on the indigo is a ring alone. */}
+          <nav aria-label="Main" data-scan-group data-housing>
             <SidebarMenu>
               {APP_NAV.map((item) => {
                 const Icon = ICONS[item.path];
@@ -136,6 +149,9 @@ function AppSidebar() {
           </nav>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter className="group-data-[collapsible=icon]:px-0.5">
+        <ScanPauseKey />
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );

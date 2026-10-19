@@ -16,6 +16,7 @@ import {
   voiceModelFrom,
 } from "@september/core/rules/voice";
 import { speakableText, stripTags } from "@september/core/rules/audio-tags";
+import { wordAt } from "@september/core/rules/spoken-word";
 
 export type VoiceService = "system" | "elevenlabs" | "dialogue";
 
@@ -72,7 +73,7 @@ const systemVoice = (settings: SpeechSettings): SpeechProvider => ({
   async speak(text, signal) {
     const started = Date.now();
     try {
-      await speakSystem(text, settings);
+      await speakSystem(text, settings, (at) => setSpokenWord(wordAt(text, at)));
       void recordTtsUsage({
         provider: "system",
         model: "macOS system voice",
@@ -183,6 +184,8 @@ export function providerFor(settings: SpeechSettings): SpeechProvider {
 // --------------------------------------------------- what is speaking now
 
 let speakingId: string | null = null;
+/** The word the voice is reading, by its place in the sentence. */
+let spokenWord: { id: string; word: number } | null = null;
 let fallback: string | null = null;
 const listeners = new Set<() => void>();
 
@@ -194,6 +197,12 @@ const subscribe = (listener: () => void) => {
   listeners.add(listener);
   return () => listeners.delete(listener);
 };
+
+function setSpokenWord(word: number): void {
+  if (!speakingId) return;
+  spokenWord = { id: speakingId, word };
+  announce();
+}
 
 function setFallback(reason: string | null): void {
   fallback = reason;
@@ -239,6 +248,7 @@ export async function speak(text: string, id = "composer"): Promise<boolean> {
     if (active === request) {
       active = null;
       speakingId = null;
+      spokenWord = null;
       announce();
     }
   }
@@ -249,7 +259,20 @@ export function stopSpeaking(): void {
   active = null;
   providerFor(speechSettings()).stop();
   speakingId = null;
+  spokenWord = null;
   announce();
+}
+
+/**
+ * The word the voice is reading now, with the thing that speaks it. Only a
+ * voice that reports its words gives one: the system voice of the browser.
+ */
+export function currentSpokenWord(): { id: string; word: number } | null {
+  return spokenWord;
+}
+
+export function useSpokenWord(): { id: string; word: number } | null {
+  return useSyncExternalStore(subscribe, currentSpokenWord, () => null);
 }
 
 /** The thing that is speaking, or nothing. */

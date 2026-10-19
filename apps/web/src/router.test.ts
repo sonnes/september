@@ -7,6 +7,7 @@ describe('browser route tree', () => {
     for (const path of [
       '/',
       '/welcome',
+      '/choose',
       '/profile',
       '/connect',
       '/finish',
@@ -21,6 +22,7 @@ describe('browser route tree', () => {
       '/help',
       '/help/$guideSlug',
       '/settings',
+      '/settings/access',
       '/settings/writing',
       '/settings/usage',
       '/settings/data',

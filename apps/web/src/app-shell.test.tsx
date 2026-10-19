@@ -8,6 +8,7 @@ import { ScreenHeader } from '@september/app-ui/blocks/screen';
 import { APP_NAV } from '@platform/rules/app-nav';
 
 const state = vi.hoisted(() => ({
+  setup: null as null | { access?: unknown },
   path: '/voice',
   screen: (path: string): React.ReactNode => <h1>{path}</h1>,
 }));
@@ -21,6 +22,12 @@ vi.mock('@tanstack/react-router', () => ({
   Outlet: () => <>{state.screen(state.path)}</>,
   useRouterState: ({ select }: { select: (value: { location: { pathname: string } }) => unknown }) =>
     select({ location: { pathname: state.path } }),
+}));
+
+vi.mock('@platform/services/os', async (original) => ({
+  ...(await original<typeof import('./services/os')>()),
+  currentSetup: () => state.setup,
+  subscribeSetup: () => () => {},
 }));
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -43,6 +50,7 @@ function setWidth(width: number) {
 
 beforeEach(() => {
   setWidth(1280);
+  state.setup = null;
   state.path = '/voice';
   state.screen = (path) => <h1>{path}</h1>;
   container = document.createElement('div');
@@ -54,6 +62,7 @@ afterEach(() => {
   act(() => root.unmount());
   container.remove();
   document.body.innerHTML = '';
+  vi.useRealTimers();
 });
 
 function render(element: React.ReactNode = <AppShell />) {
@@ -199,5 +208,44 @@ describe('the header of a screen', () => {
     expect(menu?.getAttribute('aria-expanded')).toBe('false');
     act(() => menu!.click());
     expect(menu?.getAttribute('aria-expanded')).toBe('true');
+  });
+});
+
+describe('the access profile in the app shell', () => {
+  const press = (key: string) =>
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+    });
+  const scanned = () => document.querySelector<HTMLElement>('[data-scan]');
+
+  it('puts the saved profile on the page', () => {
+    state.setup = { access: { theme: 'dark', input: 'switch' } };
+    render();
+
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(document.documentElement.dataset.input).toBe('switch');
+  });
+
+  it('scans the home key, the main menu as one group, the pause key, then the header', () => {
+    vi.useFakeTimers();
+    state.setup = { access: { input: 'switch' } };
+    state.screen = () => (
+      <ScreenHeader heading="Voice">
+        <button>Rename</button>
+      </ScreenHeader>
+    );
+    render();
+
+    press(' ');
+    expect(scanned()?.getAttribute('aria-label')).toBe('September home');
+    press(' ');
+    expect(scanned()?.dataset.scan).toBe('group');
+    expect(scanned()?.textContent).toContain('Settings');
+    press(' ');
+    expect(scanned()?.getAttribute('aria-label')).toBe('Pause scan');
+    // jsdom draws the phone copy of the pause key too, so step past it.
+    while (scanned()?.getAttribute('aria-label') === 'Pause scan') press(' ');
+    expect(scanned()?.dataset.scan).toBe('group');
+    expect(scanned()?.textContent).toContain('Rename');
   });
 });

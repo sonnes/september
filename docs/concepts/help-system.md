@@ -34,6 +34,11 @@ has a stable slug, category, action title, outcome, search keywords, platform
 labels, prerequisites, numbered steps, expected result, recovery guidance,
 related guide slugs, optional alternative tasks, and optional media metadata.
 
+The Start here category includes three guides for how a person reaches the
+screen: Choose how you use September, Use eye gaze, and Use switch scanning.
+Each one links to the other two. Search finds them by words such as access
+profile, dwell time, switch scan, and pause scan.
+
 The privacy category includes a backup and restore guide. It tells the reader
 that the file is not encrypted, keys are excluded, and restore replaces the
 current portable data.
@@ -59,7 +64,8 @@ An unknown guide slug returns to `/help`. Stable slugs let a feature or error
 link directly to one recovery task.
 
 Help routes use the application shell but remain outside the finished-setup
-guard. During setup, the onboarding sidebar opens **Set up September** in an
+guard. The shell route of the web app reads the saved setup before Help shows,
+so a guide that opens first still shows the access profile of the person. During setup, the onboarding sidebar opens **Set up September** in an
 inline sheet. Opening and closing that sheet does not navigate, complete setup,
 or change the saved setup answers.
 
