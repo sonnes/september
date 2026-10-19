@@ -11,6 +11,7 @@ import {
   Pin,
   Plus,
   Sparkles,
+  Square,
   Trash2,
   Undo2,
   Volume2,
@@ -64,6 +65,10 @@ export function LiveDemoSection() {
             Suggestions help finish your thought. Choose your words, then press Speak to say them
             out loud.
           </p>
+          <p className="mt-4 text-lg leading-relaxed text-zinc-700">
+            Setup asks how you choose. With eye gaze, a key fills as you look at it, then presses.
+            With a switch, a band moves through the screen, and one press picks.
+          </p>
           <p className="mt-6 text-base font-medium leading-relaxed text-indigo-700">
             Try typing “I ha”, then tap a suggestion.
           </p>
@@ -77,8 +82,11 @@ export function LiveDemoSection() {
 
 function WorkingDemo() {
   const [text, setText] = useState('');
-  const { speak: speakAloud } = useDemoSpeech();
+  const { speakSequence, stopSequence } = useDemoSpeech();
   const [spoken, setSpoken] = useState(DEMO_TRANSCRIPT);
+  // The sentence that plays. Like the app, it shows in a card below the
+  // messages until the voice ends or Stop ends it.
+  const [playing, setPlaying] = useState<string | null>(null);
   const [pinned, setPinned] = useState<string[]>(DEMO_PINNED);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -120,17 +128,30 @@ function WorkingDemo() {
     [text]
   );
 
+  const play = useCallback(
+    (message: string) => {
+      setPlaying(message);
+      speakSequence([message], { onDone: () => setPlaying(null) });
+    },
+    [speakSequence]
+  );
+
   const speak = useCallback(
     (value = text) => {
       const message = value.trim();
       if (!message) return;
       setSpoken(current => [...current.slice(-5), message]);
-      speakAloud(message);
+      play(message);
       setText('');
       inputRef.current?.focus();
     },
-    [setText, speakAloud, text]
+    [setText, play, text]
   );
+
+  const stop = useCallback(() => {
+    stopSequence();
+    setPlaying(null);
+  }, [stopSequence]);
 
   const undo = useCallback(() => {
     if (undoStack.length === 0) return;
@@ -180,20 +201,72 @@ function WorkingDemo() {
 
           {/* Compose column — transcript above, console (suggestions + composer) below */}
           <div className="flex min-w-0 flex-col gap-4 overflow-hidden px-3 pb-3 sm:px-4 sm:pb-4">
-            {/* Transcript — spoken messages anchored to the bottom */}
-            <div className="flex min-h-36 flex-1 flex-col justify-end gap-2.5 overflow-y-auto py-4 sm:min-h-0">
-              {spoken.map((message, i) => (
-                <div
-                  key={`${message}-${i}`}
-                  className="flex animate-in fade-in slide-in-from-bottom-1 justify-end motion-reduce:animate-none"
-                >
-                  <div className="flex max-w-[85%] items-start gap-2 rounded-lg rounded-br-sm bg-indigo-600 px-4 py-3 text-left text-white">
-                    <Volume2 className="mt-1 size-4 shrink-0 opacity-60" aria-hidden="true" />
-                    <p className="text-xl leading-snug">{message}</p>
-                  </div>
+            {/* The history: the messages said here, newest last and largest. A
+                press on a message speaks it again. */}
+            <section
+              aria-label="Messages"
+              className="flex min-h-36 flex-1 flex-col justify-end gap-1 overflow-y-auto pt-4 sm:min-h-0"
+            >
+              <p className="flex min-h-11 items-center pl-1.5 text-xs font-semibold text-muted-foreground">
+                Said today
+              </p>
+              <div className="divide-y divide-muted overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-zinc-200">
+                {spoken.slice(-3).map((message, i, shown) => (
+                  <button
+                    key={`${message}-${i}`}
+                    type="button"
+                    onClick={() => play(message)}
+                    className="focus-attention-inset flex min-h-13 w-full items-center gap-2.5 py-1 pl-3.5 pr-1 text-left transition-colors hover:bg-muted/60"
+                  >
+                    <span className="sr-only">Speak again: </span>
+                    <span
+                      className={cn(
+                        'min-w-0 flex-1 leading-snug text-foreground',
+                        i === shown.length - 1 ? 'text-xl font-medium' : 'text-base'
+                      )}
+                    >
+                      {message}
+                    </span>
+                    <span className="grid size-11 shrink-0 place-items-center text-muted-foreground">
+                      <Volume2 className="size-5" aria-hidden="true" />
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {/* The sentence that plays, below the messages. */}
+            {playing ? (
+              <div
+                role="region"
+                aria-label="Speaking"
+                className="shrink-0 rounded-surface bg-primary p-3.5 text-primary-foreground"
+              >
+                <p className="flex items-center gap-1.5 text-xs font-medium">
+                  <span aria-hidden="true" className="size-2 rounded-full bg-emerald-400" />
+                  Speaking
+                </p>
+                <p className="mt-1.5 text-xl leading-snug">{playing}</p>
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={stop}
+                    className="focus-attention inline-flex min-h-12 items-center gap-2 rounded-full bg-background px-4 font-semibold text-brand"
+                  >
+                    <Square className="size-4 fill-current" aria-hidden="true" />
+                    Stop
+                  </button>
+                  <span className="flex-1" />
+                  <button
+                    type="button"
+                    onClick={() => inputRef.current?.focus()}
+                    className="focus-attention inline-flex min-h-12 items-center rounded-full bg-white/15 px-4 font-medium hover:bg-white/25"
+                  >
+                    Write next
+                  </button>
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : null}
 
             {/* Console — suggestions + composer + space tabs on a calm surface */}
             <div className="flex shrink-0 flex-col gap-3 rounded-lg bg-muted/40 p-3">
@@ -208,7 +281,8 @@ function WorkingDemo() {
                 />
               </div>
 
-              <div className="rounded-2xl border-2 border-input bg-background p-3 transition-colors focus-within:border-ring">
+              {/* The composer ring is indigo, full strength with the focus. */}
+              <div className="rounded-surface bg-background p-3 shadow-sm ring-[3px] ring-primary/30 transition-[box-shadow] focus-within:ring-primary">
                 <textarea
                   ref={inputRef}
                   rows={1}
@@ -224,32 +298,39 @@ function WorkingDemo() {
                   placeholder="Type a message…"
                   className="max-h-40 w-full resize-none overflow-y-auto bg-transparent text-2xl font-medium leading-snug text-foreground placeholder:text-zinc-500 focus:outline-none"
                 />
-                <div className="mt-3 flex items-center justify-between gap-3">
+                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
                   <div className="flex items-center gap-1.5">
-                    <RailButton label="Undo" onClick={undo} disabled={undoStack.length === 0}>
-                      <Undo2 className="size-5" />
-                    </RailButton>
-                    <RailButton label="Delete last word" onClick={deleteLastWord} disabled={!text}>
-                      <Delete className="size-5" />
-                    </RailButton>
-                    <RailButton label="Clear" onClick={clearText} disabled={!text}>
-                      <Trash2 className="size-5" />
-                    </RailButton>
+                    <EditKey label="Undo" onClick={undo} disabled={undoStack.length === 0}>
+                      <Undo2 className="size-4" />
+                    </EditKey>
+                    <EditKey
+                      label="Delete"
+                      name="Delete last word"
+                      onClick={deleteLastWord}
+                      disabled={!text}
+                    >
+                      <Delete className="size-4" />
+                    </EditKey>
+                    <EditKey label="Clear" onClick={clearText} disabled={!text}>
+                      <Trash2 className="size-4" />
+                    </EditKey>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="ml-auto flex items-center gap-3">
                     {/* Static sound output key. The live selector needs the
                       output devices, so here it only mirrors the look. */}
                     <span
                       title="System Default"
-                      className="hidden size-11 place-items-center rounded-md border bg-card text-muted-foreground sm:grid"
+                      className="hidden size-12 place-items-center rounded-control border bg-card text-muted-foreground sm:grid"
                     >
                       <Headphones className="size-5" aria-hidden="true" />
                     </span>
+                    {/* Speak is the largest key, after a gap and a line. */}
+                    <span aria-hidden="true" className="hidden h-8 w-px bg-border sm:block" />
                     <button
                       type="button"
                       onClick={() => speak()}
                       disabled={!text.trim()}
-                      className="focus-attention inline-flex min-h-11 items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:enabled:scale-[1.02] active:enabled:scale-95 key-disabled motion-reduce:transition-none"
+                      className="focus-attention inline-flex min-h-14 items-center gap-2 rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground transition-[opacity,transform] hover:enabled:scale-[1.02] active:enabled:scale-95 key-disabled motion-reduce:transition-none"
                     >
                       <Volume2 className="size-4" aria-hidden="true" />
                       Speak
@@ -258,21 +339,23 @@ function WorkingDemo() {
                 </div>
               </div>
 
-              {/* Space tabs — mirrors SpaceSwitch styling */}
-              <div className="flex items-center gap-1 overflow-hidden rounded-md border bg-card p-0.5">
+              {/* The space keys, as in the dock of the app. A dot marks the
+                  open space. */}
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   aria-pressed="true"
-                  className="h-8 shrink-0 whitespace-nowrap rounded bg-primary px-3 text-sm font-medium text-primary-foreground"
+                  className="focus-attention inline-flex min-h-12 shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground"
                 >
+                  <span aria-hidden="true" className="size-1.5 rounded-full bg-primary-foreground" />
                   {LANDING_SPACE_SEED.title}
                 </button>
                 <button
                   type="button"
-                  className="flex h-8 shrink-0 items-center gap-1 rounded px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  aria-label="New space"
+                  className="focus-attention grid size-12 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 >
                   <Plus className="size-4" aria-hidden="true" />
-                  New
                 </button>
               </div>
             </div>
@@ -408,14 +491,17 @@ function SourceMark({ source, code }: { source: SuggestionSource; code?: string 
   );
 }
 
-// Left-rail icon button — undo / delete-word / clear (matches the real composer rail).
-function RailButton({
+// An edit key of the composer: Undo, Delete, or Clear, with its label. The
+// name starts with the label, as in the app.
+function EditKey({
   label,
+  name,
   onClick,
   disabled,
   children,
 }: {
   label: string;
+  name?: string;
   onClick: () => void;
   disabled?: boolean;
   children: ReactNode;
@@ -423,13 +509,13 @@ function RailButton({
   return (
     <button
       type="button"
-      aria-label={label}
-      title={label}
+      aria-label={name}
       onClick={onClick}
       disabled={disabled}
-      className="focus-attention flex size-11 items-center justify-center rounded-md border bg-card text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none key-disabled"
+      className="focus-attention inline-flex min-h-12 items-center gap-2 rounded-control border bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:pointer-events-none key-disabled"
     >
-      {children}
+      <span aria-hidden="true">{children}</span>
+      {label}
     </button>
   );
 }

@@ -61,7 +61,7 @@ export function HeroSection() {
 
             <p className="max-w-[44ch] text-base leading-relaxed text-primary-foreground/85 sm:text-lg">
               A communication assistant for people living with ALS, MND, and other speech &amp;
-              motor difficulties.
+              motor difficulties. Use it with touch, a keyboard, your eyes, or a switch.
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">

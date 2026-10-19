@@ -92,14 +92,50 @@ function button(label: string): HTMLButtonElement {
 }
 
 describe('Talk demo', () => {
+  const speakingCard = () => container.querySelector('[role="region"][aria-label="Speaking"]');
+
   it('speaks a composed message and clears the composer', () => {
     render(<LiveDemoSection />);
     const composer = container.querySelector('textarea')!;
     typeInto(composer, 'Hello there');
     click(button('Speak'));
 
-    expect(demoSpeech.speak).toHaveBeenCalledWith('Hello there');
+    expect(demoSpeech.speakSequence.mock.calls[0]?.[0]).toEqual(['Hello there']);
     expect(composer.value).toBe('');
+  });
+
+  it('shows the sentence that plays below the messages until the voice ends', () => {
+    render(<LiveDemoSection />);
+    typeInto(container.querySelector('textarea')!, 'Hello there');
+    click(button('Speak'));
+
+    const card = speakingCard();
+    expect(card?.textContent).toContain('Hello there');
+    const messages = container.querySelector('[aria-label="Messages"]');
+    expect(Boolean(messages && card && messages.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+
+    act(() => demoSpeech.speakSequence.mock.calls[0]?.[1]?.onDone?.());
+    expect(speakingCard()).toBeNull();
+  });
+
+  it('stops the voice with Stop', () => {
+    render(<LiveDemoSection />);
+    typeInto(container.querySelector('textarea')!, 'Hello there');
+    click(button('Speak'));
+    click(button('Stop'));
+
+    expect(demoSpeech.stopSequence).toHaveBeenCalled();
+    expect(speakingCard()).toBeNull();
+  });
+
+  it('speaks a past message again with a press on it', () => {
+    render(<LiveDemoSection />);
+    const row = [...container.querySelectorAll('button')].find(one =>
+      one.textContent?.startsWith('Speak again: That reminds me.')
+    )!;
+    click(row);
+
+    expect(demoSpeech.speakSequence.mock.calls[0]?.[0]).toEqual(['That reminds me.']);
   });
 
   it('shows only the rows that hold the typed words', () => {

@@ -118,7 +118,7 @@ function CodesDemo() {
           onSubmit={speakMessage}
           onTake={setText}
         />
-        <div className="rounded-2xl border-2 border-input bg-background p-3 transition-colors focus-within:border-ring">
+        <div className="rounded-surface bg-background p-3 shadow-sm ring-[3px] ring-primary/30 transition-[box-shadow] focus-within:ring-primary">
           <textarea
             ref={inputRef}
             rows={1}
@@ -139,7 +139,7 @@ function CodesDemo() {
               type="button"
               onClick={() => speakMessage(text)}
               disabled={!text.trim()}
-              className="focus-attention inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-[opacity,transform] hover:enabled:scale-[1.02] active:enabled:scale-95 key-disabled motion-reduce:transition-none"
+              className="focus-attention inline-flex min-h-14 items-center gap-2 rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground transition-[opacity,transform] hover:enabled:scale-[1.02] active:enabled:scale-95 key-disabled motion-reduce:transition-none"
             >
               <Volume2 className="size-4" aria-hidden="true" />
               Speak
