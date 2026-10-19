@@ -170,6 +170,15 @@ a check on the chosen row. Only the chosen row takes a Tab stop, and the arrow
 keys move the choice. Who speaks and the source of voice samples use
 `ChoiceKey` too.
 
+A `PickList` is a container. It uses two columns only when its own width is
+32rem or more, not the width of the window. A long name wraps, and it is never
+cut off.
+
+`layouts/settings.tsx` shows the Settings sections as a column from 48rem. On a
+phone the sections wrap onto more lines, so every section and the open one
+show. A row of Services, and a provider row of AI Assistance, moves its badge
+and its key under the words when the row is narrow.
+
 `blocks/space-panel.tsx` draws the right rail and the card beside it. The tabs
 come from `@september/core/rules/panel`. Each rail key shows its label under
 its icon, and the label is its name. The rail keeps phrases and speech

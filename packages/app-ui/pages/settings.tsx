@@ -339,14 +339,18 @@ function ConnectionRow({
   action: ReactNode;
 }) {
   return (
-    <div className="flex min-h-12 items-center gap-4 py-4">
+    // On a narrow screen the badge and the action move under the words, so
+    // the words keep their width.
+    <div className="flex min-h-12 flex-wrap items-center gap-x-4 gap-y-3 py-4">
       <Mark service={service} />
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 basis-40">
         <div className="text-sm font-semibold">{name}</div>
         <div className="text-muted-foreground text-sm">{state}</div>
       </div>
-      {badge}
-      {action}
+      <div className="ml-auto flex items-center gap-3">
+        {badge}
+        {action}
+      </div>
     </div>
   );
 }
@@ -583,15 +587,15 @@ export function WritingSettings() {
               key={option.value}
               // A provider that is not ready has a dashed line, not a fade,
               // so its words stay readable.
-              className={`has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5 flex min-h-12 items-center gap-3 rounded-xl border p-4 ${
+              className={`has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5 flex min-h-12 flex-wrap items-center gap-3 rounded-xl border p-4 ${
                 ready[option.value] ? "" : "border-input border-dashed"
               }`}
             >
-              <Label className="flex flex-1 cursor-pointer items-center gap-4">
+              {/* The Manage key moves under the words on a narrow screen. */}
+              <Label className="flex min-w-0 flex-1 basis-60 cursor-pointer items-center gap-4">
                 <RadioGroupItem
                   value={option.value}
                   aria-disabled={!ready[option.value]}
-                  className="size-5"
                 />
                 <Mark service={option.value} />
                 <span className="min-w-0 flex-1">
@@ -608,7 +612,9 @@ export function WritingSettings() {
                 </span>
               </Label>
               {option.value === "openrouter" ? (
-                <ManageLink provider="openrouter" status={connections.openrouter} />
+                <div className="ml-auto">
+                  <ManageLink provider="openrouter" status={connections.openrouter} />
+                </div>
               ) : null}
             </div>
           ))}

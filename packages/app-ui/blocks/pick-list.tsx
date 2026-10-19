@@ -155,7 +155,9 @@ export function PickList<Row extends PickRow>({
     : rows.filter((row) => matchesWords(row.name, query));
 
   return (
-    <div className="space-y-2">
+    // The list is a container, so it takes two columns from its own width,
+    // not from the width of the window.
+    <div className="@container space-y-2">
       {/* ponytail: a short list is faster to read than to search. */}
       {rows.length > 8 ? (
         <div className="flex max-w-md flex-col gap-1.5">
@@ -175,7 +177,7 @@ export function PickList<Row extends PickRow>({
         <ul
           role="radiogroup"
           aria-label={name}
-          className={`grid content-start gap-2 ${columns === 2 ? "sm:grid-cols-2" : ""} ${
+          className={`grid content-start gap-2 ${columns === 2 ? "@lg:grid-cols-2" : ""} ${
             fixedHeight ? "h-[calc(var(--reach-target)*4)] overflow-y-auto pr-1" : ""
           }`}
         >
@@ -198,11 +200,11 @@ export function PickList<Row extends PickRow>({
                   className="flex-1"
                 >
                   <span className="min-w-0 flex-1">
-                    <span data-row-name className="block truncate text-base font-medium">
+                    <span data-row-name className="block text-base font-medium break-words">
                       {row.name}
                     </span>
                     {row.detail ? (
-                      <span className="text-muted-foreground block truncate text-sm">
+                      <span className="text-muted-foreground block text-sm break-words">
                         {row.detail}
                       </span>
                     ) : null}
@@ -222,7 +224,7 @@ export function PickList<Row extends PickRow>({
         <ul
           role="radiogroup"
           aria-label={name}
-          className={`grid content-start gap-2 ${columns === 2 ? "sm:grid-cols-2" : ""} ${
+          className={`grid content-start gap-2 ${columns === 2 ? "@lg:grid-cols-2" : ""} ${
             fixedHeight ? "h-[calc(var(--reach-target)*4)] overflow-y-auto pr-1" : ""
           }`}
         >
@@ -237,8 +239,8 @@ export function PickList<Row extends PickRow>({
                   {row.group}
                 </li>
               ) : null}
-              {/* min-w-0 lets a long name truncate instead of pushing into
-                  the next column. */}
+              {/* min-w-0 lets a long name wrap instead of pushing into the
+                  next column. */}
               <li role="none" className="flex min-w-0 items-center gap-2">
                 <ChoiceKey
                   checked={row.id === value}
@@ -246,7 +248,7 @@ export function PickList<Row extends PickRow>({
                   onChoose={() => onPick(row.id)}
                   className="flex-1 text-base font-medium"
                 >
-                  <span data-row-name className="min-w-0 flex-1 truncate">
+                  <span data-row-name className="min-w-0 flex-1 break-words">
                     {row.name}
                   </span>
                   {row.note ? (
