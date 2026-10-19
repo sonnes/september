@@ -205,9 +205,9 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
       </p>
 
       <div className="@container bg-muted/40 flex min-h-0 flex-1 flex-col gap-3 p-2 md:p-4">
-        {/* The column gives way in this order: the history drops rows down
-            to its label, then the stripes shrink and scroll. Only after that
-            does the column itself scroll, so the field, its keys, and the dock
+        {/* The history gives way first: it drops rows down to its label. The
+            stripes never shrink or scroll. If the screen is still too short,
+            the column itself scrolls, so the field, its keys, and the dock
             are never under other content. The padding keeps edge focus rings
             inside the scroll. */}
         <div className="mx-auto flex min-h-0 w-full max-w-[calc(48rem+0.75rem)] flex-1 flex-col gap-2.5 overflow-y-auto px-1.5 pb-1">

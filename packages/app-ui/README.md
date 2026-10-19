@@ -311,7 +311,7 @@ fits, only the label row shows, and its key says "See all (N)".
 
 The parts of `Composer` are items of the screen column, through `contents`.
 The column of Talk and Agent gives way in this order. First the history drops
-rows down to its label. Then the stripes shrink and scroll, down to 96px. Last,
+rows down to its label. The stripes never shrink or scroll up and down. Last,
 the column itself scrolls. The field, its keys, and the dock are never under
 other content. Each row shows the time of the message, and a press on the row speaks it
 again. The name of a row is "Speak again:" and the words of the message. The

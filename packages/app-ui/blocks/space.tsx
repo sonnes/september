@@ -351,16 +351,14 @@ export function Composer({
   });
 
   return (
-    // The parts of the composer are items of the screen column, so the
-    // stripes are the part that gives way when the screen is short. They
-    // shrink and scroll, and the field and its keys keep their full height.
+    // The parts of the composer are items of the screen column. The stripes,
+    // the field, and its keys keep their full height, so the history gives
+    // way when the screen is short. The stripes never scroll up and down.
     <div className="contents">
       {before}
 
       {suggestions ? (
-        // The padding keeps the focus ring of an edge key inside the scroll.
-        // The floor of 96px holds only while there are stripes to show.
-        <div className="-mx-1.5 shrink overflow-y-auto px-1.5 empty:hidden has-[*]:min-h-24">
+        <div className="shrink-0 empty:hidden">
           <Suggestions
             spaceId={spaceId}
             context={context}
