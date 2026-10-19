@@ -21,6 +21,11 @@ It does not treat landing-page copy or CSS choices as application behavior.
 Suggestion tests cover sentence matching through the shared UI, slice
 selection, phrase-code continuation, and speech after the final slice.
 
+`src/axe.ts` runs the WCAG A and AA rules of axe-core on a rendered screen.
+Each main screen test has one axe test. jsdom has no layout, so the rules for
+color contrast and target size are off. The rules for a whole page are off too,
+because a test renders one screen.
+
 ## Every page names itself
 
 Screens render a `<title>`, which React 19 lifts into the head. `Screen` in

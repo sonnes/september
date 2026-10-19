@@ -5,12 +5,13 @@
  * keeps a second copy of the key.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { Ban, Volume2 } from "lucide-react";
 
 import { Button } from "@september/ui/components/button";
 import { Input } from "@september/ui/components/input";
+import { Label } from "@september/ui/components/label";
 
 import {
   connectProvider,
@@ -124,6 +125,7 @@ export function KeyPanel({
   const [key, setKey] = useState("");
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState("");
+  const keyId = useId();
 
   async function connect() {
     setBusy(true);
@@ -160,11 +162,12 @@ export function KeyPanel({
 
   return (
     <>
+      <Label htmlFor={keyId}>{name} key</Label>
       <div className="flex flex-wrap gap-2">
         <Input
+          id={keyId}
           type="password"
-          aria-label={`${name} key`}
-          placeholder={`Paste your ${name} key`}
+          placeholder="Paste the key here"
           autoComplete="off"
           spellCheck={false}
           value={key}

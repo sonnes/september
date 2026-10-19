@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MutableRefObject } from "react";
+import { useEffect, useId, useRef, useState, type MutableRefObject } from "react";
 
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -44,6 +44,7 @@ import {
   DropdownMenuTrigger,
 } from "@september/ui/components/dropdown-menu";
 import { Input } from "@september/ui/components/input";
+import { Label } from "@september/ui/components/label";
 import { Progress } from "@september/ui/components/progress";
 
 import {
@@ -519,15 +520,22 @@ export function NoteReadingBar({
           <Play aria-hidden />
           <span className="@max-[36rem]:sr-only">Present</span>
         </button>
+        {/* The name is the word on the key. The shortcut is in
+            `aria-keyshortcuts`, so a screen reader does not read the glyph. */}
         <button
           type="button"
-          aria-label="Suggestions"
+          aria-keyshortcuts="Meta+J Control+J"
           onClick={() => handle.current?.openTools()}
           className={cn(bar, "hover:bg-accent")}
         >
           <PenLine aria-hidden />
           <span className="@max-[36rem]:sr-only">Suggestions</span>
-          <kbd className="bg-muted text-muted-foreground rounded px-1.5 text-xs font-medium @max-[36rem]:hidden">⌘J</kbd>
+          <kbd
+            aria-hidden="true"
+            className="bg-muted text-muted-foreground rounded px-1.5 text-xs font-medium @max-[36rem]:hidden"
+          >
+            ⌘J
+          </kbd>
         </button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -856,6 +864,7 @@ function NoteList({
   className?: string;
 }) {
   const [query, setQuery] = useState("");
+  const searchId = useId();
   const words = query.trim();
   const shown = words
     ? notes.filter((one) => matchesWords(`${one.name ?? ""}\n${one.content}`, words))
@@ -884,14 +893,15 @@ function NoteList({
       </div>
 
       {notes.length >= SEARCH_FROM ? (
-        <Input
-          type="search"
-          value={query}
-          aria-label="Search notes"
-          placeholder="Search notes"
-          onChange={(event) => setQuery(event.target.value)}
-          className="shrink-0"
-        />
+        <div className="flex shrink-0 flex-col gap-1.5">
+          <Label htmlFor={searchId}>Search notes</Label>
+          <Input
+            id={searchId}
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </div>
       ) : null}
 
       <ul className="flex min-h-0 flex-col gap-1 overflow-y-auto">

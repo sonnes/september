@@ -47,15 +47,19 @@ The words go in at the caret. On the first typed key, the writing tools open und
 
 Escape or Hide closes the tools. ⌘J or Ctrl+J opens them with no typed key.
 
+While the note has the focus, a bar shows at its start edge: an ink line inside
+amber. When the caret moves, the note scrolls until the caret line is clear of
+the 96px that the reading bar takes at the foot of the page.
+
 ## Reading bar
 
 The reading bar is at the foot of the page. It has Read aloud, Present, Suggestions, and a More menu with Export and Delete note. The bar hides while the writing tools are open.
 
 ## The list of notes
 
-The list shows About first, then each note with its name, its first line of words, and the time of its last change. From five notes, a search field finds a note by its words. New note is at the top of the list.
+The list shows About first, then each note with its name, its first line of words, and the time of its last change. From five notes, a search field with the visible label Search notes finds a note by its words. New note is at the top of the list.
 
-From 52rem of screen body, the list is a column beside the note. Below that width, the list and the note take turns. Notes opens on the last note, and its Notes back key shows the list.
+From 52rem of screen body, the list is a column beside the note. Below that width, the list and the note take turns. Notes opens on the last note, and its All notes back key shows the list.
 
 ## About tab
 

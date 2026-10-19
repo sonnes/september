@@ -9,6 +9,7 @@ import { SpacesScreen } from '@september/app-ui/pages/spaces';
 import { SpaceDock, useSpaceBySlug } from '@september/app-ui/blocks/space';
 import { InputLayer } from '@september/app-ui/blocks/access';
 import { DEFAULT_ACCESS } from '@september/core/rules/access';
+import { axeViolations } from './axe';
 
 const state = vi.hoisted(() => ({
   navigate: vi.fn(),
@@ -288,4 +289,19 @@ describe('the space mode control', () => {
     step();
     expect(band()?.getAttribute('aria-label')).toBe('Space mode');
   });
+});
+
+describe('finding a space', () => {
+  it('gives the search a visible label', async () => {
+    state.spaces = [{ id: 's1', title: 'Mum', updated_at: 2 }];
+    await show();
+    const search = container.querySelector<HTMLInputElement>('input[type="search"]')!;
+    expect([...(search.labels ?? [])].map((label) => label.textContent?.trim())).toEqual(['Search spaces']);
+  });
+});
+
+it('passes the axe rules that jsdom can run', async () => {
+  state.spaces = [{ id: 's1', title: 'Mum', updated_at: 2 }];
+  await show();
+  expect(await axeViolations(container)).toEqual([]);
 });

@@ -136,16 +136,7 @@ export function NoteDocument({
     const element = box.current;
     const base = frame.current?.getBoundingClientRect();
     if (!element || !base) return;
-    const row = element.childNodes[span.current.to.line] as HTMLElement | undefined;
-    const selection = getSelection();
-    const range =
-      selection?.rangeCount && element.contains(selection.anchorNode)
-        ? selection.getRangeAt(0)
-        : null;
-    let caret = typeof range?.getBoundingClientRect === "function" ? range.getBoundingClientRect() : null;
-    if (!caret || (caret.top === 0 && caret.bottom === 0)) {
-      caret = row?.getBoundingClientRect() ?? null;
-    }
+    const caret = caretRect(element, span.current.to.line);
     if (!caret) {
       setTop(0);
       return;
@@ -267,6 +258,7 @@ export function NoteDocument({
       span.current = forward ? { from: anchor, to: focus } : { from: focus, to: anchor };
       markActive(element, focus.line, selection.isCollapsed);
       refresh();
+      keepCaretClear(element, focus.line);
       if (open) measure();
     };
     document.addEventListener("selectionchange", onSelection);
@@ -411,7 +403,7 @@ export function NoteDocument({
   const pressed = styleOf(kind);
 
   return (
-    <div ref={frame} className="relative">
+    <div ref={frame} className="note-frame relative">
       <div
         ref={box}
         role="textbox"
@@ -671,4 +663,35 @@ function placeCaret(element: HTMLElement, { line, offset }: Point) {
   range.collapse(true);
   selection.removeAllRanges();
   selection.addRange(range);
+}
+
+/**
+ * The room at the foot of the note scroll that the reading bar takes. The
+ * caret line stays above it, so the bar never covers the line in use.
+ */
+const CARET_ROOM_PX = 96;
+
+/** The box of the caret, or of its line when the caret has no box. */
+function caretRect(element: HTMLElement, line: number): DOMRect | null {
+  const selection = getSelection();
+  const range =
+    selection?.rangeCount && element.contains(selection.anchorNode)
+      ? selection.getRangeAt(0)
+      : null;
+  const caret = typeof range?.getBoundingClientRect === "function" ? range.getBoundingClientRect() : null;
+  if (caret && (caret.top !== 0 || caret.bottom !== 0)) return caret;
+  const row = element.childNodes[line] as HTMLElement | undefined;
+  return row?.getBoundingClientRect() ?? null;
+}
+
+/** Scrolls the note until the caret line is clear of the reading bar. */
+function keepCaretClear(element: HTMLElement, line: number) {
+  const scroller = element.closest<HTMLElement>("[data-note-scroll]");
+  const caret = caretRect(element, line);
+  if (!scroller || !caret) return;
+  const view = scroller.getBoundingClientRect();
+  // A hidden or tiny scroll has no room to keep.
+  if (view.height <= CARET_ROOM_PX) return;
+  const over = caret.bottom - (view.bottom - CARET_ROOM_PX);
+  if (over > 0) scroller.scrollTop += over;
 }

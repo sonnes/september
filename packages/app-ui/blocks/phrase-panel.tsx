@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 
 import {
   Check,
@@ -13,6 +13,7 @@ import {
 
 import { Button } from "@september/ui/components/button";
 import { Input } from "@september/ui/components/input";
+import { Label } from "@september/ui/components/label";
 import { cn } from "@september/ui";
 
 import {
@@ -56,6 +57,8 @@ export function Phrases({
   const [dismissed, setDismissed] = useState<string[]>(dismissedIdeas);
   const [draft, setDraft] = useState("");
   const [draftCode, setDraftCode] = useState("");
+  const phraseId = useId();
+  const codeId = useId();
 
   const rows = phrases ?? [];
 
@@ -125,37 +128,45 @@ export function Phrases({
       </p>
 
       <form onSubmit={add} className="space-y-2">
-        <div className="flex items-center gap-2">
-          <Input
-            value={draft}
-            aria-label="Add a phrase"
-            placeholder="Add a phrase"
-            className="h-11 min-w-0 flex-1"
-            onChange={(event) => setDraft(event.target.value)}
-          />
-          <Input
-            value={draftCode}
-            aria-label="Code (optional)"
-            placeholder="code"
-            maxLength={CODE_MAX_LENGTH}
-            className={cn(
-              "h-11 w-16 font-mono",
-              problem && "border-destructive",
-            )}
-            onChange={(event) => setDraftCode(event.target.value)}
-          />
+        <div className="flex items-end gap-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <Label htmlFor={phraseId}>Phrase</Label>
+            <Input
+              id={phraseId}
+              value={draft}
+              className="min-w-0"
+              onChange={(event) => setDraft(event.target.value)}
+            />
+          </div>
+          <div className="flex w-20 shrink-0 flex-col gap-1.5">
+            <Label htmlFor={codeId}>Code</Label>
+            <Input
+              id={codeId}
+              value={draftCode}
+              placeholder="Optional"
+              maxLength={CODE_MAX_LENGTH}
+              aria-invalid={Boolean(problem) || undefined}
+              aria-describedby={problem ? `${codeId}-problem` : undefined}
+              className="font-mono"
+              onChange={(event) => setDraftCode(event.target.value)}
+            />
+          </div>
           <Button
             type="submit"
             size="icon"
             variant="secondary"
             aria-label="Add phrase"
-            className="size-11 shrink-0"
+            className="shrink-0"
             disabled={!draft.trim() || Boolean(problem)}
           >
             <Plus aria-hidden />
           </Button>
         </div>
-        {problem ? <p className="text-destructive text-xs">{problem}</p> : null}
+        {problem ? (
+          <p id={`${codeId}-problem`} className="text-destructive text-xs">
+            {problem}
+          </p>
+        ) : null}
       </form>
 
       {rows.length === 0 ? (

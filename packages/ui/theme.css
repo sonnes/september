@@ -396,6 +396,20 @@ body {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
+  /* Focus on the note is a bar at its start edge: an ink line inside amber,
+     as in `.focus-attention`. A ring around the whole page pulls the eye
+     from the words. */
+  .note-frame:has(> .note-document:focus-visible)::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: -7px;
+    width: 3px;
+    border-radius: 9999px;
+    background: var(--attention-foreground);
+    box-shadow: 0 0 0 2px var(--attention);
+    pointer-events: none;
+  }
   .note-document[data-empty]::before {
     content: attr(data-placeholder);
     position: absolute;

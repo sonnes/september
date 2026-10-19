@@ -2,9 +2,11 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { Check, Pause, Play } from "lucide-react";
 
 import { cn } from "@september/ui";
@@ -581,13 +583,21 @@ const subscribeScan = (listener: () => void) => {
  * header of the panel, or the setup sidebar. While the scan waits, the next
  * press of the switch starts it again.
  */
-export function ScanPauseKey({ className }: { className?: string }) {
+export function ScanPauseKey({
+  className,
+  role,
+}: {
+  className?: string;
+  /** `menuitem` inside a menu, so the menu holds only its own kind of row. */
+  role?: "menuitem";
+}) {
   const control = useSyncExternalStore(subscribeScan, () => scanControl, () => null);
   if (!control) return null;
   const name = control.paused ? "Resume scan" : "Pause scan";
   return (
     <button
       type="button"
+      role={role}
       data-scan-pause=""
       aria-label={name}
       title={name}
@@ -959,5 +969,44 @@ export function InputLayer({ profile }: { profile?: AccessProfile }) {
     };
   }, [reach.scanStepMs]);
 
-  return null;
+  return <ModalPauseKey />;
+}
+
+/** The topmost open modal, or null. */
+function topModal(): HTMLElement | null {
+  const modals = document.querySelectorAll<HTMLElement>(MODAL);
+  return modals[modals.length - 1] ?? null;
+}
+
+/**
+ * A second Pause scan key, at the end of the topmost open modal.
+ *
+ * The scan holds a sheet, a dialog, or a menu while it is open, so the key
+ * of the shell is out of its reach. This key is inside the modal, in the
+ * scope of the scan and in the focus trap of the modal.
+ */
+function ModalPauseKey() {
+  const control = useSyncExternalStore(subscribeScan, () => scanControl, () => null);
+  const [modal, setModal] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!control) return;
+    const read = () => setModal(topModal());
+    read();
+    const watch = new MutationObserver(read);
+    watch.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-state", "aria-modal"],
+    });
+    return () => watch.disconnect();
+  }, [control]);
+
+  if (!control || !modal || !modal.isConnected) return null;
+  const menu = modal.matches('[data-slot="dropdown-menu-content"], [data-slot="select-content"]');
+  return createPortal(
+    <ScanPauseKey role={menu ? "menuitem" : undefined} className="mt-3 self-start" />,
+    modal,
+  );
 }

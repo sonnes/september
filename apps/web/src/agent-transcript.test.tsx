@@ -5,6 +5,7 @@ import { Transcript } from '@september/app-ui/blocks/agent-transcript';
 import type { AgentMessage } from '@september/core/rules/agent';
 import { type Root, createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { axeViolations } from './axe';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -161,4 +162,9 @@ describe('the Agent transcript', () => {
     const drawn = [...container.querySelectorAll('p:not([role="status"])')].map(line => line.textContent);
     expect(drawn.filter(text => text?.includes('One. Two.'))).toHaveLength(1);
   });
+});
+
+it('passes the axe rules that jsdom can run', async () => {
+  draw([said('a', 'user', 'Rename the space'), said('b', 'assistant', 'Which name?')]);
+  expect(await axeViolations(container)).toEqual([]);
 });

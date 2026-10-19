@@ -155,6 +155,7 @@ The sidebar is a **solid indigo panel** in light _and_ dark mode — September's
 - **Sidebar default state:** collapsed to the icon rail at every desktop width. A manual toggle (rail or ⌘/Ctrl-B) persists while the app shell is mounted, including across resizes. Below 768px it becomes the mobile sheet, closed by default.
 - **Sidebar widths:** `16rem` (256px) expanded · `18rem` mobile sheet · `3.25rem` icon rail, which holds a 48px key.
 - **Inset shell:** content floats as an inset card — `md:m-2 md:ml-0 md:rounded-xl md:shadow-sm` — over the `zinc-100` page, beside the indigo sidebar.
+- **Phone layout:** below 48rem, the right rail of a space is a row of two 48px keys under the screen, and its card opens above the row. The dock wraps the Talk, Notes, and Agent switch to a second line, so the space key keeps a full key width.
 - **Header:** `ScreenHeader` = `h-16 border-b`, the 48px Menu key + title at `px-4`. A screen with no visible `h1` gives the header a `heading`, which only a screen reader reads.
 - **Marketing / legal:** centered single column, `max-w-3xl`, `px-4 py-12 sm:px-6`; eyebrow → H1 → lede header block.
 - **Border radius (B·s roles, 2026-07-18):** four named roles plus the pill, defined as `--radius-*` tokens in `globals.css`. This replaces the old "buttons=`md`, cards=`xl`" mapping and collapses the 14 ad-hoc radii the app had drifted into.
@@ -190,7 +191,7 @@ September is operated under physical constraint. These are requirements, not nic
 - **Keyboard & switch operability:** Everything reachable and operable without a pointer. No hover-only affordances — hover may enhance, never gate. Visible, logical focus order. A move to another screen puts the focus on its `h1`, unless the screen puts it on a field.
 - **Reduced motion:** Respect `prefers-reduced-motion` and the Reduced motion choice of the access profile; no parallax, no motion that conveys required meaning.
 - **Access profile:** Setup and Settings ask how the person chooses things: touch, mouse, keyboard, switch, or eyes. The profile sets `--reach-target`, `--reach-gap`, `--reach-word`, and `--reach-scale`, the number of stripes, and the words in a slice. Eyes is 88px keys with 24px gaps, and Switch is 64px keys with 16px gaps. A new input method applies only on Continue or on its Use key. See `docs/concepts/access-profile.md`.
-- **Answers to a press:** An accepted press squeezes the key and shows an indigo check, or two indigo rings with reduced motion. A click plays unless the voice speaks or the person turned the click off. A dwell fills the key from the bottom in amber, with ink marks at the fill level. The scan band is an amber fill with an ink line, or an amber ring alone on the indigo sidebar and header. The Pause scan key sits where it covers nothing: the foot of the sidebar, the panel header, the setup sidebar, or a reserved space at the foot of a phone screen.
+- **Answers to a press:** An accepted press squeezes the key and shows an indigo check, or two indigo rings with reduced motion. A click plays unless the voice speaks or the person turned the click off. A dwell fills the key from the bottom in amber, with ink marks at the fill level. The scan band is an amber fill with an ink line, or an amber ring alone on the indigo sidebar and header. The Pause scan key sits where it covers nothing: the foot of the sidebar, the panel header, the setup sidebar, or a reserved space at the foot of a phone screen. An open sheet, dialog, or menu gets a second Pause scan key at its end.
 - **Reading pace:** Don't auto-dismiss important content quickly (toasts dwell 15s). Avoid timeouts on input.
 - **Minimal keystrokes (product-level a11y):** Suggestion pills, autocomplete, and contextual shortcuts are accessibility features — every interaction that removes a keystroke is on-thesis.
 
@@ -202,14 +203,15 @@ All UI primitives live in `@/packages/ui` (`src/packages/ui/components`) — sha
 - **Suggestion pills:** `Suggestion` / `Suggestions` — `rounded-full`, `outline`, `size="sm"`, `px-4`, in a horizontal `ScrollArea`. The autocomplete/contextual-reply surface; the product's signature interaction. Keep targets comfortable and well-spaced.
 - **Cards:** `Card` — `rounded-surface border py-6 shadow-sm`, `gap-6`; `CardTitle` = `font-semibold leading-none`. Roomy, lightly elevated.
 - **Badges:** `Badge` — `rounded-full border px-2 py-0.5 text-xs font-medium`. Variants `default`/`secondary`/`destructive`/`outline`.
-- **Inputs / fields:** `Input` = 48px high, `rounded-control border border-input shadow-xs`, `text-base` (16px) at every width. Compose with `Field`/`Form` (react-hook-form). Always pair with a visible `Label`.
+- **Inputs / fields:** `Input` = 48px high, `rounded-control border border-input shadow-xs`, `text-base` (16px) at every width. Compose with `Field`/`Form` (react-hook-form). Always pair with a visible `Label`, a search field too. A placeholder is a hint, never the only label.
 - **Callouts:** `Callout` — `rounded-lg border px-4 py-3 text-sm`, tones `info`/`warning`/`success`/`danger`, each with a lucide icon. Use for legal/explanatory notes.
 - **Sidebar nav:** `SidebarMenuButton` items (icon + label) in a `nav` named Main, collapsible groups via shadcn `Collapsible`, `SidebarGroupLabel` (`text-xs font-medium`, full white). Every row is 48px. The current row has `aria-current="page"`, the indigo-600 fill, and a 4px white bar at its start edge, so the state is not a fill alone. Rows use the inset focus. The edge strip (`SidebarRail`) is for a pointer only. Indigo surface throughout.
 - **Current tab:** a space tab in the dock shows a dot before its name when it is open. The Talk, Notes, and Agent switch is a `nav` with `aria-current`, not a `tablist`.
 - **Skip link:** the first key of each shell is "Skip to main content". It shows at the top left while it has the focus, with the attention focus.
 - **Dropdowns / comboboxes:** shadcn `DropdownMenu` and `Command` + `Popover`. Dwell and scan open them with a pointer press. The desktop More key opens a sheet of 48px rows, not a dropdown. A short fixed list of choices, such as the usage period, is a row of `ChoiceKey` keys.
 - **Word being read:** while the browser system voice reads a message, its current word is indigo-600 with white words. It is not amber, because amber marks attention only.
-- **Present keys:** Previous, Stop, and Next are keys below the words, in the ink of the tone. A key with nothing to do keeps its place and shows a dotted line.
+- **Present keys:** Previous, Stop, and Next are keys below the words, in the ink of the tone. A key with nothing to do keeps its place and shows a dotted line. Tab stays inside the stage, and the focus goes back to the Present key when the stage closes.
+- **Note focus:** while the note document has the focus, a 3px zinc-900 bar in a 2px amber ring shows at its start edge. A ring around the whole page pulls the eye from the words. The caret line stays clear of the reading bar.
 - **Overlays:** `Dialog`, `Sheet`, `AlertDialog`, `HoverCard`, `Tooltip` — Radix-backed.
 - **States:** `Skeleton` / `LoadingState` (loading), `EmptyState` (centered muted text + primary action), `ErrorState`, `Spinner`.
 - **Toasts:** Sonner `Toaster` — top-center, close button, 15s.
@@ -251,4 +253,4 @@ All UI primitives live in `@/packages/ui` (`src/packages/ui/components`) — sha
 ### Known gaps (honest state, not yet enforced)
 
 - Marketing/legal pages use raw Tailwind color utilities instead of semantic tokens.
-- No custom focus-visible audit across all domain components yet; verify suggestion pills and sidebar items meet the focus-ring standard.
+- The Talk composer shows the amber focus ring while its field has the focus, which is most of the time. This look waits for a decision.

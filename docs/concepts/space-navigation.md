@@ -49,9 +49,12 @@ of the space, so the switch is a `nav`, not a `tablist`. The open space and the
 open mode have `aria-current="page"`, and the open space shows a dot.
 
 If the space keys do not fit, their row is `inert`, and one Switch space key
-takes its place.
+takes its place. On a narrow screen, the mode switch wraps to a second line, so
+the space keys keep at least 10rem.
 
 The right rail has Phrases and Voice tabs, and all three modes carry it. It expands to a 320px panel on large screens.
+Below 48rem on web, the rail is a row under the screen, and its panel opens
+above the row. The screen keeps its full width.
 In the desktop panel, the rail shows only when the panel is 900 points wide or
 more. At a smaller width, Phrases and Voice open as sheets.
 

@@ -76,6 +76,10 @@ const button = (label: string) =>
   [...container.querySelectorAll<HTMLButtonElement>('button')].find(
     (one) => one.getAttribute('aria-label') === label || one.textContent === label,
   )!;
+const suggestions = () =>
+  [...container.querySelectorAll<HTMLButtonElement>('button')].find((one) =>
+    one.textContent?.startsWith('Suggestions'),
+  )!;
 const lastSaved = () => (save.mock.calls.at(-1)?.[0] as { content: string }).content;
 
 /** Puts the caret in a line of the note, at a character. */
@@ -196,6 +200,30 @@ describe('the note document', () => {
     expect(lastSaved()).toBe('Rest of time');
   });
 
+  it('scrolls the caret line clear of the reading bar', async () => {
+    await open('One\nTwo\nThree');
+    const scroller = container.querySelector<HTMLElement>('[data-note-scroll]')!;
+    const rect = (top: number, bottom: number) =>
+      ({ top, bottom, left: 0, right: 600, width: 600, height: bottom - top, x: 0, y: top }) as DOMRect;
+    scroller.getBoundingClientRect = () => rect(0, 400);
+    (doc().children[2] as HTMLElement).getBoundingClientRect = () => rect(370, 400);
+
+    await act(async () => caret(2, 0));
+    expect(scroller.scrollTop).toBeGreaterThan(0);
+  });
+
+  it('leaves the scroll alone while the caret line is clear', async () => {
+    await open('One\nTwo\nThree');
+    const scroller = container.querySelector<HTMLElement>('[data-note-scroll]')!;
+    const rect = (top: number, bottom: number) =>
+      ({ top, bottom, left: 0, right: 600, width: 600, height: bottom - top, x: 0, y: top }) as DOMRect;
+    scroller.getBoundingClientRect = () => rect(0, 400);
+    (doc().children[0] as HTMLElement).getBoundingClientRect = () => rect(20, 50);
+
+    await act(async () => caret(0, 0));
+    expect(scroller.scrollTop).toBe(0);
+  });
+
   it('pastes plain text as lines', async () => {
     await open('List');
     await act(async () => caret(0, 4));
@@ -240,7 +268,15 @@ describe('the reading bar', () => {
   it('opens the writing tools from Suggestions', async () => {
     save.mockResolvedValue(undefined);
     await act(async () => root.render(<Reading content="Words" />));
-    await act(async () => button('Suggestions').click());
+    await act(async () => suggestions().click());
     expect(tools()).not.toBeNull();
+  });
+
+  it('names Suggestions by its visible word, and gives its shortcut', async () => {
+    save.mockResolvedValue(undefined);
+    await act(async () => root.render(<Reading content="Words" />));
+    expect(suggestions().hasAttribute('aria-label')).toBe(false);
+    expect(suggestions().querySelector('kbd')?.getAttribute('aria-hidden')).toBe('true');
+    expect(suggestions().getAttribute('aria-keyshortcuts')).toContain('Meta+J');
   });
 });

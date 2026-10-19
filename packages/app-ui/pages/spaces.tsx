@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useId, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { MessagesSquare, Plus, Search, Trash2 } from "lucide-react";
 import {
@@ -13,6 +13,7 @@ import {
 } from "@september/ui/components/alert-dialog";
 import { Button } from "@september/ui/components/button";
 import { Input } from "@september/ui/components/input";
+import { Label } from "@september/ui/components/label";
 import { Skeleton } from "@september/ui/components/skeleton";
 import { navFor } from "@platform/rules/app-nav";
 import { useDeleteSpace, useSpaces, type Space } from "@platform/services/data";
@@ -28,6 +29,7 @@ export function SpacesScreen() {
   const { data: spaces, isPending, error } = useSpaces();
 
   const [search, setSearch] = useState("");
+  const searchId = useId();
   const [toDelete, setToDelete] = useState<Space | null>(null);
   // The space exists from the press, and the press opens it.
   const newSpace = useNewSpace();
@@ -67,19 +69,21 @@ export function SpacesScreen() {
       ) : null}
 
       {spaces?.length ? (
-        <div className="relative">
-          <Search
-            aria-hidden
-            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-          />
-          <Input
-            type="search"
-            value={search}
-            aria-label="Search spaces"
-            placeholder="Search your spaces…"
-            onChange={(event) => setSearch(event.target.value)}
-            className="pl-9"
-          />
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor={searchId}>Search spaces</Label>
+          <div className="relative">
+            <Search
+              aria-hidden
+              className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+            />
+            <Input
+              id={searchId}
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className="pl-9"
+            />
+          </div>
         </div>
       ) : null}
 

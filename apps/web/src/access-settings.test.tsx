@@ -52,6 +52,7 @@ vi.mock('@september/app-ui/layouts/onboarding', () => ({
 
 import { AccessSettings } from '@september/app-ui/pages/settings';
 import { ChooseStep, FinishStep } from '@september/app-ui/pages/steps';
+import { axeViolations } from './axe';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -188,4 +189,9 @@ describe('the How you choose step of setup', () => {
       expect.objectContaining({ name: 'Meera', access: expect.objectContaining({ input: 'switch' }) }),
     );
   });
+});
+
+it('passes the axe rules that jsdom can run', async () => {
+  await render();
+  expect(await axeViolations(container)).toEqual([]);
 });

@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
 
@@ -72,7 +73,14 @@ export function PresentOverlay({
   const stage = useStageSize();
   const held = useRef<HTMLDivElement>(null);
 
-  useEffect(() => held.current?.focus(), []);
+  // The stage takes the focus, and gives it back to the key that opened it.
+  useEffect(() => {
+    const opener = document.activeElement;
+    held.current?.focus();
+    return () => {
+      if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
+    };
+  }, []);
 
   // The desktop panel fills the screen while it presents, and goes back to
   // its size when the overlay closes. The browser does nothing.
@@ -161,6 +169,7 @@ export function PresentOverlay({
       ref={held}
       role="dialog"
       aria-modal="true"
+      onKeyDown={(event) => keepTabInside(event, held.current)}
       // The stage takes the focus, so a switch scan and a screen reader both
       // start here and not on the note behind it.
       tabIndex={-1}
@@ -259,6 +268,30 @@ export function PresentOverlay({
       </div>
     </div>
   );
+}
+
+const TABBABLE =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * Tab and Shift-Tab go around the keys of the stage, so the focus never
+ * reaches the note behind it.
+ */
+function keepTabInside(event: ReactKeyboardEvent<HTMLDivElement>, stage: HTMLElement | null) {
+  if (event.key !== "Tab" || !stage) return;
+  const keys = [...stage.querySelectorAll<HTMLElement>(TABBABLE)];
+  const first = keys[0];
+  const last = keys[keys.length - 1];
+  if (!first || !last) return;
+
+  const at = document.activeElement;
+  if (event.shiftKey && (at === first || at === stage)) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && at === last) {
+    event.preventDefault();
+    first.focus();
+  }
 }
 
 /** One chunk, as large as the stage can hold it. */

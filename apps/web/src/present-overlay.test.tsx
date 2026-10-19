@@ -4,6 +4,7 @@ import React, { act } from 'react';
 import { PresentOverlay } from '@september/app-ui/blocks/present';
 import { type Root, createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { axeViolations } from './axe';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -185,4 +186,52 @@ describe('the present overlay', () => {
     expect(platform.recordPresentUsage).toHaveBeenCalledTimes(1);
     expect(platform.recordPresentUsage).toHaveBeenCalledWith(3, false);
   });
+
+  it('keeps Tab inside the stage while it is open', () => {
+    render(<PresentOverlay name="Maya" content={NOTE} onClose={() => {}} />);
+
+    const stage = container.querySelector<HTMLElement>('[role="dialog"]')!;
+    const keys = [...stage.querySelectorAll<HTMLElement>('button')];
+    const first = keys[0]!;
+    const last = keys[keys.length - 1]!;
+
+    last.focus();
+    act(() => {
+      last.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+    });
+    expect(document.activeElement).toBe(first);
+
+    act(() => {
+      first.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }),
+      );
+    });
+    expect(document.activeElement).toBe(last);
+  });
+
+  it('gives the focus back to the key that opened it', () => {
+    function Host({ open }: { open: boolean }) {
+      return (
+        <>
+          <button type="button">Present</button>
+          {open ? <PresentOverlay name="Maya" content={NOTE} onClose={() => {}} /> : null}
+        </>
+      );
+    }
+
+    render(<Host open={false} />);
+    const opener = container.querySelector<HTMLElement>('button')!;
+    opener.focus();
+
+    render(<Host open />);
+    expect(document.activeElement).not.toBe(opener);
+
+    render(<Host open={false} />);
+    expect(document.activeElement).toBe(opener);
+  });
+});
+
+it('passes the axe rules that jsdom can run', async () => {
+  render(<PresentOverlay name="Maya" content={NOTE} onClose={() => {}} />);
+  expect(await axeViolations(container)).toEqual([]);
 });

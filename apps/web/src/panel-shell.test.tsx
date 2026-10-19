@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PanelShell } from '@september/app-ui/layouts/panel';
 import { APP_NAV } from '@platform/rules/app-nav';
+import { axeViolations } from './axe';
 
 const state = vi.hoisted(() => ({
   setup: null as null | { access?: unknown },
@@ -124,8 +125,11 @@ function openMore() {
 }
 
 function type(label: string, text: string) {
-  const field = document.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
-  expect(field).not.toBeNull();
+  // The field is found by its visible label, as a user finds it.
+  const field = [...document.querySelectorAll('label')].find(
+    (one) => one.textContent?.trim() === label,
+  )?.control as HTMLInputElement;
+  expect(field).toBeTruthy();
   act(() => {
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(field, text);
     field.dispatchEvent(new Event('input', { bubbles: true }));
@@ -335,4 +339,9 @@ describe('the panel header on a page', () => {
     expect(state.navigate).toHaveBeenLastCalledWith({ to: '/spaces' });
     expect(dialog()).toBeNull();
   });
+});
+
+it('passes the axe rules that jsdom can run', async () => {
+  await render();
+  expect(await axeViolations(container)).toEqual([]);
 });

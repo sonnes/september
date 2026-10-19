@@ -64,8 +64,10 @@ export function AppShell() {
     <SidebarProvider
       defaultOpen={false}
       // A definite height, so the screen body scrolls inside the inset
-      // instead of the whole shell growing past the window.
-      className="h-svh"
+      // instead of the whole shell growing past the window. On a phone the
+      // right rail goes under the screen, so the screen keeps its width.
+      className="h-svh max-md:flex-col"
+      data-scan-room
     >
       <RightPanelSlot.Provider value={slot}>
         <SkipLink />
@@ -74,19 +76,18 @@ export function AppShell() {
         <AppSidebar />
         {/* min-w-0 lets the surface shrink, so long content wraps. */}
         {/* On a phone the sidebar is a sheet, so the pause key of the scan
-            sits at the foot of the screen, and the screen keeps room for it. */}
+            sits at the foot of the shell, and the shell keeps room for it. */}
         <ScanPauseKey className="fixed bottom-2 left-2 z-50 md:hidden" />
         <SidebarInset
           ref={main}
           id={MAIN_ID}
           tabIndex={-1}
-          data-scan-room
           className="flex min-h-0 min-w-0 flex-col"
         >
           <Outlet />
         </SidebarInset>
         {/* `display: contents` makes the panel itself the flex child, so it
-            sits beside the inset as its own card. */}
+            sits beside the inset as its own card, or under it on a phone. */}
         <div ref={setSlot} style={{ display: "contents" }} />
       </RightPanelSlot.Provider>
     </SidebarProvider>

@@ -4,6 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { OnboardingLayout, useDraft } from '@september/app-ui/layouts/onboarding';
+import { axeViolations } from './axe';
 
 const outlet = vi.hoisted(() => ({ step: null as null | (() => React.ReactNode) }));
 
@@ -86,4 +87,8 @@ describe('the access profile during setup', () => {
     expect(document.documentElement.classList.contains('dark')).toBe(true);
     expect(document.documentElement.dataset.input).toBe('eyes');
   });
+});
+
+it('passes the axe rules that jsdom can run', async () => {
+  expect(await axeViolations(container)).toEqual([]);
 });

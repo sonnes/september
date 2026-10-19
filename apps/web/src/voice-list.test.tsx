@@ -3,6 +3,7 @@ import React, { act } from 'react';
 import { VoiceCloneScreen, VoiceScreen } from '@september/app-ui/pages/voice';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { axeViolations } from './axe';
 
 const state = vi.hoisted(() => ({
   heard: [] as string[],
@@ -148,4 +149,9 @@ it('names the file field of the voice samples', async () => {
   await act(async () => root.render(<VoiceCloneScreen />));
   const field = container.querySelector<HTMLInputElement>('input[type="file"]');
   expect(field?.getAttribute('aria-label') || field?.labels?.[0]?.textContent).toBeTruthy();
+});
+
+it('passes the axe rules that jsdom can run', async () => {
+  await render();
+  expect(await axeViolations(container)).toEqual([]);
 });

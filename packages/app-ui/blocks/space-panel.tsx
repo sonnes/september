@@ -25,7 +25,8 @@ const ICONS: Record<PanelTab, LucideIcon> = {
  *
  * The rail is always there, so the phrases and the voice are one press away in
  * every mode. The card beside it holds the open tab. This is the shape the web
- * app uses.
+ * app uses. On a phone, the rail is a row under the screen, and the card opens
+ * above the row, so the screen keeps its full width.
  */
 export function PanelRail({
   spaceId,
@@ -73,7 +74,7 @@ export function PanelRail({
       {state.open ? (
         <aside
           aria-label={`${open.title} panel`}
-          className="bg-background my-2 flex w-80 shrink-0 flex-col overflow-hidden rounded-xl border shadow-sm"
+          className="bg-background my-2 flex w-80 shrink-0 flex-col overflow-hidden rounded-xl border shadow-sm max-md:mx-2 max-md:mt-0 max-md:max-h-[45svh] max-md:w-auto"
         >
           <header className="flex min-h-14 shrink-0 items-center gap-2 border-b px-3">
             <OpenIcon className="text-muted-foreground size-4" aria-hidden />
@@ -102,7 +103,7 @@ export function PanelRail({
       <nav
         data-scan-group
         aria-label="Panel rail"
-        className="bg-background my-2 mr-2 flex w-20 shrink-0 flex-col items-stretch gap-1.5 rounded-xl border p-1.5 shadow-sm"
+        className="bg-background my-2 mr-2 flex w-20 shrink-0 flex-col items-stretch gap-1.5 rounded-xl border p-1.5 shadow-sm max-md:mt-0 max-md:ml-2 max-md:w-auto max-md:flex-row"
       >
         {PANEL_TABS.map((tab) => {
           const Icon = ICONS[tab.key];
@@ -116,7 +117,7 @@ export function PanelRail({
               type="button"
               aria-pressed={showing}
               onClick={() => show(pressTab(state, tab.key))}
-              className={`focus-attention text-muted-foreground hover:bg-muted hover:text-foreground flex min-h-16 flex-col items-center justify-center gap-1 rounded-lg text-xs font-medium transition-colors ${
+              className={`focus-attention text-muted-foreground hover:bg-muted hover:text-foreground flex min-h-16 flex-col items-center justify-center gap-1 rounded-lg text-xs font-medium transition-colors max-md:min-h-12 max-md:flex-1 max-md:flex-row max-md:gap-2 ${
                 showing ? "bg-accent text-accent-foreground" : ""
               }`}
             >

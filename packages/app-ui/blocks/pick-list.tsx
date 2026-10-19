@@ -1,9 +1,10 @@
-import { Fragment, useState, type KeyboardEvent, type ReactNode } from "react";
+import { Fragment, useId, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import { Check } from "lucide-react";
 
 import { cn } from "@september/ui";
 import { Input } from "@september/ui/components/input";
+import { Label } from "@september/ui/components/label";
 import { matchesWords } from "@september/core/rules/pick";
 
 /**
@@ -148,6 +149,7 @@ export function PickList<Row extends PickRow>({
   layout?: "grid" | "list";
 }) {
   const [query, setQuery] = useState("");
+  const searchId = useId();
   const found = filter
     ? filter(rows, query)
     : rows.filter((row) => matchesWords(row.name, query));
@@ -156,13 +158,15 @@ export function PickList<Row extends PickRow>({
     <div className="space-y-2">
       {/* ponytail: a short list is faster to read than to search. */}
       {rows.length > 8 ? (
-        <Input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={label}
-          aria-label={label}
-          className="max-w-md"
-        />
+        <div className="flex max-w-md flex-col gap-1.5">
+          <Label htmlFor={searchId}>{label}</Label>
+          <Input
+            id={searchId}
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </div>
       ) : null}
 
       {found.length === 0 ? (

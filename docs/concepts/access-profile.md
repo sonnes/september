@@ -134,3 +134,7 @@ puts it at the foot of the sidebar, and at the foot of the screen on a phone,
 where the screen keeps room for it. The desktop panel puts it in the header,
 and setup puts it in the setup sidebar. While the scan waits, the key reads
 Resume scan, and the next press of the switch starts the scan again.
+
+A sheet, a dialog, or a menu holds the scan while it is open, so the key of the
+shell is out of reach. `InputLayer` then puts a second `ScanPauseKey` at the
+end of the topmost open modal. In a menu, this key has the role `menuitem`.

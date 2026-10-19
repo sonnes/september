@@ -142,3 +142,10 @@ it('saves the Dialogue model and keeps the model of the ElevenLabs voice', async
     expect.objectContaining({ dialogueModelId: 'eleven_v3_conversational', modelId: 'eleven_flash_v2_5' }),
   );
 });
+
+it('names the thumb of every slider', async () => {
+  state.speech.stability = 0.6;
+  await render();
+  const thumbs = [...container.querySelectorAll('[role="slider"]')];
+  expect(thumbs.map(thumb => thumb.getAttribute('aria-label'))).toEqual(['Speed', 'Steadiness', 'Likeness']);
+});

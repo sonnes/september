@@ -12,6 +12,7 @@ import {
 import { SidebarProvider } from '@september/ui/components/sidebar';
 import { type Root, createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { axeViolations } from './axe';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -250,4 +251,9 @@ describe('a Help guide', () => {
 
     expect(container.querySelector('a')?.getAttribute('href')).toBe('/help');
   });
+});
+
+it('passes the axe rules that jsdom can run', async () => {
+  render(<HelpScreen />);
+  expect(await axeViolations(container)).toEqual([]);
 });

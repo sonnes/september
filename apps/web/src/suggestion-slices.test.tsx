@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, expect, it, vi } from 'vitest';
 import { Suggestions } from '@september/app-ui/blocks/suggestions';
 import { InputLayer } from '@september/app-ui/blocks/access';
+import { axeViolations } from './axe';
 
 const state = vi.hoisted(() => ({
   phrases: [] as { text: string; code: string; kind: string; pinned: boolean; space_id: string }[],
@@ -275,4 +276,11 @@ it('speaks a past sentence that contains the draft', async () => {
   await act(async () => root.render(<Composer initial="wat" history={['Can I have some water please?']} />));
   await act(async () => button('Speak:').click());
   expect(state.speak).toHaveBeenCalledWith('Can I have some water please?');
+});
+
+it('passes the axe rules that jsdom can run', async () => {
+  if (!container.isConnected) document.body.append(container);
+  await act(async () => root.render(<Composer initial="" history={['Please bring me some cold water.']} />));
+  await type('Pl');
+  expect(await axeViolations(container)).toEqual([]);
 });

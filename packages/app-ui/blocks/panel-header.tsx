@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useId, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   ChevronDown,
@@ -11,6 +11,7 @@ import {
 
 import { cn } from "@september/ui";
 import { Input } from "@september/ui/components/input";
+import { Label } from "@september/ui/components/label";
 import { Separator } from "@september/ui/components/separator";
 import {
   Sheet,
@@ -477,6 +478,7 @@ function SpaceSwitcher({
   onAllSpaces: () => void;
 }) {
   const [search, setSearch] = useState("");
+  const searchId = useId();
   const newSpace = useNewSpace();
   const shown = useMemo(
     () =>
@@ -499,20 +501,22 @@ function SpaceSwitcher({
         onOpen(chosen);
       }}
     >
-      <div className="relative">
-        <Search
-          aria-hidden
-          className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-        />
-        <Input
-          type="search"
-          autoFocus
-          value={search}
-          aria-label="Find a space"
-          placeholder="Find a space"
-          onChange={(event) => setSearch(event.target.value)}
-          className="h-11 pl-9 text-base"
-        />
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor={searchId}>Find a space</Label>
+        <div className="relative">
+          <Search
+            aria-hidden
+            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+          />
+          <Input
+            id={searchId}
+            type="search"
+            autoFocus
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            className="pl-9"
+          />
+        </div>
       </div>
 
       <ul className="flex flex-col gap-0.5">

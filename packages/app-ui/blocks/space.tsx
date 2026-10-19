@@ -881,8 +881,10 @@ function Dock({ current, spaces, mode, onMode }: DockProps) {
     }`;
 
   return (
-    <div className="bg-muted/40 flex shrink-0 items-center gap-2 border-t px-4 py-2.5">
-      <nav aria-label="Spaces" data-scan-group className="relative min-w-0 flex-1">
+    // On a narrow screen the modes wrap to a second line, so the space key
+    // keeps a full key width beside them.
+    <div className="bg-muted/40 flex shrink-0 flex-wrap items-center gap-x-2 gap-y-3 border-t px-4 py-2.5">
+      <nav aria-label="Spaces" data-scan-group className="relative min-w-40 flex-1">
         {/* A row that does not fit is inert: no pointer, key, or screen
             reader reaches it, and the Switch space key takes its place. The
             row keeps its size, so it can still be measured. */}

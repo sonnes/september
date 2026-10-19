@@ -362,7 +362,8 @@ describe('switch scanning', () => {
         <button onClick={() => cancel('Delete')}>Delete</button>
       </div>,
     );
-    for (let step = 0; step < 5; step += 1) {
+    // Cancel, Delete, the pause key of the dialog, then Cancel again.
+    for (let step = 0; step < 4; step += 1) {
       key(' ');
       expect(scanned().every((one) => one.closest('[role="dialog"]'))).toBe(true);
     }
@@ -455,6 +456,36 @@ describe('switch scanning', () => {
     expect(pause().getAttribute('aria-label')).toBe('Pause scan');
     act(() => vi.advanceTimersByTime(1200));
     expect(groups()[0].dataset.scan).toBe('group');
+  });
+
+  it('reaches a pause key inside an open sheet', () => {
+    show(
+      'switch',
+      <Sheet open>
+        <SheetContent>
+          <SheetTitle>More</SheetTitle>
+          <SheetDescription>Other screens</SheetDescription>
+          <button onClick={() => pressed('Help')}>Help</button>
+        </SheetContent>
+      </Sheet>,
+    );
+    const inside = () => document.querySelector<HTMLElement>('[role="dialog"] [data-scan-pause]');
+    expect(inside()?.getAttribute('aria-label')).toBe('Pause scan');
+
+    for (let step = 0; step < 6 && document.activeElement !== inside(); step += 1) key(' ');
+    expect(document.activeElement).toBe(inside());
+    key('Enter');
+    expect(inside()?.getAttribute('aria-label')).toBe('Resume scan');
+  });
+
+  it('reaches a pause key inside an open menu', async () => {
+    show('switch', <MoodMenu />);
+    for (let step = 0; step < 3; step += 1) key(' ');
+    key('Enter');
+    // The key follows the menu after the page changes.
+    await act(async () => {});
+    const inside = () => document.querySelector<HTMLElement>('[role="menu"] [data-scan-pause]');
+    expect(inside()).not.toBeNull();
   });
 
   it('scans only the open phone sidebar, never the keys behind it', () => {

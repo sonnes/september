@@ -51,6 +51,10 @@ only.
 A speaker switch in the chrome changes mode mid-story. Thirds of the stage move
 back, hold, and on; the keys are `←` `→` `Space` `Home` `End` `Esc`.
 
+The stage is a modal dialog. It takes the focus when it opens. Tab and
+Shift-Tab go around the keys of the stage and never reach the note behind it.
+When the stage closes, the focus goes back to the key that opened it.
+
 ## Tones
 
 Seven tones in one picker, in two families:

@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppShell } from '@september/app-ui/layouts/app';
 import { ScreenHeader } from '@september/app-ui/blocks/screen';
 import { APP_NAV } from '@platform/rules/app-nav';
+import { axeViolations } from './axe';
 
 const state = vi.hoisted(() => ({
   setup: null as null | { access?: unknown },
@@ -248,4 +249,9 @@ describe('the access profile in the app shell', () => {
     expect(scanned()?.dataset.scan).toBe('group');
     expect(scanned()?.textContent).toContain('Rename');
   });
+});
+
+it('passes the axe rules that jsdom can run', async () => {
+  render();
+  expect(await axeViolations(container)).toEqual([]);
 });

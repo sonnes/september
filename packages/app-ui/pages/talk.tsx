@@ -187,12 +187,13 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
         {playing && sentence ? `Speaking: ${sentence}` : ""}
       </p>
 
-
       <div className="@container bg-muted/40 flex min-h-0 flex-1 flex-col gap-3 p-2 md:p-4">
         <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col gap-2.5">
           {error ? <Problem error={error} /> : null}
 
-          <div className="flex min-h-0 flex-1 flex-col justify-end overflow-y-auto pt-2">
+          {/* `mt-auto` keeps the messages at the foot of the scroll. A long
+              list still scrolls up to its first message. */}
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pt-2">
             {spoken.length === 0 ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
                 <div className="bg-background text-muted-foreground flex size-12 items-center justify-center rounded-full">
@@ -221,7 +222,7 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
                 )}
               </div>
             ) : (
-              <section aria-label="Messages" data-scan-group className="flex flex-col gap-1">
+              <section aria-label="Messages" data-scan-group className="mt-auto flex flex-col gap-1">
                 <div className="text-muted-foreground flex min-h-11 items-center gap-1.5 pl-1.5 text-xs font-semibold">
                   {transcript ? "All messages" : today ? "Said today" : "Said before"}
                   <span className="text-muted-foreground font-medium">

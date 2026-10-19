@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SidebarProvider } from '@september/ui/components/sidebar';
 import { NotesScreen } from '@september/app-ui/pages/notes';
+import { axeViolations } from './axe';
 
 const note = (id: string, name: string, content: string, updated_at: number) => ({
   id,
@@ -175,11 +176,20 @@ describe('the list of notes', () => {
       note(name.toLowerCase(), name, `${name} words`, index),
     );
     await render('one');
-    const search = container.querySelector<HTMLInputElement>('input[aria-label="Search notes"]')!;
+    // The field is found by its visible label, as a user finds it.
+    const search = [...container.querySelectorAll('label')].find(
+      (label) => label.textContent?.trim() === 'Search notes',
+    )?.control as HTMLInputElement;
+    expect(search).toBeTruthy();
     await act(async () => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(search, 'four');
       search.dispatchEvent(new Event('input', { bubbles: true }));
     });
     expect(rows().map((row) => row.textContent)).toEqual([expect.stringContaining('Four')]);
   });
+});
+
+it('passes the axe rules that jsdom can run', async () => {
+  await render('one');
+  expect(await axeViolations(container)).toEqual([]);
 });

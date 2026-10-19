@@ -68,7 +68,9 @@ access profile on the root element: the dark theme, the input method, the
 motion, the contrast, and the reach tokens. `InputLayer` answers each press
 with a check and a click, presses a key after a dwell for Eyes, and scans the
 screen for Switch. Each shell also places `ScanPauseKey`, the key that pauses
-the scan: the foot of the sidebar, the panel header, or the setup sidebar. The
+the scan: the foot of the sidebar, the panel header, or the setup sidebar.
+While a sheet, a dialog, or a menu is open, `InputLayer` puts a second pause
+key at the end of it. The
 scan steps through the elements marked `data-scan-group`, then through their
 keys. `data-housing` marks an indigo surface, where the scan band is an amber
 ring with no fill. `AccessForm` asks the questions of the profile in the How
@@ -173,7 +175,8 @@ come from `@september/core/rules/panel`. Each rail key shows its label under
 its icon, and the label is its name. The rail keeps phrases and speech
 settings one press away on every screen inside a space — Talk, Notes, and
 Agent. Agent is where the phrases are written, so it is where seeing them
-matters most.
+matters most. Below 48rem, the rail is a row under the screen, and the card
+opens above the row.
 
 `blocks/space.tsx` owns the Talk, Notes, and Agent mode dock. It also keeps the
 Talk audio selector beside Speak. The selector names September audio because
@@ -190,6 +193,9 @@ in one scan group. A key that has nothing to do keeps its place, has
 `aria-disabled`, and shows a dotted line. The thirds of the stage still move
 the story for a hand, but they are not keys, so a gaze that reads the words
 presses nothing.
+
+The stage keeps Tab and Shift-Tab inside it. When it closes, the focus goes
+back to the key that opened it.
 
 `PresentOverlay` calls `fullScreen(true)` from `@platform/services/os` when it
 opens, and `fullScreen(false)` when it closes. In the desktop app, the panel

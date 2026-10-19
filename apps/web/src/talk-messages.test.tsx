@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, expect, it, vi } from 'vitest';
 import { TalkScreen } from '@september/app-ui/pages/talk';
+import { axeViolations } from './axe';
 
 const state = vi.hoisted(() => ({
   speaking: null as string | null,
@@ -76,4 +77,9 @@ it('announces the sentence that plays through a status that is already there', a
 
   expect(container.querySelector('[role="status"]')).toBe(status);
   expect(status?.textContent).toBe('Speaking: Good morning');
+});
+
+it('passes the axe rules that jsdom can run', async () => {
+  await render();
+  expect(await axeViolations(container)).toEqual([]);
 });
