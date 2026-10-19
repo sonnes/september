@@ -346,7 +346,9 @@ this line.
 Undo, Delete, and Clear show their labels, and each name starts with the
 label. They are 48 points high in every tier, in both apps. A gap and a line
 come before Speak, and Speak is the largest key. The mood in use shows its
-name beside its emoji.
+name beside its emoji. The voice keys and Speak are one group at the end of the
+row. When the row wraps, the group goes to the right of the next line, and
+Speak stays at the right end.
 
 Talk restores its device-local draft before mounting the composer. It saves
 each edit through the platform settings service and never clears newer words

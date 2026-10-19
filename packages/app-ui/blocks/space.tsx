@@ -437,8 +437,9 @@ export function Composer({
           <p role="status" className="text-muted-foreground mt-2 text-sm">{note}</p>
         ) : null}
         {/* The row folds in the compact tier, under 560 points: one mood
-            menu key for the five. */}
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            menu key for the five. When the row wraps, the voice keys and
+            Speak go together to the right, and Speak stays at the right end. */}
+        <div className="mt-3 flex flex-wrap items-center gap-3">
           {/* Each key shows its label, and its name starts with that label.
               The edit keys are one scan group, and the voice keys another. */}
           <div role="group" aria-label="Edit" data-scan-group className="flex items-center gap-1.5">
@@ -483,43 +484,44 @@ export function Composer({
             role="group"
             aria-label="Voice"
             data-scan-group
-            className={cn(
-              "flex items-center gap-2",
-              compact === null ? "@max-[35rem]:contents" : compact && "contents",
-            )}
+            className="ml-auto flex flex-wrap items-center justify-end gap-2"
           >
-            {speaks && onMood ? (
-              compact === null ? (
-                <>
-                  <div className="@max-[35rem]:hidden">
-                    <MoodKeys mood={mood} onMood={onMood} />
-                  </div>
-                  <div className="@min-[35rem]:hidden">
-                    <MoodMenu mood={mood} onMood={onMood} keys={false} />
-                  </div>
-                </>
-              ) : compact ? (
-                <MoodMenu mood={mood} onMood={onMood} keys />
-              ) : (
-                <MoodKeys mood={mood} onMood={onMood} />
-              )
-            ) : null}
-            {/* The sound output belongs beside the button that makes a sound.
-                Notes makes none. */}
-            {speaks ? <AudioSelector /> : null}
+            <div className="flex items-center gap-2">
+              {speaks && onMood ? (
+                compact === null ? (
+                  <>
+                    <div className="@max-[35rem]:hidden">
+                      <MoodKeys mood={mood} onMood={onMood} />
+                    </div>
+                    <div className="@min-[35rem]:hidden">
+                      <MoodMenu mood={mood} onMood={onMood} keys={false} />
+                    </div>
+                  </>
+                ) : compact ? (
+                  <MoodMenu mood={mood} onMood={onMood} keys />
+                ) : (
+                  <MoodKeys mood={mood} onMood={onMood} />
+                )
+              ) : null}
+              {/* The sound output belongs beside the button that makes a sound.
+                  Notes makes none. */}
+              {speaks ? <AudioSelector /> : null}
+            </div>
             {/* A gap and a line keep Speak apart from the keys before it, so
                 a near miss does not speak. Speak is the largest key. */}
-            <span aria-hidden className="bg-border mx-1 h-8 w-px shrink-0" />
-            <Button
-              type="button"
-              size="lg"
-              className="min-h-14 rounded-full px-7 text-base font-semibold"
-              onClick={() => act(draft)}
-              aria-disabled={!draft.trim() || pending}
-            >
-              <ActionIcon mode={mode} />
-              {action.label}
-            </Button>
+            <div className="flex items-center gap-2">
+              <span aria-hidden className="bg-border mx-1 h-8 w-px shrink-0" />
+              <Button
+                type="button"
+                size="lg"
+                className="min-h-14 rounded-full px-7 text-base font-semibold"
+                onClick={() => act(draft)}
+                aria-disabled={!draft.trim() || pending}
+              >
+                <ActionIcon mode={mode} />
+                {action.label}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
