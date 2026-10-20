@@ -40,7 +40,7 @@ export function PlatformSection() {
               variant="outline"
               className="h-12 rounded-full border-zinc-400 bg-white px-6 text-base font-semibold"
             >
-              <a href="https://github.com/sonnes/september/releases/download/v0.5.0/September_0.5.0_aarch64.dmg">
+              <a href="https://github.com/sonnes/september/releases/download/v0.6.0/September_0.6.0_aarch64.dmg">
                 Download for Mac
               </a>
             </Button>
