@@ -8,7 +8,7 @@ import {
 } from "react";
 
 import { Link } from "@tanstack/react-router";
-import { Download, ExternalLink, Upload } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, Upload } from "lucide-react";
 
 import {
   AlertDialog,
@@ -364,13 +364,12 @@ export function ConnectionScreen({ provider }: { provider: ConnectionId }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <nav className="text-muted-foreground text-sm">
-        <Link to="/settings" className="hover:text-foreground">
-          ← Back
+      <Button asChild variant="ghost" size="lg" className="-ml-4 self-start">
+        <Link to="/settings">
+          <ArrowLeft aria-hidden="true" />
+          All settings
         </Link>
-        <span aria-hidden="true"> / </span>
-        <span className="text-foreground font-medium">{guide.name}</span>
-      </nav>
+      </Button>
 
       <Title title={guide.name} description={guide.lede} />
 

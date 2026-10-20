@@ -422,6 +422,9 @@ The OpenRouter connection control in `blocks/services.tsx` starts platform
 OAuth, shows pending or failed authorization, and cancels when the screen
 closes. ElevenLabs retains its API-key field.
 
+`ConnectionScreen` in `pages/settings.tsx` shows the steps to connect one
+service. Its first key is All settings, which goes back to Settings.
+
 The ElevenLabs connection area links to its Impact Program in setup and
 Settings, whether or not a key is already connected. The link opens in the browser.
 
