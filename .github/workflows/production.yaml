@@ -4,11 +4,14 @@ on:
   push:
     branches:
       - main
-    # The web app and the workspace packages it renders are the only sources
-    # that change the deployed site.
+    # The sources that change the deployed site. The desktop version sets the
+    # download link.
     paths:
       - 'apps/web/**'
+      - 'apps/desktop/package.json'
       - 'packages/**'
+      - 'vite.shared.ts'
+      - 'tsconfig.base.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'

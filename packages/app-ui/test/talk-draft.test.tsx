@@ -114,6 +114,42 @@ describe('the unfinished words of Talk', () => {
     expect(container.querySelector('textarea')?.value).toBe('next thought');
     await vi.waitFor(() => expect(rows.settings.get(talkDraftKey(space.id))).toBe('next thought'));
   });
+
+  it('keeps the words and says so when the store refuses the message', async () => {
+    await finishSetup();
+    addSpace('Family');
+    vi.mocked(platform.store.putMessage).mockRejectedValueOnce(new Error('disk full'));
+
+    const { container } = await renderApp('/spaces/family/talk');
+    await typeInto(await field(container), 'hello');
+    await press(await speakKey(container));
+
+    await vi.waitFor(() => expect(container.textContent).toMatch(/could not save the message/i));
+    expect(rows.messages.size).toBe(0);
+    expect(container.querySelector('textarea')?.value).toBe('hello');
+  });
+
+  it('says so when the store refuses to keep a phrase', async () => {
+    await finishSetup();
+    const space = addSpace('Family');
+    rows.phrases.set('p1', {
+      id: 'p1',
+      space_id: space.id,
+      text: 'Could I get a glass of water',
+      kind: 'phrase',
+      pinned: false,
+      created_at: 1,
+      updated_at: 1,
+    });
+    vi.mocked(platform.store.putPhrase).mockRejectedValueOnce(new Error('disk full'));
+
+    const { container } = await renderApp('/spaces/family/talk');
+    await typeInto(await field(container), 'Could');
+    await press(await findButton('Keep this phrase', container));
+
+    await vi.waitFor(() => expect(container.textContent).toMatch(/could not keep the phrase/i));
+    expect(rows.phrases.get('p1')?.pinned).toBe(false);
+  });
 });
 
 describe('the mood of a Talk space', () => {

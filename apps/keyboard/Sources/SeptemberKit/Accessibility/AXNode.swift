@@ -12,8 +12,7 @@ public struct AXNode: Equatable, Sendable, Identifiable {
     public let value: String?
     /// The element the app has focused — the one keystrokes reach.
     public let isFocused: Bool
-    /// The children that were read. The reader reads them only on the path to
-    /// the focused element.
+    /// The children that were read. An element with none read shows shut.
     public let children: [AXNode]
     /// How many children the element has, read or not.
     public let childCount: Int
@@ -68,39 +67,26 @@ public struct AXTree: Equatable, Sendable {
     /// The most rows the viewer shows.
     public static let rowLimit = 400
 
-    /// The rows in depth-first order. Only the branch that leads to the focused
-    /// element opens. Every other row is shut and shows a count of its
-    /// children.
+    /// The rows in depth-first order. An element is open when its children
+    /// were read. Every row shows a count of the children it does not show.
     public func rows(limit: Int = AXTree.rowLimit) -> [AXTreeRow] {
         guard let root else { return [] }
         var rows: [AXTreeRow] = []
         var stack = [(node: root, depth: 0)]
         while let (node, depth) = stack.popLast(), rows.count < limit {
-            // The root opens so the app is never a dead end; below it, only
-            // ancestors of the focused element do.
-            let isExpanded = !node.children.isEmpty && (depth == 0 || node.leadsToFocus)
             rows.append(
                 AXTreeRow(
                     node: node,
                     depth: depth,
-                    isExpanded: isExpanded,
-                    hiddenChildren: node.childCount - (isExpanded ? node.children.count : 0)
+                    isExpanded: !node.children.isEmpty,
+                    hiddenChildren: node.childCount - node.children.count
                 )
             )
-            guard isExpanded else { continue }
             for child in node.children.reversed() {
                 stack.append((child, depth + 1))
             }
         }
         return rows
-    }
-}
-
-extension AXNode {
-    /// True when the focused element is somewhere below this one — the test for
-    /// whether a branch should be open.
-    var leadsToFocus: Bool {
-        children.contains { $0.isFocused || $0.leadsToFocus }
     }
 }
 
@@ -120,4 +106,33 @@ public struct AXTreeRow: Equatable, Sendable, Identifiable {
     }
 
     public var id: Int { node.id }
+
+    /// The arrow before the role.
+    public enum Disclosure: Equatable, Sendable {
+        case open
+        case shut
+        case none
+    }
+
+    public var disclosure: Disclosure {
+        if isExpanded { return .open }
+        return hiddenChildren > 0 ? .shut : .none
+    }
+
+    /// One line for VoiceOver: focus, the element, and what the row holds back.
+    public var spokenLabel: String {
+        var parts: [String] = []
+        if node.isFocused { parts.append("Focused") }
+        parts.append(node.spokenDescription)
+        switch disclosure {
+        case .open:
+            parts.append("open")
+            if hiddenChildren > 0 { parts.append("\(hiddenChildren) more not shown") }
+        case .shut:
+            parts.append("\(hiddenChildren) hidden")
+        case .none:
+            break
+        }
+        return parts.joined(separator: ", ")
+    }
 }

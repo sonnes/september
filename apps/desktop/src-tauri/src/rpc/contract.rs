@@ -8,13 +8,12 @@ use super::*;
 use crate::{
     apfel::ApfelStatus,
     audio::{AudioDevice, VirtualMicrophoneStatus},
-    providers::{ElevenLabsQuota, Provider, ProviderStatus, Voice},
+    providers::{CreatedVoice, ElevenLabsQuota, Provider, ProviderStatus, Voice},
     proxy::Endpoint,
 };
 
-/// The commands that `Commands` does not type: one takes a channel, and one
-/// takes raw bytes through `callRaw`.
-const UNTYPED: [&str; 2] = ["gaze_start", "provider_clone_voice"];
+/// The command that `Commands` does not type, because it takes a channel.
+const UNTYPED: &str = "gaze_start";
 
 fn examples() -> Value {
     serde_json::from_str(include_str!("../../../contract/commands.json")).unwrap()
@@ -71,7 +70,7 @@ fn every_command_has_an_example() {
     let examples = examples();
     let handlers = handlers();
     for name in &handlers {
-        if !UNTYPED.contains(name) {
+        if *name != UNTYPED {
             assert!(examples.get(name).is_some(), "{name} has no example");
         }
     }
@@ -261,6 +260,7 @@ fn the_answers_carry_the_names_the_webview_reads() {
             is_owner: Some(true),
         }],
     );
+    answers("provider_clone_voice", CreatedVoice { id: "v1".into() });
     answers(
         "provider_quota",
         ElevenLabsQuota {

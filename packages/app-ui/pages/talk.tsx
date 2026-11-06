@@ -111,6 +111,11 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
   useEffect(() => setPageInput(0), [newest]);
 
   const keep = usePinPhrase(space.id);
+  const saveProblem = send.isError
+    ? "Could not save the message to history."
+    : keep.failed
+      ? "Could not keep the phrase."
+      : null;
 
   // The voice starts at once. The composer holds the text until local storage
   // accepts the message, so a failed write loses no words.
@@ -295,9 +300,9 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
             onTypedKey={() => {
               keysTyped.current += 1;
             }}
-            onPin={keep}
+            onPin={keep.pin}
             pending={send.isPending}
-            note={fallback ?? moodProblem ?? undefined}
+            note={fallback ?? moodProblem ?? saveProblem ?? undefined}
             mood={mood}
             onMood={chooseMood}
             suggestions={!transcript}

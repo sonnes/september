@@ -68,7 +68,8 @@ Run `pnpm apfel:prepare` from `apps/desktop` to prepare only the sidecar.
 
 ## Show the panel
 
-`tauri.conf.json` creates one window, `panel`. It starts hidden, and the UI
+The app has one window, `panel`. `tauri.conf.json` holds its settings with
+`create: false`, and `create_panel` builds it. It starts hidden, and the UI
 shows it at boot.
 
 | Label   | Size     | Minimum | Other                                                                     |
@@ -530,7 +531,8 @@ refused tap is silent and reports nothing. The message names the one setting
 that mends it.
 
 Both native voices wait for the audio engine to play their final buffer, not on
-a clock. `speech_native_stop` stops the engine and releases that wait.
+a clock. `speech_native_stop` stops the player node, keeps the engine, and releases that
+wait.
 
 ## Stream the eye-tracker test bed
 

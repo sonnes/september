@@ -821,5 +821,11 @@
   "gaze_stop": {
     "args": null,
     "result": null
+  },
+  "provider_clone_voice": {
+    "args": null,
+    "result": {
+      "id": "v1"
+    }
   }
 }

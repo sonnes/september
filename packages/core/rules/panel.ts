@@ -86,3 +86,8 @@ export function moodForKey(key: string): MoodKey | null | undefined {
   const index = /^[1-9]$/.test(key) ? Number(key) - 1 : -1;
   return MOODS[index]?.key;
 }
+
+/** The keys that choose a mood, such as ⌃1, or ⌃0 for no mood. */
+export function moodKeyLabel(mood: MoodKey | null): string {
+  return `⌃${mood === null ? 0 : MOODS.findIndex((one) => one.key === mood) + 1}`;
+}

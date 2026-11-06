@@ -21,8 +21,6 @@ export interface AIUsage {
   generation_type: GenerationFeature;
   provider: "apple" | "openrouter";
   model: string;
-  input_length: number;
-  output_length: number;
   input_tokens: number;
   output_tokens: number;
   latency_ms: number;
@@ -39,7 +37,6 @@ export interface TtsUsage {
   voice_id?: string;
   text_length: number;
   credits?: number;
-  duration_seconds: number;
   latency_ms: number;
   success: boolean;
   cached: boolean;

@@ -12,7 +12,7 @@ final class FloatingPanel: NSPanel {
         case bottomRight
     }
 
-    var placement: Placement
+    private(set) var placement: Placement
 
     private let hosting: NSHostingView<AnyView>
     /// Distance from the screen's visible edges, the same on every side.
@@ -53,10 +53,11 @@ final class FloatingPanel: NSPanel {
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
 
-    /// Swaps the content when the layout changes size — the permission banner
-    /// appearing, for instance.
-    func update(root: AnyView, contentSize: CGSize) {
+    /// Swaps the content and moves the panel. The layout changes size when the
+    /// permission banner appears, for instance.
+    func update(root: AnyView, contentSize: CGSize, placement: Placement) {
         hosting.rootView = root
+        self.placement = placement
         setContentSize(contentSize)
         position()
     }

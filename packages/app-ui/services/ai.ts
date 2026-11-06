@@ -35,7 +35,6 @@ export interface GenerateMessage {
 export interface GenerateRequest {
   messages: GenerateMessage[];
   temperature?: number;
-  max_tokens?: number;
   response_format?: { type: "json_object" };
 }
 
@@ -186,10 +185,6 @@ export async function generate(
   if (!service) throw new Error("AI Assistance is not set up.");
 
   const started = Date.now();
-  const inputLength = request.messages.reduce(
-    (total, message) => total + message.content.length,
-    0,
-  );
   const requested = requestedModel(options.feature);
   let answered: {
     text: string;
@@ -208,7 +203,6 @@ export async function generate(
         apiKey: key,
         signal: options.signal,
         ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
-        ...(request.max_tokens === undefined ? {} : { maxTokens: request.max_tokens }),
         onPayload: (payload) => shapePayload(payload, { responseFormat: request.response_format }),
       },
     );
@@ -225,8 +219,6 @@ export async function generate(
       generation_type: options.feature,
       provider: service,
       model: requested,
-      input_length: inputLength,
-      output_length: 0,
       input_tokens: 0,
       output_tokens: 0,
       latency_ms: Date.now() - started,
@@ -242,8 +234,6 @@ export async function generate(
     generation_type: options.feature,
     provider: service,
     model: answered.model,
-    input_length: inputLength,
-    output_length: answered.text.length,
     input_tokens: answered.promptTokens,
     output_tokens: answered.completionTokens,
     latency_ms: Date.now() - started,
@@ -269,17 +259,11 @@ export async function openAgentWriter(): Promise<AgentWriter> {
   const requested = requestedModel("agent");
   const { models: all, model, priced, key } = await modelFor(requested, service);
   let asked = 0;
-  let sent = 0;
 
   return {
     model,
     stream: (picked, context: Context, options) => {
       asked = Date.now();
-      sent = (context.messages ?? []).reduce(
-        (total, message) =>
-          total + (typeof message.content === "string" ? message.content.length : 0),
-        0,
-      );
       return all.streamSimple(picked, context, {
         ...options,
         apiKey: key,
@@ -296,8 +280,6 @@ export async function openAgentWriter(): Promise<AgentWriter> {
         generation_type: "agent",
         provider: service,
         model: named,
-        input_length: sent,
-        output_length: failed ? 0 : message.usage.output,
         input_tokens: message.usage.input,
         output_tokens: message.usage.output,
         latency_ms: Date.now() - asked,

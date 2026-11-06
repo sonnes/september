@@ -18,12 +18,13 @@ import { useVoiceCloneDraft, VoiceCloneForm } from "@september/app-ui/blocks/voi
 import { VoicePicker } from "@september/app-ui/blocks/voice-picker";
 
 /**
- * The voice screen: which voice speaks, and making one of your own.
+ * The voice screen: which service and which voice speak, and making a voice
+ * of your own.
  *
- * The service, the model, and the sliders moved into the Voice tab of the
- * rail beside a space, where a change is heard next to the sentence being
- * written. The voices stayed here: an account holds a hundred of them, each
- * one worth hearing before it is chosen, and that list wants a whole screen.
+ * The model and the sliders are in the Voice tab of the rail beside a space,
+ * where the user hears a change next to the sentence being written. The
+ * voices are here: an account holds a hundred of them, each one worth hearing
+ * before it is chosen, and that list wants a whole screen.
  */
 export function VoiceScreen() {
   const speech = useSpeechSettings();

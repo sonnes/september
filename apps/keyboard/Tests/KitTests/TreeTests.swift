@@ -40,33 +40,29 @@ struct TreeTests {
         #expect(rows.map(\.depth) == [0, 1, 2, 3, 1])
     }
 
-    @Test func `only the branch holding the focused element is open`() throws {
-        // The menu bar is a sibling of the focused window: it stays shut.
+    @Test func `an element is open exactly when its children were read`() throws {
         let rows = tree.rows()
-        let menuBar = rows.first { $0.node.role == "AXMenuBar" }
-        #expect(menuBar != nil)
-        #expect(menuBar?.isExpanded == false)
-
         let window = rows.first { $0.node.role == "AXWindow" }
-        #expect(window?.isExpanded == true, "an ancestor of the focused element is open")
+        #expect(window?.isExpanded == true)
+
+        let menuBar = rows.first { $0.node.role == "AXMenuBar" }
+        #expect(menuBar?.isExpanded == false)
     }
 
-    @Test func `a collapsed element says how much it is hiding`() throws {
-        let collapsed = AXTree(
-            appName: "Big",
-            root: node(
-                0, "AXApplication",
-                children: [node(1, "AXGroup", children: (2...5).map { node($0, "AXButton") })]))
-        let group = collapsed.rows().first { $0.node.role == "AXGroup" }
-        #expect(group?.hiddenChildren == 4)
-        #expect(collapsed.rows().count == 2, "the group's children stay hidden")
-    }
-
-    @Test func `a shut element counts the children that were never read`() throws {
+    @Test func `an element with unread children is shut and counts them`() throws {
         let unread = AXTree(
             appName: "App",
-            root: node(0, "AXApplication", children: [node(1, "AXGroup", childCount: 7)]))
-        #expect(unread.rows().last?.hiddenChildren == 7)
+            root: node(
+                0, "AXApplication",
+                children: [
+                    node(1, "AXGroup", childCount: 7),
+                    node(2, "AXTextArea", focused: true, childCount: 1),
+                ]))
+        let rows = unread.rows()
+        #expect(rows.map(\.node.id) == [0, 1, 2])
+        #expect(rows.map(\.isExpanded) == [true, false, false])
+        #expect(rows.map(\.hiddenChildren) == [0, 7, 1])
+        #expect(rows.map(\.disclosure) == [.open, .shut, .shut])
     }
 
     @Test func `an open element counts the children it skipped`() throws {
@@ -78,27 +74,20 @@ struct TreeTests {
         let window = partial.rows().first { $0.node.role == "AXWindow" }
         #expect(window?.isExpanded == true)
         #expect(window?.hiddenChildren == 49)
+        #expect(window?.disclosure == .open, "skipped children do not shut an open element")
+        #expect(window?.spokenLabel.contains("open") == true)
+        #expect(window?.spokenLabel.contains("49") == true)
     }
 
-    @Test func `the focused element's own children stay shut, it is the leaf we care about`() throws {
-        let deep = AXTree(
-            appName: "App",
-            root: node(
-                0, "AXApplication",
-                children: [
-                    node(1, "AXTextArea", focused: true, children: [node(2, "AXStaticText")])
-                ]))
-        #expect(deep.rows().map(\.node.id) == [0, 1])
-        #expect(deep.rows().last?.hiddenChildren == 1)
+    @Test func `a shut element tells VoiceOver how many children it hides`() throws {
+        let row = AXTreeRow(node: node(1, "AXGroup", childCount: 7), depth: 1, isExpanded: false, hiddenChildren: 7)
+        #expect(row.spokenLabel.contains("7"))
+        #expect(!row.spokenLabel.contains("open"))
     }
 
-    @Test func `with nothing focused only the top level shows`() throws {
-        let unfocused = AXTree(
-            appName: "App",
-            root: node(
-                0, "AXApplication",
-                children: [node(1, "AXWindow", children: [node(2, "AXGroup")])]))
-        #expect(unfocused.rows().map(\.node.id) == [0, 1])
+    @Test func `an element with no children has no arrow`() throws {
+        let row = AXTreeRow(node: node(1, "AXButton"), depth: 1, isExpanded: false, hiddenChildren: 0)
+        #expect(row.disclosure == .none)
     }
 
     @Test func `an element with an empty title is labelled by its description`() {

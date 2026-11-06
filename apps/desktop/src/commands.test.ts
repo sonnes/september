@@ -1,7 +1,8 @@
 /**
  * The contract between `Commands` and the Rust commands.
  *
- * `Commands` types each example below, so a change to a type fails the build.
+ * `Commands` and `RawCommands` type each example below, so a change to a type
+ * fails the build.
  * The same examples are in `contract/commands.json`. The Rust tests in
  * `src-tauri/src/rpc/contract.rs` read that file. They fail when a command
  * has no example, when an example names no command, when a request has a
@@ -15,7 +16,7 @@ import { join } from "node:path";
 
 import { expect, it } from "vitest";
 
-import type { Commands } from "./commands";
+import type { Commands, RawCommands } from "./commands";
 
 type Name = Exclude<keyof Commands, "gaze_start">;
 type Example<N extends Name> = {
@@ -180,10 +181,14 @@ const EXAMPLES: { [N in Name]: Example<N> } = {
   gaze_stop: { args: null, result: null },
 };
 
+const RAW_EXAMPLES: { [N in keyof RawCommands]: { args: null; result: RawCommands[N]["result"] } } = {
+  provider_clone_voice: { args: null, result: { id: "v1" } },
+};
+
 const FIXTURE = join(process.cwd(), "contract/commands.json");
 
 it("holds the examples that the Rust tests read", () => {
-  const written = `${JSON.stringify(EXAMPLES, null, 2)}\n`;
+  const written = `${JSON.stringify({ ...EXAMPLES, ...RAW_EXAMPLES }, null, 2)}\n`;
   if (process.env.UPDATE_CONTRACT) writeFileSync(FIXTURE, written);
   expect(readFileSync(FIXTURE, "utf8")).toBe(written);
 });

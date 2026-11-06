@@ -111,7 +111,7 @@ The loop uses three hooks of the `Agent`:
 - `rules/keymap.ts` holds the keyboard shortcuts. A screen reads the label and the `aria-keyshortcuts` value from the binding that it handles.
 - `rules/spaces.ts` holds the space slugs, the remembered space mode, new spaces, and the Talk transcript pages. The remembered mode is keyed by space ID, and `spaceModesById` moves a mode kept by slug to the ID of its space. `byRecent` puts the space changed last first. See `docs/concepts/space-navigation.md`.
 - `rules/note-document.ts` holds the line rules of the note editor. The note stays plain Markdown. See `docs/concepts/space-notes.md`.
-- `rules/panel.ts` holds the Phrases and Voice tabs of the space rail, and reads the stored tab and open state. `tierFor` gives the width tier of the floating panel.
+- `rules/panel.ts` holds the Phrases and Voice tabs of the space rail, and reads the stored tab and open state. `tierFor` gives the width tier of the floating panel. `moodForKey` reads the digit of a Control key press as a mood, and `moodKeyLabel` gives the label of that key.
 - `rules/spoken-word.ts` finds the word that a voice reads. See `docs/concepts/spoken-word.md`.
 - `rules/titles.ts` writes the browser tab title. The part that tells two tabs apart comes first, and the app name comes last.
 

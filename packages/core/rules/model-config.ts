@@ -1,5 +1,5 @@
 /** The jobs that ask a writing model for text. */
-export type GenerationFeature = "suggestions" | "phrases" | "context" | "agent";
+export type GenerationFeature = "suggestions" | "phrases" | "agent";
 
 /** A writing provider and the model selected for it. */
 export interface WritingModelConfig {

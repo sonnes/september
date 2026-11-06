@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { escapeStep, moodForKey, panelStateFrom, pressTab, tierFor } from "./panel.ts";
+import { MOODS } from "./moods.ts";
+import { escapeStep, moodForKey, moodKeyLabel, panelStateFrom, pressTab, tierFor } from "./panel.ts";
 
 describe("panelStateFrom", () => {
   it("starts closed on the phrases when nothing is saved", () => {
@@ -75,6 +76,16 @@ describe("moodForKey", () => {
   it("ignores other keys", () => {
     expect(moodForKey("6")).toBeUndefined();
     expect(moodForKey("a")).toBeUndefined();
+  });
+});
+
+describe("moodKeyLabel", () => {
+  it("shows the Control key and the digit that moodForKey reads", () => {
+    for (const mood of [...MOODS.map((one) => one.key), null]) {
+      const label = moodKeyLabel(mood);
+      expect(label.startsWith("⌃")).toBe(true);
+      expect(moodForKey(label.slice(1))).toBe(mood);
+    }
   });
 });
 

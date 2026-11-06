@@ -96,7 +96,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let root = AnyView(AXTreeView(model: treeModel, permission: permission, height: height))
 
         if let treePanel {
-            treePanel.update(root: root, contentSize: size)
+            treePanel.update(root: root, contentSize: size, placement: .bottomRight)
         } else {
             let treePanel = FloatingPanel(root: root, contentSize: size, placement: .bottomRight)
             treePanel.orderFront(nil)
@@ -147,8 +147,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func refreshPanel() {
         guard let panel else { return }
         let (root, size) = makeRoot()
-        panel.placement = .bottomCenter(rightInset: reservedWidth)
-        panel.update(root: root, contentSize: size)
+        panel.update(root: root, contentSize: size, placement: .bottomCenter(rightInset: reservedWidth))
         // The viewer takes its height from the keyboard beside it.
         showTreePanel(height: size.height)
     }

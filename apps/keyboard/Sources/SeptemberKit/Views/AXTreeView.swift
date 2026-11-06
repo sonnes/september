@@ -110,7 +110,6 @@ private struct AXTreeRowView: View {
         HStack(alignment: .firstTextBaseline, spacing: Metrics.Tree.columnSpacing) {
             Color.clear.frame(width: CGFloat(row.depth) * Metrics.Tree.indent, height: 1)
 
-            // Shut branches say so, and say how much they are holding.
             Text(disclosure)
                 .font(Typography.treeDisclosure)
                 .foregroundStyle(Color(Tokens.sectionLabel))
@@ -148,21 +147,14 @@ private struct AXTreeRowView: View {
                 .fill(row.node.isFocused ? Color(Tokens.selection) : Color.clear)
         )
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(spokenLabel)
+        .accessibilityLabel(row.spokenLabel)
     }
 
     private var disclosure: String {
-        if row.hiddenChildren > 0 { return "▸" }
-        return row.isExpanded ? "▾" : ""
-    }
-
-    private var spokenLabel: String {
-        var parts: [String] = []
-        if row.node.isFocused { parts.append("Focused") }
-        parts.append(row.node.spokenDescription)
-        if row.hiddenChildren > 0 {
-            parts.append("\(row.hiddenChildren) hidden")
+        switch row.disclosure {
+        case .open: "▾"
+        case .shut: "▸"
+        case .none: ""
         }
-        return parts.joined(separator: ", ")
     }
 }

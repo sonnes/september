@@ -45,7 +45,7 @@ const onSpeak = vi.fn();
 /** A composer that holds the draft and shows the rows for it. */
 function Composer({ initial, history = [], mood = null }: { initial: string; history?: string[]; mood?: MoodKey | null }) {
   const [text, setText] = useState(initial);
-  const pin = usePinPhrase('space');
+  const { pin } = usePinPhrase('space');
   return (
     <>
       <input aria-label="Draft" value={text} onChange={event => setText(event.target.value)} />

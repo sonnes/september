@@ -226,15 +226,19 @@ export function usePhrases(spaceId?: string) {
   });
 }
 
-/** Keeps a saved phrase of the stripe, so a regeneration cannot take it away. */
+/**
+ * Keeps a saved phrase of the stripe, so a regeneration cannot take it away.
+ * `failed` is true when the store refused the last pin.
+ */
 export function usePinPhrase(spaceId: string) {
   const { data: phrases } = usePhrases(spaceId);
   const put = usePutPhrase();
-  return (text: string) => {
+  const pin = (text: string) => {
     const key = text.trim().toLowerCase();
     const row = phrases?.find((one) => one.text.trim().toLowerCase() === key);
     if (row && !row.pinned) put.mutate({ ...row, pinned: true });
   };
+  return { pin, failed: put.isError };
 }
 
 export function usePutPhrase() {

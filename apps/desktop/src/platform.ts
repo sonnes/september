@@ -116,7 +116,7 @@ export const platform: Platform = {
     quota: () => call("provider_quota"),
     async cloneVoice(form) {
       const { bytes, contentType } = await rawForm(form);
-      return callRaw<{ id: string }>("provider_clone_voice", bytes, {
+      return callRaw("provider_clone_voice", bytes, {
         "content-type": contentType,
       });
     },

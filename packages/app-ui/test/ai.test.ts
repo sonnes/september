@@ -65,7 +65,7 @@ describe('the writing service', () => {
     );
     await generate(
       { messages: [{ role: 'user', content: 'Describe this space' }] },
-      { feature: 'context' }
+      { feature: 'phrases' }
     );
 
     expect(bodyOf<Body>(request, 0).model).toBe('suggestions/model');
@@ -128,7 +128,7 @@ describe('the writing service', () => {
     await chooseModels({});
     await generate(
       { messages: [{ role: 'user', content: 'Describe this space' }] },
-      { feature: 'context' }
+      { feature: 'phrases' }
     );
     expect(bodyOf<Body>(request, 1).model).toBe('openrouter/free');
   });
@@ -225,7 +225,7 @@ describe('the writing service', () => {
     const request = vi.fn(async () => text('Hello.'));
     vi.stubGlobal('fetch', request);
 
-    await generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'context' });
+    await generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'phrases' });
 
     expect(String((request.mock.calls[0] as unknown[])[0])).toBe('http://127.0.0.1:9/apple/v1/chat/completions');
     expect(bodyOf<Body>(request).model).toBe('apple-foundationmodel');
@@ -238,7 +238,7 @@ describe('the writing service', () => {
     vi.stubGlobal('fetch', request);
 
     await expect(
-      generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'context' })
+      generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'phrases' })
     ).rejects.toThrow('Apple Intelligence is not available on this device.');
     expect(request).not.toHaveBeenCalled();
     expect(lastUsage()).toMatchObject({ provider: 'apple', success: false });
@@ -247,7 +247,7 @@ describe('the writing service', () => {
   it('refuses to write before a service is chosen', async () => {
     await chooseModels({ defaultModel: { service: 'none', model: '' } });
     await expect(
-      generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'context' })
+      generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'phrases' })
     ).rejects.toThrow('AI Assistance is not set up.');
   });
 });

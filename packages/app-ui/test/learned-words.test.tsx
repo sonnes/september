@@ -2,7 +2,7 @@ import { act } from 'react';
 import { beforeEach, expect, it, vi } from 'vitest';
 
 import { Suggestions } from '@september/app-ui/blocks/suggestions';
-import { useDeleteSpace, useSendMessage } from '@september/app-ui/services/data';
+import { useDeleteSpace, usePhrases, useSendMessage } from '@september/app-ui/services/data';
 
 import { rows } from './platform';
 import { addSpace, finishSetup, renderPart } from './render';
@@ -38,13 +38,38 @@ it('stops offering the words of a deleted space', async () => {
   const { container } = await renderPart(<Composer text="zinn" />);
   await vi.waitFor(() => expect(words(container)).toContain('zinnias'));
 
-  // The fake store keeps the rows of a deleted space, and the real stores remove them.
-  rows.messages.delete('m1');
   await act(async () => {
     await deleteSpace('garden');
   });
 
   await vi.waitFor(() => expect(words(container)).not.toContain('zinnias'));
+});
+
+function EveryPhrase() {
+  deleteSpace = useDeleteSpace().mutateAsync;
+  const { data } = usePhrases();
+  return <ul>{data?.map(row => <li key={row.id}>{row.text}</li>)}</ul>;
+}
+
+it('drops the phrases of a deleted space from a list that is open', async () => {
+  addSpace('Garden', { id: 'garden' });
+  rows.phrases.set('p1', {
+    id: 'p1',
+    space_id: 'garden',
+    text: 'Water the zinnias',
+    kind: 'phrase',
+    pinned: true,
+    created_at: 1,
+    updated_at: 1,
+  });
+  const { container } = await renderPart(<EveryPhrase />);
+  await vi.waitFor(() => expect(container.textContent).toContain('Water the zinnias'));
+
+  await act(async () => {
+    await deleteSpace('garden');
+  });
+
+  await vi.waitFor(() => expect(container.textContent).not.toContain('Water the zinnias'));
 });
 
 it('offers a word from a message the user just sent', async () => {

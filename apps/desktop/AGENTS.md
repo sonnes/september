@@ -11,7 +11,7 @@ Use `pnpm` from `apps/desktop/` or with `pnpm -C apps/desktop <script>`.
 | Command               | Purpose                         |
 | --------------------- | ------------------------------- |
 | `pnpm install`        | Install desktop UI dependencies |
-| `pnpm dev`            | Run the UI in a browser         |
+| `pnpm dev`            | Serve the UI to `pnpm tauri:dev` |
 | `pnpm build`          | Type-check and build the UI     |
 | `pnpm test`           | Run Vitest, then `cargo test --lib` |
 | `pnpm tauri:dev`      | Run the desktop application     |

@@ -320,7 +320,8 @@ run without a stop. A delete stops for Approve and Reject, and then asks to
 confirm. A turn that spends its whole write budget stops the same way.
 
 Everything that the person must act on is a card, and everything else is a
-line. A tool line that ran or failed is a folded `details` row. A proposal card shows what a
+line. A run of several tools, or a row with a note, folds into a `details`
+row. A proposal card shows what a
 change replaces beside what it writes. The transcript has one live region. It
 says `Working…` during a turn, then the newest reply. The words of an answer
 that is still being written are `aria-hidden`.

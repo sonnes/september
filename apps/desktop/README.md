@@ -682,8 +682,8 @@ IPC. Rust adds the cached ElevenLabs key and forwards
 the form to the fixed `/v1/voices/add` endpoint. Audio does not become JSON or
 base64, and the key never reaches the WebView.
 
-After creation, the screen selects ElevenLabs and the new voice. It keeps the
-current speech model and refreshes the account voice list. A stale provider
+After creation, the screen selects the new voice. It selects ElevenLabs, or
+keeps Dialogue when Dialogue is in use. It keeps the current speech model and refreshes the account voice list. A stale provider
 list cannot hide the new row while ElevenLabs updates the account. The form
 keeps its fields and samples after an error, and clears them after success.
 Success returns to `/voice`. Leaving the cloning page before success removes
@@ -711,11 +711,23 @@ or later and does not install an audio driver.
 
 ## Release the desktop app
 
-Set `APPLE_TEAM_ID`, `APPLE_SIGNING_IDENTITY`, and
-`APPLE_PROVISIONING_PROFILE` for a signed build. Run `make desktop-release`
-from the repository root to create the distribution DMG. The command loads the
-Apple credentials from the ignored root `.envrc`, notarizes and staples the
+Set these variables in the ignored root `.envrc`:
+
+- `APPLE_TEAM_ID`
+- `APPLE_SIGNING_IDENTITY`
+- `APPLE_PROVISIONING_PROFILE`, the path of the Developer ID provisioning profile
+- `APPLE_API_ISSUER`
+- `APPLE_API_KEY`, the ID of the App Store Connect API key
+- `APPLE_API_KEY_PATH`, the path of that key file
+
+Run `make desktop-release` from the repository root to create the distribution
+DMG. The command loads the Apple credentials from `.envrc`, notarizes and staples the
 DMG, checks it with Gatekeeper, and prints its SHA-256 checksum.
+
+`pnpm tauri:build` signs the app when `APPLE_TEAM_ID` and
+`APPLE_SIGNING_IDENTITY` are set. Then it adds `src-tauri/tauri.signed.conf.json`,
+which puts the provisioning profile in the bundle. Without them, it builds an
+unsigned app.
 
 `package.json` holds the app version. `src-tauri/tauri.conf.json` reads it for
 the bundle, and the DMG name uses it. The crate version in `Cargo.toml` does
@@ -777,8 +789,7 @@ The setup sidebar shows the brand mark. `packages/app-ui/blocks/brand.tsx` reads
 `packages/app-ui/public/logo.svg`, the file the brand publishes.
 
 The name field starts with the name from the operating system. The user can
-change it. In a browser the field starts empty, because the Tauri backend does
-not exist there.
+change it.
 
 ## Connect a service
 

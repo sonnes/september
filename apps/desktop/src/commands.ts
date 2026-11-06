@@ -140,14 +140,19 @@ export async function call<N extends Name>(
   }
 }
 
+/** The commands that take a raw body, with their answers. */
+export interface RawCommands {
+  provider_clone_voice: { result: { id: string } };
+}
+
 /** One call with a raw body, which keeps audio out of JSON. */
-export async function callRaw<T>(
-  name: "provider_clone_voice",
+export async function callRaw<N extends keyof RawCommands>(
+  name: N,
   body: Uint8Array,
   headers: Record<string, string>,
-): Promise<T> {
+): Promise<RawCommands[N]["result"]> {
   try {
-    return await invoke<T>(name, body, { headers });
+    return await invoke<RawCommands[N]["result"]>(name, body, { headers });
   } catch (reason) {
     throw reason instanceof Error ? reason : new Error(String(reason));
   }

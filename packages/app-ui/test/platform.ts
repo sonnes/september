@@ -60,7 +60,15 @@ function storeDefaults(): PlatformStore {
       rows.spaces.set(next.id, next);
       return next;
     },
-    deleteSpace: async id => remove(rows.spaces, id),
+    deleteSpace: async id => {
+      if (!rows.spaces.has(id)) return false;
+      rows.spaces.delete(id);
+      const maps: Map<string, { id: string; space_id?: string }>[] = [rows.messages, rows.agentMessages, rows.notes, rows.phrases];
+      for (const map of maps) {
+        for (const row of inSpace(map, id)) map.delete(row.id);
+      }
+      return true;
+    },
     listMessages: async spaceId => inSpace(rows.messages, spaceId),
     getMessage: async id => rows.messages.get(id) ?? null,
     putMessage: async message => (rows.messages.set(message.id, message), message),
