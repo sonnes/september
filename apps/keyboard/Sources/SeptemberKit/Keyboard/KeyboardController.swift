@@ -27,6 +27,10 @@ public final class KeyboardController: ObservableObject {
     @Published public private(set) var isFieldPrivate = false
     /// Where private text buttons keep their text.
     public var privateTexts: any PrivateTextStore = KeychainPrivateTextStore()
+    /// In Talk mode, the keys type into `talk` and the app in front gets no
+    /// events.
+    @Published public var mode: KeyboardMode = .type
+    public let talk = TalkSession()
 
     public let panels: PanelStore
 
@@ -49,6 +53,7 @@ public final class KeyboardController: ObservableObject {
     // MARK: - Pressing keys
 
     public func press(_ key: KeyDefinition) {
+        if mode == .talk { return talk.press(key, modifiers: &modifiers) }
         switch key.action {
         case .modifier(let modifier):
             modifiers.tap(modifier)
@@ -60,6 +65,7 @@ public final class KeyboardController: ObservableObject {
     }
 
     public func perform(_ action: PanelAction) {
+        if mode == .talk { return talk.perform(action, modifiers: &modifiers) }
         switch action {
         case .shortcut(let shortcut):
             post(shortcut)
