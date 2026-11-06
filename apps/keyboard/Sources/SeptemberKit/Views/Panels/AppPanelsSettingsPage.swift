@@ -10,13 +10,17 @@ public struct AppPanelsSettingsPage: View {
     @ObservedObject private var usage: UsageStore
     @ObservedObject private var learner: ShortcutLearner
     @ObservedObject private var settings: AppPanelSettings
+    @ObservedObject private var inputMonitoring: InputMonitoringStatus
     @State private var selection: String?
 
-    public init(model: AppPanelModel) {
+    /// - Parameter inputMonitoring: whether macOS lets the keyboard listen to
+    ///   the hardware keyboard.
+    public init(model: AppPanelModel, inputMonitoring: InputMonitoringStatus = InputMonitoringStatus()) {
         self.model = model
         usage = model.usage
         learner = model.learner
         settings = model.settings
+        self.inputMonitoring = inputMonitoring
     }
 
     public var body: some View {
@@ -39,6 +43,16 @@ public struct AppPanelsSettingsPage: View {
                         isOn: Binding(
                             get: { settings.isLearningOn(app.bundleID) },
                             set: { model.setLearningOn($0, for: app.bundleID) }))
+                }
+            }
+
+            if !inputMonitoring.isAllowed {
+                Section {
+                    Text(
+                        "Learning from the hardware keyboard is off. The keyboard learns only the shortcuts that you press with its own keys. To learn from the hardware keyboard, allow Keyboard in Input Monitoring, then quit and open Keyboard again."
+                    )
+                    .foregroundStyle(.secondary)
+                    Button("Open Input Monitoring Settings") { inputMonitoring.openSettings() }
                 }
             }
 

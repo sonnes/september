@@ -1,17 +1,22 @@
 import SwiftUI
 
-/// The QWERTY block: six rows filling the keyboard width.
-public struct MainKeyboardView: View {
+/// The QWERTY block: six rows filling the keyboard width, under an optional
+/// header such as the word completions.
+public struct MainKeyboardView<Header: View>: View {
     @EnvironmentObject private var controller: KeyboardController
 
     private let width: CGFloat
+    private let header: Header
 
-    public init(width: CGFloat = Metrics.keyboardWidth) {
+    public init(width: CGFloat = Metrics.keyboardWidth, @ViewBuilder header: () -> Header) {
         self.width = width
+        self.header = header()
     }
 
     public var body: some View {
         VStack(spacing: Metrics.rowSpacing) {
+            header
+                .frame(width: width)
             ForEach(KeyboardLayout.rows) { row in
                 rowView(row)
             }
@@ -56,5 +61,11 @@ public struct MainKeyboardView: View {
     private func isActive(_ key: KeyDefinition) -> Bool {
         guard case .modifier(let modifier) = key.action else { return false }
         return controller.modifiers.active.contains(modifier)
+    }
+}
+
+extension MainKeyboardView where Header == EmptyView {
+    public init(width: CGFloat = Metrics.keyboardWidth) {
+        self.init(width: width) { EmptyView() }
     }
 }

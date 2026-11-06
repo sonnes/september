@@ -9,8 +9,13 @@ import SwiftUI
 /// edit.
 public struct InputBar: View {
     @EnvironmentObject private var controller: KeyboardController
+    private let spokenWord: NSRange?
 
-    public init() {}
+    /// - Parameter spokenWord: during speech, the UTF-16 range of the current
+    ///   word in the text of the bar.
+    public init(spokenWord: NSRange? = nil) {
+        self.spokenWord = spokenWord
+    }
 
     public var body: some View {
         HStack(spacing: Metrics.Input.spacing) {
@@ -18,39 +23,11 @@ public struct InputBar: View {
                 .font(Typography.inputIcon)
                 .foregroundStyle(Color(Tokens.labelSecondary))
 
-            switch controller.input {
-            case .secure:
-                Text(
-                    controller.isFieldPrivate
-                        ? "Private text in this field. The keyboard does not show it."
-                        : "Password field — hidden")
-                    .font(Typography.inputPlaceholder)
-                    .foregroundStyle(Color(Tokens.dualSecondary))
+            if let spokenWord, !controller.input.isEmpty {
+                SpokenText(controller.input.text, word: spokenWord)
                 Spacer(minLength: 0)
-            case .local(let text):
-                HStack(spacing: Metrics.Input.caretGap) {
-                    Line(text)
-                        .truncationMode(.head)
-                    Caret()
-                    Spacer(minLength: 0)
-                }
-            case .mirrored(let text, let caret, let selectionLength):
-                let parts = InputMirror.split(text, caret: caret, selectionLength: selectionLength)
-                HStack(spacing: 0) {
-                    Line(parts.before)
-                        .truncationMode(.head)
-                        .layoutPriority(1)
-                    if parts.selected.isEmpty {
-                        Caret()
-                    } else {
-                        Line(parts.selected)
-                            .background(Color(Tokens.selection))
-                            .layoutPriority(1)
-                    }
-                    Line(parts.after)
-                        .truncationMode(.tail)
-                    Spacer(minLength: 0)
-                }
+            } else {
+                mirror
             }
 
             if case .local(let text) = controller.input, !text.isEmpty {
@@ -78,6 +55,46 @@ public struct InputBar: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityValue(controller.input.isEmpty ? "empty" : controller.input.text)
+    }
+
+    /// The field with its caret and selection, the echo, or the notice of a
+    /// hidden field.
+    @ViewBuilder
+    private var mirror: some View {
+        switch controller.input {
+        case .secure:
+            Text(
+                controller.isFieldPrivate
+                    ? "Private text in this field. The keyboard does not show it."
+                    : "Password field — hidden")
+                .font(Typography.inputPlaceholder)
+                .foregroundStyle(Color(Tokens.dualSecondary))
+            Spacer(minLength: 0)
+        case .local(let text):
+            HStack(spacing: Metrics.Input.caretGap) {
+                Line(text)
+                    .truncationMode(.head)
+                Caret()
+                Spacer(minLength: 0)
+            }
+        case .mirrored(let text, let caret, let selectionLength):
+            let parts = InputMirror.split(text, caret: caret, selectionLength: selectionLength)
+            HStack(spacing: 0) {
+                Line(parts.before)
+                    .truncationMode(.head)
+                    .layoutPriority(1)
+                if parts.selected.isEmpty {
+                    Caret()
+                } else {
+                    Line(parts.selected)
+                        .background(Color(Tokens.selection))
+                        .layoutPriority(1)
+                }
+                Line(parts.after)
+                    .truncationMode(.tail)
+                Spacer(minLength: 0)
+            }
+        }
     }
 
     private var leadingSymbol: String {

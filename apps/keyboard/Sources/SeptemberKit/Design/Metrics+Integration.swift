@@ -41,3 +41,9 @@ extension Metrics {
         public static let modeBorderOn: CGFloat = 2
     }
 }
+
+extension Metrics.AppPanel {
+    /// The height of the grid of six rows. Mine and a message in place of a
+    /// panel take the same height, so the window does not change size.
+    public static let gridHeight: CGFloat = buttonHeight * CGFloat(rows) + gap * CGFloat(rows - 1)
+}

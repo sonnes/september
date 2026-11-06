@@ -68,17 +68,21 @@ public struct AppShortcutsView: View {
     private let panel: PanelDefinition
     private let appName: String?
     private let width: CGFloat
+    private let showsHeader: Bool
     private let press: (PanelAction) -> Void
 
+    /// - Parameter showsHeader: false when tabs above the grid name the panel.
     public init(
         panel: PanelDefinition,
         appName: String?,
         width: CGFloat = Metrics.AppPanel.width,
+        showsHeader: Bool = true,
         press: @escaping (PanelAction) -> Void
     ) {
         self.panel = panel
         self.appName = appName
         self.width = width
+        self.showsHeader = showsHeader
         self.press = press
     }
 
@@ -88,7 +92,7 @@ public struct AppShortcutsView: View {
         let rows = AppPanelLayout.rows(AppPanelLayout.fitting(panel.buttons))
 
         VStack(alignment: .leading, spacing: gap) {
-            header
+            if showsHeader { header }
             ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                 HStack(spacing: gap) {
                     ForEach(row) { button in

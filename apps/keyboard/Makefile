@@ -74,6 +74,9 @@ snapshots:
 	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/keyboard-rainbow.png"
 	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/keyboard-mono.png" --mono
 	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/keyboard-light.png" --light
+	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/keyboard-talk.png" --talk
+	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/keyboard-write.png" --write
+	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/keyboard-mine.png" --mine
 	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/component-library.png" --gallery
 	swift run Keyboard --snapshot "$(SNAPSHOT_DIR)/tree-viewer.png" --viewer
 

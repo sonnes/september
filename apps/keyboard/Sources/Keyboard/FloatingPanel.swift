@@ -10,6 +10,9 @@ final class FloatingPanel: NSPanel {
         /// Centred in the space left over once `rightInset` is reserved.
         case bottomCenter(rightInset: CGFloat)
         case bottomRight
+        /// Where the app or the user put it. A new size keeps the bottom left
+        /// corner.
+        case free
     }
 
     var placement: Placement = .bottomCenter(rightInset: 0) {
@@ -61,12 +64,14 @@ final class FloatingPanel: NSPanel {
         position()
     }
 
+    /// The screen that holds the pointer: the one the user looks at.
+    static var activeScreen: NSScreen? {
+        NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }) ?? NSScreen.main
+    }
+
     /// Sit just above the bottom edge of the screen holding the pointer.
     func position() {
-        guard
-            let screen = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) })
-                ?? NSScreen.main
-        else { return }
+        guard let screen = FloatingPanel.activeScreen else { return }
         let visible = screen.visibleFrame
 
         let x: CGFloat
@@ -75,6 +80,8 @@ final class FloatingPanel: NSPanel {
             x = (visible.minX + visible.maxX - rightInset) / 2 - frame.width / 2
         case .bottomRight:
             x = visible.maxX - frame.width - FloatingPanel.margin
+        case .free:
+            return
         }
         setFrameOrigin(NSPoint(x: x, y: visible.minY + FloatingPanel.margin))
     }
