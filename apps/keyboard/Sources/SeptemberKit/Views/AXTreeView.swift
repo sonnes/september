@@ -27,7 +27,7 @@ public struct AXTreeView: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: Metrics.Tree.spacing) {
             header
 
             if !permission.isTrusted {
@@ -45,7 +45,7 @@ public struct AXTreeView: View {
                 }
             }
         }
-        .padding(12)
+        .padding(Metrics.Tree.padding)
         .frame(width: Metrics.treeViewerWidth, height: height, alignment: .topLeading)
         .panelSurface()
         .accessibilityElement(children: .contain)
@@ -55,21 +55,21 @@ public struct AXTreeView: View {
     /// Not lazy: the tree is capped at a few hundred rows anyway, and a lazy
     /// stack renders as nothing when the window is snapshotted.
     private var rows: some View {
-        VStack(alignment: .leading, spacing: 1) {
+        VStack(alignment: .leading, spacing: Metrics.Tree.rowGap) {
             ForEach(model.tree.rows()) { row in
                 AXTreeRowView(row: row)
             }
             Spacer(minLength: 0)
         }
-        .padding(.bottom, 8)
+        .padding(.bottom, Metrics.Tree.listBottom)
     }
 
     private var header: some View {
-        HStack(spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
+        HStack(spacing: Metrics.Tree.headerSpacing) {
+            VStack(alignment: .leading, spacing: Metrics.Tree.titleSpacing) {
                 SectionLabel(text: "ACCESSIBILITY TREE")
                 Text(model.tree.appName.isEmpty ? "—" : model.tree.appName)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(Typography.treeTitle)
                     .foregroundStyle(Color(Tokens.keyText))
                     .lineLimit(1)
             }
@@ -78,9 +78,9 @@ public struct AXTreeView: View {
                 model.onRefresh?()
             } label: {
                 Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(Typography.treeRefreshIcon)
                     .foregroundStyle(Color(Tokens.labelSecondary))
-                    .frame(width: 28, height: 28)
+                    .frame(width: Metrics.Tree.refreshButton, height: Metrics.Tree.refreshButton)
                     .background(Circle().fill(Color(Tokens.key)))
                     .overlay(Circle().strokeBorder(Color(Tokens.strokeStandard), lineWidth: 1))
             }
@@ -91,7 +91,7 @@ public struct AXTreeView: View {
 
     private func message(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 12))
+            .font(Typography.treeMessage)
             .foregroundStyle(Color(Tokens.dualSecondary))
             .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -102,44 +102,44 @@ private struct AXTreeRowView: View {
     let row: AXTreeRow
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Color.clear.frame(width: CGFloat(row.depth) * 10, height: 1)
+        HStack(alignment: .firstTextBaseline, spacing: Metrics.Tree.columnSpacing) {
+            Color.clear.frame(width: CGFloat(row.depth) * Metrics.Tree.indent, height: 1)
 
             // Shut branches say so, and say how much they are holding.
             Text(disclosure)
-                .font(.system(size: 8))
+                .font(Typography.treeDisclosure)
                 .foregroundStyle(Color(Tokens.sectionLabel))
-                .frame(width: 6, alignment: .leading)
+                .frame(width: Metrics.Tree.disclosureWidth, alignment: .leading)
 
             Text(row.node.role)
-                .font(.system(size: 11, weight: row.node.isFocused ? .semibold : .regular, design: .monospaced))
+                .font(Typography.treeRole(focused: row.node.isFocused))
                 .foregroundStyle(Color(row.node.isFocused ? Tokens.accent : Tokens.shortcutLabel))
                 .lineLimit(1)
                 .layoutPriority(1)
 
             if let subtitle = row.node.subtitle {
                 Text(subtitle)
-                    .font(.system(size: 11))
+                    .font(Typography.treeText)
                     .foregroundStyle(Color(Tokens.keyText))
                     .lineLimit(1)
             }
             if let detail = row.node.detail {
                 Text(detail)
-                    .font(.system(size: 11))
+                    .font(Typography.treeText)
                     .foregroundStyle(Color(Tokens.dualSecondary))
                     .lineLimit(1)
             }
             if row.hiddenChildren > 0 {
                 Text("\(row.hiddenChildren)")
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(Typography.treeCount)
                     .foregroundStyle(Color(Tokens.sectionLabel))
             }
             Spacer(minLength: 0)
         }
-        .padding(.vertical, 2)
-        .padding(.horizontal, 4)
+        .padding(.vertical, Metrics.Tree.rowVerticalPadding)
+        .padding(.horizontal, Metrics.Tree.rowHorizontalPadding)
         .background(
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
+            RoundedRectangle(cornerRadius: Metrics.Tree.rowCornerRadius, style: .continuous)
                 .fill(row.node.isFocused ? Color(Tokens.selection) : Color.clear)
         )
         .accessibilityElement(children: .ignore)

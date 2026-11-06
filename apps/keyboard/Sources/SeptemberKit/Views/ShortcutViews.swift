@@ -20,20 +20,20 @@ public struct ShortcutButtonView: View {
     }
 
     public var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Metrics.Panel.buttonSpacing) {
             if let symbol = button.symbol {
                 Image(systemName: symbol)
-                    .font(.system(size: 14))
+                    .font(Typography.shortcutButtonIcon)
                     .foregroundStyle(Color(Tokens.shortcutLabel))
-                    .frame(width: 14, height: 14)
+                    .frame(width: Metrics.Panel.buttonIcon, height: Metrics.Panel.buttonIcon)
             }
             if let hint = button.hint {
                 Text(hint)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(Typography.shortcutButtonText)
                     .foregroundStyle(Color(Tokens.shortcutLabel))
             } else {
                 Text(button.label)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(Typography.shortcutButtonText)
                     .foregroundStyle(Color(Tokens.shortcutLabel))
                     .lineLimit(1)
             }
@@ -64,25 +64,25 @@ public struct ShortcutFullView: View {
     }
 
     public var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Metrics.Panel.rowSpacing) {
             if let symbol = button.symbol {
                 Image(systemName: symbol)
-                    .font(.system(size: 12))
+                    .font(Typography.shortcutRowIcon)
                     .foregroundStyle(Color(Tokens.labelSecondary))
-                    .frame(width: 16, height: 16)
+                    .frame(width: Metrics.Panel.rowIcon, height: Metrics.Panel.rowIcon)
             }
             Text(button.label)
-                .font(.system(size: 10))
+                .font(Typography.shortcutRowText)
                 .foregroundStyle(Color(Tokens.shortcutLabel))
                 .lineLimit(1)
-            Spacer(minLength: 4)
+            Spacer(minLength: Metrics.Panel.rowMinGap)
             if let hint = button.hint {
                 Text(hint)
-                    .font(.system(size: 10))
+                    .font(Typography.shortcutRowText)
                     .foregroundStyle(Color(Tokens.dualSecondary))
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, Metrics.Panel.rowPadding)
         .frame(width: width, height: Metrics.shortcutFull.height)
         .keyChrome(fill: isPressed ? Tokens.key.pressed : Tokens.key, shadow: false)
         .pressable(label: button.accessibilityLabel) { isPressed = $0 } action: { press() }

@@ -7,7 +7,7 @@ shortcut panels around it. Built with SwiftUI + AppKit, no dependencies.
 Sources/
   SeptemberKit/     models, design tokens, views — everything testable
     Accessibility/  another app's tree as a snapshot, the Accessibility permission
-    Design/         tokens, metrics, rainbow/mono styles
+    Design/         tokens, metrics, typography, rainbow/mono styles
     Keyboard/       key definitions, the QWERTY layout, the controller
     Input/          modifiers, keystrokes, layout-aware key code map
     Panels/         panel model + JSON loading

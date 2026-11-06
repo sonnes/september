@@ -16,7 +16,7 @@ public struct MainKeyboardView: View {
                 rowView(row)
             }
         }
-        .padding(8)
+        .padding(Metrics.Keyboard.padding)
         .panelSurface(cornerRadius: Metrics.keyboardCornerRadius)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Keyboard")
@@ -42,9 +42,9 @@ public struct MainKeyboardView: View {
         .overlay(alignment: .leading) {
             if controller.style.drawsRowAccent {
                 Rectangle()
-                    .fill(Color(tint.opacity(0.5)))
-                    .frame(width: 2)
-                    .offset(x: -5)
+                    .fill(Color(tint.opacity(Metrics.Keyboard.rowAccentOpacity)))
+                    .frame(width: Metrics.Keyboard.rowAccentWidth)
+                    .offset(x: Metrics.Keyboard.rowAccentOffset)
             }
         }
         .accessibilityElement(children: .contain)

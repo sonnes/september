@@ -17,19 +17,19 @@ public struct InputBar: View {
     }
 
     public var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Metrics.Input.spacing) {
             Image(systemName: leadingSymbol)
-                .font(.system(size: 15))
+                .font(Typography.inputIcon)
                 .foregroundStyle(Color(Tokens.labelSecondary))
 
             switch controller.input {
             case .secure:
                 Text("Password field — hidden")
-                    .font(.system(size: 14))
+                    .font(Typography.inputPlaceholder)
                     .foregroundStyle(Color(Tokens.dualSecondary))
                 Spacer(minLength: 0)
             case .local(let text):
-                HStack(spacing: 2) {
+                HStack(spacing: Metrics.Input.caretGap) {
                     Line(text)
                         .truncationMode(.head)
                     Caret()
@@ -59,21 +59,21 @@ public struct InputBar: View {
                     controller.clearEcho()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 15))
+                        .font(Typography.inputIcon)
                         .foregroundStyle(Color(Tokens.dualSecondary))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Clear typed text")
             }
         }
-        .padding(.horizontal, 18)
-        .frame(width: width, height: Metrics.inputBarHeight)
+        .padding(.horizontal, Metrics.Input.horizontalPadding)
+        .frame(width: width, height: Metrics.Input.height)
         .background(
-            RoundedRectangle(cornerRadius: Metrics.inputBarCornerRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: Metrics.Input.cornerRadius, style: .continuous)
                 .fill(Color(Tokens.key))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: Metrics.inputBarCornerRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: Metrics.Input.cornerRadius, style: .continuous)
                 .strokeBorder(Color(Tokens.strokeStandard), lineWidth: 1)
         )
         .accessibilityElement(children: .combine)
@@ -108,7 +108,7 @@ private struct Line: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 16))
+            .font(Typography.inputText)
             .foregroundStyle(Color(Tokens.keyText))
             .lineLimit(1)
     }
@@ -122,11 +122,11 @@ private struct Caret: View {
     var body: some View {
         Rectangle()
             .fill(Color(Tokens.keyText))
-            .frame(width: 1.5, height: 20)
+            .frame(width: Metrics.Input.caret.width, height: Metrics.Input.caret.height)
             .opacity(visible ? 1 : 0)
             .onAppear {
                 guard !reduceMotion else { return }
-                withAnimation(.easeInOut(duration: 0.6).repeatForever()) { visible = false }
+                withAnimation(.easeInOut(duration: Metrics.Input.caretBlink).repeatForever()) { visible = false }
             }
             .accessibilityHidden(true)
     }

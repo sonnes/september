@@ -22,23 +22,23 @@ public struct ModeButtons: View {
     public init() {}
 
     public var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Metrics.Mode.spacing) {
             ForEach(Mode.allCases, id: \.self) { mode in
-                VStack(spacing: 5) {
+                VStack(spacing: Metrics.Mode.labelSpacing) {
                     Button {
                         selected = mode
                     } label: {
                         Image(systemName: mode.symbol)
-                            .font(.system(size: 16))
+                            .font(Typography.modeIcon)
                             .foregroundStyle(
                                 Color(mode == selected ? Tokens.accent : Tokens.labelSecondary)
                             )
-                            .frame(width: 44, height: 44)
+                            .frame(width: Metrics.Mode.buttonSize, height: Metrics.Mode.buttonSize)
                             .background(Circle().fill(Color(Tokens.key)))
                             .overlay(
                                 Circle().strokeBorder(
                                     Color(mode == selected ? Tokens.accent : Tokens.strokeStandard),
-                                    lineWidth: mode == selected ? 2 : 1
+                                    lineWidth: mode == selected ? Metrics.Mode.selectedStroke : 1
                                 )
                             )
                     }
@@ -47,7 +47,7 @@ public struct ModeButtons: View {
                     .accessibilityAddTraits(mode == selected ? [.isButton, .isSelected] : .isButton)
 
                     Text(mode.title)
-                        .font(.system(size: 9))
+                        .font(Typography.modeLabel)
                         .foregroundStyle(
                             Color(mode == selected ? Tokens.accent : Tokens.sectionLabel)
                         )

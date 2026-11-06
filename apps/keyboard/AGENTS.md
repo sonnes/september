@@ -25,7 +25,7 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | Path | Holds |
 |---|---|
 | `Sources/SeptemberKit/Accessibility` | `AXNode`/`AXTree` (another app's tree, snapshotted), `AccessibilityPermission` |
-| `Sources/SeptemberKit/Design` | tokens, metrics, rainbow/mono styles |
+| `Sources/SeptemberKit/Design` | tokens, metrics, typography, rainbow/mono styles |
 | `Sources/SeptemberKit/Keyboard` | key definitions, QWERTY layout, `KeyboardController` |
 | `Sources/SeptemberKit/Input` | modifiers, keystrokes, layout-aware key code map |
 | `Sources/SeptemberKit/Panels` | panel model + JSON loading |
@@ -45,8 +45,8 @@ only what needs a running app — the panel, the event sink, the menu bar.
   SwiftPM has no test framework. Add checks with `test("…") { expect(…) }` and
   register the suite in `Tests/KitTests/main.swift`. Swap to swift-testing only
   once Xcode is present.
-- **No literals in views.** Colours come from `Tokens`, sizes from `Metrics`.
-  New values go in the design layer first.
+- **No literals in views.** Colours come from `Tokens`, sizes from `Metrics`,
+  fonts from `Typography`. New values go in the design layer first.
 - **Every colour is a `ThemeColor`.** Keyboard follows the system appearance,
   so a token has a light value and a dark value, and `Color(_:)` resolves it
   against whatever is being drawn. Never pin an appearance on a window. The

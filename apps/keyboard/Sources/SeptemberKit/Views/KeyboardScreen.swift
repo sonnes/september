@@ -33,7 +33,7 @@ public struct KeyboardScreen: View {
 
             MainKeyboardView()
 
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: Metrics.keypadStackSpacing) {
                 PanelGridView(panel: controller.panels.navigate) { controller.perform($0) }
                 PanelGridView(panel: controller.panels.system) { controller.perform($0) }
             }
@@ -55,23 +55,23 @@ struct PermissionBanner: View {
     @EnvironmentObject private var permission: AccessibilityPermission
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: Metrics.Banner.spacing) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(Color(Tokens.warning))
             Text("Keyboard needs Accessibility access to type into other apps.")
-                .font(.system(size: 12))
+                .font(Typography.bannerText)
                 .foregroundStyle(Color(Tokens.keyText))
             Button("Open Settings") {
                 permission.openSettings()
             }
             .buttonStyle(.plain)
-            .font(.system(size: 12, weight: .medium))
+            .font(Typography.bannerAction)
             .foregroundStyle(Color(Tokens.accent))
         }
-        .padding(.horizontal, 16)
-        .frame(height: Metrics.bannerHeight)
+        .padding(.horizontal, Metrics.Banner.horizontalPadding)
+        .frame(height: Metrics.Banner.height)
         .background(
-            RoundedRectangle(cornerRadius: Metrics.bannerCornerRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: Metrics.Banner.cornerRadius, style: .continuous)
                 .fill(Color(Tokens.warningSurface))
         )
         .accessibilityElement(children: .combine)

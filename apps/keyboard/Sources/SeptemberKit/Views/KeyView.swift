@@ -39,8 +39,8 @@ public struct KeyView: View {
             } action: {
                 press()
             }
-            .animation(.easeOut(duration: 0.08), value: isPressed)
-            .animation(.easeOut(duration: 0.12), value: isActive)
+            .animation(.easeOut(duration: Metrics.pressAnimation), value: isPressed)
+            .animation(.easeOut(duration: Metrics.activeAnimation), value: isActive)
     }
 
     @ViewBuilder
@@ -49,29 +49,29 @@ public struct KeyView: View {
         case .dual:
             VStack(spacing: Metrics.dualLabelGap) {
                 Text(key.secondaryLabel ?? "")
-                    .font(.system(size: Metrics.dualSecondaryLabelSize))
+                    .font(Typography.keySecondaryLabel)
                     .foregroundStyle(Color(Tokens.dualSecondary))
                 Text(key.label)
-                    .font(.system(size: Metrics.labelSize(for: .dual)))
+                    .font(Typography.keyLabel(.dual))
                     .foregroundStyle(Color(tint))
             }
         case .standard:
             Text(key.label)
-                .font(.system(size: Metrics.labelSize(for: .standard)))
+                .font(Typography.keyLabel(.standard))
                 .foregroundStyle(Color(tint))
         case .special:
             Text(key.label)
-                .font(.system(size: Metrics.labelSize(for: .special)))
+                .font(Typography.keyLabel(.special))
                 .foregroundStyle(Color(isActive ? Tokens.accent : tint))
         case .function:
             Text(key.label)
-                .font(.system(size: Metrics.labelSize(for: .function), weight: .medium))
+                .font(Typography.keyLabel(.function))
                 .foregroundStyle(Color(tint))
         }
     }
 
     private var fill: ThemeColor {
-        if isActive { return Tokens.accent.opacity(0.18) }
+        if isActive { return Tokens.keyActive }
         if isPressed { return Tokens.key.pressed }
         return key.kind == .standard || key.kind == .dual ? Tokens.key : Tokens.keySpecial
     }

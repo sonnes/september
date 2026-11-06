@@ -6,8 +6,8 @@ struct SectionLabel: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 9, weight: .semibold))
-            .tracking(1.2)
+            .font(Typography.sectionLabel)
+            .tracking(Typography.sectionTracking)
             .foregroundStyle(Color(Tokens.sectionLabel))
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityAddTraits(.isHeader)
@@ -35,7 +35,7 @@ public struct PanelGridView: View {
         let columns = max(panel.columns, 1)
         let buttonWidth = (width - spacing * CGFloat(columns - 1)) / CGFloat(columns)
 
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Metrics.Panel.titleSpacing) {
             SectionLabel(text: panel.title)
             LazyVGrid(
                 columns: Array(
@@ -77,20 +77,20 @@ public struct AppShortcutsView: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: Metrics.Panel.appSpacing) {
+            HStack(spacing: Metrics.Panel.appSpacing) {
                 Image(systemName: "app.dashed")
-                    .font(.system(size: 12))
+                    .font(Typography.appIcon)
                     .foregroundStyle(Color(Tokens.accent))
                 Text(appName)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(Typography.appName)
                     .foregroundStyle(Color(Tokens.keyText))
                     .lineLimit(1)
                 Circle()
                     .fill(Color(Tokens.positive))
-                    .frame(width: 5, height: 5)
+                    .frame(width: Metrics.Panel.appDot, height: Metrics.Panel.appDot)
             }
-            .padding(.bottom, 2)
+            .padding(.bottom, Metrics.Panel.appHeaderBottom)
 
             ForEach(panel.buttons) { button in
                 ShortcutFullView(button: button, width: width) { press(button.action) }

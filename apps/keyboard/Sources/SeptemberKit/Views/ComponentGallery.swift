@@ -54,41 +54,44 @@ public struct ComponentGallery: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 28) {
-            VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Metrics.Gallery.spacing) {
+            VStack(alignment: .leading, spacing: Metrics.Gallery.headerSpacing) {
                 Text("Component Library")
-                    .font(.system(size: 24, weight: .semibold, design: .monospaced))
+                    .font(Typography.galleryTitle)
                     .foregroundStyle(Color(Tokens.keyText))
                 Text("Reusable building blocks for the keyboard system.")
-                    .font(.system(size: 12))
+                    .font(Typography.galleryCaption)
                     .foregroundStyle(Color(Tokens.labelSecondary))
             }
 
             LazyVGrid(
-                columns: Array(repeating: GridItem(.fixed(300), spacing: 24), count: 3),
+                columns: Array(
+                    repeating: GridItem(
+                        .fixed(Metrics.Gallery.columnWidth), spacing: Metrics.Gallery.columnSpacing),
+                    count: Metrics.Gallery.columns),
                 alignment: .leading,
-                spacing: 28
+                spacing: Metrics.Gallery.spacing
             ) {
                 ForEach(Array(samples.enumerated()), id: \.offset) { _, sample in
-                    HStack(alignment: .top, spacing: 16) {
-                        VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .top, spacing: Metrics.Gallery.sampleSpacing) {
+                        VStack(alignment: .leading, spacing: Metrics.Gallery.noteSpacing) {
                             Text(sample.title)
-                                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                .font(Typography.gallerySampleTitle)
                                 .foregroundStyle(Color(Tokens.keyText))
                             Text(sample.note)
-                                .font(.system(size: 10))
+                                .font(Typography.galleryNote)
                                 .foregroundStyle(Color(Tokens.labelSecondary))
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        .frame(width: 150, alignment: .leading)
+                        .frame(width: Metrics.Gallery.noteWidth, alignment: .leading)
                         Spacer(minLength: 0)
                         sample.view
                     }
                 }
             }
         }
-        .padding(40)
-        .frame(width: 1120, alignment: .leading)
+        .padding(Metrics.Gallery.padding)
+        .frame(width: Metrics.Gallery.width, alignment: .leading)
         .background(Color(Tokens.background))
     }
 }

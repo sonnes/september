@@ -90,6 +90,8 @@ public enum Tokens {
     public static let shortcutLabel = ThemeColor(
         light: RGBA(hex: 0x3C3C46), dark: RGBA(hex: 0xC0C0CC))
     public static let accent = ThemeColor(light: RGBA(hex: 0x0064D2), dark: RGBA(hex: 0x0A84FF))
+    /// A latched or locked modifier key.
+    public static let keyActive = accent.opacity(0.18)
 
     /// The selection the focused field reports, drawn behind the mirrored text.
     /// Not in the design system — the accent, dimmed enough to read through.
