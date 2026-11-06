@@ -94,9 +94,9 @@ A second window sits at the right edge of the screen, the same height as the
 keyboard, showing the accessibility tree of whatever app is in front — the tree
 Keyboard itself reads to find the field it types into.
 
-It opens collapsed: only the branch leading to the focused element is unfolded,
-and everything else shows as a shut row with a count of what it is holding, so
-the element being typed into is always the deepest thing on screen. It follows
+The viewer reads and opens only the branch that leads to the focused element.
+Every other element shows as a shut row with a count of its children. The
+element that gets the keystrokes is always the deepest row on screen. It follows
 along as focus moves, as the frontmost app changes, on a slow timer, and from
 its own refresh button.
 

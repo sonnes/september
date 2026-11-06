@@ -50,7 +50,7 @@ explains that a later generation can replace the phrase.
 Anything the user must act on is a card. Everything else is a line. There is
 no third weight.
 
-A tool call is one row, 44 pixels tall, in the gutter of the reply it
+A tool call is one row, 48 pixels tall, in the gutter of the reply it
 produced. Tools that ran one after another with the same outcome share a
 single row: a user asked one question, and the reads behind the answer — or
 the phrases written into a new space — are one act, not six. A change still

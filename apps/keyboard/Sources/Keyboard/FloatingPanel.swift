@@ -12,16 +12,15 @@ final class FloatingPanel: NSPanel {
         case bottomRight
     }
 
-    var placement: Placement = .bottomCenter(rightInset: 0) {
-        didSet { position() }
-    }
+    var placement: Placement
 
     private let hosting: NSHostingView<AnyView>
     /// Distance from the screen's visible edges, the same on every side.
     static let margin: CGFloat = 24
 
-    init(root: AnyView, contentSize: CGSize) {
+    init(root: AnyView, contentSize: CGSize, placement: Placement) {
         hosting = NSHostingView(rootView: root)
+        self.placement = placement
         super.init(
             contentRect: NSRect(origin: .zero, size: contentSize),
             styleMask: [.nonactivatingPanel, .titled, .fullSizeContentView],
@@ -47,6 +46,7 @@ final class FloatingPanel: NSPanel {
 
         contentView = hosting
         setContentSize(contentSize)
+        position()
     }
 
     /// Clicking a key must never pull focus away from the app being typed into.
@@ -69,7 +69,7 @@ final class FloatingPanel: NSPanel {
     }
 
     /// Sit just above the bottom edge of the target screen.
-    func position() {
+    private func position() {
         guard let screen = FloatingPanel.targetScreen else { return }
         let visible = screen.visibleFrame
 

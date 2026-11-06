@@ -4,9 +4,9 @@ import SeptemberKit
 
 /// Snapshots the frontmost app's accessibility tree into `AXTree`.
 ///
-/// A browser window alone runs to thousands of elements, so the walk is capped
-/// in depth, breadth and node count. Menu bars are skipped: every app has one,
-/// and none of them is what the user is looking at.
+/// A browser window alone holds thousands of elements, so the reader opens only
+/// the path from the app to the focused element. Every other element costs its
+/// own attributes and a child count.
 @MainActor
 enum AXTreeReader {
     static func read(app: NSRunningApplication?) -> AXTree {
@@ -14,10 +14,8 @@ enum AXTreeReader {
         let root = AXUIElementCreateApplication(app.processIdentifier)
         let focused = root.element(kAXFocusedUIElementAttribute)
 
-        // The viewer opens only the branch holding the focused element, so that
-        // branch has to survive the node budget.
-        var walker = Walker(focused: focused, path: ancestry(of: focused))
-        let node = walker.walk(root, depth: 0, onPath: true)
+        var reader = PathReader(focused: focused, path: ancestry(of: focused))
+        let node = reader.read(root, opens: true)
         return AXTree(appName: app.localizedName ?? "", root: node)
     }
 
@@ -33,38 +31,43 @@ enum AXTreeReader {
         return chain
     }
 
-    private struct Walker {
-        static let maxDepth = 8
+    private struct PathReader {
+        /// The most children read under one open element, plus the one on the
+        /// path. A long list or a web page can hold thousands.
         static let maxChildren = 40
 
         let focused: AXUIElement?
         let path: [AXUIElement]
-        var count = 0
+        var nextID = 0
 
-        mutating func walk(_ element: AXUIElement, depth: Int, onPath: Bool) -> AXNode? {
-            guard count < AXTree.nodeLimit || onPath else { return nil }
-            let id = count
-            count += 1
+        mutating func read(_ element: AXUIElement, opens: Bool) -> AXNode {
+            let id = nextID
+            nextID += 1
+            let isFocused = focused.map { CFEqual($0, element) } ?? false
 
-            let role = element.string(kAXRoleAttribute) ?? "unknown"
             var children: [AXNode] = []
-            if depth < Walker.maxDepth || onPath, role != (kAXMenuBarRole as String) {
-                for child in element.children.prefix(Walker.maxChildren) {
-                    let childOnPath = path.contains { CFEqual($0, child) }
-                    if let node = walk(child, depth: depth + 1, onPath: childOnPath) {
-                        children.append(node)
-                    }
+            let childCount: Int
+            if opens, !isFocused {
+                let all = element.children
+                childCount = all.count
+                for (index, child) in all.enumerated() {
+                    let onPath = path.contains { CFEqual($0, child) }
+                    guard index < PathReader.maxChildren || onPath else { continue }
+                    children.append(read(child, opens: onPath))
                 }
+            } else {
+                childCount = element.childCount
             }
 
             return AXNode(
                 id: id,
-                role: role,
+                role: element.string(kAXRoleAttribute) ?? "unknown",
                 title: element.string(kAXTitleAttribute),
                 description: element.string(kAXDescriptionAttribute),
                 value: element.string(kAXValueAttribute),
-                isFocused: focused.map { CFEqual($0, element) } ?? false,
-                children: children
+                isFocused: isFocused,
+                children: children,
+                childCount: childCount
             )
         }
     }

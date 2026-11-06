@@ -89,7 +89,7 @@ export function useUpdateSpace() {
 }
 
 export function useDeleteSpace() {
-  const refresh = useRefresh(spacesKey, ["messages"]);
+  const refresh = useRefresh(spacesKey, ["messages"], ["phrases"], ["notes"], ["agent-messages"]);
   return useMutation({
     mutationFn: (id: string) => store.deleteSpace(id),
     onSuccess: refresh,
@@ -130,8 +130,10 @@ export function useSendMessage(spaceId: string) {
         type: "user",
         created_at: Date.now(),
       }),
-    onSuccess: (message) =>
-      client.setQueryData<Message[]>(messagesKey(spaceId), (rows = []) => [...rows, message]),
+    onSuccess: (message) => {
+      for (const key of [messagesKey(spaceId), messagesKey("all")])
+        client.setQueryData<Message[]>(key, (rows) => rows && [...rows, message]);
+    },
   });
 }
 

@@ -553,7 +553,8 @@ point when both eyes are valid. The WebView takes median samples at four box
 corners and fits one linear mapping for each axis. It clips the mapped point to
 the camera box. It does not convert it to a window or operating-system pointer.
 Rust skips a frame that Vision cannot analyze and logs the reason. That frame
-sends no state and no preview.
+sends no state and no preview. After 30 such frames in a row, about 2 seconds,
+Rust ends the run with `error`.
 
 The `error` state is final. Rust sends it only when the run ends, for example
 when the camera does not open. The WebView then stops the camera.
@@ -564,7 +565,9 @@ send on its channel fails, for example after the page reloads. A new
 `gaze_start` stops the run before it. Leaving the page and application exit use
 the same stop path.
 The app requests camera access only after `gaze_start`; `Info.plist` explains
-the use and the signed app has the camera entitlement.
+the use and the signed app has the camera entitlement. The signed app also has
+the audio-input entitlement, because the hardened runtime blocks the microphone
+that voice cloning records with.
 
 ## Use the apfel API
 

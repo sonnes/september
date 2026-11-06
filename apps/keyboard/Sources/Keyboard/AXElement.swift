@@ -37,6 +37,13 @@ extension AXUIElement {
         value(kAXChildrenAttribute) as? [AXUIElement] ?? []
     }
 
+    /// Counts the children without copying them.
+    var childCount: Int {
+        var count: CFIndex = 0
+        AXUIElementGetAttributeValueCount(self, kAXChildrenAttribute as CFString, &count)
+        return count
+    }
+
     var pid: pid_t {
         var pid: pid_t = 0
         AXUIElementGetPid(self, &pid)

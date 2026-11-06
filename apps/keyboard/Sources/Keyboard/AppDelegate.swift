@@ -79,8 +79,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             MainActor.assumeIsolated { self?.refreshTree() }
         }
         let (root, size) = makeRoot()
-        let panel = FloatingPanel(root: root, contentSize: size)
-        panel.placement = .bottomCenter(rightInset: reservedWidth)
+        let panel = FloatingPanel(
+            root: root, contentSize: size, placement: .bottomCenter(rightInset: reservedWidth))
         panel.orderFront(nil)
         self.panel = panel
 
@@ -98,8 +98,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if let treePanel {
             treePanel.update(root: root, contentSize: size)
         } else {
-            let treePanel = FloatingPanel(root: root, contentSize: size)
-            treePanel.placement = .bottomRight
+            let treePanel = FloatingPanel(root: root, contentSize: size, placement: .bottomRight)
             treePanel.orderFront(nil)
             self.treePanel = treePanel
         }
@@ -111,8 +110,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         treeModel.tree = AXTreeReader.read(app: NSWorkspace.shared.frontmostApplication)
     }
 
-    /// Reading a whole tree costs hundreds of round trips to the other app, so
-    /// focus moves and app switches coalesce into one read.
+    /// Each read costs many round trips to the other app, so focus moves and
+    /// app switches coalesce into one read.
     private func scheduleTreeRefresh() {
         guard isTreeVisible, !treeRefreshScheduled else { return }
         treeRefreshScheduled = true

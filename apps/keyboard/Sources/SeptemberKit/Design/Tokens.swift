@@ -94,14 +94,14 @@ public enum Tokens {
     public static let keyActive = accent.opacity(0.18)
 
     /// The selection the focused field reports, drawn behind the mirrored text.
-    /// Not in the design system — the accent, dimmed enough to read through.
+    /// It is not in the design system. It is the accent, dimmed so the text
+    /// stays readable.
     public static let selection = ThemeColor(
-        light: RGBA(hex: 0x0064D2, alpha: 0.24), dark: RGBA(hex8: 0x0A84FF4D))
+        light: accent.light.opacity(0.24), dark: accent.dark.opacity(0x4D / 255))
 
     /// Warnings — the permission banner.
     public static let warning = ThemeColor(light: RGBA(hex: 0xB25000), dark: RGBA(hex: 0xFF9F4A))
-    public static let warningSurface = ThemeColor(
-        light: RGBA(hex: 0xB25000, alpha: 0.12), dark: RGBA(hex: 0xFF9F4A, alpha: 0.12))
+    public static let warningSurface = warning.opacity(0.12)
     /// The dot beside the app Keyboard is typing into.
     public static let positive = ThemeColor(light: RGBA(hex: 0x1B8A55), dark: RGBA(hex: 0x5CD6A0))
 

@@ -349,8 +349,8 @@ remain. Pending or failed saves show their state and offer retry on failure.
 
 Note text and titles start saving on each edit. Writes through the note-update
 hook run in order within a space. Browser close/reload warns while a save is
-pending or failed; the Mac window close action waits until those edits save.
-A forced quit, crash, or power loss before a write finishes can still lose it.
+pending or failed. Closing the Mac panel only hides it, so a pending save goes
+on. Quitting the Mac app does not wait for a save. A forced quit, crash, or power loss before a write finishes can still lose it.
 
 The Welcome screen includes a Terms & privacy summary before personal details
 or service connections. It summarizes local storage, optional providers, and
@@ -370,7 +370,7 @@ The callback must be served as a static file on the same origin as the app.
 Vercel adds no-store and no-referrer headers for `/oauth/*`.
 
 The application sidebar starts collapsed at every desktop width. The toggle
-or Ctrl/Command-B expands it; resizing preserves that choice.
+expands it; resizing preserves that choice.
 
 Help screenshots live in `packages/app-ui/public/help/`, and both apps serve
 them through `appConfig` in `vite.shared.ts`. Browser captures

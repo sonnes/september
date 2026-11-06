@@ -16,10 +16,10 @@ and the services that connect that UI to macOS.
 
 | Directory                  | Holds                                                                                                                                                      | Rule                                                 |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `packages/app-ui/layouts/` | `onboarding.tsx`, `app.tsx`, `panel.tsx`, `settings.tsx`                                                                                                   | The component renders an `<Outlet/>`.                |
-| `packages/app-ui/pages/`   | Route screens: `steps` `spaces` `talk` `agent` `notes` `voice` `settings` `usage`                                                                          | `packages/app-ui/routes.tsx` names it.               |
-| `packages/app-ui/blocks/`  | `screen` `chrome` `panel-header` `present` `services` `space-panel` `phrase-panel` `speech-settings` `pick-list` `suggestions` `usage` `brand` | Two or more pages or layouts use it.                 |
-| `packages/app-ui/services/` | `settings` `data` `speech` `ai` `agent` `usage` `connections` `backup` `export` `cloning` `phrase-sync` `suggest` `player` `browser`                     | Both apps share it, over the platform.               |
+| `packages/app-ui/layouts/` | Layouts | The component renders an `<Outlet/>`. |
+| `packages/app-ui/pages/` | Route screens | `packages/app-ui/routes.tsx` names it. |
+| `packages/app-ui/blocks/` | Parts that two or more pages or layouts use | Two or more pages or layouts use it. |
+| `packages/app-ui/services/` | The services that both apps share | Both apps share it, over the platform. |
 | `src/platform.ts`          | The Mac platform: `store`, `voice`, `providers`, `writing`, `device`, `capabilities`                                                                       | It speaks to Rust.                                   |
 | `src/commands.ts`          | Every Tauri command, with its arguments and its answer, `call`, and `callRaw`                                                                              | Every call to Rust goes through it.                  |
 | `src/window.ts`            | The panel window and the saved path                                                                                                                        | Only the desktop has it.                             |

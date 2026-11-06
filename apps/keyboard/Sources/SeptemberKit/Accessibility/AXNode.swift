@@ -12,7 +12,11 @@ public struct AXNode: Equatable, Sendable, Identifiable {
     public let value: String?
     /// The element the app has focused — the one keystrokes reach.
     public let isFocused: Bool
+    /// The children that were read. The reader reads them only on the path to
+    /// the focused element.
     public let children: [AXNode]
+    /// How many children the element has, read or not.
+    public let childCount: Int
 
     public init(
         id: Int,
@@ -21,7 +25,8 @@ public struct AXNode: Equatable, Sendable, Identifiable {
         description: String? = nil,
         value: String? = nil,
         isFocused: Bool = false,
-        children: [AXNode] = []
+        children: [AXNode] = [],
+        childCount: Int? = nil
     ) {
         self.id = id
         self.role = role
@@ -29,6 +34,7 @@ public struct AXNode: Equatable, Sendable, Identifiable {
         self.value = value
         self.isFocused = isFocused
         self.children = children
+        self.childCount = childCount ?? children.count
     }
 
     /// The value on one line, short enough for a row.
@@ -59,14 +65,13 @@ public struct AXTree: Equatable, Sendable {
 
     public static let empty = AXTree(appName: "", root: nil)
 
-    /// The most elements a tree holds or the viewer shows.
-    public static let nodeLimit = 400
+    /// The most rows the viewer shows.
+    public static let rowLimit = 400
 
-    /// Depth first, the order the tree reads on screen — but collapsed. Only
-    /// the branch leading to the focused element opens, because that is the one
-    /// the user is working in; everything else shows as a shut row with a count
-    /// of what it is holding.
-    public func rows(limit: Int = AXTree.nodeLimit) -> [AXTreeRow] {
+    /// The rows in depth-first order. Only the branch that leads to the focused
+    /// element opens. Every other row is shut and shows a count of its
+    /// children.
+    public func rows(limit: Int = AXTree.rowLimit) -> [AXTreeRow] {
         guard let root else { return [] }
         var rows: [AXTreeRow] = []
         var stack = [(node: root, depth: 0)]
@@ -79,7 +84,7 @@ public struct AXTree: Equatable, Sendable {
                     node: node,
                     depth: depth,
                     isExpanded: isExpanded,
-                    hiddenChildren: isExpanded ? 0 : node.children.count
+                    hiddenChildren: node.childCount - (isExpanded ? node.children.count : 0)
                 )
             )
             guard isExpanded else { continue }

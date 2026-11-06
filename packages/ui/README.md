@@ -14,11 +14,14 @@ import { Card, CardContent } from "@september/ui/components/card";
 
 The package root exports `cn` and `useIsMobile`.
 
-Each app's CSS entry point imports the shared theme and scans this package:
+Each app's CSS entry point imports the shared theme and scans this package and
+`packages/app-ui`. The paths are relative to the CSS file. The desktop entry
+point is:
 
 ```css
 @import "@september/ui/theme.css";
 @source "../../../packages/ui";
+@source "../../../packages/app-ui";
 ```
 
 `Switch` is 32 by 56px, with its thumb 2px from each edge, and the thumb

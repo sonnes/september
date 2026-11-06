@@ -9,11 +9,12 @@ private func node(
     description: String? = nil,
     value: String? = nil,
     focused: Bool = false,
-    children: [AXNode] = []
+    children: [AXNode] = [],
+    childCount: Int? = nil
 ) -> AXNode {
     AXNode(
         id: id, role: role, title: title, description: description, value: value,
-        isFocused: focused, children: children)
+        isFocused: focused, children: children, childCount: childCount)
 }
 
 struct TreeTests {
@@ -59,6 +60,24 @@ struct TreeTests {
         let group = collapsed.rows().first { $0.node.role == "AXGroup" }
         #expect(group?.hiddenChildren == 4)
         #expect(collapsed.rows().count == 2, "the group's children stay hidden")
+    }
+
+    @Test func `a shut element counts the children that were never read`() throws {
+        let unread = AXTree(
+            appName: "App",
+            root: node(0, "AXApplication", children: [node(1, "AXGroup", childCount: 7)]))
+        #expect(unread.rows().last?.hiddenChildren == 7)
+    }
+
+    @Test func `an open element counts the children it skipped`() throws {
+        let partial = AXTree(
+            appName: "App",
+            root: node(
+                0, "AXApplication",
+                children: [node(1, "AXWindow", children: [node(2, "AXTextArea", focused: true)], childCount: 50)]))
+        let window = partial.rows().first { $0.node.role == "AXWindow" }
+        #expect(window?.isExpanded == true)
+        #expect(window?.hiddenChildren == 49)
     }
 
     @Test func `the focused element's own children stay shut, it is the leaf we care about`() throws {

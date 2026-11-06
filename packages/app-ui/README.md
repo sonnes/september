@@ -19,7 +19,7 @@ different in the browser and on the Mac:
 | `voice`        | The system voice, the cloud voice stream, stop, and a sound file of a sentence.      |
 | `providers`    | The status, the keys, the OpenRouter sign-in, the voices, the quota, and the clones. |
 | `writing`      | The endpoint and the key of OpenRouter, and of Apple Intelligence where it runs.     |
-| `device`       | The identity, the browser, the close guard, and the sound outputs.                   |
+| `device`       | The identity, the browser, and the sound outputs.                                    |
 | `capabilities` | The flags `dashboard`, `eyeTracker`, and `floatingPanel`.                            |
 
 An optional member is a capability. A platform that cannot do the work has no
@@ -320,7 +320,7 @@ run without a stop. A delete stops for Approve and Reject, and then asks to
 confirm. A turn that spends its whole write budget stops the same way.
 
 Everything that the person must act on is a card, and everything else is a
-line. A tool line is a folded `details` row. A proposal card shows what a
+line. A tool line that ran or failed is a folded `details` row. A proposal card shows what a
 change replaces beside what it writes. The transcript has one live region. It
 says `Working…` during a turn, then the newest reply. The words of an answer
 that is still being written are `aria-hidden`.
