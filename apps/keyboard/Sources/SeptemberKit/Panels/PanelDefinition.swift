@@ -7,6 +7,9 @@ public enum PanelAction: Sendable, Hashable {
     /// Key combinations pressed one after the other, such as esc esc.
     case sequence([Shortcut])
     case text(String)
+    /// The text of a private button of My Panel, by the ID of the button. The
+    /// text is in the Keychain.
+    case privateText(String)
 }
 
 /// One button in a shortcut panel.
@@ -38,7 +41,7 @@ public struct PanelButton: Sendable, Hashable, Identifiable {
         case .shortcut(let shortcut): "\(label), \(shortcut.spokenName)"
         case .sequence(let steps):
             "\(label), \(steps.map(\.spokenName).joined(separator: ", then "))"
-        case .text: label
+        case .text, .privateText: label
         }
     }
 
