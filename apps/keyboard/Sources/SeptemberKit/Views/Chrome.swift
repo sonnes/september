@@ -99,8 +99,10 @@ private struct Pressable: ViewModifier {
     let action: () -> Void
 
     @Environment(\.keyPresser) private var presser
-    /// True while the button is down. A cancelled gesture resets it too.
-    @GestureState private var isHeld = false
+    /// True while the gesture runs. A cancelled gesture resets it too, with
+    /// no call to `onEnded`.
+    @GestureState private var isTracking = false
+    @State private var isDown = false
     @State private var press: Int?
 
     func body(content: Content) -> some View {
@@ -121,13 +123,25 @@ private struct Pressable: ViewModifier {
                     minimumDuration: Metrics.holdDuration, pressing: onPressing, perform: {})
         case .down(let hold):
             content
-                .gesture(DragGesture(minimumDistance: 0).updating($isHeld) { _, held, _ in held = true })
-                .onChange(of: isHeld) { _, held in held ? begin(hold) : end() }
+                // The gesture calls begin and end at once. A very short click
+                // can end the gesture with no call to `onChanged`, so the end
+                // begins the press first.
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .updating($isTracking) { _, tracking, _ in tracking = true }
+                        .onChanged { _ in if !isDown { begin(hold) } }
+                        .onEnded { _ in
+                            if !isDown { begin(hold) }
+                            end()
+                        }
+                )
+                .onChange(of: isTracking) { _, tracking in if !tracking { end() } }
                 .onDisappear(perform: end)
         }
     }
 
     private func begin(_ hold: KeyHold) {
+        isDown = true
         onPressing(true)
         guard let presser else { return action() }
         let action = action
@@ -137,6 +151,8 @@ private struct Pressable: ViewModifier {
     }
 
     private func end() {
+        guard isDown else { return }
+        isDown = false
         if let press { presser?.up(press) }
         press = nil
         onPressing(false)
