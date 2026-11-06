@@ -38,6 +38,7 @@ app:
 	cp "$(BUILD_DIR)/Keyboard" "$(APP)/Contents/MacOS/Keyboard"
 	cp Resources/Info.plist "$(APP)/Contents/Info.plist"
 	cp -R "$(BUILD_DIR)/Keyboard_SeptemberKit.bundle" "$(APP)/Contents/Resources/"
+	cp -R "$(BUILD_DIR)/Keyboard_Keyboard.bundle" "$(APP)/Contents/Resources/"
 	codesign --force --options runtime --timestamp=none \
 		--entitlements Resources/Keyboard.entitlements \
 		--sign "$(if $(IDENTITY),$(IDENTITY),-)" "$(APP)"
