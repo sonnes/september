@@ -1,10 +1,9 @@
 import SwiftUI
 
-/// Compact shortcut button — icon plus key hint. Used in the edit and navigate
-/// keypads either side of the keyboard.
+/// Compact shortcut button: icon plus key hint. The keypads either side of
+/// the keyboard use it.
 public struct ShortcutButtonView: View {
     private let button: PanelButton
-    private let tint: ThemeColor
     private let width: CGFloat
     private let press: () -> Void
 
@@ -12,12 +11,10 @@ public struct ShortcutButtonView: View {
 
     public init(
         button: PanelButton,
-        tint: ThemeColor = Tokens.shortcutLabel,
         width: CGFloat = Metrics.shortcutButton.width,
         press: @escaping () -> Void
     ) {
         self.button = button
-        self.tint = tint
         self.width = width
         self.press = press
     }
@@ -27,7 +24,7 @@ public struct ShortcutButtonView: View {
             if let symbol = button.symbol {
                 Image(systemName: symbol)
                     .font(.system(size: 14))
-                    .foregroundStyle(Color(tint))
+                    .foregroundStyle(Color(Tokens.shortcutLabel))
                     .frame(width: 14, height: 14)
             }
             if let hint = button.hint {
@@ -42,27 +39,13 @@ public struct ShortcutButtonView: View {
             }
         }
         .frame(width: width, height: Metrics.shortcutButton.height)
-        .background(
-            RoundedRectangle(cornerRadius: Metrics.keyCornerRadius, style: .continuous)
-                .fill(Color(isPressed ? Tokens.key.pressed : Tokens.key))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Metrics.keyCornerRadius, style: .continuous)
-                .strokeBorder(Color(Tokens.strokeStandard), lineWidth: 1)
-        )
-        .shadow(color: Color(Tokens.keyShadow), radius: 1, y: 1)
-        .contentShape(Rectangle())
-        .onTapGesture { press() }
-        .onLongPressGesture(minimumDuration: 0.4, pressing: { isPressed = $0 }, perform: {})
-        .accessibilityElement()
-        .accessibilityLabel(button.accessibilityLabel)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAction { press() }
+        .keyChrome(fill: isPressed ? Tokens.key.pressed : Tokens.key)
+        .pressable(label: button.accessibilityLabel) { isPressed = $0 } action: { press() }
         .help(button.label)
     }
 }
 
-/// Full shortcut row — icon, name and key hint. Used by the app shortcuts panel.
+/// Full shortcut row: icon, name and key hint. The app shortcuts panel uses it.
 public struct ShortcutFullView: View {
     private let button: PanelButton
     private let width: CGFloat
@@ -101,20 +84,7 @@ public struct ShortcutFullView: View {
         }
         .padding(.horizontal, 8)
         .frame(width: width, height: Metrics.shortcutFull.height)
-        .background(
-            RoundedRectangle(cornerRadius: Metrics.keyCornerRadius, style: .continuous)
-                .fill(Color(isPressed ? Tokens.key.pressed : Tokens.key))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Metrics.keyCornerRadius, style: .continuous)
-                .strokeBorder(Color(Tokens.strokeStandard), lineWidth: 1)
-        )
-        .contentShape(Rectangle())
-        .onTapGesture { press() }
-        .onLongPressGesture(minimumDuration: 0.4, pressing: { isPressed = $0 }, perform: {})
-        .accessibilityElement()
-        .accessibilityLabel(button.accessibilityLabel)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAction { press() }
+        .keyChrome(fill: isPressed ? Tokens.key.pressed : Tokens.key, shadow: false)
+        .pressable(label: button.accessibilityLabel) { isPressed = $0 } action: { press() }
     }
 }

@@ -13,7 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let sink = CGEventSink()
     private let focusWatcher = FocusWatcher()
     private let treeModel = AXTreeModel()
-    private lazy var controller = KeyboardController(sink: sink)
+    private var controller: KeyboardController!
 
     /// The tree viewer is on by default — it is the window that shows why an
     /// app does or does not mirror.
@@ -28,20 +28,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Only check at launch. The prompt is shown when the user asks for it
-        // from the banner or the menu, so starting Keyboard never throws a
-        // system dialog in front of what they were doing.
-        permission.startMonitoring()
-
-        controller.onOpenPermissionSettings = { [permission] in
-            permission.request()
-            permission.openSettings()
+        do {
+            controller = KeyboardController(sink: sink, panels: try PanelStore.bundled())
+        } catch {
+            fail(loadingPanels: error)
+            return
         }
-        permissionSubscription = permission.$isTrusted.sink { [weak self] trusted in
-            Task { @MainActor in
-                self?.controller.isAccessibilityTrusted = trusted
-                self?.refreshPanel()
-            }
+
+        // The banner and the menu ask for permission, so starting Keyboard
+        // never puts a system dialog in front of what the user was doing.
+        permission.startMonitoring()
+        permissionSubscription = permission.$isTrusted.dropFirst().sink { [weak self] _ in
+            // The banner changes the keyboard's size. `sink` runs before the
+            // new value is stored, so the rebuild waits a turn.
+            Task { @MainActor in self?.refreshPanel() }
         }
 
         // Mirror the focused field of whatever app is in front, and re-read it
@@ -53,8 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // text of the field it is already showing is caught by the slow timer.
         focusWatcher.onFocusMoved = { [weak self] in self?.scheduleTreeRefresh() }
         focusWatcher.onAppChanged = { [weak self] app in
-            self?.controller.appChanged(
-                name: app?.localizedName ?? "Finder", bundleID: app?.bundleIdentifier)
+            self?.controller.appChanged(name: app?.localizedName, bundleID: app?.bundleIdentifier)
         }
         sink.afterPost = { [weak self] in self?.focusWatcher.refreshSoon() }
         focusWatcher.start()
@@ -80,7 +79,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func showTreePanel(height: CGFloat) {
         guard isTreeVisible else { return }
         let size = CGSize(width: Metrics.treeViewerWidth, height: height)
-        let root = AnyView(AXTreeView(model: treeModel, height: height))
+        let root = AnyView(
+            AXTreeView(model: treeModel, height: height).environmentObject(permission))
 
         if let treePanel {
             treePanel.update(root: root, contentSize: size)
@@ -95,7 +95,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func refreshTree() {
         guard isTreeVisible else { return }
-        treeModel.isTrusted = permission.isTrusted
         treeModel.tree = AXTreeReader.read(app: NSWorkspace.shared.frontmostApplication)
     }
 
@@ -111,15 +110,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Builds the screen and measures it, scaling down if the display is too
-    /// narrow for the full 1660pt layout.
+    /// narrow for it.
     private func makeRoot() -> (AnyView, CGSize) {
-        let screen = KeyboardScreen().environmentObject(controller)
+        let screen = KeyboardScreen()
+            .environmentObject(controller)
+            .environmentObject(permission)
         let probe = NSHostingView(rootView: screen)
         probe.layoutSubtreeIfNeeded()
         let intrinsic = probe.fittingSize
 
-        let available = (NSScreen.main?.visibleFrame.width ?? 1440) - 48 - reservedWidth
-        let scale = intrinsic.width > 0 ? min(1, available / intrinsic.width) : 1
+        var scale: CGFloat = 1
+        if let screen = NSScreen.main, intrinsic.width > 0 {
+            let available = screen.visibleFrame.width - 2 * FloatingPanel.margin - reservedWidth
+            scale = min(1, available / intrinsic.width)
+        }
         let size = CGSize(width: intrinsic.width * scale, height: intrinsic.height * scale)
 
         let root = AnyView(
@@ -227,8 +231,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openPermissionSettings() {
-        permission.request()
         permission.openSettings()
+    }
+
+    private func fail(loadingPanels error: any Error) {
+        let alert = NSAlert()
+        alert.messageText = "Keyboard could not load its shortcut panels."
+        alert.informativeText = String(describing: error)
+        NSApp.activate()
+        alert.runModal()
+        NSApp.terminate(nil)
     }
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }

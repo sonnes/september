@@ -1,7 +1,7 @@
 import AppKit
 
 // `--snapshot <path>` renders to a PNG and exits; no window, no permissions.
-_ = MainActor.assumeIsolated { Snapshot.run(arguments: CommandLine.arguments) }
+MainActor.assumeIsolated { Snapshot.run(arguments: CommandLine.arguments) }
 // `--ax` prints the focused field (and optionally the tree) and exits.
 MainActor.assumeIsolated { AXDump.run(arguments: CommandLine.arguments) }
 

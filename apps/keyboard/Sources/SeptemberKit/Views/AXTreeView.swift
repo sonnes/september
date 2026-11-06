@@ -4,9 +4,6 @@ import SwiftUI
 @MainActor
 public final class AXTreeModel: ObservableObject {
     @Published public var tree: AXTree = .empty
-    /// Set when macOS has not granted us accessibility — there is nothing to
-    /// read, and saying so beats an empty window.
-    @Published public var isTrusted = true
     public var onRefresh: (() -> Void)?
 
     public init() {}
@@ -17,6 +14,7 @@ public final class AXTreeModel: ObservableObject {
 /// height of the keyboard.
 public struct AXTreeView: View {
     @ObservedObject private var model: AXTreeModel
+    @EnvironmentObject private var permission: AccessibilityPermission
     private let height: CGFloat
     private let scrolls: Bool
 
@@ -32,7 +30,7 @@ public struct AXTreeView: View {
         VStack(alignment: .leading, spacing: 10) {
             header
 
-            if !model.isTrusted {
+            if !permission.isTrusted {
                 message("Accessibility access is off, so no tree can be read.")
             } else if model.tree.root == nil {
                 message("Nothing in front to read.")
@@ -49,14 +47,7 @@ public struct AXTreeView: View {
         }
         .padding(12)
         .frame(width: Metrics.treeViewerWidth, height: height, alignment: .topLeading)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(Tokens.panelBackground))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Color(Tokens.panelStroke), lineWidth: 1)
-        )
+        .panelSurface()
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Accessibility tree for \(model.tree.appName)")
     }
@@ -120,7 +111,7 @@ private struct AXTreeRowView: View {
                 .foregroundStyle(Color(Tokens.sectionLabel))
                 .frame(width: 6, alignment: .leading)
 
-            Text(row.node.title)
+            Text(row.node.role)
                 .font(.system(size: 11, weight: row.node.isFocused ? .semibold : .regular, design: .monospaced))
                 .foregroundStyle(Color(row.node.isFocused ? Tokens.accent : Tokens.shortcutLabel))
                 .lineLimit(1)

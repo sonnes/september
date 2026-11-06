@@ -1,4 +1,3 @@
-import AppKit
 import Combine
 import Foundation
 
@@ -6,27 +5,14 @@ import Foundation
 /// sink turns the result into real events (or records them, in tests).
 @MainActor
 public final class KeyboardController: ObservableObject {
-    public enum Mode: String, CaseIterable, Sendable {
-        case type, talk, write, settings
-
-        public var symbol: String {
-            switch self {
-            case .type: "keyboard"
-            case .talk: "speaker.wave.2"
-            case .write: "square.and.pencil"
-            case .settings: "gearshape"
-            }
-        }
-
-        public var title: String { rawValue.capitalized }
-    }
+    /// The name shown until an app reports its own.
+    public static let defaultAppName = "Finder"
 
     @Published public var style: KeyboardStyle = .rainbow
-    @Published public var mode: Mode = .type
     @Published public private(set) var modifiers = ModifierState()
     /// What we have typed since the last Return. Only shown when the app in
-    /// front exposes no text of its own — see `input`.
-    @Published public private(set) var echo = "" {
+    /// front exposes no text of its own.
+    private var echo = "" {
         didSet { refreshInput() }
     }
     /// What the input bar shows: the focused field mirrored back, our own echo,
@@ -35,36 +21,24 @@ public final class KeyboardController: ObservableObject {
     /// The text field the app in front has focused, as far as accessibility
     /// can tell us.
     @Published public private(set) var focusedField: FocusedField?
-    @Published public private(set) var frontmostAppName = "Finder"
+    @Published public private(set) var frontmostAppName = KeyboardController.defaultAppName
     @Published public private(set) var appPanel: PanelDefinition
-    /// Set by the app once it knows whether macOS trusts us to send keystrokes.
-    @Published public var isAccessibilityTrusted = true
-    /// Opens System Settings at the Accessibility pane.
-    public var onOpenPermissionSettings: (() -> Void)?
 
-    public let editPanel: PanelDefinition
-    public let navigatePanel: PanelDefinition
-    public let systemPanel: PanelDefinition
+    public let panels: PanelStore
 
     private let sink: any KeystrokeSink
-    private let store: PanelStore
     private var keyCodeMap: KeyCodeMap
     private var observers: [any NSObjectProtocol] = []
 
     public init(
         sink: any KeystrokeSink,
-        store: PanelStore? = nil,
-        keyCodeMap: KeyCodeMap? = nil
+        panels: PanelStore,
+        keyCodeMap: KeyCodeMap = SystemKeyboardLayout.currentMap()
     ) {
         self.sink = sink
-        let store = store ?? ((try? PanelStore.bundled()) ?? PanelStore.empty)
-        self.store = store
-        self.keyCodeMap = keyCodeMap ?? SystemKeyboardLayout.currentMap()
-        editPanel = store.panel(id: "edit") ?? .empty(id: "edit", title: "EDIT")
-        navigatePanel = store.panel(id: "navigate") ?? .empty(id: "navigate", title: "NAVIGATE")
-        systemPanel = store.panel(id: "system") ?? .empty(id: "system", title: "SYSTEM")
-        appPanel = store.appPanel(forBundleID: NSWorkspace.shared.frontmostApplication?.bundleIdentifier)
-        frontmostAppName = NSWorkspace.shared.frontmostApplication?.localizedName ?? "Finder"
+        self.panels = panels
+        self.keyCodeMap = keyCodeMap
+        appPanel = panels.appPanel(forBundleID: nil)
         observe()
     }
 
@@ -78,11 +52,6 @@ public final class KeyboardController: ObservableObject {
             type(character, secondary: key.secondaryLabel)
         case .virtual(let virtual):
             post(virtual)
-        case .shortcut(let shortcut):
-            perform(.shortcut(shortcut))
-        case .text(let text):
-            sink.type(text)
-            append(text)
         }
     }
 
@@ -93,8 +62,6 @@ public final class KeyboardController: ObservableObject {
         case .text(let text):
             sink.type(text)
             append(text)
-        case .openPanel(let id):
-            if let panel = store.panel(id: id) { appPanel = panel }
         }
         modifiers.consume()
     }
@@ -108,9 +75,9 @@ public final class KeyboardController: ObservableObject {
     /// Called when a different app comes to the front. Everything on screen
     /// belonged to the app we just left: the mirrored field is gone, and our
     /// own echo was typed into that app, not this one.
-    public func appChanged(name: String, bundleID: String?) {
-        frontmostAppName = name
-        appPanel = store.appPanel(forBundleID: bundleID)
+    public func appChanged(name: String?, bundleID: String?) {
+        frontmostAppName = name ?? KeyboardController.defaultAppName
+        appPanel = panels.appPanel(forBundleID: bundleID)
         focusedField = nil
         echo = ""
     }
@@ -119,8 +86,8 @@ public final class KeyboardController: ObservableObject {
     /// field, or new text in the one we are already watching.
     public func focusChanged(to field: FocusedField?) {
         focusedField = field
-        if let field {
-            frontmostAppName = field.appName
+        if let name = field?.appName {
+            frontmostAppName = name
         }
         // Whatever we typed belongs to the field we were on; a password must
         // never linger in our buffer.
@@ -221,13 +188,9 @@ public final class KeyboardController: ObservableObject {
         }
     }
 
-    // MARK: - Following the frontmost app
+    // MARK: - Following the input source
 
     private func observe() {
-        // App switches arrive through `appChanged`, called by whoever is
-        // watching focus: it has to clear the old app's text *before* the new
-        // app's field is published, and two independent observers of the same
-        // notification cannot promise that order.
         observers.append(
             DistributedNotificationCenter.default().addObserver(
                 forName: SystemKeyboardLayout.inputSourceChanged,
@@ -236,22 +199,6 @@ public final class KeyboardController: ObservableObject {
             ) { [weak self] _ in
                 Task { @MainActor in self?.keyCodeMap = SystemKeyboardLayout.currentMap() }
             }
-        )
-    }
-}
-
-extension PanelDefinition {
-    static func empty(id: String, title: String) -> PanelDefinition {
-        PanelDefinition(id: id, title: title, columns: 2, buttons: [])
-    }
-}
-
-extension PanelStore {
-    static var empty: PanelStore {
-        PanelStore(
-            panels: [],
-            appPanels: [:],
-            generic: .empty(id: "app.generic", title: "APP")
         )
     }
 }

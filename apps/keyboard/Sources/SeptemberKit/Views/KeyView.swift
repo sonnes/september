@@ -32,26 +32,13 @@ public struct KeyView: View {
                 width: width ?? Metrics.size(for: key.kind).width,
                 height: Metrics.size(for: key.kind).height
             )
-            .background(
-                RoundedRectangle(cornerRadius: Metrics.keyCornerRadius, style: .continuous)
-                    .fill(Color(fill))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: Metrics.keyCornerRadius, style: .continuous)
-                    .strokeBorder(Color(stroke), lineWidth: 1)
-            )
-            .shadow(color: Color(Tokens.keyShadow), radius: 1, y: 1)
-            .shadow(color: Color(Tokens.keyGlow), radius: 8)
-            .contentShape(Rectangle())
-            .onTapGesture { press() }
-            .onLongPressGesture(minimumDuration: 0.4, pressing: { pressing in
+            .keyChrome(fill: fill, stroke: stroke, glow: true)
+            .pressable(label: key.accessibilityLabel, isSelected: isActive) { pressing in
                 isPressed = pressing
                 pressing ? startRepeating() : stopRepeating()
-            }, perform: {})
-            .accessibilityElement()
-            .accessibilityLabel(key.accessibilityLabel)
-            .accessibilityAddTraits(isActive ? [.isButton, .isSelected] : .isButton)
-            .accessibilityAction { press() }
+            } action: {
+                press()
+            }
             .animation(.easeOut(duration: 0.08), value: isPressed)
             .animation(.easeOut(duration: 0.12), value: isActive)
     }
@@ -95,11 +82,10 @@ public struct KeyView: View {
             ? Tokens.strokeStandard : Tokens.strokeSpecial
     }
 
-    /// Holding delete or an arrow key repeats, as a hardware keyboard does.
     private func startRepeating() {
         guard case .virtual(let virtual) = key.action, virtual.repeatsWhenHeld else { return }
         repeatTimer?.invalidate()
-        repeatTimer = Timer.scheduledTimer(withTimeInterval: 0.08, repeats: true) { _ in
+        repeatTimer = Timer.scheduledTimer(withTimeInterval: Metrics.keyRepeatInterval, repeats: true) { _ in
             Task { @MainActor in press() }
         }
     }
@@ -107,15 +93,5 @@ public struct KeyView: View {
     private func stopRepeating() {
         repeatTimer?.invalidate()
         repeatTimer = nil
-    }
-}
-
-extension VirtualKey {
-    /// Keys where holding should repeat.
-    public var repeatsWhenHeld: Bool {
-        switch self {
-        case .delete, .forwardDelete, .left, .right, .up, .down, .space: true
-        default: false
-        }
     }
 }

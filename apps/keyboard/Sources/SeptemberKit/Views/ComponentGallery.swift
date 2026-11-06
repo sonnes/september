@@ -3,9 +3,11 @@ import SwiftUI
 /// The component library from the design system, rendered on its own so each
 /// piece can be compared against the reference images.
 public struct ComponentGallery: View {
-    @EnvironmentObject private var controller: KeyboardController
-
     public init() {}
+
+    private func size(_ kind: KeyKind) -> String {
+        Metrics.describe(Metrics.size(for: kind))
+    }
 
     private var samples: [(title: String, note: String, view: AnyView)] {
         let standard = KeyDefinition(id: "g-a", kind: .standard, label: "A", action: .character("a"))
@@ -25,27 +27,27 @@ public struct ComponentGallery: View {
 
         return [
             (
-                "Key / Standard", "Primary alphanumeric key. 48×48.",
+                "Key / Standard", "Primary alphanumeric key. \(size(.standard)).",
                 AnyView(KeyView(key: standard) {})
             ),
             (
-                "Key / Special", "Modifier and utility keys. 60×48, flexible width.",
+                "Key / Special", "Modifier and utility keys. \(size(.special)), flexible width.",
                 AnyView(KeyView(key: special) {})
             ),
             (
-                "Key / Function", "Function row keys. 60×32.",
+                "Key / Function", "Function row keys. \(size(.function)).",
                 AnyView(KeyView(key: function) {})
             ),
             (
-                "Key / Dual", "Two-label key with primary and secondary glyphs. 48×48.",
+                "Key / Dual", "Two-label key with primary and secondary glyphs. \(size(.dual)).",
                 AnyView(KeyView(key: dual) {})
             ),
             (
-                "Shortcut / Button", "Icon plus key hint. 120×40.",
+                "Shortcut / Button", "Icon plus key hint. \(Metrics.describe(Metrics.shortcutButton)).",
                 AnyView(ShortcutButtonView(button: copy) {})
             ),
             (
-                "Shortcut / Full", "Icon, name and key hint. 160×36.",
+                "Shortcut / Full", "Icon, name and key hint. \(Metrics.describe(Metrics.shortcutFull)).",
                 AnyView(ShortcutFullView(button: copy) {})
             ),
         ]

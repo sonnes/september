@@ -4,7 +4,8 @@ import Foundation
 ///
 /// Offsets are UTF-16 units because that is what `AXSelectedTextRange` speaks.
 public struct FocusedField: Equatable, Sendable {
-    public var appName: String
+    /// `nil` when the owning process reports no name.
+    public var appName: String?
     /// `AXTextField`, `AXTextArea`, `AXComboBox`… — kept for diagnostics.
     public var role: String
     public var isEditable: Bool
@@ -16,7 +17,7 @@ public struct FocusedField: Equatable, Sendable {
     public var selection: NSRange?
 
     public init(
-        appName: String,
+        appName: String?,
         role: String,
         isEditable: Bool,
         isSecure: Bool,

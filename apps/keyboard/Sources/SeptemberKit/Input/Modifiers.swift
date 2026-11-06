@@ -1,3 +1,5 @@
+import CoreGraphics
+
 /// Modifier keys, as a set so combinations are one value.
 public struct Modifiers: OptionSet, Sendable, Hashable {
     public let rawValue: UInt8
@@ -10,38 +12,63 @@ public struct Modifiers: OptionSet, Sendable, Hashable {
     public static let function = Modifiers(rawValue: 1 << 4)
     public static let capsLock = Modifiers(rawValue: 1 << 5)
 
-    /// The virtual key posted to hold this modifier down. Caps lock has no
-    /// postable key — macOS owns its toggle — so we fold it into shift instead.
-    public var virtualKey: UInt16? {
-        switch self {
-        case .shift: 56
-        case .control: 59
-        case .option: 58
-        case .command: 55
-        case .function: 63
-        default: nil
+    /// A modifier that a chord can hold down.
+    public struct Held: Sendable {
+        public let modifier: Modifiers
+        /// The name in panel JSON.
+        public let name: String
+        public let symbol: String
+        public let spokenName: String
+        /// The macOS `kVK_*` code posted to hold it down.
+        public let virtualKey: UInt16
+        public let eventFlag: CGEventFlags
+    }
+
+    /// Every modifier a chord can hold, in the order macOS prints them and a
+    /// hand presses them. Caps lock is not here: macOS owns its toggle, so no
+    /// app can post it.
+    public static let held: [Held] = [
+        Held(
+            modifier: .function, name: "function", symbol: "fn", spokenName: "Function",
+            virtualKey: 63, eventFlag: .maskSecondaryFn),
+        Held(
+            modifier: .control, name: "control", symbol: "⌃", spokenName: "Control",
+            virtualKey: 59, eventFlag: .maskControl),
+        Held(
+            modifier: .option, name: "option", symbol: "⌥", spokenName: "Option",
+            virtualKey: 58, eventFlag: .maskAlternate),
+        Held(
+            modifier: .shift, name: "shift", symbol: "⇧", spokenName: "Shift",
+            virtualKey: 56, eventFlag: .maskShift),
+        Held(
+            modifier: .command, name: "command", symbol: "⌘", spokenName: "Command",
+            virtualKey: 55, eventFlag: .maskCommand),
+    ]
+
+    /// The held modifiers in this set, in press order.
+    public var heldKeys: [Held] { Modifiers.held.filter { contains($0.modifier) } }
+
+    /// The key code posted to hold this single modifier, or nil for caps lock.
+    public var virtualKey: UInt16? { heldKeys.count == 1 ? heldKeys[0].virtualKey : nil }
+
+    /// The hint drawn on a shortcut, such as "⇧⌘".
+    public var symbols: String { heldKeys.map(\.symbol).joined() }
+
+    public var spokenName: String { heldKeys.map(\.spokenName).joined(separator: " ") }
+
+    public var eventFlags: CGEventFlags {
+        heldKeys.reduce(into: []) { $0.insert($1.eventFlag) }
+    }
+
+    /// Modifiers by their panel JSON names.
+    public init(names: [String]) throws {
+        var modifiers: Modifiers = []
+        for name in names {
+            guard let match = Modifiers.held.first(where: { $0.name == name }) else {
+                throw PanelDecodingError.unknownModifier(name)
+            }
+            modifiers.insert(match.modifier)
         }
-    }
-
-    /// Order modifiers are pressed in, matching how a hand builds a chord.
-    public static let pressOrder: [Modifiers] = [.control, .option, .shift, .command]
-
-    /// The symbols shown on a shortcut, in the order macOS prints them.
-    public var symbols: String {
-        var out = ""
-        if contains(.control) { out += "⌃" }
-        if contains(.option) { out += "⌥" }
-        if contains(.shift) { out += "⇧" }
-        if contains(.command) { out += "⌘" }
-        return out
-    }
-
-    public var spokenName: String {
-        var parts: [String] = []
-        if contains(.control) { parts.append("Control") }
-        if contains(.option) { parts.append("Option") }
-        if contains(.shift) { parts.append("Shift") }
-        if contains(.command) { parts.append("Command") }
-        return parts.joined(separator: " ")
+        self = modifiers
     }
 }

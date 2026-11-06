@@ -8,9 +8,8 @@ public struct KeyRow: Sendable, Identifiable {
 
 /// The US QWERTY keyboard from the design mock.
 ///
-/// Keys carry a *weight*, not a fixed width: the component library sizes
-/// (48pt standard, 60pt special) are the gallery defaults, while an assembled
-/// row fills the 980pt keyboard proportionally, as the mock shows.
+/// Keys carry a weight, not a fixed width: an assembled row fills the keyboard
+/// width in proportion, as the mock shows.
 public enum KeyboardLayout {
     public static let rows: [KeyRow] = [
         KeyRow(id: .function, keys: functionRow),

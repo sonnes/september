@@ -1,6 +1,7 @@
 keyboardLayoutTests()
 modifierStateTests()
 keyCodeMapTests()
+modifierNameTests()
 keystrokeTests()
 panelTests()
 controllerTests()

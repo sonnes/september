@@ -36,11 +36,6 @@ public struct ModifierState: Sendable, Equatable {
         latched = []
     }
 
-    public mutating func clear() {
-        latched = []
-        locked = []
-    }
-
     /// Case of a typed character under the current shift / caps lock state.
     /// Shift and caps lock together cancel out, as on a hardware keyboard.
     public func apply(to character: String) -> String {

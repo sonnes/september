@@ -4,14 +4,13 @@ import SwiftUI
 /// keyboard below.
 public struct KeyboardScreen: View {
     @EnvironmentObject private var controller: KeyboardController
+    @EnvironmentObject private var permission: AccessibilityPermission
 
     public init() {}
 
     public var body: some View {
-        // The input bar and the mode buttons float free above the keys; only
-        // the keys and their panels sit on a surface.
         VStack(alignment: .leading, spacing: Metrics.sectionSpacing) {
-            if !controller.isAccessibilityTrusted {
+            if !permission.isTrusted {
                 PermissionBanner()
                     .padding(.leading, Metrics.keypadWidth + Metrics.sectionSpacing)
             }
@@ -25,18 +24,18 @@ public struct KeyboardScreen: View {
 
             keys
         }
-        .padding(16)
+        .padding(Metrics.surfacePadding)
     }
 
     private var keys: some View {
         HStack(alignment: .top, spacing: Metrics.sectionSpacing) {
-            PanelGridView(panel: controller.editPanel) { controller.perform($0) }
+            PanelGridView(panel: controller.panels.edit) { controller.perform($0) }
 
             MainKeyboardView()
 
             VStack(alignment: .leading, spacing: 12) {
-                PanelGridView(panel: controller.navigatePanel) { controller.perform($0) }
-                PanelGridView(panel: controller.systemPanel) { controller.perform($0) }
+                PanelGridView(panel: controller.panels.navigate) { controller.perform($0) }
+                PanelGridView(panel: controller.panels.system) { controller.perform($0) }
             }
 
             AppShortcutsView(
@@ -44,16 +43,16 @@ public struct KeyboardScreen: View {
                 appName: controller.frontmostAppName
             ) { controller.perform($0) }
         }
-        .padding(16)
+        .padding(Metrics.surfacePadding)
         .background(Color(Tokens.background))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Metrics.surfaceCornerRadius, style: .continuous))
     }
 }
 
-/// Shown until macOS trusts the app to send keystrokes — without it every key
-/// press would silently do nothing.
+/// Shown until macOS trusts the app to send keystrokes. Without that trust,
+/// macOS drops every key press without an error.
 struct PermissionBanner: View {
-    @EnvironmentObject private var controller: KeyboardController
+    @EnvironmentObject private var permission: AccessibilityPermission
 
     var body: some View {
         HStack(spacing: 10) {
@@ -63,16 +62,16 @@ struct PermissionBanner: View {
                 .font(.system(size: 12))
                 .foregroundStyle(Color(Tokens.keyText))
             Button("Open Settings") {
-                controller.onOpenPermissionSettings?()
+                permission.openSettings()
             }
             .buttonStyle(.plain)
             .font(.system(size: 12, weight: .medium))
             .foregroundStyle(Color(Tokens.accent))
         }
         .padding(.horizontal, 16)
-        .frame(height: 36)
+        .frame(height: Metrics.bannerHeight)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: Metrics.bannerCornerRadius, style: .continuous)
                 .fill(Color(Tokens.warningSurface))
         )
         .accessibilityElement(children: .combine)

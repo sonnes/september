@@ -95,11 +95,4 @@ func treeTests() {
             root: node(0, "AXApplication", children: (1...50).map { node($0, "AXGroup") }))
         expectEqual(wide.rows(limit: 10).count, 10)
     }
-
-    test("the rows of the sample tree stop at the focused branch") {
-        expectEqual(tree.rows().map(\.node.role), [
-            "AXApplication", "AXWindow", "AXScrollArea", "AXTextArea", "AXMenuBar",
-        ])
-    }
-
 }

@@ -14,21 +14,21 @@ public struct Keystroke: Sendable, Equatable {
     /// Modifier downs, the key, then modifier ups in reverse — the order a
     /// hardware keyboard produces, which is what apps expect to see.
     public static func events(virtualKey: UInt16, modifiers: Modifiers) -> [Keystroke] {
-        let held = Modifiers.pressOrder.filter { modifiers.contains($0) }
+        let held = modifiers.heldKeys
         var accumulated: Modifiers = []
         var events: [Keystroke] = []
 
-        for modifier in held {
-            accumulated.insert(modifier)
-            events.append(Keystroke(virtualKey: modifier.virtualKey!, flags: accumulated, isDown: true))
+        for key in held {
+            accumulated.insert(key.modifier)
+            events.append(Keystroke(virtualKey: key.virtualKey, flags: accumulated, isDown: true))
         }
 
         events.append(Keystroke(virtualKey: virtualKey, flags: accumulated, isDown: true))
         events.append(Keystroke(virtualKey: virtualKey, flags: accumulated, isDown: false))
 
-        for modifier in held.reversed() {
-            accumulated.remove(modifier)
-            events.append(Keystroke(virtualKey: modifier.virtualKey!, flags: accumulated, isDown: false))
+        for key in held.reversed() {
+            accumulated.remove(key.modifier)
+            events.append(Keystroke(virtualKey: key.virtualKey, flags: accumulated, isDown: false))
         }
 
         return events

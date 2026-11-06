@@ -28,13 +28,20 @@ private let stubMap = KeyCodeMap { code, modifiers in
         1: ("s", "S"),
         6: ("z", "Z"),
         8: ("c", "C"),
-        9: ("v", "V"),
         18: ("1", "!"),
-        24: ("=", "+"),
-        27: ("-", "_"),
     ]
     guard let entry = table[code] else { return nil }
     return modifiers.contains(.shift) ? entry.shifted : entry.plain
+}
+
+/// A controller with the bundled panels and the stub layout, so no test
+/// depends on the machine's own keyboard layout.
+@MainActor
+func makeController() throws -> (KeyboardController, RecordingSink) {
+    let sink = RecordingSink()
+    let controller = KeyboardController(
+        sink: sink, panels: try PanelStore.bundled(), keyCodeMap: stubMap)
+    return (controller, sink)
 }
 
 private func key(_ id: String) -> KeyDefinition {
@@ -46,79 +53,86 @@ private func key(_ id: String) -> KeyDefinition {
 
 @MainActor
 func controllerTests() {
-    func makeController() -> (KeyboardController, RecordingSink) {
-        let sink = RecordingSink()
-        let controller = KeyboardController(
-            sink: sink,
-            store: try! PanelStore.bundled(),
-            keyCodeMap: stubMap
-        )
-        return (controller, sink)
-    }
-
     test("typing a letter posts that key and echoes it") {
-        let (controller, sink) = makeController()
+        let (controller, sink) = try makeController()
         controller.press(key("key-a"))
         expectEqual(sink.downs.count, 1)
         expectEqual(sink.downs.first?.key, 0)
         expectEqual(sink.downs.first?.flags, [])
-        expectEqual(controller.echo, "a")
+        expectEqual(controller.input, .local(text: "a"))
     }
 
     test("a latched shift uppercases exactly one letter") {
-        let (controller, sink) = makeController()
+        let (controller, sink) = try makeController()
         controller.press(key("shift-left"))
         controller.press(key("key-a"))
         expectEqual(sink.downs.first?.flags, .shift)
-        expectEqual(controller.echo, "A")
+        expectEqual(controller.input, .local(text: "A"))
 
         sink.reset()
         controller.press(key("key-s"))
         expectEqual(sink.downs.first?.flags, [], "shift should have expired")
-        expectEqual(controller.echo, "As")
+        expectEqual(controller.input, .local(text: "As"))
     }
 
     test("caps lock stays on until tapped again") {
-        let (controller, _) = makeController()
+        let (controller, _) = try makeController()
         controller.press(key("capslock"))
         controller.press(key("key-a"))
         controller.press(key("key-s"))
-        expectEqual(controller.echo, "AS")
+        expectEqual(controller.input, .local(text: "AS"))
         controller.press(key("capslock"))
         controller.press(key("key-a"))
-        expectEqual(controller.echo, "ASa")
+        expectEqual(controller.input, .local(text: "ASa"))
     }
 
     test("a latched command makes the next letter a shortcut, not text") {
-        let (controller, sink) = makeController()
+        let (controller, sink) = try makeController()
         controller.press(key("command-left"))
         controller.press(key("key-c"))
         expectEqual(sink.downs.map(\.key), [Modifiers.command.virtualKey!, 8])
         expectEqual(sink.downs.last?.flags, .command)
-        expectEqual(controller.echo, "", "a shortcut is not typed text")
+        expectEqual(controller.input, .local(text: ""), "a shortcut is not typed text")
+    }
+
+    test("a latched fn holds fn down for the next key") {
+        let (controller, sink) = try makeController()
+        controller.press(key("fn"))
+        controller.press(key("f1"))
+        expectEqual(sink.downs.map(\.key), [Modifiers.function.virtualKey!, VirtualKey.f1.rawValue])
+        expectEqual(sink.downs.last?.flags, .function)
+    }
+
+    test("fn and a letter make a shortcut, not text") {
+        let (controller, sink) = try makeController()
+        controller.press(key("fn"))
+        controller.press(key("key-a"))
+        expectEqual(sink.downs.map(\.key), [Modifiers.function.virtualKey!, 0])
+        expectEqual(sink.downs.last?.flags, .function)
+        expectEqual(controller.input, .local(text: ""))
     }
 
     test("shift plus a dual key types the secondary glyph") {
-        let (controller, _) = makeController()
+        let (controller, _) = try makeController()
         controller.press(key("shift-left"))
         controller.press(key("key-1"))
-        expectEqual(controller.echo, "!")
+        expectEqual(controller.input, .local(text: "!"))
     }
 
     test("delete removes the last character and return clears the line") {
-        let (controller, _) = makeController()
+        let (controller, _) = try makeController()
         controller.press(key("key-a"))
         controller.press(key("key-s"))
         controller.press(key("delete"))
-        expectEqual(controller.echo, "a")
+        expectEqual(controller.input, .local(text: "a"))
         controller.press(key("space"))
-        expectEqual(controller.echo, "a ")
+        expectEqual(controller.input, .local(text: "a "))
         controller.press(key("return"))
-        expectEqual(controller.echo, "")
+        expectEqual(controller.input, .local(text: ""))
     }
 
     test("a panel shortcut posts its whole combination") {
-        let (controller, sink) = makeController()
+        let (controller, sink) = try makeController()
         controller.perform(.shortcut(Shortcut(modifiers: [.command, .shift], key: .character("z"))))
         expectEqual(
             sink.downs.map(\.key),
@@ -128,25 +142,27 @@ func controllerTests() {
     }
 
     test("a text action is typed verbatim") {
-        let (controller, sink) = makeController()
+        let (controller, sink) = try makeController()
         controller.perform(.text("Hello"))
         expectEqual(sink.typed, ["Hello"])
-        expectEqual(controller.echo, "Hello")
+        expectEqual(controller.input, .local(text: "Hello"))
+    }
+
+    test("a panel button uses up a latched modifier") {
+        let (controller, sink) = try makeController()
+        controller.press(key("shift-left"))
+        controller.perform(.text("hi"))
+        controller.press(key("key-a"))
+        expectEqual(sink.downs.last?.flags, [])
+        expectEqual(controller.input, .local(text: "hia"))
     }
 
     test("characters the layout cannot produce fall back to unicode injection") {
-        let (controller, sink) = makeController()
+        let (controller, sink) = try makeController()
         controller.press(
             KeyDefinition(id: "emoji", kind: .standard, label: "🙂", action: .character("🙂"))
         )
         expectEqual(sink.typed, ["🙂"])
         expectEqual(sink.posted.count, 0)
-    }
-
-    test("the edit panel loads into the controller") {
-        let (controller, _) = makeController()
-        expectEqual(controller.editPanel.buttons.count, 12)
-        expectEqual(controller.navigatePanel.title, "NAVIGATE")
-        expectEqual(controller.systemPanel.title, "SYSTEM")
     }
 }

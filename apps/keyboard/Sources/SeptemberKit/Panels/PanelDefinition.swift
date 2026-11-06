@@ -1,12 +1,9 @@
 import Foundation
 
-/// What a panel button does. Deliberately the same vocabulary Apple's
-/// Accessibility Keyboard uses for `.ascconfig` panels: press a key macro,
-/// type a string, or open another panel.
+/// What a panel button does: press a key combination or type a phrase.
 public enum PanelAction: Sendable, Hashable {
     case shortcut(Shortcut)
     case text(String)
-    case openPanel(String)
 }
 
 /// One button in a shortcut panel.
@@ -16,6 +13,13 @@ public struct PanelButton: Sendable, Hashable, Identifiable {
     /// SF Symbol name.
     public let symbol: String?
     public let action: PanelAction
+
+    public init(id: String, label: String, symbol: String?, action: PanelAction) {
+        self.id = id
+        self.label = label
+        self.symbol = symbol
+        self.action = action
+    }
 
     /// The key combination printed on the button, if it has one.
     public var hint: String? {
@@ -27,21 +31,18 @@ public struct PanelButton: Sendable, Hashable, Identifiable {
         switch action {
         case .shortcut(let shortcut): "\(label), \(shortcut.spokenName)"
         case .text: label
-        case .openPanel: "\(label), opens panel"
         }
     }
 }
 
-/// A grid of shortcut buttons — the left EDIT keypad, the right NAVIGATE
-/// keypad, or the shortcuts for the app currently in front.
-public struct PanelDefinition: Sendable, Hashable, Identifiable {
-    public let id: String
+/// A grid of shortcut buttons: the EDIT, NAVIGATE and SYSTEM keypads, or the
+/// shortcuts for the app in front.
+public struct PanelDefinition: Sendable, Hashable {
     public let title: String
     public let columns: Int
     public let buttons: [PanelButton]
 
-    public init(id: String, title: String, columns: Int, buttons: [PanelButton]) {
-        self.id = id
+    public init(title: String, columns: Int, buttons: [PanelButton]) {
         self.title = title
         self.columns = columns
         self.buttons = buttons
@@ -52,7 +53,21 @@ public struct PanelDefinition: Sendable, Hashable, Identifiable {
 
 extension PanelDefinition: Decodable {
     enum CodingKeys: String, CodingKey {
-        case id, title, columns, buttons
+        case title, columns, buttons
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let buttons = try container.decode([PanelButton].self, forKey: .buttons)
+        var seen: Set<String> = []
+        for button in buttons where !seen.insert(button.id).inserted {
+            throw PanelDecodingError.duplicateButton(button.id)
+        }
+        self.init(
+            title: try container.decode(String.self, forKey: .title),
+            columns: try container.decode(Int.self, forKey: .columns),
+            buttons: buttons
+        )
     }
 }
 
@@ -64,7 +79,7 @@ extension PanelButton: Decodable {
 
 extension PanelAction: Decodable {
     enum CodingKeys: String, CodingKey {
-        case type, modifiers, key, text, panel
+        case type, modifiers, key, text
     }
 
     public init(from decoder: any Decoder) throws {
@@ -79,8 +94,6 @@ extension PanelAction: Decodable {
             )
         case "text":
             self = .text(try container.decode(String.self, forKey: .text))
-        case "openPanel":
-            self = .openPanel(try container.decode(String.self, forKey: .panel))
         default:
             throw DecodingError.dataCorruptedError(
                 forKey: .type,
@@ -88,25 +101,6 @@ extension PanelAction: Decodable {
                 debugDescription: "unknown panel action type '\(type)'"
             )
         }
-    }
-}
-
-extension Modifiers {
-    /// Modifier names as written in panel JSON.
-    public init(names: [String]) throws {
-        var modifiers: Modifiers = []
-        for name in names {
-            switch name {
-            case "shift": modifiers.insert(.shift)
-            case "control": modifiers.insert(.control)
-            case "option": modifiers.insert(.option)
-            case "command": modifiers.insert(.command)
-            case "function": modifiers.insert(.function)
-            default:
-                throw PanelDecodingError.unknownModifier(name)
-            }
-        }
-        self = modifiers
     }
 }
 
@@ -126,13 +120,15 @@ extension Shortcut.Key {
 public enum PanelDecodingError: Error, CustomStringConvertible {
     case unknownModifier(String)
     case unknownKey(String)
-    case missingPanels
+    case duplicateButton(String)
+    case missingPanel(String)
 
     public var description: String {
         switch self {
         case .unknownModifier(let name): "unknown modifier '\(name)'"
         case .unknownKey(let name): "unknown key '\(name)'"
-        case .missingPanels: "no panel definitions found in the app bundle"
+        case .duplicateButton(let id): "two buttons share the id '\(id)'"
+        case .missingPanel(let name): "no panel '\(name)' in the app bundle"
         }
     }
 }

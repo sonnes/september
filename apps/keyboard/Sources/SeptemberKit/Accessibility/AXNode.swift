@@ -31,8 +31,6 @@ public struct AXNode: Equatable, Sendable, Identifiable {
         self.children = children
     }
 
-    public var title: String { role }
-
     public var subtitle: String? {
         guard let label, !label.isEmpty else { return nil }
         return label
@@ -66,12 +64,14 @@ public struct AXTree: Equatable, Sendable {
 
     public static let empty = AXTree(appName: "", root: nil)
 
+    /// The most elements a tree holds or the viewer shows.
+    public static let nodeLimit = 400
+
     /// Depth first, the order the tree reads on screen — but collapsed. Only
     /// the branch leading to the focused element opens, because that is the one
     /// the user is working in; everything else shows as a shut row with a count
-    /// of what it is holding. Trees run to thousands of elements, so the viewer
-    /// still takes no more than `limit` rows.
-    public func rows(limit: Int = 400) -> [AXTreeRow] {
+    /// of what it is holding.
+    public func rows(limit: Int = AXTree.nodeLimit) -> [AXTreeRow] {
         guard let root else { return [] }
         var rows: [AXTreeRow] = []
         var stack = [(node: root, depth: 0)]

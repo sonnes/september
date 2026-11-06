@@ -8,15 +8,11 @@ public enum KeyAction: Sendable, Hashable {
     case virtual(VirtualKey)
     /// Latch, lock or clear a modifier.
     case modifier(Modifiers)
-    /// A full combination, as used by the shortcut panels.
-    case shortcut(Shortcut)
-    /// Type a stored phrase verbatim.
-    case text(String)
 }
 
 /// A modifier combination plus the key it applies to.
-public struct Shortcut: Sendable, Hashable, Codable {
-    public enum Key: Sendable, Hashable, Codable {
+public struct Shortcut: Sendable, Hashable {
+    public enum Key: Sendable, Hashable {
         case character(String)
         case virtual(VirtualKey)
     }
@@ -29,7 +25,7 @@ public struct Shortcut: Sendable, Hashable, Codable {
         self.key = key
     }
 
-    /// "⌘C", "⇧⌘Z", "⌘↩" — the hint drawn on shortcut buttons.
+    /// "⌘C", "⇧⌘Z", "⌘↩": the hint drawn on shortcut buttons.
     public var display: String {
         let keyPart: String
         switch key {
@@ -49,8 +45,6 @@ public struct Shortcut: Sendable, Hashable, Codable {
         return modifierPart.isEmpty ? keyPart : "\(modifierPart) \(keyPart)"
     }
 }
-
-extension Modifiers: Codable {}
 
 /// One key on the keyboard.
 public struct KeyDefinition: Sendable, Hashable, Identifiable {
@@ -81,4 +75,16 @@ public struct KeyDefinition: Sendable, Hashable, Identifiable {
         self.action = action
         self.accessibilityLabel = accessibilityLabel ?? label.capitalized
     }
+}
+
+/// The kind of key, which fixes its size and label treatment.
+public enum KeyKind: Sendable, Hashable, CaseIterable {
+    /// Alphanumeric key with a single label.
+    case standard
+    /// Modifier or utility key (shift, tab, delete, return, caps lock).
+    case special
+    /// Function row key (esc, F1–F12).
+    case function
+    /// Number row key with a secondary symbol above the primary label.
+    case dual
 }

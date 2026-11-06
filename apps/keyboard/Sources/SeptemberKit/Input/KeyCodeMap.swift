@@ -28,10 +28,6 @@ public struct KeyCodeMap: Sendable {
         self.table = table
     }
 
-    public func keystroke(for character: Character) -> Resolved? {
-        table[String(character)]
-    }
-
     public func keystroke(for text: String) -> Resolved? {
         table[text]
     }

@@ -2,37 +2,38 @@ import AppKit
 import ApplicationServices
 import Combine
 
-/// Tracks whether the app is trusted for Accessibility. macOS re-asks
-/// periodically (15+), and the user grants it in System Settings while we keep
-/// running, so this polls rather than checking once at launch.
+/// Whether macOS trusts the app for Accessibility. The user grants it in
+/// System Settings while Keyboard runs, and macOS 15 and later re-asks from
+/// time to time, so this polls.
 @MainActor
-final class AccessibilityPermission: ObservableObject {
-    @Published private(set) var isTrusted: Bool = AXIsProcessTrusted()
+public final class AccessibilityPermission: ObservableObject {
+    @Published public private(set) var isTrusted: Bool
 
     private var timer: Timer?
 
-    func startMonitoring() {
+    public init(isTrusted: Bool = AXIsProcessTrusted()) {
+        self.isTrusted = isTrusted
+    }
+
+    public func startMonitoring() {
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.refresh() }
         }
     }
 
-    func refresh() {
+    private func refresh() {
         let trusted = AXIsProcessTrusted()
         if trusted != isTrusted { isTrusted = trusted }
     }
 
-    /// Shows the system prompt the first time; afterwards it is a no-op, which
-    /// is why `openSettings()` exists alongside it.
-    func request() {
-        // kAXTrustedCheckOptionPrompt is an imported `var`, which Swift 6 will
-        // not let us touch across isolation; its value is a stable constant.
+    /// Shows the system prompt, which macOS shows only once, then opens the
+    /// Accessibility pane of System Settings.
+    public func openSettings() {
+        // kAXTrustedCheckOptionPrompt is an imported `var`, which Swift 6 does
+        // not let us touch across isolation. Its value is a stable constant.
         let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
         _ = AXIsProcessTrustedWithOptions(options)
-    }
-
-    func openSettings() {
         guard
             let url = URL(
                 string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"

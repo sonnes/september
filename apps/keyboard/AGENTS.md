@@ -24,14 +24,14 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 
 | Path | Holds |
 |---|---|
-| `Sources/SeptemberKit/Accessibility` | `AXNode`/`AXTree` — another app's tree, snapshotted |
+| `Sources/SeptemberKit/Accessibility` | `AXNode`/`AXTree` (another app's tree, snapshotted), `AccessibilityPermission` |
 | `Sources/SeptemberKit/Design` | tokens, metrics, rainbow/mono styles |
 | `Sources/SeptemberKit/Keyboard` | key definitions, QWERTY layout, `KeyboardController` |
 | `Sources/SeptemberKit/Input` | modifiers, keystrokes, layout-aware key code map |
 | `Sources/SeptemberKit/Panels` | panel model + JSON loading |
 | `Sources/SeptemberKit/Views` | keys, shortcut buttons, panels, assembled screen |
-| `Sources/SeptemberKit/Resources/Panels` | `*.json` panels, `Apps/<bundle id>.json` |
-| `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `AXTreeReader`, permission, snapshots |
+| `Sources/SeptemberKit/Resources/Panels` | `edit`/`navigate`/`system.json`, `Apps/generic.json`, `Apps/<bundle id>.json` |
+| `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `AXTreeReader`, `AXElement` reads, snapshots |
 | `Tests/KitTests` | tests + the harness |
 
 Rule of thumb: **anything testable lives in `SeptemberKit`**. `Keyboard` holds
@@ -49,18 +49,16 @@ only what needs a running app — the panel, the event sink, the menu bar.
   New values go in the design layer first.
 - **Every colour is a `ThemeColor`.** Keyboard follows the system appearance,
   so a token has a light value and a dark value, and `Color(_:)` resolves it
-  against whatever is being drawn. Never pin an appearance on a window, and
-  never add a token that fails the contrast checks in `DesignTests`. The dark
-  column is issue #10's; the light column is derived — see
-  `docs/notes/2026-07-27-mac-keyboard-panels.md`.
+  against whatever is being drawn. Never pin an appearance on a window. The
+  dark column is issue #10's; the light column is derived from it.
 - **Design comes from [issue #10](https://github.com/sonnes/september/issues/10)**,
   not from the root `DESIGN.md` (that one governs the web app). Do not invent
-  colours or sizes; where sources conflict, follow
-  `docs/notes/2026-07-27-mac-keyboard-panels.md`.
+  colours or sizes.
 - **Every interactive element is an accessibility element** with a spoken label,
   `.isButton`, and an `accessibilityAction` wired to the same handler as the
-  tap. Dwell, Switch Control and Voice Control drive the app through `AXPress`;
-  a control that only responds to `onTapGesture` is unusable for our users.
+  tap. The `pressable` view modifier does all of this. Dwell, Switch Control
+  and Voice Control drive the app through `AXPress`; a control that only
+  responds to `onTapGesture` is unusable for our users.
 - **The panel must never take focus.** Do not add text fields, do not set
   `canBecomeKey`, do not activate the app. Everything the user types goes to the
   app in front.
@@ -74,9 +72,9 @@ only what needs a running app — the panel, the event sink, the menu bar.
   nothing for a password field. Never keep text typed into an
   `AXSecureTextField`. See `docs/concepts/input-mirroring.md`.
 - **Panels are data.** New shortcuts are JSON in `Resources/Panels`, not Swift.
-  The action vocabulary (`shortcut` / `text` / `openPanel`) deliberately mirrors
-  Apple's `.ascconfig` panels — see
-  `docs/research/2026-07-27-macos-accessibility-keyboard.md`.
+  A button either presses a `shortcut` or types `text`. The file name is the
+  panel's identity: an app panel is `Apps/<bundle id>.json`. `PanelStore`
+  throws on a missing or broken file, and the app shows the error and quits.
 - **Keep Swift 6 concurrency clean.** UI and controller are `@MainActor`; sinks
   crossing into CoreGraphics are `@unchecked Sendable` with a comment saying
   why. Do not silence warnings any other way.
@@ -95,12 +93,11 @@ only what needs a running app — the panel, the event sink, the menu bar.
   shows nothing.
 - Read focus from the **frontmost app's** element, not the system-wide one: the
   system-wide `AXFocusedUIElement` returns nothing whenever the key window and
-  `NSWorkspace.frontmostApplication` disagree. Details and the per-app coverage
-  table: `docs/research/2026-07-27-reading-the-focused-field.md`.
+  `NSWorkspace.frontmostApplication` disagree.
 - A locked screen makes every accessibility read collapse to `AXApplication`.
   Nothing probed then means anything.
 - `ImageRenderer` draws nothing inside a `ScrollView` — that is why
   `AXTreeView` takes a `scrolls` flag and `--snapshot --viewer` passes `false`.
-- Two windows now share the screen's bottom edge. The keyboard centres in the
+- Two windows share the screen's bottom edge. The keyboard centres in the
   space left after `reservedWidth`; both take the same margin, which is what
   keeps their heights and baselines matched.

@@ -84,6 +84,8 @@ func keyCodeMapTests() {
 }
 
 func keystrokeTests() {
+    let z: UInt16 = 6
+
     test("a plain character is one down and one up") {
         let events = Keystroke.events(virtualKey: 0, modifiers: [])
         expectEqual(events.count, 2)
@@ -92,25 +94,35 @@ func keystrokeTests() {
     }
 
     test("shift command Z presses modifiers first and releases them last") {
-        let events = Keystroke.events(virtualKey: VirtualKey.z.rawValue, modifiers: [.shift, .command])
+        let events = Keystroke.events(virtualKey: z, modifiers: [.shift, .command])
         expectEqual(events.count, 6)
         expectEqual(events.filter(\.isDown).count, 3)
 
         let downKeys = events.filter(\.isDown).map(\.virtualKey)
-        expectEqual(downKeys, [Modifiers.shift.virtualKey!, Modifiers.command.virtualKey!, VirtualKey.z.rawValue])
+        expectEqual(downKeys, [Modifiers.shift.virtualKey!, Modifiers.command.virtualKey!, z])
 
         let upKeys = events.filter { !$0.isDown }.map(\.virtualKey)
-        expectEqual(upKeys, [VirtualKey.z.rawValue, Modifiers.command.virtualKey!, Modifiers.shift.virtualKey!])
+        expectEqual(upKeys, [z, Modifiers.command.virtualKey!, Modifiers.shift.virtualKey!])
     }
 
     test("the key itself carries the modifier flags so apps see the combination") {
-        let events = Keystroke.events(virtualKey: VirtualKey.z.rawValue, modifiers: [.command])
-        let keyDown = events.first { $0.virtualKey == VirtualKey.z.rawValue && $0.isDown }
+        let events = Keystroke.events(virtualKey: z, modifiers: [.command])
+        let keyDown = events.first { $0.virtualKey == z && $0.isDown }
         expectEqual(keyDown?.flags, .command)
     }
 
     test("caps lock is never posted as part of a combination") {
         let events = Keystroke.events(virtualKey: 0, modifiers: [.capsLock, .shift])
-        expect(!events.contains { $0.virtualKey == Modifiers.capsLock.virtualKey })
+        expectEqual(events.filter(\.isDown).map(\.virtualKey), [Modifiers.shift.virtualKey!, 0])
+    }
+}
+
+func modifierNameTests() {
+    test("panel modifier names decode, fn included") {
+        expectEqual(try Modifiers(names: ["function", "command"]), [.function, .command])
+    }
+
+    test("an unknown modifier name is rejected") {
+        expect((try? Modifiers(names: ["hyper"])) == nil)
     }
 }

@@ -6,13 +6,14 @@ shortcut panels around it. Built with SwiftUI + AppKit, no dependencies.
 ```
 Sources/
   SeptemberKit/     models, design tokens, views — everything testable
+    Accessibility/  another app's tree as a snapshot, the Accessibility permission
     Design/         tokens, metrics, rainbow/mono styles
     Keyboard/       key definitions, the QWERTY layout, the controller
     Input/          modifiers, keystrokes, layout-aware key code map
     Panels/         panel model + JSON loading
     Views/          keys, shortcut buttons, panels, the assembled screen
-    Resources/      Panels/*.json and Panels/Apps/<bundle id>.json
-  Keyboard/         the app: floating panel, CGEvent sink, focus watcher, menu bar, permission
+    Resources/      Panels/{edit,navigate,system}.json, Panels/Apps/generic.json, Panels/Apps/<bundle id>.json
+  Keyboard/         the app: floating panel, CGEvent sink, focus watcher, tree reader, menu bar
 Tests/KitTests/     tests (see "Tests" below)
 ```
 
@@ -123,8 +124,7 @@ are reviewed outside the executable suite.
 
 Tokens, sizes and the two keyboard variants come from
 [issue #10](https://github.com/sonnes/september/issues/10). Where the issue body
-and the spec sheet disagree the issue body wins; see
-`docs/notes/2026-07-27-mac-keyboard-panels.md`.
+and the spec sheet disagree, the issue body wins.
 
 The keyboard follows the system light/dark setting. Every token is a
 `ThemeColor` — the issue's palette in the dark column, a derived one in the

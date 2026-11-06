@@ -31,21 +31,6 @@ public struct RGBA: Equatable, Hashable, Sendable {
             alpha: Double(hex8 & 0xFF) / 255
         )
     }
-
-    /// WCAG relative luminance — the basis for every contrast check.
-    public var relativeLuminance: Double {
-        func channel(_ value: Double) -> Double {
-            value <= 0.03928 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4)
-        }
-        return 0.2126 * channel(red) + 0.7152 * channel(green) + 0.0722 * channel(blue)
-    }
-
-    /// WCAG contrast, 1 (identical) to 21 (black on white).
-    public func contrastRatio(with other: RGBA) -> Double {
-        let a = relativeLuminance
-        let b = other.relativeLuminance
-        return (max(a, b) + 0.05) / (min(a, b) + 0.05)
-    }
 }
 
 /// One token in both appearances. Keyboard follows the system setting, so
@@ -57,11 +42,6 @@ public struct ThemeColor: Equatable, Hashable, Sendable {
     public init(light: RGBA, dark: RGBA) {
         self.light = light
         self.dark = dark
-    }
-
-    /// The same colour in both appearances — for the few that need no change.
-    public init(_ both: RGBA) {
-        self.init(light: both, dark: both)
     }
 
     public func resolved(dark isDark: Bool) -> RGBA { isDark ? dark : light }
@@ -97,8 +77,7 @@ extension RGBA {
 ///
 /// The dark values are the design system's own (issue #10). It defines no light
 /// appearance, so the light column mirrors each dark value's role rather than
-/// its hex — surfaces invert, text inverts, and every pairing is held to a WCAG
-/// contrast floor by the tests in `DesignTests`.
+/// its hex: surfaces invert, and text inverts.
 public enum Tokens {
     public static let background = ThemeColor(light: RGBA(hex: 0xEDEDF2), dark: RGBA(hex: 0x1C1C1E))
     public static let key = ThemeColor(light: RGBA(hex: 0xFFFFFF), dark: RGBA(hex: 0x1A1A20))
@@ -141,4 +120,13 @@ public enum Tokens {
         light: RGBA(hex8: 0x0000000F), dark: RGBA(hex8: 0xFFFFFF0F))
     public static let sectionLabel = ThemeColor(
         light: RGBA(hex: 0x6A6A76), dark: RGBA(hex: 0x606070))
+
+    /// Rainbow key labels, one hue per row. The hues assume a dark key, so the
+    /// light column takes each one down to hold its contrast on a white key.
+    public static let rowFunction = ThemeColor(light: RGBA(hex: 0xC01829), dark: RGBA(hex: 0xFF6B7A))
+    public static let rowNumber = ThemeColor(light: RGBA(hex: 0xA35400), dark: RGBA(hex: 0xFF9F4A))
+    public static let rowQwerty = ThemeColor(light: RGBA(hex: 0x866200), dark: RGBA(hex: 0xF5D06B))
+    public static let rowHome = ThemeColor(light: RGBA(hex: 0x0F7A48), dark: RGBA(hex: 0x5CD6A0))
+    public static let rowShift = ThemeColor(light: RGBA(hex: 0x0A6E96), dark: RGBA(hex: 0x5AC8FA))
+    public static let rowBottom = ThemeColor(light: RGBA(hex: 0x4A46D6), dark: RGBA(hex: 0x8B8BFF))
 }

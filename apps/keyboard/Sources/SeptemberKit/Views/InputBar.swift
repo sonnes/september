@@ -81,7 +81,6 @@ public struct InputBar: View {
         .accessibilityValue(controller.input.isEmpty ? "empty" : controller.input.text)
     }
 
-    /// A lock for a password field, the app's own text otherwise.
     private var leadingSymbol: String {
         switch controller.input {
         case .secure: "lock.fill"
@@ -130,50 +129,5 @@ private struct Caret: View {
                 withAnimation(.easeInOut(duration: 0.6).repeatForever()) { visible = false }
             }
             .accessibilityHidden(true)
-    }
-}
-
-/// Type / Talk / Write / Settings. Only Type does anything in this phase.
-public struct ModeButtons: View {
-    @EnvironmentObject private var controller: KeyboardController
-
-    public init() {}
-
-    public var body: some View {
-        HStack(spacing: 12) {
-            ForEach(KeyboardController.Mode.allCases, id: \.self) { mode in
-                VStack(spacing: 5) {
-                    Button {
-                        controller.mode = mode
-                    } label: {
-                        Image(systemName: mode.symbol)
-                            .font(.system(size: 16))
-                            .foregroundStyle(
-                                Color(mode == controller.mode ? Tokens.accent : Tokens.labelSecondary)
-                            )
-                            .frame(width: 44, height: 44)
-                            .background(Circle().fill(Color(Tokens.key)))
-                            .overlay(
-                                Circle().strokeBorder(
-                                    Color(mode == controller.mode ? Tokens.accent : Tokens.strokeStandard),
-                                    lineWidth: mode == controller.mode ? 2 : 1
-                                )
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(mode.title)
-                    .accessibilityAddTraits(mode == controller.mode ? [.isButton, .isSelected] : .isButton)
-
-                    Text(mode.title)
-                        .font(.system(size: 9))
-                        .foregroundStyle(
-                            Color(mode == controller.mode ? Tokens.accent : Tokens.sectionLabel)
-                        )
-                        // Without this the label is squeezed to nothing when the
-                        // row's height is set by the input bar beside it.
-                        .fixedSize()
-                }
-            }
-        }
     }
 }

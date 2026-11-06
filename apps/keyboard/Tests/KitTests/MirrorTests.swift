@@ -66,11 +66,6 @@ func mirrorTests() {
 
 @MainActor
 func focusTests() {
-    func makeController() -> (KeyboardController, RecordingSink) {
-        let sink = RecordingSink()
-        return (KeyboardController(sink: sink, store: try! PanelStore.bundled()), sink)
-    }
-
     let editable = FocusedField(
         appName: "TextEdit",
         role: "AXTextArea",
@@ -81,22 +76,23 @@ func focusTests() {
     )
 
     test("with nothing focused the bar shows what we typed ourselves") {
-        let (controller, _) = makeController()
+        let (controller, _) = try makeController()
         controller.focusChanged(to: nil)
-        controller.press(KeyDefinition(id: "x", kind: .standard, label: "x", action: .text("x")))
+        controller.perform(.text("x"))
         expectEqual(controller.input, .local(text: "x"))
     }
 
     test("focusing a readable field mirrors it instead of our echo") {
-        let (controller, _) = makeController()
-        controller.press(KeyDefinition(id: "x", kind: .standard, label: "x", action: .text("x")))
+        let (controller, _) = try makeController()
+        controller.perform(.text("x"))
         controller.focusChanged(to: editable)
         expectEqual(controller.input, .mirrored(text: "hello", caret: 5, selectionLength: 0))
-        expectEqual(controller.echo, "", "the local buffer is dropped while mirroring")
+        controller.focusChanged(to: nil)
+        expectEqual(controller.input, .local(text: ""), "the local buffer is dropped while mirroring")
     }
 
     test("the mirror follows the field as it changes") {
-        let (controller, _) = makeController()
+        let (controller, _) = try makeController()
         controller.focusChanged(to: editable)
         var typed = editable
         typed.text = "hello!"
@@ -106,48 +102,59 @@ func focusTests() {
     }
 
     test("leaving a mirrored field falls back to a fresh local echo") {
-        let (controller, _) = makeController()
+        let (controller, _) = try makeController()
         controller.focusChanged(to: editable)
         controller.focusChanged(to: nil)
         expectEqual(controller.input, .local(text: ""))
     }
 
     test("a secure field shows nothing and clears what we typed") {
-        let (controller, _) = makeController()
-        controller.press(KeyDefinition(id: "x", kind: .standard, label: "x", action: .text("secr")))
+        let (controller, _) = try makeController()
+        controller.perform(.text("secr"))
         var secure = editable
         secure.isSecure = true
         secure.text = ""
         controller.focusChanged(to: secure)
         expectEqual(controller.input, .secure)
-        expectEqual(controller.echo, "", "a password must not sit in our buffer")
+        controller.focusChanged(to: nil)
+        expectEqual(controller.input, .local(text: ""), "a password must not sit in our buffer")
     }
 
     test("typing into a secure field never reaches the buffer") {
-        let (controller, sink) = makeController()
+        let (controller, sink) = try makeController()
         var secure = editable
         secure.isSecure = true
         controller.focusChanged(to: secure)
-        controller.press(KeyDefinition(id: "x", kind: .standard, label: "x", action: .text("pw")))
-        expectEqual(controller.echo, "")
+        controller.perform(.text("pw"))
+        controller.focusChanged(to: nil)
+        expectEqual(controller.input, .local(text: ""))
         expectEqual(sink.typed, ["pw"], "the keystroke still goes through")
     }
 
     test("the app name comes from the focused field, not just the frontmost app") {
-        let (controller, _) = makeController()
+        let (controller, _) = try makeController()
         controller.focusChanged(to: editable)
         expectEqual(controller.frontmostAppName, "TextEdit")
     }
 
+    test("a field with no app name keeps the name we have") {
+        let (controller, _) = try makeController()
+        controller.appChanged(name: "Safari", bundleID: "com.apple.Safari")
+        var unnamed = editable
+        unnamed.appName = nil
+        controller.focusChanged(to: unnamed)
+        expectEqual(controller.frontmostAppName, "Safari")
+    }
+
     test("switching apps drops what we typed into the last one") {
-        let (controller, _) = makeController()
-        controller.press(KeyDefinition(id: "x", kind: .standard, label: "x", action: .text("draft")))
+        let (controller, _) = try makeController()
+        controller.perform(.text("draft"))
         controller.appChanged(name: "Safari", bundleID: "com.apple.Safari")
         expectEqual(controller.input, .local(text: ""))
     }
 
     test("switching apps drops the field we were mirroring") {
-        let (controller, _) = makeController()
+        let (controller, _) = try makeController()
         controller.focusChanged(to: editable)
         controller.appChanged(name: "Safari", bundleID: "com.apple.Safari")
         expectEqual(controller.input, .local(text: ""), "the old app's text is not ours to show")
@@ -155,9 +162,10 @@ func focusTests() {
     }
 
     test("switching apps swaps the name and the shortcuts panel") {
-        let (controller, _) = makeController()
+        let (controller, _) = try makeController()
         controller.appChanged(name: "Visual Studio Code", bundleID: "com.microsoft.VSCode")
         expectEqual(controller.frontmostAppName, "Visual Studio Code")
-        expectEqual(controller.appPanel.id, "app.com.microsoft.VSCode")
+        expectEqual(controller.appPanel, controller.panels.appPanel(forBundleID: "com.microsoft.VSCode"))
+        expect(controller.appPanel != controller.panels.appPanel(forBundleID: nil))
     }
 }

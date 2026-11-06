@@ -5,10 +5,9 @@ import SeptemberKit
 /// Reads the focused text field out of whatever app is in front, and keeps
 /// reading it as the user types, so the input bar can mirror it.
 ///
-/// The path is:  system-wide element → `AXFocusedUIElement` → its value and
-/// selected range. Changes arrive through an `AXObserver` on the frontmost
-/// app's process; apps that stay quiet are caught by the refresh that follows
-/// every keystroke we send.
+/// Changes arrive through an `AXObserver` on the frontmost app's process.
+/// Apps that stay quiet are caught by the refresh after every keystroke we
+/// send and by a slow poll.
 @MainActor
 final class FocusWatcher {
     /// Called with the focused field, or `nil` when nothing readable is focused.
@@ -27,7 +26,6 @@ final class FocusWatcher {
 
     private let systemElement = AXUIElementCreateSystemWide()
     private var observer: AXObserver?
-    private var observedPID: pid_t?
     private var observedElements: [AXUIElement] = []
     private var workspaceObserver: (any NSObjectProtocol)?
     private var refreshScheduled = false
@@ -54,16 +52,6 @@ final class FocusWatcher {
         pollTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.refresh() }
         }
-    }
-
-    func stop() {
-        if let workspaceObserver {
-            NSWorkspace.shared.notificationCenter.removeObserver(workspaceObserver)
-        }
-        workspaceObserver = nil
-        pollTimer?.invalidate()
-        pollTimer = nil
-        tearDownObserver()
     }
 
     /// Re-reads the field a moment from now. Called after we post keystrokes:
@@ -113,7 +101,6 @@ final class FocusWatcher {
             return
         }
         observer = created
-        observedPID = app.processIdentifier
 
         let context = Unmanaged.passUnretained(self).toOpaque()
         add(kAXFocusedUIElementChangedNotification, on: element, context: context)
@@ -166,7 +153,6 @@ final class FocusWatcher {
                 CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .defaultMode)
         }
         observer = nil
-        observedPID = nil
         observedElements = []
     }
 
@@ -189,51 +175,31 @@ final class FocusWatcher {
     private func focusedElement() -> AXUIElement? {
         let ours = ProcessInfo.processInfo.processIdentifier
         if let app = NSWorkspace.shared.frontmostApplication, app.processIdentifier != ours,
-            let element = element(
-                in: AXUIElementCreateApplication(app.processIdentifier),
-                kAXFocusedUIElementAttribute)
+            let element = AXUIElementCreateApplication(app.processIdentifier)
+                .element(kAXFocusedUIElementAttribute)
         {
             return element
         }
-        guard let element = element(in: systemElement, kAXFocusedUIElementAttribute) else {
-            return nil
-        }
-        var pid: pid_t = 0
-        AXUIElementGetPid(element, &pid)
         // Our own panel never takes focus, but the menu bar item can.
-        guard pid != ours else { return nil }
-        return element
-    }
-
-    private func element(in parent: AXUIElement, _ attribute: String) -> AXUIElement? {
-        guard let value = copy(parent, attribute), CFGetTypeID(value) == AXUIElementGetTypeID()
+        guard let element = systemElement.element(kAXFocusedUIElementAttribute),
+            element.pid != ours
         else { return nil }
-        return (value as! AXUIElement)
+        return element
     }
 
     func readFocusedField() -> FocusedField? {
         guard let element = focusedElement() else { return nil }
 
-        var pid: pid_t = 0
-        AXUIElementGetPid(element, &pid)
-        let appName =
-            NSRunningApplication(processIdentifier: pid)?.localizedName
-            ?? NSWorkspace.shared.frontmostApplication?.localizedName
-            ?? "the app in front"
-
-        let role = string(element, kAXRoleAttribute) ?? "unknown"
-        let subrole = string(element, kAXSubroleAttribute)
-        let isSecure = subrole == (kAXSecureTextFieldSubrole as String)
-
+        let isSecure = element.string(kAXSubroleAttribute) == (kAXSecureTextFieldSubrole as String)
         var settable: DarwinBoolean = false
         AXUIElementIsAttributeSettable(element, kAXValueAttribute as CFString, &settable)
 
-        let selection = range(element, kAXSelectedTextRangeAttribute)
+        let selection = element.range(kAXSelectedTextRangeAttribute)
         let read = isSecure ? (text: nil, selection: selection) : readText(element, selection: selection)
 
         return FocusedField(
-            appName: appName,
-            role: role,
+            appName: NSRunningApplication(processIdentifier: element.pid)?.localizedName,
+            role: element.string(kAXRoleAttribute) ?? "unknown",
             isEditable: settable.boolValue,
             isSecure: isSecure,
             text: read.text,
@@ -248,14 +214,13 @@ final class FocusWatcher {
         _ element: AXUIElement,
         selection: NSRange?
     ) -> (text: String?, selection: NSRange?) {
-        let count = number(element, kAXNumberOfCharactersAttribute)
-
-        if let count, count > windowThreshold, let selection {
+        if let count = element.number(kAXNumberOfCharactersAttribute), count > windowThreshold,
+            let selection
+        {
             let start = max(0, selection.location - windowRadius)
             let length = min(count - start, selection.length + 2 * windowRadius)
-            if let window = string(
-                element,
-                parameterized: kAXStringForRangeParameterizedAttribute,
+            if let window = element.string(
+                kAXStringForRangeParameterizedAttribute,
                 range: NSRange(location: start, length: length)
             ) {
                 return (
@@ -264,47 +229,7 @@ final class FocusWatcher {
                 )
             }
         }
-        return (string(element, kAXValueAttribute), selection)
-    }
-
-    // MARK: - Attribute plumbing
-
-    private func copy(_ element: AXUIElement, _ attribute: String) -> CFTypeRef? {
-        var value: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, attribute as CFString, &value) == .success
-        else { return nil }
-        return value
-    }
-
-    private func string(_ element: AXUIElement, _ attribute: String) -> String? {
-        copy(element, attribute) as? String
-    }
-
-    private func number(_ element: AXUIElement, _ attribute: String) -> Int? {
-        (copy(element, attribute) as? NSNumber)?.intValue
-    }
-
-    private func range(_ element: AXUIElement, _ attribute: String) -> NSRange? {
-        guard let value = copy(element, attribute), CFGetTypeID(value) == AXValueGetTypeID()
-        else { return nil }
-        var cfRange = CFRange()
-        guard AXValueGetValue(value as! AXValue, .cfRange, &cfRange) else { return nil }
-        return NSRange(location: cfRange.location, length: cfRange.length)
-    }
-
-    private func string(
-        _ element: AXUIElement,
-        parameterized attribute: String,
-        range: NSRange
-    ) -> String? {
-        var cfRange = CFRange(location: range.location, length: range.length)
-        guard let parameter = AXValueCreate(.cfRange, &cfRange) else { return nil }
-        var value: CFTypeRef?
-        guard
-            AXUIElementCopyParameterizedAttributeValue(
-                element, attribute as CFString, parameter, &value) == .success
-        else { return nil }
-        return value as? String
+        return (element.string(kAXValueAttribute), selection)
     }
 }
 

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The QWERTY block: six rows filling the 980pt keyboard width.
+/// The QWERTY block: six rows filling the keyboard width.
 public struct MainKeyboardView: View {
     @EnvironmentObject private var controller: KeyboardController
 
@@ -17,14 +17,7 @@ public struct MainKeyboardView: View {
             }
         }
         .padding(8)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color(Tokens.panelBackground))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Color(Tokens.panelStroke), lineWidth: 1)
-        )
+        .panelSurface(cornerRadius: Metrics.keyboardCornerRadius)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Keyboard")
     }

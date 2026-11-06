@@ -22,7 +22,7 @@ final class CGEventSink: KeystrokeSink, @unchecked Sendable {
                     keyDown: event.isDown
                 )
             else { continue }
-            cgEvent.flags = event.flags.cgEventFlags
+            cgEvent.flags = event.flags.eventFlags
             cgEvent.post(tap: .cghidEventTap)
         }
         // Every key press starts on the main actor, so this hop is free.
@@ -43,17 +43,5 @@ final class CGEventSink: KeystrokeSink, @unchecked Sendable {
         }
         // Every key press starts on the main actor, so this hop is free.
         MainActor.assumeIsolated { afterPost?() }
-    }
-}
-
-extension Modifiers {
-    var cgEventFlags: CGEventFlags {
-        var flags: CGEventFlags = []
-        if contains(.shift) { flags.insert(.maskShift) }
-        if contains(.control) { flags.insert(.maskControl) }
-        if contains(.option) { flags.insert(.maskAlternate) }
-        if contains(.command) { flags.insert(.maskCommand) }
-        if contains(.function) { flags.insert(.maskSecondaryFn) }
-        return flags
     }
 }

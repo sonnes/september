@@ -8,7 +8,7 @@ import SeptemberKit
 ///
 ///     swift run Keyboard --ax                 # focused field, right now
 ///     swift run Keyboard --ax --wait 5        # after 5s, so you can click away
-///     swift run Keyboard --ax --tree          # + the app's tree, 4 levels deep
+///     swift run Keyboard --ax --tree          # + the app's tree, as the viewer shows it
 @MainActor
 enum AXDump {
     static func run(arguments: [String]) {
@@ -33,7 +33,7 @@ enum AXDump {
                 """
 
                 focused field
-                  app          \(field.appName)
+                  app          \(field.appName ?? "?")
                   role         \(field.role)
                   editable     \(field.isEditable)
                   secure       \(field.isSecure)
@@ -46,32 +46,21 @@ enum AXDump {
             print("\nno focused field — nothing to mirror")
         }
 
-        if arguments.contains("--tree"), let app {
+        if arguments.contains("--tree") {
             print("\ntree")
-            dump(AXUIElementCreateApplication(app.processIdentifier), depth: 0, limit: 4)
+            for row in AXTreeReader.read(app: app).rows() {
+                print(line(for: row))
+            }
         }
         exit(0)
     }
 
-    private static func dump(_ element: AXUIElement, depth: Int, limit: Int) {
-        guard depth <= limit else { return }
-        var role: CFTypeRef?
-        AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &role)
-        var title: CFTypeRef?
-        AXUIElementCopyAttributeValue(element, kAXTitleAttribute as CFString, &title)
-        var value: CFTypeRef?
-        AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &value)
-
-        var line = String(repeating: "  ", count: depth) + ((role as? String) ?? "?")
-        if let title = title as? String, !title.isEmpty { line += " \"\(title)\"" }
-        if let value = value as? String, !value.isEmpty { line += " = \"\(value.prefix(60))\"" }
-        print(line)
-
-        var children: CFTypeRef?
-        AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &children)
-        // Menu bars are every app's biggest, least interesting subtree.
-        for child in (children as? [AXUIElement] ?? []).prefix(20) where depth < limit {
-            dump(child, depth: depth + 1, limit: limit)
-        }
+    private static func line(for row: AXTreeRow) -> String {
+        var line = String(repeating: "  ", count: row.depth) + row.node.role
+        if let label = row.node.subtitle { line += " \"\(label)\"" }
+        if let detail = row.node.detail { line += " = \"\(detail)\"" }
+        if row.node.isFocused { line += "  <- focused" }
+        if row.hiddenChildren > 0 { line += "  (\(row.hiddenChildren) hidden)" }
+        return line
     }
 }

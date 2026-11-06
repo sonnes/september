@@ -1,31 +1,29 @@
 ---
 title: Shortcut panels (macOS)
-description: Panels are data, not views — grids of buttons that type text, press a key combination, or open another panel, with one panel per app and a generic fallback.
+description: Panels are grids of buttons in JSON. A button types text or presses a key combination. Each app can have its own panel, and a generic panel is the fallback.
 package: keyboard
 ---
 
 # Shortcut panels (macOS)
 
-The macOS keyboard is surrounded by panels: EDIT on the left, NAVIGATE and
-SYSTEM on the right, and the shortcuts for whichever app is in front. All of
-them are the same thing — a grid of buttons defined in JSON, loaded at launch.
+Panels are on each side of the macOS keyboard. EDIT is on the left. NAVIGATE
+and SYSTEM are on the right. The shortcuts of the app in front are also a
+panel. Each panel is a grid of buttons in a JSON file that the app loads at
+launch.
 
-This mirrors how Apple's own Accessibility Keyboard works (`.ascconfig` bundles
-of buttons with actions, see
-[the research notes](../research/2026-07-27-macos-accessibility-keyboard.md)),
-minus the absolute-rect layout and the modal editor.
+The Apple Accessibility Keyboard uses the same model: `.ascconfig` bundles of
+buttons with actions. September has no absolute layout and no modal editor.
 
 ## The model
 
 ```
-PanelDefinition   id, title, columns, buttons
+PanelDefinition   title, columns, buttons
   PanelButton     id, label, symbol (SF Symbol), action
-    PanelAction   .shortcut(Shortcut) | .text(String) | .openPanel(String)
+    PanelAction   .shortcut(Shortcut) | .text(String)
 ```
 
-Three actions, deliberately: press a key combination, type a phrase, or move to
-another panel. Anything a communication panel needs, and nothing that requires
-code to express.
+A button presses a key combination or types a phrase. A text button uses up
+the latched modifiers, the same as a text key.
 
 `Shortcut` renders its own hint (`⇧⌘Z`) and its own spoken name ("Shift Command
 Z"), so a button never has to repeat itself in JSON.
@@ -42,16 +40,21 @@ Sources/SeptemberKit/Resources/Panels/
     └── com.microsoft.VSCode.json    # one file per known app, named by bundle id
 ```
 
-`PanelStore.bundled()` loads them. Panels in `Apps/` are keyed by file name, so
-adding shortcuts for an app means adding `Apps/<bundle id>.json` — no Swift.
+`PanelStore.bundled()` loads them. The file name is the name of the panel. To
+add shortcuts for an app, add `Apps/<bundle id>.json`. No Swift change is
+necessary.
+
+`PanelStore.bundled()` throws if a panel is missing, if a file does not
+decode, or if two buttons in a panel have the same id. The app then shows the
+error and quits.
 
 ## Following the frontmost app
 
-`KeyboardController` observes `NSWorkspace.didActivateApplicationNotification`
-and swaps `appPanel` for the panel matching the new frontmost app's bundle ID,
-falling back to `generic.json`. Because the keyboard panel is non-activating, it
-never becomes frontmost itself, so this always reflects the app the user is
-actually typing into.
+`FocusWatcher` reports each change of the frontmost app. Then
+`KeyboardController.appChanged(name:bundleID:)` shows the panel for the bundle
+ID of that app, or `generic.json` if no panel has that name. The keyboard
+window does not activate, so the frontmost app is always the app that gets
+the keys.
 
 ## Adding a panel
 
@@ -59,7 +62,6 @@ actually typing into.
 
    ```json
    {
-     "id": "app.com.apple.Safari",
      "title": "SAFARI",
      "columns": 2,
      "buttons": [
@@ -74,5 +76,5 @@ actually typing into.
    behaviour worth pinning.
 
 Key names are a single character (`"t"`) or a `VirtualKey` case name
-(`"return"`, `"pageDown"`, `"f5"`). Unknown modifiers, keys or action types fail
-decoding loudly rather than silently dropping a button.
+(`"return"`, `"pageDown"`, `"f5"`). An unknown modifier, key, or action type
+stops the decoding with an error.

@@ -1,70 +1,68 @@
 import Foundation
 
-/// The panels shipped with the app: the fixed keypads plus one panel per app
-/// we know shortcuts for, with a generic fallback.
+/// The panels shipped with the app: the fixed keypads, one panel per app we
+/// know shortcuts for, and a generic panel for every other app.
+///
+/// File names are the identity: `edit.json`, `navigate.json`, `system.json`,
+/// `Apps/generic.json`, and `Apps/<bundle id>.json`.
 public struct PanelStore: Sendable {
-    private let panels: [String: PanelDefinition]
-    private let byBundleID: [String: PanelDefinition]
+    public let edit: PanelDefinition
+    public let navigate: PanelDefinition
+    public let system: PanelDefinition
     private let generic: PanelDefinition
+    private let byBundleID: [String: PanelDefinition]
 
     public init(
-        panels: [PanelDefinition],
-        appPanels: [String: PanelDefinition],
-        generic: PanelDefinition
+        edit: PanelDefinition,
+        navigate: PanelDefinition,
+        system: PanelDefinition,
+        generic: PanelDefinition,
+        byBundleID: [String: PanelDefinition]
     ) {
-        self.panels = Dictionary(uniqueKeysWithValues: panels.map { ($0.id, $0) })
-        self.byBundleID = appPanels
+        self.edit = edit
+        self.navigate = navigate
+        self.system = system
         self.generic = generic
+        self.byBundleID = byBundleID
     }
-
-    public func panel(id: String) -> PanelDefinition? { panels[id] }
 
     public func appPanel(forBundleID bundleID: String?) -> PanelDefinition {
         guard let bundleID, let panel = byBundleID[bundleID] else { return generic }
         return panel
     }
 
-    public var allPanels: [PanelDefinition] {
-        Array(panels.values) + Array(byBundleID.values) + [generic]
-    }
-
-    /// Loads `Resources/Panels/*.json` and `Resources/Panels/Apps/<bundle id>.json`.
-    public static func bundled(bundle: Bundle? = nil) throws -> PanelStore {
-        let bundle = bundle ?? .module
-        guard let root = bundle.url(forResource: "Panels", withExtension: nil) else {
-            throw PanelDecodingError.missingPanels
+    /// Loads the panels from `Resources/Panels`. Throws when a fixed panel is
+    /// missing or any file does not decode.
+    public static func bundled() throws -> PanelStore {
+        guard let root = Bundle.module.url(forResource: "Panels", withExtension: nil) else {
+            throw PanelDecodingError.missingPanel("Panels")
         }
         let decoder = JSONDecoder()
 
-        func load(_ url: URL) throws -> PanelDefinition {
-            try decoder.decode(PanelDefinition.self, from: Data(contentsOf: url))
-        }
-
-        let files = try FileManager.default.contentsOfDirectory(
-            at: root,
-            includingPropertiesForKeys: nil
-        )
-        let panels = try files.filter { $0.pathExtension == "json" }.map(load)
-
-        var appPanels: [String: PanelDefinition] = [:]
-        var generic: PanelDefinition?
-        let appsDirectory = root.appendingPathComponent("Apps")
-        if let appFiles = try? FileManager.default.contentsOfDirectory(
-            at: appsDirectory,
-            includingPropertiesForKeys: nil
-        ) {
-            for file in appFiles where file.pathExtension == "json" {
-                let panel = try load(file)
-                let name = file.deletingPathExtension().lastPathComponent
-                if name == "generic" {
-                    generic = panel
-                } else {
-                    appPanels[name] = panel
-                }
+        func load(_ name: String, in directory: URL = root) throws -> PanelDefinition {
+            let url = directory.appendingPathComponent(name).appendingPathExtension("json")
+            guard FileManager.default.fileExists(atPath: url.path) else {
+                throw PanelDecodingError.missingPanel(name)
             }
+            return try decoder.decode(PanelDefinition.self, from: Data(contentsOf: url))
         }
 
-        guard let generic else { throw PanelDecodingError.missingPanels }
-        return PanelStore(panels: panels, appPanels: appPanels, generic: generic)
+        let apps = root.appendingPathComponent("Apps")
+        var byBundleID: [String: PanelDefinition] = [:]
+        for file in try FileManager.default.contentsOfDirectory(
+            at: apps, includingPropertiesForKeys: nil)
+        where file.pathExtension == "json" {
+            let name = file.deletingPathExtension().lastPathComponent
+            guard name != "generic" else { continue }
+            byBundleID[name] = try load(name, in: apps)
+        }
+
+        return PanelStore(
+            edit: try load("edit"),
+            navigate: try load("navigate"),
+            system: try load("system"),
+            generic: try load("generic", in: apps),
+            byBundleID: byBundleID
+        )
     }
 }

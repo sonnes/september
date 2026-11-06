@@ -17,8 +17,8 @@ final class FloatingPanel: NSPanel {
     }
 
     private let hosting: NSHostingView<AnyView>
-    /// Distance from the screen's visible edges — the same gap on both sides.
-    private let margin: CGFloat = 24
+    /// Distance from the screen's visible edges, the same on every side.
+    static let margin: CGFloat = 24
 
     init(root: AnyView, contentSize: CGSize) {
         hosting = NSHostingView(rootView: root)
@@ -74,8 +74,8 @@ final class FloatingPanel: NSPanel {
         case .bottomCenter(let rightInset):
             x = (visible.minX + visible.maxX - rightInset) / 2 - frame.width / 2
         case .bottomRight:
-            x = visible.maxX - frame.width - margin
+            x = visible.maxX - frame.width - FloatingPanel.margin
         }
-        setFrameOrigin(NSPoint(x: x, y: visible.minY + margin))
+        setFrameOrigin(NSPoint(x: x, y: visible.minY + FloatingPanel.margin))
     }
 }

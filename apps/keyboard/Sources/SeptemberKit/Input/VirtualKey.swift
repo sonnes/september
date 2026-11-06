@@ -1,18 +1,6 @@
-/// Named virtual key codes we post directly rather than resolving through the
-/// keyboard layout. Values are the macOS `kVK_*` constants.
-public enum VirtualKey: UInt16, Sendable, Hashable, Codable, CaseIterable {
-    case a = 0
-    case s = 1
-    case z = 6
-    case x = 7
-    case c = 8
-    case v = 9
-    case n = 45
-    case f = 3
-    case w = 13
-    case o = 31
-    case p = 35
-
+/// Keys that type no character, posted by their macOS `kVK_*` code. Keys that
+/// type a character go through `KeyCodeMap`, so they follow the user's layout.
+public enum VirtualKey: UInt16, Sendable, Hashable, CaseIterable {
     case `return` = 36
     case tab = 48
     case space = 49
@@ -42,8 +30,9 @@ public enum VirtualKey: UInt16, Sendable, Hashable, Codable, CaseIterable {
     case f11 = 103
     case f12 = 111
 
-    case minus = 27
-    case equal = 24
+    private static let functionKeys: [VirtualKey] = [
+        .f1, .f2, .f3, .f4, .f5, .f6, .f7, .f8, .f9, .f10, .f11, .f12,
+    ]
 
     /// Looks a key up by the name used in panel JSON ("return", "pageDown").
     public init?(name: String) {
@@ -52,39 +41,32 @@ public enum VirtualKey: UInt16, Sendable, Hashable, Codable, CaseIterable {
         self = match
     }
 
-    /// F-keys by number, so the layout can build the function row in a loop.
+    /// F-keys by number, from 1 to 12.
     public static func function(_ number: Int) -> VirtualKey? {
-        let keys: [VirtualKey] = [.f1, .f2, .f3, .f4, .f5, .f6, .f7, .f8, .f9, .f10, .f11, .f12]
-        guard (1...keys.count).contains(number) else { return nil }
-        return keys[number - 1]
+        guard (1...functionKeys.count).contains(number) else { return nil }
+        return functionKeys[number - 1]
     }
 
-    /// How VoiceOver should say this key.
+    /// How VoiceOver says this key.
     public var spokenName: String {
         switch self {
-        case .return: "Return"
-        case .tab: "Tab"
-        case .space: "Space"
-        case .delete: "Delete"
-        case .escape: "Escape"
-        case .forwardDelete: "Forward Delete"
-        case .left: "Left Arrow"
-        case .right: "Right Arrow"
-        case .up: "Up Arrow"
-        case .down: "Down Arrow"
-        case .home: "Home"
-        case .end: "End"
-        case .pageUp: "Page Up"
-        case .pageDown: "Page Down"
+        case .return: return "Return"
+        case .tab: return "Tab"
+        case .space: return "Space"
+        case .delete: return "Delete"
+        case .escape: return "Escape"
+        case .forwardDelete: return "Forward Delete"
+        case .left: return "Left Arrow"
+        case .right: return "Right Arrow"
+        case .up: return "Up Arrow"
+        case .down: return "Down Arrow"
+        case .home: return "Home"
+        case .end: return "End"
+        case .pageUp: return "Page Up"
+        case .pageDown: return "Page Down"
         case .f1, .f2, .f3, .f4, .f5, .f6, .f7, .f8, .f9, .f10, .f11, .f12:
-            "F" + String(VirtualKey.functionNumber(self) ?? 0)
-        default: String(describing: self).uppercased()
+            return "F\(VirtualKey.functionKeys.firstIndex(of: self)! + 1)"
         }
-    }
-
-    private static func functionNumber(_ key: VirtualKey) -> Int? {
-        let keys: [VirtualKey] = [.f1, .f2, .f3, .f4, .f5, .f6, .f7, .f8, .f9, .f10, .f11, .f12]
-        return keys.firstIndex(of: key).map { $0 + 1 }
     }
 
     /// The glyph shown on a shortcut hint (⌫, ↩, ⇥ …), or nil to use the name.
@@ -100,6 +82,14 @@ public enum VirtualKey: UInt16, Sendable, Hashable, Codable, CaseIterable {
         case .up: "↑"
         case .down: "↓"
         default: nil
+        }
+    }
+
+    /// Keys that repeat while held, as on a hardware keyboard.
+    public var repeatsWhenHeld: Bool {
+        switch self {
+        case .delete, .forwardDelete, .left, .right, .up, .down, .space: true
+        default: false
         }
     }
 }

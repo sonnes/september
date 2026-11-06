@@ -1,20 +1,17 @@
 import CoreGraphics
+import Foundation
 
-/// The kind of key, which fixes its size and label treatment.
-public enum KeyKind: Sendable, Hashable, CaseIterable {
-    /// Alphanumeric key with a single label.
-    case standard
-    /// Modifier or utility key (shift, tab, delete, return, caps lock).
-    case special
-    /// Function row key (esc, F1–F12).
-    case function
-    /// Number row key with a secondary symbol above the primary label.
-    case dual
-}
-
-/// Sizes and spacing from the keyboard design system.
 public enum Metrics {
     public static let keyCornerRadius: CGFloat = 6
+    /// The surfaces that hold keys: the keyboard block, the screen, the viewer.
+    public static let keyboardCornerRadius: CGFloat = 12
+    public static let surfaceCornerRadius: CGFloat = 16
+    public static let surfacePadding: CGFloat = 16
+    public static let bannerCornerRadius: CGFloat = 10
+    public static let bannerHeight: CGFloat = 36
+    /// How long a press lasts before a key starts to repeat.
+    public static let holdDuration: TimeInterval = 0.4
+    public static let keyRepeatInterval: TimeInterval = 0.08
     public static let rowSpacing: CGFloat = 3
     public static let sectionSpacing: CGFloat = 16
     public static let keyboardWidth: CGFloat = 980
@@ -36,6 +33,11 @@ public enum Metrics {
         case .special: CGSize(width: 60, height: 48)
         case .function: CGSize(width: 60, height: 32)
         }
+    }
+
+    /// "48×48", as the component library writes a size.
+    public static func describe(_ size: CGSize) -> String {
+        "\(Int(size.width))×\(Int(size.height))"
     }
 
     public static func labelSize(for kind: KeyKind) -> CGFloat {
