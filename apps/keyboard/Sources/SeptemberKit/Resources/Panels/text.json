@@ -1,0 +1,30 @@
+{
+  "title": "Text",
+  "columns": 2,
+  "buttons": [
+    { "id": "up", "label": "Up",
+      "action": {"type": "shortcut", "modifiers": [], "key": "up"} },
+    { "id": "down", "label": "Down",
+      "action": {"type": "shortcut", "modifiers": [], "key": "down"} },
+    { "id": "left", "label": "Left",
+      "action": {"type": "shortcut", "modifiers": [], "key": "left"} },
+    { "id": "right", "label": "Right",
+      "action": {"type": "shortcut", "modifiers": [], "key": "right"} },
+    { "id": "word-left", "label": "Word Left",
+      "action": {"type": "shortcut", "modifiers": ["option"], "key": "left"} },
+    { "id": "word-right", "label": "Word Right",
+      "action": {"type": "shortcut", "modifiers": ["option"], "key": "right"} },
+    { "id": "line-start", "label": "Line Start",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "left"} },
+    { "id": "line-end", "label": "Line End",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "right"} },
+    { "id": "select-word-left", "label": "Select Word Left",
+      "action": {"type": "shortcut", "modifiers": ["option", "shift"], "key": "left"} },
+    { "id": "select-word-right", "label": "Select Word Right",
+      "action": {"type": "shortcut", "modifiers": ["option", "shift"], "key": "right"} },
+    { "id": "select-line-start", "label": "Select to Line Start",
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "left"} },
+    { "id": "select-line-end", "label": "Select to Line End",
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "right"} }
+  ]
+}

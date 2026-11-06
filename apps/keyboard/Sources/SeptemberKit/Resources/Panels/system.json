@@ -1,10 +1,22 @@
 {
-  "title": "SYSTEM",
+  "title": "System",
   "columns": 2,
   "buttons": [
-    { "id": "fullscreen", "label": "Full Screen", "symbol": "macwindow",
-      "action": { "type": "shortcut", "modifiers": ["control", "command"], "key": "f" } },
-    { "id": "screenshot", "label": "Screenshot", "symbol": "camera",
-      "action": { "type": "shortcut", "modifiers": ["command", "shift"], "key": "4" } }
+    { "id": "find", "label": "Find",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "f"} },
+    { "id": "mission-control", "label": "Mission Control",
+      "action": {"type": "shortcut", "modifiers": ["control"], "key": "up"} },
+    { "id": "page-up", "label": "Page Up",
+      "action": {"type": "shortcut", "modifiers": [], "key": "pageUp"} },
+    { "id": "page-down", "label": "Page Down",
+      "action": {"type": "shortcut", "modifiers": [], "key": "pageDown"} },
+    { "id": "zoom-out", "label": "Zoom Out",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "-"} },
+    { "id": "zoom-in", "label": "Zoom In",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "="} },
+    { "id": "full-screen", "label": "Full Screen",
+      "action": {"type": "shortcut", "modifiers": ["control", "command"], "key": "f"} },
+    { "id": "screenshot", "label": "Screenshot",
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "4"} }
   ]
 }

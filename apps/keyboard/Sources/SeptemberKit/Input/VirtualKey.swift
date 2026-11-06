@@ -81,6 +81,8 @@ public enum VirtualKey: UInt16, Sendable, Hashable, CaseIterable {
         case .right: "→"
         case .up: "↑"
         case .down: "↓"
+        case .pageUp: "⇞"
+        case .pageDown: "⇟"
         default: nil
         }
     }

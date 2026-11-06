@@ -1,0 +1,28 @@
+{
+  "title": "Safari",
+  "columns": 2,
+  "buttons": [
+    { "id": "new-tab", "label": "New Tab",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "t"} },
+    { "id": "close-tab", "label": "Close Tab",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "w"} },
+    { "id": "reopen-tab", "label": "Reopen Tab",
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "t"} },
+    { "id": "address", "label": "Address",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "l"} },
+    { "id": "back", "label": "Back",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "["} },
+    { "id": "forward", "label": "Forward",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "]"} },
+    { "id": "reload", "label": "Reload",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "r"} },
+    { "id": "find", "label": "Find",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "f"} },
+    { "id": "reader", "label": "Reader",
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "r"} },
+    { "id": "next-tab", "label": "Next Tab",
+      "action": {"type": "shortcut", "modifiers": ["control"], "key": "tab"} },
+    { "id": "bookmark", "label": "Bookmark",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "d"} }
+  ]
+}

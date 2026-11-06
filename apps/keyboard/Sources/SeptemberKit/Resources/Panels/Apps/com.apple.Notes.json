@@ -1,0 +1,26 @@
+{
+  "title": "Notes",
+  "columns": 2,
+  "buttons": [
+    { "id": "new-note", "label": "New Note",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "n"} },
+    { "id": "checklist", "label": "Checklist",
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "l"} },
+    { "id": "title", "label": "Title",
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "t"} },
+    { "id": "heading", "label": "Heading",
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "h"} },
+    { "id": "body", "label": "Body",
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "b"} },
+    { "id": "bold", "label": "Bold",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "b"} },
+    { "id": "italic", "label": "Italic",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "i"} },
+    { "id": "table", "label": "Table",
+      "action": {"type": "shortcut", "modifiers": ["option", "command"], "key": "t"} },
+    { "id": "find", "label": "Find",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "f"} },
+    { "id": "search", "label": "Search",
+      "action": {"type": "shortcut", "modifiers": ["option", "command"], "key": "f"} }
+  ]
+}

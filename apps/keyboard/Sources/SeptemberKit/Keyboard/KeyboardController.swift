@@ -57,6 +57,8 @@ public final class KeyboardController: ObservableObject {
         switch action {
         case .shortcut(let shortcut):
             post(shortcut)
+        case .sequence(let steps):
+            steps.forEach(post)
         case .text(let text):
             sink.type(text)
             append(text)

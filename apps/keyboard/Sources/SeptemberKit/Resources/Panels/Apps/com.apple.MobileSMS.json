@@ -1,0 +1,24 @@
+{
+  "title": "Messages",
+  "columns": 2,
+  "buttons": [
+    { "id": "new-message", "label": "New Message",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "n"} },
+    { "id": "reply", "label": "Reply",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "r"} },
+    { "id": "tapback", "label": "Tapback",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "t"} },
+    { "id": "find", "label": "Find",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "f"} },
+    { "id": "next-chat", "label": "Next Chat",
+      "action": {"type": "shortcut", "modifiers": ["control"], "key": "tab"} },
+    { "id": "previous-chat", "label": "Previous Chat",
+      "action": {"type": "shortcut", "modifiers": ["control", "shift"], "key": "tab"} },
+    { "id": "emoji", "label": "Emoji",
+      "action": {"type": "shortcut", "modifiers": ["control", "command"], "key": "space"} },
+    { "id": "be-right-back", "label": "Be right back",
+      "action": {"type": "text", "text": "Be right back"} },
+    { "id": "talk-soon", "label": "Talk soon",
+      "action": {"type": "text", "text": "Talk soon"} }
+  ]
+}

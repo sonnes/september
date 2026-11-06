@@ -1,8 +1,11 @@
 import Foundation
 
-/// What a panel button does: press a key combination or type a phrase.
+/// What a panel button does: press a key combination, press several in
+/// order, or type a phrase.
 public enum PanelAction: Sendable, Hashable {
     case shortcut(Shortcut)
+    /// Key combinations pressed one after the other, such as esc esc.
+    case sequence([Shortcut])
     case text(String)
 }
 
@@ -21,21 +24,39 @@ public struct PanelButton: Sendable, Hashable, Identifiable {
         self.action = action
     }
 
-    /// The key combination printed on the button, if it has one.
+    /// The keys printed on the button, if it presses keys.
     public var hint: String? {
-        guard case .shortcut(let shortcut) = action else { return nil }
-        return shortcut.display
+        switch action {
+        case .shortcut(let shortcut): shortcut.display
+        case .sequence(let steps): steps.map(\.display).joined(separator: " ")
+        case .text: nil
+        }
     }
 
     public var accessibilityLabel: String {
         switch action {
         case .shortcut(let shortcut): "\(label), \(shortcut.spokenName)"
+        case .sequence(let steps):
+            "\(label), \(steps.map(\.spokenName).joined(separator: ", then "))"
         case .text: label
         }
     }
+
+    /// A button that types its text. It shows the text and takes a whole row
+    /// of an app panel.
+    public var isText: Bool {
+        if case .text = action { return true }
+        return false
+    }
+
+    /// The prefix of the ID of a button that `ShortcutLearner` added.
+    public static let learnedPrefix = "learned."
+
+    /// True for a chord that the keyboard learned from the hardware keyboard.
+    public var isLearned: Bool { id.hasPrefix(PanelButton.learnedPrefix) }
 }
 
-/// A grid of shortcut buttons: the EDIT, NAVIGATE and SYSTEM keypads, or the
+/// A grid of shortcut buttons: the Edit, Text, and System keypads, or the
 /// shortcuts for the app in front.
 public struct PanelDefinition: Sendable, Hashable {
     public let title: String
@@ -46,6 +67,28 @@ public struct PanelDefinition: Sendable, Hashable {
         self.title = title
         self.columns = columns
         self.buttons = buttons
+    }
+
+    /// The chords that the buttons press on their own.
+    public var shortcuts: Set<Shortcut> {
+        Set(buttons.compactMap { button in
+            if case .shortcut(let shortcut) = button.action { return shortcut }
+            return nil
+        })
+    }
+
+    /// The same panel with other buttons after its own. A button whose ID is
+    /// already in the panel is skipped.
+    public func appending(_ extra: [PanelButton]) -> PanelDefinition {
+        let ids = Set(buttons.map(\.id))
+        return PanelDefinition(
+            title: title, columns: columns,
+            buttons: buttons + extra.filter { !ids.contains($0.id) })
+    }
+
+    /// The same panel with these buttons.
+    public func with(buttons: [PanelButton]) -> PanelDefinition {
+        PanelDefinition(title: title, columns: columns, buttons: buttons)
     }
 }
 
@@ -79,7 +122,19 @@ extension PanelButton: Decodable {
 
 extension PanelAction: Decodable {
     enum CodingKeys: String, CodingKey {
-        case type, modifiers, key, text
+        case type, modifiers, key, keys, text
+    }
+
+    /// One step of a sequence: `{"modifiers": ["control"], "key": "c"}`.
+    private struct Step: Decodable {
+        let modifiers: [String]?
+        let key: String
+
+        var shortcut: Shortcut {
+            get throws {
+                Shortcut(modifiers: try Modifiers(names: modifiers ?? []), key: try Shortcut.Key(name: key))
+            }
+        }
     }
 
     public init(from decoder: any Decoder) throws {
@@ -92,6 +147,13 @@ extension PanelAction: Decodable {
             self = .shortcut(
                 Shortcut(modifiers: try Modifiers(names: names), key: try Shortcut.Key(name: key))
             )
+        case "sequence":
+            let steps = try container.decode([Step].self, forKey: .keys)
+            guard !steps.isEmpty else {
+                throw DecodingError.dataCorruptedError(
+                    forKey: .keys, in: container, debugDescription: "a sequence has no keys")
+            }
+            self = .sequence(try steps.map { try $0.shortcut })
         case "text":
             self = .text(try container.decode(String.self, forKey: .text))
         default:
@@ -106,13 +168,21 @@ extension PanelAction: Decodable {
 
 extension Shortcut.Key {
     /// A single character is typed as-is; anything longer names a virtual key.
-    init(name: String) throws {
+    public init(name: String) throws {
         if name.count == 1 {
             self = .character(name)
         } else if let virtual = VirtualKey(name: name) {
             self = .virtual(virtual)
         } else {
             throw PanelDecodingError.unknownKey(name)
+        }
+    }
+
+    /// The name in panel JSON: the character, or the name of the virtual key.
+    public var name: String {
+        switch self {
+        case .character(let character): character
+        case .virtual(let virtual): String(describing: virtual)
         }
     }
 }
