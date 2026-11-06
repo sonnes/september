@@ -868,7 +868,7 @@ model and the sound moved to the rail of a space.
 
 `packages/core/rules/navigation.ts` holds the rules that a test can read: the sections, the
 open section, and the guide for each cloud service. `packages/app-ui/layouts/settings.tsx`
-holds the section list, and `packages/app-ui/pages/settings.tsx` holds the screens.
+holds the section list, and the `packages/app-ui/pages/settings*.tsx` files hold the screens.
 
 The Data section downloads the portable settings and every domain row as one
 JSON file. It does not include Keychain keys, the selected audio output, cached

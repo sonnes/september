@@ -253,3 +253,23 @@ export function voiceRows<V extends ListedVoice>(
 /** The voices heard lately, with the one heard now first. */
 export const heardVoices = (heard: readonly string[], id: string): string[] =>
   [id, ...heard.filter((one) => one !== id)].slice(0, HEARD_LIMIT);
+
+/** The speeds a cloud voice takes. */
+export const SPEED_RANGE = { min: 0.7, max: 1.2 } as const;
+
+/** The sentence that Hear it says. */
+export const VOICE_SAMPLE_TEXT = "This is how I sound today.";
+
+/**
+ * The voices the list offers: the voices of the account and the stock
+ * ElevenLabs voices, once each. A new account has no voices of its own, so
+ * the stock voices are what it can speak with.
+ */
+export function listedVoices<V extends { id: string }>(voices: readonly V[]): V[] {
+  const seen = new Set<string>();
+  return voices.filter((voice) => {
+    if (!voice.id || seen.has(voice.id)) return false;
+    seen.add(voice.id);
+    return true;
+  });
+}

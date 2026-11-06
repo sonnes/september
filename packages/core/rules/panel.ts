@@ -8,6 +8,15 @@
 
 import { MOODS, type MoodKey } from "./moods.ts";
 
+export type Tier = "compact" | "regular" | "wide";
+
+/** The tier for a width in points. */
+export function tierFor(width: number): Tier {
+  if (width < 560) return "compact";
+  if (width < 900) return "regular";
+  return "wide";
+}
+
 export const PANEL_TABS = [
   { key: "phrases", title: "Phrases" },
   { key: "voice", title: "Voice" },

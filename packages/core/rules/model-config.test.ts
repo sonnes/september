@@ -4,9 +4,10 @@ import {
   AGENT_MODELS,
   modelChoices,
   modelConfigFor,
+  type ModelSettings,
   modelSettingsFrom,
   SUGGESTIONS_MODELS,
-  type ModelSettings,
+  withProvider,
 } from "./model-config.ts";
 
 const settings = (): ModelSettings => ({
@@ -116,5 +117,19 @@ describe("modelChoices", () => {
     expect(modelChoices(SUGGESTIONS_MODELS, saved)).toHaveLength(
       modelChoices(SUGGESTIONS_MODELS, "").length,
     );
+  });
+});
+
+describe("withProvider", () => {
+  it("moves the suggestions model to the new provider with the default model", () => {
+    const moved = withProvider(
+      {
+        defaultModel: { service: "openrouter", model: "a" },
+        suggestionsModel: { service: "openrouter", model: "b" },
+      },
+      "apple",
+    );
+    expect(moved.defaultModel.service).toBe("apple");
+    expect(moved.suggestionsModel?.service).toBe("apple");
   });
 });

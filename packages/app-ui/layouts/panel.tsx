@@ -7,13 +7,12 @@ import { Button } from "@september/ui/components/button";
 import { APP_NAV } from "@september/app-ui/navigation";
 
 import { useSpaces } from "@september/app-ui/services/data";
+import { panel as panelRail } from "@september/app-ui/services/settings";
 import { stopSpeaking, useSpeaking } from "@september/app-ui/services/speech";
 import {
   ChromeContext,
   PanelContext,
-  tierFor,
   type ComposerHandle,
-  type RailRequest,
 } from "@september/app-ui/blocks/chrome";
 import {
   PanelHeader,
@@ -26,13 +25,12 @@ import {
   SkipLink,
   useRouteFocus,
 } from "@september/app-ui/blocks/screen";
-import {
-  ApplyAccess,
-  InputLayer,
-  ScanPauseKey,
-} from "@september/app-ui/blocks/access";
-import { spaceParams, useNewSpace } from "@september/app-ui/blocks/space";
-import { escapeStep, moodForKey } from "@september/core/rules/panel";
+import { ApplyAccess } from "@september/app-ui/blocks/access";
+import { InputLayer, ScanPauseKey } from "@september/app-ui/blocks/input-layer";
+import { spaceParams, useNewSpace } from "@september/app-ui/blocks/space-routes";
+import { escapeStep, moodForKey, tierFor } from "@september/core/rules/panel";
+import { KEYMAP, presses } from "@september/core/rules/keymap";
+import { useEscape } from "@september/app-ui/blocks/keymap";
 import type { SpaceMode } from "@september/core/rules/records";
 import { spaceFromSlug } from "@september/core/rules/spaces";
 
@@ -99,7 +97,6 @@ export function PanelShell({
   const composer = useRef<ComposerHandle | null>(null);
   const [sheet, setSheet] = useState<PanelSheet | null>(null);
   const [outputOpen, setOutputOpen] = useState(false);
-  const [rail, setRail] = useState<RailRequest | null>(null);
 
   // The tier follows the width of the whole panel, not of the screen body,
   // so the rail does not take the wide tier away by its own width.
@@ -122,30 +119,31 @@ export function PanelShell({
   useRouteFocus(pathname, main);
 
   const openTab = (tab: "phrases" | "voice") => {
-    if (tier === "wide") setRail({ tab, at: Date.now() });
-    else setSheet(tab);
+    if (tier !== "wide") return setSheet(tab);
+    panelRail.set({ open: true, tab }).catch((error: unknown) => {
+      console.error("September did not keep the state of the rail.", error);
+    });
   };
+
+  useEscape(
+    () => {
+      const step = escapeStep({
+        speaking: speaking !== null,
+        sheetOpen: sheet !== null,
+        draft: composer.current?.draft ?? "",
+      });
+      if (step === "none") return false;
+      if (step === "stop") stopSpeaking();
+      else if (step === "close") setSheet(null);
+      else onHide();
+    },
+    { base: true },
+  );
 
   // The keys of the panel. The handler reads the newest state, so it is
   // added again after each render.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        // A menu or a dialog that closed on this key has used it.
-        if (event.defaultPrevented) return;
-        const step = escapeStep({
-          speaking: speaking !== null,
-          sheetOpen: sheet !== null,
-          draft: composer.current?.draft ?? "",
-        });
-        if (step === "none") return;
-        event.preventDefault();
-        if (step === "stop") stopSpeaking();
-        else if (step === "close") setSheet(null);
-        else onHide();
-        return;
-      }
-
       if (event.ctrlKey && !event.metaKey && !event.altKey) {
         const mood = moodForKey(event.key);
         const onMood = composer.current?.onMood;
@@ -166,14 +164,12 @@ export function PanelShell({
         return;
       }
 
-      const key = event.key.toLowerCase();
-      if (key === "k" && !event.shiftKey) setSheet("spaces");
-      else if (key === "p" && !event.shiftKey && space) openTab("phrases");
-      else if (key === "v" && event.shiftKey && space) openTab("voice");
-      else if (key === "o" && event.shiftKey && composer.current?.speaks)
-        setOutputOpen(true);
-      else if (key === "backspace" && composer.current?.clear) composer.current.clear();
-      else if (key === "?") void navigate({ to: "/help" });
+      if (presses(event, KEYMAP.spaces)) setSheet("spaces");
+      else if (presses(event, KEYMAP.phrases) && space) openTab("phrases");
+      else if (presses(event, KEYMAP.voice) && space) openTab("voice");
+      else if (presses(event, KEYMAP.output) && composer.current?.speaks) setOutputOpen(true);
+      else if (presses(event, KEYMAP.clear) && composer.current?.clear) composer.current.clear();
+      else if (presses(event, KEYMAP.help)) void navigate({ to: "/help" });
       else return;
       event.preventDefault();
     };
@@ -187,7 +183,7 @@ export function PanelShell({
   return (
     <ChromeContext.Provider value="panel">
       <PanelContext.Provider
-        value={{ tier, composer, outputOpen, setOutputOpen, rail }}
+        value={{ tier, composer, outputOpen, setOutputOpen }}
       >
         <RightPanelSlot.Provider value={tier === "wide" ? slot : null}>
           <div

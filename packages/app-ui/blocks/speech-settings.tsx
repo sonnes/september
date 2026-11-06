@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { Volume2 } from "lucide-react";
 
@@ -7,12 +7,13 @@ import { Label } from "@september/ui/components/label";
 import { Slider } from "@september/ui/components/slider";
 
 import { PickList } from "@september/app-ui/blocks/pick-list";
-import { readConnections } from "@september/app-ui/services/connections";
+import { useConnections } from "@september/app-ui/services/connections";
+import { useAutosave } from "@september/app-ui/services/autosave";
 import {
   DEFAULT_SPEECH,
   speak,
-  speechSettings,
   updateSpeech,
+  useSpeechSettings,
   type SpeechSettings as Speech,
 } from "@september/app-ui/services/speech";
 import {
@@ -25,12 +26,10 @@ import {
   hasSimilarity,
   stabilityFor,
   V3_STABILITY,
+  SPEED_RANGE,
   VOICE_MODELS,
+  VOICE_SAMPLE_TEXT,
 } from "@september/core/rules/voice";
-
-const TRY_IT = "This is how I sound today.";
-
-const SPEED = { min: 0.7, max: 1.2 } as const;
 
 /**
  * The sound of the voice, in the card of the right rail.
@@ -49,26 +48,21 @@ const SPEED = { min: 0.7, max: 1.2 } as const;
  * The service and the list of voices live on `/voice`, which has the room.
  */
 export function SpeechSettings() {
-  const [settings, setSettings] = useState<Speech>(speechSettings);
-  const [connected, setConnected] = useState<boolean | null>(null);
-  const [custom, setCustom] = useState(
-    () => expressionOf(speechSettings()) === "custom",
-  );
+  const stored = useSpeechSettings();
+  // A slider shows each step at once. The store follows behind it.
+  const saved = useAutosave(stored, async (next) => {
+    await updateSpeech(next);
+  });
+  const settings = saved.value;
+  const { connections } = useConnections();
+  const connected = connections.elevenlabs.connected;
+  const [custom, setCustom] = useState(() => expressionOf(stored) === "custom");
 
-  const change = (next: Partial<Speech>) => {
-    setSettings({ ...settings, ...next });
-    void updateSpeech(next);
-  };
-
-  useEffect(() => {
-    void readConnections()
-      .then((connections) => setConnected(connections.elevenlabs.connected))
-      .catch(() => setConnected(false));
-  }, []);
+  const change = (next: Partial<Speech>) => saved.write({ ...saved.current(), ...next });
 
   const dialogue = settings.provider === "dialogue";
-  const cloud = settings.provider === "elevenlabs" && connected === true;
-  const expressive = cloud || (dialogue && connected === true);
+  const cloud = settings.provider === "elevenlabs" && connected;
+  const expressive = cloud || (dialogue && connected);
   // The Dialogue voice ignores the saved model and always uses Eleven v3.
   const soundModel = dialogue ? DIALOGUE_MODEL : settings.modelId;
   const preset =
@@ -78,6 +72,14 @@ export function SpeechSettings() {
 
   return (
     <div className="space-y-5 p-4">
+      {saved.state === "failed" ? (
+        <div role="alert" className="space-y-2 text-sm">
+          <p className="text-destructive">September did not keep the change.</p>
+          <Button type="button" variant="outline" onClick={saved.retry}>
+            Retry saving
+          </Button>
+        </div>
+      ) : null}
       <p className="text-muted-foreground text-xs">
         How your voice sounds in every space. A change is kept as you make it.
       </p>
@@ -88,8 +90,8 @@ export function SpeechSettings() {
           label="Speed"
           low="Slower"
           high="Faster"
-          min={SPEED.min}
-          max={SPEED.max}
+          min={SPEED_RANGE.min}
+          max={SPEED_RANGE.max}
           value={settings.speed}
           onChange={(speed) => change({ speed })}
         />
@@ -161,7 +163,7 @@ export function SpeechSettings() {
       <Button
         type="button"
         className="h-11 w-full"
-        onClick={() => void speak(TRY_IT)}
+        onClick={() => void speak(VOICE_SAMPLE_TEXT)}
       >
         <Volume2 aria-hidden />
         Hear it

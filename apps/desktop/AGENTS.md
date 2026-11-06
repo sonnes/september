@@ -72,7 +72,7 @@ cargo fmt --all -- --check
 - Never put the words of the user in a log. A line carries a count, a device
   name, or a reason. The sentence in the composer is what they are about to say
   out loud, and it belongs to them. The same goes for an API key.
-- Write through `Composer` in `packages/app-ui/blocks/space.tsx` in Talk, Agent, and
+- Write through `Composer` in `packages/app-ui/blocks/composer.tsx` in Talk, Agent, and
   the first turn that sets a space up. Notes writes in `NoteDocument` in
   `packages/app-ui/blocks/note-document.tsx`, which shows the same `Suggestions`,
   Undo, and Delete last word. A writing surface without the word tiles, the codes, or
@@ -190,7 +190,7 @@ cargo fmt --all -- --check
 - Keep the settings sections in `SETTINGS_SECTIONS` in
   `packages/core/rules/navigation.ts`, where a test can read them, the section
   list in `packages/app-ui/layouts/settings.tsx`, and the screens in
-  `packages/app-ui/pages/settings.tsx`. Give each path an icon in
+  `packages/app-ui/pages/settings*.tsx`. Give each path an icon in
   `packages/app-ui/navigation.ts`. The icon record is typed by path.
 - Keep the parts that setup and settings share in `packages/app-ui/blocks/services.tsx`: the mode
   card, the mark, the state pill, and the key panel. Do not write a second one.

@@ -1,8 +1,10 @@
-import { expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
+import { serviceName } from "./services.ts";
 
 import {
   countsAsTypedKey,
   getTimeRangeBounds,
+  sourceLabel,
   summarizeUsage,
   toRecentCalls,
   usageCallsToCsv,
@@ -186,4 +188,12 @@ it("a presentation is counted, but it is not a provider call", () => {
   expect(toRecentCalls(events).length).toBe(1);
   expect(summarizeUsage(events).services.total_calls).toBe(1);
   expect(summarizeUsage(events).services.total_credits).toBe(10);
+});
+
+describe("the names of a usage row", () => {
+  it("names a cost source and a service, and shows an unknown id as it is", () => {
+    expect(sourceLabel("quota")).toBe("credits");
+    expect(serviceName("elevenlabs")).toBe("ElevenLabs");
+    expect(serviceName("mystery")).toBe("mystery");
+  });
 });

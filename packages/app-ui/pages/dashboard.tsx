@@ -5,14 +5,13 @@ import { Screen } from "@september/app-ui/blocks/screen";
 import {
   formatCost,
   formatCount,
-  providerLabel,
   QuietStat,
-  sourceLabel,
   TimeRangeSelect,
   UsageCard,
 } from "@september/app-ui/blocks/usage";
+import { sourceLabel, type TimeRange } from "@september/core/rules/usage-summary";
+import { serviceName } from "@september/core/rules/services";
 import { useElevenLabsQuota, useUsage } from "@september/app-ui/services/usage";
-import type { TimeRange } from "@september/core/rules/usage-summary";
 
 export function DashboardScreen() {
   const [range, setRange] = useState<TimeRange>("week");
@@ -101,7 +100,7 @@ export function DashboardScreen() {
                   <div key={provider} className="flex min-h-16 items-center gap-3 rounded-control border px-4 py-3">
                     <Sparkles className="text-muted-foreground size-4" aria-hidden />
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold">{providerLabel(provider)}</div>
+                      <div className="text-sm font-semibold">{serviceName(provider)}</div>
                       <div className="text-muted-foreground text-xs">
                         {formatCount(bucket.calls)} requests · {sourceLabel(bucket.source)}
                       </div>

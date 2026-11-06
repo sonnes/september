@@ -1,27 +1,19 @@
-import { useId, useMemo, useState, type ReactNode } from "react";
+import { useId, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { MessagesSquare, Plus, Search, Trash2 } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@september/ui/components/alert-dialog";
 import { Button } from "@september/ui/components/button";
 import { Input } from "@september/ui/components/input";
 import { Label } from "@september/ui/components/label";
 import { Skeleton } from "@september/ui/components/skeleton";
 import { navFor } from "@september/core/rules/navigation";
-import { useDeleteSpace, useSpaces } from "@september/app-ui/services/data";
+import { useSpaces } from "@september/app-ui/services/data";
 import type { Space } from "@september/core/rules/records";
 import { Screen } from "@september/app-ui/blocks/screen";
 import { filterSpaces, timeAgo } from "@september/core/rules/spaces";
 
-import { Problem, openParams, useNewSpace } from "@september/app-ui/blocks/space";
+import { EmptyState, Problem } from "@september/app-ui/blocks/states";
+import { DeleteSpaceDialog } from "@september/app-ui/blocks/delete-space-dialog";
+import { openParams, useNewSpace } from "@september/app-ui/blocks/space-routes";
 
 // ------------------------------------------------------------- space list
 
@@ -89,7 +81,8 @@ export function SpacesScreen() {
       ) : null}
 
       {spaces && spaces.length === 0 ? (
-        <Empty
+        <EmptyState
+          icon={MessagesSquare}
           title="No spaces yet"
           body="A space keeps the words you use with one person or in one place."
           action={
@@ -106,7 +99,7 @@ export function SpacesScreen() {
       ) : null}
 
       {spaces?.length && shown.length === 0 ? (
-        <Empty title="No spaces found" body="No title holds those words." />
+        <EmptyState icon={MessagesSquare} title="No spaces found" body="No title holds those words." />
       ) : null}
 
       {shown.length ? (
@@ -142,77 +135,5 @@ export function SpacesScreen() {
 
       <DeleteSpaceDialog space={toDelete} onClose={() => setToDelete(null)} />
     </Screen>
-  );
-}
-
-function Empty({
-  title,
-  body,
-  action,
-}: {
-  title: string;
-  body: string;
-  action?: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed p-10 text-center">
-      <MessagesSquare className="text-muted-foreground size-8" aria-hidden />
-      <div className="space-y-1">
-        <h3 className="text-sm font-medium">{title}</h3>
-        <p className="text-muted-foreground text-sm">{body}</p>
-      </div>
-      {action}
-    </div>
-  );
-}
-
-/** Deleting a space deletes its messages too, so the user says yes first. */
-export function DeleteSpaceDialog({
-  space,
-  onClose,
-  onDeleted,
-}: {
-  space: Space | null;
-  onClose: () => void;
-  /** Runs after the space is gone, before the dialog closes. */
-  onDeleted?: () => void;
-}) {
-  const deleteSpace = useDeleteSpace();
-
-  return (
-    <AlertDialog open={Boolean(space)} onOpenChange={(open) => !open && onClose()}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete {space?.title}?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This deletes the space and every message in it. You cannot undo
-            this.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={deleteSpace.isPending}>
-            Keep it
-          </AlertDialogCancel>
-          <AlertDialogAction
-            // The button that erases the messages must not look like the
-            // button that keeps them.
-            variant="destructive"
-            disabled={deleteSpace.isPending}
-            onClick={(event) => {
-              event.preventDefault();
-              if (space)
-                deleteSpace.mutate(space.id, {
-                  onSuccess: () => {
-                    onDeleted?.();
-                    onClose();
-                  },
-                });
-            }}
-          >
-            {deleteSpace.isPending ? "Deleting…" : "Delete space"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   );
 }

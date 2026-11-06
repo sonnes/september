@@ -1,7 +1,5 @@
 import { platform } from "@platform/adapter";
-
-export const MAX_VOICE_SAMPLE_BYTES = 25 * 1024 * 1024;
-export const MAX_VOICE_CLONE_BYTES = 100 * 1024 * 1024;
+import { validateVoiceClone } from "@september/core/rules/voice-clone";
 
 export interface VoiceCloneInput {
   files: File[];
@@ -34,41 +32,9 @@ export function keepCreatedVoice<T extends { id: string }>(
   return [created, ...fresh];
 }
 
-type VoiceSampleFile = Pick<File, "name" | "size" | "type">;
-
-/** Returns the one problem the form must fix before it calls ElevenLabs. */
-export function validateVoiceClone({
-  files,
-  name,
-}: {
-  files: VoiceSampleFile[];
-  name: string;
-}): string | null {
-  if (files.length === 0) return "Add at least one voice sample.";
-  if (!name.trim()) return "Give this voice a name.";
-
-  for (const file of files) {
-    if (file.type && !file.type.startsWith("audio/")) {
-      return `${file.name} is not an audio file.`;
-    }
-    if (file.size > MAX_VOICE_SAMPLE_BYTES) {
-      return `${file.name} is larger than 25 MB.`;
-    }
-  }
-  return null;
-}
-
-export function validateVoiceCloneBytes(size: number): string | null {
-  return size > MAX_VOICE_CLONE_BYTES
-    ? "Voice samples are larger than 100 MB in total."
-    : null;
-}
-
 /** Creates an ElevenLabs voice from the samples. */
 export async function cloneVoice(input: VoiceCloneInput): Promise<CreatedVoice> {
-  const problem =
-    validateVoiceClone(input) ??
-    validateVoiceCloneBytes(input.files.reduce((total, file) => total + file.size, 0));
+  const problem = validateVoiceClone(input);
   if (problem) throw new Error(problem);
 
   const form = new FormData();

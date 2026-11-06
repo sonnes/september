@@ -1,5 +1,16 @@
 export type TimeRange = "day" | "week" | "month";
 export type CostSource = "measured" | "estimated" | "free" | "quota" | "unknown";
+
+const SOURCE_LABELS: Record<CostSource, string> = {
+  measured: "exact",
+  estimated: "estimate",
+  free: "free",
+  quota: "credits",
+  unknown: "—",
+};
+
+/** The plain word for a cost source. The stored value is an identifier, not copy. */
+export const sourceLabel = (source: CostSource): string => SOURCE_LABELS[source] ?? source;
 /** Every kind of event the apps record. One list, read by both of them. */
 export const USAGE_EVENT_TYPES = [
   "message_sent",

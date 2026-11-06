@@ -9,7 +9,6 @@
 import { useSyncExternalStore } from "react";
 
 import { platform } from "@platform/adapter";
-import { moodFrom, type MoodKey } from "@september/core/rules/moods";
 import {
   DEFAULT_DRAFT,
   savedSetupFrom,
@@ -18,8 +17,8 @@ import {
 } from "@september/core/rules/onboarding";
 import { panelStateFrom, type PanelState } from "@september/core/rules/panel";
 import { presentSettings, type PresentSettings } from "@september/core/rules/present/settings";
-import { SETTINGS, talkDraftKey, talkMoodKey } from "@september/core/rules/settings";
-import type { SpaceModes } from "@september/core/rules/spaces";
+import { SETTINGS } from "@september/core/rules/settings";
+import { spaceModesById, type SpaceModes } from "@september/core/rules/spaces";
 
 import type { SpeechSettings } from "./speech";
 
@@ -70,7 +69,7 @@ export const panel = setting<PanelState>(SETTINGS.panel, panelStateFrom);
 export const present = setting<PresentSettings>(SETTINGS.present, presentSettings);
 /** The shortcut ideas the user turned down. They never come back. */
 export const dismissedIdeas = setting<string[]>(SETTINGS.dismissedIdeas, listOf);
-/** The mode each space was left in, by slug. */
+/** The mode each space was left in, by space id. */
 export const spaceModes = setting<SpaceModes>(SETTINGS.spaceModes, recordOf);
 /** The voices heard lately on the Voice screen, newest first. */
 export const heardVoices = setting<string[]>(SETTINGS.heardVoices, listOf);
@@ -99,6 +98,15 @@ export async function loadSettings(): Promise<void> {
     ...loaded.map((held) => held.load()),
   ]);
   identity = { name: found.name, userId: found.userId ?? LOCAL_USER };
+  await keySpaceModesById();
+}
+
+/** Moves a setting that keys the modes by slug, from an older app or backup, to space ids. */
+async function keySpaceModesById(): Promise<void> {
+  const modes = spaceModes.get();
+  if (Object.keys(modes).length === 0) return;
+  const byId = spaceModesById(modes, await platform.store.listSpaces(currentUserId()));
+  if (JSON.stringify(byId) !== JSON.stringify(modes)) await spaceModes.set(byId);
 }
 
 /** The name the system knows for the person, or nothing. */
@@ -140,19 +148,3 @@ export function updateSetup(patch: Partial<OnboardingDraft>): Promise<SavedSetup
 export async function saveSetup(draft: OnboardingDraft): Promise<void> {
   await setup.set({ ...draft, id: currentUserId() });
 }
-
-/** Unsent words are device settings, apart from the spoken transcript. */
-export async function readTalkDraft(spaceId: string): Promise<string> {
-  return (await platform.store.getSetting<string>(talkDraftKey(spaceId))) ?? "";
-}
-
-export const saveTalkDraft = (spaceId: string, words: string): Promise<void> =>
-  platform.store.putSetting(talkDraftKey(spaceId), words);
-
-/** The mood of a Talk space. It stays until the user presses its key again. */
-export async function readTalkMood(spaceId: string): Promise<MoodKey | null> {
-  return moodFrom(await platform.store.getSetting(talkMoodKey(spaceId)));
-}
-
-export const saveTalkMood = (spaceId: string, mood: MoodKey | null): Promise<void> =>
-  platform.store.putSetting(talkMoodKey(spaceId), mood);

@@ -24,16 +24,13 @@ import { APP_NAV } from "@september/app-ui/navigation";
 import { Phrases } from "@september/app-ui/blocks/phrase-panel";
 import { SpeechSettings } from "@september/app-ui/blocks/speech-settings";
 import { usePanel } from "@september/app-ui/blocks/chrome";
-import { ScanPauseKey } from "@september/app-ui/blocks/access";
-import {
-  SpaceTitle,
-  agentEnabled,
-  spaceParams,
-  useNewSpace,
-} from "@september/app-ui/blocks/space";
-import { DeleteSpaceDialog } from "@september/app-ui/pages/spaces";
+import { ScanPauseKey } from "@september/app-ui/blocks/input-layer";
+import { agentEnabled, spaceParams, useNewSpace } from "@september/app-ui/blocks/space-routes";
+import { SpaceTitle } from "@september/app-ui/blocks/space-title";
+import { DeleteSpaceDialog } from "@september/app-ui/blocks/delete-space-dialog";
 import type { Space, SpaceMode } from "@september/core/rules/records";
-import { filterSpaces, timeAgo } from "@september/core/rules/spaces";
+import { ariaShortcut, KEYMAP, keyLabel, type Binding } from "@september/core/rules/keymap";
+import { byRecent, filterSpaces, timeAgo } from "@september/core/rules/spaces";
 
 /** The sheets and dialogs that open over the panel. */
 export type PanelSheet =
@@ -209,10 +206,13 @@ function MoreRows({
   space,
   onSheet,
   onPanelTab,
+  afterClose,
 }: {
   space: Space | undefined;
   onSheet: (sheet: PanelSheet | null) => void;
   onPanelTab: (tab: "phrases" | "voice") => void;
+  /** Runs once the sheet has closed and given the focus back. */
+  afterClose: (then: () => void) => void;
 }) {
   const navigate = useNavigate();
   const panel = usePanel();
@@ -224,8 +224,7 @@ function MoreRows({
       {space ? (
         <>
           <MoreRow
-            keys="⌘P"
-            shortcut="Meta+P"
+            binding={KEYMAP.phrases}
             onSelect={() => {
               close();
               onPanelTab("phrases");
@@ -234,8 +233,7 @@ function MoreRows({
             Phrases
           </MoreRow>
           <MoreRow
-            keys="⌘⇧V"
-            shortcut="Meta+Shift+V"
+            binding={KEYMAP.voice}
             onSelect={() => {
               close();
               onPanelTab("voice");
@@ -247,13 +245,10 @@ function MoreRows({
       ) : null}
       {composer?.speaks ? (
         <MoreRow
-          keys="⌘⇧O"
-          shortcut="Meta+Shift+O"
+          binding={KEYMAP.output}
           onSelect={() => {
+            afterClose(() => panel?.setOutputOpen(true));
             close();
-            // The output menu opens once the sheet has closed and given the
-            // focus back.
-            setTimeout(() => panel?.setOutputOpen(true), 0);
           }}
         >
           Sound output
@@ -261,8 +256,7 @@ function MoreRows({
       ) : null}
       {composer?.clear && panel?.tier === "compact" ? (
         <MoreRow
-          keys="⌘⌫"
-          shortcut="Meta+Backspace"
+          binding={KEYMAP.clear}
           disabled={!composer.draft}
           onSelect={() => {
             composer.clear?.();
@@ -285,8 +279,7 @@ function MoreRows({
       {APP_NAV.map((item) => (
         <MoreRow
           key={item.path}
-          keys={item.path === "/help" ? "⌘?" : undefined}
-          shortcut={item.path === "/help" ? "Meta+?" : undefined}
+          binding={item.path === "/help" ? KEYMAP.help : undefined}
           onSelect={() => {
             close();
             void navigate({ to: item.path });
@@ -300,17 +293,13 @@ function MoreRows({
 }
 
 function MoreRow({
-  keys,
-  shortcut,
+  binding,
   destructive,
   disabled,
   onSelect,
   children,
 }: {
-  /** The keys as the row shows them, such as ⌘P. */
-  keys?: string;
-  /** The same keys for `aria-keyshortcuts`, such as Meta+P. */
-  shortcut?: string;
+  binding?: Binding;
   destructive?: boolean;
   disabled?: boolean;
   onSelect: () => void;
@@ -320,7 +309,7 @@ function MoreRow({
     <button
       type="button"
       disabled={disabled}
-      aria-keyshortcuts={shortcut}
+      aria-keyshortcuts={binding && ariaShortcut(binding)}
       onClick={onSelect}
       className={cn(
         "focus-attention-inset key-disabled hover:bg-muted flex min-h-12 w-full items-center gap-3 rounded-control px-3 text-left text-base font-medium transition-colors",
@@ -328,9 +317,9 @@ function MoreRow({
       )}
     >
       <span className="flex-1">{children}</span>
-      {keys ? (
+      {binding ? (
         <kbd aria-hidden className="text-muted-foreground font-sans text-sm">
-          {keys}
+          {keyLabel(binding)}
         </kbd>
       ) : null}
     </button>
@@ -376,6 +365,7 @@ export function PanelSheets({
   const navigate = useNavigate();
   const panel = usePanel();
   const close = () => onSheet(null);
+  const [afterMore, setAfterMore] = useState<{ then: () => void } | null>(null);
 
   return (
     <>
@@ -395,8 +385,21 @@ export function PanelSheets({
         />
       </PanelSheet>
 
-      <PanelSheet open={sheet === "more"} onClose={close} title="More">
-        <MoreRows space={space} onSheet={onSheet} onPanelTab={onPanelTab} />
+      <PanelSheet
+        open={sheet === "more"}
+        onClose={close}
+        onClosed={() => {
+          afterMore?.then();
+          setAfterMore(null);
+        }}
+        title="More"
+      >
+        <MoreRows
+          space={space}
+          onSheet={onSheet}
+          onPanelTab={onPanelTab}
+          afterClose={(then) => setAfterMore({ then })}
+        />
       </PanelSheet>
 
       {space ? (
@@ -442,17 +445,21 @@ export function PanelSheets({
 function PanelSheet({
   open,
   onClose,
+  onClosed,
   title,
   children,
 }: {
   open: boolean;
   onClose: () => void;
+  /** Runs after the sheet has closed and the focus is back. */
+  onClosed?: () => void;
   title: string;
   children: ReactNode;
 }) {
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
       <SheetContent
+        onCloseAutoFocus={onClosed}
         side="top"
         aria-describedby={undefined}
         // Below the 64-point header, inset as a card.
@@ -490,9 +497,7 @@ function SpaceSwitcher({
   const newSpace = useNewSpace();
   const shown = useMemo(
     () =>
-      filterSpaces(spaces, search).sort(
-        (a, b) => (b.updated_at ?? 0) - (a.updated_at ?? 0),
-      ),
+      byRecent(filterSpaces(spaces, search)),
     [spaces, search],
   );
 

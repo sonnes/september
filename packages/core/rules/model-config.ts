@@ -23,6 +23,20 @@ export function modelConfigFor(
 }
 
 /**
+ * The model settings after a change of provider. Every feature moves with it,
+ * so no feature points at a provider the user left.
+ */
+export function withProvider(
+  settings: ModelSettings,
+  service: WritingModelConfig["service"],
+): ModelSettings {
+  return {
+    defaultModel: { ...settings.defaultModel, service },
+    suggestionsModel: settings.suggestionsModel && { ...settings.suggestionsModel, service },
+  };
+}
+
+/**
  * The model settings of a saved setup, whatever shape it was written in.
  *
  * Setup used to hold one flat service and model. A row written then has no

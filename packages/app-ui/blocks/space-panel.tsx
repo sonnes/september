@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import {
   MessageSquareQuote,
@@ -18,9 +18,9 @@ import {
 
 import { Phrases } from "@september/app-ui/blocks/phrase-panel";
 import { SpeechSettings } from "@september/app-ui/blocks/speech-settings";
-import { panel } from "@september/app-ui/services/settings";
-import { usePanel } from "@september/app-ui/blocks/chrome";
+import { panel, useSetting } from "@september/app-ui/services/settings";
 import { HeaderActions } from "@september/app-ui/blocks/screen";
+import { useEscape } from "@september/app-ui/blocks/keymap";
 import { PANEL_TABS, pressTab, type PanelTab } from "@september/core/rules/panel";
 
 const ICONS: Record<PanelTab, LucideIcon> = {
@@ -45,40 +45,20 @@ export function PanelRail({
   /** Puts a phrase in the composer of the screen that holds the rail. */
   onInsert: (text: string) => void;
 }) {
-  const [state, setState] = useState(panel.get);
+  const state = useSetting(panel);
   const phone = useIsMobile();
   // A phone opens the sheet only on a press, never from the remembered state,
   // so a screen does not start under a sheet.
   const [pressed, setPressed] = useState(false);
   const opener = useRef<HTMLButtonElement | null>(null);
-  // The More menu of the panel asks for a tab here in the wide tier.
-  const request = usePanel()?.rail ?? null;
-
   const show = (next: typeof state) => {
-    setState(next);
-    void panel.set(next);
+    panel.set(next).catch((error: unknown) => {
+      console.error("September did not keep the state of the rail.", error);
+    });
   };
 
-  useEffect(() => {
-    if (request) show({ open: true, tab: request.tab });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [request]);
-
-  // Escape closes the card and leaves the rail, the same as the web app.
-  useEffect(() => {
-    if (!state.open) return;
-
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.defaultPrevented) return;
-      // The key is used, so the panel does not hide on the same press.
-      event.preventDefault();
-      show({ ...state, open: false });
-    };
-    // The capture phase runs before the Escape of the panel.
-    document.addEventListener("keydown", onKey, true);
-    return () => document.removeEventListener("keydown", onKey, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]);
+  // Escape closes the card and leaves the rail.
+  useEscape(state.open ? () => show({ ...state, open: false }) : null);
 
   const open = PANEL_TABS.find((tab) => tab.key === state.tab)!;
   const OpenIcon = ICONS[open.key];

@@ -3,13 +3,14 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_VOICE_MODEL,
   DIALOGUE_MODELS,
-  elevenLabsCredits,
   dialogueModelFrom,
   dialogueParts,
-  EXPRESSIONS,
+  elevenLabsCredits,
   expressionOf,
+  EXPRESSIONS,
   expressionSound,
   heardVoices,
+  listedVoices,
   stabilityFor,
   VOICE_MODELS,
   voiceModelFrom,
@@ -229,5 +230,12 @@ describe("elevenLabsCredits", () => {
     for (const model of [...VOICE_MODELS, ...DIALOGUE_MODELS]) {
       expect(elevenLabsCredits("abc", model.id)).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("listedVoices", () => {
+  it("keeps one row for each voice and drops a row with no id", () => {
+    const rows = listedVoices([{ id: "a" }, { id: "" }, { id: "a" }, { id: "b" }]);
+    expect(rows.map((row) => row.id)).toEqual(["a", "b"]);
   });
 });

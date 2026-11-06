@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 
 import { platform } from "@platform/adapter";
 import { fileSound, speakableText, stripTags } from "@september/core/rules/audio-tags";
@@ -13,7 +13,9 @@ import {
 } from "@september/core/rules/voice";
 
 import { InterruptedSpeech, type CloudVoice } from "../platform";
-import { currentSetup, savedSpeech } from "./settings";
+import type { SavedSetup } from "@september/core/rules/onboarding";
+
+import { currentSetup, savedSpeech, useSetting, useSetup } from "./settings";
 import { recordTtsUsage } from "./usage";
 
 export type VoiceService = "system" | "elevenlabs" | "dialogue";
@@ -44,15 +46,25 @@ export const DEFAULT_SPEECH: SpeechSettings = {
  * the service that setup chose decides.
  */
 export function speechSettings(): SpeechSettings {
-  const saved = savedSpeech.get();
+  return speechFrom(savedSpeech.get(), currentSetup());
+}
+
+function speechFrom(saved: SpeechSettings | null, setup: SavedSetup | null): SpeechSettings {
   if (saved) {
     const kept = { ...DEFAULT_SPEECH, ...saved };
     return { ...kept, modelId: voiceModelFrom(kept.modelId) };
   }
   return {
     ...DEFAULT_SPEECH,
-    provider: currentSetup()?.voiceService === "elevenlabs" ? "elevenlabs" : "system",
+    provider: setup?.voiceService === "elevenlabs" ? "elevenlabs" : "system",
   };
+}
+
+/** The settings in use, and a new render when they change. */
+export function useSpeechSettings(): SpeechSettings {
+  const saved = useSetting(savedSpeech);
+  const setup = useSetup();
+  return useMemo(() => speechFrom(saved, setup), [saved, setup]);
 }
 
 /** Changes some of the speech settings and keeps the rest. */

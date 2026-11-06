@@ -10,7 +10,7 @@ import {
 import { modelContextFrom, modelTextFrom } from "../model-client.ts";
 import type { AgentMessage, AgentToolState } from "../records.ts";
 import { composerAction, rememberSpaceMode, spaceModeFrom } from "../spaces.ts";
-import { INTRODUCTION_WAIT_MS, agentOwesReply } from "./introduction.ts";
+import { agentOwesReply, INTRODUCTION_WAIT_MS, replyOwedUntil } from "./introduction.ts";
 import { AGENT_MAX_WRITES, askSpaceAgent, resolveSpaceAgentProposal } from "./loop.ts";
 import {
   AGENT_TOOLS,
@@ -1295,5 +1295,14 @@ describe("the turn that makes a space", () => {
 
     // An app closed mid-run would otherwise promise an answer for ever.
     expect(agentOwesReply([asked], 1_000 + INTRODUCTION_WAIT_MS)).toBe(false);
+  });
+});
+
+describe("replyOwedUntil", () => {
+  it("gives the end of the wait after a turn of the user, and nothing after a reply", () => {
+    const asked = { role: "user", created_at: 1_000 } as Parameters<typeof replyOwedUntil>[0][number];
+    const answered = { ...asked, role: "assistant" } as typeof asked;
+    expect(replyOwedUntil([asked])).toBe(1_000 + INTRODUCTION_WAIT_MS);
+    expect(replyOwedUntil([asked, answered])).toBeNull();
   });
 });

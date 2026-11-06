@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc --noEmit"
+    "build": "tsc --noEmit",
+    "test": "vitest --run"
   },
   "exports": {
-    ".": "./index.ts",
     "./app": "./app.tsx",
     "./blocks/*": "./blocks/*.tsx",
     "./layouts/*": "./layouts/*.tsx",
@@ -15,7 +15,9 @@
     "./pages/*": "./pages/*.tsx",
     "./platform": "./platform.ts",
     "./routes": "./routes.tsx",
-    "./services/*": "./services/*.ts"
+    "./services/*": "./services/*.ts",
+    "./test/platform": "./test/platform.ts",
+    "./test/axe": "./test/axe.ts"
   },
   "dependencies": {
     "@earendil-works/pi-ai": "0.84.4",
@@ -35,6 +37,7 @@
   "devDependencies": {
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
+    "axe-core": "^4.14.0",
     "react": "19.2.1",
     "react-dom": "19.2.1"
   }

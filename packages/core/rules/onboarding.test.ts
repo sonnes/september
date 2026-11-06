@@ -3,12 +3,13 @@ import { describe, expect, it } from "vitest";
 import {
   canReach,
   DEFAULT_DRAFT,
+  defaultServices,
   isSetupDone,
   nextStep,
   previousStep,
+  type SavedSetup,
   savedSetupFrom,
   stepIndex,
-  type SavedSetup,
 } from "./onboarding.ts";
 
 describe("the setup steps", () => {
@@ -70,5 +71,24 @@ describe("a saved setup", () => {
   it("keeps a feature the user turned off", () => {
     const saved = { ...DEFAULT_DRAFT, id: "ravi", name: "Ravi", autoPhrases: false };
     expect(savedSetupFrom(saved)!.autoPhrases).toBe(false);
+  });
+});
+
+describe("defaultServices", () => {
+  const none = { appleAvailable: false, openrouterConnected: false, elevenlabsConnected: false };
+
+  it("chooses Apple Intelligence, then a connected OpenRouter", () => {
+    expect(defaultServices(DEFAULT_DRAFT, { ...none, appleAvailable: true }).defaultModel.service).toBe("apple");
+    expect(defaultServices(DEFAULT_DRAFT, { ...none, openrouterConnected: true }).defaultModel.service).toBe("openrouter");
+    expect(defaultServices(DEFAULT_DRAFT, none).defaultModel.service).toBe("none");
+  });
+
+  it("keeps a service the person chose", () => {
+    const chosen = { ...DEFAULT_DRAFT, defaultModel: { ...DEFAULT_DRAFT.defaultModel, service: "openrouter" as const } };
+    expect(defaultServices(chosen, { ...none, appleAvailable: true }).defaultModel.service).toBe("openrouter");
+  });
+
+  it("speaks with ElevenLabs once it is connected", () => {
+    expect(defaultServices(DEFAULT_DRAFT, { ...none, elevenlabsConnected: true }).voiceService).toBe("elevenlabs");
   });
 });

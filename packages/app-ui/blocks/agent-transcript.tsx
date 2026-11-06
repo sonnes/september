@@ -53,7 +53,7 @@ const MARKS: Record<AgentToolTone, { icon: typeof Check; className: string }> =
  * The whole row is the control, at 44px, and the fold state lives on the row
  * rather than on a separate handle beside it — one reach, not two.
  */
-export function ToolLine({
+function ToolLine({
   tone,
   title,
   label,
@@ -195,7 +195,7 @@ function proposalIcon(row: AgentMessage): typeof Check {
  * It shows what it would replace beside what it would write, so approving
  * does not mean opening another screen to compare.
  */
-export function ProposalCard({
+function ProposalCard({
   row,
   space,
   busy,

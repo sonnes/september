@@ -22,9 +22,10 @@ export interface PickRow {
 
 /**
  * Moves the choice with the arrow keys, as a screen reader user expects of a
- * radio group. The next choice takes the focus and is chosen.
+ * radio group. The next choice takes the focus and is chosen. Every radio key
+ * of the app uses it.
  */
-function moveChoice(event: KeyboardEvent<HTMLButtonElement>) {
+export function moveChoice(event: KeyboardEvent<HTMLButtonElement>) {
   const step =
     event.key === "ArrowRight" || event.key === "ArrowDown"
       ? 1

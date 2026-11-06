@@ -5,14 +5,13 @@ import { Button } from "@september/ui/components/button";
 import {
   formatCost,
   formatCount,
-  providerLabel,
   QuietStat,
-  sourceLabel,
   TimeRangeSelect,
   UsageCard,
 } from "@september/app-ui/blocks/usage";
+import { sourceLabel, type SpendBucket, type TimeRange } from "@september/core/rules/usage-summary";
+import { serviceName } from "@september/core/rules/services";
 import { downloadUsageCsv, useElevenLabsQuota, useUsage } from "@september/app-ui/services/usage";
-import type { SpendBucket, TimeRange } from "@september/core/rules/usage-summary";
 
 const SHORT_LIST = 8;
 
@@ -120,7 +119,7 @@ export function UsageSettings() {
                         </td>
                         <td className="py-3 pr-4 capitalize">{call.feature}</td>
                         <td className="py-3 pr-4">
-                          <div className="font-medium">{providerLabel(call.provider)}</div>
+                          <div className="font-medium">{serviceName(call.provider)}</div>
                           <div className="text-muted-foreground max-w-52 truncate text-xs">{call.model}</div>
                         </td>
                         <td className="py-3 text-right whitespace-nowrap">
@@ -171,7 +170,7 @@ function Breakdown({ title, rows }: { title: string; rows: Record<string, SpendB
         <div className="space-y-4">
           {entries.map(([name, bucket]) => (
             <div key={name} className="grid gap-2 sm:grid-cols-[minmax(120px,0.45fr)_1fr_auto] sm:items-center">
-              <span className="truncate text-sm font-medium capitalize">{providerLabel(name)}</span>
+              <span className="truncate text-sm font-medium capitalize">{serviceName(name)}</span>
               <div className="bg-muted h-2 overflow-hidden rounded-full">
                 <div
                   className="bg-primary h-full rounded-full"

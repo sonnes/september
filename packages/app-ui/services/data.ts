@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { platform } from "@platform/adapter";
+import { pinnedPhrase } from "@september/core/rules/phrases/rows";
 import { STARTER_PACK } from "@september/core/rules/phrases/starter-pack";
-import type { Message, SavedPhrase, SpacePatch } from "@september/core/rules/records";
+import type { Message, SavedPhrase, Space, SpacePatch } from "@september/core/rules/records";
 
 import { currentUserId } from "./settings";
 
@@ -28,8 +29,14 @@ export function useSpaces() {
   });
 }
 
-/** Makes a space. The first space starts with the starter phrases. */
+/**
+ * Makes a space. The first space starts with the starter phrases.
+ *
+ * The new space goes into the held list at once, so a screen that opens it
+ * by slug finds it before the list is read again.
+ */
 export function useCreateSpace() {
+  const client = useQueryClient();
   const refresh = useRefresh(spacesKey, ["phrases"]);
   return useMutation({
     mutationFn: async (title: string) => {
@@ -57,7 +64,12 @@ export function useCreateSpace() {
       }
       return created;
     },
-    onSuccess: () => void refresh(),
+    onSuccess: (created) => {
+      client.setQueryData<Space[]>(spacesKey, (held) =>
+        held?.some((one) => one.id === created.id) ? held : [created, ...(held ?? [])],
+      );
+      void refresh();
+    },
   });
 }
 
@@ -119,6 +131,17 @@ export function useSendMessage(spaceId: string) {
     onSuccess: (message) =>
       client.setQueryData<Message[]>(messagesKey(spaceId), (rows = []) => [...rows, message]),
   });
+}
+
+/** Reads again everything the agent of a space can change. */
+export function useRefreshAgentSpace(spaceId: string) {
+  return useRefresh(
+    agentMessagesKey(spaceId),
+    spacesKey,
+    messagesKey(spaceId),
+    notesKey(spaceId),
+    ["phrases"],
+  );
 }
 
 export function useAgentMessages(spaceId: string) {
@@ -197,6 +220,16 @@ export function usePhrases(spaceId?: string) {
     queryFn: () => store.listPhrases(spaceId),
     enabled: spaceId !== "",
   });
+}
+
+/** Keeps a row of the stripe, so a regeneration cannot take it away. */
+export function usePinPhrase(spaceId: string) {
+  const { data: phrases } = usePhrases(spaceId);
+  const put = usePutPhrase();
+  return (text: string) => {
+    const row = pinnedPhrase(text, spaceId, phrases ?? []);
+    if (row) put.mutate(row);
+  };
 }
 
 export function usePutPhrase() {

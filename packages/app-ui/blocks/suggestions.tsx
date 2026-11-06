@@ -20,19 +20,10 @@ import {
 
 import { cn } from "@september/ui";
 
-import {
-  generate,
-  hasWritingService,
-  itemsFrom,
-  userContext,
-} from "@september/app-ui/services/ai";
-import type { SavedSetup } from "@september/core/rules/onboarding";
 import { useSetup } from "@september/app-ui/services/settings";
 import { useMessages, usePhrases } from "@september/app-ui/services/data";
-import { matchCode, trailingWord } from "@september/core/rules/phrases/codes";
-import { isKept, topPhrases, topRows } from "@september/core/rules/phrases/rows";
-import type { SavedPhrase } from "@september/core/rules/records";
-import { buildSuggestionPrompt } from "@september/core/rules/prompts/suggestions";
+import { isKept, topPhrases } from "@september/core/rules/phrases/rows";
+import { SAVED_LIMIT, stripeRows, type Stripe } from "@september/core/rules/stripe-rows";
 import {
   draftParts,
   isTag,
@@ -41,54 +32,29 @@ import {
   wordRow,
 } from "@september/core/rules/audio-tags";
 import { exampleTags, type MoodKey } from "@september/core/rules/moods";
-import { speechSettings, useSpokenWord } from "@september/app-ui/services/speech";
+import { useSpeechSettings, useSpokenWord } from "@september/app-ui/services/speech";
 import { wordsOf } from "@september/core/rules/spoken-word";
 import { useReach } from "@september/app-ui/blocks/access";
 import { applySuggestion } from "@september/core/autocomplete";
-import { useSuggestions } from "@september/app-ui/services/suggest";
+import { useCompletions, useSuggestions } from "@september/app-ui/services/suggest";
 import {
   boardWords,
-  codeExpansionText,
-  composeSuggestions,
   joinTokens,
-  MAX_COMPOSED,
-  stripeForText,
-  stripePhrases,
   takeTokens,
   TILE,
   tileScale,
   type SuggestionSource,
 } from "@september/core/rules/stripes";
 
-/** Curated rows in the stripe, and how many of them may be starters. */
-const SAVED_LIMIT = 5;
-const STARTER_LIMIT = 2;
-/** The delay after a qualifying edit before a model request. */
-const THINK_AFTER_MS = 200;
 
 const PUNCTUATION = /^[.,!?;:]+$/;
-
-interface Stripe {
-  text: string;
-  tokens: string[];
-  hidden: number;
-  /** The tags after `hidden` that a take puts at the start of the draft. */
-  lead?: number;
-  hasMore: boolean;
-  source: SuggestionSource;
-  code?: string;
-  /** The user keeps this phrase, so the pin is solid, as in the panel. */
-  kept?: boolean;
-  /** The tiles that the typed words found inside the row, as [start, end). */
-  found?: [number, number];
-}
 
 /** An audio tag in a row: a direction to the voice, not a word. */
 const TAG_TILE =
   "border-primary/30 bg-primary/10 text-brand hover:border-primary/60 gap-1.5";
 
 /** The inside of a tag tile or chip: a sound mark and the words of the tag. */
-export function TagMark({ label }: { label: string }) {
+function TagMark({ label }: { label: string }) {
   return (
     <>
       <AudioLines className="size-[0.9em] shrink-0" aria-hidden />
@@ -261,12 +227,12 @@ export function Suggestions({
   // no wait.
   // A space that does not exist yet names no lane of the engine.
   const found = useSuggestions(spaceId || undefined, text);
-  const tagsOn = tagsSpoken(speechSettings());
+  const tagsOn = tagsSpoken(useSpeechSettings());
   const words = useMemo(
     () => wordRow(found, { tags: tagsOn, examples: exampleTags(mood), draft: text }),
     [found, tagsOn, mood, text],
   );
-  const { rows: fromModel, writing } = useCompletions({
+  const { rows: fromModel, writing, problem } = useCompletions({
     text,
     context,
     history,
@@ -278,16 +244,20 @@ export function Suggestions({
   // The access profile sets how many stripes show, how many words a slice
   // holds, and the size of a word, a tile, and a gap.
   const reach = useReach();
-  const stripes = useStripes({
-    text,
-    spaceId,
-    spacePhrases: spacePhrases ?? [],
-    allPhrases: allPhrases ?? [],
-    history,
-    fromModel,
-    selected,
-    sliceWords: reach.slice,
-  }).slice(0, reach.stripes);
+  const stripes = useMemo(
+    () =>
+      stripeRows({
+        text,
+        spaceId,
+        spacePhrases: spacePhrases ?? [],
+        allPhrases: allPhrases ?? [],
+        history,
+        fromModel,
+        selected,
+        sliceWords: reach.slice,
+      }).slice(0, reach.stripes),
+    [text, spaceId, spacePhrases, allPhrases, history, fromModel, selected, reach.slice, reach.stripes],
+  );
 
   const chips = useMemo(() => {
     const board = boardWords(topPhrases(spacePhrases ?? [], SAVED_LIMIT));
@@ -317,7 +287,7 @@ export function Suggestions({
   const size = (base: number) => base * scale * grow;
   const gap = Math.max(size(TILE.gapPx), reach.gapPx);
 
-  if (stripes.length === 0 && chips.length === 0 && words.length === 0 && !writing) {
+  if (stripes.length === 0 && chips.length === 0 && words.length === 0 && !writing && !problem) {
     return null;
   }
 
@@ -354,7 +324,7 @@ export function Suggestions({
         </div>
       ) : null}
 
-      {stripes.length > 0 || writing ? (
+      {stripes.length > 0 || writing || problem ? (
       <section aria-label="Suggestions" className="flex flex-col gap-1">
       <div className="flex min-h-5 items-center gap-2 px-1.5">
         <h2 className="text-muted-foreground text-xs font-semibold">
@@ -370,6 +340,10 @@ export function Suggestions({
           >
             <Sparkles className="size-3.5 animate-pulse" aria-hidden />
             Writing
+          </span>
+        ) : problem ? (
+          <span role="status" className="text-destructive text-xs font-medium">
+            {problem}
           </span>
         ) : null}
       </div>
@@ -545,12 +519,19 @@ function WordRow({
   useLayoutEffect(() => {
     const row = box.current;
     if (!row) return;
-    const bottom = row.getBoundingClientRect().bottom;
-    const next = [...row.querySelectorAll<HTMLElement>("[data-word]")]
-      .filter((key) => key.getBoundingClientRect().bottom > bottom + 1)
-      .map((key) => key.dataset.word ?? "");
-    setClipped((last) => (last.join("\n") === next.join("\n") ? last : next));
-  });
+    const measure = () => {
+      const bottom = row.getBoundingClientRect().bottom;
+      const next = [...row.querySelectorAll<HTMLElement>("[data-word]")]
+        .filter((key) => key.getBoundingClientRect().bottom > bottom + 1)
+        .map((key) => key.dataset.word ?? "");
+      setClipped((last) => (last.join("\n") === next.join("\n") ? last : next));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const watcher = new ResizeObserver(measure);
+    watcher.observe(row);
+    return () => watcher.disconnect();
+  }, [words]);
 
   return (
     <div
@@ -748,167 +729,3 @@ function SourceMark({
   );
 }
 
-function useStripes({
-  text,
-  spaceId,
-  spacePhrases,
-  allPhrases,
-  history,
-  fromModel,
-  selected,
-  sliceWords,
-}: {
-  text: string;
-  spaceId: string;
-  spacePhrases: SavedPhrase[];
-  allPhrases: SavedPhrase[];
-  history: string[];
-  fromModel: string[];
-  selected: Stripe | null;
-  /** The most words in a slice, from the access profile. */
-  sliceWords: number;
-}): Stripe[] {
-  return useMemo(() => {
-    const starters = topRows(spacePhrases, STARTER_LIMIT, "starter").map(
-      (row) => row.text,
-    );
-    // Every phrase of the space goes in, and `stripePhrases` caps the rows
-    // after it drops the one-word phrases that the chips draw.
-    const saved = stripePhrases(
-      topPhrases(spacePhrases, spacePhrases.length),
-      SAVED_LIMIT - starters.length,
-    );
-
-    const composed = composeSuggestions({
-      typed: text,
-      mdPhrases: saved,
-      starters,
-      history,
-      llm: fromModel,
-    });
-
-    const rows = composed
-      .map((one) => ({
-        ...stripeForText(one.text, text, sliceWords),
-        source: one.source,
-        kept: isKept(one.text, spacePhrases),
-      }))
-      .filter((one) => one.hidden < one.tokens.length);
-
-    if (selected && selected.text.trim().toLowerCase() !== text.trim().toLowerCase()) {
-      const continuation: Stripe = { ...selected, ...stripeForText(selected.text, text, sliceWords) };
-      return [continuation, ...rows.filter((one) => one.text.toLowerCase() !== selected.text.toLowerCase())]
-        .slice(0, MAX_COMPOSED);
-    }
-
-    // A code at the caret is local and exact, so it never waits on the model.
-    const word = trailingWord(text);
-    const match = word ? matchCode(word, allPhrases, spaceId) : undefined;
-    if (!match) return rows;
-
-    const expanded = codeExpansionText(text, match.text);
-    if (expanded.trim().toLowerCase() === text.trim().toLowerCase())
-      return rows;
-
-    const codeStripe: Stripe = {
-      ...stripeForText(expanded, text, sliceWords),
-      source: "code",
-      code: match.code,
-    };
-    return [
-      codeStripe,
-      ...rows.filter(
-        (one) => one.text.toLowerCase() !== codeStripe.text.toLowerCase(),
-      ),
-    ].slice(0, MAX_COMPOSED);
-  }, [text, spaceId, spacePhrases, allPhrases, history, fromModel, selected, sliceWords]);
-}
-
-/** The last rows of the stripe, from the writing service. */
-function useCompletions({
-  text,
-  context,
-  history,
-  spaceId,
-  setup,
-  mood,
-  document,
-}: {
-  text: string;
-  context: string;
-  history: string[];
-  spaceId: string;
-  setup: SavedSetup | null;
-  mood: MoodKey | null;
-  document?: { before: string; after: string };
-}): { rows: string[]; writing: boolean } {
-  // The note changes with every key, and only an edit of the typed words asks
-  // again. The request reads the note as it stands when it leaves.
-  const note = useRef(document);
-  note.current = document;
-  const [rows, setRows] = useState<string[]>([]);
-  // A request is on its way to the model.
-  const [writing, setWriting] = useState(false);
-  const enabled = setup?.autoSuggestions !== false;
-  const settingsKey = JSON.stringify([
-    setup?.defaultModel, setup?.suggestionsModel, setup?.speakingStyle, setup?.personalWords,
-  ]);
-  // The voice decides whether a suggestion can hold audio tags.
-  const tags = tagsSpoken(speechSettings());
-  const previous = useRef({ text, spaceId, enabled, settingsKey, mood });
-  const historyKey = JSON.stringify(history.slice(-20));
-
-  useEffect(() => {
-    // A new mood asks again at once, because the user wants its tone now.
-    const edited = (previous.current.text !== text || previous.current.mood !== mood) &&
-      previous.current.spaceId === spaceId && previous.current.enabled === enabled &&
-      previous.current.settingsKey === settingsKey;
-    previous.current = { text, spaceId, enabled, settingsKey, mood };
-    setRows([]);
-    setWriting(false);
-    if (!edited || !enabled || !text.trim() ||
-      !/[\s.,!?;:]$/.test(text) || !hasWritingService("suggestions")) return;
-
-    const dropped = new AbortController();
-    const timer = setTimeout(() => {
-      setWriting(true);
-      const { system, user } = buildSuggestionPrompt({
-        globalMd: userContext(),
-        spaceMd: context,
-        history: (JSON.parse(historyKey) as string[]).map((one) => `Me: ${one}`),
-        typed: text,
-        mood,
-        tags,
-        document: note.current,
-      });
-
-      generate(
-        {
-          messages: [
-            { role: "system", content: system },
-            { role: "user", content: user },
-          ],
-          temperature: 0.7,
-          response_format: { type: "json_object" },
-        },
-        { feature: "suggestions", signal: dropped.signal },
-      )
-        .then((answer) => {
-          if (!dropped.signal.aborted) setRows(itemsFrom(answer, "suggestions"));
-        })
-        .catch(() => {
-          if (!dropped.signal.aborted) setRows([]);
-        })
-        .finally(() => {
-          if (!dropped.signal.aborted) setWriting(false);
-        });
-    }, THINK_AFTER_MS);
-
-    return () => {
-      clearTimeout(timer);
-      dropped.abort();
-    };
-  }, [text, spaceId, enabled, settingsKey, context, historyKey, mood, tags]);
-
-  return { rows, writing };
-}

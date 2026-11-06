@@ -11,7 +11,6 @@ import { createPortal } from "react-dom";
 import { Separator } from "@september/ui/components/separator";
 import { SidebarTrigger } from "@september/ui/components/sidebar";
 
-import { navFor, type AppPath } from "@september/core/rules/navigation";
 import { documentTitle } from "@september/core/rules/titles";
 import { useChrome } from "@september/app-ui/blocks/chrome";
 
@@ -75,9 +74,6 @@ export function SkipLink() {
   );
 }
 
-/** How many frames the focus waits for the new screen to replace the old one. */
-const ROUTE_FOCUS_FRAMES = 20;
-
 /**
  * After a move to another screen, the focus goes to the `h1` of the new
  * screen, so a screen reader reads where the user is. If the new screen has
@@ -85,8 +81,8 @@ const ROUTE_FOCUS_FRAMES = 20;
  *
  * The focus stays where it is on the first screen, and when the new screen
  * has put the focus inside `main` itself, such as on the composer. A screen
- * can load after the path changes, so the hook looks again for some frames.
- * If the old `h1` took the focus and then left the page, the new `h1` gets it.
+ * can draw its `h1` after the path changes, so the hook looks again on each
+ * change inside `main` until the person acts or the screen takes the focus.
  */
 export function useRouteFocus(
   pathname: string,
@@ -99,31 +95,38 @@ export function useRouteFocus(
     last.current = pathname;
 
     let placed: HTMLElement | null = null;
-    const place = () => {
+    /** Puts the focus in place. Gives true once the screen owns the focus. */
+    const place = (): boolean => {
       const area = main.current;
-      if (!area) return;
+      if (!area) return true;
       const active = document.activeElement;
       const owned =
         active instanceof HTMLElement &&
         active !== document.body &&
         active !== placed &&
         area.contains(active);
-      if (owned) return;
-      if (placed?.isConnected && active === placed) return;
+      if (owned) return true;
 
       const heading = area.querySelector<HTMLElement>("h1");
       if (heading && !heading.hasAttribute("tabindex")) heading.tabIndex = -1;
       placed = heading ?? area;
-      placed.focus({ preventScroll: true });
+      if (active !== placed) placed.focus({ preventScroll: true });
+      return false;
     };
 
-    place();
-    let frames = 0;
-    let frame = requestAnimationFrame(function again() {
-      place();
-      if (++frames < ROUTE_FOCUS_FRAMES) frame = requestAnimationFrame(again);
+    if (place() || !main.current) return;
+    const watch = new MutationObserver(() => {
+      if (place()) stop();
     });
-    return () => cancelAnimationFrame(frame);
+    const stop = () => {
+      watch.disconnect();
+      document.removeEventListener("pointerdown", stop, true);
+      document.removeEventListener("keydown", stop, true);
+    };
+    watch.observe(main.current, { childList: true, subtree: true });
+    document.addEventListener("pointerdown", stop, true);
+    document.addEventListener("keydown", stop, true);
+    return stop;
   }, [pathname, main]);
 }
 

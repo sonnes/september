@@ -11,6 +11,7 @@ import type {
   Voice,
 } from '@september/app-ui/platform';
 import { SETTINGS } from '@september/core/rules/settings';
+import { listedVoices } from '@september/core/rules/voice';
 
 import { authorizeOpenRouter } from './oauth';
 import { getRepository } from './repository';
@@ -101,13 +102,15 @@ export const providers: PlatformProviders = {
         is_owner?: boolean;
       }>;
     }>('https://api.elevenlabs.io/v1/voices');
-    return answer.voices.map(voice => ({
-      id: voice.voice_id,
-      name: voice.name,
-      preview_url: voice.preview_url ?? null,
-      category: voice.category ?? null,
-      is_owner: voice.is_owner ?? null,
-    }));
+    return listedVoices(
+      answer.voices.map(voice => ({
+        id: voice.voice_id,
+        name: voice.name,
+        preview_url: voice.preview_url ?? null,
+        category: voice.category ?? null,
+        is_owner: voice.is_owner ?? null,
+      }))
+    );
   },
 
   async quota(): Promise<ElevenLabsQuota | null> {

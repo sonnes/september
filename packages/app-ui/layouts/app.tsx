@@ -17,11 +17,8 @@ import {
 
 import { BrandMark, BrandWordmark } from "@september/app-ui/blocks/brand";
 import { APP_NAV } from "@september/app-ui/navigation";
-import {
-  ApplyAccess,
-  InputLayer,
-  ScanPauseKey,
-} from "@september/app-ui/blocks/access";
+import { ApplyAccess } from "@september/app-ui/blocks/access";
+import { InputLayer, ScanPauseKey } from "@september/app-ui/blocks/input-layer";
 import {
   HeaderActionsSlot,
   MAIN_ID,

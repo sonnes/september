@@ -1,13 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { platform } from "@platform/adapter";
-import {
-  readTalkDraft,
-  readTalkMood,
-  saveTalkDraft,
-  saveTalkMood,
-} from "@september/app-ui/services/settings";
-import type { MoodKey } from "@september/core/rules/moods";
+import { useAutosave } from "@september/app-ui/services/autosave";
+import { useSaveTalkDraft, useTalkDraft, useTalkMood } from "@september/app-ui/services/talk";
 import { useNavigate } from "@tanstack/react-router";
 import { MessagesSquare, Square, Volume2 } from "lucide-react";
 import { cn } from "@september/ui";
@@ -16,7 +9,7 @@ import { recordMessageUsage } from "@september/app-ui/services/usage";
 import {
   useMessages,
   usePhrases,
-  usePutPhrase,
+  usePinPhrase,
   useSendMessage,
 } from "@september/app-ui/services/data";
 import type { Message, Space } from "@september/core/rules/records";
@@ -26,7 +19,6 @@ import {
 } from "@september/app-ui/blocks/screen";
 import { PanelRail } from "@september/app-ui/blocks/space-panel";
 import { SpokenText } from "@september/app-ui/blocks/suggestions";
-import { pinnedPhrase } from "@september/core/rules/phrases/rows";
 import { documentTitle } from "@september/core/rules/titles";
 import { useSyncPhrases } from "@september/app-ui/services/phrase-sync";
 import {
@@ -35,34 +27,27 @@ import {
   useSpeaking,
   useVoiceFallback,
 } from "@september/app-ui/services/speech";
-import { useChrome } from "@september/app-ui/blocks/chrome";
+import { useChrome, type ComposerHandle } from "@september/app-ui/blocks/chrome";
+import { useEscape } from "@september/app-ui/blocks/keymap";
+import { KEYMAP, keyLabel } from "@september/core/rules/keymap";
 import {
   messageTime,
   recentThatFit,
-  spaceSlug,
   spokenToday,
   TRANSCRIPT_PAGE_SIZE,
   transcriptPage,
 } from "@september/core/rules/spaces";
 
-import {
-  Composer,
-  Problem,
-  SpaceDock,
-  SpaceTitle,
-  spaceParams,
-  useRememberMode,
-  useSpaceBySlug,
-} from "@september/app-ui/blocks/space";
+import { Composer } from "@september/app-ui/blocks/composer";
+import { Problem } from "@september/app-ui/blocks/states";
+import { SpaceDock } from "@september/app-ui/blocks/space-dock";
+import { spaceParams, useRememberMode, useSpaceBySlug } from "@september/app-ui/blocks/space-routes";
+import { SpaceTitle } from "@september/app-ui/blocks/space-title";
 // ------------------------------------------------------------------- talk
 
 export function TalkScreen({ slug }: { slug: string }) {
   const { space, spaces } = useSpaceBySlug(slug, "talk");
-  const saved = useQuery({
-    queryKey: ["talk-draft", space?.id],
-    queryFn: () => readTalkDraft(space!.id),
-    enabled: !!space,
-  });
+  const saved = useTalkDraft(space?.id);
 
   if (!space) return null;
   if (saved.error) return <Problem error={saved.error} />;
@@ -76,7 +61,6 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
   const { data: messages, error } = useMessages(space.id);
   const { data: phrases } = usePhrases(space.id);
   const send = useSendMessage(space.id);
-  const putPhrase = usePutPhrase();
   const navigate = useNavigate();
 
   // A model writes the phrases of this space, and writes them again as the
@@ -85,29 +69,8 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
   useRememberMode(space, "talk");
 
   const fallback = useVoiceFallback();
-  const [draft, setDraft] = useState(initialDraft);
-  const heldDraft = useRef(initialDraft);
-  const draftRevision = useRef(0);
-  const client = useQueryClient();
-  const draftSave = useMutation({
-    scope: { id: `talk-draft:${space.id}` },
-    mutationFn: (words: string) => saveTalkDraft(space.id, words),
-    onSuccess: (_result, words) => client.setQueryData(["talk-draft", space.id], words),
-  });
-  useEffect(() => {
-    if (!draftSave.isPending && !draftSave.isError) return;
-    return platform.device.guardUnsavedChanges();
-  }, [draftSave.isPending, draftSave.isError]);
-  // The mood stays with the space until the user presses its key again.
-  const savedMood = useQuery({
-    queryKey: ["talk-mood", space.id],
-    queryFn: () => readTalkMood(space.id),
-  });
-  const mood = savedMood.data ?? null;
-  const chooseMood = (next: MoodKey | null) => {
-    client.setQueryData(["talk-mood", space.id], next);
-    void saveTalkMood(space.id, next);
-  };
+  const draft = useAutosave(initialDraft, useSaveTalkDraft(space.id));
+  const [mood, chooseMood] = useTalkMood(space.id);
   const keysTyped = useRef(0);
   const [pageInput, setPageInput] = useState(0);
   // See all shows the pages of the transcript in place of the suggestions.
@@ -120,6 +83,7 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
   const [writing, setWriting] = useState(false);
   const playing = speaking === "composer" && sentence !== null;
   const field = useRef<HTMLTextAreaElement>(null);
+  const composer = useRef<ComposerHandle | null>(null);
 
   const spoken = (messages ?? []).filter((message) => message.type === "user");
   const { page, pageCount, slice } = transcriptPage(spoken, pageInput);
@@ -140,51 +104,30 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
   const shown = transcript ? slice : recent.slice(recent.length - count);
   const today = spokenToday(spoken);
 
-  // Escape closes the transcript before the panel uses the key.
-  useEffect(() => {
-    if (!transcript) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.defaultPrevented) return;
-      event.preventDefault();
-      setTranscript(false);
-    };
-    document.addEventListener("keydown", onKey, true);
-    return () => document.removeEventListener("keydown", onKey, true);
-  }, [transcript]);
+  useEscape(transcript ? () => setTranscript(false) : null);
 
   // A new message goes to the newest page, so the user never sends from
   // behind an old page.
   const newest = spoken[spoken.length - 1]?.id;
   useEffect(() => setPageInput(0), [newest]);
 
-  /** Keeps a row of the stripe, so a regeneration cannot take it away. */
-  const keep = (text: string) => {
-    const row = pinnedPhrase(text, space.id, phrases ?? []);
-    if (row) putPhrase.mutate(row);
-  };
+  const keep = usePinPhrase(space.id);
 
   const say = (sentence: string) => {
     const typed = keysTyped.current;
-    const sentRevision = draftRevision.current;
+    const sent = draft.current();
     setSentence(sentence);
     setWriting(false);
     void speak(sentence);
     send.mutate(sentence, {
       onSuccess: () => {
         void recordMessageUsage(sentence, typed, space.id);
-        if (draftRevision.current === sentRevision) {
-          write("");
+        if (draft.current() === sent) {
+          draft.write("");
           keysTyped.current = 0;
         }
       },
     });
-  };
-
-  const write = (text: string) => {
-    draftRevision.current += 1;
-    heldDraft.current = text;
-    setDraft(text);
-    draftSave.mutate(text);
   };
 
   // The voice starts at once. The composer holds the text until local storage
@@ -238,10 +181,7 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
                     type="button"
                     variant="outline"
                     onClick={() =>
-                      navigate({
-                        to: "/spaces/$slug/notes",
-                        params: { slug: spaceSlug(space.title) },
-                      })
+                      navigate(spaceParams(space, "notes"))
                     }
                   >
                     Tell September what this space is for
@@ -335,24 +275,24 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
               text={sentence}
               onWrite={(key) => {
                 setWriting(true);
-                if (key) write(draft + key);
+                if (key) draft.write(draft.value + key);
                 field.current?.focus();
               }}
             />
           ) : null}
 
-          {draftSave.isError ? (
+          {draft.state === "failed" ? (
             <div role="alert">
               <p>Your unfinished words could not be saved. Keep this page open and retry.</p>
-              <Button onClick={() => draftSave.mutate(heldDraft.current)}>Retry saving</Button>
+              <Button onClick={draft.retry}>Retry saving</Button>
             </div>
-          ) : draftSave.isPending ? <p role="status">Saving…</p> : null}
+          ) : draft.state === "saving" ? <p role="status">Saving…</p> : null}
           <Composer
             mode="talk"
             spaceId={space.id}
             context={space.context ?? ""}
-            draft={draft}
-            onDraft={write}
+            draft={draft.value}
+            onDraft={draft.write}
             onAction={say}
             onTypedKey={() => {
               keysTyped.current += 1;
@@ -364,6 +304,7 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
             onMood={chooseMood}
             suggestions={!transcript}
             fieldRef={field}
+            handle={composer}
           />
           <KeyHints
             items={
@@ -374,7 +315,7 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
                   : [
                       ["Return", "speaks"],
                       ["Shift-Return", "starts a new line"],
-                      ...(chrome === "panel" ? [["⌘K", "spaces"] as const] : []),
+                      ...(chrome === "panel" ? [[keyLabel(KEYMAP.spaces), "spaces"] as const] : []),
                     ]
             }
           />
@@ -384,18 +325,13 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
           current={space}
           spaces={spaces}
           mode="talk"
-          onMode={(next) => navigate(spaceParams(space, next))}
         />
       </div>
 
       <RightPanel>
         <PanelRail
           spaceId={space.id}
-          onInsert={(text) =>
-            setDraft((current) =>
-              !current || /\s$/.test(current) ? current + text : `${current} ${text}`,
-            )
-          }
+          onInsert={(text) => composer.current?.insert(text)}
         />
       </RightPanel>
     </>

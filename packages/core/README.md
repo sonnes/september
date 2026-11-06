@@ -39,7 +39,7 @@ The Agent of a space runs on `@earendil-works/pi-agent-core`. Each turn builds a
 | `rules/agent/executor.ts` | `executeAgentRead` and `applyAgentWrite`, which run a call against the data of one space. |
 | `rules/agent/loop.ts` | `askSpaceAgent`, `resolveSpaceAgentProposal`, `AgentWriter`, and `AGENT_MAX_WRITES`. |
 | `rules/agent/transcript.ts` | How the transcript shows on a screen: turns, outcomes, summaries, and proposal lines. |
-| `rules/agent/introduction.ts` | `agentOwesReply`, which tells a screen that a turn that it did not start is still running. |
+| `rules/agent/introduction.ts` | `agentOwesReply`, which tells a screen that a turn that it did not start is still running, and `replyOwedUntil`, which gives the time that the wait ends. |
 
 The tool schemas never accept a space ID. The executor makes the codes of saved phrases. `parseAgentCall` makes sure that the arguments of a call are valid before an app receives them. A call with arguments that are not valid fails with its reason.
 
@@ -66,7 +66,7 @@ The loop uses three hooks of the `Agent`:
 
 `rules/audio-tags.ts` decides which voice receives audio tags, and removes the tags for each other voice. `rules/moods.ts` holds the five moods of Talk, with their prompt instructions and example tags. See `docs/concepts/audio-tags.md`.
 
-`rules/model-config.ts` selects the model for a text job. All jobs use `defaultModel`. If `suggestionsModel` is not null, the suggestions use that model. `SUGGESTIONS_MODELS` and `AGENT_MODELS` are the curated model lists. `modelChoices` makes a list into rows: Automatic first, then the Frontier and Open groups. See `docs/concepts/writing-model-settings.md`.
+`rules/model-config.ts` selects the model for a text job. All jobs use `defaultModel`. If `suggestionsModel` is not null, the suggestions use that model. `withProvider` moves both models to a new provider. `SUGGESTIONS_MODELS` and `AGENT_MODELS` are the curated model lists. `modelChoices` makes a list into rows: Automatic first, then the Frontier and Open groups. See `docs/concepts/writing-model-settings.md`.
 
 ## Phrases
 
@@ -96,17 +96,22 @@ The loop uses three hooks of the `Agent`:
 
 `rules/navigation.ts` holds the pages of the app and the sections of Settings. A page that only one platform has names the capability that it needs in `requires`. `Capabilities` has three flags: `dashboard`, `eyeTracker`, and `floatingPanel`. `appNav` and `settingsNav` give the pages and the sections for a set of capabilities. The file also holds the connection guides, `windowTitle`, and `openingPath`. `openingPath` gives the screen where the app opens: the saved path when it names a page or an existing space, else Talk of the last space, else the first page.
 
-`rules/onboarding.ts` holds the setup draft, the steps, and the step rules. `savedSetupFrom` reads a stored setup and fills the fields of an older setup. `isSetupDone` is true when the setup has a name and a mode. `canReach` blocks a step after About you until the draft has a name. `voiceServices` gives the voice choices, with the description of the system voice that the platform gives.
+`rules/onboarding.ts` holds the setup draft, the steps, and the step rules. `savedSetupFrom` reads a stored setup and fills the fields of an older setup. `isSetupDone` is true when the setup has a name and a mode. `canReach` blocks a step after About you until the draft has a name. `voiceServices` gives the voice choices, with the description of the system voice that the platform gives. `defaultServices` chooses the services that setup starts with: Apple Intelligence when it is ready, then a connected OpenRouter. A connected ElevenLabs speaks. A choice of the person stays.
+
+`rules/services.ts` holds the name of each service, and `serviceName` gives the name of a stored service ID.
 
 ## Other Rules
 
-- `rules/access.ts` holds the access profile. `reachFor` makes a profile into the target size, the gap, the word size, the dwell, the scan step, and the size of a stripe. A dwell time or a scan step is from `TIME_MIN_MS` (0.3 s) to `TIME_MAX_MS` (30 s). See `docs/concepts/access-profile.md`.
-- `rules/voice.ts` holds the ElevenLabs models, their credit rates, and the Expression presets. `elevenLabsCredits` gives the credits of a text for a model. `voiceModelFrom` reads the old Turbo models as their Flash replacements. `dialogueParts` divides a long text into requests of at most 2,000 characters. `voiceRows` groups the voice list, and `heardVoices` keeps the last three voices heard. See `docs/concepts/voice-expression.md`.
-- `rules/usage-summary.ts` adds up the usage events of a time range and writes them as CSV. See `docs/concepts/desktop-usage.md`.
-- `rules/stripes.ts` cuts history sentences into suggestion slices of at most six words. Punctuation and audio tags do not count. `stripeForText` takes a smaller limit from the access profile, and `matchTyped` finds the rows that match the draft. `tileScale` makes the padding and the gaps of a tile smaller, but never the word.
-- `rules/spaces.ts` holds the space slugs, the remembered space mode, new spaces, and the Talk transcript pages. See `docs/concepts/space-navigation.md`.
+- `rules/access.ts` holds the access profile. `reachFor` makes a profile into the target size, the gap, the word size, the dwell, the scan step, and the size of a stripe. A dwell time or a scan step is from `TIME_MIN_MS` (0.3 s) to `TIME_MAX_MS` (30 s). `steppedTime` gives the next time of a stepper, and `reachSummary` writes the profile in one line. See `docs/concepts/access-profile.md`.
+- `rules/voice.ts` holds the ElevenLabs models, their credit rates, and the Expression presets. `elevenLabsCredits` gives the credits of a text for a model. `voiceModelFrom` reads the old Turbo models as their Flash replacements. `dialogueParts` divides a long text into requests of at most 2,000 characters. `listedVoices` keeps one row for each voice ID, and both apps use it for the voice list. `voiceRows` groups the voice list, and `heardVoices` keeps the last three voices heard. See `docs/concepts/voice-expression.md`.
+- `rules/voice-clone.ts` holds the size limits of voice samples. `validateVoiceClone` gives the first problem of a set of samples, or null.
+- `rules/usage-summary.ts` adds up the usage events of a time range and writes them as CSV. `sourceLabel` gives the word for a cost source. See `docs/concepts/desktop-usage.md`.
+- `rules/stripes.ts` cuts history sentences into suggestion slices of at most six words. Punctuation and audio tags do not count. `stripeForText` takes a smaller limit from the access profile, and `matchTyped` finds the rows that match the draft. `tileScale` makes the padding and the gaps of a tile smaller, but never the word. `insertAtEnd` adds words at the end of a draft.
+- `rules/stripe-rows.ts` builds the rows of the stripe from the starters and phrases of a space, the history, a typed code, and the rows of a model. A row that the user took from stays first while the draft follows it.
+- `rules/keymap.ts` holds the keyboard shortcuts. A screen reads the label and the `aria-keyshortcuts` value from the binding that it handles.
+- `rules/spaces.ts` holds the space slugs, the remembered space mode, new spaces, and the Talk transcript pages. The remembered mode is keyed by space ID, and `spaceModesById` moves a mode kept by slug to the ID of its space. `byRecent` puts the space changed last first. See `docs/concepts/space-navigation.md`.
 - `rules/note-document.ts` holds the line rules of the note editor. The note stays plain Markdown. See `docs/concepts/space-notes.md`.
-- `rules/panel.ts` holds the Phrases and Voice tabs of the space rail, and reads the stored tab and open state.
+- `rules/panel.ts` holds the Phrases and Voice tabs of the space rail, and reads the stored tab and open state. `tierFor` gives the width tier of the floating panel.
 - `rules/spoken-word.ts` finds the word that a voice reads. See `docs/concepts/spoken-word.md`.
 - `rules/titles.ts` writes the browser tab title. The part that tells two tabs apart comes first, and the app name comes last.
 

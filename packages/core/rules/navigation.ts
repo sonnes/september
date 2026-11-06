@@ -8,6 +8,7 @@
 
 import { helpGuide } from "./help/search.ts";
 import { STEPS } from "./onboarding.ts";
+import { SERVICE_NAMES } from "./services.ts";
 import { spaceFromSlug, spaceSlug } from "./spaces.ts";
 
 /** What a platform offers beyond the pages that every platform has. */
@@ -137,7 +138,7 @@ export function sectionFor(pathname: string): SettingsSection {
 /** How to get a key, in the words of the user. */
 export const CONNECTION_GUIDES = {
   openrouter: {
-    name: "OpenRouter",
+    name: SERVICE_NAMES.openrouter,
     lede: "One service that gives AI Assistance. Free models are available, and no card is necessary.",
     steps: [
       "Choose Connect OpenRouter below.",
@@ -147,7 +148,7 @@ export const CONNECTION_GUIDES = {
     url: "https://openrouter.ai/keys",
   },
   elevenlabs: {
-    name: "ElevenLabs",
+    name: SERVICE_NAMES.elevenlabs,
     lede: "Natural voices, and a clone of your own voice. In September it speaks your messages.",
     steps: [
       "Open the ElevenLabs keys page and sign in.",

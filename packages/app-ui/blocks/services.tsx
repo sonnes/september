@@ -5,16 +5,20 @@
  * keeps a second copy of the key.
  */
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 import { Ban, Volume2 } from "lucide-react";
 
 import { Button } from "@september/ui/components/button";
 import { Input } from "@september/ui/components/input";
 import { Label } from "@september/ui/components/label";
+import { Link } from "@tanstack/react-router";
+import { RadioGroupItem } from "@september/ui/components/radio-group";
 
 import { platform } from "@platform/adapter";
 import type { Provider, ProviderStatus } from "@september/app-ui/platform";
+import { useConnections, useForgetKey, type Connections } from "@september/app-ui/services/connections";
+import type { ConnectionId } from "@september/core/rules/navigation";
 
 /**
  * The mark beside a service name.
@@ -104,19 +108,10 @@ export function CloudStatus({
   return <Status tone="idle" text="Not connected" />;
 }
 
-export function KeyPanel({
-  provider,
-  name,
-  status,
-  onConnected,
-  onForget,
-}: {
-  provider: Provider;
-  name: string;
-  status: ProviderStatus;
-  onConnected: (status: ProviderStatus) => void;
-  onForget: (provider: Provider) => void;
-}) {
+export function KeyPanel({ provider, name }: { provider: Provider; name: string }) {
+  const { connections, replace: onConnected } = useConnections();
+  const status = connections[provider];
+  const forget = useForgetKey();
   const [key, setKey] = useState("");
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState("");
@@ -145,10 +140,16 @@ export function KeyPanel({
           type="button"
           variant="ghost"
           className="h-9 px-3 text-xs"
-          onClick={() => onForget(provider)}
+          aria-disabled={forget.isPending}
+          onClick={() => !forget.isPending && forget.mutate(provider)}
         >
           Disconnect
         </Button>
+        {forget.error ? (
+          <p role="alert" className="text-destructive text-xs font-semibold">
+            {forget.error.message}
+          </p>
+        ) : null}
       </div>
     );
   }
@@ -232,6 +233,96 @@ export function ElevenLabsImpactLink() {
     <Button type="button" variant="link" className="h-auto min-h-11 justify-start whitespace-normal px-0 text-left"
       onClick={() => void platform.device.openInBrowser("https://elevenlabs.io/impact")}>
       ElevenLabs Impact Program
+    </Button>
+  );
+}
+
+/**
+ * One service inside a job.
+ *
+ * Selection changes the border and nothing else. The panel below belongs to
+ * the state of the service, not to the choice, so the card keeps its height
+ * and no choice below it moves down the page.
+ */
+export function ServiceChoice({
+  value,
+  label,
+  description,
+  selected,
+  disabled,
+  badge,
+  children,
+}: {
+  value: string;
+  label: string;
+  description: string;
+  selected: boolean;
+  disabled?: boolean;
+  badge?: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <div
+      // A choice that is not ready has a dashed line, not a fade, so its
+      // words stay readable.
+      className={`grid gap-4 rounded-xl border p-4 ${
+        selected
+          ? "border-brand ring-[3px] ring-indigo-500/30"
+          : "border-border"
+      } ${disabled ? "border-input border-dashed" : ""}`}
+    >
+      <label className="grid cursor-pointer grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[auto_auto_minmax(0,1fr)_auto] sm:gap-4">
+        <RadioGroupItem value={value} disabled={disabled} />
+        <Mark service={value} />
+        <span>
+          <span className="text-sm font-semibold">{label}</span>
+          <span className="text-muted-foreground mt-1 block text-xs leading-relaxed">
+            {description}
+          </span>
+        </span>
+        {/* The status has no column of its own on a phone, so it drops to the
+            next row under the name instead of squeezing the description. */}
+        {badge && (
+          <span className="col-start-3 sm:col-start-4 sm:justify-self-end">
+            {badge}
+          </span>
+        )}
+      </label>
+      {/* The indent lines the panel up with the service name. A phone has no
+          70px to spare, so the panel starts at the edge of the card. */}
+      <div className="grid gap-3 pl-0 empty:hidden sm:pl-[4.75rem]">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export function appleState(connections: Connections): string {
+  if (connections.apple.available) {
+    return "AI Assistance from Apple Intelligence. Your words stay on this device.";
+  }
+  if (!connections.apple.supported) {
+    return "Apple Intelligence is not available on this device.";
+  }
+  return connections.apple.reason ?? "Turn it on in System Settings.";
+}
+
+export function ManageLink({
+  provider,
+  status,
+}: {
+  provider: ConnectionId;
+  status: ProviderStatus;
+}) {
+  return (
+    <Button
+      asChild
+      type="button"
+      variant={status.connected ? "outline" : "default"}
+    >
+      <Link to="/settings/connections/$provider" params={{ provider }}>
+        {status.connected ? "Manage" : "Set up"}
+      </Link>
     </Button>
   );
 }

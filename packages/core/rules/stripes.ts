@@ -392,3 +392,8 @@ export function tileScale(rows: readonly StripeSize[], availablePx: number): num
   if (widest <= 0) return 1;
   return Math.max(TILE_SCALE_MIN, Math.min(1, (availablePx - TILE.markPx) / widest));
 }
+
+/** Adds words at the end of a draft, with one space between. */
+export function insertAtEnd(draft: string, words: string): string {
+  return !draft || /\s$/.test(draft) ? draft + words : `${draft} ${words}`;
+}

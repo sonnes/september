@@ -40,6 +40,8 @@ import {
   type LineStyle,
   type Point,
 } from "@september/core/rules/note-document";
+import { useEscape } from "@september/app-ui/blocks/keymap";
+import { KEYMAP, presses } from "@september/core/rules/keymap";
 
 /** What the screen around the document can ask of it. */
 export interface NoteDocumentHandle {
@@ -89,7 +91,6 @@ export function NoteDocument({
   spaceId,
   context,
   onPin,
-  onBlur,
   onTools,
   handle,
   autoFocus = true,
@@ -103,7 +104,6 @@ export function NoteDocument({
   spaceId: string;
   context: string;
   onPin?: (phrase: string) => void;
-  onBlur?: () => void;
   /** Says when the writing tools open and close. */
   onTools?: (open: boolean) => void;
   handle?: MutableRefObject<NoteDocumentHandle | null>;
@@ -270,22 +270,18 @@ export function NoteDocument({
     return () => document.removeEventListener("selectionchange", onSelection);
   }, [open, measure, refresh]);
 
-  // Escape hides the tools before any other screen hears it. ⌘J or Ctrl+J
-  // shows them without a typed key, for a user who writes from suggestions.
+  useEscape(open ? () => setOpen(false) : null);
+  // The tools key shows the tools without a typed key, for a user who writes
+  // from suggestions.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && open) {
-        event.preventDefault();
-        event.stopPropagation();
-        setOpen(false);
-      } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "j") {
-        event.preventDefault();
-        if (open) setOpen(false);
-        else openTools();
-      }
+      if (!presses(event, KEYMAP.tools)) return;
+      event.preventDefault();
+      if (open) setOpen(false);
+      else openTools();
     };
-    document.addEventListener("keydown", onKey, true);
-    return () => document.removeEventListener("keydown", onKey, true);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
   }, [open, openTools]);
 
   useEffect(() => onTools?.(open), [open, onTools]);
@@ -425,7 +421,6 @@ export function NoteDocument({
           moved.current = true;
         }}
         onPaste={onPaste}
-        onBlur={onBlur}
         className="note-document caret-primary min-h-40 text-xl leading-relaxed focus:outline-none"
       />
 

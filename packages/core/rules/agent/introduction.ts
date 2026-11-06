@@ -18,8 +18,12 @@ export function agentOwesReply(
   rows: readonly AgentMessage[],
   now: number,
 ): boolean {
+  const until = replyOwedUntil(rows);
+  return until !== null && now < until;
+}
+
+/** When the wait for a reply to the newest turn ends, or null when no reply is owed. */
+export function replyOwedUntil(rows: readonly AgentMessage[]): number | null {
   const last = rows.at(-1);
-  return (
-    last?.role === "user" && now - last.created_at < INTRODUCTION_WAIT_MS
-  );
+  return last?.role === "user" ? last.created_at + INTRODUCTION_WAIT_MS : null;
 }

@@ -141,6 +141,29 @@ export const TIME_MIN_MS = 300;
  */
 export const TIME_MAX_MS = 30_000;
 
+/**
+ * The next time of a stepper. Below 2 seconds a step is a tenth of a second.
+ * Above it a step is half a second, so 30 seconds is near.
+ */
+export function steppedTime(value: number, direction: 1 | -1): number {
+  const size = value + direction * 100 > 2000 ? 500 : 100;
+  return Math.round((value + direction * size) / size) * size;
+}
+
+const seconds = (ms: number) => `${(ms / 1000).toFixed(1)} s`;
+
+/** What the profile asks of the screen, in one line. */
+export function reachSummary(reach: Reach): string {
+  const size = `${reach.targetPx} px keys, ${reach.gapPx} px gaps.`;
+  if (reach.dwellMs !== null) {
+    return `${size} Hold your gaze for ${seconds(reach.dwellMs)} to choose a key.`;
+  }
+  if (reach.scanStepMs !== null) {
+    return `${size} The scan moves on every ${seconds(reach.scanStepMs)}.`;
+  }
+  return size;
+}
+
 const oneOf = <T extends string>(value: unknown, allowed: readonly T[]): T | undefined =>
   allowed.includes(value as T) ? (value as T) : undefined;
 

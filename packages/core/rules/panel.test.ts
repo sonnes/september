@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { escapeStep, moodForKey, panelStateFrom, pressTab } from "./panel.ts";
+import { escapeStep, moodForKey, panelStateFrom, pressTab, tierFor } from "./panel.ts";
 
 describe("panelStateFrom", () => {
   it("starts closed on the phrases when nothing is saved", () => {
@@ -75,5 +75,11 @@ describe("moodForKey", () => {
   it("ignores other keys", () => {
     expect(moodForKey("6")).toBeUndefined();
     expect(moodForKey("a")).toBeUndefined();
+  });
+});
+
+describe("tierFor", () => {
+  it("gives the tier of a panel width", () => {
+    expect([tierFor(400), tierFor(700), tierFor(1000)]).toEqual(["compact", "regular", "wide"]);
   });
 });

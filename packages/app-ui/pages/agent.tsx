@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { MessagesSquare } from "lucide-react";
 
@@ -14,7 +13,11 @@ import {
   AlertDialogTitle,
 } from "@september/ui/components/alert-dialog";
 import { Button } from "@september/ui/components/button";
-import { agentOwesReply, INTRODUCTION_WAIT_MS } from "@september/core/rules/agent/introduction";
+import {
+  agentOwesReply,
+  INTRODUCTION_WAIT_MS,
+  replyOwedUntil,
+} from "@september/core/rules/agent/introduction";
 import { AGENT_OPENERS, agentProposalIsDelete } from "@september/core/rules/agent/transcript";
 import type { AgentMessage, Space } from "@september/core/rules/records";
 import { documentTitle } from "@september/core/rules/titles";
@@ -26,19 +29,20 @@ import {
 
 import { hasWritingService } from "@september/app-ui/services/ai";
 import { askAgent, resolveAgentProposal } from "@september/app-ui/services/agent";
-import { useAgentMessages, useAllMessages, useUpdateSpace } from "@september/app-ui/services/data";
+import {
+  useAgentMessages,
+  useAllMessages,
+  useRefreshAgentSpace,
+  useUpdateSpace,
+} from "@september/app-ui/services/data";
+import type { ComposerHandle } from "@september/app-ui/blocks/chrome";
 import { RightPanel, ScreenHeader } from "@september/app-ui/blocks/screen";
 import { PanelRail } from "@september/app-ui/blocks/space-panel";
-import {
-  Composer,
-  Problem,
-  SpaceDock,
-  SpaceTitle,
-  agentEnabled,
-  spaceParams,
-  useRememberMode,
-  useSpaceBySlug,
-} from "@september/app-ui/blocks/space";
+import { Composer } from "@september/app-ui/blocks/composer";
+import { Problem } from "@september/app-ui/blocks/states";
+import { SpaceDock } from "@september/app-ui/blocks/space-dock";
+import { agentEnabled, spaceParams, useRememberMode, useSpaceBySlug } from "@september/app-ui/blocks/space-routes";
+import { SpaceTitle } from "@september/app-ui/blocks/space-title";
 import {
   AgentLetter,
   Transcript,
@@ -61,7 +65,6 @@ export function AgentScreen({ slug }: { slug: string }) {
 
 function Agent({ space, spaces }: { space: Space; spaces: Space[] }) {
   const navigate = useNavigate();
-  const client = useQueryClient();
   const { data: messages, error } = useAgentMessages(space.id);
   const rows = messages ?? [];
   // A space that has still to be told what it is for. Its first turn is its
@@ -85,6 +88,7 @@ function Agent({ space, spaces }: { space: Space; spaces: Space[] }) {
   const [problem, setProblem] = useState("");
   const [confirming, setConfirming] = useState<AgentMessage | null>(null);
   const end = useRef<HTMLDivElement>(null);
+  const composer = useRef<ComposerHandle | null>(null);
   useRememberMode(space, "agent");
 
   const pending = rows.some((row) => row.tool_state === "pending");
@@ -92,6 +96,15 @@ function Agent({ space, spaces }: { space: Space; spaces: Space[] }) {
   // of a new space runs on past the screen that asked for it, so an owed
   // reply is how this one knows work is in flight.
   const working = busy || agentOwesReply(rows, Date.now());
+  const owedUntil = replyOwedUntil(rows);
+  const [, wake] = useReducer((count: number) => count + 1, 0);
+  // The screen draws again when the wait ends, so it stops saying a reply is coming.
+  useEffect(() => {
+    const wait = owedUntil === null ? 0 : owedUntil - Date.now();
+    if (wait <= 0) return;
+    const timer = setTimeout(wake, wait);
+    return () => clearTimeout(timer);
+  }, [owedUntil]);
 
   useEffect(() => {
     end.current?.scrollIntoView({ block: "end" });
@@ -108,15 +121,7 @@ function Agent({ space, spaces }: { space: Space; spaces: Space[] }) {
     [everyMessage],
   );
 
-  const refresh = async () => {
-    await Promise.all([
-      client.invalidateQueries({ queryKey: ["agent-messages", space.id] }),
-      client.invalidateQueries({ queryKey: ["spaces"] }),
-      client.invalidateQueries({ queryKey: ["messages", space.id] }),
-      client.invalidateQueries({ queryKey: ["notes", space.id] }),
-      client.invalidateQueries({ queryKey: ["phrases"] }),
-    ]);
-  };
+  const refresh = useRefreshAgentSpace(space.id);
 
   /**
    * Sends what the user wrote, and sets the space up when it is the first
@@ -294,6 +299,7 @@ function Agent({ space, spaces }: { space: Space; spaces: Space[] }) {
                 ? "Approve or reject the proposed change before asking again."
                 : undefined
             }
+            handle={composer}
           />
         </div>
 
@@ -301,18 +307,13 @@ function Agent({ space, spaces }: { space: Space; spaces: Space[] }) {
           current={space}
           spaces={spaces}
           mode="agent"
-          onMode={(next) => navigate(spaceParams(space, next))}
         />
       </div>
 
       <RightPanel>
         <PanelRail
           spaceId={space.id}
-          onInsert={(text) =>
-            setDraft((current) =>
-              !current || /\s$/.test(current) ? current + text : `${current} ${text}`,
-            )
-          }
+          onInsert={(text) => composer.current?.insert(text)}
         />
       </RightPanel>
 

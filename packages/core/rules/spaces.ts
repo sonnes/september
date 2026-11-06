@@ -207,21 +207,16 @@ const COMPOSER_ACTIONS: Record<ComposerMode, ComposerAction> = {
 export const composerAction = (mode: ComposerMode): ComposerAction =>
   COMPOSER_ACTIONS[mode];
 
-/** The mode of each space, by slug. A space that is absent opens in Talk. */
+/** The mode of each space, by space id. A space that is absent opens in Talk. */
 export type SpaceModes = Record<string, string>;
 
-/**
- * The mode a space was left in.
- *
- * The slug is the key, not the identifier, so the space list can choose the
- * mode before it reads a row.
- */
+/** The mode a space was left in. */
 export function spaceModeFrom(
   modes: SpaceModes,
-  slug: string,
+  spaceId: string,
   agentEnabled = true,
 ): SpaceMode {
-  const mode = modes[slug];
+  const mode = modes[spaceId];
   if (mode === "agent") return agentEnabled ? "agent" : "talk";
   return mode === "notes" ? mode : "talk";
 }
@@ -229,10 +224,33 @@ export function spaceModeFrom(
 /** The modes with one space changed. The others keep the mode they hold. */
 export function rememberSpaceMode(
   modes: SpaceModes,
-  slug: string,
+  spaceId: string,
   mode: SpaceMode,
 ): SpaceModes {
-  return { ...modes, [slug]: mode };
+  return { ...modes, [spaceId]: mode };
+}
+
+/**
+ * The modes keyed by space id. A setting written before held a slug of the
+ * title as the key, and a backup from that time still does. A key that names
+ * no space is dropped.
+ */
+export function spaceModesById<T extends { id: string; title?: string | null }>(
+  modes: SpaceModes,
+  spaces: readonly T[],
+): SpaceModes {
+  const byId: SpaceModes = {};
+  for (const [key, mode] of Object.entries(modes)) {
+    if (spaces.some((space) => space.id === key)) byId[key] = mode;
+    const named = spaceFromSlug(key, spaces);
+    if (named && !(named.id in modes)) byId[named.id] = mode;
+  }
+  return byId;
+}
+
+/** The spaces, the one changed last first. */
+export function byRecent<T extends { updated_at?: number | null }>(spaces: readonly T[]): T[] {
+  return [...spaces].sort((a, b) => (b.updated_at ?? 0) - (a.updated_at ?? 0));
 }
 
 /** The spaces whose title holds the words that the user typed. */

@@ -3,7 +3,7 @@ import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, expect, it } from 'vitest';
 
-import { axeViolations } from './axe';
+import { axeViolations } from '@september/app-ui/test/axe';
 
 const container = document.createElement('div');
 document.body.append(container);

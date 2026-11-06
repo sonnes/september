@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   composeSuggestions,
   historyMatches,
+  insertAtEnd,
   joinTokens,
   matchTyped,
   stripeForText,
@@ -199,5 +200,13 @@ describe("rows that contain the draft", () => {
     const row = stripeForText("Water, no ice", "water");
     expect(row.hidden).toBe(1);
     expect(row.found).toBeUndefined();
+  });
+});
+
+describe("insertAtEnd", () => {
+  it("adds words after one space", () => {
+    expect(insertAtEnd("", "hello")).toBe("hello");
+    expect(insertAtEnd("I want", "tea")).toBe("I want tea");
+    expect(insertAtEnd("I want ", "tea")).toBe("I want tea");
   });
 });

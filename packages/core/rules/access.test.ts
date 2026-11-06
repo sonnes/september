@@ -5,6 +5,8 @@ import {
   isDark,
   parseAccess,
   reachFor,
+  reachSummary,
+  steppedTime,
 } from "./access";
 
 describe("reachFor", () => {
@@ -99,5 +101,21 @@ describe("parseAccess", () => {
   it("refuses a dwell time or scan step outside the safe range", () => {
     expect(parseAccess({ dwellMs: 10 }).dwellMs).toBeUndefined();
     expect(parseAccess({ scanStepMs: 60_000 }).scanStepMs).toBeUndefined();
+  });
+});
+
+describe("steppedTime", () => {
+  it("steps by a tenth of a second up to two seconds, and by half a second above", () => {
+    expect(steppedTime(800, 1)).toBe(900);
+    expect(steppedTime(2000, 1)).toBe(2500);
+    expect(steppedTime(2500, -1)).toBe(2000);
+    expect(steppedTime(2000, -1)).toBe(1900);
+  });
+});
+
+describe("reachSummary", () => {
+  it("names the dwell time of a gaze profile", () => {
+    const reach = reachFor({ ...DEFAULT_ACCESS, input: "eyes", dwellMs: 800 });
+    expect(reachSummary(reach)).toContain("0.8 s");
   });
 });

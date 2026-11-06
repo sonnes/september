@@ -1,14 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  byRecent,
   composerAction,
-  recentThatFit,
   deleteLastWord,
   messageTime,
   newSpaceMode,
   newSpaceTitle,
+  recentThatFit,
   spaceForSlug,
   spaceModeFrom,
+  spaceModesById,
   spaceNeedsSetup,
   spokenToday,
 } from "./spaces.ts";
@@ -196,5 +198,27 @@ describe("recentThatFit", () => {
 
   it("shows nothing when there are no rows", () => {
     expect(recentThatFit([], 900)).toBe(0);
+  });
+});
+
+describe("spaceModesById", () => {
+  const spaces = [
+    { id: "s1", title: "Mum" },
+    { id: "s2", title: "Work" },
+  ];
+
+  it("moves a mode kept by slug to the id of its space", () => {
+    expect(spaceModesById({ mum: "notes", s2: "agent" }, spaces)).toEqual({ s1: "notes", s2: "agent" });
+  });
+
+  it("keeps a mode kept by id over one kept by slug, and drops a gone space", () => {
+    expect(spaceModesById({ s1: "agent", mum: "notes", gone: "talk" }, spaces)).toEqual({ s1: "agent" });
+  });
+});
+
+describe("byRecent", () => {
+  it("puts the space changed last first", () => {
+    const rows = byRecent([{ id: "old", updated_at: 1 }, { id: "new", updated_at: 2 }]);
+    expect(rows.map((row) => row.id)).toEqual(["new", "old"]);
   });
 });

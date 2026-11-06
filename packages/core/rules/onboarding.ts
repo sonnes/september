@@ -1,6 +1,8 @@
 import { DEFAULT_ACCESS, type AccessProfile } from "./access.ts";
+import { SERVICE_NAMES } from "./services.ts";
 import {
   modelSettingsFrom,
+  withProvider,
   type ModelSettings,
   type WritingModelConfig,
 } from "./model-config.ts";
@@ -83,18 +85,18 @@ export function savedSetupFrom(saved: SavedSetup | null): SavedSetup | null {
 export const WRITING_SERVICES = [
   {
     value: "apple",
-    label: "Apple Intelligence",
+    label: SERVICE_NAMES.apple,
     description: "Runs on this Mac. Your words do not leave the device.",
   },
   {
     value: "openrouter",
-    label: "OpenRouter",
+    label: SERVICE_NAMES.openrouter,
     description:
       "Cloud service. Stronger AI Assistance. Free models are available.",
   },
   {
     value: "none",
-    label: "No AI Assistance",
+    label: SERVICE_NAMES.none,
     description: "September stays a keyboard and a voice.",
   },
 ] as const satisfies readonly {
@@ -110,10 +112,10 @@ export function voiceServices(systemVoice: string): readonly {
   description: string;
 }[] {
   return [
-    { value: "system", label: "System voice", description: systemVoice },
+    { value: "system", label: SERVICE_NAMES.system, description: systemVoice },
     {
       value: "elevenlabs",
-      label: "ElevenLabs",
+      label: SERVICE_NAMES.elevenlabs,
       description: "Cloud service. Natural voices, and you can clone a voice.",
     },
   ];
@@ -203,4 +205,35 @@ export function canReach(
   draft: Pick<OnboardingDraft, "name">,
 ): boolean {
   return stepIndex(path) <= stepIndex("/profile") || Boolean(draft.name.trim());
+}
+
+/** What the platform reports about the services that setup can choose. */
+export interface ServiceReadiness {
+  appleAvailable: boolean;
+  openrouterConnected: boolean;
+  elevenlabsConnected: boolean;
+}
+
+/**
+ * The services that setup chooses by itself. A choice the person made stays.
+ * Apple Intelligence wins when it is ready, then a connected OpenRouter. A
+ * connected ElevenLabs speaks.
+ */
+export function defaultServices(
+  draft: OnboardingDraft,
+  ready: ServiceReadiness,
+): OnboardingDraft {
+  const service =
+    draft.defaultModel.service !== "none"
+      ? draft.defaultModel.service
+      : ready.appleAvailable
+        ? "apple"
+        : ready.openrouterConnected
+          ? "openrouter"
+          : "none";
+  return {
+    ...draft,
+    ...withProvider(draft, service),
+    voiceService: ready.elevenlabsConnected ? "elevenlabs" : draft.voiceService,
+  };
 }

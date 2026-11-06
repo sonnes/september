@@ -1,26 +1,25 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
 
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@september/ui/components/button";
 import { Input } from "@september/ui/components/input";
-import { Label } from "@september/ui/components/label";
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from "@september/ui/components/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@september/ui/components/select";
-import { Textarea } from "@september/ui/components/textarea";
+import { RadioGroup } from "@september/ui/components/radio-group";
 
-import { useDraft } from "@september/app-ui/layouts/onboarding";
-import { AccessForm } from "@september/app-ui/blocks/access";
-import { INPUT_METHODS } from "@september/core/rules/access";
+import { useDraft } from "@september/app-ui/blocks/onboarding-draft";
+import { AccessForm } from "@september/app-ui/blocks/access-form";
+import { PickList } from "@september/app-ui/blocks/pick-list";
+import { Section, SpeakingStyle } from "@september/app-ui/blocks/setup-fields";
 import {
+  CloudStatus,
+  ElevenLabsImpactLink,
+  KeyPanel,
+  ServiceChoice,
+  Status,
+} from "@september/app-ui/blocks/services";
+import { INPUT_METHODS } from "@september/core/rules/access";
+import { withProvider } from "@september/core/rules/model-config";
+import {
+  defaultServices,
   nextStep,
   previousStep,
   SPEAKING_STYLES,
@@ -29,24 +28,14 @@ import {
   WRITING_SERVICES,
   type StepPath,
 } from "@september/core/rules/onboarding";
+import { voiceRows } from "@september/core/rules/voice";
+import { documentTitle } from "@september/core/rules/titles";
 import { platform } from "@platform/adapter";
 import { APP_NAV } from "@september/app-ui/navigation";
-import type { Provider, ProviderStatus, Voice } from "@september/app-ui/platform";
-import {
-  BLANK_CONNECTIONS,
-  readConnections,
-  type Connections,
-} from "@september/app-ui/services/connections";
+import { useConnections, useVoices } from "@september/app-ui/services/connections";
+import { play } from "@september/app-ui/services/player";
 import { saveSetup } from "@september/app-ui/services/settings";
-import {
-  CloudStatus,
-  ElevenLabsImpactLink,
-  KeyPanel,
-  Mark,
-  Status,
-} from "@september/app-ui/blocks/services";
 import { updateSpeech } from "@september/app-ui/services/speech";
-import { documentTitle } from "@september/core/rules/titles";
 
 // DESIGN.md asks for a 44px target on primary actions; `lg` is 40px.
 // Below `sm` it takes the whole row, which is the widest target available.
@@ -62,7 +51,6 @@ function Step({
   footer: ReactNode;
 }) {
   const navigate = useNavigate();
-  const { draft } = useDraft();
   const step = stepFor(path);
   const back = previousStep(path);
 
@@ -110,7 +98,6 @@ function Step({
 
 export function WelcomeStep() {
   const navigate = useNavigate();
-  const { draft } = useDraft();
 
   return (
     <Step
@@ -189,9 +176,7 @@ export function ProfileStep() {
   const { draft, setDraft } = useDraft();
   const [name, setName] = useState(draft.name);
   const [speakingStyle, setSpeakingStyle] = useState(draft.speakingStyle);
-  const selected = SPEAKING_STYLES.find(
-    (option) => option.value === speakingStyle,
-  );
+  const nameId = useId();
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -219,86 +204,31 @@ export function ProfileStep() {
           </Button>
         }
       >
-        <div className="space-y-6">
-          <Field
+        <div className="space-y-8">
+          <Section
             title="Name"
             description="Used in September's profile on this device."
-            htmlFor="onboarding-name"
+            htmlFor={nameId}
           >
             <Input
-              id="onboarding-name"
+              id={nameId}
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Your name"
               autoComplete="name"
               required
-              className="h-11"
+              className="h-11 max-w-md"
             />
-          </Field>
+          </Section>
 
-          <Field
-            title="Speaking style"
-            description="Choose a style or write a brief note about how you speak."
-            htmlFor="onboarding-speaking-style"
-          >
-            <div className="flex flex-wrap gap-2">
-              {SPEAKING_STYLES.map((option) => (
-                <Button
-                  key={option.label}
-                  type="button"
-                  variant={
-                    speakingStyle === option.value ? "default" : "outline"
-                  }
-                  aria-pressed={speakingStyle === option.value}
-                  onClick={() => setSpeakingStyle(option.value)}
-                  className="h-11 rounded-full px-4"
-                >
-                  {option.label}
-                </Button>
-              ))}
-            </div>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              {selected?.description ?? "Edit the note below any time."}
-            </p>
-            <Textarea
-              id="onboarding-speaking-style"
-              value={speakingStyle}
-              onChange={(event) => setSpeakingStyle(event.target.value)}
-              rows={4}
-              maxLength={1000}
-              className="leading-relaxed"
-            />
-          </Field>
-
+          <SpeakingStyle
+            value={speakingStyle}
+            onChange={setSpeakingStyle}
+            description="Choose a style, or write a brief note about how you speak."
+          />
         </div>
       </Step>
     </form>
-  );
-}
-
-function Field({
-  title,
-  description,
-  htmlFor,
-  children,
-}: {
-  title: string;
-  description: string;
-  htmlFor: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="grid gap-5 border-l border-zinc-200 pl-4 sm:pl-5 lg:grid-cols-[15rem_1fr] lg:gap-8">
-      <div>
-        <Label htmlFor={htmlFor} className="text-sm font-semibold">
-          {title}
-        </Label>
-        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-          {description}
-        </p>
-      </div>
-      <div className="space-y-3">{children}</div>
-    </div>
   );
 }
 
@@ -363,90 +293,48 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-// ------------------------------------------------------------- connect step
-
 export function ConnectStep() {
   const navigate = useNavigate();
   const { draft, setDraft } = useDraft();
-  const [connections, setConnections] =
-    useState<Connections>(BLANK_CONNECTIONS);
-  const [checking, setChecking] = useState(true);
-  const [voices, setVoices] = useState<Voice[]>([]);
-  const [voiceId, setVoiceId] = useState("");
+  const { connections, checking } = useConnections();
+  const appleAvailable = connections.apple.available;
+  const openrouterConnected = connections.openrouter.connected;
+  const elevenlabsConnected = connections.elevenlabs.connected;
+  const voices = useVoices(elevenlabsConnected);
+  const voiceList = elevenlabsConnected ? (voices.data ?? []) : [];
+  const [picked, setPicked] = useState("");
+  const voiceId = voiceList.some((voice) => voice.id === picked) ? picked : (voiceList[0]?.id ?? "");
+  const [problem, setProblem] = useState("");
+  const voiceOptions = voiceServices(platform.voice.systemDescription);
 
+  // The step answers itself, so a supported Mac needs no action.
   useEffect(() => {
-    let live = true;
+    if (checking) return;
+    setDraft((current) =>
+      defaultServices(current, { appleAvailable, openrouterConnected, elevenlabsConnected }),
+    );
+  }, [checking, appleAvailable, openrouterConnected, elevenlabsConnected, setDraft]);
 
-    readConnections().then((found) => {
-      if (!live) return;
-      setConnections(found);
-      setChecking(false);
-      // The step answers itself, so a supported Mac needs no action.
-      setDraft((current) => ({
-        ...current,
-        defaultModel: {
-          ...current.defaultModel,
-          service:
-            current.defaultModel.service !== "none"
-              ? current.defaultModel.service
-              : found.apple.available
-                ? "apple"
-                : found.openrouter.connected
-                  ? "openrouter"
-                  : "none",
-        },
-        voiceService: found.elevenlabs.connected
-          ? "elevenlabs"
-          : current.voiceService,
-      }));
-    });
-
-    return () => {
-      live = false;
-    };
-  }, [setDraft]);
-
-  const hasVoiceKey = connections.elevenlabs.connected;
-
-  useEffect(() => {
-    if (!hasVoiceKey) {
-      setVoices([]);
-      return;
-    }
-    let live = true;
-    platform.providers.voices()
-      .then((found) => live && setVoices(found))
-      .catch(() => live && setVoices([]));
-    return () => {
-      live = false;
-    };
-  }, [hasVoiceKey]);
-
-  useEffect(() => {
-    if (!voiceId && voices.length > 0) setVoiceId(voices[0].id);
-  }, [voiceId, voices]);
-
-  function replace(status: ProviderStatus) {
-    setConnections((current) => ({ ...current, [status.provider]: status }));
-  }
-
-  function forget(provider: Provider) {
-    platform.providers.forget(provider).then(() =>
-      replace({ provider, connected: false, label: null, detail: null }),
+  function submit() {
+    setProblem("");
+    // `/voice` owns the voice, in the `speech` setting. Setup seeds it, so the
+    // voice chosen here is the voice that speaks the first message.
+    updateSpeech({
+      provider: draft.voiceService,
+      voiceId: draft.voiceService === "elevenlabs" ? voiceId || null : null,
+    }).then(
+      () => navigate({ to: nextStep("/connect")! }),
+      (reason: unknown) =>
+        setProblem(reason instanceof Error ? reason.message : String(reason)),
     );
   }
 
-  function submit() {
-    // `/voice` owns the voice, in the `speech` setting. Setup seeds it, so the
-    // voice chosen here is the voice that speaks the first message.
-    void updateSpeech({
-      provider: draft.voiceService,
-      voiceId: draft.voiceService === "elevenlabs" ? voiceId || null : null,
-    });
-    navigate({ to: nextStep("/connect")! });
+  function hear(url: string) {
+    setProblem("");
+    play(url).catch((reason: unknown) =>
+      setProblem(reason instanceof Error ? reason.message : String(reason)),
+    );
   }
-
-  const chosenVoice = voices.find((voice) => voice.id === voiceId);
 
   return (
     <Step
@@ -457,7 +345,12 @@ export function ConnectStep() {
         </Button>
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-8">
+        {problem ? (
+          <p role="alert" className="text-destructive text-sm">
+            {problem}
+          </p>
+        ) : null}
         <Section
           title="AI Assistance"
           description="September suggests words and finishes sentences while you type."
@@ -466,86 +359,58 @@ export function ConnectStep() {
             aria-label="AI Assistance"
             className="gap-3"
             value={draft.defaultModel.service}
-            onValueChange={(value) =>
-              setDraft((current) => ({
-                ...current,
-                defaultModel: {
-                  ...current.defaultModel,
-                  service: value as typeof current.defaultModel.service,
-                },
-              }))
-            }
+            onValueChange={(value) => {
+              const service = WRITING_SERVICES.find((option) => option.value === value)?.value;
+              if (service) setDraft((current) => ({ ...current, ...withProvider(current, service) }));
+            }}
           >
             {WRITING_SERVICES.filter(
               // A Mac that cannot run it never shows a control it must disable.
-              (option) =>
-                option.value !== "apple" || connections.apple.supported,
+              (option) => option.value !== "apple" || connections.apple.supported,
             ).map((option) => (
-              <Choice
+              <ServiceChoice
                 key={option.value}
                 value={option.value}
                 label={option.label}
                 description={option.description}
                 selected={draft.defaultModel.service === option.value}
-                disabled={
-                  option.value === "apple" && !connections.apple.available
-                }
+                disabled={option.value === "apple" && !appleAvailable}
                 badge={
                   option.value === "apple" ? (
                     <Status
-                      tone={connections.apple.available ? "ready" : "warn"}
-                      text={
-                        connections.apple.available
-                          ? "Ready"
-                          : "Turn it on in System Settings"
-                      }
+                      tone={appleAvailable ? "ready" : "warn"}
+                      text={appleAvailable ? "Ready" : "Turn it on in System Settings"}
                     />
                   ) : option.value === "openrouter" ? (
-                    <CloudStatus
-                      checking={checking}
-                      status={connections.openrouter}
-                    />
+                    <CloudStatus checking={checking} status={connections.openrouter} />
                   ) : null
                 }
               >
-                {option.value === "apple" && !connections.apple.available
-                  ? connections.apple.reason && (
-                      <p className="text-foreground text-xs leading-relaxed">
-                        {connections.apple.reason}
-                      </p>
-                    )
-                  : null}
-                {option.value === "openrouter" && (
-                  <KeyPanel
-                    provider="openrouter"
-                    name="OpenRouter"
-                    status={connections.openrouter}
-                    onConnected={replace}
-                    onForget={forget}
-                  />
-                )}
-              </Choice>
+                {option.value === "apple" && !appleAvailable && connections.apple.reason ? (
+                  <p className="text-foreground text-xs leading-relaxed">
+                    {connections.apple.reason}
+                  </p>
+                ) : null}
+                {option.value === "openrouter" ? (
+                  <KeyPanel provider="openrouter" name="OpenRouter" />
+                ) : null}
+              </ServiceChoice>
             ))}
           </RadioGroup>
         </Section>
 
-        <Section
-          title="Voice"
-          description="The voice that speaks your messages out loud."
-        >
+        <Section title="Voice" description="The voice that speaks your messages out loud.">
           <RadioGroup
             aria-label="Voice"
             className="gap-3"
             value={draft.voiceService}
-            onValueChange={(value) =>
-              setDraft((current) => ({
-                ...current,
-                voiceService: value as typeof current.voiceService,
-              }))
-            }
+            onValueChange={(value) => {
+              const voiceService = voiceOptions.find((option) => option.value === value)?.value;
+              if (voiceService) setDraft((current) => ({ ...current, voiceService }));
+            }}
           >
-            {voiceServices(platform.voice.systemDescription).map((option) => (
-              <Choice
+            {voiceOptions.map((option) => (
+              <ServiceChoice
                 key={option.value}
                 value={option.value}
                 label={option.label}
@@ -555,146 +420,50 @@ export function ConnectStep() {
                   option.value === "system" ? (
                     <Status tone="ready" text="Ready" />
                   ) : (
-                    <CloudStatus
-                      checking={checking}
-                      status={connections.elevenlabs}
-                    />
+                    <CloudStatus checking={checking} status={connections.elevenlabs} />
                   )
                 }
               >
-                {option.value === "elevenlabs" && (
+                {option.value === "elevenlabs" ? (
                   <>
-                    <KeyPanel
-                      provider="elevenlabs"
-                      name="ElevenLabs"
-                      status={connections.elevenlabs}
-                      onConnected={replace}
-                      onForget={forget}
-                    />
+                    <KeyPanel provider="elevenlabs" name="ElevenLabs" />
                     <ElevenLabsImpactLink />
-                    {voices.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Select value={voiceId} onValueChange={setVoiceId}>
-                          <SelectTrigger
-                            aria-label="Voice"
-                            className="h-11 w-full flex-1 sm:min-w-64"
-                          >
-                            <SelectValue placeholder="Pick a voice" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {voices.map((voice) => (
-                              <SelectItem key={voice.id} value={voice.id}>
-                                {voice.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {chosenVoice?.preview_url && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="h-11 px-4"
-                            // ponytail: the voice list carries a public sample,
-                            // so a preview needs no key and no speech call.
-                            onClick={() =>
-                              void new Audio(chosenVoice.preview_url!).play()
-                            }
-                          >
-                            ▶ Hear it
-                          </Button>
-                        )}
-                      </div>
-                    )}
+                    {voices.error ? (
+                      <p role="alert" className="text-destructive text-sm">
+                        {voices.error.message}
+                      </p>
+                    ) : null}
+                    {voiceList.length > 0 ? (
+                      <PickList
+                        rows={voiceRows(voiceList, [])}
+                        value={voiceId}
+                        onPick={setPicked}
+                        label="Search voices"
+                        name="Voice"
+                        columns={1}
+                        fixedHeight
+                        after={(row) =>
+                          row.voice.preview_url ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="h-11 px-4"
+                              aria-label={`Hear ${row.name}`}
+                              onClick={() => hear(row.voice.preview_url!)}
+                            >
+                              ▶ Hear it
+                            </Button>
+                          ) : null
+                        }
+                      />
+                    ) : null}
                   </>
-                )}
-              </Choice>
+                ) : null}
+              </ServiceChoice>
             ))}
           </RadioGroup>
         </Section>
       </div>
     </Step>
-  );
-}
-
-/** The Field layout without a Label: a radio group names itself instead. */
-function Section({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="grid gap-5 border-l border-zinc-200 pl-4 sm:pl-5 lg:grid-cols-[15rem_1fr] lg:gap-8">
-      <div>
-        <p className="text-sm font-semibold">{title}</p>
-        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-          {description}
-        </p>
-      </div>
-      <div className="space-y-3">{children}</div>
-    </div>
-  );
-}
-
-/**
- * One service inside a job.
- *
- * Selection changes the border and nothing else. The panel below belongs to
- * the state of the service, not to the choice, so the card keeps its height
- * and no choice below it moves down the page.
- */
-function Choice({
-  value,
-  label,
-  description,
-  selected,
-  disabled,
-  badge,
-  children,
-}: {
-  value: string;
-  label: string;
-  description: string;
-  selected: boolean;
-  disabled?: boolean;
-  badge?: ReactNode;
-  children?: ReactNode;
-}) {
-  return (
-    <div
-      // A choice that is not ready has a dashed line, not a fade, so its
-      // words stay readable.
-      className={`grid gap-4 rounded-xl border p-4 ${
-        selected
-          ? "border-brand ring-[3px] ring-indigo-500/30"
-          : "border-border"
-      } ${disabled ? "border-input border-dashed" : ""}`}
-    >
-      <label className="grid cursor-pointer grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[auto_auto_minmax(0,1fr)_auto] sm:gap-4">
-        <RadioGroupItem value={value} disabled={disabled} />
-        <Mark service={value} />
-        <span>
-          <span className="text-sm font-semibold">{label}</span>
-          <span className="text-muted-foreground mt-1 block text-xs leading-relaxed">
-            {description}
-          </span>
-        </span>
-        {/* The status has no column of its own on a phone, so it drops to the
-            next row under the name instead of squeezing the description. */}
-        {badge && (
-          <span className="col-start-3 sm:col-start-4 sm:justify-self-end">
-            {badge}
-          </span>
-        )}
-      </label>
-      {/* The indent lines the panel up with the service name. A phone has no
-          70px to spare, so the panel starts at the edge of the card. */}
-      <div className="grid gap-3 pl-0 empty:hidden sm:pl-[4.75rem]">
-        {children}
-      </div>
-    </div>
   );
 }

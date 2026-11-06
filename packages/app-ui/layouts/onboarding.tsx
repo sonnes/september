@@ -1,22 +1,13 @@
-import {
-  createContext,
-  useContext,
-  useMemo,
-  useState,
-  type Dispatch,
-  type SetStateAction,
-} from "react";
+import { useMemo, useState } from "react";
 
 import { Link, Navigate, Outlet, useRouterState } from "@tanstack/react-router";
 import { CircleHelp } from "lucide-react";
 
 import { BrandMark, BrandWordmark } from "@september/app-ui/blocks/brand";
-import {
-  ApplyAccess,
-  InputLayer,
-  ScanPauseKey,
-} from "@september/app-ui/blocks/access";
-import { HelpGuideContent } from "@september/app-ui/pages/help";
+import { ApplyAccess } from "@september/app-ui/blocks/access";
+import { InputLayer, ScanPauseKey } from "@september/app-ui/blocks/input-layer";
+import { HelpGuideContent } from "@september/app-ui/blocks/help-guide";
+import { DraftContext } from "@september/app-ui/blocks/onboarding-draft";
 import { helpGuide } from "@september/core/rules/help/search";
 import { Button } from "@september/ui/components/button";
 import {
@@ -37,19 +28,7 @@ import {
 } from "@september/core/rules/onboarding";
 import { systemName } from "@september/app-ui/services/settings";
 
-interface DraftValue {
-  draft: OnboardingDraft;
-  setDraft: Dispatch<SetStateAction<OnboardingDraft>>;
-}
-
-const DraftContext = createContext<DraftValue | null>(null);
 const SETUP_GUIDE = helpGuide("set-up-september")!;
-
-export function useDraft(): DraftValue {
-  const value = useContext(DraftContext);
-  if (!value) throw new Error("useDraft needs the onboarding layout");
-  return value;
-}
 
 // ponytail: the draft stays in memory until account persistence is ported.
 export function OnboardingLayout() {
@@ -140,6 +119,9 @@ export function OnboardingLayout() {
   );
 }
 
+const STEP_CLASS =
+  "flex items-center gap-3 rounded-full p-1.5 md:rounded-md md:p-0";
+
 function ProgressNav({
   current,
   draft,
@@ -168,6 +150,25 @@ function ProgressNav({
               ? "border-indigo-200 bg-indigo-200 text-indigo-700"
               : "border-indigo-300 text-indigo-100";
 
+          const marker = (
+            <>
+              <span
+                className={`flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-bold ${state}`}
+              >
+                {completed ? "✓" : index + 1}
+              </span>
+              {/* The bar has no room for five words, and the step title is
+                  already the heading beside it. Below `md` only a screen
+                  reader reads the label. */}
+              <span
+                className={`sr-only text-sm font-semibold md:not-sr-only ${current >= index ? "text-white" : "text-indigo-100"}`}
+              >
+                {step.label}
+              </span>
+              {completed ? <span className="sr-only">, completed</span> : null}
+            </>
+          );
+
           return (
             <li
               key={step.path}
@@ -175,28 +176,22 @@ function ProgressNav({
             >
               {/* The padding below `md` is the touch target the bare 32px
                   circle does not give on a phone. The name of the link is
-                  the words it shows, so a voice user can say them. */}
-              <Link
-                to={step.path}
-                disabled={!canReach(step.path, draft)}
-                aria-current={isCurrent ? "step" : undefined}
-                className="focus-attention flex items-center gap-3 rounded-full p-1.5 aria-disabled:cursor-default md:rounded-md md:p-0"
-              >
-                <span
-                  className={`flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-bold ${state}`}
-                >
-                  {completed ? "✓" : index + 1}
+                  the words it shows, so a voice user can say them. The
+                  current step is not a link, because a link to the open
+                  page marks itself as the current page, not the step. */}
+              {isCurrent ? (
+                <span aria-current="step" className={STEP_CLASS}>
+                  {marker}
                 </span>
-                {/* The bar has no room for five words, and the step title is
-                    already the heading beside it. Below `md` only a screen
-                    reader reads the label. */}
-                <span
-                  className={`sr-only text-sm font-semibold md:not-sr-only ${current >= index ? "text-white" : "text-indigo-100"}`}
+              ) : (
+                <Link
+                  to={step.path}
+                  disabled={!canReach(step.path, draft)}
+                  className={`focus-attention ${STEP_CLASS} aria-disabled:cursor-default`}
                 >
-                  {step.label}
-                </span>
-                {completed ? <span className="sr-only">, completed</span> : null}
-              </Link>
+                  {marker}
+                </Link>
+              )}
               {!isLast && (
                 <span
                   aria-hidden="true"

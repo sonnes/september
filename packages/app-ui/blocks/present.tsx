@@ -40,6 +40,7 @@ import { platform } from "@platform/adapter";
 import { present } from "@september/app-ui/services/settings";
 import { speak, stopSpeaking } from "@september/app-ui/services/speech";
 import { recordPresentUsage } from "@september/app-ui/services/usage";
+import { useEscape } from "@september/app-ui/blocks/keymap";
 
 /** What is speaking, so the note screen can tell its own voice-over apart. */
 const PRESENT_SPEAKER = "present";
@@ -155,8 +156,7 @@ export function PresentOverlay({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-      else if (event.key === "ArrowRight") move(1);
+      if (event.key === "ArrowRight") move(1);
       else if (event.key === "ArrowLeft") move(-1);
       else if (event.key === " ") setPaused((held) => !held);
       else if (event.key === "Home") setIndex(0);
@@ -169,7 +169,9 @@ export function PresentOverlay({
     return () => window.removeEventListener("keydown", onKey);
     // `move` is new on each render, and reads the same state as this handler.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [total, onClose]);
+  }, [total]);
+
+  useEscape(onClose);
 
   const chrome = (share: number) =>
     `color-mix(in srgb, ${tone.display} ${share}%, transparent)`;

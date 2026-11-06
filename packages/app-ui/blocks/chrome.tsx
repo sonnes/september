@@ -1,7 +1,7 @@
 import { createContext, useContext, type MutableRefObject } from "react";
 
 import type { MoodKey } from "@september/core/rules/moods";
-import type { PanelTab } from "@september/core/rules/panel";
+import type { Tier } from "@september/core/rules/panel";
 
 /**
  * Which frame draws around a screen.
@@ -18,16 +18,6 @@ export function useChrome(): Chrome {
   return useContext(ChromeContext);
 }
 
-/** The width tiers of the panel. */
-export type Tier = "compact" | "regular" | "wide";
-
-/** The tier for a width in points. */
-export function tierFor(width: number): Tier {
-  if (width < 560) return "compact";
-  if (width < 900) return "regular";
-  return "wide";
-}
-
 /** What the composer on the screen lets the panel header do. */
 export interface ComposerHandle {
   draft: string;
@@ -41,12 +31,6 @@ export interface ComposerHandle {
   onMood?: (mood: MoodKey | null) => void;
 }
 
-/** A request to open a tab of the right rail. `at` makes each press new. */
-export interface RailRequest {
-  tab: PanelTab;
-  at: number;
-}
-
 /** What `PanelShell` shares with the screens inside it. */
 export interface PanelState {
   tier: Tier;
@@ -55,8 +39,6 @@ export interface PanelState {
   /** Whether the sound output menu of the composer is open. */
   outputOpen: boolean;
   setOutputOpen: (open: boolean) => void;
-  /** The last request to open a tab of the right rail, in the wide tier. */
-  rail: RailRequest | null;
 }
 
 export const PanelContext = createContext<PanelState | null>(null);
