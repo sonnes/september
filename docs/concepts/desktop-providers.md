@@ -75,52 +75,40 @@ for each one. See [on-device AI](on-device-ai.md).
 An unsupported Mac gets no disabled control. A control the user can never use
 is noise.
 
-The backend starts apfel when a screen first asks for its status or generation.
+The backend starts apfel when a screen first asks for its status, or when the
+proxy first sends a request to it.
 It reuses the process while its health request succeeds and replaces it when
 the request fails.
 
-## The model list shows the free models, and the search finds the others
+## The model lists are curated
 
-`GET /api/v1/models` gives every model of the service, with a price for a
-prompt token and a completion token. Rust marks a model `free` when both
-prices read zero. A model with no price is not known to be free, so it is
-paid. Every model crosses to the screen, with the free ones first.
+Rust gives no model list. The OpenRouter and ElevenLabs models that the
+screens offer are fixed lists in `packages/core`. The two apps show the same
+lists.
 
-The list shows the free rows until the user types. September promises that the
-user needs no card, and a paid row in the resting list would break that
-promise: the user picks a name, and the next suggestion fails with a bill they
-cannot pay.
+`SUGGESTIONS_MODELS` and `AGENT_MODELS` in `rules/model-config.ts` hold the
+OpenRouter models. Each list starts with **Automatic**, and each row reads
+**Free** or **Paid**. Automatic is the default. The request names
+`openrouter/free`, and OpenRouter picks a free model that answers. See
+[writing model settings](writing-model-settings.md).
 
-The **Search models** field reaches every model. A user with credit can find
-the model they pay for, and a user without credit never meets one by accident.
-Each word of the query must be in the name or in the id. A paid row reads
-**Paid**. The row in use stays in the list while the words are there, so the
-user always sees what speaks for them now.
+`VOICE_MODELS` and `DIALOGUE_MODELS` in `rules/voice.ts` hold the ElevenLabs
+models. The list appears once, under Custom in the Voice tab of the space
+rail. A user hears the result there without leaving the conversation. The
+choice goes into the `speech` setting.
 
-The model lists and the voice list are the same control, `PickList`. It is a
-radio group of 48px rows in two columns, not a dropdown, because a dropdown
-closes when a dwell moves away from it. The arrow keys move the choice. The 320px card of the space rail asks for one
-column, with `columns={1}`.
+The model lists and the voice list use the same control, `PickList`. It is a
+radio group of 48px rows in two columns, not a dropdown. A dropdown closes
+when a dwell moves away from it. The arrow keys move the choice. The 320px
+card of the space rail asks for one column, with `columns={1}`.
 
-The ElevenLabs model list appears once, under Custom in the Voice tab of the
-space rail. A user hears the answer there without leaving the conversation. It
-lists Flash v2.5, Multilingual v2, and Eleven v3, and it writes the `speech`
-setting. The voice list appears once, on `/voice`, beside the service:
-a hundred rows, each with a sample to hear, do not fit a 320px card.
-
-**Automatic** is the first row of the picker, and the default. The request
-names `openrouter/free`, and OpenRouter picks a free model that answers. One
-busy model is therefore not one lost sentence. A named model replaces
-`openrouter/free`, and the request asks for it alone.
-
-The Agent and phrases list writes the default model settings. The Suggestions
-list writes separate Suggestions settings. If the separate value is not null,
-Suggestions use it. Both lists are on AI Assistance, not on the key screen.
+The voice list appears once, on `/voice`, beside the service. A hundred rows,
+each with a sample to hear, do not fit a 320px card.
 
 ## The voice list holds the voices of the account
 
-`GET /v2/voices?page_size=100&voice_type=non-default` gives the list. The web
-app asks the same way, so the two apps show one list.
+The desktop app gets the list from
+`GET /v2/voices?page_size=100&voice_type=non-default`, in Rust.
 
 | Part         | Value         | Why                                               |
 | ------------ | ------------- | ------------------------------------------------- |
@@ -128,16 +116,18 @@ app asks the same way, so the two apps show one list.
 | `voice_type` | `non-default` | The stock voices are not the voices of this user. |
 | `page_size`  | `100`         | A page gives 10 without it.                       |
 
+The web app gets the list from `GET /v1/voices`, in the browser. That list
+also holds the stock voices of ElevenLabs. As a result, the web app can show
+voices that the desktop app does not show.
+
 Rust gives the list in the order of ElevenLabs. The category and `is_owner`
 reach the screen, and `voiceRows` in core sorts the rows. `voiceRows` puts a voice
 with `is_owner: true` in **Yours**, a `premade` voice in **ElevenLabs voices**,
 and every other voice in **From the library**. A professional voice from the
 library has `is_owner: false`, so the category alone cannot say whose it is.
 
-The web app also searches the public voice library, through
-`/v1/shared-voices`. The desktop app does not port that search. Voice cloning
-is separate: it creates a voice in the account, then the normal account list
-can return it.
+Neither app searches the public voice library. A cloned voice goes into the
+account, so the account list returns it.
 
 ## A clone crosses as raw multipart audio
 
@@ -161,13 +151,13 @@ keeps the user on the cloning page with the draft intact.
 
 ## The names cross the boundary
 
-ElevenLabs names a voice `voice_id` and a model `model_id`. The screens read
-`id`. Rust therefore renames each field on the way in only, with
+ElevenLabs names a voice `voice_id`. The screens read `id`. Rust therefore
+renames the field on the way in only, with
 `#[serde(rename(deserialize = "..."))]`.
 
 A two-way rename sends `voice_id` to the WebView. `voice.id` is then
 `undefined` for every row, and `undefined === undefined` makes every row look
-selected. The `SpeechSettings` type has the opposite direction: the WebView
+selected. The `VoiceSettings` type has the opposite direction: the WebView
 sends it, so it uses `#[serde(rename_all = "camelCase")]`.
 
 ## The voice preview needs no key

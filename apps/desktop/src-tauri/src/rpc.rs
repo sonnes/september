@@ -17,8 +17,7 @@ use crate::{
     audio::{self, AudioDevice, VirtualMicrophoneStatus},
     gaze::GazeState,
     providers::{
-        CreatedVoice, ElevenLabsQuota, Model, Provider, ProviderKeys, ProviderStatus, Providers,
-        Voice, WritingModel,
+        CreatedVoice, ElevenLabsQuota, Provider, ProviderKeys, ProviderStatus, Providers, Voice,
     },
     proxy::{Endpoint, WritingProxy},
     repository::{
@@ -716,39 +715,6 @@ pub(crate) async fn provider_voices(
     };
     providers
         .voices(&key)
-        .await
-        .map_err(|error| error.to_string())
-}
-
-/// The OpenRouter models for the stored key. Empty without a key.
-#[tauri::command]
-pub(crate) async fn provider_writing_models(
-    keys: State<'_, ProviderKeys>,
-    providers: State<'_, Providers>,
-) -> RpcResult<Vec<WritingModel>> {
-    let Some(key) = keys
-        .get(Provider::OpenRouter)
-        .map_err(|error| error.to_string())?
-    else {
-        return Ok(Vec::new());
-    };
-    providers
-        .writing_models(&key)
-        .await
-        .map_err(|error| error.to_string())
-}
-
-/// The ElevenLabs models for the stored key. The list is empty without a key.
-#[tauri::command]
-pub(crate) async fn provider_models(
-    keys: State<'_, ProviderKeys>,
-    providers: State<'_, Providers>,
-) -> RpcResult<Vec<Model>> {
-    let Some(key) = eleven_labs_key(&keys)? else {
-        return Ok(Vec::new());
-    };
-    providers
-        .models(&key)
         .await
         .map_err(|error| error.to_string())
 }

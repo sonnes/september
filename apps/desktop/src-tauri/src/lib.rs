@@ -73,8 +73,6 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
             oauth::openrouter_cancel,
             rpc::provider_forget,
             rpc::provider_voices,
-            rpc::provider_models,
-            rpc::provider_writing_models,
             rpc::provider_clone_voice,
             rpc::provider_quota,
             rpc::speech_synthesize,

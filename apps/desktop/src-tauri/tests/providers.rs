@@ -171,50 +171,6 @@ async fn eleven_labs_quota_keeps_the_reset_and_raw_counts() {
 }
 
 #[tokio::test]
-async fn the_writing_models_hold_the_free_ones_first() {
-    let (base, requests) = serve_once(
-        "200 OK",
-        json!({ "data": [
-            {
-                "id": "openai/gpt-5",
-                "name": "OpenAI: GPT-5",
-                "pricing": { "prompt": "0.00001", "completion": "0.00003" }
-            },
-            {
-                "id": "qwen/qwen3-next-80b-a3b-instruct:free",
-                "name": "Qwen: Qwen3 Next 80B (free)",
-                "pricing": { "prompt": "0", "completion": "0" }
-            },
-            {
-                "id": "acme/no-price",
-                "name": "Acme: no price",
-                "pricing": { "prompt": "", "completion": "" }
-            }
-        ] }),
-    );
-
-    let models = open_router(&base).writing_models("sk-test").await.unwrap();
-
-    let head = requests.recv().unwrap();
-    assert!(head.contains("GET /api/v1/models"), "{head}");
-    // The search reaches every model, so every model crosses. The free rows
-    // come first, because the picker shows them before the user types.
-    // A model with no price is not known to be free.
-    assert_eq!(
-        models
-            .iter()
-            .map(|model| (model.id.as_str(), model.free))
-            .collect::<Vec<_>>(),
-        vec![
-            ("qwen/qwen3-next-80b-a3b-instruct:free", true),
-            ("acme/no-price", false),
-            ("openai/gpt-5", false),
-        ]
-    );
-    assert_eq!(models[0].name, "Qwen: Qwen3 Next 80B (free)");
-}
-
-#[tokio::test]
 async fn an_empty_eleven_labs_quota_is_an_error() {
     let (base, _requests) = serve_once(
         "200 OK",

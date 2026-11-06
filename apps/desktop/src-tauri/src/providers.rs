@@ -129,68 +129,6 @@ pub struct CreatedVoice {
     pub id: String,
 }
 
-/// One OpenRouter model the user can choose.
-///
-/// September promises that the user needs no card, so the picker shows the
-/// free rows until the user searches. `free` tells the screen which rows those
-/// are, and which rows to mark. It carries no price: a user who cannot pay
-/// needs the answer, not the number.
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
-pub struct WritingModel {
-    pub id: String,
-    pub name: String,
-    /// True when a prompt token and a completion token both cost zero.
-    pub free: bool,
-}
-
-/// One row of the OpenRouter model list, before the price decides.
-#[derive(Debug, Clone, Deserialize)]
-struct OpenRouterModelRow {
-    id: String,
-    name: String,
-    #[serde(default)]
-    pricing: OpenRouterPricing,
-}
-
-#[derive(Debug, Clone, Default, Deserialize)]
-struct OpenRouterPricing {
-    #[serde(default)]
-    prompt: String,
-    #[serde(default)]
-    completion: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-struct OpenRouterModelList {
-    data: Vec<OpenRouterModelRow>,
-}
-
-/// OpenRouter gives a price as a string of dollars for one token. A free
-/// model reads `0`. An absent price is not known to be free, so it is paid.
-fn costs_nothing(price: &str) -> bool {
-    price
-        .trim()
-        .parse::<f64>()
-        .is_ok_and(|dollars| dollars == 0.0)
-}
-
-/// One ElevenLabs model. It decides the quality, the speed, and the languages.
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
-pub struct Model {
-    #[serde(rename(deserialize = "model_id"))]
-    pub id: String,
-    pub name: String,
-    #[serde(default)]
-    pub description: Option<String>,
-    /// Some models only listen. The screen shows the models that speak.
-    #[serde(
-        default,
-        rename(deserialize = "can_do_text_to_speech"),
-        skip_serializing
-    )]
-    pub speaks: bool,
-}
-
 // ---------------------------------------------------------------- keychain
 
 fn entry(provider: Provider) -> Result<keyring::Entry> {
@@ -641,51 +579,6 @@ impl Providers {
         let body: VoiceList = decode(response).await?;
         Ok(body.voices)
     }
-
-    /// Every OpenRouter model, the free ones first and then by name.
-    ///
-    /// The search of the picker reaches every model, so the price sorts the
-    /// list here instead of cutting it. The screen shows the free rows until
-    /// the user types, and marks a paid row that a search finds.
-    pub async fn writing_models(&self, key: &str) -> Result<Vec<WritingModel>> {
-        let response = self
-            .client
-            .get(format!("{}/api/v1/models", self.open_router))
-            .bearer_auth(key)
-            .send()
-            .await?;
-        let body: OpenRouterModelList = decode(response).await?;
-
-        let mut models: Vec<WritingModel> = body
-            .data
-            .into_iter()
-            .map(|row| WritingModel {
-                free: costs_nothing(&row.pricing.prompt) && costs_nothing(&row.pricing.completion),
-                id: row.id,
-                name: row.name,
-            })
-            .collect();
-        models.sort_by(|left, right| {
-            right
-                .free
-                .cmp(&left.free)
-                .then_with(|| left.name.cmp(&right.name))
-        });
-        Ok(models)
-    }
-
-    /// The ElevenLabs models that can speak. A model that only listens is not
-    /// a choice the Voice screen can offer.
-    pub async fn models(&self, key: &str) -> Result<Vec<Model>> {
-        let response = self
-            .client
-            .get(format!("{}/v1/models", self.eleven_labs))
-            .header("xi-api-key", key)
-            .send()
-            .await?;
-        let models: Vec<Model> = decode(response).await?;
-        Ok(models.into_iter().filter(|model| model.speaks).collect())
-    }
 }
 
 /// The response when the service accepted the request. A refusal becomes
@@ -868,7 +761,7 @@ fn unexpected(error: impl std::fmt::Display) -> ProviderError {
 mod tests {
     use std::cell::Cell;
 
-    use super::{thousands, Model, Provider, ProviderKeys, Voice};
+    use super::{thousands, Provider, ProviderKeys, Voice};
 
     #[test]
     fn provider_keys_are_loaded_once_and_then_read_from_memory() {
@@ -917,8 +810,8 @@ mod tests {
     }
 
     #[test]
-    fn the_screen_reads_a_voice_and_a_model_by_id() {
-        // ElevenLabs names them `voice_id` and `model_id`. The screens read
+    fn the_screen_reads_a_voice_by_id() {
+        // ElevenLabs names it `voice_id`. The screens read
         // `id`, so the rename must work one way only.
         let voice: Voice = serde_json::from_value(serde_json::json!({
             "voice_id": "v1",
@@ -928,18 +821,6 @@ mod tests {
         .unwrap();
         assert_eq!(voice.id, "v1");
         assert_eq!(serde_json::to_value(&voice).unwrap()["id"], "v1");
-
-        let model: Model = serde_json::from_value(serde_json::json!({
-            "model_id": "eleven_turbo_v2_5",
-            "name": "Turbo v2.5",
-            "can_do_text_to_speech": true,
-        }))
-        .unwrap();
-        assert_eq!(model.id, "eleven_turbo_v2_5");
-        assert_eq!(
-            serde_json::to_value(&model).unwrap()["id"],
-            "eleven_turbo_v2_5"
-        );
     }
 
     #[test]

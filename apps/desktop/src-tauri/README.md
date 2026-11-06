@@ -370,8 +370,6 @@ A key never returns to the WebView. Every command answers with a status only.
 | `provider_forget`         | `{ provider }`      | `boolean`                                  |
 | `provider_voices`         | none                | The ElevenLabs voices                      |
 | `provider_clone_voice`    | raw multipart audio | `{ id }`                                   |
-| `provider_models`         | none                | The ElevenLabs speech models               |
-| `provider_writing_models` | none                | Every OpenRouter model                     |
 | `provider_quota`          | none                | The current ElevenLabs allowance or `null` |
 
 ```ts
@@ -440,11 +438,6 @@ available, the request gets `502` with the reason.
 The TypeScript service selects the model before it calls. It uses the default
 model settings for all jobs except Suggestions. If the Suggestions override is
 not null, Suggestions use it.
-
-`provider_writing_models` gives the models the user can choose. Each row has
-`free`, which is true when a prompt token and a completion token both cost
-zero. A model with no price is not known to be free, so `free` is false. The
-WebView puts the rows in order.
 
 ## Speak a sentence
 
