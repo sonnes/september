@@ -1,6 +1,5 @@
 {
   "title": "SYSTEM",
-  "columns": 2,
   "buttons": [
     { "id": "fullscreen", "label": "Full Screen", "symbol": "macwindow",
       "action": { "type": "shortcut", "modifiers": ["control", "command"], "key": "f" } },

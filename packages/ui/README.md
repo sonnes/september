@@ -59,7 +59,7 @@ Three attributes mark popups and controls for the access layer. Dialog and
 sheet content has `data-modal`. Menu content has `data-menu`. The
 sidebar rail has `data-pointer-only`, because only a pointer uses it.
 
-Every `Sidebar` menu row, sub row, and row action is 48px. The rows use
+Every `Sidebar` menu row is 48px. The rows use
 `focus-attention-inset`, because the sidebar clips a ring outside a row. The
 current row shows a bar at its start edge. `SidebarTrigger` is named Menu and
 has `aria-expanded`. `SidebarRail` is a pointer strip only: it has

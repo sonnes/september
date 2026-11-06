@@ -1,7 +1,7 @@
 //! OpenRouter PKCE: browser authorization, loopback callback, Keychain storage.
 use crate::providers::{Provider, ProviderKeys, ProviderStatus, Providers, OPEN_ROUTER};
 use axum::{
-    http::{StatusCode, Uri},
+    http::Uri,
     response::{Html, IntoResponse},
     routing::get,
     Router,
@@ -23,22 +23,20 @@ fn challenge(verifier: &str) -> String {
     URL_SAFE_NO_PAD.encode(Sha256::digest(verifier.as_bytes()))
 }
 
-fn callback_code(uri: &str, path: &str) -> Option<Result<String, String>> {
-    let url = reqwest::Url::parse(&format!("http://localhost{uri}")).ok()?;
-    if url.path() != path {
-        return None;
-    }
-    let codes: Vec<_> = url.query_pairs().filter(|(key, _)| key == "code").collect();
+/// The one authorization code in the query of the callback.
+fn callback_code(query: &str) -> Result<String, String> {
+    let url = reqwest::Url::parse(&format!("http://localhost/?{query}"))
+        .map_err(|error| format!("OpenRouter sent an invalid callback. ({error})"))?;
+    let pairs: Vec<_> = url.query_pairs().collect();
+    let codes: Vec<_> = pairs.iter().filter(|(key, _)| key == "code").collect();
     if codes.len() == 1
         && !codes[0].1.is_empty()
         && codes[0].1.len() <= 4096
-        && !url.query_pairs().any(|(key, _)| key == "error")
+        && !pairs.iter().any(|(key, _)| key == "error")
     {
-        Some(Ok(codes[0].1.to_string()))
+        Ok(codes[0].1.to_string())
     } else {
-        Some(Err(
-            "OpenRouter did not authorize the connection. Try again.".into(),
-        ))
+        Err("OpenRouter did not authorize the connection. Try again.".into())
     }
 }
 
@@ -152,12 +150,10 @@ async fn authorize(
 async fn receive_code(listener: tokio::net::TcpListener, path: String) -> Result<String, String> {
     let (send, receive) = oneshot::channel();
     let sender = Arc::new(Mutex::new(Some(send)));
-    let callback_path = path.clone();
     let router = Router::new().route(&path, get(move |uri: Uri| {
         let sender = sender.clone();
-        let path = callback_path.clone();
         async move {
-            let Some(result) = callback_code(&uri.to_string(), &path) else { return StatusCode::NOT_FOUND.into_response(); };
+            let result = callback_code(uri.query().unwrap_or_default());
             if let Ok(mut sender) = sender.lock() {
                 if let Some(sender) = sender.take() { let _ = sender.send(result); }
             }
@@ -186,7 +182,7 @@ mod tests {
             .send()
             .await
             .unwrap();
-        assert_eq!(wrong.status(), StatusCode::NOT_FOUND);
+        assert_eq!(wrong.status(), axum::http::StatusCode::NOT_FOUND);
         let response = client
             .get(format!("http://{address}/callback/nonce?code=authorized"))
             .send()
@@ -224,21 +220,11 @@ mod tests {
     }
 
     #[test]
-    fn callback_is_bound_to_its_random_path() {
-        assert!(callback_code("/other?code=foreign", "/callback/nonce").is_none());
-        assert_eq!(
-            callback_code("/callback/nonce?code=authorized", "/callback/nonce"),
-            Some(Ok("authorized".into()))
-        );
-        assert!(
-            callback_code("/callback/nonce?error=denied", "/callback/nonce")
-                .unwrap()
-                .is_err()
-        );
-        assert!(
-            callback_code("/callback/nonce?code=a&code=b", "/callback/nonce")
-                .unwrap()
-                .is_err()
-        );
+    fn a_callback_holds_exactly_one_code_and_no_error() {
+        assert_eq!(callback_code("code=authorized"), Ok("authorized".into()));
+        assert!(callback_code("error=denied").is_err());
+        assert!(callback_code("code=authorized&error=denied").is_err());
+        assert!(callback_code("code=a&code=b").is_err());
+        assert!(callback_code("").is_err());
     }
 }

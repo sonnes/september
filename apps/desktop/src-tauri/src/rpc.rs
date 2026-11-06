@@ -148,7 +148,6 @@ pub(crate) struct SpeakRequest {
 #[derive(Deserialize)]
 pub(crate) struct SystemSpeechRequest {
     text: String,
-    voice_id: Option<String>,
     speed: f32,
 }
 
@@ -675,16 +674,9 @@ pub(crate) async fn speech_system(
     request: SystemSpeechRequest,
 ) -> RpcResult<()> {
     let output = september_output(&state)?;
-    tokio::task::spawn_blocking(move || {
-        audio::speak_system(
-            &request.text,
-            request.voice_id.as_deref(),
-            request.speed,
-            &output,
-        )
-    })
-    .await
-    .map_err(|error| error.to_string())?
+    tokio::task::spawn_blocking(move || audio::speak_system(&request.text, request.speed, &output))
+        .await
+        .map_err(|error| error.to_string())?
 }
 
 /// Stops every native voice now, and the cloud stream that feeds one.
@@ -847,6 +839,9 @@ pub(crate) fn virtual_microphone_start() -> RpcResult<VirtualMicrophoneStatus> {
 pub(crate) fn virtual_microphone_stop() -> RpcResult<VirtualMicrophoneStatus> {
     audio::virtual_microphone_stop()
 }
+
+#[cfg(test)]
+mod contract;
 
 #[cfg(test)]
 mod tests {

@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   draftParts,
-  fileSound,
   isTag,
   speakableText,
   stripTags,
@@ -80,22 +79,6 @@ describe("speakableText", () => {
   });
 });
 
-describe("fileSound", () => {
-  it("makes a Dialogue file with the settings that the Dialogue voice streams", () => {
-    expect(fileSound("[laughs] Hi.", voice("dialogue"))).toEqual({
-      text: "[laughs] Hi.",
-      settings: { provider: "dialogue", modelId: "eleven_v3", stability: 0.5, speed: 1 },
-    });
-  });
-
-  it("keeps the model and removes the tags for other voices", () => {
-    expect(fileSound("[laughs] Hi.", voice("elevenlabs"))).toEqual({
-      text: "Hi.",
-      settings: voice("elevenlabs"),
-    });
-  });
-});
-
 describe("wordRow", () => {
   const found = ["and", "but", "[giggles]"];
 
@@ -110,6 +93,16 @@ describe("wordRow", () => {
     expect(
       wordRow(found, { tags: true, examples: ["laughs", "sighs"], draft: "so " }),
     ).toEqual(["and", "but", "[giggles]", "[laughs]"]);
+  });
+
+  it("shows two learned tags at most, whatever the engine found", () => {
+    expect(
+      wordRow(["and", "[giggles]", "[sighs]", "[laughs]"], {
+        tags: true,
+        examples: ["whispers"],
+        draft: "so ",
+      }),
+    ).toEqual(["and", "[giggles]", "[sighs]"]);
   });
 
   it("skips a tag that the draft already holds", () => {

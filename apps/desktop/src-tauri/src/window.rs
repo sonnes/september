@@ -5,7 +5,7 @@ use tauri::{
     image::Image,
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
-    AppHandle, Manager, Runtime, WebviewWindow, WebviewWindowBuilder,
+    AppHandle, Manager, Runtime, State, WebviewWindow, WebviewWindowBuilder,
 };
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
@@ -96,14 +96,8 @@ pub fn float_on(saved: Option<&Value>) -> bool {
     saved.and_then(Value::as_bool).unwrap_or(true)
 }
 
-/// The saved float choice. An app with no storage, such as a window test,
-/// floats.
-fn saved_float<R: Runtime>(app: &AppHandle<R>) -> Result<bool, String> {
-    let saved = match app.try_state::<BackendState>() {
-        Some(state) => state.setting(PANEL_FLOAT_SETTING)?,
-        None => None,
-    };
-    Ok(float_on(saved.as_ref()))
+fn saved_float(state: &BackendState) -> Result<bool, String> {
+    Ok(float_on(state.setting(PANEL_FLOAT_SETTING)?.as_ref()))
 }
 
 /// Keeps the panel above other apps, an app in full screen, and each Space, or
@@ -159,7 +153,8 @@ pub fn create_panel(app: &tauri::App) -> tauri::Result<()> {
 /// and the global key.
 pub(crate) fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     create_panel(app)?;
-    apply_float(app.handle(), false, saved_float(app.handle())?)?;
+    let float = saved_float(&app.state::<BackendState>())?;
+    apply_float(app.handle(), false, float)?;
 
     let menu = Menu::with_items(
         app,
@@ -218,16 +213,17 @@ pub(crate) fn panel_hide(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command(async)]
-pub(crate) fn panel_float(app: AppHandle) -> Result<bool, String> {
-    saved_float(&app)
+pub(crate) fn panel_float(state: State<'_, BackendState>) -> Result<bool, String> {
+    saved_float(&state)
 }
 
 /// Saves the float choice and applies it to the panel now.
 #[tauri::command(async)]
-pub(crate) fn panel_set_float(app: AppHandle, on: bool) -> Result<(), String> {
-    let state = app
-        .try_state::<BackendState>()
-        .ok_or("September is not ready.")?;
+pub(crate) fn panel_set_float(
+    app: AppHandle,
+    state: State<'_, BackendState>,
+    on: bool,
+) -> Result<(), String> {
     state.put_setting(PANEL_FLOAT_SETTING, &Value::Bool(on))?;
     apply_float(&app, false, on).map_err(|error| error.to_string())
 }
@@ -235,8 +231,12 @@ pub(crate) fn panel_set_float(app: AppHandle, on: bool) -> Result<(), String> {
 /// With `on`, makes the panel a normal window for setup. The saved float
 /// choice does not change. Without it, applies the saved float choice.
 #[tauri::command(async)]
-pub(crate) fn panel_setup(app: AppHandle, on: bool) -> Result<(), String> {
-    let float = saved_float(&app)?;
+pub(crate) fn panel_setup(
+    app: AppHandle,
+    state: State<'_, BackendState>,
+    on: bool,
+) -> Result<(), String> {
+    let float = saved_float(&state)?;
     apply_float(&app, on, float).map_err(|error| error.to_string())
 }
 

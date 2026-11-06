@@ -1,9 +1,7 @@
 import Foundation
 
-/// One element of another app's accessibility tree, snapshotted for display.
-///
-/// This is what the viewer shows and what Keyboard itself reads to find the
-/// field it mirrors — the same tree Switch Control and VoiceOver walk.
+/// One element of another app's accessibility tree, snapshotted for the
+/// viewer. Switch Control and VoiceOver walk the same tree.
 public struct AXNode: Equatable, Sendable, Identifiable {
     public let id: Int
     /// `AXWindow`, `AXTextArea`, `AXButton`…

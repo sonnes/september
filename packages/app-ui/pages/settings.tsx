@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@september/ui/components/button";
 import { AccessForm } from "@september/app-ui/blocks/access-form";
 import { INPUT_METHODS, type InputMethod, parseAccess } from "@september/core/rules/access";
-import { SettingsTitle, useSetupDraft } from "@september/app-ui/blocks/setup-fields";
+import { SaveFailed, SettingsTitle, useSetupAnswers } from "@september/app-ui/blocks/setup-fields";
 
 /**
  * The access profile: how the person chooses things, the size of the text,
@@ -11,7 +11,7 @@ import { SettingsTitle, useSetupDraft } from "@september/app-ui/blocks/setup-fie
  * how every key responds, so an arrow key that passes it must not start it.
  */
 export function AccessSettings() {
-  const [setup, change] = useSetupDraft();
+  const { setup, change, failed, retry } = useSetupAnswers();
   const saved = parseAccess(setup.access);
   const [pending, setPending] = useState<InputMethod | null>(null);
   const input = pending ?? saved.input;
@@ -23,6 +23,7 @@ export function AccessSettings() {
         title="Access"
         description="How you choose things, and how September looks for you."
       />
+      {failed ? <SaveFailed retry={retry} /> : null}
       <AccessForm
         value={{ ...saved, input }}
         onChange={(next) => {

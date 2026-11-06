@@ -208,7 +208,7 @@ if (
   });
 
   const titledLogoSvg = logoSvg.replace(/(<svg[^>]*>)/, '$1<title>September</title>');
-  const logoSvgPath = `${publicDir}/logo.svg`;
+  const logoSvgPath = fileURLToPath(new URL('../../../packages/app-ui/public/logo.svg', import.meta.url));
   await writeFile(logoSvgPath, titledLogoSvg);
 
   const targets = [

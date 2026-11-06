@@ -26,7 +26,7 @@ needs no account and no network. A broken key can never stop speech.
 | Value                                   | Home                                                  |
 | --------------------------------------- | ----------------------------------------------------- |
 | An API key                              | The macOS Keychain, then process memory after startup |
-| The chosen services and the voice id    | SQLite settings, key `services`                       |
+| The chosen services and the voice id    | SQLite settings, keys `setup` and `speech`            |
 | A key status, an account label, a quota | Memory, for the length of one screen                  |
 | Apple Intelligence availability         | Memory, for the life of the process                   |
 

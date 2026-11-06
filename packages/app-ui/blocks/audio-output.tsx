@@ -30,6 +30,8 @@ export function AudioOutput() {
   const selected = devices.find((device) => device.uid === chosen.data);
   const microphoneOn = microphone.data?.active ?? false;
   const microphoneAvailable = Boolean(supported && microphone.data);
+  // The browser has no microphone status, and still names the Mac feature.
+  const microphoneName = microphone.data?.name ?? "September Microphone";
 
   return (
     <DropdownMenu
@@ -52,7 +54,7 @@ export function AudioOutput() {
           type="button"
           size="icon"
           variant="outline"
-          aria-label={`Sound output: ${selected?.name ?? "not chosen"}. September Microphone ${microphoneOn ? "on" : "off"}`}
+          aria-label={`Sound output: ${selected?.name ?? "not chosen"}. ${microphoneName} ${microphoneOn ? "on" : "off"}`}
           title={selected?.name ?? "Sound output"}
           className="relative size-11"
         >
@@ -98,7 +100,7 @@ export function AudioOutput() {
         >
           <Mic aria-hidden />
           <span className="flex flex-col">
-            <span>September Microphone</span>
+            <span>{microphoneName}</span>
             <span className="text-muted-foreground text-xs font-normal">
               {microphoneAvailable
                 ? (microphone.data?.detail ??

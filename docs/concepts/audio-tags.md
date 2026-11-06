@@ -21,7 +21,7 @@ ElevenLabs voice with `eleven_v3`. It is false for all other voices.
 | --- | --- | --- |
 | Speak, the speak key of a row, replay, Read aloud, Present | Kept | Removed |
 | Fallback to the system voice | Removed | Removed |
-| Note audio and video export (`fileSound`) | Kept. Dialogue uses `eleven_v3`, the stability of the stream, and the normal speed. | Removed |
+| Note audio and video export (`soundFile`) | Kept. `cloudSound` gives Dialogue `eleven_v3`, the stability mode of the stream, and the normal speed. | Removed |
 | Tag rules in the suggestion and phrase prompts | Present | Absent |
 | Tag tiles in the word row | Shown | Not shown |
 | Captions | `alignmentToWords` skips tags. | Same |
@@ -62,8 +62,8 @@ of strings.
   a row without that tag.
 
 The word engine in `packages/core/autocomplete` reads a tag as a `tag` token.
-It learns tags from sent messages. `suggestionsFor` puts up to two learned tags
-after the words. `wordRow` then adds the example tags of the mood, skips a tag
+It learns tags from sent messages. `suggestionsFor` puts the learned tags after
+the words. `wordRow` then adds the example tags of the mood, skips a tag
 that the draft holds, and shows at most two tag tiles. A tag tile adds its tag
 after a part-written word and keeps the word. A draft that ends in a tag is at
 a word boundary.

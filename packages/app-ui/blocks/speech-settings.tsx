@@ -7,17 +7,17 @@ import { Label } from "@september/ui/components/label";
 import { Slider } from "@september/ui/components/slider";
 
 import { PickList } from "@september/app-ui/blocks/pick-list";
+import { SaveFailed } from "@september/app-ui/blocks/setup-fields";
 import { useConnections } from "@september/app-ui/services/connections";
 import { useAutosave } from "@september/app-ui/services/autosave";
 import {
-  DEFAULT_SPEECH,
   speak,
   updateSpeech,
   useSpeechSettings,
 } from "@september/app-ui/services/speech";
-import type { SpeechSettings as Speech } from "@september/core/rules/voice";
 import {
-  DIALOGUE_MODEL,
+  cloudSound,
+  DEFAULT_SPEECH,
   DIALOGUE_MODELS,
   dialogueModelFrom,
   EXPRESSIONS,
@@ -29,6 +29,7 @@ import {
   SPEED_RANGE,
   VOICE_MODELS,
   VOICE_SAMPLE_TEXT,
+  type SpeechSettings as Speech,
 } from "@september/core/rules/voice";
 
 /**
@@ -63,8 +64,7 @@ export function SpeechSettings() {
   const dialogue = settings.provider === "dialogue";
   const cloud = settings.provider === "elevenlabs" && connected;
   const expressive = cloud || (dialogue && connected);
-  // The Dialogue voice ignores the saved model and always uses Eleven v3.
-  const soundModel = dialogue ? DIALOGUE_MODEL : settings.modelId;
+  const soundModel = cloudSound(settings, "live").modelId;
   const preset =
     custom && !dialogue
       ? "custom"
@@ -72,14 +72,7 @@ export function SpeechSettings() {
 
   return (
     <div className="space-y-5 p-4">
-      {saved.state === "failed" ? (
-        <div role="alert" className="space-y-2 text-sm">
-          <p className="text-destructive">September did not keep the change.</p>
-          <Button type="button" variant="outline" onClick={saved.retry}>
-            Retry saving
-          </Button>
-        </div>
-      ) : null}
+      {saved.state === "failed" ? <SaveFailed retry={saved.retry} /> : null}
       <p className="text-muted-foreground text-xs">
         How your voice sounds in every space. A change is kept as you make it.
       </p>
@@ -176,7 +169,7 @@ export function SpeechSettings() {
           setCustom(false);
           change({
             modelId: DEFAULT_SPEECH.modelId,
-            ...expressionSound("natural", dialogue ? DIALOGUE_MODEL : undefined),
+            ...expressionSound("natural", dialogue ? soundModel : undefined),
             speed: DEFAULT_SPEECH.speed,
           });
         }}

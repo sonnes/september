@@ -1,15 +1,10 @@
 /**
- * The pure rules of a note. A test reads them here, without a renderer.
+ * The rules of a note.
  *
  * A note holds long text that the user writes over minutes or days, and hears
  * back in the chosen voice. Talk holds one sentence, said now.
- *
- * These rules are a port of `packages/notes/lib/title.ts` and
- * `markdownToVoiceText` in the web app. Change them in both apps, or in
- * neither.
  */
 
-// A node test loads this file directly, and node does not resolve `@/`.
 import { slugify } from "./spaces.ts";
 
 /** What the title field shows while a note has no name of its own. */
@@ -87,7 +82,7 @@ export function noteFromSlug<T extends { name?: string | null }>(
  * The words of a note, with the markup removed.
  *
  * A voice must say `Monday`, not `# Monday`. Nothing here changes the note
- * itself, so the markup stays on the screen and in IndexedDB.
+ * itself, so the markup stays on the screen and in the store.
  */
 export function markdownToVoiceText(content: string): string {
   return content

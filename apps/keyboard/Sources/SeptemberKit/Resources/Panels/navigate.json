@@ -1,6 +1,5 @@
 {
   "title": "NAVIGATE",
-  "columns": 2,
   "buttons": [
     { "id": "find", "label": "Find", "symbol": "magnifyingglass",
       "action": { "type": "shortcut", "modifiers": ["command"], "key": "f" } },

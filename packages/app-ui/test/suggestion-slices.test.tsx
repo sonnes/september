@@ -9,30 +9,18 @@ import { DEFAULT_ACCESS } from '@september/core/rules/access';
 import type { MoodKey } from '@september/core/rules/moods';
 import type { PhraseKind } from '@september/core/rules/records';
 
+import { bodyOf, jsonReply } from './model';
 import { rows } from './platform';
 import { finishSetup, press, renderPart, typeInto } from './render';
 
-/** One streamed OpenAI-compatible reply with `suggestions` as its JSON. */
-function reply(suggestions: string[]): Response {
-  const chunk = (delta: object, finish: string | null) =>
-    JSON.stringify({ id: '1', model: 'test', choices: [{ index: 0, delta, finish_reason: finish }] });
-  const content = JSON.stringify({ suggestions });
-  const events = [chunk({ role: 'assistant', content }, null), chunk({}, 'stop'), '[DONE]'];
-  return new Response(events.map(event => `data: ${event}\n\n`).join(''), {
-    headers: { 'content-type': 'text/event-stream' },
-  });
-}
-
 /** The writing service, answering each request with the rows `answer` holds then. */
 function model(answer: { rows: string[] }) {
-  const request = vi.fn(async (_url: string, _init: RequestInit) => reply(answer.rows));
+  const request = vi.fn(async (_url: string, _init: RequestInit) => jsonReply({ suggestions: answer.rows }));
   vi.stubGlobal('fetch', request);
-  const systemPrompt = (call = 0) => {
-    const body = JSON.parse(String(request.mock.calls[call]![1].body)) as {
-      messages: { role: string; content: unknown }[];
-    };
-    return JSON.stringify(body.messages.find(one => one.role === 'system' || one.role === 'developer')?.content);
-  };
+  const systemPrompt = (call = 0) =>
+    JSON.stringify(
+      bodyOf(request, call).messages.find(one => one.role === 'system' || one.role === 'developer')?.content,
+    );
   return { request, systemPrompt };
 }
 

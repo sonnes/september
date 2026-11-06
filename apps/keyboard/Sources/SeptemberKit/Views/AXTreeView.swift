@@ -9,9 +9,8 @@ public final class AXTreeModel: ObservableObject {
     public init() {}
 }
 
-/// The accessibility tree of the app in front, the same one Keyboard reads to
-/// find the field it types into. It sits at the right edge of the screen, the
-/// height of the keyboard.
+/// The accessibility tree of the app in front. It sits at the right edge of
+/// the screen, the height of the keyboard.
 public struct AXTreeView: View {
     @ObservedObject private var model: AXTreeModel
     @EnvironmentObject private var permission: AccessibilityPermission

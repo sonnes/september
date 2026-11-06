@@ -9,7 +9,6 @@ func panelTests() {
     let editJSON = """
         {
           "title": "EDIT",
-          "columns": 2,
           "buttons": [
             {"id": "cut", "label": "Cut", "symbol": "scissors",
              "action": {"type": "shortcut", "modifiers": ["command"], "key": "x"}},
@@ -25,7 +24,6 @@ func panelTests() {
     test("a panel decodes with its buttons and actions") {
         let panel = try decode(editJSON)
         expectEqual(panel.title, "EDIT")
-        expectEqual(panel.columns, 2)
         expectEqual(panel.buttons.count, 4)
         expectEqual(
             panel.buttons[0].action,
@@ -44,7 +42,7 @@ func panelTests() {
 
     test("an unknown action type is rejected rather than silently dropped") {
         let bad = """
-            {"title": "X", "columns": 1,
+            {"title": "X",
              "buttons": [{"id": "b", "label": "B", "action": {"type": "explode"}}]}
             """
         expect((try? decode(bad)) == nil, "unknown action decoded anyway")
@@ -52,7 +50,7 @@ func panelTests() {
 
     test("two buttons with one id are rejected") {
         let bad = """
-            {"title": "X", "columns": 1, "buttons": [
+            {"title": "X", "buttons": [
               {"id": "b", "label": "B", "action": {"type": "text", "text": "b"}},
               {"id": "b", "label": "C", "action": {"type": "text", "text": "c"}}]}
             """

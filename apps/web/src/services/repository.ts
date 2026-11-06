@@ -825,7 +825,6 @@ function migratedAnalytics(row: Record<string, unknown>): UsageEvent {
 }
 
 function setupFromAccount(account: Record<string, unknown>): Record<string, unknown> {
-  const speech = (account.ai_speech ?? {}) as Record<string, unknown>;
   return {
     id: String(account.id ?? LOCAL_USER),
     name: String(account.name ?? ''),
@@ -834,7 +833,6 @@ function setupFromAccount(account: Record<string, unknown>): Record<string, unkn
     mode: account.setup_mode === 'advanced' ? 'advanced' : 'free',
     defaultModel: { service: 'none', model: '' },
     suggestionsModel: null,
-    voiceService: speech.provider === 'elevenlabs' ? 'elevenlabs' : 'system',
   };
 }
 

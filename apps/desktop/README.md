@@ -380,7 +380,6 @@ The store of `src/platform.ts` reads and writes a note through `note_list`, `not
 `useUpdateNote` reads the row first and changes only the fields it carries.
 Deleting a space deletes its notes, in the same transaction as its messages.
 
-The desktop note is a plain text field, not the rich editor of the web app.
 Both apps keep markdown in the same `content` column, so the rows stay the
 same.
 
@@ -474,9 +473,8 @@ rail a card of its own.
 A person with ALS types slowly. Each word that the app offers is a word that
 the user does not type. This is the first measure of the app.
 
-`packages/core/autocomplete/` holds the engine. It is a copy of the engine in the web
-app, so a correction in one app can move to the other one. It reads no file
-and calls no service.
+`packages/core/autocomplete/` holds the engine, and both apps import it. It
+reads no file and calls no service.
 
 The engine blends three models of the words that come next:
 
@@ -778,9 +776,9 @@ A failed record goes to the console.
 
 ## Walk through setup
 
-Each step is a route: `/welcome`, `/profile`, `/connect`, and
+Each step is a route: `/welcome`, `/choose`, `/profile`, `/connect`, and
 `/finish`.
-Everyone follows the same four steps. Connecting cloud services is optional.
+Everyone follows the same five steps. Connecting cloud services is optional.
 `STEPS` in `packages/core/rules/onboarding.ts` owns the sequence, and the sidebar, the
 guards, and both navigation directions all read it. The router uses hash history,
 because Tauri serves the built files from the asset protocol. A step opens only
@@ -792,7 +790,7 @@ Each step opens as an inset white card beside it. All sections on a step stay
 open. There are no collapsible groups.
 
 The setup sidebar shows the brand mark. `packages/app-ui/blocks/brand.tsx` reads it from
-`public/logo.svg`, the file the brand publishes.
+`packages/app-ui/public/logo.svg`, the file the brand publishes.
 
 The name field starts with the name from the operating system. The user can
 change it. In a browser the field starts empty, because the Tauri backend does
@@ -954,9 +952,8 @@ border. A caller with no room for two columns sends `columns={1}`, as the
 A search field appears above the rows when the list holds more than eight.
 Each word of the query must be in the name, through `matchesWords` in
 `packages/core/rules/pick.ts`. A caller with another rule sends `filter`. A caller with a control for each row sends `after`,
-and the voice list sends the play button. The voice list sends
-`layout="list"`: a card for each row with a radio mark, the name, a detail
-line, and the play button inside the card. The cards of each group fill two
+and the voice list sends the play button. Each row shows a radio mark, the
+name, and a detail line when the row has one. The rows of each group fill the
 columns under the group heading.
 
 Every change is kept at once, as the Voice card of the rail does. There is no
@@ -1039,9 +1036,10 @@ pnpm test
 pnpm build
 ```
 
-The Vitest tests cover the eye-tracker calibration and the Panel section of
-Settings. The shared routes, screens, and rules have their tests in
-`apps/web`, `packages/ui`, and `packages/core`. Rust
+The Vitest tests cover the eye-tracker calibration, the Panel section of
+Settings, and the command contract. The shared routes, screens, and rules have
+their tests in `apps/web`, `packages/app-ui`, `packages/ui`, and
+`packages/core`. Rust
 tests cover native services, persistence, providers, and process boundaries.
 
 Run the Rust checks from `src-tauri/`:
@@ -1085,7 +1083,8 @@ uses PKCE and a temporary loopback callback on a free port. It exchanges and
 checks the key before saving it to Keychain; the WebView receives only status.
 Cancel closes the attempt, and an unanswered attempt expires after five minutes.
 
-Help screenshots live in `public/help/` and ship in both apps. Browser captures
+Help screenshots live in `packages/app-ui/public/help/`, and both apps serve
+them through `appConfig` in `vite.shared.ts`. Browser captures
 use the 1376 × 1032 iPad landscape viewport at 2× pixel density. Captions
 identify the browser UI. The shared guides place close-ups beside steps and
 open screenshots in a keyboard-accessible dialog. The catalog records capture

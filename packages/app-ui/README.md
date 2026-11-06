@@ -50,7 +50,7 @@ platform:
 | `speech.ts`      | The speech settings, `speak`, `stopSpeaking`, and the fallback to the system voice. |
 | `sound.ts`       | The sound outputs and the virtual microphone.                                       |
 | `data.ts`        | The query hooks of the spaces, messages, notes, phrases, and Agent rows, and `spacesQuery`. |
-| `connections.ts` | The state of every service, the voices of the account, and forgetting a key.        |
+| `connections.ts` | The state of every service, the voices of the account, a new clone in that list, and forgetting a key. |
 | `ai.ts`          | `generate` and the Agent writer, through `@earendil-works/pi-ai`.                   |
 | `agent.ts`       | `askAgent` and `resolveAgentProposal`.                                              |
 | `suggest.ts`     | The local word completion, and the suggestions of AI Assistance.                    |
@@ -66,7 +66,12 @@ Each app awaits `loadSettings` once before the first render. It reads every
 held setting and the identity of the device. After that, a screen reads a
 setting at once. A change goes to the store first. The held value changes only
 after the write succeeds. `setting(key, from)` gives one held setting, and
-`useSetting` gives its value to a screen.
+`useSetting` gives its value to a screen. `keep` writes a setting for a screen
+that does not wait, and logs a failed write.
+
+Setup keeps the voice in the speech settings, not in the setup. A setup saved
+before setup wrote the speech settings names its voice service, and
+`loadSettings` moves that voice to the speech settings.
 
 If the store holds no setup, the owner of the rows is the login name of the
 system. If the system knows no login name, the owner is `local-user`. Setup
@@ -74,8 +79,9 @@ keeps the owner in the saved setup.
 
 ## Saving as the Person Types
 
-The Talk draft, a note, the About text of a space, and the speech settings
-save on each edit. There is no Save button. `useAutosave` does the save for
+The Talk draft, a note, the About text of a space, the sound of the voice in
+the rail, and the Access and AI Assistance sections of Settings save on each
+edit. There is no Save button. `useAutosave` does the save for
 all of them:
 
 - The screen shows each edit at once, and the saves run one at a time, in order.

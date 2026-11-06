@@ -109,9 +109,7 @@ function Panel({ onHide }: { onHide: () => void }) {
 
   const openTab = (tab: "phrases" | "voice") => {
     if (tier !== "wide") return setSheet(tab);
-    panelRail.set({ open: true, tab }).catch((error: unknown) => {
-      console.error("September did not keep the state of the rail.", error);
-    });
+    panelRail.keep({ open: true, tab });
   };
 
   useEscape(

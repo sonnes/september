@@ -1,38 +1,23 @@
 import { act, useState } from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useSyncPhrases } from '@september/app-ui/services/phrase-sync';
 import { updateSetup } from '@september/app-ui/services/settings';
 
+import { bodyOf, jsonReply, signalOf } from './model';
 import { rows } from './platform';
 import { addSpace, finishSetup, renderPart } from './render';
 
 const ANSWER = { phrases: ['Please bring some water.'], starters: ['I would like to'] };
 
-/** One streamed OpenAI-compatible reply with `answer` as its JSON. */
-function reply(answer: object): Response {
-  const chunk = (delta: object, finish: string | null) =>
-    JSON.stringify({ id: '1', model: 'test', choices: [{ index: 0, delta, finish_reason: finish }] });
-  const events = [chunk({ role: 'assistant', content: JSON.stringify(answer) }, null), chunk({}, 'stop'), '[DONE]'];
-  return new Response(events.map(event => `data: ${event}\n\n`).join(''), {
-    headers: { 'content-type': 'text/event-stream' },
-  });
-}
-
 /** The writing service. Each request takes the next held answer, or answers at once. */
 const queued: (() => Promise<Response>)[] = [];
-const request = vi.fn((_url: string, _init: RequestInit) => (queued.shift() ?? (async () => reply(ANSWER)))());
-const signalOf = (call: number) => request.mock.calls[call]![1].signal as AbortSignal;
-const bodyOf = (call: number) =>
-  JSON.parse(String(request.mock.calls[call]![1].body)) as {
-    messages: { content: unknown }[];
-    response_format?: unknown;
-  };
+const request = vi.fn((_url: string, _init: RequestInit) => (queued.shift() ?? (async () => jsonReply(ANSWER)))());
 
 /** An answer that waits for the test. */
 function held() {
   let answer!: () => void;
-  queued.push(() => new Promise<Response>(done => (answer = () => done(reply(ANSWER)))));
+  queued.push(() => new Promise<Response>(done => (answer = () => done(jsonReply(ANSWER)))));
   return () => act(async () => answer());
 }
 
@@ -75,10 +60,15 @@ function Space({ first }: { first: Shown }) {
   return null;
 }
 
-/** Lets a request that would start reach the service. */
-const settle = () => act(() => new Promise(done => setTimeout(done, 50)));
+/** Lets a request that would start reach the service. The client loads at once, since `beforeAll` loaded it. */
+const settle = () => act(() => vi.dynamicImportSettled());
 
 const render = (first: Partial<Shown> = {}) => renderPart(<Space first={{ id: 'space', count: 1, ...first }} />);
+
+beforeAll(async () => {
+  await import('@earendil-works/pi-ai');
+  await import('@earendil-works/pi-ai/providers/openrouter');
+});
 
 beforeEach(async () => {
   queued.length = 0;
@@ -134,7 +124,7 @@ describe('automatic phrases', () => {
     });
     await answer();
 
-    expect(signalOf(0).aborted).toBe(true);
+    expect(signalOf(request).aborted).toBe(true);
     expect(written('space')).toEqual([]);
     expect(rows.spaces.get('space')?.phrases_synced_count).toBeUndefined();
 
@@ -165,7 +155,7 @@ describe('automatic phrases', () => {
     await render();
     await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(1));
 
-    const body = bodyOf(0);
+    const body = bodyOf<{ messages: { content: unknown }[]; response_format?: unknown }>(request);
     expect(body.response_format).toEqual({ type: 'json_object' });
     expect(JSON.stringify(body.messages)).toMatch(/json/i);
   });
@@ -189,7 +179,7 @@ describe('automatic phrases', () => {
     });
     await settle();
     expect(request).toHaveBeenCalledTimes(1);
-    expect(signalOf(0).aborted).toBe(false);
+    expect(signalOf(request).aborted).toBe(false);
     await answer();
 
     await vi.waitFor(() => expect(written('space')).toEqual(['Please bring some water.', 'I would like to']));

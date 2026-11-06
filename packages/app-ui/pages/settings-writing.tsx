@@ -2,15 +2,15 @@ import { useState } from "react";
 import { Label } from "@september/ui/components/label";
 import { RadioGroup } from "@september/ui/components/radio-group";
 import { Switch } from "@september/ui/components/switch";
-import { DEFAULT_DRAFT, type OnboardingDraft, WRITING_SERVICES } from "@september/core/rules/onboarding";
+import { DEFAULT_ANSWERS, type SetupAnswers, WRITING_SERVICES } from "@september/core/rules/onboarding";
 import { useConnections } from "@september/app-ui/services/connections";
 import { updateSetup, useSetup } from "@september/app-ui/services/settings";
 import { AGENT_MODELS, type CuratedModel, modelChoices, SUGGESTIONS_MODELS, withProvider } from "@september/core/rules/model-config";
 import { PickList } from "@september/app-ui/blocks/pick-list";
 import { appleState, ManageLink, ServiceChoice } from "@september/app-ui/blocks/services";
-import { Section, SettingsTitle, SpeakingStyle, useSetupDraft } from "@september/app-ui/blocks/setup-fields";
+import { SaveFailed, Section, SettingsTitle, SpeakingStyle, useSetupAnswers } from "@september/app-ui/blocks/setup-fields";
 
-type WritingServiceId = OnboardingDraft["defaultModel"]["service"];
+type WritingServiceId = SetupAnswers["defaultModel"]["service"];
 type SwitchField = "autoSuggestions" | "autoPhrases" | "agentEnabled";
 
 /**
@@ -29,7 +29,7 @@ function SetupSwitch({
   label: string;
   description: string;
 }) {
-  const setup = useSetup() ?? DEFAULT_DRAFT;
+  const setup = useSetup() ?? DEFAULT_ANSWERS;
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const id = `setting-${field}`;
@@ -118,7 +118,7 @@ function AppleModel() {
  * both, so a feature can never point at a provider the user left.
  */
 export function WritingSettings() {
-  const [setup, change] = useSetupDraft();
+  const { setup, change, failed, retry } = useSetupAnswers();
   const { connections } = useConnections();
   const provider = setup.defaultModel.service;
 
@@ -142,6 +142,7 @@ export function WritingSettings() {
         title="AI Assistance"
         description="September finishes your sentences while you type."
       />
+      {failed ? <SaveFailed retry={retry} /> : null}
 
       <Section
         title="Provider"

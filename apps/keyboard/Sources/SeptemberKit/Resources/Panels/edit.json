@@ -1,6 +1,5 @@
 {
   "title": "EDIT",
-  "columns": 2,
   "buttons": [
     { "id": "cut", "label": "Cut", "symbol": "scissors",
       "action": { "type": "shortcut", "modifiers": ["command"], "key": "x" } },

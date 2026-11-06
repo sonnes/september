@@ -10,10 +10,12 @@ import { useSyncExternalStore } from "react";
 
 import { platform } from "@platform/adapter";
 import {
-  DEFAULT_DRAFT,
+  DEFAULT_ANSWERS,
   savedSetupFrom,
+  speechFromOlderSetup,
   type OnboardingDraft,
   type SavedSetup,
+  type SetupAnswers,
 } from "@september/core/rules/onboarding";
 import { panelStateFrom, type PanelState } from "@september/core/rules/panel";
 import { presentSettings, type PresentSettings } from "@september/core/rules/present/settings";
@@ -24,7 +26,10 @@ import type { SpeechSettings } from "@september/core/rules/voice";
 
 export interface Setting<T> {
   get(): T;
+  /** Writes the value. The held value changes only after the write succeeds. */
   set(value: T): Promise<void>;
+  /** Writes the value for a caller that does not wait, and logs a failed write. */
+  keep(value: T): void;
   subscribe(listener: () => void): () => void;
   load(): Promise<void>;
 }
@@ -33,12 +38,18 @@ export interface Setting<T> {
 export function setting<T>(key: string, from: (saved: unknown) => T): Setting<T> {
   let value = from(null);
   const listeners = new Set<() => void>();
+  const set = async (next: T) => {
+    await platform.store.putSetting(key, next);
+    value = next;
+    for (const listener of listeners) listener();
+  };
   return {
     get: () => value,
-    async set(next) {
-      await platform.store.putSetting(key, next);
-      value = next;
-      for (const listener of listeners) listener();
+    set,
+    keep(next) {
+      set(next).catch((reason: unknown) =>
+        console.error(`September did not keep the setting ${key}.`, reason),
+      );
     },
     subscribe(listener) {
       listeners.add(listener);
@@ -96,6 +107,14 @@ export async function loadSettings(): Promise<void> {
   ]);
   identity = { name: found.name, userId: found.userId ?? LOCAL_USER };
   await keySpaceModesById();
+  await keepOlderSetupVoice();
+}
+
+/** Moves the voice of a setup saved before setup wrote the speech settings. */
+async function keepOlderSetupVoice(): Promise<void> {
+  if (savedSpeech.get()) return;
+  const speech = speechFromOlderSetup(await platform.store.getSetting(SETTINGS.setup));
+  if (speech) await savedSpeech.set(speech);
 }
 
 /** Moves a setting that keys the modes by slug, from an older app or backup, to space ids. */
@@ -125,10 +144,10 @@ export function currentUserId(): string {
 let setupWrite: Promise<unknown> = Promise.resolve();
 
 /** Changes some setup answers. Writes run one after the other. */
-export function updateSetup(patch: Partial<OnboardingDraft>): Promise<SavedSetup> {
+export function updateSetup(patch: Partial<SetupAnswers>): Promise<SavedSetup> {
   const write = setupWrite.then(async () => {
     const saved: SavedSetup = {
-      ...(setup.get() ?? { ...DEFAULT_DRAFT, id: currentUserId() }),
+      ...(setup.get() ?? { ...DEFAULT_ANSWERS, id: currentUserId() }),
       ...patch,
     };
     await setup.set(saved);
@@ -141,7 +160,7 @@ export function updateSetup(patch: Partial<OnboardingDraft>): Promise<SavedSetup
   return write;
 }
 
-/** Keeps the finished setup. */
-export async function saveSetup(draft: OnboardingDraft): Promise<void> {
-  await setup.set({ ...draft, id: currentUserId() });
+/** Keeps the finished setup. The voice of the draft is in the speech settings. */
+export async function saveSetup({ voiceService: _voiceService, ...answers }: OnboardingDraft): Promise<void> {
+  await setup.set({ ...answers, id: currentUserId() });
 }

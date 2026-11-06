@@ -1,16 +1,11 @@
 import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { PanelShell } from '@september/app-ui/layouts/panel';
 import { stopSpeaking } from '@september/app-ui/services/speech';
 import { talkMoodKey } from '@september/core/rules/settings';
 
 import { platform, rows } from './platform';
-import { addSpace, findButton, finishSetup, press, renderApp, typeInto } from './render';
-
-function Panel() {
-  return <PanelShell onHide={() => {}} />;
-}
+import { addSpace, findButton, finishSetup, PanelWindow, press, renderApp, typeInto } from './render';
 
 beforeEach(async () => {
   await finishSetup();
@@ -33,7 +28,7 @@ const field = () =>
 
 /** Talk of Family in the browser shell, or in the panel. */
 async function renderTalk({ panel = false } = {}) {
-  const rendered = await renderApp('/spaces/family/talk', panel ? { shell: Panel } : {});
+  const rendered = await renderApp('/spaces/family/talk', panel ? { shell: PanelWindow } : {});
   await field();
   return rendered;
 }

@@ -2,10 +2,10 @@ import { parseAccess } from "./access.ts";
 import { AGENT_TOOLS, isAgentWriteTool, parseAgentCall } from "./agent/tools.ts";
 import { CLOSED_PANEL, PANEL_TABS, panelStateFrom, type PanelState } from "./panel.ts";
 import { presentSettings, type PresentSettings } from "./present/settings.ts";
-import { DEFAULT_TONE, PRESENT_TONES } from "./present/stage.ts";
+import { PRESENT_TONES } from "./present/stage.ts";
 import {
   SETUP_MODES,
-  VOICE_SERVICES,
+  speechFromOlderSetup,
   WRITING_SERVICES,
   type SavedSetup,
 } from "./onboarding.ts";
@@ -13,6 +13,7 @@ import {
   AGENT_ROLES,
   AGENT_TOOL_STATES,
   PHRASE_KINDS,
+  PHRASE_TEXT_LIMIT,
   SPACE_MODES,
   type AgentMessage,
   type Message,
@@ -24,7 +25,7 @@ import {
 import { PORTABLE_SETTINGS } from "./settings.ts";
 import { spaceSlug } from "./spaces.ts";
 import { USAGE_EVENT_TYPES, type UsageEvent } from "./usage-summary.ts";
-import { SPEECH_SERVICES, type SpeechSettings } from "./voice.ts";
+import { SPEECH_SERVICES, SPEED_RANGE, type SpeechSettings } from "./voice.ts";
 
 export const BACKUP_FORMAT = "september-backup" as const;
 export const BACKUP_FORMAT_VERSION = 2 as const;
@@ -158,9 +159,16 @@ function arrayOf(value: unknown, label: string): unknown[] {
 function stringOf(
   value: unknown,
   label: string,
-  { empty = true, maxBytes }: { empty?: boolean; maxBytes?: number } = {},
+  {
+    empty = true,
+    maxBytes,
+    maxLength,
+  }: { empty?: boolean; maxBytes?: number; maxLength?: number } = {},
 ): string {
   if (typeof value !== "string") invalid(`${label} must be text.`);
+  if (maxLength !== undefined && value.length > maxLength) {
+    invalid(`${label} must contain no more than ${maxLength} characters.`);
+  }
   const bytes = textEncoder.encode(value).byteLength;
   if (!empty && bytes === 0) invalid(`${label} must not be empty.`);
   if (maxBytes !== undefined && bytes > maxBytes) {
@@ -320,7 +328,6 @@ function setupFrom(value: unknown): SavedSetup | null {
       row.suggestionsModel === undefined || row.suggestionsModel === null
         ? null
         : modelConfigFrom(row.suggestionsModel, "setup Suggestions model"),
-    voiceService: oneOf(row.voiceService, VOICE_SERVICES, "setup voice service"),
     access: parseAccess(row.access),
   };
 }
@@ -346,7 +353,7 @@ function speechFrom(value: unknown): SpeechSettings | null {
       : { dialogueModelId: identifier(row.dialogueModelId, "speech dialogue model ID") }),
     stability: boundedNumber(row.stability, 0, 1, "speech stability"),
     similarity: boundedNumber(row.similarity, 0, 1, "speech similarity"),
-    speed: boundedNumber(row.speed, 0.7, 1.2, "speech speed"),
+    speed: boundedNumber(row.speed, SPEED_RANGE.min, SPEED_RANGE.max, "speech speed"),
   };
 }
 
@@ -391,7 +398,7 @@ function settingsFrom(value: unknown, skips: Skips): BackupSettings {
 
   return {
     setup: kept(() => setupFrom(row.setup), skips) ?? null,
-    speech: kept(() => speechFrom(row.speech), skips) ?? null,
+    speech: kept(() => speechFrom(row.speech), skips) ?? speechFromOlderSetup(row.setup),
     dismissedIdeas: listFrom(
       row.dismissedIdeas,
       "settings.dismissedIdeas",
@@ -400,10 +407,7 @@ function settingsFrom(value: unknown, skips: Skips): BackupSettings {
     ),
     spaceModes: spaceModesFrom(row.spaceModes, skips),
     panel: kept(() => panelFrom(row.panel), skips) ?? CLOSED_PANEL,
-    present: kept(() => presentFrom(row.present), skips) ?? {
-      tone: DEFAULT_TONE,
-      spoken: false,
-    },
+    present: kept(() => presentFrom(row.present), skips) ?? presentSettings(undefined),
   };
 }
 
@@ -467,7 +471,7 @@ function phraseFrom(value: unknown): SavedPhrase {
     space_id: identifier(row.space_id, "saved phrase space ID"),
     text: stringOf(row.text, "saved phrase text", {
       empty: false,
-      maxBytes: 256,
+      maxLength: PHRASE_TEXT_LIMIT,
     }),
     kind: oneOf(row.kind, PHRASE_KINDS, "saved phrase kind"),
     ...(code === undefined ? {} : { code }),

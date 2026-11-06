@@ -1,6 +1,5 @@
 {
   "title": "VS CODE",
-  "columns": 2,
   "buttons": [
     { "id": "terminal", "label": "Terminal", "symbol": "terminal",
       "action": { "type": "shortcut", "modifiers": ["control"], "key": "`" } },

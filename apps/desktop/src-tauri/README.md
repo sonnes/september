@@ -262,7 +262,7 @@ values of each field.
 
 - An ID, a user ID, and a setting key contain 1 to 256 bytes.
 - A message type, an agent role, a phrase kind, and phrase text are not empty.
-- A timestamp and `phrases_synced_count` are not negative.
+- A timestamp is not negative.
 - A scoped row refers to a space that exists.
 
 Deleting a space also deletes its scoped Talk messages, Agent messages, and
@@ -406,9 +406,10 @@ fails is not stored, and the command rejects its promise.
 fail in August, so a stored key that now fails reports `connected: false` with
 the reason in `detail`.
 
-`provider_voices` returns an empty list when no ElevenLabs key is stored. Each
-voice carries `id`, `name`, and `preview_url`. The preview URL is public, so
-the UI can play a sample without a key.
+`provider_voices` returns an empty list when no ElevenLabs key is stored. It
+reads every page of the ElevenLabs voice list. Each voice carries `id`, `name`,
+`preview_url`, `category`, and `is_owner`. The preview URL is public, so the UI
+can play a sample without a key.
 
 `provider_clone_voice` accepts only a raw `multipart/form-data` body with its
 boundary in the `content-type` IPC header. The command rejects an empty body,
@@ -650,7 +651,8 @@ through `APFEL_TOKEN`, not through a command argument.
 
 The WebView cannot start shell commands or call the server directly. Rust
 checks the current process before each use and replaces it when the health
-request fails. It stops the child process when the backend exits.
+request fails. It stops the child process when the backend exits. When a new
+process does not answer, the error carries the last line it wrote to stderr.
 
 The bundle contains apfel v1.12.0 and its MIT license. The preparation script
 makes sure that the downloaded archive and extracted binary match pinned

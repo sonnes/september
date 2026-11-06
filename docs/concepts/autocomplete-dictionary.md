@@ -1,7 +1,7 @@
 ---
 title: The autocomplete dictionary
 description: The engine ships 5,000 words of spoken English beside the seed sentences, so that a part-written word always has candidates.
-package: desktop, web
+package: core, desktop, web
 ---
 
 # The autocomplete dictionary

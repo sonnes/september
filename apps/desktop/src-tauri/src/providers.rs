@@ -113,8 +113,8 @@ pub struct Voice {
     pub name: String,
     #[serde(default)]
     pub preview_url: Option<String>,
-    /// `cloned`, `professional`, `premade`, or `similar`. The Voice screen
-    /// groups the voices by it.
+    /// The ElevenLabs category. `packages/core/rules/voice.ts` groups the
+    /// voices by it.
     #[serde(default)]
     pub category: Option<String>,
     /// True for a voice the user made. A library voice they added is false.
@@ -563,18 +563,33 @@ impl Providers {
         decode(response).await
     }
 
+    /// Every voice of the account and every stock voice, each with its
+    /// category.
     pub async fn voices(&self, key: &str) -> Result<Vec<Voice>> {
-        // The list holds the voices of the account and the stock voices,
-        // each with its category, so the screens can tell them apart. The v2
-        // list counts a page with `page_size`, and gives 10 without it.
-        let response = self
-            .client
-            .get(format!("{}/v2/voices?page_size=100", self.eleven_labs))
-            .header("xi-api-key", key)
-            .send()
-            .await?;
-        let body: VoiceList = decode(response).await?;
-        Ok(body.voices)
+        // The v2 list gives 10 voices a page without `page_size`, and at most
+        // 100 with it. `next_page_token` names the next page.
+        let mut voices = Vec::new();
+        let mut page: Option<String> = None;
+        loop {
+            let mut url = reqwest::Url::parse(&format!("{}/v2/voices", self.eleven_labs))
+                .map_err(unexpected)?;
+            url.query_pairs_mut().append_pair("page_size", "100");
+            if let Some(token) = &page {
+                url.query_pairs_mut().append_pair("next_page_token", token);
+            }
+            let response = self
+                .client
+                .get(url)
+                .header("xi-api-key", key)
+                .send()
+                .await?;
+            let body: VoiceList = decode(response).await?;
+            voices.extend(body.voices);
+            match body.next_page_token {
+                Some(token) if body.has_more => page = Some(token),
+                _ => return Ok(voices),
+            }
+        }
     }
 }
 
@@ -669,6 +684,10 @@ pub struct ElevenLabsQuota {
 #[derive(Deserialize)]
 struct VoiceList {
     voices: Vec<Voice>,
+    #[serde(default)]
+    has_more: bool,
+    #[serde(default)]
+    next_page_token: Option<String>,
 }
 
 /// One object of the Dialogue stream. The timing fields are not read.

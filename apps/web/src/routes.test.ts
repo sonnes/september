@@ -1,7 +1,7 @@
 import { createMemoryHistory } from '@tanstack/react-router';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import { loadSettings, saveSetup } from '@september/app-ui/services/settings';
+import { saveSetup } from '@september/app-ui/services/settings';
 import { APP_NAV, SETTINGS_NAV } from '@september/app-ui/navigation';
 import { DEFAULT_DRAFT, STEPS } from '@september/core/rules/onboarding';
 
@@ -14,8 +14,6 @@ async function lands(at: string): Promise<string | null> {
   const found = router.state.matches.at(-1)?.routeId !== '__root__';
   return found ? router.state.location.pathname : null;
 }
-
-beforeEach(() => loadSettings());
 
 describe('the setup flow', () => {
   it('holds an unfinished setup at the step it asks for, and sends an app page to the start', async () => {

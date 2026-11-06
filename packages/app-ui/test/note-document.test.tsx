@@ -4,12 +4,18 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { NoteDocumentHandle } from '@september/app-ui/blocks/note-document';
 import { NoteEditor } from '@september/app-ui/blocks/note-editor';
 import { NoteReadingBar } from '@september/app-ui/blocks/note-reading-bar';
+import { present, savedSpeech } from '@september/app-ui/services/settings';
+import { DEFAULT_SPEECH } from '@september/core/rules/voice';
 import type { Note } from '@september/core/rules/records';
 
+import { bodyOf, jsonReply } from './model';
 import { platform, rows } from './platform';
 import { findButton, finishSetup, press, renderPart } from './render';
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  delete platform.device.renderVideo;
+});
 
 function putNote(content: string): Note {
   const note: Note = {
@@ -77,24 +83,6 @@ async function open(content: string) {
   await renderPart(<NoteEditor note={note} spaceId="space" onRenamed={() => {}} />);
 }
 
-/** One streamed OpenAI-compatible answer with the rows of a model. */
-function modelAnswer(rowsOfModel: string[]) {
-  const content = JSON.stringify({ suggestions: rowsOfModel });
-  const events = [
-    { id: '1', model: 'test', choices: [{ index: 0, delta: { role: 'assistant', content }, finish_reason: null }] },
-    {
-      id: '1',
-      model: 'test',
-      choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
-      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
-    },
-  ];
-  return new Response(
-    [...events.map(event => `data: ${JSON.stringify(event)}\n\n`), 'data: [DONE]\n\n'].join(''),
-    { status: 200, headers: { 'content-type': 'text/event-stream' } },
-  );
-}
-
 describe('the note document', () => {
   it('shows each line of the note', async () => {
     await open('# Holiday\nRest of the time');
@@ -158,7 +146,7 @@ describe('the note document', () => {
 
   it('asks the model with the full note, split at the caret', async () => {
     await finishSetup({ defaultModel: { service: 'openrouter', model: '' } });
-    const request = vi.fn(async () => modelAnswer(['Then we go home.']));
+    const request = vi.fn(async (_url: string, _init: RequestInit) => jsonReply({ suggestions: ['Then we go home.'] }));
     vi.stubGlobal('fetch', request);
     await open('First line\nIt is late.\nLast line');
 
@@ -166,8 +154,7 @@ describe('the note document', () => {
     await act(async () => typeAtEnd(1, ' '));
 
     await findButton('Add to the note: Then we go home.');
-    const [, init] = request.mock.calls[0] as unknown as [string, RequestInit];
-    expect(JSON.parse(String(init.body)).messages.at(-1).content).toContain(
+    expect(bodyOf(request).messages.at(-1)?.content).toContain(
       'Note:\nFirst line\nIt is late. Then <caret/>\nLast line',
     );
   });
@@ -290,6 +277,33 @@ describe('the reading bar', () => {
     await press(button('Read selection'));
 
     expect(vi.mocked(platform.voice.speakSystem).mock.lastCall?.[0]).toBe('Read this part');
+  });
+
+  it('exports with the tone picked in Present, while the Export dialog stays mounted', async () => {
+    await present.set({ tone: 'indigo', spoken: false });
+    await savedSpeech.set({ ...DEFAULT_SPEECH, provider: 'elevenlabs', voiceId: 'voice-1' });
+    platform.device.renderVideo = vi.fn();
+    await renderPart(<Reading note={putNote('# Day\nWords')} />);
+
+    const more = button('More note actions');
+    await act(async () => {
+      more.focus();
+      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    });
+    const exportItem = await vi.waitFor(() => {
+      const item = [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(one =>
+        one.textContent?.includes('Export'),
+      );
+      if (!item) throw new Error('No Export item');
+      return item;
+    });
+    await press(exportItem);
+    const cream = await findButton('Cream');
+    expect(cream.getAttribute('aria-pressed')).toBe('false');
+
+    await act(() => present.set({ tone: 'cream', spoken: false }));
+
+    expect(cream.getAttribute('aria-pressed')).toBe('true');
   });
 
   it('opens the writing tools from Suggestions', async () => {

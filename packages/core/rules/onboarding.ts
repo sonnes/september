@@ -6,6 +6,13 @@ import {
   type ModelSettings,
   type WritingModelConfig,
 } from "./model-config.ts";
+import {
+  DEFAULT_SPEECH,
+  speechServices,
+  type SpeechService,
+  type SpeechServiceChoice,
+  type SpeechSettings,
+} from "./voice.ts";
 
 export const SETUP_MODES = ["free", "advanced"] as const;
 
@@ -14,12 +21,11 @@ export type SetupMode = (typeof SETUP_MODES)[number];
 /** The service that suggests words while the user types. */
 export type WritingService = WritingModelConfig["service"];
 
-/** The service that speaks a message out loud. */
-export const VOICE_SERVICES = ["system", "elevenlabs"] as const;
+/** The voices that setup offers. The Dialogue voice is on the Voice screen. */
+export type SetupVoice = Exclude<SpeechService, "dialogue">;
 
-export type VoiceService = (typeof VOICE_SERVICES)[number];
-
-export interface OnboardingDraft extends ModelSettings {
+/** The setup answers that the app keeps. */
+export interface SetupAnswers extends ModelSettings {
   autoSuggestions: boolean;
   autoPhrases: boolean;
   agentEnabled: boolean;
@@ -27,13 +33,17 @@ export interface OnboardingDraft extends ModelSettings {
   speakingStyle: string;
   personalWords: string;
   mode: SetupMode | null;
-  voiceService: VoiceService;
   /** How the person chooses things, and how large the screen must be. */
   access: AccessProfile;
 }
 
+/** The answers of the setup steps. The voice goes to the speech settings, not to the setup. */
+export interface OnboardingDraft extends SetupAnswers {
+  voiceService: SetupVoice;
+}
+
 /** The finished setup, with the identifier of the owner beside its answers. */
-export type SavedSetup = OnboardingDraft & { id: string };
+export type SavedSetup = SetupAnswers & { id: string };
 
 export const SPEAKING_STYLES = [
   {
@@ -54,9 +64,8 @@ export const SPEAKING_STYLES = [
   },
 ] as const;
 
-// The system voice needs no account, and the writing service moves to
-// "apple" once the platform reports that it is ready.
-export const DEFAULT_DRAFT: OnboardingDraft = {
+// The writing service moves to "apple" once the platform reports that it is ready.
+export const DEFAULT_ANSWERS: SetupAnswers = {
   name: "",
   speakingStyle: SPEAKING_STYLES[0].value,
   personalWords: "",
@@ -66,9 +75,11 @@ export const DEFAULT_DRAFT: OnboardingDraft = {
   autoSuggestions: true,
   autoPhrases: true,
   agentEnabled: true,
-  voiceService: "system",
   access: DEFAULT_ACCESS,
 };
+
+/** The system voice needs no account. */
+export const DEFAULT_DRAFT: OnboardingDraft = { ...DEFAULT_ANSWERS, voiceService: "system" };
 
 /**
  * A saved setup in the current shape. A setup saved before a switch existed
@@ -77,9 +88,10 @@ export const DEFAULT_DRAFT: OnboardingDraft = {
  */
 export function savedSetupFrom(saved: SavedSetup | null): SavedSetup | null {
   if (!saved) return null;
+  const { voiceService: _voiceService, ...answers } = saved as SavedSetup & { voiceService?: unknown };
   return {
-    ...saved,
-    ...modelSettingsFrom(saved),
+    ...answers,
+    ...modelSettingsFrom(answers),
     autoSuggestions: saved.autoSuggestions ?? true,
     autoPhrases: saved.autoPhrases ?? true,
     agentEnabled: saved.agentEnabled ?? true,
@@ -109,20 +121,19 @@ export const WRITING_SERVICES = [
   description: string;
 }[];
 
-/** The voice services. `systemVoice` describes the voice of this platform. */
-export function voiceServices(systemVoice: string): readonly {
-  value: VoiceService;
-  label: string;
-  description: string;
-}[] {
-  return [
-    { value: "system", label: SERVICE_NAMES.system, description: systemVoice },
-    {
-      value: "elevenlabs",
-      label: SERVICE_NAMES.elevenlabs,
-      description: "Cloud service. Natural voices, and you can clone a voice.",
-    },
-  ];
+/** The voices that setup offers. `systemVoice` describes the voice of this platform. */
+export const setupVoices = (systemVoice: string) =>
+  speechServices(systemVoice).filter(
+    (choice): choice is SpeechServiceChoice & { value: SetupVoice } => choice.value !== "dialogue",
+  );
+
+/**
+ * The speech settings of a setup saved before setup wrote them, or null.
+ * That setup names its voice service.
+ */
+export function speechFromOlderSetup(setup: unknown): SpeechSettings | null {
+  const service = (setup as { voiceService?: unknown } | null)?.voiceService;
+  return service === "elevenlabs" ? { ...DEFAULT_SPEECH, provider: "elevenlabs" } : null;
 }
 
 export const STEPS = [

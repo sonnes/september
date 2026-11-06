@@ -22,12 +22,12 @@ import {
   usePhrases,
   usePutPhrase,
 } from "@september/app-ui/services/data";
-import { dismissedIdeas } from "@september/app-ui/services/settings";
+import { dismissedIdeas, useSetting } from "@september/app-ui/services/settings";
 import { useEscape } from "@september/app-ui/blocks/keymap";
 import { TaggedText } from "@september/app-ui/blocks/tagged-text";
 import { CODE_MAX_LENGTH, validateCode } from "@september/core/rules/phrases/codes";
 import { mineShortcuts, normalizeMinedText } from "@september/core/rules/phrases/mining";
-import type { SavedPhrase } from "@september/core/rules/records";
+import { PHRASE_TEXT_LIMIT, type SavedPhrase } from "@september/core/rules/records";
 
 /**
  * The phrases of one space, and the shortcut ideas that come from repeated
@@ -50,7 +50,7 @@ export function Phrases({
   const putPhrase = usePutPhrase();
   const deletePhrase = useDeletePhrase();
 
-  const [dismissed, setDismissed] = useState<string[]>(dismissedIdeas.get);
+  const dismissed = useSetting(dismissedIdeas);
   const [draft, setDraft] = useState("");
   const [draftCode, setDraftCode] = useState("");
   const phraseId = useId();
@@ -106,11 +106,7 @@ export function Phrases({
     setDraftCode("");
   };
 
-  const dismiss = (text: string) => {
-    const next = [...dismissed, normalizeMinedText(text)];
-    setDismissed(next);
-    void dismissedIdeas.set(next);
-  };
+  const dismiss = (text: string) => dismissedIdeas.keep([...dismissed, normalizeMinedText(text)]);
 
   const kept = rows.filter((row) => row.pinned);
   const written = rows.filter((row) => !row.pinned);
@@ -130,6 +126,7 @@ export function Phrases({
             <Input
               id={phraseId}
               value={draft}
+              maxLength={PHRASE_TEXT_LIMIT}
               className="min-w-0"
               onChange={(event) => setDraft(event.target.value)}
             />
@@ -165,6 +162,12 @@ export function Phrases({
           </p>
         ) : null}
       </form>
+
+      {putPhrase.isError || deletePhrase.isError ? (
+        <p role="alert" className="text-destructive text-xs">
+          September did not keep the change to the phrase. Try again.
+        </p>
+      ) : null}
 
       {rows.length === 0 ? (
         <p className="text-muted-foreground text-sm">

@@ -1,28 +1,21 @@
 import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, Mic, Play, Plus, Volume2 } from "lucide-react";
+import { ChevronLeft, Mic, Plus, Volume2 } from "lucide-react";
 import { Button } from "@september/ui/components/button";
-import { ChoiceKey, PickList } from "@september/app-ui/blocks/pick-list";
+import { ChoiceKey } from "@september/app-ui/blocks/pick-list";
 import { Skeleton } from "@september/ui/components/skeleton";
 import { navFor } from "@september/core/rules/navigation";
+import { platform } from "@platform/adapter";
 import type { Voice } from "@september/app-ui/platform";
-import { useConnections, useVoices } from "@september/app-ui/services/connections";
+import { useConnections, useKeepCreatedVoice, useVoices } from "@september/app-ui/services/connections";
 import { heardVoices as heardSetting } from "@september/app-ui/services/settings";
-import { heardVoices, shownVoices, VOICE_SAMPLE_TEXT, voiceRows } from "@september/core/rules/voice";
+import { heardVoices, speechServices, VOICE_SAMPLE_TEXT, type SpeechSettings } from "@september/core/rules/voice";
 import { play } from "@september/app-ui/services/player";
-import { type CreatedVoice, keepCreatedVoice, recentCreatedVoice, rememberCreatedVoice } from "@september/app-ui/services/cloning";
+import type { CreatedVoice } from "@september/app-ui/services/cloning";
 import { Screen } from "@september/app-ui/blocks/screen";
 import { speak, speechSettings, updateSpeech, useSpeechSettings } from "@september/app-ui/services/speech";
-import type { SpeechService, SpeechSettings } from "@september/core/rules/voice";
 import { useVoiceCloneDraft, VoiceCloneForm } from "@september/app-ui/blocks/voice-clone";
-
-/** A voice made a moment ago, before ElevenLabs lists it. */
-function optimisticCreatedVoice(): Voice | null {
-  const created = recentCreatedVoice();
-  return created
-    ? { ...created, preview_url: null, category: "cloned", is_owner: true }
-    : null;
-}
+import { VoicePicker } from "@september/app-ui/blocks/voice-picker";
 
 /**
  * The voice screen: which voice speaks, and making one of your own.
@@ -45,7 +38,7 @@ export function VoiceScreen() {
   // Both ElevenLabs services speak with a voice from the same list.
   const cloud = provider !== "system";
   const listed = useVoices(cloud && connected === true);
-  const voices = listed.data ? keepCreatedVoice(listed.data, optimisticCreatedVoice()) : null;
+  const voices = listed.data ?? null;
 
   const show = (reason: unknown) =>
     setProblem(reason instanceof Error ? reason.message : String(reason));
@@ -83,7 +76,7 @@ export function VoiceScreen() {
       <section className="space-y-3">
         <h2 className="text-sm font-semibold">Who speaks</h2>
         <div role="radiogroup" aria-label="Who speaks" className="grid gap-2">
-          {VOICE_SERVICES.map((service) => (
+          {speechServices(platform.voice.systemDescription).map((service) => (
             <ChoiceKey
               key={service.value}
               value={service.value}
@@ -92,8 +85,8 @@ export function VoiceScreen() {
               onChoose={() => change({ provider: service.value })}
             >
               <span className="min-w-0 flex-1 space-y-1">
-                <span className="block text-sm font-medium">{service.title}</span>
-                <span className="text-muted-foreground block text-sm">{service.body}</span>
+                <span className="block text-sm font-medium">{service.label}</span>
+                <span className="text-muted-foreground block text-sm">{service.description}</span>
               </span>
             </ChoiceKey>
           ))}
@@ -125,34 +118,13 @@ export function VoiceScreen() {
             </p>
           ) : (
             <div role="group" aria-label="Voices">
-              <PickList
-                rows={voiceRows(voices, heardBefore)}
+              <VoicePicker
+                voices={voices}
+                heard={heardBefore}
                 value={voiceId}
                 onPick={(next) => change({ voiceId: next })}
-                label="Search voices"
+                onHear={hear}
                 name="Voices"
-                layout="list"
-                filter={(rows, query) => {
-                  const shown = shownVoices(voices, query, voiceId);
-                  return rows.filter((row) => shown.includes(row.voice));
-                }}
-                // The button sits inside the row, so it always reads as part
-                // of the voice beside it.
-                after={({ voice }) => (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="size-11 shrink-0 rounded-full"
-                    aria-label={`Hear ${voice.name}`}
-                    aria-disabled={!voice.preview_url}
-                    // The sample is public, so it needs no key and no speech
-                    // call.
-                    onClick={() => hear(voice)}
-                  >
-                    <Play aria-hidden />
-                  </Button>
-                )}
               />
             </div>
           )}
@@ -199,15 +171,16 @@ export function VoiceCloneScreen() {
   const { connections, checking } = useConnections();
   const connected = checking ? null : connections.elevenlabs.connected;
   const draft = useVoiceCloneDraft();
+  const keepCreatedVoice = useKeepCreatedVoice();
 
   const handleCreated = async (created: CreatedVoice) => {
-    rememberCreatedVoice(created);
     const current = speechSettings();
     await updateSpeech({
       // A new clone speaks through the ElevenLabs service in use.
       provider: current.provider === "dialogue" ? "dialogue" : "elevenlabs",
       voiceId: created.id,
     });
+    await keepCreatedVoice(created);
     await navigate({ to: "/voice", replace: true });
   };
 
@@ -232,22 +205,3 @@ export function VoiceCloneScreen() {
     </Screen>
   );
 }
-
-/** The services that can speak, in the order of the choice. */
-const VOICE_SERVICES: readonly { value: SpeechService; title: string; body: string }[] = [
-  {
-    value: "system",
-    title: "System voice",
-    body: "Built into this device. It needs no account.",
-  },
-  {
-    value: "elevenlabs",
-    title: "ElevenLabs",
-    body: "Natural voices from a cloud service. It needs your key.",
-  },
-  {
-    value: "dialogue",
-    title: "ElevenLabs Dialogue",
-    body: "Eleven v3 voices that can laugh, sigh, and whisper. It needs your ElevenLabs key.",
-  },
-];

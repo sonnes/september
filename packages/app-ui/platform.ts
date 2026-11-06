@@ -13,6 +13,7 @@ import type { Capabilities } from "@september/core/rules/navigation";
 import type { PresentToneKey } from "@september/core/rules/present/stage";
 import type { Message, Note, SavedPhrase, Space } from "@september/core/rules/records";
 import type { UsageEvent } from "@september/core/rules/usage-summary";
+import type { CloudSound } from "@september/core/rules/voice";
 
 export type { Capabilities };
 
@@ -37,12 +38,8 @@ export interface PlatformStore extends Omit<AgentRuntimeAdapter, "openWriter"> {
 }
 
 /** One cloud voice, with the values its model takes. */
-export interface CloudVoice {
+export interface CloudVoice extends CloudSound {
   voiceId: string;
-  modelId: string;
-  stability: number;
-  similarity: number;
-  speed: number;
 }
 
 /**
@@ -57,11 +54,7 @@ export interface PlatformVoice {
   /** What setup says about the system voice. */
   systemDescription: string;
   /** Speaks with the voice of the system. `onWord` hears where each word starts. */
-  speakSystem(
-    text: string,
-    voice: { voiceId: string | null; speed: number },
-    onWord?: (charIndex: number) => void,
-  ): Promise<void>;
+  speakSystem(text: string, speed: number, onWord?: (charIndex: number) => void): Promise<void>;
   /**
    * Speaks one sentence in a cloud voice and resolves when the sound stops.
    * `dialogueParts` holds the parts for the Dialogue voice. It rejects with

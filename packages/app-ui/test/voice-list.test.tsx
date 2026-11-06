@@ -1,3 +1,4 @@
+import { act } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import { heardVoices, savedSpeech } from '@september/app-ui/services/settings';
@@ -176,4 +177,24 @@ it('names the file field of the voice samples', async () => {
     return input;
   });
   expect(field.getAttribute('aria-label') || field.labels?.[0]?.textContent).toBeTruthy();
+});
+
+it('shows a voice made a moment ago, before ElevenLabs lists it', async () => {
+  vi.mocked(platform.providers.cloneVoice).mockResolvedValue({ id: 'fresh' });
+  const { container } = await renderApp('/voice/clone');
+  const input = await vi.waitFor(() => {
+    const field = container.querySelector<HTMLInputElement>('input[type="file"]');
+    if (!field) throw new Error('No file field');
+    return field;
+  });
+  const sample = new File([new Uint8Array([1])], 'sample.mp3', { type: 'audio/mpeg' });
+  await act(async () => {
+    Object.defineProperty(input, 'files', { value: [sample], configurable: true });
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await typeInto(container.querySelector<HTMLInputElement>('#clone-name')!, 'Fresh voice');
+  await press(await findButton('Create voice', container));
+
+  await vi.waitFor(() => expect(listed(container)).toContain('Fresh voice'));
+  expect(savedSpeech.get()).toEqual(expect.objectContaining({ voiceId: 'fresh' }));
 });

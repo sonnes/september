@@ -2,15 +2,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { generate, openAgentWriter } from '@september/app-ui/services/ai';
 import { setup } from '@september/app-ui/services/settings';
-import { DEFAULT_DRAFT, type SavedSetup } from '@september/core/rules/onboarding';
+import { DEFAULT_ANSWERS, type SavedSetup } from '@september/core/rules/onboarding';
 
+import { bodyOf, streamedReply, textReply } from './model';
 import { platform } from './platform';
+
+type Body = Record<string, unknown>;
 
 async function chooseModels(
   models: Partial<Pick<SavedSetup, 'defaultModel' | 'suggestionsModel'>>
 ) {
   await setup.set({
-    ...DEFAULT_DRAFT,
+    ...DEFAULT_ANSWERS,
     id: 'ravi',
     name: 'Ravi',
     defaultModel: { service: 'openrouter', model: '' },
@@ -26,37 +29,9 @@ beforeEach(() => chooseModels({}));
 
 afterEach(() => vi.unstubAllGlobals());
 
-/** One streamed OpenAI-compatible reply, which is what the client reads. */
-function answer(
-  deltas: Array<Record<string, unknown>>,
-  {
-    model = 'current/tool-model:free',
-    finish = 'stop',
-    usage = { prompt_tokens: 2, completion_tokens: 1, total_tokens: 3 },
-  }: { model?: string; finish?: string; usage?: Record<string, number> } = {}
-) {
-  const events = [
-    ...deltas.map(delta =>
-      JSON.stringify({ id: '1', model, choices: [{ index: 0, delta, finish_reason: null }] })
-    ),
-    JSON.stringify({
-      id: '1',
-      model,
-      choices: [{ index: 0, delta: {}, finish_reason: finish }],
-      usage,
-    }),
-    '[DONE]',
-  ];
-  return new Response(events.map(event => `data: ${event}\n\n`).join(''), {
-    status: 200,
-    headers: { 'content-type': 'text/event-stream' },
-  });
-}
-
-const text = (content: string) => answer([{ role: 'assistant', content }]);
-
-const bodyOf = (request: ReturnType<typeof vi.fn>, call = 0) =>
-  JSON.parse(String(request.mock.calls[call]?.[1]?.body)) as Record<string, unknown>;
+const text = (content: string) => textReply(content, { model: 'current/tool-model:free' });
+const answer = (deltas: Array<Record<string, unknown>>, options: Parameters<typeof streamedReply>[1] = {}) =>
+  streamedReply(deltas, { model: 'current/tool-model:free', ...options });
 
 describe('the writing service', () => {
   it('routes an automatic Agent request through OpenRouter’s current free tool models', async () => {
@@ -69,7 +44,7 @@ describe('the writing service', () => {
     });
     await stream.result();
 
-    const body = bodyOf(request);
+    const body = bodyOf<Body>(request);
     expect(body.model).toBe('openrouter/free');
     expect(body).not.toHaveProperty('models');
     // The loop reads one call at a time, so the model may only make one.
@@ -93,8 +68,8 @@ describe('the writing service', () => {
       { feature: 'context' }
     );
 
-    expect(bodyOf(request, 0).model).toBe('suggestions/model');
-    expect(bodyOf(request, 1).model).toBe('default/model');
+    expect(bodyOf<Body>(request, 0).model).toBe('suggestions/model');
+    expect(bodyOf<Body>(request, 1).model).toBe('default/model');
   });
 
   it('uses the default model for Suggestions when no override is set', async () => {
@@ -107,7 +82,7 @@ describe('the writing service', () => {
       { feature: 'suggestions' }
     );
 
-    expect(bodyOf(request, 0).model).toBe('default/model');
+    expect(bodyOf<Body>(request, 0).model).toBe('default/model');
   });
 
   it.each(['', '   '])(
@@ -128,7 +103,7 @@ describe('the writing service', () => {
         { feature: 'suggestions' }
       );
 
-      const body = bodyOf(request);
+      const body = bodyOf<Body>(request);
       expect(body.model).toBe('openrouter/free');
       expect(body.response_format).toEqual({ type: 'json_object' });
       const messages = body.messages as Array<Record<string, unknown>>;
@@ -148,14 +123,14 @@ describe('the writing service', () => {
       { messages: [{ role: 'user', content: 'Suggest something' }] },
       { feature: 'suggestions' }
     );
-    expect(bodyOf(request).model).toBe('openrouter/free');
+    expect(bodyOf<Body>(request).model).toBe('openrouter/free');
 
     await chooseModels({});
     await generate(
       { messages: [{ role: 'user', content: 'Describe this space' }] },
       { feature: 'context' }
     );
-    expect(bodyOf(request, 1).model).toBe('openrouter/free');
+    expect(bodyOf<Body>(request, 1).model).toBe('openrouter/free');
   });
 
   it('records what an Agent answer spent, and what a failed one did not', async () => {
@@ -253,7 +228,7 @@ describe('the writing service', () => {
     await generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'context' });
 
     expect(String((request.mock.calls[0] as unknown[])[0])).toBe('http://127.0.0.1:9/apple/v1/chat/completions');
-    expect(bodyOf(request).model).toBe('apple-foundationmodel');
+    expect(bodyOf<Body>(request).model).toBe('apple-foundationmodel');
     expect(lastUsage()).toMatchObject({ provider: 'apple', cost_source: 'free', success: true });
   });
 

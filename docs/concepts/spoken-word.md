@@ -25,7 +25,7 @@ character.
 
 The web speech service calls `wordAt` on each word boundary of the browser
 system voice. `useSpokenWord` gives the word and the id of the thing that
-speaks it. `SpokenText` in `packages/app-ui/blocks/suggestions.tsx` draws a
+speaks it. `SpokenText` in `packages/app-ui/blocks/tagged-text.tsx` draws a
 text with `wordsOf` and marks the word with the same id.
 
 The cloud voices and the native desktop voice do not report word boundaries.

@@ -1,59 +1,36 @@
 import { useMemo, useSyncExternalStore } from "react";
 
 import { platform } from "@platform/adapter";
-import { fileSound, speakableText, stripTags } from "@september/core/rules/audio-tags";
+import { speakableText, stripTags } from "@september/core/rules/audio-tags";
 import { wordAt } from "@september/core/rules/spoken-word";
 import {
-  DEFAULT_VOICE_MODEL,
-  dialogueModelFrom,
+  cloudSound,
+  DEFAULT_SPEECH,
   dialogueParts,
   elevenLabsCredits,
-  stabilityFor,
   voiceModelFrom,
-  type SpeechService,
   type SpeechSettings,
 } from "@september/core/rules/voice";
 
 import { InterruptedSpeech, type CloudVoice } from "../platform";
-import type { SavedSetup } from "@september/core/rules/onboarding";
 
-import { currentSetup, savedSpeech, useSetting, useSetup } from "./settings";
+import { savedSpeech, useSetting } from "./settings";
 import { recordTtsUsage } from "./usage";
 
-
-export const DEFAULT_SPEECH: SpeechSettings = {
-  provider: "system",
-  voiceId: null,
-  modelId: DEFAULT_VOICE_MODEL,
-  stability: 0.5,
-  similarity: 0.75,
-  speed: 1,
-};
-
-/**
- * The settings in use. The Voice screen owns them. Before the user chooses,
- * the service that setup chose decides.
- */
+/** The settings in use. The Voice screen and setup choose them. */
 export function speechSettings(): SpeechSettings {
-  return speechFrom(savedSpeech.get(), currentSetup());
+  return speechFrom(savedSpeech.get());
 }
 
-function speechFrom(saved: SpeechSettings | null, setup: SavedSetup | null): SpeechSettings {
-  if (saved) {
-    const kept = { ...DEFAULT_SPEECH, ...saved };
-    return { ...kept, modelId: voiceModelFrom(kept.modelId) };
-  }
-  return {
-    ...DEFAULT_SPEECH,
-    provider: setup?.voiceService === "elevenlabs" ? "elevenlabs" : "system",
-  };
+function speechFrom(saved: SpeechSettings | null): SpeechSettings {
+  const kept = { ...DEFAULT_SPEECH, ...saved };
+  return { ...kept, modelId: voiceModelFrom(kept.modelId) };
 }
 
 /** The settings in use, and a new render when they change. */
 export function useSpeechSettings(): SpeechSettings {
   const saved = useSetting(savedSpeech);
-  const setup = useSetup();
-  return useMemo(() => speechFrom(saved, setup), [saved, setup]);
+  return useMemo(() => speechFrom(saved), [saved]);
 }
 
 /** Changes some of the speech settings and keeps the rest. */
@@ -63,42 +40,19 @@ export async function updateSpeech(patch: Partial<SpeechSettings>): Promise<Spee
   return next;
 }
 
-/** The cloud voice of the settings, with the values its model takes. */
-function cloudVoiceOf(settings: SpeechSettings): CloudVoice {
+/** The cloud voice of the settings, live or for a file. */
+function cloudVoiceOf(settings: SpeechSettings, use: "live" | "file"): CloudVoice {
   if (!settings.voiceId) throw new Error("Choose an ElevenLabs voice first.");
-  const modelId =
-    settings.provider === "dialogue"
-      ? dialogueModelFrom(settings.dialogueModelId)
-      : settings.modelId;
-  return {
-    voiceId: settings.voiceId,
-    modelId,
-    stability: settings.provider === "dialogue"
-      ? stabilityFor(modelId, settings.stability)
-      : settings.stability,
-    similarity: settings.similarity,
-    speed: settings.speed,
-  };
+  return { voiceId: settings.voiceId, ...cloudSound(settings, use) };
 }
 
 /**
- * The words and the voice of a sound file in the voice in use. A file of the
- * Dialogue voice uses Eleven v3, and a voice that says tags aloud gets the
- * words alone.
+ * The words and the voice of a sound file in the voice in use. A voice that
+ * says tags aloud gets the words alone.
  */
 export function soundFile(words: string): { text: string; voice: CloudVoice } {
-  const { text, settings } = fileSound(words, speechSettings());
-  if (!settings.voiceId) throw new Error("Choose an ElevenLabs voice first.");
-  return {
-    text,
-    voice: {
-      voiceId: settings.voiceId,
-      modelId: settings.modelId,
-      stability: settings.stability,
-      similarity: settings.similarity,
-      speed: settings.speed,
-    },
-  };
+  const settings = speechSettings();
+  return { text: speakableText(words, settings), voice: cloudVoiceOf(settings, "file") };
 }
 
 interface SpeechProvider {
@@ -106,13 +60,13 @@ interface SpeechProvider {
   speak(text: string, signal: AbortSignal): Promise<void>;
 }
 
-const systemVoice = (settings: SpeechSettings): SpeechProvider => ({
+const systemVoice = (speed: number): SpeechProvider => ({
   async speak(text, signal) {
     const started = Date.now();
     const usage = {
       provider: "system" as const,
       model: platform.voice.systemName,
-      voice_id: settings.voiceId ?? undefined,
+      voice_id: "system",
       text_length: text.length,
       credits: 0,
       duration_seconds: 0,
@@ -121,7 +75,7 @@ const systemVoice = (settings: SpeechSettings): SpeechProvider => ({
       cost_source: "free" as const,
     };
     try {
-      await platform.voice.speakSystem(text, settings, (at) => setSpokenWord(wordAt(text, at)));
+      await platform.voice.speakSystem(text, speed, (at) => setSpokenWord(wordAt(text, at)));
     } catch (reason) {
       recordTtsUsage({
         ...usage,
@@ -140,15 +94,12 @@ const systemVoice = (settings: SpeechSettings): SpeechProvider => ({
 const cloudVoice = (settings: SpeechSettings): SpeechProvider => ({
   async speak(text, signal) {
     const started = Date.now();
-    const model =
-      settings.provider === "dialogue"
-        ? dialogueModelFrom(settings.dialogueModelId)
-        : settings.modelId;
+    const model = cloudSound(settings, "live").modelId;
     let heard: { fromCache: boolean; latencyMs: number };
     try {
       heard = await platform.voice.stream(
         text,
-        cloudVoiceOf(settings),
+        cloudVoiceOf(settings, "live"),
         settings.provider === "dialogue" ? dialogueParts(text) : undefined,
         signal,
       );
@@ -169,9 +120,8 @@ const cloudVoice = (settings: SpeechSettings): SpeechProvider => ({
       // The listener heard the first words, and a second voice would say them again.
       if (reason instanceof InterruptedSpeech) throw reason;
       // A person who cannot speak must not meet silence, so the system voice
-      // says the words. It says a tag aloud, so it gets the words alone, and
-      // a cloud voice ID names no voice of the system.
-      await systemVoice({ ...settings, voiceId: null }).speak(stripTags(text), signal);
+      // says the words. It says a tag aloud, so it gets the words alone.
+      await systemVoice(settings.speed).speak(stripTags(text), signal);
       if (!signal.aborted) {
         setFallback("The chosen voice did not answer, so this device spoke instead.");
       }
@@ -198,7 +148,7 @@ const cloudVoice = (settings: SpeechSettings): SpeechProvider => ({
 });
 
 const providerFor = (settings: SpeechSettings): SpeechProvider =>
-  settings.provider === "system" ? systemVoice(settings) : cloudVoice(settings);
+  settings.provider === "system" ? systemVoice(settings.speed) : cloudVoice(settings);
 
 let speakingId: string | null = null;
 let spokenWord: { id: string; word: number } | null = null;

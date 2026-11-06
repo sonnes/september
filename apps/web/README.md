@@ -124,16 +124,16 @@ support. Applicable statutory rights remain intact. The privacy notice covers
 local storage, optional providers, and website metadata. GitHub issues are the
 public contact route; users must not post private information there.
 
-`docs/research/2026-09-05-india-legal-review.md` records the legal sources and
-limits of this review. A software licence does not supply privacy consent or
+`docs/research/2026-09-05-india-legal-review.md` on the `archive/old-docs`
+branch records the legal sources and limits of this review. A software licence does not supply privacy consent or
 exempt a personal project from applicable law.
 
 
 ## Brand assets
 
 `pnpm brand:generate` draws the mark and the share card with `satori`, then
-writes them to `public/`: `logo.svg`, the favicons, the app icons, and
-`og.png`. Run it after a change to the mark, to the landing hero, or to the
+writes `logo.svg` to `packages/app-ui/public/`, and the favicons, the app
+icons, and `og.png` to `public/`. Run it after a change to the mark, to the landing hero, or to the
 words on the card, and commit what it writes.
 
 The share card is 1200x630, the size every link preview expects. `index.html`
@@ -369,7 +369,8 @@ Vercel adds no-store and no-referrer headers for `/oauth/*`.
 The application sidebar starts collapsed at every desktop width. The toggle
 or Ctrl/Command-B expands it; resizing preserves that choice.
 
-Help screenshots live in `public/help/` and ship in both apps. Browser captures
+Help screenshots live in `packages/app-ui/public/help/`, and both apps serve
+them through `appConfig` in `vite.shared.ts`. Browser captures
 use the 1376 × 1032 iPad landscape viewport at 2× pixel density. Captions
 identify the browser UI. The shared guides place close-ups beside steps and
 open screenshots in a keyboard-accessible dialog. The catalog records capture

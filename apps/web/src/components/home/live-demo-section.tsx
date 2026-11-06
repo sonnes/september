@@ -2,22 +2,22 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 
 import { cn } from '@september/ui';
 import {
-  ChevronsRight,
   Delete,
   Headphones,
-  History,
   PanelLeft,
   PanelRight,
   Pin,
   Plus,
-  Sparkles,
   Square,
   Trash2,
   Undo2,
   Volume2,
 } from 'lucide-react';
 
+import { deleteLastWord } from '@september/core/rules/spaces';
 import { type SuggestionSource, joinTokens, matchTyped, stripeForText } from '@september/core/rules/stripes';
+
+import { LANE, SourceMark } from '@september/app-ui/blocks/suggestions';
 
 import { useDemoSpeech } from './use-demo-speech';
 
@@ -162,10 +162,8 @@ function WorkingDemo() {
     inputRef.current?.focus();
   }, [undoStack, setText]);
 
-  const deleteLastWord = useCallback(() => {
-    const trimmed = text.replace(/\s+$/, '');
-    const idx = trimmed.search(/\S+$/);
-    setText(idx > 0 ? trimmed.slice(0, idx) : '');
+  const removeLastWord = useCallback(() => {
+    setText(deleteLastWord(text));
     inputRef.current?.focus();
   }, [text, setText]);
 
@@ -306,7 +304,7 @@ function WorkingDemo() {
                     <EditKey
                       label="Delete"
                       name="Delete last word"
-                      onClick={deleteLastWord}
+                      onClick={removeLastWord}
                       disabled={!text}
                     >
                       <Delete className="size-4" />
@@ -421,7 +419,7 @@ export function LandingSuggestionStripes({
                       onClick={() => onTake(joinTokens(stripe.tokens.slice(0, index + 1)))}
                       className={cn(
                         'focus-attention min-h-11 shrink-0 rounded-chip border px-4 text-base font-medium text-foreground transition-colors',
-                        LANE[stripe.source],
+                        LANE[stripe.source].idle,
                         found && 'underline decoration-primary decoration-2 underline-offset-4'
                       )}
                     >
@@ -453,41 +451,6 @@ export function LandingSuggestionStripes({
         </section>
       )}
     </div>
-  );
-}
-
-// The tile colors of each source, as in the app.
-const LANE: Record<SuggestionSource, string> = {
-  md: 'border-primary/40 bg-card hover:border-primary/70 hover:bg-primary/5',
-  history: 'border-chart-2/45 bg-card hover:border-chart-2/70 hover:bg-chart-2/5',
-  llm: 'border-border bg-card hover:border-primary/50 hover:bg-primary/5',
-  code: 'border-primary/70 bg-primary/10 hover:border-primary hover:bg-primary/15',
-  starter: 'border-primary/40 bg-card hover:border-primary/70 hover:bg-primary/5',
-};
-
-// The mark at the start of a row says where the row came from.
-function SourceMark({ source, code }: { source: SuggestionSource; code?: string }) {
-  if (source === 'code') {
-    return (
-      <span
-        aria-label={`Code ${code}`}
-        className="inline-flex shrink-0 items-center rounded-md bg-primary px-1.5 py-0.5 text-xs font-bold text-primary-foreground"
-      >
-        {code}
-      </span>
-    );
-  }
-  if (source === 'starter') {
-    return <ChevronsRight className="size-4 shrink-0 text-brand" aria-label="An opening" />;
-  }
-  if (source === 'history') {
-    return <History className="size-4 shrink-0 text-chart-2" aria-label="You said this before" />;
-  }
-  if (source === 'md') {
-    return <Pin className="size-4 shrink-0 text-brand/70" aria-label="A saved phrase" />;
-  }
-  return (
-    <Sparkles className="size-4 shrink-0 text-muted-foreground" aria-label="From AI Assistance" />
   );
 }
 

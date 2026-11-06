@@ -16,6 +16,7 @@ import { Link } from "@tanstack/react-router";
 import { RadioGroupItem } from "@september/ui/components/radio-group";
 
 import { platform } from "@platform/adapter";
+import { SERVICE_NAMES, type ServiceId } from "@september/core/rules/services";
 import type { Provider, ProviderStatus } from "@september/app-ui/platform";
 import { useConnections, useForgetKey, type Connections } from "@september/app-ui/services/connections";
 import type { ConnectionId } from "@september/core/rules/navigation";
@@ -28,7 +29,7 @@ import type { ConnectionId } from "@september/core/rules/navigation";
  * which `system-ui` in the font stack supplies. Apple asks for a written
  * trademark licence before a third party shows this mark.
  */
-export function Mark({ service }: { service: string }) {
+export function Mark({ service }: { service: ServiceId }) {
   const slot =
     "grid size-9 shrink-0 place-items-center rounded-lg border border-zinc-200 bg-white";
 
@@ -108,7 +109,7 @@ export function CloudStatus({
   return <Status tone="idle" text="Not connected" />;
 }
 
-export function KeyPanel({ provider, name }: { provider: Provider; name: string }) {
+export function KeyPanel({ provider }: { provider: Provider }) {
   const { connections, replace: onConnected } = useConnections();
   const status = connections[provider];
   const forget = useForgetKey();
@@ -158,7 +159,7 @@ export function KeyPanel({ provider, name }: { provider: Provider; name: string 
 
   return (
     <>
-      <Label htmlFor={keyId}>{name} key</Label>
+      <Label htmlFor={keyId}>{SERVICE_NAMES[provider]} key</Label>
       <div className="flex flex-wrap gap-2">
         <Input
           id={keyId}
@@ -253,7 +254,7 @@ export function ServiceChoice({
   badge,
   children,
 }: {
-  value: string;
+  value: ServiceId;
   label: string;
   description: string;
   selected: boolean;

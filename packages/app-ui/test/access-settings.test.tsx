@@ -57,6 +57,23 @@ describe('the Access section of Settings', () => {
     expect(saved()?.input).toBe('touch');
   });
 
+  it('says so when a change is not kept, and keeps it on a retry', async () => {
+    await openAccess();
+    vi.mocked(platform.store.putSetting).mockRejectedValueOnce(new Error('disk full'));
+    await press(await choice('Theme', 'Dark'));
+
+    const alert = await vi.waitFor(() => {
+      const found = document.querySelector('[role="alert"]');
+      if (!found) throw new Error('No alert');
+      return found;
+    });
+    expect(saved()?.theme).toBe('light');
+
+    await press(await findButton('Retry saving', alert));
+    await vi.waitFor(() => expect(saved()?.theme).toBe('dark'));
+    expect(document.querySelector('[role="alert"]')).toBeNull();
+  });
+
   it('saves the theme the person chooses', async () => {
     await openAccess();
     await press(await choice('Theme', 'Dark'));

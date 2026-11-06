@@ -5,11 +5,12 @@ import { Label } from "@september/ui/components/label";
 import { Textarea } from "@september/ui/components/textarea";
 
 import {
-  DEFAULT_DRAFT,
+  DEFAULT_ANSWERS,
   SPEAKING_STYLES,
-  type OnboardingDraft,
+  type SetupAnswers,
 } from "@september/core/rules/onboarding";
-import { currentSetup, updateSetup } from "@september/app-ui/services/settings";
+import { useAutosave } from "@september/app-ui/services/autosave";
+import { updateSetup, useSetup } from "@september/app-ui/services/settings";
 
 /**
  * A titled part of a setup screen. With `htmlFor`, the title is the label of
@@ -112,21 +113,32 @@ export function SpeakingStyle({
   );
 }
 
-export function useSetupDraft(): [
-  OnboardingDraft,
-  (patch: Partial<OnboardingDraft>) => void,
-] {
-  // A platform without saved setup draws the defaults instead of throwing.
-  const [setup, setSetup] = useState(() => currentSetup() ?? DEFAULT_DRAFT);
+/**
+ * The setup answers of a Settings screen. An edit shows at once and saves
+ * behind it. A failed save shows its alert from `SaveFailed`.
+ */
+export function useSetupAnswers() {
+  const saved = useAutosave<SetupAnswers>(useSetup() ?? DEFAULT_ANSWERS, async (next) => {
+    await updateSetup(next);
+  });
+  return {
+    setup: saved.value,
+    change: (patch: Partial<SetupAnswers>) => saved.write({ ...saved.current(), ...patch }),
+    failed: saved.state === "failed",
+    retry: saved.retry,
+  };
+}
 
-  return [
-    setup,
-    (patch) => {
-      // The screen shows the new answer at once. Local storage keeps it behind that.
-      setSetup((current) => ({ ...current, ...patch }));
-      void updateSetup(patch);
-    },
-  ];
+/** The alert of a failed save, with a key that saves again. */
+export function SaveFailed({ retry }: { retry: () => void }) {
+  return (
+    <div role="alert" className="space-y-2 text-sm">
+      <p className="text-destructive">September did not keep the change.</p>
+      <Button type="button" variant="outline" onClick={retry}>
+        Retry saving
+      </Button>
+    </div>
+  );
 }
 
 export function SettingsTitle({ title, description }: { title: string; description: string }) {

@@ -5,7 +5,10 @@ import {
   callOperation,
   isAgentWriteTool,
   jsonObject,
+  NOTE_OPERATIONS,
+  PHRASE_OPERATIONS,
   readAgentCall,
+  TALK_MESSAGE_OPERATIONS,
   type AgentCall,
   type AgentToolName,
   type InspectSpaceResult,
@@ -129,22 +132,17 @@ export function agentRowCall(
 const capitalize = (value: string) =>
   value.slice(0, 1).toUpperCase() + value.slice(1);
 
-const OPERATIONS: readonly string[] = [
-  "create",
-  "append",
-  "replace",
-  "rename",
-  "edit",
-  "pin",
-  "unpin",
-  "delete",
-];
+const OPERATIONS: ReadonlySet<string> = new Set<string>([
+  ...NOTE_OPERATIONS,
+  ...PHRASE_OPERATIONS,
+  ...TALK_MESSAGE_OPERATIONS,
+]);
 
 /** The operation that arguments name, even when the rest is not valid. */
 function statedOperation(raw: string): string | undefined {
   try {
     const { operation } = jsonObject(raw, "Arguments");
-    return typeof operation === "string" && OPERATIONS.includes(operation)
+    return typeof operation === "string" && OPERATIONS.has(operation)
       ? operation
       : undefined;
   } catch {

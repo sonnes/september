@@ -13,6 +13,9 @@ import {
   storedBackupFrom,
   type SeptemberBackup,
 } from "./backup.ts";
+import { parseAgentCall } from "./agent/tools.ts";
+import { presentSettings } from "./present/settings.ts";
+import { PHRASE_TEXT_LIMIT } from "./records.ts";
 import { PORTABLE_SETTING_KEYS } from "./settings.ts";
 
 const validBackup = (): SeptemberBackup => ({
@@ -33,7 +36,6 @@ const validBackup = (): SeptemberBackup => ({
       autoSuggestions: true,
       autoPhrases: true,
       agentEnabled: true,
-      voiceService: "elevenlabs",
       access: DEFAULT_ACCESS,
     },
     speech: {
@@ -200,6 +202,15 @@ describe("the portable September backup", () => {
     expect(
       parseBackup(encodeBackup(validBackup())).backup.settings.setup?.access,
     ).toEqual(DEFAULT_ACCESS);
+  });
+
+  it("gives an older backup the cloud voice its setup named", () => {
+    const backup = validBackup();
+    (backup.settings.setup as unknown as Record<string, unknown>).voiceService = "elevenlabs";
+    (backup.settings as unknown as Record<string, unknown>).speech = null;
+    const { settings } = parseBackup(JSON.stringify(backup)).backup;
+    expect(settings.speech?.provider).toBe("elevenlabs");
+    expect(settings.setup).not.toHaveProperty("voiceService");
   });
 
   it("turns the agent on for a backup made before the agent switch", () => {
@@ -422,6 +433,45 @@ describe("the portable September backup", () => {
       backup: { agentMessages: [] },
       skipped: 1,
     });
+  });
+
+  it("restores a long phrase that the Agent can write", () => {
+    const backup = validBackup();
+    const text = "I would like to tell you about my week. ".repeat(20).trim();
+    expect(
+      parseAgentCall(
+        "change_phrase",
+        JSON.stringify({ operation: "create", text }),
+      ),
+    ).toMatchObject({ text });
+    backup.savedPhrases[0].text = text;
+
+    const parsed = parseBackup(encodeBackup(backup));
+
+    expect(parsed.backup.savedPhrases.map((row) => row.text)).toEqual([text]);
+    expect(parsed.skipped).toBe(0);
+  });
+
+  it("skips a phrase longer than any writer accepts", () => {
+    const backup = validBackup();
+    backup.savedPhrases[0].text = "a".repeat(PHRASE_TEXT_LIMIT + 1);
+
+    const parsed = parseBackup(JSON.stringify(backup));
+
+    expect(parsed.backup.savedPhrases).toEqual([]);
+    expect(parsed.skipped).toBe(1);
+  });
+
+  it("restores Present with its sound on when the backup has no Present setting", () => {
+    const backup = validBackup() as unknown as {
+      settings: Record<string, unknown>;
+    };
+    delete backup.settings.present;
+
+    const parsed = parseBackup(JSON.stringify(backup));
+
+    expect(parsed.backup.settings.present).toEqual(presentSettings(undefined));
+    expect(parsed.backup.settings.present.spoken).toBe(true);
   });
 
   it("skips the second of two space titles that resolve to one route", () => {

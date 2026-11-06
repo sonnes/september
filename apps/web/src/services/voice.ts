@@ -617,17 +617,11 @@ export const voice: PlatformVoice = {
   systemName: 'browser system voice',
   systemDescription: 'Built into this browser. Free, and it works without an account.',
 
-  async speakSystem(text, chosen, onWord) {
+  async speakSystem(text, speed, onWord) {
     if (!('speechSynthesis' in window)) throw new Error('This browser has no system voice.');
     await new Promise<void>((resolve, reject) => {
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = chosen.speed;
-      if (chosen.voiceId) {
-        utterance.voice =
-          speechSynthesis
-            .getVoices()
-            .find(one => one.voiceURI === chosen.voiceId || one.name === chosen.voiceId) ?? null;
-      }
+      utterance.rate = speed;
       utterance.onboundary = event => {
         if (event.name === 'word') onWord?.(event.charIndex);
       };

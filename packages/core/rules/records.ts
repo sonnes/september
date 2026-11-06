@@ -51,6 +51,9 @@ export type PhraseKind = "phrase" | "starter";
 
 export const PHRASE_KINDS: readonly PhraseKind[] = ["phrase", "starter"];
 
+/** The most characters a saved phrase holds. A writer and a restore accept a phrase up to this length. */
+export const PHRASE_TEXT_LIMIT = 10_000;
+
 export interface SavedPhrase {
   id: string;
   space_id: string;

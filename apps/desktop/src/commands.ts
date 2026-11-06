@@ -81,7 +81,7 @@ export interface Commands {
   /** The login name, or null when the system gives none. */
   user_id: Command<undefined, string | null>;
 
-  speech_system: Request<{ text: string; voice_id: string | null; speed: number }, void>;
+  speech_system: Request<{ text: string; speed: number }, void>;
   speech_stream: Request<
     { text: string; voice: CloudVoice; dialogueParts?: string[] },
     { from_cache: boolean; latency_ms: number; interrupted: string | null }

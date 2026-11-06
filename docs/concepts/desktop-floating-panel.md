@@ -173,4 +173,5 @@ crate needs `macOSPrivateApi`, which rules out the Mac App Store. A nonactivatin
 panel can also lose Command-C, Command-V, Command-Z, and Command-Q.
 
 The compact bar, reply to a selection, and snap to a screen edge from
-`docs/mocks/2026-10-04-floating-panel.html` are not built.
+`docs/mocks/2026-10-04-floating-panel.html` on the `archive/old-docs` branch
+are not built.

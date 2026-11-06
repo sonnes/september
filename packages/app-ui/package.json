@@ -17,7 +17,7 @@
     "./routes": "./routes.tsx",
     "./services/*": "./services/*.ts",
     "./test/platform": "./test/platform.ts",
-    "./test/axe": "./test/axe.ts"
+    "./test/setup": "./test/setup.ts"
   },
   "dependencies": {
     "@earendil-works/pi-ai": "0.84.4",

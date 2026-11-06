@@ -37,7 +37,7 @@ import {
 } from "@september/core/rules/present/stage";
 import { BrandMark, BrandWordmark } from "@september/app-ui/blocks/brand";
 import { platform } from "@platform/adapter";
-import { present } from "@september/app-ui/services/settings";
+import { present, useSetting } from "@september/app-ui/services/settings";
 import { speak, stopSpeaking } from "@september/app-ui/services/speech";
 import { recordPresentUsage } from "@september/app-ui/services/usage";
 import { useEscape } from "@september/app-ui/blocks/keymap";
@@ -67,7 +67,7 @@ export function PresentOverlay({
 }) {
   const chunks = useMemo(() => presentChunks(content), [content]);
   const [index, setIndex] = useState(0);
-  const [settings, setSettings] = useState<PresentSettings>(present.get);
+  const settings = useSetting(present);
   const [paused, setPaused] = useState(false);
   const [speechFailed, setSpeechFailed] = useState(false);
   const [colours, setColours] = useState(false);
@@ -111,11 +111,7 @@ export function PresentOverlay({
 
   const move = (delta: number) => setIndex((at) => stepChunk(at, total, delta));
 
-  const choose = (next: Partial<PresentSettings>) => {
-    const saved = { ...settings, ...next };
-    setSettings(saved);
-    void present.set(saved);
-  };
+  const choose = (next: Partial<PresentSettings>) => present.keep({ ...settings, ...next });
 
   // One event for the story, not one for each chunk.
   useEffect(() => {

@@ -1,24 +1,14 @@
-import { act, StrictMode, useState, type ReactNode } from 'react';
-import { createRoot } from 'react-dom/client';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { createMemoryHistory, createRouter, RouterProvider, type AnyRouter } from '@tanstack/react-router';
+import { act, useState, type ReactNode } from 'react';
+import type { AnyRouter } from '@tanstack/react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createQueryClient } from '@september/app-ui/app';
 import { ScreenHeader } from '@september/app-ui/blocks/screen';
-import { AppShell } from '@september/app-ui/layouts/app';
 import { APP_NAV } from '@september/app-ui/navigation';
-import { createAppRoutes } from '@september/app-ui/routes';
 import { DEFAULT_ACCESS } from '@september/core/rules/access';
 
-import { findButton, finishSetup, press } from './render';
+import { findButton, finishSetup, mockMedia, press, renderApp } from './render';
 
-const unmounts: (() => void)[] = [];
-
-afterEach(() => {
-  for (const unmount of unmounts.splice(0)) unmount();
-  vi.useRealTimers();
-});
+afterEach(() => vi.useRealTimers());
 
 /** A screen that a test controls, at a path that the route tree takes from the platform. */
 let screen: () => ReactNode = () => <h1>Dashboard</h1>;
@@ -28,27 +18,7 @@ function Dashboard() {
 
 /** The app with the test screen at `/dashboard`, over a memory history. */
 async function renderShell(path = '/voice', { strict = false } = {}): Promise<AnyRouter> {
-  const routeTree = createAppRoutes({
-    shell: AppShell,
-    home: { component: () => <p>Home</p> },
-    pages: { '/dashboard': Dashboard },
-  });
-  const router = createRouter({ routeTree, history: createMemoryHistory({ initialEntries: [path] }) });
-  const container = document.createElement('div');
-  document.body.append(container);
-  const root = createRoot(container);
-  unmounts.push(() => {
-    act(() => root.unmount());
-    container.remove();
-  });
-  const app = (
-    <QueryClientProvider client={createQueryClient()}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  );
-  await act(async () => root.render(strict ? <StrictMode>{app}</StrictMode> : app));
-  await act(async () => router.load());
-  return router;
+  return (await renderApp(path, { dashboard: Dashboard, strict })).router!;
 }
 
 const go = (router: AnyRouter, to: string) => act(() => router.navigate({ to }));
@@ -58,15 +28,7 @@ const link = (name: string) =>
 
 function setWidth(width: number) {
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
-  vi.spyOn(window, 'matchMedia').mockImplementation(
-    query =>
-      ({
-        matches: width < 768,
-        media: query,
-        addEventListener: () => undefined,
-        removeEventListener: () => undefined,
-      }) as unknown as MediaQueryList,
-  );
+  mockMedia(() => width < 768);
 }
 
 beforeEach(async () => {

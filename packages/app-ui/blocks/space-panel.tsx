@@ -46,11 +46,7 @@ export function PanelRail({ spaceId }: { spaceId: string }) {
   // so a screen does not start under a sheet.
   const [pressed, setPressed] = useState(false);
   const opener = useRef<HTMLButtonElement | null>(null);
-  const show = (next: typeof state) => {
-    panel.set(next).catch((error: unknown) => {
-      console.error("September did not keep the state of the rail.", error);
-    });
-  };
+  const show = (next: typeof state) => panel.keep(next);
 
   // Escape closes the card and leaves the rail.
   useEscape(state.open ? () => show({ ...state, open: false }) : null);

@@ -1,6 +1,6 @@
 mod common;
 
-use common::serve_once;
+use common::{serve_json, serve_once};
 use september_desktop_lib::providers::{Provider, ProviderError, Providers};
 use serde_json::{json, Value};
 
@@ -128,21 +128,29 @@ async fn an_empty_eleven_labs_quota_is_an_error() {
 }
 
 #[tokio::test]
-async fn the_voice_list_holds_every_voice_with_its_category() {
-    let (base, requests) = serve_once(
-        "200 OK",
-        json!({ "voices": [
-            { "voice_id": "21m", "name": "Rachel", "category": "premade", "preview_url": "https://storage.googleapis.com/rachel.mp3" },
-            { "voice_id": "AZn", "name": "River", "category": "cloned" }
-        ] }),
-    );
+async fn the_voice_list_holds_every_voice_of_every_page_with_its_category() {
+    let (base, requests) = serve_json(vec![
+        json!({
+            "voices": [{ "voice_id": "21m", "name": "Rachel", "category": "premade", "preview_url": "https://storage.googleapis.com/rachel.mp3" }],
+            "has_more": true,
+            "next_page_token": "page-2",
+        }),
+        json!({
+            "voices": [{ "voice_id": "AZn", "name": "River", "category": "cloned" }],
+            "has_more": false,
+            "next_page_token": null,
+        }),
+    ]);
 
     let voices = eleven_labs(&base).voices("xi-test").await.unwrap();
 
-    let head = requests.recv().unwrap();
-    assert!(head.contains("GET /v2/voices"), "{head}");
-    assert!(!head.contains("voice_type"), "{head}");
-    assert!(head.contains("page_size=100"), "{head}");
+    let first = requests.recv().unwrap();
+    assert!(first.contains("GET /v2/voices"), "{first}");
+    assert!(!first.contains("next_page_token"), "{first}");
+    let second = requests
+        .recv_timeout(Duration::from_secs(5))
+        .expect("the list asks for the next page");
+    assert!(second.contains("next_page_token=page-2"), "{second}");
 
     assert_eq!(
         voices
@@ -154,7 +162,7 @@ async fn the_voice_list_holds_every_voice_with_its_category() {
             ("AZn", None)
         ]
     );
-    // The screens read the category to keep the stock voices out of the list.
+    // The voice list groups the voices by category.
     let sent = serde_json::to_value(&voices).unwrap();
     assert_eq!(sent[0]["category"], "premade");
     assert_eq!(sent[1]["category"], "cloned");

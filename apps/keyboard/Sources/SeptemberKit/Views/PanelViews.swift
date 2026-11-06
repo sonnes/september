@@ -32,7 +32,7 @@ public struct PanelGridView: View {
 
     public var body: some View {
         let spacing = Metrics.rowSpacing * 2
-        let columns = max(panel.columns, 1)
+        let columns = Metrics.Panel.columns
         let buttonWidth = (width - spacing * CGFloat(columns - 1)) / CGFloat(columns)
 
         VStack(alignment: .leading, spacing: Metrics.Panel.titleSpacing) {

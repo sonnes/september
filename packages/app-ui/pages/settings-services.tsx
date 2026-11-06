@@ -5,6 +5,7 @@ import { Button } from "@september/ui/components/button";
 import { platform } from "@platform/adapter";
 import { useConnections } from "@september/app-ui/services/connections";
 import { CONNECTION_GUIDES, type ConnectionId } from "@september/core/rules/navigation";
+import { SERVICE_NAMES, type ServiceId } from "@september/core/rules/services";
 import {
   appleState,
   CloudStatus,
@@ -39,7 +40,6 @@ export function SetupSettings() {
         <div className="divide-y border-y">
           <ConnectionRow
             service="apple"
-            name="Apple Intelligence"
             state={appleState(connections)}
             badge={
               connections.apple.available ? (
@@ -56,7 +56,6 @@ export function SetupSettings() {
           />
           <ConnectionRow
             service="openrouter"
-            name="OpenRouter"
             state={
               connections.openrouter.connected
                 ? `Connected. ${connections.openrouter.detail ?? ""}`
@@ -77,7 +76,6 @@ export function SetupSettings() {
           />
           <ConnectionRow
             service="elevenlabs"
-            name="ElevenLabs"
             state={
               connections.elevenlabs.connected
                 ? "Connected. Choose a voice on the Voice screen."
@@ -104,13 +102,11 @@ export function SetupSettings() {
 
 function ConnectionRow({
   service,
-  name,
   state,
   badge,
   action,
 }: {
-  service: string;
-  name: string;
+  service: ServiceId;
   state: string;
   badge: ReactNode;
   action: ReactNode;
@@ -121,7 +117,7 @@ function ConnectionRow({
     <div className="flex min-h-12 flex-wrap items-center gap-x-4 gap-y-3 py-4">
       <Mark service={service} />
       <div className="min-w-0 flex-1 basis-40">
-        <div className="text-sm font-semibold">{name}</div>
+        <div className="text-sm font-semibold">{SERVICE_NAMES[service]}</div>
         <div className="text-muted-foreground text-sm">{state}</div>
       </div>
       <div className="ml-auto flex items-center gap-3">
@@ -159,7 +155,7 @@ export function ConnectionScreen({ provider }: { provider: ConnectionId }) {
         ))}
       </ol>
 
-      <KeyPanel provider={provider} name={guide.name} />
+      <KeyPanel provider={provider} />
 
       {provider === "elevenlabs" ? <ElevenLabsImpactLink /> : null}
 

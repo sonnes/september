@@ -17,7 +17,7 @@ buttons with actions. September has no absolute layout and no modal editor.
 ## The model
 
 ```
-PanelDefinition   title, columns, buttons
+PanelDefinition   title, buttons
   PanelButton     id, label, symbol (SF Symbol), action
     PanelAction   .shortcut(Shortcut) | .text(String)
 ```
@@ -63,7 +63,6 @@ the keys.
    ```json
    {
      "title": "SAFARI",
-     "columns": 2,
      "buttons": [
        { "id": "new-tab", "label": "New Tab", "symbol": "plus.square",
          "action": { "type": "shortcut", "modifiers": ["command"], "key": "t" } }

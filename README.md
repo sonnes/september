@@ -171,7 +171,7 @@ september/
 │   ├── core/           Pure rules and autocomplete
 │   ├── ui/             Shared tokens and generic UI primitives
 │   └── app-ui/         Shared layouts, blocks, and application screens
-└── docs/               concepts, plans, research, notes, and screenshots
+└── docs/               concepts, mocks, notes, plans, and screenshots
 ```
 
 Read the instruction file in an application directory before you change that
@@ -188,7 +188,8 @@ The public `/privacy-policy` and `/terms-of-service` pages cover the supplied
 applications. They describe September as a personal open-source project in
 India. The terms follow the MIT License, and the privacy notice explains the
 actual data flows. See `apps/web/src/pages/legal.tsx` and
-`docs/research/2026-09-05-india-legal-review.md`.
+`docs/research/2026-09-05-india-legal-review.md` on the `archive/old-docs`
+branch.
 
 The browser app imports the old web databases one time. It validates the imported rows before it removes the old databases and local-storage keys.
 
@@ -200,7 +201,7 @@ Run the checks from the application directory:
 
 ```sh
 pnpm -C apps/web test
-pnpm -C apps/web lint
+pnpm lint
 pnpm -C apps/web build
 
 pnpm -C apps/desktop test

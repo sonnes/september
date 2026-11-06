@@ -2,7 +2,7 @@ import { act, createElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { InterruptedSpeech } from '@september/app-ui/platform';
-import { savedSpeech, setup } from '@september/app-ui/services/settings';
+import { loadSettings, savedSpeech, setup } from '@september/app-ui/services/settings';
 import {
   soundFile,
   speak,
@@ -14,7 +14,7 @@ import {
   useVoiceFallback,
 } from '@september/app-ui/services/speech';
 import type { SpeechSettings } from '@september/core/rules/voice';
-import { DEFAULT_DRAFT, type VoiceService } from '@september/core/rules/onboarding';
+import { DEFAULT_ANSWERS } from '@september/core/rules/onboarding';
 
 import { platform } from './platform';
 import { renderPart } from './render';
@@ -53,10 +53,6 @@ const usage = () => vi.mocked(platform.store.putUsageEvent).mock.calls.map(([eve
 
 const say = (text: string, id?: string) => act(() => speak(text, id));
 
-async function chooseSetupVoice(voiceService: VoiceService) {
-  await setup.set({ ...DEFAULT_DRAFT, id: 'ravi', name: 'Ravi', voiceService });
-}
-
 async function chooseSpeech(settings: Partial<SpeechSettings>) {
   await savedSpeech.set({
     provider: 'elevenlabs',
@@ -73,20 +69,23 @@ beforeEach(async () => {
   stream = vi.mocked(platform.voice.stream);
   speakSystem = vi.mocked(platform.voice.speakSystem);
   stopSpeaking();
-  await chooseSetupVoice('elevenlabs');
   await chooseSpeech({});
   await renderPart(createElement(Probe));
 });
 
 describe('the speech settings', () => {
-  it('follow the voice of setup before the user chooses one', async () => {
+  it('use the system voice before anyone chooses one', async () => {
     await savedSpeech.set(null);
-    expect(speechSettings()).toMatchObject({
-      provider: 'elevenlabs',
-      modelId: 'eleven_flash_v2_5',
-    });
-    await chooseSetupVoice('system');
-    expect(speechSettings().provider).toBe('system');
+    expect(speechSettings()).toMatchObject({ provider: 'system', modelId: 'eleven_flash_v2_5' });
+  });
+
+  it('take the cloud voice that an older setup named', async () => {
+    await platform.store.putSetting('setup', { ...DEFAULT_ANSWERS, id: 'ravi', voiceService: 'elevenlabs' });
+    await platform.store.putSetting('speech', null);
+    await loadSettings();
+    expect(speechSettings().provider).toBe('elevenlabs');
+    expect(await platform.store.getSetting('speech')).toMatchObject({ provider: 'elevenlabs' });
+    expect(setup.get()).not.toHaveProperty('voiceService');
   });
 
   it('read a saved Turbo v2.5 model as Flash v2.5', async () => {
@@ -117,7 +116,7 @@ describe('speaking', () => {
     await chooseSpeech({ provider: 'system', voiceId: null });
     const sentence = 'Thursday is the physio appointment.';
     const reading = deferred<void>();
-    speakSystem.mockImplementation(async (text, _voice, onWord) => {
+    speakSystem.mockImplementation(async (text, _speed, onWord) => {
       onWord?.(text.indexOf('physio'));
       await reading.promise;
     });
@@ -231,12 +230,6 @@ describe('speaking', () => {
     expect(speakSystem.mock.calls[0]![0]).toBe('hello');
   });
 
-  it('gives the fallback voice no cloud voice ID', async () => {
-    stream.mockRejectedValueOnce(new Error('offline'));
-    await say('hello');
-    expect(speakSystem.mock.calls[0]![1].voiceId).toBeNull();
-  });
-
   it('streams the Dialogue voice in parts with Eleven v3, and records that model', async () => {
     await chooseSpeech({ provider: 'dialogue', stability: 0.45 });
     stream.mockResolvedValue({ fromCache: false, latencyMs: 300 });
@@ -253,13 +246,13 @@ describe('speaking', () => {
     );
   });
 
-  it('records Eleven v3 Conversational when the Dialogue voice uses it', async () => {
-    await chooseSpeech({ provider: 'dialogue', dialogueModelId: 'eleven_v3_conversational' });
+  it('streams Eleven v3 Conversational with a stability mode, and records that model', async () => {
+    await chooseSpeech({ provider: 'dialogue', dialogueModelId: 'eleven_v3_conversational', stability: 0.62 });
     stream.mockResolvedValue({ fromCache: false, latencyMs: 200 });
 
     await say('hello');
 
-    expect(stream.mock.calls[0]![1].modelId).toBe('eleven_v3_conversational');
+    expect(stream.mock.calls[0]![1]).toMatchObject({ modelId: 'eleven_v3_conversational', stability: 0.5 });
     expect(usage()).toContainEqual(
       expect.objectContaining({ model: 'eleven_v3_conversational', success: true }),
     );
@@ -314,7 +307,12 @@ describe('a sound file', () => {
   });
 
   it('keeps the tags and uses Eleven v3 at its own speed for the Dialogue voice', async () => {
-    await chooseSpeech({ provider: 'dialogue', speed: 1.2, stability: 0.45 });
+    await chooseSpeech({
+      provider: 'dialogue',
+      dialogueModelId: 'eleven_v3_conversational',
+      speed: 1.2,
+      stability: 0.45,
+    });
     expect(soundFile('[laughs] Hello there.')).toEqual({
       text: '[laughs] Hello there.',
       voice: {

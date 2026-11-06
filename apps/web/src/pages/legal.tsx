@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
 
 import { BrandMark, BrandWordmark } from '@september/app-ui/blocks/brand';
+import { documentTitle } from '@september/core/rules/titles';
 import { Footer } from '@/components/home/footer';
 
 function LegalPage({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <title>{`${title} · September`}</title>
+      <title>{documentTitle(title)}</title>
       <header className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
         <a
           href="/"

@@ -135,6 +135,10 @@ cargo fmt --all -- --check
   to `Commands` with its arguments and its answer. A Tauri command rejects with
   a string, so a screen that reads `error.message` shows nothing without
   `call()`.
+- Give each command an example in `src/commands.test.ts`, and write
+  `contract/commands.json` again with `UPDATE_CONTRACT=1 pnpm test`. The Rust
+  tests in `src-tauri/src/rpc/contract.rs` read that file into the Rust types,
+  so a field that one side names differently fails a test.
 - Ask before an action that erases rows. Use the shadcn `AlertDialog`, and give
   the confirming button the `destructive` variant.
 - Give each row the owner from `currentUserId()` in
@@ -172,12 +176,13 @@ cargo fmt --all -- --check
   A field that comes from a service with another name uses
   `#[serde(rename(deserialize = "..."))]`, which works on the way in only. A
   type that the WebView sends uses `#[serde(rename_all = "camelCase")]`. A name
-  that does not match makes a field `undefined`, and TypeScript cannot see it.
+  that does not match makes a field `undefined`. The contract tests catch it.
 - Keep every API key in the macOS Keychain, through `src-tauri/src/providers.rs`.
   A key must not enter the onboarding draft, SQLite, a Tauri event, a log, or
   the browser storage. A command returns a status, never a key.
 - Use a brand mark only from the file that the brand publishes, kept in
-  `public/`. Do not redraw one. The September mark is `public/logo.svg`, shown
+  `packages/app-ui/public/`. Do not redraw one. The September mark is
+  `packages/app-ui/public/logo.svg`, shown
   through `BrandMark` in `packages/app-ui/blocks/brand.tsx`. The Apple logo is the U+F8FF glyph from the
   macOS system font, which `system-ui` supplies. Apple asks for a written
   trademark licence before a third party shows this mark.

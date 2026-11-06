@@ -101,9 +101,9 @@ describe('on a phone', () => {
     expect(headerKey('Phrases')!.getAttribute('aria-pressed')).toBe('true');
 
     await press(await findButton('Close', sheet));
-    // The sheet gives the focus back after it leaves the page.
-    await act(async () => new Promise(done => setTimeout(done, 0)));
-    expect(document.querySelector('[role="dialog"]')).toBeNull();
-    expect(document.activeElement).toBe(headerKey('Phrases'));
+    await vi.waitFor(() => {
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
+      expect(document.activeElement).toBe(headerKey('Phrases'));
+    });
   });
 });

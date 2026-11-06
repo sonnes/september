@@ -1,13 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { PanelShell } from '@september/app-ui/layouts/panel';
 
 import { platform, rows } from './platform';
-import { addSpace, findButton, finishSetup, press, renderApp } from './render';
-
-function PanelWindow() {
-  return <PanelShell onHide={() => {}} />;
-}
+import { addSpace, findButton, finishSetup, PanelWindow, press, renderApp } from './render';
 
 async function openNote(shell?: typeof PanelWindow) {
   await finishSetup();

@@ -39,12 +39,10 @@ public struct PanelButton: Sendable, Hashable, Identifiable {
 /// shortcuts for the app in front.
 public struct PanelDefinition: Sendable, Hashable {
     public let title: String
-    public let columns: Int
     public let buttons: [PanelButton]
 
-    public init(title: String, columns: Int, buttons: [PanelButton]) {
+    public init(title: String, buttons: [PanelButton]) {
         self.title = title
-        self.columns = columns
         self.buttons = buttons
     }
 }
@@ -53,7 +51,7 @@ public struct PanelDefinition: Sendable, Hashable {
 
 extension PanelDefinition: Decodable {
     enum CodingKeys: String, CodingKey {
-        case title, columns, buttons
+        case title, buttons
     }
 
     public init(from decoder: any Decoder) throws {
@@ -65,7 +63,6 @@ extension PanelDefinition: Decodable {
         }
         self.init(
             title: try container.decode(String.self, forKey: .title),
-            columns: try container.decode(Int.self, forKey: .columns),
             buttons: buttons
         )
     }

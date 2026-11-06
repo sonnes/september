@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  cloudSound,
+  DEFAULT_SPEECH,
   DEFAULT_VOICE_MODEL,
   DIALOGUE_MODELS,
   dialogueModelFrom,
@@ -11,6 +13,7 @@ import {
   expressionSound,
   heardVoices,
   shownVoices,
+  speechServices,
   stabilityFor,
   VOICE_MODELS,
   voiceModelFrom,
@@ -89,8 +92,58 @@ describe("stabilityFor", () => {
     expect(stabilityFor("eleven_v3", 0.8)).toBe(1);
   });
 
+  it("snaps stability for Eleven v3 Conversational too", () => {
+    expect(stabilityFor("eleven_v3_conversational", 0.62)).toBe(0.5);
+  });
+
   it("keeps stability for the other models", () => {
     expect(stabilityFor("eleven_flash_v2_5", 0.42)).toBe(0.42);
+  });
+});
+
+describe("cloudSound", () => {
+  const dialogue = {
+    ...DEFAULT_SPEECH,
+    provider: "dialogue" as const,
+    dialogueModelId: "eleven_v3_conversational",
+    stability: 0.62,
+    speed: 0.8,
+  };
+
+  it("speaks the Dialogue voice live with its chosen model, a stability mode, and no speed", () => {
+    expect(cloudSound(dialogue, "live")).toEqual({
+      modelId: "eleven_v3_conversational",
+      stability: 0.5,
+      similarity: 0.75,
+      speed: 1,
+    });
+  });
+
+  it("makes a Dialogue file with Eleven v3 and the same stability mode", () => {
+    expect(cloudSound(dialogue, "file")).toEqual({
+      modelId: "eleven_v3",
+      stability: 0.5,
+      similarity: 0.75,
+      speed: 1,
+    });
+  });
+
+  it("keeps the model and the values of an ElevenLabs voice", () => {
+    const voice = { ...DEFAULT_SPEECH, provider: "elevenlabs" as const, stability: 0.42, speed: 1.1 };
+    expect(cloudSound(voice, "file")).toEqual({
+      modelId: DEFAULT_VOICE_MODEL,
+      stability: 0.42,
+      similarity: 0.75,
+      speed: 1.1,
+    });
+  });
+});
+
+describe("speechServices", () => {
+  it("offers each service once, with the system voice of the platform", () => {
+    const services = speechServices("Built into this device.");
+    expect(services.map((one) => one.value)).toEqual(["system", "elevenlabs", "dialogue"]);
+    expect(services[0].description).toBe("Built into this device.");
   });
 });
 

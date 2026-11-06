@@ -80,8 +80,7 @@ export const platform: Platform = {
     systemName: "macOS system voice",
     systemDescription: "Built into macOS. Free, and it works without a network.",
     // The native voice does not report its words, so `onWord` is never called.
-    speakSystem: (text, { voiceId, speed }) =>
-      call("speech_system", { request: { text, voice_id: voiceId, speed } }),
+    speakSystem: (text, speed) => call("speech_system", { request: { text, speed } }),
     // Rust plays the sound, and a stop goes through `stop`, so the signal is not sent.
     async stream(text, voice, dialogueParts) {
       const heard = await call("speech_stream", {

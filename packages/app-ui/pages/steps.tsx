@@ -7,8 +7,8 @@ import { RadioGroup } from "@september/ui/components/radio-group";
 
 import { useDraft } from "@september/app-ui/blocks/onboarding-draft";
 import { AccessForm } from "@september/app-ui/blocks/access-form";
-import { PickList } from "@september/app-ui/blocks/pick-list";
 import { Section, SpeakingStyle } from "@september/app-ui/blocks/setup-fields";
+import { VoicePicker } from "@september/app-ui/blocks/voice-picker";
 import {
   CloudStatus,
   ElevenLabsImpactLink,
@@ -23,8 +23,8 @@ import {
   nextStep,
   previousStep,
   SPEAKING_STYLES,
+  setupVoices,
   stepFor,
-  voiceServices,
   WRITING_SERVICES,
   type StepPath,
 } from "@september/core/rules/onboarding";
@@ -307,7 +307,7 @@ export function ConnectStep() {
     ? picked
     : (voiceRows(shownVoices(voiceList, ""), [])[0]?.id ?? "");
   const [problem, setProblem] = useState("");
-  const voiceOptions = voiceServices(platform.voice.systemDescription);
+  const voiceOptions = setupVoices(platform.voice.systemDescription);
 
   // The step answers itself, so a supported Mac needs no action.
   useEffect(() => {
@@ -394,7 +394,7 @@ export function ConnectStep() {
                   </p>
                 ) : null}
                 {option.value === "openrouter" ? (
-                  <KeyPanel provider="openrouter" name="OpenRouter" />
+                  <KeyPanel provider="openrouter" />
                 ) : null}
               </ServiceChoice>
             ))}
@@ -428,7 +428,7 @@ export function ConnectStep() {
               >
                 {option.value === "elevenlabs" ? (
                   <>
-                    <KeyPanel provider="elevenlabs" name="ElevenLabs" />
+                    <KeyPanel provider="elevenlabs" />
                     <ElevenLabsImpactLink />
                     {voices.error ? (
                       <p role="alert" className="text-destructive text-sm">
@@ -436,31 +436,13 @@ export function ConnectStep() {
                       </p>
                     ) : null}
                     {voiceList.length > 0 ? (
-                      <PickList
-                        rows={voiceRows(voiceList, [])}
-                        filter={(rows, query) => {
-                          const shown = shownVoices(voiceList, query, voiceId);
-                          return rows.filter((row) => shown.includes(row.voice));
-                        }}
+                      <VoicePicker
+                        voices={voiceList}
                         value={voiceId}
                         onPick={setPicked}
-                        label="Search voices"
+                        onHear={(voice) => hear(voice.preview_url!)}
                         name="Voice"
-                        columns={1}
-                        fixedHeight
-                        after={(row) =>
-                          row.voice.preview_url ? (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="h-11 px-4"
-                              aria-label={`Hear ${row.name}`}
-                              onClick={() => hear(row.voice.preview_url!)}
-                            >
-                              ▶ Hear it
-                            </Button>
-                          ) : null
-                        }
+                        compact
                       />
                     ) : null}
                   </>

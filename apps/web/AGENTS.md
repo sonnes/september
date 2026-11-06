@@ -47,6 +47,6 @@ The production output is `dist/`. Vercel serves prerendered public pages and `ap
 
 ## Module Structure
 
-Each package must have an `index.ts`, a `package.json`, and a `README.md`.
+Each package must have a `package.json` and a `README.md`.
 
 **READ and UPDATE the README.md in each module directory before and after making changes.**

@@ -7,7 +7,7 @@ import { Input } from "@september/ui/components/input";
 import { Label } from "@september/ui/components/label";
 import { Textarea } from "@september/ui/components/textarea";
 import { cloneVoice, type CreatedVoice, MediaRecorderManager, recordingFile, type RecordingStatus, SamplePlayer } from "@september/app-ui/services/cloning";
-import { CLONE_LIMITS_TEXT, validateVoiceClone } from "@september/core/rules/voice-clone";
+import { CLONE_LIMITS_TEXT, validateSampleFile, validateVoiceClone } from "@september/core/rules/voice-clone";
 
 const SAMPLE_TEXTS = [
   { id: "birch-canoe", text: "The birch canoe slid on the smooth planks." },
@@ -113,7 +113,7 @@ export function useVoiceCloneDraft(): VoiceCloneDraft {
 
   const addUploads = (files: File[]) => {
     for (const file of files) {
-      const problem = validateVoiceClone({ files: [file], name: "Voice" });
+      const problem = validateSampleFile(file);
       if (problem) {
         setUploadError(problem);
         return;

@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { platform } from "@platform/adapter";
 
-import type { AppleStatus, Provider, ProviderStatus } from "../platform";
+import type { AppleStatus, Provider, ProviderStatus, Voice } from "../platform";
+import type { CreatedVoice } from "./cloning";
 
 export interface Connections {
   apple: AppleStatus;
@@ -38,6 +39,7 @@ async function readConnections(): Promise<Connections> {
 }
 
 const connectionsKey = ["connections"];
+const voicesKey = ["voices"];
 
 /** What this device reports about each service, read once for every screen. */
 export function useConnections() {
@@ -47,12 +49,17 @@ export function useConnections() {
     connections: read.data ?? BLANK_CONNECTIONS,
     checking: read.isPending,
     error: read.error,
-    /** Puts a new status of one service in place, after a key is saved or forgotten. */
-    replace: (status: ProviderStatus) =>
+    /**
+     * Puts a new status of one service in place, after a key is saved or
+     * forgotten. A new ElevenLabs key reads its own voices.
+     */
+    replace: (status: ProviderStatus) => {
       client.setQueryData<Connections>(connectionsKey, (held = BLANK_CONNECTIONS) => ({
         ...held,
         [status.provider]: status,
-      })),
+      }));
+      if (status.provider === "elevenlabs") void client.resetQueries({ queryKey: voicesKey });
+    },
   };
 }
 
@@ -68,11 +75,32 @@ export function useForgetKey() {
   });
 }
 
+/**
+ * ElevenLabs lists a new voice some time after it makes it, so a held list
+ * that holds a new voice is not read again for this long.
+ */
+const VOICES_FRESH_MS = 60_000;
+
+const voicesQuery = {
+  queryKey: voicesKey,
+  queryFn: () => platform.providers.voices(),
+  staleTime: VOICES_FRESH_MS,
+};
+
 /** The voices of the ElevenLabs account, read while `enabled`. */
 export function useVoices(enabled: boolean) {
-  return useQuery({
-    queryKey: ["voices"],
-    queryFn: () => platform.providers.voices(),
-    enabled,
-  });
+  return useQuery({ ...voicesQuery, enabled });
+}
+
+/** Puts a voice made a moment ago into the held list, before ElevenLabs lists it. */
+export function useKeepCreatedVoice() {
+  const client = useQueryClient();
+  return async (created: CreatedVoice) => {
+    const held = await client.ensureQueryData(voicesQuery);
+    if (held.some((voice) => voice.id === created.id)) return;
+    client.setQueryData<Voice[]>(voicesKey, [
+      { ...created, preview_url: null, category: "cloned", is_owner: true },
+      ...held,
+    ]);
+  };
 }
