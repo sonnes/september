@@ -1,0 +1,26 @@
+{
+  "title": "Mail",
+  "columns": 2,
+  "buttons": [
+    { "id": "new-message", "label": "New Message",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "n"} },
+    { "id": "reply", "label": "Reply",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "r"} },
+    { "id": "reply-all", "label": "Reply All",
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "r"} },
+    { "id": "forward", "label": "Forward",
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "f"} },
+    { "id": "send", "label": "Send",
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "d"} },
+    { "id": "archive", "label": "Archive",
+      "action": {"type": "shortcut", "modifiers": ["control", "command"], "key": "a"} },
+    { "id": "get-mail", "label": "Get Mail",
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "n"} },
+    { "id": "search", "label": "Search",
+      "action": {"type": "shortcut", "modifiers": ["option", "command"], "key": "f"} },
+    { "id": "attach", "label": "Attach",
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "a"} },
+    { "id": "flag", "label": "Flag",
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "l"} }
+  ]
+}

@@ -13,6 +13,8 @@ public struct AXNode: Equatable, Sendable, Identifiable {
     public let value: String?
     /// The element the app has focused — the one keystrokes reach.
     public let isFocused: Bool
+    /// The keys of a menu item, when it has a shortcut.
+    public let menuKeys: AXMenuKeys?
     public let children: [AXNode]
 
     public init(
@@ -21,6 +23,7 @@ public struct AXNode: Equatable, Sendable, Identifiable {
         label: String? = nil,
         value: String? = nil,
         isFocused: Bool = false,
+        menuKeys: AXMenuKeys? = nil,
         children: [AXNode] = []
     ) {
         self.id = id
@@ -28,6 +31,7 @@ public struct AXNode: Equatable, Sendable, Identifiable {
         self.label = label
         self.value = value
         self.isFocused = isFocused
+        self.menuKeys = menuKeys
         self.children = children
     }
 

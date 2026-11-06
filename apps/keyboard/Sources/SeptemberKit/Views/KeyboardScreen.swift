@@ -30,7 +30,7 @@ public struct KeyboardScreen: View {
             MainKeyboardView()
 
             VStack(alignment: .leading, spacing: Metrics.keypadStackSpacing) {
-                PanelGridView(panel: controller.panels.navigate) { controller.perform($0) }
+                PanelGridView(panel: controller.panels.text) { controller.perform($0) }
                 PanelGridView(panel: controller.panels.system) { controller.perform($0) }
             }
 

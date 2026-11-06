@@ -3,24 +3,27 @@ import Foundation
 /// The panels shipped with the app: the fixed keypads, one panel per app we
 /// know shortcuts for, and a generic panel for every other app.
 ///
-/// File names are the identity: `edit.json`, `navigate.json`, `system.json`,
-/// `Apps/generic.json`, and `Apps/<bundle id>.json`.
+/// File names are the identity: `edit.json`, `text.json`, `system.json`,
+/// `Apps/generic.json`, and `Apps/<bundle id>.json`. The Claude Code panel is
+/// `Apps/claude-code.json`, because it belongs to a tool in a terminal, not to
+/// an app.
 public struct PanelStore: Sendable {
     public let edit: PanelDefinition
-    public let navigate: PanelDefinition
+    public let text: PanelDefinition
     public let system: PanelDefinition
-    private let generic: PanelDefinition
+    /// The panel of an app with no panel file.
+    public let generic: PanelDefinition
     private let byBundleID: [String: PanelDefinition]
 
     public init(
         edit: PanelDefinition,
-        navigate: PanelDefinition,
+        text: PanelDefinition,
         system: PanelDefinition,
         generic: PanelDefinition,
         byBundleID: [String: PanelDefinition]
     ) {
         self.edit = edit
-        self.navigate = navigate
+        self.text = text
         self.system = system
         self.generic = generic
         self.byBundleID = byBundleID
@@ -29,6 +32,23 @@ public struct PanelStore: Sendable {
     public func appPanel(forBundleID bundleID: String?) -> PanelDefinition {
         guard let bundleID, let panel = byBundleID[bundleID] else { return generic }
         return panel
+    }
+
+    /// True when the app has a panel file of its own.
+    public func hasPanel(forBundleID bundleID: String) -> Bool {
+        byBundleID[bundleID] != nil
+    }
+
+    /// Each app panel with its bundle ID, by title.
+    public var appPanels: [(bundleID: String, panel: PanelDefinition)] {
+        byBundleID
+            .map { (bundleID: $0.key, panel: $0.value) }
+            .sorted { $0.panel.title.localizedStandardCompare($1.panel.title) == .orderedAscending }
+    }
+
+    /// The chords of the Edit, Text, and System keypads.
+    public var keypadShortcuts: Set<Shortcut> {
+        edit.shortcuts.union(text.shortcuts).union(system.shortcuts)
     }
 
     /// Loads the panels from `Resources/Panels`. Throws when a fixed panel is
@@ -59,7 +79,7 @@ public struct PanelStore: Sendable {
 
         return PanelStore(
             edit: try load("edit"),
-            navigate: try load("navigate"),
+            text: try load("text"),
             system: try load("system"),
             generic: try load("generic", in: apps),
             byBundleID: byBundleID

@@ -1,0 +1,28 @@
+{
+  "title": "Finder",
+  "columns": 2,
+  "buttons": [
+    { "id": "new-window", "label": "New Window",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "n"} },
+    { "id": "new-folder", "label": "New Folder",
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "n"} },
+    { "id": "go-to-folder", "label": "Go to Folder",
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "g"} },
+    { "id": "get-info", "label": "Get Info",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "i"} },
+    { "id": "quick-look", "label": "Quick Look",
+      "action": {"type": "shortcut", "modifiers": [], "key": "space"} },
+    { "id": "home", "label": "Home",
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "h"} },
+    { "id": "downloads", "label": "Downloads",
+      "action": {"type": "shortcut", "modifiers": ["option", "command"], "key": "l"} },
+    { "id": "desktop", "label": "Desktop",
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "d"} },
+    { "id": "back", "label": "Back",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "["} },
+    { "id": "search", "label": "Search",
+      "action": {"type": "shortcut", "modifiers": ["command"], "key": "f"} },
+    { "id": "applications", "label": "Applications",
+      "action": {"type": "shortcut", "modifiers": ["shift", "command"], "key": "a"} }
+  ]
+}
