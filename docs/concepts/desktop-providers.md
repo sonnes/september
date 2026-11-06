@@ -107,18 +107,19 @@ each with a sample to hear, do not fit a 320px card.
 
 ## The voice list holds the voices of the account
 
-The desktop app gets the list from
-`GET /v2/voices?page_size=100&voice_type=non-default`, in Rust.
+The desktop app gets the list from `GET /v2/voices?page_size=100`, in Rust.
+A page gives 10 voices without `page_size`. The web app gets the list from
+`GET /v1/voices`, in the browser. Both lists hold the voices of the account
+and the stock voices of ElevenLabs, each with its category.
 
-| Part         | Value         | Why                                               |
-| ------------ | ------------- | ------------------------------------------------- |
-| Version      | `v2`          | The v1 list has no `voice_type` filter.           |
-| `voice_type` | `non-default` | The stock voices are not the voices of this user. |
-| `page_size`  | `100`         | A page gives 10 without it.                       |
+`shownVoices` in `@september/core/rules/voice` decides the rows. The Voice
+screen and the Connect step of setup both use it:
 
-The web app gets the list from `GET /v1/voices`, in the browser. That list
-also holds the stock voices of ElevenLabs. As a result, the web app can show
-voices that the desktop app does not show.
+- The list shows the voices of the account. These are the voices of every
+  category except `premade`, the ElevenLabs stock voices.
+- A search also shows the stock voices that match it.
+- If the account has no voices of its own, the list shows the stock voices.
+- The chosen voice shows when there is no search.
 
 Rust gives the list in the order of ElevenLabs. The category and `is_owner`
 reach the screen, and `voiceRows` in core sorts the rows. `voiceRows` puts a voice

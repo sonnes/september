@@ -6,6 +6,8 @@
  * similarity setting, and it takes three stability modes, not a range.
  */
 
+import { matchesWords } from "./pick.ts";
+
 export const DEFAULT_VOICE_MODEL = "eleven_flash_v2_5";
 
 /**
@@ -261,15 +263,29 @@ export const SPEED_RANGE = { min: 0.7, max: 1.2 } as const;
 export const VOICE_SAMPLE_TEXT = "This is how I sound today.";
 
 /**
- * The voices the list offers: the voices of the account and the stock
- * ElevenLabs voices, once each. A new account has no voices of its own, so
- * the stock voices are what it can speak with.
+ * The voices a voice list shows for a search, once each.
+ *
+ * The list shows the voices of the account: every category except the
+ * ElevenLabs stock voices (`premade`). A search also shows the stock voices
+ * that match it. An account with no voices of its own shows the stock voices.
+ * The chosen voice shows without a search, so the list never hides the choice.
  */
-export function listedVoices<V extends { id: string }>(voices: readonly V[]): V[] {
+export function shownVoices<V extends ListedVoice>(
+  voices: readonly V[],
+  query: string,
+  chosen?: string | null,
+): V[] {
   const seen = new Set<string>();
-  return voices.filter((voice) => {
+  const unique = voices.filter((voice) => {
     if (!voice.id || seen.has(voice.id)) return false;
     seen.add(voice.id);
     return true;
   });
+  const own = unique.filter((voice) => voice.category !== "premade");
+  const searched = query.trim() !== "";
+  return unique.filter(
+    (voice) =>
+      matchesWords(voice.name, query) &&
+      (own.length === 0 || searched || own.includes(voice) || voice.id === chosen),
+  );
 }

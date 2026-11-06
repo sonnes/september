@@ -820,10 +820,10 @@ loopback proxy and a token that lasts one run; the proxy exchanges that token
 for the real key and forwards the request. See
 [desktop providers](../../docs/concepts/desktop-providers.md).
 
-The voice list comes from `GET /v2/voices`, with `voice_type=non-default` and
-`page_size=100`. The web app asks the same way. The filter leaves out the stock
-ElevenLabs voices, so the list holds the voices of this account only. A page
-gives 10 voices without `page_size`.
+The voice list comes from `GET /v2/voices`, with `page_size=100`. A page gives
+10 voices without `page_size`. The list holds every voice with its category.
+The screens show the voices of the account, and the stock ElevenLabs voices
+only for a search or for an account with no voices of its own.
 
 Rust gives the list in the order of ElevenLabs, with the category and
 `is_owner` of each voice. `voiceRows` in `packages/core/rules/voice.ts` groups

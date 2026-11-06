@@ -564,13 +564,13 @@ impl Providers {
     }
 
     pub async fn voices(&self, key: &str) -> Result<Vec<Voice>> {
-        // `non-default` leaves out the stock voices, so the list holds the
-        // voices of this account only. The v2 list counts a page with
-        // `page_size`, and gives 10 without it.
+        // The list holds the voices of the account and the stock voices,
+        // each with its category, so the screens can tell them apart. The v2
+        // list counts a page with `page_size`, and gives 10 without it.
         let response = self
             .client
             .get(format!(
-                "{}/v2/voices?page_size=100&voice_type=non-default",
+                "{}/v2/voices?page_size=100",
                 self.eleven_labs
             ))
             .header("xi-api-key", key)

@@ -186,7 +186,7 @@ async fn an_empty_eleven_labs_quota_is_an_error() {
 }
 
 #[tokio::test]
-async fn the_voice_list_holds_the_voices_of_the_account() {
+async fn the_voice_list_holds_every_voice_with_its_category() {
     let (base, requests) = serve_once(
         "200 OK",
         json!({ "voices": [
@@ -199,7 +199,7 @@ async fn the_voice_list_holds_the_voices_of_the_account() {
 
     let head = requests.recv().unwrap();
     assert!(head.contains("GET /v2/voices"), "{head}");
-    assert!(head.contains("voice_type=non-default"), "{head}");
+    assert!(!head.contains("voice_type"), "{head}");
     assert!(head.contains("page_size=100"), "{head}");
 
     assert_eq!(
@@ -212,6 +212,10 @@ async fn the_voice_list_holds_the_voices_of_the_account() {
             ("AZn", None)
         ]
     );
+    // The screens read the category to keep the stock voices out of the list.
+    let sent = serde_json::to_value(&voices).unwrap();
+    assert_eq!(sent[0]["category"], "premade");
+    assert_eq!(sent[1]["category"], "cloned");
 }
 
 #[tokio::test]

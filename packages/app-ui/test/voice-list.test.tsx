@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { heardVoices, savedSpeech } from '@september/app-ui/services/settings';
 
 import { platform } from './platform';
-import { findButton, finishSetup, press, renderApp } from './render';
+import { findButton, finishSetup, press, renderApp, typeInto } from './render';
 
 const played: string[] = [];
 
@@ -37,9 +37,26 @@ beforeEach(async () => {
   vi.mocked(platform.providers.voices).mockResolvedValue([
     { id: 'roger', name: 'Roger - Laid-Back, Casual', preview_url: 'https://x/roger.mp3', category: 'premade' },
     { id: 'mine', name: 'My voice', preview_url: null, category: 'cloned' },
+    { id: 'paul', name: 'Paul - Narrator', preview_url: null, category: 'professional', is_owner: false },
     { id: 'alice', name: 'Alice - Clear, Engaging', preview_url: 'https://x/alice.mp3', category: 'premade' },
+    ...STOCK,
   ]);
 });
+
+/** More stock voices, so the list is long enough to have a search field. */
+const STOCK = ['Bella', 'Chris', 'Daniel', 'Eric', 'George', 'Lily'].map(name => ({
+  id: name.toLowerCase(),
+  name,
+  preview_url: null,
+  category: 'premade',
+}));
+
+const OWN_AND_CHOSEN = ['Yours', 'My voice', 'From the library', 'Paul', 'ElevenLabs voices', 'Alice'];
+
+async function search(container: HTMLElement, query: string) {
+  const field = container.querySelector<HTMLInputElement>('input[type="search"]')!;
+  await typeInto(field, query);
+}
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -57,37 +74,52 @@ async function render() {
   return rendered;
 }
 
-it('shows the voices of the user first, then the ElevenLabs voices by name', async () => {
+it('shows the voices of the account and the voice in use, not the other stock voices', async () => {
   const { container } = await render();
-  expect(listed(container)).toEqual(['Yours', 'My voice', 'ElevenLabs voices', 'Alice', 'Roger']);
+  expect(listed(container)).toEqual(OWN_AND_CHOSEN);
+});
+
+it('adds the stock voices that match a search', async () => {
+  const { container } = await render();
+  await search(container, 'roger');
+  expect(listed(container)).toEqual(['ElevenLabs voices', 'Roger']);
+});
+
+it('shows the stock voices when the account has no voices of its own', async () => {
+  vi.mocked(platform.providers.voices).mockResolvedValue([
+    { id: 'roger', name: 'Roger - Laid-Back, Casual', preview_url: null, category: 'premade' },
+    { id: 'alice', name: 'Alice - Clear, Engaging', preview_url: null, category: 'premade' },
+  ]);
+  const { container } = await render();
+  expect(listed(container)).toEqual(['ElevenLabs voices', 'Alice', 'Roger']);
 });
 
 it('shows the description of a voice under its name', async () => {
   const { container } = await render();
-  expect(container.querySelector('[aria-label="Voices"]')?.textContent).toContain('Laid-Back, Casual');
+  expect(container.querySelector('[aria-label="Voices"]')?.textContent).toContain('Clear, Engaging');
 });
 
 it('plays the sample a person hears and keeps the voice without moving its row', async () => {
   const { container } = await render();
-  await press(await findButton('Hear Roger - Laid-Back, Casual', container));
-  expect(played).toEqual(['https://x/roger.mp3']);
-  await vi.waitFor(() => expect(heardVoices.get()).toEqual(['roger']));
-  expect(listed(container)).toEqual(['Yours', 'My voice', 'ElevenLabs voices', 'Alice', 'Roger']);
+  await press(await findButton('Hear Alice - Clear, Engaging', container));
+  expect(played).toEqual(['https://x/alice.mp3']);
+  await vi.waitFor(() => expect(heardVoices.get()).toEqual(['alice']));
+  expect(listed(container)).toEqual(OWN_AND_CHOSEN);
 });
 
 it('lists the voices heard on an earlier visit under Heard lately', async () => {
-  await heardVoices.set(['roger']);
+  await heardVoices.set(['paul']);
   const { container } = await render();
-  expect(listed(container)).toEqual(['Yours', 'My voice', 'Heard lately', 'Roger', 'ElevenLabs voices', 'Alice']);
+  expect(listed(container)).toEqual(['Yours', 'My voice', 'Heard lately', 'Paul', 'ElevenLabs voices', 'Alice']);
 });
 
 it('marks the voice in use and saves a new choice', async () => {
   const { container } = await render();
   const chosen = container.querySelector('[aria-label="Voices"] [role="radio"][aria-checked="true"]');
   expect(chosen?.textContent).toContain('Alice');
-  const roger = [...container.querySelectorAll('[data-row-name]')].find(name => name.textContent === 'Roger');
-  await press(roger!.closest('button')!);
-  await vi.waitFor(() => expect(savedSpeech.get()).toEqual(expect.objectContaining({ voiceId: 'roger' })));
+  const mine = [...container.querySelectorAll('[data-row-name]')].find(name => name.textContent === 'My voice');
+  await press(mine!.closest('button')!);
+  await vi.waitFor(() => expect(savedSpeech.get()).toEqual(expect.objectContaining({ voiceId: 'mine' })));
 });
 
 it('shows who speaks as choices, with the one in use checked', async () => {
@@ -103,7 +135,7 @@ it('offers the Dialogue voice and keeps the voice list for it', async () => {
   expect(choice).not.toBeNull();
   await press(choice!);
   await vi.waitFor(() => expect(savedSpeech.get()).toEqual(expect.objectContaining({ provider: 'dialogue' })));
-  expect(listed(container)).toEqual(['Yours', 'My voice', 'ElevenLabs voices', 'Alice', 'Roger']);
+  expect(listed(container)).toEqual(OWN_AND_CHOSEN);
 });
 
 it('speaks a sample in the voice in use', async () => {

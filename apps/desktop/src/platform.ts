@@ -13,7 +13,6 @@ import {
   type Platform,
   type PlatformStore,
 } from "@september/app-ui/platform";
-import { listedVoices } from "@september/core/rules/voice";
 
 import packageMetadata from "../package.json";
 import { call, callRaw } from "./commands";
@@ -117,7 +116,7 @@ export const platform: Platform = {
       }
     },
     forget: (provider) => call("provider_forget", { request: { provider } }),
-    voices: async () => listedVoices(await call("provider_voices")),
+    voices: () => call("provider_voices"),
     quota: () => call("provider_quota"),
     async cloneVoice(form) {
       const { bytes, contentType } = await rawForm(form);

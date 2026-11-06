@@ -8,8 +8,7 @@ import { navFor } from "@september/core/rules/navigation";
 import type { Voice } from "@september/app-ui/platform";
 import { useConnections, useVoices } from "@september/app-ui/services/connections";
 import { heardVoices as heardSetting } from "@september/app-ui/services/settings";
-import { matchesWords } from "@september/core/rules/pick";
-import { heardVoices, VOICE_SAMPLE_TEXT, voiceRows } from "@september/core/rules/voice";
+import { heardVoices, shownVoices, VOICE_SAMPLE_TEXT, voiceRows } from "@september/core/rules/voice";
 import { play } from "@september/app-ui/services/player";
 import { type CreatedVoice, keepCreatedVoice, recentCreatedVoice, rememberCreatedVoice } from "@september/app-ui/services/cloning";
 import { Screen } from "@september/app-ui/blocks/screen";
@@ -132,11 +131,10 @@ export function VoiceScreen() {
                 label="Search voices"
                 name="Voices"
                 layout="list"
-                filter={(rows, query) =>
-                  rows.filter((row) =>
-                    matchesWords(`${row.name} ${row.detail ?? ""}`, query),
-                  )
-                }
+                filter={(rows, query) => {
+                  const shown = shownVoices(voices, query, voiceId);
+                  return rows.filter((row) => shown.includes(row.voice));
+                }}
                 // The button sits inside the row, so it always reads as part
                 // of the voice beside it.
                 after={({ voice }) => (

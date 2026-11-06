@@ -10,7 +10,7 @@ import {
   EXPRESSIONS,
   expressionSound,
   heardVoices,
-  listedVoices,
+  shownVoices,
   stabilityFor,
   VOICE_MODELS,
   voiceModelFrom,
@@ -233,9 +233,31 @@ describe("elevenLabsCredits", () => {
   });
 });
 
-describe("listedVoices", () => {
-  it("keeps one row for each voice and drops a row with no id", () => {
-    const rows = listedVoices([{ id: "a" }, { id: "" }, { id: "a" }, { id: "b" }]);
-    expect(rows.map((row) => row.id)).toEqual(["a", "b"]);
+describe("shownVoices", () => {
+  const voice = (id: string, name: string, category: string | null) => ({ id, name, category });
+  const own = [voice("mine", "Maya clone", "cloned"), voice("lib", "Rachel library", "professional")];
+  const stock = [voice("adam", "Adam - deep", "premade"), voice("rachel", "Rachel - calm", "premade")];
+  const ids = (rows: { id: string }[]) => rows.map((row) => row.id);
+
+  it("hides the stock voices of an account with its own voices", () => {
+    expect(ids(shownVoices([...own, ...stock], ""))).toEqual(["mine", "lib"]);
+  });
+
+  it("adds the stock voices that match a search", () => {
+    expect(ids(shownVoices([...own, ...stock], "rachel"))).toEqual(["lib", "rachel"]);
+  });
+
+  it("shows the stock voices of an account with no voices of its own", () => {
+    expect(ids(shownVoices(stock, ""))).toEqual(["adam", "rachel"]);
+    expect(ids(shownVoices(stock, "adam"))).toEqual(["adam"]);
+  });
+
+  it("keeps the chosen voice", () => {
+    expect(ids(shownVoices([...own, ...stock], "", "adam"))).toEqual(["mine", "lib", "adam"]);
+  });
+
+  it("shows each voice once and drops a voice with no id", () => {
+    const rows = shownVoices([voice("a", "A", null), voice("", "B", null), voice("a", "A", null)], "");
+    expect(ids(rows)).toEqual(["a"]);
   });
 });

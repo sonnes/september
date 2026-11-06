@@ -28,7 +28,7 @@ import {
   WRITING_SERVICES,
   type StepPath,
 } from "@september/core/rules/onboarding";
-import { voiceRows } from "@september/core/rules/voice";
+import { shownVoices, voiceRows } from "@september/core/rules/voice";
 import { documentTitle } from "@september/core/rules/titles";
 import { platform } from "@platform/adapter";
 import { APP_NAV } from "@september/app-ui/navigation";
@@ -303,7 +303,9 @@ export function ConnectStep() {
   const voices = useVoices(elevenlabsConnected);
   const voiceList = elevenlabsConnected ? (voices.data ?? []) : [];
   const [picked, setPicked] = useState("");
-  const voiceId = voiceList.some((voice) => voice.id === picked) ? picked : (voiceList[0]?.id ?? "");
+  const voiceId = voiceList.some((voice) => voice.id === picked)
+    ? picked
+    : (voiceRows(shownVoices(voiceList, ""), [])[0]?.id ?? "");
   const [problem, setProblem] = useState("");
   const voiceOptions = voiceServices(platform.voice.systemDescription);
 
@@ -436,6 +438,10 @@ export function ConnectStep() {
                     {voiceList.length > 0 ? (
                       <PickList
                         rows={voiceRows(voiceList, [])}
+                        filter={(rows, query) => {
+                          const shown = shownVoices(voiceList, query, voiceId);
+                          return rows.filter((row) => shown.includes(row.voice));
+                        }}
                         value={voiceId}
                         onPick={setPicked}
                         label="Search voices"
