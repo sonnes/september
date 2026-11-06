@@ -64,6 +64,8 @@ pub enum ProviderError {
     Rejected,
     #[error("This account has no characters left this month.")]
     QuotaEmpty,
+    #[error("The service is busy. Try again in a moment.")]
+    Busy,
     #[error("Could not reach the service. Check the internet and try again. ({0})")]
     Unreachable(#[from] reqwest::Error),
     #[error("The service sent a reply September could not read. ({0})")]
@@ -606,19 +608,29 @@ impl Providers {
 /// the error that says why, with the message of the service when it sent one.
 async fn accepted(response: reqwest::Response) -> Result<reqwest::Response> {
     let status = response.status();
-    if matches!(status, StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN) {
-        return Err(ProviderError::Rejected);
-    }
-    if status == StatusCode::TOO_MANY_REQUESTS {
-        return Err(ProviderError::QuotaEmpty);
-    }
     if status.is_success() {
         return Ok(response);
     }
+    if status == StatusCode::TOO_MANY_REQUESTS {
+        return Err(ProviderError::Busy);
+    }
 
     let bytes = response.bytes().await?;
-    let message = serde_json::from_slice::<Value>(&bytes)
-        .ok()
+    let body = serde_json::from_slice::<Value>(&bytes).ok();
+    // ElevenLabs answers a used-up quota with 401 and this status.
+    if body
+        .as_ref()
+        .and_then(|body| body.pointer("/detail/status"))
+        .and_then(Value::as_str)
+        == Some("quota_exceeded")
+    {
+        return Err(ProviderError::QuotaEmpty);
+    }
+    if matches!(status, StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN) {
+        return Err(ProviderError::Rejected);
+    }
+
+    let message = body
         .and_then(|body| {
             body.pointer("/detail/message")
                 .or_else(|| body.get("detail"))

@@ -79,7 +79,7 @@ enum Snapshot {
     }
 }
 
-private final class SilentSink: KeystrokeSink, @unchecked Sendable {
+private final class SilentSink: KeystrokeSink {
     func post(_ events: [Keystroke]) {}
     func type(_ text: String) {}
 }

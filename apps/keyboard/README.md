@@ -110,15 +110,12 @@ just do not reach other apps.
 
 ## Tests
 
-Xcode is not installed on this machine, so SwiftPM has neither swift-testing nor
-XCTest available. Tests are a plain executable with a ~40-line harness in
-`Tests/KitTests/Harness.swift`, run with `make test`. Once Xcode is installed,
-move the target to `.testTarget` and swap `test`/`expect` for `@Test`/`#expect` —
-the test bodies barely change.
+The tests use swift-testing and live in `Tests/KitTests`. `make test` runs
+`swift test`.
 
-The tests cover keystroke dispatch, controller state, input mirroring, panels,
-and accessibility-tree behavior. Visual tokens and exact layout measurements
-are reviewed outside the executable suite.
+The tests cover keystroke dispatch, key repeat, controller state, input
+mirroring, panels, and accessibility-tree behavior. They do not cover visual
+tokens or exact layout measurements.
 
 ## Design system
 

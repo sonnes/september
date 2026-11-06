@@ -90,9 +90,10 @@ panel commands:
 `window.rs` reads and writes the `panel-float` setting through
 `BackendState::setting` and `BackendState::put_setting`.
 
-`lib.rs` handles `WindowEvent::CloseRequested` for `panel`. It prevents the
-close and hides the panel, so the draft and the close guard stay. Quit still
-stops speech, the microphone, and gaze on `RunEvent::Exit`.
+`on_window_event` in `src/window.rs` handles `WindowEvent::CloseRequested` for
+`panel`. It prevents the close and hides the panel, so the draft and the close
+guard stay. Quit still stops speech, the microphone, and gaze on
+`RunEvent::Exit`.
 
 On macOS, `RunEvent::Reopen` comes from a click on the Dock icon. The handler
 shows the panel.
@@ -270,9 +271,9 @@ notes. Global Talk messages and notes remain. For example, this call creates
 or replaces a space:
 
 ```ts
-import { invoke } from "@tauri-apps/api/core";
+import { call } from "./commands";
 
-const space = await invoke<Space>("space_put", {
+const space = await call("space_put", {
   request: {
     id: crypto.randomUUID(),
     user_id: "local-user",
@@ -413,9 +414,10 @@ can play a sample without a key.
 
 `provider_clone_voice` accepts only a raw `multipart/form-data` body with its
 boundary in the `content-type` IPC header. The command rejects an empty body,
-a JSON body, and a body over 100 MB. It adds the cached ElevenLabs key and
-forwards the bytes to the fixed `/v1/voices/add` endpoint. Rust does not parse
-or copy the audio into JSON.
+a JSON body, and a body over 101 MB. That is the 100 MB of samples that
+`packages/core/rules/voice-clone.ts` allows, and room for the multipart
+headers. It adds the cached ElevenLabs key and forwards the bytes to the fixed
+`/v1/voices/add` endpoint. Rust does not parse or copy the audio into JSON.
 
 `provider_quota` returns the account tier, used characters, character limit,
 and reset time. It returns `null` when no ElevenLabs key is stored. The API key
@@ -436,7 +438,7 @@ space.
 
 The WebView writes with a typed model client, so Rust serves it rather than
 calling for it. `writing_proxy` starts a loopback proxy on the first call and
-answers with `{ baseUrl, token }`. The proxy binds `127.0.0.1` on a free port
+answers with `{ baseUrl, appleUrl, token }`. The proxy binds `127.0.0.1` on a free port
 and serves `POST /v1/chat/completions`. It requires the run token in
 `Authorization`, swaps that token for the OpenRouter key from the Keychain,
 and forwards the body to OpenRouter unchanged. The reply goes back byte for
@@ -498,7 +500,7 @@ their sound. Voice-list previews stay in the WebView and do not enter the tap.
 | `audio_outputs`      | none                         | `{ uid, name }[]`      |
 | `audio_output`       | none                         | The UID September uses |
 | `audio_output_set`   | `{ uid }`                    | none                   |
-| `speech_system`      | `{ text, voice_id?, speed }` | none                   |
+| `speech_system`      | `{ text, speed }`            | none                   |
 | `speech_stream`      | `{ text, voice, dialogueParts? }` | `{ from_cache, latency_ms, interrupted }` |
 | `speech_native_stop` | none                         | none, or rejects       |
 

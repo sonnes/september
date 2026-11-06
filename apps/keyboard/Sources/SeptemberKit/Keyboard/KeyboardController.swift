@@ -9,18 +9,17 @@ public final class KeyboardController: ObservableObject {
     @Published public private(set) var modifiers = ModifierState()
     /// What we have typed since the last Return. Only shown when the app in
     /// front exposes no text of its own.
-    private var echo = "" {
-        didSet { refreshInput() }
-    }
-    /// What the input bar shows: the focused field mirrored back, our own echo,
-    /// or nothing for a password field.
-    @Published public private(set) var input: InputMirror = .local(text: "")
+    @Published private var echo = ""
     /// The text field the app in front has focused, as far as accessibility
     /// can tell us.
     @Published public private(set) var focusedField: FocusedField?
     /// The name of the app in front. `nil` until an app reports its name.
     @Published public private(set) var frontmostAppName: String?
     @Published public private(set) var appPanel: PanelDefinition
+
+    /// What the input bar shows: the focused field mirrored back, our own echo,
+    /// or nothing for a password field.
+    public var input: InputMirror { focusedField?.display ?? .local(text: echo) }
 
     public let panels: PanelStore
 
@@ -92,13 +91,13 @@ public final class KeyboardController: ObservableObject {
         if let name = field?.appName {
             frontmostAppName = name
         }
-        // Whatever we typed belongs to the field we were on; a password must
+        // Whatever we typed belongs to the field we were on. A password must
         // never linger in our buffer.
-        if field?.display != nil { echo = "" } else { refreshInput() }
+        if isMirroring { echo = "" }
     }
 
-    /// True while the field itself is showing us its text — our echo would only
-    /// be a second, staler copy of it.
+    /// True while the field shows us its own text. Our echo is then a second,
+    /// staler copy of it.
     private var isMirroring: Bool { focusedField?.display != nil }
 
     /// Our own text only stands in for fields that show us nothing, and never
@@ -106,10 +105,6 @@ public final class KeyboardController: ObservableObject {
     private func append(_ text: String) {
         guard !isMirroring else { return }
         echo += text
-    }
-
-    private func refreshInput() {
-        input = focusedField?.display ?? .local(text: echo)
     }
 
     // MARK: - Turning presses into keystrokes

@@ -1,8 +1,9 @@
 import Foundation
 import SeptemberKit
+import Testing
 
 @MainActor
-func mirrorTests() {
+struct MirrorTests {
     func field(
         text: String? = "hello",
         selection: NSRange? = NSRange(location: 5, length: 0),
@@ -20,69 +21,69 @@ func mirrorTests() {
         )
     }
 
-    test("a readable field is mirrored with its caret") {
-        expectEqual(field().display, .mirrored(text: "hello", caret: 5, selectionLength: 0))
+    @Test func `a readable field is mirrored with its caret`() throws {
+        #expect(field().display == .mirrored(text: "hello", caret: 5, selectionLength: 0))
     }
 
-    test("a selection comes through as a length") {
+    @Test func `a selection comes through as a length`() throws {
         let selected = field(text: "hello", selection: NSRange(location: 1, length: 3))
-        expectEqual(selected.display, .mirrored(text: "hello", caret: 1, selectionLength: 3))
+        #expect(selected.display == .mirrored(text: "hello", caret: 1, selectionLength: 3))
     }
 
-    test("the caret is clamped to the text") {
+    @Test func `the caret is clamped to the text`() throws {
         let past = field(text: "hi", selection: NSRange(location: 99, length: 4))
-        expectEqual(past.display, .mirrored(text: "hi", caret: 2, selectionLength: 0))
+        #expect(past.display == .mirrored(text: "hi", caret: 2, selectionLength: 0))
     }
 
-    test("a field with no selection puts the caret at the end") {
-        expectEqual(field(selection: nil).display, .mirrored(text: "hello", caret: 5, selectionLength: 0))
+    @Test func `a field with no selection puts the caret at the end`() throws {
+        #expect(field(selection: nil).display == .mirrored(text: "hello", caret: 5, selectionLength: 0))
     }
 
-    test("a secure field is never mirrored") {
-        expectEqual(field(text: "", role: "AXTextField", secure: true).display, .secure)
+    @Test func `a secure field is never mirrored`() throws {
+        #expect(field(text: "", role: "AXTextField", secure: true).display == .secure)
     }
 
-    test("a field the app exposes no text for is not mirrored") {
-        expect(field(text: nil).display == nil)
+    @Test func `a field the app exposes no text for is not mirrored`() throws {
+        #expect(field(text: nil).display == nil)
     }
 
-    test("a read-only field is not mirrored") {
-        expect(field(editable: false).display == nil)
+    @Test func `a read-only field is not mirrored`() throws {
+        #expect(field(editable: false).display == nil)
     }
 
-    test("caret offsets are UTF-16, the same units the accessibility API uses") {
+    @Test func `caret offsets are UTF-16, the same units the accessibility API uses`() throws {
         let emoji = field(text: "🙂ok", selection: NSRange(location: 2, length: 0))
-        expectEqual(emoji.display, .mirrored(text: "🙂ok", caret: 2, selectionLength: 0))
-        expectEqual(InputMirror.split("🙂ok", caret: 2, selectionLength: 0).before, "🙂")
+        #expect(emoji.display == .mirrored(text: "🙂ok", caret: 2, selectionLength: 0))
+        #expect(InputMirror.split("🙂ok", caret: 2, selectionLength: 0).before == "🙂")
     }
 
-    test("a long field is read in a window around the selection") {
+    @Test func `a long field is read in a window around the selection`() throws {
         let middle = FocusedField.readWindow(
             count: 10_000, selection: NSRange(location: 5_000, length: 3), radius: 200)
-        expectEqual(middle.window, NSRange(location: 4_800, length: 403))
-        expectEqual(middle.selection, NSRange(location: 200, length: 3))
+        #expect(middle.window == NSRange(location: 4_800, length: 403))
+        #expect(middle.selection == NSRange(location: 200, length: 3))
 
         let start = FocusedField.readWindow(
             count: 10_000, selection: NSRange(location: 50, length: 0), radius: 200)
-        expectEqual(start.window, NSRange(location: 0, length: 400))
-        expectEqual(start.selection, NSRange(location: 50, length: 0))
+        #expect(start.window == NSRange(location: 0, length: 400))
+        #expect(start.selection == NSRange(location: 50, length: 0))
 
         let end = FocusedField.readWindow(
             count: 10_000, selection: NSRange(location: 9_990, length: 0), radius: 200)
-        expectEqual(end.window, NSRange(location: 9_790, length: 210))
-        expectEqual(end.selection, NSRange(location: 200, length: 0))
+        #expect(end.window == NSRange(location: 9_790, length: 210))
+        #expect(end.selection == NSRange(location: 200, length: 0))
     }
 
-    test("splitting a mirrored line gives the three runs the bar draws") {
+    @Test func `splitting a mirrored line gives the three runs the bar draws`() throws {
         let parts = InputMirror.split("hello", caret: 1, selectionLength: 3)
-        expectEqual(parts.before, "h")
-        expectEqual(parts.selected, "ell")
-        expectEqual(parts.after, "o")
+        #expect(parts.before == "h")
+        #expect(parts.selected == "ell")
+        #expect(parts.after == "o")
     }
 }
 
 @MainActor
-func focusTests() {
+struct FocusTests {
     let editable = FocusedField(
         appName: "TextEdit",
         role: "AXTextArea",
@@ -92,105 +93,105 @@ func focusTests() {
         selection: NSRange(location: 5, length: 0)
     )
 
-    test("with nothing focused the bar shows what we typed ourselves") {
+    @Test func `with nothing focused the bar shows what we typed ourselves`() throws {
         let (controller, _) = try makeController()
         controller.focusChanged(to: nil)
         controller.perform(.text("x"))
-        expectEqual(controller.input, .local(text: "x"))
+        #expect(controller.input == .local(text: "x"))
     }
 
-    test("focusing a readable field mirrors it instead of our echo") {
+    @Test func `focusing a readable field mirrors it instead of our echo`() throws {
         let (controller, _) = try makeController()
         controller.perform(.text("x"))
         controller.focusChanged(to: editable)
-        expectEqual(controller.input, .mirrored(text: "hello", caret: 5, selectionLength: 0))
+        #expect(controller.input == .mirrored(text: "hello", caret: 5, selectionLength: 0))
         controller.focusChanged(to: nil)
-        expectEqual(controller.input, .local(text: ""), "the local buffer is dropped while mirroring")
+        #expect(controller.input == .local(text: ""), "the local buffer is dropped while mirroring")
     }
 
-    test("the mirror follows the field as it changes") {
+    @Test func `the mirror follows the field as it changes`() throws {
         let (controller, _) = try makeController()
         controller.focusChanged(to: editable)
         var typed = editable
         typed.text = "hello!"
         typed.selection = NSRange(location: 6, length: 0)
         controller.focusChanged(to: typed)
-        expectEqual(controller.input, .mirrored(text: "hello!", caret: 6, selectionLength: 0))
+        #expect(controller.input == .mirrored(text: "hello!", caret: 6, selectionLength: 0))
     }
 
-    test("leaving a mirrored field falls back to a fresh local echo") {
+    @Test func `leaving a mirrored field falls back to a fresh local echo`() throws {
         let (controller, _) = try makeController()
         controller.focusChanged(to: editable)
         controller.focusChanged(to: nil)
-        expectEqual(controller.input, .local(text: ""))
+        #expect(controller.input == .local(text: ""))
     }
 
-    test("a secure field shows nothing and clears what we typed") {
+    @Test func `a secure field shows nothing and clears what we typed`() throws {
         let (controller, _) = try makeController()
         controller.perform(.text("secr"))
         var secure = editable
         secure.isSecure = true
         secure.text = ""
         controller.focusChanged(to: secure)
-        expectEqual(controller.input, .secure)
+        #expect(controller.input == .secure)
         controller.focusChanged(to: nil)
-        expectEqual(controller.input, .local(text: ""), "a password must not sit in our buffer")
+        #expect(controller.input == .local(text: ""), "a password must not sit in our buffer")
     }
 
-    test("typing into a secure field never reaches the buffer") {
+    @Test func `typing into a secure field never reaches the buffer`() throws {
         let (controller, sink) = try makeController()
         var secure = editable
         secure.isSecure = true
         controller.focusChanged(to: secure)
         controller.perform(.text("pw"))
         controller.focusChanged(to: nil)
-        expectEqual(controller.input, .local(text: ""))
-        expectEqual(sink.typed, ["pw"], "the keystroke still goes through")
+        #expect(controller.input == .local(text: ""))
+        #expect(sink.typed == ["pw"], "the keystroke still goes through")
     }
 
-    test("the app name comes from the focused field, not just the frontmost app") {
+    @Test func `the app name comes from the focused field, not just the frontmost app`() throws {
         let (controller, _) = try makeController()
         controller.focusChanged(to: editable)
-        expectEqual(controller.frontmostAppName, "TextEdit")
+        #expect(controller.frontmostAppName == "TextEdit")
     }
 
-    test("a field with no app name keeps the name we have") {
+    @Test func `a field with no app name keeps the name we have`() throws {
         let (controller, _) = try makeController()
         controller.appChanged(name: "Safari", bundleID: "com.apple.Safari")
         var unnamed = editable
         unnamed.appName = nil
         controller.focusChanged(to: unnamed)
-        expectEqual(controller.frontmostAppName, "Safari")
+        #expect(controller.frontmostAppName == "Safari")
     }
 
-    test("switching apps drops what we typed into the last one") {
+    @Test func `switching apps drops what we typed into the last one`() throws {
         let (controller, _) = try makeController()
         controller.perform(.text("draft"))
         controller.appChanged(name: "Safari", bundleID: "com.apple.Safari")
-        expectEqual(controller.input, .local(text: ""))
+        #expect(controller.input == .local(text: ""))
     }
 
-    test("switching apps drops the field we were mirroring") {
+    @Test func `switching apps drops the field we were mirroring`() throws {
         let (controller, _) = try makeController()
         controller.focusChanged(to: editable)
         controller.appChanged(name: "Safari", bundleID: "com.apple.Safari")
-        expectEqual(controller.input, .local(text: ""), "the old app's text is not ours to show")
-        expect(controller.focusedField == nil)
+        #expect(controller.input == .local(text: ""), "the old app's text is not ours to show")
+        #expect(controller.focusedField == nil)
     }
 
-    test("the app name is unknown until an app reports one") {
+    @Test func `the app name is unknown until an app reports one`() throws {
         let (controller, _) = try makeController()
-        expect(controller.frontmostAppName == nil)
+        #expect(controller.frontmostAppName == nil)
         controller.appChanged(name: "Safari", bundleID: "com.apple.Safari")
         controller.appChanged(name: nil, bundleID: nil)
-        expect(controller.frontmostAppName == nil, "a nameless app keeps no stale name")
+        #expect(controller.frontmostAppName == nil, "a nameless app keeps no stale name")
     }
 
-    test("switching apps swaps the name and the shortcuts panel") {
+    @Test func `switching apps swaps the name and the shortcuts panel`() throws {
         let (controller, _) = try makeController()
         controller.appChanged(name: "Visual Studio Code", bundleID: "com.microsoft.VSCode")
-        expectEqual(controller.frontmostAppName, "Visual Studio Code")
-        expectEqual(controller.appPanel, controller.panels.appPanel(forBundleID: "com.microsoft.VSCode"))
-        expect(controller.appPanel != controller.panels.appPanel(forBundleID: nil))
+        #expect(controller.frontmostAppName == "Visual Studio Code")
+        #expect(controller.appPanel == controller.panels.appPanel(forBundleID: "com.microsoft.VSCode"))
+        #expect(controller.appPanel != controller.panels.appPanel(forBundleID: nil))
     }
 }

@@ -36,7 +36,8 @@ public struct Keystroke: Sendable, Equatable {
 }
 
 /// Where keystrokes go. The app posts CGEvents; tests record them.
-public protocol KeystrokeSink: AnyObject, Sendable {
+@MainActor
+public protocol KeystrokeSink: AnyObject {
     func post(_ events: [Keystroke])
     /// Literal text, injected as a unicode string so emoji and non-layout
     /// characters work without a matching physical key.

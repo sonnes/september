@@ -122,8 +122,8 @@ private struct AXTreeRowView: View {
                 .lineLimit(1)
                 .layoutPriority(1)
 
-            if let subtitle = row.node.subtitle {
-                Text(subtitle)
+            if let label = row.node.label {
+                Text(label)
                     .font(Typography.treeText)
                     .foregroundStyle(Color(Tokens.keyText))
                     .lineLimit(1)

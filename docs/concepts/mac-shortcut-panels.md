@@ -75,5 +75,7 @@ the keys.
    behaviour worth pinning.
 
 Key names are a single character (`"t"`) or a `VirtualKey` case name
-(`"return"`, `"pageDown"`, `"f5"`). An unknown modifier, key, or action type
-stops the decoding with an error.
+(`"return"`, `"pageDown"`, `"f5"`). Modifier names are `function`, `control`,
+`option`, `shift`, and `command`. A letter key is lowercase. For ⇧⌘T, write
+`"t"` and put `"shift"` in the modifiers. An unknown modifier or key, an
+uppercase letter, or an unknown action type stops the decoding with an error.

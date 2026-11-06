@@ -6,7 +6,8 @@ public struct AXNode: Equatable, Sendable, Identifiable {
     public let id: Int
     /// `AXWindow`, `AXTextArea`, `AXButton`…
     public let role: String
-    /// Its title or description, when it has one.
+    /// Its title, or its description when the title is empty. Apps often give
+    /// an icon button an empty title and a real description.
     public let label: String?
     public let value: String?
     /// The element the app has focused — the one keystrokes reach.
@@ -16,22 +17,18 @@ public struct AXNode: Equatable, Sendable, Identifiable {
     public init(
         id: Int,
         role: String,
-        label: String? = nil,
+        title: String? = nil,
+        description: String? = nil,
         value: String? = nil,
         isFocused: Bool = false,
         children: [AXNode] = []
     ) {
         self.id = id
         self.role = role
-        self.label = label
+        self.label = [title, description].compactMap { $0 }.first { !$0.isEmpty }
         self.value = value
         self.isFocused = isFocused
         self.children = children
-    }
-
-    public var subtitle: String? {
-        guard let label, !label.isEmpty else { return nil }
-        return label
     }
 
     /// The value on one line, short enough for a row.
@@ -46,7 +43,7 @@ public struct AXNode: Equatable, Sendable, Identifiable {
 
     /// One line for VoiceOver, since the columns mean nothing spoken.
     public var spokenDescription: String {
-        [role, subtitle, detail].compactMap { $0 }.joined(separator: ", ")
+        [role, label, detail].compactMap { $0 }.joined(separator: ", ")
     }
 }
 

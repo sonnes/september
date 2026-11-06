@@ -175,14 +175,15 @@ september/
 ```
 
 Read the instruction file in an application directory before you change that
-application. JavaScript dependencies use the root lockfile. Commands can still
+application. JavaScript dependencies use the root lockfile. The `catalog` in
+`pnpm-workspace.yaml` holds the one version of React, its types, the TanStack
+libraries, and `lucide-react`, and each package refers to it with `catalog:`.
+Commands can still
 run from an app directory.
 
 ## Web data migration
 
 The web app deploys to Vercel through `.github/workflows/production.yaml`.
-The former server module and its Makefile deployment commands have been removed.
-Removing local code does not decommission previously deployed infrastructure.
 
 The public `/privacy-policy` and `/terms-of-service` pages cover the supplied
 applications. They describe September as a personal open-source project in

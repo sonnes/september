@@ -6,7 +6,8 @@ import { USAGE_RETENTION_MS } from "@september/core/rules/usage-summary";
 const invoke = vi.hoisted(() => vi.fn<(name: string, args?: unknown) => Promise<unknown>>());
 vi.mock("@tauri-apps/api/core", () => ({ invoke, convertFileSrc: (path: string) => path }));
 vi.mock("@tauri-apps/api/window", () => ({ getCurrentWindow: vi.fn() }));
-vi.mock("@tauri-apps/plugin-shell", () => ({ open: vi.fn() }));
+const openUrl = vi.hoisted(() => vi.fn<(url: string) => Promise<void>>());
+vi.mock("@tauri-apps/plugin-opener", () => ({ openUrl }));
 
 const { platform } = await import("./platform");
 
@@ -77,5 +78,24 @@ describe("the Mac identity", () => {
     });
 
     await expect(platform.device.identity()).rejects.toThrow("IPC is down");
+  });
+});
+
+describe("the Mac browser", () => {
+  it("opens an address in the default browser", async () => {
+    openUrl.mockResolvedValue();
+
+    await platform.device.openInBrowser("https://september.to");
+
+    expect(openUrl).toHaveBeenCalledWith("https://september.to");
+  });
+
+  it("logs an address it cannot open, so a link press never rejects", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    openUrl.mockRejectedValue("not allowed");
+
+    await expect(platform.device.openInBrowser("https://september.to")).resolves.toBeUndefined();
+    expect(logged).toHaveBeenCalled();
+    logged.mockRestore();
   });
 });

@@ -16,17 +16,17 @@
     "@september/app-ui": "workspace:*",
     "@september/core": "workspace:*",
     "@september/ui": "workspace:*",
-    "@tanstack/react-query": "^5.102.2",
-    "@tanstack/react-router": "^1.170.32",
+    "@tanstack/react-query": "catalog:",
+    "@tanstack/react-router": "catalog:",
     "@tauri-apps/api": "^2.11.1",
-    "@tauri-apps/plugin-shell": "^2.3.5",
-    "lucide-react": "^0.556.0",
-    "react": "19.2.1",
-    "react-dom": "19.2.1"
+    "@tauri-apps/plugin-opener": "~2.5.5",
+    "lucide-react": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4",
-    "@types/react": "19.2.7",
-    "@types/react-dom": "19.2.3"
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:"
   }
 }

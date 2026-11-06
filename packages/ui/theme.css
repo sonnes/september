@@ -25,6 +25,9 @@ body {
   --radius-control: 0.75rem; /* 12px */
   --radius-chip: 0.875rem; /* 14px */
   --radius-surface: 1.25rem; /* 20px */
+  /* The smallest target of the access profile, never under 48px. It gives
+     `min-h-reach`, `min-w-reach`, and `size-reach`. */
+  --spacing-reach: max(3rem, var(--reach-target, 3rem));
   /* Type role with no native Tailwind step: note & section titles (17px/600). */
   --text-title: calc(1.0625rem * var(--reach-scale, 1));
   /* The text size of the access profile grows every text role. No text is

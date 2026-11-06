@@ -8,6 +8,7 @@ import { AGENT_MODELS, type CuratedModel, modelChoices, SUGGESTIONS_MODELS, with
 import { PickList } from "@september/app-ui/blocks/pick-list";
 import { appleState, ManageLink, offeredWritingServices, ServiceChoice, writingServiceOf } from "@september/app-ui/blocks/services";
 import { SaveFailed, Section, SettingsTitle, SpeakingStyle, useSetupAnswers } from "@september/app-ui/blocks/setup-fields";
+import { sectionFor } from "@september/core/rules/navigation";
 
 type WritingServiceId = SetupAnswers["defaultModel"]["service"];
 type SwitchField = "autoSuggestions" | "autoPhrases" | "agentEnabled";
@@ -120,7 +121,7 @@ export function WritingSettings() {
   return (
     <div className="flex flex-col gap-8">
       <SettingsTitle
-        title="AI Assistance"
+        title={sectionFor("/settings/writing").title}
         description="September finishes your sentences while you type."
       />
       {failed ? <SaveFailed retry={retry} /> : null}

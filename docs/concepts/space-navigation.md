@@ -22,7 +22,8 @@ The route slug comes from the space title. The app resolves the slug against the
 
 ## Remembered mode
 
-Each space remembers its last mode by slug. The space list opens Talk, Notes,
+Each space remembers its last mode by space id, so the mode stays after a
+rename. The space list opens Talk, Notes,
 or Agent from this saved value.
 
 The setting name is `space-modes`. SQLite stores it on desktop. The `settings` IndexedDB store keeps it on the web.

@@ -60,8 +60,8 @@ enum AXTreeReader {
             return AXNode(
                 id: id,
                 role: role,
-                label: element.string(kAXTitleAttribute)
-                    ?? element.string(kAXDescriptionAttribute),
+                title: element.string(kAXTitleAttribute),
+                description: element.string(kAXDescriptionAttribute),
                 value: element.string(kAXValueAttribute),
                 isFocused: focused.map { CFEqual($0, element) } ?? false,
                 children: children

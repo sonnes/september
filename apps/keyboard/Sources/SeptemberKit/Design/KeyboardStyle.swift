@@ -1,5 +1,5 @@
 /// The rows of the main keyboard, in visual order. Rainbow tints key by row.
-public enum KeyboardRow: String, Sendable, Hashable, CaseIterable {
+public enum KeyboardRow: String, Sendable, Hashable {
     case function
     case number
     case qwerty
@@ -32,7 +32,7 @@ public enum KeyboardStyle: String, Sendable, CaseIterable {
 }
 
 /// The kind of key, which fixes its size and label treatment.
-public enum KeyKind: Sendable, Hashable, CaseIterable {
+public enum KeyKind: Sendable, Hashable {
     /// Alphanumeric key with a single label.
     case standard
     /// Modifier or utility key (shift, tab, delete, return, caps lock).

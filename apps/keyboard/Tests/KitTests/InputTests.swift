@@ -1,56 +1,57 @@
 import SeptemberKit
+import Testing
 
-func modifierStateTests() {
-    test("a tapped modifier applies to exactly one keystroke") {
+struct ModifierStateTests {
+    @Test func `a tapped modifier applies to exactly one keystroke`() throws {
         var state = ModifierState()
         state.tap(.command)
-        expectEqual(state.active, .command)
+        #expect(state.active == .command)
         state.consume()
-        expectEqual(state.active, [])
+        #expect(state.active == [])
     }
 
-    test("a double tapped modifier locks until tapped again") {
+    @Test func `a double tapped modifier locks until tapped again`() throws {
         var state = ModifierState()
         state.tap(.command)
         state.tap(.command)
-        expectEqual(state.active, .command)
+        #expect(state.active == .command)
         state.consume()
-        expectEqual(state.active, .command, "locked modifiers survive a keystroke")
+        #expect(state.active == .command, "locked modifiers survive a keystroke")
         state.tap(.command)
-        expectEqual(state.active, [])
+        #expect(state.active == [])
     }
 
-    test("modifiers combine") {
+    @Test func `modifiers combine`() throws {
         var state = ModifierState()
         state.tap(.shift)
         state.tap(.command)
-        expectEqual(state.active, [.shift, .command])
+        #expect(state.active == [.shift, .command])
     }
 
-    test("caps lock latches on its own and is not consumed") {
+    @Test func `caps lock latches on its own and is not consumed`() throws {
         var state = ModifierState()
         state.tap(.capsLock)
-        expect(state.isCapsLockOn)
+        #expect(state.isCapsLockOn)
         state.consume()
-        expect(state.isCapsLockOn, "caps lock stays on across keystrokes")
+        #expect(state.isCapsLockOn, "caps lock stays on across keystrokes")
         state.tap(.capsLock)
-        expect(!state.isCapsLockOn)
+        #expect(!state.isCapsLockOn)
     }
 
-    test("shift and caps lock both uppercase, together they cancel") {
+    @Test func `shift and caps lock both uppercase, together they cancel`() throws {
         var state = ModifierState()
-        expectEqual(state.apply(to: "a"), "a")
+        #expect(state.apply(to: "a") == "a")
         state.tap(.shift)
-        expectEqual(state.apply(to: "a"), "A")
+        #expect(state.apply(to: "a") == "A")
         state.consume()
         state.tap(.capsLock)
-        expectEqual(state.apply(to: "a"), "A")
+        #expect(state.apply(to: "a") == "A")
         state.tap(.shift)
-        expectEqual(state.apply(to: "a"), "a")
+        #expect(state.apply(to: "a") == "a")
     }
 }
 
-func keyCodeMapTests() {
+struct KeyCodeMapTests {
     // A stub of a US layout: keycode 0 is "a", 18 is "1", shift changes both.
     let map = KeyCodeMap { code, modifiers in
         switch (code, modifiers.contains(.shift)) {
@@ -64,55 +65,55 @@ func keyCodeMapTests() {
         }
     }
 
-    test("unshifted characters map to their key") {
+    @Test func `unshifted characters map to their key`() throws {
         let stroke = map.keystroke(for: "a")
-        expectEqual(stroke?.virtualKey, 0)
-        expectEqual(stroke?.modifiers, [])
+        #expect(stroke?.virtualKey == 0)
+        #expect(stroke?.modifiers == [])
     }
 
-    test("shifted characters carry the shift flag") {
+    @Test func `shifted characters carry the shift flag`() throws {
         let stroke = map.keystroke(for: "!")
-        expectEqual(stroke?.virtualKey, 18)
-        expectEqual(stroke?.modifiers, .shift)
-        expectEqual(map.keystroke(for: "A")?.virtualKey, 0)
-        expectEqual(map.keystroke(for: "A")?.modifiers, .shift)
+        #expect(stroke?.virtualKey == 18)
+        #expect(stroke?.modifiers == .shift)
+        #expect(map.keystroke(for: "A")?.virtualKey == 0)
+        #expect(map.keystroke(for: "A")?.modifiers == .shift)
     }
 
-    test("characters the layout cannot produce return nil") {
-        expect(map.keystroke(for: "π") == nil)
+    @Test func `characters the layout cannot produce return nil`() throws {
+        #expect(map.keystroke(for: "π") == nil)
     }
 }
 
-func keystrokeTests() {
+struct KeystrokeTests {
     let z: UInt16 = 6
 
-    test("a plain character is one down and one up") {
+    @Test func `a plain character is one down and one up`() throws {
         let events = Keystroke.events(virtualKey: 0, modifiers: [])
-        expectEqual(events.count, 2)
-        expectEqual(events[0], Keystroke(virtualKey: 0, flags: [], isDown: true))
-        expectEqual(events[1], Keystroke(virtualKey: 0, flags: [], isDown: false))
+        #expect(events.count == 2)
+        #expect(events[0] == Keystroke(virtualKey: 0, flags: [], isDown: true))
+        #expect(events[1] == Keystroke(virtualKey: 0, flags: [], isDown: false))
     }
 
-    test("shift command Z presses modifiers first and releases them last") {
+    @Test func `shift command Z presses modifiers first and releases them last`() throws {
         let events = Keystroke.events(virtualKey: z, modifiers: [.shift, .command])
-        expectEqual(events.count, 6)
-        expectEqual(events.filter(\.isDown).count, 3)
+        #expect(events.count == 6)
+        #expect(events.filter(\.isDown).count == 3)
 
         let downKeys = events.filter(\.isDown).map(\.virtualKey)
-        expectEqual(downKeys, [56, 55, z])
+        #expect(downKeys == [56, 55, z])
 
         let upKeys = events.filter { !$0.isDown }.map(\.virtualKey)
-        expectEqual(upKeys, [z, 55, 56])
+        #expect(upKeys == [z, 55, 56])
     }
 
-    test("the key itself carries the modifier flags so apps see the combination") {
+    @Test func `the key itself carries the modifier flags so apps see the combination`() throws {
         let events = Keystroke.events(virtualKey: z, modifiers: [.command])
         let keyDown = events.first { $0.virtualKey == z && $0.isDown }
-        expectEqual(keyDown?.flags, .command)
+        #expect(keyDown?.flags == .command)
     }
 
-    test("caps lock is never posted as part of a combination") {
+    @Test func `caps lock is never posted as part of a combination`() throws {
         let events = Keystroke.events(virtualKey: 0, modifiers: [.capsLock, .shift])
-        expectEqual(events.filter(\.isDown).map(\.virtualKey), [56, 0])
+        #expect(events.filter(\.isDown).map(\.virtualKey) == [56, 0])
     }
 }

@@ -3,6 +3,7 @@ import { Button } from "@september/ui/components/button";
 import { AccessForm } from "@september/app-ui/blocks/access-form";
 import { INPUT_METHODS, type InputMethod, parseAccess } from "@september/core/rules/access";
 import { SaveFailed, SettingsTitle, useSetupAnswers } from "@september/app-ui/blocks/setup-fields";
+import { sectionFor } from "@september/core/rules/navigation";
 
 /**
  * The access profile: how the person chooses things, the size of the text,
@@ -20,7 +21,7 @@ export function AccessSettings() {
   return (
     <div className="flex flex-col gap-8">
       <SettingsTitle
-        title="Access"
+        title={sectionFor("/settings/access").title}
         description="How you choose things, and how September looks for you."
       />
       {failed ? <SaveFailed retry={retry} /> : null}

@@ -1,9 +1,10 @@
 import Foundation
 import SeptemberKit
+import Testing
 
 /// Records what would have been posted, so key handling is testable without
 /// injecting real events into whatever app happens to be frontmost.
-final class RecordingSink: KeystrokeSink, @unchecked Sendable {
+final class RecordingSink: KeystrokeSink {
     var posted: [Keystroke] = []
     var typed: [String] = []
 
@@ -52,129 +53,126 @@ private func key(_ id: String) -> KeyDefinition {
 }
 
 @MainActor
-func controllerTests() {
-    test("typing a letter posts that key and echoes it") {
+struct ControllerTests {
+    @Test func `typing a letter posts that key and echoes it`() throws {
         let (controller, sink) = try makeController()
         controller.press(key("key-a"))
-        expectEqual(sink.downs.count, 1)
-        expectEqual(sink.downs.first?.key, 0)
-        expectEqual(sink.downs.first?.flags, [])
-        expectEqual(controller.input, .local(text: "a"))
+        #expect(sink.downs.count == 1)
+        #expect(sink.downs.first?.key == 0)
+        #expect(sink.downs.first?.flags == [])
+        #expect(controller.input == .local(text: "a"))
     }
 
-    test("a latched shift uppercases exactly one letter") {
+    @Test func `a latched shift uppercases exactly one letter`() throws {
         let (controller, sink) = try makeController()
         controller.press(key("shift-left"))
         controller.press(key("key-a"))
-        expectEqual(sink.downs.first?.flags, .shift)
-        expectEqual(controller.input, .local(text: "A"))
+        #expect(sink.downs.first?.flags == .shift)
+        #expect(controller.input == .local(text: "A"))
 
         sink.reset()
         controller.press(key("key-s"))
-        expectEqual(sink.downs.first?.flags, [], "shift should have expired")
-        expectEqual(controller.input, .local(text: "As"))
+        #expect(sink.downs.first?.flags == [], "shift should have expired")
+        #expect(controller.input == .local(text: "As"))
     }
 
-    test("caps lock stays on until tapped again") {
+    @Test func `caps lock stays on until tapped again`() throws {
         let (controller, _) = try makeController()
         controller.press(key("capslock"))
         controller.press(key("key-a"))
         controller.press(key("key-s"))
-        expectEqual(controller.input, .local(text: "AS"))
+        #expect(controller.input == .local(text: "AS"))
         controller.press(key("capslock"))
         controller.press(key("key-a"))
-        expectEqual(controller.input, .local(text: "ASa"))
+        #expect(controller.input == .local(text: "ASa"))
     }
 
-    test("a latched command makes the next letter a shortcut, not text") {
+    @Test func `a latched command makes the next letter a shortcut, not text`() throws {
         let (controller, sink) = try makeController()
         controller.press(key("command-left"))
         controller.press(key("key-c"))
-        expectEqual(sink.downs.map(\.key), [55, 8])
-        expectEqual(sink.downs.last?.flags, .command)
-        expectEqual(controller.input, .local(text: ""), "a shortcut is not typed text")
+        #expect(sink.downs.map(\.key) == [55, 8])
+        #expect(sink.downs.last?.flags == .command)
+        #expect(controller.input == .local(text: ""), "a shortcut is not typed text")
     }
 
-    test("a latched fn holds fn down for the next key") {
+    @Test func `a latched fn holds fn down for the next key`() throws {
         let (controller, sink) = try makeController()
         controller.press(key("fn"))
         controller.press(key("f1"))
-        expectEqual(sink.downs.map(\.key), [63, VirtualKey.f1.rawValue])
-        expectEqual(sink.downs.last?.flags, .function)
+        #expect(sink.downs.map(\.key) == [63, VirtualKey.f1.rawValue])
+        #expect(sink.downs.last?.flags == .function)
     }
 
-    test("fn and a letter make a shortcut, not text") {
+    @Test func `fn and a letter make a shortcut, not text`() throws {
         let (controller, sink) = try makeController()
         controller.press(key("fn"))
         controller.press(key("key-a"))
-        expectEqual(sink.downs.map(\.key), [63, 0])
-        expectEqual(sink.downs.last?.flags, .function)
-        expectEqual(controller.input, .local(text: ""))
+        #expect(sink.downs.map(\.key) == [63, 0])
+        #expect(sink.downs.last?.flags == .function)
+        #expect(controller.input == .local(text: ""))
     }
 
-    test("shift plus a dual key types the secondary glyph") {
+    @Test func `shift plus a dual key types the secondary glyph`() throws {
         let (controller, _) = try makeController()
         controller.press(key("shift-left"))
         controller.press(key("key-1"))
-        expectEqual(controller.input, .local(text: "!"))
+        #expect(controller.input == .local(text: "!"))
     }
 
-    test("delete removes the last character and return clears the line") {
+    @Test func `delete removes the last character and return clears the line`() throws {
         let (controller, _) = try makeController()
         controller.press(key("key-a"))
         controller.press(key("key-s"))
         controller.press(key("delete"))
-        expectEqual(controller.input, .local(text: "a"))
+        #expect(controller.input == .local(text: "a"))
         controller.press(key("space"))
-        expectEqual(controller.input, .local(text: "a "))
+        #expect(controller.input == .local(text: "a "))
         controller.press(key("return"))
-        expectEqual(controller.input, .local(text: ""))
+        #expect(controller.input == .local(text: ""))
     }
 
-    test("a panel shortcut posts its whole combination") {
+    @Test func `a panel shortcut posts its whole combination`() throws {
         let (controller, sink) = try makeController()
         controller.perform(.shortcut(Shortcut(modifiers: [.command, .shift], key: .character("z"))))
-        expectEqual(
-            sink.downs.map(\.key),
-            [56, 55, 6]
-        )
-        expectEqual(sink.downs.last?.flags, [.command, .shift])
+        #expect(sink.downs.map(\.key) == [56, 55, 6])
+        #expect(sink.downs.last?.flags == [.command, .shift])
     }
 
-    test("a text action is typed verbatim") {
+    @Test func `a text action is typed verbatim`() throws {
         let (controller, sink) = try makeController()
         controller.perform(.text("Hello"))
-        expectEqual(sink.typed, ["Hello"])
-        expectEqual(controller.input, .local(text: "Hello"))
+        #expect(sink.typed == ["Hello"])
+        #expect(controller.input == .local(text: "Hello"))
     }
 
-    test("a panel button uses up a latched modifier") {
+    @Test func `a panel button uses up a latched modifier`() throws {
         let (controller, sink) = try makeController()
         controller.press(key("shift-left"))
         controller.perform(.text("hi"))
         controller.press(key("key-a"))
-        expectEqual(sink.downs.last?.flags, [])
-        expectEqual(controller.input, .local(text: "hia"))
+        #expect(sink.downs.last?.flags == [])
+        #expect(controller.input == .local(text: "hia"))
     }
 
-    test("a panel return clears the echo and a panel delete drops one character") {
+    @Test func `a panel return clears the echo and a panel delete drops one character`() throws {
         let (controller, _) = try makeController()
         controller.press(key("key-a"))
         controller.press(key("key-s"))
         controller.perform(.shortcut(Shortcut(modifiers: [], key: .virtual(.delete))))
-        expectEqual(controller.input, .local(text: "a"))
+        #expect(controller.input == .local(text: "a"))
         controller.perform(.shortcut(Shortcut(modifiers: [], key: .virtual(.return))))
-        expectEqual(controller.input, .local(text: ""))
+        #expect(controller.input == .local(text: ""))
     }
 
-    test("a chord with delete leaves the echo as it is") {
+    @Test func `a chord with delete leaves the echo as it is`() throws {
         let (controller, _) = try makeController()
         controller.press(key("key-a"))
         controller.perform(.shortcut(Shortcut(modifiers: .command, key: .virtual(.delete))))
-        expectEqual(controller.input, .local(text: "a"))
+        #expect(controller.input == .local(text: "a"))
     }
 
-    test("a shortcut on a layout without its letter uses the ASCII-capable layout") {
+    @Test func `a shortcut on a layout without its letter uses the ASCII-capable layout`() throws {
         let sink = RecordingSink()
         let cyrillic = KeyCodeMap(
             probe: { code, _ in code == 6 ? "я" : nil },
@@ -183,27 +181,27 @@ func controllerTests() {
         let controller = KeyboardController(
             sink: sink, panels: try PanelStore.bundled(), keyCodeMap: cyrillic)
         controller.perform(.shortcut(Shortcut(modifiers: .command, key: .character("z"))))
-        expectEqual(sink.downs.map(\.key), [55, 6])
+        #expect(sink.downs.map(\.key) == [55, 6])
 
         sink.reset()
         controller.press(key("command-left"))
         controller.press(key("key-z"))
-        expectEqual(sink.downs.map(\.key), [55, 6])
+        #expect(sink.downs.map(\.key) == [55, 6])
     }
 
-    test("a new input source changes the keys that typing posts") {
+    @Test func `a new input source changes the keys that typing posts`() throws {
         let (controller, sink) = try makeController()
         controller.layoutChanged(to: KeyCodeMap { code, _ in code == 12 ? "a" : nil })
         controller.press(key("key-a"))
-        expectEqual(sink.downs.map(\.key), [12])
+        #expect(sink.downs.map(\.key) == [12])
     }
 
-    test("characters the layout cannot produce fall back to unicode injection") {
+    @Test func `characters the layout cannot produce fall back to unicode injection`() throws {
         let (controller, sink) = try makeController()
         controller.press(
             KeyDefinition(id: "emoji", kind: .standard, label: "🙂", action: .character("🙂"))
         )
-        expectEqual(sink.typed, ["🙂"])
-        expectEqual(sink.posted.count, 0)
+        #expect(sink.typed == ["🙂"])
+        #expect(sink.posted.count == 0)
     }
 }

@@ -5,6 +5,7 @@ import { Button } from "@september/ui/components/button";
 import { downloadBackup, importBackup } from "@september/app-ui/services/backup";
 import { backupProblem, type BackupSummary, backupSummary, parseBackup, type SeptemberBackup } from "@september/core/rules/backup";
 import { Section, SettingsTitle } from "@september/app-ui/blocks/setup-fields";
+import { sectionFor } from "@september/core/rules/navigation";
 
 function BackupPreview({
   fileName,
@@ -129,7 +130,7 @@ export function DataSettings() {
   return (
     <div className="flex flex-col gap-8">
       <SettingsTitle
-        title="Data"
+        title={sectionFor("/settings/data").title}
         description="Keep a private copy of your September settings and data."
       />
 

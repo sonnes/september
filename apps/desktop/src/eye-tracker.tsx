@@ -30,10 +30,15 @@ import {
 
 type RunState = "off" | "starting" | "running" | "error";
 
-const STATE_MESSAGES: Partial<Record<GazeState, string>> = {
+const STATE_MESSAGES: Record<GazeState, string> = {
+  starting: "Starting camera…",
   ready: "Both eyes found.",
   noFace: "Keep one face in view.",
   lowConfidence: "Move into clearer light and keep both eyes open.",
+  permissionDenied: "Allow September to use the camera in System Settings.",
+  unavailable: "Eye tracking is not available on this Mac.",
+  error: "The camera stopped.",
+  stopped: "Camera is off.",
 };
 
 const FAILED: readonly GazeState[] = ["permissionDenied", "unavailable", "error"];
@@ -119,7 +124,7 @@ function CameraBox({
 
 export function EyeTracker() {
   const [runState, setRunState] = useState<RunState>("off");
-  const [status, setStatus] = useState("Camera is off.");
+  const [status, setStatus] = useState(STATE_MESSAGES.stopped);
   const [frame, setFrame] = useState<GazeFrame | null>(null);
   const [calibration, setCalibration] = useState<BoxCalibration | null>(null);
   const [calibrationIndex, setCalibrationIndex] = useState<number | null>(null);
@@ -133,7 +138,7 @@ export function EyeTracker() {
 
   const stop = useCallback(async () => {
     setRunState("off");
-    setStatus("Camera is off.");
+    setStatus(STATE_MESSAGES.stopped);
     setFrame(null);
     clearCalibration();
     await stopGaze().catch((error: Error) => {
@@ -172,7 +177,7 @@ export function EyeTracker() {
 
     const { state, detail } = event.data;
     if (!(calibrationSession.current && state === "ready")) {
-      setStatus(detail ?? STATE_MESSAGES[state] ?? state);
+      setStatus(detail ?? STATE_MESSAGES[state]);
     }
     if (FAILED.includes(state)) {
       setRunState("error");
@@ -182,7 +187,7 @@ export function EyeTracker() {
 
   const start = useCallback(async () => {
     setRunState("starting");
-    setStatus("Starting camera…");
+    setStatus(STATE_MESSAGES.starting);
     setFrame(null);
     clearCalibration();
     try {

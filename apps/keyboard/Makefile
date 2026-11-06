@@ -29,7 +29,7 @@ dev:
 	@echo "Keyboard running detached — stop it with: make stop"
 
 test:
-	swift run KitTests
+	swift test
 
 app:
 	swift build -c $(CONFIG)

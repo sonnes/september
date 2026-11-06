@@ -57,7 +57,7 @@ enum AXDump {
 
     private static func line(for row: AXTreeRow) -> String {
         var line = String(repeating: "  ", count: row.depth) + row.node.role
-        if let label = row.node.subtitle { line += " \"\(label)\"" }
+        if let label = row.node.label { line += " \"\(label)\"" }
         if let detail = row.node.detail { line += " = \"\(detail)\"" }
         if row.node.isFocused { line += "  <- focused" }
         if row.hiddenChildren > 0 { line += "  (\(row.hiddenChildren) hidden)" }

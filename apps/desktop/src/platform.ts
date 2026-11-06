@@ -6,7 +6,7 @@
 
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { open } from "@tauri-apps/plugin-shell";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 import {
   InterruptedSpeech,
@@ -141,7 +141,10 @@ export const platform: Platform = {
       const [name, userId] = await Promise.all([call("user_name"), call("user_id")]);
       return { name, userId };
     },
-    openInBrowser: (url) => open(url),
+    openInBrowser: (url) =>
+      openUrl(url).catch((reason: unknown) =>
+        console.error("September could not open the address in the browser.", reason),
+      ),
     guardUnsavedChanges() {
       const release = warnBeforeUnload();
       let active = true;

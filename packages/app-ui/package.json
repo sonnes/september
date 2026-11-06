@@ -26,7 +26,7 @@
     "@fontsource/noto-sans": "^5.2.10",
     "@september/core": "workspace:*",
     "@september/ui": "workspace:*",
-    "lucide-react": "^0.556.0"
+    "lucide-react": "catalog:"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.102.2",
@@ -35,10 +35,10 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@types/react": "19.2.7",
-    "@types/react-dom": "19.2.3",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "axe-core": "^4.14.0",
-    "react": "19.2.1",
-    "react-dom": "19.2.1"
+    "react": "catalog:",
+    "react-dom": "catalog:"
   }
 }

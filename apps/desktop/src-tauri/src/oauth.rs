@@ -13,11 +13,49 @@ use std::{
     time::Duration,
 };
 use tauri::{AppHandle, State};
-use tauri_plugin_shell::ShellExt;
+use tauri_plugin_opener::OpenerExt;
 use tokio::sync::oneshot;
 
-type Attempt = (String, oneshot::Sender<()>);
-static ACTIVE: Mutex<Option<Attempt>> = Mutex::new(None);
+/// The OpenRouter sign-in that runs now, with the sender that cancels it.
+#[derive(Default)]
+pub(crate) struct SignIns(Mutex<Option<(String, oneshot::Sender<()>)>>);
+
+const LOCK_LOST: &str = "Could not reach the sign-in. Quit and open the app again.";
+
+impl SignIns {
+    /// Starts the sign-in `id` and cancels the one before it.
+    fn begin(&self, id: &str) -> Result<oneshot::Receiver<()>, String> {
+        let (cancel, cancelled) = oneshot::channel();
+        let mut active = self.0.lock().map_err(|_| LOCK_LOST)?;
+        if let Some((_, previous)) = active.replace((id.to_owned(), cancel)) {
+            let _ = previous.send(());
+        }
+        Ok(cancelled)
+    }
+
+    /// Cancels the sign-in `id`, and leaves a newer one running.
+    fn cancel(&self, id: &str) -> Result<(), String> {
+        let mut active = self.0.lock().map_err(|_| LOCK_LOST)?;
+        if active.as_ref().is_some_and(|(current, _)| current == id) {
+            if let Some((_, cancel)) = active.take() {
+                let _ = cancel.send(());
+            }
+        }
+        Ok(())
+    }
+
+    /// Ends the sign-in `id` and runs `keep` under the lock, so a cancel
+    /// cannot come between the check and the write. A cancelled or newer
+    /// sign-in keeps nothing.
+    fn finish<T>(&self, id: &str, keep: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
+        let mut active = self.0.lock().map_err(|_| LOCK_LOST)?;
+        if active.as_ref().is_none_or(|(current, _)| current != id) {
+            return Err("Connection cancelled. Try again.".into());
+        }
+        active.take();
+        keep()
+    }
+}
 
 fn challenge(verifier: &str) -> String {
     URL_SAFE_NO_PAD.encode(Sha256::digest(verifier.as_bytes()))
@@ -41,15 +79,11 @@ fn callback_code(query: &str) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub(crate) fn openrouter_cancel(request: crate::rpc::SignInRequest) {
-    let request_id = request.request_id;
-    if let Ok(mut active) = ACTIVE.lock() {
-        if active.as_ref().is_some_and(|(id, _)| id == &request_id) {
-            if let Some((_, cancel)) = active.take() {
-                let _ = cancel.send(());
-            }
-        }
-    }
+pub(crate) fn openrouter_cancel(
+    sign_ins: State<'_, SignIns>,
+    request: crate::rpc::SignInRequest,
+) -> Result<(), String> {
+    sign_ins.cancel(&request.request_id)
 }
 
 #[tauri::command]
@@ -57,36 +91,22 @@ pub(crate) async fn openrouter_connect(
     app: AppHandle,
     keys: State<'_, ProviderKeys>,
     providers: State<'_, Providers>,
+    sign_ins: State<'_, SignIns>,
     request: crate::rpc::SignInRequest,
 ) -> Result<ProviderStatus, String> {
     let request_id = request.request_id;
-    let (cancel, cancelled) = oneshot::channel();
-    {
-        let mut active = ACTIVE
-            .lock()
-            .map_err(|_| "Could not start authorization. Quit and open the app again.")?;
-        if let Some((_, previous)) = active.replace((request_id.clone(), cancel)) {
-            let _ = previous.send(());
-        }
-    }
+    let cancelled = sign_ins.begin(&request_id)?;
     let result = tokio::select! {
         _ = cancelled => Err("Connection cancelled. Try again.".into()),
         result = tokio::time::timeout(Duration::from_secs(300), authorize(&app, &providers)) =>
             result.unwrap_or_else(|_| Err("Connection timed out. Try again.".into())),
     };
-    // A cancelled or superseded attempt must not persist a late result.
-    // Keep this lock through the synchronous Keychain write.
-    let mut active = ACTIVE
-        .lock()
-        .map_err(|_| "Could not finish authorization. Quit and open the app again.")?;
-    if active.as_ref().is_none_or(|(id, _)| id != &request_id) {
-        return Err("Connection cancelled. Try again.".into());
-    }
-    active.take();
-    let (key, status) = result?;
-    keys.store(Provider::OpenRouter, &key)
-        .map_err(|error| error.to_string())?;
-    Ok(status)
+    sign_ins.finish(&request_id, || {
+        let (key, status) = result?;
+        keys.store(Provider::OpenRouter, &key)
+            .map_err(|error| error.to_string())?;
+        Ok(status)
+    })
 }
 
 async fn authorize(
@@ -113,9 +133,8 @@ async fn authorize(
         .append_pair("callback_url", &format!("http://localhost:{port}{path}"))
         .append_pair("code_challenge", &challenge(&verifier))
         .append_pair("code_challenge_method", "S256");
-    #[allow(deprecated)]
-    app.shell()
-        .open(auth.as_str(), None)
+    app.opener()
+        .open_url(auth.as_str(), None::<&str>)
         .map_err(|error| format!("Could not open your browser. ({error})"))?;
     let code = receive_code(listener, path).await?;
     let response = providers
@@ -201,21 +220,45 @@ mod tests {
     }
 
     #[test]
-    fn cancellation_only_stops_the_matching_attempt() {
-        let (send, mut receive) = oneshot::channel();
-        *ACTIVE.lock().unwrap() = Some(("current".into(), send));
-        openrouter_cancel(crate::rpc::SignInRequest {
-            request_id: "stale".into(),
-        });
+    fn a_cancel_stops_only_the_sign_in_it_names() {
+        let sign_ins = SignIns::default();
+        let mut cancelled = sign_ins.begin("current").unwrap();
+
+        sign_ins.cancel("stale").unwrap();
         assert!(matches!(
-            receive.try_recv(),
+            cancelled.try_recv(),
             Err(oneshot::error::TryRecvError::Empty)
         ));
-        openrouter_cancel(crate::rpc::SignInRequest {
-            request_id: "current".into(),
-        });
-        assert_eq!(receive.try_recv(), Ok(()));
-        assert!(ACTIVE.lock().unwrap().is_none());
+
+        sign_ins.cancel("current").unwrap();
+        assert_eq!(cancelled.try_recv(), Ok(()));
+        assert!(sign_ins.finish("current", || Ok(())).is_err());
+    }
+
+    #[test]
+    fn a_new_sign_in_cancels_the_one_before_it() {
+        let sign_ins = SignIns::default();
+        let mut first = sign_ins.begin("first").unwrap();
+        sign_ins.begin("second").unwrap();
+
+        assert_eq!(first.try_recv(), Ok(()));
+        assert!(sign_ins.finish("first", || Ok(())).is_err());
+        assert_eq!(sign_ins.finish("second", || Ok(7)), Ok(7));
+    }
+
+    #[test]
+    fn a_lost_lock_is_an_error() {
+        let sign_ins = std::sync::Arc::new(SignIns::default());
+        let poisoner = sign_ins.clone();
+        std::thread::spawn(move || {
+            let _held = poisoner.0.lock().unwrap();
+            panic!("poison the lock");
+        })
+        .join()
+        .unwrap_err();
+
+        assert!(sign_ins.begin("one").is_err());
+        assert!(sign_ins.cancel("one").is_err());
     }
 
     #[test]

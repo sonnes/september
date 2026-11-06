@@ -26,25 +26,23 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 |---|---|
 | `Sources/SeptemberKit/Accessibility` | `AXNode`/`AXTree` (another app's tree, snapshotted), `AccessibilityPermission` |
 | `Sources/SeptemberKit/Design` | tokens, metrics, typography, rainbow/mono styles |
-| `Sources/SeptemberKit/Keyboard` | key definitions, QWERTY layout, `KeyboardController` |
+| `Sources/SeptemberKit/Keyboard` | key definitions, QWERTY layout, `KeyboardController`, `KeyRepeater` |
 | `Sources/SeptemberKit/Input` | modifiers, keystrokes, layout-aware key code map |
 | `Sources/SeptemberKit/Panels` | panel model + JSON loading |
 | `Sources/SeptemberKit/Views` | keys, shortcut buttons, panels, assembled screen |
 | `Sources/SeptemberKit/Resources/Panels` | `edit`/`navigate`/`system.json`, `Apps/generic.json`, `Apps/<bundle id>.json` |
 | `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `AXTreeReader`, `AXElement` reads, snapshots |
-| `Tests/KitTests` | tests + the harness |
+| `Tests/KitTests` | swift-testing suites |
 
 Rule of thumb: **anything testable lives in `SeptemberKit`**. `Keyboard` holds
 only what needs a running app — the panel, the event sink, the menu bar.
 
 ## Rules
 
-- **TDD, strictly.** Write the failing check first, then the smallest code that
+- **TDD, strictly.** Write the failing test first, then the smallest code that
   passes it. Every model change lands with a test in `Tests/KitTests`.
-- **Tests are an executable, not `swift test`.** Xcode is not installed, so
-  SwiftPM has no test framework. Add checks with `test("…") { expect(…) }` and
-  register the suite in `Tests/KitTests/main.swift`. Swap to swift-testing only
-  once Xcode is present.
+- **Tests use swift-testing.** `make test` runs `swift test`. Write each test
+  as ``@Test func `what it shows`()`` with `#expect`.
 - **No literals in views.** Colours come from `Tokens`, sizes from `Metrics`,
   fonts from `Typography`. New values go in the design layer first.
 - **Every colour is a `ThemeColor`.** Keyboard follows the system appearance,
@@ -75,9 +73,9 @@ only what needs a running app — the panel, the event sink, the menu bar.
   A button either presses a `shortcut` or types `text`. The file name is the
   panel's identity: an app panel is `Apps/<bundle id>.json`. `PanelStore`
   throws on a missing or broken file, and the app shows the error and quits.
-- **Keep Swift 6 concurrency clean.** UI and controller are `@MainActor`; sinks
-  crossing into CoreGraphics are `@unchecked Sendable` with a comment saying
-  why. Do not silence warnings any other way.
+- **Keep Swift 6 concurrency clean.** UI, controller and keystroke sinks are
+  `@MainActor`. Do not silence warnings with `@unchecked Sendable` or
+  `nonisolated(unsafe)`.
 
 ## Gotchas
 

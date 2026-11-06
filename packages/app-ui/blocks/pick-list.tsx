@@ -78,7 +78,7 @@ export function ChoiceKey({
       onClick={onChoose}
       onKeyDown={moveChoice}
       className={cn(
-        "focus-attention bg-background text-foreground hover:bg-accent flex min-h-[var(--reach-target)] min-w-0 items-center gap-3 rounded-xl border px-4 py-2 text-left transition-colors",
+        "focus-attention bg-background text-foreground hover:bg-accent flex min-h-reach min-w-0 items-center gap-3 rounded-xl border px-4 py-2 text-left transition-colors",
         checked && "border-brand bg-primary/5",
         className,
       )}

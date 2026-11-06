@@ -16,9 +16,7 @@ let package = Package(
             name: "Keyboard",
             dependencies: ["SeptemberKit"]
         ),
-        // Xcode is not installed, so SwiftPM has no test framework available.
-        // Tests run as a plain executable: `swift run KitTests`.
-        .executableTarget(
+        .testTarget(
             name: "KitTests",
             dependencies: ["SeptemberKit"],
             path: "Tests/KitTests"

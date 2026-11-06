@@ -133,6 +133,40 @@ async fn an_empty_eleven_labs_quota_is_an_error() {
     assert!(matches!(error, ProviderError::QuotaEmpty), "{error:?}");
 }
 
+async fn eleven_labs_refusal(status: &str, detail_status: &str) -> ProviderError {
+    let (base, _requests) = serve_once(
+        status,
+        json!({ "detail": { "status": detail_status, "message": "Refused." } }),
+    );
+    eleven_labs(&base)
+        .check(Provider::ElevenLabs, "xi-test")
+        .await
+        .unwrap_err()
+}
+
+#[tokio::test]
+async fn an_eleven_labs_account_out_of_characters_is_not_a_bad_key() {
+    let error = eleven_labs_refusal("401 Unauthorized", "quota_exceeded").await;
+
+    assert!(matches!(error, ProviderError::QuotaEmpty), "{error:?}");
+}
+
+#[tokio::test]
+async fn an_invalid_eleven_labs_key_is_rejected() {
+    let error = eleven_labs_refusal("401 Unauthorized", "invalid_api_key").await;
+
+    assert!(matches!(error, ProviderError::Rejected), "{error:?}");
+}
+
+#[tokio::test]
+async fn a_busy_eleven_labs_service_asks_to_try_again() {
+    for detail_status in ["too_many_concurrent_requests", "system_busy"] {
+        let error = eleven_labs_refusal("429 Too Many Requests", detail_status).await;
+
+        assert!(matches!(error, ProviderError::Busy), "{error:?}");
+    }
+}
+
 #[tokio::test]
 async fn the_voice_list_holds_every_voice_of_every_page_with_its_category() {
     let (base, requests) = serve_json(vec![

@@ -93,8 +93,9 @@ OpenRouter models. Each list starts with **Automatic**, and each row reads
 [writing model settings](writing-model-settings.md).
 
 `VOICE_MODELS` and `DIALOGUE_MODELS` in `rules/voice.ts` hold the ElevenLabs
-models. The list appears once, under Custom in the Voice tab of the space
-rail. A user hears the result there without leaving the conversation. The
+models. The list appears under Voice model in the voice controls of a space:
+the Voice tab of the space rail, and the Voice controls sheet of the panel. A
+user hears the result there without leaving the conversation. The
 choice goes into the `speech` setting.
 
 The model lists and the voice list use the same control, `PickList`. It is a

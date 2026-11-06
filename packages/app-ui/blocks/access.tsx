@@ -67,4 +67,4 @@ export function ApplyAccess({ profile }: { profile?: AccessProfile }) {
 
 /** A key of the form: the reach target each way, and never less than 48 px. */
 export const KEY_SIZE =
-  "min-h-[max(3rem,var(--reach-target,3rem))] min-w-[max(3rem,var(--reach-target,3rem))]";
+  "min-h-reach min-w-reach";

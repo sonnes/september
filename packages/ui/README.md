@@ -31,10 +31,12 @@ owns the reach tokens: `--reach-target`, `--reach-gap`, `--reach-word`, and
 `--reach-scale`. Every text role grows with `--reach-scale`. No text role is
 smaller than 14px.
 
-`cn` knows the radius roles and `text-title`, so a later role replaces an
-earlier one. `Button`, `Input`, the menu rows,
-and the close key of `Sheet` and `Dialog` take their height from
-`--reach-target`, 48px at the smallest.
+`--spacing-reach` is `--reach-target`, 48px at the smallest. It gives the
+`min-h-reach`, `min-w-reach`, and `size-reach` utilities. `Button`, `Input`,
+the menu rows, and the close key of `Sheet` and `Dialog` use them.
+
+`cn` knows the radius roles, `reach`, and `text-title`, so a later role
+replaces an earlier one.
 
 A focusable primitive shows focus with the `focus-attention` class: a 2px ink
 outline inside a 5px amber ring. A menu item uses

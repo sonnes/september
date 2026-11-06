@@ -29,6 +29,9 @@ type RpcResult<T> = std::result::Result<T, String>;
 /// them, and room for the multipart headers around them.
 const MAX_VOICE_CLONE_BYTES: usize = 101 * 1024 * 1024;
 const AUDIO_OUTPUT_SETTING: &str = "audio-output";
+/// The folder of the voice files, under the local data folder of the app. The
+/// asset scope in `tauri.conf.json` lets the WebView read it.
+const AUDIO_DIRECTORY: &str = "audio";
 
 /// The storage of the app, and the cloud-voice sentence that streams now.
 pub(crate) struct BackendState {
@@ -220,6 +223,7 @@ pub(crate) fn setup(app: &mut tauri::App) -> std::result::Result<(), Box<dyn std
     app.manage(ApfelState::default());
     app.manage(WritingProxy::default());
     app.manage(GazeState::default());
+    app.manage(crate::oauth::SignIns::default());
     Ok(())
 }
 
@@ -524,7 +528,7 @@ fn audio_directory(app: &AppHandle) -> RpcResult<PathBuf> {
         .path()
         .app_local_data_dir()
         .map_err(|error| error.to_string())?
-        .join("audio"))
+        .join(AUDIO_DIRECTORY))
 }
 
 fn eleven_labs_key(keys: &ProviderKeys) -> RpcResult<Option<String>> {
@@ -872,7 +876,18 @@ mod contract;
 
 #[cfg(test)]
 mod tests {
-    use super::{clean_name, login_name, MAX_VOICE_CLONE_BYTES};
+    use super::{clean_name, login_name, AUDIO_DIRECTORY, MAX_VOICE_CLONE_BYTES};
+
+    #[test]
+    fn the_webview_may_read_the_voice_files() {
+        let config: serde_json::Value =
+            serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
+        let scope = &config["app"]["security"]["assetProtocol"]["scope"];
+        assert_eq!(
+            scope,
+            &serde_json::json!([format!("$APPLOCALDATA/{AUDIO_DIRECTORY}/*")])
+        );
+    }
 
     #[test]
     fn a_display_name_keeps_only_its_first_gecos_field() {

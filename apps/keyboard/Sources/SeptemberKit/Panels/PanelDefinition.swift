@@ -105,14 +105,8 @@ extension PanelAction: Decodable {
 }
 
 extension Modifiers {
-    /// The modifier names in panel JSON.
-    private static let panelNames: [String: Modifiers] = [
-        "function": .function,
-        "control": .control,
-        "option": .option,
-        "shift": .shift,
-        "command": .command,
-    ]
+    private static let panelNames = Dictionary(
+        uniqueKeysWithValues: Modifiers.held.map { ($0.name, $0.modifier) })
 
     init(panelNames names: [String]) throws {
         self = try names.reduce(into: []) { modifiers, name in
@@ -125,19 +119,16 @@ extension Modifiers {
 }
 
 extension Shortcut.Key {
-    /// The virtual key names in panel JSON.
-    private static let virtualKeys: [String: VirtualKey] = [
-        "return": .return, "tab": .tab, "space": .space, "delete": .delete,
-        "escape": .escape, "forwardDelete": .forwardDelete, "home": .home, "end": .end,
-        "pageUp": .pageUp, "pageDown": .pageDown,
-        "left": .left, "right": .right, "up": .up, "down": .down,
-        "f1": .f1, "f2": .f2, "f3": .f3, "f4": .f4, "f5": .f5, "f6": .f6,
-        "f7": .f7, "f8": .f8, "f9": .f9, "f10": .f10, "f11": .f11, "f12": .f12,
-    ]
+    /// A virtual key goes by its case name in panel JSON.
+    private static let virtualKeys = Dictionary(
+        uniqueKeysWithValues: VirtualKey.allCases.map { ("\($0)", $0) })
 
-    /// A single character types as is. A longer name is a virtual key.
+    /// A single character is that key. A longer name is a virtual key. An
+    /// uppercase letter is rejected: a shifted key names "shift" among the
+    /// modifiers.
     init(panelName name: String) throws {
         if name.count == 1 {
+            guard name == name.lowercased() else { throw PanelDecodingError.uppercaseKey(name) }
             self = .character(name)
         } else if let virtual = Shortcut.Key.virtualKeys[name] {
             self = .virtual(virtual)
@@ -150,6 +141,7 @@ extension Shortcut.Key {
 public enum PanelDecodingError: Error, CustomStringConvertible {
     case unknownModifier(String)
     case unknownKey(String)
+    case uppercaseKey(String)
     case duplicateButton(String)
     case missingPanel(String)
 
@@ -157,6 +149,8 @@ public enum PanelDecodingError: Error, CustomStringConvertible {
         switch self {
         case .unknownModifier(let name): "unknown modifier '\(name)'"
         case .unknownKey(let name): "unknown key '\(name)'"
+        case .uppercaseKey(let name):
+            "key '\(name)' is uppercase. Write it in lowercase and add \"shift\" to the modifiers."
         case .duplicateButton(let id): "two buttons share the id '\(id)'"
         case .missingPanel(let name): "no panel '\(name)' in the app bundle"
         }

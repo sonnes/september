@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { SettingsTitle } from "@september/app-ui/blocks/setup-fields";
+import { sectionFor } from "@september/core/rules/navigation";
 import { Label } from "@september/ui/components/label";
 import { Switch } from "@september/ui/components/switch";
 
@@ -43,7 +44,7 @@ export function PanelSettings() {
   return (
     <div className="flex flex-col gap-8">
       <SettingsTitle
-        title="Panel"
+        title={sectionFor("/settings/panel").title}
         description="The panel shows Talk, Notes, and Agent beside your other apps."
       />
       <div className="flex flex-col gap-1.5">

@@ -4,7 +4,7 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 import { Button } from "@september/ui/components/button";
 import { platform } from "@platform/adapter";
 import { useConnections } from "@september/app-ui/services/connections";
-import { CONNECTION_GUIDES, type ConnectionId } from "@september/core/rules/navigation";
+import { CONNECTION_GUIDES, type ConnectionId, sectionFor } from "@september/core/rules/navigation";
 import { SERVICE_NAMES, type ServiceId } from "@september/core/rules/services";
 import {
   appleState,
@@ -29,7 +29,7 @@ export function SetupSettings() {
   return (
     <div className="flex flex-col gap-8">
       <SettingsTitle
-        title="Services"
+        title={sectionFor("/settings").title}
         description="The services September uses, and the keys they need."
       />
 

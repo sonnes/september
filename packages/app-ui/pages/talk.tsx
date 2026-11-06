@@ -44,7 +44,6 @@ import { Problem } from "@september/app-ui/blocks/states";
 import { SpaceDock } from "@september/app-ui/blocks/space-dock";
 import { spaceParams, useRememberMode, useSpaceBySlug } from "@september/app-ui/blocks/space-routes";
 import { SpaceTitle } from "@september/app-ui/blocks/space-title";
-// ------------------------------------------------------------------- talk
 
 export function TalkScreen({ slug }: { slug: string }) {
   const { space, spaces } = useSpaceBySlug(slug, "talk");
@@ -113,6 +112,8 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
 
   const keep = usePinPhrase(space.id);
 
+  // The voice starts at once. The composer holds the text until local storage
+  // accepts the message, so a failed write loses no words.
   const say = (sentence: string) => {
     const typed = keysTyped.current;
     const sent = draft.current();
@@ -129,9 +130,6 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
       },
     });
   };
-
-  // The voice starts at once. The composer holds the text until local storage
-  // accepts the message, so a failed write loses no words.
 
   return (
     <>
