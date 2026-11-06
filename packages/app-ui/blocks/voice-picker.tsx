@@ -1,7 +1,7 @@
 import { Play } from "lucide-react";
 
 import { Button } from "@september/ui/components/button";
-import { shownVoices, voiceRows } from "@september/core/rules/voice";
+import { voiceList, voiceRows } from "@september/core/rules/voice";
 
 import { PickList } from "@september/app-ui/blocks/pick-list";
 import type { Voice } from "@september/app-ui/platform";
@@ -39,10 +39,7 @@ export function VoicePicker({
       name={name}
       columns={compact ? 1 : 2}
       fixedHeight={compact}
-      filter={(rows, query) => {
-        const shown = shownVoices(voices, query, value);
-        return rows.filter((row) => shown.includes(row.voice));
-      }}
+      filter={(_, query) => voiceList(voices, heard, query, value)}
       after={({ voice }) => (
         <Button
           type="button"

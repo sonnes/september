@@ -170,6 +170,14 @@ describe("what a note exports to", () => {
     expect(exportReason("video", ready)).toBe(null);
     expect(exportReason("video", { ...ready, video: false })).not.toBe(null);
   });
+
+  it("exports audio and video in the Dialogue voice", () => {
+    const dialogue = { provider: "dialogue" as const, voiceId: "v1", video: true };
+
+    expect(exportReason("audio", dialogue)).toBe(null);
+    expect(exportReason("video", dialogue)).toBe(null);
+    expect(exportReason("audio", { ...dialogue, voiceId: null })).not.toBe(null);
+  });
 });
 
 describe("what the app remembers about presenting", () => {

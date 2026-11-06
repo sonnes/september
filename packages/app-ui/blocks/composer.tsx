@@ -53,7 +53,7 @@ export function Composer({
   onAction: (text: string) => void;
   /** Counts direct keyboard work. Inserted suggestions do not call it. */
   onTypedKey?: () => void;
-  onPin: (phrase: string) => void;
+  onPin?: (phrase: string) => void;
   pending?: boolean;
   /** A line under the field, for example why a voice did not answer. */
   note?: string;

@@ -48,8 +48,9 @@ home shows all applicable guides instead of hiding another platform's
 instructions. Related links and search operate on the same catalog.
 
 `packages/app-ui/pages/help.tsx` renders the catalog for both applications.
-`HelpScreen` selects the home or one guide. `HelpGuideContent` renders the
-complete written guide by itself so another surface can reuse it.
+`HelpScreen` selects the home or one guide. `HelpGuideContent` in
+`packages/app-ui/blocks/help-guide.tsx` renders the complete written guide by
+itself, so the setup sheet uses it too.
 
 ## Routes and setup access
 
@@ -64,7 +65,7 @@ An unknown guide slug returns to `/help`. Stable slugs let a feature or error
 link directly to one recovery task.
 
 Help routes use the application shell but remain outside the finished-setup
-guard. The shell route of the web app reads the saved setup before Help shows,
+guard. The web app reads the saved setup with `loadSettings` before it mounts,
 so a guide that opens first still shows the access profile of the person. During setup, the onboarding sidebar opens **Set up September** in an
 inline sheet. Opening and closing that sheet does not navigate, complete setup,
 or change the saved setup answers.

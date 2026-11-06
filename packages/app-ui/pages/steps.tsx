@@ -13,8 +13,10 @@ import {
   CloudStatus,
   ElevenLabsImpactLink,
   KeyPanel,
+  offeredWritingServices,
   ServiceChoice,
   Status,
+  writingServiceOf,
 } from "@september/app-ui/blocks/services";
 import { INPUT_METHODS } from "@september/core/rules/access";
 import { withProvider } from "@september/core/rules/model-config";
@@ -25,10 +27,9 @@ import {
   SPEAKING_STYLES,
   setupVoices,
   stepFor,
-  WRITING_SERVICES,
   type StepPath,
 } from "@september/core/rules/onboarding";
-import { shownVoices, voiceRows } from "@september/core/rules/voice";
+import { voiceList } from "@september/core/rules/voice";
 import { documentTitle } from "@september/core/rules/titles";
 import { platform } from "@platform/adapter";
 import { APP_NAV } from "@september/app-ui/navigation";
@@ -235,6 +236,7 @@ export function ProfileStep() {
 export function FinishStep() {
   const { draft } = useDraft();
   const navigate = useNavigate();
+  const [problem, setProblem] = useState("");
   const style = SPEAKING_STYLES.find(
     (option) => option.value === draft.speakingStyle,
   );
@@ -248,13 +250,23 @@ export function FinishStep() {
           size="lg"
           className={ACTION}
           onClick={() => {
-            saveSetup(draft).then(() => navigate({ to: APP_NAV[0].path }));
+            setProblem("");
+            saveSetup(draft).then(
+              () => navigate({ to: APP_NAV[0].path }),
+              (reason: unknown) =>
+                setProblem(reason instanceof Error ? reason.message : String(reason)),
+            );
           }}
         >
           {stepFor("/finish").action}
         </Button>
       }
     >
+      {problem ? (
+        <p role="alert" className="text-destructive mb-4 text-sm">
+          {problem}
+        </p>
+      ) : null}
       <div className="grid gap-5 rounded-xl border border-indigo-200 bg-indigo-50 p-4 sm:grid-cols-[auto_1fr] sm:p-8">
         <span
           aria-hidden="true"
@@ -301,11 +313,11 @@ export function ConnectStep() {
   const openrouterConnected = connections.openrouter.connected;
   const elevenlabsConnected = connections.elevenlabs.connected;
   const voices = useVoices(elevenlabsConnected);
-  const voiceList = elevenlabsConnected ? (voices.data ?? []) : [];
+  const listed = elevenlabsConnected ? (voices.data ?? []) : [];
   const [picked, setPicked] = useState("");
-  const voiceId = voiceList.some((voice) => voice.id === picked)
+  const voiceId = listed.some((voice) => voice.id === picked)
     ? picked
-    : (voiceRows(shownVoices(voiceList, ""), [])[0]?.id ?? "");
+    : (voiceList(listed, [], "")[0]?.id ?? "");
   const [problem, setProblem] = useState("");
   const voiceOptions = setupVoices(platform.voice.systemDescription);
 
@@ -362,14 +374,11 @@ export function ConnectStep() {
             className="gap-3"
             value={draft.defaultModel.service}
             onValueChange={(value) => {
-              const service = WRITING_SERVICES.find((option) => option.value === value)?.value;
+              const service = writingServiceOf(value);
               if (service) setDraft((current) => ({ ...current, ...withProvider(current, service) }));
             }}
           >
-            {WRITING_SERVICES.filter(
-              // A Mac that cannot run it never shows a control it must disable.
-              (option) => option.value !== "apple" || connections.apple.supported,
-            ).map((option) => (
+            {offeredWritingServices(connections).map((option) => (
               <ServiceChoice
                 key={option.value}
                 value={option.value}
@@ -435,9 +444,9 @@ export function ConnectStep() {
                         {voices.error.message}
                       </p>
                     ) : null}
-                    {voiceList.length > 0 ? (
+                    {listed.length > 0 ? (
                       <VoicePicker
-                        voices={voiceList}
+                        voices={listed}
                         value={voiceId}
                         onPick={setPicked}
                         onHear={(voice) => hear(voice.preview_url!)}

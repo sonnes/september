@@ -62,8 +62,8 @@ longer draft, each model row starts with the draft.
 History matches individual sentences, with newer messages first. Stored
 messages remain complete. Duplicate sentences appear once.
 
-Suggestion rows show at most six unaccepted words and stop at sentence
-boundaries. Punctuation does not count toward the limit. A word press inserts
+Suggestion rows show at most six unaccepted words, or four for switch and
+eyes, and stop at sentence boundaries. Punctuation does not count toward the limit. A word press inserts
 the suggestion through that word and reveals the next slice.
 
 An unfinished slice ends with an insert action. The final slice offers Speak
@@ -77,7 +77,7 @@ code reads the words only. See [audio tags and moods](audio-tags.md).
 
 ## Generation
 
-OpenRouter can generate phrases from the space context and recent messages. A generation call runs only when the user connected that service.
+The chosen writing service, OpenRouter or Apple Intelligence, can generate phrases from the space context and recent messages. A generation call runs only when a writing service is ready.
 
 `Space.phrases_synced_count` records the message count of the last successful generation. A failed generation keeps the prior rows and count.
 

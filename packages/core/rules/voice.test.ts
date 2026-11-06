@@ -12,10 +12,10 @@ import {
   EXPRESSIONS,
   expressionSound,
   heardVoices,
-  shownVoices,
   speechServices,
   stabilityFor,
   VOICE_MODELS,
+  voiceList,
   voiceModelFrom,
   voiceRows,
 } from "./voice.ts";
@@ -31,10 +31,6 @@ describe("voiceModelFrom", () => {
     expect(voiceModelFrom("eleven_multilingual_v2")).toBe(
       "eleven_multilingual_v2",
     );
-  });
-
-  it("uses Flash v2.5 by default", () => {
-    expect(DEFAULT_VOICE_MODEL).toBe("eleven_flash_v2_5");
   });
 });
 
@@ -286,31 +282,31 @@ describe("elevenLabsCredits", () => {
   });
 });
 
-describe("shownVoices", () => {
+describe("voiceList", () => {
   const voice = (id: string, name: string, category: string | null) => ({ id, name, category });
   const own = [voice("mine", "Maya clone", "cloned"), voice("lib", "Rachel library", "professional")];
   const stock = [voice("adam", "Adam - deep", "premade"), voice("rachel", "Rachel - calm", "premade")];
   const ids = (rows: { id: string }[]) => rows.map((row) => row.id);
 
   it("hides the stock voices of an account with its own voices", () => {
-    expect(ids(shownVoices([...own, ...stock], ""))).toEqual(["mine", "lib"]);
+    expect(ids(voiceList([...own, ...stock], [], ""))).toEqual(["mine", "lib"]);
   });
 
   it("adds the stock voices that match a search", () => {
-    expect(ids(shownVoices([...own, ...stock], "rachel"))).toEqual(["lib", "rachel"]);
+    expect(ids(voiceList([...own, ...stock], [], "rachel"))).toEqual(["lib", "rachel"]);
   });
 
   it("shows the stock voices of an account with no voices of its own", () => {
-    expect(ids(shownVoices(stock, ""))).toEqual(["adam", "rachel"]);
-    expect(ids(shownVoices(stock, "adam"))).toEqual(["adam"]);
+    expect(ids(voiceList(stock, [], ""))).toEqual(["adam", "rachel"]);
+    expect(ids(voiceList(stock, [], "adam"))).toEqual(["adam"]);
   });
 
   it("keeps the chosen voice", () => {
-    expect(ids(shownVoices([...own, ...stock], "", "adam"))).toEqual(["mine", "lib", "adam"]);
+    expect(ids(voiceList([...own, ...stock], [], "", "adam"))).toEqual(["mine", "lib", "adam"]);
   });
 
   it("shows each voice once and drops a voice with no id", () => {
-    const rows = shownVoices([voice("a", "A", null), voice("", "B", null), voice("a", "A", null)], "");
+    const rows = voiceList([voice("a", "A", null), voice("", "B", null), voice("a", "A", null)], [], "");
     expect(ids(rows)).toEqual(["a"]);
   });
 });

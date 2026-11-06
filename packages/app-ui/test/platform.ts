@@ -154,7 +154,7 @@ function defaults(): Platform {
   };
 }
 
-/** Wraps each function of an object in `vi.fn`, one level down at most twice. */
+/** Wraps each function of an object in `vi.fn`, at any depth. */
 function mocked<T extends object>(source: T): T {
   for (const [key, value] of Object.entries(source)) {
     if (typeof value === 'function') {

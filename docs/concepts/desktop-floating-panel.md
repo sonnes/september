@@ -87,7 +87,7 @@ goes to `/spaces` after it is done.
 
 | Path                                                                                                  | Screen                         |
 | ----------------------------------------------------------------------------------------------------- | ------------------------------ |
-| `/welcome`, `/profile`, `/connect`, `/finish`                                                         | The setup steps                |
+| `/welcome`, `/choose`, `/profile`, `/connect`, `/finish`                                              | The setup steps                |
 | `/`                                                                                                   | Redirects to `openingPath`     |
 | `/spaces`                                                                                             | `SpacesScreen`                 |
 | `/spaces/$slug/talk`, `/spaces/$slug/notes`, `/spaces/$slug/notes/$noteSlug`, `/spaces/$slug/agent`   | Talk, Notes, and Agent         |

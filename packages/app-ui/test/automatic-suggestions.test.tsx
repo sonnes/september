@@ -49,7 +49,6 @@ async function render({
         context=""
         history={[]}
         onTake={() => {}}
-        onPin={() => {}}
         onSpeak={() => {}}
         {...props}
       />

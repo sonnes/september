@@ -346,14 +346,24 @@ export const SPEED_RANGE = { min: 0.7, max: 1.2 } as const;
 export const VOICE_SAMPLE_TEXT = "This is how I sound today.";
 
 /**
- * The voices a voice list shows for a search, once each.
+ * The rows that a voice list shows for a search, in the order of `voiceRows`.
  *
  * The list shows the voices of the account: every category except the
  * ElevenLabs stock voices (`premade`). A search also shows the stock voices
  * that match it. An account with no voices of its own shows the stock voices.
  * The chosen voice shows without a search, so the list never hides the choice.
+ * Each voice shows once.
  */
-export function shownVoices<V extends ListedVoice>(
+export function voiceList<V extends ListedVoice>(
+  voices: readonly V[],
+  heard: readonly string[],
+  query: string,
+  chosen?: string | null,
+): (VoiceRow & { voice: V })[] {
+  return voiceRows(shownVoices(voices, query, chosen), heard);
+}
+
+function shownVoices<V extends ListedVoice>(
   voices: readonly V[],
   query: string,
   chosen?: string | null,

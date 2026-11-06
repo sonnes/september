@@ -1,16 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, CircleHelp, MessageCircle, Search, Video, Wrench } from "lucide-react";
-import { HELP_CATEGORIES, HELP_HOME_SHORTCUTS, type HelpGuide } from "@september/core/rules/help/catalog";
+import { ArrowLeft, ArrowRight, CircleHelp, MessageCircle, Search, Video, Wrench, type LucideIcon } from "lucide-react";
+import { HELP_CATEGORIES, HELP_HOME_SHORTCUTS, type HelpGuide, type HelpHomeShortcut } from "@september/core/rules/help/catalog";
 import { groupHelpGuides, helpGuide, searchHelpGuides } from "@september/core/rules/help/search";
 import { Button } from "@september/ui/components/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@september/ui/components/card";
+import { Card, CardContent } from "@september/ui/components/card";
 import { Input } from "@september/ui/components/input";
 import { Label } from "@september/ui/components/label";
 import { ScreenHeader } from "@september/app-ui/blocks/screen";
 import { documentTitle } from "@september/core/rules/titles";
 import { GuideLink, HelpGuideContent, PlatformBadges } from "@september/app-ui/blocks/help-guide";
+
+const shortcutKey = ({ target }: HelpHomeShortcut) =>
+  target.type === "guide" ? target.slug : target.categoryId;
+
+const SHORTCUT_ICONS: Record<string, LucideIcon> = {
+  "speak-your-first-message": MessageCircle,
+  "fix-a-problem": Wrench,
+  "speak-into-facetime-or-zoom": Video,
+};
 
 // Navigation memory lasts only in this app window; Help queries are not persisted.
 const homePosition = { query: "", scrollTop: 0 };
@@ -26,7 +35,7 @@ export function HelpScreen({ guideSlug }: { guideSlug?: string }) {
 
   if (guideSlug) {
     const guide = helpGuide(guideSlug);
-    content = guide ? <GuideScreen guide={guide} /> : <MissingGuide />;
+    content = guide ? <GuideScreen guide={guide} /> : null;
     name = guide?.title;
   } else {
     content = <HelpHome />;
@@ -95,8 +104,8 @@ function HelpHome() {
           Quick help
         </h2>
         <div className="grid gap-4 md:grid-cols-3">
-          {HELP_HOME_SHORTCUTS.map((shortcut, index) => {
-            const Icon = [MessageCircle, Wrench, Video][index] ?? CircleHelp;
+          {HELP_HOME_SHORTCUTS.map((shortcut) => {
+            const Icon = SHORTCUT_ICONS[shortcutKey(shortcut)] ?? CircleHelp;
             const content = (
               <>
                 <span className="bg-accent text-accent-foreground flex size-11 shrink-0 items-center justify-center rounded-control">
@@ -297,21 +306,5 @@ function GuideScreen({ guide }: { guide: HelpGuide }) {
       </Button>
       <HelpGuideContent guide={guide} />
     </div>
-  );
-}
-
-function MissingGuide() {
-  return (
-    <Card className="mx-auto w-full max-w-2xl">
-      <CardHeader>
-        <CardTitle>Guide not found</CardTitle>
-        <CardDescription>This Help link may be out of date.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Button asChild size="lg" className="min-h-11">
-          <Link to="/help">Return to Help</Link>
-        </Button>
-      </CardContent>
-    </Card>
   );
 }

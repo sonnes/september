@@ -151,6 +151,6 @@ does not fail the handshake. ElevenLabs accepts the socket and sends the reason
 as a message, so the app shows that reason.
 
 The hash of a kept Dialogue sentence covers the text, the
-voice, the stability, and the Dialogue model. The desktop file name holds the
-provider and the Dialogue model. Exports use `eleven_v3` for both models,
+voice, the stability, and the Dialogue model. The desktop file name hashes the
+voice id, the model, the stability, the similarity, the speed, and the text. Exports use `eleven_v3` for both models,
 because an export needs an MP3 file from the text-to-speech endpoint.

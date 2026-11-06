@@ -73,18 +73,16 @@ public struct KeyDefinition: Sendable, Hashable, Identifiable {
         self.secondaryLabel = secondaryLabel
         self.weight = weight
         self.action = action
-        self.accessibilityLabel = accessibilityLabel ?? label.capitalized
+        self.accessibilityLabel = accessibilityLabel ?? Self.spokenName(of: action, label: label)
     }
-}
 
-/// The kind of key, which fixes its size and label treatment.
-public enum KeyKind: Sendable, Hashable, CaseIterable {
-    /// Alphanumeric key with a single label.
-    case standard
-    /// Modifier or utility key (shift, tab, delete, return, caps lock).
-    case special
-    /// Function row key (esc, F1–F12).
-    case function
-    /// Number row key with a secondary symbol above the primary label.
-    case dual
+    /// The name of the key the action posts, or the label for caps lock and
+    /// a character.
+    private static func spokenName(of action: KeyAction, label: String) -> String {
+        switch action {
+        case .virtual(let virtual): virtual.spokenName
+        case .modifier(let modifier) where !modifier.spokenName.isEmpty: modifier.spokenName
+        case .modifier, .character: label.capitalized
+        }
+    }
 }

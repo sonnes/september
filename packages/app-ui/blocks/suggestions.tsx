@@ -128,7 +128,7 @@ export function Suggestions({
   history?: string[];
   onTake: (next: string) => void;
   onSpeak: (sentence: string) => void;
-  onPin: (phrase: string) => void;
+  onPin?: (phrase: string) => void;
 }) {
   const setup = useSetup();
   const { data: spacePhrases } = usePhrases(spaceId);
@@ -309,7 +309,7 @@ export function Suggestions({
                   source={stripe.source}
                   code={stripe.code}
                   kept={Boolean(stripe.kept)}
-                  onPin={() => onPin(stripe.text)}
+                  onPin={onPin ? () => onPin(stripe.text) : undefined}
                 />
               </span>
 

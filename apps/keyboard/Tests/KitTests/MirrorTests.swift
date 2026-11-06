@@ -56,6 +56,23 @@ func mirrorTests() {
         expectEqual(InputMirror.split("🙂ok", caret: 2, selectionLength: 0).before, "🙂")
     }
 
+    test("a long field is read in a window around the selection") {
+        let middle = FocusedField.readWindow(
+            count: 10_000, selection: NSRange(location: 5_000, length: 3), radius: 200)
+        expectEqual(middle.window, NSRange(location: 4_800, length: 403))
+        expectEqual(middle.selection, NSRange(location: 200, length: 3))
+
+        let start = FocusedField.readWindow(
+            count: 10_000, selection: NSRange(location: 50, length: 0), radius: 200)
+        expectEqual(start.window, NSRange(location: 0, length: 400))
+        expectEqual(start.selection, NSRange(location: 50, length: 0))
+
+        let end = FocusedField.readWindow(
+            count: 10_000, selection: NSRange(location: 9_990, length: 0), radius: 200)
+        expectEqual(end.window, NSRange(location: 9_790, length: 210))
+        expectEqual(end.selection, NSRange(location: 200, length: 0))
+    }
+
     test("splitting a mirrored line gives the three runs the bar draws") {
         let parts = InputMirror.split("hello", caret: 1, selectionLength: 3)
         expectEqual(parts.before, "h")

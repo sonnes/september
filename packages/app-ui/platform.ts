@@ -13,7 +13,7 @@ import type { Capabilities } from "@september/core/rules/navigation";
 import type { PresentToneKey } from "@september/core/rules/present/stage";
 import type { Message, Note, SavedPhrase, Space } from "@september/core/rules/records";
 import type { UsageEvent } from "@september/core/rules/usage-summary";
-import type { CloudSound } from "@september/core/rules/voice";
+import type { CloudSound, ListedVoice } from "@september/core/rules/voice";
 
 export type { Capabilities };
 
@@ -88,14 +88,8 @@ export interface AppleStatus {
   reason: string | null;
 }
 
-export interface Voice {
-  id: string;
-  name: string;
+export interface Voice extends ListedVoice {
   preview_url: string | null;
-  /** `premade`, `cloned`, `generated`, `professional`, and more, from ElevenLabs. */
-  category?: string | null;
-  /** True for a voice the user made. A library voice they added is false. */
-  is_owner?: boolean | null;
 }
 
 export interface ElevenLabsQuota {

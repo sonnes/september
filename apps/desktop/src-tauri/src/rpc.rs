@@ -13,6 +13,7 @@ use crate::{
     gaze::GazeState,
     providers::{
         CreatedVoice, ElevenLabsQuota, Provider, ProviderKeys, ProviderStatus, Providers, Voice,
+        NO_ELEVEN_LABS_KEY,
     },
     proxy::{Endpoint, WritingProxy},
     repository::{
@@ -59,16 +60,19 @@ impl BackendState {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct KeyRequest {
     key: String,
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct EntityIdRequest {
     id: String,
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct AgentToolStateRequest {
     id: String,
     expected: String,
@@ -78,16 +82,19 @@ pub(crate) struct AgentToolStateRequest {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct SpaceListRequest {
     user_id: String,
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct SpaceFilterRequest {
     space_id: Option<String>,
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct AnalyticsListRequest {
     user_id: String,
     start_at: i64,
@@ -97,7 +104,7 @@ pub(crate) struct AnalyticsListRequest {
 }
 
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub(crate) struct BackupExportRequest {
     setting_keys: Vec<String>,
     /// Usage events from before this time are deleted.
@@ -105,30 +112,34 @@ pub(crate) struct BackupExportRequest {
 }
 
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub(crate) struct BackupImportRequest {
     contents: BackupContents,
     setting_keys: Vec<String>,
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct ProviderRequest {
     provider: Provider,
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct ProviderConnectRequest {
     provider: Provider,
     key: String,
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct PhraseReplaceRequest {
     space_id: String,
     phrases: Vec<SavedPhrase>,
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct AudioOutputRequest {
     uid: String,
 }
@@ -137,7 +148,7 @@ pub(crate) struct AudioOutputRequest {
 /// sentence for the Dialogue voice, and is absent for a voice that makes a
 /// file.
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub(crate) struct SpeakRequest {
     text: String,
     voice: VoiceSettings,
@@ -146,6 +157,7 @@ pub(crate) struct SpeakRequest {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct SystemSpeechRequest {
     text: String,
     speed: f32,
@@ -169,9 +181,24 @@ pub(crate) struct StreamedAudio {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct SettingPutRequest {
     key: String,
     value: Value,
+}
+
+/// Turns one panel state on or off.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct SwitchRequest {
+    pub(crate) on: bool,
+}
+
+/// Names one OpenRouter sign-in, so a cancel reaches only that one.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub(crate) struct SignInRequest {
+    pub(crate) request_id: String,
 }
 
 pub(crate) fn setup(app: &mut tauri::App) -> std::result::Result<(), Box<dyn std::error::Error>> {
@@ -751,7 +778,7 @@ pub(crate) async fn provider_clone_voice(
         return Err("voice cloning samples are too large".into());
     }
 
-    let key = eleven_labs_key(&keys)?.ok_or("Connect ElevenLabs in Settings first.")?;
+    let key = eleven_labs_key(&keys)?.ok_or(NO_ELEVEN_LABS_KEY)?;
     providers
         .clone_voice(&key, &content_type, body)
         .await

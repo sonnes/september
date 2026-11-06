@@ -86,7 +86,8 @@ only what needs a running app — the panel, the event sink, the menu bar.
   (README) before wondering why keys stopped working.
 - Never prompt for permission at launch; the banner and the menu item ask.
 - Key code mapping goes through `UCKeyTranslate`, never a hardcoded US table,
-  and rebuilds when the input source changes.
+  and rebuilds when the input source changes. A shortcut letter that the
+  current layout lacks comes from the ASCII-capable layout, as macOS does.
 - `--snapshot` renders without opening a window; use it to check layout against
   the mocks instead of asking someone to look at their screen. `--ax` prints the
   focused field Keyboard would mirror — reach for it before guessing why an app

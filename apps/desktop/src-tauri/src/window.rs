@@ -5,7 +5,7 @@ use tauri::{
     image::Image,
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
-    AppHandle, Manager, Runtime, State, WebviewWindow, WebviewWindowBuilder,
+    AppHandle, Manager, RunEvent, Runtime, State, WebviewWindow, WebviewWindowBuilder, WindowEvent,
 };
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
@@ -74,6 +74,29 @@ pub fn show_panel<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         })?;
     }
     panel.set_focus()
+}
+
+/// Hides the panel instead of closing it, so the app keeps running.
+pub(crate) fn on_window_event<R: Runtime>(window: &tauri::Window<R>, event: &WindowEvent) {
+    if let WindowEvent::CloseRequested { api, .. } = event {
+        if window.label() == PANEL {
+            api.prevent_close();
+            if let Err(error) = window.hide() {
+                eprintln!("[window] could not hide the panel: {error}");
+            }
+        }
+    }
+}
+
+/// A click on the Dock icon shows the panel.
+#[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
+pub(crate) fn on_run_event<R: Runtime>(app: &AppHandle<R>, event: &RunEvent) {
+    #[cfg(target_os = "macos")]
+    if let RunEvent::Reopen { .. } = event {
+        if let Err(error) = show_panel(app) {
+            eprintln!("[window] could not show the panel: {error}");
+        }
+    }
 }
 
 /// Shows the panel, or hides it when it is the key window.
@@ -222,8 +245,9 @@ pub(crate) fn panel_float(state: State<'_, BackendState>) -> Result<bool, String
 pub(crate) fn panel_set_float(
     app: AppHandle,
     state: State<'_, BackendState>,
-    on: bool,
+    request: crate::rpc::SwitchRequest,
 ) -> Result<(), String> {
+    let on = request.on;
     state.put_setting(PANEL_FLOAT_SETTING, &Value::Bool(on))?;
     apply_float(&app, false, on).map_err(|error| error.to_string())
 }
@@ -234,8 +258,9 @@ pub(crate) fn panel_set_float(
 pub(crate) fn panel_setup(
     app: AppHandle,
     state: State<'_, BackendState>,
-    on: bool,
+    request: crate::rpc::SwitchRequest,
 ) -> Result<(), String> {
+    let on = request.on;
     let float = saved_float(&state)?;
     apply_float(&app, on, float).map_err(|error| error.to_string())
 }
@@ -243,9 +268,12 @@ pub(crate) fn panel_setup(
 /// Fills the screen with the panel while Present shows, without a new macOS
 /// desktop, or gives the panel back its size.
 #[tauri::command]
-pub(crate) fn panel_present(app: AppHandle, on: bool) -> Result<(), String> {
+pub(crate) fn panel_present(
+    app: AppHandle,
+    request: crate::rpc::SwitchRequest,
+) -> Result<(), String> {
     panel(&app)
-        .and_then(|panel| panel.set_simple_fullscreen(on))
+        .and_then(|panel| panel.set_simple_fullscreen(request.on))
         .map_err(|error| error.to_string())
 }
 

@@ -30,7 +30,8 @@ The setting name is `space-modes`. SQLite stores it on desktop. The `settings` I
 ## New space
 
 A new space has no route of its own. The press makes the space and opens it: in
-Agent when a writing service is configured, and in Talk when none is.
+Agent when a writing service is configured and the agent is on, and in Talk
+otherwise.
 
 A space with no description and an empty Agent transcript has still to be set
 up. Its Agent asks what it is for, with the same composer and suggestion stripe
@@ -73,5 +74,6 @@ spaces row opens `/spaces`. On `/spaces`, the header shows Back and the title
 Spaces. Back goes to the last space-mode path.
 
 The panel keeps its last path in the `lastPath` setting. `openingPath` reopens
-a saved space-mode path while its space exists. Else it opens Talk of the space
-that changed last. See [the floating panel](desktop-floating-panel.md).
+a saved space-mode path while its space exists, and a saved app page that the
+platform has. Else it opens Talk of the space that changed last. With no
+spaces, it opens the first page. See [the floating panel](desktop-floating-panel.md).

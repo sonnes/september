@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { Note } from '@september/core/rules/records';
 
-import { rows } from './platform';
+import { platform, rows } from './platform';
 import { addSpace, findButton, finishSetup, press, renderApp, typeInto } from './render';
 
 function putNote(id: string, name: string, content: string, updated_at: number): Note {
@@ -107,5 +107,16 @@ describe('the list of notes', () => {
     await typeInto(search, 'four');
 
     expect(noteRows().map(row => row.textContent)).toEqual([expect.stringContaining('Four')]);
+  });
+
+  it('says so when a new note could not be made', async () => {
+    const { router } = await openNotes();
+    vi.mocked(platform.store.putNote).mockRejectedValueOnce(new Error('Storage unavailable'));
+
+    await press(await findButton('New note', document.querySelector('nav[aria-label="Notes"]')!));
+
+    await vi.waitFor(() => expect(document.querySelector('[role="alert"]')?.textContent).toBe('Storage unavailable'));
+    expect(router!.state.location.pathname).toBe('/spaces/family/notes/holiday');
+    expect(rows.notes.size).toBe(2);
   });
 });

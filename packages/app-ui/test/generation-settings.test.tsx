@@ -82,6 +82,25 @@ it('keeps the saved switch value and reports a failed save', async () => {
   expect(saved().autoSuggestions).toBe(true);
 });
 
+it('keeps a switch that changes while a model choice is still saving', async () => {
+  const container = await open();
+  const put = vi.mocked(platform.store.putSetting);
+  const write = put.getMockImplementation()!;
+  let release!: () => void;
+  put.mockImplementationOnce(
+    (key, value) => new Promise<void>(done => (release = () => void write(key, value).then(done))),
+  );
+  await press(row(section('Agent and phrases', container), AGENT_MODELS[0].name));
+  await press(switches(container)[0]);
+  await press(row(section('Agent and phrases', container), AGENT_MODELS[1].name));
+  release();
+
+  await vi.waitFor(() =>
+    expect(saved().defaultModel).toEqual({ service: 'openrouter', model: AGENT_MODELS[1].id }),
+  );
+  expect(saved().autoSuggestions).toBe(false);
+});
+
 it('saves the suggestions model without changing the agent model', async () => {
   const container = await open();
   const model = SUGGESTIONS_MODELS[0];

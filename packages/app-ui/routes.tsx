@@ -12,7 +12,7 @@ import { platform } from "@platform/adapter";
 import { AgentScreen } from "@september/app-ui/pages/agent";
 import { HelpScreen } from "@september/app-ui/pages/help";
 import { NotesScreen } from "@september/app-ui/pages/notes";
-import { AccessSettings } from "@september/app-ui/pages/settings";
+import { AccessSettings } from "@september/app-ui/pages/settings-access";
 import { DataSettings } from "@september/app-ui/pages/settings-data";
 import { ConnectionScreen, SetupSettings } from "@september/app-ui/pages/settings-services";
 import { WritingSettings } from "@september/app-ui/pages/settings-writing";

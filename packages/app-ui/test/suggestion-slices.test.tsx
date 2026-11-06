@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import { InputLayer } from '@september/app-ui/blocks/input-layer';
 import { Suggestions } from '@september/app-ui/blocks/suggestions';
+import { usePinPhrase } from '@september/app-ui/services/data';
 import { updateSpeech } from '@september/app-ui/services/speech';
 import { updateSetup } from '@september/app-ui/services/settings';
 import { DEFAULT_ACCESS } from '@september/core/rules/access';
@@ -44,6 +45,7 @@ const onSpeak = vi.fn();
 /** A composer that holds the draft and shows the rows for it. */
 function Composer({ initial, history = [], mood = null }: { initial: string; history?: string[]; mood?: MoodKey | null }) {
   const [text, setText] = useState(initial);
+  const pin = usePinPhrase('space');
   return (
     <>
       <input aria-label="Draft" value={text} onChange={event => setText(event.target.value)} />
@@ -56,7 +58,7 @@ function Composer({ initial, history = [], mood = null }: { initial: string; his
         mood={mood}
         onTake={setText}
         onSpeak={onSpeak}
-        onPin={() => {}}
+        onPin={pin}
       />
     </>
   );
@@ -150,6 +152,18 @@ it('names a chip by its phrase, then by where it came from', async () => {
   expect(button(container, 'Thanks. Suggested phrase.')).toBeDefined();
   await press(button(container, 'Yes. Kept phrase.'));
   expect(draftOf(container)?.trim()).toBe('Yes');
+});
+
+it('keeps a suggested phrase when the person presses its pin key', async () => {
+  phrase('Could I get a glass of water', '', { pinned: false });
+  const { container } = await renderPart(<Composer initial="Could" />);
+
+  await vi.waitFor(() => expect(button(container, 'Keep this phrase').getAttribute('aria-pressed')).toBe('false'));
+  await press(button(container, 'Keep this phrase'));
+
+  await vi.waitFor(() => expect(rows.phrases.get('p-Could I get a glass of water')?.pinned).toBe(true));
+  await vi.waitFor(() => expect(button(container, 'Keep this phrase').getAttribute('aria-pressed')).toBe('true'));
+  expect([...rows.phrases.values()]).toHaveLength(1);
 });
 
 it('says on the pin key whether the person keeps the row', async () => {

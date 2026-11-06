@@ -335,8 +335,9 @@ impl WritingProxy {
 
         use tauri::Manager;
         let sidecar = app.clone();
+        let providers = app.state::<crate::providers::Providers>();
         let config = ProxyConfig {
-            upstream: crate::providers::OPEN_ROUTER.to_owned(),
+            upstream: providers.open_router().to_owned(),
             apple: apple_upstream(move || {
                 let sidecar = sidecar.clone();
                 async move {
@@ -347,7 +348,7 @@ impl WritingProxy {
                         .map_err(|error| error.to_string())
                 }
             }),
-            client: app.state::<crate::providers::Providers>().client().clone(),
+            client: providers.client().clone(),
         };
 
         let app = app.clone();

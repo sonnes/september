@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { PhraseKind, SavedPhrase } from "../records.ts";
-import { dedupeAgainstPinned, isKept, pinnedPhrase, topPhrases, topRows } from "./rows.ts";
+import { dedupeAgainstPinned, isKept, topPhrases, topRows } from "./rows.ts";
 
 const row = (
   text: string,
@@ -58,26 +58,5 @@ describe("isKept", () => {
 
     expect(isKept(" thank YOU", rows)).toBe(true);
     expect(isKept("Water", rows)).toBe(false);
-  });
-});
-
-describe("pinnedPhrase", () => {
-  it("makes a pinned phrase with a code that no row holds", () => {
-    const made = pinnedPhrase("Thank you very much", "space", [row("Other", { code: "tyvm" })], 5);
-
-    expect(made).toMatchObject({
-      space_id: "space",
-      text: "Thank you very much",
-      kind: "phrase",
-      pinned: true,
-      created_at: 5,
-      updated_at: 5,
-    });
-    expect(made?.code).toBeTruthy();
-    expect(made?.code).not.toBe("tyvm");
-  });
-
-  it("makes nothing when the space holds the text already", () => {
-    expect(pinnedPhrase("water ", "space", [row("Water")])).toBeNull();
   });
 });

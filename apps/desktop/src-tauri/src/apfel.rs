@@ -132,6 +132,17 @@ impl ApfelState {
         }
     }
 
+    /// Stops the sidecar of this run. A sidecar that is still starting holds
+    /// the lock, and the exit does not wait for it.
+    pub(crate) fn stop(&self) {
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        if let Ok(mut managed) = self.managed.try_lock() {
+            if let Some(mut process) = managed.take() {
+                process.stop();
+            }
+        }
+    }
+
     #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
     async fn available(&self, _app: &AppHandle) -> Result<ApfelClient> {
         Err(ApfelError::Unsupported)

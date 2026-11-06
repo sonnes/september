@@ -34,13 +34,6 @@ public enum VirtualKey: UInt16, Sendable, Hashable, CaseIterable {
         .f1, .f2, .f3, .f4, .f5, .f6, .f7, .f8, .f9, .f10, .f11, .f12,
     ]
 
-    /// Looks a key up by the name used in panel JSON ("return", "pageDown").
-    public init?(name: String) {
-        guard let match = VirtualKey.allCases.first(where: { String(describing: $0) == name })
-        else { return nil }
-        self = match
-    }
-
     /// F-keys by number, from 1 to 12.
     public static func function(_ number: Int) -> VirtualKey? {
         guard (1...functionKeys.count).contains(number) else { return nil }

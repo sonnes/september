@@ -716,7 +716,9 @@
   },
   "openrouter_connect": {
     "args": {
-      "requestId": "r1"
+      "request": {
+        "requestId": "r1"
+      }
     },
     "result": {
       "provider": "elevenlabs",
@@ -727,7 +729,9 @@
   },
   "openrouter_cancel": {
     "args": {
-      "requestId": "r1"
+      "request": {
+        "requestId": "r1"
+      }
     },
     "result": null
   },
@@ -789,7 +793,9 @@
   },
   "panel_setup": {
     "args": {
-      "on": true
+      "request": {
+        "on": true
+      }
     },
     "result": null
   },
@@ -799,13 +805,17 @@
   },
   "panel_set_float": {
     "args": {
-      "on": true
+      "request": {
+        "on": true
+      }
     },
     "result": null
   },
   "panel_present": {
     "args": {
-      "on": true
+      "request": {
+        "on": true
+      }
     },
     "result": null
   },

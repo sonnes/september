@@ -91,8 +91,8 @@ In the panel, the note actions sit in a row above the note. See
 | Row | File | Needs |
 | --- | --- | --- |
 | Text | `<note-slug>.md` | nothing |
-| Audio | `<note-slug>.mp3` | an ElevenLabs voice |
-| Video | `<note-slug>.mp4` | an ElevenLabs voice, in the browser app |
+| Audio | `<note-slug>.mp3` | an ElevenLabs voice or the Dialogue voice |
+| Video | `<note-slug>.mp4` | an ElevenLabs voice or the Dialogue voice, in the browser app |
 
 `exportReason` says why a row cannot run yet, in the place of its own
 description. A row that cannot run keeps its target and its place; a row that
@@ -116,8 +116,8 @@ joins them to the voice with `ffmpeg.wasm`. Nothing leaves the machine.
 
 The Mac platform has no `renderVideo`, so the row names the browser instead of
 hiding: `ffmpeg.wasm` reaches
-its core through a blob URL, and the script policy of that window allows
-`'self'` only.
+its core through a blob URL, and the script policy of that window allows no
+script from a blob URL.
 
 ## What is counted
 

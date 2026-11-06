@@ -6,9 +6,10 @@ package: core, app-ui, desktop, web
 
 # Voice expression
 
-The Voice tab of the space rail shows Speed for every voice. An ElevenLabs
-voice also shows Voice model and Expression. Voice model always shows. Its list
-holds Flash v2.5, Multilingual v2, and Eleven v3. Expression holds Steady,
+The Voice tab of the space rail shows Speed for every voice except Dialogue.
+An ElevenLabs or Dialogue voice also shows Voice model and Expression when
+ElevenLabs is connected. For an ElevenLabs voice, the Voice model list holds
+Flash v2.5, Multilingual v2, and Eleven v3. Expression holds Steady,
 Natural, Expressive, and Custom.
 
 A preset writes the stability and the similarity into the `speech` setting. It

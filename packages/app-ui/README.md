@@ -277,8 +277,9 @@ Microphone is on.
 
 Each suggestion row is a group named by its number, its source, and its words.
 A mark at the start of a row shows its source: a past message, a phrase, an
-opening, a typed code, or AI Assistance. The pin of a row is a key with
-`aria-pressed`. A row shows at most six words at a time. The insert key takes
+opening, a typed code, or AI Assistance. In Talk and Notes, the pin of a
+saved phrase is a key with `aria-pressed`. A press of the key keeps the phrase.
+In Agent, the pin is only a mark. A row shows at most six words at a time. The insert key takes
 the shown words and shows the next ones. The last slice offers Speak for the
 whole suggestion.
 

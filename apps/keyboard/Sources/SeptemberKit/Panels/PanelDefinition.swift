@@ -87,7 +87,10 @@ extension PanelAction: Decodable {
             let names = try container.decodeIfPresent([String].self, forKey: .modifiers) ?? []
             let key = try container.decode(String.self, forKey: .key)
             self = .shortcut(
-                Shortcut(modifiers: try Modifiers(names: names), key: try Shortcut.Key(name: key))
+                Shortcut(
+                    modifiers: try Modifiers(panelNames: names),
+                    key: try Shortcut.Key(panelName: key)
+                )
             )
         case "text":
             self = .text(try container.decode(String.self, forKey: .text))
@@ -101,12 +104,42 @@ extension PanelAction: Decodable {
     }
 }
 
+extension Modifiers {
+    /// The modifier names in panel JSON.
+    private static let panelNames: [String: Modifiers] = [
+        "function": .function,
+        "control": .control,
+        "option": .option,
+        "shift": .shift,
+        "command": .command,
+    ]
+
+    init(panelNames names: [String]) throws {
+        self = try names.reduce(into: []) { modifiers, name in
+            guard let modifier = Modifiers.panelNames[name] else {
+                throw PanelDecodingError.unknownModifier(name)
+            }
+            modifiers.insert(modifier)
+        }
+    }
+}
+
 extension Shortcut.Key {
-    /// A single character is typed as-is; anything longer names a virtual key.
-    init(name: String) throws {
+    /// The virtual key names in panel JSON.
+    private static let virtualKeys: [String: VirtualKey] = [
+        "return": .return, "tab": .tab, "space": .space, "delete": .delete,
+        "escape": .escape, "forwardDelete": .forwardDelete, "home": .home, "end": .end,
+        "pageUp": .pageUp, "pageDown": .pageDown,
+        "left": .left, "right": .right, "up": .up, "down": .down,
+        "f1": .f1, "f2": .f2, "f3": .f3, "f4": .f4, "f5": .f5, "f6": .f6,
+        "f7": .f7, "f8": .f8, "f9": .f9, "f10": .f10, "f11": .f11, "f12": .f12,
+    ]
+
+    /// A single character types as is. A longer name is a virtual key.
+    init(panelName name: String) throws {
         if name.count == 1 {
             self = .character(name)
-        } else if let virtual = VirtualKey(name: name) {
+        } else if let virtual = Shortcut.Key.virtualKeys[name] {
             self = .virtual(virtual)
         } else {
             throw PanelDecodingError.unknownKey(name)

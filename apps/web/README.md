@@ -202,7 +202,7 @@ expandable panels with keyboard support. Privacy and the founder story follow
 the demos. Compact browser and Mac choices provide the final calls to action.
 
 The Mac section presents the full desktop app with Apple Intelligence and an
-alpha download. Its direct DMG link targets `v0.2.0` for Apple Silicon
+alpha download. Its direct DMG link targets `v0.6.0` for Apple Silicon
 and macOS 14.2 or later. Apple Intelligence requires macOS 26 or later. Update this link when a new desktop alpha ships.
 
 The landing sections demonstrate the real feature machinery on marketing-only

@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem?
     private var keyboardItem: NSMenuItem?
     private var permissionSubscription: AnyCancellable?
+    private var inputSourceObserver: (any NSObjectProtocol)?
     private let permission = AccessibilityPermission()
     private let sink = CGEventSink()
     private let focusWatcher = FocusWatcher()
@@ -39,10 +40,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // The banner and the menu ask for permission, so starting Keyboard
         // never puts a system dialog in front of what the user was doing.
         permission.startMonitoring()
-        permissionSubscription = permission.$isTrusted.dropFirst().sink { [weak self] _ in
-            // The banner changes the keyboard's size. `sink` runs before the
-            // new value is stored, so the rebuild waits a turn.
-            Task { @MainActor in self?.refreshPanel() }
+        // The banner changes the keyboard's size. `@Published` sends before it
+        // stores the value, so the rebuild runs on the next turn of the queue.
+        permissionSubscription = permission.$isTrusted.dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                MainActor.assumeIsolated { self?.refreshPanel() }
+            }
+
+        inputSourceObserver = DistributedNotificationCenter.default().addObserver(
+            forName: SystemKeyboardLayout.inputSourceChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.controller.layoutChanged(to: SystemKeyboardLayout.currentMap())
+            }
         }
 
         // Mirror the focused field of whatever app is in front, and re-read it
@@ -80,8 +93,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func showTreePanel(height: CGFloat) {
         guard isTreeVisible else { return }
         let size = CGSize(width: Metrics.treeViewerWidth, height: height)
-        let root = AnyView(
-            AXTreeView(model: treeModel, height: height).environmentObject(permission))
+        let root = AnyView(AXTreeView(model: treeModel, permission: permission, height: height))
 
         if let treePanel {
             treePanel.update(root: root, contentSize: size)
@@ -113,9 +125,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// Builds the screen and measures it, scaling down if the display is too
     /// narrow for it.
     private func makeRoot() -> (AnyView, CGSize) {
-        let screen = KeyboardScreen()
-            .environmentObject(controller)
-            .environmentObject(permission)
+        let screen = KeyboardScreen(controller: controller, permission: permission)
         let probe = NSHostingView(rootView: screen)
         probe.layoutSubtreeIfNeeded()
         let intrinsic = probe.fittingSize

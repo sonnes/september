@@ -1,5 +1,6 @@
 //! Helpers for the integration tests: a loopback HTTP server for the tests
-//! that call a service, and a runner for the native audio tests.
+//! that call a service, fake ElevenLabs servers, and a runner for the native
+//! audio tests.
 
 // Each test file uses some of these helpers, not all of them.
 #![allow(dead_code)]
@@ -13,6 +14,14 @@ use std::{
 };
 
 use serde_json::Value;
+
+pub mod eleven_labs;
+
+/// The JSON body of one captured request.
+pub fn body_of(request: &str) -> Value {
+    let (_, body) = request.split_once("\r\n\r\n").unwrap();
+    serde_json::from_str(body).unwrap()
+}
 
 /// Answers one request with `status` and a JSON body, and hands the request back.
 pub fn serve_once(status: &str, body: Value) -> (String, mpsc::Receiver<String>) {
@@ -100,6 +109,9 @@ fn answer(listener: &TcpListener, response: &str, sender: &mpsc::Sender<String>)
 /// output when either step fails.
 pub fn run_native_audio_test(test: &str) {
     let binary = std::env::temp_dir().join(format!("september-audio-{}", uuid::Uuid::new_v4()));
+    let frameworks = env!("SEPTEMBER_NATIVE_FRAMEWORKS")
+        .split(' ')
+        .flat_map(|framework| ["-framework", framework]);
     let compiled = Command::new("clang")
         .current_dir(env!("CARGO_MANIFEST_DIR"))
         .args([
@@ -107,16 +119,9 @@ pub fn run_native_audio_test(test: &str) {
             concat!("-mmacosx-version-min=", env!("SEPTEMBER_MACOS_MIN")),
             &format!("tests/{test}.m"),
             "native/audio.m",
-            "-framework",
-            "AVFoundation",
-            "-framework",
-            "AudioToolbox",
-            "-framework",
-            "CoreAudio",
-            "-framework",
-            "Foundation",
-            "-o",
         ])
+        .args(frameworks)
+        .arg("-o")
         .arg(&binary)
         .output()
         .unwrap();

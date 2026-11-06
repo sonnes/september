@@ -30,3 +30,15 @@ public enum KeyboardStyle: String, Sendable, CaseIterable {
         }
     }
 }
+
+/// The kind of key, which fixes its size and label treatment.
+public enum KeyKind: Sendable, Hashable, CaseIterable {
+    /// Alphanumeric key with a single label.
+    case standard
+    /// Modifier or utility key (shift, tab, delete, return, caps lock).
+    case special
+    /// Function row key (esc, F1–F12).
+    case function
+    /// Number row key with a secondary symbol above the primary label.
+    case dual
+}

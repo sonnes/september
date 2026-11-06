@@ -56,5 +56,6 @@ macOS publishes no way to read the answer. A refused tap carries sound with no
 words in it and reports no error, so the microphone control names the setting
 that mends it while it runs.
 
-This design uses the public Core Audio process-tap API on macOS 26 or later.
+This design uses the public Core Audio process-tap API on macOS 14.2 or
+later. On macOS 26 or later, the tap also names the bundle that it taps.
 It does not install an audio driver or a privileged helper.

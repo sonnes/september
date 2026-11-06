@@ -4,7 +4,7 @@ import { MessagesSquare, Plus } from "lucide-react";
 
 import { Button } from "@september/ui/components/button";
 
-import { APP_NAV } from "@september/app-ui/navigation";
+import { pageOf } from "@september/app-ui/navigation";
 
 import { useSpaces } from "@september/app-ui/services/data";
 import { panel as panelRail } from "@september/app-ui/services/settings";
@@ -33,14 +33,6 @@ import { KEYMAP, presses } from "@september/core/rules/keymap";
 import { useEscape } from "@september/app-ui/blocks/keymap";
 import { modeForDigit, spaceRoute } from "@september/core/rules/navigation";
 import { spaceFromSlug } from "@september/core/rules/spaces";
-
-/** The title of the app page that a path belongs to, such as Settings for a section. */
-function pageTitle(path: string): string {
-  return (
-    APP_NAV.find((item) => path === item.path || path.startsWith(`${item.path}/`))
-      ?.title ?? ""
-  );
-}
 
 /**
  * The floating panel of the desktop app: the panel header over the Talk,
@@ -79,7 +71,7 @@ function Panel({ onHide }: { onHide: () => void }) {
   const page = at
     ? null
     : {
-        title: pageTitle(pathname),
+        title: pageOf(pathname)?.title ?? "",
         onBack: () => void navigate({ to: lastSpacePath ?? "/spaces" }),
       };
 

@@ -4,11 +4,7 @@ import SwiftUI
 public struct MainKeyboardView: View {
     @EnvironmentObject private var controller: KeyboardController
 
-    private let width: CGFloat
-
-    public init(width: CGFloat = Metrics.keyboardWidth) {
-        self.width = width
-    }
+    public init() {}
 
     public var body: some View {
         VStack(spacing: Metrics.rowSpacing) {
@@ -24,7 +20,7 @@ public struct MainKeyboardView: View {
 
     @ViewBuilder
     private func rowView(_ row: KeyRow) -> some View {
-        let widths = KeyboardLayout.widths(for: row, totalWidth: width)
+        let widths = KeyboardLayout.widths(for: row)
         let tint = controller.style.tint(for: row.id)
 
         HStack(spacing: Metrics.rowSpacing) {

@@ -10,6 +10,7 @@ import type {
 } from '@september/core/rules/records';
 import { LOCAL_USER, PORTABLE_SETTING_KEYS, SETTINGS } from '@september/core/rules/settings';
 import { usageSince, type UsageEvent } from '@september/core/rules/usage-summary';
+import { DEFAULT_SPEECH, type SpeechSettings } from '@september/core/rules/voice';
 
 const DATABASE_NAME = 'september';
 const DATABASE_VERSION = 3;
@@ -846,17 +847,17 @@ function providerKeysFromAccount(account: Record<string, unknown>): Record<strin
   );
 }
 
-function speechFromAccount(account: Record<string, unknown>): Record<string, unknown> {
+function speechFromAccount(account: Record<string, unknown>): SpeechSettings {
   const speech = (account.ai_speech ?? {}) as Record<string, unknown>;
   const settings = (speech.settings ?? {}) as Record<string, unknown>;
   const similarity = settings.similarity ?? settings.similarity_boost;
   return {
     provider: speech.enabled === true && speech.provider === 'elevenlabs' ? 'elevenlabs' : 'system',
     voiceId: typeof speech.voice_id === 'string' ? speech.voice_id : null,
-    modelId: typeof speech.model_id === 'string' ? speech.model_id : 'eleven_turbo_v2_5',
-    stability: typeof settings.stability === 'number' ? settings.stability : 0.5,
-    similarity: typeof similarity === 'number' ? similarity : 0.75,
-    speed: typeof settings.speed === 'number' ? settings.speed : 1,
+    modelId: typeof speech.model_id === 'string' ? speech.model_id : DEFAULT_SPEECH.modelId,
+    stability: typeof settings.stability === 'number' ? settings.stability : DEFAULT_SPEECH.stability,
+    similarity: typeof similarity === 'number' ? similarity : DEFAULT_SPEECH.similarity,
+    speed: typeof settings.speed === 'number' ? settings.speed : DEFAULT_SPEECH.speed,
   };
 }
 

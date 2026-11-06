@@ -99,8 +99,8 @@ export interface Commands {
   provider_forget: Request<{ provider: Provider }, boolean>;
   provider_voices: Command<undefined, Voice[]>;
   provider_quota: Command<undefined, ElevenLabsQuota | null>;
-  openrouter_connect: Command<{ requestId: string }, ProviderStatus>;
-  openrouter_cancel: Command<{ requestId: string }, void>;
+  openrouter_connect: Request<{ requestId: string }, ProviderStatus>;
+  openrouter_cancel: Request<{ requestId: string }, void>;
 
   audio_outputs: Command<undefined, AudioOutput[]>;
   audio_output: Command<undefined, string>;
@@ -111,10 +111,10 @@ export interface Commands {
 
   panel_show: Command<undefined, void>;
   panel_hide: Command<undefined, void>;
-  panel_setup: Command<{ on: boolean }, void>;
+  panel_setup: Request<{ on: boolean }, void>;
   panel_float: Command<undefined, boolean>;
-  panel_set_float: Command<{ on: boolean }, void>;
-  panel_present: Command<{ on: boolean }, void>;
+  panel_set_float: Request<{ on: boolean }, void>;
+  panel_present: Request<{ on: boolean }, void>;
 
   gaze_start: Command<{ onEvent: Channel<GazeEvent> }, void>;
   gaze_stop: Command<undefined, void>;

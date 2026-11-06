@@ -13,14 +13,20 @@ public final class AXTreeModel: ObservableObject {
 /// the screen, the height of the keyboard.
 public struct AXTreeView: View {
     @ObservedObject private var model: AXTreeModel
-    @EnvironmentObject private var permission: AccessibilityPermission
+    @ObservedObject private var permission: AccessibilityPermission
     private let height: CGFloat
     private let scrolls: Bool
 
     /// `scrolls: false` is for `--snapshot`: `ImageRenderer` draws nothing
     /// inside a `ScrollView`, so the rows would come out blank.
-    public init(model: AXTreeModel, height: CGFloat, scrolls: Bool = true) {
+    public init(
+        model: AXTreeModel,
+        permission: AccessibilityPermission,
+        height: CGFloat,
+        scrolls: Bool = true
+    ) {
         self.model = model
+        self.permission = permission
         self.height = height
         self.scrolls = scrolls
     }

@@ -17,16 +17,11 @@ struct SectionLabel: View {
 /// A grid of compact shortcut buttons — the EDIT, NAVIGATE and SYSTEM keypads.
 public struct PanelGridView: View {
     private let panel: PanelDefinition
-    private let width: CGFloat
     private let press: (PanelAction) -> Void
+    private let width = Metrics.keypadWidth
 
-    public init(
-        panel: PanelDefinition,
-        width: CGFloat = Metrics.keypadWidth,
-        press: @escaping (PanelAction) -> Void
-    ) {
+    public init(panel: PanelDefinition, press: @escaping (PanelAction) -> Void) {
         self.panel = panel
-        self.width = width
         self.press = press
     }
 
@@ -62,18 +57,16 @@ public struct PanelGridView: View {
 public struct AppShortcutsView: View {
     private let panel: PanelDefinition
     private let appName: String?
-    private let width: CGFloat
     private let press: (PanelAction) -> Void
+    private let width = Metrics.keypadWidth
 
     public init(
         panel: PanelDefinition,
         appName: String?,
-        width: CGFloat = Metrics.keypadWidth,
         press: @escaping (PanelAction) -> Void
     ) {
         self.panel = panel
         self.appName = appName
-        self.width = width
         self.press = press
     }
 

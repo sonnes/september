@@ -81,6 +81,15 @@ interface CodeCheckOptions {
 }
 
 /**
+ * The codes that a new or changed code must not repeat. A code works in every
+ * space, so `rows` must hold the phrases of every space. `exceptId` names the
+ * row that changes, which can keep its own code.
+ */
+export function codesInUse(rows: readonly SavedPhrase[], exceptId?: string): string[] {
+  return rows.flatMap((row) => (row.code && row.id !== exceptId ? [row.code] : []));
+}
+
+/**
  * Validate a user-entered code. Returns the normalized code on success; on
  * dictionary/duplicate collision, offers a mutated suggestion when one exists.
  */

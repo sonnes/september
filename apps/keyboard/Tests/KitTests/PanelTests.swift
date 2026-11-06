@@ -40,6 +40,30 @@ func panelTests() {
         expectEqual(panel.buttons[3].action, .text("Hello"))
     }
 
+    test("panel modifier names decode, fn included") {
+        let panel = try decode(
+            """
+            {"title": "X", "buttons": [{"id": "b", "label": "B",
+              "action": {"type": "shortcut", "modifiers": ["function", "command"], "key": "f5"}}]}
+            """)
+        expectEqual(
+            panel.buttons[0].action,
+            .shortcut(Shortcut(modifiers: [.function, .command], key: .virtual(.f5)))
+        )
+    }
+
+    test("an unknown modifier or key name is rejected") {
+        for action in [
+            #"{"type": "shortcut", "modifiers": ["hyper"], "key": "a"}"#,
+            #"{"type": "shortcut", "key": "launch"}"#,
+        ] {
+            let bad = """
+                {"title": "X", "buttons": [{"id": "b", "label": "B", "action": \(action)}]}
+                """
+            expect((try? decode(bad)) == nil, "\(action) decoded anyway")
+        }
+    }
+
     test("an unknown action type is rejected rather than silently dropped") {
         let bad = """
             {"title": "X",

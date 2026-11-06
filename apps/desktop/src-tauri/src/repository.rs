@@ -128,6 +128,16 @@ pub struct BackupContents {
     pub usage_events: Vec<AnalyticsEvent>,
 }
 
+/// Every table that a backup carries besides `settings`, children first.
+const BACKUP_TABLES: [&str; 6] = [
+    AgentMessage::TABLE,
+    Message::TABLE,
+    Note::TABLE,
+    SavedPhrase::TABLE,
+    Space::TABLE,
+    AnalyticsEvent::TABLE,
+];
+
 /// A row type and the table that holds it. The columns are in the order of
 /// `values` and `from_row`, with `id` first.
 trait Record: Sized {
@@ -767,14 +777,9 @@ impl Repository {
         }
 
         let transaction = self.connection.transaction()?;
-        transaction.execute_batch(
-            "DELETE FROM agent_messages;
-             DELETE FROM messages;
-             DELETE FROM notes;
-             DELETE FROM saved_phrases;
-             DELETE FROM spaces;
-             DELETE FROM analytics_events;",
-        )?;
+        for table in BACKUP_TABLES {
+            transaction.execute(&format!("DELETE FROM {table}"), [])?;
+        }
         for key in setting_keys {
             validate_key(key)?;
             transaction.execute("DELETE FROM settings WHERE key = ?1", [key])?;
@@ -937,6 +942,26 @@ mod tests {
             }],
             usage_events: vec![analytics_event("event-1", "user-1", NOW - 1_000)],
         }
+    }
+
+    #[test]
+    fn a_backup_carries_every_table() {
+        let repository = Repository::open_in_memory().unwrap();
+        let mut statement = repository
+            .connection
+            .prepare(
+                "SELECT name FROM sqlite_master WHERE type = 'table' \
+                 AND name NOT LIKE 'sqlite_%' AND name != 'settings' ORDER BY name",
+            )
+            .unwrap();
+        let tables: Vec<String> = statement
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .collect::<rusqlite::Result<_>>()
+            .unwrap();
+        let mut carried = BACKUP_TABLES.map(str::to_owned).to_vec();
+        carried.sort();
+        assert_eq!(tables, carried);
     }
 
     #[test]

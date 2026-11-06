@@ -3,24 +3,29 @@ import SwiftUI
 /// The whole floating surface: the input bar above, the keypads and the
 /// keyboard below.
 public struct KeyboardScreen: View {
-    @EnvironmentObject private var controller: KeyboardController
-    @EnvironmentObject private var permission: AccessibilityPermission
+    @ObservedObject private var controller: KeyboardController
+    @ObservedObject private var permission: AccessibilityPermission
 
-    public init() {}
+    public init(controller: KeyboardController, permission: AccessibilityPermission) {
+        self.controller = controller
+        self.permission = permission
+    }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: Metrics.sectionSpacing) {
             if !permission.isTrusted {
                 PermissionBanner()
-                    .padding(.leading, Metrics.keypadWidth + Metrics.sectionSpacing)
+                    .padding(.leading, Metrics.keyboardLeadingInset)
             }
 
             InputBar()
-                .padding(.leading, Metrics.keypadWidth + Metrics.sectionSpacing)
+                .padding(.leading, Metrics.keyboardLeadingInset)
 
             keys
         }
         .padding(Metrics.surfacePadding)
+        .environmentObject(controller)
+        .environmentObject(permission)
     }
 
     private var keys: some View {

@@ -21,7 +21,7 @@ and the services that connect that UI to macOS.
 | `packages/app-ui/blocks/`  | `screen` `chrome` `panel-header` `present` `services` `space-panel` `phrase-panel` `speech-settings` `pick-list` `suggestions` `usage` `brand` | Two or more pages or layouts use it.                 |
 | `packages/app-ui/services/` | `settings` `data` `speech` `ai` `agent` `usage` `connections` `backup` `export` `cloning` `phrase-sync` `suggest` `player` `browser`                     | Both apps share it, over the platform.               |
 | `src/platform.ts`          | The Mac platform: `store`, `voice`, `providers`, `writing`, `device`, `capabilities`                                                                       | It speaks to Rust.                                   |
-| `src/commands.ts`          | Every Tauri command, with its arguments and its answer, and `call`                                                                                         | Every call to Rust goes through `call`.              |
+| `src/commands.ts`          | Every Tauri command, with its arguments and its answer, `call`, and `callRaw`                                                                              | Every call to Rust goes through it.                  |
 | `src/window.ts`            | The panel window and the saved path                                                                                                                        | Only the desktop has it.                             |
 | `src/services/gaze.ts`     | The camera session of the eye tracker                                                                                                                      | Only the desktop has it.                             |
 | `packages/core/`           | autocomplete and platform-independent rules                                                                                                                | Both web and desktop import the same implementation. |
@@ -257,7 +257,7 @@ The slug is the title of the space, and it holds no identifier. A stale slug
 goes back to the list. A new title moves the address with it. Two spaces cannot
 share a title, because one slug must name one space.
 
-The Talk screen has three parts, from the top:
+The Talk screen has four parts, from the top:
 
 1. The panel header. It holds the space button, the mode switch, and the More
    menu.
@@ -328,7 +328,7 @@ a separate conversation that can read the space and propose changes.
 panel header moves between all three. The space switcher opens the chosen space
 in the mode the user is in.
 
-September keeps the mode of each space, by slug, in the `space-modes` setting.
+September keeps the mode of each space, by space id, in the `space-modes` setting.
 The space list opens each space the way the user left it. A new space starts
 in Agent, where it is set up, unless no writing service is connected.
 
@@ -358,9 +358,9 @@ The note starts saving text and title edits immediately. Pending or failed
 saves keep the normal close guard active. There is no Save button, because a user who types
 slowly must never lose words to a button they did not press.
 
-The note has two writers: the field and the console. The field takes the new
-text whenever it holds nothing unsaved, so words added from the console show
-at once and are never written over.
+The note has two writers: the field and the agent. The field takes the new
+text whenever it holds nothing unsaved, so words from the agent show at once
+and are never written over.
 
 The first save gives the note a name, from its first six words. A name the
 user typed is never replaced. A new name makes a new slug, so the address
@@ -385,8 +385,8 @@ same.
 
 ### Present and export
 
-A row above the note carries four actions: Read aloud, Present, Export, and
-Delete.
+The reading bar below the note holds Read aloud, Present, Suggestions, and a
+More menu with Export and Delete note.
 
 Present opens `PresentOverlay` from `packages/app-ui/blocks/present.tsx` over
 the panel. When the overlay opens, it calls `fullScreen(true)`, and the panel
@@ -409,14 +409,15 @@ that a voice-over already made.
 
 Video is made in the browser app for now, and the row says so instead of
 hiding. The Mac platform has no `renderVideo`: `ffmpeg.wasm` reaches its core
-through a blob URL, and the script policy of this window allows `'self'` only.
+through a blob URL, and the script policy of this window allows no script from
+a blob URL.
 
 `packages/core/rules/present/` owns the chunking, the tones, the font fit,
 and the caption timing. See `docs/concepts/note-present-export.md`.
 
 ### The note of the space
 
-The first tab of the console is About. It opens the note of the space, which
+The first row of the notes list is About. It opens the note of the space, which
 says who the user speaks to here and why. Every suggestion and every phrase of
 the space reads it, so a change here changes the words that the app offers.
 
@@ -424,10 +425,9 @@ A model writes this note one time, on the first turn of the space, from the
 words the user gave it. `space_patch` keeps it in the `context` column. A note that the
 user wrote is never replaced. A title that the user typed stays.
 
-The About tab saves with no Save button. It saves when the field loses focus,
-and again when the tab closes with words unsaved. The console writes here too,
-so a user who cannot type fills this note with the word tiles. The console
-writes only after the field blurs, so the two writers cannot race.
+The About note saves on each edit, with no Save button. The writing tools under
+the caret write here too, so a user who cannot type fills this note with the
+word tiles.
 
 The tab is state, and not an address. The app cannot open on it, and a reload
 returns to the last note. Give the tab an address when a user asks to link to
@@ -782,8 +782,8 @@ Everyone follows the same five steps. Connecting cloud services is optional.
 `STEPS` in `packages/core/rules/onboarding.ts` owns the sequence, and the sidebar, the
 guards, and both navigation directions all read it. The router uses hash history,
 because Tauri serves the built files from the asset protocol. A step opens only
-after the answers it needs exist. The answers stay in memory until account
-persistence is ported.
+after the answers it needs exist. The answers stay in memory until the
+last step writes them to the `setup` setting.
 
 The brand, the setup title, and the step list are in a left indigo sidebar.
 Each step opens as an inset white card beside it. All sections on a step stay
@@ -857,9 +857,10 @@ section list beside the open section, ported from the web app.
 
 | Section       | Route               | Holds                                                   |
 | ------------- | ------------------- | ------------------------------------------------------- |
-| Setup         | `/settings`         | The state of each service, its key, and its model       |
+| Services      | `/settings`         | The state of each service, its key, and its model       |
+| Access        | `/settings/access`  | How you choose things, the text size, and the theme     |
 | AI Assistance | `/settings/writing` | Who writes, and what the model knows about you          |
-| Usage         | `/settings/usage`   | Typing saved, service use, quota, recent calls, and CSV |
+| Usage         | `/settings/usage`   | Service use, quota, recent calls, and CSV               |
 | Panel         | `/settings/panel`   | Float on top, for the panel                             |
 | Data          | `/settings/data`    | A portable backup download and restore                  |
 
@@ -957,8 +958,8 @@ name, and a detail line when the row has one. The rows of each group fill the
 columns under the group heading.
 
 Every change is kept at once, as the Voice card of the rail does. There is no
-Save button to forget. A text field waits half a second after the last keystroke, so one
-sentence is one write.
+Save button to forget. A text field saves on each edit, and the writes run one
+at a time, in order.
 
 The setup steps ask how September runs. Settings does not ask again, because
 one answer in two places lets the two disagree.
@@ -1036,11 +1037,13 @@ pnpm test
 pnpm build
 ```
 
-The Vitest tests cover the eye-tracker calibration, the Panel section of
-Settings, and the command contract. The shared routes, screens, and rules have
-their tests in `apps/web`, `packages/app-ui`, `packages/ui`, and
-`packages/core`. Rust
-tests cover native services, persistence, providers, and process boundaries.
+`pnpm test` runs the Vitest tests, then the Rust unit tests with
+`cargo test --lib`. The Vitest tests cover the eye-tracker calibration, the
+Panel section of Settings, and the command contract. The Rust contract tests
+in `src-tauri/src/rpc/contract.rs` read the same examples. The shared routes,
+screens, and rules have their tests in `apps/web`, `packages/app-ui`,
+`packages/ui`, and `packages/core`. Rust tests cover native services,
+persistence, providers, and process boundaries.
 
 Run the Rust checks from `src-tauri/`:
 
@@ -1076,7 +1079,7 @@ A forced quit, crash, or power loss before a write finishes can still lose it.
 The Welcome screen includes a Terms & privacy summary before personal details
 or service connections. It summarizes local storage, optional providers, and
 the MIT terms. Full policies open in the browser while setup stays in place.
-Get started advances to About you; it does not record consent to optional processing.
+Get started advances to How you choose. It does not record consent to optional processing.
 
 OpenRouter connects through browser authorization in setup and Settings. Rust
 uses PKCE and a temporary loopback callback on a free port. It exchanges and

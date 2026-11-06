@@ -1,10 +1,13 @@
 /**
  * The contract between `Commands` and the Rust commands.
  *
- * Each example below is typed by `Commands`, so a change to a type fails the
- * build. The same examples live in `contract/commands.json`, which the Rust
- * tests read into the Rust types and write back, so a change on either side
- * fails a test. Run `UPDATE_CONTRACT=1 pnpm test` to write the file again.
+ * `Commands` types each example below, so a change to a type fails the build.
+ * The same examples are in `contract/commands.json`. The Rust tests in
+ * `src-tauri/src/rpc/contract.rs` read that file. They fail when a command
+ * has no example, when an example names no command, when a request has a
+ * field that its Rust type does not have, or when Rust writes an answer with
+ * other names. Run
+ * `UPDATE_CONTRACT=1 pnpm test` to write the file again.
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
@@ -160,8 +163,8 @@ const EXAMPLES: { [N in Name]: Example<N> } = {
     args: null,
     result: { tier: "starter", character_count: 10, character_limit: 100, resets_at: 99 },
   },
-  openrouter_connect: { args: { requestId: "r1" }, result: status },
-  openrouter_cancel: { args: { requestId: "r1" }, result: null },
+  openrouter_connect: { args: { request: { requestId: "r1" } }, result: status },
+  openrouter_cancel: { args: { request: { requestId: "r1" } }, result: null },
   audio_outputs: { args: null, result: [{ uid: "speakers", name: "Speakers" }] },
   audio_output: { args: null, result: "speakers" },
   audio_output_set: { args: { request: { uid: "speakers" } }, result: null },
@@ -170,10 +173,10 @@ const EXAMPLES: { [N in Name]: Example<N> } = {
   virtual_microphone_stop: { args: null, result: microphone },
   panel_show: { args: null, result: null },
   panel_hide: { args: null, result: null },
-  panel_setup: { args: { on: true }, result: null },
+  panel_setup: { args: { request: { on: true } }, result: null },
   panel_float: { args: null, result: true },
-  panel_set_float: { args: { on: true }, result: null },
-  panel_present: { args: { on: true }, result: null },
+  panel_set_float: { args: { request: { on: true } }, result: null },
+  panel_present: { args: { request: { on: true } }, result: null },
   gaze_stop: { args: null, result: null },
 };
 

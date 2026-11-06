@@ -12,8 +12,8 @@ browser app or the Mac app.
 The top-level envelope names the format version, export time, source app, and
 app version. Version 2 contains these values:
 
-- setup, speech, dismissed ideas, space modes, the new-space draft, panel
-  state, and Present settings;
+- setup, speech, dismissed ideas, space modes, panel state, and Present
+  settings;
 - all spaces, Talk messages, Agent messages, notes, saved phrases, and usage
   events.
 
@@ -49,7 +49,7 @@ Some older profiles have no owner ID in the setup value. Export uses the
 current owner of the rows in the backup without changing the stored value.
 
 Older desktop profiles can also name the retired Camera panel tab. An import
-changes this tab to Phrases. An export writes the value the app holds.
+and an export both change this tab to Phrases.
 
 The JSON is readable text and is not encrypted. It can contain private
 Talk messages, Agent messages, and notes. The Data screen tells the user to

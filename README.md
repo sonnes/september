@@ -197,7 +197,7 @@ If another tab blocks database removal, close the old tab and start September ag
 
 ## Tests
 
-Run the checks from the application directory:
+Run the checks of one application from the repository root:
 
 ```sh
 pnpm -C apps/web test
@@ -209,6 +209,10 @@ pnpm -C apps/desktop build
 
 make mac-test
 ```
+
+`pnpm -C apps/desktop test` runs the Vitest tests and then the Rust unit
+tests, which include the command contract in
+`apps/desktop/src-tauri/src/rpc/contract.rs`. It needs Rust.
 
 Tests cover current behavior at module boundaries. They do not pin page copy,
 visual styling, or the absence of retired code.

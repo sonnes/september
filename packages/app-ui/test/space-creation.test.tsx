@@ -12,7 +12,7 @@ import type { Space } from '@september/core/rules/records';
 import { spaceSlug } from '@september/core/rules/spaces';
 
 import { platform, rows } from './platform';
-import { addSpace, findButton, finishSetup, press, renderApp, renderPart, type Rendered } from './render';
+import { addSpace, findButton, finishSetup, press, renderApp, renderPart, typeInto, type Rendered } from './render';
 
 const writing = { defaultModel: { service: 'openrouter' as const, model: '' } };
 
@@ -196,10 +196,7 @@ describe('finding a space', () => {
       return found;
     });
 
-    await act(async () => {
-      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(search, 'phy');
-      search.dispatchEvent(new Event('input', { bubbles: true }));
-    });
+    await typeInto(search, 'phy');
 
     const titles = [...container.querySelectorAll('main li button:first-child')].map(one =>
       one.querySelector('span')?.textContent,

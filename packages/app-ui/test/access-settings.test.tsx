@@ -153,3 +153,22 @@ describe('the How you choose step of setup', () => {
     );
   });
 });
+
+describe('the Finish step of setup', () => {
+  it('stays on the step and says so when the setup did not save', async () => {
+    vi.mocked(platform.device.identity).mockResolvedValue({ name: 'Meera', userId: null });
+    await loadSettings();
+    const { container, router } = await renderApp('/choose');
+    const path = () => router!.state.location.pathname;
+    for (const step of ['/choose', '/profile', '/connect'] as const) {
+      await press(await findButton(stepFor(step).action, container));
+    }
+    await vi.waitFor(() => expect(path()).toBe('/finish'));
+
+    vi.mocked(platform.store.putSetting).mockRejectedValue(new Error('Storage unavailable'));
+    await press(await findButton(stepFor('/finish').action, container));
+
+    await vi.waitFor(() => expect(container.querySelector('[role="alert"]')?.textContent).toBe('Storage unavailable'));
+    expect(path()).toBe('/finish');
+  });
+});

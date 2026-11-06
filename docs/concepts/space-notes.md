@@ -66,10 +66,10 @@ From 52rem of screen body, the list is a column beside the note. Below that widt
 
 The About tab edits the `context` field of the space, in the same document editor. Phrase generation and writing prompts read this field.
 
-The About tab saves when its field loses focus. It also saves pending text when the tab closes.
+The About tab saves on each edit, the same way a note does.
 
 ## Read aloud
 
 Read aloud uses the same voice settings as Talk. It reads the selected words when there is a selection. Otherwise, it reads the full note. It does not say the box of a checklist line. It does not create a message or change the Talk transcript.
 
-Removing a space also removes its scoped notes, messages, and phrases in one repository operation.
+Removing a space also removes its scoped notes, messages, Agent messages, and phrases in one repository operation.

@@ -11,9 +11,9 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
 use tokio_tungstenite::tungstenite::{self, client::IntoClientRequest, Message};
 
-use crate::speech::VoiceSettings;
+use crate::speech::{VoiceSettings, STREAM_SAMPLE_RATE};
 
-pub(crate) const OPEN_ROUTER: &str = "https://openrouter.ai";
+const OPEN_ROUTER: &str = "https://openrouter.ai";
 const ELEVEN_LABS: &str = "https://api.elevenlabs.io";
 
 /// An ElevenLabs file that does not arrive in this time does not answer. The
@@ -26,6 +26,9 @@ const FIRST_DIALOGUE_AUDIO: Duration = Duration::from_secs(10);
 /// The realtime Eleven v3 model. ElevenLabs serves it on the dialogue socket
 /// only.
 const CONVERSATIONAL_MODEL: &str = "eleven_v3_conversational";
+
+/// The answer to a voice request when no ElevenLabs key is stored.
+pub(crate) const NO_ELEVEN_LABS_KEY: &str = "Connect ElevenLabs in Settings first.";
 
 /// One Keychain service holds both accounts, so the Mac shows them together.
 const KEYCHAIN_SERVICE: &str = "com.september.desktop";
@@ -250,6 +253,11 @@ impl Providers {
         self
     }
 
+    /// The OpenRouter address that every OpenRouter call of this app uses.
+    pub(crate) fn open_router(&self) -> &str {
+        &self.open_router
+    }
+
     /// The HTTP client every request of this app shares.
     pub(crate) fn client(&self) -> &reqwest::Client {
         &self.client
@@ -336,7 +344,8 @@ impl Providers {
     }
 
     /// Speaks the parts of one sentence in the Dialogue voice. Each chunk of
-    /// sound goes to `on_samples` as it arrives: 16-bit mono samples at 24 kHz.
+    /// sound goes to `on_samples` as it arrives: 16-bit mono samples at
+    /// `STREAM_SAMPLE_RATE`.
     pub async fn speak_dialogue(
         &self,
         key: &str,
@@ -381,7 +390,7 @@ impl Providers {
         messages.push(serde_json::json!({ "close_socket": true }));
         self.socket_stream(
             &format!(
-                "/v1/text-to-dialogue/stream-input?model_id={}&output_format=pcm_24000",
+                "/v1/text-to-dialogue/stream-input?model_id={}&output_format=pcm_{STREAM_SAMPLE_RATE}",
                 voice.model_id
             ),
             key,
@@ -490,7 +499,7 @@ impl Providers {
         let request = self
             .client
             .post(format!(
-                "{}/v1/text-to-dialogue/stream/with-timestamps?output_format=pcm_24000",
+                "{}/v1/text-to-dialogue/stream/with-timestamps?output_format=pcm_{STREAM_SAMPLE_RATE}",
                 self.eleven_labs
             ))
             .header("xi-api-key", key)
@@ -845,13 +854,6 @@ mod tests {
         .unwrap();
         assert_eq!(voice.id, "v1");
         assert_eq!(serde_json::to_value(&voice).unwrap()["id"], "v1");
-    }
-
-    #[test]
-    fn each_provider_owns_one_keychain_account() {
-        assert_eq!(Provider::OpenRouter.account(), "openrouter");
-        assert_eq!(Provider::ElevenLabs.account(), "elevenlabs");
-        assert_eq!(Provider::ALL.len(), 2);
     }
 
     #[test]

@@ -41,8 +41,7 @@ public enum KeyboardLayout {
                 kind: .function,
                 label: "esc",
                 weight: 1.5,
-                action: .virtual(.escape),
-                accessibilityLabel: "Escape"
+                action: .virtual(.escape)
             )
         ]
         for number in 1...12 {
@@ -51,8 +50,7 @@ public enum KeyboardLayout {
                     id: "f\(number)",
                     kind: .function,
                     label: "F\(number)",
-                    action: .virtual(VirtualKey.function(number)!),
-                    accessibilityLabel: "F\(number)"
+                    action: .virtual(VirtualKey.function(number)!)
                 )
             )
         }
@@ -71,8 +69,7 @@ public enum KeyboardLayout {
                 kind: .special,
                 label: "delete",
                 weight: 1.5,
-                action: .virtual(.delete),
-                accessibilityLabel: "Delete"
+                action: .virtual(.delete)
             )
         )
         return keys
@@ -85,8 +82,7 @@ public enum KeyboardLayout {
                 kind: .special,
                 label: "tab",
                 weight: 1.5,
-                action: .virtual(.tab),
-                accessibilityLabel: "Tab"
+                action: .virtual(.tab)
             )
         ]
         + "QWERTYUIOP".map(letterKey)
@@ -103,8 +99,7 @@ public enum KeyboardLayout {
                 kind: .special,
                 label: "caps lock",
                 weight: 1.75,
-                action: .modifier(.capsLock),
-                accessibilityLabel: "Caps Lock"
+                action: .modifier(.capsLock)
             )
         ]
         + "ASDFGHJKL".map(letterKey)
@@ -116,8 +111,7 @@ public enum KeyboardLayout {
                 kind: .special,
                 label: "return",
                 weight: 1.75,
-                action: .virtual(.return),
-                accessibilityLabel: "Return"
+                action: .virtual(.return)
             ),
         ]
 
@@ -128,8 +122,7 @@ public enum KeyboardLayout {
                 kind: .special,
                 label: "shift",
                 weight: 2.25,
-                action: .modifier(.shift),
-                accessibilityLabel: "Shift"
+                action: .modifier(.shift)
             )
         ]
         + "ZXCVBNM".map(letterKey)
@@ -142,39 +135,38 @@ public enum KeyboardLayout {
                 kind: .special,
                 label: "shift",
                 weight: 2.25,
-                action: .modifier(.shift),
-                accessibilityLabel: "Shift"
+                action: .modifier(.shift)
             ),
         ]
 
     private static let bottomRow: [KeyDefinition] = [
         KeyDefinition(
             id: "fn", kind: .special, label: "fn", weight: 1.2,
-            action: .modifier(.function), accessibilityLabel: "Function"
+            action: .modifier(.function)
         ),
         KeyDefinition(
             id: "control", kind: .special, label: "control", weight: 1.2,
-            action: .modifier(.control), accessibilityLabel: "Control"
+            action: .modifier(.control)
         ),
         KeyDefinition(
             id: "option-left", kind: .special, label: "option", weight: 1.2,
-            action: .modifier(.option), accessibilityLabel: "Option"
+            action: .modifier(.option)
         ),
         KeyDefinition(
             id: "command-left", kind: .special, label: "command", weight: 1.4,
-            action: .modifier(.command), accessibilityLabel: "Command"
+            action: .modifier(.command)
         ),
         KeyDefinition(
             id: "space", kind: .special, label: "space", weight: 6.5,
-            action: .virtual(.space), accessibilityLabel: "Space"
+            action: .virtual(.space)
         ),
         KeyDefinition(
             id: "command-right", kind: .special, label: "command", weight: 1.4,
-            action: .modifier(.command), accessibilityLabel: "Command"
+            action: .modifier(.command)
         ),
         KeyDefinition(
             id: "option-right", kind: .special, label: "option", weight: 1.2,
-            action: .modifier(.option), accessibilityLabel: "Option"
+            action: .modifier(.option)
         ),
     ]
 
@@ -185,8 +177,7 @@ public enum KeyboardLayout {
             id: "key-\(letter.lowercased())",
             kind: .standard,
             label: String(letter),
-            action: .character(letter.lowercased()),
-            accessibilityLabel: String(letter)
+            action: .character(letter.lowercased())
         )
     }
 
@@ -196,8 +187,7 @@ public enum KeyboardLayout {
             kind: .dual,
             label: primary,
             secondaryLabel: secondary,
-            action: .character(primary),
-            accessibilityLabel: "\(primary), shift for \(secondary)"
+            action: .character(primary)
         )
     }
 }

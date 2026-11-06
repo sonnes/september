@@ -19,15 +19,6 @@ enum Snapshot {
         let view: AnyView
         if arguments.contains("--gallery") {
             view = AnyView(ComponentGallery())
-        } else if arguments.contains("--viewer") {
-            // The real tree of whatever is in front, so the viewer can be
-            // checked against the mocks with something in it.
-            let model = AXTreeModel()
-            model.tree = AXTreeReader.read(app: NSWorkspace.shared.frontmostApplication)
-            view = AnyView(
-                AXTreeView(model: model, height: 460, scrolls: false)
-                    .environmentObject(permission)
-                    .padding(16))
         } else {
             let panels: PanelStore
             do {
@@ -37,10 +28,23 @@ enum Snapshot {
             }
             let controller = KeyboardController(sink: SilentSink(), panels: panels)
             controller.style = arguments.contains("--mono") ? .mono : .rainbow
-            view = AnyView(
-                KeyboardScreen()
-                    .environmentObject(controller)
-                    .environmentObject(permission))
+            let keyboard = KeyboardScreen(controller: controller, permission: permission)
+            if arguments.contains("--viewer") {
+                // The real tree of whatever is in front, so the viewer can be
+                // checked against the mocks with something in it.
+                let model = AXTreeModel()
+                model.tree = AXTreeReader.read(app: NSWorkspace.shared.frontmostApplication)
+                view = AnyView(
+                    AXTreeView(
+                        model: model,
+                        permission: permission,
+                        height: NSHostingView(rootView: keyboard).fittingSize.height,
+                        scrolls: false
+                    )
+                    .padding(Metrics.surfacePadding))
+            } else {
+                view = AnyView(keyboard)
+            }
         }
 
         // The app follows the system appearance, so a snapshot has to say which

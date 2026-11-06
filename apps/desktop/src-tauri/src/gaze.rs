@@ -201,13 +201,27 @@ impl GazeState {
             .lock()
             .map_err(|_| "the eye-tracker state is unavailable".to_string())?
             .take();
-        if let Some(run) = run {
-            run.stop.store(true, Ordering::Release);
-            run.handle
-                .join()
-                .map_err(|_| "the eye-tracker camera stopped unexpectedly".to_string())?;
+        match run {
+            Some(run) => run.finish(),
+            None => Ok(()),
         }
-        Ok(())
+    }
+}
+
+impl GazeRun {
+    fn finish(self) -> Result<(), String> {
+        self.stop.store(true, Ordering::Release);
+        self.handle
+            .join()
+            .map_err(|_| "the eye-tracker camera stopped unexpectedly".to_string())
+    }
+}
+
+/// Sends one event. A send fails when the page that started the run is gone,
+/// and then the run stops.
+fn emit(channel: &Channel<GazeEvent>, stop: &AtomicBool, event: GazeEvent) {
+    if channel.send(event).is_err() {
+        stop.store(true, Ordering::Release);
     }
 }
 
@@ -220,19 +234,10 @@ pub(crate) fn gaze_start(
         .run
         .lock()
         .map_err(|_| "the eye-tracker state is unavailable".to_string())?;
-    // The camera thread ends by itself after an error, so a finished run
-    // does not block a new one.
-    if run
-        .as_ref()
-        .is_some_and(|current| !current.handle.is_finished())
-    {
-        return Err("the eye tracker is already running".to_string());
-    }
-    if let Some(finished) = run.take() {
-        finished
-            .handle
-            .join()
-            .map_err(|_| "the eye-tracker camera stopped unexpectedly".to_string())?;
+    // A page that reloads never sends its stop, so a new start replaces the
+    // run before it.
+    if let Some(previous) = run.take() {
+        previous.finish()?;
     }
 
     let stop = Arc::new(AtomicBool::new(false));
@@ -251,11 +256,15 @@ pub(crate) fn gaze_stop(state: State<'_, GazeState>) -> Result<(), String> {
 }
 
 #[cfg(not(target_os = "macos"))]
-fn capture_loop(channel: Channel<GazeEvent>, _stop: Arc<AtomicBool>) {
-    let _ = channel.send(GazeEvent::Status {
-        state: TrackerState::Unavailable,
-        detail: Some("eye tracking is available only on macOS".to_string()),
-    });
+fn capture_loop(channel: Channel<GazeEvent>, stop: Arc<AtomicBool>) {
+    emit(
+        &channel,
+        &stop,
+        GazeEvent::Status {
+            state: TrackerState::Unavailable,
+            detail: Some("eye tracking is available only on macOS".to_string()),
+        },
+    );
 }
 
 #[cfg(target_os = "macos")]
@@ -273,8 +282,8 @@ mod native {
     use cidre::{arc, av, blocks, cm, cv, define_obj_type, dispatch, ns, objc, vn};
 
     use super::{
-        downsample_bgra_crop, eye_position, face_crop, CropSmoother, GazeEvent, NormalizedRect,
-        Point, Smoother, TrackerState,
+        downsample_bgra_crop, emit, eye_position, face_crop, CropSmoother, GazeEvent,
+        NormalizedRect, Point, Smoother, TrackerState,
     };
     use std::sync::{
         atomic::{AtomicBool, Ordering},
@@ -308,6 +317,7 @@ mod native {
 
     struct FrameProcessor {
         channel: Channel<GazeEvent>,
+        stop: Arc<AtomicBool>,
         last_analysis: Option<Instant>,
         last_preview: Option<Instant>,
         last_status: Option<(TrackerState, Option<String>)>,
@@ -401,12 +411,16 @@ mod native {
             };
 
             self.last_preview = Some(now);
-            let _ = self.channel.send(GazeEvent::Frame {
-                width,
-                height,
-                pixels_base64,
-                point,
-            });
+            emit(
+                &self.channel,
+                &self.stop,
+                GazeEvent::Frame {
+                    width,
+                    height,
+                    pixels_base64,
+                    point,
+                },
+            );
         }
 
         fn status(&mut self, state: TrackerState, detail: Option<String>) {
@@ -415,7 +429,11 @@ mod native {
                 return;
             }
             self.last_status = current;
-            let _ = self.channel.send(GazeEvent::Status { state, detail });
+            emit(
+                &self.channel,
+                &self.stop,
+                GazeEvent::Status { state, detail },
+            );
         }
     }
 
@@ -560,45 +578,26 @@ mod native {
 
     pub(super) fn capture_loop(channel: Channel<GazeEvent>, stop: Arc<AtomicBool>) {
         let _pool = objc::AutoreleasePoolPage::push();
-        let _ = channel.send(GazeEvent::Status {
-            state: TrackerState::Starting,
-            detail: None,
-        });
-        match camera_permission(&stop) {
-            Ok(true) => {}
-            Ok(false) => {
-                let _ = channel.send(GazeEvent::Status {
-                    state: TrackerState::PermissionDenied,
-                    detail: Some(
-                        "Allow September to use the camera in System Settings, then try again."
-                            .to_string(),
-                    ),
-                });
-                return;
-            }
-            Err(detail) => {
-                let _ = channel.send(GazeEvent::Status {
-                    state: TrackerState::Error,
-                    detail: Some(detail),
-                });
-                return;
-            }
-        }
-
-        if let Err(detail) = run_camera(channel.clone(), &stop) {
-            let _ = channel.send(GazeEvent::Status {
-                state: TrackerState::Error,
-                detail: Some(detail),
-            });
-            return;
-        }
-        let _ = channel.send(GazeEvent::Status {
-            state: TrackerState::Stopped,
-            detail: None,
-        });
+        let status = |state, detail| emit(&channel, &stop, GazeEvent::Status { state, detail });
+        status(TrackerState::Starting, None);
+        let ended = match camera_permission(&stop) {
+            Ok(true) => run_camera(channel.clone(), stop.clone()).map_or_else(
+                |detail| (TrackerState::Error, Some(detail)),
+                |()| (TrackerState::Stopped, None),
+            ),
+            Ok(false) => (
+                TrackerState::PermissionDenied,
+                Some(
+                    "Allow September to use the camera in System Settings, then try again."
+                        .to_string(),
+                ),
+            ),
+            Err(detail) => (TrackerState::Error, Some(detail)),
+        };
+        status(ended.0, ended.1);
     }
 
-    fn run_camera(channel: Channel<GazeEvent>, stop: &AtomicBool) -> Result<(), String> {
+    fn run_camera(channel: Channel<GazeEvent>, stop: Arc<AtomicBool>) -> Result<(), String> {
         let device = av::CaptureDevice::default_with_media(av::MediaType::video())
             .ok_or_else(|| "September could not find a camera".to_string())?;
         let input = av::CaptureDeviceInput::with_device(&device)
@@ -615,6 +614,7 @@ mod native {
         let frame_queue = dispatch::Queue::new();
         let delegate = FrameDelegate::with(FrameProcessor {
             channel,
+            stop: stop.clone(),
             last_analysis: None,
             last_preview: None,
             last_status: None,
@@ -671,6 +671,29 @@ mod tests {
             let name = serde_json::to_string(&state).unwrap();
             assert!(screen.contains(&format!("| {name}")), "{name}");
         }
+    }
+
+    fn status() -> GazeEvent {
+        GazeEvent::Status {
+            state: TrackerState::Ready,
+            detail: None,
+        }
+    }
+
+    #[test]
+    fn a_run_stops_when_its_page_is_gone() {
+        let stop = AtomicBool::new(false);
+        let gone = Channel::new(|_| Err(tauri::Error::WindowNotFound));
+        emit(&gone, &stop, status());
+        assert!(stop.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn a_run_goes_on_while_its_page_listens() {
+        let stop = AtomicBool::new(false);
+        let open = Channel::new(|_| Ok(()));
+        emit(&open, &stop, status());
+        assert!(!stop.load(Ordering::Acquire));
     }
 
     fn assert_close(actual: f64, expected: f64) {

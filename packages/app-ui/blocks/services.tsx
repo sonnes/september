@@ -16,6 +16,7 @@ import { Link } from "@tanstack/react-router";
 import { RadioGroupItem } from "@september/ui/components/radio-group";
 
 import { platform } from "@platform/adapter";
+import { WRITING_SERVICES } from "@september/core/rules/onboarding";
 import { SERVICE_NAMES, type ServiceId } from "@september/core/rules/services";
 import type { Provider, ProviderStatus } from "@september/app-ui/platform";
 import { useConnections, useForgetKey, type Connections } from "@september/app-ui/services/connections";
@@ -297,6 +298,14 @@ export function ServiceChoice({
     </div>
   );
 }
+
+/** The writing services this device offers. A device that cannot run Apple Intelligence does not show it. */
+export const offeredWritingServices = (connections: Connections) =>
+  WRITING_SERVICES.filter((option) => option.value !== "apple" || connections.apple.supported);
+
+/** The writing service of a radio value, or nothing. */
+export const writingServiceOf = (value: string) =>
+  WRITING_SERVICES.find((option) => option.value === value)?.value;
 
 export function appleState(connections: Connections): string {
   if (connections.apple.available) {

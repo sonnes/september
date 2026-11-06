@@ -1,5 +1,5 @@
 //! OpenRouter PKCE: browser authorization, loopback callback, Keychain storage.
-use crate::providers::{Provider, ProviderKeys, ProviderStatus, Providers, OPEN_ROUTER};
+use crate::providers::{Provider, ProviderKeys, ProviderStatus, Providers};
 use axum::{
     http::Uri,
     response::{Html, IntoResponse},
@@ -41,7 +41,8 @@ fn callback_code(query: &str) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub(crate) fn openrouter_cancel(request_id: String) {
+pub(crate) fn openrouter_cancel(request: crate::rpc::SignInRequest) {
+    let request_id = request.request_id;
     if let Ok(mut active) = ACTIVE.lock() {
         if active.as_ref().is_some_and(|(id, _)| id == &request_id) {
             if let Some((_, cancel)) = active.take() {
@@ -56,8 +57,9 @@ pub(crate) async fn openrouter_connect(
     app: AppHandle,
     keys: State<'_, ProviderKeys>,
     providers: State<'_, Providers>,
-    request_id: String,
+    request: crate::rpc::SignInRequest,
 ) -> Result<ProviderStatus, String> {
+    let request_id = request.request_id;
     let (cancel, cancelled) = oneshot::channel();
     {
         let mut active = ACTIVE
@@ -104,7 +106,8 @@ async fn authorize(
         uuid::Uuid::new_v4().simple(),
         uuid::Uuid::new_v4().simple()
     );
-    let mut auth = reqwest::Url::parse(&format!("{OPEN_ROUTER}/auth"))
+    let open_router = providers.open_router();
+    let mut auth = reqwest::Url::parse(&format!("{open_router}/auth"))
         .map_err(|error| format!("Invalid authorization address. ({error})"))?;
     auth.query_pairs_mut()
         .append_pair("callback_url", &format!("http://localhost:{port}{path}"))
@@ -117,7 +120,7 @@ async fn authorize(
     let code = receive_code(listener, path).await?;
     let response = providers
         .client()
-        .post(format!("{OPEN_ROUTER}/api/v1/auth/keys"))
+        .post(format!("{open_router}/api/v1/auth/keys"))
         .json(&serde_json::json!({ "code": code, "code_verifier": verifier, "code_challenge_method": "S256" }))
         .send()
         .await
@@ -201,12 +204,16 @@ mod tests {
     fn cancellation_only_stops_the_matching_attempt() {
         let (send, mut receive) = oneshot::channel();
         *ACTIVE.lock().unwrap() = Some(("current".into(), send));
-        openrouter_cancel("stale".into());
+        openrouter_cancel(crate::rpc::SignInRequest {
+            request_id: "stale".into(),
+        });
         assert!(matches!(
             receive.try_recv(),
             Err(oneshot::error::TryRecvError::Empty)
         ));
-        openrouter_cancel("current".into());
+        openrouter_cancel(crate::rpc::SignInRequest {
+            request_id: "current".into(),
+        });
         assert_eq!(receive.try_recv(), Ok(()));
         assert!(ACTIVE.lock().unwrap().is_none());
     }

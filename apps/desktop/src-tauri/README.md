@@ -617,8 +617,10 @@ the camera box. It does not convert it to a window or operating-system pointer.
 A frame that Vision cannot analyze sends the `error` state with the reason.
 
 Neither side saves the preview, point, or calibration. `gaze_stop` joins the
-capture thread. The capture thread stops by itself after an error, and the
-next `gaze_start` starts a new one. Leaving the page and application exit use the same stop path.
+capture thread. The capture thread stops by itself after an error, or when a
+send on its channel fails, for example after the page reloads. A new
+`gaze_start` stops the run before it. Leaving the page and application exit use
+the same stop path.
 The app requests camera access only after `gaze_start`; `Info.plist` explains
 the use and the signed app has the camera entitlement.
 
@@ -651,7 +653,8 @@ through `APFEL_TOKEN`, not through a command argument.
 
 The WebView cannot start shell commands or call the server directly. Rust
 checks the current process before each use and replaces it when the health
-request fails. It stops the child process when the backend exits. When a new
+request fails. The exit handler in `src/lib.rs` stops the running server. A
+server that is still starting at exit is not stopped. When a new
 process does not answer, the error carries the last line it wrote to stderr.
 
 The bundle contains apfel v1.12.0 and its MIT license. The preparation script

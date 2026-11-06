@@ -3,6 +3,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 
 import { useSyncPhrases } from '@september/app-ui/services/phrase-sync';
 import { updateSetup } from '@september/app-ui/services/settings';
+import { generateCode } from '@september/core/rules/phrases/codes';
 
 import { bodyOf, jsonReply, signalOf } from './model';
 import { rows } from './platform';
@@ -183,5 +184,25 @@ describe('automatic phrases', () => {
     await answer();
 
     await vi.waitFor(() => expect(written('space')).toEqual(['Please bring some water.', 'I would like to']));
+  });
+
+  it('gives a new phrase a code that no other space holds', async () => {
+    const taken = generateCode('Please bring some water.', { existingCodes: [] })!;
+    rows.phrases.set('kept', {
+      id: 'kept',
+      space_id: 'other',
+      text: 'Pass the bread, sweetheart.',
+      kind: 'phrase',
+      code: taken,
+      pinned: true,
+      created_at: 0,
+      updated_at: 0,
+    });
+    await render();
+
+    await vi.waitFor(() => expect(written('space')).toContain('Please bring some water.'));
+    const made = [...rows.phrases.values()].find(row => row.text === 'Please bring some water.');
+    expect(made?.code).toBeTruthy();
+    expect(made?.code).not.toBe(taken);
   });
 });

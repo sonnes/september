@@ -184,7 +184,7 @@ The sidebar is a **solid indigo panel** in light _and_ dark mode — September's
 
 September is operated under physical constraint. These are requirements, not nice-to-haves. In QA mode, flag violations.
 
-- **Target size:** Every key is at least `--reach-target`, 48px for touch. Every `Button` size, `Input`, `Select`, `Tabs`, menu row, and close key has this minimum. A checkbox or a radio is 24px inside a labelled row of 48px. Never pack small icon-only controls tightly.
+- **Target size:** Every key is at least `--reach-target`, 48px for touch. Every `Button` size, `Input`, menu row, and close key has this minimum. A checkbox or a radio is 24px inside a labelled row of 48px. Never pack small icon-only controls tightly.
 - **Spacing between actions:** Generous gaps between adjacent targets so imprecise input (tremor, eye-gaze dwell) doesn't mis-hit. The roomy density exists to serve this.
 - **Focus visibility:** Every interactive element shows focus with `.focus-attention`: a 2px zinc-900 line inside a 5px amber-300 ring. The line passes 3:1 on white and zinc, and the amber passes 3:1 on indigo and on dark surfaces. A menu row or a scroll area uses `.focus-attention-inset`. **Never** remove the outline.
 - **Contrast:** WCAG **AA** at the minimum: 4.5:1 for text, 3:1 for large text, field lines, and focus. Secondary text is zinc-600 (7:1 on zinc-100). Indigo text is `--brand`, so it passes in dark too. A disabled key uses `.key-disabled`, a dotted border, so its state is not a fade alone.
@@ -207,7 +207,7 @@ All UI primitives live in `@september/ui` (`packages/ui/components/`) — shadcn
 - **Choice lists:** a `PickList` takes two columns from its own width (32rem or more), not from the window. A name wraps and is never cut off. On a phone, the Settings sections wrap onto more lines instead of a row that scrolls sideways, and a settings row moves its badge and key under its words when it is narrow.
 - **Switches:** `Switch` is 32 by 56px. The thumb sits 2px from each edge and shows an indigo check when the switch is on. The whole labelled row of 48px turns it on and off.
 - **Callouts:** `Callout` — `rounded-lg border px-4 py-3 text-sm`, tones `info`/`warning`/`success`/`danger`, each with a lucide icon. Use for legal/explanatory notes.
-- **Sidebar nav:** `SidebarMenuButton` items (icon + label) in a `nav` named Main, `SidebarGroupLabel` (`text-xs font-medium`, full white). Every row is 48px. The current row has `aria-current="page"`, the indigo-600 fill, and a 4px white bar at its start edge, so the state is not a fill alone. Rows use the inset focus. The edge strip (`SidebarRail`) is for a pointer only. Indigo surface throughout.
+- **Sidebar nav:** `SidebarMenuButton` items (icon + label) in a `nav` named Main, inside a `SidebarGroup`. Every row is 48px. The current row has `aria-current="page"`, the indigo-600 fill, and a 4px white bar at its start edge, so the state is not a fill alone. Rows use the inset focus. The edge strip (`SidebarRail`) is for a pointer only. Indigo surface throughout.
 - **Current tab:** a space tab in the dock shows a dot before its name when it is open. The Talk, Notes, and Agent switch is a `nav` with `aria-current`.
 - **Skip link:** the first key of each shell is "Skip to main content". It shows at the top left while it has the focus, with the attention focus.
 - **Dropdowns:** shadcn `DropdownMenu`. Dwell and scan open them with a pointer press. The desktop More key opens a sheet of 48px rows. A short fixed list of choices, such as the usage period, is a row of `ChoiceKey` keys.

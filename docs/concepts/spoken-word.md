@@ -23,8 +23,8 @@ character.
 
 ## Voices
 
-The web speech service calls `wordAt` on each word boundary of the browser
-system voice. `useSpokenWord` gives the word and the id of the thing that
+The shared speech service in `packages/app-ui/services/speech.ts` calls
+`wordAt` on each word boundary of the browser system voice. `useSpokenWord` gives the word and the id of the thing that
 speaks it. `SpokenText` in `packages/app-ui/blocks/tagged-text.tsx` draws a
 text with `wordsOf` and marks the word with the same id.
 

@@ -102,13 +102,13 @@ export const platform: Platform = {
       signal.throwIfAborted();
       const requestId = crypto.randomUUID();
       const cancel = () => {
-        call("openrouter_cancel", { requestId }).catch((reason: unknown) =>
+        call("openrouter_cancel", { request: { requestId } }).catch((reason: unknown) =>
           console.warn("September could not cancel the OpenRouter sign-in.", reason),
         );
       };
       signal.addEventListener("abort", cancel, { once: true });
       try {
-        return await call("openrouter_connect", { requestId });
+        return await call("openrouter_connect", { request: { requestId } });
       } finally {
         signal.removeEventListener("abort", cancel);
       }
@@ -160,7 +160,7 @@ export const platform: Platform = {
       current: () => call("audio_output"),
       choose: (uid) => call("audio_output_set", { request: { uid } }),
     },
-    fullScreen: (on) => call("panel_present", { on }),
+    fullScreen: (on) => call("panel_present", { request: { on } }),
     virtualMicrophone: {
       status: () => call("virtual_microphone_status"),
       start: () => call("virtual_microphone_start"),

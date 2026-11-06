@@ -1,6 +1,6 @@
 mod common;
 
-use common::serve_raw;
+use common::{body_of, serve_raw};
 use september_desktop_lib::proxy::{self, ProxyConfig};
 use serde_json::{json, Value};
 
@@ -21,11 +21,6 @@ fn config(upstream: &str) -> ProxyConfig {
         }),
         client: reqwest::Client::new(),
     }
-}
-
-fn body_of(request: &str) -> Value {
-    let (_, body) = request.split_once("\r\n\r\n").unwrap();
-    serde_json::from_str(body).unwrap()
 }
 
 fn header_of(request: &str, name: &str) -> String {

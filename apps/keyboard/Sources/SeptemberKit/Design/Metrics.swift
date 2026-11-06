@@ -18,6 +18,9 @@ public enum Metrics {
     public static let sectionSpacing: CGFloat = 16
     public static let keyboardWidth: CGFloat = 980
     public static let keypadWidth: CGFloat = 200
+    /// Where the main keyboard starts: past the EDIT keypad and the gap after
+    /// it. The input bar and the banner line up with it.
+    public static let keyboardLeadingInset = keypadWidth + sectionSpacing
     /// The accessibility tree viewer, which sits at the right edge of the
     /// screen and takes its height from the keyboard beside it.
     public static let treeViewerWidth: CGFloat = 320

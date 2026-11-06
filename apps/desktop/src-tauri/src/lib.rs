@@ -26,16 +26,7 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
             rpc::setup(app)?;
             window::setup(app)
         })
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                if window.label() == "panel" {
-                    api.prevent_close();
-                    if let Err(error) = window.hide() {
-                        eprintln!("[window] could not hide the panel: {error}");
-                    }
-                }
-            }
-        })
+        .on_window_event(window::on_window_event)
         .invoke_handler(tauri::generate_handler![
             rpc::setting_get,
             rpc::setting_put,
@@ -101,13 +92,7 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building September desktop")
         .run(|app, event| {
-            // A click on the Dock icon shows the panel.
-            #[cfg(target_os = "macos")]
-            if let tauri::RunEvent::Reopen { .. } = event {
-                if let Err(error) = window::show_panel(app) {
-                    eprintln!("[window] could not show the panel: {error}");
-                }
-            }
+            window::on_run_event(app, &event);
             if matches!(event, tauri::RunEvent::Exit) {
                 audio::stop_speech();
                 if let Err(error) = audio::virtual_microphone_stop() {
@@ -117,6 +102,22 @@ pub fn run() {
                 if let Err(error) = app.state::<gaze::GazeState>().stop() {
                     eprintln!("[gaze] could not stop the eye tracker: {error}");
                 }
+                app.state::<apfel::ApfelState>().stop();
             }
         });
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn cidre_targets_the_oldest_macos_the_bundle_allows() {
+        let feature = format!(
+            "\"macos_{}\"",
+            env!("SEPTEMBER_MACOS_MIN").replace('.', "_")
+        );
+        assert!(
+            include_str!("../Cargo.toml").contains(&feature),
+            "{feature}"
+        );
+    }
 }

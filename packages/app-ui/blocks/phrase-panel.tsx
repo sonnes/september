@@ -25,7 +25,7 @@ import {
 import { dismissedIdeas, useSetting } from "@september/app-ui/services/settings";
 import { useEscape } from "@september/app-ui/blocks/keymap";
 import { TaggedText } from "@september/app-ui/blocks/tagged-text";
-import { CODE_MAX_LENGTH, validateCode } from "@september/core/rules/phrases/codes";
+import { CODE_MAX_LENGTH, codesInUse, validateCode } from "@september/core/rules/phrases/codes";
 import { mineShortcuts, normalizeMinedText } from "@september/core/rules/phrases/mining";
 import { PHRASE_TEXT_LIMIT, type SavedPhrase } from "@september/core/rules/records";
 
@@ -58,14 +58,7 @@ export function Phrases({
 
   const rows = phrases ?? [];
 
-  // A code works in every space, so a new one is measured against them all.
-  const everyCode = useMemo(
-    () =>
-      (allPhrases ?? [])
-        .map((row) => row.code)
-        .filter((code): code is string => Boolean(code)),
-    [allPhrases],
-  );
+  const everyCode = useMemo(() => codesInUse(allPhrases ?? []), [allPhrases]);
 
   const checked = draftCode.trim()
     ? validateCode(draftCode, { existingCodes: everyCode })
@@ -430,12 +423,8 @@ function CodeField({
   const [value, setValue] = useState(row.code ?? "");
   useEscape(onDone);
 
-  // The row keeps its own code, so a change that keeps it is not a duplicate.
-  const others = allPhrases
-    .filter((one) => one.id !== row.id && one.code)
-    .map((one) => one.code as string);
   const checked = value.trim()
-    ? validateCode(value, { existingCodes: others })
+    ? validateCode(value, { existingCodes: codesInUse(allPhrases, row.id) })
     : undefined;
   const problem =
     checked && !checked.ok ? REASONS[checked.reason](checked.suggestion) : null;

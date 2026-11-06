@@ -26,7 +26,6 @@ public final class KeyboardController: ObservableObject {
 
     private let sink: any KeystrokeSink
     private var keyCodeMap: KeyCodeMap
-    private var observers: [any NSObjectProtocol] = []
 
     public init(
         sink: any KeystrokeSink,
@@ -37,7 +36,12 @@ public final class KeyboardController: ObservableObject {
         self.panels = panels
         self.keyCodeMap = keyCodeMap
         appPanel = panels.appPanel(forBundleID: nil)
-        observe()
+    }
+
+    /// Called when the user switches input source, with the map of the new
+    /// layout.
+    public func layoutChanged(to map: KeyCodeMap) {
+        keyCodeMap = map
     }
 
     // MARK: - Pressing keys
@@ -49,7 +53,8 @@ public final class KeyboardController: ObservableObject {
         case .character(let character):
             type(character, secondary: key.secondaryLabel)
         case .virtual(let virtual):
-            post(virtual)
+            post(virtual, modifiers: modifiers.active.subtracting(.capsLock))
+            modifiers.consume()
         }
     }
 
@@ -128,14 +133,7 @@ public final class KeyboardController: ObservableObject {
             // way a hardware keyboard would.
             var flags = chord
             if modifiers.active.contains(.shift) { flags.insert(.shift) }
-            if let resolved = keyCodeMap.keystroke(for: base) {
-                sink.post(
-                    Keystroke.events(
-                        virtualKey: resolved.virtualKey,
-                        modifiers: flags.union(resolved.modifiers)
-                    )
-                )
-            }
+            post(shortcut: base, modifiers: flags)
         }
         modifiers.consume()
     }
@@ -151,52 +149,35 @@ public final class KeyboardController: ObservableObject {
         }
     }
 
-    private func post(_ virtual: VirtualKey) {
+    /// Posts a named key. Without a chord, the echo follows what the key
+    /// does to the text.
+    private func post(_ virtual: VirtualKey, modifiers: Modifiers) {
+        sink.post(Keystroke.events(virtualKey: virtual.rawValue, modifiers: modifiers))
+        guard !isMirroring, modifiers.subtracting(.shift).isEmpty else { return }
+        switch virtual {
+        case .delete: echo = String(echo.dropLast())
+        case .return: echo = ""
+        case .space: echo += " "
+        default: break
+        }
+    }
+
+    private func post(shortcut character: String, modifiers: Modifiers) {
+        guard let resolved = keyCodeMap.shortcutKeystroke(for: character) else { return }
         sink.post(
             Keystroke.events(
-                virtualKey: virtual.rawValue,
-                modifiers: modifiers.active.subtracting(.capsLock)
+                virtualKey: resolved.virtualKey,
+                modifiers: modifiers.union(resolved.modifiers)
             )
         )
-        if !isMirroring {
-            switch virtual {
-            case .delete: echo = String(echo.dropLast())
-            case .return: echo = ""
-            case .space: echo += " "
-            default: break
-            }
-        }
-        modifiers.consume()
     }
 
     private func post(_ shortcut: Shortcut) {
         switch shortcut.key {
         case .virtual(let virtual):
-            sink.post(
-                Keystroke.events(virtualKey: virtual.rawValue, modifiers: shortcut.modifiers)
-            )
+            post(virtual, modifiers: shortcut.modifiers)
         case .character(let character):
-            guard let resolved = keyCodeMap.keystroke(for: character) else { return }
-            sink.post(
-                Keystroke.events(
-                    virtualKey: resolved.virtualKey,
-                    modifiers: shortcut.modifiers.union(resolved.modifiers)
-                )
-            )
+            post(shortcut: character, modifiers: shortcut.modifiers)
         }
-    }
-
-    // MARK: - Following the input source
-
-    private func observe() {
-        observers.append(
-            DistributedNotificationCenter.default().addObserver(
-                forName: SystemKeyboardLayout.inputSourceChanged,
-                object: nil,
-                queue: .main
-            ) { [weak self] _ in
-                Task { @MainActor in self?.keyCodeMap = SystemKeyboardLayout.currentMap() }
-            }
-        )
     }
 }

@@ -289,7 +289,6 @@ function Agent({ space, spaces }: { space: Space; spaces: Space[] }) {
             draft={draft}
             onDraft={setDraft}
             onAction={(text) => void ask(text)}
-            onPin={() => undefined}
             pending={working || pending || !hasWritingService()}
             history={setup ? history : undefined}
             suggestions={setup}

@@ -13,7 +13,7 @@ Use `pnpm` from `apps/desktop/` or with `pnpm -C apps/desktop <script>`.
 | `pnpm install`        | Install desktop UI dependencies |
 | `pnpm dev`            | Run the UI in a browser         |
 | `pnpm build`          | Type-check and build the UI     |
-| `pnpm test`           | Run tests (Vitest)              |
+| `pnpm test`           | Run Vitest, then `cargo test --lib` |
 | `pnpm tauri:dev`      | Run the desktop application     |
 | `pnpm tauri:build`    | Build an installable bundle     |
 
@@ -124,7 +124,7 @@ cargo fmt --all -- --check
 - Move to the next chunk when `speak()` resolves, never on a timer. It resolves
   when the sound stops, so the story keeps the pace of the voice.
 - Say `Present`, `Export`, `Text`, `Audio`, and `Video`, and never the retired
-  name for any of them. A test reads every source file for it.
+  name for any of them.
 - Save a file through `packages/app-ui/services/export.ts`, which calls
   `platform.device.save`, with the WebView download support. Say why a row cannot run in the place of its own description, and
   keep its target. A row that disappears teaches the user nothing.
@@ -134,11 +134,13 @@ cargo fmt --all -- --check
 - Send every command through `call()` in `src/commands.ts`, and add the command
   to `Commands` with its arguments and its answer. A Tauri command rejects with
   a string, so a screen that reads `error.message` shows nothing without
-  `call()`.
+  `call()`. Send a raw body, such as voice samples, through `callRaw()`.
 - Give each command an example in `src/commands.test.ts`, and write
   `contract/commands.json` again with `UPDATE_CONTRACT=1 pnpm test`. The Rust
-  tests in `src-tauri/src/rpc/contract.rs` read that file into the Rust types,
-  so a field that one side names differently fails a test.
+  tests in `src-tauri/src/rpc/contract.rs` read that file into the Rust types.
+  A command that one side lacks, a field that one side names differently, and
+  a request field that Rust does not have each fail a test. Give a command
+  that takes JSON arguments a `request` struct with `deny_unknown_fields`.
 - Ask before an action that erases rows. Use the shadcn `AlertDialog`, and give
   the confirming button the `destructive` variant.
 - Give each row the owner from `currentUserId()` in

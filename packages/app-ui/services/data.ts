@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { platform } from "@platform/adapter";
-import { pinnedPhrase } from "@september/core/rules/phrases/rows";
 import { STARTER_PACK } from "@september/core/rules/phrases/starter-pack";
 import type { Message, SavedPhrase, Space, SpacePatch } from "@september/core/rules/records";
 
@@ -225,13 +224,14 @@ export function usePhrases(spaceId?: string) {
   });
 }
 
-/** Keeps a row of the stripe, so a regeneration cannot take it away. */
+/** Keeps a saved phrase of the stripe, so a regeneration cannot take it away. */
 export function usePinPhrase(spaceId: string) {
   const { data: phrases } = usePhrases(spaceId);
   const put = usePutPhrase();
   return (text: string) => {
-    const row = pinnedPhrase(text, spaceId, phrases ?? []);
-    if (row) put.mutate(row);
+    const key = text.trim().toLowerCase();
+    const row = phrases?.find((one) => one.text.trim().toLowerCase() === key);
+    if (row && !row.pinned) put.mutate({ ...row, pinned: true });
   };
 }
 
