@@ -13,6 +13,13 @@ public enum SystemKeyboardLayout {
         }
     }
 
+    /// What the current layout types for a key code. The import of My Panel
+    /// reads recorded key codes with it.
+    public static func currentProbe() -> KeyLayoutProbe {
+        guard let data = currentLayoutData() else { return { _, _ in nil } }
+        return { code, modifiers in translate(keyCode: code, modifiers: modifiers, layoutData: data) }
+    }
+
     /// Fires whenever the user switches input source; the caller rebuilds.
     public static let inputSourceChanged = Notification.Name(
         kTISNotifySelectedKeyboardInputSourceChanged as String

@@ -178,6 +178,18 @@ func importerTests() {
         expectEqual(panel(panels, "Code")?.textCount, 2)
     }
 
+    test("the system probe names the keys that the system key map types") {
+        let probe = SystemKeyboardLayout.currentProbe()
+        let map = SystemKeyboardLayout.currentMap()
+        var named = 0
+        for code in UInt16(0)..<128 {
+            guard let character = probe(code, []) else { continue }
+            named += 1
+            expect(map.keystroke(for: character) != nil, "key \(code) has no way back")
+        }
+        expect(named > 0, "the probe names no key")
+    }
+
     test("a missing folder gives no panels") {
         let panels = try AccessibilityKeyboardImporter(
             directory: temporaryDirectory(), layout: stubLayout

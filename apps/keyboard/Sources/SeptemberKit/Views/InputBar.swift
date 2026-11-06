@@ -20,7 +20,10 @@ public struct InputBar: View {
 
             switch controller.input {
             case .secure:
-                Text("Password field — hidden")
+                Text(
+                    controller.isFieldPrivate
+                        ? "Private text in this field. The keyboard does not show it."
+                        : "Password field — hidden")
                     .font(Typography.inputPlaceholder)
                     .foregroundStyle(Color(Tokens.dualSecondary))
                 Spacer(minLength: 0)
@@ -87,7 +90,7 @@ public struct InputBar: View {
 
     private var accessibilityLabel: String {
         switch controller.input {
-        case .secure: "Password field"
+        case .secure: controller.isFieldPrivate ? "Private text" : "Password field"
         case .mirrored: controller.frontmostAppName.map { "Text in \($0)" } ?? "Text in the app in front"
         case .local: "Typed text"
         }
