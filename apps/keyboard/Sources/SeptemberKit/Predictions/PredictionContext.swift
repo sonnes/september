@@ -57,6 +57,34 @@ public struct PredictionContext: Equatable, Sendable {
         return String(String(word.reversed()).drop(while: Self.isApostrophe))
     }
 
+    /// The same context with the partial word at the caret replaced by a
+    /// completion of it and a space.
+    public func completing(with completion: WordCompletion) -> PredictionContext {
+        let before = String(typed.dropLast(completion.partial.count)) + completion.word + " "
+        return PredictionContext(
+            text: before + following, caret: before.utf16.count, mode: mode, said: said)
+    }
+
+    /// The full sentence of an answer of the model, or `nil` when the answer
+    /// does not fit the field. The model either repeats the typed words and
+    /// continues them, or gives only the words that come next. In the second
+    /// form, the first word must complete the partial word at the caret.
+    public func sentence(from answer: String) -> String? {
+        let answer = answer.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !answer.isEmpty else { return nil }
+        let base = SuggestionPrompt(context: self).typed
+        let repeated = PredictionStripe(prediction: answer, typed: base)
+        if repeated.matches, repeated.hidden > 0 { return answer }
+
+        let partial = partialWord
+        if !partial.isEmpty {
+            guard answer.lowercased().hasPrefix(partial.lowercased()) else { return nil }
+            return String(base.dropLast(partial.count)) + answer
+        }
+        if base.isEmpty || base.last?.isWhitespace == true { return base + answer }
+        return base + " " + answer
+    }
+
     private static func isWordCharacter(_ character: Character) -> Bool {
         character.isLetter || isApostrophe(character)
     }
