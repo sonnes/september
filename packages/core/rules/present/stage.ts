@@ -123,7 +123,8 @@ export function presentTone(key: PresentToneKey): PresentTone {
 }
 
 /** A chunk opens a section, or continues one. */
-export type ChunkRole = "display" | "support";
+export const CHUNK_ROLES = ["display", "support"] as const;
+export type ChunkRole = (typeof CHUNK_ROLES)[number];
 
 export interface RoleSpec {
   fontFamily: string;

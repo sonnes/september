@@ -24,7 +24,8 @@ function words(text: string): string[] {
     .map((token) => token.normalized);
 }
 
-function isWordComplete(text: string): boolean {
+/** Whether the text ends with a finished word, a mark, or an audio tag. */
+export function isWordComplete(text: string): boolean {
   return /[\s.,!?;:\]]$/.test(text);
 }
 

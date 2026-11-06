@@ -82,6 +82,15 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+it('asks after an audio tag', async () => {
+  await render();
+  await show('hello [laughs');
+  await show('hello [laughs]');
+
+  await advance();
+  expect(request).toHaveBeenCalledTimes(1);
+});
+
 it.each([' ', '\n', '.', ',', '!', '?', ';', ':'])('asks after an edit that ends with %j', async boundary => {
   await render();
   await show('hello');

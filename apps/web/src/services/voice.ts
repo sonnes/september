@@ -36,14 +36,11 @@ async function blobId(prefix: string, fields: object): Promise<string> {
   return `${prefix}:${hash}`;
 }
 
+/** Every value of the voice changes the sound, so every value is in the key. */
 const speechBlobId = (text: string, voice: CloudVoice) =>
   blobId('speech', {
     text,
-    voiceId: voice.voiceId,
-    modelId: voice.modelId,
-    stability: voice.stability,
-    similarity: voice.similarity,
-    speed: voice.speed,
+    voice: Object.fromEntries(Object.entries(voice).sort(([a], [b]) => a.localeCompare(b))),
   });
 
 /** A kept file, or nothing when the store holds none or cannot be read. */

@@ -286,8 +286,11 @@ whole suggestion.
 The word row completes the word being typed from local words, on each letter.
 It shows two lines at most. A word that the row clips is `inert`.
 
+The local words come from the messages the user sent. When a message is
+deleted or changed, its old words stop showing.
+
 AI suggestions ask the writing service after an edit that ends in a space, a
-new line, or `. , ! ? ; :`, then a pause of 200 ms. A restored draft waits for
+new line, `. , ! ? ; :`, or the `]` of an audio tag, then a pause of 200 ms. A restored draft waits for
 an edit. A space change, a newer edit, or a change of the settings cancels the
 open request. While a request is open, a Writing status shows. If the service
 does not answer, a status line says so.

@@ -198,6 +198,23 @@ fn frame_state(analysis: &Result<Option<FrameAnalysis>, String>) -> Option<Track
     }
 }
 
+/// The number of frames in a row that Vision cannot analyze before the run
+/// ends. One frame is analyzed each 66 ms, so 30 frames take about 2 s.
+const FAILED_FRAME_LIMIT: u32 = 30;
+
+#[derive(Default)]
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+struct FailedFrames(u32);
+
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+impl FailedFrames {
+    /// Counts one analyzed frame. Returns true when the run must end.
+    fn record(&mut self, failed: bool) -> bool {
+        self.0 = if failed { self.0 + 1 } else { 0 };
+        self.0 >= FAILED_FRAME_LIMIT
+    }
+}
+
 #[derive(Clone, Serialize)]
 #[serde(tag = "event", content = "data", rename_all = "camelCase")]
 pub(crate) enum GazeEvent {
@@ -295,7 +312,11 @@ fn capture_loop(channel: Channel<GazeEvent>, stop: Arc<AtomicBool>) {
 #[cfg(target_os = "macos")]
 #[allow(clippy::useless_transmute)]
 mod native {
-    use std::{sync::mpsc, thread, time::Duration};
+    use std::{
+        sync::{mpsc, OnceLock},
+        thread,
+        time::Duration,
+    };
 
     use base64::{engine::general_purpose::STANDARD, Engine as _};
     use cidre::av::CaptureVideoDataOutputSampleBufDelegate;
@@ -303,7 +324,7 @@ mod native {
 
     use super::{
         downsample_bgra_crop, emit, eye_position, face_crop, frame_state, CropSmoother,
-        FrameAnalysis, GazeEvent, NormalizedRect, Point, Smoother, TrackerState,
+        FailedFrames, FrameAnalysis, GazeEvent, NormalizedRect, Point, Smoother, TrackerState,
     };
     use std::sync::{
         atomic::{AtomicBool, Ordering},
@@ -342,6 +363,9 @@ mod native {
         last_status: Option<TrackerState>,
         smoother: Smoother,
         crop_smoother: CropSmoother,
+        failed_frames: FailedFrames,
+        /// The reason the run ended, when the camera pictures cannot be read.
+        failure: Arc<OnceLock<String>>,
     }
 
     define_obj_type!(
@@ -378,6 +402,15 @@ mod native {
             let _pool = objc::AutoreleasePoolPage::push();
 
             let analysis = analyze_frame(sample_buf);
+            if self.failed_frames.record(analysis.is_err()) {
+                if let Err(reason) = &analysis {
+                    let _ = self.failure.set(format!(
+                        "September could not read the pictures from the camera: {reason}"
+                    ));
+                }
+                self.stop.store(true, Ordering::Release);
+                return;
+            }
             let Some(state) = frame_state(&analysis) else {
                 if let Err(reason) = analysis {
                     eprintln!("[gaze] skipped a frame: {reason}");
@@ -616,6 +649,7 @@ mod native {
             .set_video_settings(Some(&video_settings))
             .map_err(|error| format!("the camera preview format is unavailable: {error:?}"))?;
         let frame_queue = dispatch::Queue::new();
+        let failure = Arc::new(OnceLock::new());
         let delegate = FrameDelegate::with(FrameProcessor {
             channel,
             stop: stop.clone(),
@@ -624,6 +658,8 @@ mod native {
             last_status: None,
             smoother: Smoother::default(),
             crop_smoother: CropSmoother::default(),
+            failed_frames: FailedFrames::default(),
+            failure: failure.clone(),
         });
         output.set_sample_buf_delegate(Some(delegate.as_ref()), Some(&frame_queue));
 
@@ -651,7 +687,10 @@ mod native {
         }
         session.stop_running();
         output.set_sample_buf_delegate::<FrameDelegate>(None, None);
-        Ok(())
+        match failure.get() {
+            Some(detail) => Err(detail.clone()),
+            None => Ok(()),
+        }
     }
 }
 
@@ -688,6 +727,19 @@ mod tests {
     #[test]
     fn a_frame_that_vision_cannot_analyze_changes_no_state() {
         assert_eq!(frame_state(&Err("no image".to_string())), None);
+    }
+
+    #[test]
+    fn a_run_ends_after_a_row_of_frames_that_vision_cannot_analyze() {
+        let mut failed = FailedFrames::default();
+        for _ in 1..FAILED_FRAME_LIMIT {
+            assert!(!failed.record(true));
+        }
+        assert!(!failed.record(false));
+        for _ in 1..FAILED_FRAME_LIMIT {
+            assert!(!failed.record(true));
+        }
+        assert!(failed.record(true));
     }
 
     #[test]

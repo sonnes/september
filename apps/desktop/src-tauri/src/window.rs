@@ -153,6 +153,21 @@ fn apply_float<R: Runtime>(app: &AppHandle<R>, setup: bool, float: bool) -> taur
 #[cfg(target_os = "macos")]
 const BUTTONS: (f64, f64) = (20.0, 32.0);
 
+/// Accepts each download of the panel. When WebKit asks the navigation
+/// delegate about a download, wry cancels it unless a handler exists. Wry saves the file in the Downloads folder under the suggested
+/// name and adds " (1)" when a file of that name exists. The log leaves out
+/// the name, because a file name can hold the words of the user.
+fn on_download<R: Runtime>(_: tauri::Webview<R>, event: tauri::webview::DownloadEvent<'_>) -> bool {
+    if let tauri::webview::DownloadEvent::Finished { success, .. } = event {
+        if success {
+            eprintln!("[window] saved a download to the Downloads folder");
+        } else {
+            eprintln!("[window] a download failed");
+        }
+    }
+    true
+}
+
 /// Makes the panel from its entry in `tauri.conf.json`. The title bar is an
 /// overlay, and the window buttons sit at the middle of the 64-point indigo
 /// header. Only the builder passes this position to the webview, so the
@@ -165,7 +180,7 @@ pub fn create_panel(app: &tauri::App) -> tauri::Result<()> {
         .iter()
         .find(|window| window.label == PANEL)
         .ok_or(tauri::Error::WindowNotFound)?;
-    let builder = WebviewWindowBuilder::from_config(app.handle(), config)?;
+    let builder = WebviewWindowBuilder::from_config(app.handle(), config)?.on_download(on_download);
     #[cfg(target_os = "macos")]
     let builder = builder.traffic_light_position(tauri::LogicalPosition::new(BUTTONS.0, BUTTONS.1));
     builder.build()?;

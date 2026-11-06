@@ -1,6 +1,7 @@
 /** How a note becomes chunks on a stage, one thought at a time. */
 
 import { markdownToVoiceText } from "../notes.ts";
+import { sentencesOf } from "../spoken-word.ts";
 import type { ChunkRole } from "./stage.ts";
 
 /** A chunk holds one thought, said in one breath. */
@@ -55,13 +56,6 @@ function blocksOf(section: string): string[] {
 
   flush();
   return blocks;
-}
-
-/** One sentence at a time, keeping the mark that ends it. */
-function sentencesOf(text: string): string[] {
-  return (text.match(/[^.!?]+(?:[.!?]+(?=\s|$)|$)/g) ?? [])
-    .map((sentence) => sentence.trim())
-    .filter(Boolean);
 }
 
 /** The parts of a sentence, cut where the writer paused. */

@@ -557,6 +557,18 @@ describe('speech files', () => {
     expect(fetchSpeech).toHaveBeenCalledTimes(2);
   });
 
+  it('keys a kept file by every value of the voice, in any order', async () => {
+    const fetchSpeech = mp3Service();
+    const { voiceId, ...rest } = flash;
+
+    await voice.synthesize('Please close the door.', flash);
+    await voice.synthesize('Please close the door.', { ...rest, voiceId });
+    expect(fetchSpeech).toHaveBeenCalledTimes(1);
+
+    await voice.synthesize('Please close the door.', { ...flash, style: 0.3 } as CloudVoice);
+    expect(fetchSpeech).toHaveBeenCalledTimes(2);
+  });
+
   it('still gives the new file when the browser cannot keep it', async () => {
     vi.spyOn(BrowserRepository.prototype, 'putBlob').mockRejectedValueOnce(
       new Error('storage quota reached')

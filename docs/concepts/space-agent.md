@@ -1,6 +1,6 @@
 ---
 title: Space agents
-description: Each space has a separately stored Agent conversation whose scoped tools read immediately and require approval before changing space data.
+description: Each space has a separately stored Agent conversation whose scoped tools run at once, except a delete or an invalid call, which waits for approval.
 package: core, app-ui, desktop, web
 ---
 

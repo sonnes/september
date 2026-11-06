@@ -15,7 +15,8 @@ import { DEFAULT_SPEECH, type SpeechSettings } from '@september/core/rules/voice
 const DATABASE_NAME = 'september';
 const DATABASE_VERSION = 3;
 
-const DEFAULT_BLOB_CACHE_BYTES = 100 * 1024 * 1024;
+/** The most bytes the speech cache keeps. */
+export const DEFAULT_BLOB_CACHE_BYTES = 100 * 1024 * 1024;
 const DEFAULT_BLOB_CHUNK_BYTES = 1024 * 1024;
 
 const LEGACY_DATABASES = [

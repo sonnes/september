@@ -12,7 +12,6 @@ import {
   type Platform,
   type PlatformStore,
 } from "@september/app-ui/platform";
-import { warnBeforeUnload } from "@september/app-ui/services/browser";
 import { PORTABLE_SETTING_KEYS } from "@september/core/rules/settings";
 import { usageSince } from "@september/core/rules/usage-summary";
 
@@ -144,7 +143,6 @@ export const platform: Platform = {
       openUrl(url).catch((reason: unknown) =>
         console.error("September could not open the address in the browser.", reason),
       ),
-    guardUnsavedChanges: warnBeforeUnload,
     outputs: {
       list: () => call("audio_outputs"),
       current: () => call("audio_output"),

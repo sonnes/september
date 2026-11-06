@@ -35,6 +35,12 @@ export const BACKUP_SOURCES = ["web", "desktop"] as const;
 
 export type BackupSource = (typeof BACKUP_SOURCES)[number];
 
+/** The name of the app that made a backup. */
+export const BACKUP_SOURCE_LABELS: Record<BackupSource, string> = {
+  web: "Web app",
+  desktop: "Desktop app",
+};
+
 export interface BackupSettings {
   setup: SavedSetup | null;
   speech: SpeechSettings | null;

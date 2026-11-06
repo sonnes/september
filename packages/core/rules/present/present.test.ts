@@ -35,6 +35,17 @@ describe("the chunks of a note", () => {
     ]);
   });
 
+  it("keeps a decimal and a web address inside their sentence", () => {
+    const chunks = presentChunks(
+      "It costs 3.50 today. See example.com for more.",
+    );
+
+    expect(chunks.map((chunk) => chunk.text)).toEqual([
+      "It costs 3.50 today.",
+      "See example.com for more.",
+    ]);
+  });
+
   it("splits a long sentence at its clauses", () => {
     const long =
       "I have known Maya for thirty years, since the summer we shared a house by the river, " +

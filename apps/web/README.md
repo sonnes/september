@@ -202,8 +202,10 @@ expandable panels with keyboard support. Privacy and the founder story follow
 the demos. Compact browser and Mac choices provide the final calls to action.
 
 The Mac section presents the full desktop app with Apple Intelligence and an
-alpha download. Its direct DMG link targets `v0.6.0` for Apple Silicon
-and macOS 14.2 or later. Apple Intelligence requires macOS 26 or later. Update this link when a new desktop alpha ships.
+alpha download. Its direct DMG link takes the version from
+`apps/desktop/package.json`, so the link follows each desktop release. The DMG
+is for Apple Silicon and macOS 14.2 or later. Apple Intelligence requires macOS
+26 or later.
 
 The landing sections demonstrate the real feature machinery on marketing-only
 data: the phrase chapter runs `matchCode`, the Present chapter runs
@@ -297,7 +299,8 @@ their model ID. Requests preserve JSON response settings.
 The space Agent uses OpenRouter's tool-calling request shape.
 When the model choice is Automatic, the Agent uses `openrouter/free` so
 OpenRouter selects a currently available free model that supports the tools.
-Its tool definitions are fixed by core, every write waits for approval, and its
+Its tool definitions are fixed by core. A delete or an invalid call waits for
+approval, and every other write runs at once. Its
 transcript never enters Talk history or speech. An Agent turn streams: its
 words reach the screen as they arrive, and the stored row replaces them when
 the turn ends.

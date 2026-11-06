@@ -220,7 +220,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if panel.isVisible {
             panel.orderOut(nil)
         } else {
-            panel.position()
+            refreshPanel()
             panel.orderFront(nil)
         }
     }

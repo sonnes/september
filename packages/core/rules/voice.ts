@@ -8,6 +8,7 @@
 
 import { matchesWords } from "./pick.ts";
 import { SERVICE_NAMES } from "./services.ts";
+import { sentencesOf } from "./spoken-word.ts";
 
 export const DEFAULT_VOICE_MODEL = "eleven_flash_v2_5";
 
@@ -99,15 +100,13 @@ const DIALOGUE_LIMIT = 2000;
 /**
  * The text in parts that one dialogue request each can hold.
  *
- * A part ends at a sentence end, which is a . ! or ? before a space. A
- * sentence longer than the limit ends at the last space before the limit, or
+ * A part ends at a sentence end. A sentence longer than the limit ends at the last space before the limit, or
  * at the limit when it has no space.
  */
 export function dialogueParts(text: string, limit = DIALOGUE_LIMIT): string[] {
-  const sentences = text.trim().split(/(?<=[.!?])\s+/);
-  const pieces = sentences.flatMap((sentence) => {
+  const pieces = sentencesOf(text).flatMap((sentence) => {
     const out: string[] = [];
-    let rest = sentence.trim();
+    let rest = sentence;
     while (rest.length > limit) {
       const space = rest.lastIndexOf(" ", limit);
       const cut = space > 0 ? space : limit;

@@ -89,7 +89,7 @@ export function useUpdateSpace() {
 }
 
 export function useDeleteSpace() {
-  const refresh = useRefresh(spacesKey);
+  const refresh = useRefresh(spacesKey, ["messages"]);
   return useMutation({
     mutationFn: (id: string) => store.deleteSpace(id),
     onSuccess: refresh,
@@ -140,7 +140,7 @@ export function useRefreshAgentSpace(spaceId: string) {
   return useRefresh(
     agentMessagesKey(spaceId),
     spacesKey,
-    messagesKey(spaceId),
+    ["messages"],
     notesKey(spaceId),
     ["phrases"],
   );

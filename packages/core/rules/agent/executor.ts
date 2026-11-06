@@ -123,7 +123,7 @@ function requireVersion(
     throw new Error(`The ${label} changed. Read it again before changing it.`);
   }
   if (actual !== expected)
-    throw new Error(`The ${label} changed before approval. Ask again.`);
+    throw new Error(`The ${label} changed since it was read. Read it again.`);
 }
 
 const entityId = (seed: string, kind: string) =>
@@ -303,7 +303,7 @@ async function changeTalkMessage(
     held.text !== call.expected_text ||
     held.created_at !== call.expected_created_at
   ) {
-    throw new Error("The Talk message changed before approval. Ask again.");
+    throw new Error("The Talk message changed since it was read. Read it again.");
   }
   const reset = () =>
     data.patchSpace({

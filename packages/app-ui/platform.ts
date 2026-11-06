@@ -153,8 +153,6 @@ export interface PlatformDevice {
   identity(): Promise<{ name: string; userId: string | null }>;
   /** Opens an address outside the app window. */
   openInBrowser(url: string): Promise<void>;
-  /** Asks before a close while edits are not saved. Returns the release. */
-  guardUnsavedChanges(): () => void;
   outputs: {
     list(): Promise<AudioOutput[]>;
     current(): Promise<string>;

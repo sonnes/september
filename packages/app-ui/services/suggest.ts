@@ -1,12 +1,14 @@
 /**
  * The words that the app offers while the user writes. One engine serves the
  * whole app. It learns the seed words at the first request, and then each
- * message of the user once.
+ * message of the user once. When a message it read is gone or changed, the
+ * engine starts again from the messages that remain.
  */
 import { useEffect, useRef, useState } from "react";
 
 import {
   createEngine,
+  isWordComplete,
   suggestionsFor,
   type Autocomplete,
 } from "@september/core/autocomplete";
@@ -25,8 +27,8 @@ const THINK_AFTER_MS = 200;
 
 let engine: Autocomplete | null = null;
 
-/** The identifiers of the messages that the engine already read. */
-const learned = new Set<string>();
+/** The text of each message that the engine already read, by identifier. */
+const learned = new Map<string, string>();
 
 function theEngine(): Autocomplete {
   if (!engine) engine = createEngine();
@@ -52,10 +54,16 @@ export function useSuggestions(
   useEffect(() => {
     if (!messages) return;
 
+    const current = new Map(messages.map((message) => [message.id, message.text]));
     let added = 0;
+    if ([...learned].some(([id, text]) => current.get(id) !== text)) {
+      engine = createEngine();
+      learned.clear();
+      added += 1;
+    }
     for (const message of messages) {
       if (learned.has(message.id)) continue;
-      learned.add(message.id);
+      learned.set(message.id, message.text);
       if (message.type !== "user" || !message.space_id) continue;
       theEngine().observe(message.text, message.space_id);
       added += 1;
@@ -113,7 +121,7 @@ export function useCompletions({
     setWriting(false);
     setProblem(null);
     if (!edited || !enabled || !text.trim() ||
-      !/[\s.,!?;:]$/.test(text) || !hasWritingService("suggestions")) return;
+      !isWordComplete(text) || !hasWritingService("suggestions")) return;
 
     const dropped = new AbortController();
     const timer = setTimeout(() => {

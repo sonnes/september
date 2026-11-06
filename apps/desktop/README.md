@@ -1,6 +1,6 @@
 # September Desktop
 
-The current prerelease is `v0.6.0`. The signed DMG targets Apple Silicon and macOS 14.2 or later.
+The signed DMG targets Apple Silicon and macOS 14.2 or later.
 
 September Desktop is the Tauri edition of September, in one floating window,
 the panel. It renders the workspace's shared application UI and supplies
@@ -333,8 +333,7 @@ editor, and the line rules are in `packages/core/rules/note-document.ts`.
 The word engine reads the note in Notes mode, not the spoken messages, so the
 words it offers follow what the user is writing.
 
-The note starts saving text and title edits immediately. Pending or failed
-saves make a reload warn first. There is no Save button, because a user who types
+The note starts saving text and title edits immediately. There is no Save button, because a user who types
 slowly must never lose words to a button they did not press.
 
 The note has two writers: the field and the agent. The field takes the new
@@ -382,8 +381,10 @@ Thirds of the stage move back, hold, and on. The keys are `←` `→` `Space`
 `present` setting.
 
 Export saves the note as `.md` always, and as `.mp3` with an ElevenLabs voice.
-`packages/app-ui/services/export.ts` writes both through the WebView download support, so
-the file is made on the Mac and goes nowhere else. Audio reuses the speech file
+`packages/app-ui/services/export.ts` saves both with `downloadBlob`. The panel
+accepts each download and saves it in the Downloads folder of the user. A
+name that is taken gets " (1)". The file is made on the Mac and goes nowhere
+else. Audio reuses the speech file
 that a voice-over already made.
 
 Video is made in the browser app for now, and the row says so instead of
@@ -855,8 +856,8 @@ model and the sound moved to the rail of a space.
 open section, and the guide for each cloud service. `packages/app-ui/layouts/settings.tsx`
 holds the section list, and the `packages/app-ui/pages/settings*.tsx` files hold the screens.
 
-The Data section downloads the portable settings and every domain row as one
-JSON file. It does not include Keychain keys, the selected audio output, cached
+The Data section saves the portable settings and every domain row as one JSON
+file in the Downloads folder. It does not include Keychain keys, the selected audio output, cached
 audio paths, or internal state. Version 2 includes the separate Agent
 transcripts. Import also accepts version 1 with no Agent messages, validates
 the complete file, previews its counts, and replaces the portable SQLite rows
@@ -1054,9 +1055,8 @@ A successful message save clears only the draft that was sent; later edits
 remain. Pending or failed saves show their state and offer retry on failure.
 
 Note text and titles start saving on each edit. Writes through the note-update
-hook run in order within a space. Browser close/reload warns while a save is
-pending or failed. The close button of the panel hides the panel, so those
-edits continue to save.
+hook run in order within a space. The close button of the panel hides the
+panel, so pending edits continue to save.
 A forced quit, crash, or power loss before a write finishes can still lose it.
 
 The Welcome screen includes a Terms & privacy summary before personal details

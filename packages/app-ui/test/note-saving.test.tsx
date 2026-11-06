@@ -56,8 +56,6 @@ describe('saving a note', () => {
   });
 
   it('shows a failed save and guards closing until a retry succeeds', async () => {
-    const release = vi.fn();
-    const guard = vi.mocked(platform.device.guardUnsavedChanges).mockReturnValue(release);
     const put = vi.mocked(platform.store.putNote);
     const keep = put.getMockImplementation()!;
     put.mockRejectedValue(new Error('disk full'));
@@ -70,13 +68,13 @@ describe('saving a note', () => {
       if (!found) throw new Error('No alert');
       return found;
     });
-    const held = () => guard.mock.calls.length - release.mock.calls.length;
-    expect(held()).toBe(1);
+    const held = () => !window.dispatchEvent(new Event('beforeunload', { cancelable: true }));
+    expect(held()).toBe(true);
 
     put.mockImplementation(keep);
     await press(await findButton('Retry', alert));
 
-    await vi.waitFor(() => expect(held()).toBe(0));
+    await vi.waitFor(() => expect(held()).toBe(false));
     expect(rows.notes.get('note')?.content).toBe('keep these words');
     expect(doc().textContent).toBe('keep these words');
   });

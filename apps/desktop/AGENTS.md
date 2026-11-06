@@ -125,9 +125,12 @@ cargo fmt --all -- --check
   when the sound stops, so the story keeps the pace of the voice.
 - Say `Present`, `Export`, `Text`, `Audio`, and `Video`, and never the retired
   name for any of them.
-- Save a file through `packages/app-ui/services/export.ts`, which calls
-  `platform.device.save`, with the WebView download support. Say why a row cannot run in the place of its own description, and
-  keep its target. A row that disappears teaches the user nothing.
+- Save a file through `downloadBlob` in `packages/app-ui/services/browser.ts`,
+  as `packages/app-ui/services/export.ts` does. The panel accepts the download
+  in `on_download` in `src-tauri/src/window.rs` and saves it in the Downloads
+  folder.
+- Say why a row cannot run in the place of its own description, and keep its
+  target. A row that disappears teaches the user nothing.
 - Keep the rules of a space in `packages/core/rules/spaces.ts`, where a test can read them
   without a renderer: the slug, the search, the new title, the relative time,
   the transcript page, and the composer helpers.
