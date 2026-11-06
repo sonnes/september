@@ -30,11 +30,14 @@ public struct PanelCard<Content: View>: View {
 
 /// The grip at the top of a card: a bar the width of the card. A drag on it
 /// moves the window. The drag does not activate the app or take focus.
-struct Grip: View {
+public struct Grip: View {
+    /// The identifier of the view that moves the window.
+    public static let identifier = NSUserInterfaceItemIdentifier("september.grip")
+
     let height: CGFloat
     @Environment(\.isSnapshot) private var isSnapshot
 
-    var body: some View {
+    public var body: some View {
         Capsule()
             .fill(Color(Tokens.labelSecondary))
             .opacity(Metrics.Detached.gripOpacity)
@@ -52,18 +55,41 @@ extension EnvironmentValues {
     @Entry public var isSnapshot = false
 }
 
-/// Moves its window when the user drags it. `performDrag` lets the window
-/// server move the window, so a panel that never becomes key moves too.
+/// Moves its window when the user drags it. The view moves the window
+/// itself, so a panel that never becomes key moves too, and the app does not
+/// activate.
 private struct WindowDragArea: NSViewRepresentable {
     final class DragView: NSView {
-        override var mouseDownCanMoveWindow: Bool { true }
+        /// The point of the mouse and the corner of the window when the
+        /// button went down, in screen coordinates.
+        private var start: (mouse: NSPoint, origin: NSPoint)?
+
+        override var mouseDownCanMoveWindow: Bool { false }
         override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
         override func mouseDown(with event: NSEvent) {
-            window?.performDrag(with: event)
+            guard let window else { return }
+            start = (window.convertPoint(toScreen: event.locationInWindow), window.frame.origin)
+        }
+
+        override func mouseDragged(with event: NSEvent) {
+            guard let window, let start else { return }
+            let mouse = window.convertPoint(toScreen: event.locationInWindow)
+            window.setFrameOrigin(
+                NSPoint(x: start.origin.x + mouse.x - start.mouse.x, y: start.origin.y + mouse.y - start.mouse.y))
+        }
+
+        override func mouseUp(with event: NSEvent) {
+            start = nil
         }
     }
 
-    func makeNSView(context: Context) -> DragView { DragView() }
+    func makeNSView(context: Context) -> DragView {
+        let view = DragView()
+        view.identifier = Grip.identifier
+        return view
+    }
+
     func updateNSView(_ view: DragView, context: Context) {}
 }
 
