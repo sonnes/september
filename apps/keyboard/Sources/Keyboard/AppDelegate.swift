@@ -225,7 +225,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             session.appChanged(name: app?.localizedName, bundleID: app?.bundleIdentifier, windowTitle: title)
             startChordTap()
         }
-        panels[.app]?.update(root: content.panel(.app, appIcon: appIcon), contentSize: panelSize(.app))
+        // Panels of different apps differ in height. The top of the panel
+        // stays in line with the top of the keys.
+        if let window = panels[.app] {
+            let top = window.frame.maxY
+            window.update(root: content.panel(.app, appIcon: appIcon), contentSize: panelSize(.app))
+            window.setFrameOrigin(NSPoint(x: window.frame.minX, y: top - window.frame.height))
+        }
     }
 
     // MARK: - The Write window

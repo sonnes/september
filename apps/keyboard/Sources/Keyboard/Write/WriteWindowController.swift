@@ -66,7 +66,7 @@ final class WriteWindowController: NSWindowController, NSWindowDelegate, NSToolb
             page.send(.theme(.september))
             model.start()
         }
-        NSApp.activate()
+        AppActivation.bringToFront()
         showWindow(nil)
         window?.makeKeyAndOrderFront(nil)
         window?.makeFirstResponder(page.webView)

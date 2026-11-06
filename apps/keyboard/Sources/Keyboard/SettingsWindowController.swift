@@ -23,7 +23,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         if !NSApp.isActive {
             previousApp = NSWorkspace.shared.frontmostApplication
         }
-        NSApp.activate()
+        AppActivation.bringToFront()
         window.makeKeyAndOrderFront(nil)
     }
 

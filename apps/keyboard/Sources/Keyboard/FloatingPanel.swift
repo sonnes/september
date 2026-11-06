@@ -27,7 +27,9 @@ final class FloatingPanel: NSPanel {
         hosting = NSHostingView(rootView: root)
         super.init(
             contentRect: NSRect(origin: .zero, size: contentSize),
-            styleMask: [.nonactivatingPanel, .titled, .fullSizeContentView],
+            // No title bar: a title bar gives the hosting view a safe area, and
+            // SwiftUI then moves the content up and down by half its height.
+            styleMask: [.nonactivatingPanel, .borderless],
             backing: .buffered,
             defer: false
         )
@@ -38,15 +40,10 @@ final class FloatingPanel: NSPanel {
         level = .floating
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
 
-        titleVisibility = .hidden
-        titlebarAppearsTransparent = true
         isMovableByWindowBackground = true
         backgroundColor = .clear
         isOpaque = false
         hasShadow = true
-        for button in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
-            standardWindowButton(button)?.isHidden = true
-        }
 
         contentView = hosting
         setContentSize(contentSize)
