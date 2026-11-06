@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -37,13 +36,6 @@ vi.mock('@september/app-ui/services/ai', () => ({ hasWritingService: () => false
 vi.mock('@september/app-ui/services/speech', () => ({ useSpeaking: () => null, stopSpeaking: vi.fn() }));
 vi.mock('@september/app-ui/blocks/phrase-panel', () => ({ Phrases: () => <p>Phrases list</p> }));
 vi.mock('@september/app-ui/blocks/speech-settings', () => ({ SpeechSettings: () => <p>Voice settings</p> }));
-
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-globalThis.ResizeObserver ??= class {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-} as unknown as typeof ResizeObserver;
 
 const onHide = vi.fn();
 

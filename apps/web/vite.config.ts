@@ -1,12 +1,5 @@
-import tailwindcss from '@tailwindcss/vite';
-import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
-  resolve: {
-    tsconfigPaths: true,
-    alias: { '@platform/adapter': '/src/platform.ts' },
-  },
-  server: { port: 3009 },
-});
+import { appConfig } from '../../vite.shared.ts';
+
+export default defineConfig(appConfig(3009));

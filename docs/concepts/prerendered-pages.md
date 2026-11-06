@@ -104,7 +104,7 @@ and the application shell alike. Automatic tracking is off: the script would
 read the address and the title of every page the user moves to, and a
 September address names the person the user talks to.
 
-The router reports each page instead. A screen that names nobody is reported
+`countPages` in `src/router.tsx` reports each page instead. A screen that names nobody is reported
 by its address — `/dashboard`, `/help/clone-a-voice`. A screen that carries a
 name is reported by the shape of its route — `/spaces/$slug/talk`. So a count
 says a space was opened without saying whose, and the words stay on the

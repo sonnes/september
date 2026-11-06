@@ -17,9 +17,12 @@ export function PanelSettings() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    void panelFloat()
+    panelFloat()
       .then(setFloat)
-      .catch(() => setFloat(true));
+      .catch((reason: unknown) => {
+        console.error("September could not read the panel setting.", reason);
+        setError("September could not read the setting.");
+      });
   }, []);
 
   const toggle = async () => {
@@ -62,7 +65,7 @@ export function PanelSettings() {
           </Label>
           <Switch
             id="setting-panel-float"
-            checked={float !== false}
+            checked={float === true}
             disabled={float === null}
             aria-describedby="setting-panel-float-description"
             aria-disabled={pending}

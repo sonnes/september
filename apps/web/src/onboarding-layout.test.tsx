@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -21,8 +20,6 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 vi.mock('@september/app-ui/services/speech', () => ({ useSpeaking: () => null }));
 vi.mock('@september/app-ui/pages/help', () => ({ HelpGuideContent: () => null }));
-
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let container: HTMLDivElement;
 let root: Root;

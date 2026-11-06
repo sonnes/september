@@ -5,7 +5,6 @@ import { afterEach, expect, it } from 'vitest';
 
 import { axeViolations } from './axe';
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const container = document.createElement('div');
 document.body.append(container);
 let root = createRoot(container);

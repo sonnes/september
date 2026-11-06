@@ -77,10 +77,35 @@ freezes the owner in the saved setup.
 Lucide icon for each path. The icon records are typed by path, so a missing
 icon fails the build. Setup ends on the first page of `APP_NAV`.
 
+## Routes and the app root
+
+`routes.tsx` gives `createAppRoutes`, the route tree of both apps: setup, Help,
+the pages, and the Settings sections. Each app passes what only it has:
+
+| Option        | Web                                | Desktop                          |
+| ------------- | ---------------------------------- | -------------------------------- |
+| `shell`       | `AppShell` from `layouts/app.tsx`  | `PanelShell` from `layouts/panel.tsx`, with `onHide` |
+| `home`        | The landing page                   | A redirect to `openingPath`      |
+| `publicPages` | The legal pages                    | None                             |
+| `pages`       | `/dashboard`                       | `/eyetracker`                    |
+| `sections`    | None                               | `/settings/panel`                |
+
+`pages` and `sections` are keyed by the paths of `APP_PAGES` and
+`SETTINGS_SECTIONS`. Setup runs once. An app page asked for before setup is
+done goes to `/welcome`, and a setup step asked for after it goes to the
+first page of `APP_NAV`.
+
+`app.tsx` gives `App`, the root of both apps: `StrictMode`, the fonts, the
+query cache, and the router. `createQueryClient` makes the cache. A failed
+read is not retried, because both stores are on the device.
+
+Both shells stay here. They draw only shared blocks and `APP_NAV`, and each app
+picks one.
+
 ## Checks
 
 `pnpm --filter @september/app-ui build` type-checks the package with
-`tsconfig.json`.
+`tsconfig.json`. The tests of the shared screens and routes run in `apps/web`.
 
 ## Screens
 

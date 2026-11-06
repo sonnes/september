@@ -23,7 +23,6 @@ vi.mock('@tanstack/react-router', async original => ({
 vi.mock('@september/app-ui/layouts/onboarding', () => ({
   useDraft: () => ({ draft: { name: '', mode: null }, setDraft: vi.fn() }),
 }));
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const container = document.createElement('div');
 let root = createRoot(container);
 afterEach(() => {

@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import React, { act } from 'react';
 
 import { HelpGuideContent, HelpScreen } from '@september/app-ui/pages/help';
@@ -8,8 +7,6 @@ import { SidebarProvider } from '@september/ui/components/sidebar';
 import { type Root, createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axeViolations } from './axe';
-
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({

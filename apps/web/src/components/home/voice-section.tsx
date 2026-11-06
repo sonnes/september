@@ -49,7 +49,7 @@ function VoiceDemo() {
       });
     };
     load();
-    const synthesis = typeof window !== 'undefined' ? window.speechSynthesis : undefined;
+    const synthesis = window.speechSynthesis;
     synthesis?.addEventListener?.('voiceschanged', load);
     return () => {
       active = false;

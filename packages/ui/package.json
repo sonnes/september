@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc --noEmit"
+    "build": "tsc --noEmit",
+    "test": "vitest --run"
   },
   "exports": {
     ".": "./index.ts",
@@ -29,7 +30,6 @@
     "@types/react-dom": "19.2.3",
     "react": "19.2.1",
     "react-dom": "19.2.1",
-    "tailwindcss": "^4.3.3",
-    "typescript": "^5.9.3"
+    "tailwindcss": "^4.3.3"
   }
 }

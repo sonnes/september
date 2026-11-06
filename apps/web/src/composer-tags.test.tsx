@@ -14,7 +14,6 @@ vi.mock('@september/app-ui/services/data', () => ({
 vi.mock('@september/app-ui/services/ai', () => ({ hasWritingService: () => false }));
 vi.mock('@september/app-ui/blocks/suggestions', () => ({ Suggestions: () => null }));
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const container = document.createElement('div');
 document.body.append(container);
 let root = createRoot(container);

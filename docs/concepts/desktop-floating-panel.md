@@ -75,11 +75,13 @@ The shared package cannot hide a window, so the desktop bootstrap gives
 ## One route tree
 
 The window has one webview and one TanStack Query cache, so a write refreshes
-every screen through its query keys. `src/main.tsx` builds one route tree.
+every screen through its query keys. `src/main.tsx` builds one route tree with
+`createAppRoutes` from `packages/app-ui/routes.tsx`.
 
 The setup routes keep `OnboardingLayout`. All other routes sit under a layout
 route that renders `PanelShell`. The Help routes need no finished setup. The
-other app routes turn back to `/welcome` before setup is done.
+other app routes turn back to `/welcome` before setup is done, and a setup step
+goes to `/spaces` after it is done.
 
 | Path                                                                                                  | Screen                         |
 | ----------------------------------------------------------------------------------------------------- | ------------------------------ |
@@ -88,7 +90,6 @@ other app routes turn back to `/welcome` before setup is done.
 | `/spaces`                                                                                             | `SpacesScreen`                 |
 | `/spaces/$slug/talk`, `/spaces/$slug/notes`, `/spaces/$slug/notes/$noteSlug`, `/spaces/$slug/agent`   | Talk, Notes, and Agent         |
 | `/voice`, `/voice/clone`, `/eyetracker`, `/help`, `/help/$guideSlug`, `/settings` and its sections    | The pages of the app           |
-| `/dashboard`, any other path                                                                          | Redirects to `/`               |
 
 `openingPath(saved, spaces, capabilities)` in `packages/core/rules/navigation.ts` gives the
 saved `lastPath` only when that path is exactly one of these pages:
@@ -134,7 +135,7 @@ The panel starts hidden. `src/main.tsx` awaits `loadSettings`, mounts the
 app, and shows the panel with `panel_show`. `src/window.ts` holds the panel
 commands.
 Before setup is done, the bootstrap calls `panel_setup(true)` first. When setup
-becomes done, it calls `panel_setup(false)` and goes to `/`. If setup goes back
+becomes done, it calls `panel_setup(false)`. If setup goes back
 to not done, it calls `panel_setup(true)` again.
 
 The Dock icon follows the float choice. `policy(setup, float)` in

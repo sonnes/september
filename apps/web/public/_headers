@@ -1,6 +1,0 @@
-# Cross-origin isolation headers for the deployed browser application.
-# Vercel applies the matching policy through vercel.json.
-/*
-  Cross-Origin-Opener-Policy: same-origin
-  Cross-Origin-Embedder-Policy: require-corp
-  Cross-Origin-Resource-Policy: cross-origin

@@ -1,59 +1,21 @@
-import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  createHashHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-  Outlet,
-  redirect,
-  RouterProvider,
-} from "@tanstack/react-router";
+import { createHashHistory, createRouter, redirect } from "@tanstack/react-router";
 
-import "@fontsource/lexend/700.css";
-import "@fontsource/noto-sans/400.css";
-import "@fontsource/noto-sans/500.css";
-import "@fontsource/noto-sans/600.css";
-import "@fontsource/noto-sans/700.css";
-
-import { OnboardingLayout } from "@september/app-ui/layouts/onboarding";
-import { openingPath, windowTitle } from "@september/core/rules/navigation";
-import { HelpScreen } from "@september/app-ui/pages/help";
-import { helpGuide } from "@september/core/rules/help/search";
-import { NotesScreen } from "@september/app-ui/pages/notes";
-import { isSetupDone } from "@september/core/rules/onboarding";
+import { App, createQueryClient } from "@september/app-ui/app";
+import { PanelShell } from "@september/app-ui/layouts/panel";
+import { createAppRoutes } from "@september/app-ui/routes";
 import {
   currentSetup,
   currentUserId,
   loadSettings,
   subscribeSetup,
 } from "@september/app-ui/services/settings";
-import { PanelShell } from "@september/app-ui/layouts/panel";
-import { SettingsLayout } from "@september/app-ui/layouts/settings";
-import { AgentScreen } from "@september/app-ui/pages/agent";
-import {
-  ConnectionScreen,
-  DataSettings,
-  SetupSettings,
-  AccessSettings,
-  WritingSettings,
-} from "@september/app-ui/pages/settings";
-import { UsageSettings } from "@september/app-ui/pages/usage";
-import { isConnectionId } from "@september/core/rules/navigation";
-import { EyeTracker } from "@/eye-tracker";
-import { PanelSettings } from "@/panel-settings";
-import { SpacesScreen } from "@september/app-ui/pages/spaces";
-import { TalkScreen } from "@september/app-ui/pages/talk";
-import { VoiceCloneScreen, VoiceScreen } from "@september/app-ui/pages/voice";
-import {
-  ConnectStep,
-  FinishStep,
-  ProfileStep,
-  ChooseStep,
-  WelcomeStep,
-} from "@september/app-ui/pages/steps";
+import { openingPath, windowTitle } from "@september/core/rules/navigation";
+import { isSetupDone } from "@september/core/rules/onboarding";
+
+import { EyeTracker } from "./eye-tracker";
+import { PanelSettings } from "./panel-settings";
 import { platform } from "./platform";
 import {
   hidePanel,
@@ -69,184 +31,16 @@ import "./styles.css";
 const report = (what: string) => (reason: unknown) =>
   console.error(`September could not ${what}.`, reason);
 
-// SQLite is next to the app, so a read is cheap and a stale row is not worth
-// a background refetch.
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
-});
+const queryClient = createQueryClient();
 
-// The root route holds an outlet only. Setup and the app are separate
-// layouts below it, so a step never wears the panel chrome.
-const rootRoute = createRootRoute({ component: Outlet });
+let lastPath: string | null = null;
 
-const setupRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  id: "setup",
-  component: OnboardingLayout,
-});
-
-const step = (path: string, component: () => React.JSX.Element) =>
-  createRoute({ getParentRoute: () => setupRoute, path, component });
-
-const panelRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  id: "panel",
-  component: function Panel() {
+const routeTree = createAppRoutes({
+  shell: function Panel() {
     return <PanelShell onHide={() => void hidePanel().catch(report("hide the panel"))} />;
   },
-});
-
-const appRoute = createRoute({
-  getParentRoute: () => panelRoute,
-  id: "app",
-  // Every app screen needs a name and a mode, so an unfinished setup turns
-  // back to the start. A reload of a deep route passes through here too.
-  beforeLoad: () => {
-    if (!isSetupDone(currentSetup())) throw redirect({ to: "/welcome" });
-  },
-});
-
-const spacesRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "/spaces",
-  component: SpacesScreen,
-});
-
-const talkRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "/spaces/$slug/talk",
-  component: function Talk() {
-    return <TalkScreen slug={talkRoute.useParams().slug} />;
-  },
-});
-
-const agentRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "/spaces/$slug/agent",
-  component: function Agent() {
-    return <AgentScreen slug={agentRoute.useParams().slug} />;
-  },
-});
-
-// A note is named by its slug. Without one in the address, the note the
-// user changed last opens.
-const notesRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "/spaces/$slug/notes",
-  component: function Notes() {
-    return <NotesScreen slug={notesRoute.useParams().slug} />;
-  },
-});
-
-const noteRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "/spaces/$slug/notes/$noteSlug",
-  component: function Note() {
-    const { slug, noteSlug } = noteRoute.useParams();
-    return <NotesScreen slug={slug} noteSlug={noteSlug} />;
-  },
-});
-
-// Settings is a layout with a section list, so a section keeps the list
-// beside it. A connection page is a child of Setup, not a section of its own.
-const settingsRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "/settings",
-  component: SettingsLayout,
-});
-
-const connectionRoute = createRoute({
-  getParentRoute: () => settingsRoute,
-  path: "/connections/$provider",
-  beforeLoad: ({ params }) => {
-    if (!isConnectionId(params.provider)) throw redirect({ to: "/settings" });
-  },
-  component: function Connection() {
-    const { provider } = connectionRoute.useParams();
-    return <ConnectionScreen provider={provider as "openrouter" | "elevenlabs"} />;
-  },
-});
-
-// Help needs no finished setup, as before.
-const helpHomeRoute = createRoute({
-  getParentRoute: () => panelRoute,
-  path: "/help",
-  component: HelpScreen,
-});
-
-const helpGuideRoute = createRoute({
-  getParentRoute: () => panelRoute,
-  path: "/help/$guideSlug",
-  beforeLoad: ({ params }) => {
-    if (!helpGuide(params.guideSlug)) throw redirect({ to: "/help" });
-  },
-  component: function HelpGuide() {
-    return <HelpScreen guideSlug={helpGuideRoute.useParams().guideSlug} />;
-  },
-});
-
-const guardedAppRoute = appRoute.addChildren([
-  spacesRoute,
-  talkRoute,
-  agentRoute,
-  notesRoute,
-  noteRoute,
-  createRoute({
-    getParentRoute: () => appRoute,
-    path: "/voice",
-    component: VoiceScreen,
-  }),
-  createRoute({
-    getParentRoute: () => appRoute,
-    path: "/voice/clone",
-    component: VoiceCloneScreen,
-  }),
-  createRoute({
-    getParentRoute: () => appRoute,
-    path: "/eyetracker",
-    component: EyeTracker,
-  }),
-  settingsRoute.addChildren([
-    createRoute({
-      getParentRoute: () => settingsRoute,
-      path: "/",
-      component: SetupSettings,
-    }),
-    createRoute({
-      getParentRoute: () => settingsRoute,
-      path: "/access",
-      component: AccessSettings,
-    }),
-    createRoute({
-      getParentRoute: () => settingsRoute,
-      path: "/writing",
-      component: WritingSettings,
-    }),
-    createRoute({
-      getParentRoute: () => settingsRoute,
-      path: "/usage",
-      component: UsageSettings,
-    }),
-    createRoute({
-      getParentRoute: () => settingsRoute,
-      path: "/panel",
-      component: PanelSettings,
-    }),
-    createRoute({
-      getParentRoute: () => settingsRoute,
-      path: "/data",
-      component: DataSettings,
-    }),
-    connectionRoute,
-  ]),
-]);
-
-const routeTree = rootRoute.addChildren([
-  createRoute({
-    getParentRoute: () => rootRoute,
-    path: "/",
-    // Setup runs once. After that the app opens where the user left it, or
-    // on Talk of the space that changed last.
+  // The app opens where the user left it, or on Talk of the space that changed last.
+  home: {
     beforeLoad: async () => {
       if (!isSetupDone(currentSetup())) throw redirect({ to: "/welcome" });
       const spaces = await queryClient
@@ -255,58 +49,27 @@ const routeTree = rootRoute.addChildren([
           queryFn: () => platform.store.listSpaces(currentUserId()),
         })
         .catch((reason: unknown) => {
-          // The app still opens, on its first page.
           report("read the spaces")(reason);
           return [];
         });
       throw redirect({ to: openingPath(lastPath, spaces, platform.capabilities) });
     },
-  }),
-  setupRoute.addChildren([
-    step("/welcome", WelcomeStep),
-    step("/choose", ChooseStep),
-    step("/profile", ProfileStep),
-    step("/connect", ConnectStep),
-    step("/finish", FinishStep),
-  ]),
-  panelRoute.addChildren([helpHomeRoute, helpGuideRoute, guardedAppRoute]),
-  // `/dashboard`, where setup ends, and any address that names no screen.
-  createRoute({
-    getParentRoute: () => rootRoute,
-    path: "$",
-    beforeLoad: () => {
-      throw redirect({ to: "/" });
-    },
-  }),
-]);
+  },
+  pages: { "/eyetracker": EyeTracker },
+  sections: { "/settings/panel": PanelSettings },
+});
 
-let lastPath: string | null = null;
-
-// ponytail: hash history keeps deep routes working from the Tauri asset
-// protocol without a dev-server rewrite rule.
+// Hash history keeps deep routes working from the Tauri asset protocol.
 const router = createRouter({ routeTree, history: createHashHistory() });
 
-// The app opens where the user left it, so every arrival is kept.
-// `onResolved` runs after the route settles, so a redirect keeps only where it
-// landed.
+// `onResolved` runs after redirects settle, so only the screen the user lands on is kept.
 router.subscribe("onResolved", ({ toLocation }) => {
   const path = toLocation.pathname;
-  // One screen can resolve twice, and a write that changes nothing is skipped.
   if (path !== lastPath) {
     lastPath = path;
     saveLastPath(path).catch(report("keep the screen"));
   }
   setWindowTitle(windowTitle(path)).catch(report("set the window title"));
-});
-
-// Setup runs in a normal window with a Dock icon. When it ends, the panel
-// takes the saved float choice and opens on `/`.
-let setupDone = false;
-subscribeSetup(() => {
-  const done = isSetupDone(currentSetup());
-  if (done !== setupDone) panelSetup(!done).catch(report("change the window"));
-  if (done && !setupDone) void router.navigate({ to: "/" });
-  setupDone = done;
 });
 
 declare module "@tanstack/react-router" {
@@ -315,28 +78,25 @@ declare module "@tanstack/react-router" {
   }
 }
 
-const root = document.getElementById("root");
-
-if (!root) {
-  throw new Error("Missing root element");
+/** Setup runs in a normal window with a Dock icon. After it, the panel takes the saved float choice. */
+function followSetup(): void {
+  let done = isSetupDone(currentSetup());
+  subscribeSetup(() => {
+    const now = isSetupDone(currentSetup());
+    if (now !== done) panelSetup(!now).catch(report("change the window"));
+    done = now;
+  });
 }
 
 /** Reads the settings once, mounts the app, then shows the panel. */
 async function start(element: HTMLElement): Promise<void> {
   [lastPath] = await Promise.all([readLastPath(), loadSettings()]);
-  setupDone = isSetupDone(currentSetup());
-
-  createRoot(element).render(
-    <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>
-    </StrictMode>,
-  );
-
-  // The panel starts hidden. Before setup ends, it is a normal window.
-  if (!setupDone) await panelSetup(true);
+  followSetup();
+  createRoot(element).render(<App router={router} queryClient={queryClient} />);
+  if (!isSetupDone(currentSetup())) await panelSetup(true);
   await showPanel();
 }
 
+const root = document.getElementById("root");
+if (!root) throw new Error("Missing root element");
 start(root).catch(report("start"));

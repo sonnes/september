@@ -2,8 +2,9 @@
 
 Assistive communication app for people with ALS or MND. This app is a Vite SPA with React 19, TanStack Router, Tailwind CSS 4, and shadcn/ui.
 
-This app belongs to the root pnpm workspace. Its route graph lives in
-`src/router.tsx`, and its public landing page stays at `/`. Browser services and
+This app belongs to the root pnpm workspace. `src/router.tsx` gives the shared
+route tree of `@september/app-ui/routes` the browser shell and the web-only
+pages, and the public landing page stays at `/`. Browser services and
 platform-only rules live in `src/`. Common rules, autocomplete, primitives,
 tokens, layouts, blocks, and screens live in the root `packages/*` workspace.
 
@@ -19,8 +20,9 @@ Use `pnpm` — never `npm` or `yarn`. Run from `apps/web/` (or `pnpm -C apps/web
 | `pnpm dev`           | Dev server (Vite)                  |
 | `pnpm build`         | Type-check and build the SPA        |
 | `pnpm start`         | Preview the web production build   |
-| `pnpm lint`          | Lint                               |
 | `pnpm test`          | Run tests (Vitest)                 |
+
+Run `pnpm lint` from the repository root. One ESLint config, `eslint.config.mjs`, covers every package.
 
 The production output is `dist/`. Vercel serves prerendered public pages and `app.html` for application routes.
 
@@ -32,7 +34,7 @@ The production output is `dist/`. Vercel serves prerendered public pages and `ap
   that alias mapped to `src/platform.ts`, and to `src/test/platform.ts` in
   Vitest. Put shared work in `packages/app-ui/services/`, and only browser work
   in `src/`.
-- Keep application route paths equal to the desktop paths in `src/router.tsx`. Preserve the web-only landing page at `/`.
+- Add a route that both apps have in `packages/app-ui/routes.tsx`. Add a web-only page in `src/router.tsx`. Preserve the web-only landing page at `/`.
 - Use `useNavigate` and `Link` from `@tanstack/react-router`.
 - Styling: shadcn/ui + Tailwind. Font family is Noto Sans (self-hosted via `@fontsource/noto-sans`). Note titles and headings use Fraunces (`@fontsource-variable/fraunces`, `font-heading`).
 - React Query owns the UI cache. `src/services/repository.ts` owns all durable browser data.

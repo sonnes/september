@@ -10,6 +10,17 @@ export type GazeFrame = {
   point: GazePoint | null;
 };
 
+/** The states that `src-tauri/src/gaze.rs` sends. */
+export type GazeState =
+  | "starting"
+  | "ready"
+  | "noFace"
+  | "lowConfidence"
+  | "permissionDenied"
+  | "unavailable"
+  | "error"
+  | "stopped";
+
 export type GazeEvent =
   | {
       event: "frame";
@@ -17,7 +28,7 @@ export type GazeEvent =
     }
   | {
       event: "status";
-      data: { state: string; detail: string | null };
+      data: { state: GazeState; detail: string | null };
     };
 
 /**
@@ -26,18 +37,18 @@ export type GazeEvent =
  * Nothing reads it. It holds the channel alive for as long as Rust may send
  * on it, so the callback is not collected under a session in progress.
  */
-let activeChannel: Channel<GazeEvent> | null = null;
+let _heldChannel: Channel<GazeEvent> | null = null;
 
 export async function startGaze(onEvent: (event: GazeEvent) => void): Promise<void> {
   const onEventChannel = new Channel<GazeEvent>(onEvent);
   await call("gaze_start", { onEvent: onEventChannel });
-  activeChannel = onEventChannel;
+  _heldChannel = onEventChannel;
 }
 
 export async function stopGaze(): Promise<void> {
   try {
     await call("gaze_stop");
   } finally {
-    activeChannel = null;
+    _heldChannel = null;
   }
 }

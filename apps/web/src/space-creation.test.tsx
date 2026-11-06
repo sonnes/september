@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import React, { act } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createRoot, type Root } from 'react-dom/client';
@@ -49,17 +48,7 @@ vi.mock('@september/app-ui/services/suggest', () => ({
   applySuggestion: (text: string) => text,
 }));
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-
 // The sidebar asks the window how wide it is. jsdom has no media queries.
-window.matchMedia = ((query: string) => ({
-  matches: false,
-  media: query,
-  onchange: null,
-  addEventListener: () => undefined,
-  removeEventListener: () => undefined,
-  dispatchEvent: () => false,
-})) as unknown as typeof window.matchMedia;
 
 let container: HTMLDivElement;
 let root: Root;
@@ -228,11 +217,6 @@ describe('a space whose name changes under the address', () => {
 describe('the space mode control', () => {
   const space = { id: 's1', title: 'Mum', updated_at: 1 } as Parameters<typeof SpaceDock>[0]['current'];
   const tabs = async () => {
-    globalThis.ResizeObserver ??= class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    };
     client = new QueryClient();
     await act(async () =>
       root.render(

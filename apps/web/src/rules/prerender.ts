@@ -92,7 +92,7 @@ function attribute(value: string): string {
 export function withAnalytics(shell: string, analytics: Analytics | null): string {
   if (!analytics?.src || !analytics.websiteId) return shell;
 
-  // `crossorigin` is not decoration: `public/_headers` and `vercel.json` make
+  // `crossorigin` is not decoration: `vercel.json` makes
   // the site cross-origin isolated for ffmpeg.wasm, and `require-corp` drops a
   // cross-origin script that arrives without a resource policy. Over CORS it
   // arrives.

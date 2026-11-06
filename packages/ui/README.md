@@ -66,8 +66,9 @@ key.
 The `warning` tone of `Callout` is zinc with a warning icon, because
 amber marks attention only.
 
-Run the type check from the repository root:
+Run the type check and the tests from the repository root:
 
 ```sh
 pnpm --filter @september/ui build
+pnpm --filter @september/ui test
 ```

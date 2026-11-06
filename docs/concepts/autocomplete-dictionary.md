@@ -29,7 +29,7 @@ Measured on 30 care requests that the engine never saw:
 | Word list only | 43.4% |
 | Both | 47.8% |
 
-`apps/desktop/tests/autocomplete-savings.test.mjs` holds a floor under these
+`packages/core/autocomplete/savings.test.ts` holds a floor under these
 numbers. A change that lowers the saving fails the build.
 
 ## Where the words come from

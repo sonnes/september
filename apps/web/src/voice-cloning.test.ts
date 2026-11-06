@@ -76,7 +76,11 @@ describe('a voice clone', () => {
 
 describe('a created voice', () => {
   it('stays in the list when an older account refresh arrives', () => {
-    const created = { id: 'new', name: 'My voice', preview_url: null };
+    const created: { id: string; name: string; preview_url: string | null } = {
+      id: 'new',
+      name: 'My voice',
+      preview_url: null,
+    };
     const old = { id: 'old', name: 'Old voice', preview_url: 'https://example.com/old.mp3' };
 
     expect(keepCreatedVoice([old], created)).toEqual([created, old]);

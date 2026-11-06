@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import React, { act } from 'react';
 
 import { PresentOverlay } from '@september/app-ui/blocks/present';
@@ -8,8 +7,6 @@ import { present } from '@september/app-ui/services/settings';
 import { SETTINGS } from '@september/core/rules/settings';
 import { axeViolations } from './axe';
 import { platform } from './test/platform';
-
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 /** The services the shared block reaches through. */
 const services = vi.hoisted(() => ({

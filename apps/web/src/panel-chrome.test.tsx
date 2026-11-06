@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import React, { act, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -62,21 +61,6 @@ vi.mock('@september/app-ui/blocks/suggestions', () => ({
   TaggedText: ({ text }: { text: string }) => <>{text}</>,
   SpokenText: ({ text }: { text: string }) => <>{text}</>,
 }));
-
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-globalThis.ResizeObserver ??= class {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-} as unknown as typeof ResizeObserver;
-window.matchMedia = ((query: string) => ({
-  matches: false,
-  media: query,
-  onchange: null,
-  addEventListener: () => undefined,
-  removeEventListener: () => undefined,
-  dispatchEvent: () => false,
-})) as unknown as typeof window.matchMedia;
 
 const container = document.createElement('div');
 document.body.append(container);

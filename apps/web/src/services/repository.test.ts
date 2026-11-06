@@ -691,7 +691,7 @@ describe('legacy migration', () => {
       setItem: () => {
         throw new Error('storage is denied');
       },
-    } as Storage;
+    } as unknown as Storage;
     vi.stubGlobal('localStorage', denied);
 
     const interrupted = await openRepository();

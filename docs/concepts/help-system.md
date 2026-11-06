@@ -53,7 +53,7 @@ complete written guide by itself so another surface can reuse it.
 
 ## Routes and setup access
 
-The browser and desktop route trees expose the same Help addresses:
+The shared route tree of `packages/app-ui/routes.tsx` gives both apps these Help addresses:
 
 ```text
 /help

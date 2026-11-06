@@ -4,7 +4,6 @@ import { SpeechSettings } from '@september/app-ui/blocks/speech-settings';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-
 import { savedSpeech } from '@september/app-ui/services/settings';
 
 import { platform } from './test/platform';
@@ -15,13 +14,6 @@ vi.mock('@september/app-ui/services/speech', async original => ({
 }));
 
 const state = { speech: {} as Record<string, unknown> };
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-// The slider measures itself, and jsdom has no ResizeObserver.
-globalThis.ResizeObserver ??= class {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-};
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 beforeEach(() => {

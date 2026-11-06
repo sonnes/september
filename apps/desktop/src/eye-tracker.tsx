@@ -25,9 +25,24 @@ import {
   stopGaze,
   type GazeEvent,
   type GazeFrame,
+  type GazeState,
 } from "@/services/gaze";
 
 type RunState = "off" | "starting" | "running" | "error";
+
+const STATE_MESSAGES: Partial<Record<GazeState, string>> = {
+  ready: "Both eyes found.",
+  noFace: "Keep one face in view.",
+  lowConfidence: "Move into clearer light and keep both eyes open.",
+};
+
+const FAILED: readonly GazeState[] = ["permissionDenied", "unavailable", "error"];
+
+/** Stops the camera when no control waits on the answer. A failed stop goes to the console. */
+const stopInBackground = () =>
+  stopGaze().catch((reason: unknown) =>
+    console.error("September could not stop the camera.", reason),
+  );
 
 function drawFeed(canvas: HTMLCanvasElement, frame: GazeFrame) {
   const context = canvas.getContext("2d");
@@ -157,16 +172,11 @@ export function EyeTracker() {
 
     const { state, detail } = event.data;
     if (!(calibrationSession.current && state === "ready")) {
-      const message = {
-        ready: "Both eyes found.",
-        noFace: "Keep one face in view.",
-        lowConfidence: "Move into clearer light and keep both eyes open.",
-      }[state];
-      setStatus(detail ?? message ?? state);
+      setStatus(detail ?? STATE_MESSAGES[state] ?? state);
     }
-    if (["permissionDenied", "unavailable", "error"].includes(state)) {
+    if (FAILED.includes(state)) {
       setRunState("error");
-      void stopGaze();
+      void stopInBackground();
     }
   }, []);
 
@@ -181,7 +191,7 @@ export function EyeTracker() {
     } catch (error) {
       setRunState("error");
       setStatus(error instanceof Error ? error.message : String(error));
-      void stopGaze();
+      void stopInBackground();
     }
   }, [clearCalibration, onEvent]);
 
@@ -193,9 +203,7 @@ export function EyeTracker() {
     setStatus("Look at the first dot and hold your gaze steady.");
   }, [calibrationIndex, frame?.point, runState]);
 
-  useEffect(() => () => {
-    void stopGaze();
-  }, []);
+  useEffect(() => () => void stopInBackground(), []);
 
   const running = runState === "starting" || runState === "running";
   const canCalibrate = runState === "running" && !!frame?.point && calibrationIndex === null;

@@ -11,10 +11,6 @@
     "./autocomplete": "./autocomplete/index.ts",
     "./rules/*": "./rules/*.ts"
   },
-  "devDependencies": {
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.16"
-  },
   "dependencies": {
     "@earendil-works/pi-agent-core": "0.84.4",
     "@earendil-works/pi-ai": "0.84.4"

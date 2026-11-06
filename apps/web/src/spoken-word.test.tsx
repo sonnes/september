@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -8,7 +7,6 @@ vi.mock('@september/app-ui/services/speech', () => ({ useSpokenWord: () => state
 
 import { SpokenText } from '@september/app-ui/blocks/suggestions';
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const container = document.createElement('div');
 document.body.append(container);
 const root = createRoot(container);

@@ -95,6 +95,18 @@ The web app does not use environment variables for provider keys. Add OpenRouter
 
 ## Develop
 
+Check every package from the repository root:
+
+```sh
+pnpm build
+pnpm lint
+pnpm test
+```
+
+The packages share one configuration. `tsconfig.base.json` holds the compiler
+options, `eslint.config.mjs` holds the lint rules, `vite.shared.ts` holds the
+Vite and Vitest pieces, and `vitest.setup.ts` gives jsdom what React tests need.
+
 Start the browser application:
 
 ```sh

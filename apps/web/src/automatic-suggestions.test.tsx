@@ -34,14 +34,6 @@ vi.mock('@september/app-ui/services/ai', () => ({
   itemsFrom: (answer: string[]) => answer,
   userContext: () => '',
 }));
-vi.stubGlobal(
-  'ResizeObserver',
-  class {
-    observe() {}
-    disconnect() {}
-  }
-);
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 beforeEach(() => {

@@ -22,7 +22,6 @@ vi.mock('@september/app-ui/services/ai', () => ({
   hasWritingService: () => state.writing,
   itemsFrom: (answer: Record<string, string[]>, key: string) => answer[key] ?? [],
 }));
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 let root: ReturnType<typeof createRoot>;
 const answer = { phrases: ['Please bring some water.'], starters: ['I would like to'] };
 const saved = (patch: Partial<SavedSetup>): SavedSetup => ({

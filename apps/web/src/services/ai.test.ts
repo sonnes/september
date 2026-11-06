@@ -64,9 +64,10 @@ describe('the writing service', () => {
     vi.stubGlobal('fetch', request);
 
     const writer = await openAgentWriter();
-    await writer
-      .stream(writer.model, { messages: [{ role: 'user', content: 'Hi', timestamp: 1 }] })
-      .result();
+    const stream = await writer.stream(writer.model, {
+      messages: [{ role: 'user', content: 'Hi', timestamp: 1 }],
+    });
+    await stream.result();
 
     const body = bodyOf(request);
     expect(body.model).toBe('openrouter/free');
@@ -163,9 +164,10 @@ describe('the writing service', () => {
       vi.fn(async () => text('Hello.'))
     );
     const writer = await openAgentWriter();
-    const answer = await writer
-      .stream(writer.model, { messages: [{ role: 'user', content: 'Hi', timestamp: 1 }] })
-      .result();
+    const stream = await writer.stream(writer.model, {
+      messages: [{ role: 'user', content: 'Hi', timestamp: 1 }],
+    });
+    const answer = await stream.result();
     writer.spent?.(answer);
 
     // The model that answered is free, so the turn cost nothing and says so.
@@ -250,7 +252,7 @@ describe('the writing service', () => {
 
     await generate({ messages: [{ role: 'user', content: 'Hi' }] }, { feature: 'context' });
 
-    expect(String(request.mock.calls[0][0])).toBe('http://127.0.0.1:9/apple/v1/chat/completions');
+    expect(String((request.mock.calls[0] as unknown[])[0])).toBe('http://127.0.0.1:9/apple/v1/chat/completions');
     expect(bodyOf(request).model).toBe('apple-foundationmodel');
     expect(lastUsage()).toMatchObject({ provider: 'apple', cost_source: 'free', success: true });
   });

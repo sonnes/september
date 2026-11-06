@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { act, useSyncExternalStore } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -53,8 +52,6 @@ vi.mock('@september/app-ui/layouts/onboarding', () => ({
 import { AccessSettings } from '@september/app-ui/pages/settings';
 import { ChooseStep, FinishStep } from '@september/app-ui/pages/steps';
 import { axeViolations } from './axe';
-
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let container: HTMLDivElement;
 let root: Root;

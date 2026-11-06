@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import { createMemoryHistory } from '@tanstack/react-router';
 
-import { App } from '@/app';
+import { App, createQueryClient } from '@september/app-ui/app';
 import { getRouter } from '@/router';
 
 export {
@@ -31,5 +31,5 @@ export {
 export async function renderPage(path: string): Promise<string> {
   const router = getRouter(createMemoryHistory({ initialEntries: [path] }));
   await router.load();
-  return renderToStaticMarkup(<App router={router} />);
+  return renderToStaticMarkup(<App router={router} queryClient={createQueryClient()} />);
 }

@@ -13,7 +13,7 @@ Use `pnpm` from `apps/desktop/` or with `pnpm -C apps/desktop <script>`.
 | `pnpm install`        | Install desktop UI dependencies |
 | `pnpm dev`            | Run the UI in a browser         |
 | `pnpm build`          | Type-check and build the UI     |
-| `pnpm test`           | Run bootstrap tests             |
+| `pnpm test`           | Run tests (Vitest)              |
 | `pnpm tauri:dev`      | Run the desktop application     |
 | `pnpm tauri:build`    | Build an installable bundle     |
 
@@ -27,8 +27,9 @@ cargo fmt --all -- --check
 
 ## UI boundary
 
-- `packages/app-ui/` owns layouts, blocks, and application screens. Desktop
-  routes in `src/main.tsx` import them through `@september/app-ui`.
+- `packages/app-ui/` owns layouts, blocks, application screens, and the route
+  tree. `src/main.tsx` passes `createAppRoutes` in `packages/app-ui/routes.tsx`
+  the panel shell, the `/` redirect, and the pages that only the Mac has.
 - `packages/ui/` owns shadcn primitives and `theme.css`. `src/styles.css` is a
   small Tailwind entry point that imports that theme.
 - `packages/core/` owns autocomplete and platform-independent rules, including
@@ -183,7 +184,8 @@ cargo fmt --all -- --check
   `packages/core/rules/navigation.ts`. It
   is an allowlist of app paths. A saved address that names no screen must not
   decide where the app opens.
-- Add a screen as a route in `src/main.tsx`. Keep the step rules in
+- Add a screen that both apps have as a route in `packages/app-ui/routes.tsx`,
+  and a Mac-only screen in the `pages` or `sections` of `src/main.tsx`. Keep the step rules in
   `packages/core/rules/onboarding.ts`, where a test can read them.
 - Keep the settings sections in `SETTINGS_SECTIONS` in
   `packages/core/rules/navigation.ts`, where a test can read them, the section

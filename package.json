@@ -2,17 +2,37 @@
   "name": "september",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@10.19.0",
   "scripts": {
-    "build": "pnpm --filter @september/core --filter @september/ui --filter @september/web --filter @september/desktop build",
-    "lint": "pnpm --filter @september/web lint",
-    "test": "pnpm --filter @september/core --filter @september/web --filter @september/desktop test"
+    "build": "pnpm -r build",
+    "lint": "eslint .",
+    "test": "pnpm -r test"
   },
   "pnpm": {
     "overrides": {
       "@types/react": "19.2.7",
       "@types/react-dom": "19.2.3"
     },
-    "onlyBuiltDependencies": ["esbuild", "sharp"]
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^20.19.43",
+    "@vitejs/plugin-react": "^6.1.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.4",
+    "globals": "^17.11.0",
+    "jsdom": "^27.4.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.67.0",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
   }
 }

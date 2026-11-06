@@ -13,7 +13,6 @@ vi.mock('@september/app-ui/services/data', () => ({
   useDeletePhrase: () => ({ mutateAsync: vi.fn() }),
 }));
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const container = document.createElement('div');
 document.body.append(container);
 let root = createRoot(container);
@@ -47,7 +46,7 @@ it('gives the key of a service a visible label', async () => {
       <KeyPanel
         provider="elevenlabs"
         name="ElevenLabs"
-        status={{ connected: false }}
+        status={{ provider: 'elevenlabs', connected: false, label: null, detail: null }}
         onConnected={() => {}}
         onForget={() => {}}
       />,

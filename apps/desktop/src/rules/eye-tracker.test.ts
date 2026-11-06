@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, it } from "vitest";
 
 import {
   advanceBoxCalibration,
@@ -8,14 +7,15 @@ import {
   fitBoxCalibration,
   mapCalibratedPoint,
   startBoxCalibration,
-} from "../src/rules/eye-tracker.ts";
+  type BoxCalibrationUpdate,
+} from "./eye-tracker";
 
-test("the virtual pointer cannot leave the camera box", () => {
-  assert.deepEqual(boxPointer({ x: -0.2, y: 1.4 }), { x: 0, y: 1 });
-  assert.deepEqual(boxPointer({ x: 0.25, y: 0.75 }), { x: 0.25, y: 0.75 });
+it("keeps the virtual pointer inside the camera box", () => {
+  expect(boxPointer({ x: -0.2, y: 1.4 })).toEqual({ x: 0, y: 1 });
+  expect(boxPointer({ x: 0.25, y: 0.75 })).toEqual({ x: 0.25, y: 0.75 });
 });
 
-test("four box corners calibrate reversed eye axes", () => {
+it("calibrates reversed eye axes from four box corners", () => {
   const calibration = fitBoxCalibration([
     { raw: { x: 0.8, y: 0.7 }, target: calibrationPoints[0] },
     { raw: { x: 0.2, y: 0.7 }, target: calibrationPoints[1] },
@@ -23,17 +23,14 @@ test("four box corners calibrate reversed eye axes", () => {
     { raw: { x: 0.8, y: 0.3 }, target: calibrationPoints[3] },
   ]);
 
-  assert.ok(calibration);
-  const middle = mapCalibratedPoint({ x: 0.5, y: 0.5 }, calibration);
-  assert.ok(Math.abs(middle.x - 0.5) < 0.000001);
-  assert.ok(Math.abs(middle.y - 0.5) < 0.000001);
-  assert.deepEqual(mapCalibratedPoint({ x: 2, y: -2 }, calibration), {
-    x: 0,
-    y: 1,
-  });
+  expect(calibration).toBeTruthy();
+  const middle = mapCalibratedPoint({ x: 0.5, y: 0.5 }, calibration!);
+  expect(middle.x).toBeCloseTo(0.5, 6);
+  expect(middle.y).toBeCloseTo(0.5, 6);
+  expect(mapCalibratedPoint({ x: 2, y: -2 }, calibration!)).toEqual({ x: 0, y: 1 });
 });
 
-test("calibration holds at each corner and uses its median eye point", () => {
+it("holds at each corner and keeps its median eye point", () => {
   let session = startBoxCalibration(0);
   for (const point of [
     { x: 0.9, y: 0.8 },
@@ -44,15 +41,15 @@ test("calibration holds at each corner and uses its median eye point", () => {
   }
   const update = advanceBoxCalibration(session, { x: 0.8, y: 0.7 }, 1_800);
 
-  assert.equal(update.outcome, "advanced");
-  assert.equal(update.session.index, 1);
-  assert.deepEqual(update.session.pairs[0], {
+  expect(update.outcome).toBe("advanced");
+  expect(update.session.index).toBe(1);
+  expect(update.session.pairs[0]).toEqual({
     raw: { x: 0.8, y: 0.7 },
     target: calibrationPoints[0],
   });
 });
 
-test("four completed holds produce a box calibration", () => {
+it("makes a box calibration from four completed holds", () => {
   const rawPoints = [
     { x: 0.8, y: 0.7 },
     { x: 0.2, y: 0.7 },
@@ -60,7 +57,7 @@ test("four completed holds produce a box calibration", () => {
     { x: 0.8, y: 0.3 },
   ];
   let session = startBoxCalibration(0);
-  let update;
+  let update: BoxCalibrationUpdate | undefined;
 
   rawPoints.forEach((point, index) => {
     const start = index * 1_800;
@@ -71,9 +68,8 @@ test("four completed holds produce a box calibration", () => {
     session = update.session;
   });
 
-  assert.equal(update.outcome, "complete");
-  assert.ok(update.calibration);
-  const middle = mapCalibratedPoint({ x: 0.5, y: 0.5 }, update.calibration);
-  assert.ok(Math.abs(middle.x - 0.5) < 0.000001);
-  assert.ok(Math.abs(middle.y - 0.5) < 0.000001);
+  expect(update?.outcome).toBe("complete");
+  const middle = mapCalibratedPoint({ x: 0.5, y: 0.5 }, update!.calibration!);
+  expect(middle.x).toBeCloseTo(0.5, 6);
+  expect(middle.y).toBeCloseTo(0.5, 6);
 });

@@ -9,7 +9,7 @@
 
 import { DIALOGUE_MODEL, stabilityFor } from "./voice.ts";
 
-const TAG_SOURCE = String.raw`\[[^\[\]]+\]`;
+const TAG_SOURCE = String.raw`\[[^[\]]+\]`;
 const TAG = new RegExp(`^${TAG_SOURCE}$`);
 const TAGS = new RegExp(TAG_SOURCE, "g");
 const TAG_PARTS = new RegExp(`(${TAG_SOURCE})`);
@@ -110,14 +110,14 @@ export function tagBefore(
   caret: number,
 ): { start: number; end: number } | null {
   const before = text.slice(0, caret);
-  const found = before.match(/\[[^\[\]]+\] ?$/);
+  const found = before.match(/\[[^[\]]+\] ?$/);
   return found?.index === undefined ? null : { start: found.index, end: caret };
 }
 
 /** The draft in order, as runs of words and single tags, for the chip layer. */
 export function draftParts(text: string): { text: string; tag: boolean }[] {
   return text
-    .split(/(\[[^\[\]]+\])/)
+    .split(/(\[[^[\]]+\])/)
     .filter(Boolean)
     .map((part) => ({ text: part, tag: isTag(part) }));
 }

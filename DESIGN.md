@@ -150,7 +150,7 @@ The sidebar is a **solid indigo panel** in light _and_ dark mode — September's
 
 ## Layout
 
-- **Base viewport:** **13" iPad Pro (M4), landscape — 1376×1032.** Primary designs target this size; lay things out here first, then scale up for wider desktops and down for tablet portrait / mobile. The constant lives in `BASE_VIEWPORT_WIDTH` (`@/packages/shared`).
+- **Base viewport:** **13" iPad Pro (M4), landscape — 1376×1032.** Primary designs target this size; lay things out here first, then scale up for wider desktops and down for tablet portrait / mobile.
 - **Approach:** shadcn `Sidebar` + `SidebarInset`, grid-disciplined.
 - **Sidebar default state:** collapsed to the icon rail at every desktop width. A manual toggle (rail or ⌘/Ctrl-B) persists while the app shell is mounted, including across resizes. Below 768px it becomes the mobile sheet, closed by default.
 - **Sidebar widths:** `16rem` (256px) expanded · `18rem` mobile sheet · `3.25rem` icon rail, which holds a 48px key.

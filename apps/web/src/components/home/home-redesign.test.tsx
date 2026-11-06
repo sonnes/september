@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import React, { act } from 'react';
 
 import { MOODS } from '@september/core/rules/moods';
@@ -15,16 +14,6 @@ import { NOTE_SENTENCES, NotesSection, PRESENT_CHUNKS } from './notes-section';
 import { PhraseCodesSection, matchDemoCode } from './phrase-codes-section';
 import { PlatformSection } from './platform-section';
 import { VoiceSection } from './voice-section';
-
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-
-class ResizeObserverStub {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-}
-(globalThis as unknown as { ResizeObserver: typeof ResizeObserverStub }).ResizeObserver =
-  ResizeObserverStub;
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({

@@ -8,8 +8,6 @@ export function useIsMobile() {
 
   React.useEffect(() => {
     setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    // A page without media queries keeps the width it started with.
-    if (typeof window.matchMedia !== "function") return
     const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
     const onChange = () => {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)

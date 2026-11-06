@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, expect, it } from 'vitest';
 import { PickList } from '@september/app-ui/blocks/pick-list';
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const container = document.createElement('div');
 document.body.append(container);
 let root = createRoot(container);

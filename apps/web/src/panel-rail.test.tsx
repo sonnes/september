@@ -12,7 +12,6 @@ vi.mock('@september/app-ui/blocks/chrome', () => ({ usePanel: () => null }));
 vi.mock('@september/app-ui/blocks/phrase-panel', () => ({ Phrases: () => <p>Phrase list</p> }));
 vi.mock('@september/app-ui/blocks/speech-settings', () => ({ SpeechSettings: () => <p>Voice settings</p> }));
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const container = document.createElement('div');
 document.body.append(container);
 let root = createRoot(container);

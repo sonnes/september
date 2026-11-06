@@ -35,7 +35,6 @@ vi.mock('@september/app-ui/blocks/space', () => ({
   Problem: () => null, SpaceDock: () => null, SpaceTitle: () => null, spaceParams: () => ({}), useRememberMode: () => {},
   useSpaceBySlug: () => ({ space: { id: 'space', title: 'Family', context: 'Home' }, spaces: [], isPending: false }),
 }));
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const container = document.createElement('div');
 document.body.append(container);
 let root = createRoot(container);

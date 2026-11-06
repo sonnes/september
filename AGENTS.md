@@ -32,6 +32,7 @@ september/
 
 Run commands from the app directory or via the root `Makefile` (`make dev`,
 `make desktop-dev`, `make mac-run`, `make mac-test`).
+`pnpm build`, `pnpm lint`, and `pnpm test` at the root check every package.
 
 ## Dev Server
 

@@ -7,20 +7,18 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "node --test",
+    "test": "vitest --run",
     "apfel:prepare": "node scripts/prepare-apfel.mjs",
     "tauri:dev": "node scripts/tauri.mjs dev",
     "tauri:build": "node scripts/tauri.mjs build"
   },
   "dependencies": {
     "@earendil-works/pi-ai": "0.84.4",
-    "@fontsource/lexend": "^5.2.8",
-    "@fontsource/noto-sans": "^5.2.10",
     "@september/app-ui": "workspace:*",
     "@september/core": "workspace:*",
     "@september/ui": "workspace:*",
-    "@tanstack/react-query": "^5.101.4",
-    "@tanstack/react-router": "^1.170.31",
+    "@tanstack/react-query": "^5.102.2",
+    "@tanstack/react-router": "^1.170.32",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-shell": "^2.3.5",
     "lucide-react": "^0.556.0",
@@ -28,13 +26,8 @@
     "react-dom": "19.2.1"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.3.3",
     "@tauri-apps/cli": "^2.11.4",
     "@types/react": "19.2.7",
-    "@types/react-dom": "19.2.3",
-    "@vitejs/plugin-react": "^6.0.2",
-    "tailwindcss": "^4.3.3",
-    "typescript": "^5.9.3",
-    "vite": "^8.0.16"
+    "@types/react-dom": "19.2.3"
   }
 }

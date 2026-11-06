@@ -11,7 +11,6 @@ vi.mock('@september/app-ui/services/backup', () => ({
   importBackup: backup.restore,
 }));
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 

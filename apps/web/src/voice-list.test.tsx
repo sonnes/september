@@ -24,7 +24,6 @@ vi.mock('@september/app-ui/services/speech', async original => ({
   speak: vi.fn(),
 }));
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 beforeEach(async () => {

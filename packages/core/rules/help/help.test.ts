@@ -26,14 +26,12 @@ describe("the Help catalog", () => {
   });
 
   it("resolves every home shortcut target", () => {
-    for (const shortcut of HELP_HOME_SHORTCUTS) {
-      if (shortcut.target.type === "guide") {
-        expect(helpGuide(shortcut.target.slug)).toBeDefined();
+    for (const { target } of HELP_HOME_SHORTCUTS) {
+      if (target.type === "guide") {
+        expect(helpGuide(target.slug)).toBeDefined();
       } else {
         expect(
-          HELP_CATEGORIES.some(
-            (category) => category.id === shortcut.target.categoryId,
-          ),
+          HELP_CATEGORIES.some((category) => category.id === target.categoryId),
         ).toBe(true);
       }
     }

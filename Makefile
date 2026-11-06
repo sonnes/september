@@ -1,9 +1,7 @@
-PORT ?= 3009
-
-.PHONY: dev desktop-dev desktop-build desktop-release mac-run mac-dev mac-test mac-app keyboard-dmg mac-dmg mac-stop
+.PHONY: dev desktop-dev desktop-build desktop-release mac-run mac-dev mac-test mac-app keyboard-dmg mac-stop
 
 dev:
-	pnpm -C apps/web dev --port $(PORT)
+	pnpm -C apps/web dev $(if $(PORT),--port $(PORT))
 
 # Independent Tauri desktop app with Rust-owned SQLite settings.
 desktop-dev:
@@ -62,8 +60,6 @@ mac-app:
 
 keyboard-dmg:
 	$(MAKE) -C apps/keyboard dmg
-
-mac-dmg: keyboard-dmg
 
 mac-stop:
 	$(MAKE) -C apps/keyboard stop

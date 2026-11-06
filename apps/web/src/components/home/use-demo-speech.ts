@@ -1,5 +1,3 @@
-'use client';
-
 import { useCallback, useEffect, useRef } from 'react';
 
 export interface DemoVoice {
@@ -14,7 +12,7 @@ export interface DemoSequenceHooks {
 }
 
 export interface UseDemoSpeechReturn {
-  /** Speak one message through the app's audio player (browser TTS). */
+  /** Speaks one message with the browser voice. */
   speak: (text: string, voice?: DemoVoice) => void;
   /** Speak parts back-to-back, reporting each part as it starts. */
   speakSequence: (parts: string[], hooks?: DemoSequenceHooks, voice?: DemoVoice) => void;
@@ -32,11 +30,8 @@ export function useDemoSpeech(): UseDemoSpeechReturn {
   const sequenceId = useRef(0);
 
   const utterance = useCallback((text: string, voice?: DemoVoice) => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return null;
+    if (!window.speechSynthesis) return null;
     const spoken = new SpeechSynthesisUtterance(text);
-    spoken.rate = 1;
-    spoken.pitch = 1;
-    spoken.volume = 1;
     spoken.lang = voice?.language ?? 'en-US';
     if (voice) {
       spoken.voice =
@@ -57,7 +52,7 @@ export function useDemoSpeech(): UseDemoSpeechReturn {
 
   const speakSequence = useCallback(
     (parts: string[], hooks?: DemoSequenceHooks, voice?: DemoVoice) => {
-      const synthesis = typeof window !== 'undefined' ? window.speechSynthesis : undefined;
+      const synthesis = window.speechSynthesis;
       const id = ++sequenceId.current;
 
       const speakPart = async (index: number) => {
@@ -86,13 +81,13 @@ export function useDemoSpeech(): UseDemoSpeechReturn {
 
   const stopSequence = useCallback(() => {
     sequenceId.current++;
-    if (typeof window !== 'undefined') window.speechSynthesis?.cancel();
+    window.speechSynthesis?.cancel();
   }, []);
 
   useEffect(() => stopSequence, [stopSequence]);
 
   const listVoices = useCallback(async (): Promise<DemoVoice[]> => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return [];
+    if (!window.speechSynthesis) return [];
     return window.speechSynthesis.getVoices().map(voice => ({
       id: voice.voiceURI,
       name: voice.name,

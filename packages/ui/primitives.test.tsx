@@ -1,21 +1,12 @@
 import React, { act } from 'react';
 
-import { cn } from '@september/ui';
-import { Slider } from '@september/ui/components/slider';
+import { cn } from './lib/utils';
+import { Slider } from './components/slider';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 let container: HTMLDivElement;
 let root: Root;
-
-beforeAll(() => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  globalThis.ResizeObserver ??= class {
-    observe(): void {}
-    unobserve(): void {}
-    disconnect(): void {}
-  };
-});
 
 beforeEach(() => {
   container = document.createElement('div');

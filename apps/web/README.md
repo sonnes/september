@@ -10,11 +10,10 @@ Run these commands from `apps/web`:
 pnpm install
 pnpm dev
 pnpm test
-pnpm lint
 pnpm build
 ```
 
-The development server uses `http://localhost:3009`. The production build writes a Vite SPA to `dist/`.
+The development server uses `http://localhost:3009`. Run `pnpm lint` from the repository root. The production build writes a Vite SPA to `dist/`.
 
 The test suite covers interactions, routes, browser services, and persistence.
 It does not treat landing-page copy or CSS choices as application behavior.
@@ -147,18 +146,19 @@ one. `src/share-card.test.ts` holds both to that.
 
 ## Routes
 
-`src/router.tsx` defines the complete route graph. The route contract test keeps the application paths equal to the desktop paths and protects the browser landing page at `/`.
+`createAppRoutes` in `@september/app-ui/routes` builds the route tree that the
+web and desktop apps share. `src/router.tsx` gives it what only the browser
+has: the `AppShell` sidebar, the landing page at `/`, the legal pages, and
+`/dashboard`. `getRouter(history)` takes a browser history in `src/main.tsx`
+and a memory history in the prerender and the tests. `src/main.tsx` also calls
+`countPages(router)`, so only the browser counts pages.
 
-The application route components come from `@september/app-ui`. The router and
-the web-only landing and legal pages remain local.
-
-The setup routes are `/welcome`, `/profile`, `/connect`, and `/finish`.
-
-Setup runs once, and the two guards mirror each other: an application route
-asked for before setup is finished turns back to `/welcome`, and a setup step
-asked for after it is finished goes on to `/dashboard`. So the landing page's
-calls to action, a bookmark, and the back button all land a returning user in
-the app. `src/setup-guard.test.ts` holds both directions.
+Setup runs once. An application route asked for before setup is finished
+turns back to `/welcome`. A setup step asked for after it is finished goes on
+to the first page of `APP_NAV`, `/dashboard`. So the landing page's calls to
+action, a bookmark, and the back button all land a returning user in the app.
+`src/routes.test.ts` holds both directions, and opens every page and section of
+the navigation.
 
 `src/main.tsx` awaits `loadSettings` from `@september/app-ui/services/settings`
 once, then mounts the app. The guards read the held setup and do not wait. If
@@ -178,6 +178,7 @@ The application routes are:
 - `/help`
 - `/help/$guideSlug`
 - `/settings`
+- `/settings/access`
 - `/settings/writing`
 - `/settings/usage`
 - `/settings/data`
@@ -267,7 +268,7 @@ ElevenLabs speech files use a cache key made from the text and every sound setti
 
 For the ElevenLabs Dialogue voice, `voice.stream` sends the sentence to the Text to Dialogue stream with `eleven_v3` instead. With `eleven_v3_conversational`, it uses the Text to Dialogue socket. Each chunk of samples plays on one `AudioContext` while the rest of the sentence arrives. A complete sentence is kept in the same cache as a WAV file. If the voice breaks after its first sound, the system voice does not repeat the sentence. A text of more than 2,000 characters goes in parts, one request after the other. See the Dialogue voice section of `docs/concepts/streaming-voice.md`.
 
-A note presents and exports from its own screen. The shared export service saves the words as `.md` with nothing configured, the voice as `.mp3` from the speech cache, and a 9:16 `.mp4` with word-synced captions. `synthesizeTimed` in `src/services/voice.ts` asks ElevenLabs for the sound and the character alignment together and caches both in the same bounded store. `src/services/video.ts` draws every frame on a canvas and joins them to the voice with `ffmpeg.wasm`, which needs the cross-origin isolation headers in `public/_headers`. Video assembly stays in the browser; cloud speech requests still send text to ElevenLabs. See `docs/concepts/note-present-export.md`.
+A note presents and exports from its own screen. The shared export service saves the words as `.md` with nothing configured, the voice as `.mp3` from the speech cache, and a 9:16 `.mp4` with word-synced captions. `synthesizeTimed` in `src/services/voice.ts` asks ElevenLabs for the sound and the character alignment together and caches both in the same bounded store. `src/services/video.ts` draws every frame on a canvas and joins them to the voice with `ffmpeg.wasm`, which needs the cross-origin isolation headers in `vercel.json`. Video assembly stays in the browser; cloud speech requests still send text to ElevenLabs. See `docs/concepts/note-present-export.md`.
 
 OpenRouter and ElevenLabs calls go directly from the browser. `src/services/providers.ts`
 keeps their keys in IndexedDB and reads them for each request. Setup stores one default writing-model setting. Every AI text

@@ -17,7 +17,7 @@ and the services that connect that UI to macOS.
 | Directory                  | Holds                                                                                                                                                      | Rule                                                 |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `packages/app-ui/layouts/` | `onboarding.tsx`, `app.tsx`, `panel.tsx`, `settings.tsx`                                                                                                   | The component renders an `<Outlet/>`.                |
-| `packages/app-ui/pages/`   | Route screens: `steps` `spaces` `talk` `agent` `notes` `voice` `settings` `usage`                                                                          | A `createRoute` call in `src/main.tsx` names it.     |
+| `packages/app-ui/pages/`   | Route screens: `steps` `spaces` `talk` `agent` `notes` `voice` `settings` `usage`                                                                          | `packages/app-ui/routes.tsx` names it.               |
 | `packages/app-ui/blocks/`  | `screen` `space` `chrome` `panel-header` `present` `services` `space-panel` `phrase-panel` `speech-settings` `pick-list` `suggestions` `usage` `brand` | Two or more pages or layouts use it.                 |
 | `packages/app-ui/services/` | `settings` `data` `speech` `ai` `agent` `usage` `connections` `backup` `export` `cloning` `phrase-sync` `suggest` `player`                               | Both apps share it, over the platform.               |
 | `src/platform.ts`          | The Mac platform: `store`, `voice`, `providers`, `writing`, `device`, `capabilities`                                                                       | It speaks to Rust.                                   |
@@ -44,16 +44,19 @@ the panel is a normal window. See
 
 The panel starts hidden. At boot, `src/main.tsx` shows it with `panel_show`.
 
-The root route holds an outlet only. Below it are two layouts, so a setup step
+`createAppRoutes` in `packages/app-ui/routes.tsx` builds the route tree. The
+root route holds an outlet only. Below it are two layouts, so a setup step
 never wears the panel chrome, and an app screen never wears the setup sidebar.
+`src/main.tsx` gives the tree the panel shell, the `/` redirect, `/eyetracker`,
+and `/settings/panel`.
 
 | Layout | Component                                                    | Routes                                                                                                                                                                                                                                                                                                         |
 | ------ | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Setup  | `OnboardingLayout`, `packages/app-ui/layouts/onboarding.tsx` | `/welcome` `/profile` `/connect` `/finish`                                                                                                                                                                                                                                                                     |
 | Panel  | `PanelShell`, `packages/app-ui/layouts/panel.tsx`            | `/spaces` `/spaces/$slug/talk` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/spaces/$slug/agent` `/voice` `/voice/clone` `/eyetracker` `/help` `/help/$guideSlug` `/settings` `/settings/writing` `/settings/usage` `/settings/panel` `/settings/data` `/settings/connections/$provider` |
 
-`/` redirects to the opening path. `/dashboard` and any other path that names
-no screen redirect to `/`. The bootstrap gives `PanelShell` one callback,
+`/` redirects to the opening path. A setup step asked for after setup is done
+goes to the first page of `APP_NAV`, `/spaces`. The bootstrap gives `PanelShell` one callback,
 `onHide`, which calls `panel_hide`.
 
 `APP_NAV` in `packages/app-ui/navigation.ts` lists the pages for the
@@ -73,8 +76,8 @@ calls `panel_setup(true)`, then shows the panel. The panel is then a normal
 window, and September has a Dock icon. The last step keeps its answers in the
 `setup` setting, then opens the first page of `APP_NAV`, `/spaces`.
 
-When setup becomes done, the bootstrap calls `panel_setup(false)` and goes to
-`/`. `panel_setup(false)` applies the saved float choice. If setup goes back to
+When setup becomes done, the bootstrap calls `panel_setup(false)`, which
+applies the saved float choice. If setup goes back to
 not done, the bootstrap calls `panel_setup(true)` again.
 
 The app comes back where it was. The router keeps each arrival in the
@@ -498,7 +501,7 @@ list arrived.
 
 Measured on 30 care requests that the engine never saw, the sentences alone
 save 37.6% of keystrokes. With the list, they save 47.8%.
-`tests/autocomplete-savings.test.mjs` holds a floor under both numbers.
+`packages/core/autocomplete/savings.test.ts` holds a floor under both numbers.
 
 Rebuild the list with `node scripts/build-dictionary.mjs`. The script writes
 the same file to both apps. It removes slurs and strong obscenity, because a
@@ -1033,8 +1036,9 @@ pnpm test
 pnpm build
 ```
 
-The JavaScript tests cover desktop-only navigation, the rules of the panel,
-and onboarding rules. Rust
+The Vitest tests cover the eye-tracker calibration and the Panel section of
+Settings. The shared routes, screens, and rules have their tests in
+`apps/web`, `packages/ui`, and `packages/core`. Rust
 tests cover native services, persistence, providers, and process boundaries.
 
 Run the Rust checks from `src-tauri/`:

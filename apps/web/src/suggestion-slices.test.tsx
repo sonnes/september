@@ -30,8 +30,6 @@ vi.mock('@september/app-ui/services/ai', () => ({
   itemsFrom: (answer: string[]) => answer, userContext: () => '',
 }));
 vi.mock('@september/app-ui/services/speech', () => ({ speechSettings: () => state.speech, useSpeaking: () => null, useSpokenWord: () => null }));
-vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const container = document.createElement('div');
 document.body.append(container);
 let root = createRoot(container);

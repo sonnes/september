@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client';
 import { expect, it, vi } from 'vitest';
 import { KeyPanel } from '@september/app-ui/blocks/services';
 import { platform } from './test/platform';
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 it('connects OpenRouter through authorization and reports its status', async () => {
   const container = document.createElement('div');
   const root = createRoot(container);

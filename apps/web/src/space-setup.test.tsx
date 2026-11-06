@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import React, { act } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createRoot, type Root } from 'react-dom/client';
@@ -46,26 +45,6 @@ vi.mock('@september/app-ui/services/suggest', () => ({
 }));
 
 vi.mock('@september/app-ui/blocks/space-panel', () => ({ PanelRail: () => null }));
-
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-
-// jsdom has neither of these, and the dock measures itself with one.
-class Observer {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-}
-globalThis.ResizeObserver = Observer as unknown as typeof ResizeObserver;
-Element.prototype.scrollIntoView = () => undefined;
-
-window.matchMedia = ((query: string) => ({
-  matches: false,
-  media: query,
-  onchange: null,
-  addEventListener: () => undefined,
-  removeEventListener: () => undefined,
-  dispatchEvent: () => false,
-})) as unknown as typeof window.matchMedia;
 
 let container: HTMLDivElement;
 let root: Root;
