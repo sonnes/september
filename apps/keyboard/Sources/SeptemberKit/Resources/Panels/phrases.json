@@ -1,0 +1,30 @@
+{
+  "title": "PHRASES",
+  "columns": 2,
+  "buttons": [
+    { "id": "yes", "label": "Yes",
+      "action": { "type": "text", "text": "Yes" } },
+    { "id": "no", "label": "No",
+      "action": { "type": "text", "text": "No" } },
+    { "id": "thanks", "label": "Thanks",
+      "action": { "type": "text", "text": "Thanks" } },
+    { "id": "wait", "label": "Wait",
+      "action": { "type": "text", "text": "Wait" } },
+    { "id": "again", "label": "Again?",
+      "action": { "type": "text", "text": "Again?" } },
+    { "id": "one-sec", "label": "One sec",
+      "action": { "type": "text", "text": "One sec" } },
+    { "id": "hello", "label": "Hello",
+      "action": { "type": "text", "text": "Hello" } },
+    { "id": "bye", "label": "Bye",
+      "action": { "type": "text", "text": "Bye" } },
+    { "id": "not-sure", "label": "Not sure",
+      "action": { "type": "text", "text": "Not sure" } },
+    { "id": "later", "label": "Later",
+      "action": { "type": "text", "text": "Later" } },
+    { "id": "funny", "label": "Funny!",
+      "action": { "type": "text", "text": "Funny!" } },
+    { "id": "typing", "label": "Typing...",
+      "action": { "type": "text", "text": "Typing..." } }
+  ]
+}
