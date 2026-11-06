@@ -135,15 +135,11 @@ fn the_requests_name_every_field() {
     ] {
         assert_eq!(request::<EntityIdRequest>(command).id, id, "{command}");
     }
-    for command in [
-        "message_list",
-        "note_list",
-        "phrase_list",
-        "agent_message_list",
-    ] {
+    for command in ["message_list", "note_list", "phrase_list"] {
         let filter: SpaceFilterRequest = request(command);
         assert_eq!(filter.space_id.as_deref(), Some("s1"), "{command}");
     }
+    assert_eq!(request::<SpaceRequest>("agent_message_list").space_id, "s1");
 
     let tool: AgentToolStateRequest = request("agent_tool_state");
     assert_eq!(
@@ -229,7 +225,6 @@ fn the_answers_carry_the_names_the_webview_reads() {
         "speech_synthesize",
         SpokenAudio {
             path: "/audio/a.mp3".into(),
-            from_cache: true,
         },
     );
     answers(

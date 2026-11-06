@@ -25,9 +25,11 @@ value is null when Suggestions use the default. Each non-null value contains
 one service and one model ID.
 
 Import converts the older `writingService` and `writingModel` fields to
-`defaultModel` when that field is absent. A missing `suggestionsModel` defaults
-to null. The parser validates the converted values and preserves the setup
-owner ID, which both apps use to find restored rows.
+`defaultModel` when that field is absent. A setup with neither gets no writing
+service. A missing `suggestionsModel` defaults to null. The parser validates
+the fields that are present, and then reads the setup with `savedSetupFrom`,
+the same reader as the settings. It preserves the setup owner ID, which both
+apps use to find restored rows.
 
 The file does not contain provider keys. It also excludes the selected audio
 output, last path, migration state, cached speech files, and local message

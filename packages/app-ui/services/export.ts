@@ -10,6 +10,7 @@ import {
 import type { PresentToneKey } from "@september/core/rules/present/stage";
 
 import type { VideoStage } from "../platform";
+import { downloadBlob } from "./browser";
 import { soundFile, speechSettings } from "./speech";
 import { recordExportUsage } from "./usage";
 
@@ -20,7 +21,7 @@ export function exportUnavailable(kind: ExportKind): string | null {
 }
 
 export function saveNoteText(name: string | null | undefined, content: string): void {
-  platform.device.save(
+  downloadBlob(
     new Blob([content], { type: "text/markdown;charset=utf-8" }),
     exportFileName(name, "text"),
   );
@@ -33,7 +34,7 @@ export async function saveNoteAudio(
 ): Promise<void> {
   const { text, voice } = soundFile(markdownToVoiceText(content));
   const sound = await platform.voice.synthesize(text, voice);
-  platform.device.save(sound, exportFileName(name, "audio"));
+  downloadBlob(sound, exportFileName(name, "audio"));
   recordExportUsage("audio");
 }
 
@@ -47,6 +48,6 @@ export async function saveNoteVideo(
   if (!render) throw new Error(exportUnavailable("video") ?? "Video is not available here.");
   onStage?.("voice");
   const film = await render({ ...soundFile(markdownToVoiceText(content)), tone, onStage });
-  platform.device.save(film, exportFileName(name, "video"));
+  downloadBlob(film, exportFileName(name, "video"));
   recordExportUsage("video");
 }

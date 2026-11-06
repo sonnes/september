@@ -99,11 +99,12 @@ const DIALOGUE_LIMIT = 2000;
 /**
  * The text in parts that one dialogue request each can hold.
  *
- * A part ends at a sentence end. A sentence longer than the limit ends at the
- * last space before the limit, or at the limit when it has no space.
+ * A part ends at a sentence end, which is a . ! or ? before a space. A
+ * sentence longer than the limit ends at the last space before the limit, or
+ * at the limit when it has no space.
  */
 export function dialogueParts(text: string, limit = DIALOGUE_LIMIT): string[] {
-  const sentences = text.trim().match(/[^.!?]*[.!?]+|[^.!?]+$/g) ?? [];
+  const sentences = text.trim().split(/(?<=[.!?])\s+/);
   const pieces = sentences.flatMap((sentence) => {
     const out: string[] = [];
     let rest = sentence.trim();

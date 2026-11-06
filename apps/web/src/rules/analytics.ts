@@ -15,7 +15,7 @@
  * Reporting them costs the user nothing and answers the questions worth
  * asking: which guide is read, which service is connected.
  */
-const OURS = new Set(['/help/$guideSlug', '/settings/connections/$provider']);
+export const OWN_PARAMETER_ROUTES = new Set(['/help/$guideSlug', '/settings/connections/$provider']);
 
 /**
  * The path to report for a resolved route.
@@ -29,5 +29,5 @@ export function analyticsPath(
 ): string {
   if (!pattern) return '/';
   if (!pattern.includes('$')) return pathname;
-  return OURS.has(pattern) ? pathname : pattern;
+  return OWN_PARAMETER_ROUTES.has(pattern) ? pathname : pattern;
 }

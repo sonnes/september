@@ -7,9 +7,11 @@ import Testing
 final class RecordingSink: KeystrokeSink {
     var posted: [Keystroke] = []
     var typed: [String] = []
+    var beeps = 0
 
     func post(_ events: [Keystroke]) { posted.append(contentsOf: events) }
     func type(_ text: String) { typed.append(text) }
+    func beep() { beeps += 1 }
 
     func reset() {
         posted = []
@@ -85,6 +87,19 @@ struct ControllerTests {
         controller.press(key("capslock"))
         controller.press(key("key-a"))
         #expect(controller.input == .local(text: "ASa"))
+    }
+
+    @Test func `a shortcut with no key on any layout beeps and keeps the modifier`() throws {
+        let (controller, sink) = try makeController()
+        controller.press(key("command-left"))
+        controller.press(key("key-x"))
+        #expect(sink.posted.isEmpty)
+        #expect(sink.beeps == 1)
+        #expect(controller.modifiers.active == .command)
+
+        controller.press(key("key-c"))
+        #expect(sink.downs.last?.flags == .command)
+        #expect(controller.modifiers.active == [])
     }
 
     @Test func `a latched command makes the next letter a shortcut, not text`() throws {

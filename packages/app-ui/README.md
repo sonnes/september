@@ -19,7 +19,7 @@ different in the browser and on the Mac:
 | `voice`        | The system voice, the cloud voice stream, stop, and a sound file of a sentence.      |
 | `providers`    | The status, the keys, the OpenRouter sign-in, the voices, the quota, and the clones. |
 | `writing`      | The endpoint and the key of OpenRouter, and of Apple Intelligence where it runs.     |
-| `device`       | The identity, the browser, the close guard, file saves, and the sound outputs.       |
+| `device`       | The identity, the browser, the close guard, and the sound outputs.                   |
 | `capabilities` | The flags `dashboard`, `eyeTracker`, and `floatingPanel`.                            |
 
 An optional member is a capability. A platform that cannot do the work has no
@@ -60,7 +60,7 @@ platform:
 | `export.ts`      | A note saved as text, audio, or video.                                              |
 | `cloning.ts`     | The recorder and the clone of a voice.                                              |
 | `player.ts`      | The preview player of a voice.                                                      |
-| `browser.ts`     | `downloadBlob` and `warnBeforeUnload`, the WebView work that both platforms use.    |
+| `browser.ts`     | `downloadBlob` saves a file as a download. `warnBeforeUnload` guards a close.       |
 
 Each app awaits `loadSettings` once before the first render. It reads every
 held setting and the identity of the device. After that, a screen reads a

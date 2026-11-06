@@ -72,14 +72,11 @@ leaving the current step or changing its answers. An unknown guide slug returns
 to `/help`.
 
 Before the first render, `src/main.tsx` awaits `loadSettings` and reads the
-`lastPath` setting. Setup runs one time. Before setup is done, `src/main.tsx`
-calls `panel_setup(true)`, then shows the panel. The panel is then a normal
-window, and September has a Dock icon. The last step keeps its answers in the
-`setup` setting, then opens the first page of `APP_NAV`, `/spaces`.
-
-When setup becomes done, the bootstrap calls `panel_setup(false)`, which
-applies the saved float choice. If setup goes back to
-not done, the bootstrap calls `panel_setup(true)` again.
+`lastPath` setting. Setup runs one time. During setup, the panel is a normal
+window with a Dock icon. See
+[Show and hide the panel](../../docs/concepts/desktop-floating-panel.md#show-and-hide-the-panel).
+The last step keeps its answers in the `setup` setting, then opens the first
+page of `APP_NAV`, `/spaces`.
 
 The app comes back where it was. The router keeps each arrival in the
 `lastPath` setting, and `/` reads it. `openingPath(saved, spaces, capabilities)`
@@ -130,16 +127,8 @@ The space sheet with the model and the sliders is named Voice controls. This
 name keeps it apart from the Voice page. With no spaces, a space-mode path
 shows `No spaces yet` and New space. The other pages show as usual.
 
-The layout of a screen follows the width of the panel:
-
-| Tier    | Width                | Layout                                                                                                                                                                                                              |
-| ------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Compact | Less than 560 points | One mood menu key replaces the five mood keys. Clear moves into the More menu. Phrases and Voice controls open as sheets. |
-| Regular | 560 to 899 points    | The composer and the history are the same as in the web app. Phrases and Voice controls open as sheets below the panel header.                                                                                       |
-| Wide    | 900 points and more  | Phrases and Voice open in the right rail.                                                                                                                                                                           |
-
-`PanelShell` measures the width of the whole panel for the tier. The composer reads
-that tier.
+The layout of a screen follows the width of the panel. See
+[Width tiers](../../docs/concepts/desktop-floating-panel.md#width-tiers).
 
 ### Keys
 
@@ -156,23 +145,13 @@ that tier.
 | Escape                            | Panel               | Stops the voice. Else closes the open sheet or menu. Else, with an empty draft, hides the panel. |
 | Control-1 to Control-5, Control-0 | Panel, compact tier | Sets the mood. Control-0 clears it.                                                              |
 
-`PanelShell` binds the panel keys. Rust registers Control-Option-Space. If
-another app owns that key, the registration fails with no error. The menu bar
-item still shows the panel.
+`PanelShell` binds the panel keys. Rust registers Control-Option-Space.
 
 ### The Dock and the menu bar
 
-The Dock icon follows the float choice. `policy(setup, float)` in
-`src-tauri/src/window.rs` gives the macOS activation policy:
-
-| State             | Policy      | Dock icon                           |
-| ----------------- | ----------- | ----------------------------------- |
-| Setup is not done | `Regular`   | Yes                                 |
-| Float on          | `Accessory` | No. September is not in Command-Tab. |
-| Float off         | `Regular`   | Yes                                 |
-
-A click on the Dock icon shows the panel. The menu bar item shows the
-September keycap. Its menu holds Show Panel and Quit September.
+The float choice decides the Dock icon. See
+[Show and hide the panel](../../docs/concepts/desktop-floating-panel.md#show-and-hide-the-panel).
+The menu bar item shows the September keycap.
 
 The close button of the panel hides the panel. The app keeps running, and the
 draft stays. Quit September in the menu bar item quits the app.
@@ -355,7 +334,7 @@ The word engine reads the note in Notes mode, not the spoken messages, so the
 words it offers follow what the user is writing.
 
 The note starts saving text and title edits immediately. Pending or failed
-saves keep the normal close guard active. There is no Save button, because a user who types
+saves make a reload warn first. There is no Save button, because a user who types
 slowly must never lose words to a button they did not press.
 
 The note has two writers: the field and the agent. The field takes the new
@@ -736,6 +715,10 @@ Set `APPLE_TEAM_ID`, `APPLE_SIGNING_IDENTITY`, and
 from the repository root to create the distribution DMG. The command loads the
 Apple credentials from the ignored root `.envrc`, notarizes and staples the
 DMG, checks it with Gatekeeper, and prints its SHA-256 checksum.
+
+`package.json` holds the app version. `src-tauri/tauri.conf.json` reads it for
+the bundle, and the DMG name uses it. The crate version in `Cargo.toml` does
+not go into the bundle.
 
 ## Measure saved typing and service use
 

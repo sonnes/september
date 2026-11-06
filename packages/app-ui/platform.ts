@@ -155,8 +155,6 @@ export interface PlatformDevice {
   openInBrowser(url: string): Promise<void>;
   /** Asks before a close while edits are not saved. Returns the release. */
   guardUnsavedChanges(): () => void;
-  /** Saves a file to the computer of the user. */
-  save(blob: Blob, filename: string): void;
   outputs: {
     list(): Promise<AudioOutput[]>;
     current(): Promise<string>;

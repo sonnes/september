@@ -25,7 +25,7 @@ import { createEngine } from "@september/core/autocomplete";
 
 A store keeps the settings of a backup as a map by setting key, in `StoredBackup`. `backupContentsFrom` makes that map into the typed settings of a backup, and `storedBackupFrom` makes the typed settings into the map. Each app stores the map as it is. `StoredSettings` types the map by the keys of `PORTABLE_SETTINGS`. The setup of a backup is a `SavedSetup` and its speech is a `SpeechSettings`.
 
-An import also reads the older `writingService` and `writingModel` fields as `defaultModel`, and keeps the user ID of the setup. The `autoSuggestions`, `autoPhrases`, and `agentEnabled` fields of the setup are `true` when they are missing. `parseAccess` reads the access profile, and a backup without a profile gets the default profile. See `docs/concepts/portable-backups.md`.
+An import checks the fields of the setup and then reads it with `savedSetupFrom`, the same reader as the settings. It reads the older `writingService` and `writingModel` fields as `defaultModel`. A setup with no model gets no writing service. The import keeps the user ID of the setup. The `autoSuggestions`, `autoPhrases`, and `agentEnabled` fields of the setup are `true` when they are missing. `parseAccess` reads the access profile, and a backup without a profile gets the default profile. See `docs/concepts/portable-backups.md`.
 
 `rules/time.ts` holds `DAY_MS` and `halfLifeWeight`, the decay that the phrase mining uses.
 

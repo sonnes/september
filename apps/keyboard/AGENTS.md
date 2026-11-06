@@ -1,44 +1,15 @@
 # Keyboard for macOS — agent guide
 
 Native floating keyboard. SwiftUI + AppKit, SwiftPM, no third-party
-dependencies. Read this before changing anything in `apps/keyboard/`; it augments
-the root [CLAUDE.md](../../CLAUDE.md) (symlink of the root `AGENTS.md`) and
-[apps/keyboard/README.md](README.md).
-
-## Commands
-
-```sh
-make test       # tests — run before and after every change
-make run        # run unbundled, inheriting the terminal's Accessibility permission
-make dev        # same, detached; make stop to quit it
-make app        # build + sign Keyboard.app (needs its own permission grant)
-make dmg        # package Keyboard.app with an Applications shortcut
-make open       # build, sign, launch
-make snapshots  # keyboard + component library PNGs in .build/snapshots
-```
-
-Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
-`mac-app` / `keyboard-dmg` / `mac-stop` from the repo root.
-
-## Layout
-
-| Path | Holds |
-|---|---|
-| `Sources/SeptemberKit/Accessibility` | `AXNode`/`AXTree` (another app's tree, snapshotted), `AccessibilityPermission` |
-| `Sources/SeptemberKit/Design` | tokens, metrics, typography, rainbow/mono styles |
-| `Sources/SeptemberKit/Keyboard` | key definitions, QWERTY layout, `KeyboardController`, `KeyRepeater` |
-| `Sources/SeptemberKit/Input` | modifiers, keystrokes, layout-aware key code map |
-| `Sources/SeptemberKit/Panels` | panel model + JSON loading |
-| `Sources/SeptemberKit/Views` | keys, shortcut buttons, panels, assembled screen |
-| `Sources/SeptemberKit/Resources/Panels` | `edit`/`navigate`/`system.json`, `Apps/generic.json`, `Apps/<bundle id>.json` |
-| `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `AXTreeReader`, `AXElement` reads, snapshots |
-| `Tests/KitTests` | swift-testing suites |
-
-Rule of thumb: **anything testable lives in `SeptemberKit`**. `Keyboard` holds
-only what needs a running app — the panel, the event sink, the menu bar.
+dependencies. Read this before you change anything in `apps/keyboard/`. It adds
+to the root [CLAUDE.md](../../CLAUDE.md) (a symlink of the root `AGENTS.md`).
+[README.md](README.md) has the source layout, the `make` commands, and the
+signing certificate steps.
 
 ## Rules
 
+- **Anything testable lives in `SeptemberKit`.** `Keyboard` holds only what
+  needs a running app: the panel, the event sink, and the menu bar.
 - **TDD, strictly.** Write the failing test first, then the smallest code that
   passes it. Every model change lands with a test in `Tests/KitTests`.
 - **Tests use swift-testing.** `make test` runs `swift test`. Write each test
@@ -54,7 +25,9 @@ only what needs a running app — the panel, the event sink, the menu bar.
   colours or sizes.
 - **Every interactive element is an accessibility element** with a spoken label,
   `.isButton`, and an `accessibilityAction` wired to the same handler as the
-  tap. The `pressable` view modifier does all of this. Dwell, Switch Control
+  tap. The `pressable` view modifier does all of this. A container that holds
+  a button uses `.accessibilityElement(children: .contain)`, not `.combine`,
+  so that the button stays its own element. Dwell, Switch Control
   and Voice Control drive the app through `AXPress`; a control that only
   responds to `onTapGesture` is unusable for our users.
 - **The panel must never take focus.** Do not add text fields, do not set

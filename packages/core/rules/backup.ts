@@ -5,6 +5,7 @@ import { presentSettings, type PresentSettings } from "./present/settings.ts";
 import { PRESENT_TONES } from "./present/stage.ts";
 import {
   SETUP_MODES,
+  savedSetupFrom,
   speechFromOlderSetup,
   WRITING_SERVICES,
   type SavedSetup,
@@ -300,36 +301,35 @@ function rowsFrom<T extends { id: string }>(
 function setupFrom(value: unknown): SavedSetup | null {
   if (value === null) return null;
   const row = objectOf(value, "settings.setup");
-  return {
-    autoSuggestions:
-      row.autoSuggestions === undefined
-        ? true
-        : booleanOf(row.autoSuggestions, "automatic suggestions"),
-    autoPhrases:
-      row.autoPhrases === undefined
-        ? true
-        : booleanOf(row.autoPhrases, "automatic phrase generation"),
-    agentEnabled:
-      row.agentEnabled === undefined
-        ? true
-        : booleanOf(row.agentEnabled, "agent switch"),
+  const given = <T>(field: unknown, read: (field: unknown) => T): T | undefined =>
+    field === undefined ? undefined : read(field);
+  return savedSetupFrom({
     id: identifier(row.id, "setup ID"),
     name: stringOf(row.name, "setup name", { empty: false }),
     speakingStyle: stringOf(row.speakingStyle, "setup speaking style"),
     personalWords: stringOf(row.personalWords, "setup personal words"),
     mode: oneOf(row.mode, SETUP_MODES, "setup mode"),
-    defaultModel: modelConfigFrom(
-      row.defaultModel === undefined
-        ? { service: row.writingService, model: row.writingModel }
-        : row.defaultModel,
-      "setup default model",
-    ),
-    suggestionsModel:
-      row.suggestionsModel === undefined || row.suggestionsModel === null
-        ? null
-        : modelConfigFrom(row.suggestionsModel, "setup Suggestions model"),
     access: parseAccess(row.access),
-  };
+    autoSuggestions: given(row.autoSuggestions, (field) =>
+      booleanOf(field, "automatic suggestions"),
+    ),
+    autoPhrases: given(row.autoPhrases, (field) =>
+      booleanOf(field, "automatic phrase generation"),
+    ),
+    agentEnabled: given(row.agentEnabled, (field) => booleanOf(field, "agent switch")),
+    defaultModel: given(row.defaultModel, (field) =>
+      modelConfigFrom(field, "setup default model"),
+    ),
+    suggestionsModel: given(row.suggestionsModel ?? undefined, (field) =>
+      modelConfigFrom(field, "setup Suggestions model"),
+    ),
+    writingService: given(row.writingService, (field) =>
+      oneOf(field, WRITING_SERVICE_KEYS, "setup writing service"),
+    ),
+    writingModel: given(row.writingModel, (field) =>
+      stringOf(field, "setup writing model"),
+    ),
+  } as SavedSetup);
 }
 
 function modelConfigFrom(value: unknown, label: string): SavedSetup["defaultModel"] {

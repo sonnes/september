@@ -10,6 +10,7 @@ import {
   suggestionsFor,
   type Autocomplete,
 } from "@september/core/autocomplete";
+import { modelConfigFor } from "@september/core/rules/model-config";
 import type { SavedSetup } from "@september/core/rules/onboarding";
 import type { MoodKey } from "@september/core/rules/moods";
 import { buildSuggestionPrompt } from "@september/core/rules/prompts/suggestions";
@@ -94,7 +95,8 @@ export function useCompletions({
   const [problem, setProblem] = useState<string | null>(null);
   const enabled = setup?.autoSuggestions !== false;
   const settingsKey = JSON.stringify([
-    setup?.defaultModel, setup?.suggestionsModel, setup?.speakingStyle, setup?.personalWords,
+    setup && modelConfigFor(setup, "suggestions"),
+    userContext(),
   ]);
   // The voice decides whether a suggestion can hold audio tags.
   const tags = tagsSpoken(useSpeechSettings());

@@ -2,8 +2,8 @@
  * The 9:16 story film of a note.
  *
  * The browser draws every frame on a canvas and `ffmpeg.wasm` joins them to
- * the voice. Nothing leaves the machine: the words, the sound, and the film
- * are made on the same tab that plays them.
+ * the voice. The frames and the join stay in the browser. ElevenLabs gets the
+ * text of the note for the voice.
  *
  * The caption rules live in `@september/core/rules/present`, so the exported
  * film and the stage agree.

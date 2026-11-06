@@ -110,16 +110,16 @@ it gives `/spaces`.
 The panel resizes from 400×560 points to the full screen. Its layout has three
 tiers:
 
-| Tier    | Width                | Layout                                                                                                                 |
-| ------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Compact | Less than 560 points | One mood menu key, Clear in the More sheet. Sheets for Phrases and Voice controls. |
-| Regular | 560 to 899 points    | The composer and the history of the web app. Sheets for Phrases and Voice controls.                                   |
-| Wide    | 900 points and more  | The full screens of the web app, with the right rail.                                                                 |
+| Tier    | Width                | Layout                                                                                                                                  |
+| ------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Compact | Less than 560 points | One mood menu key replaces the five mood keys, and Control-1 to Control-5 set the mood. Clear moves into the More sheet. Phrases and Voice controls open as sheets. |
+| Regular | 560 to 899 points    | The composer and the history of the web app. Phrases and Voice controls open as sheets below the header.                               |
+| Wide    | 900 points and more  | The full screens of the web app. Phrases and Voice open in the right rail.                                                             |
 
-`PanelShell` measures the width of the panel for the right rail, the composer,
-Clear in the More sheet, and the Control mood keys. In the web app, the
-composer uses a CSS container query on the screen body, so a phone also shows
-the mood menu key.
+`tierFor` in `packages/core/rules/panel.ts` holds the thresholds. `PanelShell`
+measures the width of the whole panel, not of the screen body, so the rail
+does not change the tier. In the web app, the composer uses a CSS container
+query on the screen body, so a phone also shows the mood menu key.
 
 ## Present
 
@@ -137,25 +137,29 @@ The panel starts hidden. `src/main.tsx` awaits `loadSettings`, mounts the
 app, and shows the panel with `panel_show`. `src/window.ts` holds the panel
 commands.
 Before setup is done, the bootstrap calls `panel_setup(true)` first. When setup
-becomes done, it calls `panel_setup(false)`. If setup goes back
-to not done, it calls `panel_setup(true)` again.
+becomes done, it calls `panel_setup(false)`, which applies the saved float
+choice. If setup goes back to not done, it calls `panel_setup(true)` again.
 
 The Dock icon follows the float choice. `policy(setup, float)` in
-`src-tauri/src/window.rs` gives the activation policy:
+`src-tauri/src/window.rs` gives the activation policy, and `apply_float` sets
+it on macOS:
 
-| State             | Activation policy | Dock icon                            |
-| ----------------- | ----------------- | ------------------------------------ |
-| Setup is not done | `Regular`         | Shows                                |
+| State             | Activation policy | Dock icon                                |
+| ----------------- | ----------------- | ---------------------------------------- |
+| Setup is not done | `Regular`         | Shows                                    |
 | Float on          | `Accessory`       | Hidden. September is not in Command-Tab. |
-| Float off         | `Regular`         | Shows                                |
+| Float off         | `Regular`         | Shows                                    |
 
+`apply_float` floats the panel only with the `Accessory` policy. So
 `panel_setup(true)` also turns off always-on-top, all desktops, and the
 floating level. The saved float choice does not change. `panel_show` does not
 change the activation policy.
 
 A click on the Dock icon shows the panel. The menu bar item holds Show Panel
 and Quit September. Control-Option-Space shows the panel from any app. If the
-panel is visible and is the key window, the key hides it.
+panel is visible and is the key window, the key hides it. If another app owns
+the key, the registration fails. `window::setup` logs the reason, and the menu
+bar item still shows the panel.
 
 The close button hides the panel, and the draft stays. `native/window.m` lets
 the panel float above an app in full screen and follow the user to each macOS

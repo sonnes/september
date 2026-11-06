@@ -14,6 +14,40 @@ public struct InputBar: View {
 
     public var body: some View {
         HStack(spacing: Metrics.Input.spacing) {
+            mirror
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(accessibilityLabel)
+                .accessibilityValue(controller.input.isEmpty ? "empty" : controller.input.text)
+
+            if case .local(let text) = controller.input, !text.isEmpty {
+                Button {
+                    controller.clearEcho()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(Typography.inputIcon)
+                        .foregroundStyle(Color(Tokens.dualSecondary))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear typed text")
+            }
+        }
+        .padding(.horizontal, Metrics.Input.horizontalPadding)
+        .frame(width: Metrics.keyboardWidth, height: Metrics.Input.height)
+        .background(
+            RoundedRectangle(cornerRadius: Metrics.Input.cornerRadius, style: .continuous)
+                .fill(Color(Tokens.key))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Metrics.Input.cornerRadius, style: .continuous)
+                .strokeBorder(Color(Tokens.strokeStandard), lineWidth: 1)
+        )
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Input bar")
+    }
+
+    /// The leading symbol and the mirrored line, read as one element.
+    private var mirror: some View {
+        HStack(spacing: Metrics.Input.spacing) {
             Image(systemName: leadingSymbol)
                 .font(Typography.inputIcon)
                 .foregroundStyle(Color(Tokens.labelSecondary))
@@ -49,32 +83,7 @@ public struct InputBar: View {
                     Spacer(minLength: 0)
                 }
             }
-
-            if case .local(let text) = controller.input, !text.isEmpty {
-                Button {
-                    controller.clearEcho()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(Typography.inputIcon)
-                        .foregroundStyle(Color(Tokens.dualSecondary))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Clear typed text")
-            }
         }
-        .padding(.horizontal, Metrics.Input.horizontalPadding)
-        .frame(width: Metrics.keyboardWidth, height: Metrics.Input.height)
-        .background(
-            RoundedRectangle(cornerRadius: Metrics.Input.cornerRadius, style: .continuous)
-                .fill(Color(Tokens.key))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Metrics.Input.cornerRadius, style: .continuous)
-                .strokeBorder(Color(Tokens.strokeStandard), lineWidth: 1)
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(accessibilityLabel)
-        .accessibilityValue(controller.input.isEmpty ? "empty" : controller.input.text)
     }
 
     private var leadingSymbol: String {

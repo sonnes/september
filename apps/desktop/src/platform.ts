@@ -5,7 +5,6 @@
  */
 
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
 import {
@@ -13,7 +12,7 @@ import {
   type Platform,
   type PlatformStore,
 } from "@september/app-ui/platform";
-import { downloadBlob, warnBeforeUnload } from "@september/app-ui/services/browser";
+import { warnBeforeUnload } from "@september/app-ui/services/browser";
 import { PORTABLE_SETTING_KEYS } from "@september/core/rules/settings";
 import { usageSince } from "@september/core/rules/usage-summary";
 
@@ -145,19 +144,7 @@ export const platform: Platform = {
       openUrl(url).catch((reason: unknown) =>
         console.error("September could not open the address in the browser.", reason),
       ),
-    guardUnsavedChanges() {
-      const release = warnBeforeUnload();
-      let active = true;
-      const native = getCurrentWindow().onCloseRequested((event) => {
-        if (active) event.preventDefault();
-      });
-      return () => {
-        release();
-        active = false;
-        void native.then((unlisten) => unlisten());
-      };
-    },
-    save: downloadBlob,
+    guardUnsavedChanges: warnBeforeUnload,
     outputs: {
       list: () => call("audio_outputs"),
       current: () => call("audio_output"),

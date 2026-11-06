@@ -60,7 +60,7 @@ public final class KeyboardController: ObservableObject {
     public func perform(_ action: PanelAction) {
         switch action {
         case .shortcut(let shortcut):
-            post(shortcut)
+            guard post(shortcut) else { return }
         case .text(let text):
             sink.type(text)
             append(text)
@@ -128,7 +128,7 @@ public final class KeyboardController: ObservableObject {
             // way a hardware keyboard would.
             var flags = chord
             if modifiers.active.contains(.shift) { flags.insert(.shift) }
-            post(shortcut: base, modifiers: flags)
+            guard post(shortcut: base, modifiers: flags) else { return }
         }
         modifiers.consume()
     }
@@ -157,22 +157,28 @@ public final class KeyboardController: ObservableObject {
         }
     }
 
-    private func post(shortcut character: String, modifiers: Modifiers) {
-        guard let resolved = keyCodeMap.shortcutKeystroke(for: character) else { return }
+    /// Returns false, and beeps, when no layout has a key for `character`.
+    private func post(shortcut character: String, modifiers: Modifiers) -> Bool {
+        guard let resolved = keyCodeMap.shortcutKeystroke(for: character) else {
+            sink.beep()
+            return false
+        }
         sink.post(
             Keystroke.events(
                 virtualKey: resolved.virtualKey,
                 modifiers: modifiers.union(resolved.modifiers)
             )
         )
+        return true
     }
 
-    private func post(_ shortcut: Shortcut) {
+    private func post(_ shortcut: Shortcut) -> Bool {
         switch shortcut.key {
         case .virtual(let virtual):
             post(virtual, modifiers: shortcut.modifiers)
+            return true
         case .character(let character):
-            post(shortcut: character, modifiers: shortcut.modifiers)
+            return post(shortcut: character, modifiers: shortcut.modifiers)
         }
     }
 }

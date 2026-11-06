@@ -35,7 +35,7 @@ import {
   type AppPath,
   type SettingsPath,
 } from "@september/core/rules/navigation";
-import { isSetupDone } from "@september/core/rules/onboarding";
+import { isSetupDone, STEPS, type StepPath } from "@september/core/rules/onboarding";
 
 export interface AppRoutes {
   /** The layout around Help and the app pages. */
@@ -61,6 +61,14 @@ function checkPages(given: string[]): void {
 }
 
 const finished = () => isSetupDone(currentSetup());
+
+const STEP_PAGES: Record<StepPath, RouteComponent> = {
+  "/welcome": WelcomeStep,
+  "/choose": ChooseStep,
+  "/profile": ProfileStep,
+  "/connect": ConnectStep,
+  "/finish": FinishStep,
+};
 
 /**
  * The route tree of the app. Setup runs once: an unfinished setup sends an
@@ -95,7 +103,7 @@ export function createAppRoutes({
     getParentRoute: () => shellRoute,
     id: "app",
     beforeLoad: () => {
-      if (!finished()) throw redirect({ to: "/welcome" });
+      if (!finished()) throw redirect({ to: STEPS[0].path });
     },
   });
 
@@ -104,9 +112,6 @@ export function createAppRoutes({
     path: "/settings",
     component: SettingsLayout,
   });
-
-  const step = (path: string, component: RouteComponent) =>
-    createRoute({ getParentRoute: () => setupRoute, path, component });
 
   const page = (path: string, component: RouteComponent) =>
     createRoute({ getParentRoute: () => appRoute, path, component });
@@ -175,13 +180,11 @@ export function createAppRoutes({
     ...Object.entries(publicPages).map(([path, component]) =>
       createRoute({ getParentRoute: () => rootRoute, path, component }),
     ),
-    setupRoute.addChildren([
-      step("/welcome", WelcomeStep),
-      step("/choose", ChooseStep),
-      step("/profile", ProfileStep),
-      step("/connect", ConnectStep),
-      step("/finish", FinishStep),
-    ]),
+    setupRoute.addChildren(
+      STEPS.map(({ path }) =>
+        createRoute({ getParentRoute: () => setupRoute, path, component: STEP_PAGES[path] }),
+      ),
+    ),
     shellRoute.addChildren([
       createRoute({ getParentRoute: () => shellRoute, path: "/help", component: HelpScreen }),
       helpGuideRoute,

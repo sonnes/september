@@ -112,7 +112,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     /// Reading a whole tree costs hundreds of round trips to the other app, so
-    /// keystrokes and app switches coalesce into one read.
+    /// focus moves and app switches coalesce into one read.
     private func scheduleTreeRefresh() {
         guard isTreeVisible, !treeRefreshScheduled else { return }
         treeRefreshScheduled = true
@@ -131,7 +131,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let intrinsic = probe.fittingSize
 
         var scale: CGFloat = 1
-        if let screen = NSScreen.main, intrinsic.width > 0 {
+        if let screen = FloatingPanel.targetScreen, intrinsic.width > 0 {
             let available = screen.visibleFrame.width - 2 * FloatingPanel.margin - reservedWidth
             scale = min(1, available / intrinsic.width)
         }

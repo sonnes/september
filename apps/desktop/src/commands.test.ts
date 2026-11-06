@@ -142,7 +142,7 @@ const EXAMPLES: { [N in Name]: Example<N> } = {
   },
   speech_synthesize: {
     args: { request: { text: "Hello", voice } },
-    result: { path: "/audio/a.mp3", from_cache: true },
+    result: { path: "/audio/a.mp3" },
   },
   speech_native_stop: { args: null, result: null },
   apfel_status: { args: null, result: { supported: true, available: false, reason: "Off" } },

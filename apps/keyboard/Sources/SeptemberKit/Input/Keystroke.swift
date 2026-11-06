@@ -42,4 +42,6 @@ public protocol KeystrokeSink: AnyObject {
     /// Literal text, injected as a unicode string so emoji and non-layout
     /// characters work without a matching physical key.
     func type(_ text: String)
+    /// Tells the user that a key press sent nothing.
+    func beep()
 }

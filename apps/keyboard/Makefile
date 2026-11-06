@@ -1,11 +1,4 @@
-# Keyboard — macOS app
-#
-# Accessibility permission is granted to a (bundle id, code signature) pair.
-# Signing ad-hoc mints a new signature on every build, which revokes the
-# permission each time, so `make app` prefers a stable self-signed identity.
-# Create one once (Keychain Access ▸ Certificate Assistant ▸ Create a
-# Certificate…, name "Keyboard Dev", type "Code Signing"), then rebuilds keep
-# their permission. See README.md.
+# Keyboard: macOS app. README.md describes each target and the signing certificate.
 
 CONFIG ?= release
 BUILD_DIR := .build/$(CONFIG)

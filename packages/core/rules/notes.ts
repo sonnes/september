@@ -16,6 +16,16 @@ export function noteNameIsUnset(name: string | null | undefined): boolean {
   return !trimmed || trimmed.toLowerCase() === UNTITLED_NOTE.toLowerCase();
 }
 
+/** The note without code blocks. Images, links, inline code, and headings become plain words. */
+function withoutMarkup(content: string): string {
+  return content
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "");
+}
+
 /** How many words of the note make its name. */
 const NAME_WORDS = 6;
 const NAME_LIMIT = 64;
@@ -27,12 +37,7 @@ const NAME_LIMIT = 64;
  * before the writing starts. The first words give one instead.
  */
 export function noteNameFromContent(content: string): string | undefined {
-  const text = content
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/`([^`]+)`/g, "$1")
-    .replace(/^#{1,6}\s+/gm, "")
+  const text = withoutMarkup(content)
     .replace(/[*_>#-]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -85,13 +90,9 @@ export function noteFromSlug<T extends { name?: string | null }>(
  * itself, so the markup stays on the screen and in the store.
  */
 export function markdownToVoiceText(content: string): string {
-  return content
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/^#{1,6}\s+/gm, "")
+  return withoutMarkup(content)
     .replace(/^>\s?/gm, "")
     .replace(/^\s*[-*+]\s+(\[[ xX]\]\s+)?/gm, "")
-    .replace(/`([^`]+)`/g, "$1")
     .replace(/[*_~]/g, "")
     .replace(/\s+/g, " ")
     .trim();

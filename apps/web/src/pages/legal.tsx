@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
 
 import { BrandMark, BrandWordmark } from '@september/app-ui/blocks/brand';
+import { DAY_MS } from '@september/core/rules/time';
 import { documentTitle } from '@september/core/rules/titles';
+import { USAGE_RETENTION_MS } from '@september/core/rules/usage-summary';
 import { Footer } from '@/components/home/footer';
 
 function LegalPage({ title, children }: { title: string; children: ReactNode }) {
@@ -255,7 +257,7 @@ export function PrivacyPolicy() {
         <p>
           Local content remains until you delete it or your browser or device removes it. Browser
           eviction, device loss, and storage failure can remove it sooner. Local usage events older
-          than 90 days are removed when the app performs its retention cleanup. The browser speech
+          than {USAGE_RETENTION_MS / DAY_MS} days are removed when the app performs its retention cleanup. The browser speech
           cache is limited to 100 MiB and evicts older, less-used files. Mac audio files can remain
           in application storage until removed. Exported backups remain wherever you save them and
           are not automatically encrypted by September.

@@ -5,7 +5,6 @@ import { USAGE_RETENTION_MS } from "@september/core/rules/usage-summary";
 
 const invoke = vi.hoisted(() => vi.fn<(name: string, args?: unknown) => Promise<unknown>>());
 vi.mock("@tauri-apps/api/core", () => ({ invoke, convertFileSrc: (path: string) => path }));
-vi.mock("@tauri-apps/api/window", () => ({ getCurrentWindow: vi.fn() }));
 const openUrl = vi.hoisted(() => vi.fn<(url: string) => Promise<void>>());
 vi.mock("@tauri-apps/plugin-opener", () => ({ openUrl }));
 

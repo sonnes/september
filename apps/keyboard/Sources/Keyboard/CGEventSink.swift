@@ -1,4 +1,4 @@
-import CoreGraphics
+import AppKit
 import SeptemberKit
 
 /// Posts keystrokes as real events. The panel never takes focus, so whatever
@@ -39,5 +39,9 @@ final class CGEventSink: KeystrokeSink {
             event.post(tap: .cghidEventTap)
         }
         afterPost?()
+    }
+
+    func beep() {
+        NSSound.beep()
     }
 }

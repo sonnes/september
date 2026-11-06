@@ -5,6 +5,7 @@ import { saveSetup } from '@september/app-ui/services/settings';
 import { APP_NAV, SETTINGS_NAV } from '@september/app-ui/navigation';
 import { DEFAULT_DRAFT, STEPS } from '@september/core/rules/onboarding';
 
+import { OWN_PARAMETER_ROUTES } from './rules/analytics';
 import { getRouter } from './router';
 
 /** Where the router settles when it is asked for a path, or null when no route matches. */
@@ -36,6 +37,11 @@ describe('the setup flow', () => {
 });
 
 describe('the routes', () => {
+  it('hold every route that analytics reports by its address', () => {
+    const router = getRouter(createMemoryHistory());
+    for (const pattern of OWN_PARAMETER_ROUTES) expect(router.routesByPath).toHaveProperty([pattern]);
+  });
+
   it('open every step before setup ends', async () => {
     for (const step of STEPS) expect(await lands(step.path)).toBe(step.path);
   });

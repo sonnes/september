@@ -98,6 +98,12 @@ pub(crate) struct SpaceFilterRequest {
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
+pub(crate) struct SpaceRequest {
+    space_id: String,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct AnalyticsListRequest {
     user_id: String,
     start_at: i64,
@@ -170,7 +176,6 @@ pub(crate) struct SystemSpeechRequest {
 pub(crate) struct SpokenAudio {
     /// The file on disk. The WebView reads it through the asset protocol.
     path: String,
-    from_cache: bool,
 }
 
 /// One streamed sentence. `interrupted` holds the reason when the sound
@@ -357,12 +362,9 @@ pub(crate) fn analytics_list(
 #[tauri::command(async)]
 pub(crate) fn agent_message_list(
     state: State<'_, BackendState>,
-    request: SpaceFilterRequest,
+    request: SpaceRequest,
 ) -> RpcResult<Vec<AgentMessage>> {
-    let space_id = request
-        .space_id
-        .ok_or("An agent transcript needs a space.")?;
-    state.with_repo(|repository| repository.list_agent_messages(&space_id))
+    state.with_repo(|repository| repository.list_agent_messages(&request.space_id))
 }
 
 #[tauri::command(async)]
@@ -547,7 +549,7 @@ pub(crate) async fn speech_synthesize(
 ) -> RpcResult<SpokenAudio> {
     let directory = audio_directory(&app)?;
     let key = eleven_labs_key(&keys)?;
-    let (path, from_cache) = speech::synthesize(
+    let (path, _) = speech::synthesize(
         &directory,
         &request.voice,
         &request.text,
@@ -558,7 +560,6 @@ pub(crate) async fn speech_synthesize(
 
     Ok(SpokenAudio {
         path: path.to_string_lossy().into_owned(),
-        from_cache,
     })
 }
 

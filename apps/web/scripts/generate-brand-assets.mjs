@@ -212,7 +212,6 @@ if (
   await writeFile(logoSvgPath, titledLogoSvg);
 
   const targets = [
-    ['logo.png', 500],
     ['favicon-16x16.png', 16],
     ['favicon-32x32.png', 32],
     ['apple-touch-icon.png', 180],

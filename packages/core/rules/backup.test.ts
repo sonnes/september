@@ -253,6 +253,22 @@ describe("the portable September backup", () => {
     expect(parsed.backup.spaces.every((space) => space.user_id === "person-1")).toBe(true);
   });
 
+  it("restores a setup that names no model", () => {
+    const backup = validBackup();
+    const setup = backup.settings.setup! as unknown as Record<string, unknown>;
+    delete setup.defaultModel;
+    delete setup.suggestionsModel;
+
+    const parsed = parseBackup(JSON.stringify(backup));
+
+    expect(parsed.skipped).toBe(0);
+    expect(parsed.backup.settings.setup).toEqual({
+      ...validBackup().settings.setup,
+      defaultModel: { service: "none", model: "" },
+      suggestionsModel: null,
+    });
+  });
+
   it("defaults a missing Suggestions model to the default model", () => {
     const backup = validBackup();
     delete (backup.settings.setup! as unknown as Record<string, unknown>).suggestionsModel;

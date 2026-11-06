@@ -23,7 +23,7 @@ desktop-release:
 	: "$${APPLE_API_KEY_PATH:?Set APPLE_API_KEY_PATH in .envrc}"; \
 	test -r "$${APPLE_PROVISIONING_PROFILE}" || { echo "Cannot read APPLE_PROVISIONING_PROFILE"; exit 1; }; \
 	test -r "$${APPLE_API_KEY_PATH}" || { echo "Cannot read APPLE_API_KEY_PATH"; exit 1; }; \
-	desktop_version="$$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').version")"; \
+	desktop_version="$$(node -p "require('./apps/desktop/package.json').version")"; \
 	case "$$(uname -m)" in \
 		arm64) desktop_arch=aarch64 ;; \
 		x86_64) desktop_arch=x64 ;; \

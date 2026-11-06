@@ -88,7 +88,7 @@ export interface Commands {
   >;
   speech_synthesize: Request<
     { text: string; voice: CloudVoice },
-    { path: string; from_cache: boolean }
+    { path: string }
   >;
   speech_native_stop: Command<undefined, void>;
 

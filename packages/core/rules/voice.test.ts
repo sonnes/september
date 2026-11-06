@@ -242,8 +242,14 @@ describe("dialogueParts", () => {
   });
 
   it("keeps punctuation at the start of a text", () => {
-    expect(dialogueParts("...I guess so")).toEqual(["... I guess so"]);
+    expect(dialogueParts("...I guess so")).toEqual(["...I guess so"]);
     expect(dialogueParts("?!")).toEqual(["?!"]);
+  });
+
+  it("keeps decimals and web addresses whole", () => {
+    const text = "It costs 3.50 today. Visit example.com now";
+    expect(dialogueParts(text)).toEqual([text]);
+    expect(dialogueParts(text, 25)).toEqual(["It costs 3.50 today.", "Visit example.com now"]);
   });
 
   it("gives nothing for empty text", () => {

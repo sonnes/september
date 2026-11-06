@@ -61,12 +61,16 @@ final class FloatingPanel: NSPanel {
         position()
     }
 
-    /// Sit just above the bottom edge of the screen holding the pointer.
+    /// The screen that holds the pointer. Every panel sits on it, and the
+    /// keyboard takes its width from it.
+    static var targetScreen: NSScreen? {
+        NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) })
+            ?? NSScreen.main
+    }
+
+    /// Sit just above the bottom edge of the target screen.
     func position() {
-        guard
-            let screen = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) })
-                ?? NSScreen.main
-        else { return }
+        guard let screen = FloatingPanel.targetScreen else { return }
         let visible = screen.visibleFrame
 
         let x: CGFloat

@@ -5,16 +5,25 @@ shortcut panels around it. Built with SwiftUI + AppKit, no dependencies.
 
 ```
 Sources/
-  SeptemberKit/     models, design tokens, views — everything testable
-    Accessibility/  another app's tree as a snapshot, the Accessibility permission
-    Design/         tokens, metrics, typography, rainbow/mono styles
-    Keyboard/       key definitions, the QWERTY layout, the controller
+  SeptemberKit/     models, design tokens, views: everything testable
+    Accessibility/  AXNode and AXTree (a snapshot of the tree of another app), AccessibilityPermission
+    Design/         tokens, metrics, typography, rainbow and mono styles
+    Keyboard/       key definitions, the QWERTY layout, KeyboardController, PressTracker
     Input/          modifiers, keystrokes, layout-aware key code map
-    Panels/         panel model + JSON loading
+    Panels/         panel model and JSON loading
     Views/          keys, shortcut buttons, panels, the assembled screen
     Resources/      Panels/{edit,navigate,system}.json, Panels/Apps/generic.json, Panels/Apps/<bundle id>.json
-  Keyboard/         the app: floating panel, CGEvent sink, focus watcher, tree reader, menu bar
-Tests/KitTests/     tests (see "Tests" below)
+  Keyboard/         the app, which needs a running process
+    AppDelegate.swift    menu bar item, panel setup, tree viewer refresh
+    FloatingPanel.swift  the non-activating panel and its screen position
+    CGEventSink.swift    posts keystrokes as CGEvents
+    FocusWatcher.swift   follows the focused field and app switches
+    AXElement.swift      reads attributes of an accessibility element
+    AXTreeReader.swift   reads the accessibility tree of the app in front
+    AXDump.swift         the --ax command
+    Snapshot.swift       the --snapshot command
+    main.swift           entry point
+Tests/KitTests/     swift-testing suites (see "Tests" below)
 ```
 
 ## Commands
@@ -29,6 +38,9 @@ make dmg        # package Keyboard.app in an installable DMG
 make open       # build, sign and launch
 make snapshots  # render the keyboard and component library to .build/snapshots
 ```
+
+Run them from `apps/keyboard/`. From the repo root, use `make mac-run`,
+`mac-dev`, `mac-stop`, `mac-test`, `mac-app`, or `keyboard-dmg`.
 
 `make run` and `make dev` launch Keyboard as a child of your shell, so it
 inherits the terminal's Accessibility permission — keys type into other apps
@@ -55,6 +67,7 @@ window:
 ```sh
 swift run Keyboard --snapshot out.png            # the whole keyboard (rainbow)
 swift run Keyboard --snapshot out.png --mono     # mono variant
+swift run Keyboard --snapshot out.png --light    # light appearance
 swift run Keyboard --snapshot out.png --gallery  # the component library
 swift run Keyboard --snapshot out.png --viewer   # the tree viewer, reading the app in front
 ```

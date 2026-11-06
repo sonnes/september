@@ -64,7 +64,7 @@ The interactive work surfaces (Talk, Notes) standardize on five type roles. Four
 - **Compact mark:** An inverted, top-down 2D mechanical keycap. The indigo housing surrounds a white inset face with a large indigo `Sep` legend.
 - **Wordmark:** Lexend 700 `September`, with solid indigo `Sep` and pale-indigo `tember` to represent autocomplete.
 - **Usage:** Use the square mark alone where space is constrained. Use the wordmark in headers, navigation, launch surfaces, and marketing.
-- **Assets:** `packages/app-ui/public/logo.svg` is the scalable source. `pnpm brand:generate` in `apps/web` regenerates it, `logo.png`, the favicons, the touch icons, and the install icons.
+- **Assets:** `packages/app-ui/public/logo.svg` is the scalable source. `pnpm brand:generate` in `apps/web` regenerates it, the favicons, the touch icons, and the install icons.
 
 ## Color
 

@@ -84,15 +84,15 @@ panel commands:
 | `panel_hide`      | none       | Hides the panel.                                                                                                             |
 | `panel_float`     | none       | Returns `false` only when the user turned the float off.                                                                     |
 | `panel_set_float` | `on: bool` | Saves the choice, then applies it to the panel and to the activation policy.                                                 |
-| `panel_setup`     | `on: bool` | On: a normal window with the `Regular` policy. The saved choice does not change. Off: applies the saved float choice.        |
+| `panel_setup`     | `on: bool` | On: a normal window for setup. Off: applies the saved float choice.                                                          |
 | `panel_present`   | `on: bool` | On: `set_simple_fullscreen(true)`. Off: `set_simple_fullscreen(false)`.                                                      |
 
 `window.rs` reads and writes the `panel-float` setting through
 `BackendState::setting` and `BackendState::put_setting`.
 
 `on_window_event` in `src/window.rs` handles `WindowEvent::CloseRequested` for
-`panel`. It prevents the close and hides the panel, so the draft and the close
-guard stay. Quit still stops speech, the microphone, and gaze on
+`panel`. It prevents the close and hides the panel, so the draft stays and
+pending saves finish. Quit still stops speech, the microphone, and gaze on
 `RunEvent::Exit`.
 
 On macOS, `RunEvent::Reopen` comes from a click on the Dock icon. The handler
@@ -101,18 +101,8 @@ shows the panel.
 ### The Dock icon
 
 `policy(setup, float)` is a pure rule with its own `Policy` enum. A unit test
-reads it.
-
-| Setup  | Float | Policy      | Result                                       |
-| ------ | ----- | ----------- | -------------------------------------------- |
-| On     | Any   | `Regular`   | A Dock icon and a place in Command-Tab       |
-| Off    | On    | `Accessory` | No Dock icon and no place in Command-Tab     |
-| Off    | Off   | `Regular`   | A Dock icon and a place in Command-Tab       |
-
-`apply_float` maps `Policy` to the Tauri `ActivationPolicy` on macOS. It sets
-the float on the panel only when the float is on and setup is off. As a
-result, `panel_setup(true)` also turns off always-on-top, all desktops, and the
-floating level.
+reads it. The policy table is in
+[Show and hide the panel](../../../docs/concepts/desktop-floating-panel.md#show-and-hide-the-panel).
 
 ### The menu bar item and the global key
 
@@ -123,10 +113,10 @@ menu holds Show Panel and Quit September. The `tauri` crate needs the
 
 The same setup registers Control-Option-Space through
 `tauri-plugin-global-shortcut`. The crate is pinned to `~2.3`, because 2.4
-needs a newer `tauri`. A press shows the panel. If the panel is visible and is
-the key window, the press hides it. `panel_toggle` holds this rule, and a unit
-test reads it. If another app owns the key, the registration fails and the
-app logs the reason.
+needs a newer `tauri`. `panel_toggle` holds the
+rule of a press, and a unit test reads it. See
+[Show and hide the panel](../../../docs/concepts/desktop-floating-panel.md#show-and-hide-the-panel)
+for what a press does and for a key that another app owns.
 
 ### Float over a full-screen app
 
@@ -212,46 +202,10 @@ Agent messages have their own table and API. `agent_tool_state` resolves a
 pending tool record only when its current state matches `expected`, so a second
 approval cannot apply the same proposal again.
 
-The objects use the same snake-case fields as the SQLite columns:
-
-```ts
-type Space = {
-  id: string;
-  user_id: string;
-  title?: string;
-  context?: string;
-  phrases_synced_count?: number;
-  created_at: number;
-  updated_at: number;
-};
-
-type SpacePatch = {
-  id: string;
-  title?: string;
-  context?: string;
-  phrases_synced_count?: number;
-  reset_phrases_synced_count?: boolean;
-  updated_at: number;
-};
-
-type Message = {
-  id: string;
-  space_id?: string;
-  user_id: string;
-  text: string;
-  type: string;
-  created_at: number;
-};
-
-type Note = {
-  id: string;
-  space_id?: string;
-  name?: string;
-  content: string;
-  created_at: number;
-  updated_at: number;
-};
-```
+The objects use the same snake-case fields as the SQLite columns.
+`packages/core/rules/records.ts` holds their TypeScript types. The contract in
+`contract/commands.json` holds one example of each request and answer, and
+`src/rpc/contract.rs` reads each example into the Rust types.
 
 `space_list` returns one user's spaces from most recently updated to least
 recently updated. Message lists use conversation order. Note lists use most
@@ -295,15 +249,8 @@ inclusive timestamp range, newest first.
 | `analytics_put`  | `AnalyticsEvent`                       | `AnalyticsEvent`   |
 | `analytics_list` | `{ user_id, start_at, end_at, since }` | `AnalyticsEvent[]` |
 
-```ts
-type AnalyticsEvent = {
-  id: string;
-  user_id: string;
-  event_type: string;
-  timestamp: number;
-  data: Record<string, unknown>;
-};
-```
+`AnalyticsEvent` has the fields of `UsageEvent` in
+`packages/core/rules/usage-summary.ts`.
 
 The WebView sets `since` from `USAGE_RETENTION_MS` in
 `packages/core/rules/usage-summary.ts`. The timestamp index keeps cleanup and
@@ -327,19 +274,8 @@ Each command accepts a `request` object.
 | `backup_export` | `{ settingKeys, usageSince }`   | `BackupContents` |
 | `backup_import` | `{ contents, settingKeys }`     | none             |
 
-`BackupContents` holds the rows of each table and the portable settings:
-
-```ts
-type BackupContents = {
-  settings: Record<string, unknown>;
-  spaces: Space[];
-  messages: Message[];
-  agentMessages: AgentMessage[];
-  notes: Note[];
-  savedPhrases: SavedPhrase[];
-  usageEvents: AnalyticsEvent[];
-};
-```
+`BackupContents` holds the rows of each table and the portable settings.
+`StoredBackup` in `packages/core/rules/backup.ts` is its TypeScript type.
 
 `settings` uses the stored setting names as keys, for example `panel-open`.
 The WebView passes `PORTABLE_SETTING_KEYS` from
@@ -463,7 +399,7 @@ not null, Suggestions use it.
 ## Speak a sentence
 
 The `speech_synthesize` command takes `{ text, voice }` and returns
-`{ path, from_cache }`:
+`{ path }`:
 
 ```ts
 type VoiceSettings = {
@@ -616,10 +552,14 @@ more than five frames per second. Each frame includes the current smoothed
 point when both eyes are valid. The WebView takes median samples at four box
 corners and fits one linear mapping for each axis. It clips the mapped point to
 the camera box. It does not convert it to a window or operating-system pointer.
-A frame that Vision cannot analyze sends the `error` state with the reason.
+Rust skips a frame that Vision cannot analyze and logs the reason. That frame
+sends no state and no preview.
+
+The `error` state is final. Rust sends it only when the run ends, for example
+when the camera does not open. The WebView then stops the camera.
 
 Neither side saves the preview, point, or calibration. `gaze_stop` joins the
-capture thread. The capture thread stops by itself after an error, or when a
+capture thread. The capture thread stops by itself after a final error, or when a
 send on its channel fails, for example after the page reloads. A new
 `gaze_start` stops the run before it. Leaving the page and application exit use
 the same stop path.

@@ -88,10 +88,15 @@ export const DEFAULT_DRAFT: OnboardingDraft = { ...DEFAULT_ANSWERS, voiceService
  */
 export function savedSetupFrom(saved: SavedSetup | null): SavedSetup | null {
   if (!saved) return null;
-  const { voiceService: _voiceService, ...answers } = saved as SavedSetup & { voiceService?: unknown };
+  const {
+    voiceService: _voiceService,
+    writingService: _writingService,
+    writingModel: _writingModel,
+    ...answers
+  } = saved as SavedSetup & Record<"voiceService" | "writingService" | "writingModel", unknown>;
   return {
     ...answers,
-    ...modelSettingsFrom(answers),
+    ...modelSettingsFrom(saved),
     autoSuggestions: saved.autoSuggestions ?? true,
     autoPhrases: saved.autoPhrases ?? true,
     agentEnabled: saved.agentEnabled ?? true,

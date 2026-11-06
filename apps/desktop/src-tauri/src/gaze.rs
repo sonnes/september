@@ -178,6 +178,26 @@ pub(crate) enum TrackerState {
     Stopped,
 }
 
+const MIN_CONFIDENCE: f32 = 0.5;
+
+#[derive(Clone, Copy)]
+struct FrameAnalysis {
+    point: Point,
+    confidence: f32,
+    face: NormalizedRect,
+}
+
+/// The state that one analyzed frame reports. A frame that Vision cannot
+/// analyze reports none, and the next frame decides.
+fn frame_state(analysis: &Result<Option<FrameAnalysis>, String>) -> Option<TrackerState> {
+    match analysis {
+        Err(_) => None,
+        Ok(Some(face)) if face.confidence >= MIN_CONFIDENCE => Some(TrackerState::Ready),
+        Ok(Some(_)) => Some(TrackerState::LowConfidence),
+        Ok(None) => Some(TrackerState::NoFace),
+    }
+}
+
 #[derive(Clone, Serialize)]
 #[serde(tag = "event", content = "data", rename_all = "camelCase")]
 pub(crate) enum GazeEvent {
@@ -282,8 +302,8 @@ mod native {
     use cidre::{arc, av, blocks, cm, cv, define_obj_type, dispatch, ns, objc, vn};
 
     use super::{
-        downsample_bgra_crop, emit, eye_position, face_crop, CropSmoother, GazeEvent,
-        NormalizedRect, Point, Smoother, TrackerState,
+        downsample_bgra_crop, emit, eye_position, face_crop, frame_state, CropSmoother,
+        FrameAnalysis, GazeEvent, NormalizedRect, Point, Smoother, TrackerState,
     };
     use std::sync::{
         atomic::{AtomicBool, Ordering},
@@ -295,7 +315,6 @@ mod native {
     const ANALYSIS_INTERVAL: Duration = Duration::from_millis(66);
     const PREVIEW_INTERVAL: Duration = Duration::from_millis(200);
     const PREVIEW_WIDTH: usize = 320;
-    const MIN_CONFIDENCE: f32 = 0.5;
 
     define_obj_type!(DetectFaceLandmarksRequest(vn::ImageBasedRequest));
 
@@ -320,16 +339,9 @@ mod native {
         stop: Arc<AtomicBool>,
         last_analysis: Option<Instant>,
         last_preview: Option<Instant>,
-        last_status: Option<(TrackerState, Option<String>)>,
+        last_status: Option<TrackerState>,
         smoother: Smoother,
         crop_smoother: CropSmoother,
-    }
-
-    #[derive(Clone, Copy)]
-    struct FrameAnalysis {
-        point: Point,
-        confidence: f32,
-        face: NormalizedRect,
     }
 
     define_obj_type!(
@@ -365,27 +377,18 @@ mod native {
             self.last_analysis = Some(now);
             let _pool = objc::AutoreleasePoolPage::push();
 
-            let analysis = match analyze_frame(sample_buf) {
-                Ok(analysis) => analysis,
-                Err(detail) => {
-                    self.status(TrackerState::Error, Some(detail));
-                    return;
+            let analysis = analyze_frame(sample_buf);
+            let Some(state) = frame_state(&analysis) else {
+                if let Err(reason) = analysis {
+                    eprintln!("[gaze] skipped a frame: {reason}");
                 }
+                return;
             };
-            let point = match analysis {
-                Some(analysis) if analysis.confidence >= MIN_CONFIDENCE => {
-                    self.status(TrackerState::Ready, None);
-                    Some(self.smoother.update(analysis.point))
-                }
-                Some(_) => {
-                    self.status(TrackerState::LowConfidence, None);
-                    None
-                }
-                None => {
-                    self.status(TrackerState::NoFace, None);
-                    None
-                }
-            };
+            self.status(state);
+            let analysis = analysis.ok().flatten();
+            let point = analysis
+                .filter(|_| state == TrackerState::Ready)
+                .map(|analysis| self.smoother.update(analysis.point));
             let crop = analysis
                 .map(|analysis| self.crop_smoother.update(face_crop(analysis.face)))
                 .or_else(|| self.crop_smoother.current())
@@ -423,22 +426,23 @@ mod native {
             );
         }
 
-        fn status(&mut self, state: TrackerState, detail: Option<String>) {
-            let current = Some((state, detail.clone()));
-            if self.last_status == current {
+        fn status(&mut self, state: TrackerState) {
+            if self.last_status == Some(state) {
                 return;
             }
-            self.last_status = current;
+            self.last_status = Some(state);
             emit(
                 &self.channel,
                 &self.stop,
-                GazeEvent::Status { state, detail },
+                GazeEvent::Status {
+                    state,
+                    detail: None,
+                },
             );
         }
     }
 
     /// The face in one frame, or `None` when the frame holds no single face.
-    /// A frame that Vision cannot analyze is an error.
     fn analyze_frame(sample_buf: &cm::SampleBuf) -> Result<Option<FrameAnalysis>, String> {
         let pixel_buf = sample_buf
             .image_buf()
@@ -671,6 +675,29 @@ mod tests {
             let name = serde_json::to_string(&state).unwrap();
             assert!(screen.contains(&format!("| {name}")), "{name}");
         }
+    }
+
+    fn face(confidence: f32) -> FrameAnalysis {
+        FrameAnalysis {
+            point: Point { x: 0.5, y: 0.5 },
+            confidence,
+            face: NormalizedRect::FULL,
+        }
+    }
+
+    #[test]
+    fn a_frame_that_vision_cannot_analyze_changes_no_state() {
+        assert_eq!(frame_state(&Err("no image".to_string())), None);
+    }
+
+    #[test]
+    fn a_frame_reports_whether_it_holds_a_clear_face() {
+        assert_eq!(frame_state(&Ok(None)), Some(TrackerState::NoFace));
+        assert_eq!(
+            frame_state(&Ok(Some(face(0.2)))),
+            Some(TrackerState::LowConfidence)
+        );
+        assert_eq!(frame_state(&Ok(Some(face(0.9)))), Some(TrackerState::Ready));
     }
 
     fn status() -> GazeEvent {

@@ -143,7 +143,6 @@ function defaults(): Platform {
       identity: async () => ({ name: '', userId: null }),
       openInBrowser: async () => {},
       guardUnsavedChanges: () => () => {},
-      save: () => {},
       outputs: {
         list: async () => [],
         current: async () => '',

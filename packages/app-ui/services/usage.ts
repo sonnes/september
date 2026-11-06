@@ -14,6 +14,7 @@ import {
   type UsageEvent,
 } from "@september/core/rules/usage-summary";
 
+import { downloadBlob } from "./browser";
 import { currentUserId } from "./settings";
 
 export interface AIUsage {
@@ -123,7 +124,7 @@ export function useElevenLabsQuota() {
 }
 
 export function downloadUsageCsv(calls: ReturnType<typeof toRecentCalls>): void {
-  platform.device.save(
+  downloadBlob(
     new Blob([usageCallsToCsv(calls)], { type: "text/csv;charset=utf-8" }),
     `september-usage-${new Date().toISOString().slice(0, 10)}.csv`,
   );

@@ -636,8 +636,7 @@
       }
     },
     "result": {
-      "path": "/audio/a.mp3",
-      "from_cache": true
+      "path": "/audio/a.mp3"
     }
   },
   "speech_native_stop": {

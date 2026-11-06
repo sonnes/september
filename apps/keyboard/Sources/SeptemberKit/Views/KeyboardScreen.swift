@@ -75,6 +75,7 @@ struct PermissionBanner: View {
             RoundedRectangle(cornerRadius: Metrics.Banner.cornerRadius, style: .continuous)
                 .fill(Color(Tokens.warningSurface))
         )
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Accessibility access")
     }
 }

@@ -46,18 +46,22 @@ const button = (name: string) =>
   [...container.querySelectorAll("button")].find((each) => each.textContent?.includes(name))!;
 const tracker = (state: GazeEvent & { event: "status" }) => act(async () => send(state));
 
-it("says each state that the camera sends in words", async () => {
+it("says each state that the camera sends and keeps the camera on", async () => {
   await act(async () => root.render(<EyeTracker />));
-  const off = status();
   await act(async () => button("Start camera").click());
   const starting = status();
 
-  await tracker({ event: "status", data: { state: "starting", detail: null } });
-  expect(status()).toBe(starting);
+  await tracker({ event: "status", data: { state: "noFace", detail: null } });
+  const noFace = status();
+  expect(noFace).toBeTruthy();
+  expect(noFace).not.toBe(starting);
 
-  await act(async () => button("Stop camera").click());
-  await tracker({ event: "status", data: { state: "stopped", detail: null } });
-  expect(status()).toBe(off);
+  await tracker({ event: "status", data: { state: "lowConfidence", detail: null } });
+  expect(status()).toBeTruthy();
+  expect(status()).not.toBe(noFace);
+
+  expect(gaze.stopGaze).not.toHaveBeenCalled();
+  expect(button("Stop camera")).toBeDefined();
 });
 
 it("shows the reason that the camera gives", async () => {

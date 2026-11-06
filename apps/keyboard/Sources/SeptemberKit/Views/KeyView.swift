@@ -10,7 +10,6 @@ public struct KeyView: View {
     private let press: @MainActor () -> Void
 
     @State private var isPressed = false
-    @State private var repeater = KeyRepeater()
 
     public init(
         key: KeyDefinition,
@@ -33,16 +32,9 @@ public struct KeyView: View {
                 height: Metrics.size(for: key.kind).height
             )
             .keyChrome(fill: fill, stroke: stroke, glow: true)
-            .pressable(label: key.accessibilityLabel, isSelected: isActive) { pressing in
-                isPressed = pressing
-                if pressing, repeatsWhenHeld {
-                    repeater.start(press)
-                } else {
-                    repeater.stop()
-                }
-            } action: {
-                press()
-            }
+            .pressable(
+                label: key.accessibilityLabel, isSelected: isActive, repeats: repeatsWhenHeld
+            ) { isPressed = $0 } action: { press() }
             .animation(.easeOut(duration: Metrics.pressAnimation), value: isPressed)
             .animation(.easeOut(duration: Metrics.activeAnimation), value: isActive)
     }
