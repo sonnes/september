@@ -86,7 +86,9 @@ struct MineButtonView: View {
         label
             .frame(width: width, height: Metrics.UserPanel.buttonHeight)
             .mineChrome(fill: fill, stroke: stroke)
-            .pressable(label: button.accessibilityLabel) { isPressed = $0 } action: { press() }
+            .pressable(label: button.accessibilityLabel, trigger: .down(.once)) { isPressed = $0 } action: {
+                press()
+            }
             .onHover { isHovered = $0 }
             .help(button.name)
     }

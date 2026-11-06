@@ -56,7 +56,7 @@ private struct WordButton: View {
                 RoundedRectangle(cornerRadius: Metrics.Predictions.wordCornerRadius, style: .continuous)
                     .strokeBorder(Color(Tokens.strokeStandard), lineWidth: Metrics.Predictions.strokeWidth)
             )
-            .pressable(label: completion.word, onPressing: { pressed = $0 }) {
+            .pressable(label: completion.word, trigger: .down(.once), onPressing: { pressed = $0 }) {
                 onType(completion.textToType)
             }
     }

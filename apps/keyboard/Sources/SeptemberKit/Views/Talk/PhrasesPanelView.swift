@@ -52,6 +52,8 @@ private struct PhraseButton: View {
             .frame(height: Metrics.Talk.phraseHeight)
             .background(shape.fill(Color(isPressed ? Tokens.key.pressed : Tokens.key)))
             .overlay(shape.strokeBorder(Color(Tokens.strokeStandard), lineWidth: 1))
-            .pressable(label: button.accessibilityLabel) { isPressed = $0 } action: { press() }
+            .pressable(label: button.accessibilityLabel, trigger: .down(.once)) { isPressed = $0 } action: {
+                press()
+            }
     }
 }

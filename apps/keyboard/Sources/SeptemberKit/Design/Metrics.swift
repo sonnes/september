@@ -7,9 +7,9 @@ public enum Metrics {
     public static let keyboardCornerRadius: CGFloat = 12
     public static let surfaceCornerRadius: CGFloat = 16
     public static let surfacePadding: CGFloat = 16
-    /// How long a press lasts before a key starts to repeat.
+    /// The long press that gives the pressed look to a control that acts
+    /// when the button goes up.
     public static let holdDuration: TimeInterval = 0.4
-    public static let keyRepeatInterval: TimeInterval = 0.08
     public static let pressAnimation: TimeInterval = 0.08
     public static let activeAnimation: TimeInterval = 0.12
     /// The gap between the stacked keypads on the right of the keyboard.

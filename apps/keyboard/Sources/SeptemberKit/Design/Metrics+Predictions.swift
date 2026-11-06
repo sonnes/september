@@ -37,6 +37,8 @@ extension Metrics {
         public static let wordRowLinePadding: CGFloat = 4
         /// The space between the line and the first row of keys.
         public static let wordRowBottomSpacing: CGFloat = 2
+        /// An accent of a held letter is a square tile as high as a word.
+        public static let accentTile: CGFloat = wordHeight
         /// The dashes of an empty word slot.
         public static let emptySlotDash: [CGFloat] = [4, 3]
     }

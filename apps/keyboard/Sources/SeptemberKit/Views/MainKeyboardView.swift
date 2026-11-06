@@ -38,7 +38,11 @@ public struct MainKeyboardView<Header: View>: View {
                     key: key,
                     tint: tint,
                     isActive: isActive(key),
-                    width: widths[index]
+                    width: widths[index],
+                    hold: KeyHold(
+                        behavior: { controller.holdBehavior(for: key) },
+                        again: { controller.repeatPress(key) },
+                        choices: { controller.showAccents($0) })
                 ) {
                     controller.press(key)
                 }

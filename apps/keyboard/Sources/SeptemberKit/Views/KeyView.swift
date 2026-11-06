@@ -7,22 +7,24 @@ public struct KeyView: View {
     private let tint: ThemeColor
     private let isActive: Bool
     private let width: CGFloat?
+    private let hold: KeyHold
     private let press: () -> Void
 
     @State private var isPressed = false
-    @State private var repeatTimer: Timer?
 
     public init(
         key: KeyDefinition,
         tint: ThemeColor = Tokens.keyText,
         isActive: Bool = false,
         width: CGFloat? = nil,
+        hold: KeyHold = .once,
         press: @escaping () -> Void
     ) {
         self.key = key
         self.tint = tint
         self.isActive = isActive
         self.width = width
+        self.hold = hold
         self.press = press
     }
 
@@ -33,9 +35,8 @@ public struct KeyView: View {
                 height: Metrics.size(for: key.kind).height
             )
             .keyChrome(fill: fill, stroke: stroke, glow: true)
-            .pressable(label: key.accessibilityLabel, isSelected: isActive) { pressing in
-                isPressed = pressing
-                pressing ? startRepeating() : stopRepeating()
+            .pressable(label: key.accessibilityLabel, isSelected: isActive, trigger: .down(hold)) {
+                isPressed = $0
             } action: {
                 press()
             }
@@ -80,18 +81,5 @@ public struct KeyView: View {
         if isActive { return Tokens.accent }
         return key.kind == .standard || key.kind == .dual
             ? Tokens.strokeStandard : Tokens.strokeSpecial
-    }
-
-    private func startRepeating() {
-        guard case .virtual(let virtual) = key.action, virtual.repeatsWhenHeld else { return }
-        repeatTimer?.invalidate()
-        repeatTimer = Timer.scheduledTimer(withTimeInterval: Metrics.keyRepeatInterval, repeats: true) { _ in
-            Task { @MainActor in press() }
-        }
-    }
-
-    private func stopRepeating() {
-        repeatTimer?.invalidate()
-        repeatTimer = nil
     }
 }

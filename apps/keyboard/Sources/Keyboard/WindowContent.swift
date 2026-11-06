@@ -10,6 +10,9 @@ struct WindowContent {
     let session: KeyboardSession
     let permission: AccessibilityPermission
     let phrases: PanelDefinition
+    /// Times the keys and the panel buttons, which act when the button goes
+    /// down.
+    var presser = KeyPresser()
     var write: () -> Void = {}
     var settings: () -> Void = {}
 
@@ -17,7 +20,8 @@ struct WindowContent {
         AnyView(
             KeyboardScreen(session: session, phrases: phrases, write: write, settings: settings)
                 .environmentObject(controller)
-                .environmentObject(permission))
+                .environmentObject(permission)
+                .environment(\.keyPresser, presser))
     }
 
     /// The keys card of Type mode alone, to measure where the panels go.
@@ -33,7 +37,7 @@ struct WindowContent {
         case .system: view = AnyView(KeypadCard(panel: controller.panels.system))
         case .app: view = AnyView(AppPanelCard(session: session, appIcon: appIcon))
         }
-        return AnyView(view.environmentObject(controller))
+        return AnyView(view.environmentObject(controller).environment(\.keyPresser, presser))
     }
 
     /// The size that a view asks for.

@@ -93,13 +93,22 @@ public struct KeyboardScreen: View {
     }
 }
 
-/// The keys with the word completions on top.
+/// The keys with the word completions on top. The accents of a held letter
+/// show over the top of the keys, so the keys do not move.
 struct KeysWithWords: View {
+    @EnvironmentObject private var controller: KeyboardController
     @ObservedObject var session: KeyboardSession
 
     var body: some View {
         MainKeyboardView {
             WordCompletionRow(engine: session.predictions, onType: session.type)
+                .accessibilityHidden(!controller.accentChoices.isEmpty)
+        }
+        .overlay(alignment: .top) {
+            if !controller.accentChoices.isEmpty {
+                AccentRow(choices: controller.accentChoices, choose: controller.chooseAccent)
+                    .padding(Metrics.Keyboard.padding)
+            }
         }
     }
 }

@@ -27,7 +27,7 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Accessibility` | `AXNode`/`AXTree` (another app's tree, snapshotted), `AccessibilityPermission` |
 | `Sources/SeptemberKit/Design` | tokens, metrics, typography, rainbow/mono styles |
 | `Sources/SeptemberKit/Keyboard` | key definitions, QWERTY layout, `KeyboardController` |
-| `Sources/SeptemberKit/Input` | modifiers, keystrokes, layout-aware key code map |
+| `Sources/SeptemberKit/Input` | modifiers, keystrokes, layout-aware key code map, the key settings of macOS (`KeyTiming`) and the timing of a held key (`KeyPresser`) |
 | `Sources/SeptemberKit/Integration` | `KeyboardSession` (joins the parts), `SpeakText`, `FrontAppTracker`, `PanelPlacement` |
 | `Sources/SeptemberKit/Panels` | panel model, JSON loading, app panel ranking and learning |
 | `Sources/SeptemberKit/Predictions` | sentence predictions (Apple Intelligence) and word completions |
@@ -38,6 +38,7 @@ Run them from `apps/keyboard/`, or `make mac-test` / `mac-run` / `mac-dev` /
 | `Sources/SeptemberKit/Write` | the document library and the editor bridge of the Write window |
 | `Sources/SeptemberKit/Views` | keys, shortcut buttons, panels, the keyboard screen, and the views of each part |
 | `Sources/SeptemberKit/Resources/Panels` | `edit`/`text`/`system`/`phrases.json`, `Apps/generic.json`, `Apps/<bundle id>.json` |
+| `Sources/SeptemberKit/Resources/Accents` | the accents of a held letter, by language (`en.json`) |
 | `Sources/Keyboard` | app shell, `FloatingPanel`, `CGEventSink`, `FocusWatcher`, `ChordTap`, `MenuBarReader`, `AXTreeReader`, the Settings and Write windows, snapshots |
 | `Tests/KitTests` | tests + the harness |
 
@@ -66,6 +67,11 @@ only what needs a running app — the panel, the event sink, the menu bar.
   tap. The `pressable` view modifier does all of this. Dwell, Switch Control
   and Voice Control drive the app through `AXPress`; a control that only
   responds to `onTapGesture` is unusable for our users.
+- **Keys and panel buttons act when the button goes down.** Give them
+  `pressable(trigger: .down(...))`. `KeyPresser` applies Slow Keys, key repeat,
+  and press and hold. Do not put a timer in a view. Controls that open a
+  window, change the mode, speak, or type a whole sentence keep `.up`, so the
+  user can slide off to cancel.
 - **The keyboard window and the shortcut panels never take focus.** Do not add
   text fields to them, do not set `canBecomeKey`, and do not activate the app
   from them. Everything the user types goes to the app in front. Only the

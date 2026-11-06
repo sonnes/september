@@ -84,6 +84,33 @@ Write opens the Write window, a normal macOS window with a Markdown editor.
 Settings opens the Settings window. Both windows take focus. The menu bar item
 also opens them.
 
+## Pressing and holding keys
+
+The keys, the word row, the accents, and the buttons of the shortcut panels
+act when the mouse button goes down. The prediction tiles, Speak, the mode
+buttons, the tabs, and the Said list act when the button goes up, so a slide
+off the control cancels the press. A press through `AXPress` (Dwell, Switch
+Control, Voice Control) acts at once.
+
+A held key obeys the keyboard settings of macOS. `KeyPresser` applies them,
+and each press reads them again:
+
+- Key repeat: Delete, Space, and the characters that are not letters repeat
+  after the delay of System Settings, at its rate. If key repeat is off, no key
+  repeats. The modifiers, Return, Escape, Tab, chords, and the shortcut buttons
+  do not repeat.
+- Press and hold: if `ApplePressAndHoldEnabled` is on (the macOS default), a
+  held letter shows its accents over the word row and does not repeat. A press
+  on an accent replaces the letter. A press on any key closes the accents. If
+  the setting is off, a held letter repeats. The accents are in
+  `Resources/Accents/en.json`, copied from the press and hold table of macOS.
+- Slow Keys: if Slow Keys is on (System Settings, Accessibility, Keyboard), a
+  key acts only after the user holds it for the acceptance delay. If the user
+  lets go before the delay, nothing happens. The keyboard reads `slowKey` and
+  `slowKeyDelay` from `com.apple.universalaccess`.
+- Sticky Keys: one tap on a modifier latches it for the next key, a second tap
+  locks it, and a third tap releases it, as Sticky Keys of macOS does.
+
 ## Render snapshots
 
 Individual snapshots, for comparing against the design mocks without opening a

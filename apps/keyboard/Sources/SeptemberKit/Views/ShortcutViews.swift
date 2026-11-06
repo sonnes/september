@@ -29,7 +29,9 @@ public struct ShortcutButtonView: View {
             .overlay(alignment: .topTrailing) { learnedDot }
             .overlay(alignment: .top) { tip }
             .onHover { isHovered = $0 }
-            .pressable(label: button.accessibilityLabel) { isPressed = $0 } action: { press() }
+            .pressable(label: button.accessibilityLabel, trigger: .down(.once)) { isPressed = $0 } action: {
+                press()
+            }
             .zIndex(isHovered ? 1 : 0)
     }
 
