@@ -21,6 +21,12 @@ public final class KeyboardController: ObservableObject {
     /// The name of the app in front. `nil` until an app reports its name.
     @Published public private(set) var frontmostAppName: String?
     @Published public private(set) var appPanel: PanelDefinition
+    /// True after a private text button typed into the focused field, until
+    /// the focus moves. The bar hides the field, and the controller keeps none
+    /// of its text, so predictions and learning never see it.
+    @Published public private(set) var isFieldPrivate = false
+    /// Where private text buttons keep their text.
+    public var privateTexts: any PrivateTextStore = KeychainPrivateTextStore()
 
     public let panels: PanelStore
 
@@ -60,6 +66,10 @@ public final class KeyboardController: ObservableObject {
         case .text(let text):
             sink.type(text)
             append(text)
+        case .privateText(let id):
+            guard let text = try? privateTexts.text(for: id) else { break }
+            sink.type(text)
+            hideField()
         }
         modifiers.consume()
     }
@@ -77,13 +87,28 @@ public final class KeyboardController: ObservableObject {
         frontmostAppName = name
         appPanel = panels.appPanel(forBundleID: bundleID)
         focusedField = nil
+        isFieldPrivate = false
+        echo = ""
+    }
+
+    /// Called when focus lands on a different element. Private text stays in
+    /// the field it went into, so the bar can show the new field.
+    public func focusMoved() {
+        guard isFieldPrivate else { return }
+        isFieldPrivate = false
+        echo = ""
+    }
+
+    private func hideField() {
+        isFieldPrivate = true
+        focusedField = focusedField?.withoutText
         echo = ""
     }
 
     /// Called by the app whenever accessibility reports a different focused
     /// field, or new text in the one we are already watching.
     public func focusChanged(to field: FocusedField?) {
-        focusedField = field
+        focusedField = isFieldPrivate ? field?.withoutText : field
         if let name = field?.appName {
             frontmostAppName = name
         }
@@ -99,12 +124,12 @@ public final class KeyboardController: ObservableObject {
     /// Our own text only stands in for fields that show us nothing, and never
     /// for a password.
     private func append(_ text: String) {
-        guard !isMirroring else { return }
+        guard !isMirroring, !isFieldPrivate else { return }
         echo += text
     }
 
     private func refreshInput() {
-        input = focusedField?.display ?? .local(text: echo)
+        input = isFieldPrivate ? .secure : focusedField?.display ?? .local(text: echo)
     }
 
     // MARK: - Turning presses into keystrokes
@@ -158,7 +183,7 @@ public final class KeyboardController: ObservableObject {
                 modifiers: modifiers.active.subtracting(.capsLock)
             )
         )
-        if !isMirroring {
+        if !isMirroring, !isFieldPrivate {
             switch virtual {
             case .delete: echo = String(echo.dropLast())
             case .return: echo = ""

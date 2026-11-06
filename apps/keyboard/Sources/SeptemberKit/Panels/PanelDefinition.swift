@@ -4,6 +4,9 @@ import Foundation
 public enum PanelAction: Sendable, Hashable {
     case shortcut(Shortcut)
     case text(String)
+    /// The text of a private button of My Panel, by the ID of the button. The
+    /// text is in the Keychain.
+    case privateText(String)
 }
 
 /// One button in a shortcut panel.
@@ -30,7 +33,7 @@ public struct PanelButton: Sendable, Hashable, Identifiable {
     public var accessibilityLabel: String {
         switch action {
         case .shortcut(let shortcut): "\(label), \(shortcut.spokenName)"
-        case .text: label
+        case .text, .privateText: label
         }
     }
 }
