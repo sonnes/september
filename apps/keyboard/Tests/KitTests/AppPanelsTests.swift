@@ -347,6 +347,7 @@ private func menuIndexTests() {
                             menuItem(5, "Downloads", char: "L", modifiers: 2),
                             menuItem(6, "Next Tab", virtualKey: 48, modifiers: 4 | 8),
                             menuItem(7, "No Keys"),
+                            menuItem(11, "Force Quit", char: "⎋", virtualKey: 53, modifiers: 2),
                             menuItem(
                                 8, "More",
                                 children: [
@@ -366,6 +367,9 @@ private func menuIndexTests() {
         expectEqual(
             index.name(for: Shortcut(modifiers: .control, key: .virtual(.tab))), "Next Tab")
         expectEqual(index.name(for: shortcut([.control, .command], "9")), "Deep")
+        expectEqual(
+            index.name(for: Shortcut(modifiers: [.option, .command], key: .virtual(.escape))),
+            "Force Quit")
         expectEqual(index.name(for: shortcut(.command, "q")), nil)
     }
 }
@@ -518,6 +522,18 @@ private func modelTests() {
         model.chordPressed(other) { _ in "Other" }
         model.chordPressed(other) { _ in "Other" }
         expectEqual(model.panel.buttons.count, before)
+    }
+
+    test("the panel header names the panel, or the app when it has no panel") {
+        let (model, _) = try makeModel()
+        model.appActivated(bundleID: "com.apple.Terminal", windowTitle: "✳ Claude Code")
+        expectEqual(model.title(appName: "Terminal"), "Claude Code")
+        model.appActivated(bundleID: "com.example.new", windowTitle: nil)
+        expectEqual(model.title(appName: "New App"), "New App")
+        model.setPanelOn(false, for: "com.apple.mail")
+        model.appActivated(bundleID: "com.apple.mail", windowTitle: nil)
+        expectEqual(model.title(appName: "Mail"), "Mail")
+        expectEqual(model.panel.title, model.store.generic.title)
     }
 
     test("the app list starts with the bundled panels and names each one") {

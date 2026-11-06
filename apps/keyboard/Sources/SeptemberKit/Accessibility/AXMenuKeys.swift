@@ -29,13 +29,15 @@ public struct AXMenuKeys: Equatable, Hashable, Sendable {
         if modifiers & AXMenuKeys.controlBit != 0 { held.insert(.control) }
         if modifiers & AXMenuKeys.noCommandBit == 0 { held.insert(.command) }
 
+        // A key with no character, such as esc, reports a glyph as its
+        // character and the key code beside it. The key code wins.
+        if let virtualKey, let key = VirtualKey(rawValue: virtualKey) {
+            return Shortcut(modifiers: held, key: .virtual(key))
+        }
         if let character, character.count == 1,
             character.unicodeScalars.allSatisfy({ $0.value > 32 && $0.value != 127 })
         {
             return Shortcut(modifiers: held, key: .character(character.lowercased()))
-        }
-        if let virtualKey, let key = VirtualKey(rawValue: virtualKey) {
-            return Shortcut(modifiers: held, key: .virtual(key))
         }
         return nil
     }

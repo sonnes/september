@@ -95,6 +95,17 @@ public final class AppPanelModel: ObservableObject {
         }
     }
 
+    /// The header of the panel: the title of a bundled panel, such as Claude
+    /// Code in a terminal, or else the name of the app in front.
+    public func title(appName: String?) -> String {
+        if let bundleID = current.bundleID, store.hasPanel(forBundleID: bundleID),
+            settings.isPanelOn(bundleID)
+        {
+            return current.panel.title
+        }
+        return appName ?? current.panel.title
+    }
+
     // MARK: - Settings
 
     /// The bundled app panels by title, then the other apps that have usage or

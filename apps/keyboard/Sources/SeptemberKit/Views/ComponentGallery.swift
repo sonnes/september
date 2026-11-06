@@ -21,9 +21,14 @@ public struct ComponentGallery: View {
             id: "g-1", kind: .dual, label: "1", secondaryLabel: "!", action: .character("1")
         )
         let copy = PanelButton(
-            id: "g-copy", label: "Copy", symbol: "doc.on.doc",
+            id: "g-copy", label: "Copy", symbol: nil,
             action: .shortcut(Shortcut(modifiers: .command, key: .character("c")))
         )
+        let phrase = PanelButton(
+            id: "g-phrase", label: "Be right back", symbol: nil, action: .text("Be right back")
+        )
+        let buttonSize = CGSize(
+            width: Metrics.AppPanel.buttonWidth, height: Metrics.AppPanel.buttonHeight)
 
         return [
             (
@@ -43,12 +48,12 @@ public struct ComponentGallery: View {
                 AnyView(KeyView(key: dual) {})
             ),
             (
-                "Shortcut / Button", "Icon plus key hint. \(Metrics.describe(Metrics.shortcutButton)).",
+                "Shortcut / Keys", "Keys only; the name shows on hover. \(Metrics.describe(buttonSize)).",
                 AnyView(ShortcutButtonView(button: copy) {})
             ),
             (
-                "Shortcut / Full", "Icon, name and key hint. \(Metrics.describe(Metrics.shortcutFull)).",
-                AnyView(ShortcutFullView(button: copy) {})
+                "Shortcut / Text", "The text it types, across two columns.",
+                AnyView(ShortcutButtonView(button: phrase, width: Metrics.AppPanel.width) {})
             ),
         ]
     }
