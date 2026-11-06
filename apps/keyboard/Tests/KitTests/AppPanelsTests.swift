@@ -130,6 +130,15 @@ private func panelFileTests() {
         expectEqual(rewind?.action, .sequence([escape, escape]))
     }
 
+    test("a text button of marks only is one key wide and shows its marks") {
+        let heading = PanelButton(id: "h", label: "Heading", symbol: nil, action: .text("# "))
+        let clear = PanelButton(id: "c", label: "Clear", symbol: nil, action: .text("/clear"))
+        expect(AppPanelLayout.slots([heading]) == 1)
+        expect(heading.hint == "#")
+        expect(AppPanelLayout.slots([clear]) == 2)
+        expect(clear.hint == nil)
+    }
+
     test("every bundled panel fits the two-column grid") {
         let store = try PanelStore.bundled()
         for panel in [store.edit, store.text, store.system] + store.appPanels.map(\.panel) {

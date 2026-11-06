@@ -32,7 +32,8 @@ public struct PanelButton: Sendable, Hashable, Identifiable {
         switch action {
         case .shortcut(let shortcut): shortcut.display
         case .sequence(let steps): steps.map(\.display).joined(separator: " ")
-        case .text: nil
+        case .text(let text): Self.marks(text)
+        case .privateText: nil
         }
     }
 
@@ -45,11 +46,20 @@ public struct PanelButton: Sendable, Hashable, Identifiable {
         }
     }
 
-    /// A button that types its text. It shows the text and takes a whole row
-    /// of an app panel.
+    /// A button that types words. It shows the text and takes a whole row of
+    /// an app panel. Text of marks only, such as `# `, is a key instead.
     public var isText: Bool {
-        if case .text = action { return true }
+        if case .text(let text) = action { return Self.marks(text) == nil }
         return false
+    }
+
+    /// The text without spaces, if it has no letters or digits.
+    private static func marks(_ text: String) -> String? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed.rangeOfCharacter(from: .alphanumerics) == nil else {
+            return nil
+        }
+        return trimmed
     }
 
     /// The prefix of the ID of a button that `ShortcutLearner` added.
