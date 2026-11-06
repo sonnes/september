@@ -8,7 +8,6 @@
     "test": "vitest --run"
   },
   "exports": {
-    ".": "./index.ts",
     "./autocomplete": "./autocomplete/index.ts",
     "./rules/*": "./rules/*.ts"
   },

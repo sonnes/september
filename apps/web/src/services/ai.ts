@@ -2,19 +2,19 @@ import type { AssistantMessage, Context, Model, Models } from '@earendil-works/p
 
 import { currentSetup, providerKey } from '@/services/os';
 import { recordAiUsage, type GenerationFeature } from '@/services/usage';
+import type { AgentWriter } from '@september/core/rules/agent/loop';
 import {
   modelContextFrom,
   modelTextFrom,
-  type AgentWriter,
   type ModelIdentity,
-} from '@september/core/rules/agent';
+} from '@september/core/rules/model-client';
 import { modelConfigFor, type WritingModelConfig } from '@september/core/rules/model-config';
 import type { CostSource } from '@september/core/rules/usage-summary';
 import {
   buildSpaceContextPrompt,
   spaceDescriptionFrom,
   type SpaceDescription,
-} from '@september/core/rules/prompts';
+} from '@september/core/rules/prompts/space';
 
 /**
  * The writing service.

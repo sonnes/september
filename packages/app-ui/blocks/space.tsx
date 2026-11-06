@@ -39,12 +39,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@september/ui/components/dropdown-menu";
-import {
-  useCreateSpace,
-  useSpaces,
-  useUpdateSpace,
-  type Space,
-} from "@platform/services/data";
+import { useCreateSpace, useSpaces, useUpdateSpace } from "@platform/services/data";
 import { hasWritingService } from "@platform/services/ai";
 import {
   chooseOutput,
@@ -62,6 +57,7 @@ import { useChrome, usePanel } from "@september/app-ui/blocks/chrome";
 import { draftParts, tagBefore } from "@september/core/rules/audio-tags";
 import { MOODS, type MoodKey } from "@september/core/rules/moods";
 import { countsAsTypedKey } from "@september/core/rules/usage-summary";
+import type { Space, SpaceMode } from "@september/core/rules/records";
 import {
   composerAction,
   deleteLastWord,
@@ -74,7 +70,6 @@ import {
   spaceSlug,
   type ComposerMode,
   type SeenSpace,
-  type SpaceMode,
 } from "@september/core/rules/spaces";
 
 const talkParams = (space: Pick<Space, "title">) => ({

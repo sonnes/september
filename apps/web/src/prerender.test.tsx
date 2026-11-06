@@ -1,4 +1,4 @@
-import { HELP_GUIDES } from '@september/core/rules/help';
+import { HELP_GUIDES } from '@september/core/rules/help/catalog';
 import { describe, expect, it } from 'vitest';
 
 import { renderPage } from './entry-server';

@@ -1,3 +1,4 @@
+import { SETTINGS, talkDraftKey, talkMoodKey } from "@september/core/rules/settings";
 import { modelSettingsFrom } from "@september/core/rules/model-config";
 import { fileSound } from "@september/core/rules/audio-tags";
 import { moodFrom, type MoodKey } from "@september/core/rules/moods";
@@ -7,7 +8,7 @@ import { open } from "@tauri-apps/plugin-shell";
 
 import { DEFAULT_DRAFT, type OnboardingDraft } from "@/rules/onboarding";
 import { panelStateFrom, type PanelState } from "@september/core/rules/panel";
-import { presentSettings, type PresentSettings } from "@september/core/rules/present";
+import { presentSettings, type PresentSettings } from "@september/core/rules/present/settings";
 import type { SpeechSettings } from "@/services/speech";
 
 /**
@@ -38,7 +39,7 @@ export type SavedSetup = OnboardingDraft & { id: string };
 
 const readSetup = () =>
   invoke<SavedSetup | null>("setting_get", {
-    request: { key: "setup" },
+    request: { key: SETTINGS.setup },
   })
     // A setup written before `defaultModel` existed held one flat service and
     // model, and every screen that reads one would throw on it.
@@ -84,7 +85,7 @@ export function currentUserId(): string {
 export async function saveSetup(draft: OnboardingDraft): Promise<void> {
   const saved: SavedSetup = { ...draft, id: osUser };
   await invoke("setting_put", {
-    request: { key: "setup", value: saved },
+    request: { key: SETTINGS.setup, value: saved },
   }).catch(() => undefined);
   setup = saved;
   setupListeners.forEach((listener) => listener());
@@ -102,7 +103,7 @@ export function updateSetup(patch: Partial<OnboardingDraft>): Promise<SavedSetup
       ...(setup ?? { id: osUser, ...DEFAULT_DRAFT }),
       ...patch,
     };
-    await invoke("setting_put", { request: { key: "setup", value: saved } });
+    await invoke("setting_put", { request: { key: SETTINGS.setup, value: saved } });
     setup = saved;
     setupListeners.forEach((listener) => listener());
     return saved;
@@ -119,7 +120,7 @@ export function updateSetup(patch: Partial<OnboardingDraft>): Promise<SavedSetup
  * dashboard first, and then moves.
  */
 let lastPath = await invoke<string | null>("setting_get", {
-  request: { key: "lastPath" },
+  request: { key: SETTINGS.lastPath },
 }).catch(() => null);
 
 export function currentPath(): string | null {
@@ -133,7 +134,7 @@ export async function savePath(path: string): Promise<void> {
   if (path === lastPath) return;
   lastPath = path;
   await invoke("setting_put", {
-    request: { key: "lastPath", value: path },
+    request: { key: SETTINGS.lastPath, value: path },
   }).catch(() => undefined);
 }
 
@@ -152,7 +153,7 @@ export const openInBrowser = (url: string) => open(url);
  */
 const readSpeech = () =>
   invoke<SpeechSettings | null>("setting_get", {
-    request: { key: "speech" },
+    request: { key: SETTINGS.speech },
   }).catch(() => null);
 
 let speech = await readSpeech();
@@ -163,7 +164,7 @@ export function currentSpeech(): SpeechSettings | null {
 
 export async function saveSpeech(settings: SpeechSettings): Promise<void> {
   await invoke("setting_put", {
-    request: { key: "speech", value: settings },
+    request: { key: SETTINGS.speech, value: settings },
   }).catch(() => undefined);
   speech = settings;
 }
@@ -231,12 +232,12 @@ export const audioUrl = (path: string) => convertFileSrc(path);
  */
 export const dismissedIdeas =
   (await invoke<string[] | null>("setting_get", {
-    request: { key: "dismissed-ideas" },
+    request: { key: SETTINGS.dismissedIdeas },
   }).catch(() => null)) ?? [];
 
 export const rememberDismissed = (texts: string[]) =>
   invoke("setting_put", {
-    request: { key: "dismissed-ideas", value: texts },
+    request: { key: SETTINGS.dismissedIdeas, value: texts },
   }).catch(() => undefined);
 
 /**
@@ -248,30 +249,30 @@ export const rememberDismissed = (texts: string[]) =>
  */
 export const spaceModes =
   (await invoke<Record<string, string> | null>("setting_get", {
-    request: { key: "space-modes" },
+    request: { key: SETTINGS.spaceModes },
   }).catch(() => null)) ?? {};
 
 export const rememberModes = (modes: Record<string, string>) =>
   invoke("setting_put", {
-    request: { key: "space-modes", value: modes },
+    request: { key: SETTINGS.spaceModes, value: modes },
   }).catch(() => undefined);
 
 /** The voices heard lately on the Voice screen, newest first. */
 export const heardVoiceIds =
   (await invoke<string[] | null>("setting_get", {
-    request: { key: "heard-voices" },
+    request: { key: SETTINGS.heardVoices },
   }).catch(() => null)) ?? [];
 
 export const rememberHeardVoices = async (ids: string[]) => {
   heardVoiceIds.splice(0, heardVoiceIds.length, ...ids);
   await invoke("setting_put", {
-    request: { key: "heard-voices", value: ids },
+    request: { key: SETTINGS.heardVoices, value: ids },
   }).catch(() => undefined);
 };
 
 let panel = panelStateFrom(
   await invoke<unknown>("setting_get", {
-    request: { key: "panel-open" },
+    request: { key: SETTINGS.panel },
   }).catch(() => null),
 );
 
@@ -300,20 +301,20 @@ export function guardUnsavedChanges(): () => void {
 
 /** Unsent words are local settings, separate from the spoken transcript. */
 export async function readTalkDraft(spaceId: string): Promise<string> {
-  return (await invoke<string | null>("setting_get", { request: { key: `talk-draft:${spaceId}` } })) ?? "";
+  return (await invoke<string | null>("setting_get", { request: { key: talkDraftKey(spaceId) } })) ?? "";
 }
 
 export async function saveTalkDraft(spaceId: string, words: string): Promise<void> {
-  await invoke("setting_put", { request: { key: `talk-draft:${spaceId}`, value: words } });
+  await invoke("setting_put", { request: { key: talkDraftKey(spaceId), value: words } });
 }
 
 /** The mood of a Talk space. It stays until the user presses its key again. */
 export async function readTalkMood(spaceId: string): Promise<MoodKey | null> {
-  return moodFrom(await invoke<string | null>("setting_get", { request: { key: `talk-mood:${spaceId}` } }));
+  return moodFrom(await invoke<string | null>("setting_get", { request: { key: talkMoodKey(spaceId) } }));
 }
 
 export async function saveTalkMood(spaceId: string, mood: MoodKey | null): Promise<void> {
-  await invoke("setting_put", { request: { key: `talk-mood:${spaceId}`, value: mood } });
+  await invoke("setting_put", { request: { key: talkMoodKey(spaceId), value: mood } });
 }
 
 export function currentPanel(): PanelState {
@@ -323,13 +324,13 @@ export function currentPanel(): PanelState {
 export const rememberPanel = (state: PanelState) => {
   panel = state;
   return invoke("setting_put", {
-    request: { key: "panel-open", value: state },
+    request: { key: SETTINGS.panel, value: state },
   }).catch(() => undefined);
 };
 
 let present = presentSettings(
   await invoke<unknown>("setting_get", {
-    request: { key: "present" },
+    request: { key: SETTINGS.present },
   }).catch(() => null),
 );
 
@@ -346,7 +347,7 @@ export function currentPresent(): PresentSettings {
 export const rememberPresent = (settings: PresentSettings) => {
   present = settings;
   return invoke("setting_put", {
-    request: { key: "present", value: settings },
+    request: { key: SETTINGS.present, value: settings },
   }).catch(() => undefined);
 };
 

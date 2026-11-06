@@ -8,11 +8,14 @@
 
 export const DEFAULT_VOICE_MODEL = "eleven_flash_v2_5";
 
-/** The models of the Voice tab, fastest first. */
+/**
+ * The models of the Voice tab, fastest first. `credits` is the ElevenLabs
+ * quota that one character costs.
+ */
 export const VOICE_MODELS = [
-  { id: "eleven_flash_v2_5", name: "Eleven Flash v2.5", note: "Fastest" },
-  { id: "eleven_multilingual_v2", name: "Eleven Multilingual v2", note: "Best quality" },
-  { id: "eleven_v3", name: "Eleven v3", note: "Most expressive" },
+  { id: "eleven_flash_v2_5", name: "Eleven Flash v2.5", note: "Fastest", credits: 0.5 },
+  { id: "eleven_multilingual_v2", name: "Eleven Multilingual v2", note: "Best quality", credits: 1 },
+  { id: "eleven_v3", name: "Eleven v3", note: "Most expressive", credits: 1 },
 ] as const;
 
 /** The first model of the ElevenLabs Dialogue voice, and the model of its files. */
@@ -23,8 +26,13 @@ export const CONVERSATIONAL_MODEL = "eleven_v3_conversational";
 
 /** The models of the Dialogue voice. */
 export const DIALOGUE_MODELS = [
-  { id: DIALOGUE_MODEL, name: "Eleven v3", note: "Most expressive" },
-  { id: CONVERSATIONAL_MODEL, name: "Eleven v3 Conversational", note: "Starts to speak sooner" },
+  { id: DIALOGUE_MODEL, name: "Eleven v3", note: "Most expressive", credits: 1 },
+  {
+    id: CONVERSATIONAL_MODEL,
+    name: "Eleven v3 Conversational",
+    note: "Starts to speak sooner",
+    credits: 1,
+  },
 ] as const;
 
 /** A saved Dialogue model, or Eleven v3 for a missing or other model. */
@@ -72,8 +80,18 @@ const REPLACED: Record<string, string> = {
   eleven_turbo_v2: "eleven_flash_v2",
 };
 
+/** Eleven Flash v2 is not offered, but a saved Turbo v2 voice speaks with it. */
+const UNLISTED_MODELS = [{ id: "eleven_flash_v2", credits: 0.5 }] as const;
+
 /** A saved model id, with a deprecated model read as its replacement. */
 export const voiceModelFrom = (id: string): string => REPLACED[id] ?? id;
+
+/** Estimated quota credits for one ElevenLabs speech request, or nothing for a model with no known rate. */
+export function elevenLabsCredits(text: string, model: string): number | undefined {
+  const id = voiceModelFrom(model);
+  const rate = [...VOICE_MODELS, ...DIALOGUE_MODELS, ...UNLISTED_MODELS].find((one) => one.id === id)?.credits;
+  return rate === undefined ? undefined : Math.ceil(text.length * rate);
+}
 
 /** Eleven v3 has no similarity setting. */
 export const hasSimilarity = (modelId: string): boolean =>

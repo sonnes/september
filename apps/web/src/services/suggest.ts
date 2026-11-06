@@ -1,7 +1,7 @@
 /**
  * The words that the app offers while the user writes.
  *
- * The rules are in `src/autocomplete/`, which takes no renderer. This file
+ * The rules are in `@september/core/autocomplete`, which takes no renderer. This file
  * holds the engine and gives it the messages of the user.
  *
  * ponytail: one engine for the whole app, made when a screen first asks for
@@ -55,7 +55,7 @@ export function useSuggestions(
       if (learned.has(message.id)) continue;
       learned.add(message.id);
       if (message.type !== "user" || !message.space_id) continue;
-      theEngine().observe(message.text, { chatId: message.space_id });
+      theEngine().observe(message.text, message.space_id);
       added += 1;
     }
 

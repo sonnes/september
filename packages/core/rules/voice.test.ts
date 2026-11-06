@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEFAULT_VOICE_MODEL,
-  DIALOGUE_MODEL,
   DIALOGUE_MODELS,
+  elevenLabsCredits,
   dialogueModelFrom,
   dialogueParts,
   EXPRESSIONS,
@@ -11,6 +11,7 @@ import {
   expressionSound,
   heardVoices,
   stabilityFor,
+  VOICE_MODELS,
   voiceModelFrom,
   voiceRows,
 } from "./voice.ts";
@@ -199,19 +200,9 @@ describe("dialogueParts", () => {
     expect(dialogueParts("   ")).toEqual([]);
   });
 
-  it("always uses Eleven v3", () => {
-    expect(DIALOGUE_MODEL).toBe("eleven_v3");
-  });
 });
 
 describe("dialogueModelFrom", () => {
-  it("offers Eleven v3 and Eleven v3 Conversational for the Dialogue voice", () => {
-    expect(DIALOGUE_MODELS.map((model) => model.id)).toEqual([
-      "eleven_v3",
-      "eleven_v3_conversational",
-    ]);
-  });
-
   it("keeps a Dialogue model", () => {
     expect(dialogueModelFrom("eleven_v3_conversational")).toBe("eleven_v3_conversational");
   });
@@ -219,5 +210,24 @@ describe("dialogueModelFrom", () => {
   it("reads a missing or other model as Eleven v3", () => {
     expect(dialogueModelFrom(undefined)).toBe("eleven_v3");
     expect(dialogueModelFrom("eleven_flash_v2_5")).toBe("eleven_v3");
+  });
+});
+
+describe("elevenLabsCredits", () => {
+  it("turns the rate of the model into whole credits", () => {
+    expect(elevenLabsCredits("abc", "eleven_flash_v2_5")).toBe(2);
+    expect(elevenLabsCredits("abc", "eleven_v3")).toBe(3);
+    expect(elevenLabsCredits("abc", "unlisted")).toBeUndefined();
+  });
+
+  it("reads a deprecated model at the rate of its replacement", () => {
+    expect(elevenLabsCredits("abc", "eleven_turbo_v2_5")).toBe(2);
+    expect(elevenLabsCredits("abc", "eleven_turbo_v2")).toBe(2);
+  });
+
+  it("knows the rate of every model the apps offer", () => {
+    for (const model of [...VOICE_MODELS, ...DIALOGUE_MODELS]) {
+      expect(elevenLabsCredits("abc", model.id)).toBeGreaterThan(0);
+    }
   });
 });

@@ -9,7 +9,6 @@ import {
   backupSummary,
   encodeBackup,
   parseBackup,
-  PORTABLE_SETTING_KEYS,
   type SeptemberBackup,
 } from "./backup.ts";
 
@@ -44,7 +43,6 @@ const validBackup = (): SeptemberBackup => ({
     },
     dismissedIdeas: ["idea-1"],
     spaceModes: { family: "notes" },
-    newSpaceDraft: "A careful unfinished thought.",
     panel: { open: true, tab: "voice" },
     present: { tone: "cream", spoken: false },
   },
@@ -507,18 +505,6 @@ describe("the portable September backup", () => {
     expect(
       parseBackup(encodeBackup(backup)).backup.spaces.map((row) => row.id),
     ).toEqual(["B", "a"]);
-  });
-
-  it("names the settings a restore replaces", () => {
-    expect([...PORTABLE_SETTING_KEYS]).toEqual([
-      "setup",
-      "speech",
-      "dismissed-ideas",
-      "space-modes",
-      "new-space-draft",
-      "panel-open",
-      "present",
-    ]);
   });
 
   it("hands a repository the portable parts and nothing else", () => {

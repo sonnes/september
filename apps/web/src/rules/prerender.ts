@@ -5,7 +5,7 @@
  * root with the pages that a build machine can draw, so the first paint and
  * every crawler read the words without running the application.
  */
-import { HELP_GUIDES } from '@september/core/rules/help';
+import { HELP_GUIDES } from '@september/core/rules/help/catalog';
 
 const ROOT = /(<div id="root"[^>]*>)(<\/div>)/;
 const TITLE = /<title>[\s\S]*?<\/title>/;

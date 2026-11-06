@@ -16,7 +16,8 @@ import { Input } from "@september/ui/components/input";
 import { Label } from "@september/ui/components/label";
 import { Skeleton } from "@september/ui/components/skeleton";
 import { navFor } from "@platform/rules/app-nav";
-import { useDeleteSpace, useSpaces, type Space } from "@platform/services/data";
+import { useDeleteSpace, useSpaces } from "@platform/services/data";
+import type { Space } from "@september/core/rules/records";
 import { Screen } from "@september/app-ui/blocks/screen";
 import { filterSpaces, timeAgo } from "@september/core/rules/spaces";
 

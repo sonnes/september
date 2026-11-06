@@ -2,13 +2,8 @@
 import React, { act } from 'react';
 
 import { HelpGuideContent, HelpScreen } from '@september/app-ui/pages/help';
-import {
-  HELP_CATEGORIES,
-  HELP_GUIDES,
-  groupHelpGuides,
-  helpGuide,
-  searchHelpGuides,
-} from '@september/core/rules/help';
+import { HELP_CATEGORIES, HELP_GUIDES } from '@september/core/rules/help/catalog';
+import { groupHelpGuides, helpGuide, searchHelpGuides } from '@september/core/rules/help/search';
 import { SidebarProvider } from '@september/ui/components/sidebar';
 import { type Root, createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

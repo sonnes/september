@@ -1,15 +1,9 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
-import { STARTER_PACK, type SavedPhrase } from '@september/core/rules/phrases';
+import { STARTER_PACK } from '@september/core/rules/phrases/starter-pack';
+import type { AgentMessage, Message, SavedPhrase, SpacePatch } from '@september/core/rules/records';
 import { currentUserId } from '@/services/os';
-import {
-  getRepository,
-  type Message,
-  type SpacePatch,
-} from '@/services/repository';
-
-export type { AnalyticsEvent, Message, Note, SavedPhrase, Space, SpacePatch } from './repository';
-export type { AgentMessage } from './repository';
+import { getRepository } from '@/services/repository';
 
 const messagesKey = (spaceId: string) => ['messages', spaceId];
 const phrasesKey = (spaceId?: string) => ['phrases', spaceId ?? 'all'];
@@ -130,7 +124,7 @@ export function useAgentMessages(spaceId: string) {
 export function usePutAgentMessage(spaceId: string) {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (message: import('./repository').AgentMessage) =>
+    mutationFn: async (message: AgentMessage) =>
       (await getRepository()).putAgentMessage(message),
     onSuccess: () => client.invalidateQueries({ queryKey: agentMessagesKey(spaceId) }),
   });

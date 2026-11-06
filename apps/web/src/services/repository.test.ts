@@ -4,17 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { BackupContents } from '@september/core/rules/backup';
 
-import {
-  DATABASE_NAME,
-  LEGACY_DATABASES,
-  openRepository,
-  type AgentMessage,
-  type AnalyticsEvent,
-  type Message,
-  type Note,
-  type SavedPhrase,
-  type Space,
-} from './repository';
+import { DATABASE_NAME, LEGACY_DATABASES, openRepository, type AnalyticsEvent } from './repository';
+import type {
+  AgentMessage,
+  Message,
+  Note,
+  SavedPhrase,
+  Space,
+} from '@september/core/rules/records';
 
 async function rowsFromStore<T>(storeName: string): Promise<T[]> {
   const database = await new Promise<IDBDatabase>((resolve, reject) => {
@@ -327,14 +324,13 @@ describe('BrowserRepository', () => {
     await repository.putSetting('speech', speech);
     await repository.putSetting('dismissed-ideas', ['idea-1']);
     await repository.putSetting('space-modes', { general: 'notes' });
-    await repository.putSetting('new-space-draft', 'Unfinished words');
     await repository.putSetting('panel-open', { open: true, tab: 'voice' });
     await repository.putSetting('present', { tone: 'cream', spoken: false });
     await repository.putSetting('provider-keys', { openrouter: 'secret' });
     await repository.putSetting('audio-output', 'speaker-1');
     await repository.putSetting('legacy-migration', 'clean');
     await repository.putSpace(space());
-    await repository.putMessage(message({ audio_path: '/private/audio.mp3' }));
+    await repository.putMessage(message());
     await repository.putNote(note());
     await repository.putPhrase(phrase());
     await repository.putAgentMessage(agentMessage());
@@ -347,7 +343,6 @@ describe('BrowserRepository', () => {
         speech,
         dismissedIdeas: ['idea-1'],
         spaceModes: { general: 'notes' },
-        newSpaceDraft: 'Unfinished words',
         panel: { open: true, tab: 'voice' },
         present: { tone: 'cream', spoken: false },
       },
@@ -363,7 +358,7 @@ describe('BrowserRepository', () => {
 
   it('atomically replaces portable rows and keeps local-only values', async () => {
     const repository = await openRepository({ migrate: false });
-    await repository.putSetting('new-space-draft', 'Old draft');
+    await repository.putSetting('dismissed-ideas', ['old-idea']);
     await repository.putSetting('provider-keys', { openrouter: 'secret' });
     await repository.putSetting('audio-output', 'speaker-1');
     await repository.putSetting('legacy-migration', 'clean');
@@ -389,7 +384,7 @@ describe('BrowserRepository', () => {
     expect(await rowsFromStore('notes')).toEqual([]);
     expect(await rowsFromStore('saved_phrases')).toEqual([]);
     expect(await rowsFromStore('analytics_events')).toEqual([]);
-    expect(await repository.getSetting('new-space-draft')).toBe('New draft');
+    expect(await repository.getSetting('dismissed-ideas')).toEqual(['new-idea']);
     expect(await repository.getSetting('provider-keys')).toEqual({
       openrouter: 'secret',
     });
@@ -401,16 +396,16 @@ describe('BrowserRepository', () => {
 
   it('aborts every replacement write when one value cannot be stored', async () => {
     const repository = await openRepository({ migrate: false });
-    await repository.putSetting('new-space-draft', 'Old draft');
+    await repository.putSetting('dismissed-ideas', ['old-idea']);
     await repository.putSpace(space());
 
     const invalid = backupContents({
       spaces: [space({ id: 'space-2', title: 'Friends' })],
     });
-    invalid.settings.newSpaceDraft = (() => 'not cloneable') as unknown as string;
+    invalid.settings.dismissedIdeas = (() => 'not cloneable') as unknown as string[];
 
     await expect(repository.replaceBackupContents(invalid)).rejects.toBeDefined();
-    expect(await repository.getSetting('new-space-draft')).toBe('Old draft');
+    expect(await repository.getSetting('dismissed-ideas')).toEqual(['old-idea']);
     expect(await repository.listSpaces('local-user')).toEqual([space()]);
     repository.close();
   });
@@ -477,9 +472,8 @@ function backupContents(overrides: Partial<BackupContents> = {}): BackupContents
     settings: {
       setup: null,
       speech: null,
-      dismissedIdeas: [],
+      dismissedIdeas: ['new-idea'],
       spaceModes: {},
-      newSpaceDraft: 'New draft',
       panel: { open: false, tab: 'phrases' },
       present: { tone: 'indigo', spoken: true },
     },

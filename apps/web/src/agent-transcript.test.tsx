@@ -2,7 +2,7 @@
 import React, { act } from 'react';
 
 import { Transcript } from '@september/app-ui/blocks/agent-transcript';
-import type { AgentMessage } from '@september/core/rules/agent';
+import type { AgentMessage } from '@september/core/rules/records';
 import { type Root, createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axeViolations } from './axe';

@@ -24,11 +24,17 @@ import {
   WritingSettings,
 } from '@september/app-ui/pages/settings';
 import { SpacesScreen } from '@september/app-ui/pages/spaces';
-import { ChooseStep, ConnectStep, FinishStep, ProfileStep, WelcomeStep } from '@september/app-ui/pages/steps';
+import {
+  ChooseStep,
+  ConnectStep,
+  FinishStep,
+  ProfileStep,
+  WelcomeStep,
+} from '@september/app-ui/pages/steps';
 import { TalkScreen } from '@september/app-ui/pages/talk';
 import { UsageSettings } from '@september/app-ui/pages/usage';
 import { VoiceCloneScreen, VoiceScreen } from '@september/app-ui/pages/voice';
-import { helpGuide } from '@september/core/rules/help';
+import { helpGuide } from '@september/core/rules/help/search';
 import { analyticsPath } from '@/rules/analytics';
 import { isSetupDone } from '@/rules/onboarding';
 import { isConnectionId } from '@/rules/settings-nav';

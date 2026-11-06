@@ -7,30 +7,15 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 
 import { currentUserId } from "@/services/os";
-import { STARTER_PACK, type SavedPhrase } from "@september/core/rules/phrases";
-import type { AgentMessage } from "@september/core/rules/agent";
-
-export type { AgentMessage };
-
-export interface Space {
-  id: string;
-  user_id: string;
-  title?: string;
-  context?: string;
-  /** How many messages the space held when a model last wrote its phrases. */
-  phrases_synced_count?: number;
-  created_at: number;
-  updated_at: number;
-}
-
-export interface Message {
-  id: string;
-  space_id?: string;
-  user_id: string;
-  text: string;
-  type: string;
-  created_at: number;
-}
+import { STARTER_PACK } from "@september/core/rules/phrases/starter-pack";
+import type {
+  AgentMessage,
+  Message,
+  Note,
+  SavedPhrase,
+  Space,
+  SpacePatch,
+} from "@september/core/rules/records";
 
 const messagesKey = (spaceId: string) => ["messages", spaceId];
 const phrasesKey = (spaceId?: string) => ["phrases", spaceId ?? "all"];
@@ -110,16 +95,6 @@ export function useCreateSpace() {
   });
 }
 
-/** `space_put` replaces one complete row, so it takes the whole space. */
-/** The fields of a space one writer changes. A field left out keeps its value. */
-export interface SpacePatch {
-  id: string;
-  title?: string;
-  context?: string;
-  phrases_synced_count?: number;
-  reset_phrases_synced_count?: boolean;
-}
-
 /**
  * Changes some fields of a space.
  *
@@ -132,7 +107,7 @@ export function useUpdateSpace() {
   const client = useQueryClient();
 
   return useMutation({
-    mutationFn: (patch: SpacePatch) =>
+    mutationFn: (patch: Omit<SpacePatch, "updated_at">) =>
       call<Space>("space_patch", { ...patch, updated_at: Date.now() }),
     onSuccess: refresh(client),
   });
@@ -241,15 +216,6 @@ export function useResolveAgentTool(spaceId: string) {
 }
 
 // -------------------------------------------------------------------- notes
-
-export interface Note {
-  id: string;
-  space_id?: string;
-  name?: string;
-  content: string;
-  created_at: number;
-  updated_at: number;
-}
 
 const notesKey = (spaceId: string) => ["notes", spaceId];
 

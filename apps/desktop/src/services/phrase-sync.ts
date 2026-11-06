@@ -4,23 +4,12 @@ import { currentSetup, subscribeSetup } from "@/services/os";
 import { generate, hasWritingService, itemsFrom } from "@/services/ai";
 import { speechSettings } from "@/services/speech";
 import { tagsSpoken } from "@september/core/rules/audio-tags";
-import {
-  useReplaceAiPhrases,
-  useUpdateSpace,
-  type Message,
-  type Space,
-} from "@/services/data";
-import {
-  buildPhrasesPrompt,
-  decidePhraseSync,
-  dedupeAgainstPinned,
-  formatPhraseHistory,
-  generateCode,
-  rowKind,
-  sanitizeStarters,
-  type PhraseKind,
-  type SavedPhrase,
-} from "@september/core/rules/phrases";
+import { useReplaceAiPhrases, useUpdateSpace } from "@/services/data";
+import { generateCode } from "@september/core/rules/phrases/codes";
+import { dedupeAgainstPinned } from "@september/core/rules/phrases/rows";
+import { decidePhraseSync, sanitizeStarters } from "@september/core/rules/phrases/sync";
+import { buildPhrasesPrompt, formatPhraseHistory } from "@september/core/rules/prompts/phrases";
+import type { Message, PhraseKind, SavedPhrase, Space } from "@september/core/rules/records";
 
 /**
  * Keeps the phrases of a space near the conversation.
@@ -103,7 +92,7 @@ async function writePhrases({
 }): Promise<SavedPhrase[]> {
   const rowsOf = (kind: PhraseKind) =>
     phrases
-      .filter((row) => rowKind(row) === kind)
+      .filter((row) => row.kind === kind)
       .map((row) => ({ text: row.text, pinned: row.pinned }));
 
   const { system, prompt } = buildPhrasesPrompt({

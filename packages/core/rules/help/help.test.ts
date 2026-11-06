@@ -1,0 +1,135 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  HELP_CATEGORIES,
+  HELP_GUIDES,
+  HELP_HOME_SHORTCUTS,
+  HELP_PLATFORMS,
+} from "./catalog.ts";
+import { helpGuide, searchHelpGuides } from "./search.ts";
+
+describe("the Help catalog", () => {
+  it("resolves every guide and every internal reference", () => {
+    const slugs = new Set(HELP_GUIDES.map((guide) => guide.slug));
+    const categories = new Set(HELP_CATEGORIES.map((category) => category.id));
+    const platforms = new Set(HELP_PLATFORMS.map((platform) => platform.key));
+
+    expect(slugs.size).toBe(HELP_GUIDES.length);
+    for (const guide of HELP_GUIDES) {
+      expect(helpGuide(guide.slug)).toBe(guide);
+      expect(categories.has(guide.category)).toBe(true);
+      expect(guide.platforms.every((platform) => platforms.has(platform))).toBe(
+        true,
+      );
+      expect(guide.related.every((slug) => slugs.has(slug))).toBe(true);
+    }
+  });
+
+  it("resolves every home shortcut target", () => {
+    for (const shortcut of HELP_HOME_SHORTCUTS) {
+      if (shortcut.target.type === "guide") {
+        expect(helpGuide(shortcut.target.slug)).toBeDefined();
+      } else {
+        expect(
+          HELP_CATEGORIES.some(
+            (category) => category.id === shortcut.target.categoryId,
+          ),
+        ).toBe(true);
+      }
+    }
+  });
+});
+
+describe("the guides for how a person reaches the screen", () => {
+  it("finds the access profile, eye gaze, and switch scanning guides", () => {
+    const found = (query: string) => searchHelpGuides(query).map((guide) => guide.slug);
+
+    expect(found("access profile")).toContain("choose-how-you-use-september");
+    expect(found("Settings Access")).toContain("choose-how-you-use-september");
+    expect(found("dwell time")).toContain("use-eye-gaze");
+    expect(found("switch scan")).toContain("use-switch-scanning");
+    expect(found("pause scan")).toContain("use-switch-scanning");
+  });
+
+  it("links the three guides to each other", () => {
+    const slugs = ["choose-how-you-use-september", "use-eye-gaze", "use-switch-scanning"];
+    for (const slug of slugs) {
+      const guide = helpGuide(slug);
+      expect(guide, slug).toBeDefined();
+      for (const other of slugs.filter((one) => one !== slug)) {
+        expect(guide!.related).toContain(other);
+      }
+    }
+  });
+
+  it("gives every picture and recording a written fallback", () => {
+    for (const guide of HELP_GUIDES) {
+      const media = [
+        ...(guide.media ?? []),
+        ...(guide.alternatives ?? []).flatMap((task) => task.media ?? []),
+      ];
+      for (const item of media) {
+        const fallback = item.type === "screenshot" ? item.alt : item.transcript;
+        expect(fallback.trim(), guide.slug).not.toBe("");
+      }
+    }
+  });
+});
+
+describe("Help search", () => {
+  it("searches titles, summaries, keywords, and steps without caring about case", () => {
+    expect(
+      searchHelpGuides("PHRASE CODES").map((guide) => guide.slug),
+    ).toContain("use-phrase-codes");
+    expect(
+      searchHelpGuides("prepared message").map((guide) => guide.slug),
+    ).toContain("prepare-a-note");
+    expect(searchHelpGuides("AAC").map((guide) => guide.slug)).toContain(
+      "speak-your-first-message",
+    );
+    expect(
+      searchHelpGuides("Press Speak").map((guide) => guide.slug),
+    ).toContain("speak-your-first-message");
+  });
+
+  it("requires every search word and preserves catalog order", () => {
+    const results = searchHelpGuides("voice preview");
+    const positions = results.map((guide) => HELP_GUIDES.indexOf(guide));
+
+    expect(results.length).toBeGreaterThan(0);
+    expect(positions).toEqual(
+      [...positions].sort((left, right) => left - right),
+    );
+    expect(
+      results.every((guide) => {
+        const text = [
+          guide.title,
+          guide.summary,
+          ...guide.keywords,
+          ...guide.steps,
+        ]
+          .join(" ")
+          .toLocaleLowerCase();
+        return text.includes("voice") && text.includes("preview");
+      }),
+    ).toBe(true);
+  });
+
+  it("finds an instruction in an alternative task", () => {
+    const guide = {
+      ...HELP_GUIDES[0],
+      alternatives: [
+        {
+          title: "Choose a path",
+          steps: ["Select the violet option"],
+          expectedResult: "Ready",
+        },
+      ],
+    };
+    expect(searchHelpGuides("violet", [guide])).toEqual([guide]);
+  });
+
+  it("returns the full catalog for an empty query", () => {
+    expect(searchHelpGuides("  ")).toEqual(HELP_GUIDES);
+  });
+});

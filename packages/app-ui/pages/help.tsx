@@ -16,14 +16,12 @@ import {
   HELP_CATEGORIES,
   HELP_HOME_SHORTCUTS,
   HELP_PLATFORMS,
-  groupHelpGuides,
-  helpGuide,
-  searchHelpGuides,
   type HelpGuide,
   type HelpMedia,
   type HelpPlatform,
   type HelpScreenshot,
-} from "@september/core/rules/help";
+} from "@september/core/rules/help/catalog";
+import { groupHelpGuides, helpGuide, searchHelpGuides } from "@september/core/rules/help/search";
 import {
   Dialog,
   DialogClose,

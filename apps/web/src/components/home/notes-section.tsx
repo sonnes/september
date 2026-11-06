@@ -5,7 +5,8 @@ import { Plus } from 'lucide-react';
 
 import { BrandMark } from '@september/app-ui/blocks/brand';
 
-import { presentChunks, presentTone, roleSpec } from '@september/core/rules/present';
+import { presentChunks } from '@september/core/rules/present/chunks';
+import { presentTone, roleSpec } from '@september/core/rules/present/stage';
 
 import { useDemoSpeech } from './use-demo-speech';
 

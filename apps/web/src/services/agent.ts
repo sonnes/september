@@ -1,11 +1,10 @@
 import {
   askSpaceAgent,
   resolveSpaceAgentProposal,
-  type AgentMessage,
   type AgentRuntimeAdapter,
   type AgentRunOptions,
-  type AgentSpace,
-} from '@september/core/rules/agent';
+} from '@september/core/rules/agent/loop';
+import type { AgentMessage, Space } from '@september/core/rules/records';
 
 import { openAgentWriter } from '@/services/ai';
 import { currentUserId } from '@/services/os';
@@ -33,11 +32,11 @@ const adapter: AgentRuntimeAdapter = {
   deleteMessage: async id => (await getRepository()).deleteMessage(id),
 };
 
-export const askAgent = (space: AgentSpace, text: string, options?: AgentRunOptions) =>
+export const askAgent = (space: Space, text: string, options?: AgentRunOptions) =>
   askSpaceAgent(adapter, space, text, options);
 
 export const resolveAgentProposal = (
-  space: AgentSpace,
+  space: Space,
   proposal: AgentMessage,
   approve: boolean,
   options?: AgentRunOptions,

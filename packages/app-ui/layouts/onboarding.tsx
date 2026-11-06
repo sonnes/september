@@ -17,7 +17,7 @@ import {
   ScanPauseKey,
 } from "@september/app-ui/blocks/access";
 import { HelpGuideContent } from "@september/app-ui/pages/help";
-import { helpGuide } from "@september/core/rules/help";
+import { helpGuide } from "@september/core/rules/help/search";
 import { Button } from "@september/ui/components/button";
 import {
   Sheet,

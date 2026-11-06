@@ -11,8 +11,8 @@ import {
   exportFileName,
   exportReason,
   type ExportKind,
-  type PresentToneKey,
-} from "@september/core/rules/present";
+} from "@september/core/rules/present/export";
+import type { PresentToneKey } from "@september/core/rules/present/stage";
 import { audioUrl, synthesizeSpeech } from "@/services/os";
 import { speechSettings } from "@/services/speech";
 import { recordExportUsage } from "@/services/usage";

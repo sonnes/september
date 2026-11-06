@@ -33,7 +33,8 @@ import {
 } from "@september/app-ui/blocks/access";
 import { spaceParams, useNewSpace } from "@september/app-ui/blocks/space";
 import { escapeStep, moodForKey } from "@september/core/rules/panel";
-import { spaceFromSlug, type SpaceMode } from "@september/core/rules/spaces";
+import type { SpaceMode } from "@september/core/rules/records";
+import { spaceFromSlug } from "@september/core/rules/spaces";
 
 /**
  * The space and the mode that a space path names: Talk, Notes, a note, or

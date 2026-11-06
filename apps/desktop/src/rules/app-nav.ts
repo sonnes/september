@@ -3,7 +3,7 @@
  * renderer. `shell.tsx` supplies the icon for each path.
  */
 
-import { helpGuide } from "@september/core/rules/help";
+import { helpGuide } from "@september/core/rules/help/search";
 import { spaceFromSlug, spaceSlug } from "@september/core/rules/spaces";
 
 import { STEPS } from "./onboarding.ts";

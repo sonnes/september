@@ -81,21 +81,6 @@ export function countsAsTypedKey(key: string): boolean {
   return key.length === 1 || key === "Backspace" || key === "Enter";
 }
 
-const ELEVEN_LABS_RATES: Record<string, number> = {
-  eleven_v3: 1,
-  eleven_multilingual_v2: 1,
-  eleven_flash_v2_5: 0.5,
-  eleven_flash_v2: 0.5,
-  eleven_turbo_v2_5: 0.5,
-  eleven_turbo_v2: 0.5,
-};
-
-/** Estimated quota credits for one ElevenLabs speech request. */
-export function elevenLabsCredits(text: string, model: string): number | undefined {
-  const rate = ELEVEN_LABS_RATES[model];
-  return rate === undefined ? undefined : Math.ceil(text.length * rate);
-}
-
 /** Calendar bounds in the local timezone. Weeks begin on Monday. */
 export function getTimeRangeBounds(
   range: TimeRange,

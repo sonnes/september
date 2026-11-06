@@ -1,12 +1,16 @@
 import type { UsageEventType } from '@september/core/rules/usage-summary';
-import type { AgentMessage } from '@september/core/rules/agent';
+import type {
+  AgentMessage,
+  Message,
+  Note,
+  SavedPhrase,
+  Space,
+  SpacePatch,
+} from '@september/core/rules/records';
 import { panelStateFrom } from '@september/core/rules/panel';
-import { presentSettings } from '@september/core/rules/present';
-import {
-  PORTABLE_SETTING_KEYS,
-  type BackupContents,
-  type BackupSettings,
-} from '@september/core/rules/backup';
+import { presentSettings } from '@september/core/rules/present/settings';
+import { PORTABLE_SETTING_KEYS, SETTINGS } from '@september/core/rules/settings';
+import type { BackupContents, BackupSettings } from '@september/core/rules/backup';
 
 export const DATABASE_NAME = 'september';
 const DATABASE_VERSION = 3;
@@ -37,55 +41,6 @@ const STORES = {
   blobChunks: 'blob_chunks',
 } as const;
 
-export interface Space {
-  id: string;
-  user_id: string;
-  title?: string;
-  context?: string;
-  phrases_synced_count?: number;
-  created_at: number;
-  updated_at: number;
-}
-
-export interface SpacePatch {
-  id: string;
-  title?: string;
-  context?: string;
-  phrases_synced_count?: number;
-  reset_phrases_synced_count?: boolean;
-  updated_at: number;
-}
-
-export interface Message {
-  id: string;
-  space_id?: string;
-  user_id: string;
-  text: string;
-  type: string;
-  audio_path?: string;
-  created_at: number;
-}
-
-export interface Note {
-  id: string;
-  space_id?: string;
-  name?: string;
-  content: string;
-  created_at: number;
-  updated_at: number;
-}
-
-export interface SavedPhrase {
-  id: string;
-  space_id: string;
-  text: string;
-  kind: 'phrase' | 'starter';
-  code?: string;
-  pinned: boolean;
-  created_at: number;
-  updated_at: number;
-}
-
 export interface AnalyticsEvent {
   id: string;
   user_id: string;
@@ -94,8 +49,6 @@ export interface AnalyticsEvent {
   timestamp: number;
   data: Record<string, unknown>;
 }
-
-export type { AgentMessage };
 
 interface SettingRow {
   key: string;
@@ -302,17 +255,18 @@ export class BrowserRepository {
 
     return {
       settings: {
-        setup: (settings.get('setup') as BackupSettings['setup'] | undefined) ?? null,
-        speech: (settings.get('speech') as BackupSettings['speech'] | undefined) ?? null,
+        setup: (settings.get(SETTINGS.setup) as BackupSettings['setup'] | undefined) ?? null,
+        speech: (settings.get(SETTINGS.speech) as BackupSettings['speech'] | undefined) ?? null,
         dismissedIdeas:
-          (settings.get('dismissed-ideas') as BackupSettings['dismissedIdeas'] | undefined) ?? [],
-        spaceModes: (settings.get('space-modes') as BackupSettings['spaceModes'] | undefined) ?? {},
-        newSpaceDraft: (settings.get('new-space-draft') as string | undefined) ?? '',
-        panel: panelStateFrom(settings.get('panel-open')),
-        present: presentSettings(settings.get('present')),
+          (settings.get(SETTINGS.dismissedIdeas) as BackupSettings['dismissedIdeas'] | undefined) ??
+          [],
+        spaceModes:
+          (settings.get(SETTINGS.spaceModes) as BackupSettings['spaceModes'] | undefined) ?? {},
+        panel: panelStateFrom(settings.get(SETTINGS.panel)),
+        present: presentSettings(settings.get(SETTINGS.present)),
       },
       spaces,
-      messages: messages.map(({ audio_path: _audioPath, ...message }) => message),
+      messages,
       agentMessages,
       notes,
       savedPhrases,
@@ -338,14 +292,15 @@ export class BrowserRepository {
       const settings = transaction.objectStore(STORES.settings);
       for (const key of PORTABLE_SETTING_KEYS) settings.delete(key);
       const values: Array<[string, unknown]> = [
-        ['dismissed-ideas', contents.settings.dismissedIdeas],
-        ['space-modes', contents.settings.spaceModes],
-        ['new-space-draft', contents.settings.newSpaceDraft],
-        ['panel-open', contents.settings.panel],
-        ['present', contents.settings.present],
+        [SETTINGS.dismissedIdeas, contents.settings.dismissedIdeas],
+        [SETTINGS.spaceModes, contents.settings.spaceModes],
+        [SETTINGS.panel, contents.settings.panel],
+        [SETTINGS.present, contents.settings.present],
       ];
-      if (contents.settings.setup !== null) values.push(['setup', contents.settings.setup]);
-      if (contents.settings.speech !== null) values.push(['speech', contents.settings.speech]);
+      if (contents.settings.setup !== null) values.push([SETTINGS.setup, contents.settings.setup]);
+      if (contents.settings.speech !== null) {
+        values.push([SETTINGS.speech, contents.settings.speech]);
+      }
       for (const [key, value] of values) settings.put({ key, value } satisfies SettingRow);
 
       const spaces = transaction.objectStore(STORES.spaces);
@@ -862,7 +817,6 @@ function migratedMessage(row: Record<string, unknown>): Message {
     user_id: String(row.user_id),
     text: String(row.text),
     type: String(row.type),
-    ...(typeof row.audio_path === 'string' ? { audio_path: row.audio_path } : {}),
     created_at: timestamp(row.created_at),
   };
 }
@@ -997,7 +951,7 @@ async function importLegacyBrowserSettings(repository: BrowserRepository): Promi
       open?: unknown;
       activeTab?: unknown;
     };
-    await repository.putSetting('panel-open', {
+    await repository.putSetting(SETTINGS.panel, {
       open: saved.state === 'expanded' || saved.open === true,
       tab: saved.activeTab === 'voice' ? 'voice' : 'phrases',
     });
@@ -1006,14 +960,14 @@ async function importLegacyBrowserSettings(repository: BrowserRepository): Promi
   const dismissed = storedJson('september:mined-dismissed');
   if (Array.isArray(dismissed)) {
     await repository.putSetting(
-      'dismissed-ideas',
+      SETTINGS.dismissedIdeas,
       dismissed.filter((value): value is string => typeof value === 'string')
     );
   }
 
   try {
     const output = localStorage.getItem('september:audio-output-device');
-    if (output) await repository.putSetting('audio-output', output);
+    if (output) await repository.putSetting(SETTINGS.audioOutput, output);
   } catch {
     // A browser that denies storage access still completes the row migration.
   }
@@ -1030,7 +984,7 @@ async function importLegacyBrowserSettings(repository: BrowserRepository): Promi
       // Keep any modes already read.
     }
   }
-  if (Object.keys(modes).length) await repository.putSetting('space-modes', modes);
+  if (Object.keys(modes).length) await repository.putSetting(SETTINGS.spaceModes, modes);
 }
 
 function deleteLegacyBrowserSettings(): boolean {
@@ -1061,14 +1015,14 @@ async function validateIds<T extends { id: string }>(
 }
 
 export async function migrateLegacyData(repository: BrowserRepository): Promise<void> {
-  const state = await repository.getSetting<string>('legacy-migration');
+  const state = await repository.getSetting<string>(SETTINGS.legacyMigration);
   if (state === 'clean') return;
   if (state === 'imported') {
-    if (await cleanupLegacyData()) await repository.putSetting('legacy-migration', 'clean');
+    if (await cleanupLegacyData()) await repository.putSetting(SETTINGS.legacyMigration, 'clean');
     return;
   }
 
-  await repository.putSetting('legacy-migration', 'copying');
+  await repository.putSetting(SETTINGS.legacyMigration, 'copying');
   const [accounts, spaces, messages, notes, phrases, events] = await Promise.all([
     readLegacyRows<Record<string, unknown>>('app-user-account', 'user-account'),
     readLegacyRows<Record<string, unknown>>('app-spaces', 'spaces'),
@@ -1092,9 +1046,9 @@ export async function migrateLegacyData(repository: BrowserRepository): Promise<
 
   const account = accounts[0];
   if (account) {
-    await repository.putSetting('setup', setupFromAccount(account));
-    await repository.putSetting('provider-keys', providerKeysFromAccount(account));
-    await repository.putSetting('speech', speechFromAccount(account));
+    await repository.putSetting(SETTINGS.setup, setupFromAccount(account));
+    await repository.putSetting(SETTINGS.providerKeys, providerKeysFromAccount(account));
+    await repository.putSetting(SETTINGS.speech, speechFromAccount(account));
   }
   await importLegacyBrowserSettings(repository);
 
@@ -1116,6 +1070,6 @@ export async function migrateLegacyData(repository: BrowserRepository): Promise<
     );
   }
 
-  await repository.putSetting('legacy-migration', 'imported');
-  if (await cleanupLegacyData()) await repository.putSetting('legacy-migration', 'clean');
+  await repository.putSetting(SETTINGS.legacyMigration, 'imported');
+  if (await cleanupLegacyData()) await repository.putSetting(SETTINGS.legacyMigration, 'clean');
 }

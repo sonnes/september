@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 
 import { Transcript } from '@september/app-ui/blocks/agent-transcript';
-import type { AgentMessage, AgentToolName, AgentToolState } from '@september/core/rules/agent';
+import type { AgentToolName } from '@september/core/rules/agent/tools';
+import type { AgentMessage, AgentToolState } from '@september/core/rules/records';
 import { ArrowRight, Check, FileText, Pin } from 'lucide-react';
 
 const NOTE_TEXT =

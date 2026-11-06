@@ -21,18 +21,20 @@ import {
 } from "lucide-react";
 
 import {
-  chunkFontRatio,
   chunkProgress,
-  PRESENT_TONES,
   presentChunks,
+  stepChunk,
+  type PresentChunk,
+} from "@september/core/rules/present/chunks";
+import type { PresentSettings } from "@september/core/rules/present/settings";
+import {
+  chunkFontRatio,
+  PRESENT_TONES,
   presentTone,
   roleSpec,
-  stepChunk,
   STAGE_PADDING_RATIO,
-  type PresentChunk,
-  type PresentSettings,
   type PresentTone,
-} from "@september/core/rules/present";
+} from "@september/core/rules/present/stage";
 import { BrandMark, BrandWordmark } from "@september/app-ui/blocks/brand";
 import {
   currentPresent,

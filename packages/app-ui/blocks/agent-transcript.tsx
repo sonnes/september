@@ -14,8 +14,8 @@ import {
 
 import { Button } from "@september/ui/components/button";
 import {
-  agentCallInput,
   agentProposalIsDelete,
+  agentRowCall,
   agentProposalIsUnpin,
   agentProposalLines,
   agentToolOutcome,
@@ -23,10 +23,10 @@ import {
   agentToolSummary,
   groupAgentTurns,
   type AgentChangeLine,
-  type AgentMessage,
   type AgentToolTone,
   type AgentTurnPart,
-} from "@september/core/rules/agent";
+} from "@september/core/rules/agent/transcript";
+import type { AgentMessage } from "@september/core/rules/records";
 
 /**
  * The Agent transcript.
@@ -179,10 +179,13 @@ const writeNote = (row: AgentMessage): string | undefined =>
 /** The mark on a proposal card says what kind of change is waiting. */
 function proposalIcon(row: AgentMessage): typeof Check {
   if (agentProposalIsDelete(row)) return Trash2;
-  if (!row.tool_name || !row.tool_arguments) return Pencil;
-  const input = agentCallInput(row.tool_name, row.tool_arguments);
-  if (input.operation === "pin" || input.operation === "unpin") return Pin;
-  if (input.operation === "create") return input.pinned ? Pin : Plus;
+  const read = agentRowCall(row);
+  if (!read.ok || read.call.tool !== "change_phrase") {
+    return read.ok && "operation" in read.call && read.call.operation === "create" ? Plus : Pencil;
+  }
+  const { operation, pinned } = read.call;
+  if (operation === "pin" || operation === "unpin") return Pin;
+  if (operation === "create") return pinned ? Pin : Plus;
   return Pencil;
 }
 

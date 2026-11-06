@@ -1,41 +1,29 @@
-import {
-  isAgentWriteTool,
-  parseAgentToolArguments,
-  type AgentMessage,
-  type AgentToolName,
-} from "./agent.ts";
-import { CLOSED_PANEL, PANEL_TABS, type PanelState } from "./panel.ts";
-import {
-  DEFAULT_TONE,
-  PRESENT_TONES,
-  type PresentSettings,
-  type PresentToneKey,
-} from "./present.ts";
-import { spaceSlug } from "./spaces.ts";
-import { USAGE_EVENT_TYPES, type UsageEventType } from "./usage-summary.ts";
 import { parseAccess, type AccessProfile } from "./access.ts";
+import { AGENT_TOOLS, isAgentWriteTool, parseAgentCall } from "./agent/tools.ts";
+import { CLOSED_PANEL, PANEL_TABS, type PanelState } from "./panel.ts";
+import type { PresentSettings } from "./present/settings.ts";
+import { DEFAULT_TONE, PRESENT_TONES, type PresentToneKey } from "./present/stage.ts";
+import {
+  PHRASE_KINDS,
+  SPACE_MODES,
+  type AgentMessage,
+  type Message,
+  type Note,
+  type SavedPhrase,
+  type Space,
+  type SpaceMode,
+} from "./records.ts";
+import { spaceSlug } from "./spaces.ts";
+import {
+  USAGE_EVENT_TYPES,
+  type UsageEvent,
+  type UsageEventType,
+} from "./usage-summary.ts";
 
 export const BACKUP_FORMAT = "september-backup" as const;
 export const BACKUP_FORMAT_VERSION = 2 as const;
 
 export type BackupSource = "web" | "desktop";
-
-/**
- * The settings a backup carries, under the names both apps store them by.
- *
- * A restore removes every one of these and writes it again. A key that is
- * not here belongs to the device — a provider key, the chosen output, the
- * state of a migration — and a restore never touches it.
- */
-export const PORTABLE_SETTING_KEYS = [
-  "setup",
-  "speech",
-  "dismissed-ideas",
-  "space-modes",
-  "new-space-draft",
-  "panel-open",
-  "present",
-] as const;
 
 export interface BackupSetup {
   autoSuggestions: boolean;
@@ -73,60 +61,11 @@ export interface BackupSettings {
   setup: BackupSetup | null;
   speech: BackupSpeech | null;
   dismissedIdeas: string[];
-  spaceModes: Record<string, "talk" | "notes" | "agent">;
-  newSpaceDraft: string;
+  spaceModes: Record<string, SpaceMode>;
   panel: PanelState;
   present: PresentSettings;
 }
 
-export interface BackupSpace {
-  id: string;
-  user_id: string;
-  title?: string;
-  context?: string;
-  phrases_synced_count?: number;
-  created_at: number;
-  updated_at: number;
-}
-
-export interface BackupMessage {
-  id: string;
-  space_id?: string;
-  user_id: string;
-  text: string;
-  type: string;
-  created_at: number;
-}
-
-export interface BackupNote {
-  id: string;
-  space_id?: string;
-  name?: string;
-  content: string;
-  created_at: number;
-  updated_at: number;
-}
-
-export interface BackupPhrase {
-  id: string;
-  space_id: string;
-  text: string;
-  kind: "phrase" | "starter";
-  code?: string;
-  pinned: boolean;
-  created_at: number;
-  updated_at: number;
-}
-
-export interface BackupUsageEvent {
-  id: string;
-  user_id: string;
-  event_type: UsageEventType;
-  timestamp: number;
-  data: Record<string, unknown>;
-}
-
-export type BackupAgentMessage = AgentMessage;
 
 export interface SeptemberBackup {
   format: typeof BACKUP_FORMAT;
@@ -135,12 +74,12 @@ export interface SeptemberBackup {
   source: BackupSource;
   appVersion: string;
   settings: BackupSettings;
-  spaces: BackupSpace[];
-  messages: BackupMessage[];
-  agentMessages: BackupAgentMessage[];
-  notes: BackupNote[];
-  savedPhrases: BackupPhrase[];
-  usageEvents: BackupUsageEvent[];
+  spaces: Space[];
+  messages: Message[];
+  agentMessages: AgentMessage[];
+  notes: Note[];
+  savedPhrases: SavedPhrase[];
+  usageEvents: UsageEvent[];
 }
 
 export type BackupContents = Pick<
@@ -266,7 +205,7 @@ function boundedNumber(
 function timestamps(
   row: Record<string, unknown>,
   label: string,
-): Pick<BackupSpace, "created_at" | "updated_at"> {
+): Pick<Space, "created_at" | "updated_at"> {
   const created_at = integerOf(row.created_at, `${label} created_at`);
   const updated_at = integerOf(row.updated_at, `${label} updated_at`);
   if (updated_at < created_at)
@@ -407,7 +346,7 @@ function spaceModesFrom(
       () =>
         [
           identifier(slug, "space mode slug"),
-          oneOf(mode, ["talk", "notes", "agent"], `mode for ${slug}`),
+          oneOf(mode, SPACE_MODES, `mode for ${slug}`),
         ] as const,
       skips,
     );
@@ -449,8 +388,6 @@ function settingsFrom(value: unknown, skips: Skips): BackupSettings {
       skips,
     ),
     spaceModes: spaceModesFrom(row.spaceModes, skips),
-    newSpaceDraft:
-      kept(() => stringOf(row.newSpaceDraft, "new-space draft"), skips) ?? "",
     panel: kept(() => panelFrom(row.panel), skips) ?? CLOSED_PANEL,
     present: kept(() => presentFrom(row.present), skips) ?? {
       tone: DEFAULT_TONE,
@@ -459,7 +396,7 @@ function settingsFrom(value: unknown, skips: Skips): BackupSettings {
   };
 }
 
-function spaceFrom(value: unknown): BackupSpace {
+function spaceFrom(value: unknown): Space {
   const row = objectOf(value, "space");
   const phrases_synced_count =
     row.phrases_synced_count === undefined
@@ -479,7 +416,7 @@ function spaceFrom(value: unknown): BackupSpace {
   };
 }
 
-function messageFrom(value: unknown): BackupMessage {
+function messageFrom(value: unknown): Message {
   const row = objectOf(value, "message");
   const space_id =
     row.space_id === undefined
@@ -495,7 +432,7 @@ function messageFrom(value: unknown): BackupMessage {
   };
 }
 
-function noteFrom(value: unknown): BackupNote {
+function noteFrom(value: unknown): Note {
   const row = objectOf(value, "note");
   const space_id =
     row.space_id === undefined
@@ -511,7 +448,7 @@ function noteFrom(value: unknown): BackupNote {
   };
 }
 
-function phraseFrom(value: unknown): BackupPhrase {
+function phraseFrom(value: unknown): SavedPhrase {
   const row = objectOf(value, "saved phrase");
   const code = optionalString(row, "code", "saved phrase code");
   return {
@@ -521,14 +458,14 @@ function phraseFrom(value: unknown): BackupPhrase {
       empty: false,
       maxBytes: 256,
     }),
-    kind: oneOf(row.kind, ["phrase", "starter"], "saved phrase kind"),
+    kind: oneOf(row.kind, PHRASE_KINDS, "saved phrase kind"),
     ...(code === undefined ? {} : { code }),
     pinned: booleanOf(row.pinned, "saved phrase pinned state"),
     ...timestamps(row, "saved phrase"),
   };
 }
 
-function usageEventFrom(value: unknown): BackupUsageEvent {
+function usageEventFrom(value: unknown): UsageEvent {
   const row = objectOf(value, "usage event");
   const event_type = oneOf(
     row.event_type,
@@ -544,7 +481,7 @@ function usageEventFrom(value: unknown): BackupUsageEvent {
   };
 }
 
-function agentMessageFrom(value: unknown): BackupAgentMessage {
+function agentMessageFrom(value: unknown): AgentMessage {
   const row = objectOf(value, "agent message");
   const id = identifier(row.id, "agent message ID");
   const role = oneOf(
@@ -561,15 +498,7 @@ function agentMessageFrom(value: unknown): BackupAgentMessage {
       ? undefined
       : oneOf(
           row.tool_name,
-          [
-            "inspect_space",
-            "read_note",
-            "read_talk_messages",
-            "configure_space",
-            "change_note",
-            "change_phrase",
-            "change_talk_message",
-          ],
+          AGENT_TOOLS.map((tool) => tool.function.name),
           "agent tool name",
         );
   const tool_arguments = optionalString(
@@ -598,7 +527,7 @@ function agentMessageFrom(value: unknown): BackupAgentMessage {
   }
   if (tool_name !== undefined && tool_arguments !== undefined) {
     try {
-      parseAgentToolArguments(tool_name as AgentToolName, tool_arguments);
+      parseAgentCall(tool_name, tool_arguments);
     } catch (error) {
       invalid(
         `Agent message ${id} has invalid tool arguments. ${
@@ -610,7 +539,7 @@ function agentMessageFrom(value: unknown): BackupAgentMessage {
   if (
     tool_state === "pending" &&
     tool_name !== undefined &&
-    !isAgentWriteTool(tool_name as AgentToolName)
+    !isAgentWriteTool(tool_name)
   ) {
     invalid(`Agent message ${id} cannot leave a read tool pending.`);
   }

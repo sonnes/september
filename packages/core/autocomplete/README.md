@@ -1,52 +1,41 @@
 # Autocomplete
 
-This package supplies word completions and next-word predictions for the Talk and Notes composers.
+This module gives word completions and next-word predictions for the Talk and Notes composers.
 
 ## Engine
 
-`Autocomplete` combines these parts:
+`Autocomplete` blends three n-gram models with Stupid Backoff:
 
-- a trie for prefix matches
-- a 5-gram model with Stupid Backoff
-- a QWERTY-weighted fuzzy match
-- a shared base layer, user layer, and per-space layer
-- recency weighting for learned text
+- the seed sentences in `corpus.ts`
+- every message that the user wrote
+- the messages that the user wrote in the current space
 
-The engine accepts new messages through `observe(text, { chatId })`. The web service reads each user message from the main repository one time.
+A space model reaches its full weight after 500 tokens. `observe(text, spaceId)` adds one message of the user.
 
-## Desktop stripe contract
+Completions come from the word counts. The dictionary adds to the word counts only, and never to an n-gram model.
 
-`createEngine()` trains the engine with the spoken corpus and dictionary. `suggestionsFor()` returns at most six words for the current composer text.
+## Stripe
 
-`applySuggestion()` replaces the partial word and adds a trailing space. This operation saves the next separator keystroke.
+`createEngine()` trains the engine on the corpus and the dictionary. `suggestionsFor()` returns at most `MAX_SUGGESTIONS` (6) words for the composer text. After a finished word, learned audio tags come after the words.
 
-## Corpus and dictionary
+`applySuggestion()` replaces the partial word and adds a trailing space. A tag never replaces a word.
 
-`corpus.ts` teaches word order from spoken sentences. `dictionary.ts` gives prefix coverage for 5,000 common spoken words.
+## Corpus and Dictionary
 
-The dictionary comes from OpenSubtitles 2018 word counts. The source list uses the MIT License.
+`dictionary.ts` holds the 5,000 most frequent words of spoken English. The list comes from OpenSubtitles 2018 word counts, under the MIT License.
 
-Run this command from `apps/desktop` to rebuild the dictionary:
+To rebuild the dictionary, run this command from `apps/desktop`:
 
 ```sh
 node scripts/build-dictionary.mjs
 ```
 
-The command writes `packages/core/autocomplete/dictionary.ts`, which both apps
-import.
-
-## Persistence
-
-The web app does not persist an autocomplete snapshot. It trains the base engine at start and learns from repository messages.
-
-This package can serialize an engine snapshot for tests and future adapters. It does not open IndexedDB.
-
 ## Tests
 
-Run the package test command from the repository root:
+Run the tests from the repository root:
 
 ```sh
 pnpm --filter @september/core test
 ```
 
-The tests cover tokenization, n-gram scoring, fuzzy matches, recency, snapshots, and the six-word stripe contract.
+`savings.test.ts` holds a floor for the keystroke saving on unseen sentences.

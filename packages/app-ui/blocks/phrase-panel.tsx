@@ -24,14 +24,9 @@ import {
 } from "@platform/services/data";
 import { dismissedIdeas, rememberDismissed } from "@platform/services/os";
 import { TaggedText } from "@september/app-ui/blocks/suggestions";
-import {
-  CODE_MAX_LENGTH,
-  mineShortcuts,
-  normalizeMinedText,
-  rowKind,
-  validateCode,
-  type SavedPhrase,
-} from "@september/core/rules/phrases";
+import { CODE_MAX_LENGTH, validateCode } from "@september/core/rules/phrases/codes";
+import { mineShortcuts, normalizeMinedText } from "@september/core/rules/phrases/mining";
+import type { SavedPhrase } from "@september/core/rules/records";
 
 /**
  * The phrases of one space, and the shortcut ideas that come from repeated
@@ -358,7 +353,7 @@ function PhraseRow({
         </span>
       </button>
 
-      {rowKind(row) === "starter" ? (
+      {row.kind === "starter" ? (
         <span className="border-primary/50 text-brand shrink-0 rounded-md border border-dashed px-1.5 py-0.5 text-xs">
           opening
         </span>

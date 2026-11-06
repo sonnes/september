@@ -5,12 +5,12 @@ import type {
   Models,
 } from "@earendil-works/pi-ai";
 
+import type { AgentWriter } from "@september/core/rules/agent/loop";
 import {
   modelContextFrom,
   modelTextFrom,
-  type AgentWriter,
   type ModelIdentity,
-} from "@september/core/rules/agent";
+} from "@september/core/rules/model-client";
 import {
   modelConfigFor,
   type WritingModelConfig,
@@ -24,7 +24,7 @@ import {
   buildSpaceContextPrompt,
   spaceDescriptionFrom,
   type SpaceDescription,
-} from "@september/core/rules/prompts";
+} from "@september/core/rules/prompts/space";
 
 /**
  * The writing service.

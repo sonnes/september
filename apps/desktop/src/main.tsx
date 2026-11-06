@@ -21,7 +21,7 @@ import "@fontsource/noto-sans/700.css";
 import { OnboardingLayout } from "@september/app-ui/layouts/onboarding";
 import { openingPath, windowTitle } from "@/rules/app-nav";
 import { HelpScreen } from "@september/app-ui/pages/help";
-import { helpGuide } from "@september/core/rules/help";
+import { helpGuide } from "@september/core/rules/help/search";
 import { NotesScreen } from "@september/app-ui/pages/notes";
 import { isSetupDone } from "@/rules/onboarding";
 import {

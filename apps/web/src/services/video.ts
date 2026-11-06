@@ -13,19 +13,21 @@
 import {
   alignmentToWords,
   captionRoles,
+  wordsToCaptions,
+  type Caption,
+  type SpeechAlignment,
+} from '@september/core/rules/present/captions';
+import {
   chunkFontRatio,
   presentTone,
   roleSpec,
   SPOKEN_OPACITY,
   STAGE_PADDING_RATIO,
   UNSPOKEN_OPACITY,
-  wordsToCaptions,
-  type Caption,
   type ChunkRole,
   type PresentTone,
   type PresentToneKey,
-  type SpeechAlignment,
-} from '@september/core/rules/present';
+} from '@september/core/rules/present/stage';
 
 const WIDTH = 1080;
 const HEIGHT = 1920;

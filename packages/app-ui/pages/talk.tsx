@@ -18,16 +18,15 @@ import {
   usePhrases,
   usePutPhrase,
   useSendMessage,
-  type Message,
-  type Space,
 } from "@platform/services/data";
+import type { Message, Space } from "@september/core/rules/records";
 import {
   RightPanel,
   ScreenHeader,
 } from "@september/app-ui/blocks/screen";
 import { PanelRail } from "@september/app-ui/blocks/space-panel";
 import { SpokenText } from "@september/app-ui/blocks/suggestions";
-import { pinnedPhrase } from "@september/core/rules/phrases";
+import { pinnedPhrase } from "@september/core/rules/phrases/rows";
 import { documentTitle } from "@september/core/rules/titles";
 import { useSyncPhrases } from "@platform/services/phrase-sync";
 import {
@@ -187,7 +186,6 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
     setDraft(text);
     draftSave.mutate(text);
   };
-
 
   // The voice starts at once. The composer holds the text until local storage
   // accepts the message, so a failed write loses no words.

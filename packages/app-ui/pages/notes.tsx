@@ -55,9 +55,8 @@ import {
   usePutPhrase,
   useUpdateNote,
   useUpdateSpace,
-  type Note,
-  type Space,
 } from "@platform/services/data";
+import type { Note, Space } from "@september/core/rules/records";
 import {
   markdownToVoiceText,
   noteContentUpdates,
@@ -73,13 +72,9 @@ import { PanelRail } from "@september/app-ui/blocks/space-panel";
 import { PresentOverlay } from "@september/app-ui/blocks/present";
 import { RightPanel, ScreenHeader } from "@september/app-ui/blocks/screen";
 import { documentTitle } from "@september/core/rules/titles";
-import { pinnedPhrase } from "@september/core/rules/phrases";
-import {
-  EXPORT_ARTIFACTS,
-  PRESENT_TONES,
-  type ExportKind,
-  type PresentToneKey,
-} from "@september/core/rules/present";
+import { pinnedPhrase } from "@september/core/rules/phrases/rows";
+import { EXPORT_ARTIFACTS, type ExportKind } from "@september/core/rules/present/export";
+import { PRESENT_TONES, type PresentToneKey } from "@september/core/rules/present/stage";
 import { messageTime, spaceSlug } from "@september/core/rules/spaces";
 import { notePreview } from "@september/core/rules/note-document";
 import { matchesWords } from "@september/core/rules/pick";

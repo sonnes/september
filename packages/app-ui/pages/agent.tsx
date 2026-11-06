@@ -14,13 +14,9 @@ import {
   AlertDialogTitle,
 } from "@september/ui/components/alert-dialog";
 import { Button } from "@september/ui/components/button";
-import {
-  AGENT_OPENERS,
-  agentOwesReply,
-  agentProposalIsDelete,
-  INTRODUCTION_WAIT_MS,
-  type AgentMessage,
-} from "@september/core/rules/agent";
+import { agentOwesReply, INTRODUCTION_WAIT_MS } from "@september/core/rules/agent/introduction";
+import { AGENT_OPENERS, agentProposalIsDelete } from "@september/core/rules/agent/transcript";
+import type { AgentMessage, Space } from "@september/core/rules/records";
 import { documentTitle } from "@september/core/rules/titles";
 import {
   NEW_SPACE_CONTEXT,
@@ -30,12 +26,7 @@ import {
 
 import { hasWritingService } from "@platform/services/ai";
 import { askAgent, resolveAgentProposal } from "@platform/services/agent";
-import {
-  useAgentMessages,
-  useAllMessages,
-  useUpdateSpace,
-  type Space,
-} from "@platform/services/data";
+import { useAgentMessages, useAllMessages, useUpdateSpace } from "@platform/services/data";
 import { RightPanel, ScreenHeader } from "@september/app-ui/blocks/screen";
 import { PanelRail } from "@september/app-ui/blocks/space-panel";
 import {

@@ -9,12 +9,19 @@
 
 import { DIALOGUE_MODEL, stabilityFor } from "./voice.ts";
 
-/** One tag, as a whole token. */
-const TAG = /^\[[^\[\]]+\]$/;
-/** Every tag in a text. */
-const TAGS = /\[[^\[\]]+\]/g;
+const TAG_SOURCE = String.raw`\[[^\[\]]+\]`;
+const TAG = new RegExp(`^${TAG_SOURCE}$`);
+const TAGS = new RegExp(TAG_SOURCE, "g");
+const TAG_PARTS = new RegExp(`(${TAG_SOURCE})`);
+const ENDING_TAG = new RegExp(`${TAG_SOURCE}$`);
 
 export const isTag = (token: string): boolean => TAG.test(token);
+
+/** True when the text ends with a tag. */
+export const endsWithTag = (text: string): boolean => ENDING_TAG.test(text);
+
+/** The text cut into its tags and the text between them, in order. */
+export const splitTags = (text: string): string[] => text.split(TAG_PARTS);
 
 /** The words inside the brackets, for a chip. */
 export const tagLabel = (tag: string): string => tag.slice(1, -1).trim();

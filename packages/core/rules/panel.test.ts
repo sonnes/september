@@ -1,6 +1,32 @@
 import { describe, expect, it } from "vitest";
 
-import { escapeStep, moodForKey } from "./panel.ts";
+import { escapeStep, moodForKey, panelStateFrom, pressTab } from "./panel.ts";
+
+describe("panelStateFrom", () => {
+  it("starts closed on the phrases when nothing is saved", () => {
+    expect(panelStateFrom(null)).toEqual({ open: false, tab: "phrases" });
+    expect(panelStateFrom(undefined)).toEqual({ open: false, tab: "phrases" });
+  });
+
+  it("brings back the tab the user left, open or closed", () => {
+    expect(panelStateFrom({ open: true, tab: "voice" })).toEqual({ open: true, tab: "voice" });
+    expect(panelStateFrom({ open: false, tab: "voice" })).toEqual({ open: false, tab: "voice" });
+  });
+});
+
+describe("pressTab", () => {
+  it("opens a closed card on the pressed tab", () => {
+    expect(pressTab({ open: false, tab: "voice" }, "phrases")).toEqual({ open: true, tab: "phrases" });
+  });
+
+  it("moves an open card to another tab", () => {
+    expect(pressTab({ open: true, tab: "phrases" }, "voice")).toEqual({ open: true, tab: "voice" });
+  });
+
+  it("closes the card when the open tab is pressed, and keeps the tab", () => {
+    expect(pressTab({ open: true, tab: "voice" }, "voice")).toEqual({ open: false, tab: "voice" });
+  });
+});
 
 describe("escapeStep", () => {
   it("stops the voice first", () => {

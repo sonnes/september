@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { call } from "@/services/data";
 import { currentUserId } from "@/services/os";
-import type { ExportKind } from "@september/core/rules/present";
+import type { ExportKind } from "@september/core/rules/present/export";
 import {
   getTimeRangeBounds,
   summarizeUsage,

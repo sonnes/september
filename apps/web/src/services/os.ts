@@ -1,8 +1,10 @@
+import { SETTINGS, talkDraftKey, talkMoodKey } from '@september/core/rules/settings';
 import { authorizeOpenRouter } from './oauth';
 import { modelSettingsFrom } from '@september/core/rules/model-config';
 import { DEFAULT_DRAFT, type OnboardingDraft } from '@/rules/onboarding';
 import { panelStateFrom, type PanelState } from '@september/core/rules/panel';
-import { presentSettings, type PresentSettings, type SpeechAlignment } from '@september/core/rules/present';
+import type { SpeechAlignment } from '@september/core/rules/present/captions';
+import { presentSettings, type PresentSettings } from '@september/core/rules/present/settings';
 import { getRepository } from '@/services/repository';
 import {
   CONVERSATIONAL_MODEL,
@@ -50,16 +52,16 @@ export async function bootstrapBrowserServices(): Promise<void> {
     output,
     savedHeard,
   ] = await Promise.all([
-    repository.getSetting<SavedSetup>('setup'),
-    repository.getSetting<string>('lastPath'),
-    repository.getSetting<SpeechSettings>('speech'),
-    repository.getSetting<string[]>('dismissed-ideas'),
+    repository.getSetting<SavedSetup>(SETTINGS.setup),
+    repository.getSetting<string>(SETTINGS.lastPath),
+    repository.getSetting<SpeechSettings>(SETTINGS.speech),
+    repository.getSetting<string[]>(SETTINGS.dismissedIdeas),
     repository.getSetting<Record<string, string>>('space-modes'),
-    repository.getSetting<unknown>('panel-open'),
-    repository.getSetting<unknown>('present'),
+    repository.getSetting<unknown>(SETTINGS.panel),
+    repository.getSetting<unknown>(SETTINGS.present),
     repository.getSetting<Partial<Record<Provider, string>>>('provider-keys'),
-    repository.getSetting<string>('audio-output'),
-    repository.getSetting<string[]>('heard-voices'),
+    repository.getSetting<string>(SETTINGS.audioOutput),
+    repository.getSetting<string[]>(SETTINGS.heardVoices),
   ]);
   // Every other setting here is normalised as it is read. This one was
   // not, so a setup written before `defaultModel` existed threw on the
@@ -103,7 +105,7 @@ export function currentUserId(): string {
 
 export async function saveSetup(draft: OnboardingDraft): Promise<void> {
   const saved: SavedSetup = { ...draft, id: setup?.id ?? LOCAL_USER };
-  await (await getRepository()).putSetting('setup', saved);
+  await (await getRepository()).putSetting(SETTINGS.setup, saved);
   setup = saved;
   setupListeners.forEach((listener) => listener());
 }
@@ -114,7 +116,7 @@ export function updateSetup(patch: Partial<OnboardingDraft>): Promise<SavedSetup
       ...(setup ?? { id: LOCAL_USER, ...DEFAULT_DRAFT }),
       ...patch,
     };
-    await (await getRepository()).putSetting('setup', saved);
+    await (await getRepository()).putSetting(SETTINGS.setup, saved);
     setup = saved;
     setupListeners.forEach((listener) => listener());
     return saved;
@@ -130,7 +132,7 @@ export function currentPath(): string | null {
 export async function savePath(path: string): Promise<void> {
   if (path === lastPath) return;
   lastPath = path;
-  await (await getRepository()).putSetting('lastPath', path);
+  await (await getRepository()).putSetting(SETTINGS.lastPath, path);
 }
 
 export const openInBrowser = async (url: string): Promise<void> => {
@@ -142,7 +144,7 @@ export function currentSpeech(): SpeechSettings | null {
 }
 
 export async function saveSpeech(settings: SpeechSettings): Promise<void> {
-  await (await getRepository()).putSetting('speech', settings);
+  await (await getRepository()).putSetting(SETTINGS.speech, settings);
   speech = settings;
 }
 
@@ -841,17 +843,17 @@ export const audioUrl = (path: string) => path;
 
 export async function rememberDismissed(texts: string[]): Promise<void> {
   dismissedIdeas.splice(0, dismissedIdeas.length, ...texts);
-  await (await getRepository()).putSetting('dismissed-ideas', texts);
+  await (await getRepository()).putSetting(SETTINGS.dismissedIdeas, texts);
 }
 
 export async function rememberHeardVoices(ids: string[]): Promise<void> {
   heardVoiceIds.splice(0, heardVoiceIds.length, ...ids);
-  await (await getRepository()).putSetting('heard-voices', ids);
+  await (await getRepository()).putSetting(SETTINGS.heardVoices, ids);
 }
 
 export async function rememberModes(modes: Record<string, string>): Promise<void> {
   Object.assign(spaceModes, modes);
-  await (await getRepository()).putSetting('space-modes', modes);
+  await (await getRepository()).putSetting(SETTINGS.spaceModes, modes);
 }
 
 /** Protect a normal close while local edits are pending or failed. */
@@ -868,20 +870,20 @@ export function guardUnsavedChanges(): () => void {
 
 /** Unsent words are local settings, separate from the spoken transcript. */
 export async function readTalkDraft(spaceId: string): Promise<string> {
-  return (await (await getRepository()).getSetting<string>(`talk-draft:${spaceId}`)) ?? '';
+  return (await (await getRepository()).getSetting<string>(talkDraftKey(spaceId))) ?? '';
 }
 
 export async function saveTalkDraft(spaceId: string, words: string): Promise<void> {
-  await (await getRepository()).putSetting(`talk-draft:${spaceId}`, words);
+  await (await getRepository()).putSetting(talkDraftKey(spaceId), words);
 }
 
 /** The mood of a Talk space. It stays until the user presses its key again. */
 export async function readTalkMood(spaceId: string): Promise<MoodKey | null> {
-  return moodFrom(await (await getRepository()).getSetting<string>(`talk-mood:${spaceId}`));
+  return moodFrom(await (await getRepository()).getSetting<string>(talkMoodKey(spaceId)));
 }
 
 export async function saveTalkMood(spaceId: string, mood: MoodKey | null): Promise<void> {
-  await (await getRepository()).putSetting(`talk-mood:${spaceId}`, mood);
+  await (await getRepository()).putSetting(talkMoodKey(spaceId), mood);
 }
 
 export function currentPanel(): PanelState {
@@ -890,7 +892,7 @@ export function currentPanel(): PanelState {
 
 export async function rememberPanel(state: PanelState): Promise<void> {
   panel = state;
-  await (await getRepository()).putSetting('panel-open', state);
+  await (await getRepository()).putSetting(SETTINGS.panel, state);
 }
 
 /**
@@ -905,7 +907,7 @@ export function currentPresent(): PresentSettings {
 
 export async function rememberPresent(settings: PresentSettings): Promise<void> {
   present = settings;
-  await (await getRepository()).putSetting('present', settings);
+  await (await getRepository()).putSetting(SETTINGS.present, settings);
 }
 
 export type Provider = 'openrouter' | 'elevenlabs';
@@ -1024,7 +1026,7 @@ export async function connectProvider(provider: Provider, key: string, signal?: 
   await verifyProvider(provider, trimmed, signal);
   signal?.throwIfAborted();
   const nextKeys = { ...providerKeys, [provider]: trimmed };
-  await (await getRepository()).putSetting('provider-keys', nextKeys);
+  await (await getRepository()).putSetting(SETTINGS.providerKeys, nextKeys);
   providerKeys = nextKeys;
   return providerStatus(provider);
 }
@@ -1033,7 +1035,7 @@ export async function forgetProvider(provider: Provider): Promise<boolean> {
   const existed = Boolean(providerKeys[provider]);
   const { [provider]: _removed, ...rest } = providerKeys;
   providerKeys = rest;
-  await (await getRepository()).putSetting('provider-keys', providerKeys);
+  await (await getRepository()).putSetting(SETTINGS.providerKeys, providerKeys);
   return existed;
 }
 
@@ -1119,7 +1121,7 @@ export async function currentOutput(): Promise<string> {
 
 export async function chooseOutput(uid: string): Promise<void> {
   selectedOutput = uid;
-  await (await getRepository()).putSetting('audio-output', uid);
+  await (await getRepository()).putSetting(SETTINGS.audioOutput, uid);
 }
 
 export interface VirtualMicrophoneStatus {

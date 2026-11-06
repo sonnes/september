@@ -5,7 +5,7 @@
  * Both applications import the same stripe rules from this module.
  */
 
-import { isTag, stripTags } from "./audio-tags.ts";
+import { isTag, splitTags, stripTags } from "./audio-tags.ts";
 
 export type SuggestionSource = "md" | "starter" | "history" | "llm" | "code";
 
@@ -28,7 +28,7 @@ const PUNCTUATION = /^[\p{P}\p{S}]+$/u;
  */
 export function tokenize(sentence: string): string[] {
   const tokens: string[] = [];
-  for (const part of sentence.split(/(\[[^\[\]]+\])/)) {
+  for (const part of splitTags(sentence)) {
     if (isTag(part)) {
       tokens.push(part);
       continue;
@@ -315,16 +315,6 @@ export function takeTokens(
     ...stripe.tokens.slice(0, stripe.hidden),
     ...stripe.tokens.slice(stripe.hidden + lead, Math.max(end, stripe.hidden + lead)),
   ];
-}
-
-/**
- * Appends the tokens of `entry` to the tokens of `text`, joined back into a string.
- * Used by chip/board-mode insertion. Does NOT call trackKeystroke — the savings
- * analytic (text_length − keys_typed) is correct only when trackKeystroke is not
- * called for suggestion-driven text changes.
- */
-export function appendTokens(text: string, entry: string): string {
-  return joinTokens([...tokenize(text), ...tokenize(entry)]);
 }
 
 /**

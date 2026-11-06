@@ -20,7 +20,7 @@ import {
 } from "@september/ui/components/sheet";
 
 import { APP_NAV } from "@platform/rules/app-nav";
-import type { Space } from "@platform/services/data";
+
 import { Phrases } from "@september/app-ui/blocks/phrase-panel";
 import { SpeechSettings } from "@september/app-ui/blocks/speech-settings";
 import { usePanel } from "@september/app-ui/blocks/chrome";
@@ -32,11 +32,8 @@ import {
   useNewSpace,
 } from "@september/app-ui/blocks/space";
 import { DeleteSpaceDialog } from "@september/app-ui/pages/spaces";
-import {
-  filterSpaces,
-  timeAgo,
-  type SpaceMode,
-} from "@september/core/rules/spaces";
+import type { Space, SpaceMode } from "@september/core/rules/records";
+import { filterSpaces, timeAgo } from "@september/core/rules/spaces";
 
 /** The sheets and dialogs that open over the panel. */
 export type PanelSheet =

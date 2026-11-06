@@ -9,6 +9,6 @@
     "allowImportingTsExtensions": true,
     "skipLibCheck": true
   },
-  "include": ["index.ts", "autocomplete/**/*.ts", "rules/**/*.ts"],
-  "exclude": ["**/*.test.ts", "autocomplete/demo.ts", "autocomplete/test.ts"]
+  "include": ["autocomplete/**/*.ts", "rules/**/*.ts"],
+  "exclude": ["**/*.test.ts"]
 }

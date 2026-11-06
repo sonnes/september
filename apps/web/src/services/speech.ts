@@ -8,11 +8,11 @@ import {
   stopNativeSpeech,
   streamSpeech,
 } from "@/services/os";
-import { elevenLabsCredits } from "@september/core/rules/usage-summary";
 import { recordTtsUsage } from "@/services/usage";
 import {
   DEFAULT_VOICE_MODEL,
   dialogueModelFrom,
+  elevenLabsCredits,
   voiceModelFrom,
 } from "@september/core/rules/voice";
 import { speakableText, stripTags } from "@september/core/rules/audio-tags";

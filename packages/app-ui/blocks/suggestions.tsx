@@ -29,15 +29,10 @@ import {
 } from "@platform/services/ai";
 import { currentSetup, subscribeSetup, type SavedSetup } from "@platform/services/os";
 import { useMessages, usePhrases } from "@platform/services/data";
-import {
-  isKept,
-  matchCode,
-  topPhrases,
-  topRows,
-  trailingWord,
-  type SavedPhrase,
-} from "@september/core/rules/phrases";
-import { buildSuggestionPrompt } from "@september/core/rules/prompts";
+import { matchCode, trailingWord } from "@september/core/rules/phrases/codes";
+import { isKept, topPhrases, topRows } from "@september/core/rules/phrases/rows";
+import type { SavedPhrase } from "@september/core/rules/records";
+import { buildSuggestionPrompt } from "@september/core/rules/prompts/suggestions";
 import {
   draftParts,
   isTag,

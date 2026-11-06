@@ -3,6 +3,9 @@
  * without a renderer.
  */
 
+import type { SpaceMode } from "./records.ts";
+import { DAY_MS } from "./time.ts";
+
 /**
  * The name of a space nobody has named.
  *
@@ -121,9 +124,6 @@ export function newSpaceTitle(
     if (free(title)) return title;
   }
 }
-
-/** A space opens in one of three modes, and the address holds which one. */
-export type SpaceMode = "talk" | "notes" | "agent";
 
 /**
  * Which mode a space that was just made opens in.
@@ -272,7 +272,6 @@ export function timeAgo(at: number, now: number = Date.now()): string {
 }
 
 const startOfDay = (at: number) => new Date(at).setHours(0, 0, 0, 0);
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * The time beside a message: the hour and minute today, the day of the week in
