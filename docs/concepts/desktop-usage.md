@@ -1,6 +1,6 @@
 ---
 title: Desktop usage
-description: The independent desktop app measures saved typing and service use locally, then removes events after 90 days.
+description: The independent desktop app measures saved typing and service use locally, and removes events after the 90-day retention in core.
 package: desktop
 ---
 
@@ -52,9 +52,10 @@ download. Calendar weeks begin on Monday in the Mac's local timezone.
 
 ## Remove old events automatically
 
-The backend keeps 90 days of events. It removes older rows when the app starts
-and whenever the app reads or writes usage. Cleanup deletes timestamps before
-the boundary, so an event exactly 90 days old remains until it becomes older.
+`USAGE_RETENTION_MS` in `packages/core/rules/usage-summary.ts` keeps 90 days
+of events. Each usage read and each backup export sends the boundary to the
+backend, which deletes the older rows first. An event exactly at the boundary
+remains until it becomes older.
 
 The user and timestamp live in indexed columns rather than the JSON payload.
 This makes bounded reports and retention cleanup direct SQLite queries.

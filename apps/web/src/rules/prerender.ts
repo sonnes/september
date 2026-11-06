@@ -7,6 +7,8 @@
  */
 import { HELP_GUIDES } from '@september/core/rules/help/catalog';
 
+import { isPublicPath, PUBLIC_PAGES, type PublicPageEntry } from '@/public-pages';
+
 const ROOT = /(<div id="root"[^>]*>)(<\/div>)/;
 const TITLE = /<title>[\s\S]*?<\/title>/;
 
@@ -20,10 +22,7 @@ const TITLE = /<title>[\s\S]*?<\/title>/;
  * nothing there for it to draw.
  */
 export const PRERENDERED_PATHS: string[] = [
-  '/',
-  '/privacy-policy',
-  '/terms-of-service',
-  '/help',
+  ...Object.keys(PUBLIC_PAGES),
   ...HELP_GUIDES.map(guide => `/help/${guide.slug}`),
 ];
 
@@ -115,41 +114,23 @@ export interface PublicPage {
 }
 
 /** Only public, storage-independent content may enter a shared card. */
-export function publicPage(path: string): PublicPage {
-  let heading: string;
-  let description: string;
-  let title: string;
+function entryFor(path: string): PublicPageEntry {
   const guide = HELP_GUIDES.find(guide => path === `/help/${guide.slug}`);
   if (guide) {
-    heading = guide.title;
-    description = guide.summary;
-    title = `${heading} · Help · September`;
-  } else {
-    const pages: Record<string, [string, string]> = {
-      '/': [
-        'Faster Communication, Fewer Keystrokes',
-        'A communication assistant for people living with ALS, MND, and other speech and motor difficulties.',
-      ],
-      '/help': [
-        'Help',
-        'Learn to set up September, speak messages, save phrases, and choose a voice.',
-      ],
-      '/privacy-policy': [
-        'Privacy Policy',
-        'How September stores your data, uses optional providers, and protects your privacy.',
-      ],
-      '/terms-of-service': [
-        'Terms of Service',
-        'The terms for using September, its MIT license, and optional third-party services.',
-      ],
+    return {
+      heading: guide.title,
+      description: guide.summary,
+      title: `${guide.title} · Help · September`,
     };
-    if (!pages[path]) throw new Error(`No public page: ${path}`);
-    [heading, description] = pages[path];
-    title =
-      path === '/'
-        ? 'September — faster communication, fewer keystrokes'
-        : `${heading} · September`;
   }
+  if (isPublicPath(path)) return PUBLIC_PAGES[path];
+  throw new Error(`No public page: ${path}`);
+}
+
+export function publicPage(path: string): PublicPage {
+  const entry = entryFor(path);
+  const { heading, description } = entry;
+  const title = entry.title ?? `${heading} · September`;
   return {
     title,
     heading,

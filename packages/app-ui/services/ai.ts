@@ -14,12 +14,18 @@ import {
   modelTextFrom,
   type ModelIdentity,
 } from "@september/core/rules/model-client";
-import { modelConfigFor, type WritingModelConfig } from "@september/core/rules/model-config";
+import {
+  APPLE_MODEL,
+  modelConfigFor,
+  modelIdFor,
+  type GenerationFeature,
+  type WritingModelConfig,
+} from "@september/core/rules/model-config";
 import type { CostSource } from "@september/core/rules/usage-summary";
 
 import type { Endpoint } from "../platform";
 import { currentSetup } from "./settings";
-import { recordAiUsage, type GenerationFeature } from "./usage";
+import { recordAiUsage } from "./usage";
 
 export interface GenerateMessage {
   role: "system" | "user" | "assistant";
@@ -35,9 +41,6 @@ export interface GenerateRequest {
 
 type Service = "apple" | "openrouter";
 
-const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
-const FREE_AGENT_MODEL = "openrouter/free";
-const APPLE_MODEL = "apple-foundationmodel";
 const AGENT_MAX_TOKENS = 1_024;
 const AGENT_TEMPERATURE = 0.2;
 
@@ -70,12 +73,11 @@ function models(): Promise<Models> {
  * A model the catalog does not list. The user typed its name, and nobody
  * knows its price, so a call to one records no cost.
  */
-const unlistedModel = (id: string): Model<"openai-completions"> => ({
+const unlistedModel = (id: string): Omit<Model<"openai-completions">, "baseUrl"> => ({
   id,
   name: id,
   api: "openai-completions",
   provider: "openrouter",
-  baseUrl: OPENROUTER_BASE,
   reasoning: false,
   input: ["text"],
   cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
@@ -159,10 +161,8 @@ function writingService(feature: GenerationFeature): Service | null {
 export const hasWritingService = (feature: GenerationFeature = "agent") =>
   writingService(feature) !== null;
 
-/** The model to ask. Apple Intelligence has one, and Automatic is the free router. */
-function requestedModel(service: Service, feature: GenerationFeature): string {
-  if (service === "apple") return APPLE_MODEL;
-  return configuredModel(feature).model.trim() || FREE_AGENT_MODEL;
+function requestedModel(feature: GenerationFeature): string {
+  return modelIdFor(configuredModel(feature));
 }
 
 /**
@@ -190,7 +190,7 @@ export async function generate(
     (total, message) => total + message.content.length,
     0,
   );
-  const requested = requestedModel(service, options.feature);
+  const requested = requestedModel(options.feature);
   let answered: {
     text: string;
     model: string;
@@ -266,7 +266,7 @@ export async function openAgentWriter(): Promise<AgentWriter> {
   const service = writingService("agent");
   if (!service) throw new Error("Connect AI Assistance in Settings first.");
 
-  const requested = requestedModel(service, "agent");
+  const requested = requestedModel("agent");
   const { models: all, model, priced, key } = await modelFor(requested, service);
   let asked = 0;
   let sent = 0;

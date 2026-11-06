@@ -18,11 +18,12 @@ and the services that connect that UI to macOS.
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `packages/app-ui/layouts/` | `onboarding.tsx`, `app.tsx`, `panel.tsx`, `settings.tsx`                                                                                                   | The component renders an `<Outlet/>`.                |
 | `packages/app-ui/pages/`   | Route screens: `steps` `spaces` `talk` `agent` `notes` `voice` `settings` `usage`                                                                          | `packages/app-ui/routes.tsx` names it.               |
-| `packages/app-ui/blocks/`  | `screen` `space` `chrome` `panel-header` `present` `services` `space-panel` `phrase-panel` `speech-settings` `pick-list` `suggestions` `usage` `brand` | Two or more pages or layouts use it.                 |
-| `packages/app-ui/services/` | `settings` `data` `speech` `ai` `agent` `usage` `connections` `backup` `export` `cloning` `phrase-sync` `suggest` `player`                               | Both apps share it, over the platform.               |
+| `packages/app-ui/blocks/`  | `screen` `chrome` `panel-header` `present` `services` `space-panel` `phrase-panel` `speech-settings` `pick-list` `suggestions` `usage` `brand` | Two or more pages or layouts use it.                 |
+| `packages/app-ui/services/` | `settings` `data` `speech` `ai` `agent` `usage` `connections` `backup` `export` `cloning` `phrase-sync` `suggest` `player` `browser`                     | Both apps share it, over the platform.               |
 | `src/platform.ts`          | The Mac platform: `store`, `voice`, `providers`, `writing`, `device`, `capabilities`                                                                       | It speaks to Rust.                                   |
 | `src/commands.ts`          | Every Tauri command, with its arguments and its answer, and `call`                                                                                         | Every call to Rust goes through `call`.              |
 | `src/window.ts`            | The panel window and the saved path                                                                                                                        | Only the desktop has it.                             |
+| `src/services/gaze.ts`     | The camera session of the eye tracker                                                                                                                      | Only the desktop has it.                             |
 | `packages/core/`           | autocomplete and platform-independent rules                                                                                                                | Both web and desktop import the same implementation. |
 | `packages/ui/`             | Tailwind theme and shadcn primitives                                                                                                                       | A token or primitive has one source.                 |
 | `src/rules/`               | `eye-tracker`                                                                                                                                              | A rule of a desktop-only screen.                     |
@@ -52,8 +53,8 @@ and `/settings/panel`.
 
 | Layout | Component                                                    | Routes                                                                                                                                                                                                                                                                                                         |
 | ------ | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Setup  | `OnboardingLayout`, `packages/app-ui/layouts/onboarding.tsx` | `/welcome` `/profile` `/connect` `/finish`                                                                                                                                                                                                                                                                     |
-| Panel  | `PanelShell`, `packages/app-ui/layouts/panel.tsx`            | `/spaces` `/spaces/$slug/talk` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/spaces/$slug/agent` `/voice` `/voice/clone` `/eyetracker` `/help` `/help/$guideSlug` `/settings` `/settings/writing` `/settings/usage` `/settings/panel` `/settings/data` `/settings/connections/$provider` |
+| Setup  | `OnboardingLayout`, `packages/app-ui/layouts/onboarding.tsx` | `/welcome` `/choose` `/profile` `/connect` `/finish`                                                                                                                                                                                                                                                                     |
+| Panel  | `PanelShell`, `packages/app-ui/layouts/panel.tsx`            | `/spaces` `/spaces/$slug/talk` `/spaces/$slug/notes` `/spaces/$slug/notes/$noteSlug` `/spaces/$slug/agent` `/voice` `/voice/clone` `/eyetracker` `/help` `/help/$guideSlug` `/settings` `/settings/access` `/settings/writing` `/settings/usage` `/settings/panel` `/settings/data` `/settings/connections/$provider` |
 
 `/` redirects to the opening path. A setup step asked for after setup is done
 goes to the first page of `APP_NAV`, `/spaces`. The bootstrap gives `PanelShell` one callback,
@@ -95,10 +96,9 @@ Else `openingPath` gives Talk of the space with the highest `updated_at`. With
 no spaces, it gives `/spaces`. A setup step and an address that names no screen
 never decide where the app opens.
 
-The macOS app and the panel are named `September`. After each route settles,
-the window adds the page name, such as `September — Talk`. The `windowTitle`
-rule in `packages/core/rules/navigation.ts` names setup steps, space and note screens, voice
-cloning, settings sections, and connection pages.
+The macOS app and the panel are named `September`. Each screen sets the
+document title, such as `Amma · Talk · September`, and `main.tsx` copies the
+document title to the window of the Mac.
 
 `isSetupDone` in `packages/core/rules/onboarding.ts` owns that rule: setup is done when it
 holds a name and a mode. The app layout reads the same rule, so an app screen
@@ -108,8 +108,8 @@ To run setup again, erase the `setup` setting.
 
 ### The panel header
 
-`PanelShell` sets `ChromeContext` to `"panel"`, so the screens draw no screen
-header and no dock. The panel header takes their place. See
+`PanelShell` provides `PanelContext`, so `useChrome` gives `"panel"` and the
+screens draw no screen header and no dock. The panel header takes their place. See
 `packages/app-ui/README.md`.
 
 | Path              | Left         | Middle                                         | Right |
@@ -285,7 +285,8 @@ unique title, and the word that delete removes.
 
 `packages/app-ui/services/data.ts` holds every read and every write of a space or a message. It uses
 TanStack Query over the store of `src/platform.ts`, which calls the Rust commands. The owner of each row is the login name
-of the operating system, which setup keeps in the `setup` setting.
+of the operating system, which setup keeps in the `setup` setting. A Mac with
+no login name gives the rows `LOCAL_USER` from `packages/core/rules/settings.ts`.
 
 The composer keeps its text until SQLite accepts the message, so a failed write
 loses no words.
@@ -503,8 +504,8 @@ Measured on 30 care requests that the engine never saw, the sentences alone
 save 37.6% of keystrokes. With the list, they save 47.8%.
 `packages/core/autocomplete/savings.test.ts` holds a floor under both numbers.
 
-Rebuild the list with `node scripts/build-dictionary.mjs`. The script writes
-the same file to both apps. It removes slurs and strong obscenity, because a
+Rebuild the list with `node scripts/build-dictionary.mjs` from
+`packages/core`. Both apps use the file it writes. It removes slurs and strong obscenity, because a
 wrong tap speaks the word aloud. This blocks the list, not the user: the user
 layer still learns every word that the user writes.
 
@@ -763,9 +764,11 @@ OpenRouter model whose published rates September holds records an estimated
 cost from those rates and the tokens the call used; a model nobody prices
 records none.
 
-Usage events stay in `analytics_events` inside `september.sqlite3`. The app
-deletes events older than 90 days at startup and whenever it reads or writes
-usage. An event exactly 90 days old remains until it crosses the boundary.
+Usage events stay in `analytics_events` inside `september.sqlite3`.
+`USAGE_RETENTION_MS` in `packages/core/rules/usage-summary.ts` sets how long an
+event stays, which is 90 days. Each usage read and each backup export sends the
+boundary to Rust, and Rust deletes the older events first. An event exactly at
+the boundary remains.
 Recording is best-effort and never stops speaking or writing.
 
 `packages/core/rules/usage-summary.ts` holds the key-count, range, aggregation, and CSV rules.

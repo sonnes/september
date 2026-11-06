@@ -13,6 +13,7 @@ import {
   storedBackupFrom,
   type SeptemberBackup,
 } from "./backup.ts";
+import { PORTABLE_SETTING_KEYS } from "./settings.ts";
 
 const validBackup = (): SeptemberBackup => ({
   format: "september-backup",
@@ -562,6 +563,13 @@ describe("the rows of a store", () => {
       present: { tone: "cream", spoken: false },
     });
     expect(backupContentsFrom(stored, "someone-else")).toEqual(contents());
+  });
+
+  it("write only the keys that a store replaces on a restore", () => {
+    const portable = new Set<string>(PORTABLE_SETTING_KEYS);
+    for (const key of Object.keys(storedBackupFrom(contents()).settings)) {
+      expect(portable.has(key)).toBe(true);
+    }
   });
 
   it("store no setup and no speech that the backup does not hold", () => {

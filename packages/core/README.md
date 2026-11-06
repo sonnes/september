@@ -14,16 +14,16 @@ import { createEngine } from "@september/core/autocomplete";
 
 ## Stored Data
 
-`rules/records.ts` holds the rows that both apps store and that a backup carries: `Space`, `Message` (one message of Talk), `Note`, `SavedPhrase`, and `AgentMessage`. It also holds `SpaceMode` and `PhraseKind`, with the lists `SPACE_MODES` and `PHRASE_KINDS`.
+`rules/records.ts` holds the rows that both apps store and that a backup carries: `Space`, `Message` (one message of Talk), `Note`, `SavedPhrase`, and `AgentMessage`. It also holds `SpaceMode`, `PhraseKind`, `AgentRole`, and `AgentToolState`, with the lists `SPACE_MODES`, `PHRASE_KINDS`, `AGENT_ROLES`, and `AGENT_TOOL_STATES`.
 
-`rules/settings.ts` holds the key of each stored setting. `PORTABLE_SETTINGS` holds the keys that a backup carries, and `PORTABLE_SETTING_KEYS` lists them. `DEVICE_SETTINGS` holds the keys that stay on one device. `talkDraftKey` and `talkMoodKey` give the device keys of the Talk draft and the Talk mood of one space.
+`rules/settings.ts` holds the key of each stored setting. `PORTABLE_SETTINGS` holds the keys that a backup carries, and `PORTABLE_SETTING_KEYS` lists them. `DEVICE_SETTINGS` holds the keys that stay on one device. `talkDraftKey` and `talkMoodKey` give the device keys of the Talk draft and the Talk mood of one space. `LOCAL_USER` owns the rows when the system knows no login name.
 
 `rules/backup.ts` holds version 2 of the portable backup. An export writes the rows in a stable order. An import reads each setting and each row separately. It removes unknown fields, leaves out the rows that are not valid, and counts them. The browser tests and the desktop tests read the same fixture, `rules/fixtures/backup-v1.json`. The import reads two older forms of data:
 
 - A version 1 file gets an empty Agent transcript.
 - The old `camera` panel tab of an older desktop file becomes `phrases`.
 
-A store keeps the settings of a backup as a map by setting key, in `StoredBackup`. `backupContentsFrom` makes that map into the typed settings of a backup, and `storedBackupFrom` makes the typed settings into the map. Each app stores the map as it is.
+A store keeps the settings of a backup as a map by setting key, in `StoredBackup`. `backupContentsFrom` makes that map into the typed settings of a backup, and `storedBackupFrom` makes the typed settings into the map. Each app stores the map as it is. `StoredSettings` types the map by the keys of `PORTABLE_SETTINGS`. The setup of a backup is a `SavedSetup` and its speech is a `SpeechSettings`.
 
 An import also reads the older `writingService` and `writingModel` fields as `defaultModel`, and keeps the user ID of the setup. The `autoSuggestions`, `autoPhrases`, and `agentEnabled` fields of the setup are `true` when they are missing. `parseAccess` reads the access profile, and a backup without a profile gets the default profile. See `docs/concepts/portable-backups.md`.
 
@@ -66,7 +66,7 @@ The loop uses three hooks of the `Agent`:
 
 `rules/audio-tags.ts` decides which voice receives audio tags, and removes the tags for each other voice. `rules/moods.ts` holds the five moods of Talk, with their prompt instructions and example tags. See `docs/concepts/audio-tags.md`.
 
-`rules/model-config.ts` selects the model for a text job. All jobs use `defaultModel`. If `suggestionsModel` is not null, the suggestions use that model. `withProvider` moves both models to a new provider. `SUGGESTIONS_MODELS` and `AGENT_MODELS` are the curated model lists. `modelChoices` makes a list into rows: Automatic first, then the Frontier and Open groups. See `docs/concepts/writing-model-settings.md`.
+`rules/model-config.ts` selects the model for a text job. `GenerationFeature` names the jobs. All jobs use `defaultModel`. If `suggestionsModel` is not null, the suggestions use that model. `withProvider` moves both models to a new provider. `SUGGESTIONS_MODELS` and `AGENT_MODELS` are the curated model lists. `modelChoices` makes a list into rows: Automatic first, then the Frontier and Open groups. `modelIdFor` gives the model id of a request: `openrouter/free` for Automatic, and the one model of Apple Intelligence. `OPENROUTER_BASE` is the address of the OpenRouter API. See `docs/concepts/writing-model-settings.md`.
 
 ## Phrases
 
@@ -94,7 +94,7 @@ The loop uses three hooks of the `Agent`:
 
 ## Navigation and Setup
 
-`rules/navigation.ts` holds the pages of the app and the sections of Settings. A page that only one platform has names the capability that it needs in `requires`. `Capabilities` has three flags: `dashboard`, `eyeTracker`, and `floatingPanel`. `appNav` and `settingsNav` give the pages and the sections for a set of capabilities. The file also holds the connection guides, `windowTitle`, and `openingPath`. `openingPath` gives the screen where the app opens: the saved path when it names a page or an existing space, else Talk of the last space, else the first page.
+`rules/navigation.ts` holds the pages of the app and the sections of Settings. A page that only one platform has names the capability that it needs in `requires`. `Capabilities` has three flags: `dashboard`, `eyeTracker`, and `floatingPanel`. `appNav` and `settingsNav` give the pages and the sections for a set of capabilities. `capabilityPaths` gives the paths of those pages that a platform offers. The file also holds the connection guides, `SPACE_MODE_TITLES`, `spaceRoute`, `modeForDigit`, and `openingPath`. `spaceRoute` reads the space and the mode from a path. `modeForDigit` gives the mode of ⌘⌥ and a digit, in the order of `SPACE_MODES`. `openingPath` gives the screen where the app opens: the saved path when it names a page or an existing space, else Talk of the last space, else the first page.
 
 `rules/onboarding.ts` holds the setup draft, the steps, and the step rules. `savedSetupFrom` reads a stored setup and fills the fields of an older setup. `isSetupDone` is true when the setup has a name and a mode. `canReach` blocks a step after About you until the draft has a name. `voiceServices` gives the voice choices, with the description of the system voice that the platform gives. `defaultServices` chooses the services that setup starts with: Apple Intelligence when it is ready, then a connected OpenRouter. A connected ElevenLabs speaks. A choice of the person stays.
 
@@ -103,9 +103,9 @@ The loop uses three hooks of the `Agent`:
 ## Other Rules
 
 - `rules/access.ts` holds the access profile. `reachFor` makes a profile into the target size, the gap, the word size, the dwell, the scan step, and the size of a stripe. A dwell time or a scan step is from `TIME_MIN_MS` (0.3 s) to `TIME_MAX_MS` (30 s). `steppedTime` gives the next time of a stepper, and `reachSummary` writes the profile in one line. See `docs/concepts/access-profile.md`.
-- `rules/voice.ts` holds the ElevenLabs models, their credit rates, and the Expression presets. `elevenLabsCredits` gives the credits of a text for a model. `voiceModelFrom` reads the old Turbo models as their Flash replacements. `dialogueParts` divides a long text into requests of at most 2,000 characters. `shownVoices` gives the voices that a voice list shows for a search: the voices of the account, the stock voices that match a search, and the stock voices when the account has none of its own. `voiceRows` groups the voice list, and `heardVoices` keeps the last three voices heard. See `docs/concepts/voice-expression.md`.
+- `rules/voice.ts` holds `SpeechSettings`, the stored sound settings, the ElevenLabs models, their credit rates, and the Expression presets. `elevenLabsCredits` gives the credits of a text for a model. `voiceModelFrom` reads the old Turbo models as their Flash replacements. `dialogueParts` divides a long text into requests of at most 2,000 characters. `shownVoices` gives the voices that a voice list shows for a search: the voices of the account, the stock voices that match a search, and the stock voices when the account has none of its own. `voiceRows` groups the voice list, and `heardVoices` keeps the last three voices heard. See `docs/concepts/voice-expression.md`.
 - `rules/voice-clone.ts` holds the size limits of voice samples. `validateVoiceClone` gives the first problem of a set of samples, or null.
-- `rules/usage-summary.ts` adds up the usage events of a time range and writes them as CSV. `sourceLabel` gives the word for a cost source. See `docs/concepts/desktop-usage.md`.
+- `rules/usage-summary.ts` adds up the usage events of a time range and writes them as CSV. `USAGE_RETENTION_MS` is how long a store keeps an event, and `usageSince` gives the boundary for a time. `sourceLabel` gives the word for a cost source. See `docs/concepts/desktop-usage.md`.
 - `rules/stripes.ts` cuts history sentences into suggestion slices of at most six words. Punctuation and audio tags do not count. `stripeForText` takes a smaller limit from the access profile, and `matchTyped` finds the rows that match the draft. `tileScale` makes the padding and the gaps of a tile smaller, but never the word. `insertAtEnd` adds words at the end of a draft.
 - `rules/stripe-rows.ts` builds the rows of the stripe from the starters and phrases of a space, the history, a typed code, and the rows of a model. A row that the user took from stays first while the draft follows it.
 - `rules/keymap.ts` holds the keyboard shortcuts. A screen reads the label and the `aria-keyshortcuts` value from the binding that it handles.

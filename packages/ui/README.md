@@ -32,7 +32,7 @@ owns the reach tokens: `--reach-target`, `--reach-gap`, `--reach-word`, and
 smaller than 14px.
 
 `cn` knows the radius roles and `text-title`, so a later role replaces an
-earlier one. `Button`, `Input`, the `Select` trigger, the menu rows,
+earlier one. `Button`, `Input`, the menu rows,
 and the close key of `Sheet` and `Dialog` take their height from
 `--reach-target`, 48px at the smallest.
 
@@ -56,7 +56,7 @@ A `Slider` with one thumb gives its `aria-label` or `aria-labelledby` to the
 thumb.
 
 Three attributes mark popups and controls for the access layer. Dialog and
-sheet content has `data-modal`. Menu and select content has `data-menu`. The
+sheet content has `data-modal`. Menu content has `data-menu`. The
 sidebar rail has `data-pointer-only`, because only a pointer uses it.
 
 Every `Sidebar` menu row, sub row, and row action is 48px. The rows use

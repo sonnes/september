@@ -25,14 +25,16 @@ backups.
 
 ## Replace data from a backup
 
-The `backup_export` command returns the portable settings as a map by setting
-key, and every domain row. It does not return Keychain keys, the selected
+The `backup_export` command takes the keys of the portable settings,
+`PORTABLE_SETTING_KEYS` from core, and the usage boundary. It returns those
+settings as a map by setting key, and every domain row. It does not return Keychain keys, the selected
 audio output, or internal settings. `backupContentsFrom` in core makes the map
 into the settings of a backup.
 
 The `backup_import` command takes the same map, which `storedBackupFrom` in
-core makes. It validates the full payload first. It then replaces
-the portable settings and domain tables in one SQLite transaction. A failed
+core makes, and the same keys. It refuses a setting that is not in the keys.
+It then replaces those settings and the domain tables in one SQLite
+transaction. A failed
 row rolls back the complete replacement. See
 [Portable backups](portable-backups.md).
 
@@ -47,7 +49,7 @@ notes. Global Talk messages and notes have no space and remain intact.
 SQLite stores domain timestamps as Unix milliseconds. Composite indexes cover
 the existing space-scoped message and note queries.
 
-## Keep usage events for 90 days
+## Keep usage events for the retention period
 
 The `analytics_events` table stores an event ID, user ID, event type, Unix
 millisecond timestamp, and validated JSON payload. An index on user and
@@ -58,10 +60,12 @@ Usage rows do not reference spaces. Deleting a conversation removes its Talk
 messages, Agent messages, and notes, but it does not rewrite historical
 efficiency or service totals.
 
-The backend deletes events strictly older than 90 days when the app starts and
-whenever usage is read or written. An event at the exact boundary remains. No
-background worker is necessary, and a long-running app still cleans itself
-when the next event or report arrives.
+Core holds the retention period, `USAGE_RETENTION_MS` in
+`rules/usage-summary.ts`, which is 90 days. `analytics_list` and
+`backup_export` take the boundary from TypeScript. The backend deletes the
+events strictly older than the boundary before it reads. An event at the exact
+boundary remains. No background worker is necessary, because the next report
+or backup deletes the old events.
 
 ## Use typed domain commands
 

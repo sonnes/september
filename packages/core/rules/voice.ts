@@ -10,6 +10,23 @@ import { matchesWords } from "./pick.ts";
 
 export const DEFAULT_VOICE_MODEL = "eleven_flash_v2_5";
 
+/** The voices a message speaks with: the system voice, an ElevenLabs file, or the Dialogue voice. */
+export const SPEECH_SERVICES = ["system", "elevenlabs", "dialogue"] as const;
+
+export type SpeechService = (typeof SPEECH_SERVICES)[number];
+
+/** Everything that shapes the sound. All of it names the audio file. */
+export interface SpeechSettings {
+  provider: SpeechService;
+  voiceId: string | null;
+  modelId: string;
+  /** The model of the Dialogue voice: Eleven v3 or Eleven v3 Conversational. */
+  dialogueModelId?: string;
+  stability: number;
+  similarity: number;
+  speed: number;
+}
+
 /**
  * The models of the Voice tab, fastest first. `credits` is the ElevenLabs
  * quota that one character costs.

@@ -2,7 +2,7 @@ import { beforeEach, expect, it, vi } from 'vitest';
 
 import { SpeechSettings } from '@september/app-ui/blocks/speech-settings';
 import { savedSpeech } from '@september/app-ui/services/settings';
-import type { SpeechSettings as Speech } from '@september/app-ui/services/speech';
+import type { SpeechSettings as Speech } from '@september/core/rules/voice';
 
 import { platform } from './platform';
 import { findButton, press, renderPart } from './render';

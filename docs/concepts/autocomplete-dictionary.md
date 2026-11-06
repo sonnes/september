@@ -47,16 +47,14 @@ up, and the file becomes larger.
 
 ## How the engine holds them
 
-`seedDictionary(words)` puts the words in the trie and the word-frequency map.
-It never touches the n-gram model, because a flat word list holds no real pairs
-of words. A false pair would push a wrong word to the top of a row.
+`new Autocomplete(corpus, dictionary)` puts the words in the word counts that
+give completions. The words never go into an n-gram model, because a flat word
+list holds no real pairs of words. A false pair would push a wrong word to the
+top of a row.
 
 Weight falls as the square root of the rank. This is near the shape of word
 frequency in English, and it keeps the counts small enough that the words of
 the user can still catch up.
-
-Call `seedDictionary` after `train()` or after `restoreFromSnapshot()`. Both of
-those clear the engine.
 
 ## Words that the list does not hold
 
@@ -69,9 +67,5 @@ the user writes, so nobody loses their own vocabulary.
 
 ## Rebuild the list
 
-Run `node scripts/build-dictionary.mjs` from `apps/desktop`. The script writes
-the same dictionary to the desktop and web autocomplete folders.
-
-The web engine also ports the desktop spoken corpus. It trains in memory and
-learns from messages in the browser repository. It does not create an
-autocomplete database.
+Run `node scripts/build-dictionary.mjs` from `packages/core`. The script writes
+`packages/core/autocomplete/dictionary.ts`, which both apps use.

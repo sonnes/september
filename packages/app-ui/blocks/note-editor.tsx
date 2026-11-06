@@ -1,10 +1,11 @@
-import type { MutableRefObject } from "react";
+import { useRef, useState, type MutableRefObject } from "react";
 import { Button } from "@september/ui/components/button";
 import { useUpdateNote, useUpdateSpace } from "@september/app-ui/services/data";
 import type { Note, Space } from "@september/core/rules/records";
 import { noteContentUpdates, UNTITLED_NOTE } from "@september/core/rules/notes";
 import { NoteDocument, type NoteDocumentHandle } from "@september/app-ui/blocks/note-document";
 import { useAutosave } from "@september/app-ui/services/autosave";
+import { useEscape } from "@september/app-ui/blocks/keymap";
 
 /**
  * The title and the words of one note.
@@ -46,6 +47,16 @@ export function NoteEditor({
   const { name, content } = saved.value;
   const write = (text: string) => saved.write({ ...saved.current(), content: text });
   const writeName = (text: string) => saved.write({ ...saved.current(), name: text });
+  const title = useRef<HTMLInputElement>(null);
+  const [naming, setNaming] = useState(false);
+  useEscape(
+    naming
+      ? () => {
+          writeName(note.name ?? "");
+          title.current?.blur();
+        }
+      : null,
+  );
 
   return (
     // The page scrolls, and the writing tools scroll with the line they serve.
@@ -62,12 +73,11 @@ export function NoteEditor({
           aria-label="Note title"
           placeholder={UNTITLED_NOTE}
           onChange={(event) => writeName(event.target.value)}
+          ref={title}
+          onFocus={() => setNaming(true)}
+          onBlur={() => setNaming(false)}
           onKeyDown={(event) => {
             if (event.key === "Enter") event.currentTarget.blur();
-            if (event.key === "Escape") {
-              writeName(note.name ?? "");
-              event.currentTarget.blur();
-            }
           }}
           className="focus-attention font-heading placeholder:text-muted-foreground w-full rounded-md bg-transparent text-3xl leading-tight @max-[36rem]:text-2xl font-semibold tracking-tight"
         />

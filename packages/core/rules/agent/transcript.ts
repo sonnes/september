@@ -8,6 +8,10 @@ import {
   readAgentCall,
   type AgentCall,
   type AgentToolName,
+  type InspectSpaceResult,
+  type ReadNoteResult,
+  type ReadTalkResult,
+  type WriteResult,
 } from "./tools.ts";
 
 /** Openers for the Agent console. A press on one costs no keystrokes. */
@@ -271,8 +275,16 @@ export const agentProposalIsUnpin = (row: AgentMessage): boolean =>
 const count = (n: number, one: string, many = `${one}s`): string =>
   n > 0 ? `${n} ${n === 1 ? one : many}` : "";
 
-const listSize = (value: unknown): number =>
-  Array.isArray(value) ? value.length : 0;
+/** The result a tool row holds, or null when it holds no JSON object. */
+function resultOf<T>(row: AgentMessage): Partial<T> | null {
+  let found: Partial<T> | null;
+  try {
+    found = JSON.parse(row.content);
+  } catch {
+    return null;
+  }
+  return typeof found === "object" && found !== null && !Array.isArray(found) ? found : null;
+}
 
 /**
  * What a tool found, in words.
@@ -281,37 +293,29 @@ const listSize = (value: unknown): number =>
  * that is not a JSON object says nothing.
  */
 export function agentToolResult(row: AgentMessage): string {
-  let found: Record<string, unknown>;
-  try {
-    found = jsonObject(row.content, "A tool result");
-  } catch {
-    return "";
-  }
-
   if (row.tool_name === "inspect_space") {
+    const found = resultOf<InspectSpaceResult>(row);
     return [
-      count(listSize(found.notes), "note"),
-      count(listSize(found.phrases), "phrase"),
-      count(listSize(found.recent_talk_messages), "recent message"),
+      count(found?.notes?.length ?? 0, "note"),
+      count(found?.phrases?.length ?? 0, "phrase"),
+      count(found?.recent_talk_messages?.length ?? 0, "recent message"),
     ]
       .filter(Boolean)
       .join(", ");
   }
 
   if (row.tool_name === "read_note") {
-    const name = typeof found.name === "string" ? found.name : "";
-    const read = count(
-      typeof found.content === "string" ? found.content.length : 0,
-      "character",
-    );
-    const more = found.has_more ? ", and more to read" : "";
-    return [name, read && `${read}${more}`].filter(Boolean).join(" — ");
+    const found = resultOf<ReadNoteResult>(row);
+    const read = count(found?.content?.length ?? 0, "character");
+    const more = found?.has_more ? ", and more to read" : "";
+    return [found?.name ?? "", read && `${read}${more}`].filter(Boolean).join(" — ");
   }
 
   if (row.tool_name === "read_talk_messages") {
-    const read = count(listSize(found.messages), "message");
-    return read && `${read}${found.has_more ? ", and older ones" : ""}`;
+    const found = resultOf<ReadTalkResult>(row);
+    const read = count(found?.messages?.length ?? 0, "message");
+    return read && `${read}${found?.has_more ? ", and older ones" : ""}`;
   }
 
-  return found.ok === true ? "Done." : "";
+  return resultOf<WriteResult>(row)?.ok === true ? "Done." : "";
 }

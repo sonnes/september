@@ -15,15 +15,10 @@ pnpm build
 
 The development server uses `http://localhost:3009`. Run `pnpm lint` from the repository root. The production build writes a Vite SPA to `dist/`.
 
-The test suite covers interactions, routes, browser services, and persistence.
-It does not treat landing-page copy or CSS choices as application behavior.
-Suggestion tests cover sentence matching through the shared UI, slice
-selection, phrase-code continuation, and speech after the final slice.
-
-`src/axe.ts` runs the WCAG A and AA rules of axe-core on a rendered screen.
-Each main screen test has one axe test. jsdom has no layout, so the rules for
-color contrast and target size are off. The rules for a whole page are off too,
-because a test renders one screen.
+The tests of this app cover the routes, the prerender, the browser services,
+and IndexedDB. They do not treat landing-page copy or CSS choices as
+application behavior. The tests of the shared screens, and their axe checks,
+are in `packages/app-ui/test/`.
 
 ## Every page names itself
 
@@ -101,10 +96,11 @@ crawler gets them without running JavaScript at all. A deep link to an
 application route gets the empty shell, so it never paints the marketing page
 first.
 
-`PRERENDERED_PATHS` in `src/rules/prerender.ts` is the list, and it derives the
-guides from `HELP_GUIDES`. Writing a new guide prerenders it. Nothing else can
-go on the list unless it can render without browser storage. The legal notices
-also meet that requirement.
+`PUBLIC_PAGES` in `src/public-pages.ts` holds the public pages: the path, the
+words of a shared link, and the page that the web app draws. The router and
+the prerender both read it. `PRERENDERED_PATHS` in `src/rules/prerender.ts`
+adds the guides from `HELP_GUIDES`, so writing a new guide prerenders it. A
+page goes in `PUBLIC_PAGES` only when it renders without browser storage.
 
 The markup is static: the browser mounts over it rather than hydrating it. The
 title each page renders is moved into its own head, since a crawler reads the
@@ -120,7 +116,7 @@ See `docs/concepts/prerendered-pages.md`.
 `/privacy-policy` and `/terms-of-service` are public, prerendered pages.
 They remain available before setup and link from the landing footer.
 `src/pages/legal.tsx` contains their text and shared contact section.
-They are web-only routes and do not change the shared application route contract.
+`PUBLIC_PAGES` gives them to the router. They are web-only routes and do not change the shared application route contract.
 
 The notices describe a personal open-source project in India. The terms follow
 the root MIT `LICENSE`: broad reuse rights, no warranty, and no guaranteed
@@ -226,6 +222,12 @@ returns to `/help`.
 `src/services/repository.ts` owns one native IndexedDB database named
 `september`. The database contains application rows, a separate
 `agent_messages` transcript store, and a bounded speech-file cache.
+`BrowserRepository` is the store of the platform. `browserRepository` opens the
+database on its first call, and a failed open runs again on the next call.
+
+Usage events stay for `USAGE_RETENTION_MS` from
+`packages/core/rules/usage-summary.ts`, which is 90 days. A usage read deletes
+the older events, and a backup leaves them out.
 
 The first start imports data from the old browser databases. The import uses idempotent writes and validates the imported row identifiers. It then removes these databases:
 
@@ -313,8 +315,9 @@ src/
 ├── components/   web-only landing-page sections
 ├── pages/        the web-only home and legal pages
 ├── rules/        the prerender and analytics rules of the web
-├── services/     IndexedDB, voices, provider keys, video, OAuth, analytics
-└── test/         the in-memory platform of the tests
+├── services/     IndexedDB, voices, audio output, provider keys, video, OAuth, analytics
+├── public-pages.ts  the pages anyone can open, for the router and the prerender
+└── test/         the setup file of the tests
 ```
 
 The root workspace supplies the common source:
@@ -325,8 +328,8 @@ The root workspace supplies the common source:
 
 The shared UI imports the browser platform from `@platform/adapter`. TypeScript
 and Vite map it to `src/platform.ts`. Vitest maps it to
-`src/test/platform.ts`, an in-memory platform that a setup file resets before
-each test.
+`@september/app-ui/test/platform`, an in-memory platform that
+`src/test/setup.ts` resets before each test.
 
 ## Speech and unfinished words
 

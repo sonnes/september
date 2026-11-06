@@ -54,8 +54,9 @@ cargo fmt --all -- --check
 - Let the float choice decide the Dock icon. `policy(setup, float)` in
   `src-tauri/src/window.rs` holds the rule. `panel_show` must not change the
   activation policy.
-- Call the Rust backend from `src/platform.ts` or `src/window.ts` only. Do not
-  call `invoke` from a component or from a shared service.
+- Call the Rust backend from `src/platform.ts`, `src/window.ts`, or
+  `src/services/gaze.ts` only. Do not call `invoke` from a component or from a
+  shared service.
 - Change a space with `space_patch`, never with a whole row. Three writers
   change a space and each one knows only its own fields, so a whole-row write
   lets the last writer undo the others.

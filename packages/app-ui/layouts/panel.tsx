@@ -10,9 +10,9 @@ import { useSpaces } from "@september/app-ui/services/data";
 import { panel as panelRail } from "@september/app-ui/services/settings";
 import { stopSpeaking, useSpeaking } from "@september/app-ui/services/speech";
 import {
-  ChromeContext,
+  EditorProvider,
   PanelContext,
-  type ComposerHandle,
+  useActiveEditor,
 } from "@september/app-ui/blocks/chrome";
 import {
   PanelHeader,
@@ -31,19 +31,8 @@ import { spaceParams, useNewSpace } from "@september/app-ui/blocks/space-routes"
 import { escapeStep, moodForKey, tierFor } from "@september/core/rules/panel";
 import { KEYMAP, presses } from "@september/core/rules/keymap";
 import { useEscape } from "@september/app-ui/blocks/keymap";
-import type { SpaceMode } from "@september/core/rules/records";
+import { modeForDigit, spaceRoute } from "@september/core/rules/navigation";
 import { spaceFromSlug } from "@september/core/rules/spaces";
-
-/**
- * The space and the mode that a space path names: Talk, Notes, a note, or
- * Agent. Any other path is a page.
- */
-function spacePath(path: string): { slug: string; mode: SpaceMode } | null {
-  const found = /^\/spaces\/([^/]+)\/(talk|agent|notes(?:\/[^/]+)?)$/.exec(path);
-  if (!found) return null;
-  const mode = found[2].split("/")[0] as SpaceMode;
-  return { slug: decodeURIComponent(found[1]), mode };
-}
 
 /** The title of the app page that a path belongs to, such as Settings for a section. */
 function pageTitle(path: string): string {
@@ -53,26 +42,26 @@ function pageTitle(path: string): string {
   );
 }
 
-const MODE_CODES: Record<string, SpaceMode> = {
-  Digit1: "talk",
-  Digit2: "notes",
-  Digit3: "agent",
-};
-
 /**
  * The floating panel of the desktop app: the panel header over the Talk,
  * Notes, or Agent screen of one space, or over a page such as Settings.
  *
- * The screens are the same as in the shell. The chrome context tells them to
+ * The screens are the same as in the shell. The panel context tells them to
  * leave out their own header and dock. The right rail has a place only in
  * the wide tier; in the other tiers Phrases and Voice open as sheets.
  */
-export function PanelShell({
-  onHide,
-}: {
+export function PanelShell(props: {
   /** Hides the panel window. Escape calls it when there is nothing to stop or close. */
   onHide: () => void;
 }) {
+  return (
+    <EditorProvider>
+      <Panel {...props} />
+    </EditorProvider>
+  );
+}
+
+function Panel({ onHide }: { onHide: () => void }) {
   const navigate = useNavigate();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
@@ -80,7 +69,7 @@ export function PanelShell({
   const { data: spaces } = useSpaces();
   const speaking = useSpeaking();
 
-  const at = spacePath(pathname);
+  const at = spaceRoute(pathname);
   const space = at ? spaceFromSlug(at.slug, spaces ?? []) : undefined;
   const mode = at?.mode ?? "talk";
 
@@ -94,7 +83,7 @@ export function PanelShell({
         onBack: () => void navigate({ to: lastSpacePath ?? "/spaces" }),
       };
 
-  const composer = useRef<ComposerHandle | null>(null);
+  const editor = useActiveEditor();
   const [sheet, setSheet] = useState<PanelSheet | null>(null);
   const [outputOpen, setOutputOpen] = useState(false);
 
@@ -130,7 +119,7 @@ export function PanelShell({
       const step = escapeStep({
         speaking: speaking !== null,
         sheetOpen: sheet !== null,
-        draft: composer.current?.draft ?? "",
+        draft: editor.current?.draft ?? "",
       });
       if (step === "none") return false;
       if (step === "stop") stopSpeaking();
@@ -146,7 +135,7 @@ export function PanelShell({
     const onKey = (event: KeyboardEvent) => {
       if (event.ctrlKey && !event.metaKey && !event.altKey) {
         const mood = moodForKey(event.key);
-        const onMood = composer.current?.onMood;
+        const onMood = editor.current?.onMood;
         if (tier !== "compact" || mood === undefined || !onMood) return;
         event.preventDefault();
         onMood(mood);
@@ -157,7 +146,7 @@ export function PanelShell({
 
       if (event.altKey) {
         // Option changes the character of a digit, so the code names the key.
-        const next = MODE_CODES[event.code];
+        const next = modeForDigit(event.code);
         if (!next || !space) return;
         event.preventDefault();
         void navigate(spaceParams(space, next));
@@ -167,8 +156,8 @@ export function PanelShell({
       if (presses(event, KEYMAP.spaces)) setSheet("spaces");
       else if (presses(event, KEYMAP.phrases) && space) openTab("phrases");
       else if (presses(event, KEYMAP.voice) && space) openTab("voice");
-      else if (presses(event, KEYMAP.output) && composer.current?.speaks) setOutputOpen(true);
-      else if (presses(event, KEYMAP.clear) && composer.current?.clear) composer.current.clear();
+      else if (presses(event, KEYMAP.output) && editor.current?.speaks) setOutputOpen(true);
+      else if (presses(event, KEYMAP.clear) && editor.current?.clear) editor.current.clear();
       else if (presses(event, KEYMAP.help)) void navigate({ to: "/help" });
       else return;
       event.preventDefault();
@@ -181,60 +170,58 @@ export function PanelShell({
   const empty = spaces !== undefined && spaces.length === 0;
 
   return (
-    <ChromeContext.Provider value="panel">
-      <PanelContext.Provider
-        value={{ tier, composer, outputOpen, setOutputOpen }}
-      >
-        <RightPanelSlot.Provider value={tier === "wide" ? slot : null}>
-          <div
-            ref={setFrame}
-            className="bg-muted text-foreground flex h-svh flex-col overflow-hidden"
-          >
-            <SkipLink />
-            <ApplyAccess />
-            <InputLayer />
-            <PanelHeader
-              space={space}
-              mode={mode}
-              onSheet={setSheet}
-              page={page}
-            />
-            {/* In the compact tier, the scan pause key has its own row under
-                the header. The row is empty, and hidden, without a scan. */}
-            {tier === "compact" ? (
-              <div
-                data-housing
-                className="bg-sidebar flex shrink-0 justify-end px-2.5 pb-2 empty:hidden"
-              >
-                <ScanPauseKey className="min-h-12 min-w-12" />
-              </div>
-            ) : null}
-            <div className="flex min-h-0 flex-1">
-              <main
-                ref={main}
-                id={MAIN_ID}
-                tabIndex={-1}
-                className="bg-background flex min-h-0 min-w-0 flex-1 flex-col focus:outline-none"
-              >
-                {empty && at ? <PanelEmpty /> : <Outlet />}
-              </main>
-              {/* `display: contents` makes the rail itself the flex child. */}
-              {tier === "wide" ? (
-                <div ref={setSlot} style={{ display: "contents" }} />
-              ) : null}
+    <PanelContext.Provider
+      value={{ tier, outputOpen, setOutputOpen }}
+    >
+      <RightPanelSlot.Provider value={tier === "wide" ? slot : null}>
+        <div
+          ref={setFrame}
+          className="bg-muted text-foreground flex h-svh flex-col overflow-hidden"
+        >
+          <SkipLink />
+          <ApplyAccess />
+          <InputLayer />
+          <PanelHeader
+            space={space}
+            mode={mode}
+            onSheet={setSheet}
+            page={page}
+          />
+          {/* In the compact tier, the scan pause key has its own row under
+              the header. The row is empty, and hidden, without a scan. */}
+          {tier === "compact" ? (
+            <div
+              data-housing
+              className="bg-sidebar flex shrink-0 justify-end px-2.5 pb-2 empty:hidden"
+            >
+              <ScanPauseKey className="min-h-12 min-w-12" />
             </div>
-            <PanelSheets
-              sheet={sheet}
-              onSheet={setSheet}
-              onPanelTab={openTab}
-              space={space}
-              spaces={spaces ?? []}
-              mode={mode}
-            />
+          ) : null}
+          <div className="flex min-h-0 flex-1">
+            <main
+              ref={main}
+              id={MAIN_ID}
+              tabIndex={-1}
+              className="bg-background flex min-h-0 min-w-0 flex-1 flex-col focus:outline-none"
+            >
+              {empty && at ? <PanelEmpty /> : <Outlet />}
+            </main>
+            {/* `display: contents` makes the rail itself the flex child. */}
+            {tier === "wide" ? (
+              <div ref={setSlot} style={{ display: "contents" }} />
+            ) : null}
           </div>
-        </RightPanelSlot.Provider>
-      </PanelContext.Provider>
-    </ChromeContext.Provider>
+          <PanelSheets
+            sheet={sheet}
+            onSheet={setSheet}
+            onPanelTab={openTab}
+            space={space}
+            spaces={spaces ?? []}
+            mode={mode}
+          />
+        </div>
+      </RightPanelSlot.Provider>
+    </PanelContext.Provider>
   );
 }
 

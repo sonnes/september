@@ -7,13 +7,17 @@ import {
   type WritingModelConfig,
 } from "./model-config.ts";
 
-export type SetupMode = "free" | "advanced";
+export const SETUP_MODES = ["free", "advanced"] as const;
+
+export type SetupMode = (typeof SETUP_MODES)[number];
 
 /** The service that suggests words while the user types. */
 export type WritingService = WritingModelConfig["service"];
 
 /** The service that speaks a message out loud. */
-export type VoiceService = "system" | "elevenlabs";
+export const VOICE_SERVICES = ["system", "elevenlabs"] as const;
+
+export type VoiceService = (typeof VOICE_SERVICES)[number];
 
 export interface OnboardingDraft extends ModelSettings {
   autoSuggestions: boolean;

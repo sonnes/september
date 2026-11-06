@@ -46,8 +46,7 @@ To test window persistence on macOS:
 5. Make sure that the size and position of the panel match the recorded values.
 
 The Tauri product and the panel are named `September`. The default capability
-lets the UI replace the native window title after navigation, so each page adds
-its name to the app name.
+lets the UI set the native window title to the document title of each screen.
 
 The panel has no title bar. The title bar is an overlay, and the window buttons
 sit over the indigo header. The header drags the window, so the capability
@@ -185,6 +184,7 @@ when its row does not exist.
 | `space_list`         | `{ user_id }`                                  | `Space[]`         |
 | `space_get`          | `{ id }`                                       | `Space \| null`   |
 | `space_put`          | `Space`                                        | `Space`           |
+| `space_patch`        | `SpacePatch`                                   | `Space`           |
 | `space_delete`       | `{ id }`                                       | `boolean`         |
 | `message_list`       | `{ space_id? }`                                | `Message[]`       |
 | `message_get`        | `{ id }`                                       | `Message \| null` |
@@ -197,10 +197,15 @@ when its row does not exist.
 | `phrase_list`        | `{ space_id? }`                                | `SavedPhrase[]`   |
 | `phrase_put`         | `SavedPhrase`                                  | `SavedPhrase`     |
 | `phrase_delete`      | `{ id }`                                       | `boolean`         |
-| `phrase_replace_ai`  | `{ space_id, phrases }`                        | `SavedPhrase[]`   |
+| `phrase_replace_ai`  | `{ space_id, phrases }`                        | none              |
 | `agent_message_list` | `{ space_id }`                                 | `AgentMessage[]`  |
 | `agent_message_put`  | `AgentMessage`                                 | `AgentMessage`    |
 | `agent_tool_state`   | `{ id, expected, state, content, updated_at }` | `AgentMessage`    |
+
+`space_patch` changes only the fields that the patch holds and returns the
+stored space. `reset_phrases_synced_count: true` clears
+`phrases_synced_count`. A space has more than one writer, and each writer
+knows only its own fields, so a writer changes a space with a patch.
 
 Agent messages have their own table and API. `agent_tool_state` resolves a
 pending tool record only when its current state matches `expected`, so a second
@@ -216,6 +221,15 @@ type Space = {
   context?: string;
   phrases_synced_count?: number;
   created_at: number;
+  updated_at: number;
+};
+
+type SpacePatch = {
+  id: string;
+  title?: string;
+  context?: string;
+  phrases_synced_count?: number;
+  reset_phrases_synced_count?: boolean;
   updated_at: number;
 };
 
@@ -271,13 +285,14 @@ const space = await invoke<Space>("space_put", {
 
 ## Call the usage API
 
-`analytics_put` stores a local event. `analytics_list` returns the events of
-one user in an inclusive timestamp range, newest first.
+`analytics_put` stores a local event. `analytics_list` deletes the events of
+every user from before `since`, then returns the events of one user in an
+inclusive timestamp range, newest first.
 
-| Command          | Request                         | Response           |
-| ---------------- | ------------------------------- | ------------------ |
-| `analytics_put`  | `AnalyticsEvent`                | `AnalyticsEvent`   |
-| `analytics_list` | `{ user_id, start_at, end_at }` | `AnalyticsEvent[]` |
+| Command          | Request                                | Response           |
+| ---------------- | -------------------------------------- | ------------------ |
+| `analytics_put`  | `AnalyticsEvent`                       | `AnalyticsEvent`   |
+| `analytics_list` | `{ user_id, start_at, end_at, since }` | `AnalyticsEvent[]` |
 
 ```ts
 type AnalyticsEvent = {
@@ -289,9 +304,9 @@ type AnalyticsEvent = {
 };
 ```
 
-The repository deletes events strictly older than 90 days before each usage
-read, after each usage write, and before each backup export. The timestamp
-index keeps cleanup and bounded reports out of the event payload.
+The WebView sets `since` from `USAGE_RETENTION_MS` in
+`packages/core/rules/usage-summary.ts`. The timestamp index keeps cleanup and
+bounded reports out of the event payload.
 
 ## Call the settings API
 
@@ -304,10 +319,12 @@ Each command accepts a `request` object.
 
 ## Call the backup API
 
-| Command         | Request                       | Response                              |
-| --------------- | ----------------------------- | ------------------------------------- |
-| `backup_export` | none                          | Portable settings and all domain rows |
-| `backup_import` | `{ request: BackupContents }` | none                                  |
+Each command accepts a `request` object.
+
+| Command         | Request                         | Response         |
+| --------------- | ------------------------------- | ---------------- |
+| `backup_export` | `{ settingKeys, usageSince }`   | `BackupContents` |
+| `backup_import` | `{ contents, settingKeys }`     | none             |
 
 `BackupContents` holds the rows of each table and the portable settings:
 
@@ -324,15 +341,16 @@ type BackupContents = {
 ```
 
 `settings` uses the stored setting names as keys, for example `panel-open`.
-`PORTABLE_SETTING_KEYS` in `src/repository.rs` lists the portable keys. Export
-leaves out a portable key that has no value. It also leaves out the Keychain
-keys, the selected audio output, and every other setting of this Mac. The
-WebView changes `settings` into the settings of the backup file, and back.
+The WebView passes `PORTABLE_SETTING_KEYS` from
+`packages/core/rules/settings.ts` as `settingKeys`. Export holds the settings
+of `settingKeys` that have a value, and leaves out every other setting of this
+Mac. It first deletes the usage events from before `usageSince`. The WebView
+changes `settings` into the settings of the backup file, and back.
 
-`backup_import` refuses a setting key that is not portable. It replaces the
-portable settings and every row in one transaction. If an ID repeats, a row
-refers to a space that is not in the backup, or a write fails, the current
-database stays.
+`backup_import` refuses a setting that is not in `settingKeys`. In one
+transaction, it deletes the settings of `settingKeys`, writes the settings of
+the backup, and replaces every row. If an ID repeats, a row refers to a space
+that is not in the backup, or a write fails, the current database stays.
 
 ## Read the user name
 
@@ -345,8 +363,8 @@ placeholder.
 ## Read the login name
 
 The `user_id` command takes no request. It returns the login name of the
-signed-in user, for example `ravi`. The command rejects its promise when the
-system knows no login name.
+signed-in user, for example `ravi`, or `null` when the system gives no usable
+login name. The command rejects only when it cannot ask the system.
 
 A space and a message need an identifier for the owner. The display name from
 `user_name` can be empty, and the user can change it, so it cannot be one.
@@ -404,8 +422,8 @@ never crosses the command boundary.
 
 ## Keep the phrases of a user
 
-`phrase_replace_ai` takes `{ space_id, phrases }` and returns the phrases of
-that space. It erases the rows with `pinned = 0` and writes the new rows, in
+`phrase_replace_ai` takes `{ space_id, phrases }` and returns nothing. It
+erases the rows with `pinned = 0` and writes the new rows, in
 one transaction. A pinned row never changes, so a phrase that the user keeps
 cannot be lost by a model. Rust refuses a replacement row that says it is
 pinned, or that belongs to another space.
@@ -573,7 +591,7 @@ refused tap is silent and reports nothing. The message names the one setting
 that mends it.
 
 Both native voices wait for the audio engine to play their final buffer, not on
-a clock. `speech_stop` stops the engine and releases that wait.
+a clock. `speech_native_stop` stops the engine and releases that wait.
 
 ## Stream the eye-tracker test bed
 
@@ -595,6 +613,7 @@ more than five frames per second. Each frame includes the current smoothed
 point when both eyes are valid. The WebView takes median samples at four box
 corners and fits one linear mapping for each axis. It clips the mapped point to
 the camera box. It does not convert it to a window or operating-system pointer.
+A frame that Vision cannot analyze sends the `error` state with the reason.
 
 Neither side saves the preview, point, or calibration. `gaze_stop` joins the
 capture thread. The capture thread stops by itself after an error, and the

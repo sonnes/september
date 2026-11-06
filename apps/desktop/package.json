@@ -13,7 +13,6 @@
     "tauri:build": "node scripts/tauri.mjs build"
   },
   "dependencies": {
-    "@earendil-works/pi-ai": "0.84.4",
     "@september/app-ui": "workspace:*",
     "@september/core": "workspace:*",
     "@september/ui": "workspace:*",

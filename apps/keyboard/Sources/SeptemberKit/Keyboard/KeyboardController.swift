@@ -5,9 +5,6 @@ import Foundation
 /// sink turns the result into real events (or records them, in tests).
 @MainActor
 public final class KeyboardController: ObservableObject {
-    /// The name shown until an app reports its own.
-    public static let defaultAppName = "Finder"
-
     @Published public var style: KeyboardStyle = .rainbow
     @Published public private(set) var modifiers = ModifierState()
     /// What we have typed since the last Return. Only shown when the app in
@@ -21,7 +18,8 @@ public final class KeyboardController: ObservableObject {
     /// The text field the app in front has focused, as far as accessibility
     /// can tell us.
     @Published public private(set) var focusedField: FocusedField?
-    @Published public private(set) var frontmostAppName = KeyboardController.defaultAppName
+    /// The name of the app in front. `nil` until an app reports its name.
+    @Published public private(set) var frontmostAppName: String?
     @Published public private(set) var appPanel: PanelDefinition
 
     public let panels: PanelStore
@@ -76,7 +74,7 @@ public final class KeyboardController: ObservableObject {
     /// belonged to the app we just left: the mirrored field is gone, and our
     /// own echo was typed into that app, not this one.
     public func appChanged(name: String?, bundleID: String?) {
-        frontmostAppName = name ?? KeyboardController.defaultAppName
+        frontmostAppName = name
         appPanel = panels.appPanel(forBundleID: bundleID)
         focusedField = nil
         echo = ""

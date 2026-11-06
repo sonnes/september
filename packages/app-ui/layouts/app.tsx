@@ -18,6 +18,7 @@ import {
 import { BrandMark, BrandWordmark } from "@september/app-ui/blocks/brand";
 import { APP_NAV } from "@september/app-ui/navigation";
 import { ApplyAccess } from "@september/app-ui/blocks/access";
+import { EditorProvider } from "@september/app-ui/blocks/chrome";
 import { InputLayer, ScanPauseKey } from "@september/app-ui/blocks/input-layer";
 import {
   HeaderActionsSlot,
@@ -49,6 +50,7 @@ export function AppShell() {
       className="h-svh"
       data-scan-room
     >
+      <EditorProvider>
       <RightPanelSlot.Provider value={slot}>
       <HeaderActionsSlot.Provider value={headerActions}>
         <SkipLink />
@@ -73,6 +75,7 @@ export function AppShell() {
         <div ref={setSlot} style={{ display: "contents" }} />
       </HeaderActionsSlot.Provider>
       </RightPanelSlot.Provider>
+      </EditorProvider>
     </SidebarProvider>
   );
 }

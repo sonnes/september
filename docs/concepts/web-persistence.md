@@ -40,6 +40,12 @@ Import reads the complete backup before it opens a write transaction. The
 write clears and replaces only the portable settings and domain stores. An
 abort keeps every old value. See [Portable backups](portable-backups.md).
 
+## Keep usage events for the retention period
+
+`USAGE_RETENTION_MS` in `packages/core/rules/usage-summary.ts` keeps 90 days of
+usage events. A usage read deletes the older events first, and a backup leaves
+them out. The desktop app keeps the same period.
+
 ## Bounded speech files
 
 ElevenLabs speech uses a key derived from the text, voice, model, stability, similarity, and speed. An exact match reads the saved file and avoids another provider request. Browser system speech does not create a file.

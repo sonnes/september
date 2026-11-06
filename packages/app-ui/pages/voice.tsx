@@ -12,7 +12,8 @@ import { heardVoices, shownVoices, VOICE_SAMPLE_TEXT, voiceRows } from "@septemb
 import { play } from "@september/app-ui/services/player";
 import { type CreatedVoice, keepCreatedVoice, recentCreatedVoice, rememberCreatedVoice } from "@september/app-ui/services/cloning";
 import { Screen } from "@september/app-ui/blocks/screen";
-import { speak, type SpeechSettings, speechSettings, updateSpeech, useSpeechSettings, type VoiceService } from "@september/app-ui/services/speech";
+import { speak, speechSettings, updateSpeech, useSpeechSettings } from "@september/app-ui/services/speech";
+import type { SpeechService, SpeechSettings } from "@september/core/rules/voice";
 import { useVoiceCloneDraft, VoiceCloneForm } from "@september/app-ui/blocks/voice-clone";
 
 /** A voice made a moment ago, before ElevenLabs lists it. */
@@ -233,7 +234,7 @@ export function VoiceCloneScreen() {
 }
 
 /** The services that can speak, in the order of the choice. */
-const VOICE_SERVICES: readonly { value: VoiceService; title: string; body: string }[] = [
+const VOICE_SERVICES: readonly { value: SpeechService; title: string; body: string }[] = [
   {
     value: "system",
     title: "System voice",

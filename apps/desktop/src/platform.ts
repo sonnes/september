@@ -13,6 +13,9 @@ import {
   type Platform,
   type PlatformStore,
 } from "@september/app-ui/platform";
+import { downloadBlob, warnBeforeUnload } from "@september/app-ui/services/browser";
+import { PORTABLE_SETTING_KEYS } from "@september/core/rules/settings";
+import { usageSince } from "@september/core/rules/usage-summary";
 
 import packageMetadata from "../package.json";
 import { call, callRaw } from "./commands";
@@ -50,20 +53,16 @@ const store: PlatformStore = {
     await call("analytics_put", { request: event });
   },
   listUsageEvents: (user_id, start_at, end_at) =>
-    call("analytics_list", { request: { user_id, start_at, end_at } }),
-  exportBackup: () => call("backup_export"),
-  importBackup: (stored) => call("backup_import", { request: stored }),
+    call("analytics_list", {
+      request: { user_id, start_at, end_at, since: usageSince(Date.now()) },
+    }),
+  exportBackup: () =>
+    call("backup_export", {
+      request: { settingKeys: PORTABLE_SETTING_KEYS, usageSince: usageSince(Date.now()) },
+    }),
+  importBackup: (contents) =>
+    call("backup_import", { request: { contents, settingKeys: PORTABLE_SETTING_KEYS } }),
 };
-
-/** A WebView download. The file never leaves the Mac first. */
-function save(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-}
 
 /** The multipart body as raw bytes, with the boundary in its content type. */
 async function rawForm(form: FormData): Promise<{ bytes: Uint8Array; contentType: string }> {
@@ -140,31 +139,23 @@ export const platform: Platform = {
   },
   device: {
     async identity() {
-      const [name, userId] = await Promise.all([
-        call("user_name"),
-        // A Mac with no login name gives the rows the local owner.
-        call("user_id").catch(() => null),
-      ]);
+      const [name, userId] = await Promise.all([call("user_name"), call("user_id")]);
       return { name, userId };
     },
     openInBrowser: (url) => open(url),
     guardUnsavedChanges() {
-      const warn = (event: BeforeUnloadEvent) => {
-        event.preventDefault();
-        event.returnValue = "";
-      };
-      window.addEventListener("beforeunload", warn);
+      const release = warnBeforeUnload();
       let active = true;
       const native = getCurrentWindow().onCloseRequested((event) => {
         if (active) event.preventDefault();
       });
       return () => {
-        window.removeEventListener("beforeunload", warn);
+        release();
         active = false;
         void native.then((unlisten) => unlisten());
       };
     },
-    save,
+    save: downloadBlob,
     outputs: {
       list: () => call("audio_outputs"),
       current: () => call("audio_output"),

@@ -7,6 +7,7 @@ use tauri::AppHandle;
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use {
     std::{net::TcpListener, process::Command},
+    tauri::Manager,
     tauri_plugin_shell::{process::CommandChild, ShellExt},
     tokio::{sync::Mutex, time::Duration},
     uuid::Uuid,
@@ -41,7 +42,7 @@ pub struct ApfelClient {
 }
 
 impl ApfelClient {
-    pub fn new(base_url: String, token: String) -> Result<Self> {
+    pub fn new(client: reqwest::Client, base_url: String, token: String) -> Result<Self> {
         let url = Url::parse(&base_url)
             .map_err(|error| ApfelError::InvalidEndpoint(error.to_string()))?;
         let is_loopback = match url.host_str() {
@@ -58,7 +59,7 @@ impl ApfelClient {
         }
 
         Ok(Self {
-            client: reqwest::Client::new(),
+            client,
             base_url: base_url.trim_end_matches('/').to_owned(),
             token,
         })
@@ -205,7 +206,11 @@ impl ApfelState {
             .map_err(|error| ApfelError::Start(error.to_string()))?;
         tauri::async_runtime::spawn(async move { while events.recv().await.is_some() {} });
 
-        let client = ApfelClient::new(format!("http://127.0.0.1:{port}"), token)?;
+        let client = ApfelClient::new(
+            app.state::<crate::providers::Providers>().client().clone(),
+            format!("http://127.0.0.1:{port}"),
+            token,
+        )?;
         let mut process = ManagedApfel {
             client: client.clone(),
             child: Some(child),

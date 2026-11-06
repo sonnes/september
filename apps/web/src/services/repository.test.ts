@@ -3,8 +3,9 @@ import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { StoredBackup } from '@september/core/rules/backup';
+import { USAGE_RETENTION_MS, type UsageEvent } from '@september/core/rules/usage-summary';
 
-import { DATABASE_NAME, LEGACY_DATABASES, openRepository, type AnalyticsEvent } from './repository';
+import { browserRepository, openRepository } from './repository';
 import type {
   AgentMessage,
   Message,
@@ -12,6 +13,20 @@ import type {
   SavedPhrase,
   Space,
 } from '@september/core/rules/records';
+
+/** The database of the app, and the retired databases it replaces. Both are stored in browsers now. */
+const DATABASE_NAME = 'september';
+const LEGACY_DATABASES = [
+  'app-user-account',
+  'app-spaces',
+  'app-messages',
+  'app-documents',
+  'app-saved-phrases',
+  'analytics',
+  'september-autocomplete',
+  'september-audio',
+];
+const NOW = Date.now();
 
 async function rowsFromStore<T>(storeName: string): Promise<T[]> {
   const database = await new Promise<IDBDatabase>((resolve, reject) => {
@@ -118,12 +133,12 @@ function phrase(overrides: Partial<SavedPhrase> = {}): SavedPhrase {
   };
 }
 
-function analytics(overrides: Partial<AnalyticsEvent> = {}): AnalyticsEvent {
+function analytics(overrides: Partial<UsageEvent> = {}): UsageEvent {
   return {
     id: 'event-1',
     user_id: 'local-user',
     event_type: 'message_sent',
-    timestamp: 70,
+    timestamp: NOW - 1_000,
     data: { text_length: 5, keys_typed: 2 },
     ...overrides,
   };
@@ -185,7 +200,7 @@ describe('BrowserRepository', () => {
     await expect(
       repository.updateAgentToolState('agent-1', 'pending', 'rejected', '', 100)
     ).rejects.toThrow('already resolved');
-    repository.close();
+    await repository.close();
   });
 
   it('adds blob stores to an existing version-one database without losing rows', async () => {
@@ -210,7 +225,7 @@ describe('BrowserRepository', () => {
     expect(await repository.getSetting('lastPath')).toBe('/dashboard');
     await repository.putBlob('speech-1', new Blob(['audio']));
     expect(await repository.getBlob('speech-1')).not.toBeNull();
-    repository.close();
+    await repository.close();
   });
 
   it('stores the desktop row model and patches a space without losing other fields', async () => {
@@ -227,7 +242,7 @@ describe('BrowserRepository', () => {
     await repository.putNote(note());
     await repository.putPhrase(phrase());
     await repository.putAgentMessage(agentMessage());
-    await repository.putAnalyticsEvent(analytics());
+    await repository.putUsageEvent(analytics());
 
     expect(await repository.getSetting('/missing')).toBeNull();
     expect(await repository.getSetting('lastPath')).toBe('/spaces');
@@ -237,9 +252,9 @@ describe('BrowserRepository', () => {
     expect(await repository.listMessages('space-1')).toEqual([message()]);
     expect(await repository.listNotes('space-1')).toEqual([note()]);
     expect(await repository.listPhrases('space-1')).toEqual([phrase()]);
-    expect(await repository.listAnalyticsEvents('local-user', 0, 100)).toEqual([analytics()]);
+    expect(await repository.listUsageEvents('local-user', 0, NOW)).toEqual([analytics()]);
 
-    repository.close();
+    await repository.close();
   });
 
   it('clears the phrase sync marker after an agent edits Talk history', async () => {
@@ -253,7 +268,7 @@ describe('BrowserRepository', () => {
     });
 
     expect(changed.phrases_synced_count).toBeUndefined();
-    repository.close();
+    await repository.close();
   });
 
   it('deletes a space and all of its child rows in one operation', async () => {
@@ -275,7 +290,7 @@ describe('BrowserRepository', () => {
       note({ id: 'unscoped', space_id: undefined })
     );
 
-    repository.close();
+    await repository.close();
   });
 
   it('replaces only unpinned AI phrases', async () => {
@@ -297,7 +312,29 @@ describe('BrowserRepository', () => {
       'phrase-1',
       'new-ai',
     ]);
-    repository.close();
+    await repository.close();
+  });
+
+  it('drops usage events past the retention from a read and from a backup', async () => {
+    const repository = await openRepository({ migrate: false });
+    const old = analytics({ id: 'old', timestamp: NOW - USAGE_RETENTION_MS - 60_000 });
+    await repository.putUsageEvent(old);
+    await repository.putUsageEvent(analytics());
+
+    expect((await repository.exportBackup()).usageEvents).toEqual([analytics()]);
+    expect(await repository.listUsageEvents('local-user', 0, NOW)).toEqual([analytics()]);
+    expect(await rowsFromStore('analytics_events')).toEqual([analytics()]);
+    await repository.close();
+  });
+
+  it('opens the database again after a failed open', async () => {
+    vi.stubGlobal('indexedDB', undefined);
+    await expect(browserRepository.getSetting('lastPath')).rejects.toThrow('IndexedDB');
+    vi.unstubAllGlobals();
+    vi.stubGlobal('localStorage', memoryStorage());
+
+    await browserRepository.putSetting('lastPath', '/spaces');
+    expect(await browserRepository.getSetting('lastPath')).toBe('/spaces');
   });
 
   it('takes one portable snapshot without secrets, device state, or cached audio paths', async () => {
@@ -334,7 +371,7 @@ describe('BrowserRepository', () => {
     await repository.putNote(note());
     await repository.putPhrase(phrase());
     await repository.putAgentMessage(agentMessage());
-    await repository.putAnalyticsEvent(analytics());
+    await repository.putUsageEvent(analytics());
     await repository.putBlob('speech-1', new Blob(['audio']));
 
     expect(await repository.exportBackup()).toEqual({
@@ -353,7 +390,7 @@ describe('BrowserRepository', () => {
       savedPhrases: [phrase()],
       usageEvents: [analytics()],
     });
-    repository.close();
+    await repository.close();
   });
 
   it('atomically replaces portable rows and keeps local-only values', async () => {
@@ -367,7 +404,7 @@ describe('BrowserRepository', () => {
     await repository.putNote(note());
     await repository.putPhrase(phrase());
     await repository.putAgentMessage(agentMessage());
-    await repository.putAnalyticsEvent(analytics());
+    await repository.putUsageEvent(analytics());
     await repository.putBlob('speech-1', new Blob(['audio']));
 
     const next = storedBackup({
@@ -391,7 +428,7 @@ describe('BrowserRepository', () => {
     expect(await repository.getSetting('audio-output')).toBe('speaker-1');
     expect(await repository.getSetting('legacy-migration')).toBe('clean');
     expect(await repository.getBlob('speech-1')).not.toBeNull();
-    repository.close();
+    await repository.close();
   });
 
   it('aborts every replacement write when one value cannot be stored', async () => {
@@ -402,12 +439,12 @@ describe('BrowserRepository', () => {
     const invalid = storedBackup({
       spaces: [space({ id: 'space-2', title: 'Friends' })],
     });
-    invalid.settings['dismissed-ideas'] = () => 'not cloneable';
+    (invalid.settings as Record<string, unknown>)['dismissed-ideas'] = () => 'not cloneable';
 
     await expect(repository.importBackup(invalid)).rejects.toBeDefined();
     expect(await repository.getSetting('dismissed-ideas')).toEqual(['old-idea']);
     expect(await repository.listSpaces('local-user')).toEqual([space()]);
-    repository.close();
+    await repository.close();
   });
 
   it('stores a blob as ordered chunks and reconstructs the original file', async () => {
@@ -427,9 +464,8 @@ describe('BrowserRepository', () => {
     const restored = await repository.getBlob('speech-1', 20);
     expect(restored?.type).toBe('audio/mpeg');
     expect(restored && (await blobText(restored))).toBe('abcdefgh');
-    expect(await repository.getBlobCacheSize()).toBe(8);
 
-    repository.close();
+    await repository.close();
   });
 
   it('evicts the least recently used files before the blob cache exceeds its byte limit', async () => {
@@ -454,16 +490,17 @@ describe('BrowserRepository', () => {
     expect(await repository.getBlob('newer', 5)).toBeNull();
     expect(await repository.getBlob('oldest', 5)).not.toBeNull();
     expect(await repository.getBlob('incoming', 5)).not.toBeNull();
-    expect(await repository.getBlobCacheSize()).toBe(8);
     expect(
       await repository.putBlob('too-large', new Blob(['123456789']), {
         ...options,
         accessedAt: 6,
       })
     ).toBe(false);
-    expect(await repository.getBlobCacheSize()).toBe(8);
+    expect(await repository.getBlob('too-large', 7)).toBeNull();
+    expect(await repository.getBlob('oldest', 7)).not.toBeNull();
+    expect(await repository.getBlob('incoming', 7)).not.toBeNull();
 
-    repository.close();
+    await repository.close();
   });
 });
 
@@ -524,6 +561,7 @@ describe('legacy migration', () => {
   it('imports user data once, converts dates, and drops every old database', async () => {
     const createdAt = new Date('2026-08-01T00:00:00.000Z');
     const updatedAt = new Date('2026-08-02T00:00:00.000Z');
+    const recentAt = new Date(NOW - 60_000);
 
     await putLegacyRows('app-user-account', 'user-account', [
       {
@@ -598,7 +636,7 @@ describe('legacy migration', () => {
       [
         {
           id: 'event-1',
-          value: analytics({ timestamp: updatedAt as unknown as number }),
+          value: analytics({ timestamp: recentAt as unknown as number }),
         },
       ],
       'analytics_events'
@@ -658,8 +696,8 @@ describe('legacy migration', () => {
         updated_at: createdAt.getTime(),
       }),
     ]);
-    expect(await repository.listAnalyticsEvents('local-user', 0, Date.now())).toEqual([
-      analytics({ timestamp: updatedAt.getTime() }),
+    expect(await repository.listUsageEvents('local-user', 0, Date.now())).toEqual([
+      analytics({ timestamp: recentAt.getTime() }),
     ]);
 
     const databaseNames = (await indexedDB.databases()).flatMap(database =>
@@ -672,7 +710,7 @@ describe('legacy migration', () => {
     expect(localStorage.getItem('september:audio-output-device')).toBeNull();
     expect(localStorage.getItem('september:space-mode:general')).toBeNull();
 
-    repository.close();
+    await repository.close();
   });
 
   it('retries cleanup when the browser denies local-storage access', async () => {
@@ -696,11 +734,11 @@ describe('legacy migration', () => {
 
     const interrupted = await openRepository();
     expect(await interrupted.getSetting('legacy-migration')).toBe('imported');
-    interrupted.close();
+    await interrupted.close();
 
     vi.stubGlobal('localStorage', memoryStorage());
     const retried = await openRepository();
     expect(await retried.getSetting('legacy-migration')).toBe('clean');
-    retried.close();
+    await retried.close();
   });
 });

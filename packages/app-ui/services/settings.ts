@@ -17,13 +17,10 @@ import {
 } from "@september/core/rules/onboarding";
 import { panelStateFrom, type PanelState } from "@september/core/rules/panel";
 import { presentSettings, type PresentSettings } from "@september/core/rules/present/settings";
-import { SETTINGS } from "@september/core/rules/settings";
+import { LOCAL_USER, SETTINGS } from "@september/core/rules/settings";
 import { spaceModesById, type SpaceModes } from "@september/core/rules/spaces";
 
-import type { SpeechSettings } from "./speech";
-
-/** The owner of the rows when the system knows no login name. */
-export const LOCAL_USER = "local-user";
+import type { SpeechSettings } from "@september/core/rules/voice";
 
 export interface Setting<T> {
   get(): T;

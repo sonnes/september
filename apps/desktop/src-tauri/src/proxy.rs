@@ -36,21 +36,13 @@ where
     Arc::new(move || Box::pin(source()))
 }
 
-/// Where the proxy forwards.
+/// Where the proxy forwards, and the client it forwards with.
 #[derive(Clone)]
 pub struct ProxyConfig {
     pub upstream: String,
     /// The on-Mac sidecar, when this Mac has one.
     pub apple: Option<AppleSource>,
-}
-
-impl Default for ProxyConfig {
-    fn default() -> Self {
-        Self {
-            upstream: crate::providers::OPEN_ROUTER.to_owned(),
-            apple: None,
-        }
-    }
+    pub client: reqwest::Client,
 }
 
 /// The addresses and the run token the WebView needs. It holds no API key.
@@ -85,7 +77,7 @@ where
         token: token.clone(),
         upstream: config.upstream.trim_end_matches('/').to_owned(),
         apple: config.apple,
-        client: reqwest::Client::new(),
+        client: config.client,
         key: Arc::new(key),
     };
 
@@ -346,12 +338,13 @@ impl WritingProxy {
             return Ok(endpoint.clone());
         }
 
+        use tauri::Manager;
         let sidecar = app.clone();
         let config = ProxyConfig {
+            upstream: crate::providers::OPEN_ROUTER.to_owned(),
             apple: Some(apple_upstream(move || {
                 let sidecar = sidecar.clone();
                 async move {
-                    use tauri::Manager;
                     sidecar
                         .state::<crate::apfel::ApfelState>()
                         .endpoint(&sidecar)
@@ -359,12 +352,11 @@ impl WritingProxy {
                         .map_err(|error| error.to_string())
                 }
             })),
-            ..ProxyConfig::default()
+            client: app.state::<crate::providers::Providers>().client().clone(),
         };
 
         let app = app.clone();
         let endpoint = serve(config, move || {
-            use tauri::Manager;
             app.state::<crate::providers::ProviderKeys>()
                 .get(crate::providers::Provider::OpenRouter)
                 .map_err(|error| error.to_string())?

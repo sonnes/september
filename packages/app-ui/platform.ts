@@ -27,7 +27,7 @@ export interface PlatformStore extends Omit<AgentRuntimeAdapter, "openWriter"> {
   /** Every note of every space when `spaceId` is absent. */
   listNotes(spaceId?: string): Promise<Note[]>;
   /** Puts the rows of a model in place of the unpinned rows of one space. */
-  replaceAiPhrases(spaceId: string, phrases: SavedPhrase[]): Promise<SavedPhrase[]>;
+  replaceAiPhrases(spaceId: string, phrases: SavedPhrase[]): Promise<void>;
   putUsageEvent(event: UsageEvent): Promise<void>;
   listUsageEvents(userId: string, startAt: number, endAt: number): Promise<UsageEvent[]>;
   /** One consistent copy of every portable row and setting. */

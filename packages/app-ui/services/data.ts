@@ -22,11 +22,14 @@ function useRefresh(...keys: unknown[][]) {
     Promise.all(keys.map((queryKey) => client.invalidateQueries({ queryKey })));
 }
 
+/** The spaces of the user, for `useQuery` or a `fetchQuery` before the first screen. */
+export const spacesQuery = () => ({
+  queryKey: spacesKey,
+  queryFn: () => store.listSpaces(currentUserId()),
+});
+
 export function useSpaces() {
-  return useQuery({
-    queryKey: spacesKey,
-    queryFn: () => store.listSpaces(currentUserId()),
-  });
+  return useQuery(spacesQuery());
 }
 
 /**

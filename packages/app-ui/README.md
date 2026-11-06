@@ -49,7 +49,7 @@ platform:
 | `autosave.ts`    | `useAutosave`, the one save path of every field that saves as the person types.     |
 | `speech.ts`      | The speech settings, `speak`, `stopSpeaking`, and the fallback to the system voice. |
 | `sound.ts`       | The sound outputs and the virtual microphone.                                       |
-| `data.ts`        | The query hooks of the spaces, messages, notes, phrases, and Agent rows.            |
+| `data.ts`        | The query hooks of the spaces, messages, notes, phrases, and Agent rows, and `spacesQuery`. |
 | `connections.ts` | The state of every service, the voices of the account, and forgetting a key.        |
 | `ai.ts`          | `generate` and the Agent writer, through `@earendil-works/pi-ai`.                   |
 | `agent.ts`       | `askAgent` and `resolveAgentProposal`.                                              |
@@ -60,6 +60,7 @@ platform:
 | `export.ts`      | A note saved as text, audio, or video.                                              |
 | `cloning.ts`     | The recorder and the clone of a voice.                                              |
 | `player.ts`      | The preview player of a voice.                                                      |
+| `browser.ts`     | `downloadBlob` and `warnBeforeUnload`, the WebView work that both platforms use.    |
 
 Each app awaits `loadSettings` once before the first render. It reads every
 held setting and the identity of the device. After that, a screen reads a
@@ -97,7 +98,8 @@ Help, the pages, and the Settings sections. Each app gives what only it has:
 | `sections`    | None                              | `/settings/panel`                                    |
 
 The keys of `pages` and `sections` are paths of `APP_PAGES` and
-`SETTINGS_SECTIONS`. Setup runs once. Before setup is done, an app page goes
+`SETTINGS_SECTIONS`. They must be the paths that the capabilities of the
+platform offer, or `createAppRoutes` throws. Setup runs once. Before setup is done, an app page goes
 to `/welcome`. After setup is done, a setup step goes to the first page of
 `APP_NAV`.
 
@@ -145,7 +147,9 @@ resizes.
 
 Escape closes the thing that opened last first. A sheet, a dialog, the
 writing tools of a note, the Talk message pages, and Present each close on
-Escape before the screen behind them.
+Escape before the screen behind them. Every Escape step goes through
+`useEscape` in `blocks/keymap.tsx`, and a field that leaves on Escape, such as
+the note title or the code of a phrase, adds its own step while it is open.
 
 ## Access
 
@@ -255,7 +259,8 @@ message, the word that it reads is indigo. See `docs/concepts/spoken-word.md`.
 The composer has Undo, Delete, Clear, five mood keys, the sound output, and
 Speak. Speak is the largest key. Below 560px of screen body, one mood menu key
 replaces the five mood keys. The mood changes the suggestion prompt, and the
-space keeps it. If the mood does not save, the mood goes back. Audio tags show
+space keeps it. If the mood does not save, the mood goes back, and a line
+under the field says so. Audio tags show
 as chips. See `docs/concepts/audio-tags.md`.
 
 The sound output key opens the outputs of September audio. It does not change
@@ -316,6 +321,11 @@ Inside a space, the right rail keeps the phrases and the voice controls one
 press away. Below 48rem, the two keys are in the screen header, and each opens
 a sheet from the bottom. A phrase pressed in a sheet closes the sheet. The
 sheet gives the focus back to its key when it closes.
+
+A phrase goes into the active editor: the composer or the note document on the
+screen. Each shell holds one active editor in `EditorProvider` from
+`blocks/chrome.tsx`. The field registers with `useActiveEditor`, and the rail,
+the panel sheets, and the panel keys read the same ref.
 
 ## Present
 

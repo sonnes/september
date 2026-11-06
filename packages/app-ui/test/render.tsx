@@ -68,7 +68,11 @@ export function renderApp(
   path: string,
   { shell = AppShell }: { shell?: RouteComponent } = {},
 ): Promise<Rendered> {
-  const routeTree = createAppRoutes({ shell, home: { component: () => <p>Home</p> } });
+  const routeTree = createAppRoutes({
+    shell,
+    home: { component: () => <p>Home</p> },
+    pages: { '/dashboard': () => <h1>Today</h1> },
+  });
   const router = createRouter({ routeTree, history: createMemoryHistory({ initialEntries: [path] }) });
   return renderRouter(router);
 }

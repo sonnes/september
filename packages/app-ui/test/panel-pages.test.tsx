@@ -1,11 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { ChromeContext } from '@september/app-ui/blocks/chrome';
-import { Screen } from '@september/app-ui/blocks/screen';
 import { PanelShell } from '@september/app-ui/layouts/panel';
 import { SETTINGS_NAV } from '@september/app-ui/navigation';
 
-import { findButton, finishSetup, press, renderApp, renderPart } from './render';
+import { platform } from './platform';
+import { findButton, finishSetup, press, renderApp } from './render';
 
 function Panel() {
   return <PanelShell onHide={() => {}} />;
@@ -25,25 +24,11 @@ const sections = () =>
 
 describe('a page in the panel', () => {
   it('keeps the title and the action of a screen', async () => {
-    const onAction = vi.fn();
-    const { container } = await renderPart(
-      <ChromeContext.Provider value="panel">
-        <Screen
-          title="Voice"
-          action={
-            <button type="button" onClick={onAction}>
-              Hear it
-            </button>
-          }
-        >
-          body
-        </Screen>
-      </ChromeContext.Provider>,
-    );
+    await renderPanel('/voice');
 
-    expect(container.querySelector('h1')?.textContent).toBe('Voice');
-    await press(await findButton('Hear it', container));
-    expect(onAction).toHaveBeenCalled();
+    await vi.waitFor(() => expect(document.querySelector('main h1')?.textContent).toBe('Voice'));
+    await press(await findButton('Hear it', document.querySelector('main')!));
+    await vi.waitFor(() => expect(platform.voice.speakSystem).toHaveBeenCalled());
   });
 
   it('keeps each settings section and the open section', async () => {

@@ -9,7 +9,6 @@ import {
 } from "react";
 
 import {
-  AudioLines,
   ChevronsRight,
   CornerDownLeft,
   Ellipsis,
@@ -25,15 +24,14 @@ import { useMessages, usePhrases } from "@september/app-ui/services/data";
 import { isKept, topPhrases } from "@september/core/rules/phrases/rows";
 import { SAVED_LIMIT, stripeRows, type Stripe } from "@september/core/rules/stripe-rows";
 import {
-  draftParts,
   isTag,
   tagLabel,
   tagsSpoken,
   wordRow,
 } from "@september/core/rules/audio-tags";
 import { exampleTags, type MoodKey } from "@september/core/rules/moods";
-import { useSpeechSettings, useSpokenWord } from "@september/app-ui/services/speech";
-import { wordsOf } from "@september/core/rules/spoken-word";
+import { useSpeechSettings } from "@september/app-ui/services/speech";
+import { TagMark } from "@september/app-ui/blocks/tagged-text";
 import { useReach } from "@september/app-ui/blocks/access";
 import { applySuggestion } from "@september/core/autocomplete";
 import { useCompletions, useSuggestions } from "@september/app-ui/services/suggest";
@@ -46,71 +44,11 @@ import {
   type SuggestionSource,
 } from "@september/core/rules/stripes";
 
-
 const PUNCTUATION = /^[.,!?;:]+$/;
 
 /** An audio tag in a row: a direction to the voice, not a word. */
 const TAG_TILE =
   "border-primary/30 bg-primary/10 text-brand hover:border-primary/60 gap-1.5";
-
-/** The inside of a tag tile or chip: a sound mark and the words of the tag. */
-function TagMark({ label }: { label: string }) {
-  return (
-    <>
-      <AudioLines className="size-[0.9em] shrink-0" aria-hidden />
-      {label}
-    </>
-  );
-}
-
-/**
- * A sentence that the voice can read. While the voice reads this sentence,
- * the word it is on is indigo with white words. Amber marks attention only,
- * so the word that is read is not amber. A sentence with audio tags shows its
- * tags instead, because the voice does not read them as words.
- */
-export function SpokenText({ id, text }: { id: string; text: string }) {
-  const spoken = useSpokenWord();
-  if (draftParts(text).some((part) => part.tag)) return <TaggedText text={text} />;
-  const reading = spoken?.id === id ? spoken.word : null;
-  return (
-    <>
-      {wordsOf(text).map((part, index) =>
-        part.word !== null && part.word === reading ? (
-          <mark
-            key={index}
-            className="bg-primary text-primary-foreground rounded-md px-0.5 [box-decoration-break:clone]"
-          >
-            {part.text}
-          </mark>
-        ) : (
-          part.text
-        ),
-      )}
-    </>
-  );
-}
-
-/** Text with each audio tag shown as a chip, for a message or a phrase. */
-export function TaggedText({ text }: { text: string }) {
-  return (
-    <>
-      {draftParts(text).map((part, index) =>
-        part.tag ? (
-          <span
-            key={index}
-            data-tag
-            className="bg-primary/10 text-brand inline-flex items-center gap-1 rounded-full px-2 align-baseline text-sm font-medium"
-          >
-            <TagMark label={tagLabel(part.text)} />
-          </span>
-        ) : (
-          part.text
-        ),
-      )}
-    </>
-  );
-}
 
 /**
  * One colour lane for each source, ported from the web app.

@@ -21,6 +21,7 @@ import { SpeechSettings } from "@september/app-ui/blocks/speech-settings";
 import { panel, useSetting } from "@september/app-ui/services/settings";
 import { HeaderActions } from "@september/app-ui/blocks/screen";
 import { useEscape } from "@september/app-ui/blocks/keymap";
+import { useActiveEditor } from "@september/app-ui/blocks/chrome";
 import { PANEL_TABS, pressTab, type PanelTab } from "@september/core/rules/panel";
 
 const ICONS: Record<PanelTab, LucideIcon> = {
@@ -37,14 +38,8 @@ const ICONS: Record<PanelTab, LucideIcon> = {
  * a key opens its tab as a sheet from the bottom, so the screen keeps its
  * full width and height.
  */
-export function PanelRail({
-  spaceId,
-  onInsert,
-}: {
-  spaceId: string;
-  /** Puts a phrase in the composer of the screen that holds the rail. */
-  onInsert: (text: string) => void;
-}) {
+export function PanelRail({ spaceId }: { spaceId: string }) {
+  const editor = useActiveEditor();
   const state = useSetting(panel);
   const phone = useIsMobile();
   // A phone opens the sheet only on a press, never from the remembered state,
@@ -69,7 +64,7 @@ export function PanelRail({
       <Phrases
         spaceId={spaceId}
         onInsert={(text) => {
-          onInsert(text);
+          editor.current?.insert(text);
           // On a phone the sheet covers the composer, so it closes on a press.
           if (phone) show({ ...state, open: false });
         }}

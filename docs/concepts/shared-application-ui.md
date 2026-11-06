@@ -78,8 +78,7 @@ visible label.
 The narrowest screen a step is laid out for is 320px. A measurement that would
 overflow it — a fixed sidebar width, a `min-w-64` field, a 70px panel indent, a
 two-column summary row — carries a breakpoint prefix instead of applying
-everywhere. `apps/web/src/onboarding-responsive.test.tsx` reads that contract
-off the rendered tree.
+everywhere.
 
 Welcome includes the Terms & privacy summary in both apps, before
 personal details or service connections. Its full-policy controls open the

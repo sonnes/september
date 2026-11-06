@@ -1,17 +1,18 @@
 import { createRoot } from "react-dom/client";
 
 import { createHashHistory, createRouter, redirect } from "@tanstack/react-router";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { App, createQueryClient } from "@september/app-ui/app";
 import { PanelShell } from "@september/app-ui/layouts/panel";
 import { createAppRoutes } from "@september/app-ui/routes";
+import { spacesQuery } from "@september/app-ui/services/data";
 import {
   currentSetup,
-  currentUserId,
   loadSettings,
   subscribeSetup,
 } from "@september/app-ui/services/settings";
-import { openingPath, windowTitle } from "@september/core/rules/navigation";
+import { openingPath } from "@september/core/rules/navigation";
 import { isSetupDone } from "@september/core/rules/onboarding";
 
 import { EyeTracker } from "./eye-tracker";
@@ -22,7 +23,6 @@ import {
   panelSetup,
   readLastPath,
   saveLastPath,
-  setWindowTitle,
   showPanel,
 } from "./window";
 import "./styles.css";
@@ -44,10 +44,7 @@ const routeTree = createAppRoutes({
     beforeLoad: async () => {
       if (!isSetupDone(currentSetup())) throw redirect({ to: "/welcome" });
       const spaces = await queryClient
-        .fetchQuery({
-          queryKey: ["spaces"],
-          queryFn: () => platform.store.listSpaces(currentUserId()),
-        })
+        .fetchQuery(spacesQuery())
         .catch((reason: unknown) => {
           report("read the spaces")(reason);
           return [];
@@ -69,8 +66,12 @@ router.subscribe("onResolved", ({ toLocation }) => {
     lastPath = path;
     saveLastPath(path).catch(report("keep the screen"));
   }
-  setWindowTitle(windowTitle(path)).catch(report("set the window title"));
 });
+
+// Each screen sets the document title, and the Mac window shows the same words.
+new MutationObserver(() => {
+  getCurrentWindow().setTitle(document.title).catch(report("set the window title"));
+}).observe(document.head, { childList: true, subtree: true, characterData: true });
 
 declare module "@tanstack/react-router" {
   interface Register {

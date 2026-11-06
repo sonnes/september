@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { Composer } from '@september/app-ui/blocks/composer';
 import { InputLayer } from '@september/app-ui/blocks/input-layer';
-import { TaggedText } from '@september/app-ui/blocks/suggestions';
+import { TaggedText } from '@september/app-ui/blocks/tagged-text';
 import { updateSetup } from '@september/app-ui/services/settings';
 import { DEFAULT_ACCESS } from '@september/core/rules/access';
 import type { MoodKey } from '@september/core/rules/moods';

@@ -14,8 +14,8 @@ import {
   speak,
   updateSpeech,
   useSpeechSettings,
-  type SpeechSettings as Speech,
 } from "@september/app-ui/services/speech";
+import type { SpeechSettings as Speech } from "@september/core/rules/voice";
 import {
   DIALOGUE_MODEL,
   DIALOGUE_MODELS,

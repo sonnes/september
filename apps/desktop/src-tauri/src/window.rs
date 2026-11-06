@@ -109,9 +109,10 @@ fn saved_float<R: Runtime>(app: &AppHandle<R>) -> Result<bool, String> {
 /// Keeps the panel above other apps, an app in full screen, and each Space, or
 /// makes it a normal window. Sets the activation policy to match.
 fn apply_float<R: Runtime>(app: &AppHandle<R>, setup: bool, float: bool) -> tauri::Result<()> {
-    let on = float && !setup;
+    let policy = policy(setup, float);
+    let on = policy == Policy::Accessory;
     #[cfg(target_os = "macos")]
-    app.set_activation_policy(match policy(setup, float) {
+    app.set_activation_policy(match policy {
         Policy::Regular => tauri::ActivationPolicy::Regular,
         Policy::Accessory => tauri::ActivationPolicy::Accessory,
     })?;

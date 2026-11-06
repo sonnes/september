@@ -1,66 +1,8 @@
-use std::{
-    io::{Read, Write},
-    net::TcpListener,
-    sync::mpsc,
-    thread,
-};
+mod common;
 
+use common::serve_once;
 use september_desktop_lib::providers::{Provider, ProviderError, Providers};
 use serde_json::{json, Value};
-
-/// Answers one request and hands it back, including a body when it has one.
-fn serve_once(status: &str, body: Value) -> (String, mpsc::Receiver<String>) {
-    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    let address = listener.local_addr().unwrap();
-    let (sender, receiver) = mpsc::channel();
-    let status = status.to_owned();
-
-    thread::spawn(move || {
-        let (mut stream, _) = listener.accept().unwrap();
-        let mut bytes = Vec::new();
-        let mut buffer = [0_u8; 4096];
-
-        while !bytes.windows(4).any(|window| window == b"\r\n\r\n") {
-            let read = stream.read(&mut buffer).unwrap();
-            assert!(read > 0, "request ended before its headers");
-            bytes.extend_from_slice(&buffer[..read]);
-        }
-
-        let header_end = bytes
-            .windows(4)
-            .position(|window| window == b"\r\n\r\n")
-            .unwrap()
-            + 4;
-        let head = String::from_utf8_lossy(&bytes[..header_end]);
-        let content_length = head
-            .lines()
-            .find_map(|line| {
-                let (name, value) = line.split_once(':')?;
-                name.eq_ignore_ascii_case("content-length")
-                    .then(|| value.trim().parse::<usize>().ok())
-                    .flatten()
-            })
-            .unwrap_or(0);
-        while bytes.len() < header_end + content_length {
-            let read = stream.read(&mut buffer).unwrap();
-            assert!(read > 0, "request ended before its body");
-            bytes.extend_from_slice(&buffer[..read]);
-        }
-
-        sender
-            .send(String::from_utf8_lossy(&bytes).into_owned())
-            .unwrap();
-        let body = body.to_string();
-        write!(
-            stream,
-            "HTTP/1.1 {status}\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{body}",
-            body.len()
-        )
-        .unwrap();
-    });
-
-    (format!("http://{address}"), receiver)
-}
 
 fn open_router(base: &str) -> Providers {
     Providers::with_bases(base, "http://127.0.0.1:1")

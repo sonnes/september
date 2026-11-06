@@ -87,7 +87,6 @@ function storeDefaults(): PlatformStore {
         if (!row.pinned) rows.phrases.delete(row.id);
       }
       for (const phrase of phrases) rows.phrases.set(phrase.id, phrase);
-      return phrases;
     },
     putUsageEvent: async event => {
       rows.usage.set(event.id, event);
@@ -170,20 +169,24 @@ function mocked<T extends object>(source: T): T {
 /** The platform the shared code sees. Its object identity never changes. */
 export const platform: Platform = mocked(defaults());
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !(value instanceof Map);
+
+/**
+ * Makes `target` match `fresh` in place, so the objects that the shared code
+ * holds stay the same. A member that a test added and `fresh` lacks goes away.
+ */
+function restore(target: Record<string, unknown>, fresh: Record<string, unknown>): void {
+  for (const key of Object.keys(target)) if (!(key in fresh)) delete target[key];
+  for (const [key, value] of Object.entries(fresh)) {
+    const held = target[key];
+    if (isRecord(held) && isRecord(value)) restore(held, value);
+    else target[key] = value;
+  }
+}
+
 /** Empties the rows and gives every member its default answer again. */
 export function resetPlatform(): void {
   for (const map of Object.values(rows)) map.clear();
-  const fresh = mocked(defaults());
-  Object.assign(platform.store, fresh.store);
-  Object.assign(platform.voice, fresh.voice);
-  Object.assign(platform.providers, fresh.providers);
-  Object.assign(platform.writing, fresh.writing);
-  Object.assign(platform.device.outputs, fresh.device.outputs);
-  delete platform.device.fullScreen;
-  delete platform.device.virtualMicrophone;
-  delete platform.device.renderVideo;
-  const { outputs: _outputs, ...device } = fresh.device;
-  Object.assign(platform.device, device);
-  delete platform.writing.apple;
-  Object.assign(platform.capabilities, fresh.capabilities);
+  restore(platform as unknown as Record<string, unknown>, mocked(defaults()) as unknown as Record<string, unknown>);
 }

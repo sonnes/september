@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { platform } from "@platform/adapter";
+import type { GenerationFeature } from "@september/core/rules/model-config";
 import type { ExportKind } from "@september/core/rules/present/export";
 import {
   getTimeRangeBounds,
@@ -14,8 +15,6 @@ import {
 } from "@september/core/rules/usage-summary";
 
 import { currentUserId } from "./settings";
-
-export type GenerationFeature = "suggestions" | "phrases" | "context" | "agent";
 
 export interface AIUsage {
   generation_type: GenerationFeature;

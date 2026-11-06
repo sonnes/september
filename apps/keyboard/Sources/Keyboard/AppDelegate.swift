@@ -4,10 +4,11 @@ import SeptemberKit
 import SwiftUI
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var panel: FloatingPanel?
     private var treePanel: FloatingPanel?
     private var statusItem: NSStatusItem?
+    private var keyboardItem: NSMenuItem?
     private var permissionSubscription: AnyCancellable?
     private let permission = AccessibilityPermission()
     private let sink = CGEventSink()
@@ -151,11 +152,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
 
         let menu = NSMenu()
-        menu.addItem(
-            withTitle: "Show Keyboard",
+        menu.delegate = self
+        let keyboardItem = menu.addItem(
+            withTitle: "",
             action: #selector(toggleKeyboard),
             keyEquivalent: ""
-        ).target = self
+        )
+        keyboardItem.target = self
+        self.keyboardItem = keyboardItem
         let treeItem = menu.addItem(
             withTitle: "Accessibility Tree",
             action: #selector(toggleTree),
@@ -197,15 +201,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = item
     }
 
+    func menuWillOpen(_ menu: NSMenu) {
+        keyboardItem?.title = panel?.isVisible == true ? "Hide Keyboard" : "Show Keyboard"
+    }
+
     @objc private func toggleKeyboard(_ sender: NSMenuItem) {
         guard let panel else { return }
         if panel.isVisible {
             panel.orderOut(nil)
-            sender.title = "Show Keyboard"
         } else {
             panel.position()
             panel.orderFront(nil)
-            sender.title = "Hide Keyboard"
         }
     }
 

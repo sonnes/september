@@ -12,11 +12,11 @@ import {
   type PlatformVoice,
 } from '@september/app-ui/platform';
 import type { SpeechAlignment } from '@september/core/rules/present/captions';
-import { SETTINGS } from '@september/core/rules/settings';
 import { CONVERSATIONAL_MODEL } from '@september/core/rules/voice';
 
+import { audioOutput } from './audio-output';
 import { providerKey } from './providers';
-import { getRepository } from './repository';
+import { browserRepository } from './repository';
 
 /** The dialogue voice sends 16-bit mono samples at this rate. */
 const STREAM_RATE = 24_000;
@@ -25,14 +25,8 @@ const FILE_AUDIO_MS = 15_000;
 /** Eleven v3 starts to speak later than Flash, so it gets more time. */
 const DIALOGUE_FIRST_AUDIO_MS = 10_000;
 
-/** The output the user chose, or the default output. */
-async function audioOutput(): Promise<string> {
-  try {
-    return (await (await getRepository()).getSetting<string>(SETTINGS.audioOutput)) ?? '';
-  } catch {
-    return '';
-  }
-}
+/** The output the user chose. Speech plays on the default output when storage is denied. */
+const outputOrDefault = (): Promise<string> => audioOutput().catch(() => '');
 
 /** A cache key: the prefix and the SHA-256 hash of the fields. */
 async function blobId(prefix: string, fields: object): Promise<string> {
@@ -55,7 +49,7 @@ const speechBlobId = (text: string, voice: CloudVoice) =>
 /** A kept file, or nothing when the store holds none or cannot be read. */
 async function keptBlob(id: string): Promise<Blob | null> {
   try {
-    return await (await getRepository()).getBlob(id);
+    return await browserRepository.getBlob(id);
   } catch {
     // Speech stays available when private storage is denied or full.
     return null;
@@ -65,7 +59,7 @@ async function keptBlob(id: string): Promise<Blob | null> {
 /** Keeps a file. A failed write costs only a second request later. */
 async function keepBlob(id: string, blob: Blob): Promise<void> {
   try {
-    await (await getRepository()).putBlob(id, blob);
+    await browserRepository.putBlob(id, blob);
   } catch {
     // The sound still plays when the cache write fails.
   }
@@ -185,7 +179,7 @@ async function playBlob(blob: Blob): Promise<void> {
   activeAudio = audio;
   activeAudioUrl = url;
   try {
-    const output = await audioOutput();
+    const output = await outputOrDefault();
     if (output && 'setSinkId' in audio) {
       await (audio as HTMLAudioElement & { setSinkId(id: string): Promise<void> }).setSinkId(
         output
@@ -333,7 +327,7 @@ async function playArriving(
   start: (feed: Feed) => () => void
 ): Promise<Heard | null> {
   stopStream?.();
-  const output = await audioOutput();
+  const output = await outputOrDefault();
   return new Promise((resolve, reject) => {
     const player = pcmPlayer(output, () => finishWhenPlayed());
     let final = false;

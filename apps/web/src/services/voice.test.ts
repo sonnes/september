@@ -5,7 +5,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { InterruptedSpeech, type CloudVoice } from '@september/app-ui/platform';
 import { dialogueParts } from '@september/core/rules/voice';
 
-import { BrowserRepository, getRepository } from './repository';
+import { BrowserRepository, browserRepository } from './repository';
 import { synthesizeTimed, voice } from './voice';
 
 const flash: CloudVoice = {
@@ -123,7 +123,7 @@ async function nextSocket(count: number): Promise<FakeSocket> {
 const lastContext = () => FakeContext.made[FakeContext.made.length - 1];
 
 beforeAll(async () => {
-  await (await getRepository()).putSetting('provider-keys', { elevenlabs: 'secret' });
+  await browserRepository.putSetting('provider-keys', { elevenlabs: 'secret' });
 });
 
 beforeEach(() => {
@@ -575,7 +575,7 @@ describe('speech files', () => {
 
   it('does not start a file after Stop while the output is being chosen', async () => {
     mp3Service();
-    await (await getRepository()).putSetting('audio-output', 'speaker');
+    await browserRepository.putSetting('audio-output', 'speaker');
     let ready!: () => void;
     const selected = new Promise<void>(resolve => {
       ready = resolve;
@@ -605,7 +605,7 @@ describe('speech files', () => {
     ready();
     await pending;
     expect(play).not.toHaveBeenCalled();
-    await (await getRepository()).putSetting('audio-output', '');
+    await browserRepository.putSetting('audio-output', '');
   });
 
   it('settles a stopped file that never reports its end', async () => {

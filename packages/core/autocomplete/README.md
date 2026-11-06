@@ -24,7 +24,7 @@ Completions come from the word counts. The dictionary adds to the word counts on
 
 `dictionary.ts` holds the 5,000 most frequent words of spoken English. The list comes from OpenSubtitles 2018 word counts, under the MIT License.
 
-To rebuild the dictionary, run this command from `apps/desktop`:
+To rebuild the dictionary, run this command from `packages/core`:
 
 ```sh
 node scripts/build-dictionary.mjs

@@ -57,9 +57,6 @@ importers:
 
   apps/desktop:
     dependencies:
-      '@earendil-works/pi-ai':
-        specifier: 0.84.4
-        version: 0.84.4(ws@8.21.3)(zod@4.4.3)
       '@september/app-ui':
         specifier: workspace:*
         version: link:../../packages/app-ui
@@ -103,9 +100,6 @@ importers:
 
   apps/web:
     dependencies:
-      '@earendil-works/pi-ai':
-        specifier: 0.84.4
-        version: 0.84.4(ws@8.21.3)(zod@4.4.3)
       '@ffmpeg/ffmpeg':
         specifier: ^0.12.15
         version: 0.12.15

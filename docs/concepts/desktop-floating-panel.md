@@ -32,12 +32,14 @@ The panel shows the same `TalkScreen`, `NotesScreen`, and `AgentScreen` as the
 web app. A second set of screens doubles the work for each later change to
 Talk.
 
-`ChromeContext` in `packages/app-ui/blocks/chrome.tsx` tells a screen which
-frame draws around it. The value is `"shell"` or `"panel"`, and the default is
-`"shell"`. In `"panel"`, `SpaceDock` renders nothing, and `ScreenHeader` renders
-only the `h1` of the screen, which only a screen reader reads.
-`PanelShell` in `packages/app-ui/layouts/panel.tsx` sets the value and draws
-`PanelHeader` in their place.
+`useChrome()` in `packages/app-ui/blocks/chrome.tsx` tells a screen which
+frame draws around it. It gives `"panel"` inside the `PanelContext` that
+`PanelShell` in `packages/app-ui/layouts/panel.tsx` provides, and `"shell"`
+everywhere else. In `"panel"`, `SpaceDock` renders nothing, and `ScreenHeader`
+renders only the `h1` of the screen, which only a screen reader reads.
+`PanelShell` draws `PanelHeader` in their place. `EditorProvider` and
+`useActiveEditor` in the same file hold the one reference to the editor on the
+screen, which the header and the rail type into.
 
 The panel has no title bar. The macOS window buttons sit over the left end of
 the indigo header, and a drag on the free space of the header moves the

@@ -1,9 +1,4 @@
-/**
- * The words that the engine starts with, before the user writes any.
- *
- * ponytail: a module, not a `?raw` import of a text file. A `?raw` import
- * needs a Vite type declaration, and `node --test` cannot resolve it.
- */
+/** The words that the engine starts with, before the user writes any. */
 export const SEED_CORPUS = `I would like some water please.
 I would like quiet please.
 I would like coffee now.

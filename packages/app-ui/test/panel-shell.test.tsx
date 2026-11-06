@@ -5,6 +5,7 @@ import { PanelShell } from '@september/app-ui/layouts/panel';
 import { APP_NAV } from '@september/app-ui/navigation';
 import { DEFAULT_ACCESS } from '@september/core/rules/access';
 import { spaceSlug } from '@september/core/rules/spaces';
+import { panel as panelRail } from '@september/app-ui/services/settings';
 
 import { platform, rows } from './platform';
 import { addSpace, findButton, finishSetup, press, renderApp, typeInto, type Rendered } from './render';
@@ -271,6 +272,51 @@ describe('the panel', () => {
     const band = document.querySelector<HTMLElement>('[data-scan="group"]');
     expect(band).not.toBeNull();
     expect(band!.querySelector('[aria-label="More"]')).not.toBeNull();
+  });
+
+  it('leaves the note title on Escape and keeps the panel open', async () => {
+    rows.notes.set('n1', { id: 'n1', space_id: 'family', name: 'Shopping', content: 'milk', created_at: 1, updated_at: 1 });
+    await renderPanel('/spaces/family/notes/shopping');
+    const title = await vi.waitFor(() => {
+      const found = document.querySelector<HTMLInputElement>('input[aria-label="Note title"]');
+      if (!found) throw new Error('No note title');
+      return found;
+    });
+    act(() => title.focus());
+
+    pressKey('Escape');
+
+    expect(title.value).toBe('Shopping');
+    expect(document.activeElement).not.toBe(title);
+    expect(onHide).not.toHaveBeenCalled();
+  });
+
+  it('leaves the code field of a phrase on Escape and keeps the rail and the panel open', async () => {
+    const width = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(1000);
+    try {
+      await panelRail.set({ open: true, tab: 'phrases' });
+      rows.phrases.set('p1', {
+        id: 'p1',
+        space_id: 'family',
+        text: 'Thank you',
+        kind: 'phrase',
+        pinned: true,
+        created_at: 1,
+        updated_at: 1,
+      });
+      await renderPanel();
+      await click(await findButton('Add a code for Thank you'));
+      const field = document.querySelector<HTMLInputElement>('input[aria-label="Code for Thank you"]');
+      expect(field).not.toBeNull();
+
+      pressKey('Escape');
+
+      expect(document.querySelector('input[aria-label="Code for Thank you"]')).toBeNull();
+      expect(await findButton('Add a code for Thank you')).toBeDefined();
+      expect(onHide).not.toHaveBeenCalled();
+    } finally {
+      width.mockRestore();
+    }
   });
 
   it('moves the focus to the screen after a move to another page', async () => {

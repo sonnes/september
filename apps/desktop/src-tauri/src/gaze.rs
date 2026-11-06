@@ -162,6 +162,22 @@ fn downsample_bgra_crop(
     Some(rgba)
 }
 
+/// The states that `src/services/gaze.ts` reads.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum TrackerState {
+    Starting,
+    Ready,
+    NoFace,
+    LowConfidence,
+    PermissionDenied,
+    /// Sent on a system without the camera pipeline, which is every system but macOS.
+    #[cfg_attr(target_os = "macos", allow(dead_code))]
+    Unavailable,
+    Error,
+    Stopped,
+}
+
 #[derive(Clone, Serialize)]
 #[serde(tag = "event", content = "data", rename_all = "camelCase")]
 pub(crate) enum GazeEvent {
@@ -173,7 +189,7 @@ pub(crate) enum GazeEvent {
         point: Option<Point>,
     },
     Status {
-        state: &'static str,
+        state: TrackerState,
         detail: Option<String>,
     },
 }
@@ -237,7 +253,7 @@ pub(crate) fn gaze_stop(state: State<'_, GazeState>) -> Result<(), String> {
 #[cfg(not(target_os = "macos"))]
 fn capture_loop(channel: Channel<GazeEvent>, _stop: Arc<AtomicBool>) {
     let _ = channel.send(GazeEvent::Status {
-        state: "unavailable",
+        state: TrackerState::Unavailable,
         detail: Some("eye tracking is available only on macOS".to_string()),
     });
 }
@@ -258,7 +274,7 @@ mod native {
 
     use super::{
         downsample_bgra_crop, eye_position, face_crop, CropSmoother, GazeEvent, NormalizedRect,
-        Point, Smoother,
+        Point, Smoother, TrackerState,
     };
     use std::sync::{
         atomic::{AtomicBool, Ordering},
@@ -294,7 +310,7 @@ mod native {
         channel: Channel<GazeEvent>,
         last_analysis: Option<Instant>,
         last_preview: Option<Instant>,
-        last_status: Option<&'static str>,
+        last_status: Option<(TrackerState, Option<String>)>,
         smoother: Smoother,
         crop_smoother: CropSmoother,
     }
@@ -339,18 +355,24 @@ mod native {
             self.last_analysis = Some(now);
             let _pool = objc::AutoreleasePoolPage::push();
 
-            let analysis = analyze_frame(sample_buf);
+            let analysis = match analyze_frame(sample_buf) {
+                Ok(analysis) => analysis,
+                Err(detail) => {
+                    self.status(TrackerState::Error, Some(detail));
+                    return;
+                }
+            };
             let point = match analysis {
                 Some(analysis) if analysis.confidence >= MIN_CONFIDENCE => {
-                    self.status("ready", None);
+                    self.status(TrackerState::Ready, None);
                     Some(self.smoother.update(analysis.point))
                 }
                 Some(_) => {
-                    self.status("lowConfidence", None);
+                    self.status(TrackerState::LowConfidence, None);
                     None
                 }
                 None => {
-                    self.status("noFace", None);
+                    self.status(TrackerState::NoFace, None);
                     None
                 }
             };
@@ -387,22 +409,34 @@ mod native {
             });
         }
 
-        fn status(&mut self, state: &'static str, detail: Option<String>) {
-            if self.last_status == Some(state) && detail.is_none() {
+        fn status(&mut self, state: TrackerState, detail: Option<String>) {
+            let current = Some((state, detail.clone()));
+            if self.last_status == current {
                 return;
             }
-            self.last_status = Some(state);
+            self.last_status = current;
             let _ = self.channel.send(GazeEvent::Status { state, detail });
         }
     }
 
-    fn analyze_frame(sample_buf: &cm::SampleBuf) -> Option<FrameAnalysis> {
-        let pixel_buf = sample_buf.image_buf()?;
+    /// The face in one frame, or `None` when the frame holds no single face.
+    /// A frame that Vision cannot analyze is an error.
+    fn analyze_frame(sample_buf: &cm::SampleBuf) -> Result<Option<FrameAnalysis>, String> {
+        let pixel_buf = sample_buf
+            .image_buf()
+            .ok_or("the camera sent a frame without an image")?;
         let request = DetectFaceLandmarksRequest::new();
         let request_ref: &vn::Request = &request;
         let requests = ns::Array::from_slice(&[request_ref]);
-        let handler = vn::ImageRequestHandler::with_cv_pixel_buf(pixel_buf, None)?;
-        handler.perform(&requests).ok()?;
+        let handler = vn::ImageRequestHandler::with_cv_pixel_buf(pixel_buf, None)
+            .ok_or("Vision could not read the camera frame")?;
+        handler
+            .perform(&requests)
+            .map_err(|error| format!("Vision could not analyze the camera frame: {error:?}"))?;
+        Ok(face_in(&request))
+    }
+
+    fn face_in(request: &DetectFaceLandmarksRequest) -> Option<FrameAnalysis> {
         let faces = request.results()?;
         if faces.len() != 1 {
             return None;
@@ -527,14 +561,14 @@ mod native {
     pub(super) fn capture_loop(channel: Channel<GazeEvent>, stop: Arc<AtomicBool>) {
         let _pool = objc::AutoreleasePoolPage::push();
         let _ = channel.send(GazeEvent::Status {
-            state: "starting",
+            state: TrackerState::Starting,
             detail: None,
         });
         match camera_permission(&stop) {
             Ok(true) => {}
             Ok(false) => {
                 let _ = channel.send(GazeEvent::Status {
-                    state: "permissionDenied",
+                    state: TrackerState::PermissionDenied,
                     detail: Some(
                         "Allow September to use the camera in System Settings, then try again."
                             .to_string(),
@@ -544,7 +578,7 @@ mod native {
             }
             Err(detail) => {
                 let _ = channel.send(GazeEvent::Status {
-                    state: "error",
+                    state: TrackerState::Error,
                     detail: Some(detail),
                 });
                 return;
@@ -553,13 +587,13 @@ mod native {
 
         if let Err(detail) = run_camera(channel.clone(), &stop) {
             let _ = channel.send(GazeEvent::Status {
-                state: "error",
+                state: TrackerState::Error,
                 detail: Some(detail),
             });
             return;
         }
         let _ = channel.send(GazeEvent::Status {
-            state: "stopped",
+            state: TrackerState::Stopped,
             detail: None,
         });
     }
@@ -620,6 +654,24 @@ mod native {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn every_tracker_state_is_one_the_web_view_reads() {
+        let screen = include_str!("../../src/services/gaze.ts");
+        for state in [
+            TrackerState::Starting,
+            TrackerState::Ready,
+            TrackerState::NoFace,
+            TrackerState::LowConfidence,
+            TrackerState::PermissionDenied,
+            TrackerState::Unavailable,
+            TrackerState::Error,
+            TrackerState::Stopped,
+        ] {
+            let name = serde_json::to_string(&state).unwrap();
+            assert!(screen.contains(&format!("| {name}")), "{name}");
+        }
+    }
 
     fn assert_close(actual: f64, expected: f64) {
         assert!(

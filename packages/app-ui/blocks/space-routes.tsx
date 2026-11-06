@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Bot, FileText, MessagesSquare } from "lucide-react";
+import { Bot, FileText, MessagesSquare, type LucideIcon } from "lucide-react";
 
 import { useCreateSpace, useSpaces } from "@september/app-ui/services/data";
 import { hasWritingService } from "@september/app-ui/services/ai";
 import { currentSetup, spaceModes } from "@september/app-ui/services/settings";
 import { noteSlug } from "@september/core/rules/notes";
-import type { Space, SpaceMode } from "@september/core/rules/records";
+import { SPACE_MODE_TITLES } from "@september/core/rules/navigation";
+import { SPACE_MODES, type Space, type SpaceMode } from "@september/core/rules/records";
 import {
   newSpaceMode,
   newSpaceTitle,
@@ -42,15 +43,19 @@ export const agentEnabled = (): boolean => currentSetup()?.agentEnabled !== fals
 export const openParams = (space: Pick<Space, "id" | "title">) =>
   spaceParams(space, spaceModeFrom(spaceModes.get(), space.id, agentEnabled()));
 
-/** The modes of a space. A user who turned the agent off does not see it. */
-export const SPACE_MODES = [
-  { key: "talk", label: "Talk", icon: MessagesSquare },
-  { key: "notes", label: "Notes", icon: FileText },
-  { key: "agent", label: "Agent", icon: Bot },
-] as const satisfies readonly { key: SpaceMode; label: string; icon: unknown }[];
+const MODE_ICONS: Record<SpaceMode, LucideIcon> = {
+  talk: MessagesSquare,
+  notes: FileText,
+  agent: Bot,
+};
 
+/** The modes of a space, in order. A user who turned the agent off does not see it. */
 export const shownModes = () =>
-  SPACE_MODES.filter(({ key }) => key !== "agent" || agentEnabled());
+  SPACE_MODES.filter((key) => key !== "agent" || agentEnabled()).map((key) => ({
+    key,
+    label: SPACE_MODE_TITLES[key],
+    icon: MODE_ICONS[key],
+  }));
 
 /**
  * Keeps the mode a space is open in, so it opens the same way next time.

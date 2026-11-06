@@ -10,6 +10,8 @@ import {
   elevenLabsCredits,
   stabilityFor,
   voiceModelFrom,
+  type SpeechService,
+  type SpeechSettings,
 } from "@september/core/rules/voice";
 
 import { InterruptedSpeech, type CloudVoice } from "../platform";
@@ -18,19 +20,6 @@ import type { SavedSetup } from "@september/core/rules/onboarding";
 import { currentSetup, savedSpeech, useSetting, useSetup } from "./settings";
 import { recordTtsUsage } from "./usage";
 
-export type VoiceService = "system" | "elevenlabs" | "dialogue";
-
-/** Everything that shapes the sound. All of it names the audio file. */
-export interface SpeechSettings {
-  provider: VoiceService;
-  voiceId: string | null;
-  modelId: string;
-  /** The model of the Dialogue voice: Eleven v3 or Eleven v3 Conversational. */
-  dialogueModelId?: string;
-  stability: number;
-  similarity: number;
-  speed: number;
-}
 
 export const DEFAULT_SPEECH: SpeechSettings = {
   provider: "system",

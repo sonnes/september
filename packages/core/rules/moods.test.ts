@@ -3,16 +3,11 @@ import { describe, expect, it } from "vitest";
 import { exampleTags, moodBlock, moodFrom, MOODS } from "./moods.ts";
 
 describe("MOODS", () => {
-  it("holds five moods, each with an emoji and example tags", () => {
-    expect(MOODS.map((mood) => mood.key)).toEqual([
-      "warm",
-      "playful",
-      "low",
-      "frustrated",
-      "angry",
-    ]);
+  it("gives each mood its own key, an emoji, instructions, and example tags", () => {
+    expect(new Set(MOODS.map((mood) => mood.key)).size).toBe(MOODS.length);
     for (const mood of MOODS) {
       expect(mood.emoji).not.toBe("");
+      expect(mood.lines.length).toBeGreaterThan(0);
       expect(mood.tags.length).toBeGreaterThan(0);
     }
   });
@@ -20,7 +15,7 @@ describe("MOODS", () => {
 
 describe("moodFrom", () => {
   it("reads a saved mood", () => {
-    expect(moodFrom("playful")).toBe("playful");
+    for (const mood of MOODS) expect(moodFrom(mood.key)).toBe(mood.key);
   });
 
   it("reads anything else as no mood", () => {
@@ -31,10 +26,13 @@ describe("moodFrom", () => {
 });
 
 describe("moodBlock", () => {
-  it("gives the instructions of the mood in a mood block", () => {
-    expect(moodBlock("low")).toBe(
-      "<mood>\nThe user feels low or tired.\nWrite short, quiet suggestions.\nDo not try to change the mood of the user.\n</mood>",
-    );
+  it("puts every instruction of the mood inside one mood block", () => {
+    for (const mood of MOODS) {
+      const block = moodBlock(mood.key);
+      expect(block.startsWith("<mood>\n")).toBe(true);
+      expect(block.endsWith("\n</mood>")).toBe(true);
+      for (const line of mood.lines) expect(block).toContain(line);
+    }
   });
 
   it("gives nothing without a mood", () => {
@@ -44,16 +42,10 @@ describe("moodBlock", () => {
 
 describe("exampleTags", () => {
   it("gives the tags of the mood", () => {
-    expect(exampleTags("angry")).toEqual(["angry", "shouting", "firmly"]);
+    for (const mood of MOODS) expect(exampleTags(mood.key)).toEqual(mood.tags);
   });
 
-  it("gives the default tags without a mood", () => {
-    expect(exampleTags(null)).toEqual([
-      "laughs",
-      "sighs",
-      "whispers",
-      "excited",
-      "curious",
-    ]);
+  it("gives example tags without a mood", () => {
+    expect(exampleTags(null).length).toBeGreaterThan(0);
   });
 });

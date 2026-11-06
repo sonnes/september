@@ -39,8 +39,8 @@ type Request<Args, Result> = Command<{ request: Args }, Result>;
 export interface Commands {
   setting_get: Request<{ key: string }, unknown>;
   setting_put: Request<{ key: string; value: unknown }, unknown>;
-  backup_export: Command<undefined, StoredBackup>;
-  backup_import: Request<StoredBackup, void>;
+  backup_export: Request<{ settingKeys: readonly string[]; usageSince: number }, StoredBackup>;
+  backup_import: Request<{ contents: StoredBackup; settingKeys: readonly string[] }, void>;
 
   space_list: Request<{ user_id: string }, Space[]>;
   space_get: Request<{ id: string }, Space | null>;
@@ -70,12 +70,16 @@ export interface Commands {
   phrase_list: Request<{ space_id: string | null }, SavedPhrase[]>;
   phrase_put: Request<SavedPhrase, SavedPhrase>;
   phrase_delete: Request<{ id: string }, boolean>;
-  phrase_replace_ai: Request<{ space_id: string; phrases: SavedPhrase[] }, SavedPhrase[]>;
+  phrase_replace_ai: Request<{ space_id: string; phrases: SavedPhrase[] }, void>;
   analytics_put: Request<UsageEvent, UsageEvent>;
-  analytics_list: Request<{ user_id: string; start_at: number; end_at: number }, UsageEvent[]>;
+  analytics_list: Request<
+    { user_id: string; start_at: number; end_at: number; since: number },
+    UsageEvent[]
+  >;
 
   user_name: Command<undefined, string>;
-  user_id: Command<undefined, string>;
+  /** The login name, or null when the system gives none. */
+  user_id: Command<undefined, string | null>;
 
   speech_system: Request<{ text: string; voice_id: string | null; speed: number }, void>;
   speech_stream: Request<

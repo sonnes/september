@@ -4,6 +4,7 @@ import {
   AGENT_MODELS,
   modelChoices,
   modelConfigFor,
+  modelIdFor,
   type ModelSettings,
   modelSettingsFrom,
   SUGGESTIONS_MODELS,
@@ -16,7 +17,7 @@ const settings = (): ModelSettings => ({
 });
 
 describe("model configuration", () => {
-  it.each(["agent", "context", "phrases"])(
+  it.each(["agent", "context", "phrases"] as const)(
     "uses the default model for %s calls",
     (feature) => {
       expect(modelConfigFor(settings(), feature)).toEqual({
@@ -37,6 +38,17 @@ describe("model configuration", () => {
     expect(
       modelConfigFor({ ...settings(), suggestionsModel: null }, "suggestions"),
     ).toEqual({ service: "apple", model: "" });
+  });
+});
+
+describe("the model a request names", () => {
+  it("asks the free router for Automatic, and the chosen model otherwise", () => {
+    expect(modelIdFor({ service: "openrouter", model: " " })).toBe("openrouter/free");
+    expect(modelIdFor({ service: "openrouter", model: "openai/gpt-6-sol" })).toBe("openai/gpt-6-sol");
+  });
+
+  it("asks Apple Intelligence for its one model", () => {
+    expect(modelIdFor({ service: "apple", model: "anything" })).toBe("apple-foundationmodel");
   });
 });
 

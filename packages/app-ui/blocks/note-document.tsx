@@ -23,7 +23,7 @@ import {
 
 import { cn } from "@september/ui";
 
-import { usePanel } from "@september/app-ui/blocks/chrome";
+import { useActiveEditor } from "@september/app-ui/blocks/chrome";
 import { Suggestions } from "@september/app-ui/blocks/suggestions";
 import {
   inlineParts,
@@ -45,8 +45,6 @@ import { KEYMAP, presses } from "@september/core/rules/keymap";
 
 /** What the screen around the document can ask of it. */
 export interface NoteDocumentHandle {
-  /** Puts words at the caret, as a phrase from the rail does. */
-  insert: (text: string) => void;
   /** The selected words of the document, or an empty string. */
   selection: () => string;
   /** The words of the document as they stand. */
@@ -93,7 +91,6 @@ export function NoteDocument({
   onPin,
   onTools,
   handle,
-  autoFocus = true,
 }: {
   value: string;
   onChange: (text: string) => void;
@@ -107,7 +104,6 @@ export function NoteDocument({
   /** Says when the writing tools open and close. */
   onTools?: (open: boolean) => void;
   handle?: MutableRefObject<NoteDocumentHandle | null>;
-  autoFocus?: boolean;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLDivElement>(null);
@@ -217,7 +213,6 @@ export function NoteDocument({
 
   if (handle) {
     handle.current = {
-      insert,
       selection: () => textOf(lines.current, span.current),
       text: () => lines.current.join("\n"),
       openTools,
@@ -231,14 +226,12 @@ export function NoteDocument({
     if (element.childNodes.length > 0 && value === lines.current.join("\n")) return;
     lines.current = value.split("\n");
     draw(element, lines.current);
-    if (element.childNodes.length > 0 && autoFocus && !element.contains(document.activeElement)) {
+    if (element.childNodes.length > 0 && !element.contains(document.activeElement)) {
       span.current = endOf(lines.current);
       element.focus({ preventScroll: true });
       placeCaret(element, span.current.to);
       markActive(element, span.current.to.line, true);
     }
-    // The value is the only input. The caret is kept by the editor itself.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   // The heading serif. It is fetched with the first note on the screen.
@@ -298,16 +291,15 @@ export function NoteDocument({
     };
   }, [open, sentence, kind, measure]);
 
-  // A phrase from the panel goes in at the caret.
-  const composer = usePanel()?.composer;
+  // A phrase from the rail or a sheet goes in at the caret.
+  const editor = useActiveEditor();
   useEffect(() => {
-    if (!composer) return;
     const held = { draft: "", insert, speaks: false };
-    composer.current = held;
+    editor.current = held;
     return () => {
-      if (composer.current === held) composer.current = null;
+      if (editor.current === held) editor.current = null;
     };
-  }, [composer, insert]);
+  }, [editor, insert]);
 
   const onInput = (event: React.FormEvent<HTMLDivElement>) => {
     const element = box.current;

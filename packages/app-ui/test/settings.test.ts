@@ -5,7 +5,6 @@ import {
   currentSetup,
   currentUserId,
   heardVoices,
-  LOCAL_USER,
   loadSettings,
   saveSetup,
   spaceModes,
@@ -14,9 +13,8 @@ import {
   updateSetup,
 } from '@september/app-ui/services/settings';
 import { useTalkMood } from '@september/app-ui/services/talk';
-import type { MoodKey } from '@september/core/rules/moods';
 import { DEFAULT_DRAFT } from '@september/core/rules/onboarding';
-import { SETTINGS, talkMoodKey } from '@september/core/rules/settings';
+import { LOCAL_USER, SETTINGS, talkMoodKey } from '@september/core/rules/settings';
 
 import { platform, rows } from './platform';
 import { addSpace, findButton, finishSetup, press, renderApp, renderPart } from './render';
@@ -92,7 +90,7 @@ describe('the device settings', () => {
 
   it('keep the mood of each space, and read an unknown mood as none', async () => {
     rows.settings.set(talkMoodKey('two'), 'grumpy-ish');
-    const seen: Record<string, [MoodKey | null, (next: MoodKey | null) => void]> = {};
+    const seen: Record<string, ReturnType<typeof useTalkMood>> = {};
     const Probe = ({ id }: { id: string }) => {
       seen[id] = useTalkMood(id);
       return null;
@@ -100,9 +98,9 @@ describe('the device settings', () => {
     await renderPart([createElement(Probe, { key: 'one', id: 'one' }), createElement(Probe, { key: 'two', id: 'two' })]);
     await vi.waitFor(() => expect(platform.store.getSetting).toHaveBeenCalledWith(talkMoodKey('two')));
 
-    seen.one![1]('playful');
+    seen.one!.choose('playful');
     await vi.waitFor(() => expect(rows.settings.get(talkMoodKey('one'))).toBe('playful'));
-    expect(seen.two![0]).toBeNull();
+    expect(seen.two!.mood).toBeNull();
     expect(rows.settings.get(talkMoodKey('two'))).toBe('grumpy-ish');
   });
 });

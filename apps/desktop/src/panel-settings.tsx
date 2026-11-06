@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { SettingsTitle } from "@september/app-ui/blocks/setup-fields";
 import { Label } from "@september/ui/components/label";
 import { Switch } from "@september/ui/components/switch";
 
@@ -41,12 +42,10 @@ export function PanelSettings() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">Panel</h1>
-        <p className="text-muted-foreground text-sm">
-          The panel shows Talk, Notes, and Agent beside your other apps.
-        </p>
-      </div>
+      <SettingsTitle
+        title="Panel"
+        description="The panel shows Talk, Notes, and Agent beside your other apps."
+      />
       <div className="flex flex-col gap-1.5">
         <div className="flex min-h-11 items-center justify-between gap-4 rounded-xl border px-4 py-3">
           <Label

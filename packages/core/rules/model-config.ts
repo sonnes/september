@@ -1,8 +1,26 @@
+/** The jobs that ask a writing model for text. */
+export type GenerationFeature = "suggestions" | "phrases" | "context" | "agent";
+
 /** A writing provider and the model selected for it. */
 export interface WritingModelConfig {
   service: "apple" | "openrouter" | "none";
-  /** Empty asks the provider to choose automatically. */
+  /** Empty is Automatic. */
   model: string;
+}
+
+/** The address of the OpenRouter API. */
+export const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
+
+/** The OpenRouter router that picks a free model. Automatic asks it. */
+export const AUTOMATIC_MODEL = "openrouter/free";
+
+/** The one model of Apple Intelligence. */
+export const APPLE_MODEL = "apple-foundationmodel";
+
+/** The model id that a request names for a configuration. */
+export function modelIdFor(config: WritingModelConfig): string {
+  if (config.service === "apple") return APPLE_MODEL;
+  return config.model.trim() || AUTOMATIC_MODEL;
 }
 
 /** The model settings shared by setup and every text-generation call. */
@@ -15,7 +33,7 @@ export interface ModelSettings {
 /** Returns the only feature override, or the application-wide default. */
 export function modelConfigFor(
   settings: ModelSettings,
-  feature: string,
+  feature: GenerationFeature,
 ): WritingModelConfig {
   return feature === "suggestions" && settings.suggestionsModel
     ? settings.suggestionsModel

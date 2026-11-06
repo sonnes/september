@@ -19,19 +19,6 @@ const MIGRATIONS: [(i64, &str); 5] = [
     ),
 ];
 
-/// The settings a backup carries. Every other key belongs to this Mac.
-pub const PORTABLE_SETTING_KEYS: [&str; 6] = [
-    "setup",
-    "speech",
-    "dismissed-ideas",
-    "space-modes",
-    "panel-open",
-    "present",
-];
-
-/// A usage event older than this is deleted before the next read or write.
-pub const ANALYTICS_RETENTION_MS: i64 = 90 * 24 * 60 * 60 * 1_000;
-
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Space {
     pub id: String,
@@ -688,23 +675,21 @@ impl Repository {
         Ok(())
     }
 
-    /// Stores one usage event, then applies the retention boundary.
-    pub fn put_analytics_event(&self, event: &AnalyticsEvent, now: i64) -> Result<()> {
-        write_row(&self.connection, &upsert_sql::<AnalyticsEvent>(), event)?;
-        self.delete_expired_analytics(now)
+    pub fn put_analytics_event(&self, event: &AnalyticsEvent) -> Result<()> {
+        write_row(&self.connection, &upsert_sql::<AnalyticsEvent>(), event)
     }
 
-    /// The events of one user in a time range, newest first, after the
-    /// retention boundary is applied.
+    /// The events of one user in a time range, newest first. Events of every
+    /// user from before `since` are deleted first.
     pub fn list_analytics_events(
         &self,
         user_id: &str,
         start_at: i64,
         end_at: i64,
-        now: i64,
+        since: i64,
     ) -> Result<Vec<AnalyticsEvent>> {
         validate_identifier("analytics user ID", user_id)?;
-        self.delete_expired_analytics(now)?;
+        self.delete_analytics_before(since)?;
         query_rows(
             &self.connection,
             "WHERE user_id = ?1 AND timestamp BETWEEN ?2 AND ?3 ORDER BY timestamp DESC, id",
@@ -712,13 +697,9 @@ impl Repository {
         )
     }
 
-    /// Deletes events strictly older than the retention period.
-    fn delete_expired_analytics(&self, now: i64) -> Result<()> {
-        let cutoff = now.saturating_sub(ANALYTICS_RETENTION_MS);
-        self.connection.execute(
-            "DELETE FROM analytics_events WHERE timestamp < ?1",
-            [cutoff],
-        )?;
+    fn delete_analytics_before(&self, since: i64) -> Result<()> {
+        self.connection
+            .execute("DELETE FROM analytics_events WHERE timestamp < ?1", [since])?;
         Ok(())
     }
 
@@ -740,14 +721,18 @@ impl Repository {
         put_setting(&self.connection, key, value)
     }
 
-    /// Every portable value. Usage events past the retention boundary are
-    /// deleted first.
-    pub fn backup_contents(&self, now: i64) -> Result<BackupContents> {
-        self.delete_expired_analytics(now)?;
+    /// The settings of `setting_keys` that hold a value, and every row.
+    /// Usage events from before `usage_since` are deleted first.
+    pub fn backup_contents(
+        &self,
+        setting_keys: &[String],
+        usage_since: i64,
+    ) -> Result<BackupContents> {
+        self.delete_analytics_before(usage_since)?;
         let mut settings = Map::new();
-        for key in PORTABLE_SETTING_KEYS {
+        for key in setting_keys {
             if let Some(value) = self.get_setting(key)? {
-                settings.insert(key.to_owned(), value);
+                settings.insert(key.clone(), value);
             }
         }
         let all = "ORDER BY id";
@@ -762,14 +747,19 @@ impl Repository {
         })
     }
 
-    /// Replaces every portable value in one transaction. A setting that is
-    /// not portable stays as it is. A row with an ID that repeats, or with a
-    /// space that is not in the backup, fails the whole restore.
-    pub fn replace_backup_contents(&mut self, contents: &BackupContents) -> Result<()> {
+    /// Replaces the settings of `setting_keys` and every row in one
+    /// transaction. Other settings stay as they are. A setting outside
+    /// `setting_keys`, a row with an ID that repeats, or a row with a space
+    /// that is not in the backup fails the whole restore.
+    pub fn replace_backup_contents(
+        &mut self,
+        contents: &BackupContents,
+        setting_keys: &[String],
+    ) -> Result<()> {
         if let Some(key) = contents
             .settings
             .keys()
-            .find(|key| !PORTABLE_SETTING_KEYS.contains(&key.as_str()))
+            .find(|key| !setting_keys.contains(key))
         {
             return Err(BackendError::InvalidInput(format!(
                 "a backup cannot hold the setting {key}"
@@ -785,7 +775,8 @@ impl Repository {
              DELETE FROM spaces;
              DELETE FROM analytics_events;",
         )?;
-        for key in PORTABLE_SETTING_KEYS {
+        for key in setting_keys {
+            validate_key(key)?;
             transaction.execute("DELETE FROM settings WHERE key = ?1", [key])?;
         }
         for (key, value) in &contents.settings {
@@ -888,6 +879,11 @@ mod tests {
         }
     }
 
+    /// The settings these tests treat as portable. `audio-output` stays on the device.
+    fn setting_keys() -> Vec<String> {
+        ["setup", "speech", "present"].map(str::to_owned).to_vec()
+    }
+
     fn backup_contents(space_id: &str) -> BackupContents {
         let mut settings = Map::new();
         settings.insert(
@@ -948,16 +944,21 @@ mod tests {
         let mut repository = Repository::open_in_memory().unwrap();
         let contents = backup_contents("space-1");
 
-        repository.replace_backup_contents(&contents).unwrap();
+        repository
+            .replace_backup_contents(&contents, &setting_keys())
+            .unwrap();
 
-        assert_eq!(repository.backup_contents(NOW).unwrap(), contents);
+        assert_eq!(
+            repository.backup_contents(&setting_keys(), 0).unwrap(),
+            contents
+        );
     }
 
     #[test]
     fn a_backup_replacement_removes_every_row_that_was_here() {
         let mut repository = Repository::open_in_memory().unwrap();
         repository
-            .replace_backup_contents(&backup_contents("old-space"))
+            .replace_backup_contents(&backup_contents("old-space"), &setting_keys())
             .unwrap();
         repository
             .put_setting("speech", &json!({ "provider": "system" }))
@@ -968,9 +969,11 @@ mod tests {
         next.saved_phrases.clear();
         next.usage_events.clear();
         next.settings.remove("present");
-        repository.replace_backup_contents(&next).unwrap();
+        repository
+            .replace_backup_contents(&next, &setting_keys())
+            .unwrap();
 
-        let restored = repository.backup_contents(NOW).unwrap();
+        let restored = repository.backup_contents(&setting_keys(), 0).unwrap();
         assert_eq!(restored, next);
     }
 
@@ -982,7 +985,7 @@ mod tests {
             .unwrap();
 
         repository
-            .replace_backup_contents(&backup_contents("space-1"))
+            .replace_backup_contents(&backup_contents("space-1"), &setting_keys())
             .unwrap();
 
         assert_eq!(
@@ -990,21 +993,23 @@ mod tests {
             Some(json!("speaker-1"))
         );
         assert!(!repository
-            .backup_contents(NOW)
+            .backup_contents(&setting_keys(), 0)
             .unwrap()
             .settings
             .contains_key("audio-output"));
     }
 
     #[test]
-    fn a_backup_cannot_write_a_device_setting() {
+    fn a_backup_cannot_write_a_setting_outside_its_keys() {
         let mut repository = Repository::open_in_memory().unwrap();
         let mut contents = backup_contents("space-1");
         contents
             .settings
             .insert("audio-output".to_owned(), json!("speaker-2"));
 
-        assert!(repository.replace_backup_contents(&contents).is_err());
+        assert!(repository
+            .replace_backup_contents(&contents, &setting_keys())
+            .is_err());
         assert_eq!(repository.get_setting("audio-output").unwrap(), None);
     }
 
@@ -1012,7 +1017,7 @@ mod tests {
     fn a_backup_with_a_repeated_id_or_a_missing_space_changes_nothing() {
         let mut repository = Repository::open_in_memory().unwrap();
         repository
-            .replace_backup_contents(&backup_contents("old-space"))
+            .replace_backup_contents(&backup_contents("old-space"), &setting_keys())
             .unwrap();
 
         let mut repeated = backup_contents("space-1");
@@ -1021,35 +1026,61 @@ mod tests {
         orphan.notes[0].space_id = Some("missing".to_owned());
 
         for contents in [repeated, orphan] {
-            assert!(repository.replace_backup_contents(&contents).is_err());
+            assert!(repository
+                .replace_backup_contents(&contents, &setting_keys())
+                .is_err());
             assert_eq!(
-                repository.backup_contents(NOW).unwrap(),
+                repository.backup_contents(&setting_keys(), 0).unwrap(),
                 backup_contents("old-space")
             );
         }
     }
 
     #[test]
-    fn a_usage_event_older_than_the_retention_period_is_deleted() {
+    fn a_usage_event_from_before_since_is_deleted() {
         let repository = Repository::open_in_memory().unwrap();
-        let boundary = NOW - ANALYTICS_RETENTION_MS;
-        for (id, timestamp) in [("older", boundary - 1), ("boundary", boundary)] {
+        let since = NOW - 100;
+        for (id, user, timestamp) in [
+            ("older", "user-1", since - 1),
+            ("other-older", "user-2", since - 1),
+            ("boundary", "user-1", since),
+        ] {
             repository
-                .connection
-                .execute(
-                    &insert_sql::<AnalyticsEvent>(),
-                    params_from_iter(analytics_event(id, "user-1", timestamp).values().unwrap()),
-                )
+                .put_analytics_event(&analytics_event(id, user, timestamp))
                 .unwrap();
         }
 
         let rows = repository
-            .list_analytics_events("user-1", 0, NOW, NOW)
+            .list_analytics_events("user-1", 0, NOW, since)
             .unwrap();
-
         assert_eq!(
             rows.iter().map(|row| row.id.as_str()).collect::<Vec<_>>(),
             vec!["boundary"]
+        );
+        assert!(repository
+            .list_analytics_events("user-2", 0, NOW, 0)
+            .unwrap()
+            .is_empty());
+    }
+
+    #[test]
+    fn a_backup_holds_only_the_usage_events_from_usage_since() {
+        let repository = Repository::open_in_memory().unwrap();
+        for (id, timestamp) in [("older", NOW - 101), ("kept", NOW - 100)] {
+            repository
+                .put_analytics_event(&analytics_event(id, "user-1", timestamp))
+                .unwrap();
+        }
+
+        let contents = repository.backup_contents(&[], NOW - 100).unwrap();
+
+        assert_eq!(
+            contents
+                .usage_events
+                .iter()
+                .map(|row| row.id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["kept"]
         );
     }
 
@@ -1063,12 +1094,12 @@ mod tests {
             ("outside", "user-1", NOW - 40),
         ] {
             repository
-                .put_analytics_event(&analytics_event(id, user, timestamp), NOW)
+                .put_analytics_event(&analytics_event(id, user, timestamp))
                 .unwrap();
         }
 
         let rows = repository
-            .list_analytics_events("user-1", NOW - 30, NOW, NOW)
+            .list_analytics_events("user-1", NOW - 30, NOW, 0)
             .unwrap();
         assert_eq!(
             rows.iter().map(|row| row.id.as_str()).collect::<Vec<_>>(),

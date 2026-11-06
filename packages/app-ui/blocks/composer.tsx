@@ -2,8 +2,6 @@ import {
   useEffect,
   useRef,
   useState,
-  type MutableRefObject,
-  type ReactNode,
   type RefObject,
 } from "react";
 import { Bot, ChevronDown, Delete, Trash2, Undo2, Volume2 } from "lucide-react";
@@ -21,7 +19,7 @@ import {
 } from "@september/ui/components/dropdown-menu";
 
 import { AudioOutput } from "@september/app-ui/blocks/audio-output";
-import { usePanel, type ComposerHandle } from "@september/app-ui/blocks/chrome";
+import { useActiveEditor, usePanel, type EditorHandle } from "@september/app-ui/blocks/chrome";
 import { Suggestions } from "@september/app-ui/blocks/suggestions";
 import { draftParts, tagBefore } from "@september/core/rules/audio-tags";
 import { MOODS, type MoodKey } from "@september/core/rules/moods";
@@ -41,12 +39,10 @@ export function Composer({
   pending,
   note,
   history,
-  before,
   suggestions = true,
   mood = null,
   onMood,
   fieldRef,
-  handle,
 }: {
   mode: ComposerMode;
   /** The space the stripe reads. */
@@ -61,10 +57,8 @@ export function Composer({
   pending?: boolean;
   /** A line under the field, for example why a voice did not answer. */
   note?: string;
-  /** The words the suggestion engine reads. Notes gives it the note. */
+  /** The words the suggestion engine reads. Agent setup gives it the words of every space. */
   history?: string[];
-  /** The working-set row above the suggestions. Notes puts its tabs here. */
-  before?: ReactNode;
   /** Agent keeps its prompt private from speech-oriented suggestions. */
   suggestions?: boolean;
   /** The mood of the conversation. Talk shows the mood keys. */
@@ -73,8 +67,6 @@ export function Composer({
   onMood?: (mood: MoodKey | null) => void;
   /** The field, so a screen can move the focus to it. */
   fieldRef?: RefObject<HTMLTextAreaElement | null>;
-  /** The draft, for a control of the screen outside the composer. */
-  handle?: MutableRefObject<ComposerHandle | null>;
 }) {
   const ownField = useRef<HTMLTextAreaElement>(null);
   const field = fieldRef ?? ownField;
@@ -123,22 +115,18 @@ export function Composer({
     field.current?.focus();
   };
 
-  // The panel header and the rail of the screen reach the draft through
-  // this: Clear in the More menu, a phrase from the Phrases sheet or the
-  // rail, Escape, and the mood keys.
-  const composer = panel?.composer;
+  const editor = useActiveEditor();
   useEffect(() => {
-    const current: ComposerHandle = {
+    const current: EditorHandle = {
       draft,
       clear: () => draft && write(""),
       insert: (text: string) => write(insertAtEnd(draft, text)),
       speaks,
       onMood: speaks ? onMood : undefined,
     };
-    const holders = [composer, handle].filter((one) => one !== undefined);
-    for (const holder of holders) holder.current = current;
+    editor.current = current;
     return () => {
-      for (const holder of holders) if (holder.current === current) holder.current = null;
+      if (editor.current === current) editor.current = null;
     };
   });
 
@@ -147,7 +135,6 @@ export function Composer({
     // the field, and its keys keep their full height, so the history gives
     // way when the screen is short. The stripes never scroll up and down.
     <div className="contents">
-      {before}
 
       {suggestions ? (
         <div className="shrink-0 empty:hidden">

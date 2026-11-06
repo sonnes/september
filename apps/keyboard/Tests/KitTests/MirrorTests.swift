@@ -161,6 +161,14 @@ func focusTests() {
         expect(controller.focusedField == nil)
     }
 
+    test("the app name is unknown until an app reports one") {
+        let (controller, _) = try makeController()
+        expect(controller.frontmostAppName == nil)
+        controller.appChanged(name: "Safari", bundleID: "com.apple.Safari")
+        controller.appChanged(name: nil, bundleID: nil)
+        expect(controller.frontmostAppName == nil, "a nameless app keeps no stale name")
+    }
+
     test("switching apps swaps the name and the shortcuts panel") {
         let (controller, _) = try makeController()
         controller.appChanged(name: "Visual Studio Code", bundleID: "com.microsoft.VSCode")

@@ -134,6 +134,25 @@ describe('the mood of a Talk space', () => {
     );
     expect((await findButton('Mood: Low', container)).getAttribute('aria-pressed')).toBe('false');
   });
+
+  it('puts the mood back and says so when the store refuses it', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    await finishSetup();
+    const space = addSpace('Family');
+    rows.settings.set(talkMoodKey(space.id), 'low');
+    vi.mocked(platform.store.putSetting).mockImplementation(async key => {
+      if (key === talkMoodKey(space.id)) throw new Error('disk full');
+    });
+
+    const { container } = await renderApp('/spaces/family/talk');
+    const low = await findButton('Mood: Low', container);
+    await vi.waitFor(() => expect(low.getAttribute('aria-pressed')).toBe('true'));
+    await press(await findButton('Mood: Playful', container));
+
+    await vi.waitFor(() => expect(container.textContent).toContain('did not keep the mood'));
+    expect((await findButton('Mood: Low', container)).getAttribute('aria-pressed')).toBe('true');
+    expect(rows.settings.get(talkMoodKey(space.id))).toBe('low');
+  });
 });
 
 describe('the messages of Talk', () => {

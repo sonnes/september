@@ -23,9 +23,9 @@ import { APP_NAV } from "@september/app-ui/navigation";
 
 import { Phrases } from "@september/app-ui/blocks/phrase-panel";
 import { SpeechSettings } from "@september/app-ui/blocks/speech-settings";
-import { usePanel } from "@september/app-ui/blocks/chrome";
+import { useActiveEditor, usePanel } from "@september/app-ui/blocks/chrome";
 import { ScanPauseKey } from "@september/app-ui/blocks/input-layer";
-import { agentEnabled, spaceParams, useNewSpace } from "@september/app-ui/blocks/space-routes";
+import { shownModes, spaceParams, useNewSpace } from "@september/app-ui/blocks/space-routes";
 import { SpaceTitle } from "@september/app-ui/blocks/space-title";
 import { DeleteSpaceDialog } from "@september/app-ui/blocks/delete-space-dialog";
 import type { Space, SpaceMode } from "@september/core/rules/records";
@@ -40,12 +40,6 @@ export type PanelSheet =
   | "voice"
   | "rename"
   | "delete";
-
-const MODES: { key: SpaceMode; label: string }[] = [
-  { key: "talk", label: "Talk" },
-  { key: "notes", label: "Notes" },
-  { key: "agent", label: "Agent" },
-];
 
 const ring = "focus-attention";
 
@@ -79,7 +73,7 @@ export function PanelHeader({
 }) {
   const navigate = useNavigate();
   const panel = usePanel();
-  const shown = MODES.filter(({ key }) => key !== "agent" || agentEnabled());
+  const shown = shownModes();
 
   return (
     // The header is the title bar of the desktop window: a press on its free
@@ -216,7 +210,7 @@ function MoreRows({
 }) {
   const navigate = useNavigate();
   const panel = usePanel();
-  const composer = panel?.composer.current;
+  const composer = useActiveEditor().current;
   const close = () => onSheet(null);
 
   return (
@@ -363,7 +357,7 @@ export function PanelSheets({
   mode: SpaceMode;
 }) {
   const navigate = useNavigate();
-  const panel = usePanel();
+  const editor = useActiveEditor();
   const close = () => onSheet(null);
   const [afterMore, setAfterMore] = useState<{ then: () => void } | null>(null);
 
@@ -411,7 +405,7 @@ export function PanelSheets({
           >
             <Phrases
               spaceId={space.id}
-              onInsert={(text) => panel?.composer.current?.insert(text)}
+              onInsert={(text) => editor.current?.insert(text)}
             />
           </PanelSheet>
 

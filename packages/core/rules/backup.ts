@@ -1,9 +1,17 @@
-import { parseAccess, type AccessProfile } from "./access.ts";
+import { parseAccess } from "./access.ts";
 import { AGENT_TOOLS, isAgentWriteTool, parseAgentCall } from "./agent/tools.ts";
 import { CLOSED_PANEL, PANEL_TABS, panelStateFrom, type PanelState } from "./panel.ts";
 import { presentSettings, type PresentSettings } from "./present/settings.ts";
-import { DEFAULT_TONE, PRESENT_TONES, type PresentToneKey } from "./present/stage.ts";
+import { DEFAULT_TONE, PRESENT_TONES } from "./present/stage.ts";
 import {
+  SETUP_MODES,
+  VOICE_SERVICES,
+  WRITING_SERVICES,
+  type SavedSetup,
+} from "./onboarding.ts";
+import {
+  AGENT_ROLES,
+  AGENT_TOOL_STATES,
   PHRASE_KINDS,
   SPACE_MODES,
   type AgentMessage,
@@ -15,52 +23,19 @@ import {
 } from "./records.ts";
 import { PORTABLE_SETTINGS } from "./settings.ts";
 import { spaceSlug } from "./spaces.ts";
-import {
-  USAGE_EVENT_TYPES,
-  type UsageEvent,
-  type UsageEventType,
-} from "./usage-summary.ts";
+import { USAGE_EVENT_TYPES, type UsageEvent } from "./usage-summary.ts";
+import { SPEECH_SERVICES, type SpeechSettings } from "./voice.ts";
 
 export const BACKUP_FORMAT = "september-backup" as const;
 export const BACKUP_FORMAT_VERSION = 2 as const;
 
-export type BackupSource = "web" | "desktop";
+export const BACKUP_SOURCES = ["web", "desktop"] as const;
 
-export interface BackupSetup {
-  autoSuggestions: boolean;
-  autoPhrases: boolean;
-  agentEnabled: boolean;
-  id: string;
-  name: string;
-  speakingStyle: string;
-  personalWords: string;
-  mode: "free" | "advanced";
-  defaultModel: BackupModelConfig;
-  suggestionsModel: BackupModelConfig | null;
-  voiceService: "system" | "elevenlabs";
-  /** How the person chooses things. A backup made before it has the default. */
-  access: AccessProfile;
-}
-
-export interface BackupModelConfig {
-  service: "apple" | "openrouter" | "none";
-  model: string;
-}
-
-export interface BackupSpeech {
-  provider: "system" | "elevenlabs" | "dialogue";
-  voiceId: string | null;
-  modelId: string;
-  /** The model of the Dialogue voice. Older backups do not have it. */
-  dialogueModelId?: string;
-  stability: number;
-  similarity: number;
-  speed: number;
-}
+export type BackupSource = (typeof BACKUP_SOURCES)[number];
 
 export interface BackupSettings {
-  setup: BackupSetup | null;
-  speech: BackupSpeech | null;
+  setup: SavedSetup | null;
+  speech: SpeechSettings | null;
   dismissedIdeas: string[];
   spaceModes: Record<string, SpaceMode>;
   panel: PanelState;
@@ -95,28 +70,31 @@ export type BackupContents = Pick<
 >;
 
 /**
- * The portable rows as a store holds them: the settings by their stored key,
- * and the rows of each table.
+ * The portable settings as a store holds them, by their stored key. A setup
+ * saved before setups had an identifier has none.
  */
-export type StoredBackup = Omit<BackupContents, "settings"> & {
-  settings: Partial<Record<(typeof PORTABLE_SETTINGS)[keyof typeof PORTABLE_SETTINGS], unknown>>;
+export type StoredSettings = {
+  -readonly [K in keyof typeof PORTABLE_SETTINGS as (typeof PORTABLE_SETTINGS)[K]]?: K extends "setup"
+    ? (Omit<SavedSetup, "id"> & { id?: string }) | null
+    : BackupSettings[K];
 };
+
+/** The portable rows as a store holds them: the settings, and the rows of each table. */
+export type StoredBackup = Omit<BackupContents, "settings"> & { settings: StoredSettings };
 
 /** The contents of a backup, from the rows that a store holds. */
 export function backupContentsFrom(stored: StoredBackup, userId: string): BackupContents {
-  const setup = stored.settings[PORTABLE_SETTINGS.setup] as BackupSetup | null | undefined;
+  const { settings } = stored;
+  const setup = settings[PORTABLE_SETTINGS.setup];
   return {
     ...stored,
     settings: {
       setup: setup ? { ...setup, id: setup.id ?? userId } : null,
-      speech: (stored.settings[PORTABLE_SETTINGS.speech] as BackupSpeech | undefined) ?? null,
-      dismissedIdeas:
-        (stored.settings[PORTABLE_SETTINGS.dismissedIdeas] as string[] | undefined) ?? [],
-      spaceModes:
-        (stored.settings[PORTABLE_SETTINGS.spaceModes] as BackupSettings["spaceModes"] | undefined) ??
-        {},
-      panel: panelStateFrom(stored.settings[PORTABLE_SETTINGS.panel]),
-      present: presentSettings(stored.settings[PORTABLE_SETTINGS.present]),
+      speech: settings[PORTABLE_SETTINGS.speech] ?? null,
+      dismissedIdeas: settings[PORTABLE_SETTINGS.dismissedIdeas] ?? [],
+      spaceModes: settings[PORTABLE_SETTINGS.spaceModes] ?? {},
+      panel: panelStateFrom(settings[PORTABLE_SETTINGS.panel]),
+      present: presentSettings(settings[PORTABLE_SETTINGS.present]),
     },
   };
 }
@@ -154,20 +132,22 @@ export interface BackupSummary {
   usageEvents: number;
 }
 
-const USAGE_EVENT_TYPE_SET = new Set<UsageEventType>(USAGE_EVENT_TYPES);
-const PANEL_TABS_SET = new Set(PANEL_TABS.map((tab) => tab.key));
-const PRESENT_TONES_SET = new Set(PRESENT_TONES.map((tone) => tone.key));
+const PANEL_TAB_KEYS = PANEL_TABS.map((tab) => tab.key);
+const PRESENT_TONE_KEYS = PRESENT_TONES.map((tone) => tone.key);
+const WRITING_SERVICE_KEYS = WRITING_SERVICES.map((service) => service.value);
+const AGENT_TOOL_NAMES = AGENT_TOOLS.map((tool) => tool.function.name);
 const textEncoder = new TextEncoder();
 
 function invalid(detail: string): never {
   throw new Error(`This is not a valid September backup. ${detail}`);
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
 function objectOf(value: unknown, label: string): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    invalid(`${label} must be an object.`);
-  }
-  return value as Record<string, unknown>;
+  if (!isRecord(value)) invalid(`${label} must be an object.`);
+  return value;
 }
 
 function arrayOf(value: unknown, label: string): unknown[] {
@@ -206,15 +186,14 @@ function oneOf<T extends string>(
   choices: readonly T[],
   label: string,
 ): T {
-  if (typeof value !== "string" || !choices.includes(value as T)) {
-    invalid(`${label} is not supported.`);
-  }
-  return value as T;
+  const found = choices.find((choice) => choice === value);
+  if (found === undefined) invalid(`${label} is not supported.`);
+  return found;
 }
 
 function backupPanelTab(value: unknown): PanelState["tab"] {
   if (value === "camera") return "phrases";
-  return oneOf(value, [...PANEL_TABS_SET], "panel tab");
+  return oneOf(value, PANEL_TAB_KEYS, "panel tab");
 }
 
 function booleanOf(value: unknown, label: string): boolean {
@@ -310,7 +289,7 @@ function rowsFrom<T extends { id: string }>(
   });
 }
 
-function setupFrom(value: unknown): BackupSetup | null {
+function setupFrom(value: unknown): SavedSetup | null {
   if (value === null) return null;
   const row = objectOf(value, "settings.setup");
   return {
@@ -330,7 +309,7 @@ function setupFrom(value: unknown): BackupSetup | null {
     name: stringOf(row.name, "setup name", { empty: false }),
     speakingStyle: stringOf(row.speakingStyle, "setup speaking style"),
     personalWords: stringOf(row.personalWords, "setup personal words"),
-    mode: oneOf(row.mode, ["free", "advanced"], "setup mode"),
+    mode: oneOf(row.mode, SETUP_MODES, "setup mode"),
     defaultModel: modelConfigFrom(
       row.defaultModel === undefined
         ? { service: row.writingService, model: row.writingModel }
@@ -341,32 +320,24 @@ function setupFrom(value: unknown): BackupSetup | null {
       row.suggestionsModel === undefined || row.suggestionsModel === null
         ? null
         : modelConfigFrom(row.suggestionsModel, "setup Suggestions model"),
-    voiceService: oneOf(
-      row.voiceService,
-      ["system", "elevenlabs"],
-      "setup voice service",
-    ),
+    voiceService: oneOf(row.voiceService, VOICE_SERVICES, "setup voice service"),
     access: parseAccess(row.access),
   };
 }
 
-function modelConfigFrom(value: unknown, label: string): BackupModelConfig {
+function modelConfigFrom(value: unknown, label: string): SavedSetup["defaultModel"] {
   const row = objectOf(value, label);
   return {
-    service: oneOf(
-      row.service,
-      ["apple", "openrouter", "none"],
-      `${label} service`,
-    ),
+    service: oneOf(row.service, WRITING_SERVICE_KEYS, `${label} service`),
     model: stringOf(row.model, `${label} model`),
   };
 }
 
-function speechFrom(value: unknown): BackupSpeech | null {
+function speechFrom(value: unknown): SpeechSettings | null {
   if (value === null) return null;
   const row = objectOf(value, "settings.speech");
   return {
-    provider: oneOf(row.provider, ["system", "elevenlabs", "dialogue"], "speech provider"),
+    provider: oneOf(row.provider, SPEECH_SERVICES, "speech provider"),
     voiceId:
       row.voiceId === null ? null : identifier(row.voiceId, "speech voice ID"),
     modelId: identifier(row.modelId, "speech model ID"),
@@ -410,11 +381,7 @@ function panelFrom(value: unknown): PanelState {
 function presentFrom(value: unknown): PresentSettings {
   const present = objectOf(value, "settings.present");
   return {
-    tone: oneOf(
-      present.tone,
-      [...PRESENT_TONES_SET],
-      "presentation tone",
-    ) as PresentToneKey,
+    tone: oneOf(present.tone, PRESENT_TONE_KEYS, "presentation tone"),
     spoken: booleanOf(present.spoken, "presentation speech state"),
   };
 }
@@ -511,11 +478,7 @@ function phraseFrom(value: unknown): SavedPhrase {
 
 function usageEventFrom(value: unknown): UsageEvent {
   const row = objectOf(value, "usage event");
-  const event_type = oneOf(
-    row.event_type,
-    [...USAGE_EVENT_TYPE_SET],
-    "usage event type",
-  );
+  const event_type = oneOf(row.event_type, USAGE_EVENT_TYPES, "usage event type");
   return {
     id: identifier(row.id, "usage event ID"),
     user_id: identifier(row.user_id, "usage event user ID"),
@@ -528,11 +491,7 @@ function usageEventFrom(value: unknown): UsageEvent {
 function agentMessageFrom(value: unknown): AgentMessage {
   const row = objectOf(value, "agent message");
   const id = identifier(row.id, "agent message ID");
-  const role = oneOf(
-    row.role,
-    ["user", "assistant", "tool"],
-    "agent message role",
-  );
+  const role = oneOf(row.role, AGENT_ROLES, "agent message role");
   const tool_call_id =
     row.tool_call_id === undefined
       ? undefined
@@ -540,11 +499,7 @@ function agentMessageFrom(value: unknown): AgentMessage {
   const tool_name =
     row.tool_name === undefined
       ? undefined
-      : oneOf(
-          row.tool_name,
-          AGENT_TOOLS.map((tool) => tool.function.name),
-          "agent tool name",
-        );
+      : oneOf(row.tool_name, AGENT_TOOL_NAMES, "agent tool name");
   const tool_arguments = optionalString(
     row,
     "tool_arguments",
@@ -553,11 +508,7 @@ function agentMessageFrom(value: unknown): AgentMessage {
   const tool_state =
     row.tool_state === undefined
       ? undefined
-      : oneOf(
-          row.tool_state,
-          ["pending", "applied", "rejected", "failed"],
-          "agent tool state",
-        );
+      : oneOf(row.tool_state, AGENT_TOOL_STATES, "agent tool state");
   const toolFields = [tool_call_id, tool_name, tool_arguments, tool_state];
   if (role === "tool" && toolFields.some((field) => field === undefined)) {
     invalid(
@@ -684,7 +635,7 @@ function backupFrom(value: unknown, skips: Skips): SeptemberBackup {
       format: BACKUP_FORMAT,
       formatVersion: BACKUP_FORMAT_VERSION,
       exportedAt,
-      source: oneOf(row.source, ["web", "desktop"], "source app"),
+      source: oneOf(row.source, BACKUP_SOURCES, "source app"),
       appVersion: stringOf(row.appVersion, "app version", {
         empty: false,
         maxBytes: 64,

@@ -31,10 +31,12 @@ The production output is `dist/`. Vercel serves prerendered public pages and `ap
 - Import pure rules from `@september/core`, primitives from `@september/ui`, and
   application screens from `@september/app-ui`.
 - Shared application UI reaches the browser through `@platform/adapter`. Keep
-  that alias mapped to `src/platform.ts`, and to `src/test/platform.ts` in
-  Vitest. Put shared work in `packages/app-ui/services/`, and only browser work
-  in `src/`.
-- Add a route that both apps have in `packages/app-ui/routes.tsx`. Add a web-only page in `src/router.tsx`. Preserve the web-only landing page at `/`.
+  that alias mapped to `src/platform.ts`, and to
+  `@september/app-ui/test/platform` in Vitest. Put shared work in
+  `packages/app-ui/services/`, and only browser work in `src/`.
+- Add a route that both apps have in `packages/app-ui/routes.tsx`. Add a public
+  web-only page to `PUBLIC_PAGES` in `src/public-pages.ts`, and any other
+  web-only page in `src/router.tsx`. Preserve the web-only landing page at `/`.
 - Use `useNavigate` and `Link` from `@tanstack/react-router`.
 - Styling: shadcn/ui + Tailwind. Font family is Noto Sans (self-hosted via `@fontsource/noto-sans`). Note titles and headings use Fraunces (`@fontsource-variable/fraunces`, `font-heading`).
 - React Query owns the UI cache. `src/services/repository.ts` owns all durable browser data.

@@ -52,7 +52,7 @@ it('scans the rail as one group', async () => {
   await renderPart(
     <>
       <InputLayer profile={{ ...DEFAULT_ACCESS, input: 'switch' }} />
-      <PanelRail spaceId="family" onInsert={() => {}} />
+      <PanelRail spaceId="family" />
     </>,
   );
 

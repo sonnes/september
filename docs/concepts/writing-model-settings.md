@@ -10,16 +10,19 @@ The saved setup contains `defaultModel` and `suggestionsModel`. Each model
 setting contains a writing service and a model ID. An empty model ID asks the
 selected service to choose a model automatically.
 
-Both apps send `openrouter/free` for an Automatic OpenRouter selection. This
-rule applies to the default model and the Suggestions override. The shared
-writing service in `packages/app-ui/services/ai.ts` sends it.
+Both apps send `AUTOMATIC_MODEL`, `openrouter/free`, for an Automatic
+OpenRouter selection. This rule applies to the default model and the
+Suggestions override. `modelIdFor` in `packages/core/rules/model-config.ts`
+gives the model id of each request, and the shared writing service in
+`packages/app-ui/services/ai.ts` sends it.
 
 Every text-generation job reads `defaultModel`. This rule includes space
 descriptions, saved-phrase generation, and Agent turns. The provider of
 `defaultModel` is the provider of every feature.
 
 Suggestions read `suggestionsModel` first. If this value is null, Suggestions
-read `defaultModel`. The shared `modelConfigFor` rule owns this selection.
+read `defaultModel`. `modelConfigFor` in core takes a `GenerationFeature`, the
+job that asks for text, and owns this selection.
 
 AI Assistance shows the provider first. A provider change writes the new
 service into `defaultModel`, and into `suggestionsModel` when it is not null.

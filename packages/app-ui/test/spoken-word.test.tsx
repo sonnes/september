@@ -1,7 +1,7 @@
 import { act } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 
-import { SpokenText } from '@september/app-ui/blocks/suggestions';
+import { SpokenText } from '@september/app-ui/blocks/tagged-text';
 import { speak, stopSpeaking } from '@september/app-ui/services/speech';
 
 import { platform } from './platform';

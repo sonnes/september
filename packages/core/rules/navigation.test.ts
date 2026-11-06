@@ -8,7 +8,9 @@ import {
   openingPath,
   sectionFor,
   settingsNav,
-  windowTitle,
+  capabilityPaths,
+  modeForDigit,
+  spaceRoute,
   type Capabilities,
 } from "./navigation.ts";
 
@@ -125,18 +127,33 @@ describe("the opening path", () => {
   });
 });
 
-describe("the window title", () => {
-  it("names the mode of a space and the page", () => {
-    expect(windowTitle("/spaces/amma/talk")).toBe("September — Talk");
-    expect(windowTitle("/spaces/amma/notes/shopping")).toBe("September — Notes");
-    expect(windowTitle("/spaces/amma/agent/")).toBe("September — Agent");
-    expect(windowTitle("/voice/clone")).toBe("September — Clone your voice");
-    expect(windowTitle("/settings/connections/elevenlabs")).toBe("September — ElevenLabs");
-    expect(windowTitle("/spaces")).toBe("September — Spaces");
+describe("a space path", () => {
+  it("names the space and the mode of Talk, Notes, a note, and Agent", () => {
+    expect(spaceRoute("/spaces/amma/talk")).toEqual({ slug: "amma", mode: "talk" });
+    expect(spaceRoute("/spaces/amma/notes")).toEqual({ slug: "amma", mode: "notes" });
+    expect(spaceRoute("/spaces/amma/notes/shopping")).toEqual({ slug: "amma", mode: "notes" });
+    expect(spaceRoute("/spaces/amma/agent")).toEqual({ slug: "amma", mode: "agent" });
   });
 
-  it("gives the app name alone for a path that names no screen", () => {
-    expect(windowTitle("/spaces/amma")).toBe("September");
-    expect(windowTitle("/spaces/amma/notes/a/b")).toBe("September");
+  it("names nothing for a page or a deeper path", () => {
+    expect(spaceRoute("/spaces")).toBeNull();
+    expect(spaceRoute("/spaces/amma")).toBeNull();
+    expect(spaceRoute("/spaces/amma/talk/x")).toBeNull();
+    expect(spaceRoute("/spaces/amma/notes/a/b")).toBeNull();
+  });
+});
+
+describe("the mode keys", () => {
+  it("open Talk, Notes, and Agent with 1, 2, and 3", () => {
+    expect(["Digit1", "Digit2", "Digit3"].map(modeForDigit)).toEqual(["talk", "notes", "agent"]);
+    expect(modeForDigit("Digit4")).toBeUndefined();
+    expect(modeForDigit("KeyA")).toBeUndefined();
+  });
+});
+
+describe("the pages that need a capability", () => {
+  it("are the pages and sections that the platform offers beyond the common ones", () => {
+    expect(capabilityPaths(mac)).toEqual(["/eyetracker", "/settings/panel"]);
+    expect(capabilityPaths(browser)).toEqual(["/dashboard"]);
   });
 });

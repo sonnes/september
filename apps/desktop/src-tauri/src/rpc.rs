@@ -1,9 +1,4 @@
-use std::{
-    fs,
-    path::PathBuf,
-    sync::Mutex,
-    time::{Instant, SystemTime, UNIX_EPOCH},
-};
+use std::{fs, path::PathBuf, sync::Mutex, time::Instant};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -29,7 +24,9 @@ use crate::{
 
 type RpcResult<T> = std::result::Result<T, String>;
 
-const MAX_VOICE_CLONE_BYTES: usize = 100 * 1024 * 1024;
+/// The samples of one clone, as `packages/core/rules/voice-clone.ts` allows
+/// them, and room for the multipart headers around them.
+const MAX_VOICE_CLONE_BYTES: usize = 101 * 1024 * 1024;
 const AUDIO_OUTPUT_SETTING: &str = "audio-output";
 
 /// The storage of the app, and the cloud-voice sentence that streams now.
@@ -59,12 +56,6 @@ impl BackendState {
     pub(crate) fn put_setting(&self, key: &str, value: &Value) -> RpcResult<()> {
         self.with_repo(|repository| repository.put_setting(key, value))
     }
-}
-
-fn now_ms() -> i64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |elapsed| elapsed.as_millis() as i64)
 }
 
 #[derive(Deserialize)]
@@ -101,6 +92,23 @@ pub(crate) struct AnalyticsListRequest {
     user_id: String,
     start_at: i64,
     end_at: i64,
+    /// Events of every user from before this time are deleted.
+    since: i64,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct BackupExportRequest {
+    setting_keys: Vec<String>,
+    /// Usage events from before this time are deleted.
+    usage_since: i64,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct BackupImportRequest {
+    contents: BackupContents,
+    setting_keys: Vec<String>,
 }
 
 #[derive(Deserialize)]
@@ -207,16 +215,23 @@ pub(crate) fn setting_put(
 }
 
 #[tauri::command(async)]
-pub(crate) fn backup_export(state: State<'_, BackendState>) -> RpcResult<BackupContents> {
-    state.with_repo(|repository| repository.backup_contents(now_ms()))
+pub(crate) fn backup_export(
+    state: State<'_, BackendState>,
+    request: BackupExportRequest,
+) -> RpcResult<BackupContents> {
+    state.with_repo(|repository| {
+        repository.backup_contents(&request.setting_keys, request.usage_since)
+    })
 }
 
 #[tauri::command(async)]
 pub(crate) fn backup_import(
     state: State<'_, BackendState>,
-    request: BackupContents,
+    request: BackupImportRequest,
 ) -> RpcResult<()> {
-    state.with_repo(|repository| repository.replace_backup_contents(&request))
+    state.with_repo(|repository| {
+        repository.replace_backup_contents(&request.contents, &request.setting_keys)
+    })
 }
 
 #[tauri::command(async)]
@@ -290,7 +305,7 @@ pub(crate) fn analytics_put(
     state: State<'_, BackendState>,
     request: AnalyticsEvent,
 ) -> RpcResult<AnalyticsEvent> {
-    state.with_repo(|repository| repository.put_analytics_event(&request, now_ms()))?;
+    state.with_repo(|repository| repository.put_analytics_event(&request))?;
     Ok(request)
 }
 
@@ -304,7 +319,7 @@ pub(crate) fn analytics_list(
             &request.user_id,
             request.start_at,
             request.end_at,
-            now_ms(),
+            request.since,
         )
     })
 }
@@ -400,17 +415,13 @@ pub(crate) fn phrase_delete(
     state.with_repo(|repository| repository.delete_phrase(&request.id))
 }
 
-/// Puts the rows of a model in place of the unpinned rows of one space, and
-/// returns the phrases of the space.
+/// Puts the rows of a model in place of the unpinned rows of one space.
 #[tauri::command(async)]
 pub(crate) fn phrase_replace_ai(
     state: State<'_, BackendState>,
     request: PhraseReplaceRequest,
-) -> RpcResult<Vec<SavedPhrase>> {
-    state.with_repo(|repository| {
-        repository.replace_ai_phrases(&request.space_id, &request.phrases)?;
-        repository.list_phrases(Some(&request.space_id))
-    })
+) -> RpcResult<()> {
+    state.with_repo(|repository| repository.replace_ai_phrases(&request.space_id, &request.phrases))
 }
 
 /// The name the operating system holds for the signed-in user. Empty when the
@@ -420,12 +431,12 @@ pub(crate) fn user_name() -> String {
     clean_name(&whoami::realname())
 }
 
-/// The login name of the operating system, for example `ravi`. The command
-/// rejects when the system knows no login name.
+/// The login name of the operating system, for example `ravi`. Absent when
+/// the system gives no usable login name.
 #[tauri::command(async)]
-pub(crate) fn user_id() -> RpcResult<String> {
+pub(crate) fn user_id() -> RpcResult<Option<String>> {
     let raw = whoami::fallible::username().map_err(|error| error.to_string())?;
-    login_name(&raw).ok_or_else(|| "This Mac has no login name.".to_owned())
+    Ok(login_name(&raw))
 }
 
 #[tauri::command]
@@ -839,7 +850,7 @@ pub(crate) fn virtual_microphone_stop() -> RpcResult<VirtualMicrophoneStatus> {
 
 #[cfg(test)]
 mod tests {
-    use super::{clean_name, login_name};
+    use super::{clean_name, login_name, MAX_VOICE_CLONE_BYTES};
 
     #[test]
     fn a_display_name_keeps_only_its_first_gecos_field() {
@@ -860,5 +871,17 @@ mod tests {
     fn a_login_name_is_trimmed_and_a_blank_one_is_refused() {
         assert_eq!(login_name("  ravi  ").as_deref(), Some("ravi"));
         assert_eq!(login_name("   "), None);
+    }
+
+    #[test]
+    fn the_clone_body_holds_every_sample_the_form_allows() {
+        let rules = include_str!("../../../../packages/core/rules/voice-clone.ts");
+        assert!(rules.contains("const MB = 1024 * 1024;"));
+        let megabytes: usize = rules
+            .split_once("totalBytes: ")
+            .and_then(|(_, rest)| rest.split_once(" * MB"))
+            .and_then(|(count, _)| count.parse().ok())
+            .expect("voice-clone.ts states totalBytes in MB");
+        assert!(MAX_VOICE_CLONE_BYTES > megabytes * 1024 * 1024);
     }
 }

@@ -1,59 +1,8 @@
-use std::{
-    io::{Read, Write},
-    net::TcpListener,
-    sync::mpsc,
-    thread,
-};
+mod common;
 
+use common::serve_raw;
 use september_desktop_lib::proxy::{self, ProxyConfig};
 use serde_json::{json, Value};
-
-/// Answers one request with a raw response and hands the request back.
-fn serve_once(response: &'static str) -> (String, mpsc::Receiver<String>) {
-    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    let address = listener.local_addr().unwrap();
-    let (sender, receiver) = mpsc::channel();
-
-    thread::spawn(move || {
-        let (mut stream, _) = listener.accept().unwrap();
-        let mut bytes = Vec::new();
-        let mut buffer = [0_u8; 4096];
-
-        while !bytes.windows(4).any(|window| window == b"\r\n\r\n") {
-            let read = stream.read(&mut buffer).unwrap();
-            assert!(read > 0, "request ended before its headers");
-            bytes.extend_from_slice(&buffer[..read]);
-        }
-
-        let header_end = bytes
-            .windows(4)
-            .position(|window| window == b"\r\n\r\n")
-            .unwrap()
-            + 4;
-        let head = String::from_utf8_lossy(&bytes[..header_end]);
-        let content_length = head
-            .lines()
-            .find_map(|line| {
-                let (name, value) = line.split_once(':')?;
-                name.eq_ignore_ascii_case("content-length")
-                    .then(|| value.trim().parse::<usize>().ok())
-                    .flatten()
-            })
-            .unwrap_or(0);
-        while bytes.len() < header_end + content_length {
-            let read = stream.read(&mut buffer).unwrap();
-            assert!(read > 0, "request ended before its body");
-            bytes.extend_from_slice(&buffer[..read]);
-        }
-
-        sender
-            .send(String::from_utf8_lossy(&bytes).into_owned())
-            .unwrap();
-        stream.write_all(response.as_bytes()).unwrap();
-    });
-
-    (format!("http://{address}"), receiver)
-}
 
 const REPLY: &str = concat!(
     "HTTP/1.1 200 OK\r\n",
@@ -67,6 +16,7 @@ fn config(upstream: &str) -> ProxyConfig {
     ProxyConfig {
         upstream: upstream.to_owned(),
         apple: None,
+        client: reqwest::Client::new(),
     }
 }
 
@@ -88,7 +38,7 @@ fn header_of(request: &str, name: &str) -> String {
 
 #[tokio::test]
 async fn it_lends_the_key_without_giving_it_away() {
-    let (upstream, requests) = serve_once(REPLY);
+    let (upstream, requests) = serve_raw(REPLY.to_owned());
     let endpoint = proxy::serve(config(&upstream), || Ok("sk-real".to_owned()))
         .await
         .unwrap();
@@ -132,7 +82,7 @@ async fn it_refuses_a_body_that_is_not_a_json_object() {
 
 #[tokio::test]
 async fn it_answers_nothing_without_the_run_token() {
-    let (upstream, _requests) = serve_once(REPLY);
+    let (upstream, _requests) = serve_raw(REPLY.to_owned());
     let endpoint = proxy::serve(config(&upstream), || Ok("sk-real".to_owned()))
         .await
         .unwrap();
@@ -166,7 +116,7 @@ async fn it_answers_nothing_without_the_run_token() {
 
 #[tokio::test]
 async fn it_says_which_service_is_not_connected() {
-    let (upstream, _requests) = serve_once(REPLY);
+    let (upstream, _requests) = serve_raw(REPLY.to_owned());
     let endpoint = proxy::serve(config(&upstream), || {
         Err("Connect OpenRouter in Settings first.".to_owned())
     })
@@ -198,7 +148,7 @@ async fn it_passes_a_streamed_reply_through() {
         "data: {\"one\":1}\n\n",
         "data: [DONE]\n\n"
     );
-    let (upstream, _requests) = serve_once(STREAM);
+    let (upstream, _requests) = serve_raw(STREAM.to_owned());
     let endpoint = proxy::serve(config(&upstream), || Ok("sk-real".to_owned()))
         .await
         .unwrap();
@@ -223,7 +173,7 @@ async fn it_passes_a_streamed_reply_through() {
 
 #[tokio::test]
 async fn it_lets_the_web_view_ask_first() {
-    let (upstream, _requests) = serve_once(REPLY);
+    let (upstream, _requests) = serve_raw(REPLY.to_owned());
     let endpoint = proxy::serve(config(&upstream), || Ok("sk-real".to_owned()))
         .await
         .unwrap();
@@ -256,7 +206,7 @@ async fn it_lets_the_web_view_ask_first() {
 
 #[tokio::test]
 async fn it_carries_apple_intelligence_for_the_web_view() {
-    let (sidecar, requests) = serve_once(REPLY);
+    let (sidecar, requests) = serve_raw(REPLY.to_owned());
     let apple = sidecar.clone();
     let endpoint = proxy::serve(
         ProxyConfig {
@@ -288,7 +238,7 @@ async fn it_carries_apple_intelligence_for_the_web_view() {
 
 #[tokio::test]
 async fn it_says_when_this_mac_has_no_apple_intelligence() {
-    let (upstream, _requests) = serve_once(REPLY);
+    let (upstream, _requests) = serve_raw(REPLY.to_owned());
     let endpoint = proxy::serve(config(&upstream), || Ok("sk-real".to_owned()))
         .await
         .unwrap();

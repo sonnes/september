@@ -5,9 +5,8 @@
  * the voice. Nothing leaves the machine: the words, the sound, and the film
  * are made on the same tab that plays them.
  *
- * This is the renderer of the retired reel feature, kept for its timing and
- * re-dressed in the presentation tones. The caption rules live in
- * `@/rules/present`, so the exported film and the stage agree.
+ * The caption rules live in `@september/core/rules/present`, so the exported
+ * film and the stage agree.
  */
 
 import {

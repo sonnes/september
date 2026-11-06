@@ -10,10 +10,11 @@ import type {
   ProviderStatus,
   Voice,
 } from '@september/app-ui/platform';
+import { OPENROUTER_BASE } from '@september/core/rules/model-config';
 import { SETTINGS } from '@september/core/rules/settings';
 
 import { authorizeOpenRouter } from './oauth';
-import { getRepository } from './repository';
+import { browserRepository } from './repository';
 
 type Keys = Partial<Record<Provider, string>>;
 
@@ -23,11 +24,11 @@ const NAMES: Record<Provider, string> = {
 };
 
 async function keys(): Promise<Keys> {
-  return (await (await getRepository()).getSetting<Keys>(SETTINGS.providerKeys)) ?? {};
+  return (await browserRepository.getSetting<Keys>(SETTINGS.providerKeys)) ?? {};
 }
 
 async function putKeys(next: Keys): Promise<void> {
-  await (await getRepository()).putSetting(SETTINGS.providerKeys, next);
+  await browserRepository.putSetting(SETTINGS.providerKeys, next);
 }
 
 /** The key of one service. It rejects when the user has not connected it. */
@@ -49,7 +50,7 @@ async function connect(provider: Provider, key: string, signal?: AbortSignal) {
   const trimmed = key.trim();
   const response = await fetch(
     provider === 'openrouter'
-      ? 'https://openrouter.ai/api/v1/key'
+      ? `${OPENROUTER_BASE}/key`
       : 'https://api.elevenlabs.io/v1/user',
     { headers: headers(provider, trimmed), signal }
   );

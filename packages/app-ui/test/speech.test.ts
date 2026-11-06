@@ -12,8 +12,8 @@ import {
   useSpeaking,
   useSpokenWord,
   useVoiceFallback,
-  type SpeechSettings,
 } from '@september/app-ui/services/speech';
+import type { SpeechSettings } from '@september/core/rules/voice';
 import { DEFAULT_DRAFT, type VoiceService } from '@september/core/rules/onboarding';
 
 import { platform } from './platform';

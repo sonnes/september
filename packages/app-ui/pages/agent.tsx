@@ -20,6 +20,7 @@ import {
 } from "@september/core/rules/agent/introduction";
 import { AGENT_OPENERS, agentProposalIsDelete } from "@september/core/rules/agent/transcript";
 import type { AgentMessage, Space } from "@september/core/rules/records";
+import { SPACE_MODE_TITLES } from "@september/core/rules/navigation";
 import { documentTitle } from "@september/core/rules/titles";
 import {
   NEW_SPACE_CONTEXT,
@@ -35,7 +36,6 @@ import {
   useRefreshAgentSpace,
   useUpdateSpace,
 } from "@september/app-ui/services/data";
-import type { ComposerHandle } from "@september/app-ui/blocks/chrome";
 import { RightPanel, ScreenHeader } from "@september/app-ui/blocks/screen";
 import { PanelRail } from "@september/app-ui/blocks/space-panel";
 import { Composer } from "@september/app-ui/blocks/composer";
@@ -88,7 +88,6 @@ function Agent({ space, spaces }: { space: Space; spaces: Space[] }) {
   const [problem, setProblem] = useState("");
   const [confirming, setConfirming] = useState<AgentMessage | null>(null);
   const end = useRef<HTMLDivElement>(null);
-  const composer = useRef<ComposerHandle | null>(null);
   useRememberMode(space, "agent");
 
   const pending = rows.some((row) => row.tool_state === "pending");
@@ -196,8 +195,8 @@ function Agent({ space, spaces }: { space: Space; spaces: Space[] }) {
 
   return (
     <>
-      <title>{documentTitle(space.title, "Agent")}</title>
-      <ScreenHeader heading={`${space.title} · Agent`}>
+      <title>{documentTitle(space.title, SPACE_MODE_TITLES.agent)}</title>
+      <ScreenHeader heading={`${space.title} · ${SPACE_MODE_TITLES.agent}`}>
         <SpaceTitle space={space} mode="agent" />
       </ScreenHeader>
 
@@ -299,7 +298,6 @@ function Agent({ space, spaces }: { space: Space; spaces: Space[] }) {
                 ? "Approve or reject the proposed change before asking again."
                 : undefined
             }
-            handle={composer}
           />
         </div>
 
@@ -311,10 +309,7 @@ function Agent({ space, spaces }: { space: Space; spaces: Space[] }) {
       </div>
 
       <RightPanel>
-        <PanelRail
-          spaceId={space.id}
-          onInsert={(text) => composer.current?.insert(text)}
-        />
+        <PanelRail spaceId={space.id} />
       </RightPanel>
 
       <DeleteProposalDialog

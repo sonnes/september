@@ -68,13 +68,6 @@ public enum Metrics {
         public static let caretBlink: TimeInterval = 0.6
     }
 
-    public enum Mode {
-        public static let spacing: CGFloat = 12
-        public static let labelSpacing: CGFloat = 5
-        public static let buttonSize: CGFloat = 44
-        public static let selectedStroke: CGFloat = 2
-    }
-
     public enum Banner {
         public static let height: CGFloat = 36
         public static let cornerRadius: CGFloat = 10

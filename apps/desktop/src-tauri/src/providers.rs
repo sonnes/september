@@ -569,10 +569,7 @@ impl Providers {
         // list counts a page with `page_size`, and gives 10 without it.
         let response = self
             .client
-            .get(format!(
-                "{}/v2/voices?page_size=100",
-                self.eleven_labs
-            ))
+            .get(format!("{}/v2/voices?page_size=100", self.eleven_labs))
             .header("xi-api-key", key)
             .send()
             .await?;
@@ -761,7 +758,15 @@ fn unexpected(error: impl std::fmt::Display) -> ProviderError {
 mod tests {
     use std::cell::Cell;
 
-    use super::{thousands, Provider, ProviderKeys, Voice};
+    use super::{thousands, Provider, ProviderKeys, Voice, CONVERSATIONAL_MODEL};
+
+    #[test]
+    fn the_conversational_model_is_the_one_the_web_view_names() {
+        let rules = include_str!("../../../../packages/core/rules/voice.ts");
+        assert!(rules.contains(&format!(
+            "export const CONVERSATIONAL_MODEL = \"{CONVERSATIONAL_MODEL}\";"
+        )));
+    }
 
     #[test]
     fn provider_keys_are_loaded_once_and_then_read_from_memory() {

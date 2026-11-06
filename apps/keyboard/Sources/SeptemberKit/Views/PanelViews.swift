@@ -57,16 +57,17 @@ public struct PanelGridView: View {
     }
 }
 
-/// Shortcuts for whichever app is in front, headed by that app's name.
+/// Shortcuts for whichever app is in front, headed by that app's name, or by
+/// the panel title when the app has no name.
 public struct AppShortcutsView: View {
     private let panel: PanelDefinition
-    private let appName: String
+    private let appName: String?
     private let width: CGFloat
     private let press: (PanelAction) -> Void
 
     public init(
         panel: PanelDefinition,
-        appName: String,
+        appName: String?,
         width: CGFloat = Metrics.keypadWidth,
         press: @escaping (PanelAction) -> Void
     ) {
@@ -82,7 +83,7 @@ public struct AppShortcutsView: View {
                 Image(systemName: "app.dashed")
                     .font(Typography.appIcon)
                     .foregroundStyle(Color(Tokens.accent))
-                Text(appName)
+                Text(title)
                     .font(Typography.appName)
                     .foregroundStyle(Color(Tokens.keyText))
                     .lineLimit(1)
@@ -98,6 +99,8 @@ public struct AppShortcutsView: View {
         }
         .frame(width: width, alignment: .leading)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(appName) shortcuts")
+        .accessibilityLabel("\(title) shortcuts")
     }
+
+    private var title: String { appName ?? panel.title }
 }

@@ -7,8 +7,8 @@
  */
 
 import { helpGuide } from "./help/search.ts";
-import { STEPS } from "./onboarding.ts";
 import { SERVICE_NAMES } from "./services.ts";
+import { SPACE_MODES, type SpaceMode } from "./records.ts";
 import { spaceFromSlug, spaceSlug } from "./spaces.ts";
 
 /** What a platform offers beyond the pages that every platform has. */
@@ -22,8 +22,6 @@ export interface Capabilities {
 }
 
 type Capability = keyof Capabilities;
-
-export const APP_NAME = "September";
 
 export const APP_PAGES = [
   {
@@ -167,30 +165,39 @@ export type ConnectionId = keyof typeof CONNECTION_GUIDES;
 export const isConnectionId = (value: string): value is ConnectionId =>
   value in CONNECTION_GUIDES;
 
-const SPACE_MODE_PATH = /^\/spaces\/([^/]+)\/(?:(talk|agent|notes)|(notes)\/[^/]+)$/;
+/** The title of each mode of a space. */
+export const SPACE_MODE_TITLES: Record<SpaceMode, string> = {
+  talk: "Talk",
+  notes: "Notes",
+  agent: "Agent",
+};
+
+const SPACE_PATH = /^\/spaces\/([^/]+)\/(?:(talk|agent|notes)|(notes)\/[^/]+)$/;
 const HELP_GUIDE_PATH = /^\/help\/([^/]+)$/;
 const CONNECTION_PATH = /^\/settings\/connections\/([^/]+)$/;
-const SPACE_MODE_TITLES = { talk: "Talk", agent: "Agent", notes: "Notes" } as const;
 const CLONE_PATH = "/voice/clone";
 
-/** The title of a window that shows a path. */
-export function windowTitle(pathname: string): string {
-  const path = pathname === "/" ? pathname : pathname.replace(/\/+$/, "");
-  const spaceMode = path.match(SPACE_MODE_PATH);
-  const mode = (spaceMode?.[2] ?? spaceMode?.[3]) as keyof typeof SPACE_MODE_TITLES | undefined;
-  const guideSlug = path.match(HELP_GUIDE_PATH)?.[1];
-  const provider = path.match(CONNECTION_PATH)?.[1];
+/**
+ * The space and the mode that a path names: Talk, Notes, a note, or Agent.
+ * Any other path gives null.
+ */
+export function spaceRoute(path: string): { slug: string; mode: SpaceMode } | null {
+  const found = SPACE_PATH.exec(path);
+  if (!found) return null;
+  return { slug: decodeURIComponent(found[1]), mode: (found[2] ?? found[3]) as SpaceMode };
+}
 
-  const page =
-    (mode && SPACE_MODE_TITLES[mode]) ??
-    (path === CLONE_PATH ? "Clone your voice" : undefined) ??
-    STEPS.find((step) => step.path === path)?.label ??
-    SETTINGS_SECTIONS.find((section) => section.path === path)?.title ??
-    (provider && isConnectionId(provider) ? CONNECTION_GUIDES[provider].name : undefined) ??
-    (guideSlug ? helpGuide(guideSlug)?.title : undefined) ??
-    APP_PAGES.find((item) => item.path === path)?.title;
+/** The mode that ⌘⌥ and a digit open: 1 is the first mode, in the order of `SPACE_MODES`. */
+export function modeForDigit(code: string): SpaceMode | undefined {
+  const digit = /^Digit([1-9])$/.exec(code)?.[1];
+  return digit ? SPACE_MODES[Number(digit) - 1] : undefined;
+}
 
-  return page ? `${APP_NAME} — ${page}` : APP_NAME;
+/** The paths that need a capability and that this platform offers. */
+export function capabilityPaths(capabilities: Capabilities): string[] {
+  return [...appNav(capabilities), ...settingsNav(capabilities)]
+    .filter((page) => "requires" in page)
+    .map((page) => page.path);
 }
 
 function isPage(path: string, capabilities: Capabilities): boolean {
@@ -216,7 +223,7 @@ export function openingPath(
   capabilities: Capabilities,
 ): string {
   if (saved) {
-    const slug = saved.match(SPACE_MODE_PATH)?.[1];
+    const slug = spaceRoute(saved)?.slug;
     if (slug && spaceFromSlug(slug, spaces)) return saved;
     if (!slug && isPage(saved, capabilities)) return saved;
   }

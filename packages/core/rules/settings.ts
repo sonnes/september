@@ -19,7 +19,6 @@ export const DEVICE_SETTINGS = {
   heardVoices: "heard-voices",
   audioOutput: "audio-output",
   providerKeys: "provider-keys",
-  panelFloat: "panel-float",
   legacyMigration: "legacy-migration",
 } as const;
 
@@ -30,6 +29,9 @@ export type PortableSettingKey =
 
 export const PORTABLE_SETTING_KEYS: readonly PortableSettingKey[] =
   Object.values(PORTABLE_SETTINGS);
+
+/** The owner of the rows when the system knows no login name. */
+export const LOCAL_USER = "local-user";
 
 /** The unsent words of Talk in one space. Device only. */
 export const talkDraftKey = (spaceId: string) => `talk-draft:${spaceId}`;

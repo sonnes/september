@@ -8,6 +8,7 @@ import { noteFromSlug } from "@september/core/rules/notes";
 import type { NoteDocumentHandle } from "@september/app-ui/blocks/note-document";
 import { PanelRail } from "@september/app-ui/blocks/space-panel";
 import { RightPanel, ScreenHeader } from "@september/app-ui/blocks/screen";
+import { SPACE_MODE_TITLES } from "@september/core/rules/navigation";
 import { documentTitle } from "@september/core/rules/titles";
 import { SpaceDock } from "@september/app-ui/blocks/space-dock";
 import { noteParams, spaceParams, useRememberMode, useSpaceBySlug } from "@september/app-ui/blocks/space-routes";
@@ -79,10 +80,10 @@ function Notes({
       <title>
         {note
           ? documentTitle(note.name, space.title)
-          : documentTitle(space.title, "Notes")}
+          : documentTitle(space.title, SPACE_MODE_TITLES.notes)}
       </title>
       <ScreenHeader
-        heading={note ? `${note.name} · ${space.title}` : `${space.title} · Notes`}
+        heading={note ? `${note.name} · ${space.title}` : `${space.title} · ${SPACE_MODE_TITLES.notes}`}
       >
         <SpaceTitle space={space} mode="notes" />
       </ScreenHeader>
@@ -177,10 +178,7 @@ function Notes({
       </div>
 
       <RightPanel>
-        <PanelRail
-          spaceId={space.id}
-          onInsert={(text) => handle.current?.insert(text)}
-        />
+        <PanelRail spaceId={space.id} />
       </RightPanel>
     </>
   );

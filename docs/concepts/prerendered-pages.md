@@ -41,9 +41,11 @@ One file per page, because one shell cannot be all of them. If the shell
 carried the landing markup, a deep link to `/dashboard` would paint the
 marketing page for as long as the bundle took to boot.
 
-`PRERENDERED_PATHS` in `apps/web/src/rules/prerender.ts` is the whole list, and
-it derives the guides from `HELP_GUIDES`. A new guide is prerendered by being
-written; nothing else has to be told about it.
+`PUBLIC_PAGES` in `apps/web/src/public-pages.ts` holds the public pages, with
+the words of a shared link and the page that the web app draws. The router
+and the prerender both read it. `PRERENDERED_PATHS` in
+`apps/web/src/rules/prerender.ts` adds the guides from `HELP_GUIDES`. A new
+guide is prerendered by being written; nothing else has to be told about it.
 
 ## Folder indexes, and one canonical path
 
@@ -73,8 +75,8 @@ the bundle mounts.
 
 ## Link previews follow the page
 
-`publicPage` uses the Help catalog's titles and summaries and the legal-page
-descriptions to supply each public URL's metadata. `withPageMetadata` replaces
+`publicPage` uses the Help catalog's titles and summaries and the entries of
+`PUBLIC_PAGES` to supply each public URL's metadata. `withPageMetadata` replaces
 the shell's description and Open Graph/Twitter defaults and adds a canonical
 link. Private application routes keep the generic shell.
 

@@ -62,8 +62,11 @@ export interface SavedPhrase {
   updated_at: number;
 }
 
-export type AgentRole = "user" | "assistant" | "tool";
-export type AgentToolState = "pending" | "applied" | "rejected" | "failed";
+export const AGENT_ROLES = ["user", "assistant", "tool"] as const;
+export type AgentRole = (typeof AGENT_ROLES)[number];
+
+export const AGENT_TOOL_STATES = ["pending", "applied", "rejected", "failed"] as const;
+export type AgentToolState = (typeof AGENT_TOOL_STATES)[number];
 
 /** One row of the Agent transcript of a space. */
 export interface AgentMessage {

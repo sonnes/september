@@ -10,11 +10,7 @@ import SwiftUI
 public struct InputBar: View {
     @EnvironmentObject private var controller: KeyboardController
 
-    private let width: CGFloat
-
-    public init(width: CGFloat = Metrics.keyboardWidth) {
-        self.width = width
-    }
+    public init() {}
 
     public var body: some View {
         HStack(spacing: Metrics.Input.spacing) {
@@ -67,7 +63,7 @@ public struct InputBar: View {
             }
         }
         .padding(.horizontal, Metrics.Input.horizontalPadding)
-        .frame(width: width, height: Metrics.Input.height)
+        .frame(width: Metrics.keyboardWidth, height: Metrics.Input.height)
         .background(
             RoundedRectangle(cornerRadius: Metrics.Input.cornerRadius, style: .continuous)
                 .fill(Color(Tokens.key))
@@ -92,7 +88,7 @@ public struct InputBar: View {
     private var accessibilityLabel: String {
         switch controller.input {
         case .secure: "Password field"
-        case .mirrored: "Text in \(controller.frontmostAppName)"
+        case .mirrored: controller.frontmostAppName.map { "Text in \($0)" } ?? "Text in the app in front"
         case .local: "Typed text"
         }
     }

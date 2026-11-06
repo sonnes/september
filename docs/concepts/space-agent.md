@@ -74,13 +74,13 @@ Could not apply — so the outcome is never carried by colour alone.
 
 Describing a row is not running it. A call the executor refused keeps the
 arguments the model sent, because that row is the record of what was tried, and
-those arguments are by definition ones the validator rejects. `agentCallInput`
-is what a description reads them with: it validates when it can and falls back
-to the raw object when it cannot, and it never throws. The executor keeps its
-strictness — every field a description reads is checked for its own type
-anyway, so a field it cannot validate is one the row leaves out. Validating
-while drawing would throw during render, and one refused call would take down
-every visit to the space that holds it.
+those arguments are by definition ones the validator rejects. `agentRowCall`
+in `packages/core/rules/agent/transcript.ts` is what a description reads them
+with: it gives the valid call, or the reason the row holds none, and it never
+throws. A card for a call that is not valid shows that reason, and a summary
+falls back to the operation the arguments name. The executor keeps its
+strictness. Validating while drawing would throw during render, and one
+refused call would take down every visit to the space that holds it.
 
 A pending write is the only card. It shows what the change would write beside
 what it would replace, so approving does not mean opening a second screen to

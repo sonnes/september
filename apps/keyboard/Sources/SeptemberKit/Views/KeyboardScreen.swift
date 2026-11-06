@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The whole floating surface: input bar and mode buttons above, keypads and
+/// The whole floating surface: the input bar above, the keypads and the
 /// keyboard below.
 public struct KeyboardScreen: View {
     @EnvironmentObject private var controller: KeyboardController
@@ -15,12 +15,8 @@ public struct KeyboardScreen: View {
                     .padding(.leading, Metrics.keypadWidth + Metrics.sectionSpacing)
             }
 
-            HStack(alignment: .center, spacing: Metrics.sectionSpacing) {
-                InputBar()
-                ModeButtons()
-                Spacer(minLength: 0)
-            }
-            .padding(.leading, Metrics.keypadWidth + Metrics.sectionSpacing)
+            InputBar()
+                .padding(.leading, Metrics.keypadWidth + Metrics.sectionSpacing)
 
             keys
         }

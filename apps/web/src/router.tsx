@@ -3,15 +3,20 @@ import { createRouter, type RouterHistory } from '@tanstack/react-router';
 import { AppShell } from '@september/app-ui/layouts/app';
 import { DashboardScreen } from '@september/app-ui/pages/dashboard';
 import { createAppRoutes } from '@september/app-ui/routes';
-import { HomePage } from '@/pages/home';
-import { PrivacyPolicy, TermsOfService } from '@/pages/legal';
+import { PUBLIC_PAGES } from '@/public-pages';
 import { analyticsPath } from '@/rules/analytics';
 import { countPage } from '@/services/analytics';
 
+const { '/': landing, ...others } = PUBLIC_PAGES;
+
 const routeTree = createAppRoutes({
   shell: AppShell,
-  home: { component: HomePage },
-  publicPages: { '/privacy-policy': PrivacyPolicy, '/terms-of-service': TermsOfService },
+  home: { component: landing.component },
+  publicPages: Object.fromEntries(
+    Object.entries(others).flatMap(([path, page]) =>
+      'component' in page ? [[path, page.component]] : []
+    )
+  ),
   pages: { '/dashboard': DashboardScreen },
 });
 

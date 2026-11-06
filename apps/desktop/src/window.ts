@@ -2,8 +2,6 @@
  * The panel window of the Mac, which only the desktop app has.
  */
 
-import { getCurrentWindow } from "@tauri-apps/api/window";
-
 import { SETTINGS } from "@september/core/rules/settings";
 
 import { call } from "./commands";
@@ -23,12 +21,6 @@ export const panelSetup = (on: boolean) => call("panel_setup", { on });
 export const panelFloat = () => call("panel_float");
 
 export const setPanelFloat = (on: boolean) => call("panel_set_float", { on });
-
-/** Keeps the document and the window of the Mac on the same title. */
-export async function setWindowTitle(title: string): Promise<void> {
-  document.title = title;
-  await getCurrentWindow().setTitle(title);
-}
 
 /** The screen the user left last, or nothing. */
 export const readLastPath = () => platform.store.getSetting<string>(SETTINGS.lastPath);

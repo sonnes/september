@@ -23,7 +23,8 @@ import {
   usePutPhrase,
 } from "@september/app-ui/services/data";
 import { dismissedIdeas } from "@september/app-ui/services/settings";
-import { TaggedText } from "@september/app-ui/blocks/suggestions";
+import { useEscape } from "@september/app-ui/blocks/keymap";
+import { TaggedText } from "@september/app-ui/blocks/tagged-text";
 import { CODE_MAX_LENGTH, validateCode } from "@september/core/rules/phrases/codes";
 import { mineShortcuts, normalizeMinedText } from "@september/core/rules/phrases/mining";
 import type { SavedPhrase } from "@september/core/rules/records";
@@ -424,6 +425,7 @@ function CodeField({
   onDone: () => void;
 }) {
   const [value, setValue] = useState(row.code ?? "");
+  useEscape(onDone);
 
   // The row keeps its own code, so a change that keeps it is not a duplicate.
   const others = allPhrases
@@ -471,7 +473,6 @@ function CodeField({
           event.preventDefault();
           save();
         }
-        if (event.key === "Escape") onDone();
       }}
     />
   );

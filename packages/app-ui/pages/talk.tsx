@@ -18,7 +18,8 @@ import {
   ScreenHeader,
 } from "@september/app-ui/blocks/screen";
 import { PanelRail } from "@september/app-ui/blocks/space-panel";
-import { SpokenText } from "@september/app-ui/blocks/suggestions";
+import { SpokenText } from "@september/app-ui/blocks/tagged-text";
+import { SPACE_MODE_TITLES } from "@september/core/rules/navigation";
 import { documentTitle } from "@september/core/rules/titles";
 import { useSyncPhrases } from "@september/app-ui/services/phrase-sync";
 import {
@@ -27,7 +28,7 @@ import {
   useSpeaking,
   useVoiceFallback,
 } from "@september/app-ui/services/speech";
-import { useChrome, type ComposerHandle } from "@september/app-ui/blocks/chrome";
+import { useChrome } from "@september/app-ui/blocks/chrome";
 import { useEscape } from "@september/app-ui/blocks/keymap";
 import { KEYMAP, keyLabel } from "@september/core/rules/keymap";
 import {
@@ -70,7 +71,7 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
 
   const fallback = useVoiceFallback();
   const draft = useAutosave(initialDraft, useSaveTalkDraft(space.id));
-  const [mood, chooseMood] = useTalkMood(space.id);
+  const { mood, choose: chooseMood, problem: moodProblem } = useTalkMood(space.id);
   const keysTyped = useRef(0);
   const [pageInput, setPageInput] = useState(0);
   // See all shows the pages of the transcript in place of the suggestions.
@@ -83,7 +84,6 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
   const [writing, setWriting] = useState(false);
   const playing = speaking === "composer" && sentence !== null;
   const field = useRef<HTMLTextAreaElement>(null);
-  const composer = useRef<ComposerHandle | null>(null);
 
   const spoken = (messages ?? []).filter((message) => message.type === "user");
   const { page, pageCount, slice } = transcriptPage(spoken, pageInput);
@@ -135,8 +135,8 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
 
   return (
     <>
-      <title>{documentTitle(space.title, "Talk")}</title>
-      <ScreenHeader heading={`${space.title} · Talk`}>
+      <title>{documentTitle(space.title, SPACE_MODE_TITLES.talk)}</title>
+      <ScreenHeader heading={`${space.title} · ${SPACE_MODE_TITLES.talk}`}>
         <SpaceTitle space={space} />
       </ScreenHeader>
       {/* The status is on the page before it has words, so a screen reader
@@ -299,12 +299,11 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
             }}
             onPin={keep}
             pending={send.isPending}
-            note={fallback ?? undefined}
+            note={fallback ?? moodProblem ?? undefined}
             mood={mood}
             onMood={chooseMood}
             suggestions={!transcript}
             fieldRef={field}
-            handle={composer}
           />
           <KeyHints
             items={
@@ -329,10 +328,7 @@ function Talk({ space, spaces, initialDraft }: { space: Space; spaces: Space[]; 
       </div>
 
       <RightPanel>
-        <PanelRail
-          spaceId={space.id}
-          onInsert={(text) => composer.current?.insert(text)}
-        />
+        <PanelRail spaceId={space.id} />
       </RightPanel>
     </>
   );
@@ -467,18 +463,13 @@ function SpeakingCard({
 }) {
   const stop = useRef<HTMLButtonElement>(null);
   useEffect(() => stop.current?.focus(), []);
+  useEscape(stopSpeaking);
 
   return (
     <div
       role="region"
       aria-label="Speaking"
       onKeyDown={(event) => {
-        if (event.key === "Escape") {
-          // The panel does not also hide on this press.
-          event.preventDefault();
-          stopSpeaking();
-          return;
-        }
         if (event.key.length !== 1 || event.metaKey || event.ctrlKey || event.altKey) {
           return;
         }

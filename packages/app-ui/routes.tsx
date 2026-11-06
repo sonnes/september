@@ -8,6 +8,7 @@ import {
 import { OnboardingLayout } from "@september/app-ui/layouts/onboarding";
 import { SettingsLayout } from "@september/app-ui/layouts/settings";
 import { APP_NAV } from "@september/app-ui/navigation";
+import { platform } from "@platform/adapter";
 import { AgentScreen } from "@september/app-ui/pages/agent";
 import { HelpScreen } from "@september/app-ui/pages/help";
 import { NotesScreen } from "@september/app-ui/pages/notes";
@@ -29,6 +30,7 @@ import { VoiceCloneScreen, VoiceScreen } from "@september/app-ui/pages/voice";
 import { currentSetup } from "@september/app-ui/services/settings";
 import { helpGuide } from "@september/core/rules/help/search";
 import {
+  capabilityPaths,
   isConnectionId,
   type AppPath,
   type SettingsPath,
@@ -48,6 +50,16 @@ export interface AppRoutes {
   sections?: Partial<Record<SettingsPath, RouteComponent>>;
 }
 
+/** Throws when the capabilities of the platform name other pages than the app gives. */
+function checkPages(given: string[]): void {
+  const offered = capabilityPaths(platform.capabilities).sort();
+  const sorted = [...given].sort();
+  if (offered.join() === sorted.join()) return;
+  throw new Error(
+    `The platform capabilities offer ${offered.join(", ") || "no extra pages"}, but the app gives ${sorted.join(", ") || "none"}.`,
+  );
+}
+
 const finished = () => isSetupDone(currentSetup());
 
 /**
@@ -61,6 +73,7 @@ export function createAppRoutes({
   pages = {},
   sections = {},
 }: AppRoutes) {
+  checkPages([...Object.keys(pages), ...Object.keys(sections)]);
   const rootRoute = createRootRoute();
 
   const setupRoute = createRoute({
