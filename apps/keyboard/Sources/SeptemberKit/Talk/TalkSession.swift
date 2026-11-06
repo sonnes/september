@@ -71,6 +71,12 @@ public final class TalkSession: ObservableObject {
         text += typed
     }
 
+    /// Replaces the last character of the bar, such as a letter with one of
+    /// its accents.
+    public func replaceLast(with typed: String) {
+        text = String(text.dropLast()) + typed
+    }
+
     public func clear() {
         text = ""
         speaking = nil

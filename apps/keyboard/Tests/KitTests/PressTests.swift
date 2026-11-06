@@ -5,6 +5,102 @@ import SeptemberKit
 func pressTests() {
     keyTimingTests()
     keyPresserTests()
+    heldKeyTests()
+}
+
+private func layoutKey(_ id: String) -> KeyDefinition {
+    KeyboardLayout.rows.lazy.flatMap(\.keys).first { $0.id == id }!
+}
+
+@MainActor
+private func heldKeyTests() {
+    test("the accent table holds the accents of macOS for each letter") {
+        let table = AccentTable.english
+        expect(table.choices(for: "e").contains("é"))
+        expect(table.choices(for: "E").contains("É"))
+        expect(table.choices(for: "n").contains("ñ"))
+        expectEqual(table.choices(for: "b"), [])
+        expect(!table.choices(for: "e").contains("e"), "the letter itself is not a choice")
+    }
+
+    test("a letter holds as a letter with its accents in the case it types") {
+        let (controller, _) = try makeController()
+        let e = layoutKey("key-e")
+        expectEqual(controller.holdBehavior(for: e), .letter(choices: AccentTable.english.choices(for: "e")))
+        controller.press(layoutKey("shift-left"))
+        expectEqual(controller.holdBehavior(for: e), .letter(choices: AccentTable.english.choices(for: "E")))
+    }
+
+    test("caps lock gives the accents of the capital letter") {
+        let (controller, _) = try makeController()
+        controller.press(layoutKey("capslock"))
+        expectEqual(
+            controller.holdBehavior(for: layoutKey("key-a")),
+            .letter(choices: AccentTable.english.choices(for: "A")))
+    }
+
+    test("a chord does not repeat") {
+        let (controller, _) = try makeController()
+        controller.press(layoutKey("command-left"))
+        expectEqual(controller.holdBehavior(for: layoutKey("key-c")), .once)
+    }
+
+    test("Delete, Space, and the characters that are not letters repeat") {
+        let (controller, _) = try makeController()
+        expectEqual(controller.holdBehavior(for: layoutKey("delete")), .repeats)
+        expectEqual(controller.holdBehavior(for: layoutKey("space")), .repeats)
+        expectEqual(controller.holdBehavior(for: layoutKey("key-1")), .repeats)
+    }
+
+    test("the modifiers, Return, Escape, and Tab do not repeat") {
+        let (controller, _) = try makeController()
+        for id in ["shift-left", "command-left", "capslock", "return", "esc", "tab"] {
+            expectEqual(controller.holdBehavior(for: layoutKey(id)), .once, id)
+        }
+    }
+
+    test("a repeat types the key with the modifiers of the first press") {
+        let (controller, sink) = try makeController()
+        let a = layoutKey("key-a")
+        controller.press(layoutKey("shift-left"))
+        controller.press(a)
+        controller.repeatPress(a)
+        let letters = sink.downs.filter { $0.key == 0 }
+        expectEqual(letters.map(\.flags), [.shift, .shift])
+        expectEqual(controller.input, .local(text: "AA"))
+        expectEqual(controller.modifiers.active, [], "the latched shift is used up")
+    }
+
+    test("a press on an accent replaces the letter with the accent") {
+        let (controller, sink) = try makeController()
+        controller.press(layoutKey("key-e"))
+        controller.showAccents(["é", "è"])
+        expectEqual(controller.accentChoices, ["é", "è"])
+        sink.reset()
+        controller.chooseAccent("é")
+        expectEqual(sink.downs.map(\.key), [VirtualKey.delete.rawValue])
+        expectEqual(sink.typed, ["é"])
+        expectEqual(controller.input, .local(text: "é"))
+        expectEqual(controller.accentChoices, [])
+    }
+
+    test("a press on another key closes the accents") {
+        let (controller, _) = try makeController()
+        controller.press(layoutKey("key-e"))
+        controller.showAccents(["é"])
+        controller.press(layoutKey("key-a"))
+        expectEqual(controller.accentChoices, [])
+    }
+
+    test("in Talk mode an accent replaces the letter in the bar") {
+        let (controller, sink) = try makeController()
+        controller.mode = .talk
+        controller.press(layoutKey("key-e"))
+        controller.showAccents(["é"])
+        controller.chooseAccent("é")
+        expectEqual(controller.talk.text, "é")
+        expect(sink.posted.isEmpty && sink.typed.isEmpty, "Talk mode sends no events")
+    }
 }
 
 /// A clock that moves only when a test moves it.

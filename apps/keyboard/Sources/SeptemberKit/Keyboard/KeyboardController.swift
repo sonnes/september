@@ -29,7 +29,13 @@ public final class KeyboardController: ObservableObject {
     public var privateTexts: any PrivateTextStore = KeychainPrivateTextStore()
     /// In Talk mode, the keys type into `talk` and the app in front gets no
     /// events.
-    @Published public var mode: KeyboardMode = .type
+    @Published public var mode: KeyboardMode = .type {
+        didSet { accentChoices = [] }
+    }
+    /// The accents of a held letter, shown over the word row until the user
+    /// presses a key. Empty when no accents show.
+    @Published public private(set) var accentChoices: [String] = []
+    public var accents = AccentTable.english
     public let talk = TalkSession()
     /// Called with each chord that the keys send, such as ⌘S, so the app
     /// panel can count and learn it.
@@ -38,6 +44,9 @@ public final class KeyboardController: ObservableObject {
     public let panels: PanelStore
 
     private let sink: any KeystrokeSink
+    /// The last key pressed, with the modifiers it had, so a repeat types
+    /// the same thing after the latched modifiers are used up.
+    private var lastPress: (id: String, modifiers: ModifierState)?
     private var keyCodeMap: KeyCodeMap
     private var observers: [any NSObjectProtocol] = []
 
@@ -56,18 +65,64 @@ public final class KeyboardController: ObservableObject {
     // MARK: - Pressing keys
 
     public func press(_ key: KeyDefinition) {
+        accentChoices = []
+        lastPress = (key.id, modifiers)
+        apply(key, modifiers: &modifiers)
+    }
+
+    /// Types `key` again while the user holds it, with the modifiers of its
+    /// first press.
+    public func repeatPress(_ key: KeyDefinition) {
+        guard let lastPress, lastPress.id == key.id else { return press(key) }
+        var held = lastPress.modifiers
+        apply(key, modifiers: &held)
+    }
+
+    /// What `key` does while the user holds it. Call this before `press`,
+    /// because a press uses up the latched modifiers.
+    public func holdBehavior(for key: KeyDefinition) -> HoldBehavior {
+        switch key.action {
+        case .modifier:
+            return .once
+        case .virtual(let virtual):
+            return virtual.repeatsWhenHeld ? .repeats : .once
+        case .character(let character):
+            guard modifiers.active.subtracting([.shift, .capsLock]).isEmpty else { return .once }
+            guard character.count == 1, character.first?.isLetter == true else { return .repeats }
+            return .letter(choices: accents.choices(for: modifiers.apply(to: character)))
+        }
+    }
+
+    /// Shows the accents of a held letter.
+    public func showAccents(_ choices: [String]) {
+        accentChoices = choices
+    }
+
+    /// Replaces the held letter with `choice`, as the press and hold menu of
+    /// macOS does.
+    public func chooseAccent(_ choice: String) {
+        accentChoices = []
+        if mode == .talk { return talk.replaceLast(with: choice) }
+        var none = ModifierState()
+        post(.delete, modifiers: &none)
+        send(text: choice)
+        append(choice)
+    }
+
+    private func apply(_ key: KeyDefinition, modifiers: inout ModifierState) {
         if mode == .talk { return talk.press(key, modifiers: &modifiers) }
         switch key.action {
         case .modifier(let modifier):
             modifiers.tap(modifier)
         case .character(let character):
-            type(character, secondary: key.secondaryLabel)
+            type(character, secondary: key.secondaryLabel, modifiers: &modifiers)
         case .virtual(let virtual):
-            post(virtual)
+            post(virtual, modifiers: &modifiers)
         }
     }
 
     public func perform(_ action: PanelAction) {
+        accentChoices = []
         if mode == .talk { return talk.perform(action, modifiers: &modifiers) }
         switch action {
         case .shortcut(let shortcut):
@@ -97,6 +152,7 @@ public final class KeyboardController: ObservableObject {
     public func appChanged(name: String?, bundleID: String?) {
         frontmostAppName = name
         appPanel = panels.appPanel(forBundleID: bundleID)
+        accentChoices = []
         focusedField = nil
         isFieldPrivate = false
         echo = ""
@@ -145,7 +201,7 @@ public final class KeyboardController: ObservableObject {
 
     // MARK: - Turning presses into keystrokes
 
-    private func type(_ base: String, secondary: String?) {
+    private func type(_ base: String, secondary: String?, modifiers: inout ModifierState) {
         let chord = modifiers.active.subtracting([.shift, .capsLock])
 
         if chord.isEmpty {
@@ -188,7 +244,7 @@ public final class KeyboardController: ObservableObject {
         }
     }
 
-    private func post(_ virtual: VirtualKey) {
+    private func post(_ virtual: VirtualKey, modifiers: inout ModifierState) {
         let flags = modifiers.active.subtracting(.capsLock)
         sink.post(Keystroke.events(virtualKey: virtual.rawValue, modifiers: flags))
         if !flags.subtracting(.shift).isEmpty {
